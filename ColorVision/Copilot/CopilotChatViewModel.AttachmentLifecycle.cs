@@ -39,13 +39,19 @@ namespace ColorVision.Copilot
             OnActiveDocumentStateChanged();
         }
 
-        private void ConsumeComposerAttachments(CopilotConversationRecord conversation)
+        private void ConsumeCapturedComposerAttachments(
+            CopilotConversationRecord conversation,
+            IReadOnlyList<CopilotAttachmentItem> capturedAttachments)
         {
-            if (conversation.Attachments.Count == 0)
+            if (capturedAttachments.Count == 0 || conversation.Attachments.Count == 0)
                 return;
 
-            conversation.Attachments.Clear();
-            UpdateAttachmentsState(conversation);
+            if (CopilotComposerAttachmentService.RemoveCapturedByReference(
+                    conversation.Attachments,
+                    capturedAttachments) > 0)
+            {
+                UpdateAttachmentsState(conversation);
+            }
         }
 
         private bool AttachExternalContextSnapshot(
@@ -145,13 +151,7 @@ namespace ColorVision.Copilot
 
             if (Conversations
                 .SelectMany(conversation => conversation.EnumerateReferencedAttachments())
-                .Concat((_state.QueuedFollowUpRecoveries
-                        ?? new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>())
-                    .Where(recovery => recovery != null)
-                    .SelectMany(recovery => recovery.EnumerateReferencedAttachments()))
-                .Concat(QueuedFollowUps
-                    .Where(followUp => followUp != null)
-                    .SelectMany(followUp => followUp.SubmissionContext.Attachments))
+                .Concat(_followUpQueue.EnumerateReferencedAttachments())
                 .Any(candidate => candidate.IsStoredImageFile
                     && string.Equals(candidate.Value, attachment.Value, StringComparison.OrdinalIgnoreCase)))
             {

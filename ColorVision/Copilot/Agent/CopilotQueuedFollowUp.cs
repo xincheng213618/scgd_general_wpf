@@ -14,7 +14,12 @@ namespace ColorVision.Copilot
             CopilotProfileConfig profile,
             CopilotAgentHostContextSnapshot submissionContext,
             string? goalId = null,
-            CopilotAgentSkillReference? agentSkillReference = null)
+            CopilotAgentSkillReference? agentSkillReference = null,
+            CopilotTurnRuntimeConfigSnapshot? runtimeConfigSnapshot = null,
+            CopilotWorkspaceReviewTargetContext? workspaceReviewTarget = null,
+            DateTimeOffset? queuedAtUtc = null,
+            bool? automaticGoalContinuation = null,
+            bool isLocalCommand = false)
         {
             RunId = runId ?? throw new ArgumentNullException(nameof(runId));
             ConversationId = conversationId ?? throw new ArgumentNullException(nameof(conversationId));
@@ -24,11 +29,24 @@ namespace ColorVision.Copilot
             Profile = profile ?? throw new ArgumentNullException(nameof(profile));
             SubmissionContext = submissionContext ?? throw new ArgumentNullException(nameof(submissionContext));
             GoalId = (goalId ?? string.Empty).Trim();
+            // Older goal-bound queue records were all automatic continuations.
+            // An explicit false marks user-requested goal work that must remain restartable.
+            _isAutomaticGoalContinuation = GoalId.Length > 0
+                && (automaticGoalContinuation ?? true);
+            IsLocalCommand = isLocalCommand;
             AgentSkillReference = agentSkillReference?.IsStructurallyValid() == true
                 && agentSkillReference.IsExplicitlyInvokedBy(Prompt)
                     ? agentSkillReference.CreateSnapshot()
                     : null;
-            QueuedAtUtc = DateTimeOffset.UtcNow;
+            _workspaceReviewTarget = mode == CopilotAgentMode.Review
+                && workspaceReviewTarget?.IsStructurallyValid() == true
+                    ? workspaceReviewTarget.CreateSnapshot()
+                    : null;
+            RuntimeConfigSnapshot = runtimeConfigSnapshot?.CreateSnapshot()
+                ?? new CopilotTurnRuntimeConfigSnapshot(
+                    new CopilotAgentDefaultsConfig(),
+                    Array.Empty<CopilotMcpClientServerConfig>());
+            QueuedAtUtc = queuedAtUtc ?? DateTimeOffset.UtcNow;
         }
 
         public string RunId { get; }
@@ -54,9 +72,16 @@ namespace ColorVision.Copilot
 
         public string GoalId { get; }
 
-        public bool IsAutomaticGoalContinuation => GoalId.Length > 0;
+        public bool IsGoalBound => GoalId.Length > 0;
+
+        public bool IsAutomaticGoalContinuation => _isAutomaticGoalContinuation;
+        private readonly bool _isAutomaticGoalContinuation;
+
+        public bool IsLocalCommand { get; }
 
         internal CopilotAgentSkillReference? AgentSkillReference { get; }
+
+        private readonly CopilotWorkspaceReviewTargetContext? _workspaceReviewTarget;
 
         public int QueuePosition
         {
@@ -88,6 +113,20 @@ namespace ColorVision.Copilot
         internal CopilotProfileConfig Profile { get; }
 
         internal CopilotAgentHostContextSnapshot SubmissionContext { get; }
+
+        internal CopilotTurnRuntimeConfigSnapshot RuntimeConfigSnapshot { get; }
+
+        internal CopilotWorkspaceReviewTargetContext? CreateWorkspaceReviewTargetSnapshot() =>
+            _workspaceReviewTarget?.CreateSnapshot();
+
+        internal CopilotComposerStash CreateComposerState() =>
+            CopilotComposerStash.Capture(
+                Prompt,
+                Prompt.Length,
+                Mode,
+                SubmissionContext.Attachments,
+                _workspaceReviewTarget,
+                AgentSkillReference);
 
         internal CopilotAgentHostContextSnapshot CreateExecutionContext(
             CopilotConversationHistorySnapshot conversationHistory) =>

@@ -102,7 +102,7 @@ namespace ColorVision.Copilot
             if (omittedStepCount > 0)
             {
                 var omittedSteps = availableSteps.Take(omittedStepCount).ToArray();
-                var omittedSuccessCount = omittedSteps.Count(step => step.Observation?.Success == true);
+                var omittedSuccessCount = omittedSteps.Count(step => step.EffectiveModelObservation.Success);
                 var omittedToolNames = omittedSteps
                     .Select(step => step.ToolCall?.ToolName)
                     .Where(toolName => !string.IsNullOrWhiteSpace(toolName))
@@ -125,7 +125,7 @@ namespace ColorVision.Copilot
             {
                 var stepRecord = selectedSteps[index];
                 var toolCall = stepRecord.ToolCall ?? new CopilotToolCall();
-                var observation = stepRecord.Observation ?? new CopilotToolObservation();
+                var observation = stepRecord.EffectiveModelObservation;
                 var toolName = string.IsNullOrWhiteSpace(toolCall.ToolName) ? "Unknown tool" : toolCall.ToolName;
 
                 builder.Append("- Round ")
@@ -556,7 +556,7 @@ namespace ColorVision.Copilot
             {
                 CopilotAgentMode.Web => "Prioritize provided web page content. If fetching failed, answer from other available context or general knowledge when the question still allows it.",
                 CopilotAgentMode.Code => "Prioritize attached files and project context, but avoid asking the user to attach more files unless they explicitly ask what to attach next.",
-                CopilotAgentMode.Review => "Perform a read-only code review. Inspect the current Git working tree and relevant staged or unstaged diff before making claims. Never modify files, apply fixes, or convert findings into implementation. When the user explicitly requests verification, you may run only the bounded RunWorkspaceValidation build/test tool after native approval; every other write-capable tool remains forbidden. Report actionable findings first, ordered by severity, with exact file paths and line numbers when evidence permits, impact, and concise remediation. If verification was requested, end with VERDICT: PASS only when the inspected changes satisfy the request and the collected validation succeeded; otherwise end with VERDICT: FAIL and concrete gaps. If no findings remain, say so and identify residual risks or test gaps.",
+                CopilotAgentMode.Review => "Perform a read-only code review. Inspect the current Git working tree and relevant staged, unstaged, and untracked evidence before making claims. Never modify files, apply fixes, or convert findings into implementation. When the user explicitly requests verification, you may run only the bounded RunWorkspaceValidation build/test tool after native approval; every other write-capable tool remains forbidden. After the latest Git diff and any requested validation, call SubmitCodeReviewFindings exactly once with every actionable P0-P3 finding grounded to a model-visible diff hunk, or findings=[] when none remain. Then report the same findings first, ordered by severity, with exact file paths and line numbers, impact, and concise remediation. If verification was requested, end with VERDICT: PASS only when the inspected changes satisfy the request and the collected validation succeeded; otherwise end with VERDICT: FAIL and concrete gaps. If no findings remain, say so and identify residual risks or test gaps.",
                 CopilotAgentMode.Diagnose => "Prioritize recent logs, failure details, and context. Separate known facts from hypotheses.",
                 CopilotAgentMode.Plan => "Operate in user-selected plan-only mode. Inspect only the read-only evidence needed to make the plan concrete. You may ask a structured clarification question when materially different choices remain. Produce a concise, ordered, implementation-ready plan with verification criteria. Never modify files or application state, execute commands or validation, request write approval, or claim implementation or testing occurred.",
                 CopilotAgentMode.Explain => "Make the conclusion clear and keep any context-limit caveat brief.",

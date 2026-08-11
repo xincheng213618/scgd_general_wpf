@@ -12,6 +12,25 @@ namespace ColorVision.Copilot
             CopilotTurnRequest request,
             CancellationToken cancellationToken);
 
+        void QueueSessionStart(
+            string conversationId,
+            CopilotCodexSessionStartSource source)
+        {
+        }
+
+        Task<CopilotCodexSessionStartHookOutcome> RunSessionStartHooksAsync(
+            CopilotAgentRequest request,
+            bool hasPersistedHistory,
+            Action<string>? onDiagnostic,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotCodexSessionStartHookOutcome.Continue);
+
+        Task<CopilotCodexSessionEndHookOutcome> RunSessionEndHooksAsync(
+            CopilotAgentRequest request,
+            Action<string>? onDiagnostic,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotCodexSessionEndHookOutcome.NotRun);
+
         CopilotSteeringAdmissionResult EnqueueSteeringMessage(
             string taskId,
             string message);
@@ -59,6 +78,34 @@ namespace ColorVision.Copilot
         public static CopilotTurnError FromException(Exception exception)
         {
             ArgumentNullException.ThrowIfNull(exception);
+            if (exception is CopilotSessionStartHookBlockedException)
+            {
+                var message = CopilotApprovalRequestReason.Normalize(exception.Message);
+                if (message.Length > MaximumMessageLength)
+                {
+                    var length = MaximumMessageLength;
+                    if (char.IsHighSurrogate(message[length - 1]))
+                        length--;
+                    message = message[..length].TrimEnd();
+                }
+                return new CopilotTurnError(
+                    "session_start_hook_stopped",
+                    message);
+            }
+            if (exception is CopilotUserPromptSubmitHookBlockedException)
+            {
+                var message = CopilotApprovalRequestReason.Normalize(exception.Message);
+                if (message.Length > MaximumMessageLength)
+                {
+                    var length = MaximumMessageLength;
+                    if (char.IsHighSurrogate(message[length - 1]))
+                        length--;
+                    message = message[..length].TrimEnd();
+                }
+                return new CopilotTurnError(
+                    "user_prompt_hook_blocked",
+                    message);
+            }
             return new CopilotTurnError(
                 exception is TimeoutException ? "turn_timeout" : "turn_failed",
                 "Copilot turn failed before producing a complete result.");
@@ -130,11 +177,31 @@ namespace ColorVision.Copilot
     internal sealed record CopilotTurnRequestPreparedEvent(
         CopilotPreparedTurnRequest Request) : CopilotTurnEvent;
 
+    internal sealed record CopilotTurnRuntimeDiagnosticEvent : CopilotTurnEvent
+    {
+        internal const int MaximumTextLength = 2_048;
+
+        public CopilotTurnRuntimeDiagnosticEvent(string text)
+        {
+            var normalized = CopilotAgentTraceEntry.Sanitize(text);
+            Text = normalized.Length <= MaximumTextLength
+                ? normalized
+                : normalized[..MaximumTextLength].TrimEnd();
+        }
+
+        public string Text { get; }
+    }
+
     internal sealed record CopilotTurnChatDeltaEvent(
         CopilotStreamDelta Delta) : CopilotTurnEvent;
 
+    internal sealed record CopilotTurnChatAnswerResetEvent : CopilotTurnEvent;
+
     internal sealed record CopilotTurnProviderRetryEvent(
         CopilotProviderRetryInfo Retry) : CopilotTurnEvent;
+
+    internal sealed record CopilotTurnProviderConnectionRecoveryEvent(
+        CopilotProviderConnectionRecoveryInfo Recovery) : CopilotTurnEvent;
 
     internal sealed record CopilotTurnReviewEnteredEvent(
         CopilotWorkspaceReviewTargetContext Target) : CopilotTurnEvent;
@@ -143,6 +210,9 @@ namespace ColorVision.Copilot
         CopilotWorkspaceReviewTargetContext Target,
         string ReviewText,
         bool ReviewTextTruncated) : CopilotTurnEvent;
+
+    internal sealed record CopilotTurnCodeReviewSnapshotUpdatedEvent(
+        CopilotCodeReviewSnapshot Snapshot) : CopilotTurnEvent;
 
     internal sealed record CopilotTurnWorkspaceDiffUpdatedEvent(
         CopilotTurnWorkspaceDiffSnapshot Snapshot) : CopilotTurnEvent;
@@ -293,11 +363,24 @@ namespace ColorVision.Copilot
         public void OnRequestPrepared(CopilotPreparedTurnRequest request) =>
             _publish(new CopilotTurnRequestPreparedEvent(request));
 
+        public void OnRuntimeDiagnostic(string text)
+        {
+            var diagnostic = new CopilotTurnRuntimeDiagnosticEvent(text);
+            if (diagnostic.Text.Length > 0)
+                _publish(diagnostic);
+        }
+
         public void OnChatDelta(CopilotStreamDelta delta) =>
             _publish(new CopilotTurnChatDeltaEvent(delta));
 
+        public void OnChatAnswerReset() =>
+            _publish(new CopilotTurnChatAnswerResetEvent());
+
         public void OnProviderRetry(CopilotProviderRetryInfo retry) =>
             _publish(new CopilotTurnProviderRetryEvent(retry));
+
+        public void OnProviderConnectionRecovery(CopilotProviderConnectionRecoveryInfo recovery) =>
+            _publish(new CopilotTurnProviderConnectionRecoveryEvent(recovery));
 
         public void OnReviewEntered(CopilotWorkspaceReviewTargetContext target)
         {
@@ -319,6 +402,14 @@ namespace ColorVision.Copilot
 
         public void OnAgentEvent(CopilotAgentEvent agentEvent) =>
             _publish(new CopilotTurnAgentEvent(agentEvent));
+
+        public void OnCodeReviewSnapshotUpdated(CopilotCodeReviewSnapshot snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            if (!snapshot.IsStructurallyValid())
+                throw new ArgumentException("Code review snapshot is invalid.", nameof(snapshot));
+            _publish(new CopilotTurnCodeReviewSnapshotUpdatedEvent(snapshot.CreateSnapshot()));
+        }
 
         public void OnWorkspaceDiffUpdated(CopilotTurnWorkspaceDiffSnapshot snapshot)
         {

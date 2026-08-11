@@ -64,16 +64,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            DeviceCamera.PhyCamera?.ReleaseDeviceCamera();
             EditConfig.CopyTo(DeviceCamera.Config);
-            if (DeviceCamera.PhyCamera != null)
-                DeviceCamera.PhyCamera.ConfigChanged += DeviceCamera.PhyCameraConfigChanged;
             Close();
         }
 
         private void CameraPhyID_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ComboBox comboBox && EditConfig !=null)
+            if (sender is ComboBox comboBox && EditConfig != null)
             {
                 UpdateConfig();
             }

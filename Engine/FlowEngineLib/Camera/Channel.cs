@@ -44,8 +44,4 @@ public class Channel
 		return channels[idx];
 	}
 
-	internal List<ChannelData> GetChannels()
-	{
-		return channels;
-	}
 }

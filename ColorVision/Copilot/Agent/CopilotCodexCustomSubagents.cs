@@ -66,10 +66,13 @@ namespace ColorVision.Copilot
     {
         private const int MaximumCustomSubagents = 24;
         private const int MaximumCustomSubagentDiscoveryIssues = 32;
+        private const int MaximumCustomSubagentDiscoveryDirectories = 128;
         private const string CustomAgentsDirectoryName = "agents";
         private const string CustomAgentNameKey = "name";
         private const string CustomAgentDescriptionKey = "description";
         private const string CustomAgentDeveloperInstructionsKey = "developer_instructions";
+        private const string CustomAgentConfigFileKey = "config_file";
+        private const string CustomAgentNicknameCandidatesKey = "nickname_candidates";
         private const string CustomAgentModelKey = "model";
         private const string CustomAgentContextWindowKey = "model_context_window";
         private const string CustomAgentToolOutputTokenLimitKey = "tool_output_token_limit";
@@ -82,6 +85,8 @@ namespace ColorVision.Copilot
 
         private static IReadOnlyList<CopilotCodexCustomSubagentDefinition> DiscoverCodexHomeCustomSubagents(
             string normalizedCodexHomePath,
+            string configSource,
+            string configPath,
             out IReadOnlyList<CopilotCodexCustomSubagentDiscoveryIssue> discoveryIssues)
         {
             var issues = new List<CopilotCodexCustomSubagentDiscoveryIssue>();
@@ -91,12 +96,15 @@ namespace ColorVision.Copilot
 
             var definitions = new Dictionary<string, CopilotCodexCustomSubagentDefinition>(
                 StringComparer.OrdinalIgnoreCase);
-            ApplyCustomSubagentDirectory(
+            ApplyCustomSubagentLayer(
                 definitions,
                 normalizedCodexHomePath,
+                configPath,
+                configSource,
                 Path.Combine(normalizedCodexHomePath, CustomAgentsDirectoryName),
                 CopilotProjectInstructionConfigSources.CodexHome,
-                issues);
+                issues,
+                allowOutsideRoot: true);
             discoveryIssues = issues.ToArray();
             return CreateCustomSubagentSnapshot(definitions);
         }
@@ -120,15 +128,237 @@ namespace ColorVision.Copilot
                 .ToList();
             foreach (var directoryPath in projectConfigDirectories ?? Array.Empty<string>())
             {
-                ApplyCustomSubagentDirectory(
+                var configPath = Path.Combine(directoryPath, ".codex", ConfigFileName);
+                TryReadConfigSource(normalizedProjectRoot, configPath, out var configSource);
+                ApplyCustomSubagentLayer(
                     definitions,
                     normalizedProjectRoot,
+                    configPath,
+                    configSource,
                     Path.Combine(directoryPath, ".codex", CustomAgentsDirectoryName),
                     CopilotProjectInstructionConfigSources.TrustedProject,
-                    issues);
+                    issues,
+                    allowOutsideRoot: false);
             }
             discoveryIssues = issues.ToArray();
             return CreateCustomSubagentSnapshot(definitions);
+        }
+
+        private static void ApplyCustomSubagentLayer(
+            Dictionary<string, CopilotCodexCustomSubagentDefinition> definitions,
+            string allowedRootPath,
+            string configPath,
+            string configSource,
+            string agentsDirectoryPath,
+            CopilotProjectInstructionConfigSources source,
+            List<CopilotCodexCustomSubagentDiscoveryIssue> issues,
+            bool allowOutsideRoot)
+        {
+            var declaredFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var declaredNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var inheritedDefinitions = definitions.ToDictionary(
+                pair => pair.Key,
+                pair => pair.Value,
+                StringComparer.OrdinalIgnoreCase);
+            foreach (var declaration in ParseCustomSubagentDeclarations(configSource))
+            {
+                if (!declaration.IsValid)
+                {
+                    AddCustomSubagentDiscoveryIssue(
+                        issues,
+                        configPath,
+                        source,
+                        CopilotCodexCustomSubagentDiscoveryIssueKind.InvalidDefinition);
+                    continue;
+                }
+
+                if (!TryCreateDeclaredCustomSubagent(
+                    declaration,
+                    configPath,
+                    allowedRootPath,
+                    allowOutsideRoot,
+                    source,
+                    out var definition,
+                    out var declaredFilePath,
+                    out var issueKind))
+                {
+                    AddCustomSubagentDiscoveryIssue(
+                        issues,
+                        declaredFilePath.Length > 0 ? declaredFilePath : configPath,
+                        source,
+                        issueKind);
+                    continue;
+                }
+
+                inheritedDefinitions.TryGetValue(definition.Name, out var inheritedDefinition);
+                definition = MergeDeclaredCustomSubagent(
+                    definition,
+                    inheritedDefinition,
+                    inheritRoleConfig: !declaration.HasConfigFile);
+                if (definition.Description.Length == 0)
+                {
+                    AddCustomSubagentDiscoveryIssue(
+                        issues,
+                        definition.SourceFilePath,
+                        source,
+                        CopilotCodexCustomSubagentDiscoveryIssueKind.InvalidDefinition);
+                    continue;
+                }
+                if (declaredFilePath.Length > 0)
+                    declaredFiles.Add(declaredFilePath);
+                if (!declaredNames.Add(definition.Name))
+                {
+                    AddCustomSubagentDiscoveryIssue(
+                        issues,
+                        definition.SourceFilePath,
+                        source,
+                        CopilotCodexCustomSubagentDiscoveryIssueKind.DuplicateName);
+                    continue;
+                }
+                if (!definitions.ContainsKey(definition.Name)
+                    && definitions.Count >= MaximumCustomSubagents)
+                {
+                    AddCustomSubagentDiscoveryIssue(
+                        issues,
+                        definition.SourceFilePath,
+                        source,
+                        CopilotCodexCustomSubagentDiscoveryIssueKind.LimitExceeded);
+                    continue;
+                }
+                definitions[definition.Name] = definition;
+            }
+
+            ApplyCustomSubagentDirectory(
+                definitions,
+                allowedRootPath,
+                agentsDirectoryPath,
+                source,
+                issues,
+                declaredFiles,
+                declaredNames);
+        }
+
+        private static CopilotCodexCustomSubagentDefinition MergeDeclaredCustomSubagent(
+            CopilotCodexCustomSubagentDefinition current,
+            CopilotCodexCustomSubagentDefinition? inherited,
+            bool inheritRoleConfig)
+        {
+            if (inherited == null)
+                return current;
+
+            return current with
+            {
+                Description = current.Description.Length > 0
+                    ? current.Description
+                    : inherited.Description,
+                DeveloperInstructions = inheritRoleConfig
+                    ? inherited.DeveloperInstructions
+                    : current.DeveloperInstructions,
+                Model = inheritRoleConfig ? inherited.Model : current.Model,
+                ContextWindowTokens = inheritRoleConfig
+                    ? inherited.ContextWindowTokens
+                    : current.ContextWindowTokens,
+                ToolOutputTokenLimit = inheritRoleConfig
+                    ? inherited.ToolOutputTokenLimit
+                    : current.ToolOutputTokenLimit,
+                SandboxMode = inheritRoleConfig
+                    ? inherited.SandboxMode
+                    : current.SandboxMode,
+                ReasoningEffort = inheritRoleConfig
+                    ? inherited.ReasoningEffort
+                    : current.ReasoningEffort,
+                ReasoningSummary = inheritRoleConfig
+                    ? inherited.ReasoningSummary
+                    : current.ReasoningSummary,
+                SupportsReasoningSummaries = inheritRoleConfig
+                    ? inherited.SupportsReasoningSummaries
+                    : current.SupportsReasoningSummaries,
+                ServiceTier = inheritRoleConfig
+                    ? inherited.ServiceTier
+                    : current.ServiceTier,
+                ModelVerbosity = inheritRoleConfig
+                    ? inherited.ModelVerbosity
+                    : current.ModelVerbosity,
+                HasIgnoredSettings = current.HasIgnoredSettings
+                    || (inheritRoleConfig && inherited.HasIgnoredSettings),
+            };
+        }
+
+        private static bool TryCreateDeclaredCustomSubagent(
+            CustomSubagentDeclaration declaration,
+            string configPath,
+            string allowedRootPath,
+            bool allowOutsideRoot,
+            CopilotProjectInstructionConfigSources source,
+            out CopilotCodexCustomSubagentDefinition definition,
+            out string declaredFilePath,
+            out CopilotCodexCustomSubagentDiscoveryIssueKind issueKind)
+        {
+            definition = new CopilotCodexCustomSubagentDefinition();
+            declaredFilePath = string.Empty;
+            issueKind = CopilotCodexCustomSubagentDiscoveryIssueKind.InvalidDefinition;
+
+            var description = string.Empty;
+            if (declaration.HasDescription
+                && (!TryParseConfiguredText(
+                        declaration.DescriptionValue,
+                        CopilotCodexCustomSubagentDefinition.MaximumDescriptionCharacters,
+                        out description)
+                    || description.Length == 0))
+            {
+                return false;
+            }
+
+            if (!declaration.HasConfigFile)
+            {
+                definition = new CopilotCodexCustomSubagentDefinition
+                {
+                    Name = declaration.Name,
+                    Description = description,
+                    Source = source,
+                    SourceFilePath = Path.GetFullPath(configPath),
+                    HasIgnoredSettings = declaration.HasIgnoredSettings,
+                };
+                return true;
+            }
+
+            if (!TryParseConfiguredText(
+                    declaration.ConfigFileValue,
+                    MaximumConfigReferencedPathCharacters,
+                    out var configuredPath)
+                || configuredPath.Length == 0)
+            {
+                return false;
+            }
+            if (!TryReadConfigReferencedTextFile(
+                    configPath,
+                    configuredPath,
+                    allowedRootPath,
+                    allowOutsideRoot,
+                    MaximumConfigBytes,
+                    MaximumConfigBytes,
+                    out var resolvedRoleFilePath,
+                    out var roleSource))
+            {
+                declaredFilePath = configuredPath;
+                issueKind = CopilotCodexCustomSubagentDiscoveryIssueKind.UnreadableOrUnsafe;
+                return false;
+            }
+            declaredFilePath = resolvedRoleFilePath;
+            if (!TryParseCustomSubagent(
+                    roleSource,
+                    source,
+                    declaredFilePath,
+                    declaration.Name,
+                    description,
+                    requireDescription: false,
+                    requireDeveloperInstructions: false,
+                    hasIgnoredSettings: declaration.HasIgnoredSettings,
+                    out definition))
+            {
+                return false;
+            }
+            return true;
         }
 
         private static void ApplyCustomSubagentDirectory(
@@ -136,11 +366,15 @@ namespace ColorVision.Copilot
             string allowedRootPath,
             string directoryPath,
             CopilotProjectInstructionConfigSources source,
-            List<CopilotCodexCustomSubagentDiscoveryIssue> issues)
+            List<CopilotCodexCustomSubagentDiscoveryIssue> issues,
+            IReadOnlySet<string> excludedFilePaths,
+            IReadOnlySet<string> reservedNames)
         {
             var namesInDirectory = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var filePath in EnumerateCustomSubagentFiles(allowedRootPath, directoryPath))
             {
+                if (excludedFilePaths.Contains(Path.GetFullPath(filePath)))
+                    continue;
                 if (!TryReadConfigSource(allowedRootPath, filePath, out var configSource))
                 {
                     AddCustomSubagentDiscoveryIssue(
@@ -160,6 +394,15 @@ namespace ColorVision.Copilot
                     continue;
                 }
                 if (!namesInDirectory.Add(definition.Name))
+                {
+                    AddCustomSubagentDiscoveryIssue(
+                        issues,
+                        filePath,
+                        source,
+                        CopilotCodexCustomSubagentDiscoveryIssueKind.DuplicateName);
+                    continue;
+                }
+                if (reservedNames.Contains(definition.Name))
                 {
                     AddCustomSubagentDiscoveryIssue(
                         issues,
@@ -216,10 +459,57 @@ namespace ColorVision.Copilot
                     return Array.Empty<string>();
                 }
 
-                return Directory.EnumerateFiles(fullDirectoryPath, "*.toml", SearchOption.TopDirectoryOnly)
-                    .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-                    .Take(MaximumCustomSubagents + MaximumCustomSubagentDiscoveryIssues)
-                    .ToArray();
+                var maximumFiles = MaximumCustomSubagents + MaximumCustomSubagentDiscoveryIssues;
+                var files = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+                var pendingDirectories = new Queue<string>();
+                pendingDirectories.Enqueue(fullDirectoryPath);
+                var enqueuedDirectories = 1;
+                while (pendingDirectories.Count > 0)
+                {
+                    var currentDirectoryPath = pendingDirectories.Dequeue();
+                    try
+                    {
+                        foreach (var filePath in Directory.EnumerateFiles(
+                            currentDirectoryPath,
+                            "*.toml",
+                            SearchOption.TopDirectoryOnly))
+                        {
+                            files.Add(Path.GetFullPath(filePath));
+                            if (files.Count > maximumFiles)
+                                files.Remove(files.Max!);
+                        }
+
+                        if (enqueuedDirectories >= MaximumCustomSubagentDiscoveryDirectories)
+                            continue;
+                        foreach (var childDirectoryPath in Directory.EnumerateDirectories(
+                            currentDirectoryPath,
+                            "*",
+                            SearchOption.TopDirectoryOnly)
+                            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
+                        {
+                            if (enqueuedDirectories >= MaximumCustomSubagentDiscoveryDirectories)
+                                break;
+                            var fullChildDirectoryPath = Path.TrimEndingDirectorySeparator(
+                                Path.GetFullPath(childDirectoryPath));
+                            var childDirectory = new DirectoryInfo(fullChildDirectoryPath);
+                            if (!childDirectory.Exists
+                                || (childDirectory.Attributes & FileAttributes.ReparsePoint) != 0
+                                || CopilotWorkspaceSearchSupport.HasReparsePointInPath(fullChildDirectoryPath)
+                                || !CopilotWorkspaceSearchSupport.IsPathWithinRoots(
+                                    fullChildDirectoryPath,
+                                    [allowedRootPath]))
+                            {
+                                continue;
+                            }
+                            pendingDirectories.Enqueue(fullChildDirectoryPath);
+                            enqueuedDirectories++;
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+                return files.ToArray();
             }
             catch
             {
@@ -231,11 +521,31 @@ namespace ColorVision.Copilot
             string sourceText,
             CopilotProjectInstructionConfigSources source,
             string sourceFilePath,
+            out CopilotCodexCustomSubagentDefinition definition) =>
+            TryParseCustomSubagent(
+                sourceText,
+                source,
+                sourceFilePath,
+                string.Empty,
+                string.Empty,
+                requireDescription: true,
+                requireDeveloperInstructions: true,
+                hasIgnoredSettings: false,
+                out definition);
+
+        private static bool TryParseCustomSubagent(
+            string sourceText,
+            CopilotProjectInstructionConfigSources source,
+            string sourceFilePath,
+            string nameHint,
+            string descriptionFallback,
+            bool requireDescription,
+            bool requireDeveloperInstructions,
+            bool hasIgnoredSettings,
             out CopilotCodexCustomSubagentDefinition definition)
         {
             definition = new CopilotCodexCustomSubagentDefinition();
             var assignments = new Dictionary<string, string>(StringComparer.Ordinal);
-            var hasIgnoredSettings = false;
             foreach (var assignment in EnumerateCustomSubagentAssignments(sourceText))
             {
                 if (!IsSupportedCustomSubagentKey(assignment.Key))
@@ -247,15 +557,47 @@ namespace ColorVision.Copilot
                     return false;
             }
 
-            if (!assignments.TryGetValue(CustomAgentNameKey, out var nameValue)
-                || !TryParseConfiguredText(nameValue, CopilotCodexCustomSubagentDefinition.MaximumNameCharacters, out var name)
-                || !IsValidCustomSubagentName(name)
-                || !assignments.TryGetValue(CustomAgentDescriptionKey, out var descriptionValue)
-                || !TryParseConfiguredText(descriptionValue, CopilotCodexCustomSubagentDefinition.MaximumDescriptionCharacters, out var description)
-                || description.Length == 0
-                || !assignments.TryGetValue(CustomAgentDeveloperInstructionsKey, out var instructionsValue)
-                || !TryParseConfiguredText(instructionsValue, CopilotCodexCustomSubagentDefinition.MaximumDeveloperInstructionCharacters, out var developerInstructions)
-                || developerInstructions.Length == 0)
+            var name = (nameHint ?? string.Empty).Trim();
+            if (assignments.TryGetValue(CustomAgentNameKey, out var nameValue))
+            {
+                if (!TryParseConfiguredText(
+                        nameValue,
+                        CopilotCodexCustomSubagentDefinition.MaximumNameCharacters,
+                        out name))
+                {
+                    return false;
+                }
+            }
+            if (!IsValidCustomSubagentName(name))
+                return false;
+
+            var description = (descriptionFallback ?? string.Empty).Trim();
+            if (assignments.TryGetValue(CustomAgentDescriptionKey, out var descriptionValue))
+            {
+                if (!TryParseConfiguredText(
+                        descriptionValue,
+                        CopilotCodexCustomSubagentDefinition.MaximumDescriptionCharacters,
+                        out description))
+                {
+                    return false;
+                }
+            }
+            if (requireDescription && description.Length == 0)
+                return false;
+
+            var developerInstructions = string.Empty;
+            if (assignments.TryGetValue(CustomAgentDeveloperInstructionsKey, out var instructionsValue))
+            {
+                if (!TryParseConfiguredText(
+                        instructionsValue,
+                        CopilotCodexCustomSubagentDefinition.MaximumDeveloperInstructionCharacters,
+                        out developerInstructions)
+                    || developerInstructions.Length == 0)
+                {
+                    return false;
+                }
+            }
+            else if (requireDeveloperInstructions)
             {
                 return false;
             }
@@ -402,6 +744,118 @@ namespace ColorVision.Copilot
             }
         }
 
+        private static IReadOnlyList<CustomSubagentDeclaration> ParseCustomSubagentDeclarations(string source)
+        {
+            var declarations = new List<CustomSubagentDeclaration>();
+            var assignments = new Dictionary<string, string>(StringComparer.Ordinal);
+            var currentName = string.Empty;
+            var currentIsValid = true;
+            var hasIgnoredSettings = false;
+
+            void FlushCurrent()
+            {
+                if (currentName.Length == 0 && currentIsValid)
+                    return;
+                declarations.Add(new CustomSubagentDeclaration(
+                    currentName,
+                    assignments.GetValueOrDefault(CustomAgentDescriptionKey, string.Empty),
+                    assignments.ContainsKey(CustomAgentDescriptionKey),
+                    assignments.GetValueOrDefault(CustomAgentConfigFileKey, string.Empty),
+                    assignments.ContainsKey(CustomAgentConfigFileKey),
+                    hasIgnoredSettings,
+                    currentIsValid));
+                assignments.Clear();
+                currentName = string.Empty;
+                currentIsValid = true;
+                hasIgnoredSettings = false;
+            }
+
+            var lines = NormalizeLines(source);
+            for (var index = 0; index < lines.Length; index++)
+            {
+                var line = StripComment(lines[index]).Trim();
+                if (line.Length == 0)
+                    continue;
+                if (line[0] == '[')
+                {
+                    FlushCurrent();
+                    if (TryParseCustomSubagentRoleTableHeader(line, out var roleName))
+                    {
+                        currentName = roleName;
+                    }
+                    else if (line.StartsWith("[agents.", StringComparison.Ordinal))
+                    {
+                        currentIsValid = false;
+                    }
+                    continue;
+                }
+                if (currentName.Length == 0)
+                    continue;
+
+                var equalsIndex = line.IndexOf('=');
+                if (equalsIndex <= 0)
+                {
+                    currentIsValid = false;
+                    continue;
+                }
+                var key = line[..equalsIndex].Trim();
+                var value = line[(equalsIndex + 1)..].Trim();
+                if (string.Equals(key, CustomAgentDescriptionKey, StringComparison.Ordinal)
+                    && TryGetMultilineStringDelimiter(value, out var delimiter)
+                    && !HasClosedMultilineString(value, delimiter))
+                {
+                    var builder = new StringBuilder(value);
+                    for (var logicalLine = 1;
+                        logicalLine < MaximumConfiguredTextLines && index + 1 < lines.Length;
+                        logicalLine++)
+                    {
+                        index++;
+                        builder.Append('\n').Append(lines[index]);
+                        if (HasClosedMultilineString(builder.ToString(), delimiter))
+                            break;
+                    }
+                    value = builder.ToString();
+                }
+
+                if (string.Equals(key, CustomAgentNicknameCandidatesKey, StringComparison.Ordinal))
+                {
+                    hasIgnoredSettings = true;
+                    continue;
+                }
+                if (!string.Equals(key, CustomAgentDescriptionKey, StringComparison.Ordinal)
+                    && !string.Equals(key, CustomAgentConfigFileKey, StringComparison.Ordinal))
+                {
+                    hasIgnoredSettings = true;
+                    continue;
+                }
+                if (!assignments.TryAdd(key, value))
+                    currentIsValid = false;
+            }
+            FlushCurrent();
+            return declarations;
+        }
+
+        private static bool HasValidCustomSubagentDeclarations(string source) =>
+            ParseCustomSubagentDeclarations(source).Any(declaration => declaration.IsValid);
+
+        private static bool TryParseCustomSubagentRoleTableHeader(string line, out string roleName)
+        {
+            roleName = string.Empty;
+            if (line.StartsWith("[[", StringComparison.Ordinal)
+                || !line.StartsWith("[agents.", StringComparison.Ordinal)
+                || !line.EndsWith(']'))
+            {
+                return false;
+            }
+            roleName = line[8..^1].Trim();
+            if (!IsValidCustomSubagentName(roleName))
+            {
+                roleName = string.Empty;
+                return false;
+            }
+            return true;
+        }
+
         private static bool IsSupportedCustomSubagentKey(string key) =>
             string.Equals(key, CustomAgentNameKey, StringComparison.Ordinal)
             || string.Equals(key, CustomAgentDescriptionKey, StringComparison.Ordinal)
@@ -432,6 +886,15 @@ namespace ColorVision.Copilot
                 .OrderBy(definition => definition.Name, StringComparer.OrdinalIgnoreCase)
                 .Select(definition => definition.CreateSnapshot())
                 .ToArray();
+
+        private sealed record CustomSubagentDeclaration(
+            string Name,
+            string DescriptionValue,
+            bool HasDescription,
+            string ConfigFileValue,
+            bool HasConfigFile,
+            bool HasIgnoredSettings,
+            bool IsValid);
 
         private readonly record struct CustomSubagentTomlAssignment(string Key, string Value);
     }

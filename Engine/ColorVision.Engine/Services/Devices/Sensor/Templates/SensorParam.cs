@@ -114,7 +114,14 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                 {
                     if (MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ResetDatabasePrompt+$" {typeof(SensorParam)} "+ ColorVision.Engine.Properties.Resources.RelatedItems, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                     {
-                        MySqlControl.BatchExecuteNonQuery(mysqlCommand.GetRecover());
+                        try
+                        {
+                            MySqlControl.BatchExecuteNonQuery(mysqlCommand.GetRecover());
+                        }
+                        catch (BatchExecuteNonQueryException ex)
+                        {
+                            BatchSqlConsumer.ReportUiFailure(log, $"重置数据库{typeof(SensorParam)}相关项", ex);
+                        }
                     }
                 }
             }

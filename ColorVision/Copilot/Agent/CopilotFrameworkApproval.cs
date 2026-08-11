@@ -27,6 +27,7 @@ namespace ColorVision.Copilot
         User,
         TemporaryGrant,
         AutomaticReview,
+        ExecutionPolicy,
     }
 
     internal sealed record CopilotFrameworkApprovalDecision
@@ -64,6 +65,9 @@ namespace ColorVision.Copilot
                 CopilotFrameworkApprovalDecisionKind.Approved
                     when Source == CopilotFrameworkApprovalDecisionSource.TemporaryGrant =>
                     $"{name} was approved by the temporary structured-workspace grant. Agent Framework is resuming the same session.",
+                CopilotFrameworkApprovalDecisionKind.Approved
+                    when Source == CopilotFrameworkApprovalDecisionSource.ExecutionPolicy =>
+                    $"{name} was approved by the submitted turn's Codex exec policy. Agent Framework is resuming the same session.",
                 CopilotFrameworkApprovalDecisionKind.Approved =>
                     $"{name} was approved by the ColorVision user. Agent Framework is resuming the same session.",
                 CopilotFrameworkApprovalDecisionKind.Rejected
@@ -206,6 +210,18 @@ namespace ColorVision.Copilot
                 "Approved by the current ColorVision task's temporary structured-workspace grant.",
                 string.Empty,
                 CopilotFrameworkApprovalDecisionSource.TemporaryGrant);
+        }
+
+        public static CopilotFrameworkApprovalDecision ApprovedByExecPolicy(string reason)
+        {
+            var detail = string.IsNullOrWhiteSpace(reason)
+                ? "Approved by the submitted turn's Codex exec policy."
+                : reason.Trim();
+            return new CopilotFrameworkApprovalDecision(
+                CopilotFrameworkApprovalDecisionKind.Approved,
+                detail,
+                string.Empty,
+                CopilotFrameworkApprovalDecisionSource.ExecutionPolicy);
         }
     }
 

@@ -182,7 +182,10 @@ namespace ColorVision.Copilot
             var builder = new StringBuilder();
             foreach (var hookRun in hookRuns)
             {
-                var item = $"{FormatHookPhase(hookRun.Phase)}:{hookRun.SourceId}={FormatHookState(hookRun.State)}/{hookRun.DurationMs}ms";
+                var mode = hookRun.ExecutionMode == CopilotToolExecutionHookMode.Async
+                    ? "@async"
+                    : string.Empty;
+                var item = $"{FormatHookPhase(hookRun.Phase)}:{hookRun.SourceId}{mode}={FormatHookState(hookRun.State)}/{hookRun.DurationMs}ms";
                 if (!string.IsNullOrWhiteSpace(hookRun.FailureCode))
                     item += "/" + hookRun.FailureCode;
                 if (builder.Length > 0)
@@ -207,12 +210,15 @@ namespace ColorVision.Copilot
 
         private static string FormatHookState(CopilotToolExecutionHookState state) => state switch
         {
+            CopilotToolExecutionHookState.Scheduled => "scheduled",
             CopilotToolExecutionHookState.Completed => "completed",
             CopilotToolExecutionHookState.Denied => "denied",
             CopilotToolExecutionHookState.Failed => "failed",
             CopilotToolExecutionHookState.TimedOut => "timed_out",
             CopilotToolExecutionHookState.Cancelled => "cancelled",
             CopilotToolExecutionHookState.Skipped => "skipped",
+            CopilotToolExecutionHookState.Blocked => "blocked",
+            CopilotToolExecutionHookState.Stopped => "stopped",
             _ => "unknown",
         };
 

@@ -225,6 +225,10 @@ namespace ColorVision.Copilot
 
         public string ConfiguredDeveloperInstructions { get; init; } = string.Empty;
 
+        internal string GlobalInstructionRootPath { get; init; } = string.Empty;
+
+        internal CopilotProjectInstructionDiscoveryOptions? ProjectInstructionDiscoveryOptions { get; init; }
+
         internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
             CopilotCodexWebSearchMode.Unspecified;
 
@@ -235,7 +239,15 @@ namespace ColorVision.Copilot
 
         internal bool CodexHooksEnabled { get; init; } = true;
 
+        internal IReadOnlyList<CopilotCodexCommandHookDefinition> CodexCommandHooks { get; init; } =
+            Array.Empty<CopilotCodexCommandHookDefinition>();
+
+        internal IReadOnlyList<CopilotCodexExecPolicyRule> CodexExecPolicyRules { get; init; } =
+            Array.Empty<CopilotCodexExecPolicyRule>();
+
         internal bool CodexPluginsEnabled { get; init; } = true;
+
+        internal bool CodexErrorOnToolCollisions { get; init; }
 
         internal CopilotCodexShellEnvironmentPolicy CodexShellEnvironmentPolicy { get; init; } =
             CopilotCodexShellEnvironmentPolicy.Default;
@@ -328,6 +340,15 @@ namespace ColorVision.Copilot
         public IReadOnlyList<CopilotRequestMessage> History { get; init; } = Array.Empty<CopilotRequestMessage>();
 
         public IReadOnlyList<CopilotContextItem> ContextItems { get; init; } = Array.Empty<CopilotContextItem>();
+
+        internal IReadOnlyList<string> UserPromptSubmitAdditionalContexts { get; init; } =
+            Array.Empty<string>();
+
+        internal IReadOnlyList<string> SessionStartAdditionalContexts { get; init; } =
+            Array.Empty<string>();
+
+        internal IReadOnlyList<string> AsyncHookAdditionalContexts { get; init; } =
+            Array.Empty<string>();
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
 
@@ -447,11 +468,20 @@ namespace ColorVision.Copilot
                 TrustedProjectRootPaths = trustedProjectRootPaths,
                 ActiveDocumentPath = hostContext.ActiveDocumentPath,
                 ConfiguredDeveloperInstructions = hostContext.ProjectInstructionDiscoveryOptions.DeveloperInstructions,
+                GlobalInstructionRootPath = hostContext.GlobalInstructionRootPath,
+                ProjectInstructionDiscoveryOptions = hostContext.ProjectInstructionDiscoveryOptions,
                 CodexWebSearchMode = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredWebSearchMode,
                 CodexSandboxMode = codexSandboxMode,
                 CodexShellToolEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredShellToolEnabled,
                 CodexHooksEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredHooksEnabled,
+                CodexCommandHooks = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredCommandHooks
+                    .Select(definition => definition.CreateSnapshot())
+                    .ToArray(),
+                CodexExecPolicyRules = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredExecPolicyRules
+                    .Select(rule => rule.CreateSnapshot())
+                    .ToArray(),
                 CodexPluginsEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredPluginsEnabled,
+                CodexErrorOnToolCollisions = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredErrorOnToolCollisions,
                 CodexShellEnvironmentPolicy = hostContext.ProjectInstructionDiscoveryOptions
                     .ConfiguredShellEnvironmentPolicy.CreateSnapshot(),
                 CodexExperimentalRequestUserInputEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredExperimentalRequestUserInputEnabled,
@@ -549,6 +579,21 @@ namespace ColorVision.Copilot
                 History = input.History.ToArray(),
                 Attachments = plan.Attachments,
                 ContextItems = input.ContextItems.ToArray(),
+                SessionStartAdditionalContexts = (input.SessionStartAdditionalContexts
+                        ?? Array.Empty<string>())
+                    .Where(context => !string.IsNullOrWhiteSpace(context))
+                    .Select(context => context.Trim())
+                    .ToArray(),
+                UserPromptSubmitAdditionalContexts = (input.UserPromptSubmitAdditionalContexts
+                        ?? Array.Empty<string>())
+                    .Where(context => !string.IsNullOrWhiteSpace(context))
+                    .Select(context => context.Trim())
+                    .ToArray(),
+                AsyncHookAdditionalContexts = (input.AsyncHookAdditionalContexts
+                        ?? Array.Empty<string>())
+                    .Where(context => !string.IsNullOrWhiteSpace(context))
+                    .Select(context => context.Trim())
+                    .ToArray(),
                 SearchRootPaths = plan.SearchRootPaths,
                 TrustedProjectRootPaths = plan.TrustedProjectRootPaths,
                 ActiveDocumentPath = plan.ActiveDocumentPath,
@@ -557,7 +602,16 @@ namespace ColorVision.Copilot
                 CodexSandboxMode = plan.CodexSandboxMode,
                 CodexShellToolEnabled = plan.CodexShellToolEnabled,
                 CodexHooksEnabled = plan.CodexHooksEnabled,
+                CodexCommandHooks = plan.CodexCommandHooks
+                    .Where(definition => definition?.IsStructurallyValid() == true)
+                    .Select(definition => definition.CreateSnapshot())
+                    .ToArray(),
+                CodexExecPolicyRules = plan.CodexExecPolicyRules
+                    .Where(rule => rule?.IsStructurallyValid() == true)
+                    .Select(rule => rule.CreateSnapshot())
+                    .ToArray(),
                 CodexPluginsEnabled = plan.CodexPluginsEnabled,
+                CodexErrorOnToolCollisions = plan.CodexErrorOnToolCollisions,
                 CodexShellEnvironmentPolicy = plan.CodexShellEnvironmentPolicy.CreateSnapshot(),
                 CodexExperimentalRequestUserInputEnabled = plan.CodexExperimentalRequestUserInputEnabled,
                 CodexDefaultModeRequestUserInputEnabled = plan.CodexDefaultModeRequestUserInputEnabled,
@@ -588,6 +642,16 @@ namespace ColorVision.Copilot
                     : string.Empty,
                 CodexModelVerbosity = plan.CodexModelVerbosity,
                 ProjectInstructions = plan.ProjectInstructions,
+                ReviewProjectInstructionContext = plan.Mode == CopilotAgentMode.Review
+                    && plan.ProjectInstructionDiscoveryOptions != null
+                        ? new CopilotReviewProjectInstructionContext(
+                            plan.GlobalInstructionRootPath,
+                            plan.ProjectInstructionDiscoveryOptions,
+                            plan.ProjectInstructions)
+                        : null,
+                ReviewEvidenceContext = plan.Mode == CopilotAgentMode.Review
+                    ? new CopilotReviewEvidenceContext()
+                    : null,
                 ReadableLocalFilePaths = plan.ReadableLocalFilePaths,
                 ReadableLocalDirectoryPaths = plan.ReadableLocalDirectoryPaths,
                 WritableLocalRootPaths = plan.WritableLocalRootPaths,

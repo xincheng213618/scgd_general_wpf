@@ -526,7 +526,7 @@
                                 <GridViewColumn x:Name="ContentColumn" Header="{x:Static properties:Resources.Content}" Width="420">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:SocketMessage}">
-                                            <TextBlock Text="{Binding Content}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Content}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                            <TextBlock Text="{Binding ContentPreview}" TextTrimming="CharacterEllipsis" ToolTip="{Binding ContentPreview}" Foreground="{DynamicResource SecondaryTextBrush}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>

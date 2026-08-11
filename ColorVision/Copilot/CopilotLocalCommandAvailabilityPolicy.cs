@@ -20,9 +20,7 @@ namespace ColorVision.Copilot
             CopilotLocalCommand command,
             CopilotLocalCommandComposerContext context)
         {
-            return CanShowSuggestions(context)
-                && (context != CopilotLocalCommandComposerContext.ActiveRun
-                    || command.AvailableWhileAgentRuns);
+            return CanShowSuggestions(context);
         }
 
         public static bool CanExecute(

@@ -25,9 +25,18 @@ namespace ColorVision.Copilot
 
         public IReadOnlyDictionary<string, string?>? EnvironmentOverrides { get; init; }
 
+        public string StandardInput { get; init; } = string.Empty;
+
         public Action<string>? StandardOutputReceived { get; init; }
 
         public Action<string>? StandardErrorReceived { get; init; }
+
+        /// <summary>
+        /// Keeps descendants alive after the root process has completed. This is reserved for
+        /// command hooks, which may intentionally launch detached helpers; approved shell tools
+        /// must retain their default process-tree cleanup.
+        /// </summary>
+        public bool PreserveDescendantsOnCompletion { get; init; }
     }
 
     internal sealed record CopilotShellProcessResult(
@@ -198,6 +207,8 @@ namespace ColorVision.Copilot
                     ErrorMessage = $"The command did not finish within {execution.TimeoutSeconds} seconds; inspect the captured shell output.",
                     FailureKind = CopilotToolFailureKind.Transient,
                     FailureCode = TimedOutFailureCode,
+                    ProcessOperation = CopilotToolProcessEvidence.ShellOperation,
+                    ProcessTimedOut = true,
                 };
             }
 
@@ -219,6 +230,8 @@ namespace ColorVision.Copilot
                     : $"The command returned exit code {processResult.ExitCode}; inspect the captured shell output.",
                 FailureKind = succeeded ? CopilotToolFailureKind.None : CopilotToolFailureKind.Unspecified,
                 FailureCode = succeeded ? string.Empty : NonzeroExitFailureCode,
+                ProcessOperation = CopilotToolProcessEvidence.ShellOperation,
+                ProcessExitCode = processResult.ExitCode,
             };
         }
 
@@ -597,8 +610,6 @@ namespace ColorVision.Copilot
             if (!process.Start())
                 throw new InvalidOperationException("The shell process did not start.");
             using var processJob = CopilotWindowsProcessJob.TryAssign(process);
-            process.StandardInput.Close();
-
             using var outputReadSource = new CancellationTokenSource();
             long observedStandardOutputCharacters = 0;
             long observedStandardErrorCharacters = 0;
@@ -634,9 +645,30 @@ namespace ColorVision.Copilot
             timeoutSource.CancelAfter(command.Timeout);
             var timedOut = false;
             var cancelledByCaller = false;
+            var completed = false;
             try
             {
+                try
+                {
+                    if (!string.IsNullOrEmpty(command.StandardInput))
+                    {
+                        await process.StandardInput.WriteAsync(
+                            command.StandardInput.AsMemory(),
+                            timeoutSource.Token).ConfigureAwait(false);
+                        await process.StandardInput.FlushAsync(timeoutSource.Token)
+                            .ConfigureAwait(false);
+                    }
+                }
+                catch (IOException)
+                {
+                    // A hook or command may intentionally close stdin after reading a prefix.
+                }
+                finally
+                {
+                    process.StandardInput.Close();
+                }
                 await process.WaitForExitAsync(timeoutSource.Token);
+                completed = true;
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
@@ -647,9 +679,17 @@ namespace ColorVision.Copilot
                 cancelledByCaller = true;
             }
 
-            // A successful root-shell exit must not leave approved background descendants alive.
-            // Terminating the job before draining output also closes inherited pipe handles.
-            await CopilotProcessExecutionSupport.TerminateProcessTreeAsync(process, processJob);
+            cancelledByCaller |= cancellationToken.IsCancellationRequested;
+            var preserveDescendants = completed
+                && !cancelledByCaller
+                && command.PreserveDescendantsOnCompletion
+                && (processJob == null || processJob.TryPreserveDescendants());
+            if (!preserveDescendants)
+            {
+                // Approved shell commands and incomplete executions must not leave background
+                // descendants alive. Terminating before output drain also closes inherited pipes.
+                await CopilotProcessExecutionSupport.TerminateProcessTreeAsync(process, processJob);
+            }
             var (standardOutput, standardError) = await CopilotProcessExecutionSupport.DrainOutputAsync(
                 stdoutTask, stderrTask, outputReadSource, process.StandardOutput, process.StandardError);
             stopwatch.Stop();

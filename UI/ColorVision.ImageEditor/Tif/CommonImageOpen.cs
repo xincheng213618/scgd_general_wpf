@@ -1,5 +1,6 @@
 ﻿using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
+using System;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -15,9 +16,11 @@ namespace ColorVision.ImageEditor.Tif
         {
             if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
 
+            string requestedFilePath = filePath;
+
             // Get file metadata
-            FileInfo fileInfo = new FileInfo(filePath);
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSource, filePath, nameof(CommonImageOpen), "打开器接收到的源文件路径");
+            FileInfo fileInfo = new FileInfo(requestedFilePath);
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSource, requestedFilePath, nameof(CommonImageOpen), "打开器接收到的源文件路径");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileName, fileInfo.Name, nameof(CommonImageOpen), "当前文件名");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileInfo.Length, nameof(CommonImageOpen), "当前文件大小（字节）");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileCreationTime, fileInfo.CreationTime, nameof(CommonImageOpen), "当前文件创建时间");
@@ -28,11 +31,11 @@ namespace ColorVision.ImageEditor.Tif
             
             await Task.Run(() =>
             {
-                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var stream = new FileStream(requestedFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 
                 // Try to get metadata using appropriate decoder
                 BitmapDecoder? decoder = null;
-                string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
+                string ext = Path.GetExtension(requestedFilePath).ToLower(CultureInfo.CurrentCulture);
                 
                 try
                 {
@@ -67,6 +70,10 @@ namespace ColorVision.ImageEditor.Tif
             });
             
             if (bitmapImage == null) return;
+
+            string? activeFilePath = context.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
+            if (!string.Equals(activeFilePath, requestedFilePath, StringComparison.OrdinalIgnoreCase))
+                return;
             
             // Add image dimensions
             context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, bitmapImage.PixelWidth, nameof(CommonImageOpen), "位图像素宽度");

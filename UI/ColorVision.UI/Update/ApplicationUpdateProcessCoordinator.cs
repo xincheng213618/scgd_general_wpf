@@ -30,13 +30,17 @@ namespace ColorVision.Update
 
         public static int CloseOtherApplicationProcesses()
         {
-            string executablePath = Environment.ProcessPath
-                ?? throw new InvalidOperationException("Unable to resolve the current ColorVision executable path.");
-            return CloseOtherApplicationProcesses(
-                executablePath,
-                Environment.ProcessId,
-                DefaultGracefulShutdownTimeout,
-                DefaultForcedShutdownTimeout);
+            try
+            {
+                return Environment.ProcessPath is string executablePath
+                    ? CloseOtherApplicationProcesses(executablePath, Environment.ProcessId, DefaultForcedShutdownTimeout)
+                    : 0;
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Unable to coordinate running ColorVision processes; continuing the update.", ex);
+                return 0;
+            }
         }
 
         public static int CloseEarlierApplicationProcesses(
@@ -58,11 +62,9 @@ namespace ColorVision.Update
         internal static int CloseOtherApplicationProcesses(
             string executablePath,
             int currentProcessId,
-            TimeSpan gracefulShutdownTimeout,
             TimeSpan forcedShutdownTimeout)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
-            ArgumentOutOfRangeException.ThrowIfLessThan(gracefulShutdownTimeout, TimeSpan.Zero);
             ArgumentOutOfRangeException.ThrowIfLessThan(forcedShutdownTimeout, TimeSpan.Zero);
 
             string normalizedExecutablePath = Path.GetFullPath(executablePath);
@@ -71,7 +73,6 @@ namespace ColorVision.Update
                 throw new InvalidOperationException("Unable to resolve the current ColorVision process name.");
 
             var targetProcesses = new List<Process>();
-            var unresolvedProcessIds = new List<int>();
             foreach (Process process in Process.GetProcessesByName(processName))
             {
                 bool keepProcess = false;
@@ -81,11 +82,7 @@ namespace ColorVision.Update
                         continue;
 
                     if (!TryGetExecutablePath(process, out string candidateExecutablePath))
-                    {
-                        if (IsRunning(process))
-                            unresolvedProcessIds.Add(process.Id);
                         continue;
-                    }
 
                     if (!string.Equals(
                         Path.GetFullPath(candidateExecutablePath),
@@ -109,10 +106,7 @@ namespace ColorVision.Update
                 catch (Win32Exception ex)
                 {
                     if (IsRunning(process))
-                    {
-                        unresolvedProcessIds.Add(process.Id);
                         log.Warn($"Unable to inspect ColorVision process {process.Id}: {ex.Message}");
-                    }
                 }
                 finally
                 {
@@ -121,41 +115,21 @@ namespace ColorVision.Update
                 }
             }
 
-            if (unresolvedProcessIds.Count > 0)
-            {
-                DisposeProcesses(targetProcesses);
-                throw new InvalidOperationException(
-                    $"Unable to verify running ColorVision process(es): {string.Join(", ", unresolvedProcessIds)}. Close them manually and retry the update.");
-            }
-
             try
             {
                 if (targetProcesses.Count == 0)
                     return 0;
 
                 log.Info(
-                    $"Closing {targetProcesses.Count} existing ColorVision process(es) from '{normalizedExecutablePath}': " +
+                    $"Terminating {targetProcesses.Count} existing ColorVision process(es) from '{normalizedExecutablePath}': " +
                     string.Join(", ", targetProcesses.Select(process => process.Id)));
 
                 foreach (Process process in targetProcesses)
                 {
                     try
                     {
-                        if (!process.HasExited && !process.CloseMainWindow())
-                            log.Info($"ColorVision process {process.Id} has no closeable main window; it will be stopped after the graceful timeout.");
-                    }
-                    catch (InvalidOperationException)
-                    {
-                    }
-                }
-
-                List<Process> remainingProcesses = WaitForExit(targetProcesses, gracefulShutdownTimeout);
-                foreach (Process process in remainingProcesses)
-                {
-                    try
-                    {
-                        log.Warn($"ColorVision process {process.Id} did not exit gracefully; forcing termination.");
-                        process.Kill(entireProcessTree: true);
+                        if (!process.HasExited)
+                            process.Kill(entireProcessTree: true);
                     }
                     catch (InvalidOperationException)
                     {
@@ -166,15 +140,14 @@ namespace ColorVision.Update
                     }
                 }
 
-                remainingProcesses = WaitForExit(remainingProcesses, forcedShutdownTimeout);
+                List<Process> remainingProcesses = WaitForExit(targetProcesses, forcedShutdownTimeout);
                 if (remainingProcesses.Count > 0)
                 {
-                    throw new InvalidOperationException(
-                        $"Unable to close running ColorVision process(es): {string.Join(", ", remainingProcesses.Select(process => process.Id))}.");
+                    log.Warn(
+                        $"ColorVision process(es) {string.Join(", ", remainingProcesses.Select(process => process.Id))} remain running; continuing the update.");
                 }
 
-                log.Info("All existing ColorVision processes from the current installation have exited.");
-                return targetProcesses.Count;
+                return targetProcesses.Count - remainingProcesses.Count;
             }
             finally
             {

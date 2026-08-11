@@ -18,7 +18,7 @@
 
 | 类别 | 文件 |
 | --- | --- |
-| 核心入口 | `ITemplate.cs`、`ModelBase.cs`、`ParamModBase.cs`、`TemplateContorl.cs` |
+| 核心入口 | `ITemplate.cs`、`ModelBase.cs`、`ParamModBase.cs`、`TemplateControl.cs` |
 | 编辑与创建 UI | `TemplateEditorWindow.xaml(.cs)`、`TemplateCreate.xaml(.cs)`、`TemplateSettingEdit.xaml(.cs)` |
 | 搜索入口 | `TemplateSearchProvider.cs` |
 
@@ -30,7 +30,7 @@
 
 | 类别 | 代表目录/文件 | 注意点 |
 | --- | --- | --- |
-| 核心框架层 | `ITemplate.cs`、`ModelBase.cs`、`ParamModBase.cs`、`TemplateContorl.cs`、`TemplatesExtension.cs` | 负责抽象、注册、基础模型和公共 UI |
+| 核心框架层 | `ITemplate.cs`、`ModelBase.cs`、`ParamModBase.cs`、`TemplateControl.cs`、`TemplatesExtension.cs` | 负责抽象、注册、基础模型和公共 UI |
 | 流程模板层 | `Flow/` | 承接流程模板和流程编辑运行能力 |
 | 业务模板族 | `ARVR/`、`POI/`、`Matching/`、`FindLightArea/`、`FocusPoints/`、`ImageCropping/`、`LedCheck/`、`LEDStripDetection/`、`DataLoad/` | 有的按算法域分组，有的按处理环节分组 |
 | JSON 模板族 | `Jsons/` | 以 JSON 配置为核心，与传统目录式模板并存 |
@@ -42,7 +42,7 @@
 模板系统当前最重要的运行时链路很直接：
 
 1. 主程序和插件先把程序集装载进来。
-2. `TemplateContorl` 在数据库连接可用后扫描当前已加载程序集。
+2. `TemplateControl` 在数据库连接可用后扫描当前已加载程序集。
 3. 它查找实现了 `IITemplateLoad` 的非抽象类型。
 4. 这些类型通过 `Load()` 把模板注册进 `ITemplateNames`。
 5. 模板编辑窗口、各模板菜单入口、流程窗口和业务功能再去消费这些已注册模板。
@@ -62,7 +62,7 @@
 
 ## 阅读顺序
 
-先看 `TemplateContorl.cs` 理解发现和注册，再看 `ITemplate.cs`、`ModelBase.cs`、`ParamModBase.cs`，然后看 `TemplateEditorWindow` 和 `Templates/Menus/`，最后进入 `ARVR/`、`POI/` 或 `Flow/` 等具体业务目录。
+先看 `TemplateControl.cs` 理解发现和注册，再看 `ITemplate.cs`、`ModelBase.cs`、`ParamModBase.cs`，然后看 `TemplateEditorWindow` 和 `Templates/Menus/`，最后进入 `ARVR/`、`POI/` 或 `Flow/` 等具体业务目录。
 
 ## 这页不再做什么
 

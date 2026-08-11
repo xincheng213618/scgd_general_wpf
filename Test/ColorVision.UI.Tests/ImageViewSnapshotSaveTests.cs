@@ -472,6 +472,56 @@ public sealed class ImageViewSnapshotSaveTests
     }
 
     [Fact]
+    public async Task SaveSnapshotExportsAsync_StopsBeforeSourceWhenRenderedExportFails()
+    {
+        string directory = Path.Combine(
+            Path.GetTempPath(),
+            "ColorVision.Tests",
+            Guid.NewGuid().ToString("N"));
+        string renderedTarget = Path.Combine(directory, "rendered.png");
+        string sourceFile = Path.Combine(directory, "source.png");
+        try
+        {
+            Directory.CreateDirectory(renderedTarget);
+            ImageViewSnapshot snapshot = RunOnSta(() =>
+            {
+                EnsureImageViewTestResources();
+                BitmapSource source = BitmapSource.Create(
+                    1, 1, 96, 96, PixelFormats.Bgra32, null, new byte[] { 0, 0, 255, 255 }, 4);
+                source.Freeze();
+                ImageView imageView = new();
+                try
+                {
+                    imageView.ImageShow.Source = source;
+                    return imageView.CaptureSnapshotForBackgroundSave(includeOverlays: false)!;
+                }
+                finally
+                {
+                    imageView.Dispose();
+                }
+            });
+
+            Exception? exception = await Record.ExceptionAsync(() =>
+                ImageView.SaveSnapshotExportsAsync(
+                    snapshot,
+                    new ImageViewSnapshotExportOptions
+                    {
+                        RenderedFileName = renderedTarget,
+                        SourceFileName = sourceFile,
+                    }));
+
+            Assert.NotNull(exception);
+            Assert.True(exception is IOException or UnauthorizedAccessException, exception.ToString());
+            Assert.False(File.Exists(sourceFile));
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+                Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task SaveSnapshotExportsAsync_PreservesMutableRgbAlphaAndPaletteSemantics()
     {
         string directory = Path.Combine(

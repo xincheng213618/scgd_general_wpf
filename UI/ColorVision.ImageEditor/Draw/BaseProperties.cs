@@ -8,7 +8,14 @@ namespace ColorVision.ImageEditor
 
     public class BaseProperties : ViewModelBase
     {
-        public static SolidColorBrush DefaultBrush { get; set; } = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#01F3F3F3"));
+        public static SolidColorBrush DefaultBrush { get; set; } = CreateDefaultBrush();
+
+        private static SolidColorBrush CreateDefaultBrush()
+        {
+            SolidColorBrush brush = new((Color)ColorConverter.ConvertFromString("#01F3F3F3"));
+            brush.Freeze();
+            return brush;
+        }
 
         [Category("Attribute"), DisplayName("序号")]
         public int Id { get => _Id; set { _Id = value; OnPropertyChanged(); } }

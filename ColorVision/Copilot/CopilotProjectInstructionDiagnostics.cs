@@ -337,6 +337,13 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredShellToolEnabled
                 ? "按请求意图暴露命令启动工具"
                 : "隐藏命令启动工具并拒绝旧计划、恢复状态或注入调用；已有后台命令仍可观察或停止");
+            builder.Append("Codex exec policy：已加载规则 ")
+                .Append(effective.ConfiguredExecPolicyRules.Count)
+                .Append(" 个 / 来源文件 ")
+                .Append(effective.AppliedExecPolicyFilePaths.Count)
+                .Append(" 个 / 配置问题 ")
+                .Append(effective.ConfiguredExecPolicyIssues.Count)
+                .AppendLine(" 个；全局与受信任项目 rules/*.rules 提交时冻结，最严格决策优先");
             builder.Append("Codex features.hooks：")
                 .Append(effective.ConfiguredHooksEnabled ? "true" : "false");
             if (effective.HasHooksEnabledOverride)
@@ -351,11 +358,32 @@ namespace ColorVision.Copilot
             {
                 builder.Append(" · 官方默认；");
             }
-            builder.AppendLine(effective.ConfiguredHooksEnabled && effective.ConfiguredPluginsEnabled
-                ? "ColorVision 模块扩展授权与生命周期 Hook 可运行，内置写入安全策略始终保留"
-                : effective.ConfiguredHooksEnabled
-                    ? "features.plugins=false，省略模块扩展 Hook；内置写入安全策略仍保留"
-                    : "省略模块扩展授权与生命周期 Hook，内置写入安全策略仍保留；checkpoint 按有效 Hook 面校验");
+            var synchronousHookCount = effective.ConfiguredCommandHooks.Count(
+                hook => hook.ExecutionMode == CopilotToolExecutionHookMode.Sync);
+            var asynchronousHookCount = effective.ConfiguredCommandHooks.Count(
+                hook => hook.ExecutionMode == CopilotToolExecutionHookMode.Async);
+            if (effective.ConfiguredHooksEnabled)
+            {
+                builder.Append(effective.ConfiguredPluginsEnabled
+                    ? "ColorVision 模块扩展 Hook 可运行"
+                    : "features.plugins=false，省略模块扩展 Hook");
+                builder.Append("；受信任 hooks.json 命令 Hook 可运行");
+            }
+            else
+            {
+                builder.Append("省略模块扩展与 hooks.json 命令 Hook");
+            }
+            builder.Append("；已加载命令 Hook ")
+                .Append(effective.ConfiguredCommandHooks.Count)
+                .Append(" 个（同步 ")
+                .Append(synchronousHookCount)
+                .Append(" / 异步 ")
+                .Append(asynchronousHookCount)
+                .Append("） / 来源文件 ")
+                .Append(effective.AppliedHookFilePaths.Count)
+                .Append(" 个 / 配置问题 ")
+                .Append(effective.ConfiguredHookIssues.Count)
+                .AppendLine(" 个；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
             builder.Append("Codex features.plugins：")
                 .Append(effective.ConfiguredPluginsEnabled ? "true" : "false");
             if (effective.HasPluginsEnabledOverride)
@@ -373,6 +401,23 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredPluginsEnabled
                 ? "模块提供的 Copilot context 与 tool 可用，扩展 Hook 仍受 features.hooks 约束"
                 : "排除模块提供的 Copilot context、tool、Hook 与 checkpoint capability；不卸载主程序业务插件，不影响内置工具或外部 MCP");
+            builder.Append("Codex features.tool_registry.error_on_tool_collisions：")
+                .Append(effective.ConfiguredErrorOnToolCollisions ? "true" : "false");
+            if (effective.HasErrorOnToolCollisionsOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.ErrorOnToolCollisionsSourceLabel.Length == 0
+                        ? "Codex config.toml features.tool_registry.error_on_tool_collisions"
+                        : effective.ErrorOnToolCollisionsSourceLabel)
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append(" · 官方默认；");
+            }
+            builder.AppendLine(effective.ConfiguredErrorOnToolCollisions
+                ? "重复有效工具名会在模型请求前终止本轮"
+                : "保留先注册工具并诊断跳过重复项");
             builder.Append("Codex features.mentions_v2：")
                 .Append(effective.ConfiguredMentionsV2Enabled ? "true" : "false");
             if (effective.HasMentionsV2EnabledOverride)
@@ -390,6 +435,23 @@ namespace ColorVision.Copilot
             builder.AppendLine(effective.ConfiguredMentionsV2Enabled
                 ? "@ 统一列出 Skill、模板、菜单与工作区文件"
                 : "@ 回退为旧版文件候选，不列出 Skill、模板或菜单；已有附件与上下文不受影响");
+            builder.Append("Codex features.skill_mcp_dependency_install：")
+                .Append(effective.ConfiguredSkillMcpDependencyInstallEnabled ? "true" : "false");
+            if (effective.HasSkillMcpDependencyInstallEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(effective.SkillMcpDependencyInstallEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml features.skill_mcp_dependency_install"
+                        : effective.SkillMcpDependencyInstallEnabledSourceLabel)
+                    .Append(" 提交快照；");
+            }
+            else
+            {
+                builder.Append(" · 官方默认；");
+            }
+            builder.AppendLine(effective.ConfiguredSkillMcpDependencyInstallEnabled
+                ? "显式点名 Skill 时检查缺失 MCP；仅经原生确认后写入安全的 streamable HTTP 配置"
+                : "不提示或写入 Skill 声明的缺失 MCP；已配置的外部 MCP 不受影响");
             builder.Append("Codex shell_environment_policy：")
                 .Append(effective.ConfiguredShellEnvironmentPolicy.BuildRedactedSummary());
             if (effective.HasShellEnvironmentPolicyOverride)

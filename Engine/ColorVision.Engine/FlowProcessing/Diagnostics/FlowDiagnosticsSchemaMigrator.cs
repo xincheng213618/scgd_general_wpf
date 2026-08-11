@@ -26,6 +26,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             db.CodeFirst.InitTables<FlowExecutionEvent>();
             db.CodeFirst.InitTables<FlowNodeAttempt>();
             db.CodeFirst.InitTables<FlowIncident>();
+            FlowNodeMessagePayloadStorage.EnsureSchema(db);
 
             if (db.CurrentConnectionConfig.DbType == DbType.Sqlite)
             {

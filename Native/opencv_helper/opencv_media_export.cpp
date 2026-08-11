@@ -1041,7 +1041,7 @@ COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage,int radius, 
 		}
 		if (mat.channels() != 3) {
 			if (mat.channels() == 1) {
-				// ����ͨ��ͼ��ת��Ϊ��ͨ��
+				// 将单通道图像转换为三通道
 				cv::cvtColor(mat, mat, cv::COLOR_GRAY2BGR);
 			}
 			else {
@@ -1231,7 +1231,7 @@ COLORVISIONCORE_API int M_AdjustBrightnessContrast(HImage img, HImage* outImage,
 }
 
 /// <summary>
-/// ����
+/// 反相
 /// </summary>
 /// <param name="img"></param>
 /// <param name="outImage"></param>
@@ -1685,12 +1685,12 @@ StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv:
 		}
 
 		if (images.empty()) {
-			// ��ȡ��һ��ͼ���Ի�ȡ�ο��ߴ������
+			// 读取第一张图像以获取参考尺寸和类型
 			int ref_height = img.rows;
 			int ref_width = img.cols;
-			int ref_type = img.type(); // ��ȡͼ�����ͣ����� CV_8UC1 ��ʾ�Ҷ�ͼ��
+			int ref_type = img.type(); // 获取图像类型，例如 CV_8UC1 表示灰度图像
 
-			// ������ͼ��ĳߴ�������Ƿ����һ��ͼ����ͬ
+			// 检查后续图像的尺寸和类型是否与第一张图像相同
 			for (size_t i = 1; i < image_files.size(); ++i) {
 				std::string ss = UTF8ToGB(image_files[i].c_str());
 				cv::Mat img = cv::imread(ss, cv::IMREAD_UNCHANGED);
@@ -1708,7 +1708,7 @@ StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv:
 		return StitchingErrorCode::NO_VALID_IMAGES;
 	}
 
-	// ʹ�����һ��ͼ����Ϊ��ͼ
+	// 使用最后一张图像作为底图
 	cv::Mat last_image = images.back();
 	int result_height = last_image.rows;
 	int result_width = last_image.cols;
@@ -1935,7 +1935,7 @@ COLORVISIONCORE_API int M_Fusion(const char* fusionjson, HImage* outImage)
 			return ExportInvalidJson;
 		}
 
-		// ��� JSON �����Ƿ�������
+		// 检查 JSON 对象是否是数组
 		if (!j.is_array()) {
 			return ExportInvalidJson;
 		}

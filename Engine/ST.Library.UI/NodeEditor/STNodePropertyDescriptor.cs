@@ -266,15 +266,6 @@ public class STNodePropertyDescriptor
 		// Flow-node properties are edited by ColorVision's metadata-driven WPF panel.
 	}
 
-	private bool IsShowFrm()
-	{
-		if (!IsReadOnly)
-		{
-			return IsEditEnable;
-		}
-		return false;
-	}
-
 	public void Invalidate()
 	{
 		if (Control == null)

@@ -62,8 +62,15 @@ namespace ColorVision.Copilot
             try
             {
                 using var statusJson = ParseResultJson(statusResult.Content);
-                using var diffJson = ParseResultJson(diffResult.Content);
-                return new CopilotLocalGitDiffResult(true, FormatReport(statusJson.RootElement, diffJson.RootElement));
+                if (!CopilotGitDiffResultProtocol.TryParse(diffResult.Content, out var diffSnapshot, out var diffError))
+                {
+                    return new CopilotLocalGitDiffResult(
+                        false,
+                        "Git 返回了无法解析的本地快照："
+                            + CopilotUserFacingErrorFormatter.Sanitize(diffError));
+                }
+
+                return new CopilotLocalGitDiffResult(true, FormatReport(statusJson.RootElement, diffSnapshot));
             }
             catch (JsonException ex)
             {
@@ -90,7 +97,7 @@ namespace ColorVision.Copilot
             return JsonDocument.Parse(normalizedContent[(markerIndex + ResultJsonMarker.Length)..]);
         }
 
-        private static string FormatReport(JsonElement status, JsonElement diff)
+        private static string FormatReport(JsonElement status, CopilotGitDiffSnapshot diff)
         {
             var builder = new StringBuilder();
             var repositoryRoot = ReadString(status, "repository_root");
@@ -109,7 +116,7 @@ namespace ColorVision.Copilot
 
             if (ReadBool(status, "entries_truncated"))
                 builder.AppendLine().Append("…文件状态列表已截断。");
-            if (ReadBool(diff, "patch_truncated"))
+            if (diff.PatchTruncated)
                 builder.AppendLine().Append("…补丁内容已按本地显示上限截断，可运行 /review 进行更完整的审查。");
 
             return builder.ToString().TrimEnd();
@@ -133,19 +140,22 @@ namespace ColorVision.Copilot
                 builder.Append("  ?? ").AppendLine(path);
         }
 
-        private static void AppendDiffSections(StringBuilder builder, JsonElement diff)
+        private static void AppendDiffSections(StringBuilder builder, CopilotGitDiffSnapshot diff)
         {
-            if (!diff.TryGetProperty("sections", out var sections) || sections.ValueKind != JsonValueKind.Array)
-                return;
-
             var appendedPatch = false;
-            foreach (var section in sections.EnumerateArray())
+            foreach (var section in diff.Sections)
             {
-                var patch = ReadString(section, "patch").TrimEnd();
+                var patch = section.Patch.TrimEnd();
                 if (string.IsNullOrWhiteSpace(patch))
                     continue;
 
-                builder.AppendLine().AppendLine(ReadString(section, "scope") == "staged" ? "已暂存补丁" : "未暂存补丁");
+                var sectionTitle = section.Scope switch
+                {
+                    "staged" => "已暂存补丁",
+                    "untracked" => "未跟踪文件内容",
+                    _ => "未暂存补丁",
+                };
+                builder.AppendLine().AppendLine(sectionTitle);
                 builder.AppendLine(patch);
                 appendedPatch = true;
             }

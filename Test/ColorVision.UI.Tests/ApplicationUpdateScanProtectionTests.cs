@@ -1,4 +1,5 @@
 using ColorVisionServiceHost;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.IO;
@@ -91,6 +92,181 @@ public sealed class ApplicationUpdateScanProtectionTests
     }
 
     [Fact]
+    public async Task StartReturnsTrackedCleanupAndStopWaitsForBlockedInitialCleanup()
+    {
+        using TestDirectories directories = new();
+        BlockingDefenderExclusionManager defender = new();
+        ControllableTimeProvider timeProvider = new();
+        DateTimeOffset utcNow = new(2026, 8, 12, 4, 0, 0, TimeSpan.Zero);
+        WriteExpiredState(directories, utcNow, "initial-cleanup-path");
+        ApplicationUpdateScanProtectionService service = new(
+            defender,
+            directories.StateDirectory,
+            () => utcNow,
+            timeProvider);
+
+        Task<Task> startInvocation = Task.Factory.StartNew(
+            service.Start,
+            CancellationToken.None,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default);
+        Task? initialCleanupTask = null;
+        Task? stopTask = null;
+        try
+        {
+            initialCleanupTask = await startInvocation.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.Same(initialCleanupTask, service.Start());
+            await defender.FirstRemovalStarted.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(initialCleanupTask.IsCompleted);
+            Assert.Equal(TimeSpan.FromSeconds(15), timeProvider.Timer.DueTime);
+            Assert.Equal(TimeSpan.FromSeconds(15), timeProvider.Timer.Period);
+
+            stopTask = service.StopAsync();
+            Assert.Same(stopTask, service.StopAsync());
+            Assert.False(stopTask.IsCompleted);
+            Assert.Throws<InvalidOperationException>(service.Dispose);
+
+            defender.ReleaseRemoval();
+            await stopTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.True(initialCleanupTask.IsCompletedSuccessfully);
+            Assert.Empty(Directory.EnumerateFiles(directories.StateDirectory, "*.json"));
+            service.Dispose();
+            service.Dispose();
+        }
+        finally
+        {
+            defender.ReleaseRemoval();
+            initialCleanupTask ??= await startInvocation.WaitAsync(TimeSpan.FromSeconds(5));
+            stopTask ??= service.StopAsync();
+            await stopTask.WaitAsync(TimeSpan.FromSeconds(5));
+            service.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task StopBeforeStartIsIdempotentAndEnablesConstantTimeDispose()
+    {
+        using TestDirectories directories = new();
+        ControllableTimeProvider timeProvider = new();
+        ApplicationUpdateScanProtectionService service = new(
+            new FakeDefenderExclusionManager(),
+            directories.StateDirectory,
+            timeProvider: timeProvider);
+
+        Assert.Throws<InvalidOperationException>(service.Dispose);
+        Task stopTask = service.StopAsync();
+        Assert.Same(stopTask, service.StopAsync());
+        await stopTask.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.Equal(0, timeProvider.CreateTimerCallCount);
+        service.Dispose();
+        Assert.Throws<ObjectDisposedException>(() =>
+        {
+            _ = service.Start();
+        });
+    }
+
+    [Fact]
+    public async Task StopWaitsForTimerCleanupAndClosedAdmissionPreventsFurtherCleanup()
+    {
+        using TestDirectories directories = new();
+        BlockingDefenderExclusionManager defender = new();
+        ControllableTimeProvider timeProvider = new();
+        ApplicationUpdateScanProtectionService service = new(
+            defender,
+            directories.StateDirectory,
+            timeProvider: timeProvider);
+
+        await service.Start().WaitAsync(TimeSpan.FromSeconds(5));
+        WriteRecoveryJournal(directories.StateDirectory, "first.pending", "first-path");
+        WriteRecoveryJournal(directories.StateDirectory, "second.pending", "second-path");
+
+        timeProvider.Timer.Fire();
+        Task? stopTask = null;
+        try
+        {
+            await defender.FirstRemovalStarted.WaitAsync(TimeSpan.FromSeconds(5));
+            timeProvider.Timer.Fire();
+            timeProvider.Timer.Fire();
+            Assert.Equal(1, defender.RemoveCallCount);
+
+            stopTask = service.StopAsync();
+            Assert.False(stopTask.IsCompleted);
+            timeProvider.Timer.Fire();
+            Assert.Equal(1, defender.RemoveCallCount);
+
+            defender.ReleaseRemoval();
+            await stopTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(1, defender.RemoveCallCount);
+            Assert.Equal(1, timeProvider.Timer.DisposeAsyncCallCount);
+            Assert.Single(Directory.EnumerateFiles(directories.StateDirectory, "*.pending"));
+
+            timeProvider.Timer.Fire();
+            Assert.Equal(1, defender.RemoveCallCount);
+            service.Dispose();
+        }
+        finally
+        {
+            defender.ReleaseRemoval();
+            stopTask ??= service.StopAsync();
+            await stopTask.WaitAsync(TimeSpan.FromSeconds(5));
+            service.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task TimerDisposeFailureIsReportedOnlyAfterActiveCleanupDrains()
+    {
+        using TestDirectories directories = new();
+        BlockingDefenderExclusionManager defender = new();
+        ControllableTimeProvider timeProvider = new();
+        ApplicationUpdateScanProtectionService service = new(
+            defender,
+            directories.StateDirectory,
+            timeProvider: timeProvider);
+
+        await service.Start().WaitAsync(TimeSpan.FromSeconds(5));
+        WriteRecoveryJournal(directories.StateDirectory, "blocked.pending", "blocked-path");
+        timeProvider.Timer.Fire();
+        Task? stopTask = null;
+        try
+        {
+            await defender.FirstRemovalStarted.WaitAsync(TimeSpan.FromSeconds(5));
+            InvalidOperationException marker = new("timer disposal failed");
+            timeProvider.Timer.DisposeAsyncFailure = marker;
+
+            stopTask = service.StopAsync();
+            Assert.False(stopTask.IsCompleted);
+
+            defender.ReleaseRemoval();
+            InvalidOperationException observed = await Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await stopTask.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.Same(marker, observed);
+
+            service.Dispose();
+            Assert.Same(stopTask, service.StopAsync());
+            int removeCallsAfterStop = defender.RemoveCallCount;
+            timeProvider.Timer.Fire();
+            Assert.Equal(removeCallsAfterStop, defender.RemoveCallCount);
+        }
+        finally
+        {
+            defender.ReleaseRemoval();
+            stopTask ??= service.StopAsync();
+            try
+            {
+                await stopTask.WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            service.Dispose();
+        }
+    }
+
+    [Fact]
     public void UpdateRootOutsideSystemTemporaryDirectoryIsRejected()
     {
         using TestDirectories directories = new();
@@ -156,6 +332,33 @@ public sealed class ApplicationUpdateScanProtectionTests
         };
     }
 
+    private static void WriteExpiredState(
+        TestDirectories directories,
+        DateTimeOffset utcNow,
+        string addedPath)
+    {
+        ApplicationUpdateScanProtectionState state = new()
+        {
+            ProtectionId = Guid.NewGuid().ToString("N"),
+            ApplicationDirectory = directories.ApplicationDirectory,
+            UpdateRoot = directories.UpdateRoot,
+            AddedPaths = [addedPath],
+            CreatedAtUtc = utcNow.AddMinutes(-2),
+            ExpiresAtUtc = utcNow.AddMinutes(-1),
+            CallerSid = directories.Context.UserSid,
+        };
+        File.WriteAllText(
+            Path.Combine(directories.StateDirectory, state.ProtectionId + ".json"),
+            JsonConvert.SerializeObject(state));
+    }
+
+    private static void WriteRecoveryJournal(string stateDirectory, string fileName, string path)
+    {
+        File.WriteAllLines(
+            Path.Combine(stateDirectory, fileName),
+            [Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(path))]);
+    }
+
     private sealed class FakeDefenderExclusionManager : IDefenderExclusionManager
     {
         public List<string> AddedPaths { get; } = [];
@@ -172,6 +375,95 @@ public sealed class ApplicationUpdateScanProtectionTests
         {
             RemovedPaths.AddRange(paths);
             return DefenderExclusionChangeResult.Succeeded(paths.ToArray(), []);
+        }
+    }
+
+    private sealed class BlockingDefenderExclusionManager : IDefenderExclusionManager
+    {
+        private readonly TaskCompletionSource _firstRemovalStarted = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly ManualResetEventSlim _releaseRemoval = new(initialState: false);
+        private int _removeCallCount;
+
+        public Task FirstRemovalStarted => _firstRemovalStarted.Task;
+
+        public int RemoveCallCount => Volatile.Read(ref _removeCallCount);
+
+        public DefenderExclusionChangeResult AddPaths(IReadOnlyCollection<string> paths, string recoveryJournalPath)
+        {
+            return DefenderExclusionChangeResult.Succeeded(paths.ToArray(), []);
+        }
+
+        public DefenderExclusionChangeResult RemovePaths(IReadOnlyCollection<string> paths)
+        {
+            Interlocked.Increment(ref _removeCallCount);
+            _firstRemovalStarted.TrySetResult();
+            _releaseRemoval.Wait();
+            return DefenderExclusionChangeResult.Succeeded(paths.ToArray(), []);
+        }
+
+        public void ReleaseRemoval()
+        {
+            _releaseRemoval.Set();
+        }
+    }
+
+    private sealed class ControllableTimeProvider : TimeProvider
+    {
+        private int _createTimerCallCount;
+
+        public ControllableTimer Timer { get; private set; } = null!;
+
+        public int CreateTimerCallCount => Volatile.Read(ref _createTimerCallCount);
+
+        public override ITimer CreateTimer(
+            TimerCallback callback,
+            object? state,
+            TimeSpan dueTime,
+            TimeSpan period)
+        {
+            Interlocked.Increment(ref _createTimerCallCount);
+            Timer = new ControllableTimer(callback, state, dueTime, period);
+            return Timer;
+        }
+    }
+
+    private sealed class ControllableTimer(
+        TimerCallback callback,
+        object? state,
+        TimeSpan dueTime,
+        TimeSpan period) : ITimer
+    {
+        private int _disposeAsyncCallCount;
+
+        public TimeSpan DueTime { get; } = dueTime;
+
+        public TimeSpan Period { get; } = period;
+
+        public int DisposeAsyncCallCount => Volatile.Read(ref _disposeAsyncCallCount);
+
+        public Exception? DisposeAsyncFailure { get; set; }
+
+        public bool Change(TimeSpan dueTime, TimeSpan period)
+        {
+            return true;
+        }
+
+        public void Fire()
+        {
+            callback(state);
+        }
+
+        public void Dispose()
+        {
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            Interlocked.Increment(ref _disposeAsyncCallCount);
+            if (DisposeAsyncFailure != null)
+                throw DisposeAsyncFailure;
+            return ValueTask.CompletedTask;
         }
     }
 

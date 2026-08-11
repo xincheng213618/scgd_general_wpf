@@ -1,119 +1,236 @@
-﻿<UserControl x:Class="ColorVision.Solution.Editor.AvalonEditor.AvalonEditControll"
+<UserControl x:Class="ColorVision.Solution.Editor.AvalonEditor.AvalonEditControll"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ColorVision.Solution.Editor.AvalonEditor"
              xmlns:workspace="clr-namespace:ColorVision.Solution.Workspace"
              xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
              xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}"  Initialized="UserControl_Initialized">
+             mc:Ignorable="d"
+             d:DesignHeight="450"
+             d:DesignWidth="800"
+             Background="{DynamicResource GlobalBackground}">
+    <UserControl.CommandBindings>
+        <CommandBinding Command="{x:Static local:AvalonEditControll.RunPythonCommand}"
+                        CanExecute="RunPython_CanExecute"
+                        Executed="RunPython_Executed"/>
+    </UserControl.CommandBindings>
+
     <UserControl.Resources>
-        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
+        <Style x:Key="EditorCommandButtonStyle"
+               TargetType="{x:Type Button}"
+               BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="1,0"/>
+            <Setter Property="Padding" Value="6"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
-        </Style>
-        <Style TargetType="{x:Type TextBlock}" >
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
         </Style>
 
+        <Style x:Key="EditorToggleButtonStyle" TargetType="{x:Type CheckBox}">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="1,0"/>
+            <Setter Property="Padding" Value="6"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <Border x:Name="Chrome"
+                                Padding="{TemplateBinding Padding}"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="1"
+                                CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource GlobalBorderBrush1}"/>
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource EditorSelectionForegroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.38"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="EditorRunButtonStyle"
+               TargetType="{x:Type Button}"
+               BasedOn="{StaticResource EditorCommandButtonStyle}">
+            <Setter Property="Width" Value="Auto"/>
+            <Setter Property="MinWidth" Value="104"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
     </UserControl.Resources>
-    <Grid>
+
+    <Grid Background="{DynamicResource EditorBackgroundBrush}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="36"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="24"/>
         </Grid.RowDefinitions>
-        <ToolBar DockPanel.Dock="Top" Margin="5,0,5,0">
-            <ToolBar.Resources>
-                <Style TargetType="{x:Type Image}">
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type ButtonBase}, AncestorLevel=1}, Path=IsEnabled}" Value="False">
-                            <Setter Property="Opacity" Value="0.30" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </ToolBar.Resources>
-            <Button Click="openFileClick" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{StaticResource  DIOpen}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Button Command="Save" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DISave}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Button Command="{x:Static workspace:SolutionDocumentCommands.Reload}"
-                    Content="↻"
-                    ToolTip="{x:Static properties:Resources.Refresh}"
-                    FontSize="18"
-                    Padding="3"
-                    Margin="2,0"
-                    Background="Transparent"
-                    BorderThickness="0"/>
-            <Separator/>
-            <Button Command="Cut" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DICut}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Button Command="Copy"  Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DICopy}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Button Command="Paste" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DIPaste}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Button Command="Delete" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DIDelete}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Separator/>
-            <Button Command="Undo" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DIUndo}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Button Command="Redo" Padding="3" Margin="2,0" Background="Transparent" BorderThickness="0">
-                <Viewbox>
-                    <Rectangle Fill="{DynamicResource DIRedo}" Width="16" Height="16"/>
-                </Viewbox>
-            </Button>
-            <Separator/>
-            <CheckBox IsChecked="{Binding ElementName=textEditor,Path=WordWrap}" Margin="2,0">
-                <Viewbox  Width="16" Height="16">
-                    <Rectangle Fill="{DynamicResource DIWordWrap}" Width="16" Height="16"/>
-                </Viewbox>
-            </CheckBox>
-            <CheckBox IsChecked="{Binding ElementName=textEditor,Path=ShowLineNumbers}"  Margin="2,0">
-                <TextBlock Width="16" TextAlignment="Center">#</TextBlock>
-            </CheckBox>
-            <CheckBox IsChecked="{Binding ElementName=textEditor,Path=Options.ShowEndOfLine}">
-                <TextBlock Width="16" TextAlignment="Center">¶</TextBlock>
-            </CheckBox>
-            <ComboBox Name="highlightingComboBox" Background="Transparent" BorderThickness="0"
-				SelectedItem="{Binding SyntaxHighlighting, ElementName=textEditor}"
-				ItemsSource="{Binding Source={x:Static avalonEdit:HighlightingManager.Instance}, Path=HighlightingDefinitions}"
-				SelectionChanged="HighlightingComboBox_SelectionChanged"/>
-            <Button Content="Run" Click="Button_Click"/>
-        </ToolBar>
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*"/>
-            </Grid.ColumnDefinitions>
-            <avalonEdit:TextEditor Name="textEditor" Background="Transparent" FontFamily="Consolas" ShowLineNumbers="True" FontSize="10pt" SyntaxHighlighting="C#" />
-        </Grid>
-        <StackPanel Grid.Row="2" Name="StatusBar"  Height="20" DockPanel.Dock="Bottom" Orientation="Horizontal">
-            <TextBlock Name="StatusText" Text="Ready" Margin="5 0 0 0" VerticalAlignment="Center" FontSize="12"/>
-        </StackPanel>
-        
+
+        <Border Grid.Row="0"
+                Background="{DynamicResource GlobalBackground}"
+                BorderBrush="{DynamicResource ButtonBorderBrush}"
+                BorderThickness="0,0,0,1">
+            <Grid Margin="4,2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button Style="{StaticResource EditorCommandButtonStyle}"
+                            Click="openFileClick"
+                            ToolTip="打开文件"
+                            AutomationProperties.Name="打开文件">
+                        <Rectangle Width="16" Height="16" Fill="{DynamicResource DIOpen}"/>
+                    </Button>
+                    <Button Style="{StaticResource EditorCommandButtonStyle}"
+                            Command="Save"
+                            ToolTip="保存 (Ctrl+S)"
+                            AutomationProperties.Name="保存">
+                        <Rectangle Width="16" Height="16" Fill="{DynamicResource DISave}"/>
+                    </Button>
+                    <Button Style="{StaticResource EditorCommandButtonStyle}"
+                            Command="{x:Static workspace:SolutionDocumentCommands.Reload}"
+                            ToolTip="{x:Static properties:Resources.Refresh}"
+                            AutomationProperties.Name="重新加载">
+                        <TextBlock Text="↻" FontSize="19" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Button>
+
+                    <Border Width="1" Height="18" Margin="5,0" Background="{DynamicResource ButtonBorderBrush}"/>
+
+                    <Button x:Name="UndoButton"
+                            Style="{StaticResource EditorCommandButtonStyle}"
+                            Command="Undo"
+                            ToolTip="撤销 (Ctrl+Z)"
+                            AutomationProperties.Name="撤销">
+                        <Rectangle Width="16" Height="16" Fill="{DynamicResource DIUndo}"/>
+                    </Button>
+                    <Button x:Name="RedoButton"
+                            Style="{StaticResource EditorCommandButtonStyle}"
+                            Command="Redo"
+                            ToolTip="重做 (Ctrl+Y)"
+                            AutomationProperties.Name="重做">
+                        <Rectangle Width="16" Height="16" Fill="{DynamicResource DIRedo}"/>
+                    </Button>
+
+                    <Border Width="1" Height="18" Margin="5,0" Background="{DynamicResource ButtonBorderBrush}"/>
+
+                    <CheckBox Style="{StaticResource EditorToggleButtonStyle}"
+                              IsChecked="{Binding ElementName=textEditor, Path=WordWrap}"
+                              ToolTip="自动换行"
+                              AutomationProperties.Name="自动换行">
+                        <Rectangle Width="16" Height="16" Fill="{DynamicResource DIWordWrap}"/>
+                    </CheckBox>
+                    <CheckBox Style="{StaticResource EditorToggleButtonStyle}"
+                              IsChecked="{Binding ElementName=textEditor, Path=ShowLineNumbers}"
+                              ToolTip="显示行号"
+                              AutomationProperties.Name="显示行号">
+                        <TextBlock Width="16" Text="#" TextAlignment="Center"/>
+                    </CheckBox>
+                    <CheckBox Style="{StaticResource EditorToggleButtonStyle}"
+                              IsChecked="{Binding ElementName=textEditor, Path=Options.ShowEndOfLine}"
+                              ToolTip="显示换行符"
+                              AutomationProperties.Name="显示换行符">
+                        <TextBlock Width="16" Text="¶" TextAlignment="Center"/>
+                    </CheckBox>
+                </StackPanel>
+
+                <Button x:Name="RunPythonButton"
+                        Grid.Column="2"
+                        Visibility="Collapsed"
+                        Style="{StaticResource EditorRunButtonStyle}"
+                        Command="{x:Static local:AvalonEditControll.RunPythonCommand}"
+                        ToolTip="运行 Python (F5)"
+                        AutomationProperties.Name="运行 Python"
+                        AutomationProperties.HelpText="保存当前文件并在下方运行终端中执行">
+                    <StackPanel Orientation="Horizontal">
+                        <Rectangle Width="16" Height="16" Fill="{DynamicResource DIRun}"/>
+                        <TextBlock Margin="6,0,0,0" Text="运行 Python"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <avalonEdit:TextEditor x:Name="textEditor"
+                               Grid.Row="1"
+                               Background="{DynamicResource EditorBackgroundBrush}"
+                               Foreground="{DynamicResource EditorForegroundBrush}"
+                               LineNumbersForeground="{DynamicResource EditorLineNumberBrush}"
+                               FontFamily="Cascadia Mono, Consolas"
+                               FontSize="14"
+                               ShowLineNumbers="True"
+                               HorizontalScrollBarVisibility="Auto"
+                               VerticalScrollBarVisibility="Auto"/>
+
+        <Border Grid.Row="2"
+                Background="{DynamicResource GlobalBackground}"
+                BorderBrush="{DynamicResource ButtonBorderBrush}"
+                BorderThickness="0,1,0,0">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <TextBlock x:Name="LineEndingText"
+                               MinWidth="42"
+                               Margin="8,0,2,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               Text="CRLF"
+                               AutomationProperties.Name="换行格式"/>
+                    <TextBlock x:Name="EncodingText"
+                               MinWidth="54"
+                               Margin="8,0,2,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               Text="UTF-8"
+                               AutomationProperties.Name="文件编码"/>
+                    <ComboBox x:Name="highlightingComboBox"
+                              Width="124"
+                              Margin="4,1"
+                              Padding="6,0"
+                              IsEditable="True"
+                              IsReadOnly="True"
+                              BorderThickness="0"
+                              Background="Transparent"
+                              Foreground="{DynamicResource GlobalTextBrush}"
+                              ItemsSource="{Binding Source={x:Static avalonEdit:HighlightingManager.Instance}, Path=HighlightingDefinitions}"
+                              SelectionChanged="HighlightingComboBox_SelectionChanged"
+                              ToolTip="语法高亮模式"
+                              AutomationProperties.Name="语法高亮模式"/>
+                </StackPanel>
+                <TextBlock x:Name="StatusText"
+                           Margin="8,0"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           Text="行:1 列:1"/>
+            </DockPanel>
+        </Border>
     </Grid>
 </UserControl>

@@ -1,6 +1,7 @@
 using ColorVision.Engine.FlowProcessing;
 using Microsoft.Data.Sqlite;
 using ProjectKB;
+using SqlSugar;
 using System.IO;
 using Xunit;
 
@@ -37,7 +38,8 @@ public class KBProductionStatisticsTests
             sessions,
             day,
             day.AddDays(1),
-            day.AddHours(10).AddMinutes(45));
+            day.AddHours(10).AddMinutes(45),
+            KBProductionPeriodMode.Day);
 
         Assert.Equal(4, statistics.TotalRuns);
         Assert.Equal(3, statistics.ProductionCount);
@@ -73,7 +75,8 @@ public class KBProductionStatisticsTests
             [],
             now.Date,
             now.Date.AddDays(1),
-            now);
+            now,
+            KBProductionPeriodMode.Day);
 
         KBProductionSessionRow session = Assert.Single(statistics.SessionRows);
         Assert.Equal(0, session.SessionId);
@@ -110,7 +113,11 @@ public class KBProductionStatisticsTests
             Assert.NotEqual(firstId, secondId);
             Assert.Equal(secondId, secondReusedId);
 
-            KBProductionStatistics statistics = store.QueryStatistics(start.Date, start.Date.AddDays(1), null, start.AddHours(1));
+            KBProductionStatistics statistics = store.QueryStatistics(new KBProductionQuery
+            {
+                From = start.Date,
+                ToExclusive = start.Date.AddDays(1)
+            }, start.AddHours(1));
             Assert.Collection(
                 statistics.SessionRows,
                 current =>
@@ -127,9 +134,94 @@ public class KBProductionStatisticsTests
                     Assert.Equal("W1", previous.WorkerNo);
                 });
 
-            KBProductionStatistics otherModel = store.QueryStatistics(start.Date, start.Date.AddDays(1), "OTHER", start.AddHours(1));
+            KBProductionStatistics otherModel = store.QueryStatistics(new KBProductionQuery
+            {
+                From = start.Date,
+                ToExclusive = start.Date.AddDays(1),
+                Model = "OTHER"
+            }, start.AddHours(1));
             Assert.Empty(otherModel.SessionRows);
             Assert.Equal(0, otherModel.TargetProduction);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(databasePath))
+                File.Delete(databasePath);
+        }
+    }
+
+    [Fact]
+    public void PeriodUsesMondayBasedWeeksAndSupportsCurrentMonthNavigation()
+    {
+        DateTime anchor = new(2026, 8, 5);
+
+        KBProductionPeriodRange week = KBProductionPeriod.GetRange(KBProductionPeriodMode.Week, anchor);
+        KBProductionPeriodRange month = KBProductionPeriod.GetRange(KBProductionPeriodMode.Month, anchor);
+
+        Assert.Equal(new DateTime(2026, 8, 3), week.From);
+        Assert.Equal(new DateTime(2026, 8, 10), week.ToExclusive);
+        Assert.Equal(new DateTime(2026, 8, 1), month.From);
+        Assert.Equal(new DateTime(2026, 9, 1), month.ToExclusive);
+        Assert.Equal(new DateTime(2026, 7, 5), KBProductionPeriod.ShiftAnchor(KBProductionPeriodMode.Month, anchor, -1));
+    }
+
+    [Fact]
+    public void DataStoreFiltersAndPagesIndividualDetectionRecordsWithoutGrouping()
+    {
+        string databasePath = Path.Combine(Path.GetTempPath(), $"ProjectKB-Records-{Guid.NewGuid():N}.db");
+        try
+        {
+            var store = new KBProductionDataStore(databasePath);
+            store.InitializeSchema();
+            DateTime day = new(2026, 8, 5);
+            using (var db = new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = $"Data Source={databasePath}",
+                DbType = DbType.Sqlite,
+                IsAutoCloseConnection = true,
+                InitKeyType = InitKeyType.Attribute
+            }))
+            {
+                db.Insertable(new[]
+                {
+                    CreateResult(0, null, day.AddHours(8), FlowStatus.Completed, true, 1_000, "SN-A1", "AOI TEMP"),
+                    CreateResult(0, null, day.AddHours(9), FlowStatus.Completed, false, 2_000, "SN-A2", "AOI TEMP"),
+                    CreateResult(0, null, day.AddHours(10), FlowStatus.Completed, true, 3_000, "SN-B1", "OTHER")
+                }).ExecuteCommand();
+            }
+
+            var query = new KBProductionQuery
+            {
+                From = day,
+                ToExclusive = day.AddDays(1),
+                PeriodMode = KBProductionPeriodMode.Day,
+                Model = "AOI",
+                SN = "A",
+                PageNumber = 1,
+                PageSize = 1
+            };
+
+            Assert.Equal(2, store.QueryRecordCount(query));
+            KBProductionRecordRow firstPage = Assert.Single(store.QueryRecords(query));
+            Assert.Equal("SN-A2", firstPage.SN);
+            KBProductionRecordRow secondPage = Assert.Single(store.QueryRecords(new KBProductionQuery
+            {
+                From = query.From,
+                ToExclusive = query.ToExclusive,
+                PeriodMode = query.PeriodMode,
+                Model = query.Model,
+                SN = query.SN,
+                PageNumber = 2,
+                PageSize = 1
+            }));
+            Assert.Equal("SN-A1", secondPage.SN);
+
+            KBProductionStatistics statistics = store.QueryStatistics(query, day.AddHours(11));
+            Assert.Equal(2, statistics.TotalRuns);
+            Assert.Equal(2, statistics.ProductionCount);
+            Assert.Equal(2, statistics.TrendRows.Count);
+            Assert.All(statistics.TrendRows, point => Assert.Equal(1, point.ProductionCount));
         }
         finally
         {
@@ -180,6 +272,8 @@ public class KBProductionStatisticsTests
             reader.Close();
 
             Assert.Contains(columns, column => string.Equals(column, "ProductionSessionId", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(columns, column => string.Equals(column, "ImageWidth", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(columns, column => string.Equals(column, "ImageHeight", StringComparison.OrdinalIgnoreCase));
 
             using SqliteCommand countCommand = verificationConnection.CreateCommand();
             countCommand.CommandText = "SELECT COUNT(*) FROM KBItemMaster";
@@ -203,7 +297,9 @@ public class KBProductionStatisticsTests
         DateTime createTime,
         FlowStatus status,
         bool result,
-        long runTime)
+        long runTime,
+        string sn = "",
+        string model = "AOI TEMP")
     {
         return new KBItemMaster
         {
@@ -213,7 +309,11 @@ public class KBProductionStatisticsTests
             FlowStatus = status,
             Result = result,
             RunTime = runTime,
-            Model = "AOI TEMP"
+            Model = model,
+            SN = sn,
+            KeyLcNeighborhoodRadiusMm = 0,
+            KeyLcPixelsPerMillimeter = 0,
+            KeyLcNeighborhoodVersion = 0
         };
     }
 }

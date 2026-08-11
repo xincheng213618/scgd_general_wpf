@@ -16,20 +16,50 @@ namespace ColorVision.Solution.Terminal
         private static TerminalService? _instance;
         public static TerminalService GetInstance() => _instance ??= new TerminalService();
 
-        private TerminalControl? _terminalControl;
+        private TerminalControl? _interactiveTerminalControl;
+        private TerminalControl? _runTerminalControl;
+        private Action? _activateInteractiveTerminal;
+        private Action? _activateRunTerminal;
+        private Func<TerminalControl?>? _getSelectedTerminal;
+        private string? _pendingScriptPath;
         public const string PanelId = "TerminalPanel";
 
         private TerminalService() { }
 
-        internal void SetTerminalControl(TerminalControl control)
+        internal void SetTerminalControls(
+            TerminalControl interactiveTerminalControl,
+            TerminalControl runTerminalControl,
+            Action activateInteractiveTerminal,
+            Action activateRunTerminal,
+            Func<TerminalControl?> getSelectedTerminal)
         {
-            _terminalControl = control;
+            _interactiveTerminalControl = interactiveTerminalControl;
+            _runTerminalControl = runTerminalControl;
+            _activateInteractiveTerminal = activateInteractiveTerminal;
+            _activateRunTerminal = activateRunTerminal;
+            _getSelectedTerminal = getSelectedTerminal;
+
+            if (_pendingScriptPath is string pendingScriptPath)
+            {
+                _pendingScriptPath = null;
+                _activateRunTerminal();
+                runTerminalControl.RunScript(pendingScriptPath);
+            }
         }
 
         internal void ClearTerminalControl(TerminalControl control)
         {
-            if (ReferenceEquals(_terminalControl, control))
-                _terminalControl = null;
+            if (ReferenceEquals(_interactiveTerminalControl, control))
+                _interactiveTerminalControl = null;
+            if (ReferenceEquals(_runTerminalControl, control))
+                _runTerminalControl = null;
+
+            if (_interactiveTerminalControl == null && _runTerminalControl == null)
+            {
+                _activateInteractiveTerminal = null;
+                _activateRunTerminal = null;
+                _getSelectedTerminal = null;
+            }
         }
 
         /// <summary>
@@ -37,9 +67,21 @@ namespace ColorVision.Solution.Terminal
         /// </summary>
         public void RunScript(string filePath)
         {
-            ActivatePanel();
-            var terminalControl = GetActiveTerminalControl();
-            if (terminalControl == null) return;
+            if (!ShowPanel())
+                return;
+
+            var terminalControl = GetRunTerminalControl();
+            if (terminalControl == null)
+            {
+                // Some dock hosts create their content on the next layout pass. Only the latest
+                // request is relevant; retaining a queue would start and immediately kill each
+                // earlier script when the run terminal is finally materialized.
+                _pendingScriptPath = filePath;
+                return;
+            }
+
+            _pendingScriptPath = null;
+            _activateRunTerminal?.Invoke();
             terminalControl.RunScript(filePath);
         }
 
@@ -48,9 +90,13 @@ namespace ColorVision.Solution.Terminal
         /// </summary>
         public void SendCommand(string command)
         {
-            ActivatePanel();
-            var terminalControl = GetActiveTerminalControl();
+            if (!ShowPanel())
+                return;
+
+            var terminalControl = GetInteractiveTerminalControl();
             if (terminalControl == null) return;
+            _activateInteractiveTerminal?.Invoke();
+            terminalControl.NotifyPanelActivated();
             terminalControl.SendCommand(command);
         }
 
@@ -61,9 +107,13 @@ namespace ColorVision.Solution.Terminal
 
         public bool TrySendCommand(string command, string workingDirectory)
         {
-            ActivatePanel();
-            var terminalControl = GetActiveTerminalControl();
+            if (!ShowPanel())
+                return false;
+
+            var terminalControl = GetInteractiveTerminalControl();
             if (terminalControl == null) return false;
+            _activateInteractiveTerminal?.Invoke();
+            terminalControl.NotifyPanelActivated();
             terminalControl.SendCommand(command, workingDirectory);
             return true;
         }
@@ -73,33 +123,48 @@ namespace ColorVision.Solution.Terminal
             if (commands.Count == 0)
                 return false;
 
-            ActivatePanel();
-            var terminalControl = GetActiveTerminalControl();
+            if (!ShowPanel())
+                return false;
+
+            var terminalControl = GetInteractiveTerminalControl();
             if (terminalControl == null)
                 return false;
+            _activateInteractiveTerminal?.Invoke();
+            terminalControl.NotifyPanelActivated();
             terminalControl.SendCommandBatch(commands);
             return true;
         }
 
         public void NotifyPanelActivated()
         {
-            var terminalControl = GetActiveTerminalControl();
+            var terminalControl = _getSelectedTerminal?.Invoke() ?? GetInteractiveTerminalControl();
             terminalControl?.NotifyPanelActivated();
         }
 
-        private TerminalControl? GetActiveTerminalControl()
+        private TerminalControl? GetInteractiveTerminalControl()
         {
-            if (_terminalControl?.IsDisposed == true)
-                _terminalControl = null;
+            if (_interactiveTerminalControl?.IsDisposed == true)
+                _interactiveTerminalControl = null;
 
-            return _terminalControl;
+            return _interactiveTerminalControl;
         }
 
-        private void ActivatePanel()
+        private TerminalControl? GetRunTerminalControl()
+        {
+            if (_runTerminalControl?.IsDisposed == true)
+                _runTerminalControl = null;
+
+            return _runTerminalControl;
+        }
+
+        private bool ShowPanel()
         {
             var layoutManager = WorkspaceManager.LayoutManager;
-            layoutManager?.ShowPanel(PanelId);
-            NotifyPanelActivated();
+            if (layoutManager == null)
+                return false;
+
+            layoutManager.ShowPanel(PanelId);
+            return true;
         }
     }
 
@@ -120,15 +185,41 @@ namespace ColorVision.Solution.Terminal
                 TerminalService.PanelId,
                 () =>
                 {
-                    var grid = new Grid();
-                    var terminalControl = new TerminalControl();
-                    grid.Children.Add(terminalControl);
+                    var interactiveTerminalControl = new TerminalControl();
+                    var runTerminalControl = new TerminalControl();
+                    var interactiveTab = new TabItem
+                    {
+                        Header = "终端",
+                        Content = interactiveTerminalControl,
+                    };
+                    var runTab = new TabItem
+                    {
+                        Header = "运行",
+                        Content = runTerminalControl,
+                    };
+                    var tabControl = new TabControl();
+                    tabControl.Items.Add(interactiveTab);
+                    tabControl.Items.Add(runTab);
+                    tabControl.SelectedItem = interactiveTab;
 
                     if (Application.Current != null)
-                        Application.Current.Exit += (_, _) => terminalControl.Dispose();
+                    {
+                        Application.Current.Exit += (_, _) =>
+                        {
+                            interactiveTerminalControl.Dispose();
+                            runTerminalControl.Dispose();
+                        };
+                    }
 
-                    TerminalService.GetInstance().SetTerminalControl(terminalControl);
-                    return grid;
+                    TerminalService.GetInstance().SetTerminalControls(
+                        interactiveTerminalControl,
+                        runTerminalControl,
+                        () => tabControl.SelectedItem = interactiveTab,
+                        () => tabControl.SelectedItem = runTab,
+                        () => ReferenceEquals(tabControl.SelectedItem, runTab)
+                            ? runTerminalControl
+                            : interactiveTerminalControl);
+                    return tabControl;
                 },
                 "终端",
                 PanelPosition.Bottom,

@@ -5,6 +5,12 @@ using System.Threading.Tasks;
 
 namespace ColorVision.UI
 {
+    public enum CopilotModuleToolExecutionHookMode
+    {
+        Sync,
+        Async,
+    }
+
     public sealed class CopilotModuleToolExecutionHookContext
     {
         public string CallId { get; init; } = string.Empty;
@@ -59,6 +65,12 @@ namespace ColorVision.UI
 
         public string FailureCode { get; init; } = string.Empty;
 
+        public static CopilotModuleToolPermissionRequestDecision PromptWithReason(string reason) => new()
+        {
+            ShouldPrompt = true,
+            Reason = reason ?? string.Empty,
+        };
+
         public static CopilotModuleToolPermissionRequestDecision Deny(
             string reason,
             string failureCode = "extension_permission_hook_denied")
@@ -110,6 +122,14 @@ namespace ColorVision.UI
         string ToolNamePattern => "*";
 
         int Order => 0;
+
+        /// <summary>
+        /// Async hooks run as bounded background notifications. Their decisions
+        /// cannot block, deny, or otherwise control the tool call that launched them.
+        /// Async callbacks may overlap and implementations must be thread-safe.
+        /// </summary>
+        CopilotModuleToolExecutionHookMode ExecutionMode =>
+            CopilotModuleToolExecutionHookMode.Sync;
 
         Task<CopilotModuleToolExecutionHookDecision> BeforeExecuteAsync(
             CopilotModuleToolExecutionHookContext context,

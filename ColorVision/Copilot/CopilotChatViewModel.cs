@@ -43,12 +43,14 @@ namespace ColorVision.Copilot
         private readonly CopilotConfig _config;
         private readonly ICopilotChatStateStore _stateStore;
         private readonly CopilotChatStatePersistenceCoordinator _statePersistenceCoordinator;
+        private readonly CopilotConversationSession _conversationSession;
+        private readonly CopilotComposerSession _composerSession = new();
+        private readonly CopilotApprovalCoordinator _approvalCoordinator;
+        private readonly CopilotQueuedFollowUpCoordinator _followUpQueue;
         private readonly ObservableCollection<CopilotChatMessage> _emptyMessages = new();
         private readonly ObservableCollection<CopilotAttachmentItem> _emptyAttachments = new();
-        private readonly ObservableCollection<ConfirmableAction> _pendingActions = new();
         private readonly ObservableCollection<CopilotComposerReferenceItem> _composerReferenceSuggestions = new();
         private readonly ObservableCollection<CopilotPromptHistorySearchItem> _promptHistorySearchResults = new();
-        private readonly Dictionary<string, CopilotQueuedFollowUp> _queuedFollowUpsByRunId = new(StringComparer.Ordinal);
         private readonly CopilotCompletionNoticeCenter _completionNoticeCenter = new();
         private readonly HashSet<CopilotNonBlockingCancellationSource> _auxiliaryOperationCancellations = new();
         private readonly DispatcherTimer _conversationSearchDebounceTimer;
@@ -60,10 +62,6 @@ namespace ColorVision.Copilot
         private CopilotNonBlockingCancellationSource? _composerReferenceRefreshCts;
         private CopilotLiveContext? _currentLiveContext;
         private CopilotChatState _state = new();
-        private CopilotConversationRecord? _selectedConversation;
-        private CopilotProfileConfig? _selectedProfile;
-        private CopilotAgentMode? _pendingRequestModeOverride;
-        private CopilotWorkspaceReviewTargetContext? _pendingWorkspaceReviewTarget;
         private CopilotAgentRecoveryRequest? _pendingAgentRecoveryRequest;
         private string _activeDocumentPath = string.Empty;
         private CopilotProjectInstructionDiscoveryOptions _currentCodexConfigOptions =
@@ -86,8 +84,9 @@ namespace ColorVision.Copilot
         private string _conversationSearchText = string.Empty;
         private string _composerReferenceSessionKey = string.Empty;
         private string _promptHistorySearchConversationId = string.Empty;
-        private string _promptHistorySearchDraft = string.Empty;
+        private string _promptHistorySearchQuery = string.Empty;
         private CopilotPromptHistorySearchScope _promptHistorySearchScope;
+        private bool _isActivityViewOpen;
         private bool _isComposerReferenceMentionActive;
         private bool _isComposerReferenceSearchPending;
         private bool _isPromptHistorySearchOpen;
@@ -97,10 +96,12 @@ namespace ColorVision.Copilot
         private bool _isExportingConversation;
         private bool _isInspectingGitDiff;
         private bool _isCompactingConversation;
+        private bool _isEndingConversation;
         private bool _isRetryingStatePersistence;
         private long _composerReferenceRefreshVersion;
         private int _selectedLocalCommandSuggestionIndex = -1;
         private CopilotPromptHistorySearchItem? _selectedPromptHistorySearchResult;
+        private QueuedLocalCommandExecutionContext? _queuedLocalCommandExecution;
         private int _disposeState;
 
         public CopilotChatViewModel()
@@ -114,17 +115,50 @@ namespace ColorVision.Copilot
         }
 
         public CopilotChatViewModel(CopilotChatService chatService, ICopilotChatStateStore stateStore)
+            : this(
+                chatService ?? throw new ArgumentNullException(nameof(chatService)),
+                stateStore ?? throw new ArgumentNullException(nameof(stateStore)),
+                CopilotConfig.Instance,
+                new CopilotTurnRuntime(chatService),
+                CopilotAgentTaskHost.Shared,
+                persistConfigChanges: true)
         {
-            _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
+        }
+
+        internal CopilotChatViewModel(
+            CopilotChatService chatService,
+            ICopilotChatStateStore stateStore,
+            CopilotConfig config,
+            ICopilotTurnRuntime turnRuntime,
+            CopilotAgentTaskHost taskHost)
+            : this(
+                chatService ?? throw new ArgumentNullException(nameof(chatService)),
+                stateStore ?? throw new ArgumentNullException(nameof(stateStore)),
+                config ?? throw new ArgumentNullException(nameof(config)),
+                turnRuntime ?? throw new ArgumentNullException(nameof(turnRuntime)),
+                taskHost ?? throw new ArgumentNullException(nameof(taskHost)),
+                persistConfigChanges: false)
+        {
+        }
+
+        private CopilotChatViewModel(
+            CopilotChatService chatService,
+            ICopilotChatStateStore stateStore,
+            CopilotConfig config,
+            ICopilotTurnRuntime turnRuntime,
+            CopilotAgentTaskHost taskHost,
+            bool persistConfigChanges)
+        {
+            _chatService = chatService;
             _conversationTitleCoordinator = new CopilotConversationTitleCoordinator(
                 new CopilotConversationTitleGenerator(_chatService),
                 ApplyGeneratedConversationTitleAsync);
             _goalCompletionEvaluator = new CopilotGoalCompletionEvaluator(_chatService);
-            _turnRuntime = new CopilotTurnRuntime(_chatService);
-            _taskHost = CopilotAgentTaskHost.Shared;
+            _turnRuntime = turnRuntime;
+            _taskHost = taskHost;
             _localGitDiffService = new CopilotLocalGitDiffService();
-            _config = CopilotConfig.Instance;
-            _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
+            _config = config;
+            _stateStore = stateStore;
             _statePersistenceCoordinator = new CopilotChatStatePersistenceCoordinator(
                 _stateStore,
                 () => _state,
@@ -149,16 +183,9 @@ namespace ColorVision.Copilot
             WorkspaceManager.ContentIdSelected += WorkspaceManager_ContentIdSelected;
             CopilotLiveContextRegistry.CurrentChanged -= CopilotLiveContextRegistry_CurrentChanged;
             CopilotLiveContextRegistry.CurrentChanged += CopilotLiveContextRegistry_CurrentChanged;
-            CopilotMcpConfirmationStore.Instance.ActionsChanged -= ConfirmationStore_ActionsChanged;
-            CopilotMcpConfirmationStore.Instance.ActionsChanged += ConfirmationStore_ActionsChanged;
-            CopilotMcpConfirmationStore.Instance.ActionStatusChanged -= ConfirmationStore_ActionStatusChanged;
-            CopilotMcpConfirmationStore.Instance.ActionStatusChanged += ConfirmationStore_ActionStatusChanged;
             CopilotAgentSkillCatalog.CatalogChanged -= AgentSkillCatalog_CatalogChanged;
             CopilotAgentSkillCatalog.CatalogChanged += AgentSkillCatalog_CatalogChanged;
-            WeakEventManager<CopilotAgentTaskHost, CopilotAgentTaskHostChangedEventArgs>.RemoveHandler(_taskHost, nameof(CopilotAgentTaskHost.Changed), TaskHost_Changed);
-            WeakEventManager<CopilotAgentTaskHost, CopilotAgentTaskHostChangedEventArgs>.AddHandler(_taskHost, nameof(CopilotAgentTaskHost.Changed), TaskHost_Changed);
-
-            if (_config.EnsureInitialized())
+            if (_config.EnsureInitialized() && persistConfigChanges)
                 PersistConfig();
 
             _state = _stateStore.Load();
@@ -168,9 +195,26 @@ namespace ColorVision.Copilot
                 _state,
                 DateTimeOffset.UtcNow);
             _stateStore.CleanupOrphanedAttachments(_state);
+            _conversationSession = new CopilotConversationSession(_state, _config);
+            _approvalCoordinator = new CopilotApprovalCoordinator(
+                CopilotMcpConfirmationStore.Instance,
+                _state);
+            _approvalCoordinator.PendingActionsInvalidated += ApprovalCoordinator_PendingActionsInvalidated;
+            _approvalCoordinator.ActionTransitioned += ApprovalCoordinator_ActionTransitioned;
+            _followUpQueue = new CopilotQueuedFollowUpCoordinator(_state, _taskHost);
+            _followUpQueue.Changed += FollowUpQueue_Changed;
+            WeakEventManager<CopilotAgentTaskHost, CopilotAgentTaskHostChangedEventArgs>.RemoveHandler(_taskHost, nameof(CopilotAgentTaskHost.Changed), TaskHost_Changed);
+            WeakEventManager<CopilotAgentTaskHost, CopilotAgentTaskHostChangedEventArgs>.AddHandler(_taskHost, nameof(CopilotAgentTaskHost.Changed), TaskHost_Changed);
             InitializeStateRecoveryNotice();
             if (stateChanged)
                 PersistState();
+
+            foreach (var restoredConversation in Conversations.Where(conversation => !conversation.IsArchived))
+            {
+                _turnRuntime.QueueSessionStart(
+                    restoredConversation.Id,
+                    CopilotCodexSessionStartSource.Resume);
+            }
 
             Conversations.CollectionChanged += Conversations_CollectionChanged;
 
@@ -193,6 +237,25 @@ namespace ColorVision.Copilot
                 _ => SelectedConversation != null);
             ShowUsageDiagnosticsCommand = new RelayCommand(_ => ShowUsageDiagnosticsFromUi());
             ClearConversationSearchCommand = new RelayCommand(_ => ConversationSearchText = string.Empty, _ => HasConversationSearchQuery);
+            ToggleActivityViewCommand = new RelayCommand(_ => ToggleActivityView());
+            MarkAllActivityReadCommand = new RelayCommand(
+                _ => MarkAllActivityRead(),
+                _ => HasUnreadConversationActivity);
+            ShowConversationGoalHistoryCommand = new RelayCommand(
+                _ => ShowConversationGoalHistoryFromUi(),
+                _ => CanManageExistingConversationGoal());
+            PauseConversationGoalCommand = new RelayCommand(
+                _ => PauseConversationGoalFromUi(),
+                _ => CanPauseConversationGoal());
+            ResumeConversationGoalCommand = new RelayCommand(
+                _ => ResumeConversationGoalFromUi(),
+                _ => CanResumeConversationGoal());
+            EditConversationGoalCommand = new RelayCommand(
+                _ => EditConversationGoalFromUi(),
+                _ => CanEditConversationGoal());
+            ClearConversationGoalCommand = new RelayCommand(
+                _ => ClearConversationGoalFromUi(),
+                _ => CanManageExistingConversationGoal());
             OpenConversationFindCommand = new RelayCommand(_ => OpenConversationFind(), _ => SelectedConversation != null);
             CloseConversationFindCommand = new RelayCommand(_ => CloseConversationFind(), _ => IsConversationFindOpen);
             FindPreviousConversationMatchCommand = new RelayCommand(_ => MoveConversationFind(previous: true), _ => HasConversationFindMatches);
@@ -209,6 +272,7 @@ namespace ColorVision.Copilot
             PasteImageAttachmentCommand = new RelayCommand(_ => PasteImageAttachment(), _ => !IsBusy);
             AttachCurrentLiveContextCommand = new RelayCommand(_ => AttachCurrentLiveContext(), _ => CanAttachCurrentLiveContext);
             CopyMessageCommand = new RelayCommand<CopilotChatMessage>(CopyMessage, message => !string.IsNullOrWhiteSpace(message?.Content));
+            OpenCodeReviewPaneCommand = new RelayCommand<CopilotChatMessage>(OpenCodeReviewPane, CanOpenCodeReviewPane);
             CopyLatestResponseCommand = new RelayCommand(
                 _ => CopyAssistantResponse(CopilotLocalCommandCatalog.FindExact("/copy")!, string.Empty),
                 _ => Volatile.Read(ref _disposeState) == 0 && SelectedConversation != null);
@@ -257,7 +321,11 @@ namespace ColorVision.Copilot
                 conversation => RunUiOperation(() => ExportConversationAsync(conversation), "导出会话"),
                 CanExportConversation);
             RetryStatePersistenceCommand = new RelayCommand(_ => RunUiOperation(RetryStatePersistenceAsync, "重试保存会话"), _ => CanRetryStatePersistence());
-            DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(DeleteConversation, CanDeleteConversation);
+            DeleteConversationCommand = new RelayCommand<CopilotConversationRecord>(
+                conversation => RunUiOperation(
+                    () => DeleteConversationAsync(conversation),
+                    "删除会话"),
+                CanDeleteConversation);
             TogglePinConversationCommand = new RelayCommand<CopilotConversationRecord>(TogglePinConversation, conversation => !IsBusy && conversation != null);
             CopyPendingActionIdCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionId, action => action != null);
             CopyPendingActionPayloadCommand = new RelayCommand<ConfirmableAction>(CopyPendingActionPayload, action => action != null);
@@ -304,6 +372,8 @@ namespace ColorVision.Copilot
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted += BackgroundShellCommandRegistry_CommandCompleted;
             CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent -= BackgroundShellCommandRegistry_OutputMonitorEvent;
             CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent += BackgroundShellCommandRegistry_OutputMonitorEvent;
+            RestoreDurableQueuedFollowUps();
+            InitializeStateRecoveryNotice();
         }
 
 
@@ -349,12 +419,6 @@ namespace ColorVision.Copilot
             CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget,
             CopilotAgentSkillReference? AgentSkillReference,
             IReadOnlyList<CopilotAttachmentItem> Attachments);
-
-        private sealed record CopilotPreparedQueuedFollowUpTurn(
-            CopilotConversationRecord Conversation,
-            CopilotChatMessage UserMessage,
-            CopilotChatMessage AssistantMessage,
-            CopilotAgentHostContextSnapshot TurnSnapshot);
 
         private sealed record CopilotGoalEvaluationContext(
             CopilotConversationGoal Goal,

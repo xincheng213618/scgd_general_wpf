@@ -643,8 +643,50 @@ class PluginIndexTests(unittest.TestCase):
         self.assertIn("package_index_count", payload)
         self.assertIn("storage_path", payload)
 
+    def test_admin_cache_status_exposes_plugin_index_last_error(self):
+        self.cache.index_states.update(
+            "plugins",
+            status="error",
+            finished_at="2026-08-10T04:00:00+00:00",
+            error="table plugin_index has no column named readme",
+        )
+
+        response = self.client.get(
+            "/api/admin/cache/status",
+            headers=self._auth_headers(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        state = response.get_json()["plugin_index_state"]
+        self.assertEqual(state["status"], "error")
+        self.assertEqual(
+            state["last_error"],
+            "table plugin_index has no column named readme",
+        )
+
     def test_admin_cache_status_requires_auth(self):
         response = self.client.get("/api/admin/cache/status")
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_cache_status_accepts_admin_session(self):
+        with self.client.session_transaction() as session_state:
+            session_state["authenticated"] = True
+            session_state["user_authenticated"] = True
+            session_state["username"] = "session-admin"
+            session_state["role"] = "admin"
+
+        response = self.client.get("/api/admin/cache/status")
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_cache_status_rejects_non_admin_login_as_unauthenticated(self):
+        with self.client.session_transaction() as session_state:
+            session_state["user_authenticated"] = True
+            session_state["username"] = "ordinary-user"
+            session_state["role"] = "user"
+
+        response = self.client.get("/api/admin/cache/status")
+
         self.assertEqual(response.status_code, 401)
 
     # -------------------------------------------------------------------
@@ -994,6 +1036,24 @@ class PluginIndexTests(unittest.TestCase):
             headers={"Authorization": f"Bearer {full_key}"},
         )
         self.assertEqual(response.status_code, 200)
+
+    def test_api_key_actor_identity_reaches_audit_log(self):
+        create_resp = self.client.post(
+            "/api/admin/api-keys",
+            headers=self._auth_headers(),
+            json={"name": "Audit Key", "scopes": "cache:refresh"},
+        )
+        key_data = create_resp.get_json()
+
+        response = self.client.post(
+            "/api/admin/cache/cleanup",
+            headers={"Authorization": f"Bearer {key_data['key']}"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        audit = self.cache.get_audit_log(action="cache_cleanup")
+        self.assertEqual(audit[0]["actor_type"], "api_key")
+        self.assertEqual(audit[0]["actor_id"], f"key:{key_data['key_prefix']}")
 
     def test_revoked_key_cannot_access(self):
         create_resp = self.client.post(

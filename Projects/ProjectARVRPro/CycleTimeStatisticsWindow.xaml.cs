@@ -28,6 +28,7 @@ namespace ProjectARVRPro
         private static readonly ILog Log = LogManager.GetLogger(typeof(CycleTimeStatisticsWindow));
         private readonly ViewResultManager _viewResultManager = ViewResultManager.GetInstance();
         private readonly ResultStatisticsDataStore _statisticsStore = ResultStatisticsDataStore.Instance;
+        private readonly ResultStatisticsWindowState _windowState = ProjectARVRProConfig.Instance.ResultStatisticsWindowState ??= new();
         private readonly ObservableCollection<ResultStatisticsRecordRow> _recordRows = [];
         private readonly ObservableCollection<FlowExecutionRecordRow> _flowRows = [];
         private string[] _snSuggestions = [];
@@ -51,6 +52,9 @@ namespace ProjectARVRPro
         private bool _updatingSnSuggestions;
         private bool _updatingFlowNameSuggestions;
         private bool _flowTabInitialized;
+        private bool _windowLoaded;
+        private bool _restoringSearchState = true;
+        private int _queuedHomeRefreshVersion;
         private string _homeStatus = string.Empty;
         private string _recordStatus = string.Empty;
         private string _snIndexStatus = string.Empty;
@@ -60,9 +64,7 @@ namespace ProjectARVRPro
         public CycleTimeStatisticsWindow()
         {
             InitializeComponent();
-            HomeAnchorDatePicker.SelectedDate = DateTime.Today;
-            RecordAnchorDatePicker.SelectedDate = DateTime.Today;
-            FlowAnchorDatePicker.SelectedDate = DateTime.Today;
+            RestoreSearchState();
             RecordDataGrid.ItemsSource = _recordRows;
             FlowDataGrid.ItemsSource = _flowRows;
             DetailList.ItemsSource = _details;
@@ -70,23 +72,38 @@ namespace ProjectARVRPro
             _recordRows.CollectionChanged += RecordRows_CollectionChanged;
             BuildDetailContextMenu();
             RegisterCopilotContext();
+            ConfigureHomeTrendPlot();
             ApplyStatistics(new ResultStatistics());
+            _restoringSearchState = false;
             UpdateHomePeriodText();
             UpdateRecordPeriodText();
             UpdateFlowPeriodText();
         }
 
         private ResultStatisticsRecordRow? SelectedRecordRow => RecordDataGrid.SelectedItem as ResultStatisticsRecordRow;
+        private FlowExecutionRecordRow? SelectedFlowRow => FlowDataGrid.SelectedItem as FlowExecutionRecordRow;
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            _windowLoaded = true;
             _ = LoadSnSuggestionsAsync();
-            await Task.WhenAll(RefreshHomeAsync(), RefreshRecordsAsync(1));
+            var tasks = new List<Task> { RefreshHomeAsync(), RefreshRecordsAsync(1) };
+            if (StatisticsTabs.SelectedItem == FlowQueryTab)
+            {
+                _flowTabInitialized = true;
+                _ = LoadFlowNameSuggestionsAsync();
+                tasks.Add(RefreshFlowsAsync(1));
+            }
+            await Task.WhenAll(tasks);
         }
 
         private async void StatisticsTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.Source != StatisticsTabs || StatisticsTabs.SelectedItem != FlowQueryTab || _flowTabInitialized)
+            if (e.Source != StatisticsTabs)
+                return;
+
+            CaptureSearchState();
+            if (!_windowLoaded || StatisticsTabs.SelectedItem != FlowQueryTab || _flowTabInitialized)
                 return;
 
             _flowTabInitialized = true;
@@ -94,18 +111,15 @@ namespace ProjectARVRPro
             await RefreshFlowsAsync(1);
         }
 
-        private async void HomeRefresh_Click(object sender, RoutedEventArgs e)
-        {
-            await RefreshHomeAsync();
-        }
-
         private async void RecordRefresh_Click(object sender, RoutedEventArgs e)
         {
+            CaptureSearchState();
             await RefreshRecordsAsync(1);
         }
 
         private async void FlowRefresh_Click(object sender, RoutedEventArgs e)
         {
+            CaptureSearchState();
             await RefreshFlowsAsync(1);
         }
 
@@ -116,6 +130,7 @@ namespace ProjectARVRPro
             SnFilter.Text = string.Empty;
             ResultFilter.SelectedIndex = 0;
             UpdateRecordPeriodText();
+            CaptureSearchState();
             await RefreshRecordsAsync(1);
         }
 
@@ -126,49 +141,54 @@ namespace ProjectARVRPro
             FlowNameFilter.Text = string.Empty;
             FlowResultFilter.SelectedIndex = 0;
             UpdateFlowPeriodText();
+            CaptureSearchState();
             await RefreshFlowsAsync(1);
         }
 
         private void HomePeriodMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateHomePeriodText();
+            QueueHomeRefresh();
         }
 
         private void RecordPeriodMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateRecordPeriodText();
+            CaptureSearchState();
         }
 
         private void FlowPeriodMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateFlowPeriodText();
+            CaptureSearchState();
         }
 
         private void HomeAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateHomePeriodText();
+            QueueHomeRefresh();
         }
 
         private void RecordAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateRecordPeriodText();
+            CaptureSearchState();
         }
 
         private void FlowAnchorDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateFlowPeriodText();
+            CaptureSearchState();
         }
 
-        private async void HomePreviousPeriod_Click(object sender, RoutedEventArgs e)
+        private void HomePreviousPeriod_Click(object sender, RoutedEventArgs e)
         {
             ShiftPeriod(HomePeriodMode, HomeAnchorDatePicker, -1);
-            await RefreshHomeAsync();
         }
 
-        private async void HomeNextPeriod_Click(object sender, RoutedEventArgs e)
+        private void HomeNextPeriod_Click(object sender, RoutedEventArgs e)
         {
             ShiftPeriod(HomePeriodMode, HomeAnchorDatePicker, 1);
-            await RefreshHomeAsync();
         }
 
         private async void RecordPreviousPeriod_Click(object sender, RoutedEventArgs e)
@@ -202,6 +222,72 @@ namespace ProjectARVRPro
             anchorPicker.SelectedDate = ResultStatisticsPeriod.ShiftAnchor(mode, anchor, offset);
         }
 
+        private void RestoreSearchState()
+        {
+            HomePeriodMode.SelectedIndex = GetPeriodModeIndex(_windowState.HomePeriodMode);
+            HomeAnchorDatePicker.SelectedDate = NormalizeAnchorDate(_windowState.HomeAnchorDate);
+            RecordPeriodMode.SelectedIndex = GetPeriodModeIndex(_windowState.RecordPeriodMode);
+            RecordAnchorDatePicker.SelectedDate = NormalizeAnchorDate(_windowState.RecordAnchorDate);
+            SnFilter.Text = _windowState.RecordSn ?? string.Empty;
+            ResultFilter.SelectedIndex = Math.Clamp(_windowState.RecordResultIndex, 0, 2);
+            FlowPeriodMode.SelectedIndex = GetPeriodModeIndex(_windowState.FlowPeriodMode);
+            FlowAnchorDatePicker.SelectedDate = NormalizeAnchorDate(_windowState.FlowAnchorDate);
+            FlowNameFilter.Text = _windowState.FlowName ?? string.Empty;
+            FlowResultFilter.SelectedIndex = Math.Clamp(_windowState.FlowResultIndex, 0, 2);
+            StatisticsTabs.SelectedIndex = Math.Clamp(_windowState.SelectedTabIndex, 0, StatisticsTabs.Items.Count - 1);
+        }
+
+        private void CaptureSearchState()
+        {
+            if (_restoringSearchState || StatisticsTabs == null)
+                return;
+
+            _windowState.SelectedTabIndex = Math.Max(0, StatisticsTabs.SelectedIndex);
+            _windowState.HomePeriodMode = GetSelectedPeriodMode(HomePeriodMode);
+            _windowState.HomeAnchorDate = (HomeAnchorDatePicker.SelectedDate ?? DateTime.Today).Date;
+            _windowState.RecordPeriodMode = GetSelectedPeriodMode(RecordPeriodMode);
+            _windowState.RecordAnchorDate = (RecordAnchorDatePicker.SelectedDate ?? DateTime.Today).Date;
+            _windowState.RecordSn = SnFilter.Text?.Trim() ?? string.Empty;
+            _windowState.RecordResultIndex = Math.Clamp(ResultFilter.SelectedIndex, 0, 2);
+            _windowState.FlowPeriodMode = GetSelectedPeriodMode(FlowPeriodMode);
+            _windowState.FlowAnchorDate = (FlowAnchorDatePicker.SelectedDate ?? DateTime.Today).Date;
+            _windowState.FlowName = FlowNameFilter.Text?.Trim() ?? string.Empty;
+            _windowState.FlowResultIndex = Math.Clamp(FlowResultFilter.SelectedIndex, 0, 2);
+        }
+
+        private void SaveSearchState()
+        {
+            CaptureSearchState();
+            try
+            {
+                ConfigService.Instance.Save<ProjectARVRProConfig>();
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Could not save the ARVRPro result-statistics search state.", ex);
+            }
+        }
+
+        private void QueueHomeRefresh()
+        {
+            CaptureSearchState();
+            if (_restoringSearchState || !_windowLoaded)
+                return;
+
+            ++_homeLoadVersion;
+            int requestVersion = ++_queuedHomeRefreshVersion;
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (_windowLoaded && requestVersion == _queuedHomeRefreshVersion)
+                    _ = RefreshHomeAsync();
+            }));
+        }
+
+        private static DateTime NormalizeAnchorDate(DateTime value)
+        {
+            return value == default ? DateTime.Today : value.Date;
+        }
+
         private void UpdateHomePeriodText()
         {
             if (HomePeriodText == null || HomePeriodMode == null || HomeAnchorDatePicker == null)
@@ -210,6 +296,7 @@ namespace ProjectARVRPro
             ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(HomePeriodMode);
             ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, HomeAnchorDatePicker.SelectedDate ?? DateTime.Today);
             HomePeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+            HomePeriodNavigation.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void UpdateRecordPeriodText()
@@ -220,6 +307,7 @@ namespace ProjectARVRPro
             ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(RecordPeriodMode);
             ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, RecordAnchorDatePicker.SelectedDate ?? DateTime.Today);
             RecordPeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+            RecordPeriodNavigation.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void UpdateFlowPeriodText()
@@ -230,6 +318,7 @@ namespace ProjectARVRPro
             ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(FlowPeriodMode);
             ResultStatisticsPeriodRange range = ResultStatisticsPeriod.GetRange(mode, FlowAnchorDatePicker.SelectedDate ?? DateTime.Today);
             FlowPeriodText.Text = $"查询范围：{range.ToDisplayText(mode)}";
+            FlowPeriodNavigation.Visibility = mode == ResultStatisticsPeriodMode.All ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private static ResultStatisticsPeriodMode GetSelectedPeriodMode(ComboBox selector)
@@ -238,44 +327,56 @@ namespace ProjectARVRPro
             {
                 1 => ResultStatisticsPeriodMode.Week,
                 2 => ResultStatisticsPeriodMode.Month,
+                3 => ResultStatisticsPeriodMode.All,
                 _ => ResultStatisticsPeriodMode.Day,
+            };
+        }
+
+        private static int GetPeriodModeIndex(ResultStatisticsPeriodMode mode)
+        {
+            return mode switch
+            {
+                ResultStatisticsPeriodMode.Week => 1,
+                ResultStatisticsPeriodMode.Month => 2,
+                ResultStatisticsPeriodMode.All => 3,
+                _ => 0,
             };
         }
 
         private async Task RefreshHomeAsync()
         {
             ResultStatisticsQuery query = CreateHomeQuery();
+            ResultStatisticsPeriodMode mode = GetSelectedPeriodMode(HomePeriodMode);
             int loadVersion = ++_homeLoadVersion;
-            HomeRefreshButton.IsEnabled = false;
             _homeStatus = "正在查询统计...";
             UpdateStatusText();
 
             try
             {
                 DateTime now = DateTime.Now;
-                ResultStatistics statistics = await Task.Run(() => _statisticsStore.QueryStatistics(query, now));
+                ResultStatisticsDashboard dashboard = await Task.Run(() => _statisticsStore.QueryDashboard(query, mode, now));
 
                 if (loadVersion != _homeLoadVersion)
                     return;
 
-                ApplyStatistics(statistics);
-                _homeStatus = $"已查询 {statistics.TotalCount:N0} 条记录";
+                ApplyStatistics(dashboard.Summary);
+                RenderHomeTrend(dashboard.Trend, mode, query.From, query.ToExclusive);
+                _homeStatus = $"已查询 {dashboard.Summary.TotalCount:N0} 条记录";
             }
             catch (Exception ex)
             {
                 if (loadVersion != _homeLoadVersion)
                     return;
 
+                ApplyStatistics(new ResultStatistics());
+                RenderHomeTrend([], mode, query.From, query.ToExclusive);
                 _homeStatus = "查询失败";
                 MessageBox.Show(this, $"读取首页统计失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 if (loadVersion == _homeLoadVersion)
-                {
-                    HomeRefreshButton.IsEnabled = true;
                     UpdateStatusText();
-                }
             }
         }
 
@@ -693,6 +794,184 @@ namespace ProjectARVRPro
             TodayCountText.Text = statistics.TodayCount.ToString("N0");
         }
 
+        private void ConfigureHomeTrendPlot()
+        {
+            ScottPlot.Color background = GetPlotColor("SecondaryRegionBrush", "#FFFFFF");
+            ScottPlot.Color foreground = GetPlotColor("GlobalTextBrush", "#20242A");
+            ScottPlot.Color border = GetPlotColor("BorderBrush", "#D8DEE9");
+            HomeTrendPlot.Plot.FigureBackground.Color = background;
+            HomeTrendPlot.Plot.DataBackground.Color = background;
+            HomeTrendPlot.Plot.Axes.Color(foreground);
+            HomeTrendPlot.Plot.Legend.BackgroundColor = background;
+            HomeTrendPlot.Plot.Legend.FontColor = foreground;
+            HomeTrendPlot.Plot.Legend.OutlineColor = border;
+            string chineseFont = ScottPlot.Fonts.Detect("逐条整组 CT 与累计产量");
+            HomeTrendPlot.Plot.Axes.Title.Label.FontName = chineseFont;
+            HomeTrendPlot.Plot.Axes.Left.Label.FontName = chineseFont;
+            HomeTrendPlot.Plot.Axes.Right.Label.FontName = chineseFont;
+            HomeTrendPlot.Plot.Axes.Bottom.Label.FontName = chineseFont;
+            HomeTrendPlot.Plot.Axes.Left.TickLabelStyle.FontName = chineseFont;
+            HomeTrendPlot.Plot.Axes.Right.TickLabelStyle.FontName = chineseFont;
+            HomeTrendPlot.Plot.Axes.Bottom.TickLabelStyle.FontName = chineseFont;
+            HomeTrendPlot.Plot.Legend.FontName = chineseFont;
+            HomeTrendPlot.Plot.Grid.MajorLineColor = border;
+            HomeTrendPlot.Plot.XLabel("时间");
+            ConfigureHomeTrendPresentation(ResultStatisticsPeriodMode.Day);
+        }
+
+        private ScottPlot.Color GetPlotColor(string resourceKey, string fallback)
+        {
+            if (TryFindResource(resourceKey) is SolidColorBrush brush)
+            {
+                uint argb = ((uint)brush.Color.A << 24)
+                    | ((uint)brush.Color.R << 16)
+                    | ((uint)brush.Color.G << 8)
+                    | brush.Color.B;
+                return ScottPlot.Color.FromARGB(argb);
+            }
+
+            return ScottPlot.Color.FromHex(fallback);
+        }
+
+        private void ConfigureHomeTrendPresentation(ResultStatisticsPeriodMode mode)
+        {
+            if (mode == ResultStatisticsPeriodMode.All)
+            {
+                HomeTrendPlot.Plot.Title("月产量与平均整组 CT");
+                HomeTrendPlot.Plot.YLabel("产量（组）");
+                HomeTrendPlot.Plot.Axes.Right.Label.Text = "平均 CT（秒）";
+            }
+            else
+            {
+                HomeTrendPlot.Plot.Title("逐条整组 CT 与累计产量");
+                HomeTrendPlot.Plot.YLabel("整组 CT（秒）");
+                HomeTrendPlot.Plot.Axes.Right.Label.Text = "累计产量（组）";
+            }
+        }
+
+        private void RenderHomeTrend(
+            IReadOnlyList<ResultStatisticsTrendPoint> points,
+            ResultStatisticsPeriodMode mode,
+            DateTime from,
+            DateTime toExclusive)
+        {
+            HomeTrendPlot.Plot.Clear();
+            ConfigureHomeTrendPresentation(mode);
+            bool hasData = points.Any(item => item.TotalCount > 0);
+            HomeTrendEmptyText.Visibility = hasData ? Visibility.Collapsed : Visibility.Visible;
+            if (!hasData)
+            {
+                HomeTrendPlot.Refresh();
+                return;
+            }
+
+            if (mode == ResultStatisticsPeriodMode.All)
+                RenderHomeMonthlyTrend(points);
+            else
+                RenderHomeDetailTrend(points, from, toExclusive);
+
+            HomeTrendPlot.Plot.ShowLegend(ScottPlot.Alignment.UpperRight);
+            HomeTrendPlot.Refresh();
+        }
+
+        private void RenderHomeMonthlyTrend(IReadOnlyList<ResultStatisticsTrendPoint> points)
+        {
+            var bars = points.Select((item, index) => new ScottPlot.Bar
+            {
+                Position = index,
+                Value = item.TotalCount,
+                Size = 0.68,
+                FillColor = ScottPlot.Color.FromHex("#4D8DFF"),
+            }).ToArray();
+            ScottPlot.Plottables.BarPlot productionPlot = HomeTrendPlot.Plot.Add.Bars(bars);
+            productionPlot.LegendText = "产量";
+
+            double[] positions = Enumerable.Range(0, points.Count).Select(index => (double)index).ToArray();
+            double[] averageCtSeconds = points
+                .Select(item => item.TotalCount > 0 ? item.AverageCtMilliseconds / 1000d : double.NaN)
+                .ToArray();
+            ScottPlot.Plottables.Scatter ctPlot = HomeTrendPlot.Plot.Add.Scatter(positions, averageCtSeconds);
+            ctPlot.Axes.YAxis = HomeTrendPlot.Plot.Axes.Right;
+            ctPlot.LegendText = "平均整组 CT";
+            ctPlot.Color = ScottPlot.Color.FromHex("#F59E0B");
+            ctPlot.LineWidth = 2;
+            ctPlot.MarkerSize = 5;
+
+            int tickStep = Math.Max(1, (int)Math.Ceiling(points.Count / 16d));
+            List<ScottPlot.Tick> ticks = [];
+            for (int index = 0; index < points.Count; index++)
+            {
+                if (index % tickStep == 0 || index == points.Count - 1)
+                    ticks.Add(new ScottPlot.Tick(index, points[index].Label));
+            }
+            HomeTrendPlot.Plot.Axes.Bottom.TickGenerator = new ScottPlot.TickGenerators.NumericManual(ticks.ToArray());
+            HomeTrendPlot.Plot.Axes.Bottom.TickLabelStyle.Rotation = points.Count > 16 ? -35 : 0;
+            HomeTrendPlot.Plot.Axes.SetLimitsX(-0.7, points.Count - 0.3);
+            HomeTrendPlot.Plot.Axes.Left.Min = 0;
+            HomeTrendPlot.Plot.Axes.Left.Max = Math.Max(1, points.Max(item => item.TotalCount) * 1.15);
+            HomeTrendPlot.Plot.Axes.Right.Min = 0;
+            HomeTrendPlot.Plot.Axes.Right.Max = Math.Max(1, averageCtSeconds.Where(double.IsFinite).DefaultIfEmpty(0).Max() * 1.15);
+        }
+
+        private void RenderHomeDetailTrend(
+            IReadOnlyList<ResultStatisticsTrendPoint> points,
+            DateTime from,
+            DateTime toExclusive)
+        {
+            double[] eventTimes = points.Select(item => item.Time.ToOADate()).ToArray();
+            double[] ctSeconds = points.Select(item => item.AverageCtMilliseconds / 1000d).ToArray();
+            double[] stemXs = new double[points.Count * 3];
+            double[] stemYs = new double[points.Count * 3];
+            for (int index = 0; index < points.Count; index++)
+            {
+                int offset = index * 3;
+                stemXs[offset] = eventTimes[index];
+                stemXs[offset + 1] = eventTimes[index];
+                stemXs[offset + 2] = double.NaN;
+                stemYs[offset] = 0;
+                stemYs[offset + 1] = ctSeconds[index];
+                stemYs[offset + 2] = double.NaN;
+            }
+
+            ScottPlot.Plottables.Scatter ctPlot = HomeTrendPlot.Plot.Add.Scatter(stemXs, stemYs);
+            ctPlot.LegendText = "逐条整组 CT";
+            ctPlot.Color = ScottPlot.Color.FromHex("#4D8DFF");
+            ctPlot.LineWidth = points.Count > 5_000 ? 0.6f : 1f;
+            ctPlot.MarkerSize = 0;
+
+            double rangeStart = from.ToOADate();
+            double rangeEnd = toExclusive.ToOADate();
+            double[] cumulativeXs = new double[points.Count * 2 + 2];
+            double[] cumulativeYs = new double[points.Count * 2 + 2];
+            cumulativeXs[0] = rangeStart;
+            cumulativeYs[0] = 0;
+            for (int index = 0; index < points.Count; index++)
+            {
+                int offset = index * 2 + 1;
+                cumulativeXs[offset] = eventTimes[index];
+                cumulativeYs[offset] = index;
+                cumulativeXs[offset + 1] = eventTimes[index];
+                cumulativeYs[offset + 1] = index + 1;
+            }
+            cumulativeXs[^1] = rangeEnd;
+            cumulativeYs[^1] = points.Count;
+
+            ScottPlot.Plottables.Scatter cumulativePlot = HomeTrendPlot.Plot.Add.Scatter(cumulativeXs, cumulativeYs);
+            cumulativePlot.Axes.YAxis = HomeTrendPlot.Plot.Axes.Right;
+            cumulativePlot.LegendText = "累计产量";
+            cumulativePlot.Color = ScottPlot.Color.FromHex("#F59E0B");
+            cumulativePlot.LineWidth = 2;
+            cumulativePlot.MarkerSize = 0;
+
+            HomeTrendPlot.Plot.Axes.Bottom.TickGenerator = new ScottPlot.TickGenerators.DateTimeAutomatic();
+            HomeTrendPlot.Plot.Axes.Bottom.TickLabelStyle.Rotation = -25;
+            HomeTrendPlot.Plot.Axes.SetLimitsX(rangeStart, rangeEnd);
+            HomeTrendPlot.Plot.Axes.Left.Min = 0;
+            HomeTrendPlot.Plot.Axes.Left.Max = Math.Max(1, ctSeconds.DefaultIfEmpty(0).Max() * 1.15);
+            HomeTrendPlot.Plot.Axes.Right.Min = 0;
+            HomeTrendPlot.Plot.Axes.Right.Max = Math.Max(1, points.Count * 1.05);
+        }
+
         private void UpdateStatusText()
         {
             HomeStatusText.Text = _homeStatus;
@@ -709,15 +988,34 @@ namespace ProjectARVRPro
 
         private void RecordDataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            DependencyObject? element = RecordDataGrid.InputHitTest(e.GetPosition(RecordDataGrid)) as DependencyObject;
+            SelectDataGridRowAtPointer(RecordDataGrid, e);
+        }
+
+        private void FlowDataGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!SelectDataGridRowAtPointer(FlowDataGrid, e))
+                FlowDataGrid.SelectedItems.Clear();
+        }
+
+        private static bool SelectDataGridRowAtPointer(DataGrid dataGrid, MouseButtonEventArgs e)
+        {
+            DependencyObject? element = dataGrid.InputHitTest(e.GetPosition(dataGrid)) as DependencyObject;
             while (element != null && element is not DataGridRow)
                 element = VisualTreeHelper.GetParent(element);
 
             if (element is DataGridRow row && !row.IsSelected)
             {
-                RecordDataGrid.SelectedItems.Clear();
+                dataGrid.SelectedItems.Clear();
                 row.IsSelected = true;
             }
+
+            return element is DataGridRow;
+        }
+
+        private void FlowDataGrid_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (SelectedFlowRow == null)
+                e.Handled = true;
         }
 
         private async void RecordDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -730,13 +1028,108 @@ namespace ProjectARVRPro
             await ViewSelectedItemsAsync();
         }
 
+        private async void FlowDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Left || !IsEventInsideDataGridRow(e.OriginalSource as DependencyObject))
+                return;
+
+            await ViewSelectedFlowResultAsync();
+        }
+
+        private static bool IsEventInsideDataGridRow(DependencyObject? element)
+        {
+            while (element != null && element is not DataGridRow)
+                element = VisualTreeHelper.GetParent(element);
+            return element is DataGridRow;
+        }
+
+        private async void FlowViewTestResult_Click(object sender, RoutedEventArgs e)
+        {
+            await ViewSelectedFlowResultAsync();
+        }
+
+        private async Task ViewSelectedFlowResultAsync()
+        {
+            (FlowExecutionRecordRow Row, string Json)? loaded = await LoadSelectedFlowResultAsync();
+            if (!loaded.HasValue)
+                return;
+
+            new TestResultViewWindow(loaded.Value.Json)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog();
+        }
+
+        private async void FlowViewJson_Click(object sender, RoutedEventArgs e)
+        {
+            (FlowExecutionRecordRow Row, string Json)? loaded = await LoadSelectedFlowResultAsync();
+            if (!loaded.HasValue)
+                return;
+
+            var control = new AvalonEditControll();
+            control.SetJsonText(loaded.Value.Json);
+            new Window
+            {
+                Title = $"ViewResultJson - {loaded.Value.Row.Model} - {loaded.Value.Row.SN}",
+                Owner = this,
+                Content = control,
+                Width = 900,
+                Height = 650,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog();
+        }
+
+        private async Task<(FlowExecutionRecordRow Row, string Json)?> LoadSelectedFlowResultAsync()
+        {
+            FlowExecutionRecordRow? row = SelectedFlowRow;
+            if (row == null)
+            {
+                MessageBox.Show(this, "请先选择一条流程记录。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                return null;
+            }
+
+            try
+            {
+                var result = new ProjectARVRReuslt
+                {
+                    Id = row.Id,
+                    SN = row.SN,
+                    Model = row.Model,
+                    CreateTime = row.CreateTime,
+                    RunTime = row.RunTimeMilliseconds,
+                    Result = row.Result,
+                };
+                string? viewResultJson = await Task.Run(() => _statisticsStore.LoadViewResultJson(result));
+                if (string.IsNullOrEmpty(viewResultJson))
+                {
+                    MessageBox.Show(this, "该流程没有可查看的测试结果。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return null;
+                }
+
+                return (row, viewResultJson);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"读取流程测试结果失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
+            }
+        }
+
         private async Task ViewSelectedItemsAsync()
         {
             ObjectiveTestResultRecord? record = await LoadSelectedRecordAsync();
             if (record == null)
                 return;
 
-            new TestResultViewWindow(record.ObjectiveTestResultJson)
+            string json = record.ObjectiveTestResultJson ?? string.Empty;
+            if (json.Length == 0)
+            {
+                MessageBox.Show(this, "ObjectiveTestResult 为空。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            new TestResultViewWindow(json)
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
@@ -749,8 +1142,15 @@ namespace ProjectARVRPro
             if (record == null)
                 return;
 
+            string json = record.ObjectiveTestResultJson ?? string.Empty;
+            if (json.Length == 0)
+            {
+                MessageBox.Show(this, "ObjectiveTestResult 为空。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             var control = new AvalonEditControll();
-            control.SetJsonText(record.ObjectiveTestResultJson);
+            control.SetJsonText(json);
             new Window
             {
                 Title = $"ObjectiveTestResult Json - {record.SN}",
@@ -789,7 +1189,7 @@ namespace ProjectARVRPro
                     return;
                 }
 
-                ObjectiveTestResult? result = JsonConvert.DeserializeObject<ObjectiveTestResult>(record.ObjectiveTestResultJson);
+                ObjectiveTestResult? result = JsonConvert.DeserializeObject<ObjectiveTestResult>(record.ObjectiveTestResultJson ?? string.Empty);
                 if (result == null)
                 {
                     MessageBox.Show(this, "ObjectiveTestResult 为空，无法导出。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -1079,7 +1479,7 @@ namespace ProjectARVRPro
                 _ => DetailList.SelectedItem is ProjectARVRReuslt item && item.BatchId > 0);
             var viewTestResultCommand = new RelayCommand(
                 _ => ViewTestResult(),
-                _ => DetailList.SelectedItem is ProjectARVRReuslt item && !string.IsNullOrEmpty(item.ViewResultJson));
+                _ => DetailList.SelectedItem is ProjectARVRReuslt item && (item.Id > 0 || !string.IsNullOrEmpty(item.ViewResultJson)));
 
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(new MenuItem { Command = ApplicationCommands.Copy, Header = "复制" });
@@ -1158,10 +1558,17 @@ namespace ProjectARVRPro
 
         private void ViewTestResult()
         {
-            if (DetailList.SelectedItem is not ProjectARVRReuslt item || string.IsNullOrEmpty(item.ViewResultJson))
+            if (DetailList.SelectedItem is not ProjectARVRReuslt item)
                 return;
 
-            new TestResultViewWindow(item.ViewResultJson)
+            string? viewResultJson = _statisticsStore.LoadViewResultJson(item);
+            if (string.IsNullOrEmpty(viewResultJson))
+            {
+                MessageBox.Show(this, "ViewResultJson为空", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            new TestResultViewWindow(viewResultJson)
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
@@ -1170,12 +1577,18 @@ namespace ProjectARVRPro
 
         protected override void OnClosed(EventArgs e)
         {
+            _windowLoaded = false;
+            SaveSearchState();
             ++_homeLoadVersion;
             ++_recordLoadVersion;
+            ++_flowLoadVersion;
             ++_snIndexVersion;
+            ++_flowNameIndexVersion;
             ++_detailLoadVersion;
             if (_snEditor != null)
                 _snEditor.TextChanged -= SnEditor_TextChanged;
+            if (_flowNameEditor != null)
+                _flowNameEditor.TextChanged -= FlowNameEditor_TextChanged;
             RecordDataGrid.SelectionChanged -= RecordDataGrid_SelectionChanged;
             _recordRows.CollectionChanged -= RecordRows_CollectionChanged;
             bool wasCurrent = _copilotContextSession?.IsCurrent == true;

@@ -61,7 +61,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 try
                 {
                     SqlSugarClient sharedDb = CreateDb();
-                    FlowDiagnosticsSchemaMigrator.EnsureSchema(sharedDb);
+                    FlowDiagnosticsMaintenanceGate.RunExclusive(
+                        () => FlowDiagnosticsSchemaMigrator.EnsureSchema(sharedDb));
 
                     DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
                         "sqlite.flownoderecords",
@@ -112,7 +113,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         log.Error("FlowNodeRecord写入队列没有可用数据库连接。");
                         continue;
                     }
-                    action(sharedDb);
+                    FlowDiagnosticsMaintenanceGate.RunExclusive(
+                        () => action(sharedDb));
                 }
                 catch (Exception ex)
                 {
@@ -206,7 +208,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         /// <summary>
         /// Queues one complete node-start write. The returned task completes
-        /// after both legacy rows have been persisted by the single database
+        /// after both node and message rows have been persisted by the single database
         /// writer, so callers do not need a second Task.Run queue.
         /// </summary>
         internal static Task<int> InsertNodeExecutionAsync(
@@ -225,34 +227,40 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 TaskCreationOptions.RunContinuationsAsynchronously);
             _writeQueue.Add(db =>
             {
-                int recordId;
+                int recordId = -1;
                 try
                 {
+                    db.Ado.BeginTran();
                     recordId = db.Insertable(startRecord)
                         .ExecuteReturnIdentity();
                     record.Id = recordId;
-                }
-                catch (Exception ex)
-                {
-                    log.Error("插入FlowNodeRecord失败", ex);
-                    completion.TrySetResult(-1);
-                    return;
-                }
 
-                if (message != null && startMessage != null)
-                {
-                    try
+                    if (message != null && startMessage != null)
                     {
                         startMessage.NodeRecordId = recordId;
                         int messageId = db.Insertable(startMessage)
                             .ExecuteReturnIdentity();
+                        FlowNodeMessagePayloadStorage.SaveSendPayload(
+                            db,
+                            messageId,
+                            startMessage.SendPayload);
                         message.Id = messageId;
                         message.NodeRecordId = recordId;
                     }
-                    catch (Exception ex)
+
+                    db.Ado.CommitTran();
+                }
+                catch (Exception ex)
+                {
+                    TryRollback(db);
+                    record.Id = 0;
+                    if (message != null)
                     {
-                        log.Error("插入FlowNodeMessage失败", ex);
+                        message.Id = 0;
+                        message.NodeRecordId = null;
                     }
+                    log.Error("插入流程节点及消息记录失败", ex);
+                    recordId = -1;
                 }
 
                 completion.TrySetResult(recordId);
@@ -261,7 +269,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         }
 
         /// <summary>
-        /// Queues the final legacy node record and message update as one
+        /// Queues the final node record and message update as one
         /// ordered database command.
         /// </summary>
         internal static Task UpdateNodeExecutionAsync(
@@ -278,23 +286,24 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 try
                 {
+                    db.Ado.BeginTran();
                     db.Updateable(record).ExecuteCommand();
+
+                    if (message != null)
+                    {
+                        db.Updateable(message).ExecuteCommand();
+                        FlowNodeMessagePayloadStorage.SaveRecvPayload(
+                            db,
+                            message.Id,
+                            message.RecvPayload);
+                    }
+
+                    db.Ado.CommitTran();
                 }
                 catch (Exception ex)
                 {
-                    log.Error("更新FlowNodeRecord失败", ex);
-                }
-
-                if (message != null)
-                {
-                    try
-                    {
-                        db.Updateable(message).ExecuteCommand();
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error("更新FlowNodeMessage失败", ex);
-                    }
+                    TryRollback(db);
+                    log.Error("更新流程节点及消息记录失败", ex);
                 }
                 completion.TrySetResult(true);
             });
@@ -904,12 +913,19 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 try
                 {
+                    db.Ado.BeginTran();
                     int id = db.Insertable(item).ExecuteReturnIdentity();
+                    FlowNodeMessagePayloadStorage.SaveSendPayload(
+                        db,
+                        id,
+                        item.SendPayload);
+                    db.Ado.CommitTran();
                     item.Id = id;
                     tcs.TrySetResult(id);
                 }
                 catch (Exception ex)
                 {
+                    TryRollback(db);
                     log.Error("插入FlowNodeMessage失败", ex);
                     tcs.TrySetResult(-1);
                 }
@@ -933,10 +949,17 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 try
                 {
+                    db.Ado.BeginTran();
                     db.Updateable(item).ExecuteCommand();
+                    FlowNodeMessagePayloadStorage.SaveRecvPayload(
+                        db,
+                        item.Id,
+                        item.RecvPayload);
+                    db.Ado.CommitTran();
                 }
                 catch (Exception ex)
                 {
+                    TryRollback(db);
                     log.Error("更新FlowNodeMessage失败", ex);
                 }
             });
@@ -1058,6 +1081,25 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
+        internal static FlowNodeMessagePayloads GetMessagePayloads(int messageId)
+        {
+            if (messageId <= 0 || !EnsureInitialized())
+                return default;
+
+            try
+            {
+                using var db = CreateReadDb();
+                return FlowNodeMessagePayloadStorage.LoadPayloads(db, messageId);
+            }
+            catch (Exception ex)
+            {
+                log.Error($"读取流程消息 {messageId} 的压缩载荷失败", ex);
+                throw new InvalidOperationException(
+                    $"流程消息 {messageId} 的 Payload 读取或解压失败。",
+                    ex);
+            }
+        }
+
         internal static FlowAnalysisDeleteResult DeleteAnalysisForNodeId(string nodeId)
         {
             if (string.IsNullOrWhiteSpace(nodeId))
@@ -1152,6 +1194,18 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     log.Error("删除FlowNodeMessage失败", ex);
                 }
             });
+        }
+
+        private static void TryRollback(SqlSugarClient db)
+        {
+            try
+            {
+                db.Ado.RollbackTran();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("回滚流程诊断数据库事务失败", ex);
+            }
         }
     }
 }

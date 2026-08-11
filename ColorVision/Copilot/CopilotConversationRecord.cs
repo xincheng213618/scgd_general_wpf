@@ -278,6 +278,9 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(HasGoal));
                     OnPropertyChanged(nameof(GoalDisplayText));
                     OnPropertyChanged(nameof(GoalToolTip));
+                    OnPropertyChanged(nameof(GoalProgressText));
+                    OnPropertyChanged(nameof(CanPauseGoal));
+                    OnPropertyChanged(nameof(CanResumeGoal));
                 }
             }
         }
@@ -294,6 +297,7 @@ namespace ColorVision.Copilot
                 {
                     OnPropertyChanged(nameof(GoalDisplayText));
                     OnPropertyChanged(nameof(GoalToolTip));
+                    OnPropertyChanged(nameof(GoalProgressText));
                 }
             }
         }
@@ -338,6 +342,7 @@ namespace ColorVision.Copilot
                 effectiveStartedAt = RecencyAt;
 
             var changed = false;
+            changed |= ReplaceAgentActivity(null);
             if (RecencyAt != effectiveStartedAt)
             {
                 RecencyAt = effectiveStartedAt;

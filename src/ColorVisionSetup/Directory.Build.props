@@ -1,5 +1,8 @@
 <Project>
   <PropertyGroup>
+	<Platforms>x64</Platforms>
+	<Platform Condition="'$(Platform)' == '' or '$(Platform)' == 'AnyCPU'">x64</Platform>
+	<PlatformTarget>x64</PlatformTarget>
     <Copyright>Copyright (C) 2023 ColorVision Corporation</Copyright>
     <AssemblyCompany>ColorVision Corp.</AssemblyCompany>
     <AssemblyCopyright>Copyright (C) 2023 ColorVision Corporation</AssemblyCopyright>
@@ -8,4 +11,7 @@
     <Company>ColorVision</Company>
     <NeutralLanguage>zh-CN</NeutralLanguage>
   </PropertyGroup>
+  <ItemGroup>
+	<ColorVisionPlatformRole Include="X64" />
+  </ItemGroup>
 </Project>

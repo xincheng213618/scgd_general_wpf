@@ -189,8 +189,28 @@ namespace ColorVision.Copilot
         public string AgentTaskSummaryToolTip => $"Agent 任务 · {AgentTaskModeLabel} · {AgentTaskProgressLabel}{Environment.NewLine}{AgentStopReasonLabel}";
 
         [JsonIgnore]
+        public bool HasAppliedCodexSandboxMode => !IsUser
+            && RequestMode != CopilotAgentMode.Chat
+            && AppliedCodexSandboxMode.Length > 0;
+
+        [JsonIgnore]
+        public string AppliedCodexSandboxModeLabel
+        {
+            get
+            {
+                if (string.Equals(AppliedCodexSandboxMode, "unspecified", StringComparison.Ordinal))
+                    return CopilotCodexSandboxModeSelection.GetEffectiveLabel(CopilotCodexSandboxMode.Unspecified);
+
+                return CopilotCodexSandboxModeSelection.TryParse(AppliedCodexSandboxMode, out var mode)
+                    ? CopilotCodexSandboxModeSelection.GetEffectiveLabel(mode)
+                    : string.Empty;
+            }
+        }
+
+        [JsonIgnore]
         public bool HasAgentRunMetrics => !IsUser
-            && (AgentRunBudget.ProviderCalls > 0
+            && (HasAppliedCodexSandboxMode
+                || AgentRunBudget.ProviderCalls > 0
                 || AgentRunBudget.ToolCalls > 0
                 || AgentRunBudget.ConsumedTokens > 0
                 || AgentRunBudget.PeakEstimatedInputTokens > 0
@@ -250,6 +270,14 @@ namespace ColorVision.Copilot
                     || delegatedToolSurface.AvailableToolDefinitionCharacters > 0
                     || delegatedToolSurface.HarnessInstructionCharacters > 0;
                 var builder = new StringBuilder();
+                if (HasAppliedCodexSandboxMode)
+                {
+                    builder.Append("Codex 沙箱约束：")
+                        .Append(AppliedCodexSandboxMode)
+                        .Append(" · ")
+                        .Append(AppliedCodexSandboxModeLabel)
+                        .AppendLine();
+                }
                 builder.Append("模型调用：").Append(totalProviderCalls);
                 if (delegatedProviderCalls > 0)
                 {

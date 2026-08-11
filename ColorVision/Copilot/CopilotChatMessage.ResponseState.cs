@@ -23,12 +23,49 @@ namespace ColorVision.Copilot
                     OnPropertyChanged(nameof(AgentTaskProgressLabel));
                     OnPropertyChanged(nameof(AgentStopReasonLabel));
                     OnPropertyChanged(nameof(AgentTaskSummaryToolTip));
+                    OnAgentRunMetricsChanged();
                 }
             }
         }
         private CopilotAgentMode _requestMode = CopilotAgentMode.Chat;
 
         public bool ShouldSerializeRequestMode() => RequestMode != CopilotAgentMode.Chat;
+
+        public string AppliedCodexSandboxMode
+        {
+            get => _appliedCodexSandboxMode;
+            set
+            {
+                var normalized = NormalizeAppliedCodexSandboxMode(value);
+                if (SetProperty(ref _appliedCodexSandboxMode, normalized))
+                    OnAgentRunMetricsChanged();
+            }
+        }
+        private string _appliedCodexSandboxMode = string.Empty;
+
+        public bool ShouldSerializeAppliedCodexSandboxMode() =>
+            !IsUser
+            && RequestMode != CopilotAgentMode.Chat
+            && AppliedCodexSandboxMode.Length > 0;
+
+        internal void CaptureAppliedCodexSandboxMode(CopilotCodexSandboxMode mode)
+        {
+            AppliedCodexSandboxMode = mode switch
+            {
+                CopilotCodexSandboxMode.ReadOnly => "read-only",
+                CopilotCodexSandboxMode.WorkspaceWrite => "workspace-write",
+                CopilotCodexSandboxMode.DangerFullAccess => "danger-full-access",
+                _ => "unspecified",
+            };
+        }
+
+        private static string NormalizeAppliedCodexSandboxMode(string? value)
+        {
+            var normalized = (value ?? string.Empty).Trim().ToLowerInvariant();
+            return normalized is "unspecified" or "read-only" or "workspace-write" or "danger-full-access"
+                ? normalized
+                : string.Empty;
+        }
 
         public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; set; }
 

@@ -70,6 +70,19 @@ namespace ColorVision.Copilot
             return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);
         }
 
+        internal static CopilotAgentEventPresentationResult ApplyCodeReviewSnapshotUpdated(
+            CopilotChatMessage assistantMessage,
+            CopilotCodeReviewSnapshot snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(assistantMessage);
+            ArgumentNullException.ThrowIfNull(snapshot);
+            if (!snapshot.IsStructurallyValid())
+                throw new ArgumentException("Code review snapshot is invalid.", nameof(snapshot));
+
+            assistantMessage.ApplyCodeReviewSnapshot(snapshot);
+            return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);
+        }
+
         public static CopilotAgentEventPresentationResult ApplyAgentEvent(CopilotChatMessage assistantMessage, CopilotAgentEvent agentEvent)
         {
             ArgumentNullException.ThrowIfNull(assistantMessage);

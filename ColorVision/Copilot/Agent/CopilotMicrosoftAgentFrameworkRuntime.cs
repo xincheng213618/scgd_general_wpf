@@ -50,6 +50,9 @@ namespace ColorVision.Copilot
         private bool _isFrameworkApprovalPending;
         private readonly object _steeringSyncRoot = new();
         private ActiveSteeringContext? _activeSteeringContext;
+        private readonly CopilotCodexStopHookExecutor _stopHookExecutor;
+        private readonly Func<string?, IReadOnlyList<CopilotBackgroundShellCommandSnapshot>>
+            _backgroundShellCommandSnapshotProvider;
 
         public CopilotMicrosoftAgentFrameworkRuntime(CopilotToolRegistry toolRegistry, CopilotAgentContextBuilder contextBuilder)
             : this(toolRegistry, contextBuilder, new CopilotToolExecutor(), CreateChatClient)
@@ -108,9 +111,38 @@ namespace ColorVision.Copilot
             Func<CopilotProfileConfig, IChatClient> chatClientFactory,
             ICopilotExternalToolProvider externalToolProvider,
             CopilotCapabilityCatalog? capabilityCatalog,
+            CopilotCodexStopHookExecutor stopHookExecutor,
+            Func<string?, IReadOnlyList<CopilotBackgroundShellCommandSnapshot>>?
+                backgroundShellCommandSnapshotProvider = null)
+            : this(
+                toolRegistry,
+                contextBuilder,
+                toolExecutor,
+                chatClientFactory,
+                externalToolProvider,
+                capabilityCatalog,
+                skillUsageStore: null,
+                automaticApprovalReviewer: new CopilotAutomaticApprovalReviewer(),
+                automaticApprovalOverrideStore: null,
+                stopHookExecutor: stopHookExecutor,
+                backgroundShellCommandSnapshotProvider:
+                    backgroundShellCommandSnapshotProvider)
+        {
+        }
+
+        internal CopilotMicrosoftAgentFrameworkRuntime(
+            CopilotToolRegistry toolRegistry,
+            CopilotAgentContextBuilder contextBuilder,
+            CopilotToolExecutor toolExecutor,
+            Func<CopilotProfileConfig, IChatClient> chatClientFactory,
+            ICopilotExternalToolProvider externalToolProvider,
+            CopilotCapabilityCatalog? capabilityCatalog,
             CopilotAgentSkillUsageStore? skillUsageStore,
             ICopilotAutomaticApprovalReviewer automaticApprovalReviewer,
-            CopilotAutomaticApprovalOverrideStore? automaticApprovalOverrideStore = null)
+            CopilotAutomaticApprovalOverrideStore? automaticApprovalOverrideStore = null,
+            CopilotCodexStopHookExecutor? stopHookExecutor = null,
+            Func<string?, IReadOnlyList<CopilotBackgroundShellCommandSnapshot>>?
+                backgroundShellCommandSnapshotProvider = null)
         {
             _toolRegistry = toolRegistry ?? throw new ArgumentNullException(nameof(toolRegistry));
             _contextBuilder = contextBuilder ?? throw new ArgumentNullException(nameof(contextBuilder));
@@ -124,6 +156,11 @@ namespace ColorVision.Copilot
                 ?? throw new ArgumentNullException(nameof(automaticApprovalReviewer));
             _automaticApprovalOverrideStore = automaticApprovalOverrideStore
                 ?? CopilotAutomaticApprovalOverrideStore.Shared;
+            _stopHookExecutor = stopHookExecutor ?? new CopilotCodexStopHookExecutor();
+            _backgroundShellCommandSnapshotProvider =
+                backgroundShellCommandSnapshotProvider
+                ?? (conversationId => CopilotBackgroundShellCommandRegistry.Shared
+                    .GetSnapshots(conversationId));
         }
 
 
@@ -355,7 +392,7 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static ICopilotTool[] MergeAvailableTools(
+        internal static ICopilotTool[] MergeAvailableTools(
             CopilotAgentRequest request,
             IReadOnlyList<ICopilotTool> builtInTools,
             IReadOnlyList<ICopilotTool> externalTools,
@@ -379,6 +416,8 @@ namespace ColorVision.Copilot
                     continue;
                 if (!names.Add(tool.Name))
                 {
+                    if (request.CodexErrorOnToolCollisions)
+                        throw new InvalidOperationException($"duplicate tool: functions.{tool.Name.Trim()}");
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"MCP client skipped duplicate tool name {tool.Name}."));
                     continue;
                 }

@@ -11,7 +11,7 @@ Engine 的核心链路是：启动初始化 -> 资源与设备服务 -> MQTT/远
 | 启动初始化 | `MySqlInitializer`、`MqttInitializer`、`ServiceInitializer`、`TemplateInitializer`、`RCInitializer` | 初始化顺序、异常日志、数据库、MQTT、模板扫描 |
 | 设备服务生成 | `ServiceManager`、`TypeService`、`DeviceServiceFactoryRegistry`、`DeviceService` | `ServiceTypes`、资源 `type/pid/is_delete/tenant_id`、工厂注册、`DeviceServices` |
 | MQTT 与远程命令 | `MQTTControl`、`MQTTConfig`、`Services/Devices/*/MQTT*.cs`、`MQTTRCService` | 连接状态、topic、返回码/结果 ID、文件下载、服务端日志 |
-| 模板加载 | `TemplateContorl.cs`、`TemplateModel.cs`、`Jsons/**/Template*.cs`、`TemplatePoi.cs` | 类是否扫描、无参构造、`Code`、`TemplateDicId`、模板参数 |
+| 模板加载 | `TemplateControl.cs`、`TemplateModel.cs`、`Jsons/**/Template*.cs`、`TemplatePoi.cs` | 类是否扫描、无参构造、`Code`、`TemplateDicId`、模板参数 |
 | Flow 模板保存与导入 | `TemplateFlow`、`FlowPackageHelper`、`ModMasterModel`、`ModDetailModel`、`SysResourceModel` | `DataBase64`、关联模板、重名处理、资源 `ValueA/Value` |
 | Flow 执行 | `FlowEngineControl`、`BaseStartNode`、`CVEndNode`、`FlowControl` | Start 节点、节点状态、设备 token、`FlowCompleted` |
 | 节点业务绑定 | `Templates/Flow/Nodes/`、`NodeConfiguratorRegistry`、各类 `*NodeConfig.cs` | 配置器、设备/模板名、参数恢复、是否只改了 `FlowEngineLib` |
@@ -71,7 +71,6 @@ Engine 的核心链路是：启动初始化 -> 资源与设备服务 -> MQTT/远
 
 ## 风险点
 
-- `TemplateControl` 类所在文件名是 `TemplateContorl.cs`，不要误判为两套模板控制器。
 - `TypeService` 枚举存在不代表 UI 一定显示；资源字典、过滤条件和工厂注册都要满足。
 - 模板名和 `TemplateDicId` 冲突会影响 Flow 保存、导入和执行。
 - `FlowEngineLib` 是执行骨架，Engine 的 `TemplateFlow` 和 `NodeConfigurator` 才是业务绑定层。

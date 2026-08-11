@@ -5,13 +5,13 @@
 #include <opencv2/opencv.hpp>
 
 /// <summary>
-/// Ħ�����˳�
+/// 摩尔纹滤除
 /// </summary>
 /// <param name="image"></param>
 /// <returns></returns>
 cv::Mat removeMoire(const cv::Mat& image);
 /// <summary>
-/// Ѱ�ҷ���ȥ
+/// 寻找发光去
 /// </summary>
 /// <param name="src"></param>
 /// <param name="largestRect"></param>
@@ -21,7 +21,7 @@ int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold);
 int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int threshold);
 
 /// <summary>
-/// ������
+/// 灯珠检测
 /// </summary>
 /// <param name="image"></param>
 /// <param name="rows"></param>
@@ -29,7 +29,7 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
 void LampBeadDetection(cv::Mat image, int rows, int cols);
 
 /// <summary>
-/// ����poi��ע��
+/// 绘制poi关注点
 /// </summary>
 /// <param name="img"></param>
 /// <param name="dst"></param>
@@ -41,7 +41,7 @@ void LampBeadDetection(cv::Mat image, int rows, int cols);
 int drawPoiImage(cv::Mat& img, cv::Mat& dst, int radius, int* points, int pointCount,int thickness);
 
 /// <summary>
-/// α��ɫ
+/// 伪彩色
 /// </summary>
 /// <param name="image"></param>
 /// <param name="min1"></param>
@@ -57,20 +57,20 @@ int pseudoColorTo(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::
 int pseudoColorAutoRangeTo(const cv::Mat& image, cv::Mat& dst, uint min1, uint max1, cv::ColormapTypes types, uint dataMin, uint dataMax);
 
 /// <summary>
-///�Զ��Աȶȵ���
+///自动对比度调整
 /// </summary>
 /// <param name="src"></param>
 /// <param name="dst"></param>
 void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst);
 
 /// <summary>
-/// �Զ���ɫ����
+/// 自动颜色调整
 /// </summary>
 /// <param name="image"></param>
 void automaticColorAdjustment(cv::Mat& image);
 
 /// <summary>
-/// �Զ�ɫ������
+/// 自动色调调整
 /// </summary>
 /// <param name="image"></param>
 /// <param name="clip_hist_percent"></param>
@@ -86,16 +86,16 @@ cv::Mat fusion(const std::vector<cv::Mat>& imgs, int STEP);
 
 int extractChannel(cv::Mat& input, cv::Mat& dst, int channel);
 
-//��ƽ��
+//白平衡
 void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, double redBalance, double greenBalance, double blueBalance);
 
 /// <summary>
-///�Զ�ɫ��
+///自动色阶
 /// </summary>
 void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, double gamma);
 
 /// <summary>
-/// �������ȺͶԱȶ�
+/// 调整亮度和对比度
 /// </summary>
 /// <param name="src"></param>
 /// <param name="dst"></param>

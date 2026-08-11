@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using System.Web.Script.Serialization;
 
 namespace ProjectARVRPro.Process.Distortion
 {
@@ -29,6 +30,7 @@ namespace ProjectARVRPro.Process.Distortion
         /// <summary>
         /// 光学畸变便捷属性。为了保持无第三方依赖，demo 不使用 Newtonsoft.Json 特性，实际 JSON 字段仍为 Optic_Distortion。
         /// </summary>
+        [ScriptIgnore]
         public ObjectiveTestItem OpticDistortion
         {
             get { return Optic_Distortion; }

@@ -13,10 +13,11 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import quote, urlencode
 
-from flask import Blueprint, jsonify, redirect, request, send_from_directory, session
+from flask import Blueprint, jsonify, redirect, request, send_from_directory
 from werkzeug.wsgi import get_input_stream
 
 from db_cache import CacheManager
+from routes.request_context import current_request_context
 from transfer_files import (
     TRANSFER_FILE_SCOPE,
     TransferFileError,
@@ -49,31 +50,11 @@ def _get_ctx() -> TransferRouteContext:
 
 
 def _actor_type() -> str:
-    if session.get("authenticated") or session.get("user_authenticated"):
-        return "user"
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        return "api_key"
-    auth = request.authorization
-    if auth and auth.type and auth.type.lower() == "basic":
-        return "user"
-    return "system"
+    return current_request_context().actor.actor_type or "system"
 
 
 def _actor_id() -> str:
-    if session.get("username"):
-        return session["username"]
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        token = auth_header[7:].strip()
-        parts = token.split("_", 2)
-        if len(parts) >= 2:
-            return f"key:{parts[1]}"
-        return "key:unknown"
-    auth = request.authorization
-    if auth and auth.username:
-        return auth.username
-    return "system"
+    return current_request_context().actor.actor_id or "system"
 
 
 def _json_error(message: str, status_code: int):

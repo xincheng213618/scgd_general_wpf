@@ -2147,16 +2147,6 @@ public partial class STNodeEditor : System.Windows.Controls.Control, IDisposable
 		OnDrawAlert(m_drawing_tools, m_rect_alert, m_str_alert, foreColor, backColor, m_al);
 	}
 
-	internal void InternalAddSelectedNode(STNode node)
-	{
-		node.IsSelected = true;
-		lock (m_hs_node_selected)
-		{
-			m_hs_node_selected.Add(node);
-		}
-		UpdateCanvasDragModeFromSelection();
-	}
-
 	internal void InternalRemoveSelectedNode(STNode node)
 	{
 		node.IsSelected = false;

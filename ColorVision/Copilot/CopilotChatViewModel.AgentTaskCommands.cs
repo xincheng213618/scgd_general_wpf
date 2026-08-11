@@ -44,8 +44,9 @@ namespace ColorVision.Copilot
                 CopilotCapabilityCatalog.Shared.GetSnapshot(
                     _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled
-                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled)).IsAvailable;
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                    _currentCodexConfigOptions.ConfiguredCommandHooks)).IsAvailable;
         }
 
         private void ContinueAgentTasks(CopilotChatMessage? message)
@@ -67,8 +68,9 @@ namespace ColorVision.Copilot
                 CopilotCapabilityCatalog.Shared.GetSnapshot(
                     _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled
-                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled));
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                    _currentCodexConfigOptions.ConfiguredCommandHooks));
             if (!decision.IsAvailable)
                 return false;
 
@@ -466,8 +468,9 @@ namespace ColorVision.Copilot
                 CopilotCapabilityCatalog.Shared.GetSnapshot(
                     _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled
-                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled)).IsAvailable;
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                    _currentCodexConfigOptions.ConfiguredCommandHooks)).IsAvailable;
         }
 
         private void ResumeAgentTask(CopilotAgentTaskSummary? task)
@@ -513,14 +516,19 @@ namespace ColorVision.Copilot
                 PublishSelectedTaskEventJournal();
             PersistState();
             RefreshAgentTasks();
+            RefreshConversationActivityView();
             return true;
         }
 
-        private CopilotAgentRecoveryRequest? ConsumePendingAgentRecoveryRequest()
+        private CopilotAgentRecoveryRequest? CapturePendingAgentRecoveryRequest()
         {
-            var recovery = _pendingAgentRecoveryRequest;
-            _pendingAgentRecoveryRequest = null;
-            return recovery;
+            return _pendingAgentRecoveryRequest;
+        }
+
+        private void CommitPendingAgentRecoveryRequest(CopilotAgentRecoveryRequest? captured)
+        {
+            if (ReferenceEquals(_pendingAgentRecoveryRequest, captured))
+                _pendingAgentRecoveryRequest = null;
         }
     }
 }

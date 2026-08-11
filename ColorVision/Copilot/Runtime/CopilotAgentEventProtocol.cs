@@ -21,6 +21,8 @@ namespace ColorVision.Copilot
             UserQuestion = 1 << 10,
             SteeringMessages = 1 << 11,
             ProviderRetry = 1 << 12,
+            ProviderConnectionRecovery = 1 << 13,
+            ModelToolResult = 1 << 14,
         }
 
         public static void Validate(CopilotAgentEvent agentEvent)
@@ -29,6 +31,7 @@ namespace ColorVision.Copilot
             if (!Enum.IsDefined(agentEvent.Type))
                 throw new InvalidOperationException("Copilot Agent emitted an unsupported event type.");
             if (agentEvent.Text == null
+                || agentEvent.ModelToolResult == null
                 || agentEvent.ToolExecutionHookRuns == null
                 || agentEvent.SteeringMessages == null)
             {
@@ -44,6 +47,8 @@ namespace ColorVision.Copilot
             }
 
             ValidateText(agentEvent);
+            if (agentEvent.ModelToolResult.Length > CopilotCodeReviewSnapshot.MaximumModelObservationCharacters)
+                throw new InvalidOperationException("Copilot Agent model tool result exceeds its protocol limit.");
             ValidateCorrelatedPayload(agentEvent);
         }
 
@@ -76,6 +81,10 @@ namespace ColorVision.Copilot
                 payload |= PayloadKind.SteeringMessages;
             if (agentEvent.ProviderRetry != null)
                 payload |= PayloadKind.ProviderRetry;
+            if (agentEvent.ProviderConnectionRecovery != null)
+                payload |= PayloadKind.ProviderConnectionRecovery;
+            if (agentEvent.ModelToolResult.Length > 0)
+                payload |= PayloadKind.ModelToolResult;
             return payload;
         }
 
@@ -87,7 +96,7 @@ namespace ColorVision.Copilot
             {
                 CopilotAgentEventType.Status => (text, text),
                 CopilotAgentEventType.RuntimeDiagnostic =>
-                    (text, text | PayloadKind.ProviderRetry),
+                    (text, text | PayloadKind.ProviderRetry | PayloadKind.ProviderConnectionRecovery),
                 CopilotAgentEventType.BudgetUpdated =>
                     (PayloadKind.Budget, PayloadKind.Budget),
                 CopilotAgentEventType.ToolStarted =>
@@ -101,7 +110,7 @@ namespace ColorVision.Copilot
                 CopilotAgentEventType.ToolResult =>
                     (PayloadKind.ToolResult | PayloadKind.ToolExecution,
                         text | PayloadKind.ToolResult | PayloadKind.ToolExecution
-                            | PayloadKind.ToolExecutionHookRuns),
+                            | PayloadKind.ToolExecutionHookRuns | PayloadKind.ModelToolResult),
                 CopilotAgentEventType.ReasoningDelta or CopilotAgentEventType.AnswerDelta =>
                     (text, text),
                 CopilotAgentEventType.AnswerReset
@@ -152,6 +161,13 @@ namespace ColorVision.Copilot
 
         private static void ValidateCorrelatedPayload(CopilotAgentEvent agentEvent)
         {
+            if (agentEvent.ProviderRetry != null
+                && agentEvent.ProviderConnectionRecovery != null)
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent runtime diagnostic cannot describe both a bounded retry and connection recovery.");
+            }
+
             switch (agentEvent.Type)
             {
                 case CopilotAgentEventType.ToolStarted:
@@ -167,6 +183,11 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.RuntimeDiagnostic when agentEvent.ProviderRetry != null:
                     CopilotProviderRetryProtocol.ValidateDiagnostic(
                         agentEvent.ProviderRetry,
+                        agentEvent.Text);
+                    break;
+                case CopilotAgentEventType.RuntimeDiagnostic when agentEvent.ProviderConnectionRecovery != null:
+                    CopilotProviderConnectionRecoveryProtocol.ValidateDiagnostic(
+                        agentEvent.ProviderConnectionRecovery,
                         agentEvent.Text);
                     break;
                 case CopilotAgentEventType.SteeringDelivered:

@@ -168,6 +168,10 @@ namespace ColorVision.Copilot
                 if (outcome.Result.DelegatedRunUsage != null)
                     _recordDelegatedRunUsage?.Invoke(outcome.Result.DelegatedRunUsage);
 
+                await EnqueueHookAdditionalContextAsync(
+                    outcome.ModelAdditionalContexts,
+                    cancellationToken).ConfigureAwait(false);
+
                 return FormatToolResult(outcome);
             }
 

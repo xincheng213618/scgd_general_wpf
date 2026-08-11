@@ -26,11 +26,13 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
-        private void ConfirmationStore_ActionsChanged(object? sender, EventArgs e)
+        private void ApprovalCoordinator_PendingActionsInvalidated(object? sender, EventArgs e)
         {
+            if (Volatile.Read(ref _disposeState) != 0)
+                return;
             if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
             {
-                Application.Current.Dispatcher.BeginInvoke(new Action(() => ConfirmationStore_ActionsChanged(sender, e)));
+                Application.Current.Dispatcher.BeginInvoke(new Action(() => ApprovalCoordinator_PendingActionsInvalidated(sender, e)));
                 return;
             }
 
@@ -39,7 +41,7 @@ namespace ColorVision.Copilot
 
         private void RefreshMcpStatus()
         {
-            _hasPendingMcpActions = CopilotMcpConfirmationStore.Instance.PendingCount > 0;
+            _hasPendingMcpActions = _approvalCoordinator.TotalPendingCount > 0;
             _hasRecentMcpFailures = CopilotMcpAuditLogger.GetRecentEntries(20)
                 .Any(entry => !entry.Success && DateTimeOffset.UtcNow - entry.TimestampUtc <= RecentMcpFailureWindow);
 
@@ -55,13 +57,9 @@ namespace ColorVision.Copilot
 
         private void RefreshPendingActions()
         {
-            _pendingActions.Clear();
-            foreach (var action in CopilotMcpConfirmationStore.Instance.GetPendingActionsForConversation(
-                SelectedConversation?.Id))
-            {
-                _pendingActions.Add(action);
-            }
+            _approvalCoordinator.RefreshPendingActions(SelectedConversation?.Id);
 
+            RefreshConversationRunStatuses();
             OnPropertyChanged(nameof(HasPendingActions));
             OnPropertyChanged(nameof(HasPendingActionPanel));
             OnPropertyChanged(nameof(PendingActionPanelTitle));
@@ -150,16 +148,15 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var reviewContext = CreateConfirmationReviewContext();
+            var approvalScope = CaptureApprovalScope();
             if (action!.ExecuteOnApproval)
             {
                 var cancellation = BeginAuxiliaryOperation();
                 try
                 {
-                    var approvalResult = await CopilotMcpConfirmationDecision.ApproveAsync(
-                        CopilotMcpConfirmationStore.Instance,
+                    var approvalResult = await _approvalCoordinator.ApproveAsync(
                         action,
-                        reviewContext,
+                        approvalScope,
                         cancellation.Token);
                     SetPendingActionFeedback(approvalResult.Message);
                 }
@@ -170,10 +167,9 @@ namespace ColorVision.Copilot
             }
             else
             {
-                var approvalResult = await CopilotMcpConfirmationDecision.ApproveAsync(
-                    CopilotMcpConfirmationStore.Instance,
+                var approvalResult = await _approvalCoordinator.ApproveAsync(
                     action,
-                    reviewContext,
+                    approvalScope,
                     CancellationToken.None);
                 SetPendingActionFeedback(approvalResult.Message);
             }
@@ -318,44 +314,20 @@ namespace ColorVision.Copilot
 
         private bool CanReviewPendingAction(ConfirmableAction? action)
         {
-            if (action?.Status != ConfirmableActionStatus.Pending
-                || !action.CanReviewFromConversation(SelectedConversation?.Id))
-            {
-                return false;
-            }
-
-            var requestContext = action.RequestContext;
-            if (requestContext.SourceKind == CopilotApprovalSourceKind.InAppAgent)
-            {
-                var activeRun = ActiveHostedRun;
-                if (activeRun == null
-                    || !string.Equals(activeRun.ConversationId, requestContext.ConversationId, StringComparison.Ordinal)
-                    || !string.Equals(activeRun.Id, requestContext.TaskId, StringComparison.Ordinal))
-                {
-                    return false;
-                }
-            }
-
-            var currentWorkspacePath = CaptureHostedTurnSnapshot(
-                SelectedConversation?.Attachments ?? Enumerable.Empty<CopilotAttachmentItem>()).SolutionDirectoryPath;
-            return requestContext.SourceKind is CopilotApprovalSourceKind.InAppAgent or CopilotApprovalSourceKind.ExternalMcp
-                ? AccessWorkspacePathsMatch(requestContext.WorkspacePath, currentWorkspacePath)
-                : WorkspacePathsMatch(requestContext.WorkspacePath, currentWorkspacePath);
+            return action != null
+                && _approvalCoordinator.Evaluate(action, CaptureApprovalScope()).CanReview;
         }
 
-        private CopilotConfirmationReviewContext CreateConfirmationReviewContext()
+        private CopilotApprovalScope CaptureApprovalScope()
         {
             var conversation = SelectedConversation;
             var activeRun = ActiveHostedRun;
-            var taskId = activeRun?.IsAgent == true
-                && string.Equals(activeRun.ConversationId, conversation?.Id, StringComparison.Ordinal)
-                ? activeRun?.Id ?? string.Empty
-                : string.Empty;
             var workspacePath = CaptureHostedTurnSnapshot(
                 conversation?.Attachments ?? Enumerable.Empty<CopilotAttachmentItem>()).SolutionDirectoryPath;
-            return new CopilotConfirmationReviewContext(
+            return new CopilotApprovalScope(
                 conversation?.Id ?? string.Empty,
-                taskId,
+                activeRun?.IsAgent == true ? activeRun.ConversationId : string.Empty,
+                activeRun?.IsAgent == true ? activeRun.Id : string.Empty,
                 workspacePath);
         }
 
@@ -411,93 +383,20 @@ namespace ColorVision.Copilot
             CommandManager.InvalidateRequerySuggested();
         }
 
-        private void ConfirmationStore_ActionStatusChanged(object? sender, ConfirmableActionChangedEventArgs e)
+        private void ApprovalCoordinator_ActionTransitioned(
+            object? sender,
+            CopilotApprovalActionTransitionEventArgs e)
         {
+            if (Volatile.Read(ref _disposeState) != 0)
+                return;
             if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
             {
-                Application.Current.Dispatcher.BeginInvoke(new Action(() => ConfirmationStore_ActionStatusChanged(sender, e)));
+                Application.Current.Dispatcher.BeginInvoke(new Action(() => ApprovalCoordinator_ActionTransitioned(sender, e)));
                 return;
             }
 
-            var action = e.Action;
-            if (string.IsNullOrWhiteSpace(action.AgentCallId))
-                return;
-
-            var owningConversations = action.RequestContext.SourceKind == CopilotApprovalSourceKind.InAppAgent
-                && !string.IsNullOrWhiteSpace(action.RequestContext.ConversationId)
-                ? Conversations.Where(conversation => string.Equals(
-                    conversation.Id,
-                    action.RequestContext.ConversationId,
-                    StringComparison.Ordinal))
-                : Conversations;
-            var changed = false;
-            foreach (var message in owningConversations.SelectMany(conversation => conversation.Messages))
-            {
-                var trace = message.AgentTraceEntries.FirstOrDefault(entry =>
-                    string.Equals(entry.CallId, action.AgentCallId, StringComparison.Ordinal)
-                    || (!string.IsNullOrWhiteSpace(entry.ApprovalActionId)
-                        && string.Equals(entry.ApprovalActionId, action.ActionId, StringComparison.OrdinalIgnoreCase)));
-                if (trace == null)
-                    continue;
-
-                switch (action.Status)
-                {
-                    case ConfirmableActionStatus.Pending:
-                    case ConfirmableActionStatus.Approved:
-                        trace.State = CopilotToolExecutionState.AwaitingApproval;
-                        break;
-                    case ConfirmableActionStatus.Executing:
-                        trace.State = CopilotToolExecutionState.Running;
-                        message.MarkThinkingStarted();
-                        message.IsExecutionInProgress = true;
-                        break;
-                    case ConfirmableActionStatus.Rejected:
-                        trace.State = CopilotToolExecutionState.Denied;
-                        trace.CompletedAtUtc = DateTimeOffset.UtcNow;
-                        trace.ErrorMessage = "The user rejected this approval request.";
-                        message.IsExecutionInProgress = false;
-                        message.MarkThinkingCompleted();
-                        break;
-                    case ConfirmableActionStatus.Expired:
-                        trace.State = CopilotToolExecutionState.TimedOut;
-                        trace.CompletedAtUtc = DateTimeOffset.UtcNow;
-                        trace.ErrorMessage = "The approval request expired before a decision was recorded.";
-                        message.IsExecutionInProgress = false;
-                        message.MarkThinkingCompleted();
-                        break;
-                    case ConfirmableActionStatus.Cancelled:
-                        trace.State = CopilotToolExecutionState.Cancelled;
-                        trace.CompletedAtUtc = action.CompletedAt ?? DateTimeOffset.UtcNow;
-                        trace.ErrorMessage = CopilotAgentTraceEntry.Sanitize(action.ExecutionResultText);
-                        message.IsExecutionInProgress = false;
-                        message.MarkThinkingCompleted();
-                        break;
-                    case ConfirmableActionStatus.Executed:
-                        if (action.ResumesAgentOnApproval)
-                            break;
-                        trace.State = action.ExecutionSucceeded == true
-                            ? CopilotToolExecutionState.Completed
-                            : CopilotToolExecutionState.Failed;
-                        trace.CompletedAtUtc = action.CompletedAt ?? DateTimeOffset.UtcNow;
-                        trace.ResultSummary = action.ExecutionSucceeded == true
-                            ? CopilotAgentTraceEntry.Sanitize(action.ExecutionResultText)
-                            : trace.ResultSummary;
-                        trace.ErrorMessage = action.ExecutionSucceeded == false
-                            ? CopilotAgentTraceEntry.Sanitize(action.ExecutionResultText)
-                            : string.Empty;
-                        message.IsExecutionInProgress = false;
-                        message.MarkThinkingCompleted();
-                        break;
-                }
-
-                trace.ApprovalActionId = action.ActionId;
-                if (trace.CompletedAtUtc != null && trace.StartedAtUtc != default)
-                    trace.DurationMs = Math.Max(trace.DurationMs, (long)Math.Max(0, (trace.CompletedAtUtc.Value - trace.StartedAtUtc).TotalMilliseconds));
-                message.RebuildExecutionContentFromAgentTrace();
-                changed = true;
-            }
-
-            if (changed)
+            var result = _approvalCoordinator.ApplyTransition(e.Transition);
+            if (result.StateChanged)
                 PersistState();
         }
 
@@ -510,11 +409,8 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            CopilotMcpConfirmationStore.Instance.Reject(
-                action!.ActionId,
-                CreateConfirmationReviewContext(),
-                out var message);
-            SetPendingActionFeedback($"{action.ActionId}: {message}");
+            var result = _approvalCoordinator.Reject(action, CaptureApprovalScope());
+            SetPendingActionFeedback($"{action!.ActionId}: {result.Message}");
             RefreshPendingActions();
         }
 

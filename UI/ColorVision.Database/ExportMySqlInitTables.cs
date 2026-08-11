@@ -5,6 +5,7 @@ using ColorVision.UI.Menus;
 using log4net;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -50,29 +51,43 @@ namespace ColorVision.Database
         {
             _stopwatch = Stopwatch.StartNew();
             await Task.Delay(0); // 模拟异步操作
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            IEnumerable<Type> tableTypes = AssemblyHandler.GetInstance().GetAssemblies()
+                .SelectMany(assembly => assembly.GetTypes())
+                .Where(type => typeof(IInitTables).IsAssignableFrom(type) && !type.IsAbstract);
+            InitTableTypes(tableTypes, type =>
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitTables).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    try
-                    {
-                        log.Info($"正在初始化表：{type.Name}");
-                        using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                        DB.CodeFirst.InitTables(type);
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error(ex);
-                    }
-
-                }
-
-            }
-
-
+                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                DB.CodeFirst.InitTables(type);
+            });
 
             _stopwatch.Stop();
             log.Info($"InitTables：{_stopwatch.Elapsed.TotalSeconds} 秒");
+        }
+
+        internal static void InitTableTypes(IEnumerable<Type> tableTypes, Action<Type> initializer)
+        {
+            ArgumentNullException.ThrowIfNull(tableTypes);
+            ArgumentNullException.ThrowIfNull(initializer);
+
+            List<Exception> failures = new();
+            foreach (Type type in tableTypes)
+            {
+                try
+                {
+                    log.Info($"正在初始化表：{type.Name}");
+                    initializer(type);
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"初始化表 {type.FullName} 失败", ex);
+                    failures.Add(new InvalidOperationException($"初始化表 {type.FullName} 失败。", ex));
+                }
+            }
+
+            if (failures.Count > 0)
+            {
+                throw new AggregateException("一个或多个 MySQL 表初始化失败。", failures);
+            }
         }
         
     }

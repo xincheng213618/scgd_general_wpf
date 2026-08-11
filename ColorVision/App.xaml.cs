@@ -2,6 +2,7 @@
 using ColorVision.Copilot.Mcp;
 using ColorVision.Core;
 using ColorVision.Properties;
+using ColorVision.Recovery;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.LanRemote;
@@ -10,6 +11,7 @@ using ColorVision.UI.Languages;
 using ColorVision.UI.Plugins;
 using ColorVision.UI.Shell;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -49,8 +51,10 @@ namespace ColorVision
     /// </summary>
     public partial class App : Application
     {
+        private static readonly TimeSpan SocketShutdownTimeout = TimeSpan.FromSeconds(2);
         private bool _isSessionEnding;
         private bool _isSingleInstanceReplacement;
+        private bool _startupWizardWasShown;
         private ModuleCatalog? _moduleCatalog;
         private bool _ownsSingleInstanceMutex;
         private SingleInstanceRuntimeCoordinator? _singleInstanceRuntimeCoordinator;
@@ -122,6 +126,10 @@ namespace ColorVision
                 }
             }
 
+            // Record the attempt before configuration and built-in modules initialize. The recovery
+            // UI is shown later, after the minimum theme/language services are available.
+            bool startupWasHealthy = StartupRegistryChecker.CheckAndSet();
+
             _moduleCatalog = new ModuleCatalog(AssemblyHandler.GetInstance());
             BuiltInModules.Register(_moduleCatalog);
             ConfigHandler configHandler = ConfigHandler.GetInstance();
@@ -141,6 +149,7 @@ namespace ColorVision
             {
                 FileExportResult exportResult = FileProcessorFactory.GetInstance().TryExportFile(exportFile);
                 ProgramTimer.StopAndReport();
+                StartupRegistryChecker.CompleteForRecoveryRestart();
                 if (exportResult.Succeeded)
                 {
                     return;
@@ -164,6 +173,7 @@ namespace ColorVision
                 {
                     ConfigHandler.GetInstance().IsAutoSave = true;
                     ProgramTimer.StopAndReport();
+                    StartupRegistryChecker.CompleteForRecoveryRestart();
                     if (!openResult.Succeeded)
                     {
                         MessageBox.Show(string.IsNullOrWhiteSpace(openResult.ErrorMessage)
@@ -207,6 +217,7 @@ namespace ColorVision
 
                 if (Update.ExitUpdateHandoff.TryDeferLaunchForActiveUpdate(AppDomain.CurrentDomain.BaseDirectory))
                 {
+                    StartupRegistryChecker.CompleteForRecoveryRestart();
                     Environment.Exit(0);
                     return;
                 }
@@ -262,23 +273,38 @@ namespace ColorVision
 
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
 
-            bool shouldLoadPlugins = false;
+            bool shouldLoadPlugins = true;
+            IReadOnlyList<string> skipOncePluginKeys = Array.Empty<string>();
 
-            if (StartupRegistryChecker.CheckAndSet())
+            if (!startupWasHealthy)
             {
-                shouldLoadPlugins = true;
-            }
-            else
-            {
-                var result = MessageBox.Show(ColorVision.Properties.Resources.PluginLoadFailedPrompt, "ColorVision", MessageBoxButton.YesNo);
-                if (result == MessageBoxResult.No)
+                StartupRecoveryResult recoveryResult = ShowStartupRecoveryWindow();
+                if (Dispatcher.HasShutdownStarted
+                    || Dispatcher.HasShutdownFinished
+                    || recoveryResult.Action == StartupRecoveryAction.Exit)
                 {
-                    shouldLoadPlugins = true;
+                    if (!Dispatcher.HasShutdownStarted && !Dispatcher.HasShutdownFinished)
+                        Shutdown();
+                    return;
                 }
+
+                shouldLoadPlugins = recoveryResult.Action != StartupRecoveryAction.SkipAllOnce;
+                skipOncePluginKeys = recoveryResult.SelectedPluginKeys;
             }
 
             if (shouldLoadPlugins)
-                PluginLoader.LoadPlugins(_moduleCatalog);
+            {
+                StartupRegistryChecker.MarkStage("LoadingPlugins");
+                PluginLoader.LoadPlugins(
+                    _moduleCatalog,
+                    skipOncePluginKeys,
+                    pluginKey => StartupRegistryChecker.MarkStage("LoadingPlugin", pluginKey));
+                StartupRegistryChecker.MarkStage("PluginsLoaded");
+            }
+            else
+            {
+                StartupRegistryChecker.MarkStage("PluginsSkipped");
+            }
 
             _moduleCatalog.Seal();
 
@@ -294,6 +320,7 @@ namespace ColorVision
 
             if (!WizardWindowConfig.Instance.WizardCompletionKey)
             {
+                _startupWizardWasShown = true;
                 WizardWindow wizardWindow = new WizardWindow();
                 wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 wizardWindow.Show();
@@ -303,6 +330,28 @@ namespace ColorVision
                 ///正常进入窗口
                 StartWindow StartWindow = new StartWindow();
                 StartWindow.Show();
+            }
+        }
+
+        private StartupRecoveryResult ShowStartupRecoveryWindow()
+        {
+            System.Windows.ShutdownMode previousShutdownMode = ShutdownMode;
+            Window? previousMainWindow = MainWindow;
+            ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
+
+            try
+            {
+                using StartupRecoveryWindow recoveryWindow = new(StartupRegistryChecker.PreviousFailure);
+                recoveryWindow.ShowDialog();
+                return recoveryWindow.Result;
+            }
+            finally
+            {
+                if (!Dispatcher.HasShutdownStarted && !Dispatcher.HasShutdownFinished)
+                {
+                    MainWindow = previousMainWindow;
+                    ShutdownMode = previousShutdownMode;
+                }
             }
         }
 
@@ -456,24 +505,70 @@ namespace ColorVision
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             Stopwatch exitStopwatch = Stopwatch.StartNew();
-            log.Info("Application exit cleanup started.");
-            Rbac.ApplicationUsageTracker.StopSession();
-            log.Info(ColorVision.Properties.Resources.ApplicationExit);
-            bool updateIsActive = Update.ExitUpdateHandoff.IsUpdateActive(AppDomain.CurrentDomain.BaseDirectory);
-            bool replacementIsActive = _isSingleInstanceReplacement
-                || Update.ApplicationUpdateProcessCoordinator.IsSingleInstanceReplacementRequested(Environment.ProcessId);
-            if (!_isSessionEnding && !replacementIsActive && !updateIsActive)
-                Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();
-            else if (replacementIsActive)
-                log.Info("Skipped exit-time prefetched update because a newer ColorVision instance is taking over.");
-            else if (updateIsActive)
-                log.Info("Skipped exit-time prefetched update because an external update is already active.");
-            CopilotMcpServer.Instance.Stop();
-            LanRemoteControlService.Instance.Stop();
-            //正常结束时清除标志位
-            StartupRegistryChecker.Clear();
-            NativeLogBridge.Shutdown();
-            log.Info($"Application exit cleanup completed in {exitStopwatch.ElapsedMilliseconds} ms.");
+            ApplicationExitHandoffState? handoffState = null;
+            Action<string, Exception> reportCleanupFailure =
+                (step, exception) => log.Error($"Application exit cleanup step '{step}' failed.", exception);
+            ApplicationExitCleanup.Run(
+                [
+                    new("application exit cleanup start log", () => log.Info("Application exit cleanup started.")),
+                    new("application usage session", Rbac.ApplicationUsageTracker.StopSession),
+                    new("application exit log", () => log.Info(ColorVision.Properties.Resources.ApplicationExit)),
+                    new("update, socket, and prefetched update handoff", () =>
+                    {
+                        handoffState = ApplicationExitCleanup.RunSocketBeforePrefetchedUpdate(
+                            _isSessionEnding,
+                            () => new ApplicationExitHandoffState(
+                                Update.ExitUpdateHandoff.IsUpdateActive(AppDomain.CurrentDomain.BaseDirectory),
+                                _isSingleInstanceReplacement
+                                    || Update.ApplicationUpdateProcessCoordinator.IsSingleInstanceReplacementRequested(Environment.ProcessId)),
+                            () =>
+                            {
+                                bool completed = SocketProtocol.SocketManager.ShutdownExisting(SocketShutdownTimeout);
+                                if (!completed)
+                                    log.Warn("Socket shutdown did not fully complete within the application exit budget.");
+                                return completed;
+                            },
+                            () => _ = Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit(),
+                            reportCleanupFailure);
+
+                        if (handoffState == null)
+                        {
+                            log.Warn("Skipped exit-time prefetched update because the exit handoff state could not be resolved.");
+                        }
+                        else if (handoffState.Value.ReplacementIsActive)
+                        {
+                            log.Info("Skipped exit-time prefetched update because a newer ColorVision instance is taking over.");
+                        }
+                        else if (handoffState.Value.UpdateIsActive)
+                        {
+                            log.Info("Skipped exit-time prefetched update because an external update is already active.");
+                        }
+                    }),
+                    new("Copilot MCP server", () => CopilotMcpServer.Instance.Stop()),
+                    new("LAN remote control", () => LanRemoteControlService.Instance.Stop()),
+                    new("startup recovery registry", () =>
+                    {
+                        if (handoffState == null)
+                        {
+                            log.Warn("Preserved startup recovery state because the exit handoff state could not be resolved.");
+                            return;
+                        }
+
+                        // 外部更新或恢复已经完成交接时，不应在重启后再次进入恢复窗口。
+                        // 其他启动阶段退出则保留现场，供下次启动继续恢复。
+                        if (_isSessionEnding
+                            || handoffState.Value.ReplacementIsActive
+                            || handoffState.Value.UpdateIsActive
+                            || (_startupWizardWasShown && WizardWindowConfig.Instance.WizardCompletionKey))
+                            StartupRegistryChecker.CompleteForRecoveryRestart();
+                        else
+                            StartupRegistryChecker.OnApplicationExit();
+                    }),
+                    new("native log bridge", NativeLogBridge.Shutdown),
+                    new("application exit cleanup completion log", () =>
+                        log.Info($"Application exit cleanup completed in {exitStopwatch.ElapsedMilliseconds} ms."))
+                ],
+                reportCleanupFailure);
             //Environment.Exit(0);
         }
     }

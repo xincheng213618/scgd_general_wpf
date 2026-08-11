@@ -28,6 +28,8 @@ namespace ColorVision.Copilot
         CopilotChatFinishKind FinishKind,
         string FinishReason)
     {
+        public string ImagePreparationNotice { get; init; } = string.Empty;
+
         public bool IsIncomplete => FinishKind is CopilotChatFinishKind.LengthLimit
             or CopilotChatFinishKind.ContentFiltered
             or CopilotChatFinishKind.ToolRequested
@@ -44,6 +46,8 @@ namespace ColorVision.Copilot
         public string Content => Reply.Content;
 
         public CopilotTokenUsage Usage => Reply.Usage;
+
+        public string ImagePreparationNotice => StreamResult.ImagePreparationNotice;
     }
 
     internal sealed class CopilotProviderPayloadException : InvalidOperationException

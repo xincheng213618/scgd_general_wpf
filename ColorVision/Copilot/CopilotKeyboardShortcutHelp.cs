@@ -18,6 +18,7 @@ namespace ColorVision.Copilot
             new("全局", "Alt+P", "打开模型 Profile 选择器"),
             new("全局", "Ctrl+N", "开始新会话"),
             new("全局", "Ctrl+G", "聚焦跨会话搜索"),
+            new("全局", "Ctrl+Alt+U", "打开或关闭活动视图"),
             new("全局", "Ctrl+F", "查找当前会话中的可见内容"),
             new("全局", "Ctrl+O", "复制最近一条已完成回答"),
             new("全局", "Ctrl+T", "收起或展开 Agent 任务明细"),

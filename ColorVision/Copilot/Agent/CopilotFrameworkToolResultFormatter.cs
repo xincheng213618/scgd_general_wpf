@@ -45,7 +45,7 @@ namespace ColorVision.Copilot
         public static string Format(CopilotToolExecutionOutcome outcome, int? toolOutputTokenLimit)
         {
             ArgumentNullException.ThrowIfNull(outcome);
-            var result = outcome.Result ?? new CopilotToolResult();
+            var result = outcome.EffectiveModelResult;
             if (result.SuppressModelOutput)
                 return string.Empty;
             var execution = outcome.Execution ?? new CopilotToolExecutionInfo();
@@ -160,7 +160,7 @@ namespace ColorVision.Copilot
             int originalContentCharacters,
             bool contentTruncated)
         {
-            var result = outcome.Result ?? new CopilotToolResult();
+            var result = outcome.EffectiveModelResult;
             var execution = outcome.Execution ?? new CopilotToolExecutionInfo();
             var payload = new Dictionary<string, object?>
             {
@@ -251,7 +251,7 @@ namespace ColorVision.Copilot
                 (Tool: 32, ApprovalAction: 32, IncludeAttempt: false, IncludeCounts: false),
             })
             {
-                var result = outcome.Result ?? new CopilotToolResult();
+                var result = outcome.EffectiveModelResult;
                 var execution = outcome.Execution ?? new CopilotToolExecutionInfo();
                 var payload = new Dictionary<string, object?>
                 {
@@ -296,7 +296,7 @@ namespace ColorVision.Copilot
             }
 
             var successFallback = JsonSerializer.Serialize(
-                new Dictionary<string, object?> { ["success"] = outcome.Result?.Success == true },
+                new Dictionary<string, object?> { ["success"] = outcome.EffectiveModelResult.Success },
                 JsonOptions);
             return budget.Fits(successFallback) ? successFallback : "{}";
         }

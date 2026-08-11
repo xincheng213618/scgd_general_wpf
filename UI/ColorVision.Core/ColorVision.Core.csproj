@@ -6,7 +6,6 @@
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<VersionPrefix>1.5.7.0</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
@@ -36,7 +35,7 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</Content>
-		<Content Include="..\..\x64\Release\opencv_cuda.dll" Link="runtimes\win-x64\native\opencv_cuda.dll" Condition="Exists('..\..\x64\Release\opencv_cuda.dll')">
+		<Content Include="..\..\x64\Release\opencv_cuda.dll" Link="runtimes\win-x64\native\opencv_cuda.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>

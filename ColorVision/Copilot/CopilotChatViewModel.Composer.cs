@@ -49,9 +49,6 @@ namespace ColorVision.Copilot
             PersistConfig();
             RefreshSelectedProfileReasoningState();
         }
-        private string _inputText = string.Empty;
-        private CopilotAgentSkillReference? _pendingAgentSkillReference;
-
         public string InputPlaceholder => IsPromptHistorySearchOpen
             ? $"搜索{PromptHistorySearchScopeLabel}的可见历史请求"
             : IsEditingMessage
@@ -117,7 +114,7 @@ namespace ColorVision.Copilot
 
         public string LocalCommandSuggestionHeader => ResolveLocalCommandComposerContext()
             == CopilotLocalCommandComposerContext.ActiveRun
-                ? "运行中可用命令或 Skill"
+                ? "运行中命令或 Skill · 不可立即执行的命令可排到下一轮"
                 : "/ 或 $ 命令";
 
         public bool HasLocalCommandSuggestions => LocalCommandSuggestions.Count > 0;
@@ -168,37 +165,19 @@ namespace ColorVision.Copilot
             return !command.RequiresMoreInputAfterCompletion;
         }
 
-        private void RefreshPendingAgentSkillReference(string text)
+        private void SetPendingAgentSkillReference(CopilotAgentSkillReference? reference)
         {
-            if (_pendingAgentSkillReference != null
-                && !_pendingAgentSkillReference.IsExplicitlyInvokedBy(text))
-            {
-                SetPendingAgentSkillReference(null);
-            }
-        }
-
-        private void SetPendingAgentSkillReference(
-            CopilotAgentSkillReference? reference,
-            bool synchronizeDraft = true)
-        {
-            var normalized = reference?.IsStructurallyValid() == true
-                ? reference.CreateSnapshot()
-                : null;
-            if (SkillReferencesEqual(_pendingAgentSkillReference, normalized))
+            if (!_composerSession.SetAgentSkillReference(reference))
                 return;
 
-            _pendingAgentSkillReference = normalized;
-            if (!synchronizeDraft || _selectedConversation == null)
-                return;
-
-            _selectedConversation.DraftAgentSkillReference = normalized?.CreateSnapshot();
-            _statePersistenceCoordinator.RequestSave();
+            SynchronizeSelectedConversationComposerDraft();
         }
 
         private CopilotAgentSkillReference? ResolvePendingAgentSkillReference(string text)
         {
-            return _pendingAgentSkillReference?.IsExplicitlyInvokedBy(text) == true
-                ? _pendingAgentSkillReference.CreateSnapshot()
+            var reference = _composerSession.AgentSkillReference;
+            return reference?.IsExplicitlyInvokedBy(text) == true
+                ? reference
                 : null;
         }
 

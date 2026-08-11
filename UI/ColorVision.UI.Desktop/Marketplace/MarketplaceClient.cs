@@ -25,6 +25,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceClient));
         private static readonly ConcurrentDictionary<string, Lazy<Task<ImageSource?>>> _iconCache = new(StringComparer.OrdinalIgnoreCase);
         private static readonly ConcurrentDictionary<string, CachedPluginDetail> _pluginDetailCache = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, CachedPluginDetail> _pluginUpdateMetadataCache = new(StringComparer.OrdinalIgnoreCase);
         private static readonly TimeSpan UpdateRequestTimeout = TimeSpan.FromSeconds(6);
 
         private static MarketplaceClient? _instance;
@@ -35,6 +36,7 @@ namespace ColorVision.UI.Desktop.Marketplace
         }
 
         private readonly SemaphoreSlim _batchVersionSemaphore = new(1, 1);
+        private readonly PluginUpdateMetadataRequestCache _pluginUpdateMetadataRequests = new();
         private string? _batchVersionCacheKey;
         private Dictionary<string, string?>? _batchVersionCache;
 
@@ -125,6 +127,66 @@ namespace ColorVision.UI.Desktop.Marketplace
                 }
 
                 log.Debug($"GetPluginDetailAsync failed for {pluginId}: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<MarketplacePluginDetail?> GetPluginUpdateMetadataAsync(
+            string pluginId,
+            bool forceRefresh = false,
+            CancellationToken cancellationToken = default)
+        {
+            string baseUrl = BaseUrl;
+            if (string.IsNullOrEmpty(baseUrl)) return null;
+
+            string requestKey = $"{baseUrl}\n{pluginId}";
+            Task<MarketplacePluginDetail?> request = _pluginUpdateMetadataRequests.GetOrCreate(
+                requestKey,
+                () => FetchPluginUpdateMetadataAsync(baseUrl, pluginId),
+                out bool reused);
+            if (reused)
+                log.Info($"Reusing the plugin update metadata request already in progress for {pluginId}.");
+
+            return await request.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        private static async Task<MarketplacePluginDetail?> FetchPluginUpdateMetadataAsync(string baseUrl, string pluginId)
+        {
+            try
+            {
+                using CancellationTokenSource timeoutSource = new(UpdateRequestTimeout);
+                string url = $"{baseUrl}/api/plugins/{Uri.EscapeDataString(pluginId)}?view=update";
+                using HttpResponseMessage response = await UpdateHttpClientProvider.GetClient().GetAsync(url, timeoutSource.Token).ConfigureAwait(false);
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                    return null;
+
+                response.EnsureSuccessStatusCode();
+                string json = await response.Content.ReadAsStringAsync(timeoutSource.Token).ConfigureAwait(false);
+                MarketplacePluginDetail? detail = JsonConvert.DeserializeObject<MarketplacePluginDetail>(json);
+                if (detail != null)
+                    _pluginUpdateMetadataCache[pluginId] = new CachedPluginDetail(detail);
+                return detail;
+            }
+            catch (OperationCanceledException)
+            {
+                if (TryGetCachedPluginUpdateMetadata(pluginId, out MarketplacePluginDetail? staleDetail))
+                {
+                    log.Warn($"Plugin update metadata request timed out for {pluginId}; using the last successful response.");
+                    return staleDetail;
+                }
+
+                log.Warn($"Plugin update metadata request timed out for {pluginId} after {UpdateRequestTimeout.TotalSeconds:0} seconds.");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                if (TryGetCachedPluginUpdateMetadata(pluginId, out MarketplacePluginDetail? staleDetail))
+                {
+                    log.Warn($"Plugin update metadata request failed for {pluginId}; using the last successful response: {ex.Message}");
+                    return staleDetail;
+                }
+
+                log.Debug($"Plugin update metadata request failed for {pluginId}: {ex.Message}");
                 return null;
             }
         }
@@ -382,6 +444,45 @@ namespace ColorVision.UI.Desktop.Marketplace
 
             detail = null;
             return false;
+        }
+
+        private static bool TryGetCachedPluginUpdateMetadata(string pluginId, out MarketplacePluginDetail? detail)
+        {
+            if (_pluginUpdateMetadataCache.TryGetValue(pluginId, out CachedPluginDetail? cached))
+            {
+                detail = cached.Detail;
+                return true;
+            }
+
+            detail = null;
+            return false;
+        }
+
+        private sealed class PluginUpdateMetadataRequestCache
+        {
+            private readonly object _lock = new();
+            private readonly Dictionary<string, Task<MarketplacePluginDetail?>> _requests = new(StringComparer.OrdinalIgnoreCase);
+
+            public Task<MarketplacePluginDetail?> GetOrCreate(
+                string requestKey,
+                Func<Task<MarketplacePluginDetail?>> requestFactory,
+                out bool reused)
+            {
+                lock (_lock)
+                {
+                    if (_requests.TryGetValue(requestKey, out Task<MarketplacePluginDetail?>? request)
+                        && !request.IsCompleted)
+                    {
+                        reused = true;
+                        return request;
+                    }
+
+                    request = requestFactory();
+                    _requests[requestKey] = request;
+                    reused = false;
+                    return request;
+                }
+            }
         }
 
         private sealed record CachedPluginDetail(MarketplacePluginDetail Detail);

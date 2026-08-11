@@ -47,6 +47,7 @@ namespace ColorVision.Engine.Services.PhyCameras
     public class PhyCamera : ServiceBase,ITreeViewItem, IUploadMsg
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PhyCamera));
+        private readonly CalibrationUploadRunner _calibrationUploadRunner = new();
 
         public ConfigPhyCamera Config { get; set; }
 
@@ -117,7 +118,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             CopyConfigCommand = new RelayCommand(a => Common.Clipboard.SetText(Config.ToJsonN()));
             ContentInit();
 
-            UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
+            UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a), a => !_calibrationUploadRunner.IsRunning);
+            _calibrationUploadRunner.RunningStateChanged += (_, _) => RaiseUploadCalibrationCommandCanExecuteChanged();
 
             CalibrationParam.LoadResourceParams(CalibrationParams, SysResourceModel.Id);
 
@@ -148,7 +150,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 window.ShowDialog();
             });
 
-            UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()),a=> AccessControl.Check(PermissionMode.SuperAdministrator));
+            UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()));
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code)));
             CreatResotreCommand = new RelayCommand(a => CreateRestore());
             LoadResotreCommand = new RelayCommand(a => LoadResotre());
@@ -310,18 +312,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                 // 3. 打包压缩为 .cvcal
 
-                // 如果目标文件已存在，先删除
-                if (File.Exists(finalZipPath))
-                {
-                    File.Delete(finalZipPath);
-                }
-
-                await Task.Run(async () => 
-                {
-                    // 核心压缩代码
-                    ZipFile.CreateFromDirectory(workingPath, finalZipPath, CompressionLevel.NoCompression, false);
-                }
-                );
+                await Task.Run(() => PhyCameraRestoreArchive.CreateOrReplace(workingPath, finalZipPath));
 
 
 
@@ -515,15 +506,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 PhyLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();
 
-                if (CameraLicenseModel.DevCaliId != null)
+                if (CameraLicenseModel.DevCaliId is int calibrationId)
                 {
-                    ServiceManager.GetInstance().DeviceServices.Where(a => a.SysResourceModel.Id == CameraLicenseModel.DevCaliId).ToList().ForEach(a =>
-                    {
-                        if (a is DeviceCalibration deviceCalibration)
-                        {
-                            deviceCalibration.RestartRCService();
-                        }
-                    });
+                    DeviceCalibration? deviceCalibration = ServiceManager.Current?.DeviceServices
+                        .OfType<DeviceCalibration>()
+                        .FirstOrDefault(device => device.SysResourceModel.Id == calibrationId);
+                    deviceCalibration?.RestartRCService();
                 }
             }
         }
@@ -537,15 +525,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 CameraLicenseModel.DevCaliId = deviceCalibration.SysResourceModel.Id;
                 PhyLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();
-                if (CameraLicenseModel.DevCameraId != null)
+                if (CameraLicenseModel.DevCameraId is int cameraId)
                 {
-                    ServiceManager.GetInstance().DeviceServices.Where(a => a.SysResourceModel.Id == CameraLicenseModel.DevCameraId).ToList().ForEach(a =>
-                    {
-                        if (a is DeviceCamera deviceCamera)
-                        {
-                            deviceCamera.RestartRCService();
-                        }
-                    });
+                    DeviceCamera? deviceCamera = ServiceManager.Current?.DeviceServices
+                        .OfType<DeviceCamera>()
+                        .FirstOrDefault(device => device.SysResourceModel.Id == cameraId);
+                    deviceCamera?.RestartRCService();
                 }
             }
         }
@@ -991,30 +976,18 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void UploadCalibration(object sender)
         {
-            string DesPath = Path.Combine(Config.FileServerCfg.FileBasePath, Code, "cfg");
-            if (!Directory.Exists(DesPath))
+            if (_calibrationUploadRunner.IsRunning)
             {
-                try
-                {
-                    Directory.CreateDirectory(DesPath);
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                    MessageBox.Show(ex.Message);
-                    return;
-                }
+                ShowCalibrationUploadBusy();
+                return;
             }
 
-
-            UploadList.Clear();
+            string DesPath = Path.Combine(Config.FileServerCfg.FileBasePath, Code, "cfg");
             UploadWindow uploadwindow = new UploadWindow(Properties.Resources.CalibrationFileFilter) { WindowStartupLocation = WindowStartupLocation.CenterScreen };
-            uploadwindow.OnUpload += (s, e) =>
+            uploadwindow.OnUpload += async (s, e) =>
             {
-                UploadMsg uploadMsg = new UploadMsg(this);
-                uploadMsg.Show();
                 string uploadfilepath = e.UploadFilePath;
-                Task.Run(() => UploadData(DesPath, uploadfilepath));
+                await UploadDataAsync(DesPath, uploadfilepath);
             };
             uploadwindow.ShowDialog();
         }
@@ -1025,16 +998,117 @@ namespace ColorVision.Engine.Services.PhyCameras
         public event EventHandler UploadClosed;
         public ObservableCollection<FileUploadInfo> UploadList { get; set; } = new ObservableCollection<FileUploadInfo>();
 
-        public async void UploadData(string DesPath, string UploadFilePath)
+        internal void NotifyUploadClosed()
         {
+            void RaiseUploadClosed()
+            {
+                try
+                {
+                    UploadClosed?.Invoke(this, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("Failed to notify calibration upload completion.", ex);
+                }
+            }
+
+            try
+            {
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher is null || dispatcher.CheckAccess())
+                {
+                    RaiseUploadClosed();
+                }
+                else if (!dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished)
+                {
+                    dispatcher.Invoke(RaiseUploadClosed);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Failed to dispatch calibration upload completion.", ex);
+            }
+        }
+
+        public void UploadData(string DesPath, string UploadFilePath) => _ = UploadDataAsync(DesPath, UploadFilePath);
+
+        public async Task UploadDataAsync(string DesPath, string UploadFilePath)
+        {
+            bool started = await _calibrationUploadRunner.TryRunAsync(async () =>
+            {
+                try
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        UploadList.Clear();
+                        UploadMsg uploadMsg = new UploadMsg(this);
+                        uploadMsg.Show();
+                    });
+                    await Task.Run(() => UploadDataCoreAsync(DesPath, UploadFilePath));
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                    Msg = ex.Message;
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, Properties.Resources.CalibrationFileManagement);
+                    });
+                    NotifyUploadClosed();
+                }
+            });
+
+            if (!started)
+            {
+                ShowCalibrationUploadBusy();
+            }
+        }
+
+        private static void ShowCalibrationUploadBusy()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.AlreadySentPleaseWait, Properties.Resources.CalibrationFileManagement));
+        }
+
+        internal void RaiseUploadCalibrationCommandCanExecuteChanged()
+        {
+            RaiseCanExecuteChangedOnUiThread(() =>
+            {
+                try
+                {
+                    UploadCalibrationCommand.RaiseCanExecuteChanged();
+                }
+                catch (Exception ex)
+                {
+                    log.Error("Failed to update calibration upload command state.", ex);
+                }
+            });
+        }
+
+        internal static void RaiseCanExecuteChangedOnUiThread(Action raiseCanExecuteChanged)
+        {
+            ArgumentNullException.ThrowIfNull(raiseCanExecuteChanged);
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher is null || dispatcher.CheckAccess())
+            {
+                raiseCanExecuteChanged();
+            }
+            else if (!dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished)
+            {
+                dispatcher.Invoke(raiseCanExecuteChanged);
+            }
+        }
+
+        private async Task UploadDataCoreAsync(string DesPath, string UploadFilePath)
+        {
+            Directory.CreateDirectory(DesPath);
             Msg = Properties.Resources.ExtractingFilePleaseWait;
             await Task.Delay(10);
             if (File.Exists(UploadFilePath))
             {
-                string path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ColorVision\\Cache";
-                if (Directory.Exists(path))
-                    Directory.Delete(path, true);
-                Directory.CreateDirectory(path);
+                using CalibrationUploadWorkspace workspace = CalibrationUploadWorkspace.Create();
+                string path = workspace.DirectoryPath;
                 Msg = Properties.Resources.ParsingCalibrationFilePleaseWait;
                 bool sss = ZIPHelper.ExtractToDirectoryWithOverwrite(UploadFilePath, path);
                 if (!sss)
@@ -1042,7 +1116,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     Msg = Properties.Resources.ExtractionFailedMessage;
                     MessageBox.Show(Properties.Resources.ExtractionFailedMessage);
                     await Task.Delay(100);
-                    Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                    NotifyUploadClosed();
                     return;
                 }
 
@@ -1291,7 +1365,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     if (!UploadList.Any(a => a.UploadStatus == UploadStatus.Failed))
                     {
                         await Task.Delay(500);
-                        Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                        NotifyUploadClosed();
                     }
                 }
                 catch(Exception ex)
@@ -1302,8 +1376,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                     Application.Current.Dispatcher.Invoke(() => 
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, Properties.Resources.CalibrationFileManagement);
-                        UploadClosed.Invoke(this, new EventArgs());
                     } );
+                    NotifyUploadClosed();
                     return;
                 }
             }

@@ -10,6 +10,7 @@ namespace ColorVision.Copilot
             IEnumerable<CopilotConversationRecord> conversations,
             string? activeConversationId,
             CopilotHostedRunState? activeState,
+            bool activeNeedsInput,
             IReadOnlyList<string>? queuedConversationIds)
         {
             ArgumentNullException.ThrowIfNull(conversations);
@@ -29,7 +30,7 @@ namespace ColorVision.Copilot
                 if (!string.IsNullOrWhiteSpace(normalizedActiveId)
                     && string.Equals(conversation.Id, normalizedActiveId, StringComparison.Ordinal))
                 {
-                    conversation.AgentRunStatusLabel = FormatActiveState(activeState);
+                    conversation.AgentRunStatusLabel = FormatActiveState(activeState, activeNeedsInput);
                     continue;
                 }
 
@@ -39,10 +40,11 @@ namespace ColorVision.Copilot
             }
         }
 
-        public static string FormatActiveState(CopilotHostedRunState? state)
+        public static string FormatActiveState(CopilotHostedRunState? state, bool needsInput)
         {
             return state switch
             {
+                CopilotHostedRunState.Running when needsInput => "需要输入",
                 CopilotHostedRunState.Running => "运行中",
                 CopilotHostedRunState.PauseRequested => "暂停中",
                 CopilotHostedRunState.CancelRequested => "取消中",

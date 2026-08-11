@@ -4,7 +4,7 @@
     <OutputType>WinExe</OutputType>
     <Nullable>warnings</Nullable>
     <UseWPF>true</UseWPF>
-    <Platforms>AnyCPU;x64</Platforms>
+    <Platforms>x64</Platforms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <UseWindowsForms>True</UseWindowsForms>
     <ApplicationIcon>Assets\Image\ColorVision.ico</ApplicationIcon>
@@ -42,7 +42,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="OpenAI" Version="2.12.0" />
     <!-- Keep this aligned with ScottPlot.WPF 5.0.56; newer SkiaSharp.Views.WPF assets require Windows 10.0.19041 while ColorVision targets windows7.0. -->
-    <PackageReference Include="SkiaSharp" Version="3.119.2" />
+    <PackageReference Include="SkiaSharp" Version="2.88.9" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.10" />
     <PackageReference Include="WpfMath" Version="2.1.0" />
 	</ItemGroup>

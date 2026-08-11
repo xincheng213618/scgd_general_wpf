@@ -29,6 +29,31 @@
     <SolidColorBrush x:Key="TerminalSelectionBrush" Color="#663A8DDE"/>
     <SolidColorBrush x:Key="TerminalUrlBrush" Color="#0969DA"/>
 
+    <!-- Avalon editor: VS-inspired light palette. Syntax colors intentionally differ
+         from the dark palette instead of being mechanically inverted. -->
+    <SolidColorBrush x:Key="EditorBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="EditorForegroundBrush" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="EditorLineNumberBrush" Color="#6E7681"/>
+    <SolidColorBrush x:Key="EditorCaretBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="EditorSelectionBrush" Color="#ADD6FF"/>
+    <SolidColorBrush x:Key="EditorSelectionForegroundBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="EditorCurrentLineBrush" Color="#FFFCE8"/>
+    <Pen x:Key="EditorCurrentLineBorderPen" Brush="#E5E5E5" Thickness="1"/>
+    <SolidColorBrush x:Key="EditorNonPrintableBrush" Color="#8A8A8A"/>
+    <SolidColorBrush x:Key="EditorLinkBrush" Color="#006AB1"/>
+    <SolidColorBrush x:Key="EditorSyntaxCommentBrush" Color="#008000"/>
+    <SolidColorBrush x:Key="EditorSyntaxStringBrush" Color="#A31515"/>
+    <SolidColorBrush x:Key="EditorSyntaxNumberBrush" Color="#098658"/>
+    <SolidColorBrush x:Key="EditorSyntaxKeywordBrush" Color="#0000FF"/>
+    <SolidColorBrush x:Key="EditorSyntaxTypeBrush" Color="#267F99"/>
+    <SolidColorBrush x:Key="EditorSyntaxMethodBrush" Color="#795E26"/>
+    <SolidColorBrush x:Key="EditorSyntaxPropertyBrush" Color="#001080"/>
+    <SolidColorBrush x:Key="EditorSyntaxPreprocessorBrush" Color="#666666"/>
+    <SolidColorBrush x:Key="EditorSyntaxTagBrush" Color="#800000"/>
+    <SolidColorBrush x:Key="EditorSyntaxErrorBrush" Color="#A31515"/>
+    <SolidColorBrush x:Key="EditorSyntaxAddedBrush" Color="#008000"/>
+    <SolidColorBrush x:Key="EditorSyntaxBackgroundBrush" Color="#F3F3F3"/>
+
 
     <Color x:Key="SelectedBackgroundColor">#FFC5CBF9</Color>
     <Color x:Key="SelectedUnfocusedColor">#FFDDDDDD</Color>

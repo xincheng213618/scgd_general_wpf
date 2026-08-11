@@ -83,7 +83,9 @@ function Run-FrontendBuild {
 
     if ((Test-Path $tsc) -and (Test-Path $vite)) {
         Run-Checked $tsc @("-b")
-        Run-Checked $vite @("build")
+        Run-Checked $vite @("build", "--manifest")
+        Run-Checked "node" @("scripts/precompress-static.mjs")
+        Run-Checked "node" @("scripts/check-dashboard-bundle.mjs")
         return
     }
 

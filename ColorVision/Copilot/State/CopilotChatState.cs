@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
@@ -6,7 +7,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotChatState
     {
-        public const int CurrentSchemaVersion = 37;
+        public const int CurrentSchemaVersion = 39;
 
         public int SchemaVersion { get; set; } = CurrentSchemaVersion;
 
@@ -46,6 +47,8 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeQueuedFollowUpRecoveries() => QueuedFollowUpRecoveries?.Count > 0;
 
         internal int RecoveredQueuedFollowUpCount { get; set; }
+
+        internal int ResumedQueuedFollowUpCount { get; set; }
 
         internal int RecoveredSteeringCount { get; set; }
 
@@ -139,6 +142,7 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            var conversationIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var conversation in Conversations)
             {
                 var interruptedAssistantMessage = conversation.Messages?
@@ -149,6 +153,18 @@ namespace ColorVision.Copilot
                 if (!recoveredAgentRun)
                     changed |= CopilotInterruptedResponseRecovery.Normalize(conversation, interruptedAssistantMessage);
                 changed |= conversation.EnsureValid();
+                if (!conversationIds.Add(conversation.Id))
+                {
+                    string replacementId;
+                    do
+                    {
+                        replacementId = Guid.NewGuid().ToString("N");
+                    }
+                    while (!conversationIds.Add(replacementId));
+
+                    conversation.Id = replacementId;
+                    changed = true;
+                }
 
                 if (string.IsNullOrWhiteSpace(conversation.ProfileId) || config.Profiles.All(profile => profile.Id != conversation.ProfileId))
                 {
@@ -175,7 +191,7 @@ namespace ColorVision.Copilot
 
             changed |= CopilotConversationService.NormalizeOrder(Conversations);
 
-            changed |= CopilotQueuedFollowUpRecovery.RestoreToDrafts(this);
+            changed |= CopilotQueuedFollowUpRecovery.PrepareForRestartDispatch(this);
 
             var activeConversations = Conversations
                 .Where(conversation => !conversation.IsArchived)

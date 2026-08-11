@@ -18,6 +18,7 @@ namespace ProjectKB
         private RecipeManager _recipeManager = null!;
         private RecipeEditorItem? _selectedRecipeRow;
         private KBRecipeConfig? _observedRecipeConfig;
+        private bool _isClosed;
 
         public EditRecipeWindow()
         {
@@ -53,7 +54,7 @@ namespace ProjectKB
             if (_selectedRecipeRow == null) return;
 
             _recipeManager.ApplyDefaultTo(_selectedRecipeRow.Config);
-            RefreshSelectedStatus();
+            RefreshSelectedRecipeEditor();
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
@@ -64,10 +65,7 @@ namespace ProjectKB
 
         private void RecipeDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (RecipeDataGrid.SelectedItem is RecipeEditorItem row)
-            {
-                SelectRecipe(row);
-            }
+            SelectRecipe(RecipeDataGrid.SelectedItem as RecipeEditorItem);
         }
 
         private void CopyFrom_Click(object sender, RoutedEventArgs e)
@@ -75,12 +73,29 @@ namespace ProjectKB
             if (_selectedRecipeRow == null || CopySourceComboBox.SelectedItem is not RecipeEditorItem sourceRow) return;
 
             _recipeManager.CopyRecipe(sourceRow.Config, _selectedRecipeRow.Config);
-            RefreshSelectedStatus();
+            RefreshSelectedRecipeEditor();
         }
 
         private void ApplyDefault_Click(object sender, RoutedEventArgs e)
         {
             Reset_Click(sender, e);
+        }
+
+        private void ApplyDefaultToAll_Click(object sender, RoutedEventArgs e)
+        {
+            if (_recipeRows.Count == 0) return;
+
+            MessageBoxResult result = MessageBox.Show(
+                this,
+                $"确定将当前初始值应用到全部 {_recipeRows.Count} 个模板吗？\n此操作会覆盖各模板当前的Recipe参数。",
+                "全部应用初始值",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+            if (result != MessageBoxResult.Yes) return;
+
+            _recipeManager.ApplyDefaultToAll();
+            RefreshRecipeRows();
         }
 
         private void SetDefault_Click(object sender, RoutedEventArgs e)
@@ -150,19 +165,19 @@ namespace ProjectKB
             return string.Empty;
         }
 
-        private void SelectRecipe(RecipeEditorItem row)
+        private void SelectRecipe(RecipeEditorItem? row)
         {
-            if (_observedRecipeConfig != null)
-            {
-                _observedRecipeConfig.PropertyChanged -= RecipeConfig_PropertyChanged;
-            }
+            if (_isClosed) return;
 
             _selectedRecipeRow = row;
-            _observedRecipeConfig = row.Config;
-            _observedRecipeConfig.PropertyChanged += RecipeConfig_PropertyChanged;
+            ReplaceRecipeConfigSubscription(ref _observedRecipeConfig, row?.Config, RecipeConfig_PropertyChanged);
 
-            EditStackPanel.Children.Clear();
-            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(row.Config));
+            if (row == null)
+            {
+                CopySourceComboBox.SelectedItem = null;
+                RefreshSelectedRecipeEditor();
+                return;
+            }
 
             foreach (RecipeEditorItem item in _recipeRows)
             {
@@ -170,11 +185,34 @@ namespace ProjectKB
             }
 
             CopySourceComboBox.SelectedItem = _recipeRows.FirstOrDefault(item => item != row && item.HasLimit) ?? _recipeRows.FirstOrDefault(item => item != row);
-            RefreshSelectedStatus();
+            RefreshSelectedRecipeEditor();
         }
 
         private void RecipeConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (_isClosed || !ReferenceEquals(sender, _observedRecipeConfig)) return;
+            RefreshSelectedStatus();
+        }
+
+        internal static void ReplaceRecipeConfigSubscription(ref KBRecipeConfig? current, KBRecipeConfig? next, PropertyChangedEventHandler handler)
+        {
+            if (ReferenceEquals(current, next)) return;
+
+            if (current != null)
+                current.PropertyChanged -= handler;
+
+            current = next;
+
+            if (current != null)
+                current.PropertyChanged += handler;
+        }
+
+        private void RefreshSelectedRecipeEditor()
+        {
+            EditStackPanel.Children.Clear();
+            if (_selectedRecipeRow == null) return;
+
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(_selectedRecipeRow.Config));
             RefreshSelectedStatus();
         }
 
@@ -197,6 +235,14 @@ namespace ProjectKB
                 if (ProjectKBConfig.Instance.SNlocked)
                     ProjectKBConfig.Instance.SNlocked = false;
             }
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _isClosed = true;
+            ReplaceRecipeConfigSubscription(ref _observedRecipeConfig, null, RecipeConfig_PropertyChanged);
+            _selectedRecipeRow = null;
+            base.OnClosed(e);
         }
     }
 }

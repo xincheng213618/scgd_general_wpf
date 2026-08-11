@@ -42,7 +42,6 @@ namespace ColorVision.ImageEditor
     public partial class ImageView : UserControl, IDisposable, IActiveDocumentStatusProvider, INotifyPropertyChanged
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
-        private static readonly SemaphoreSlim SnapshotSaveGate = new(1, 1);
         private readonly DefaultImageViewDisplayConfig _defaultDisplayConfig = DefaultImageViewDisplayConfig.Current;
         private readonly ImageFrameStore _imageFrameStore = new();
         private readonly List<Func<IEnumerable<ImageViewSettingsEntry>>> _settingsEntries = new();
@@ -779,7 +778,7 @@ namespace ColorVision.ImageEditor
 
         /// <summary>
         /// Encodes and writes a frozen snapshot without occupying the UI thread.
-        /// PNG encoding is serialized to avoid competing large bitmap encoders.
+        /// Each frozen snapshot is encoded independently so callers may run exports concurrently.
         /// </summary>
         public static async Task SaveSnapshotAsync(
             BitmapSource snapshot,
@@ -798,17 +797,9 @@ namespace ColorVision.ImageEditor
                     "ImageView snapshots must be frozen before background saving.");
             }
 
-            await SnapshotSaveGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                await Task.Run(
-                    () => SaveSnapshot(snapshot, fileName, cancellationToken),
-                    cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                SnapshotSaveGate.Release();
-            }
+            await Task.Run(
+                () => SaveSnapshot(snapshot, fileName, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
         }
 
         private static void SaveSnapshot(
@@ -1301,11 +1292,11 @@ namespace ColorVision.ImageEditor
             OpenImageCore(filePath);
         }
 
-        private void OpenImageCore(string? filePath)
+        private void OpenImageCore(string? filePath, bool forceReload = false)
         {
-            //如果文件已经打开，不会重复打开
+            // 普通打开会跳过同一路径；还原原图时强制重新走对应格式的打开器。
 
-            if (filePath == null || filePath.Equals(Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), StringComparison.Ordinal))
+            if (filePath == null || (!forceReload && filePath.Equals(Config.GetProperties<string>(ImageViewPropertyKeys.FilePath), StringComparison.Ordinal)))
             {
                 log.Info("文件路径未改变，跳过打开图像。");
                 return;
@@ -1343,6 +1334,32 @@ namespace ColorVision.ImageEditor
                 log.Error(ex);
                 WpfMessageBox.Show(ex.Message);
             }
+        }
+
+        public bool CanRestoreOriginalImage
+        {
+            get
+            {
+                string? filePath = Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
+                return EditorContext.IImageOpen != null && !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath);
+            }
+        }
+
+        public bool RestoreOriginalImage()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                return Dispatcher.Invoke(RestoreOriginalImage);
+            }
+
+            string? filePath = Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
+            if (EditorContext.IImageOpen == null || string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                return false;
+            }
+
+            OpenImageCore(filePath, forceReload: true);
+            return true;
         }
 
         private void OpenSingleImageGroup(string filePath)

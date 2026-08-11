@@ -138,6 +138,7 @@ namespace ColorVision.Copilot
             var statusLabel = status switch
             {
                 CopilotAgentSkillMcpDependencyStatus.Installed => "已配置",
+                CopilotAgentSkillMcpDependencyStatus.ConfiguredDisabled => "已配置但已禁用",
                 CopilotAgentSkillMcpDependencyStatus.Installable => "可安全配置",
                 CopilotAgentSkillMcpDependencyStatus.MissingInstallMetadata => "缺少 URL",
                 CopilotAgentSkillMcpDependencyStatus.UnsupportedTransport => "当前传输不支持",

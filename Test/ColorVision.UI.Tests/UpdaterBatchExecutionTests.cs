@@ -100,6 +100,125 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public async Task ManifestPluginBatchReplacesWholeDirectoryAndPreservesOtherPlugins()
+        {
+            string tempRoot = Path.Combine(_rootDirectory, "Manifest Plugin Stage %CACHE%!");
+            string stagedPluginDirectory = Path.Combine(tempRoot, "ColorVision", "Plugins", "third.party");
+            string targetDirectory = Path.Combine(_rootDirectory, "Manifest Plugin Target %PATH%! & ^");
+            string targetPluginDirectory = Path.Combine(targetDirectory, "Plugins", "third.party");
+            string otherPluginDirectory = Path.Combine(targetDirectory, "Plugins", "other.plugin");
+            Directory.CreateDirectory(stagedPluginDirectory);
+            Directory.CreateDirectory(targetPluginDirectory);
+            Directory.CreateDirectory(otherPluginDirectory);
+            File.WriteAllText(Path.Combine(stagedPluginDirectory, "payload.txt"), "new");
+            File.WriteAllText(Path.Combine(targetPluginDirectory, "payload.txt"), "old");
+            File.WriteAllText(Path.Combine(targetPluginDirectory, "obsolete.dll"), "obsolete");
+            File.WriteAllText(Path.Combine(otherPluginDirectory, "keep.dll"), "keep");
+
+            string executableName = CreateProbeExecutable(targetDirectory);
+            string batchPath = Path.Combine(tempRoot, "update.bat");
+            Directory.CreateDirectory(tempRoot);
+            File.WriteAllText(batchPath, string.Empty);
+            ExitUpdateHandoffState handoffState = ExitUpdateHandoff.Prepare(
+                targetDirectory,
+                tempRoot,
+                Path.Combine(_rootDirectory, "ManifestPluginState"));
+            PluginUpdater.GenerateBatchFile(
+                batchPath,
+                targetDirectory,
+                executableName,
+                int.MaxValue,
+                handoffState,
+                restartArguments: null,
+                manifestPluginIds: ["third.party"],
+                legacyStageDirectory: null);
+            ShortenBatchWaits(batchPath, Encoding.GetEncoding(936));
+
+            BatchResult result = await RunBatchAsync(batchPath, workingDirectory: tempRoot);
+
+            Assert.True(result.ExitCode == 0, result.ToString());
+            Assert.Equal("new", File.ReadAllText(Path.Combine(targetPluginDirectory, "payload.txt")));
+            Assert.False(File.Exists(Path.Combine(targetPluginDirectory, "obsolete.dll")));
+            Assert.Equal("keep", File.ReadAllText(Path.Combine(otherPluginDirectory, "keep.dll")));
+            Assert.Empty(Directory.EnumerateDirectories(Path.Combine(targetDirectory, "Plugins"), ".ColorVisionUpdate-*"));
+            Assert.True(await WaitForDirectoryDeletionAsync(tempRoot));
+        }
+
+        [Fact]
+        public async Task LegacyPluginBatchPreservesPluginsRelativeOverlayLayout()
+        {
+            string tempRoot = Path.Combine(_rootDirectory, "Legacy Plugin Stage");
+            string legacyStage = Path.Combine(tempRoot, "LegacyOverlay");
+            string stagedPluginDirectory = Path.Combine(legacyStage, "LegacyPlugin");
+            string targetDirectory = Path.Combine(_rootDirectory, "Legacy Plugin Target");
+            Directory.CreateDirectory(stagedPluginDirectory);
+            Directory.CreateDirectory(targetDirectory);
+            File.WriteAllText(Path.Combine(stagedPluginDirectory, "payload.txt"), "legacy");
+
+            string executableName = CreateProbeExecutable(targetDirectory);
+            string batchPath = Path.Combine(tempRoot, "update.bat");
+            File.WriteAllText(batchPath, string.Empty);
+            ExitUpdateHandoffState handoffState = ExitUpdateHandoff.Prepare(
+                targetDirectory,
+                tempRoot,
+                Path.Combine(_rootDirectory, "LegacyPluginState"));
+            PluginUpdater.GenerateBatchFile(
+                batchPath,
+                targetDirectory,
+                executableName,
+                int.MaxValue,
+                handoffState,
+                restartArguments: null,
+                manifestPluginIds: Array.Empty<string>(),
+                legacyStageDirectory: legacyStage);
+            ShortenBatchWaits(batchPath, Encoding.GetEncoding(936));
+
+            BatchResult result = await RunBatchAsync(batchPath, workingDirectory: tempRoot);
+
+            Assert.True(result.ExitCode == 0, result.ToString());
+            Assert.Equal("legacy", File.ReadAllText(Path.Combine(targetDirectory, "Plugins", "LegacyPlugin", "payload.txt")));
+            Assert.False(Directory.Exists(Path.Combine(targetDirectory, "LegacyPlugin")));
+            Assert.True(await WaitForDirectoryDeletionAsync(tempRoot));
+        }
+
+        [Fact]
+        public async Task CombinedApplicationBatchAppliesManifestPluginsAsDirectoryTransactions()
+        {
+            string tempRoot = Path.Combine(_rootDirectory, "Combined Update Root %CACHE%!");
+            string stageDirectory = Path.Combine(tempRoot, "ColorVision");
+            string manifestPluginStage = Path.Combine(tempRoot, "ManifestPlugins", "third.party");
+            string targetDirectory = Path.Combine(_rootDirectory, "Combined Target %PATH%! & ^");
+            string targetPluginDirectory = Path.Combine(targetDirectory, "Plugins", "third.party");
+            string otherPluginDirectory = Path.Combine(targetDirectory, "Plugins", "other.plugin");
+            Directory.CreateDirectory(stageDirectory);
+            Directory.CreateDirectory(manifestPluginStage);
+            Directory.CreateDirectory(targetPluginDirectory);
+            Directory.CreateDirectory(otherPluginDirectory);
+            File.WriteAllText(Path.Combine(stageDirectory, "application.txt"), "updated");
+            File.WriteAllText(Path.Combine(manifestPluginStage, "payload.txt"), "new plugin");
+            File.WriteAllText(Path.Combine(targetPluginDirectory, "payload.txt"), "old plugin");
+            File.WriteAllText(Path.Combine(targetPluginDirectory, "obsolete.dll"), "obsolete");
+            File.WriteAllText(Path.Combine(otherPluginDirectory, "keep.dll"), "keep");
+
+            string executableName = CreateProbeExecutable(stageDirectory);
+            string batchPath = Path.Combine(tempRoot, "update.bat");
+            File.WriteAllText(
+                batchPath,
+                BuildApplicationBatch(stageDirectory, tempRoot, targetDirectory, executableName, restartApplication: false),
+                new UTF8Encoding(false));
+
+            BatchResult result = await RunBatchAsync(batchPath, workingDirectory: tempRoot);
+
+            Assert.True(result.ExitCode == 0, result.ToString());
+            Assert.Equal("updated", File.ReadAllText(Path.Combine(targetDirectory, "application.txt")));
+            Assert.Equal("new plugin", File.ReadAllText(Path.Combine(targetPluginDirectory, "payload.txt")));
+            Assert.False(File.Exists(Path.Combine(targetPluginDirectory, "obsolete.dll")));
+            Assert.Equal("keep", File.ReadAllText(Path.Combine(otherPluginDirectory, "keep.dll")));
+            Assert.Empty(Directory.EnumerateDirectories(Path.Combine(targetDirectory, "Plugins"), ".ColorVisionUpdate-*"));
+            Assert.True(await WaitForDirectoryDeletionAsync(tempRoot));
+        }
+
+        [Fact]
         public void ElevatedApplicationBatchRepairsMissingServiceHostWithoutAclRewrite()
         {
             string batch = BuildApplicationBatch(
@@ -273,9 +392,9 @@ namespace ColorVision.UI.Tests
                 scanProtectionId])!);
         }
 
+        // Keep the production cleanup delay: its detached process must outlive the parent batch.
         private static string ShortenBatchWaits(string batch) => batch
-            .Replace("ping -n 2 127.0.0.1", "ping -n 1 127.0.0.1", StringComparison.Ordinal)
-            .Replace("ping -n 4 127.0.0.1", "ping -n 1 127.0.0.1", StringComparison.Ordinal);
+            .Replace("ping -n 2 127.0.0.1", "ping -n 1 127.0.0.1", StringComparison.Ordinal);
 
         private static void ShortenBatchWaits(string batchPath, Encoding encoding)
         {

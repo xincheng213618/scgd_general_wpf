@@ -157,8 +157,8 @@ public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
 ```xml
 <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="
-        set DebugPluginsDir=$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows\Plugins\$(TargetName)
-        set ReleasePluginsDir=$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows\Plugins\$(TargetName)
+        set DebugPluginsDir=$(SolutionDir)ColorVision\bin\x64\Debug\net10.0-windows\Plugins\$(TargetName)
+        set ReleasePluginsDir=$(SolutionDir)ColorVision\bin\x64\Release\net10.0-windows\Plugins\$(TargetName)
         
         if not exist &quot;%DebugPluginsDir%&quot; (mkdir &quot;%DebugPluginsDir%&quot;)
         if not exist &quot;%ReleasePluginsDir%&quot; (mkdir &quot;%ReleasePluginsDir%&quot;)
@@ -174,7 +174,7 @@ public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
 ```
 
 ### 手动部署
-将以下文件复制到 `ColorVision\bin\x64\Release\net8.0-windows\Plugins\SystemMonitor\` 目录：
+将以下文件复制到 `ColorVision\bin\x64\Release\net10.0-windows\Plugins\SystemMonitor\` 目录：
 - SystemMonitor.dll
 - manifest.json
 - README.md (可选)
@@ -182,19 +182,19 @@ public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
 ## 7. 构建说明
 
 ### 基本构建
-```bash
-dotnet build Plugins/SystemMonitor/SystemMonitor.csproj -c Release
+```powershell
+dotnet build .\Plugins\SystemMonitor\SystemMonitor.csproj -c Release -p:Platform=x64
 ```
 
 ### 目标框架
-- 主要目标: .NET 8.0-windows
-- 平台支持: x64, ARM64
+- 目标框架: `net10.0-windows`
+- 平台支持: x64（随 ColorVision 宿主交付）
 - WPF 应用程序: 启用
 - 代码签名: 启用 (使用 ColorVision.snk)
 
 ### 构建输出
 编译成功后会在以下位置生成文件：
-- `Plugins/SystemMonitor/bin/Release/net8.0-windows/SystemMonitor.dll`
+- `Plugins\SystemMonitor\bin\x64\Release\net10.0-windows\SystemMonitor.dll`
 - 自动复制到主程序 Plugins 目录
 
 ## 8. 使用指南
@@ -446,13 +446,13 @@ public void Dispose()
 ## 13. 兼容性
 
 ### 运行要求
-- **操作系统**: Windows 10/11 x64 或 ARM64
-- **.NET 运行时**: .NET 8.0 Desktop Runtime
+- **操作系统**: Windows 10/11 x64
+- **.NET 运行时**: .NET 10 Desktop Runtime
 - **权限要求**: 读取系统性能计数器权限
 
 ### 平台支持
 - **x64**: 完全支持
-- **ARM64**: 完全支持
+- **ARM64**: 当前不支持；宿主和 native runtime 尚无 ARM64 发布链
 - **Windows 性能计数器**: 必需
 
 ## 14. 约束与限制

@@ -769,13 +769,6 @@
                                 Opacity="0.62"
                                 ToolTip="返回创建此分支的直接源会话；如果中间分支已删除，则返回仍存在的根会话。"
                                 Visibility="{Binding SelectedConversation.HasBranchOrigin, Converter={StaticResource bool2VisibilityConverter}}" />
-                        <TextBlock Margin="0,3,0,0"
-                                   FontSize="10"
-                                   Foreground="{StaticResource CopilotControlBrush}"
-                                   Text="{Binding SelectedConversation.GoalDisplayText}"
-                                   TextTrimming="CharacterEllipsis"
-                                   ToolTip="{Binding SelectedConversation.GoalToolTip}"
-                                   Visibility="{Binding SelectedConversation.HasGoal, Converter={StaticResource bool2VisibilityConverter}}" />
                         <Button Margin="0,3,0,0"
                                 Padding="0"
                                 HorizontalAlignment="Left"
@@ -1363,7 +1356,7 @@
                                                             CommandParameter="{Binding}"
                                                             Click="EditMessageButton_Click"
                                                             Content="编辑"
-                                                            ToolTip="编辑这条请求并替换最新回复" />
+                                                            ToolTip="编辑这条请求；历史请求会先创建隔离的会话分支，最新请求会替换最新回复" />
                                                     <Button Margin="0"
                                                             Style="{StaticResource UserMessageActionButtonStyle}"
                                                     Command="{Binding DataContext.RetryMessageCommand, Source={x:Reference Root}}"
@@ -1705,6 +1698,12 @@
                                                     Content="{x:Static properties:Resources.Copy}"
                                                     ToolTip="复制回答（不包含执行轨迹和推理）" />
                                             <Button Style="{StaticResource MessageActionButtonStyle}"
+                                                    Command="{Binding DataContext.OpenCodeReviewPaneCommand, Source={x:Reference Root}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="审查详情"
+                                                    ToolTip="查看本轮 Review 实际使用的只读 Git Diff 与审查结论"
+                                                    Visibility="{Binding HasCodeReviewSnapshot, Converter={StaticResource bool2VisibilityConverter}}" />
+                                            <Button Style="{StaticResource MessageActionButtonStyle}"
                                                     Command="{Binding DataContext.BranchConversationCommand, Source={x:Reference Root}}"
                                                     CommandParameter="{Binding}"
                                                     Content="分支"
@@ -1771,10 +1770,11 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <Border x:Name="FileDropOverlay"
-                            Grid.RowSpan="6"
+                            Grid.RowSpan="7"
                             Panel.ZIndex="20"
                             Background="{DynamicResource GlobalBackground}"
                             BorderBrush="{DynamicResource PrimaryBrush}"
@@ -1875,6 +1875,82 @@
                     </Border>
 
                     <Border Grid.Row="1"
+                            Margin="0,0,0,6"
+                            Padding="8,6"
+                            Style="{StaticResource CopilotInsetBorderStyle}"
+                            BorderBrush="{StaticResource CopilotControlBrush}"
+                            BorderThickness="1"
+                            CornerRadius="7"
+                            ToolTip="{Binding SelectedConversation.GoalToolTip}"
+                            Visibility="{Binding SelectedConversation.HasGoal, Converter={StaticResource bool2VisibilityConverter}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <Button Padding="4,2"
+                                    HorizontalContentAlignment="Stretch"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    Command="{Binding ShowConversationGoalHistoryCommand}"
+                                    ToolTip="查看持续目标的有界迭代记录">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="20" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock VerticalAlignment="Center"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="13"
+                                               Foreground="{StaticResource CopilotControlBrush}"
+                                               Text="&#xE9D5;" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Text="{Binding SelectedConversation.GoalDisplayText}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Margin="0,2,0,0"
+                                                   FontSize="9"
+                                                   Foreground="{DynamicResource GlobalTextBrush}"
+                                                   Opacity="0.56"
+                                                   Text="{Binding SelectedConversation.GoalProgressText}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+
+                            <StackPanel Grid.Column="1"
+                                        Margin="8,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Orientation="Horizontal">
+                                <Button Margin="0,0,4,0"
+                                        Command="{Binding PauseConversationGoalCommand}"
+                                        Content="暂停"
+                                        Style="{StaticResource MessageActionButtonStyle}"
+                                        ToolTip="暂停后续目标续作；当前已开始的 Agent 轮次仍会安全收尾"
+                                        Visibility="{Binding SelectedConversation.CanPauseGoal, Converter={StaticResource bool2VisibilityConverter}}" />
+                                <Button Margin="0,0,4,0"
+                                        Command="{Binding ResumeConversationGoalCommand}"
+                                        Content="恢复"
+                                        Style="{StaticResource MessageActionButtonStyle}"
+                                        ToolTip="恢复目标并启动新的 Agent 轮次"
+                                        Visibility="{Binding SelectedConversation.CanResumeGoal, Converter={StaticResource bool2VisibilityConverter}}" />
+                                <Button Margin="0,0,4,0"
+                                        Command="{Binding EditConversationGoalCommand}"
+                                        Content="编辑"
+                                        Style="{StaticResource MessageActionButtonStyle}"
+                                        ToolTip="编辑目标结果、约束和验证条件" />
+                                <Button Command="{Binding ClearConversationGoalCommand}"
+                                        Content="清除"
+                                        Style="{StaticResource MessageActionButtonStyle}"
+                                        ToolTip="清除目标及其进度记录；不会停止当前已开始的 Agent 轮次" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="2"
                             MaxHeight="150"
                             Margin="0,0,0,6"
                             Padding="9,7"
@@ -2000,7 +2076,7 @@
                         </Grid>
                     </Border>
 
-                    <StackPanel Grid.Row="2" Margin="0,0,0,6"
+                    <StackPanel Grid.Row="3" Margin="0,0,0,6"
                                 Visibility="{Binding HasComposerAttachmentItems, Converter={StaticResource bool2VisibilityConverter}}">
                         <ScrollViewer x:Name="AttachmentScrollViewer"
                                       HorizontalScrollBarVisibility="Auto"
@@ -2104,7 +2180,7 @@
                         </ScrollViewer>
                     </StackPanel>
 
-                    <Border Grid.Row="3"
+                    <Border Grid.Row="4"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
                             BorderThickness="1"
@@ -2143,7 +2219,7 @@
                         </Button>
                     </Border>
 
-                    <Border Grid.Row="3"
+                    <Border Grid.Row="4"
                             MaxHeight="260"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
@@ -2206,7 +2282,7 @@
                         </DockPanel>
                     </Border>
 
-                    <Border Grid.Row="3"
+                    <Border Grid.Row="4"
                             MaxHeight="260"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
@@ -2288,7 +2364,7 @@
                         </DockPanel>
                     </Border>
 
-                    <Border Grid.Row="3"
+                    <Border Grid.Row="4"
                             MaxHeight="190"
                             Margin="0,0,0,6"
                             Style="{StaticResource CopilotInsetBorderStyle}"
@@ -2349,7 +2425,7 @@
                         </DockPanel>
                     </Border>
 
-                    <Grid Grid.Row="4"
+                    <Grid Grid.Row="5"
                           MinHeight="24">
                         <TextBlock Padding="0,2"
                                    Foreground="{DynamicResource GlobalTextBrush}"
@@ -2391,7 +2467,7 @@
                                  VerticalScrollBarVisibility="Auto" />
                     </Grid>
 
-                    <Grid x:Name="ComposerFooterGrid" Grid.Row="5" Margin="0,2,0,0">
+                    <Grid x:Name="ComposerFooterGrid" Grid.Row="6" Margin="0,2,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
@@ -2956,12 +3032,13 @@
                                        Text="&#xE8A7;" />
                         </Button>
 
-                        <Button Width="28"
-                                Height="28"
-                                Style="{StaticResource CopilotIconButtonStyle}"
-                                Command="{Binding NewChatCommand}"
-                                DockPanel.Dock="Right"
-                                ToolTip="新建会话 (Ctrl+N)">
+                         <Button Width="28"
+                                 Height="28"
+                                 Style="{StaticResource CopilotIconButtonStyle}"
+                                 Command="{Binding NewChatCommand}"
+                                 DockPanel.Dock="Right"
+                                 ToolTip="新建会话 (Ctrl+N)"
+                                 Visibility="{Binding IsConversationListViewOpen, Converter={StaticResource bool2VisibilityConverter}}">
                             <TextBlock HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        FontFamily="Segoe MDL2 Assets"
@@ -2973,22 +3050,66 @@
                                 Height="28"
                                 Margin="0,0,4,0"
                                 Style="{StaticResource CopilotIconButtonStyle}"
-                                Command="{Binding ExportConversationCommand}"
-                                CommandParameter="{Binding SelectedConversation}"
-                                DockPanel.Dock="Right"
-                                ToolTip="导出当前会话为 Markdown">
+                                 Command="{Binding ExportConversationCommand}"
+                                 CommandParameter="{Binding SelectedConversation}"
+                                 DockPanel.Dock="Right"
+                                 ToolTip="导出当前会话为 Markdown"
+                                 Visibility="{Binding IsConversationListViewOpen, Converter={StaticResource bool2VisibilityConverter}}">
                             <TextBlock HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="14"
                                        Text="&#xE74E;" />
-                        </Button>
+                         </Button>
 
-                        <TextBlock VerticalAlignment="Center"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource GlobalTextBrush}"
-                                   Text="{x:Static properties:Resources.CopilotConversations}" />
+                         <Button Height="28"
+                                 MinWidth="58"
+                                 Margin="0,0,4,0"
+                                 Padding="6,0"
+                                 Style="{StaticResource CopilotIconButtonStyle}"
+                                 Command="{Binding MarkAllActivityReadCommand}"
+                                 Content="全部已读"
+                                 DockPanel.Dock="Right"
+                                 FontSize="10"
+                                 ToolTip="清除待查看和任务受阻项；需要输入与运行中任务会保留"
+                                 Visibility="{Binding IsActivityViewOpen, Converter={StaticResource bool2VisibilityConverter}}" />
+
+                         <Button Width="32"
+                                 Height="28"
+                                 Margin="0,0,4,0"
+                                 Style="{StaticResource CopilotIconButtonStyle}"
+                                 Command="{Binding ToggleActivityViewCommand}"
+                                 DockPanel.Dock="Right"
+                                 ToolTip="{Binding ActivityViewToggleToolTip}">
+                             <Grid>
+                                 <TextBlock HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            FontFamily="Segoe MDL2 Assets"
+                                            FontSize="14"
+                                            Text="&#xE7ED;" />
+                                 <Border MinWidth="13"
+                                         Height="13"
+                                         Margin="12,-7,-8,0"
+                                         Padding="2,0"
+                                         HorizontalAlignment="Right"
+                                         VerticalAlignment="Top"
+                                         Background="{DynamicResource GlobalBorderBrush1}"
+                                         CornerRadius="7"
+                                         Visibility="{Binding HasConversationActivity, Converter={StaticResource bool2VisibilityConverter}}">
+                                     <TextBlock HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                FontSize="8"
+                                                Foreground="{DynamicResource GlobalTextBrush}"
+                                                Text="{Binding ActivityConversationCountLabel}" />
+                                 </Border>
+                             </Grid>
+                         </Button>
+
+                         <TextBlock VerticalAlignment="Center"
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
+                                    Foreground="{DynamicResource GlobalTextBrush}"
+                                    Text="{Binding ConversationSidebarTitle}" />
                     </DockPanel>
 
                     <Border Grid.Row="1"
@@ -3012,10 +3133,10 @@
                             <Grid Grid.Column="1" Margin="7,0,4,0">
                                 <TextBlock VerticalAlignment="Center"
                                            FontSize="11"
-                                           Foreground="{DynamicResource GlobalTextBrush}"
-                                           IsHitTestVisible="False"
-                                           Opacity="0.38"
-                                           Text="搜索会话"
+                                            Foreground="{DynamicResource GlobalTextBrush}"
+                                            IsHitTestVisible="False"
+                                            Opacity="0.38"
+                                            Text="{Binding ConversationSearchPlaceholder}"
                                            Visibility="{Binding IsConversationSearchEmpty, Converter={StaticResource bool2VisibilityConverter}}" />
                                 <TextBox x:Name="ConversationSearchTextBox"
                                          Padding="0"
@@ -3024,10 +3145,10 @@
                                          FontSize="11"
                                          Foreground="{DynamicResource GlobalTextBrush}"
                                          MaxLength="256"
-                                         PreviewKeyDown="ConversationSearchTextBox_PreviewKeyDown"
-                                         Text="{Binding ConversationSearchText, UpdateSourceTrigger=PropertyChanged}"
-                                         TextChanged="ConversationSearchTextBox_TextChanged"
-                                         ToolTip="搜索会话 (Ctrl+G)；↑↓ 选择，Enter 切换，Ctrl+R 重命名，Esc 退出" />
+                                          PreviewKeyDown="ConversationSearchTextBox_PreviewKeyDown"
+                                          Text="{Binding ConversationSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                          TextChanged="ConversationSearchTextBox_TextChanged"
+                                          ToolTip="搜索当前列表 (Ctrl+G)；↑↓ 选择，Enter 切换，Ctrl+R 重命名，Esc 退出" />
                             </Grid>
                             <Button Grid.Column="2"
                                     Style="{StaticResource AttachmentCloseButtonStyle}"
@@ -3041,10 +3162,10 @@
                     <Border Grid.Row="2"
                             Margin="8,0,8,8"
                             Padding="8,7"
-                            Style="{StaticResource CopilotInsetBorderStyle}"
-                            BorderThickness="1"
-                            CornerRadius="5"
-                            Visibility="{Binding HasAgentTasks, Converter={StaticResource bool2VisibilityConverter}}">
+                             Style="{StaticResource CopilotInsetBorderStyle}"
+                             BorderThickness="1"
+                             CornerRadius="5"
+                             Visibility="{Binding IsAgentTaskPanelVisible, Converter={StaticResource bool2VisibilityConverter}}">
                         <StackPanel>
                             <DockPanel Margin="2,0,2,5" LastChildFill="False">
                                 <Border DockPanel.Dock="Right"
@@ -3268,6 +3389,19 @@
                                TextAlignment="Center"
                                TextWrapping="Wrap"
                                Visibility="{Binding HasNoConversationSearchResults, Converter={StaticResource bool2VisibilityConverter}}" />
+
+                    <TextBlock Grid.Row="3"
+                               Margin="16"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="11"
+                               Foreground="{DynamicResource GlobalTextBrush}"
+                               IsHitTestVisible="False"
+                               Opacity="0.48"
+                               Text="暂无需要关注的会话"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
+                               Visibility="{Binding HasNoActivityConversations, Converter={StaticResource bool2VisibilityConverter}}" />
                 </Grid>
             </Border>
         </Grid>

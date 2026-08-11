@@ -179,6 +179,8 @@ namespace ColorVision.Copilot
                         : "请修改历史搜索关键词";
                 if (_isCompactingConversation)
                     return "停止上下文压缩";
+                if (_isEndingConversation)
+                    return "正在结束会话并运行 SessionEnd Hook";
                 if (_fileAttachmentCts != null)
                     return "停止处理附件";
                 if (_webPageAttachmentCts != null)
@@ -210,7 +212,7 @@ namespace ColorVision.Copilot
 
         public CopilotConversationRecord? SelectedConversation
         {
-            get => _selectedConversation;
+            get => _conversationSession.SelectedConversation;
             set => SelectConversation(value, persist: true);
         }
 
@@ -247,7 +249,7 @@ namespace ColorVision.Copilot
 
         public CopilotProfileConfig? SelectedProfile
         {
-            get => _selectedProfile;
+            get => _conversationSession.SelectedProfile;
             set => SelectProfile(value, syncConversation: true, persist: true);
         }
 
@@ -354,30 +356,52 @@ namespace ColorVision.Copilot
 
         public string InputText
         {
-            get => _inputText;
+            get => IsPromptHistorySearchOpen
+                ? _promptHistorySearchQuery
+                : _composerSession.Text;
             set
             {
                 var normalizedValue = value ?? string.Empty;
-                if (SetProperty(ref _inputText, normalizedValue))
+                if (IsPromptHistorySearchOpen)
                 {
-                    RefreshPendingAgentSkillReference(normalizedValue);
-                    if (!_isApplyingPromptHistory)
-                        _promptHistoryNavigator.Reset();
-                    if (IsPromptHistorySearchOpen)
-                        RefreshPromptHistorySearchResults();
-                    else
-                        UpdateSelectedConversationDraft(normalizedValue);
-                    OnPropertyChanged(nameof(IsInputEmpty));
-                    RefreshLocalCommandSuggestions();
-                    OnPropertyChanged(nameof(CanSubmitUserQuestionAnswer));
-                    OnPropertyChanged(nameof(CanSteerCurrentRun));
-                    OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
-                    RefreshComposerReferenceSuggestions();
-                    RefreshComposerTokenEstimate();
-                    NotifyPromptHistoryPrefixCompletionChanged();
-                    CommandManager.InvalidateRequerySuggested();
+                    if (string.Equals(
+                        _promptHistorySearchQuery,
+                        normalizedValue,
+                        StringComparison.Ordinal))
+                    {
+                        return;
+                    }
+
+                    _promptHistorySearchQuery = normalizedValue;
+                    NotifyComposerTextChanged(synchronizeDraft: false);
+                    return;
                 }
+
+                if (!_composerSession.SetText(normalizedValue))
+                    return;
+
+                NotifyComposerTextChanged(synchronizeDraft: !IsPromptHistorySearchOpen);
             }
+        }
+
+        private void NotifyComposerTextChanged(bool synchronizeDraft)
+        {
+            OnPropertyChanged(nameof(InputText));
+            if (!_isApplyingPromptHistory)
+                _promptHistoryNavigator.Reset();
+            if (IsPromptHistorySearchOpen)
+                RefreshPromptHistorySearchResults();
+            else if (synchronizeDraft)
+                SynchronizeSelectedConversationComposerDraft();
+            OnPropertyChanged(nameof(IsInputEmpty));
+            RefreshLocalCommandSuggestions();
+            OnPropertyChanged(nameof(CanSubmitUserQuestionAnswer));
+            OnPropertyChanged(nameof(CanSteerCurrentRun));
+            OnPropertyChanged(nameof(CanQueueCurrentRunFollowUp));
+            RefreshComposerReferenceSuggestions();
+            RefreshComposerTokenEstimate();
+            NotifyPromptHistoryPrefixCompletionChanged();
+            CommandManager.InvalidateRequerySuggested();
         }
 
         public int ComposerMaximumCharacters => CopilotConversationHistoryWindow.MaximumContentCharacterLimit;
@@ -435,12 +459,17 @@ namespace ColorVision.Copilot
                 : string.Empty;
 
 
-        private CopilotHostedAgentRun? ActiveHostedRun => _taskHost.ActiveRun;
+        private CopilotHostedAgentRun? ActiveHostedRun => _taskHost.ActiveRun is { IsQueuedLocalCommand: false } run
+            ? run
+            : null;
 
         private CopilotHostedRunInteraction ActiveHostedRunInteraction =>
             CopilotHostedRunInteractionPolicy.Evaluate(ActiveHostedRun?.State ?? CopilotHostedRunState.Completed);
 
-        private CopilotHostedAgentRun? SelectedHostedRun => _taskHost.FindRunByConversationId(SelectedConversation?.Id);
+        private CopilotHostedAgentRun? SelectedHostedRun =>
+            _taskHost.FindRunByConversationId(SelectedConversation?.Id) is { IsQueuedLocalCommand: false } run
+                ? run
+                : null;
 
         private bool IsAgentRequestActive => ActiveHostedRun?.IsAgent == true;
 
@@ -533,7 +562,8 @@ namespace ColorVision.Copilot
         }
         private bool _isBusy;
 
-        public bool CanSwitchConversation => !IsBusy || IsAgentRequestActive;
+        public bool CanSwitchConversation => !_isEndingConversation
+            && (!IsBusy || IsAgentRequestActive);
 
         public bool CanSelectProfile => !IsBusy && Profiles.Count > 0;
 
@@ -551,7 +581,7 @@ namespace ColorVision.Copilot
         {
             get
             {
-                var pendingCount = CopilotMcpConfirmationStore.Instance.PendingCount;
+                var pendingCount = _approvalCoordinator.TotalPendingCount;
                 if (pendingCount > 0)
                     return pendingCount == 1 ? "等待确认" : $"等待确认 {pendingCount}";
 

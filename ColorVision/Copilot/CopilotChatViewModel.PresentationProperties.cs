@@ -26,7 +26,7 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel : ViewModelBase, IDisposable
     {
-        public ObservableCollection<CopilotConversationRecord> Conversations => _state.Conversations;
+        public ObservableCollection<CopilotConversationRecord> Conversations => _conversationSession.Conversations;
 
         public event EventHandler? ConversationSearchRequested;
 
@@ -42,6 +42,52 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotConversationRecord> FilteredConversations { get; } = new();
 
+        public bool IsActivityViewOpen
+        {
+            get => _isActivityViewOpen;
+            private set
+            {
+                if (!SetProperty(ref _isActivityViewOpen, value))
+                    return;
+
+                OnPropertyChanged(nameof(IsConversationListViewOpen));
+                OnPropertyChanged(nameof(ConversationSidebarTitle));
+                OnPropertyChanged(nameof(ConversationSearchPlaceholder));
+                OnPropertyChanged(nameof(ActivityViewToggleToolTip));
+                OnPropertyChanged(nameof(IsAgentTaskPanelVisible));
+                RefreshFilteredConversations();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        public bool IsConversationListViewOpen => !IsActivityViewOpen;
+
+        public string ConversationSidebarTitle => IsActivityViewOpen
+            ? "活动"
+            : ColorVision.Properties.Resources.CopilotConversations;
+
+        public string ConversationSearchPlaceholder => IsActivityViewOpen ? "搜索活动" : "搜索会话";
+
+        public string ActivityViewToggleToolTip => IsActivityViewOpen
+            ? "返回全部会话 (Ctrl+Alt+U)"
+            : "打开活动视图 (Ctrl+Alt+U)";
+
+        public int ActivityConversationCount => Conversations.Count(conversation =>
+            !conversation.IsArchived && conversation.HasAgentRunStatus);
+
+        public string ActivityConversationCountLabel =>
+            ActivityConversationCount.ToString(System.Globalization.CultureInfo.CurrentCulture);
+
+        public bool HasConversationActivity => ActivityConversationCount > 0;
+
+        public bool HasUnreadConversationActivity => Conversations.Any(conversation =>
+            !conversation.IsArchived
+            && conversation.AgentActivity?.IsAcknowledgedByViewing == true);
+
+        public bool HasNoActivityConversations => IsActivityViewOpen
+            && !HasConversationSearchQuery
+            && FilteredConversations.Count == 0;
+
         public IReadOnlyList<CopilotConversationBranchFamilyMember> ConversationBranchFamily { get; private set; } =
             Array.Empty<CopilotConversationBranchFamilyMember>();
 
@@ -53,6 +99,8 @@ namespace ColorVision.Copilot
         public ObservableCollection<CopilotAgentTaskSummary> AgentTasks { get; } = new();
 
         public bool HasAgentTasks => AgentTasks.Count > 0;
+
+        public bool IsAgentTaskPanelVisible => HasAgentTasks && !IsActivityViewOpen;
 
         public string AgentTaskCountLabel => AgentTasks.Count.ToString(System.Globalization.CultureInfo.CurrentCulture);
 
@@ -101,7 +149,7 @@ namespace ColorVision.Copilot
         public Thickness AssistantActionsMargin =>
             CopilotCompactMessageLayout.Resolve(UseCompactMessageLayout).AssistantActionsMargin;
 
-        public ObservableCollection<CopilotQueuedFollowUp> QueuedFollowUps { get; } = new();
+        public ObservableCollection<CopilotQueuedFollowUp> QueuedFollowUps => _followUpQueue.Items;
 
         public bool HasQueuedFollowUps => QueuedFollowUps.Count > 0;
 
@@ -196,9 +244,9 @@ namespace ColorVision.Copilot
 
         public ObservableCollection<CopilotPromptHistorySearchItem> PromptHistorySearchResults => _promptHistorySearchResults;
 
-        public ObservableCollection<ConfirmableAction> PendingActions => _pendingActions;
+        public ObservableCollection<ConfirmableAction> PendingActions => _approvalCoordinator.PendingActions;
 
-        public bool HasPendingActions => _pendingActions.Count > 0;
+        public bool HasPendingActions => PendingActions.Count > 0;
 
         public bool HasPendingActionFeedback => !string.IsNullOrWhiteSpace(PendingActionFeedbackText);
 
@@ -208,7 +256,7 @@ namespace ColorVision.Copilot
         {
             get
             {
-                var count = _pendingActions.Count;
+                var count = PendingActions.Count;
                 if (count == 0)
                     return "受保护操作";
 
@@ -222,16 +270,16 @@ namespace ColorVision.Copilot
         {
             get
             {
-                if (_pendingActions.Count == 0)
+                if (PendingActions.Count == 0)
                     return "当前没有等待确认的受保护操作。";
 
-                var nextDeadline = _pendingActions
+                var nextDeadline = PendingActions
                     .OrderBy(action => action.ExpiresAt)
                     .FirstOrDefault()?.ReviewDeadlineLabel ?? string.Empty;
 
-                var actionBehavior = _pendingActions.Any(action => action.ResumesAgentOnApproval)
+                var actionBehavior = PendingActions.Any(action => action.ResumesAgentOnApproval)
                     ? "批准后，Agent 将在同一任务中继续执行。"
-                    : _pendingActions.Any(action => action.ExecuteOnApproval)
+                    : PendingActions.Any(action => action.ExecuteOnApproval)
                         ? "批准后将立即在应用内执行；是否保存仍由你决定。"
                         : "外部 MCP 操作批准后，调用方仍需提交 confirm_action。";
                 return string.IsNullOrWhiteSpace(nextDeadline) ? actionBehavior : $"{actionBehavior} 最近一项{nextDeadline}。";
@@ -242,10 +290,10 @@ namespace ColorVision.Copilot
         {
             get
             {
-                if (_pendingActions.Count == 0)
+                if (PendingActions.Count == 0)
                     return PendingActionPanelSummary;
 
-                return string.Join(Environment.NewLine, _pendingActions.Select(action =>
+                return string.Join(Environment.NewLine, PendingActions.Select(action =>
                     $"{action.Title}｜来源：{action.RequesterLabel}｜任务：{action.TaskScopeLabel}｜风险：{action.RiskDisplayLabel}｜{action.ReviewDeadlineLabel}"));
             }
         }
@@ -278,6 +326,20 @@ namespace ColorVision.Copilot
 
         public ICommand ClearConversationSearchCommand { get; }
 
+        public ICommand ToggleActivityViewCommand { get; }
+
+        public ICommand MarkAllActivityReadCommand { get; }
+
+        public ICommand ShowConversationGoalHistoryCommand { get; }
+
+        public ICommand PauseConversationGoalCommand { get; }
+
+        public ICommand ResumeConversationGoalCommand { get; }
+
+        public ICommand EditConversationGoalCommand { get; }
+
+        public ICommand ClearConversationGoalCommand { get; }
+
         public ICommand OpenConversationFindCommand { get; }
 
         public ICommand CloseConversationFindCommand { get; }
@@ -309,6 +371,8 @@ namespace ColorVision.Copilot
             : "添加附件";
 
         public ICommand CopyMessageCommand { get; }
+
+        public ICommand OpenCodeReviewPaneCommand { get; }
 
         public ICommand CopyLatestResponseCommand { get; }
 

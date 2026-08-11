@@ -28,28 +28,51 @@ namespace ColorVision.UI
 
         public static void ApplyChangedSelectedColor(this IDisPlayControl disPlayControl, Border border)
         {
-            void UpdateDisPlayBorder()
-            {
-                if (disPlayControl.IsSelected)
-                {
-                    border.BorderBrush = ImageUtils.ConvertFromString(ThemeManager.Current.CurrentUITheme switch
-                    {
-                        Theme.Light => "#5649B0",
-                        Theme.Dark => "#A79CF1",
-                        _ => "#A79CF1" // 默认颜色
-                    });
-                }
-                else
-                {
-                    Brush brush = Application.Current.FindResource("GlobalBorderBrush1") as Brush;
-                    border.BorderBrush = brush;
-                }
-            }
-            disPlayControl.SelectChanged += (s, e) => UpdateDisPlayBorder();
-            ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
-            UpdateDisPlayBorder();
+            disPlayControl.SelectChanged += (s, e) => UpdateDisPlayBorder(disPlayControl, border);
+            SubscribeToThemeChanges(
+                new WeakReference<IDisPlayControl>(disPlayControl),
+                new WeakReference<Border>(border));
+            UpdateDisPlayBorder(disPlayControl, border);
             if (disPlayControl is UserControl userControl)
                 RegisterSelectionInput(disPlayControl, userControl);
+        }
+
+        private static void SubscribeToThemeChanges(
+            WeakReference<IDisPlayControl> displayReference,
+            WeakReference<Border> borderReference)
+        {
+            ThemeManager themeManager = ThemeManager.Current;
+            ThemeChangedHandler? themeChangedHandler = null;
+            themeChangedHandler = (s) =>
+            {
+                if (displayReference.TryGetTarget(out IDisPlayControl? target)
+                    && borderReference.TryGetTarget(out Border? targetBorder))
+                {
+                    UpdateDisPlayBorder(target, targetBorder);
+                    return;
+                }
+
+                themeManager.CurrentUIThemeChanged -= themeChangedHandler;
+            };
+            themeManager.CurrentUIThemeChanged += themeChangedHandler;
+        }
+
+        private static void UpdateDisPlayBorder(IDisPlayControl target, Border targetBorder)
+        {
+            if (target.IsSelected)
+            {
+                targetBorder.BorderBrush = ImageUtils.ConvertFromString(ThemeManager.Current.CurrentUITheme switch
+                {
+                    Theme.Light => "#5649B0",
+                    Theme.Dark => "#A79CF1",
+                    _ => "#A79CF1" // 默认颜色
+                });
+            }
+            else
+            {
+                Brush brush = Application.Current.FindResource("GlobalBorderBrush1") as Brush;
+                targetBorder.BorderBrush = brush;
+            }
         }
 
         internal static void RegisterSelectionInput(IDisPlayControl disPlayControl, UserControl userControl)

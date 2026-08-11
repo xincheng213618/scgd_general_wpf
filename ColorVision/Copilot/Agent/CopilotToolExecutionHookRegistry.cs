@@ -9,16 +9,26 @@ using System.Threading;
 
 namespace ColorVision.Copilot
 {
+    public enum CopilotToolExecutionHookMode
+    {
+        Sync,
+        Async,
+    }
+
     internal sealed record CopilotToolExecutionHookBinding(
         string SourceId,
-        ICopilotToolExecutionHook Hook);
+        ICopilotToolExecutionHook Hook,
+        CopilotToolExecutionHookMode ExecutionMode = CopilotToolExecutionHookMode.Sync,
+        CopilotToolExecutionHookPhases Phases = CopilotToolExecutionHookPhases.All,
+        TimeSpan? ExecutionTimeout = null);
 
     internal sealed record CopilotToolExecutionHookRegistrationDefinition(
         string SourceId,
         ICopilotToolExecutionHook Hook,
         string ToolNamePattern = "*",
         int Order = 0,
-        string ConfigurationFingerprint = "");
+        string ConfigurationFingerprint = "",
+        CopilotToolExecutionHookMode ExecutionMode = CopilotToolExecutionHookMode.Sync);
 
     public sealed class CopilotToolExecutionHookRegistryEntry
     {
@@ -29,6 +39,9 @@ namespace ColorVision.Copilot
         public int Order { get; init; }
 
         public string HookType { get; init; } = string.Empty;
+
+        public CopilotToolExecutionHookMode ExecutionMode { get; init; } =
+            CopilotToolExecutionHookMode.Sync;
 
         public string DefinitionFingerprint { get; init; } = string.Empty;
 
@@ -46,6 +59,7 @@ namespace ColorVision.Copilot
                 && string.Equals(HookType, HookType.Trim(), StringComparison.Ordinal)
                 && HookType.Length <= 1_024
                 && !HookType.Any(char.IsControl)
+                && Enum.IsDefined(ExecutionMode)
                 && IsSha256(DefinitionFingerprint);
         }
 
@@ -66,7 +80,9 @@ namespace ColorVision.Copilot
         {
             return Revision >= 0
                 && Entries != null
-                && Entries.Count <= CopilotToolExecutionHookRegistry.MaxRegistrations + 1
+                && Entries.Count <= CopilotToolExecutionHookRegistry.MaxRegistrations
+                    + CopilotProjectInstructionDiscoveryConfig.MaximumConfiguredHookHandlers
+                    + 1
                 && Entries.All(entry => entry?.IsStructurallyValid() == true)
                 && Entries.Select(entry => entry.SourceId).Distinct(StringComparer.OrdinalIgnoreCase).Count() == Entries.Count
                 && Fingerprint?.Length == 64
@@ -109,7 +125,8 @@ namespace ColorVision.Copilot
             ICopilotToolExecutionHook hook,
             string toolNamePattern = "*",
             int order = 0,
-            string configurationFingerprint = "")
+            string configurationFingerprint = "",
+            CopilotToolExecutionHookMode executionMode = CopilotToolExecutionHookMode.Sync)
         {
             ArgumentNullException.ThrowIfNull(hook);
             return RegisterBatch(
@@ -119,7 +136,8 @@ namespace ColorVision.Copilot
                     hook,
                     toolNamePattern,
                     order,
-                    configurationFingerprint),
+                    configurationFingerprint,
+                    executionMode),
             ]);
         }
 
@@ -167,6 +185,7 @@ namespace ColorVision.Copilot
                         candidate.Entry.ToolNamePattern,
                         candidate.Entry.Order,
                         candidate.Hook,
+                        candidate.Entry.ExecutionMode,
                         candidate.Entry.DefinitionFingerprint,
                         candidate.Matcher));
                 }
@@ -189,6 +208,7 @@ namespace ColorVision.Copilot
                             ToolNamePattern = item.ToolNamePattern,
                             Order = item.Order,
                             HookType = item.Hook.GetType().FullName ?? item.Hook.GetType().Name,
+                            ExecutionMode = item.ExecutionMode,
                             DefinitionFingerprint = item.DefinitionFingerprint,
                         }));
             }
@@ -199,7 +219,8 @@ namespace ColorVision.Copilot
             string toolNamePattern,
             int order,
             ICopilotToolExecutionHook hook,
-            string configurationFingerprint = "")
+            string configurationFingerprint = "",
+            CopilotToolExecutionHookMode executionMode = CopilotToolExecutionHookMode.Sync)
         {
             ArgumentNullException.ThrowIfNull(hook);
             return new CopilotToolExecutionHookRegistryEntry
@@ -208,6 +229,7 @@ namespace ColorVision.Copilot
                 ToolNamePattern = NormalizePattern(toolNamePattern),
                 Order = order,
                 HookType = hook.GetType().FullName ?? hook.GetType().Name,
+                ExecutionMode = NormalizeExecutionMode(executionMode),
                 DefinitionFingerprint = CreateDefinitionFingerprint(hook, configurationFingerprint),
             };
         }
@@ -236,6 +258,7 @@ namespace ColorVision.Copilot
                 entry.ToolNamePattern,
                 entry.Order,
                 entry.HookType,
+                ExecutionMode = entry.ExecutionMode.ToString().ToLowerInvariant(),
                 entry.DefinitionFingerprint,
             }));
             return Convert.ToHexString(
@@ -249,7 +272,10 @@ namespace ColorVision.Copilot
             {
                 return Order(_registrations.Values)
                     .Where(item => item.Matcher.IsMatch(normalizedToolName))
-                    .Select(item => new CopilotToolExecutionHookBinding(item.SourceId, item.Hook))
+                    .Select(item => new CopilotToolExecutionHookBinding(
+                        item.SourceId,
+                        item.Hook,
+                        item.ExecutionMode))
                     .ToArray();
             }
         }
@@ -311,7 +337,8 @@ namespace ColorVision.Copilot
                 definition.ToolNamePattern,
                 definition.Order,
                 definition.Hook,
-                definition.ConfigurationFingerprint);
+                definition.ConfigurationFingerprint,
+                definition.ExecutionMode);
             if (entry.SourceId.StartsWith("builtin:", StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("The 'builtin:' Copilot tool hook source prefix is reserved.", nameof(definition));
             return new RegistrationCandidate(
@@ -337,6 +364,19 @@ namespace ColorVision.Copilot
             });
             return Convert.ToHexString(
                 SHA256.HashData(Encoding.UTF8.GetBytes(identity))).ToLowerInvariant();
+        }
+
+        private static CopilotToolExecutionHookMode NormalizeExecutionMode(
+            CopilotToolExecutionHookMode executionMode)
+        {
+            if (!Enum.IsDefined(executionMode))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(executionMode),
+                    executionMode,
+                    "Copilot tool hook execution mode is invalid.");
+            }
+            return executionMode;
         }
 
         private static string NormalizeConfigurationFingerprint(string? configurationFingerprint)
@@ -376,6 +416,7 @@ namespace ColorVision.Copilot
             string ToolNamePattern,
             int Order,
             ICopilotToolExecutionHook Hook,
+            CopilotToolExecutionHookMode ExecutionMode,
             string DefinitionFingerprint,
             Regex Matcher);
 

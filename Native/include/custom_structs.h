@@ -2,9 +2,11 @@
 
 #include <opencv2/core.hpp>
 #include <combaseapi.h>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <type_traits>
 
 #pragma pack(push, 1)
 typedef struct _RoiRect {
@@ -126,6 +128,7 @@ static inline bool HImageTryGetSpanBytes(int rows, size_t stride, size_t rowByte
     return true;
 }
 
+#pragma pack(push, 8)
 typedef struct HImage
 {
     int rows;
@@ -146,6 +149,18 @@ typedef struct HImage
     }
     unsigned char* pData;
 } HImage;
+#pragma pack(pop)
+
+static_assert(std::is_standard_layout<HImage>::value, "HImage must remain standard-layout for managed interop.");
+static_assert(sizeof(bool) == 1, "HImage ABI requires a one-byte native bool.");
+static_assert(sizeof(void*) != 8 || sizeof(HImage) == 32, "HImage x64 ABI size changed.");
+static_assert(sizeof(void*) != 8 || offsetof(HImage, rows) == 0, "HImage.rows x64 ABI offset changed.");
+static_assert(sizeof(void*) != 8 || offsetof(HImage, cols) == 4, "HImage.cols x64 ABI offset changed.");
+static_assert(sizeof(void*) != 8 || offsetof(HImage, channels) == 8, "HImage.channels x64 ABI offset changed.");
+static_assert(sizeof(void*) != 8 || offsetof(HImage, depth) == 12, "HImage.depth x64 ABI offset changed.");
+static_assert(sizeof(void*) != 8 || offsetof(HImage, stride) == 16, "HImage.stride x64 ABI offset changed.");
+static_assert(sizeof(void*) != 8 || offsetof(HImage, isDispose) == 20, "HImage.isDispose x64 ABI offset changed.");
+static_assert(sizeof(void*) != 8 || offsetof(HImage, pData) == 24, "HImage.pData x64 ABI offset changed.");
 
 static cv::Mat HImageToMatView(const HImage& img)
 {

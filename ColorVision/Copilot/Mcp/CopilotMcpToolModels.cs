@@ -7,6 +7,7 @@ using ColorVision.Solution.Workspace;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -219,6 +220,14 @@ namespace ColorVision.Copilot.Mcp
 
         public Func<long> CapabilityRevisionProvider { get; init; } = () => CopilotCapabilityCatalog.Shared.GetSnapshot().Revision;
 
+        public Func<int> ActiveCopilotRunCountProvider { get; init; } = () => CopilotAgentTaskHost.Shared.IsActive ? 1 : 0;
+
+        public Func<int> QueuedCopilotRunCountProvider { get; init; } = () => CopilotAgentTaskHost.Shared.QueuedCount;
+
+        public Func<long?> ResidentMemoryBytesProvider { get; init; } = GetCurrentProcessResidentMemoryBytes;
+
+        public Func<IReadOnlyList<string>> TemporaryDirectoryPathsProvider { get; init; } = GetProcessTemporaryDirectoryPaths;
+
         public Func<CancellationToken, Task<CopilotFlowContextSnapshot?>> FlowSnapshotProvider { get; init; } = CreateDefaultFlowSnapshotAsync;
 
         public Func<string?, int, CancellationToken, Task<CopilotFlowNodeCatalogSnapshot?>> FlowNodeCatalogProvider { get; init; } = CreateDefaultFlowNodeCatalogAsync;
@@ -240,6 +249,35 @@ namespace ColorVision.Copilot.Mcp
         public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? SetThemeHandler { get; init; }
 
         public Func<string, CancellationToken, Task<CopilotMcpToolCallResult>>? SetLanguageHandler { get; init; }
+
+        private static long? GetCurrentProcessResidentMemoryBytes()
+        {
+            using var process = Process.GetCurrentProcess();
+            return process.WorkingSet64;
+        }
+
+        private static IReadOnlyList<string> GetProcessTemporaryDirectoryPaths()
+        {
+            var paths = new List<string>();
+            foreach (var variableName in new[] { "TEMP", "TMP" })
+            {
+                var value = Environment.GetEnvironmentVariable(variableName);
+                if (string.IsNullOrWhiteSpace(value) || !Path.IsPathFullyQualified(value))
+                    continue;
+
+                try
+                {
+                    var fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(value));
+                    if (!paths.Contains(fullPath, StringComparer.OrdinalIgnoreCase))
+                        paths.Add(fullPath);
+                }
+                catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException)
+                {
+                }
+            }
+
+            return paths;
+        }
 
         private static async Task<CopilotMcpToolCallResult> ApplyTemplatePatchToActiveEditorAsync(CopilotTemplatePatchApplyRequest request, CancellationToken cancellationToken)
         {

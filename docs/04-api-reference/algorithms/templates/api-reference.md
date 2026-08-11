@@ -65,4 +65,4 @@
 | 列表项包装 | `TemplateModel.cs` |
 | 编辑窗口 | `TemplateEditorWindow.xaml.cs` |
 | 创建窗口 | `TemplateCreate.xaml.cs` |
-| 注册入口 | `TemplateContorl.cs` |
+| 注册入口 | `TemplateControl.cs` |

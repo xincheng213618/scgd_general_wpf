@@ -294,7 +294,8 @@ namespace ColorVision.Copilot
         public static bool CanAutoReview(
             CopilotAgentRequest request,
             ICopilotTool tool,
-            string currentWorkspacePath)
+            string currentWorkspacePath,
+            CopilotApprovalPromptCategory? approvalPromptCategory = null)
         {
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(tool);
@@ -314,7 +315,7 @@ namespace ColorVision.Copilot
             {
                 return CopilotCodexApprovalPolicySelection.AllowsAutomaticReview(
                         request.CodexApprovalPolicy,
-                        tool.Capability.ApprovalPromptCategory)
+                        approvalPromptCategory ?? tool.Capability.ApprovalPromptCategory)
                     && !CopilotToolIntentPolicy.IsReadOnlyMode(request.Mode)
                     && tool.Capability.RequiresNativeApproval;
             }

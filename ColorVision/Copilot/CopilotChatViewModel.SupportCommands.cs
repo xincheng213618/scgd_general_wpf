@@ -158,7 +158,7 @@ namespace ColorVision.Copilot
                 CapabilityCatalogRevision = capabilitySnapshot.Revision,
                 Capabilities = capabilitySnapshot.Capabilities,
                 ExternalMcpServers = _config.ExternalMcpServers,
-                PendingApprovals = CopilotMcpConfirmationStore.Instance.PendingCount,
+                PendingApprovals = _approvalCoordinator.TotalPendingCount,
             });
         }
 
@@ -298,10 +298,15 @@ namespace ColorVision.Copilot
             return CopilotHookDiagnostics.Format(new CopilotHookDiagnosticSnapshot
             {
                 HookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled
-                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled),
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                    _currentCodexConfigOptions.ConfiguredCommandHooks),
+                BackgroundActivity = CopilotToolExecutionHookBackgroundScheduler.Shared.GetActivitySnapshot(),
+                AsyncCommandActivity = CopilotCodexLifecycleHookBackgroundScheduler.Shared.GetActivitySnapshot(),
                 ExtensionSources = extensionSnapshot.Sources,
                 ExtensionIssues = extensionSnapshot.Issues,
+                ConfiguredHookFilePaths = _currentCodexConfigOptions.AppliedHookFilePaths,
+                ConfiguredHookIssues = _currentCodexConfigOptions.ConfiguredHookIssues,
                 RecentToolExecutions = CopilotToolExecutionAuditLogger.GetRecentEntries(30),
             });
         }
@@ -379,8 +384,9 @@ namespace ColorVision.Copilot
                 projectInstructionOptions.ConfiguredPluginsEnabled);
             var agentExtensionSnapshot = CopilotAgentExtensionBridge.Shared.GetSnapshot();
             var toolHookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                projectInstructionOptions.ConfiguredHooksEnabled
-                    && projectInstructionOptions.ConfiguredPluginsEnabled);
+                projectInstructionOptions.ConfiguredHooksEnabled,
+                projectInstructionOptions.ConfiguredPluginsEnabled,
+                projectInstructionOptions.ConfiguredCommandHooks);
             var agentDefaults = _config.AgentDefaults;
             var retainedHistoryWeight = history.Messages.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content));
             var autoCompactionUsage = CopilotConversationAutoCompactionPolicy.Measure(
@@ -689,7 +695,7 @@ namespace ColorVision.Copilot
 
         private void RunUiOperation(Func<Task> operation, string operationName, Action<string>? onError = null)
         {
-            CopilotUiTaskObserver.Run(
+            var observedOperation = CopilotUiTaskObserver.ObserveAsync(
                 operation,
                 operationName,
                 onError ?? (message =>
@@ -697,6 +703,9 @@ namespace ColorVision.Copilot
                     LocalCommandResultTitle = operationName + " · 失败";
                     LocalCommandResultText = message;
                 }));
+            var queuedCommandExecution = _queuedLocalCommandExecution;
+            if (queuedCommandExecution != null)
+                queuedCommandExecution.TrackOperation(observedOperation);
         }
     }
 }

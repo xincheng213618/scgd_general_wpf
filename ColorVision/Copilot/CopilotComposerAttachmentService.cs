@@ -84,6 +84,62 @@ namespace ColorVision.Copilot
                 imageCount);
         }
 
+        public static int RemoveCapturedByReference(
+            IList<CopilotAttachmentItem> currentAttachments,
+            IReadOnlyList<CopilotAttachmentItem> capturedAttachments)
+        {
+            ArgumentNullException.ThrowIfNull(currentAttachments);
+            ArgumentNullException.ThrowIfNull(capturedAttachments);
+
+            var removedCount = 0;
+            for (var index = currentAttachments.Count - 1; index >= 0; index--)
+            {
+                var attachment = currentAttachments[index];
+                if (!capturedAttachments.Any(captured => ReferenceEquals(captured, attachment)))
+                    continue;
+
+                currentAttachments.RemoveAt(index);
+                removedCount++;
+            }
+            return removedCount;
+        }
+
+        public static int RestoreDistinctSnapshots(
+            IList<CopilotAttachmentItem> currentAttachments,
+            IEnumerable<CopilotAttachmentItem> attachmentSnapshots)
+        {
+            ArgumentNullException.ThrowIfNull(currentAttachments);
+            ArgumentNullException.ThrowIfNull(attachmentSnapshots);
+
+            var identities = currentAttachments
+                .Where(attachment => attachment != null)
+                .Select(BuildAttachmentIdentity)
+                .ToHashSet(StringComparer.Ordinal);
+            var restoredCount = 0;
+            foreach (var attachment in attachmentSnapshots.Where(attachment => attachment != null))
+            {
+                if (!identities.Add(BuildAttachmentIdentity(attachment)))
+                    continue;
+
+                currentAttachments.Add(attachment);
+                restoredCount++;
+            }
+            return restoredCount;
+        }
+
+        private static string BuildAttachmentIdentity(CopilotAttachmentItem attachment)
+        {
+            if (!string.IsNullOrWhiteSpace(attachment.Id))
+                return "id:" + attachment.Id.Trim();
+
+            return string.Join(
+                "\0",
+                (int)attachment.Type,
+                attachment.Title,
+                attachment.Value,
+                attachment.Source);
+        }
+
         private static string? TryNormalizeFilePath(string filePath)
         {
             try

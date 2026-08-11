@@ -165,6 +165,7 @@ namespace ColorVision.Copilot
             string[] missingAttachedFilePaths = Array.Empty<string>();
             string[] missingLocalFilePaths = Array.Empty<string>();
             string[] attemptedFilePaths = Array.Empty<string>();
+            var reviewEvidenceId = string.Empty;
             foreach (var group in _requiredToolGroups)
             {
                 if (TryEvaluateFileEvidenceGroup(group, relevant, cursor, out var fileEvidence))
@@ -186,13 +187,28 @@ namespace ColorVision.Copilot
 
                 var matchedIndex = Array.FindIndex(relevant, cursor + 1, step =>
                     group.Contains(step.Execution.ToolName, StringComparer.OrdinalIgnoreCase)
-                    && IsAcceptedGroupEvidence(group, step));
+                    && IsAcceptedGroupEvidence(group, step, reviewEvidenceId));
                 if (matchedIndex < 0)
                 {
                     missingGroup = group;
                     break;
                 }
                 cursor = matchedIndex;
+                if (group.Contains("InspectGitDiff", StringComparer.OrdinalIgnoreCase))
+                    TryReadReviewEvidenceId(relevant[matchedIndex], out reviewEvidenceId);
+            }
+            var reviewFindingsGroup = _requiredToolGroups.FirstOrDefault(group =>
+                group.Contains("SubmitCodeReviewFindings", StringComparer.OrdinalIgnoreCase));
+            if (missingGroup == null
+                && reviewFindingsGroup != null
+                && !TryFindSubmissionForLatestReviewDiff(relevant, out cursor))
+            {
+                missingGroup = reviewFindingsGroup;
+                cursor = Array.FindLastIndex(relevant, step =>
+                    string.Equals(step.Execution.ToolName, "InspectGitDiff", StringComparison.OrdinalIgnoreCase)
+                    && IsAcceptedEvidence(step)
+                    && MatchesRequiredReviewTarget(step.ToolCall.ToolInput)
+                    && TryReadReviewEvidenceId(step, out _));
             }
             if (missingGroup == null)
             {
@@ -305,6 +321,10 @@ namespace ColorVision.Copilot
                 return "Execution contract: Review mode has not collected a successful Git patch for the exact structured target. "
                     + BuildRequiredReviewTargetInstruction()
                     + " Base findings only on that returned bounded diff. If output_complete is false, disclose the bounded scope and do not infer that omitted changes are clean.";
+            }
+            if (missingGroup.Contains("SubmitCodeReviewFindings", StringComparer.OrdinalIgnoreCase))
+            {
+                return "Execution contract: Review mode must submit its complete structured outcome after the latest Git diff and any requested validation. Call SubmitCodeReviewFindings exactly once now. Every finding must use P0-P3, a repository-relative changed path, old/new side, and a line range from a model-visible diff hunk. Submit findings=[] when no actionable issue remains, then make the final answer match the submitted result and disclose evidence limits.";
             }
             if (missingGroup.Contains("RunShellCommand", StringComparer.OrdinalIgnoreCase))
             {
@@ -489,13 +509,85 @@ namespace ColorVision.Copilot
                     StringComparison.Ordinal);
         }
 
-        private bool IsAcceptedGroupEvidence(string[] group, CopilotAgentStepRecord step)
+        private bool IsAcceptedGroupEvidence(
+            string[] group,
+            CopilotAgentStepRecord step,
+            string reviewEvidenceId)
         {
             if (!IsAcceptedEvidence(step))
                 return false;
-            return !group.Contains("InspectGitDiff", StringComparer.OrdinalIgnoreCase)
-                || !string.Equals(step.Execution.ToolName, "InspectGitDiff", StringComparison.OrdinalIgnoreCase)
-                || MatchesRequiredReviewTarget(step.ToolCall.ToolInput);
+            if (group.Contains("InspectGitDiff", StringComparer.OrdinalIgnoreCase)
+                && string.Equals(step.Execution.ToolName, "InspectGitDiff", StringComparison.OrdinalIgnoreCase))
+            {
+                return MatchesRequiredReviewTarget(step.ToolCall.ToolInput)
+                    && TryReadReviewEvidenceId(step, out _);
+            }
+            if (group.Contains("SubmitCodeReviewFindings", StringComparer.OrdinalIgnoreCase)
+                && string.Equals(step.Execution.ToolName, "SubmitCodeReviewFindings", StringComparison.OrdinalIgnoreCase))
+            {
+                return reviewEvidenceId.Length > 0
+                    && CopilotCodeReviewFindingsResultProtocol.TryParse(
+                        step.Observation.Content,
+                        out var submission,
+                        out _)
+                    && string.Equals(
+                        submission.EvidenceId,
+                        reviewEvidenceId,
+                        StringComparison.OrdinalIgnoreCase);
+            }
+            return true;
+        }
+
+        private static bool TryReadReviewEvidenceId(
+            CopilotAgentStepRecord step,
+            out string evidenceId)
+        {
+            evidenceId = string.Empty;
+            if (!CopilotGitDiffResultProtocol.TryParse(
+                    step.Observation.Content,
+                    out var toolSnapshot,
+                    out _)
+                || !CopilotCodeReviewSnapshot.TryCreate(
+                    toolSnapshot,
+                    step.ModelToolResult,
+                    out var reviewSnapshot)
+                || !reviewSnapshot.HasModelVisibleGitDiffEvidence())
+            {
+                return false;
+            }
+
+            evidenceId = reviewSnapshot.EvidenceId;
+            return true;
+        }
+
+        private bool TryFindSubmissionForLatestReviewDiff(
+            CopilotAgentStepRecord[] relevant,
+            out int submissionIndex)
+        {
+            submissionIndex = -1;
+            var diffIndex = Array.FindLastIndex(relevant, step =>
+                string.Equals(step.Execution.ToolName, "InspectGitDiff", StringComparison.OrdinalIgnoreCase)
+                && IsAcceptedEvidence(step)
+                && MatchesRequiredReviewTarget(step.ToolCall.ToolInput)
+                && TryReadReviewEvidenceId(step, out _));
+            if (diffIndex < 0
+                || !TryReadReviewEvidenceId(relevant[diffIndex], out var latestEvidenceId))
+            {
+                return false;
+            }
+
+            submissionIndex = Array.FindIndex(relevant, diffIndex + 1, step =>
+                string.Equals(step.Execution.ToolName, "SubmitCodeReviewFindings", StringComparison.OrdinalIgnoreCase)
+                && IsAcceptedEvidence(step)
+                && CopilotCodeReviewFindingsResultProtocol.TryParse(
+                    step.Observation.Content,
+                    out var submission,
+                    out _)
+                && string.Equals(
+                    submission.EvidenceId,
+                    latestEvidenceId,
+                    StringComparison.OrdinalIgnoreCase));
+            return submissionIndex >= 0;
         }
 
         private bool MatchesRequiredReviewTarget(CopilotAgentToolInput? input)
@@ -540,7 +632,7 @@ namespace ColorVision.Copilot
                     + JsonSerializer.Serialize(_requiredWorkspaceReviewTarget.Revision)
                     + "; omit scope.",
                 _ =>
-                    "Call InspectGitDiff with exactly target=\"working_tree\" and scope=\"both\"; omit revision.",
+                    "Call InspectGitDiff with exactly target=\"working_tree\" and scope=\"both\"; omit revision. This scope includes staged, unstaged, and untracked review evidence.",
             };
         }
 
@@ -570,6 +662,8 @@ namespace ColorVision.Copilot
             {
                 return "required_git_review_evidence_missing";
             }
+            if (evaluation.MissingToolNames.Contains("SubmitCodeReviewFindings", StringComparer.OrdinalIgnoreCase))
+                return "required_code_review_findings_missing";
             if (evaluation.MissingToolNames.Any(name => name.StartsWith("Delegate", StringComparison.OrdinalIgnoreCase)))
                 return "required_delegated_evidence_missing";
 

@@ -90,14 +90,11 @@ namespace ColorVision.Copilot
                 return false;
 
             _promptHistorySearchConversationId = conversation.Id;
-            _promptHistorySearchDraft = InputText;
+            _promptHistorySearchQuery = string.Empty;
             _promptHistoryNavigator.Reset();
             DismissComposerReferenceSuggestions();
             IsPromptHistorySearchOpen = true;
-            if (InputText.Length > 0)
-                InputText = string.Empty;
-            else
-                RefreshPromptHistorySearchResults();
+            NotifyComposerTextChanged(synchronizeDraft: false);
             return true;
         }
 
@@ -119,7 +116,7 @@ namespace ColorVision.Copilot
             if (!IsPromptHistorySearchOpen)
                 return;
 
-            ClosePromptHistorySearch(_promptHistorySearchDraft);
+            ClosePromptHistorySearch(replacementText: null);
         }
 
         public bool TryNavigatePromptHistorySearch(bool previous)
@@ -186,15 +183,17 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(InputPlaceholder));
         }
 
-        private void ClosePromptHistorySearch(string restoredText)
+        private void ClosePromptHistorySearch(string? replacementText)
         {
             IsPromptHistorySearchOpen = false;
             _promptHistorySearchConversationId = string.Empty;
-            _promptHistorySearchDraft = string.Empty;
+            _promptHistorySearchQuery = string.Empty;
             _promptHistorySearchScope = CopilotPromptHistorySearchScope.CurrentConversation;
             PromptHistorySearchResults.Clear();
             SelectedPromptHistorySearchResult = null;
-            InputText = restoredText ?? string.Empty;
+            var composerChanged = replacementText != null
+                && _composerSession.SetText(replacementText);
+            NotifyComposerTextChanged(synchronizeDraft: composerChanged);
             OnPropertyChanged(nameof(HasPromptHistorySearchResults));
             OnPropertyChanged(nameof(PromptHistorySearchHeader));
             OnPropertyChanged(nameof(PromptHistorySearchStatusText));
@@ -240,8 +239,8 @@ namespace ColorVision.Copilot
                     caretIndex,
                     ResolveComposerRequestMode(),
                     conversation.Attachments,
-                    _pendingWorkspaceReviewTarget,
-                    _pendingAgentSkillReference);
+                    _composerSession.WorkspaceReviewTarget,
+                    _composerSession.AgentSkillReference);
                 conversation.ComposerStash = capturedStash;
                 conversation.Attachments.Clear();
                 InputText = string.Empty;

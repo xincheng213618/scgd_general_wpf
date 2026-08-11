@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -6,9 +7,11 @@ from unittest import mock
 from Scripts.build import (
     RemoteUploadSettings,
     ensure_runtime_copy_integrity,
+    get_installer_for_version,
     publish_primary_release,
     validate_installer_runtime_dlls,
     validate_runtime_copy_integrity,
+    validate_shared_files_manifests,
 )
 from Scripts.service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS
 
@@ -43,6 +46,34 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
         aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
 
         self.assertFalse(validate_installer_runtime_dlls(self.runtime_directory, aip_path, report=lambda _: None))
+
+    def test_shared_files_release_gate_accepts_matching_set(self) -> None:
+        manifest_path = self.root / "shared_files.json"
+        shared_files = sorted(
+            path.relative_to(self.runtime_directory).as_posix()
+            for path in self.runtime_directory.rglob("*")
+            if path.is_file()
+        )
+        manifest_path.write_text(json.dumps({
+            "generated_at": "2000-01-01T00:00:00+00:00",
+            "shared_files": list(reversed(shared_files)),
+        }), encoding="utf-8")
+
+        self.assertTrue(validate_shared_files_manifests(
+            self.runtime_directory,
+            manifest_paths=(manifest_path,),
+            report=lambda _: None,
+        ))
+
+    def test_shared_files_release_gate_rejects_drift(self) -> None:
+        manifest_path = self.root / "shared_files.json"
+        manifest_path.write_text(json.dumps({"shared_files": ["Old.dll"]}), encoding="utf-8")
+
+        self.assertFalse(validate_shared_files_manifests(
+            self.runtime_directory,
+            manifest_paths=(manifest_path,),
+            report=lambda _: None,
+        ))
 
     def test_runtime_copy_integrity_rejects_a_mismatched_dll(self) -> None:
         solution_root = self.root / "source"
@@ -180,6 +211,39 @@ class PrimaryReleasePublishTests(unittest.TestCase):
 
         self.assertFalse(result)
         uploaded_content.assert_not_called()
+
+
+class InstallerSelectionTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._temp_directory = tempfile.TemporaryDirectory(prefix="build-selection-tests-")
+        self.root = Path(self._temp_directory.name)
+
+    def tearDown(self) -> None:
+        self._temp_directory.cleanup()
+
+    def test_selects_installer_matching_built_file_version_instead_of_highest_version(self) -> None:
+        expected_installer = self.root / "ColorVision-1.2.3.4.exe"
+        expected_installer.write_bytes(b"current build")
+        (self.root / "ColorVision-9.9.9.9.exe").write_bytes(b"stale higher version")
+
+        selected = get_installer_for_version(self.root, "1.2.3.4")
+
+        self.assertEqual(expected_installer, selected)
+
+    def test_rejects_directory_without_installer_matching_built_file_version(self) -> None:
+        (self.root / "ColorVision-9.9.9.9.exe").write_bytes(b"stale higher version")
+
+        selected = get_installer_for_version(self.root, "1.2.3.4")
+
+        self.assertIsNone(selected)
+
+    def test_rejects_ambiguous_installers_for_built_file_version(self) -> None:
+        (self.root / "ColorVision-1.2.3.4.exe").write_bytes(b"exe")
+        (self.root / "ColorVision-1.2.3.4.msi").write_bytes(b"msi")
+
+        selected = get_installer_for_version(self.root, "1.2.3.4")
+
+        self.assertIsNone(selected)
 
 
 if __name__ == "__main__":

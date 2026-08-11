@@ -151,13 +151,26 @@ namespace ColorVision.Copilot
                     emit(CopilotAgentEvent.RuntimeDiagnostic(
                         $"Agent task session was reset, but {requestedCheckpoint.ConversationMemory.Count} bounded conversation memory message(s) were restored for continuity."));
                 }
-                var recoveryEvidencePrompt = !sessionResumed && (requiresCheckpointReplan || sessionResumeFailed)
+                var sessionWasReset = !sessionResumed && (requiresCheckpointReplan || sessionResumeFailed);
+                var recoveryEvidencePrompt = sessionWasReset
                     ? CopilotAgentEvidenceArtifacts.BuildRecoveryPrompt(previousEvidenceArtifacts, capabilitySnapshot)
                     : string.Empty;
                 if (!string.IsNullOrWhiteSpace(recoveryEvidencePrompt))
                 {
                     promptMessages = InsertEvidenceMessageBeforeCurrentUser(promptMessages, recoveryEvidencePrompt);
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent recovery checkpoint contained {previousEvidenceArtifacts.Count} evidence artifact(s); bounded untrusted historical context was supplied."));
+                }
+                var attemptedToolRecoveryPrompt = sessionWasReset && requestedCheckpoint != null
+                    ? CopilotAgentTaskEventJournal.BuildAttemptedToolRecoveryPrompt(
+                        requestedCheckpoint.TaskEventJournal)
+                    : string.Empty;
+                if (!string.IsNullOrWhiteSpace(attemptedToolRecoveryPrompt))
+                {
+                    promptMessages = InsertEvidenceMessageBeforeCurrentUser(
+                        promptMessages,
+                        attemptedToolRecoveryPrompt);
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        "Agent recovery checkpoint supplied bounded recent attempted-tool metadata so the rebuilt session can avoid replaying completed or denied operations."));
                 }
 
                 return new AgentSessionPreparation

@@ -27,8 +27,11 @@ namespace ProjectARVRPro
         public DateTime CreateTime { get; set; } = DateTime.Now;
         public DateTime UpdateTime { get; set; } = DateTime.Now;
 
-        [SugarColumn(ColumnDataType = "TEXT", IsNullable = true)]
-        public string ObjectiveTestResultJson { get; set; } = string.Empty;
+        /// <summary>
+        /// 当前流程或按需加载后的整组结果 JSON。数据库只保存 GZip 压缩字段。
+        /// </summary>
+        [SugarColumn(IsIgnore = true)]
+        public string? ObjectiveTestResultJson { get; set; }
 
         public static ObjectiveTestResultRecord Create(ProjectARVRReuslt result, ObjectiveTestResult objectiveTestResult)
         {

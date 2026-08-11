@@ -1,4 +1,5 @@
 using ColorVision.Core;
+using log4net;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -12,10 +13,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
     internal sealed class VideoFrameProcessor : IDisposable
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(VideoFrameProcessor));
         private readonly object _gate = new();
         private readonly AutoResetEvent _frameReady = new(false);
         private readonly CancellationTokenSource _cts = new();
         private readonly Action<VideoFrameProcessingResult> _resultHandler;
+        private readonly Func<HImage, VideoFrameProcessingRequest, VideoFrameProcessingResult> _frameProcessor;
         private readonly Task _workerTask;
 
         private HImage? _pendingFrame;
@@ -27,9 +30,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private bool _disposed;
 
         public VideoFrameProcessor(Action<VideoFrameProcessingResult> resultHandler)
+            : this(resultHandler, ProcessFrame)
+        {
+        }
+
+        internal VideoFrameProcessor(
+            Action<VideoFrameProcessingResult> resultHandler,
+            Func<HImage, VideoFrameProcessingRequest, VideoFrameProcessingResult> frameProcessor)
         {
             ArgumentNullException.ThrowIfNull(resultHandler);
+            ArgumentNullException.ThrowIfNull(frameProcessor);
             _resultHandler = resultHandler;
+            _frameProcessor = frameProcessor;
             _workerTask = Task.Factory.StartNew(
                 WorkerLoop,
                 _cts.Token,
@@ -98,7 +110,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     workingFrame = _workingFrame!.Value;
                 }
 
-                VideoFrameProcessingResult result = ProcessFrame(workingFrame, request);
+                VideoFrameProcessingResult result;
+                try
+                {
+                    result = _frameProcessor(workingFrame, request);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("Video frame processing failed.", ex);
+                    continue;
+                }
 
                 try
                 {

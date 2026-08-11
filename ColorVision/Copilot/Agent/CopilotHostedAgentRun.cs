@@ -9,10 +9,16 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotHostedAgentRun : IDisposable
     {
+        private const int MaximumTrackedDeliveredSteeringMessages = 16;
         private readonly CopilotNonBlockingCancellationSource _cancellation = new();
         private readonly TaskCompletionSource<object?> _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly CancellationToken _cancellationToken;
+        private readonly object _steeringCheckpointSyncRoot = new();
+        private readonly Dictionary<string, CopilotSteeringMessageSnapshot> _deliveredSteeringAwaitingCheckpoint =
+            new(StringComparer.Ordinal);
+        private CopilotAgentSessionCheckpoint? _deliveredSteeringCheckpointBaseline;
         private int _agentStopReason;
+        private int _automaticFollowUpDispatchSuppressed;
         private int _checkpointReady;
         private int _disposed;
         private int _state = (int)CopilotHostedRunState.Queued;
@@ -21,12 +27,21 @@ namespace ColorVision.Copilot
         private CopilotHostedProviderRetrySnapshot _providerRetrySnapshot =
             CopilotHostedProviderRetrySnapshot.Empty;
 
-        internal CopilotHostedAgentRun(string conversationId, CopilotAgentMode mode)
+        internal CopilotHostedAgentRun(
+            string conversationId,
+            CopilotAgentMode mode,
+            string? runId = null,
+            DateTimeOffset? enqueuedAtUtc = null,
+            bool isQueuedLocalCommand = false)
         {
-            Id = "run:" + Guid.NewGuid().ToString("N");
+            var normalizedRunId = (runId ?? string.Empty).Trim();
+            Id = normalizedRunId.Length == 0
+                ? "run:" + Guid.NewGuid().ToString("N")
+                : normalizedRunId;
             ConversationId = conversationId;
             Mode = mode;
-            EnqueuedAtUtc = DateTimeOffset.UtcNow;
+            IsQueuedLocalCommand = isQueuedLocalCommand;
+            EnqueuedAtUtc = enqueuedAtUtc ?? DateTimeOffset.UtcNow;
             RunControl = IsAgent ? new CopilotAgentRunControl() : null;
             _cancellationToken = _cancellation.Token;
         }
@@ -43,7 +58,9 @@ namespace ColorVision.Copilot
 
         public bool HasStarted => StartedAtUtc.HasValue;
 
-        public bool IsAgent => Mode != CopilotAgentMode.Chat;
+        public bool IsAgent => Mode != CopilotAgentMode.Chat && !IsQueuedLocalCommand;
+
+        internal bool IsQueuedLocalCommand { get; }
 
         public bool IsCheckpointReady => Volatile.Read(ref _checkpointReady) == 1;
 
@@ -66,6 +83,9 @@ namespace ColorVision.Copilot
 
         internal CopilotHostedProviderRetrySnapshot ProviderRetrySnapshot =>
             Volatile.Read(ref _providerRetrySnapshot);
+
+        internal bool AllowsAutomaticFollowUpDispatch =>
+            Volatile.Read(ref _automaticFollowUpDispatchSuppressed) == 0;
 
         internal long ElapsedSeconds
         {
@@ -109,6 +129,11 @@ namespace ColorVision.Copilot
             Volatile.Write(ref _agentStopReason, (int)stopReason);
         }
 
+        internal void SuppressAutomaticFollowUpDispatch()
+        {
+            Interlocked.Exchange(ref _automaticFollowUpDispatchSuppressed, 1);
+        }
+
         internal void RecordProviderRetry(CopilotProviderRetryInfo retry)
         {
             ArgumentNullException.ThrowIfNull(retry);
@@ -124,6 +149,59 @@ namespace ColorVision.Copilot
                 {
                     return;
                 }
+            }
+        }
+
+        internal void RecordDeliveredSteeringAwaitingCheckpoint(
+            IEnumerable<CopilotSteeringMessageSnapshot>? messages,
+            CopilotAgentSessionCheckpoint? checkpointBaseline)
+        {
+            var delivered = CopilotSteeringMessagePolicy.SelectForRecovery(messages);
+            if (delivered.Count == 0)
+                return;
+
+            lock (_steeringCheckpointSyncRoot)
+            {
+                var wasEmpty = _deliveredSteeringAwaitingCheckpoint.Count == 0;
+                foreach (var message in delivered)
+                {
+                    if (_deliveredSteeringAwaitingCheckpoint.Count
+                        >= MaximumTrackedDeliveredSteeringMessages)
+                    {
+                        break;
+                    }
+
+                    _deliveredSteeringAwaitingCheckpoint.TryAdd(message.MessageId, message);
+                }
+                if (wasEmpty && _deliveredSteeringAwaitingCheckpoint.Count > 0)
+                    _deliveredSteeringCheckpointBaseline = checkpointBaseline;
+            }
+        }
+
+        internal (CopilotAgentSessionCheckpoint? BaselineCheckpoint, IReadOnlyList<CopilotSteeringMessageSnapshot> Messages)
+            GetDeliveredSteeringAwaitingCheckpoint()
+        {
+            lock (_steeringCheckpointSyncRoot)
+            {
+                return (
+                    _deliveredSteeringCheckpointBaseline,
+                    _deliveredSteeringAwaitingCheckpoint.Values.ToArray());
+            }
+        }
+
+        internal (CopilotAgentSessionCheckpoint? BaselineCheckpoint, IReadOnlyList<CopilotSteeringMessageSnapshot> Messages)
+            TakeDeliveredSteeringAwaitingCheckpoint()
+        {
+            lock (_steeringCheckpointSyncRoot)
+            {
+                if (_deliveredSteeringAwaitingCheckpoint.Count == 0)
+                    return (null, Array.Empty<CopilotSteeringMessageSnapshot>());
+
+                var messages = _deliveredSteeringAwaitingCheckpoint.Values.ToArray();
+                var checkpointBaseline = _deliveredSteeringCheckpointBaseline;
+                _deliveredSteeringAwaitingCheckpoint.Clear();
+                _deliveredSteeringCheckpointBaseline = null;
+                return (checkpointBaseline, messages);
             }
         }
 

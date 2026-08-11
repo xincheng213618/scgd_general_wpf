@@ -1,6 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="Platform;PlatformTarget;RuntimeIdentifier;RuntimeIdentifiers;_ColorVisionFileIORequestedPlatform;_ColorVisionFileIORequestedPlatformTarget;_ColorVisionFileIORequestedRuntimeIdentifier;_ColorVisionFileIORequestedRuntimeIdentifiers">
 
   <PropertyGroup>
+	  <!-- Preserve direct command-line requests before canonical AnyCPU values replace them. -->
+	  <_ColorVisionFileIORequestedPlatform>$(Platform)</_ColorVisionFileIORequestedPlatform>
+	  <_ColorVisionFileIORequestedPlatformTarget>$(PlatformTarget)</_ColorVisionFileIORequestedPlatformTarget>
+	  <_ColorVisionFileIORequestedRuntimeIdentifier>$(RuntimeIdentifier)</_ColorVisionFileIORequestedRuntimeIdentifier>
+	  <_ColorVisionFileIORequestedRuntimeIdentifiers>$(RuntimeIdentifiers)</_ColorVisionFileIORequestedRuntimeIdentifiers>
 	  <TargetFrameworks>net10.0;net8.0;net6.0;net461</TargetFrameworks>
 	  <VersionPrefix>1.5.1.1</VersionPrefix>
 	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -8,10 +13,18 @@
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	  <PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 	  <PackageReadmeFile>README.md</PackageReadmeFile>
-	  <Platforms>x64;ARM64;x86;AnyCPU</Platforms>
+	  <PackageId>ColorVision.FileIO</PackageId>
+	  <!-- 单一纯托管包坐标必须保持 AnyCPU，不能按宿主 Platform 产出架构绑定变体。 -->
+	  <Platforms>AnyCPU</Platforms>
+	  <Platform>AnyCPU</Platform>
+	  <PlatformTarget>AnyCPU</PlatformTarget>
+	  <RuntimeIdentifier></RuntimeIdentifier>
+	  <RuntimeIdentifiers></RuntimeIdentifiers>
   </PropertyGroup>
 
 	<ItemGroup>
+		<ColorVisionPlatformRole Remove="@(ColorVisionPlatformRole)" />
+		<ColorVisionPlatformRole Include="AnyCPU" />
 		<None Include="README.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>

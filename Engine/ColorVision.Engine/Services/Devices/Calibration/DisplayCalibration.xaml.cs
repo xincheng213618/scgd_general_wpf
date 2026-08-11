@@ -1,4 +1,5 @@
 ﻿using ColorVision.Database;
+#pragma warning disable CS8601
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.PhyCameras;
@@ -40,6 +41,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     /// </summary>
     public partial class DisplayCalibration : UserControl, IDisPlayControl,IDisposable
     {
+        private bool _isInitialized;
+        private bool _isDisposed;
 
         public DeviceCalibration Device { get; set; }
         private MQTTCalibration DeviceService { get => Device.DService;  }
@@ -55,21 +58,16 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         public ViewCalibration View { get=> Device.View; }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            if (_isInitialized || _isDisposed)
+                return;
+
+            _isInitialized = true;
             DataContext = Device;
             EnsureTimedButtonOperations();
 
-            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
-            ComboxCalibrationTemplate.SelectedIndex = 0;
-            Device.ConfigChanged += (s, e) =>
-            {
-                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
-                ComboxCalibrationTemplate.SelectedIndex = 0;
-            };
-            PhyCameraManager.GetInstance().Loaded += (s, e) =>
-            {
-                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
-                ComboxCalibrationTemplate.SelectedIndex = 0;
-            };
+            UpdateCalibrationTemplates();
+            Device.ConfigChanged += Device_ConfigChanged;
+            PhyCameraManager.GetInstance().Loaded += PhyCameraManager_Loaded;
             this.AddViewConfig(View, DisPlayName);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
@@ -80,8 +78,24 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             Device.DService.DeviceStatusChanged += DService_DeviceStatusChanged; ;
         }
 
+        private void Device_ConfigChanged(object? sender, EventArgs e) => UpdateCalibrationTemplates();
+
+        private void PhyCameraManager_Loaded(object? sender, EventArgs e) => UpdateCalibrationTemplates();
+
+        private void UpdateCalibrationTemplates()
+        {
+            if (_isDisposed)
+                return;
+
+            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
+            ComboxCalibrationTemplate.SelectedIndex = 0;
+        }
+
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
         {
+            if (_isDisposed)
+                return;
+
             void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
 
             void HideAllButtons()
@@ -277,8 +291,17 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public void Dispose()
         {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
             Device.DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
+            Device.ConfigChanged -= Device_ConfigChanged;
+            PhyCameraManager.GetInstance().Loaded -= PhyCameraManager_Loaded;
             ImageFile.TextChanged -= ImageFile_TextChanged;
+            this.DisposeTimedButtonOperations();
+            ComboxCalibrationTemplate.ItemsSource = null;
+            DataContext = null;
             GC.SuppressFinalize(this);
         }
     }

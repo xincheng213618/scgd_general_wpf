@@ -36,7 +36,8 @@ internal static class WpfTestHost
         {
             try
             {
-                _ = Application.Current ?? new Application();
+                Application application = Application.Current ?? new Application();
+                application.ShutdownMode = ShutdownMode.OnExplicitShutdown;
                 Authorization.Instance ??= new Authorization();
                 dispatcher = Dispatcher.CurrentDispatcher;
             }

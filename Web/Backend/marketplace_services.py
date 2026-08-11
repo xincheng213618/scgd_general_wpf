@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from flask import g, has_request_context, request
-
 from app_changelog import build_changelog_lookup, changelog_signature, get_cached_changelog_analysis
 from app_releases import (
     build_app_release_context,
@@ -31,6 +29,7 @@ from storage_browser import (
 from storage_paths import resolve_storage_file as resolve_storage_file_impl
 from update_retention import repair_update_storage_layout
 from services.app_latest_version_cache import get_latest_version_cached
+from services.request_context import RequestContext
 
 
 @dataclass(frozen=True)
@@ -93,12 +92,15 @@ class MarketplaceDataService:
         except OSError:
             return 0.0
 
-    def request_cached_value(self, cache_key: str, loader: Callable[[], Any]) -> Any:
-        if not has_request_context():
+    def request_cached_value(
+        self,
+        cache_key: str,
+        loader: Callable[[], Any],
+        request_context: RequestContext | None = None,
+    ) -> Any:
+        if request_context is None:
             return loader()
-        if not hasattr(g, cache_key):
-            setattr(g, cache_key, loader())
-        return getattr(g, cache_key)
+        return request_context.values.get_or_load(cache_key, loader)
 
     def scan_app_release_artifacts(self) -> list[dict[str, Any]]:
         # Try release_index first (fast, no disk scan)
@@ -146,8 +148,13 @@ class MarketplaceDataService:
     def get_download_counts(self) -> dict[str, int]:
         return get_download_counts(self._get_db)
 
-    def get_request_download_counts(self) -> dict[str, int]:
-        return self.request_cached_value("download_counts", self.get_download_counts)
+    def get_request_download_counts(
+        self,
+        request_context: RequestContext | None = None,
+    ) -> dict[str, int]:
+        return self.request_cached_value(
+            "download_counts", self.get_download_counts, request_context
+        )
 
     def scan_plugins(self, download_counts: dict[str, int] | None = None) -> list[dict]:
         if download_counts is None:
@@ -160,22 +167,27 @@ class MarketplaceDataService:
             ttl_seconds=self._cache.plugin_info_cache_ttl_seconds,
         )
 
-    def get_request_plugin_catalog(self) -> list[dict]:
+    def get_request_plugin_catalog(
+        self,
+        request_context: RequestContext | None = None,
+    ) -> list[dict]:
         def _load():
             # Try plugin_index first (fast, no disk scan)
             if self._cache_manager is not None:
                 try:
                     from services.plugin_index import get_plugin_catalog_from_index
-                    download_counts = self.get_request_download_counts()
+                    download_counts = self.get_request_download_counts(request_context)
                     indexed = get_plugin_catalog_from_index(self._cache_manager, download_counts)
                     if indexed is not None:
                         return indexed
                 except Exception as exc:
                     print(f"[plugin_index] catalog read fallback: {exc}")
             # Fallback to disk scan + cache
-            return self.scan_plugins(download_counts=self.get_request_download_counts())
+            return self.scan_plugins(
+                download_counts=self.get_request_download_counts(request_context)
+            )
 
-        return self.request_cached_value("plugin_catalog", _load)
+        return self.request_cached_value("plugin_catalog", _load, request_context)
 
     def get_plugin_info(
         self,
@@ -234,13 +246,18 @@ class MarketplaceDataService:
             ),
         )
 
-    def record_download(self, plugin_id: str, version: str):
+    def record_download(
+        self,
+        plugin_id: str,
+        version: str,
+        request_context: RequestContext,
+    ):
         record_download(
             self._get_db,
             plugin_id=plugin_id,
             version=version,
-            client_ip=request.remote_addr,
-            client_version=request.headers.get("X-Client-Version", ""),
+            client_ip=request_context.remote_addr,
+            client_version=request_context.client_version,
         )
 
     @staticmethod
@@ -438,28 +455,51 @@ class MarketplaceDataService:
             ),
         }
 
-    def get_request_home_app_info(self) -> dict[str, Any]:
-        return self.request_cached_value("home_app_info", self.build_home_app_info)
+    def get_request_home_app_info(
+        self,
+        request_context: RequestContext | None = None,
+    ) -> dict[str, Any]:
+        return self.request_cached_value(
+            "home_app_info", self.build_home_app_info, request_context
+        )
 
-    def get_request_compact_home_app_info(self) -> dict[str, Any] | None:
+    def get_request_compact_home_app_info(
+        self,
+        request_context: RequestContext | None = None,
+    ) -> dict[str, Any] | None:
         return self.request_cached_value(
             "compact_home_app_info",
             self.build_compact_home_app_info,
+            request_context,
         )
 
-    def get_request_release_app_info(self) -> dict[str, Any]:
-        return self.request_cached_value("release_app_info", self.build_release_app_info)
+    def get_request_release_app_info(
+        self,
+        request_context: RequestContext | None = None,
+    ) -> dict[str, Any]:
+        return self.request_cached_value(
+            "release_app_info", self.build_release_app_info, request_context
+        )
 
     def get_request_compact_release_page(self, **kwargs: Any) -> dict[str, Any] | None:
         return self.build_compact_release_page(**kwargs)
 
-    def get_request_changelog_app_info(self) -> dict[str, Any]:
-        return self.request_cached_value("changelog_app_info", self.build_changelog_app_info)
+    def get_request_changelog_app_info(
+        self,
+        request_context: RequestContext | None = None,
+    ) -> dict[str, Any]:
+        return self.request_cached_value(
+            "changelog_app_info", self.build_changelog_app_info, request_context
+        )
 
-    def get_request_compact_changelog_app_info(self) -> dict[str, Any]:
+    def get_request_compact_changelog_app_info(
+        self,
+        request_context: RequestContext | None = None,
+    ) -> dict[str, Any]:
         return self.request_cached_value(
             "compact_changelog_app_info",
             self.build_compact_changelog_app_info,
+            request_context,
         )
 
     def build_home_tool_preview(self) -> dict[str, Any]:
@@ -517,8 +557,13 @@ class MarketplaceDataService:
         )
         return preview
 
-    def get_request_home_tool_preview(self) -> dict[str, Any]:
-        return self.request_cached_value("home_tool_preview", self.build_home_tool_preview)
+    def get_request_home_tool_preview(
+        self,
+        request_context: RequestContext | None = None,
+    ) -> dict[str, Any]:
+        return self.request_cached_value(
+            "home_tool_preview", self.build_home_tool_preview, request_context
+        )
 
     def get_app_info(self) -> dict[str, Any]:
         changelog_path = self._storage() / "CHANGELOG.md"

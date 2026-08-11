@@ -384,8 +384,8 @@ class CVWSApiContracts(ContractTestBase):
         self.assertGreaterEqual(len(data["packages"]), 1)
 
     def test_download_returns_file(self):
-        resp = self.client.get("/api/tool/cvwindowsservice/download/1.0.0.0")
-        self.assertEqual(resp.status_code, 200)
+        with self.client.get("/api/tool/cvwindowsservice/download/1.0.0.0") as resp:
+            self.assertEqual(resp.status_code, 200)
 
     def test_download_404_for_missing_version(self):
         resp = self.client.get("/api/tool/cvwindowsservice/download/9.9.9.9")
@@ -531,8 +531,8 @@ class AuthContracts(ContractTestBase):
     """Contract tests for authentication behavior."""
 
     def test_login_page_renders(self):
-        resp = self.client.get("/login")
-        self.assertEqual(resp.status_code, 200)
+        with self.client.get("/login") as resp:
+            self.assertEqual(resp.status_code, 200)
 
     def test_login_success_redirects(self):
         resp = self.client.post("/login", data={
@@ -757,6 +757,18 @@ class AdminApiContracts(ContractTestBase):
         data = resp.get_json()
         self.assertIsInstance(data, list)
         self.assertGreater(len(data), 0)
+        self.assertEqual([job["id"] for job in data], sorted(job["id"] for job in data))
+        self.assertIn("latest_run", data[0])
+
+    def test_jobs_missing_job_contracts_remain_404(self):
+        for action in ("run", "enable", "disable"):
+            with self.subTest(action=action):
+                resp = self.client.post(
+                    f"/api/admin/jobs/missing/{action}",
+                    headers=self.basic_auth(),
+                )
+                self.assertEqual(resp.status_code, 404)
+                self.assertEqual(resp.get_json(), {"error": "Job not found"})
 
     def test_job_run_returns_result(self):
         from services.scheduler import ensure_default_jobs

@@ -6,6 +6,7 @@ using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine;
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
@@ -13,6 +14,7 @@ using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
@@ -32,6 +34,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -61,12 +64,17 @@ namespace ProjectKB
         private const double DefaultRestartServicesExpectedDurationMs = 15000;
         private const int CenterDistanceLcNeighborhoodVersion = 2;
         private const double LegacyLcNeighborhoodPaddingPixels = 300;
+        private static readonly Regex OutputDetailHeaderRegex = new(@"^\s*按键\s+\(PT\)\s+亮度\s+\(Lv\)\s+局部对比度\s+\(LC\)\s*$", RegexOptions.CultureInvariant);
+        private static readonly Regex OutputDetailRowRegex = new(@"^\s*(?<key>\[[^\]\r\n]+\])\s+(?<lv>\S+)\s+(?<lc>\S+%)\s*(?<result>Fail)?\s*$", RegexOptions.CultureInvariant);
         private readonly SemaphoreSlim _refreshGate = new(1, 1);
         private readonly FlowNodeExecutionRecorder _flowNodeExecutionRecorder = new();
+        private readonly CancellationTokenSource _lifetimeCancellation = new();
         private readonly Dictionary<KBItem, DVRectangle> _keyVisuals = new();
+        private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
         private bool _isDisposed;
         private bool _isFlowStartPending;
         private bool _isFlowLifecycleActive;
+        private bool _modbusStatusSubscribed;
         private int _resultImageRequestId;
         private KBItemMaster? _displayedKeyResult;
         private DVCircle? _lcNeighborhoodCircle;
@@ -79,6 +87,14 @@ namespace ProjectKB
         public ProjectKBWindow()
         {
             InitializeComponent();
+            outputText.CommandBindings.Add(new CommandBinding(
+                ApplicationCommands.Copy,
+                OutputText_Copy,
+                (s, e) =>
+                {
+                    e.CanExecute = !outputText.Selection.IsEmpty;
+                    e.Handled = true;
+                }));
             this.ApplyCaption(false);
             Config.SetWindow(this);
             this.Title += "-" + Assembly.GetAssembly(typeof(ProjectKBWindow))?.GetName().Version?.ToString() ?? "";
@@ -89,9 +105,9 @@ namespace ProjectKB
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            // 先挂载集合，再恢复共享的选中索引，避免空列表把校正后的索引写回单例。
+            listView1.ItemsSource = ViewResluts;
             this.DataContext = ProjectKBConfig.Instance;
-
-            ViewResultManager.ListView = listView1;
             listView1.CommandBindings.Add(new CommandBinding(
                 ApplicationCommands.Delete,
                 (s, e) =>
@@ -102,42 +118,63 @@ namespace ProjectKB
                 (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
-            listView1.ItemsSource = ViewResluts;
             BuildListViewContextMenu();
             ImageView.EditorContext.DrawEditorContext.DrawCanvas.PreviewMouseLeftButtonDown += ImageCanvas_PreviewMouseLeftButtonDown;
             InitFlow();
             EnsureTimedButtonOperations();
             logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline", ProjectKBLogConfig.Instance);
             LogGrid.Children.Add(logOutput);
-            Task.Run(async () =>
+            if (ProjectKBConfig.Instance.AutoModbusConnect)
             {
-                if (ProjectKBConfig.Instance.AutoModbusConnect)
-                {
-                    bool con = await ModbusControl.GetInstance().Connect();
-                    if (con)
-                    {
-                        log.Debug("初始化寄存器设置为0");
-                        ModbusControl.GetInstance().SetRegisterValue(0);
-                    }
-                    ModbusControl.GetInstance().StatusChanged += ProjectKBWindow_StatusChanged;
-                }
-            });
+                _ = InitializeModbusAsync();
+            }
 
             // 初始化权限系统
             InitAuth();
 
             this.Closed += (s, e) =>
             {
-                ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
-
                 SummaryManager.GetInstance().Save();
-                ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
                 AuthManager.IsAdminChanged -= AuthManager_IsAdminChanged;
                 AuthManager.AutoLoggedOut -= AuthManager_AutoLoggedOut;
                 AuthManager.Dispose();
                 this.Dispose();
             };
 
+        }
+
+        private async Task InitializeModbusAsync()
+        {
+            bool connected = await ModbusControl.GetInstance().Connect();
+            if (_isDisposed)
+                return;
+
+            if (connected)
+            {
+                log.Debug("初始化寄存器设置为0");
+                ModbusControl.GetInstance().SetRegisterValue(0);
+            }
+
+            if (!_isDisposed)
+                SubscribeModbusStatus();
+        }
+
+        private void SubscribeModbusStatus()
+        {
+            if (_isDisposed || _modbusStatusSubscribed)
+                return;
+
+            ModbusControl.GetInstance().StatusChanged += ProjectKBWindow_StatusChanged;
+            _modbusStatusSubscribed = true;
+        }
+
+        private void UnsubscribeModbusStatus()
+        {
+            if (!_modbusStatusSubscribed)
+                return;
+
+            ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
+            _modbusStatusSubscribed = false;
         }
 
         #region Auth
@@ -577,6 +614,9 @@ namespace ProjectKB
 
         public async Task RunTemplate()
         {
+            if (_isDisposed)
+                return;
+
             if (!Dispatcher.CheckAccess())
             {
                 Task dispatchedTask = await Dispatcher.InvokeAsync(RunTemplate);
@@ -601,6 +641,8 @@ namespace ProjectKB
                 LastFlowTime = await Task.Run(
                     () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
                         new FlowIdentity(template.Id, template.Key, template.Key)));
+                if (_isDisposed)
+                    return;
 
                 CurrentFlowResult = new KBItemMaster
                 {
@@ -611,10 +653,17 @@ namespace ProjectKB
                     FlowStatus = FlowStatus.Ready,
                 };
 
-                RecipeManager.SetCurrentTemplate(FlowName);
+                KBRecipeConfig currentRecipe = RecipeManager.SetCurrentTemplate(FlowName);
+                CurrentFlowResult.RecipeSnapshot = KBRecipeSnapshot.Capture(FlowName, currentRecipe);
+                CurrentFlowResult.IsResultPayloadLoaded = true;
                 await Refresh(template);
+                if (_isDisposed)
+                    return;
 
-                if (!await PreProcessingAsync(FlowName, CurrentFlowResult.SN))
+                bool preprocessingSucceeded = await PreProcessingAsync(FlowName, CurrentFlowResult.SN);
+                if (_isDisposed)
+                    return;
+                if (!preprocessingSucceeded)
                 {
                     CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                     CurrentFlowResult.Msg = "PreProcessFailed";
@@ -631,7 +680,15 @@ namespace ProjectKB
                 CreateCurrentFlowBatch();
                 _isFlowLifecycleActive = true;
 
-                if (!await flowControl.TryStartAsync(CurrentFlowResult.Code))
+                bool started = await flowControl.TryStartAsync(CurrentFlowResult.Code, _lifetimeCancellation.Token);
+                if (_isDisposed)
+                {
+                    flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                    if (started && flowControl.IsFlowRun)
+                        flowControl.Stop();
+                    return;
+                }
+                if (!started)
                 {
                     flowControl.FlowCompleted -= FlowControl_FlowCompleted;
                     await HandleFlowCompletedAsync(new FlowControlData
@@ -647,6 +704,11 @@ namespace ProjectKB
             }
             catch (Exception ex)
             {
+                if (_isDisposed)
+                {
+                    log.Debug("窗口已关闭，忽略迟到的流程启动结果", ex);
+                    return;
+                }
                 log.Error("运行流程失败", ex);
                 flowControl?.FlowCompleted -= FlowControl_FlowCompleted;
                 stopwatch.Stop();
@@ -706,6 +768,10 @@ namespace ProjectKB
                 completedFlowControl.FlowCompleted -= FlowControl_FlowCompleted;
             else if (flowControl != null)
                 flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+
+            // FlowControl 会在派发到 UI 前快照订阅者；窗口关闭时的 -= 无法取消已经排队的回调。
+            if (_isDisposed)
+                return;
 
             try
             {
@@ -869,6 +935,7 @@ namespace ProjectKB
             KBItemMaster KBItemMaster = CurrentFlowResult ?? new KBItemMaster();
             KBItemMaster.Model = CurrentFlowResult?.Model ?? FlowName;
             KBItemMaster.SN = CurrentFlowResult?.SN ?? string.Empty;
+            KBRecipeConfig resultRecipe = KBItemMaster.RecipeSnapshot?.Recipe ?? RecipeConfig;
             KBItemMaster.CreateTime = DateTime.Now;
             KBItemMaster.FlowStatus = FlowStatus.Completed;
 
@@ -974,8 +1041,8 @@ namespace ProjectKB
                 return;
             }
 
-            double keyLcNeighborhoodRadiusMm = RecipeConfig.KeyLcNeighborhoodRadiusMm;
-            double keyLcPixelsPerMillimeter = RecipeConfig.KeyLcPixelsPerMillimeter;
+            double keyLcNeighborhoodRadiusMm = resultRecipe.KeyLcNeighborhoodRadiusMm;
+            double keyLcPixelsPerMillimeter = resultRecipe.KeyLcPixelsPerMillimeter;
             double keyLcNeighborhoodRadiusPixels = GetLcNeighborhoodRadiusPixels(keyLcNeighborhoodRadiusMm, keyLcPixelsPerMillimeter);
             KBItemMaster.KeyLcNeighborhoodRadiusMm = keyLcNeighborhoodRadiusMm;
             KBItemMaster.KeyLcPixelsPerMillimeter = keyLcPixelsPerMillimeter;
@@ -984,16 +1051,16 @@ namespace ProjectKB
 
             foreach (var item in KBItemMaster.Items)
             {
-                if (RecipeConfig.EnableKeyLvLimit)
+                if (resultRecipe.EnableKeyLvLimit)
                 {
-                    item.Result = item.Result && item.Lv >= RecipeConfig.MinKeyLv;
-                    item.Result = item.Result && item.Lv <= RecipeConfig.MaxKeyLv;
+                    item.Result = item.Result && item.Lv >= resultRecipe.MinKeyLv;
+                    item.Result = item.Result && item.Lv <= resultRecipe.MaxKeyLv;
                 }
 
-                if (RecipeConfig.EnableKeyLcLimit)
+                if (resultRecipe.EnableKeyLcLimit)
                 {
-                    item.Result = item.Result && item.Lc >= RecipeConfig.MinKeyLc / 100;
-                    item.Result = item.Result && item.Lc <= RecipeConfig.MaxKeyLc / 100;
+                    item.Result = item.Result && item.Lc >= resultRecipe.MinKeyLc / 100;
+                    item.Result = item.Result && item.Lc <= resultRecipe.MaxKeyLc / 100;
                 }
             }
 
@@ -1007,7 +1074,7 @@ namespace ProjectKB
             KBItemMaster.AvgLv = KBItemMaster.Items.Any() ? KBItemMaster.Items.Average(item => item.Lv) : 0;
 
             KBItemMaster.LvUniformity = KBItemMaster.MaxLv == 0 ? 0 : KBItemMaster.MinLv / KBItemMaster.MaxLv;
-            BacklightAutotuneService.Apply(KBItemMaster, RecipeConfig);
+            BacklightAutotuneService.Apply(KBItemMaster, resultRecipe);
             KBItemMaster.SN = SNtextBox.Text;
 
 
@@ -1015,28 +1082,28 @@ namespace ProjectKB
 
             KBItemMaster.Result = true;
 
-            if (RecipeConfig.EnableKeyLvLimit)
+            if (resultRecipe.EnableKeyLvLimit)
             {
-                KBItemMaster.Result = KBItemMaster.Result && BacklightAutotuneService.GetOriginalMinLv(KBItemMaster) >= RecipeConfig.MinKeyLv;
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MaxLv <= RecipeConfig.MaxKeyLv;
+                KBItemMaster.Result = KBItemMaster.Result && BacklightAutotuneService.GetOriginalMinLv(KBItemMaster) >= resultRecipe.MinKeyLv;
+                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.MaxLv <= resultRecipe.MaxKeyLv;
             }
 
-            if (RecipeConfig.EnableAvgLvLimit)
+            if (resultRecipe.EnableAvgLvLimit)
             {
                 double originalAvgLv = BacklightAutotuneService.GetOriginalAvgLv(KBItemMaster);
-                KBItemMaster.Result = KBItemMaster.Result && originalAvgLv >= RecipeConfig.MinAvgLv;
-                KBItemMaster.Result = KBItemMaster.Result && originalAvgLv <= RecipeConfig.MaxAvgLv;
+                KBItemMaster.Result = KBItemMaster.Result && originalAvgLv >= resultRecipe.MinAvgLv;
+                KBItemMaster.Result = KBItemMaster.Result && originalAvgLv <= resultRecipe.MaxAvgLv;
             }
 
-            if (RecipeConfig.EnableUniformityLimit)
+            if (resultRecipe.EnableUniformityLimit)
             {
-                KBItemMaster.Result = KBItemMaster.Result && BacklightAutotuneService.GetOriginalLvUniformity(KBItemMaster) >= RecipeConfig.MinUniformity / 100;
+                KBItemMaster.Result = KBItemMaster.Result && BacklightAutotuneService.GetOriginalLvUniformity(KBItemMaster) >= resultRecipe.MinUniformity / 100;
             }
 
-            if (RecipeConfig.EnableKeyLcLimit)
+            if (resultRecipe.EnableKeyLcLimit)
             {
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Min(item => item.Lc) >= RecipeConfig.MinKeyLc / 100;
-                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Max(item => item.Lc) <= RecipeConfig.MaxKeyLc / 100;
+                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Min(item => item.Lc) >= resultRecipe.MinKeyLc / 100;
+                KBItemMaster.Result = KBItemMaster.Result && KBItemMaster.Items.Max(item => item.Lc) <= resultRecipe.MaxKeyLc / 100;
             }
 
             KBItemMaster.NbrFailPoints = KBItemMaster.Items.Count(item => !item.Result);
@@ -1209,7 +1276,6 @@ namespace ProjectKB
             sb.AppendLine($"型号: {modelName}");
             sb.AppendLine($"系列号: {kmitemmaster.SN}");
             sb.AppendLine($"测量设置: {GetSummaryMeasurementSetting(kmitemmaster)}");
-            sb.AppendLine($"LC邻域: {GetLcNeighborhoodDescription(kmitemmaster)}");
             sb.AppendLine($"关注点: {kmitemmaster.KBTemplate}");
             sb.AppendLine($"{kmitemmaster.CreateTime:yyyy/M/d HH:mm:ss}");
             sb.AppendLine();
@@ -1275,13 +1341,13 @@ namespace ProjectKB
             outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
-            KBRecipeConfig recipe = GetRecipeConfig(kmitemmaster);
+            KBRecipeConfig? recipe = GetRecipeConfig(kmitemmaster);
             Brush normalTextBrush = kmitemmaster.Result ? Brushes.Black : Brushes.White;
 
             string outtext = string.Empty;
             outtext += $"机种 (Model):{kmitemmaster.Model}" + Environment.NewLine;
             outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
-            outtext += $"LC邻域 (LC Neighborhood): {GetLcNeighborhoodDescription(kmitemmaster)}" + Environment.NewLine;
+            outtext += GetRecipeSnapshotDescription(kmitemmaster) + Environment.NewLine;
             outtext += $"按键明细 (Points of Interest): " + Environment.NewLine;
             outtext += $"{kmitemmaster.CreateTime:yyyy/MM/dd HH:mm:ss}" + Environment.NewLine;
 
@@ -1310,8 +1376,8 @@ namespace ProjectKB
             }
             outputText.Document.Blocks.Add(paragraph);
 
-            bool minLvFailure = recipe.EnableKeyLvLimit && BacklightAutotuneService.GetOriginalMinLv(kmitemmaster) < recipe.MinKeyLv;
-            bool maxLvFailure = recipe.EnableKeyLvLimit && kmitemmaster.MaxLv > recipe.MaxKeyLv;
+            bool minLvFailure = recipe?.EnableKeyLvLimit == true && BacklightAutotuneService.GetOriginalMinLv(kmitemmaster) < recipe.MinKeyLv;
+            bool maxLvFailure = recipe?.EnableKeyLvLimit == true && kmitemmaster.MaxLv > recipe.MaxKeyLv;
             Table summaryTable = CreateMetricTable(250, 16, 125, 45);
             TableRowGroup summaryRows = new();
             summaryTable.RowGroups.Add(summaryRows);
@@ -1331,9 +1397,9 @@ namespace ProjectKB
             criteriaTable.RowGroups.Add(criteriaRows);
             AppendCriteriaMetricRow(criteriaRows, "不合格点数", "Nbr Failed Points", kmitemmaster.NbrFailPoints.ToString(), string.Empty, kmitemmaster.NbrFailPoints > 0, normalTextBrush);
             double originalAvgLv = BacklightAutotuneService.GetOriginalAvgLv(kmitemmaster);
-            bool avgLvFailure = recipe.EnableAvgLvLimit && (originalAvgLv < recipe.MinAvgLv || originalAvgLv > recipe.MaxAvgLv);
+            bool avgLvFailure = recipe?.EnableAvgLvLimit == true && (originalAvgLv < recipe.MinAvgLv || originalAvgLv > recipe.MaxAvgLv);
             AppendCriteriaMetricRow(criteriaRows, "平均亮度", "Avg Lv", $"{kmitemmaster.AvgLv:F2} cd/m2", string.Empty, avgLvFailure, normalTextBrush);
-            bool uniformityFailure = recipe.EnableUniformityLimit && BacklightAutotuneService.GetOriginalLvUniformity(kmitemmaster) < recipe.MinUniformity / 100;
+            bool uniformityFailure = recipe?.EnableUniformityLimit == true && BacklightAutotuneService.GetOriginalLvUniformity(kmitemmaster) < recipe.MinUniformity / 100;
             AppendCriteriaMetricRow(criteriaRows, "亮度均匀性", "Lv Uniformity", $"{kmitemmaster.LvUniformity * 100:F2}%", string.Empty, uniformityFailure, normalTextBrush);
             AppendLocalContrastSummary(criteriaRows, kmitemmaster, recipe, normalTextBrush);
             outputText.Document.Blocks.Add(criteriaTable);
@@ -1358,12 +1424,21 @@ namespace ProjectKB
             outputText.Document.Blocks.Add(paragraph);
         }
 
-        private static KBRecipeConfig GetRecipeConfig(KBItemMaster kmitemmaster)
+        private static KBRecipeConfig? GetRecipeConfig(KBItemMaster kmitemmaster)
         {
-            RecipeManager recipeManager = RecipeManager.GetInstance();
-            return recipeManager.RecipeConfigs.TryGetValue(kmitemmaster.Model, out KBRecipeConfig? matchedRecipe)
-                ? matchedRecipe
-                : RecipeConfig;
+            return kmitemmaster.RecipeSnapshot?.Recipe;
+        }
+
+        private static string GetRecipeSnapshotDescription(KBItemMaster item)
+        {
+            KBRecipeSnapshot? snapshot = item.RecipeSnapshot;
+            if (snapshot == null)
+                return "Recipe快照 (Recipe Snapshot): 未记录，仅按当时保存的结果显示";
+
+            string name = string.IsNullOrWhiteSpace(snapshot.RecipeName) ? "未命名" : snapshot.RecipeName;
+            return snapshot.Origin == KBRecipeSnapshotOrigin.RebuiltFromCurrentRecipe
+                ? $"Recipe快照 (Recipe Snapshot): {name}（由当前关联Recipe重建）"
+                : $"Recipe快照 (Recipe Snapshot): {name}（运行时记录）";
         }
 
         private static void AppendOutputLine(Paragraph paragraph, string line, Brush normalTextBrush, bool highlightFailure = false)
@@ -1398,8 +1473,43 @@ namespace ProjectKB
             paragraph.Inlines.Add(run);
         }
 
-        private static bool IsKeyFailure(KBItem item, KBRecipeConfig recipe)
+        private void OutputText_Copy(object sender, ExecutedRoutedEventArgs e)
         {
+            string selectedText = outputText.Selection.Text;
+            if (string.IsNullOrEmpty(selectedText)) return;
+
+            ColorVision.Common.Clipboard.SetText(FormatOutputTextForClipboard(selectedText));
+            e.Handled = true;
+        }
+
+        public static string FormatOutputTextForClipboard(string selectedText)
+        {
+            ArgumentNullException.ThrowIfNull(selectedText);
+            if (selectedText.Length == 0) return string.Empty;
+
+            string[] lines = selectedText.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (OutputDetailHeaderRegex.IsMatch(lines[i]))
+                {
+                    lines[i] = "按键 (PT)\t亮度 (Lv)\t局部对比度 (LC)\t结果 (Result)";
+                    continue;
+                }
+
+                Match detailRow = OutputDetailRowRegex.Match(lines[i]);
+                if (!detailRow.Success) continue;
+
+                lines[i] = $"{detailRow.Groups["key"].Value}\t{detailRow.Groups["lv"].Value}\t{detailRow.Groups["lc"].Value}\t{detailRow.Groups["result"].Value}";
+            }
+
+            return string.Join(Environment.NewLine, lines);
+        }
+
+        private static bool IsKeyFailure(KBItem item, KBRecipeConfig? recipe)
+        {
+            if (recipe == null)
+                return false;
+
             if (recipe.EnableKeyLvLimit)
             {
                 if (item.Lv < recipe.MinKeyLv || item.Lv > recipe.MaxKeyLv)
@@ -1496,7 +1606,7 @@ namespace ProjectKB
             return string.Join(" ", text.Select(c => c.ToString()));
         }
 
-        private static void AppendLocalContrastSummary(TableRowGroup rowGroup, KBItemMaster kmitemmaster, KBRecipeConfig recipe, Brush normalTextBrush)
+        private static void AppendLocalContrastSummary(TableRowGroup rowGroup, KBItemMaster kmitemmaster, KBRecipeConfig? recipe, Brush normalTextBrush)
         {
             if (!kmitemmaster.Items.Any())
             {
@@ -1507,8 +1617,8 @@ namespace ProjectKB
             KBItem maxLcItem = kmitemmaster.Items.OrderByDescending(item => item.Lc).First();
             double minLcPercent = minLcItem.Lc * 100;
             double maxLcPercent = maxLcItem.Lc * 100;
-            bool minLcFailure = recipe.EnableKeyLcLimit && minLcPercent < recipe.MinKeyLc;
-            bool maxLcFailure = recipe.EnableKeyLcLimit && maxLcPercent > recipe.MaxKeyLc;
+            bool minLcFailure = recipe?.EnableKeyLcLimit == true && minLcPercent < recipe.MinKeyLc;
+            bool maxLcFailure = recipe?.EnableKeyLcLimit == true && maxLcPercent > recipe.MaxKeyLc;
 
             AppendCriteriaMetricRow(rowGroup, "最小局部对比度", "Min LC", $"{minLcPercent:F2}%", $"[{minLcItem.Name}]", minLcFailure, normalTextBrush);
             AppendCriteriaMetricRow(rowGroup, "最大局部对比度", "Max LC", $"{maxLcPercent:F2}%", $"[{maxLcItem.Name}]", maxLcFailure, normalTextBrush);
@@ -1527,66 +1637,90 @@ namespace ProjectKB
 
             Interlocked.Increment(ref _resultImageRequestId);
             ClearKeyOverlayState();
+            ViewResultManager.ViewReslutsSelectedIndex = -1;
             ViewResluts.Clear();
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
             outputText.SetResourceReference(Control.BackgroundProperty, "RegionBrush");
         }
 
-        private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private async void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
+            if (_isDisposed) return;
             if (sender is not ListView listView) return;
 
             int requestId = Interlocked.Increment(ref _resultImageRequestId);
             ClearKeyOverlayState();
-            ImageView.Clear();
-            if (listView.SelectedIndex > -1)
+            if (listView.SelectedItem is not KBItemMaster kBItem)
             {
-                var kBItem = ViewResluts[listView.SelectedIndex];
-                GenoutputText(kBItem);
-
-                _ = Task.Run(async () =>
-                {
-                    if (File.Exists(kBItem.ResultImagFile))
-                    {
-                        bool imageReady = false;
-                        try
-                        {
-                            var fileInfo = new FileInfo(kBItem.ResultImagFile);
-                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
-                            {
-                            }
-                            imageReady = fileInfo.Length > 0;
-                        }
-                        catch
-                        {
-                            log.Warn("文件还在写入");
-                            await Task.Delay(ViewResultManager.Config.ViewImageReadDelay);
-                            try
-                            {
-                                imageReady = File.Exists(kBItem.ResultImagFile) && new FileInfo(kBItem.ResultImagFile).Length > 0;
-                            }
-                            catch
-                            {
-                                imageReady = false;
-                            }
-                        }
-
-                        if (!imageReady) return;
-                        WriteableBitmap? resultBitmap = TryLoadResultBitmap(kBItem.ResultImagFile);
-                        if (resultBitmap == null) return;
-
-                        _ = Application.Current.Dispatcher.BeginInvoke(() =>
-                        {
-                            if (requestId != _resultImageRequestId) return;
-                            ImageView.Config.FilePath = kBItem.ResultImagFile;
-                            ImageView.OpenImage(resultBitmap);
-                            ImageView.UpdateZoomAndScale();
-                            RenderKeyOverlays(kBItem);
-                        });
-                    }
-                });
+                ClearResultImageSurface();
+                return;
             }
+
+            try
+            {
+                ViewResultManager.LoadResultPayload(kBItem);
+            }
+            catch (Exception ex)
+            {
+                ClearResultImageSurface();
+                log.Error($"读取 KB 历史结果失败，Id={kBItem.Id}", ex);
+                MessageBox.Show(this, $"结果明细读取失败：{ex.Message}", "ProjectKB");
+                return;
+            }
+            listView.ScrollIntoView(kBItem);
+            GenoutputText(kBItem);
+
+            if (!File.Exists(kBItem.ResultImagFile)
+                && ResultImageDimensions.IsValid(kBItem.ImageWidth, kBItem.ImageHeight))
+            {
+                ShowResultImagePlaceholder(kBItem.ImageWidth!.Value, kBItem.ImageHeight!.Value);
+                RenderKeyOverlays(kBItem);
+                return;
+            }
+
+            ClearResultImageSurface();
+            (WriteableBitmap? Bitmap, int Width, int Height) presentation;
+            try
+            {
+                presentation = await Task.Run(() => LoadResultImagePresentation(kBItem));
+            }
+            catch (Exception ex)
+            {
+                log.Error($"准备 KB 历史结果图像失败，Id={kBItem.Id}", ex);
+                return;
+            }
+
+            if (_isDisposed || requestId != _resultImageRequestId) return;
+
+            if (presentation.Bitmap != null)
+            {
+                PersistResultImageDimensions(kBItem, presentation.Width, presentation.Height);
+                ImageView.Config.FilePath = kBItem.ResultImagFile;
+                ImageView.OpenImage(presentation.Bitmap);
+                ImageView.UpdateZoomAndScale();
+                RenderKeyOverlays(kBItem);
+            }
+            else if (ResultImageDimensions.IsValid(presentation.Width, presentation.Height))
+            {
+                PersistResultImageDimensions(kBItem, presentation.Width, presentation.Height);
+                ShowResultImagePlaceholder(presentation.Width, presentation.Height);
+                RenderKeyOverlays(kBItem);
+            }
+            else
+            {
+                ClearResultImageSurface();
+                log.Warn($"KB 结果图片不存在且没有可用尺寸，已清除旧底图：resultId={kBItem.Id}, file={kBItem.ResultImagFile}");
+            }
+        }
+
+        internal static void DetachResultListView(ListView listView, SelectionChangedEventHandler selectionChangedHandler)
+        {
+            listView.SelectionChanged -= selectionChangedHandler;
+            BindingOperations.ClearBinding(listView, System.Windows.Controls.Primitives.Selector.SelectedIndexProperty);
+            listView.ItemsSource = null;
+            listView.ContextMenu = null;
+            listView.CommandBindings.Clear();
         }
 
         private static WriteableBitmap? TryLoadResultBitmap(string filePath)
@@ -1605,6 +1739,62 @@ namespace ProjectKB
             {
                 log.Warn($"结果图像加载失败: {filePath}", ex);
                 return null;
+            }
+        }
+
+        private static (WriteableBitmap? Bitmap, int Width, int Height) LoadResultImagePresentation(KBItemMaster result)
+        {
+            WriteableBitmap? bitmap = File.Exists(result.ResultImagFile)
+                ? TryLoadResultBitmap(result.ResultImagFile)
+                : null;
+            if (bitmap != null)
+                return (bitmap, bitmap.PixelWidth, bitmap.PixelHeight);
+
+            if (ResultImageDimensions.IsValid(result.ImageWidth, result.ImageHeight))
+                return (null, result.ImageWidth!.Value, result.ImageHeight!.Value);
+
+            bool found = KBResultImageDimensions.TryReadFromFile(result.ResultImagFile, out int width, out int height)
+                || KBResultImageDimensions.TryReadFromMeasureResults(result.BatchId, result.ResultImagFile, out width, out height);
+            return found ? (null, width, height) : (null, 0, 0);
+        }
+
+        private static void PersistResultImageDimensions(KBItemMaster result, int width, int height)
+        {
+            try
+            {
+                ViewResultManager.UpdateImageDimensions(result, width, height);
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"保存 KB 历史结果图像尺寸失败：resultId={result.Id}, size={width}x{height}", ex);
+            }
+        }
+
+        private void ShowResultImagePlaceholder(int width, int height)
+        {
+            DrawingImage placeholder = _resultImagePlaceholderCache.GetOrCreate(width, height);
+            if (!_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
+            {
+                ImageView.Clear();
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(ProjectKBWindow), "历史结果坐标空间宽度");
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(ProjectKBWindow), "历史结果坐标空间高度");
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(ProjectKBWindow), "历史结果图像像素宽度");
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(ProjectKBWindow), "历史结果图像像素高度");
+                ImageView.SetImageSource(placeholder, enableEditorImageServices: false, configureDefaultLayerController: false);
+                ImageView.UpdateZoomAndScale();
+            }
+        }
+
+        private void ClearResultImageSurface()
+        {
+            if (ImageView.ImageShow.Source != null
+                || !string.IsNullOrWhiteSpace(ImageView.Config.FilePath))
+            {
+                ImageView.Clear();
+            }
+            else
+            {
+                ImageView.ImageShow.Clear();
             }
         }
 
@@ -1635,13 +1825,15 @@ namespace ProjectKB
             }
         }
 
-        private static Pen CreateDefaultKeyPen(KBItem item, KBItem? darkestKey, KBItem? brightestKey)
+        internal static Pen CreateDefaultKeyPen(KBItem item, KBItem? darkestKey, KBItem? brightestKey)
         {
-            if (!item.Result) return new Pen(Brushes.Gray, 10);
+            if (!item.Result) return new Pen(Brushes.Red, 10);
             if (ReferenceEquals(item, darkestKey)) return new Pen(Brushes.Violet, 10);
             if (ReferenceEquals(item, brightestKey)) return new Pen(Brushes.White, 10);
-            return new Pen(Brushes.Red, 5);
+            return new Pen(Brushes.Gray, 5);
         }
+
+        internal static Pen CreateSelectedKeyPen() => new(Brushes.Lime, 12);
 
         private void ImageCanvas_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -1687,7 +1879,7 @@ namespace ProjectKB
                 }
             }
 
-            selectedVisual.Pen = new Pen(Brushes.Lime, 12);
+            selectedVisual.Pen = CreateSelectedKeyPen();
             selectedVisual.Render();
 
             Pen circlePen = new(Brushes.DeepSkyBlue, 5) { DashStyle = DashStyles.Dash };
@@ -1810,6 +2002,7 @@ namespace ProjectKB
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Delete });
             contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Copy, Header = "复制" });
+            contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveCommand, Header = "重新导出 CSV..." });
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem() { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
             contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = "流程执行分析" });
@@ -1891,12 +2084,15 @@ namespace ProjectKB
         {
             if (_isDisposed) return;
             _isDisposed = true;
+            _lifetimeCancellation.Cancel();
 
             Interlocked.Increment(ref _resultImageRequestId);
+            DetachResultListView(listView1, listView1_SelectionChanged);
             ImageView.EditorContext.DrawEditorContext.DrawCanvas.PreviewMouseLeftButtonDown -= ImageCanvas_PreviewMouseLeftButtonDown;
             ClearKeyOverlayState();
             ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
-            ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
+            UnsubscribeModbusStatus();
+            ImageView.Dispose();
             if (flowControl != null)
             {
                 flowControl.FlowCompleted -= FlowControl_FlowCompleted;
@@ -1909,6 +2105,7 @@ namespace ProjectKB
             logOutput?.Dispose();
             logOutput = null;
             this.DisposeTimedButtonOperations();
+            DataContext = null;
             GC.SuppressFinalize(this);
         }
 

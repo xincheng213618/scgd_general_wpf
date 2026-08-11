@@ -1,67 +1,50 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
-from typing import Callable
+from typing import Any, Callable
 
-from db_cache import PLUGIN_INFO_CACHE_TTL_SECONDS
-from package_publish import (
-    PackageValidationError,
-    finalize_plugin_publish,
-    persist_plugin_metadata,
-    save_package_file,
-    validate_api_publish_request,
-)
-from plugin_marketplace import prewarm_plugin_metadata
-from storage_uploads import UploadTooLargeError, UploadWorkflowError, store_legacy_upload
-from update_retention import prune_update_packages, repair_update_storage_layout
 from flask import abort, jsonify, request, send_from_directory
+
+from package_publish import PackageValidationError
+from services.marketplace_api import (
+    MarketplaceApiServices,
+    MarketplaceQueryError,
+    PublishPackageCommand,
+)
+from services.request_context import RequestContext
+from storage_uploads import UploadTooLargeError, UploadWorkflowError
 
 
 @dataclass(frozen=True)
 class MarketplaceApiRouteContext:
-    get_storage: Callable[[], Path]
-    max_upload_size_bytes: int
-    parse_int_arg: Callable[..., int]
-    normalize_catalog_sort_name: Callable[[str], str]
-    allowed_catalog_sorts: Any
-    allowed_catalog_sort_orders: Any
-    build_plugin_search_api_result: Callable[..., Any]
-    build_plugin_detail_api_result: Callable[..., Any]
-    collect_catalog_categories: Callable[..., Any]
-    get_request_plugin_catalog: Callable[[], Any]
-    build_plugin_icon_url: Callable[[str], str]
-    get_plugin_info: Callable[..., Any]
-    get_request_download_counts: Callable[[], Any]
-    read_text_file: Callable[[Path], str]
-    is_safe_id: Callable[[str], bool]
-    is_safe_version: Callable[[str], bool]
-    sanitize_filename: Callable[[str], str]
-    version_tuple: Callable[..., Any]
-    extract_package_version: Callable[..., Any]
-    load_manifest: Callable[[Path], Any]
-    refresh_related_caches: Callable[..., None]
-    get_download_counts: Callable[[], Any]
-    get_cache_entry: Callable[..., Any]
-    set_cache_entry: Callable[..., None]
-    record_download: Callable[[str, str], None]
-    normalize_relative_path: Callable[[str], str]
-    is_root_release_file: Callable[[str], bool]
-    reconcile_app_release_history: Callable[..., Any]
-    reconcile_plugin_package_history: Callable[..., Any]
+    """Small HTTP adapter bundle; use-case dependencies live in services."""
+
+    services: MarketplaceApiServices
     require_upload_auth: Any
-    refresh_plugin_index_on_publish: Callable[[str], None] | None = None
-    cache: Any = None
+    request_context_factory: Callable[[], RequestContext]
+
+
+def _parse_int_arg(*names: str, default: int, minimum=None, maximum=None) -> int:
+    raw = None
+    for name in names:
+        if name in request.args:
+            raw = request.args.get(name)
+            break
+    if raw is None or str(raw).strip() == "":
+        value = default
+    else:
+        try:
+            value = int(str(raw).strip())
+        except (TypeError, ValueError):
+            abort(400, description=f"Invalid integer parameter: {names[0]}")
+    if minimum is not None and value < minimum:
+        abort(400, description=f"{names[0]} must be >= {minimum}")
+    if maximum is not None and value > maximum:
+        abort(400, description=f"{names[0]} must be <= {maximum}")
+    return value
 
 
 def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> None:
-    def _indexed_latest_versions(plugin_ids: list[str]) -> dict[str, str]:
-        if not plugin_ids:
-            return {}
-        from services.app_latest_version_cache import get_plugin_latest_versions_cached
-        return get_plugin_latest_versions_cached(ctx.get_storage(), plugin_ids, ctx.cache)
-
     def _plain_version_response(version: str):
         response = app.response_class(version, 200, {"Content-Type": "text/plain; charset=utf-8"})
         response.headers["Cache-Control"] = "public, max-age=30"
@@ -75,32 +58,29 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
         author = request.args.get("Author", request.args.get("author", "")).strip()
         sort_by = request.args.get("SortBy", request.args.get("sort", "updated"))
         sort_order = request.args.get("SortOrder", request.args.get("sortOrder", "desc")).strip().lower()
-        page = ctx.parse_int_arg("Page", "page", default=1, minimum=1)
-        page_size = ctx.parse_int_arg("PageSize", "pageSize", default=20, minimum=1, maximum=100)
-        normalized_sort = ctx.normalize_catalog_sort_name(sort_by)
-        if normalized_sort not in ctx.allowed_catalog_sorts:
-            abort(400, description="Invalid SortBy parameter")
-        if sort_order not in ctx.allowed_catalog_sort_orders:
-            abort(400, description="Invalid SortOrder parameter")
-
-        return jsonify(
-            ctx.build_plugin_search_api_result(
-                ctx.get_request_plugin_catalog(),
+        page = _parse_int_arg("Page", "page", default=1, minimum=1)
+        page_size = _parse_int_arg("PageSize", "pageSize", default=20, minimum=1, maximum=100)
+        try:
+            result = ctx.services.catalog.search(
+                ctx.request_context_factory(),
                 keyword=keyword,
                 category=category,
                 author=author,
-                sort_by=normalized_sort,
+                sort_by=sort_by,
                 sort_order=sort_order,
                 page=page,
                 page_size=page_size,
-                icon_url_builder=ctx.build_plugin_icon_url,
             )
-        )
+        except MarketplaceQueryError as exc:
+            abort(400, description=str(exc))
+        return jsonify(result)
 
     @app.route("/api/plugins/categories", methods=["GET"])
     def api_categories():
         """Get all plugin categories."""
-        return jsonify(ctx.collect_catalog_categories(ctx.get_request_plugin_catalog()))
+        return jsonify(
+            ctx.services.catalog.categories(ctx.request_context_factory())
+        )
 
     @app.route("/api/plugins/batch-version-check", methods=["POST"])
     def api_batch_version_check():
@@ -118,7 +98,7 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
                 normalized_by_input.append((str(plugin_id), None))
                 continue
             normalized_id = plugin_id.strip()
-            if not normalized_id or not ctx.is_safe_id(normalized_id):
+            if not normalized_id or not ctx.services.storage.is_safe_id(normalized_id):
                 normalized_by_input.append((plugin_id, None))
                 continue
             normalized_by_input.append((normalized_id, normalized_id))
@@ -126,7 +106,7 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
                 seen_ids.add(normalized_id)
                 normalized_safe_ids.append(normalized_id)
 
-        indexed_versions = _indexed_latest_versions(normalized_safe_ids)
+        indexed_versions = ctx.services.catalog.latest_versions(normalized_safe_ids)
         results = []
         for original_id, normalized_id in normalized_by_input:
             if normalized_id is None:
@@ -144,23 +124,23 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
     @app.route("/api/plugins/<plugin_id>", methods=["GET"])
     def api_plugin_detail(plugin_id):
         """Get detailed plugin information."""
-        if not ctx.is_safe_id(plugin_id):
+        if not ctx.services.storage.is_safe_id(plugin_id):
             abort(400, description="Invalid plugin_id")
-        info = ctx.get_plugin_info(plugin_id, download_counts=ctx.get_request_download_counts())
+        info = ctx.services.catalog.detail(
+            plugin_id,
+            ctx.request_context_factory(),
+            view=request.args.get("view", "full").strip().lower(),
+        )
         if not info:
             return jsonify({"error": "Plugin not found"}), 404
-
-        return jsonify(ctx.build_plugin_detail_api_result(info, icon_url_builder=ctx.build_plugin_icon_url))
+        return jsonify(info)
 
     @app.route("/api/plugins/<plugin_id>/latest-version", methods=["GET"])
     def api_latest_version(plugin_id):
-        """
-        Return latest version as plain text — backward compatible with LATEST_RELEASE.
-        This endpoint is used by older clients that check version via a simple GET.
-        """
-        if not ctx.is_safe_id(plugin_id):
+        """Return latest version as plain text for legacy clients."""
+        if not ctx.services.storage.is_safe_id(plugin_id):
             abort(400, description="Invalid plugin_id")
-        indexed = _indexed_latest_versions([plugin_id])
+        indexed = ctx.services.catalog.latest_versions([plugin_id])
         if plugin_id in indexed:
             return _plain_version_response(indexed[plugin_id])
         return "Plugin not found", 404
@@ -168,117 +148,60 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
     @app.route("/api/packages/<plugin_id>/<version>", methods=["GET"])
     def api_download_package(plugin_id, version):
         """Download a specific plugin version .cvxp file."""
-        if not ctx.is_safe_id(plugin_id) or not ctx.is_safe_version(version):
+        if (
+            not ctx.services.storage.is_safe_id(plugin_id)
+            or not ctx.services.storage.is_safe_version(version)
+        ):
             return jsonify({"error": "Invalid plugin_id or version"}), 400
 
-        storage = ctx.get_storage()
-        plugin_dir = storage / "Plugins" / plugin_id
-        filename = f"{plugin_id}-{version}.cvxp"
-        filepath = plugin_dir / filename
-
-        if not filepath.exists():
-            history_path = storage / "History" / "Plugins" / plugin_id / filename
-            if history_path.exists():
-                ctx.record_download(plugin_id, version)
-                return send_from_directory(str(history_path.parent), history_path.name, as_attachment=True)
+        package_path = ctx.services.packages.resolve_download(plugin_id, version)
+        if package_path is None:
             return jsonify({"error": "Package not found"}), 404
-
-        ctx.record_download(plugin_id, version)
-        return send_from_directory(str(plugin_dir), filename, as_attachment=True)
+        ctx.services.packages.record_download(
+            plugin_id,
+            version,
+            ctx.request_context_factory(),
+        )
+        return send_from_directory(
+            str(package_path.parent), package_path.name, as_attachment=True
+        )
 
     @app.route("/api/packages/publish", methods=["POST"])
     @ctx.require_upload_auth
     def api_publish_package():
-        """
-        Publish a new plugin version.
-        Accepts multipart form: plugin metadata + .cvxp package file.
-        """
-        package = request.files.get("package")
+        """Publish a new plugin version from multipart form data."""
         plugin_id = request.form.get("PluginId", request.form.get("plugin_id", "")).strip()
         version = request.form.get("Version", request.form.get("version", "")).strip()
-
-        name = request.form.get("Name", request.form.get("name", plugin_id)).strip()
-        description = request.form.get("Description", request.form.get("description", "")).strip()
-        author = request.form.get("Author", request.form.get("author", "")).strip()
-        category = request.form.get("Category", request.form.get("category", "")).strip()
-        requires_ver = request.form.get(
-            "RequiresVersion", request.form.get("requires_version", "")
-        ).strip()
-        changelog_text = request.form.get("ChangeLog", request.form.get("changelog", "")).strip()
-        icon = request.files.get("icon")
-
+        command = PublishPackageCommand(
+            package=request.files.get("package"),
+            plugin_id=plugin_id,
+            version=version,
+            name=request.form.get("Name", request.form.get("name", plugin_id)).strip(),
+            description=request.form.get("Description", request.form.get("description", "")).strip(),
+            author=request.form.get("Author", request.form.get("author", "")).strip(),
+            category=request.form.get("Category", request.form.get("category", "")).strip(),
+            requires_version=request.form.get(
+                "RequiresVersion", request.form.get("requires_version", "")
+            ).strip(),
+            changelog=request.form.get("ChangeLog", request.form.get("changelog", "")).strip(),
+            icon=request.files.get("icon"),
+        )
         try:
-            storage = ctx.get_storage()
-            upload_request = validate_api_publish_request(
-                package,
-                plugin_id,
-                version,
-                sanitize_filename=ctx.sanitize_filename,
-                validate_plugin_id=ctx.is_safe_id,
-                validate_version=ctx.is_safe_version,
+            result = ctx.services.packages.publish(
+                command,
+                ctx.request_context_factory(),
             )
-            save_result = save_package_file(
-                storage,
-                package,
-                upload_request,
-                validate_plugin_id=ctx.is_safe_id,
-                read_text_file=ctx.read_text_file,
-                version_tuple=ctx.version_tuple,
-                reconcile_plugin_package_history=ctx.reconcile_plugin_package_history,
-            )
-            persist_plugin_metadata(
-                save_result.plugin_dir,
-                plugin_id=upload_request.plugin_id,
-                version=upload_request.version,
-                name=name or upload_request.plugin_id,
-                description=description,
-                author=author,
-                category=category,
-                requires_version=requires_ver,
-                changelog_text=changelog_text,
-                icon_file=icon,
-                manifest_loader=ctx.load_manifest,
-            )
-            finalize_plugin_publish(
-                storage,
-                plugin_id=upload_request.plugin_id,
-                version=upload_request.version,
-                refresh_related_caches=ctx.refresh_related_caches,
-                prewarm_plugin_metadata=prewarm_plugin_metadata,
-                get_download_counts=ctx.get_download_counts,
-                get_cache_entry=ctx.get_cache_entry,
-                set_cache_entry=ctx.set_cache_entry,
-                ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
-            )
-
-            # Update plugin index after successful publish
-            if ctx.refresh_plugin_index_on_publish:
-                try:
-                    ctx.refresh_plugin_index_on_publish(upload_request.plugin_id)
-                except Exception:
-                    pass
-
         except PackageValidationError as exc:
             return jsonify({"error": str(exc)}), 400
-
-        return (
-            jsonify({"pluginId": upload_request.plugin_id, "version": upload_request.version}),
-            201,
-        )
+        return jsonify(result), 201
 
     @app.route("/D%3A/ColorVision/Plugins/<path:filepath>")
     @app.route("/D:/ColorVision/Plugins/<path:filepath>")
     def legacy_plugin_files(filepath):
-        """
-        Backward-compatible endpoint matching the old file-server URL pattern:
-        http://host:9999/D%3A/ColorVision/Plugins/{PluginId}/LATEST_RELEASE
-        http://host:9999/D%3A/ColorVision/Plugins/{PluginId}/{PluginId}-{ver}.cvxp
-        """
-        storage = ctx.get_storage()
-        full_path = storage / "Plugins" / filepath
-        try:
-            full_path.resolve().relative_to((storage / "Plugins").resolve())
-        except ValueError:
+        """Serve the historical encoded-drive plugin URL contract."""
+        storage = ctx.services.storage.root
+        full_path = ctx.services.storage.legacy_plugin_path(filepath)
+        if not ctx.services.storage.is_within(full_path, storage / "Plugins"):
             abort(403)
         if not full_path.exists():
             abort(404)
@@ -289,21 +212,10 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
     @app.route("/D%3A/ColorVision/<path:filepath>")
     @app.route("/D:/ColorVision/<path:filepath>")
     def legacy_files(filepath):
-        """
-        Backward-compatible endpoint for other legacy file-server URLs:
-        http://host:9999/D%3A/ColorVision/LATEST_RELEASE
-        http://host:9999/D%3A/ColorVision/CHANGELOG.md
-        http://host:9999/D%3A/ColorVision/Update/...
-        http://host:9999/D%3A/ColorVision/Tool/...
-        """
-        storage = ctx.get_storage()
-        full_path = storage / filepath
-        if filepath.replace("\\", "/").startswith("Update/") and not full_path.exists():
-            repair_update_storage_layout(storage)
-            full_path = storage / filepath
-        try:
-            full_path.resolve().relative_to(storage.resolve())
-        except ValueError:
+        """Serve other historical encoded-drive file URLs."""
+        storage = ctx.services.storage.root
+        full_path = ctx.services.storage.legacy_path(filepath)
+        if not ctx.services.storage.is_within(full_path, storage):
             abort(403)
         if not full_path.exists():
             abort(404)
@@ -314,35 +226,15 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
     @app.route("/upload/<path:filepath>", methods=["PUT"])
     @ctx.require_upload_auth
     def legacy_upload(filepath):
-        """
-        Path-based upload endpoint used by the repository publishing client:
-        PUT http://host:9998/upload/ColorVision/Plugins/{PluginId}/{filename}
-        """
+        """Store uploads sent by the repository publishing client."""
         try:
-            storage = ctx.get_storage()
-
-            def _on_upload_complete(normalized_path: str):
-                from services.storage_events import on_storage_change
-                on_storage_change(ctx.cache, storage, normalized_path)
-
-            store_legacy_upload(
-                storage=storage,
-                raw_filepath=filepath,
-                stream=request.stream,
-                max_size=ctx.max_upload_size_bytes,
-                normalize_relative_path=ctx.normalize_relative_path,
-                validate_plugin_id=ctx.is_safe_id,
-                extract_package_version=lambda filename, plugin_id: ctx.extract_package_version(filename, plugin_id),
-                is_root_release_file=ctx.is_root_release_file,
-                reconcile_app_release_history=ctx.reconcile_app_release_history,
-                reconcile_plugin_package_history=ctx.reconcile_plugin_package_history,
-                prune_update_packages=prune_update_packages,
-                refresh_related_caches=ctx.refresh_related_caches,
-                on_upload_complete=_on_upload_complete,
+            ctx.services.packages.legacy_upload(
+                filepath,
+                request.stream,
+                ctx.request_context_factory(),
             )
         except UploadTooLargeError as exc:
             return exc.message, exc.status_code
         except UploadWorkflowError as exc:
             abort(exc.status_code, description=exc.message)
-
         return "File uploaded successfully", 201

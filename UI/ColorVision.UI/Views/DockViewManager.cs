@@ -45,6 +45,11 @@ namespace ColorVision.UI.Views
         public Action<Control>? ViewAddedHandler { get; set; }
 
         /// <summary>
+        /// 视图移除后的回调。用于宿主同步移除已创建的文档标签页。
+        /// </summary>
+        public Action<Control>? ViewRemovedHandler { get; set; }
+
+        /// <summary>
         /// 视图标题注册或更新后的回调。
         /// </summary>
         public Action<Control, string>? ViewTitleChangedHandler { get; set; }
@@ -99,7 +104,14 @@ namespace ColorVision.UI.Views
         /// </summary>
         public void RemoveView(Control control)
         {
+            if (control == null)
+                return;
+
             Views.Remove(control);
+            ViewTitles.Remove(control);
+            if (ReferenceEquals(LastActiveView, control))
+                LastActiveView = null;
+            ViewRemovedHandler?.Invoke(control);
         }
 
         /// <summary>

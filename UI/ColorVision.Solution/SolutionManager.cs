@@ -232,20 +232,6 @@ namespace ColorVision.Solution
             return ProjectProviderRegistry.IsSupportedProjectFilePath(path);
         }
 
-        internal static bool TryGetProjectDirectory(string? projectPath, out string directoryPath)
-        {
-            directoryPath = string.Empty;
-            if (!IsProjectFilePath(projectPath) || !File.Exists(projectPath))
-                return false;
-
-            string? parentDirectory = Path.GetDirectoryName(Path.GetFullPath(projectPath));
-            if (string.IsNullOrWhiteSpace(parentDirectory) || !Directory.Exists(parentDirectory))
-                return false;
-
-            directoryPath = parentDirectory;
-            return true;
-        }
-
         internal static string NormalizeWorkspacePath(string? path)
         {
             if (string.IsNullOrWhiteSpace(path))

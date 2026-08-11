@@ -100,6 +100,8 @@ namespace ColorVision.Copilot
                 ToolCall = toolCall,
                 FrameworkApprovalGranted = invocation.FrameworkApprovalGranted,
                 ApprovalActionId = invocation.ApprovalActionId?.Trim() ?? string.Empty,
+                ApprovalPromptCategoryOverride = invocation.ApprovalPromptCategoryOverride,
+                ApprovalPromptReasonOverride = invocation.ApprovalPromptReasonOverride?.Trim() ?? string.Empty,
                 ConcurrencyMode = ResolveConcurrencyMode(invocation.Tool),
                 ConcurrencyKey = ResolveConcurrencyKey(invocation.Tool, invocation.AgentRequest, toolInput),
                 PreviousObservationProgressSignature =

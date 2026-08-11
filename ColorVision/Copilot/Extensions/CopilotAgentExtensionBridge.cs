@@ -2,6 +2,7 @@ using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -17,7 +18,17 @@ namespace ColorVision.Copilot
 
         public string CapabilityName { get; init; } = string.Empty;
 
+        public string FailureCode { get; init; } = string.Empty;
+
         public string Message { get; init; } = string.Empty;
+    }
+
+    internal static class CopilotAgentExtensionFailureCodes
+    {
+        public const string ToolNameConflict = "extension_tool_name_conflict";
+        public const string CapabilityPublishFailed = "extension_capability_publish_failed";
+        public const string HookRegistrationFailed = "extension_hook_registration_failed";
+        public const string ActivationFailed = "extension_activation_failed";
     }
 
     public sealed class CopilotAgentExtensionBridgeSnapshot
@@ -64,6 +75,9 @@ namespace ColorVision.Copilot
         public string ToolNamePattern { get; init; } = "*";
 
         public int Order { get; init; }
+
+        public CopilotToolExecutionHookMode ExecutionMode { get; init; } =
+            CopilotToolExecutionHookMode.Sync;
 
         public bool IsActive { get; init; }
     }
@@ -171,7 +185,8 @@ namespace ColorVision.Copilot
                             {
                                 SourceId = extension.SourceId,
                                 CapabilityName = toolName,
-                                Message = $"Module tool '{toolName}' conflicts with a reserved or already active Agent tool name and was not activated.",
+                                FailureCode = CopilotAgentExtensionFailureCodes.ToolNameConflict,
+                                Message = "Module tool was not activated because its name conflicts with a reserved or already active Agent tool.",
                             });
                             continue;
                         }
@@ -212,8 +227,13 @@ namespace ColorVision.Copilot
                         issues.Add(new CopilotAgentExtensionIssue
                         {
                             SourceId = extension.SourceId,
-                            Message = $"Module tools were not activated because their capability catalog entry could not be published: {ex.Message}",
+                            FailureCode = CopilotAgentExtensionFailureCodes.CapabilityPublishFailed,
+                            Message = "Module tools were not activated because their capability catalog entry could not be published.",
                         });
+                        TraceActivationFailure(
+                            extension.SourceId,
+                            CopilotAgentExtensionFailureCodes.CapabilityPublishFailed,
+                            ex);
                         _capabilityCatalog.PublishSource(CopilotCapabilitySourceKind.Plugin, catalogSourceId, extension.SourceName, Array.Empty<ICopilotTool>());
                         _publishedCatalogSourceIds.Remove(catalogSourceId);
                     }
@@ -257,8 +277,13 @@ namespace ColorVision.Copilot
                         issues.Add(new CopilotAgentExtensionIssue
                         {
                             SourceId = extension.SourceId,
-                            Message = $"Module tool execution hooks were not activated: {ex.Message}",
+                            FailureCode = CopilotAgentExtensionFailureCodes.HookRegistrationFailed,
+                            Message = "Module tool execution hooks were not activated because the runtime rejected their registration.",
                         });
+                        TraceActivationFailure(
+                            extension.SourceId,
+                            CopilotAgentExtensionFailureCodes.HookRegistrationFailed,
+                            ex);
                     }
                 }
 
@@ -281,6 +306,7 @@ namespace ColorVision.Copilot
                             Name = hook.Name.Trim(),
                             ToolNamePattern = NormalizeHookPattern(hook.ToolNamePattern),
                             Order = hook.Order,
+                            ExecutionMode = MapExecutionMode(hook.ExecutionMode),
                             IsActive = activeHookCounts.ContainsKey(extension.SourceId),
                         }).ToArray(),
                     }).ToArray(),
@@ -292,6 +318,15 @@ namespace ColorVision.Copilot
         }
 
         private static string BuildCatalogSourceId(string extensionSourceId) => "extension:" + extensionSourceId;
+
+        private static void TraceActivationFailure(
+            string sourceId,
+            string failureCode,
+            Exception exception)
+        {
+            Trace.TraceError(
+                $"Copilot Agent extension activation failed. Source={sourceId} FailureCode={failureCode} ErrorType={exception.GetType().FullName}");
+        }
 
         private static CopilotToolExecutionHookRegistrationDefinition CreateHookRegistrationDefinition(
             CopilotAgentExtensionDescriptor extension,
@@ -309,7 +344,8 @@ namespace ColorVision.Copilot
                 adapter,
                 NormalizeHookPattern(hook.ToolNamePattern),
                 hook.Order,
-                ComputeHookConfigurationFingerprint(extension, hook));
+                ComputeHookConfigurationFingerprint(extension, hook),
+                MapExecutionMode(hook.ExecutionMode));
         }
 
         private static string BuildHookSourceId(string extensionSourceId, string hookName) =>
@@ -334,10 +370,22 @@ namespace ColorVision.Copilot
                 hook.Name.Trim(),
                 NormalizeHookPattern(hook.ToolNamePattern),
                 hook.Order.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                hook.ExecutionMode.ToString().ToLowerInvariant(),
             });
             return Convert.ToHexString(
                 SHA256.HashData(Encoding.UTF8.GetBytes(identity))).ToLowerInvariant();
         }
+
+        private static CopilotToolExecutionHookMode MapExecutionMode(
+            CopilotModuleToolExecutionHookMode executionMode) => executionMode switch
+        {
+            CopilotModuleToolExecutionHookMode.Sync => CopilotToolExecutionHookMode.Sync,
+            CopilotModuleToolExecutionHookMode.Async => CopilotToolExecutionHookMode.Async,
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(executionMode),
+                executionMode,
+                "Module tool execution hook mode is invalid."),
+        };
     }
 
     internal sealed class CopilotModuleContextProviderAdapter : ICopilotContextProvider
@@ -510,7 +558,7 @@ namespace ColorVision.Copilot
                 CreateContext(context.Invocation),
                 cancellationToken);
             if (decision?.ShouldPrompt != false)
-                return CopilotToolPermissionRequestDecision.Prompt;
+                return CopilotToolPermissionRequestDecision.PromptWithReason(decision?.Reason ?? string.Empty);
 
             return CopilotToolPermissionRequestDecision.Deny(
                 string.IsNullOrWhiteSpace(decision.Reason)

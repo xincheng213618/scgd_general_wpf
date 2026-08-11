@@ -120,7 +120,7 @@ namespace ColorVision.Copilot
                 McpListenerEnabled = _config.McpEnabled,
                 McpListenerRunning = CopilotMcpServer.Instance.IsRunning,
                 EnabledExternalMcpServers = _config.ExternalMcpServers.Count(server => server?.Enabled == true),
-                PendingApprovals = CopilotMcpConfirmationStore.Instance.PendingCount,
+                PendingApprovals = _approvalCoordinator.TotalPendingCount,
             });
         }
 
@@ -176,7 +176,10 @@ namespace ColorVision.Copilot
                 }
             }
 
-            var hookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot();
+            var hookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
+                _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                _currentCodexConfigOptions.ConfiguredCommandHooks);
             var extensionSnapshot = CopilotAgentExtensionBridge.Shared.GetSnapshot();
             var recentHookFailureCount = CopilotToolExecutionAuditLogger.GetRecentEntries(30)
                 .SelectMany(entry => entry.HookRuns ?? Array.Empty<CopilotToolExecutionHookRun>())
@@ -212,7 +215,7 @@ namespace ColorVision.Copilot
                 RecentHookFailureCount = recentHookFailureCount,
                 TrackedSkillCount = skillUsage.Entries.Count,
                 ExplicitOnlySkillCount = skillUsage.HistoricalExplicitOnlySkills.Count,
-                PendingApprovals = CopilotMcpConfirmationStore.Instance.PendingCount,
+                PendingApprovals = _approvalCoordinator.TotalPendingCount,
             });
         }
 
@@ -268,7 +271,7 @@ namespace ColorVision.Copilot
             var pausedGoal = false;
             var outcome = CopilotTaskStopRequestOutcome.NotFound;
             if (run.State == CopilotHostedRunState.Queued
-                && _queuedFollowUpsByRunId.TryGetValue(run.RunId, out var queuedFollowUp)
+                && _followUpQueue.TryGet(run.RunId, out var queuedFollowUp)
                 && TryDeleteQueuedFollowUp(queuedFollowUp, out pausedGoal))
             {
                 outcome = CopilotTaskStopRequestOutcome.CancelRequested;
@@ -540,7 +543,7 @@ namespace ColorVision.Copilot
                 Endpoint = _config.McpEndpoint,
                 Enabled = _config.McpEnabled,
                 Running = server.IsRunning,
-                PendingActions = CopilotMcpConfirmationStore.Instance.PendingCount,
+                PendingActions = _approvalCoordinator.TotalPendingCount,
                 RecentEntries = CopilotMcpAuditLogger.GetRecentEntries(verbose ? 20 : 8),
                 LastError = CopilotMcpAuditLogger.GetLastError(),
                 StatusMessage = server.LastStatusMessage,

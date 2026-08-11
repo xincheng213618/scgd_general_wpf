@@ -151,6 +151,11 @@
                                             Command="{Binding RefreshCommand}"
                                             Style="{StaticResource CleanupActionButtonStyle}"
                                             Margin="0,0,8,0"/>
+                                    <Button Content="{Binding MigrationActionName}"
+                                            Command="{Binding MigrationCommand}"
+                                            Style="{StaticResource CleanupPrimaryButtonStyle}"
+                                            Margin="0,0,8,0"
+                                            Visibility="{Binding SupportsMigration, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     <Button Content="仅创建完整备份"
                                             Command="{Binding BackupCommand}"
                                             Style="{StaticResource CleanupPrimaryButtonStyle}"

@@ -134,6 +134,62 @@ namespace ColorVision.Copilot
                 && AppendToDraft(conversation, recoveryMessages);
         }
 
+        internal static bool RestorePendingMessagesToDraft(
+            CopilotConversationRecord conversation,
+            IEnumerable<CopilotSteeringMessageSnapshot>? messages)
+        {
+            ArgumentNullException.ThrowIfNull(conversation);
+            if (conversation.PendingSteeringRecoveries == null
+                || conversation.PendingSteeringRecoveries.Count == 0)
+            {
+                return false;
+            }
+
+            var messageIds = (messages ?? Array.Empty<CopilotSteeringMessageSnapshot>())
+                .Select(message => (message?.MessageId ?? string.Empty).Trim())
+                .Where(messageId => messageId.Length > 0)
+                .ToHashSet(StringComparer.Ordinal);
+            if (messageIds.Count == 0)
+                return false;
+
+            var matchedRecords = conversation.PendingSteeringRecoveries
+                .Where(record => record != null && messageIds.Contains(record.MessageId ?? string.Empty))
+                .ToArray();
+            if (matchedRecords.Length == 0
+                || !AppendToDraft(conversation, matchedRecords.Select(record => record.Text).ToArray()))
+            {
+                return false;
+            }
+
+            foreach (var record in matchedRecords)
+                conversation.PendingSteeringRecoveries.Remove(record);
+            return true;
+        }
+
+        internal static bool AreNewMessagesIncludedInCheckpoint(
+            CopilotAgentSessionCheckpoint? previousCheckpoint,
+            CopilotAgentSessionCheckpoint? checkpoint,
+            IEnumerable<CopilotSteeringMessageSnapshot>? messages)
+        {
+            if (checkpoint == null)
+                return false;
+
+            var expectedCounts = (messages ?? Array.Empty<CopilotSteeringMessageSnapshot>())
+                .Select(message => (message?.Text ?? string.Empty).Trim())
+                .Where(text => text.Length > 0)
+                .GroupBy(text => text, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+            if (expectedCounts.Count == 0)
+                return true;
+
+            var previousCounts = CountCheckpointedSteering(previousCheckpoint);
+            var checkpointCounts = CountCheckpointedSteering(checkpoint);
+            return expectedCounts.All(expected =>
+                checkpointCounts.GetValueOrDefault(expected.Key)
+                    - previousCounts.GetValueOrDefault(expected.Key)
+                >= expected.Value);
+        }
+
         internal static bool RestorePendingToDrafts(CopilotChatState state)
         {
             ArgumentNullException.ThrowIfNull(state);
@@ -206,6 +262,17 @@ namespace ColorVision.Copilot
             foreach (var record in normalized)
                 conversation.PendingSteeringRecoveries.Add(record);
             return true;
+        }
+
+        private static Dictionary<string, int> CountCheckpointedSteering(
+            CopilotAgentSessionCheckpoint? checkpoint)
+        {
+            return (checkpoint?.ConversationMemory ?? Array.Empty<CopilotRequestMessage>())
+                .Where(message => message.IsSteering && message.Role == "user")
+                .Select(message => (message.Content ?? string.Empty).Trim())
+                .Where(content => content.Length > 0)
+                .GroupBy(content => content, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
         }
 
         private static bool AppendToDraft(

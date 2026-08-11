@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -544,17 +543,9 @@ namespace ColorVision.ImageEditor
                     throw new ArgumentException("Rendered and source image exports must use different file paths.", nameof(options));
                 }
 
-                await SnapshotSaveGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-                try
-                {
-                    await RunOnSnapshotStaThreadAsync(
-                        () => RenderAndSaveSnapshotExports(snapshot, options, cancellationToken),
-                        cancellationToken).ConfigureAwait(false);
-                }
-                finally
-                {
-                    SnapshotSaveGate.Release();
-                }
+                await RunOnSnapshotStaThreadAsync(
+                    () => RenderAndSaveSnapshotExports(snapshot, options, cancellationToken),
+                    cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -598,52 +589,24 @@ namespace ColorVision.ImageEditor
         {
             cancellationToken.ThrowIfCancellationRequested();
             BitmapSource? source = MaterializeSnapshotSource(snapshot);
-            List<Exception>? failures = null;
 
             if (!string.IsNullOrWhiteSpace(options.RenderedFileName))
             {
-                try
-                {
-                    DrawingGroup scene = ComposeSnapshotScene(snapshot, source);
-                    RenderAndSaveSnapshot(
-                        snapshot,
-                        scene,
-                        options.RenderedFileName,
-                        options.RenderedOptions,
-                        cancellationToken);
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    failures = [ex];
-                }
+                DrawingGroup scene = ComposeSnapshotScene(snapshot, source);
+                RenderAndSaveSnapshot(
+                    snapshot,
+                    scene,
+                    options.RenderedFileName,
+                    options.RenderedOptions,
+                    cancellationToken);
             }
 
             if (!string.IsNullOrWhiteSpace(options.SourceFileName))
             {
-                try
-                {
-                    if (source == null)
-                        throw new InvalidOperationException("This snapshot does not contain original source pixels.");
-                    SaveSourceSnapshot(source, options.SourceFileName, options.SourceOptions, cancellationToken);
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    (failures ??= []).Add(ex);
-                }
+                if (source == null)
+                    throw new InvalidOperationException("This snapshot does not contain original source pixels.");
+                SaveSourceSnapshot(source, options.SourceFileName, options.SourceOptions, cancellationToken);
             }
-
-            if (failures is { Count: 1 })
-                ExceptionDispatchInfo.Capture(failures[0]).Throw();
-            if (failures is { Count: > 1 })
-                throw new AggregateException("One or more image exports failed.", failures);
         }
 
         private static BitmapSource? MaterializeSnapshotSource(ImageViewSnapshot snapshot)

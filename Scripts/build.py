@@ -29,6 +29,8 @@ try:
         read_installer_source_paths,
         validate_service_host_runtime,
     )
+    from .generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
+    from .build_update import get_file_version
 except ImportError:
     from backend_client import (
         DEFAULT_CONNECT_TIMEOUT,
@@ -49,6 +51,8 @@ except ImportError:
         read_installer_source_paths,
         validate_service_host_runtime,
     )
+    from generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
+    from build_update import get_file_version
 from tqdm import tqdm
 
 VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
@@ -212,6 +216,38 @@ def validate_installer_runtime_dlls(
     return True
 
 
+def validate_shared_files_manifests(
+    runtime_directory: str | Path,
+    *,
+    manifest_paths: tuple[Path, ...] = SHARED_FILES_MANIFESTS,
+    report: Callable[[str], None] = print,
+) -> bool:
+    runtime_path = Path(runtime_directory)
+    if not runtime_path.is_dir():
+        report(f"Release runtime directory does not exist: {runtime_path}")
+        return False
+
+    for manifest_path in manifest_paths:
+        if not manifest_path.is_file():
+            report(f"Shared files manifest does not exist: {manifest_path}")
+            return False
+        try:
+            manifest_only, runtime_only = check_manifest(runtime_path, manifest_path)
+        except (OSError, RuntimeError, ValueError) as exc:
+            report(f"Could not validate shared files manifest {manifest_path}: {exc}")
+            return False
+        if manifest_only or runtime_only:
+            report(
+                f"Shared files manifest drifted: {manifest_path} "
+                f"(manifest-only={len(manifest_only)}, runtime-only={len(runtime_only)}). "
+                "Run 'py Scripts\\generate_shared_files.py' and commit both generated manifests."
+            )
+            return False
+
+    report(f"Verified {len(manifest_paths)} shared files manifests against the current host output.")
+    return True
+
+
 def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_path: Path, aip_path: Path) -> bool:
     try:
         print(f"Running MSBuild: {msbuild_path} {solution_path}")
@@ -222,6 +258,8 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
 
         runtime_directory = solution_path.parent / "ColorVision" / "bin" / "x64" / "Release" / "net10.0-windows"
         if not ensure_runtime_copy_integrity(solution_path.parent, runtime_directory):
+            return False
+        if not validate_shared_files_manifests(runtime_directory):
             return False
         if not validate_installer_runtime_dlls(runtime_directory, aip_path):
             return False
@@ -236,9 +274,13 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
     return False
 
 
-def get_latest_file(directory: str | Path) -> Path | None:
+def get_installer_for_version(directory: str | Path, expected_version: str) -> Path | None:
     directory_path = Path(directory)
     if not directory_path.is_dir():
+        return None
+
+    normalized_version = extract_version_from_filename(expected_version)
+    if not normalized_version:
         return None
 
     candidates = [
@@ -246,22 +288,15 @@ def get_latest_file(directory: str | Path) -> Path | None:
         for path in directory_path.iterdir()
         if path.is_file()
         and path.suffix.lower() in INSTALLER_EXTENSIONS
-        and extract_version_from_filename(path.name)
+        and extract_version_from_filename(path.name) == normalized_version
     ]
-    if not candidates:
-        candidates = [path for path in directory_path.iterdir() if path.is_file()]
     if not candidates:
         return None
 
-    if all(extract_version_from_filename(item.name) for item in candidates):
-        return max(
-            candidates,
-            key=lambda item: (
-                version_tuple(extract_version_from_filename(item.name) or "0.0.0.0"),
-                item.stat().st_ctime,
-            ),
-        )
-    return max(candidates, key=lambda item: item.stat().st_ctime)
+    if len(candidates) != 1:
+        return None
+
+    return candidates[0]
 
 
 def extract_version_from_filename(filename: str | Path) -> str | None:
@@ -436,17 +471,32 @@ def main() -> int:
     ):
         return 1
 
-    latest_file = get_latest_file(setup_files_dir)
-    print(setup_files_dir)
-    print(f"latest_file: {latest_file}")
-
-    if not latest_file or not latest_file.exists():
-        print("No installer files found in the directory.")
+    runtime_executable = (
+        project.solution_path.parent
+        / "ColorVision"
+        / "bin"
+        / "x64"
+        / "Release"
+        / "net10.0-windows"
+        / "ColorVision.exe"
+    )
+    built_version = get_file_version(runtime_executable)
+    if not built_version:
+        print(f"Could not read FileVersion from the built executable: {runtime_executable}")
         return 1
 
-    latest_version = extract_version_from_filename(latest_file)
+    latest_version = extract_version_from_filename(built_version)
     if not latest_version:
-        print("Could not extract the version from the filename.")
+        print(f"Built executable has an invalid FileVersion: {built_version!r}")
+        return 1
+
+    latest_file = get_installer_for_version(setup_files_dir, latest_version)
+    print(setup_files_dir)
+    print(f"Built FileVersion: {latest_version}")
+    print(f"installer_file: {latest_file}")
+
+    if not latest_file or not latest_file.exists():
+        print(f"No installer file matches the built FileVersion {latest_version}.")
         return 1
 
     if not publish_primary_release(

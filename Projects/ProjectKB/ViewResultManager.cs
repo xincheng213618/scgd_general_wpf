@@ -9,7 +9,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ProjectKB
 {
@@ -74,12 +73,10 @@ namespace ProjectKB
 
         public ObservableCollection<KBItemMaster> ViewResluts { get; set; } = new ObservableCollection<KBItemMaster>();
 
-        public int ViewReslutsSelectedIndex { get => _ViewReslutsSelectedIndex; set { _ViewReslutsSelectedIndex = value; OnPropertyChanged(); } }
+        public int ViewReslutsSelectedIndex { get => _ViewReslutsSelectedIndex; set { if (_ViewReslutsSelectedIndex == value) return; _ViewReslutsSelectedIndex = value; OnPropertyChanged(); } }
         private int _ViewReslutsSelectedIndex = -1;
-        public ListView ListView { get; set; }
 
         public RelayCommand EditConfigCommand { get; set; }
-        public RelayCommand ViewReslutsClearCommand { get; set; }
         public RelayCommand QueryCommand { get; set; }
         public RelayCommand GenericQueryCommand { get; set; }
 
@@ -91,18 +88,20 @@ namespace ProjectKB
         {
             Config = ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
             EditConfigCommand = new RelayCommand(a => EditConfig());
-            ViewReslutsClearCommand = new RelayCommand(a => ViewReslutsClear());
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
             SaveCommand = new RelayCommand(a => Save());
             _db = new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={SqliteDbPath}",
+                ConnectionString = $"Data Source={SqliteDbPath};Default Timeout=5",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
+            _db.Ado.ExecuteCommand("PRAGMA busy_timeout = 5000;");
+            _db.Ado.ExecuteCommand("PRAGMA journal_mode = WAL;");
             // 确保表存在
             _db.CodeFirst.InitTables<KBItemMaster, KBProductionSession>();
+            KBResultPayloadStorage.EnsureSchema(_db);
             LoadAll(Config.Count);
         }
 
@@ -113,14 +112,6 @@ namespace ProjectKB
 
             new PropertyEditorWindow(Config) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             ConfigService.Instance.SaveConfigs();
-        }
-
-        public void ViewReslutsClear()
-        {
-            if (!RequireAdmin()) return;
-
-            ViewReslutsSelectedIndex = -1;
-            ViewResluts.Clear();
         }
 
         public void Query()
@@ -146,6 +137,18 @@ namespace ProjectKB
             {
                 if (ViewResluts[ViewReslutsSelectedIndex] is KBItemMaster kbItemMaster)
                 {
+                    try
+                    {
+                        LoadResultPayload(kbItemMaster);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(
+                            Application.Current.GetActiveWindow(),
+                            $"结果明细读取失败，无法重新导出：{ex.Message}",
+                            "ProjectKB");
+                        return;
+                    }
                     string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
                     string regexPattern = $"[{Regex.Escape(invalidChars)}]";
                     string csvpath = Config.CsvSavePath + $"\\{Regex.Replace(kbItemMaster.Model, regexPattern, "")}_{kbItemMaster.CreateTime:yyyyMMdd}.csv";
@@ -179,18 +182,71 @@ namespace ProjectKB
         {
             if (item == null) return;
 
+            KBResultImageDimensions.TryPopulate(item);
+            bool isNew = item.Id <= 0;
+            bool savePayload = isNew || item.IsResultPayloadLoaded;
+            KBResultPayloadStorage.RunDatabaseMaintenance(() =>
+            {
+                _db.Ado.BeginTran();
+                try
+                {
+                    if (isNew)
+                    {
+                        item.Id = _db.Insertable(item).ExecuteReturnIdentity();
+                    }
+                    else
+                    {
+                        _db.Updateable(item).ExecuteCommand();
+                    }
+
+                    if (savePayload)
+                        KBResultPayloadStorage.SaveResult(_db, item);
+                    _db.Ado.CommitTran();
+                }
+                catch
+                {
+                    _db.Ado.RollbackTran();
+                    if (isNew)
+                        item.Id = 0;
+                    throw;
+                }
+            });
+
+            if (isNew || !ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
+                AddViewResult(item);
+        }
+
+        public bool UpdateImageDimensions(KBItemMaster item, int width, int height)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            if (width <= 0 || height <= 0)
+                return false;
+            if (item.ImageWidth == width && item.ImageHeight == height)
+                return false;
+
             if (item.Id > 0)
             {
-                _db.Updateable(item).ExecuteCommand();
-                if (!ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
-                    AddViewResult(item);
-                return;
+                KBResultPayloadStorage.RunDatabaseMaintenance(() =>
+                    _db.Updateable<KBItemMaster>()
+                        .SetColumns(result => new KBItemMaster
+                        {
+                            ImageWidth = width,
+                            ImageHeight = height,
+                        })
+                        .Where(result => result.Id == item.Id)
+                        .ExecuteCommand());
             }
 
-            int id = _db.Insertable(item).ExecuteReturnIdentity();
-            item.Id = id; // 更新ID
+            item.ImageWidth = width;
+            item.ImageHeight = height;
 
-            AddViewResult(item);
+            return true;
+        }
+
+        public void LoadResultPayload(KBItemMaster item)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            KBResultPayloadStorage.LoadResult(_db, item);
         }
 
         private void AddViewResult(KBItemMaster item)
@@ -209,7 +265,6 @@ namespace ProjectKB
                 if (Config.AutoRefresh)
                 {
                     ViewReslutsSelectedIndex = ViewResluts.Count - 1;
-                    ListView?.ScrollIntoView(item);
                 }
             }
         }

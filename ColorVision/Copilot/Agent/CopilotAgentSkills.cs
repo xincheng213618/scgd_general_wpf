@@ -63,7 +63,7 @@ namespace ColorVision.Copilot
                     ScriptFilter = _ => false,
                 },
                 loggerFactory: null);
-            source = new PathAwareDeduplicatingAgentSkillsSource(source, request.AgentSkillReference);
+            source = new PathAwareDeduplicatingAgentSkillsSource(source, request.AgentSkillReference, searchPaths);
             var metadataCharacterBudget = ResolveMetadataCharacterBudget(contextWindowTokens);
             var budgetedSource = new BudgetedAgentSkillsSource(
                 source,
@@ -73,7 +73,8 @@ namespace ColorVision.Copilot
                 MaxActiveSkills,
                 metadataCharacterBudget,
                 request.SkillPathOverrides,
-                includeAutomaticInstructions);
+                includeAutomaticInstructions,
+                request.ExternalMcpServers);
             source = new CachingAgentSkillsSource(budgetedSource, new CachingAgentSkillsSourceOptions());
             return new CopilotAgentSkills(
                 searchPaths,
@@ -117,6 +118,7 @@ namespace ColorVision.Copilot
                 0,
                 omittedCount
                     - explicitOnlyCount
+                    - snapshot.UnavailableDependencyNames.Count
                     - snapshot.ManualOffNames.Count
                     - snapshot.AutomaticInstructionsDisabledNames.Count
                     - snapshot.IrrelevantNames.Count);
@@ -129,6 +131,14 @@ namespace ColorVision.Copilot
                     builder.Append(" (low-use ").Append(snapshot.HistoricalExplicitOnlyNames.Count).Append(')');
                 if (snapshot.ManualExplicitOnlyNames.Count > 0)
                     builder.Append(" (manual ").Append(snapshot.ManualExplicitOnlyNames.Count).Append(')');
+            }
+            if (snapshot.UnavailableDependencyNames.Count > 0)
+            {
+                builder.Append(" · ")
+                    .Append(snapshot.UnavailableDependencyNames.Count)
+                    .Append(snapshot.UnavailableDependencyNames.Count == 1
+                        ? " unavailable dependency (explicit invocation required)"
+                        : " unavailable dependencies (explicit invocation required)");
             }
             if (snapshot.ManualNameOnlyNames.Count > 0)
                 builder.Append(" · ").Append(snapshot.ManualNameOnlyNames.Count).Append(" manual name-only");
@@ -270,6 +280,42 @@ namespace ColorVision.Copilot
             return SelectPreferredSkills(discovered, preferredReference, ResolveSkillFilePath);
         }
 
+        internal static IReadOnlyList<AgentSkill> FilterTrustedFileSkills(
+            IReadOnlyList<AgentSkill> discovered,
+            IReadOnlyList<string> trustedSearchPaths)
+        {
+            ArgumentNullException.ThrowIfNull(discovered);
+            ArgumentNullException.ThrowIfNull(trustedSearchPaths);
+
+            return discovered.Where(skill =>
+            {
+                if (skill is not AgentFileSkill fileSkill)
+                    return true;
+
+                try
+                {
+                    var skillFilePath = Path.Combine(fileSkill.Path, "SKILL.md");
+                    return IsTrustedSkillFilePath(skillFilePath, trustedSearchPaths);
+                }
+                catch
+                {
+                    return false;
+                }
+            }).ToArray();
+        }
+
+        internal static bool IsTrustedSkillFilePath(string? skillFilePath, IReadOnlyList<string> trustedSearchPaths)
+        {
+            ArgumentNullException.ThrowIfNull(trustedSearchPaths);
+            return !string.IsNullOrWhiteSpace(skillFilePath)
+                && Path.IsPathFullyQualified(skillFilePath)
+                && CopilotWorkspaceSearchSupport.TryResolveExistingFileWithinRoots(
+                    skillFilePath,
+                    trustedSearchPaths,
+                    out _,
+                    out _);
+        }
+
         internal static IReadOnlyList<AgentSkill> SelectPreferredSkills(
             IReadOnlyList<AgentSkill> discovered,
             CopilotAgentSkillReference? preferredReference,
@@ -371,6 +417,7 @@ namespace ColorVision.Copilot
             private readonly IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> _skillOverrides;
             private readonly IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> _skillPathOverrides;
             private readonly bool _includeAutomaticInstructions;
+            private readonly IReadOnlyList<CopilotMcpClientServerConfig> _configuredMcpServers;
             private readonly HashSet<string> _loadedNames = new(StringComparer.OrdinalIgnoreCase);
             private SkillSelectionSnapshot _snapshot = SkillSelectionSnapshot.Empty;
 
@@ -382,7 +429,8 @@ namespace ColorVision.Copilot
                 int maximumCount,
                 int maximumMetadataCharacters,
                 IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? skillPathOverrides,
-                bool includeAutomaticInstructions)
+                bool includeAutomaticInstructions,
+                IReadOnlyList<CopilotMcpClientServerConfig>? configuredMcpServers)
                 : base(innerSource)
             {
                 _userText = userText ?? string.Empty;
@@ -397,6 +445,10 @@ namespace ColorVision.Copilot
                 _maximumCount = maximumCount;
                 _maximumMetadataCharacters = maximumMetadataCharacters;
                 _includeAutomaticInstructions = includeAutomaticInstructions;
+                _configuredMcpServers = (configuredMcpServers ?? Array.Empty<CopilotMcpClientServerConfig>())
+                    .Where(server => server != null)
+                    .Select(server => server.Clone())
+                    .ToArray();
             }
 
             public override async Task<IList<AgentSkill>> GetSkillsAsync(
@@ -412,7 +464,8 @@ namespace ColorVision.Copilot
                     _maximumCount,
                     _maximumMetadataCharacters,
                     _skillPathOverrides,
-                    allowImplicitSelection: _includeAutomaticInstructions);
+                    allowImplicitSelection: _includeAutomaticInstructions,
+                    configuredMcpServers: _configuredMcpServers);
                 var selectedNames = selection.SelectedSkills.Select(skill => skill.Frontmatter.Name).ToArray();
                 lock (_sync)
                 {
@@ -422,6 +475,7 @@ namespace ColorVision.Copilot
                         selectedNames,
                         GetLoadedNames(selectedNames),
                         selection.MetadataExplicitOnlyNames,
+                        selection.UnavailableDependencyNames,
                         selection.HistoricalExplicitOnlyNames,
                         selection.ManualNameOnlyNames,
                         selection.ManualExplicitOnlyNames,
@@ -458,15 +512,18 @@ namespace ColorVision.Copilot
         private sealed class PathAwareDeduplicatingAgentSkillsSource : DelegatingAgentSkillsSource
         {
             private readonly CopilotAgentSkillReference? _preferredReference;
+            private readonly IReadOnlyList<string> _trustedSearchPaths;
 
             public PathAwareDeduplicatingAgentSkillsSource(
                 AgentSkillsSource innerSource,
-                CopilotAgentSkillReference? preferredReference)
+                CopilotAgentSkillReference? preferredReference,
+                IReadOnlyList<string> trustedSearchPaths)
                 : base(innerSource)
             {
                 _preferredReference = preferredReference?.IsStructurallyValid() == true
                     ? preferredReference.CreateSnapshot()
                     : null;
+                _trustedSearchPaths = trustedSearchPaths.ToArray();
             }
 
             public override async Task<IList<AgentSkill>> GetSkillsAsync(
@@ -474,7 +531,8 @@ namespace ColorVision.Copilot
                 CancellationToken cancellationToken = default)
             {
                 var discovered = await InnerSource.GetSkillsAsync(context, cancellationToken).ConfigureAwait(false);
-                return SelectPreferredSkills(discovered.ToArray(), _preferredReference).ToArray();
+                var trusted = FilterTrustedFileSkills(discovered.ToArray(), _trustedSearchPaths);
+                return SelectPreferredSkills(trusted, _preferredReference).ToArray();
             }
         }
 
@@ -518,6 +576,7 @@ namespace ColorVision.Copilot
             IReadOnlyList<string> SelectedNames,
             string[] LoadedNames,
             IReadOnlyList<string> MetadataExplicitOnlyNames,
+            IReadOnlyList<string> UnavailableDependencyNames,
             IReadOnlyList<string> HistoricalExplicitOnlyNames,
             IReadOnlyList<string> ManualNameOnlyNames,
             IReadOnlyList<string> ManualExplicitOnlyNames,
@@ -526,7 +585,7 @@ namespace ColorVision.Copilot
             IReadOnlyList<string> IrrelevantNames,
             IReadOnlyList<string> ShortenedDescriptionNames)
         {
-            public static SkillSelectionSnapshot Empty { get; } = new(false, 0, [], [], [], [], [], [], [], [], [], []);
+            public static SkillSelectionSnapshot Empty { get; } = new(false, 0, [], [], [], [], [], [], [], [], [], [], []);
         }
 
     }

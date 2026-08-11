@@ -94,12 +94,12 @@ namespace ColorVision.Copilot
                 ? CopilotUiText.NewConversationTitle
                 : conversationTitle.Trim();
             var count = items?.Count ?? 0;
-            var automaticGoalCount = items?.Count(item => item?.IsAutomaticGoalContinuation == true) ?? 0;
+            var goalWorkCount = items?.Count(item => item?.IsGoalBound == true) ?? 0;
             return $"取消当前会话“{title}”的 {count:N0} 条排队后续？"
                 + Environment.NewLine
                 + "请求正文、模式和附件快照将从队列及恢复记录移除，且不会执行；其他会话不受影响。"
-                + (automaticGoalCount > 0
-                    ? Environment.NewLine + $"其中 {automaticGoalCount:N0} 条是自动续作；命中仍活动的对应持续目标时会同时暂停目标。"
+                + (goalWorkCount > 0
+                    ? Environment.NewLine + $"其中 {goalWorkCount:N0} 条绑定持续目标；命中仍活动的对应目标时会同时暂停目标。"
                     : string.Empty);
         }
 
@@ -137,8 +137,12 @@ namespace ColorVision.Copilot
                     builder.Append(" · 附加只读目录 ")
                         .Append(item.SubmissionContext.AdditionalReadRootPaths.Count.ToString("N0", CultureInfo.CurrentCulture));
                 }
-                if (item.IsAutomaticGoalContinuation)
-                    builder.Append(" · 持续目标");
+                if (item.IsGoalBound)
+                {
+                    builder.Append(item.IsAutomaticGoalContinuation
+                        ? " · 持续目标自动续作"
+                        : " · 编辑后目标首轮");
+                }
                 builder.AppendLine();
             }
             if (items.Count > MaximumListedItems)

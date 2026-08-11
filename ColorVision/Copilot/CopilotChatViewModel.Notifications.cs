@@ -35,13 +35,9 @@ namespace ColorVision.Copilot
                 CaptureCompletedAgentRunNotice(e.Run);
                 RefreshAgentTasks();
             }
-            if (e.Kind == CopilotAgentTaskHostChangeKind.Started)
-            {
-                RemoveQueuedFollowUp(e.Run.Id, removeRecoveryRecord: false);
-            }
-            else if (e.Kind == CopilotAgentTaskHostChangeKind.Completed)
-                RemoveQueuedFollowUp(e.Run.Id, removeRecoveryRecord: true);
-            RefreshQueuedFollowUpPositions();
+            var queueChange = _followUpQueue.HandleTaskHostChanged(e);
+            if (queueChange.RecoveryChanged)
+                PersistState(immediate: true);
             NotifyHostedRunStateChanged();
             CommandManager.InvalidateRequerySuggested();
         }
@@ -64,6 +60,7 @@ namespace ColorVision.Copilot
 
         private void NotifyUserQuestionStateChanged()
         {
+            RefreshConversationRunStatuses();
             OnPropertyChanged(nameof(IsAnsweringUserQuestion));
             OnPropertyChanged(nameof(CanSubmitUserQuestionAnswer));
             OnPropertyChanged(nameof(CanSteerCurrentRun));
@@ -77,11 +74,16 @@ namespace ColorVision.Copilot
         private void RefreshConversationRunStatuses()
         {
             var activeRun = ActiveHostedRun;
+            var activeNeedsInput = activeRun?.IsAgent == true
+                && (ActiveUserQuestion?.IsPending == true
+                    || _approvalCoordinator.HasPendingActionsForConversation(activeRun.ConversationId));
             CopilotAgentRunStatusSynchronizer.Refresh(
                 Conversations,
                 activeRun?.IsAgent == true ? activeRun.ConversationId : null,
                 activeRun?.IsAgent == true ? activeRun.State : null,
+                activeNeedsInput,
                 _taskHost.QueuedRuns.Where(run => run.IsAgent).Select(run => run.ConversationId).ToArray());
+            RefreshConversationActivityView();
         }
 
         private void RefreshAgentRunNotice()
@@ -150,6 +152,16 @@ namespace ColorVision.Copilot
         {
             var conversation = Conversations.FirstOrDefault(item =>
                 string.Equals(item.Id, run.ConversationId, StringComparison.Ordinal));
+            var activity = CopilotAgentRunActivityPolicy.CreateCompletionActivity(run, conversation);
+            var isSelectedConversation = conversation != null
+                && string.Equals(conversation.Id, SelectedConversation?.Id, StringComparison.Ordinal);
+            var visibleActivity = activity?.State == CopilotConversationActivityState.NeedsInput
+                    || !isSelectedConversation
+                ? activity
+                : null;
+            if (conversation?.ReplaceAgentActivity(visibleActivity) == true)
+                PersistState(immediate: true);
+
             var notice = CopilotAgentRunCompletionNoticePolicy.Create(
                 run,
                 conversation,
@@ -466,12 +478,16 @@ namespace ColorVision.Copilot
             var queuedFollowUpNotice = _state.RecoveredQueuedFollowUpCount > 0
                 ? $"已将 {_state.RecoveredQueuedFollowUpCount} 条未执行的排队后续恢复到对应会话草稿。"
                 : string.Empty;
+            var resumedQueuedFollowUpNotice = _state.ResumedQueuedFollowUpCount > 0
+                ? $"已恢复 {_state.ResumedQueuedFollowUpCount} 条排队后续；空闲会话将按原顺序继续。"
+                : string.Empty;
             var steeringNotice = _state.RecoveredSteeringCount > 0
                 ? $"已将 {_state.RecoveredSteeringCount} 条进程退出前尚未确认送达的运行中指令恢复到对应会话草稿。"
                 : string.Empty;
             StateRecoveryNoticeText = string.Join(
                 Environment.NewLine,
-                new[] { loadNotice, queuedFollowUpNotice, steeringNotice }.Where(text => !string.IsNullOrWhiteSpace(text)));
+                new[] { loadNotice, queuedFollowUpNotice, resumedQueuedFollowUpNotice, steeringNotice }
+                    .Where(text => !string.IsNullOrWhiteSpace(text)));
             StateRecoveryNoticeToolTip = string.IsNullOrWhiteSpace(StateRecoveryNoticeText)
                 ? string.Empty
                 : $"{StateRecoveryNoticeText}{Environment.NewLine}{Environment.NewLine}状态目录：{stateStore.StateDirectoryPath}";

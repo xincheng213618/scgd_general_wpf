@@ -424,10 +424,12 @@ try {
         }
     }
     Invoke-NativeCommand -FilePath $tscExe -ArgumentList @('-b') -WorkingDirectory $frontendPath
-    Invoke-NativeCommand -FilePath $viteExe -ArgumentList @('build', '--outDir', $stagedDistPath, '--emptyOutDir', '--logLevel', 'warn') -WorkingDirectory $frontendPath
+    Invoke-NativeCommand -FilePath $viteExe -ArgumentList @('build', '--manifest', '--outDir', $stagedDistPath, '--emptyOutDir', '--logLevel', 'warn') -WorkingDirectory $frontendPath
     if (-not (Test-Path -LiteralPath (Join-Path $stagedDistPath 'index.html'))) {
         throw 'Staged frontend index.html was not generated.'
     }
+    Invoke-NativeCommand -FilePath $nodeExe -ArgumentList @('scripts/precompress-static.mjs', $stagedDistPath) -WorkingDirectory $frontendPath
+    Invoke-NativeCommand -FilePath $nodeExe -ArgumentList @('scripts/check-dashboard-bundle.mjs', $stagedDistPath) -WorkingDirectory $frontendPath
 
     if (-not $skipTests) {
         Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @('-m', 'unittest', 'test_access_analytics', 'test_frontend_spa', 'test_page_contexts', 'test_copilot_config_api', 'test_spectrum_api') -WorkingDirectory $backendPath

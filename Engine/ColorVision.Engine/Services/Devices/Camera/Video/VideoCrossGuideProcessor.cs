@@ -1,5 +1,6 @@
 using ColorVision.Core;
 using ColorVision.ImageEditor.Realtime;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -48,10 +49,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
     internal sealed class VideoCrossGuideProcessor : IDisposable
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(VideoCrossGuideProcessor));
         private readonly object _gate = new();
         private readonly AutoResetEvent _frameReady = new(false);
         private readonly CancellationTokenSource _cts = new();
         private readonly Action<VideoCrossGuideResult> _resultHandler;
+        private readonly Func<HImage, VideoCrossGuideRequest, int, int, RoiRect, VideoCrossGuideResult> _frameProcessor;
         private readonly Task _workerTask;
 
         private HImage? _pendingFrame;
@@ -70,9 +73,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private long _lastSubmittedTick;
 
         public VideoCrossGuideProcessor(Action<VideoCrossGuideResult> resultHandler)
+            : this(resultHandler, VideoCrossGuideDetector.ProcessFrame)
+        {
+        }
+
+        internal VideoCrossGuideProcessor(
+            Action<VideoCrossGuideResult> resultHandler,
+            Func<HImage, VideoCrossGuideRequest, int, int, RoiRect, VideoCrossGuideResult> frameProcessor)
         {
             ArgumentNullException.ThrowIfNull(resultHandler);
+            ArgumentNullException.ThrowIfNull(frameProcessor);
             _resultHandler = resultHandler;
+            _frameProcessor = frameProcessor;
             _workerTask = Task.Factory.StartNew(WorkerLoop, _cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
@@ -155,7 +167,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     frameHeight = _workingFrameHeight;
                 }
 
-                VideoCrossGuideResult result = VideoCrossGuideDetector.ProcessFrame(workingFrame, request, frameWidth, frameHeight, sourceRoi);
+                VideoCrossGuideResult result;
+                try
+                {
+                    result = _frameProcessor(workingFrame, request, frameWidth, frameHeight, sourceRoi);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("Video cross-guide processing failed.", ex);
+                    continue;
+                }
 
                 try
                 {

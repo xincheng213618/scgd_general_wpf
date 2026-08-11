@@ -1,0 +1,21 @@
+# Copilot 本地交互与快捷键
+
+本页是会话回顾、计划定位、推理与工具活动展开、任务面板、长文本编辑和快捷键速查的实现事实源。用户操作入口见 [Copilot 使用指南](../../01-user-guide/copilot.md)；Agent 执行与工具契约分别见 [执行链](./copilot-agent-execution.md) 和 [工具契约](./copilot-agent-tool-contracts.md)。
+
+## 会话回顾与定位
+
+`/recap` 由 `CopilotConversationRecap` 在 UI 线程同步构造纯本地有界报告：只读取当前 conversation 已显示的 user/assistant `Content`、会话标题与更新时间、持续目标、结构化 Agent task ledger/stop reason、当前 conversation 的排队后续计数，以及草稿、附件和 stash 的数量或存在性。最近回答只在最新可见 user 消息之后查找，避免把上一轮回答错配给尚未回答的新请求；正文预览限制为 240 字符，目标限制为 320 字符，并保持 UTF-16 surrogate 完整。报告不读取 `RequestContent`、reasoning、execution trace、blocker 自由文本、附件正文、草稿正文、内部 ID 或路径，不调用模型、工具或外部服务，不写入消息历史，也不改变活动任务。该入口吸收 [Claude Code session recap](https://code.claude.com/docs/en/interactive-mode#session-recap) 和本地 grok `/recap` “where was I”且不进入模型会话的职责，并结合 [Codex Agent thread 可观察性](https://learn.chatgpt.com/docs/developer-commands?surface=cli#switch-agent-threads-with-agent)；本轮只提供显式命令，不启用焦点计时或自动 recap。
+
+`/view-plan` 使用 `CopilotConversationPlanNavigation` 从当前 conversation 的已显示消息中倒序选择最近一条 `HasCompletedPlan` assistant 消息，再通过 `MessageNavigationRequested` 让 `CopilotChatPanel` 复用会话查找的 `ScrollIntoView` 路径。`HasCompletedPlan` 继续由 `CopilotPlanHandoff` 的原契约判定，因此进行中、用户中断、正文截断、非 `Completed` stop reason 或非 Plan 模式的回答都不是导航目标。定位后仍显示原消息上的“继续规划”和“执行计划”按钮；命令本身不生成、复制、批准、执行或消费计划，不修改 find 高亮、消息历史、任务或工作区，并可在其他会话的 Agent 运行时只读使用。该入口延续 [Codex `/plan` 的独立计划阶段](https://learn.chatgpt.com/docs/developer-commands?surface=cli#switch-to-plan-mode-with-plan)、[Claude Code `/plan`](https://code.claude.com/docs/en/commands) 与本地 grok `/view-plan` 的最近计划回看职责，同时保留 ColorVision 已有的摘要绑定和原生执行确认边界。
+
+`/transcript [expand|collapse]` 由 `CopilotConversationTranscriptExpansion` 统一修改当前 conversation 中 `HasThinkingTrace` 消息的 `IsThinkingExpanded`；省略参数时，只要仍有一条可查看 trace 处于收起状态就全部展开，否则全部收起。普通 user/assistant 消息和没有 trace 的回答不会因该命令获得新内容或被改写；非法参数不改变任何状态。发生实际变化时 ViewModel 只请求既有会话状态持久化，报告仍进入临时本地结果面板。命令不读取 `RequestContent` 或附件正文，不生成、复制或导出 reasoning/trace，不调用模型或工具，也不写入聊天历史；`Ctrl+O` 继续保留 `/copy` 语义。它对齐 [Claude Code transcript viewer](https://code.claude.com/docs/en/interactive-mode#transcript-viewer) 的显式明细开关、[Codex `/raw` scrollback](https://learn.chatgpt.com/docs/developer-commands?surface=cli) 的独立展示模式，以及本地 grok scrollback 对全体条目和 thinking blocks 的 expand/collapse 操作，但只复用 ColorVision 已经可见的消息卡内容。
+
+`/turn [N]` 由 `CopilotConversationTurnNavigation` 复用 `CopilotConversationRewindService.GetPoints` / `TryResolve` 的最新优先可见 user 消息编号；省略参数等价于 `1`。解析成功后只通过既有 `MessageNavigationRequested` 滚动到同一个 `CopilotChatMessage`，不创建 rewind branch、不复制消息、不恢复附件或 request mode、不修改 composer/find 状态、不持久化新状态，也不读取 `RequestContent`。无点、非正整数和越界序号只返回数量与用法，不把请求预览写入错误报告。该入口吸收 [Claude Code transcript viewer 的 user prompt 跳转](https://code.claude.com/docs/en/interactive-mode#transcript-viewer)、[Codex chat 内查找](https://learn.chatgpt.com/docs/reference/commands#search-past-chats-and-find-in-a-chat) 与本地 grok scrollback 的 prompt/paragraph navigation，同时与会创建分支的 `/rewind N` 保持明确分工。
+
+## 任务与输入界面
+
+侧栏任务列表使用 `CopilotChatState.IsAgentTaskPanelExpanded` 保存纯展示偏好（state schema 20）。收起后标题和任务计数仍然可见；`Ctrl+T` 与标题按钮只切换明细可见性，不启动、停止、恢复、放弃或重排 hosted run。该入口保留 [Codex Agent thread 的可观察性](https://learn.chatgpt.com/docs/developer-commands?surface=cli#switch-agent-threads-with-agent)，参考 [Claude Code `Ctrl+T` 任务列表开关](https://code.claude.com/docs/en/interactive-mode#general-controls) 与 grok `app_view.rs` 中 `minimal_ctrl_t_toggles_todo_panel` 的呈现行为，同时继续以 `CopilotAgentTaskIndex` 作为唯一任务数据源。
+
+大段 composer 编辑复用本机 `CopilotTextInputWindow`，不启动 `$EDITOR`、不写临时文件，也不创建第二套草稿。`CopilotComposerEditorSnapshot` 对返回正文执行与普通 composer/stash 相同的 UTF-16 安全长度边界并夹紧光标，但不 trim 首尾空白；只有对话框明确确认后才写回 `InputText`，取消只恢复原焦点和光标。入口使用 `Ctrl+E`，因为 ColorVision 的 `Ctrl+G` 已承担跨会话搜索；能力取自 [Claude Code 外部编辑器](https://code.claude.com/docs/en/interactive-mode#general-controls) 的长文本编辑意图，并沿用 grok inline editor 的“未确认不提交”边界。
+
+`CopilotKeyboardShortcutHelp` 是 UI 真实绑定的有界、纯本地速查目录；`/shortcuts` 与 `Ctrl+/` 复用同一格式，不扫描系统级按键、不读取用户输入，也不调用模型。条目以焦点作用域作为键的一部分，明确区分输入框与侧栏搜索的 `Ctrl+R`。该入口对齐 [Codex interactive shortcuts](https://learn.chatgpt.com/docs/developer-commands?surface=cli#interactive-shortcuts)、[Claude Code 快捷键帮助](https://code.claude.com/docs/en/interactive-mode#keyboard-shortcuts) 与 grok `shortcuts_help.rs` 的统一发现面，但不承诺拦截其他应用或系统保留按键。

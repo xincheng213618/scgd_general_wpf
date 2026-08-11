@@ -45,6 +45,56 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void ReloadFromDisk_NotifiesAfterReplacingMaterializedConfigs()
+        {
+            string configFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json");
+            WriteConfig(configFilePath, "before", "before-item", "initial");
+
+            var configHandler = new ConfigHandler { ConfigFilePath = configFilePath };
+            configHandler.LoadConfigs();
+            FirstConfig beforeReload = configHandler.GetRequiredService<FirstConfig>();
+            WriteConfig(configFilePath, "after", "after-item", "loaded-later");
+            FirstConfig? notifiedConfig = null;
+            int notificationCount = 0;
+            configHandler.ConfigsReloaded += (_, _) =>
+            {
+                notificationCount++;
+                notifiedConfig = configHandler.GetRequiredService<FirstConfig>();
+            };
+
+            configHandler.ReloadFromDisk();
+
+            Assert.Equal(1, notificationCount);
+            Assert.NotSame(beforeReload, notifiedConfig);
+            Assert.Equal("after", notifiedConfig!.Value);
+        }
+
+        [Fact]
+        public void LoadConfigs_NotifiesAfterReplacingMaterializedConfigs()
+        {
+            string configFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json");
+            WriteConfig(configFilePath, "before", "before-item", "initial");
+
+            var configHandler = new ConfigHandler { ConfigFilePath = configFilePath };
+            configHandler.LoadConfigs();
+            FirstConfig beforeLoad = configHandler.GetRequiredService<FirstConfig>();
+            WriteConfig(configFilePath, "after", "after-item", "loaded-later");
+            FirstConfig? notifiedConfig = null;
+            int notificationCount = 0;
+            configHandler.ConfigsReloaded += (_, _) =>
+            {
+                notificationCount++;
+                notifiedConfig = configHandler.GetRequiredService<FirstConfig>();
+            };
+
+            configHandler.LoadConfigs();
+
+            Assert.Equal(1, notificationCount);
+            Assert.NotSame(beforeLoad, notifiedConfig);
+            Assert.Equal("after", notifiedConfig!.Value);
+        }
+
+        [Fact]
         public void ReloadFromDiskPreservesLoadedConfigsWhenTheFileIsInvalid()
         {
             string configFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json");

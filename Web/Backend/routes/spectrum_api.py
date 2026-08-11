@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import hmac
 from typing import Any
 
-from flask import Blueprint, jsonify, request, send_file, session
+from flask import Blueprint, jsonify, request, send_file
+from routes.request_context import current_request_context, set_authenticated_request_context
 
 from services.spectrum_release import (
     MAX_MANIFEST_BYTES,
@@ -25,18 +25,17 @@ from services.spectrum_release import (
 
 
 spectrum_api = Blueprint("spectrum_api", __name__)
-_app_mod = None
+_ctx = None
 
 
 def register_spectrum_api(app, ctx) -> None:
-    del ctx
-    global _app_mod
-    _app_mod = __import__("app")
+    global _ctx
+    _ctx = ctx
     app.register_blueprint(spectrum_api)
 
 
 def _get_storage():
-    return _app_mod.STORAGE
+    return _ctx.storage
 
 
 def _json_error(message: str, status: int):
@@ -51,32 +50,14 @@ def _json_auth_error():
 
 
 def _has_publish_auth() -> bool:
-    if session.get("authenticated"):
-        return True
-
-    auth = request.authorization
-    if auth and (auth.type or "").lower() == "basic" and auth.username and auth.password:
-        expected_username, expected_password = _app_mod._get_upload_auth()
-        if (
-            expected_username
-            and expected_password
-            and hmac.compare_digest(auth.username, expected_username)
-            and hmac.compare_digest(auth.password, expected_password)
-        ):
-            return True
-
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        token = auth_header[7:].strip()
-        if token:
-            from services.api_key_service import verify_api_key
-
-            return verify_api_key(
-                _app_mod._cache,
-                token,
-                required_scopes=["release:publish"],
-            ) is not None
-    return False
+    request_context = current_request_context()
+    decision = _ctx.auth_policy.authorize(
+        request_context,
+        ["release:publish"],
+    )
+    if decision.allowed:
+        set_authenticated_request_context(request_context.with_actor(decision.principal))
+    return decision.allowed
 
 
 def _read_upload_bytes(field_name: str, limit: int) -> bytes:

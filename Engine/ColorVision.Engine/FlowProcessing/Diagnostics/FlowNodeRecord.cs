@@ -4,6 +4,18 @@ using System;
 namespace ColorVision.Engine.FlowProcessing.Diagnostics
 {
     [SugarTable("FlowNodeRecord")]
+    [SugarIndex(
+        "idx_flow_node_record_batch_time",
+        nameof(BatchId),
+        OrderByType.Asc,
+        nameof(StartTime),
+        OrderByType.Desc)]
+    [SugarIndex(
+        "idx_flow_node_record_node_time",
+        nameof(NodeId),
+        OrderByType.Asc,
+        nameof(StartTime),
+        OrderByType.Desc)]
     public class FlowNodeRecord
     {
         [SugarColumn(ColumnName = "id", IsPrimaryKey = true, IsIdentity = true)]

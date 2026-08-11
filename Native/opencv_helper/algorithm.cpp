@@ -45,33 +45,33 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
     cv::Mat gray;
     cv::cvtColor(image8bit, gray, cv::COLOR_BGR2GRAY);
 
-    // ����ṹԪ��
+    // 定义结构元素
     cv::Mat binary;
     cv::threshold(gray, binary, 20, 255, cv::THRESH_BINARY);
 
 
-    // ��ʴ����
+    // 腐蚀操作
     cv::erode(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
 
     cv::dilate(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(4, 4)));
     cv::erode(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
 
-    // �������
+    // 检测轮廓
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
     std::vector<cv::Point> centers;
 
-    // ��������
+    // 遍历轮廓
     for (const auto& contour : contours) {
-        // ���������ı߽��
+        // 计算轮廓的边界框
         cv::Rect boundingBox = cv::boundingRect(contour);
 
-        // ���ݵ������֪��С����
+        // 根据灯珠的已知大小过滤
         if (boundingBox.width > 2 && boundingBox.width < 20 &&
             boundingBox.height > 2 && boundingBox.height < 20) {
 
-            // �������ĵ�
+            // 计算中心点
             int cx = boundingBox.x + boundingBox.width / 2;
             int cy = boundingBox.y + boundingBox.height / 2;
             centers.push_back(cv::Point(cx, cy));
@@ -81,31 +81,31 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
         }
     }
 
-    //������
+    //总亮点
     size_t coutns = centers.size();
 
-    // �������ĵ��͹��
+    // 计算中心点的凸包
     std::vector<cv::Point> hull;
     if (!centers.empty()) {
         cv::convexHull(centers, hull);
     }
 
-    //�������ĵ�
+    //绘制中心点
     for (const auto& center : centers) {
         cv::circle(image8bit, center, 4, cv::Scalar(255), -1);
     }
 
-    // ����͹��
+    // 绘制凸包
     if (!hull.empty()) {
         for (size_t i = 0; i < hull.size(); ++i) {
             cv::line(image8bit, hull[i], hull[(i + 1) % hull.size()], cv::Scalar(255), 2);
         }
     }
 
-    // ����͹�������
+    // 计算凸包的面积
     double area = cv::contourArea(hull);
 
-    // ����͹���ı߽����
+    // 计算凸包的边界矩形
     cv::Rect boundingRect = cv::boundingRect(hull);
     double width = boundingRect.width;
     double height = boundingRect.height;
@@ -113,26 +113,26 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
     double singlewith = width / 850;
     double singleheight = height / 650;
 
-    // ����һ�����룬��ʼΪȫ��
+    // 创建一个掩码，初始为全零
     cv::Mat mask = cv::Mat::zeros(image.size(), CV_8UC1);
 
-    // �������ϻ���͹������
+    // 在掩码上绘制凸包区域
     std::vector<std::vector<cv::Point>> hulls = { hull };
     cv::fillPoly(mask, hulls, cv::Scalar(255));
 
-    // ����ͼ������е�
+    // 遍历图像的所有点
     for (int y = 0; y < binary.rows; ++y) {
         uchar* maskRow = mask.ptr<uchar>(y);
         uchar* imgRow = binary.ptr<uchar>(y);
         for (int x = 0; x < binary.cols; ++x) {
-            // ��������иõ㲻��͹���ڣ�������Ϊ255
+            // 如果掩码中该点不在凸包内，则设置为255
             if (maskRow[x] == 0) {
                 imgRow[x] = 255;
             }
         }
     }
 
-    //ȱ�ٵĵ�
+    //缺少的点
     size_t black = rows * cols - centers.size();
 
     std::vector<std::vector<cv::Point>> ledMatrix1;
@@ -146,36 +146,36 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
     std::vector<std::vector<cv::Point>> contourless;
     cv::findContours(binary, contourless, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-    // ��������
+    // 遍历轮廓
     for (const auto& contour : contourless) {
-        // ���������ı߽��
+        // 计算轮廓的边界框
         cv::Rect boundingBox = cv::boundingRect(contour);
 
-        // ���ݵ������֪��С����
+        // 根据灯珠的已知大小过滤
         if (boundingBox.width > 2 && boundingBox.width < 20 &&
             boundingBox.height > 2 && boundingBox.height < 20) {
 
-            // �������ĵ�
+            // 计算中心点
             int cx = boundingBox.x + boundingBox.width / 2;
             int cy = boundingBox.y + boundingBox.height / 2;
             blackcenters.push_back(cv::Point(cx, cy));
         }
         else
         {
-            // ����͹���ı߽����
+            // 计算凸包的边界矩形
             cv::Rect boundingRect = cv::boundingRect(contour);
 
-            // ��ļ������ʼƫ��
+            // 点的间隔和起始偏移
             int offset = 4;
 
-            // �洢��͹���ڵĵ�
+            // 存储在凸包内的点
             std::vector<cv::Point> pointsInsideHull;
 
-            // �ڱ߽�����ڵ���
+            // 在边界矩形内迭代
             for (double y = boundingRect.y + offset; y < boundingRect.y + boundingRect.height; y += singlewith) {
                 for (double x = boundingRect.x + offset; x < boundingRect.x + boundingRect.width; x += singleheight) {
                     cv::Point p(x, y);
-                    // �����Ƿ���͹����
+                    // 检查点是否在凸包内
                     if (cv::pointPolygonTest(contour, p, false) >= 0) {
                         blackcenters.push_back(p);
                     }
@@ -185,7 +185,7 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
         }
     }
 
-    //ȱ�ٵĵ�
+    //缺少的点
     for (const auto& contour : blackcenters)
     {
         cv::circle(image8bit, contour, 5, cv::Scalar(0, 0, 255), 1);
@@ -193,8 +193,8 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
 
 }
 
-// ����0������-1ͼ��գ�-2δ�ҵ�������
-// points ���ط������ĸ��ǵ㣨˳��Ϊ minAreaRect ˳��
+// 返回0正常，-1图像空，-2未找到发光区
+// points 返回发光区四个角点（顺序为 minAreaRect 顺序）
 int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int threshold)
 {
     points.clear();
@@ -236,7 +236,7 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
     std::vector<std::vector<Point>> contours;
     findContours(thresh, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
-    // ȥ�����ߵ�
+    // 去除贴边的
     contours.erase(remove_if(contours.begin(), contours.end(),
         [&](const std::vector<Point>& contour) {
             Rect rect = boundingRect(contour);
@@ -247,7 +247,7 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
 
     if (contours.empty()) return -2;
 
-    // ������������
+    // 找最大面积轮廓
     size_t maxIdx = 0;
     double maxArea = 0;
     for (size_t i = 0; i < contours.size(); ++i) {
@@ -260,18 +260,18 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
 
     std::vector<cv::Point> approx;
     double peri = cv::arcLength(contours[maxIdx], true);
-    // 0.02 * peri �ɵ�����ͨ�� 0.01~0.05 ֮��
+    // 0.02 * peri 可调整，通常 0.01~0.05 之间
     cv::approxPolyDP(contours[maxIdx], approx, 0.02 * peri, true);
 
     if (approx.size() == 4) {
-        // �������Ҫ���ı���4���ǵ�
+        // 这就是你要的四边形4个角点
         for (int i = 0; i < 4; ++i)
             points.push_back(cv::Point2f(approx[i]));
         return 0;
     }
     else {
 
-        // ��С��Ӿ���
+        // 最小外接矩形
         RotatedRect minRect = minAreaRect(contours[maxIdx]);
         Point2f verts[4];
         minRect.points(verts);
@@ -411,7 +411,7 @@ int findLuminousAreaLocalContrast(cv::Mat& src, std::vector<cv::Point2f>& points
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-    // ��ѡ����Լ�Ȩ����ɸѡ�������
+    // 可选：针对加权区域筛选最大轮廓
     // ...
 
     if (contours.empty()) return -2;
@@ -444,8 +444,8 @@ int drawPoiImage(cv::Mat& src, cv::Mat& dst, int radius, int* points, int pointC
 
     int depth = src.depth();
     int lutSize = (depth == CV_8U) ? 255 : 65535;
-    // ��������ͼ���cv::Mat
-    // ����ͼ�񣬻���Բ��
+    // 创建输入图像的cv::Mat
+    // 处理图像，绘制圆形
     for (int i = 0; i < pointCount/2; ++i)
     {
         int x = points[i * 2];
@@ -453,7 +453,7 @@ int drawPoiImage(cv::Mat& src, cv::Mat& dst, int radius, int* points, int pointC
         cv::circle(src, cv::Point(x, y), radius, cv::Scalar(0, 0, lutSize), thickness);
     }
     dst = src;
-    return 0; // �ɹ�
+    return 0; // 成功
 }
 
 
@@ -464,14 +464,14 @@ int extractChannel(cv::Mat& input, cv::Mat& dst ,int channel)
     if (channel < 0 || input.channels() <= channel)
         return -2;
 
-    // ���ͨ��
+    // 拆分通道
 
     std::vector<cv::Mat> channels;
     cv::split(input, channels);
 
     cv::Mat redChannel = channels[channel];
 
-    // ������ͨ��ͼ�� (�Ҷ�ͼ��)
+    // 创建单通道图像 (灰度图像)
     //cv::Mat grayImage;
     //std::vector<cv::Mat> grayChannels = { redChannel, redChannel, redChannel };
     //cv::merge(grayChannels, grayImage);
@@ -746,10 +746,10 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
 {
     CV_Assert(!src.empty() && src.channels() >= 3);
 
-    //ͳ�ƻҶ�ֱ��ͼ
-    int BHist[256] = { 0 };    //B����
-    int GHist[256] = { 0 };    //G����
-    int RHist[256] = { 0 };    //R����
+    //统计灰度直方图
+    int BHist[256] = { 0 };    //B分离
+    int GHist[256] = { 0 };    //G分量
+    int RHist[256] = { 0 };    //R分量
     cv::MatIterator_<Vec3b> its, ends;
     for (its = src.begin<Vec3b>(), ends = src.end<Vec3b>(); its != ends; its++)
     {
@@ -758,11 +758,11 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
         RHist[(*its)[2]]++;
     }
 
-    //����LowCut��HighCut
+    //设置LowCut和HighCut
     float LowCut = 0.4;
     float HighCut = 0.4;
 
-    //����LowCut��HighCut����ÿ��ͨ�����ֵ��Сֵ
+    //根据LowCut和HighCut查找每个通道最大值最小值
     int BMax = 0, BMin = 0;
     int GMax = 0, GMin = 0;
     int RMax = 0, RMin = 0;
@@ -771,7 +771,7 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
     float LowTh = LowCut * 0.01 * TotalPixels;
     float HighTh = HighCut * 0.01 * TotalPixels;
 
-    //Bͨ��������С���ֵ
+    //B通道查找最小最大值
     int sumTempB = 0;
     for (int i = 0; i < 256; i++)
     {
@@ -793,7 +793,7 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
         }
     }
 
-    //Gͨ��������С���ֵ
+    //G通道查找最小最大值
     int sumTempG = 0;
     for (int i = 0; i < 256; i++)
     {
@@ -815,7 +815,7 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
         }
     }
 
-    //Rͨ��������С���ֵ
+    //R通道查找最小最大值
     int sumTempR = 0;
     for (int i = 0; i < 256; i++)
     {
@@ -844,7 +844,7 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
     BuildAutoLevelTable(GMin, GMax, GTable);
     BuildAutoLevelTable(RMin, RMax, RTable);
 
-    //��ÿ��ͨ������Ӧ�Ĳ��ұ����зֶ���������
+    //对每个通道用相应的查找表进行分段线性拉伸
     cv::Mat dst_ = src.clone();
     cv::MatIterator_<Vec3b> itd, endd;
     for (itd = dst_.begin<Vec3b>(), endd = dst_.end<Vec3b>(); itd != endd; itd++)

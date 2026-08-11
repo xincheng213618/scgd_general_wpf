@@ -75,7 +75,11 @@ namespace ColorVision.Copilot
             var state = conversation.IsGoalContinuationDeferred
                 ? "待显式 Agent 任务接管"
                 : CopilotConversationGoalStateText.Format(goal.State);
-            return $"{state} · {goal.TurnCount:N0} 轮 · 累计 {CopilotConversationGoalUsageText.FormatElapsed(goal.TimeUsedSeconds)} · "
+            var progressReport = CopilotConversationGoalProgressReportText.FormatCompact(goal.LastProgressReport);
+            return $"{state} · {goal.TurnCount:N0} 轮 · 累计 {CopilotConversationGoalUsageText.FormatElapsed(goal.TimeUsedSeconds)}"
+                + CopilotConversationGoalScoreText.FormatSuffix(goal)
+                + (progressReport.Length == 0 ? string.Empty : " · " + progressReport)
+                + " · "
                 + Preview(goal.Objective, MaximumGoalCharacters);
         }
 

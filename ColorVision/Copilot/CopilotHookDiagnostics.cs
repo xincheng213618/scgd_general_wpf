@@ -10,11 +10,21 @@ namespace ColorVision.Copilot
     {
         public CopilotToolExecutionHookRegistrySnapshot? HookSurface { get; init; }
 
+        public CopilotToolExecutionHookBackgroundActivitySnapshot? BackgroundActivity { get; init; }
+
+        public CopilotCodexAsyncHookActivitySnapshot? AsyncCommandActivity { get; init; }
+
         public IReadOnlyList<CopilotAgentExtensionSourceSnapshot> ExtensionSources { get; init; } =
             Array.Empty<CopilotAgentExtensionSourceSnapshot>();
 
         public IReadOnlyList<CopilotAgentExtensionIssue> ExtensionIssues { get; init; } =
             Array.Empty<CopilotAgentExtensionIssue>();
+
+        public IReadOnlyList<string> ConfiguredHookFilePaths { get; init; } =
+            Array.Empty<string>();
+
+        public IReadOnlyList<CopilotCodexConfiguredHookIssue> ConfiguredHookIssues { get; init; } =
+            Array.Empty<CopilotCodexConfiguredHookIssue>();
 
         public IReadOnlyList<CopilotToolExecutionAuditEntry> RecentToolExecutions { get; init; } =
             Array.Empty<CopilotToolExecutionAuditEntry>();
@@ -37,13 +47,109 @@ namespace ColorVision.Copilot
             builder.AppendLine("本地只读诊断：不调用模型、工具或 MCP，不加载外部脚本，也不修改 Hook 或审批策略。");
             builder.AppendLine();
             AppendEffectiveHooks(builder, snapshot.HookSurface);
+            AppendBackgroundActivity(builder, snapshot.BackgroundActivity);
+            AppendAsyncCommandActivity(builder, snapshot.AsyncCommandActivity);
             builder.AppendLine();
             AppendExtensionSources(builder, snapshot.ExtensionSources, snapshot.ExtensionIssues);
+            builder.AppendLine();
+            AppendConfiguredHookSources(
+                builder,
+                snapshot.ConfiguredHookFilePaths,
+                snapshot.ConfiguredHookIssues);
             builder.AppendLine();
             AppendRecentHealth(builder, snapshot.RecentToolExecutions);
             builder.AppendLine();
             builder.Append("安全边界：这里只显示来源、匹配器、状态、耗时与稳定失败码；不显示工具参数、结果正文或审批内容。");
             return builder.ToString().TrimEnd();
+        }
+
+        private static void AppendConfiguredHookSources(
+            StringBuilder builder,
+            IReadOnlyList<string>? sourceFilePaths,
+            IReadOnlyList<CopilotCodexConfiguredHookIssue>? issues)
+        {
+            sourceFilePaths ??= Array.Empty<string>();
+            issues ??= Array.Empty<CopilotCodexConfiguredHookIssue>();
+            builder.Append("hooks.json：")
+                .Append(FormatCount(sourceFilePaths.Count))
+                .Append(" 个受信任来源 · ")
+                .Append(FormatCount(issues.Count))
+                .AppendLine(" 个配置问题");
+            foreach (var path in sourceFilePaths.Take(8))
+                builder.Append("  - ").AppendLine(FormatInline(path, "unknown", 260));
+            if (sourceFilePaths.Count > 8)
+            {
+                builder.Append("  - ...另有 ")
+                    .Append(FormatCount(sourceFilePaths.Count - 8))
+                    .AppendLine(" 个来源未展开");
+            }
+            foreach (var issue in issues.Take(MaxExtensionIssues))
+            {
+                builder.Append("  ! ")
+                    .Append(FormatInline(issue.SourceFilePath, "unknown", 180))
+                    .Append(": ")
+                    .AppendLine(FormatInline(issue.Message, "Invalid hook configuration.", 300));
+            }
+            if (issues.Count > MaxExtensionIssues)
+            {
+                builder.Append("  ! ...另有 ")
+                    .Append(FormatCount(issues.Count - MaxExtensionIssues))
+                    .AppendLine(" 个配置问题未展开");
+            }
+        }
+
+        private static void AppendBackgroundActivity(
+            StringBuilder builder,
+            CopilotToolExecutionHookBackgroundActivitySnapshot? activity)
+        {
+            if (activity?.IsStructurallyValid() != true)
+            {
+                builder.AppendLine("后台活动：无有效运行时快照");
+                return;
+            }
+
+            var value = activity.Value;
+            builder.Append("后台活动：运行 ")
+                .Append(FormatCount(value.RunningCount))
+                .Append('/')
+                .Append(FormatCount(value.MaximumConcurrency))
+                .Append(" · 排队 ")
+                .Append(FormatCount(value.QueuedCount))
+                .Append(" · 未完成 ")
+                .Append(FormatCount(value.OutstandingCount))
+                .Append('/')
+                .Append(FormatCount(value.MaximumPending))
+                .Append(" · 超时占槽 ")
+                .Append(FormatCount(value.TimedOutRetainedCount))
+                .AppendLine();
+        }
+
+        private static void AppendAsyncCommandActivity(
+            StringBuilder builder,
+            CopilotCodexAsyncHookActivitySnapshot? activity)
+        {
+            if (activity?.IsStructurallyValid() != true)
+            {
+                builder.AppendLine("异步命令 Hook：无有效运行时快照");
+                return;
+            }
+
+            var value = activity.Value;
+            builder.Append("异步命令 Hook：会话 ")
+                .Append(FormatCount(value.SessionCount))
+                .Append(" · 运行 ")
+                .Append(FormatCount(value.RunningCount))
+                .Append(" · 排队 ")
+                .Append(FormatCount(value.QueuedCount))
+                .Append(" · 待投递 ")
+                .Append(FormatCount(value.CompletedResultCount))
+                .Append(" · 丢弃 ")
+                .Append(FormatCount(value.DroppedResultCount))
+                .Append(" · 单会话上限 ")
+                .Append(FormatCount(value.MaximumConcurrencyPerSession))
+                .Append('/')
+                .Append(FormatCount(value.MaximumPendingPerSession))
+                .AppendLine();
         }
 
         private static void AppendEffectiveHooks(
@@ -73,6 +179,8 @@ namespace ColorVision.Copilot
                     .Append(hook.Order.ToString(CultureInfo.InvariantCulture))
                     .Append(" · type ")
                     .Append(FormatInline(hook.HookType, "unknown", 200))
+                    .Append(" · mode ")
+                    .Append(FormatHookMode(hook.ExecutionMode))
                     .AppendLine();
             }
             if (hookSurface.Entries.Count > MaxEffectiveHooks)
@@ -136,6 +244,8 @@ namespace ColorVision.Copilot
                         .Append(FormatInline(hook.ToolNamePattern, "*", 160))
                         .Append(" · order ")
                         .Append(hook.Order.ToString(CultureInfo.InvariantCulture))
+                        .Append(" · mode ")
+                        .Append(FormatHookMode(hook.ExecutionMode))
                         .AppendLine();
                 }
                 if (extensionHooks.Length > MaxExtensionHooks)
@@ -144,9 +254,19 @@ namespace ColorVision.Copilot
 
             foreach (var issue in extensionIssues.Take(MaxExtensionIssues))
             {
+                var failureCode = CopilotToolFailureCode.Normalize(issue.FailureCode);
+                if (failureCode.Length == 0)
+                    failureCode = CopilotAgentExtensionFailureCodes.ActivationFailed;
                 builder.Append("  ! ")
                     .Append(FormatInline(issue.SourceId, "unknown", 120))
-                    .Append(": ")
+                    .Append(" · code ")
+                    .Append(failureCode);
+                if (!string.IsNullOrWhiteSpace(issue.CapabilityName))
+                {
+                    builder.Append(" · capability ")
+                        .Append(FormatInline(issue.CapabilityName, "unknown", 120));
+                }
+                builder.Append(": ")
                     .Append(FormatInline(issue.Message, "No details provided.", 300))
                     .AppendLine();
             }
@@ -178,6 +298,8 @@ namespace ColorVision.Copilot
             {
                 builder.Append("（完成 ")
                     .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Completed)))
+                    .Append("，后台已调度 ")
+                    .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Scheduled)))
                     .Append("，拒绝 ")
                     .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Denied)))
                     .Append("，失败 ")
@@ -188,6 +310,10 @@ namespace ColorVision.Copilot
                     .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Cancelled)))
                     .Append("，跳过 ")
                     .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Skipped)))
+                    .Append("，阻止 ")
+                    .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Blocked)))
+                    .Append("，停止 ")
+                    .Append(FormatCount(CountState(observations, CopilotToolExecutionHookState.Stopped)))
                     .Append('）');
             }
             builder.AppendLine();
@@ -214,6 +340,8 @@ namespace ColorVision.Copilot
                     .Append(" · ")
                     .Append(FormatInline(run.SourceId, "unknown", 160))
                     .Append(" · ")
+                    .Append(FormatHookMode(run.ExecutionMode))
+                    .Append(" · ")
                     .Append(FormatHookState(run.State))
                     .Append(" · ")
                     .Append(FormatCount(run.DurationMs))
@@ -237,12 +365,22 @@ namespace ColorVision.Copilot
 
         private static string FormatHookState(CopilotToolExecutionHookState state) => state switch
         {
+            CopilotToolExecutionHookState.Scheduled => "scheduled",
             CopilotToolExecutionHookState.Completed => "completed",
             CopilotToolExecutionHookState.Denied => "denied",
             CopilotToolExecutionHookState.Failed => "failed",
             CopilotToolExecutionHookState.TimedOut => "timed_out",
             CopilotToolExecutionHookState.Cancelled => "cancelled",
             CopilotToolExecutionHookState.Skipped => "skipped",
+            CopilotToolExecutionHookState.Blocked => "blocked",
+            CopilotToolExecutionHookState.Stopped => "stopped",
+            _ => "unknown",
+        };
+
+        private static string FormatHookMode(CopilotToolExecutionHookMode mode) => mode switch
+        {
+            CopilotToolExecutionHookMode.Sync => "sync",
+            CopilotToolExecutionHookMode.Async => "async",
             _ => "unknown",
         };
 

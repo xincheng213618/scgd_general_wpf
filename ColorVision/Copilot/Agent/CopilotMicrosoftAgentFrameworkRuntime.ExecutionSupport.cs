@@ -122,6 +122,10 @@ namespace ColorVision.Copilot
                 return "Persisted Agent session predates tool-hook surface tracking; its internal task state was discarded and Agent Framework will re-plan under the current authorization hooks.";
             if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.HookSurfaceDrift)
                 return "Agent tool-hook surface changed. Persisted internal task state was discarded and Agent Framework will re-plan before any further tool authorization.";
+            if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.ProjectInstructionSnapshotMissing)
+                return "Persisted Agent session predates project-instruction tracking; its internal task state was discarded and Agent Framework will re-plan under the current personal and project instructions.";
+            if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.ProjectInstructionDrift)
+                return "Personal or project instructions changed. Persisted internal task state was discarded and Agent Framework will re-plan under the current instruction documents.";
 
             var removed = compatibility.RemovedCapabilityIds.Count;
             var changed = compatibility.ChangedCapabilityIds.Count;

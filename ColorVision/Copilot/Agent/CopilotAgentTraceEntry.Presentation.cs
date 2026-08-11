@@ -218,12 +218,15 @@ namespace ColorVision.Copilot
 
         private static string FormatHookState(CopilotToolExecutionHookState state) => state switch
         {
+            CopilotToolExecutionHookState.Scheduled => "scheduled",
             CopilotToolExecutionHookState.Completed => "completed",
             CopilotToolExecutionHookState.Denied => "denied",
             CopilotToolExecutionHookState.Failed => "failed",
             CopilotToolExecutionHookState.TimedOut => "timed out",
             CopilotToolExecutionHookState.Cancelled => "cancelled",
             CopilotToolExecutionHookState.Skipped => "skipped",
+            CopilotToolExecutionHookState.Blocked => "blocked",
+            CopilotToolExecutionHookState.Stopped => "stopped",
             _ => "unknown",
         };
 

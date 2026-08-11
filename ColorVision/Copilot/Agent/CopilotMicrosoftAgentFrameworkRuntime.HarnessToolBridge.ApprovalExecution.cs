@@ -32,18 +32,40 @@ namespace ColorVision.Copilot
                 }
 
                 var currentWorkspacePath = GetCurrentWorkspacePath();
-                var canBegin = reservation.ApprovedByFullAccess
-                    ? CopilotAgentAccessPolicy.CanAutoApprove(
+                bool canBegin;
+                if (reservation.ApprovedByExecPolicy)
+                {
+                    var execPolicy = CopilotCodexExecPolicyEvaluator.Evaluate(
                         _request,
                         reservation.Tool,
-                        currentWorkspacePath)
-                    : _approvalCoordinator.BeginIfRequired(
+                        reservation.ToolInput);
+                    canBegin = execPolicy.Decision == CopilotCodexExecPolicyDecision.Allow;
+                    if (!canBegin)
+                    {
+                        failureCode = "codex_exec_policy_changed";
+                        failureReason = string.IsNullOrWhiteSpace(execPolicy.Reason)
+                            ? "The submitted turn's frozen Codex exec policy no longer explicitly allows this exact command."
+                            : execPolicy.Reason;
+                        return false;
+                    }
+                }
+                else if (reservation.ApprovedByFullAccess)
+                {
+                    canBegin = CopilotAgentAccessPolicy.CanAutoApprove(
+                        _request,
+                        reservation.Tool,
+                        currentWorkspacePath);
+                }
+                else
+                {
+                    canBegin = _approvalCoordinator.BeginIfRequired(
                         reservation.ApprovalActionId,
                         _request,
                         currentWorkspacePath,
                         reservation.ApprovalArgumentsDigest,
                         reservation.CallId,
                         reservation.ExecutionScope);
+                }
                 if (canBegin)
                 {
                     failureCode = string.Empty;
@@ -72,6 +94,8 @@ namespace ColorVision.Copilot
                     ToolCall = CreateToolCall(reservation.Tool, reservation.ToolInput),
                     FrameworkApprovalGranted = frameworkApprovalGranted,
                     ApprovalActionId = reservation.ApprovalActionId,
+                    ApprovalPromptCategoryOverride = reservation.ApprovalPromptCategoryOverride,
+                    ApprovalPromptReasonOverride = reservation.ApprovalPromptReasonOverride,
                     PreviousObservationProgressSignature =
                         reservation.PreviousObservationProgressSignature,
                     InitialHookRuns = reservation.PermissionHookRuns,

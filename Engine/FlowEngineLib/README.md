@@ -231,10 +231,22 @@ public class FlowEngineControl
 
 ### 操作步骤
 
-1. 校验传入 DLL 路径和依赖目录。当前服务依赖目录是 `C:\Users\17917\Desktop\CVWindowsService\InstallTool`；遇到 `Deskt2op` 等路径时先用 `Test-Path` 核实。
-2. 保留 `InstallTool\FlowEngineLib.dll` 作为已安装基线。传入 DLL 放到同一目录时使用 `FlowEngineLib.<version>.dll`，不要覆盖基线。
-3. 使用与本机 ILSpy 匹配版本的官方 `ilspycmd`，将传入 DLL 反编译到桌面的版本化目录，并通过 `--referencepath` 指向 `InstallTool`。
-4. 将已安装基线 DLL 反编译到临时目录，先比较“基线版本 → 新版本”，只定位本次服务发布的真实增量。
+先在 PowerShell 中设置服务依赖目录、已安装基线和待比较 DLL：
+
+```powershell
+$serviceInstallTool = (Resolve-Path -LiteralPath (Read-Host '请输入服务 InstallTool 目录') -ErrorAction Stop).Path
+$installedFlowEngineDll = Join-Path -Path $serviceInstallTool -ChildPath 'FlowEngineLib.dll'
+$incomingFlowEngineDll = (Resolve-Path -LiteralPath (Read-Host '请输入待比较的 FlowEngineLib.dll') -ErrorAction Stop).Path
+
+if (-not (Test-Path -LiteralPath $installedFlowEngineDll -PathType Leaf)) {
+    throw "未找到已安装基线 DLL: $installedFlowEngineDll"
+}
+```
+
+1. 使用上述变量校验服务依赖目录、已安装基线和待比较 DLL。
+2. 保留 `$installedFlowEngineDll` 作为已安装基线。待比较 DLL 放到同一目录时使用 `FlowEngineLib.<version>.dll`，不要覆盖基线。
+3. 使用与本机 ILSpy 匹配版本的官方 `ilspycmd`，将 `$incomingFlowEngineDll` 反编译到版本化目录，并通过 `--referencepath` 指向 `$serviceInstallTool`。
+4. 将 `$installedFlowEngineDll` 反编译到临时目录，先比较“已安装基线 → `$incomingFlowEngineDll`”，只定位本次服务发布的真实增量。
 5. 再逐项对照 `Engine\FlowEngineLib`。检查新增/修改文件、公开类型和公开成员；必要时构建仓库程序集后用 Mono.Cecil 交叉核验，避免漏掉同名文件中的 API 变化。
 6. 只合并确认需要的功能补丁，不覆盖仓库侧完整文件。
 7. 构建、检查命令映射和最终工作区，保持无关的用户修改不变。
@@ -252,15 +264,15 @@ git status --short
 
 ## 开发调试
 
-```bash
+```powershell
 # 构建项目
-dotnet build Engine/FlowEngineLib/FlowEngineLib.csproj
+dotnet build .\Engine\FlowEngineLib\FlowEngineLib.csproj
 
 # 清理项目
-dotnet clean Engine/FlowEngineLib/FlowEngineLib.csproj
+dotnet clean .\Engine\FlowEngineLib\FlowEngineLib.csproj
 
 # 发布项目
-dotnet publish Engine/FlowEngineLib/FlowEngineLib.csproj -c Release
+dotnet publish .\Engine\FlowEngineLib\FlowEngineLib.csproj -c Release
 ```
 
 ### 调试技巧

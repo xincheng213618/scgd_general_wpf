@@ -15,11 +15,41 @@ namespace ColorVision.Copilot
 
         public string ConversationId { get; set; } = string.Empty;
 
+        public string GoalId { get; set; } = string.Empty;
+
+        // Null preserves the legacy contract where every GoalId meant automatic continuation.
+        public bool? AutomaticGoalContinuation { get; set; }
+
+        public bool IsLocalCommand { get; set; }
+
         public string Prompt { get; set; } = string.Empty;
 
         public CopilotComposerStash? ComposerState { get; set; }
 
+        public string ProfileId { get; set; } = string.Empty;
+
+        public DateTimeOffset? QueuedAtUtc { get; set; }
+
+        public bool ResumeAfterRestart { get; set; }
+
         public bool ShouldSerializeComposerState() => ComposerState?.HasContent == true;
+
+        public bool ShouldSerializeGoalId() => !string.IsNullOrWhiteSpace(GoalId);
+
+        public bool ShouldSerializeAutomaticGoalContinuation() => AutomaticGoalContinuation.HasValue;
+
+        public bool ShouldSerializeIsLocalCommand() => IsLocalCommand;
+
+        public bool ShouldSerializeProfileId() => !string.IsNullOrWhiteSpace(ProfileId);
+
+        public bool ShouldSerializeQueuedAtUtc() => QueuedAtUtc.HasValue;
+
+        public bool ShouldSerializeResumeAfterRestart() => ResumeAfterRestart;
+
+        internal bool IsGoalBound => !string.IsNullOrWhiteSpace(GoalId);
+
+        internal bool IsAutomaticGoalContinuation => IsGoalBound
+            && (AutomaticGoalContinuation ?? true);
 
         internal bool TryGetNormalized(
             out string runId,
@@ -28,6 +58,7 @@ namespace ColorVision.Copilot
         {
             runId = (RunId ?? string.Empty).Trim();
             conversationId = (ConversationId ?? string.Empty).Trim();
+            var goalId = (GoalId ?? string.Empty).Trim();
             var prompt = string.IsNullOrWhiteSpace(ComposerState?.Text)
                 ? (Prompt ?? string.Empty).Trim()
                 : ComposerState.Text.Trim();
@@ -44,9 +75,19 @@ namespace ColorVision.Copilot
                 ComposerState?.AgentSkillReference);
             return runId.Length is > 0 and <= MaximumIdentifierCharacters
                 && conversationId.Length is > 0 and <= MaximumIdentifierCharacters
+                && goalId.Length <= MaximumIdentifierCharacters
                 && prompt.Length is > 0 and <= MaximumPromptCharacters
                 && attachments.Count <= MaximumAttachments
                 && attachments.All(attachment => attachment != null);
+        }
+
+        internal bool CanResumeAfterRestart(CopilotComposerStash composerState)
+        {
+            var normalizedProfileId = (ProfileId ?? string.Empty).Trim();
+            return !IsAutomaticGoalContinuation
+                && ResumeAfterRestart
+                && normalizedProfileId.Length is > 0 and <= MaximumIdentifierCharacters
+                && composerState.RequestMode != CopilotAgentMode.Chat;
         }
 
         internal IEnumerable<CopilotAttachmentItem> EnumerateReferencedAttachments() =>
@@ -56,10 +97,23 @@ namespace ColorVision.Copilot
 
     internal static class CopilotQueuedFollowUpRecovery
     {
-        internal static bool RestoreToDrafts(CopilotChatState state)
+        internal static bool CanAutoDispatch(CopilotConversationRecord conversation)
+        {
+            ArgumentNullException.ThrowIfNull(conversation);
+            var latestAssistant = conversation.Messages.LastOrDefault(message => message?.IsUser == false);
+            return latestAssistant == null
+                || (!latestAssistant.IsResponsePending
+                    && !latestAssistant.IsThinkingInProgress
+                    && !latestAssistant.WasResponseInterrupted
+                    && latestAssistant.AgentStopReason is CopilotAgentStopReason.None
+                        or CopilotAgentStopReason.Completed);
+        }
+
+        internal static bool PrepareForRestartDispatch(CopilotChatState state)
         {
             ArgumentNullException.ThrowIfNull(state);
             state.RecoveredQueuedFollowUpCount = 0;
+            state.ResumedQueuedFollowUpCount = 0;
             if (state.QueuedFollowUpRecoveries == null)
             {
                 state.QueuedFollowUpRecoveries = new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>();
@@ -72,15 +126,125 @@ namespace ColorVision.Copilot
                 .Where(conversation => conversation != null && !string.IsNullOrWhiteSpace(conversation.Id))
                 .GroupBy(conversation => conversation.Id, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
-            var recoveriesByConversation = new Dictionary<string, List<CopilotComposerStash>>(StringComparer.Ordinal);
+            var originalRecords = state.QueuedFollowUpRecoveries.ToArray();
+            var resumableRecords = new List<CopilotQueuedFollowUpRecoveryRecord>();
+            var draftRecoveries = new List<CopilotQueuedFollowUpRecoveryRecord>();
             var seenRunIds = new HashSet<string>(StringComparer.Ordinal);
 
-            foreach (var record in state.QueuedFollowUpRecoveries.Take(CopilotAgentTaskHost.MaximumQueuedRuns))
+            foreach (var record in originalRecords)
             {
                 if (record == null
                     || !record.TryGetNormalized(out var runId, out var conversationId, out var composerState)
                     || !seenRunIds.Add(runId)
-                    || !conversationsById.ContainsKey(conversationId))
+                    || !conversationsById.TryGetValue(conversationId, out var conversation)
+                    || conversation.Messages.Any(message => message != null
+                        && message.IsUser
+                        && string.Equals((message.Id ?? string.Empty).Trim(), runId, StringComparison.Ordinal)))
+                {
+                    continue;
+                }
+
+                if (record.IsAutomaticGoalContinuation)
+                    continue;
+
+                if (record.CanResumeAfterRestart(composerState)
+                    && resumableRecords.Count < CopilotAgentTaskHost.DefaultMaxQueuedRuns)
+                {
+                    resumableRecords.Add(record);
+                }
+                else
+                {
+                    draftRecoveries.Add(record);
+                }
+            }
+
+            state.RecoveredQueuedFollowUpCount = RestoreRecordsToDrafts(state, draftRecoveries);
+            var changed = !originalRecords.SequenceEqual(resumableRecords);
+            if (changed)
+            {
+                state.QueuedFollowUpRecoveries.Clear();
+                foreach (var record in resumableRecords)
+                    state.QueuedFollowUpRecoveries.Add(record);
+            }
+            return changed;
+        }
+
+        internal static bool RestoreToDrafts(CopilotChatState state)
+        {
+            ArgumentNullException.ThrowIfNull(state);
+            state.RecoveredQueuedFollowUpCount = 0;
+            if (state.QueuedFollowUpRecoveries == null)
+            {
+                state.QueuedFollowUpRecoveries = new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>();
+                return true;
+            }
+            if (state.QueuedFollowUpRecoveries.Count == 0)
+                return false;
+
+            state.RecoveredQueuedFollowUpCount = RestoreRecordsToDrafts(
+                state,
+                state.QueuedFollowUpRecoveries.Take(CopilotAgentTaskHost.MaximumQueuedRuns));
+            state.QueuedFollowUpRecoveries.Clear();
+            return true;
+        }
+
+        internal static bool RestoreRecordToDraft(CopilotChatState state, string runId)
+        {
+            ArgumentNullException.ThrowIfNull(state);
+            var normalizedRunId = (runId ?? string.Empty).Trim();
+            if (normalizedRunId.Length is 0 or > CopilotQueuedFollowUpRecoveryRecord.MaximumIdentifierCharacters
+                || state.QueuedFollowUpRecoveries == null
+                || state.QueuedFollowUpRecoveries.Count == 0)
+            {
+                return false;
+            }
+
+            var matchingRecords = state.QueuedFollowUpRecoveries
+                .Where(record => string.Equals(
+                    (record?.RunId ?? string.Empty).Trim(),
+                    normalizedRunId,
+                    StringComparison.Ordinal))
+                .Take(CopilotAgentTaskHost.MaximumQueuedRuns)
+                .ToArray();
+            if (matchingRecords.Length == 0)
+                return false;
+
+            RestoreRecordsToDrafts(state, matchingRecords);
+            for (var index = state.QueuedFollowUpRecoveries.Count - 1; index >= 0; index--)
+            {
+                if (string.Equals(
+                    (state.QueuedFollowUpRecoveries[index]?.RunId ?? string.Empty).Trim(),
+                    normalizedRunId,
+                    StringComparison.Ordinal))
+                {
+                    state.QueuedFollowUpRecoveries.RemoveAt(index);
+                }
+            }
+            return true;
+        }
+
+        private static int RestoreRecordsToDrafts(
+            CopilotChatState state,
+            IEnumerable<CopilotQueuedFollowUpRecoveryRecord?> records)
+        {
+            var conversationsById = (state.Conversations ?? new ObservableCollection<CopilotConversationRecord>())
+                .Where(conversation => conversation != null && !string.IsNullOrWhiteSpace(conversation.Id))
+                .GroupBy(conversation => conversation.Id, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+            var recoveriesByConversation = new Dictionary<string, List<CopilotComposerStash>>(StringComparer.Ordinal);
+            var seenRunIds = new HashSet<string>(StringComparer.Ordinal);
+            var restoredCount = 0;
+
+            foreach (var record in records)
+            {
+                if (record == null
+                    || !record.TryGetNormalized(out var runId, out var conversationId, out var composerState)
+                    || record.IsAutomaticGoalContinuation
+                    || !seenRunIds.Add(runId)
+                    || !conversationsById.TryGetValue(conversationId, out var conversation)
+                    || conversation.Messages.Any(message => message != null
+                        && message.IsUser
+                        && string.Equals((message.Id ?? string.Empty).Trim(), runId, StringComparison.Ordinal)))
                 {
                     continue;
                 }
@@ -126,17 +290,22 @@ namespace ColorVision.Copilot
                 {
                     conversation.DraftAgentSkillReference = recoveredSkillReference.CreateSnapshot();
                 }
+                var recoveredReviewTarget = pair.Value.Count == 1
+                    && pair.Value[0].RequestMode == CopilotAgentMode.Review
+                    && pair.Value[0].WorkspaceReviewTarget?.IsStructurallyValid() == true
+                        ? pair.Value[0].WorkspaceReviewTarget?.CreateSnapshot()
+                        : null;
+                if (string.IsNullOrWhiteSpace(existingDraft) && recoveredReviewTarget != null)
+                    conversation.DraftWorkspaceReviewTarget = recoveredReviewTarget;
                 RestoreAttachments(conversation, pair.Value);
                 if (conversation.DraftRequestMode == CopilotAgentMode.Auto
                     && recoveredModes.Length == 1)
                 {
                     conversation.DraftRequestMode = recoveredModes[0];
                 }
-                state.RecoveredQueuedFollowUpCount += pair.Value.Count;
+                restoredCount += pair.Value.Count;
             }
-
-            state.QueuedFollowUpRecoveries.Clear();
-            return true;
+            return restoredCount;
         }
 
         internal static string FormatRestoredDraft(IReadOnlyList<string> prompts)
@@ -157,29 +326,9 @@ namespace ColorVision.Copilot
             CopilotConversationRecord conversation,
             IEnumerable<CopilotComposerStash> recoveries)
         {
-            var identities = conversation.Attachments
-                .Where(attachment => attachment != null)
-                .Select(BuildAttachmentIdentity)
-                .ToHashSet(StringComparer.Ordinal);
-            foreach (var attachment in recoveries
-                .SelectMany(recovery => recovery.CreateAttachmentSnapshots()))
-            {
-                if (identities.Add(BuildAttachmentIdentity(attachment)))
-                    conversation.Attachments.Add(attachment);
-            }
-        }
-
-        private static string BuildAttachmentIdentity(CopilotAttachmentItem attachment)
-        {
-            if (!string.IsNullOrWhiteSpace(attachment.Id))
-                return "id:" + attachment.Id.Trim();
-
-            return string.Join(
-                "\0",
-                (int)attachment.Type,
-                attachment.Title,
-                attachment.Value,
-                attachment.Source);
+            CopilotComposerAttachmentService.RestoreDistinctSnapshots(
+                conversation.Attachments,
+                recoveries.SelectMany(recovery => recovery.CreateAttachmentSnapshots()));
         }
 
         private static string FormatMode(CopilotAgentMode mode) => mode switch

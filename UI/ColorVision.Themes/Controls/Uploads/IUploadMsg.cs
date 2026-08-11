@@ -15,10 +15,19 @@ namespace ColorVision.Themes.Controls.Uploads
 
         public void Close()
         {
-            Application.Current?.Dispatcher.Invoke(() =>
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+                return;
+
+            void NotifyUploadClosed()
             {
                 UploadClosed?.Invoke(this, EventArgs.Empty);
-            });
+            }
+
+            if (dispatcher.CheckAccess())
+                NotifyUploadClosed();
+            else
+                _ = dispatcher.BeginInvoke(NotifyUploadClosed);
         }
     }
 

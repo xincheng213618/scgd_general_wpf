@@ -25,6 +25,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
     public partial class DisplayAlgorithm : UserControl, IDisPlayControl, IDisposable
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayAlgorithm));
+        private bool _isInitialized;
+        private bool _isDisposed;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm Service => Device.DService;
@@ -67,36 +69,17 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            if (_isInitialized || _isDisposed)
+                return;
+
+            _isInitialized = true;
             DataContext = Device;
             _algorithmManager = DisplayAlgorithmManager.GetInstance();
             _algorithmMetas = _algorithmManager.AlgorithmMetas.OrderBy(a => a.Order).ToList();
 
-            CB_Algorithms.SelectionChanged += (_, _) =>
-            {
-                if (CB_Algorithms.SelectedItem is not DisplayAlgorithmMeta meta)
-                {
-                    return;
-                }
-
-                if (!_algorithmDict.TryGetValue(meta.Type, out IDisplayAlgorithm? algorithm))
-                {
-                    algorithm = _algorithmManager.CreateAlgorithm(meta.Type, Device);
-                    _algorithmDict[meta.Type] = algorithm;
-                }
-
-                Device.DisplayConfig.LastSelectTemplate = meta.Name;
-                if (!_algorithmViewDict.TryGetValue(meta.Type, out UserControl? view))
-                {
-                    view = _algorithmManager.CreateView(algorithm);
-                    _algorithmViewDict[meta.Type] = view;
-                }
-
-                CB_StackPanel.Children.Clear();
-                CB_StackPanel.Children.Add(view);
-            };
-
+            CB_Algorithms.SelectionChanged += CB_Algorithms_SelectionChanged;
             InitializeAlgorithmList();
-            CB_AlgorithmTypes.SelectionChanged += (_, _) => CB_AlgorithmTypesChanged();
+            CB_AlgorithmTypes.SelectionChanged += CB_AlgorithmTypes_SelectionChanged;
 
             this.AddViewConfig(Device.View, DisPlayName);
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -104,6 +87,32 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             UpdateUI(Device.DService.DeviceStatus);
             Device.DService.DeviceStatusChanged += DService_DeviceStatusChanged;
         }
+
+        private void CB_Algorithms_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isDisposed || _algorithmManager == null || CB_Algorithms.SelectedItem is not DisplayAlgorithmMeta meta)
+            {
+                return;
+            }
+
+            if (!_algorithmDict.TryGetValue(meta.Type, out IDisplayAlgorithm? algorithm))
+            {
+                algorithm = _algorithmManager.CreateAlgorithm(meta.Type, Device);
+                _algorithmDict[meta.Type] = algorithm;
+            }
+
+            Device.DisplayConfig.LastSelectTemplate = meta.Name;
+            if (!_algorithmViewDict.TryGetValue(meta.Type, out UserControl? view))
+            {
+                view = _algorithmManager.CreateView(algorithm);
+                _algorithmViewDict[meta.Type] = view;
+            }
+
+            CB_StackPanel.Children.Clear();
+            CB_StackPanel.Children.Add(view);
+        }
+
+        private void CB_AlgorithmTypes_SelectionChanged(object sender, SelectionChangedEventArgs e) => CB_AlgorithmTypesChanged();
 
         private void InitializeAlgorithmList()
         {
@@ -181,6 +190,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
         {
+            if (_isDisposed)
+                return;
+
             UpdateUI(e);
         }
 
@@ -209,7 +221,24 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public void Dispose()
         {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
             Device.DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
+            CB_Algorithms.SelectionChanged -= CB_Algorithms_SelectionChanged;
+            CB_AlgorithmTypes.SelectionChanged -= CB_AlgorithmTypes_SelectionChanged;
+
+            CB_Algorithms.ItemsSource = null;
+            CB_AlgorithmTypes.ItemsSource = null;
+            CB_StackPanel.Children.Clear();
+
+            _algorithmViewDict.Clear();
+            _algorithmDict.Clear();
+            _algorithmMetas.Clear();
+            _algorithmManager = null;
+            DataContext = null;
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -26,7 +26,8 @@ namespace ColorVision.Copilot
 {
     public partial class CopilotChatViewModel
     {
-        private void StartNewChat()
+        private void StartNewChat(
+            CopilotCodexSessionStartSource? sessionStartSource = null)
         {
             if (!CanSwitchConversation)
                 return;
@@ -36,7 +37,11 @@ namespace ColorVision.Copilot
             ClearPendingRequestModeOverride();
 
             if (CopilotConversationService.IsReusableEmpty(SelectedConversation))
+            {
+                if (sessionStartSource.HasValue && SelectedConversation != null)
+                    _turnRuntime.QueueSessionStart(SelectedConversation.Id, sessionStartSource.Value);
                 return;
+            }
 
             var conversation = ResolveNewConversationTarget();
             if (!ReferenceEquals(conversation, SelectedConversation))
@@ -44,6 +49,8 @@ namespace ColorVision.Copilot
                 SelectConversation(conversation, persist: false);
                 PersistState();
             }
+            if (sessionStartSource.HasValue)
+                _turnRuntime.QueueSessionStart(conversation.Id, sessionStartSource.Value);
         }
 
         private void ClearConversationContext(CopilotLocalCommand command, string previousTitle)
@@ -66,7 +73,7 @@ namespace ColorVision.Copilot
             }
 
             DismissLocalCommandResult();
-            StartNewChat();
+            StartNewChat(CopilotCodexSessionStartSource.Clear);
         }
 
         private void ResumeConversation(CopilotLocalCommand command, string query)
@@ -95,7 +102,7 @@ namespace ColorVision.Copilot
             ConversationSearchRequested?.Invoke(this, EventArgs.Empty);
         }
 
-        private void ArchiveCurrentConversation(CopilotLocalCommand command)
+        private async Task ArchiveCurrentConversationAsync(CopilotLocalCommand command)
         {
             var conversation = SelectedConversation;
             if (conversation == null || conversation.IsArchived)
@@ -128,24 +135,40 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            var archivedTitle = conversation.Title;
-            AcknowledgeCompletionNotices(conversation.Id);
-            conversation.IsArchived = true;
-            conversation.Touch();
-            conversation.RefreshSummary();
-            var activeConversations = CopilotConversationArchiveService.GetActive(Conversations);
-            var replacement = activeConversations.Count > 0
-                ? activeConversations[0]
-                : CreateConversation();
-            SelectConversation(replacement, persist: false, preferredProfileId: replacement.ProfileId);
-            RefreshCompactHistoryConversations();
-            RefreshFilteredConversations();
-            RefreshConversationBranchFamily();
-            PersistState(immediate: true);
-            ShowLocalCommandResult(
-                command,
-                $"已归档“{archivedTitle}”。内容仍保留，但已从常用会话列表和 /resume 中隐藏。\n\n"
-                + "使用 /archived 查看，或 /unarchive <会话 ID 或唯一完整标题> 恢复。");
+            _isEndingConversation = true;
+            CommandManager.InvalidateRequerySuggested();
+            try
+            {
+                var hookDiagnostics = await EndConversationSessionAsync(conversation);
+                if (!Conversations.Contains(conversation) || conversation.IsArchived)
+                    return;
+
+                var archivedTitle = conversation.Title;
+                AcknowledgeCompletionNotices(conversation.Id);
+                conversation.ReplaceAgentActivity(null);
+                conversation.IsArchived = true;
+                conversation.Touch();
+                conversation.RefreshSummary();
+                var activeConversations = CopilotConversationArchiveService.GetActive(Conversations);
+                var replacement = activeConversations.Count > 0
+                    ? activeConversations[0]
+                    : CreateConversation();
+                SelectConversation(replacement, persist: false, preferredProfileId: replacement.ProfileId);
+                RefreshCompactHistoryConversations();
+                RefreshFilteredConversations();
+                RefreshConversationBranchFamily();
+                PersistState(immediate: true);
+                ShowLocalCommandResult(
+                    command,
+                    $"已归档“{archivedTitle}”。内容仍保留，但已从常用会话列表和 /resume 中隐藏。\n\n"
+                    + "使用 /archived 查看，或 /unarchive <会话 ID 或唯一完整标题> 恢复。"
+                    + FormatSessionEndHookDiagnostics(hookDiagnostics));
+            }
+            finally
+            {
+                _isEndingConversation = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
         }
 
         private void UnarchiveConversation(CopilotLocalCommand command, string query)
@@ -171,6 +194,9 @@ namespace ColorVision.Copilot
             conversation.IsArchived = false;
             conversation.Touch();
             conversation.RefreshSummary();
+            _turnRuntime.QueueSessionStart(
+                conversation.Id,
+                CopilotCodexSessionStartSource.Resume);
             CopilotConversationService.MoveToPreferredIndex(Conversations, conversation);
             RefreshCompactHistoryConversations();
             RefreshFilteredConversations();
@@ -186,9 +212,7 @@ namespace ColorVision.Copilot
             return CopilotConversationRetentionPolicy.Evaluate(
                 conversation,
                 hasScheduledRun: _taskHost.FindRunByConversationId(conversationId) != null,
-                hasPendingApproval: CopilotMcpConfirmationStore.Instance
-                    .GetPendingActionsForConversation(conversationId)
-                    .Count > 0,
+                hasPendingApproval: _approvalCoordinator.HasPendingActionsForConversation(conversationId),
                 hasQueuedFollowUp: QueuedFollowUps.Any(item => string.Equals(
                     item.ConversationId,
                     conversationId,
@@ -303,8 +327,9 @@ namespace ColorVision.Copilot
                         CopilotCapabilityCatalog.Shared.GetSnapshot(
                             _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                         CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                            _currentCodexConfigOptions.ConfiguredHooksEnabled
-                                && _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
+                            _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                            _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                            _currentCodexConfigOptions.ConfiguredCommandHooks)))
                 {
                     ShowLocalCommandResult(
                         command,

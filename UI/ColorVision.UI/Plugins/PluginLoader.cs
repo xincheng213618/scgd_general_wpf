@@ -24,6 +24,26 @@ namespace ColorVision.UI.Plugins
             return !string.IsNullOrWhiteSpace(pluginId) && RetiredPluginIds.Contains(pluginId);
         }
 
+        internal static bool ShouldSkipPlugin(IEnumerable<string>? skipOncePluginIds, string? manifestId, string? directoryName)
+        {
+            if (skipOncePluginIds == null)
+                return false;
+
+            foreach (string pluginId in skipOncePluginIds)
+            {
+                if (string.IsNullOrWhiteSpace(pluginId))
+                    continue;
+
+                if (string.Equals(pluginId, manifestId, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(pluginId, directoryName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static void LoadPlugins()
         {
             LoadPlugins("Plugins");
@@ -35,6 +55,17 @@ namespace ColorVision.UI.Plugins
             LoadPlugins("Plugins", moduleCatalog);
         }
 
+        public static void LoadPlugins(ModuleCatalog moduleCatalog, IEnumerable<string>? skipOncePluginIds)
+        {
+            LoadPlugins(moduleCatalog, skipOncePluginIds, null);
+        }
+
+        public static void LoadPlugins(ModuleCatalog moduleCatalog, IEnumerable<string>? skipOncePluginIds, Action<string>? onPluginLoading)
+        {
+            ArgumentNullException.ThrowIfNull(moduleCatalog);
+            LoadPlugins("Plugins", moduleCatalog, skipOncePluginIds, onPluginLoading);
+        }
+
         public static void LoadPlugins(string path)
         {
             LoadPlugins(path, null);
@@ -42,18 +73,32 @@ namespace ColorVision.UI.Plugins
 
         private static void LoadPlugins(string path, ModuleCatalog? moduleCatalog)
         {
+            LoadPlugins(path, moduleCatalog, null, null);
+        }
+
+        private static void LoadPlugins(
+            string path,
+            ModuleCatalog? moduleCatalog,
+            IEnumerable<string>? skipOncePluginIds,
+            Action<string>? onPluginLoading)
+        {
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
             }
+            var skipOncePluginIdSet = new HashSet<string>(
+                skipOncePluginIds?.Where(id => !string.IsNullOrWhiteSpace(id)) ?? [],
+                StringComparer.OrdinalIgnoreCase);
             PluginLoaderrConfig pluginConfig = PluginLoaderrConfig.Instance;
             var plugins = pluginConfig.Plugins;
             path = Path.GetFullPath(path); // 保证path是绝对路径
                                            // 先收集当前所有的插件目录名（通常以插件Id为key）
-            var validIds = new HashSet<string>();
+            var validIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var directory in Directory.GetDirectories(path))
             {
+                string directoryName = Path.GetFileName(directory);
                 string manifestPath = Path.Combine(directory, "manifest.json");
+                bool validManifestIdFound = false;
                 if (File.Exists(manifestPath))
                 {
                     try
@@ -63,10 +108,14 @@ namespace ColorVision.UI.Plugins
                         if (!string.IsNullOrWhiteSpace(manifest?.Id))
                         {
                             validIds.Add(manifest.Id);
+                            validManifestIdFound = true;
                         }
                     }
                     catch { /* ignore invalid manifest */ }
                 }
+
+                if (!validManifestIdFound)
+                    validIds.Add(directoryName);
             }
 
             // 删除那些在记录中存在但物理上已不存在的插件
@@ -82,18 +131,31 @@ namespace ColorVision.UI.Plugins
                 string manifestPath = Path.Combine(directory, "manifest.json");
                 PluginManifest manifest = null;
                 string dllPath = null;
-
-                DepsJson depsObj = null;
-                string[] depsFiles = Directory.GetFiles(directory, "*.deps.json");
-                if (depsFiles.Length == 1)
-                {
-                    string depsPath = depsFiles[0];
-                    string json = File.ReadAllText(depsPath);
-
-                    depsObj = JsonConvert.DeserializeObject<DepsJson>(json);
-                }
                 try
                 {
+                    string dirName = Path.GetFileName(directory);
+                    PluginInfo pluginInfo = null;
+
+                    // Directory-level recovery decisions must run before manifest parsing so a
+                    // malformed manifest can still be skipped or disabled safely.
+                    if (IsRetiredPlugin(dirName))
+                    {
+                        log.Info($"Skipped retired plugin directory '{directory}'.");
+                        continue;
+                    }
+
+                    if (plugins.TryGetValue(dirName, out pluginInfo) && !pluginInfo.Enabled)
+                    {
+                        log.Info($"Skipped disabled plugin directory '{directory}'.");
+                        continue;
+                    }
+
+                    if (ShouldSkipPlugin(skipOncePluginIdSet, null, dirName))
+                    {
+                        log.Info($"Skipped plugin directory '{directory}' for this startup.");
+                        continue;
+                    }
+
                     if (File.Exists(manifestPath))
                     {
                         string manifestContent = File.ReadAllText(manifestPath);
@@ -109,7 +171,7 @@ namespace ColorVision.UI.Plugins
                             : Path.Combine(directory, Path.GetFileName(directory) + ".dll");
 
                         // 加载插件
-                        if (!plugins.TryGetValue(manifest.Id, out var pluginInfo))
+                        if (!plugins.TryGetValue(manifest.Id, out pluginInfo))
                         {
                             pluginInfo = new PluginInfo { Manifest = manifest, Enabled = true };
                             plugins[manifest.Id] = pluginInfo;
@@ -131,6 +193,26 @@ namespace ColorVision.UI.Plugins
                         if (!pluginInfo.Enabled)
                             continue;
 
+                        if (ShouldSkipPlugin(skipOncePluginIdSet, manifest.Id, dirName))
+                        {
+                            log.Info($"Skipped plugin '{manifest.Id}' for this startup.");
+                            continue;
+                        }
+                    }
+                    onPluginLoading?.Invoke(manifest?.Id ?? dirName);
+
+                    DepsJson depsObj = null;
+                    string[] depsFiles = Directory.GetFiles(directory, "*.deps.json");
+                    if (depsFiles.Length == 1)
+                    {
+                        string depsPath = depsFiles[0];
+                        string json = File.ReadAllText(depsPath);
+
+                        depsObj = JsonConvert.DeserializeObject<DepsJson>(json);
+                    }
+
+                    if (manifest != null)
+                    {
                         pluginInfo.DepsJson = depsObj;
                         bool depsOk = false;
 
@@ -216,14 +298,6 @@ namespace ColorVision.UI.Plugins
                     }
                     else
                     {
-                        // 没有manifest，按目录名加载DLL（不加入 Plugins 字典）
-                        string dirName = Path.GetFileName(directory);
-                        if (IsRetiredPlugin(dirName))
-                        {
-                            log.Info($"Skipped retired plugin directory '{directory}'.");
-                            continue;
-                        }
-
                         dllPath = Path.Combine(directory, dirName + ".dll");
                         if (File.Exists(dllPath))
                         {

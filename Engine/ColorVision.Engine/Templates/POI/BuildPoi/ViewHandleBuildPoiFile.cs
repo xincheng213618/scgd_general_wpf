@@ -1,10 +1,9 @@
 ﻿#pragma warning disable CA1725,CS8603,CS8604
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ImageUtils = ColorVision.Common.Utilities.ImageUtils;
 using ColorVision.Engine.Services;
 using ColorVision.Database;
-using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.ImageEditor.Draw.Rasterized;
 using CsvHelper;
 using CVCommCore.CVAlgorithm;
 using System;
@@ -17,7 +16,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
@@ -132,39 +130,11 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             if (result.ViewResults.Count > 0 && result.ViewResults[0] is PoiCieFileModel model)
             {
                 POIPointInfo pointinfo = ReadPOIPointFromCSV(model.FileUrl);
-
-                if (File.Exists(result.FilePath))
+                if (pointinfo?.HeaderInfo != null && pointinfo.Positions != null)
                 {
-                    // 2. 获取全局画布尺寸（假设 DrawCanvas.ActualWidth/ActualHeight）
-                    int canvasWidth = (int)Math.Ceiling(ctx.ImageView.ActualWidth);
-                    int canvasHeight = (int)Math.Ceiling(ctx.ImageView.ActualHeight);
-                    if (canvasWidth == 0 || canvasHeight == 0) return;
-                    var fullRect = new Rect(0, 0, canvasWidth, canvasHeight);
-                    // 3. 新建全局大图
-                    var rtb = new RenderTargetBitmap(canvasWidth, canvasHeight, 144, 144, PixelFormats.Pbgra32);
-
-                    // 4. 渲染所有选中的Visual到全局
-                    var dv = new DrawingVisual();
-                    using (var dc = dv.RenderOpen())
-                    {
-                        for (int i = 0; i < pointinfo.Positions.Count; i++)
-                        {
-                            var point = pointinfo.Positions[i];
-                            RectangleProperties rectangleTextProperties = new RectangleProperties();
-                            rectangleTextProperties.Rect = new Rect(point.PixelX, point.PixelY, pointinfo.HeaderInfo.Width, pointinfo.HeaderInfo.Height);
-                            rectangleTextProperties.Brush = Brushes.Transparent;
-                            rectangleTextProperties.Pen = new Pen(Brushes.Red, 1);
-                            rectangleTextProperties.Id = i;
-                            rectangleTextProperties.Name = i.ToString();
-                            DVRectangle Rectangle = new DVRectangle(rectangleTextProperties);
-                            Rectangle.Render();
-                            dc.DrawDrawing(Rectangle.Drawing);
-                        }
-                    }
-                    rtb.Render(dv);
-                    var rasterVisual = new RasterizedSelectVisual(rtb, fullRect);
-                    rasterVisual.Attribute.Tag = pointinfo.Positions;
-                    ctx.ImageView.ImageShow.AddVisualCommand(rasterVisual);
+                    VectorizedSelectVisual? visual = CreatePoiVisual(pointinfo.Positions, pointinfo.HeaderInfo, ctx.ImageView.ImageShow.Source);
+                    if (visual != null)
+                        ctx.ImageView.ImageShow.AddVisualCommand(visual);
                 }
 
             }
@@ -180,6 +150,55 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                 ctx.ListView.ItemsSource = result.ViewResults;
             }
 
+        }
+
+        internal static VectorizedSelectVisual? CreatePoiVisual(
+            IReadOnlyList<POIPointPosition> positions,
+            POIHeaderInfo headerInfo,
+            ImageSource? imageSource)
+        {
+            ArgumentNullException.ThrowIfNull(positions);
+            ArgumentNullException.ThrowIfNull(headerInfo);
+            if (positions.Count == 0)
+                return null;
+
+            double markerWidth = headerInfo.Width;
+            double markerHeight = headerInfo.Height;
+            StreamGeometry geometry = new();
+            using (StreamGeometryContext geometryContext = geometry.Open())
+            {
+                foreach (POIPointPosition point in positions)
+                {
+                    geometryContext.BeginFigure(new Point(point.PixelX, point.PixelY), isFilled: true, isClosed: true);
+                    geometryContext.LineTo(new Point(point.PixelX + markerWidth, point.PixelY), isStroked: true, isSmoothJoin: false);
+                    geometryContext.LineTo(new Point(point.PixelX + markerWidth, point.PixelY + markerHeight), isStroked: true, isSmoothJoin: false);
+                    geometryContext.LineTo(new Point(point.PixelX, point.PixelY + markerHeight), isStroked: true, isSmoothJoin: false);
+                }
+            }
+            geometry.Freeze();
+
+            GeometryDrawing drawing = new(Brushes.Transparent, new Pen(Brushes.Red, 1), geometry);
+            drawing.Freeze();
+
+            VectorizedSelectVisual visual = new(drawing, GetPoiVisualBounds(positions, imageSource, markerWidth, markerHeight));
+            visual.Attribute.Tag = positions;
+            return visual;
+        }
+
+        private static Rect GetPoiVisualBounds(
+            IReadOnlyList<POIPointPosition> positions,
+            ImageSource? imageSource,
+            double markerWidth,
+            double markerHeight)
+        {
+            if (ImageUtils.TryGetImageSize(imageSource, out int width, out int height))
+                return new Rect(0, 0, width, height);
+
+            double minX = positions.Min(point => Math.Min(point.PixelX, point.PixelX + markerWidth));
+            double minY = positions.Min(point => Math.Min(point.PixelY, point.PixelY + markerHeight));
+            double maxX = positions.Max(point => Math.Max(point.PixelX, point.PixelX + markerWidth));
+            double maxY = positions.Max(point => Math.Max(point.PixelY, point.PixelY + markerHeight));
+            return new Rect(minX, minY, maxX - minX, maxY - minY);
         }
     }
 }

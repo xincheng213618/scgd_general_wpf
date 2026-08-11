@@ -8,6 +8,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
+using ColorVision.UI.Views;
 using log4net;
 using System;
 using System.ComponentModel;
@@ -19,6 +20,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     public class DeviceCalibration : DeviceService<ConfigCalibration>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCalibration));
+        private bool _isDisposed;
+        private PhyCamera? _subscribedPhyCamera;
 
         public MQTTCalibration DService { get; set; }
 
@@ -48,11 +51,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(),a => AccessControl.Check(OpenPhyCameraManger) && PhyCamera !=null);
             DisplayLazy = new Lazy<DisplayCalibration>(() => new DisplayCalibration(this));
-            if (PhyCamera != null)
-            {
-                PhyCamera.ConfigChanged += PhyCameraConfigChanged;
-                PhyCamera.DeviceCalibration = this;
-            }
+            AttachPhyCamera(PhyCamera);
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
         }
 
@@ -72,18 +71,35 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         }
 
 
-        private PhyCamera lastPhyCamera;
-
         public void PhyCameraConfigChanged(object? sender, PhyCameras.Configs.ConfigPhyCamera e)
         {
-            if (lastPhyCamera != null && sender is PhyCamera phyCamera && phyCamera != lastPhyCamera)
-            {
-                lastPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
-                lastPhyCamera = phyCamera;
-                phyCamera.DeviceCalibration = this;
-                lastPhyCamera.DeviceCalibration = null;
-            }
+            if (_isDisposed)
+                return;
+
             Save();
+        }
+
+        private void AttachPhyCamera(PhyCamera? phyCamera)
+        {
+            if (_isDisposed && phyCamera != null)
+                return;
+
+            if (ReferenceEquals(_subscribedPhyCamera, phyCamera))
+                return;
+
+            if (_subscribedPhyCamera != null)
+            {
+                _subscribedPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
+                if (ReferenceEquals(_subscribedPhyCamera.DeviceCalibration, this))
+                    _subscribedPhyCamera.DeviceCalibration = null;
+            }
+
+            _subscribedPhyCamera = phyCamera;
+            if (_subscribedPhyCamera != null)
+            {
+                _subscribedPhyCamera.ConfigChanged += PhyCameraConfigChanged;
+                _subscribedPhyCamera.DeviceCalibration = this;
+            }
         }
 
         [CommandDisplay("ManagePhysicalCamera")]
@@ -97,9 +113,12 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public override void Save()
         {
+            if (_isDisposed)
+                return;
+
             base.Save();
-            if (PhyCamera != null)
-                PhyCamera.SetCalibration(this);
+            AttachPhyCamera(PhyCamera);
+            _subscribedPhyCamera?.SetCalibration(this);
         }
 
 
@@ -113,6 +132,28 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         public override MQTTServiceBase? GetMQTTService()
         {
             return DService;
+        }
+
+        public override void Dispose()
+        {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
+
+            if (DisplayLazy.IsValueCreated)
+                DisplayLazy.Value.Dispose();
+
+            if (_view.IsValueCreated)
+            {
+                DockViewManager.GetInstance().RemoveView(_view.Value);
+                _view.Value.Dispose();
+            }
+
+            AttachPhyCamera(null);
+            DService.Dispose();
+            base.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

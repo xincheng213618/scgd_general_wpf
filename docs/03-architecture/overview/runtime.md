@@ -10,13 +10,28 @@
 | --- | --- |
 | 命令行文件处理 | `input`、`export` 等分支处理完成后直接返回 |
 | 正常桌面启动 | 初始化配置、日志、主题、语言、插件，再进入向导或启动窗口 |
-| 异常恢复 | 上次异常退出后，先询问是否禁用插件再继续启动 |
+| 异常恢复 | 上次启动未完成时进入独立恢复窗口，可先更新主程序、跳过或禁用插件、回退插件，再决定是否继续 |
 
 ## 主程序启动链路
 
-从 `ColorVision/App.xaml.cs` 看，常见启动顺序是：设置工作目录并预加载 DLL，初始化配置/日志/主题/语言，解析命令行，处理文件分支，执行单实例检查，必要时清理僵尸进程，按上次启动状态决定是否禁用插件，初始化 WinForms 视觉样式，最后显示 `WizardWindow` 或 `StartWindow`。
+从 `ColorVision/App.xaml.cs` 看，常见启动顺序是：处理更新包输入，创建本次启动记录，设置工作目录并预加载 DLL，初始化配置/日志/主题/语言，处理文件分支，执行单实例检查，必要时清理僵尸进程，按上次启动状态决定是否进入恢复窗口，初始化 WinForms 视觉样式，最后显示 `WizardWindow` 或 `StartWindow`。
 
 这里最重要的不是记住所有步骤，而是知道启动并不总会直接进主窗口。
+
+启动记录按安装目录和启动尝试隔离，并记录进程、阶段及正在加载的插件。只有主窗口初始化完成、功能启动器执行成功、首次向导正常完成并重启、系统关机/注销或外部更新已经真实接管时才清理；多开进程不会互相覆盖记录。恢复窗口关闭或恢复准备失败时保留原故障阶段，供下次继续判断。
+
+## 启动恢复
+
+恢复窗口只扫描 `Plugins/` 下的磁盘清单和文件时间，不读取 `.deps.json`，也不加载插件程序集。它会优先标出上次记录到的插件；“疑似”只表示与启动记录匹配，不等于已经确认故障。
+
+| 动作 | 行为 |
+| --- | --- |
+| 检查更新 | 只检查主程序；有新版时更新并重启，无新版时可下载完整安装程序修复当前版本 |
+| 本次跳过选中 | 本次在读取依赖和加载 DLL 前跳过所选插件，配置不变 |
+| 本次跳过全部 | 本次不进入插件加载器 |
+| 禁用选中并启动 | 持久保存禁用状态；旧式无清单插件也按目录名识别 |
+| 插件回退 | 仅在存在同安装目录、校验通过的更新前备份时可用；外部进程精确替换该插件目录后重启 |
+| 其他恢复 | 打开程序快照、主日志和更新日志；仅浏览这些入口不会清除故障现场 |
 
 ## 插件加载
 
@@ -28,7 +43,7 @@
 | 读取 | 读取 `manifest.json` 和可选 `.deps.json` |
 | 校验 | 检查 `ColorVision.*` 依赖版本 |
 | 装载 | 用 `Assembly.LoadFrom(...)` 装载插件程序集 |
-| 恢复 | 上次异常退出时，启动会先询问是否禁用插件 |
+| 恢复 | 上次启动未完成时，可在解析清单或依赖前按 ID/目录跳过，或读取持久禁用状态 |
 
 ## 主工作区对象
 
@@ -63,7 +78,8 @@ DisplayFlow -> FlowControl -> FlowEngineLib -> MQTTRCService -> 设备/算法服
 | 主题 | 入口 |
 | --- | --- |
 | 主启动 | `ColorVision/App.xaml.cs` |
+| 启动恢复 | `ColorVision/Recovery/`、`ColorVision/ProgramTimer.cs` |
 | 插件加载 | `UI/ColorVision.UI/Plugins/PluginLoader.cs` |
 | 服务树 | `Engine/ColorVision.Engine/Services/ServiceManager.cs` |
 | 注册中心 | `Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs` |
-| 模板注册 | `Engine/ColorVision.Engine/Templates/TemplateContorl.cs` |
+| 模板注册 | `Engine/ColorVision.Engine/Templates/TemplateControl.cs` |

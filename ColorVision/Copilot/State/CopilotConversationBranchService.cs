@@ -6,6 +6,11 @@ using System.Linq;
 
 namespace ColorVision.Copilot
 {
+    internal sealed record CopilotConversationPromptEditPreparation(
+        CopilotConversationRecord Branch,
+        int RestoredAttachmentCount,
+        bool HasUnrestorableAttachments);
+
     public sealed class CopilotConversationBranchFamilyMember
     {
         public CopilotConversationBranchFamilyMember(
@@ -108,6 +113,56 @@ namespace ColorVision.Copilot
                 copyThroughIndex,
                 requestedTitle,
                 capturesInProgressTurn: false);
+        }
+
+        public static bool CanPreparePromptEditBranch(
+            CopilotConversationRecord? source,
+            CopilotChatMessage? fromUserMessage)
+        {
+            return source != null
+                && fromUserMessage?.IsUser == true
+                && !string.IsNullOrWhiteSpace(fromUserMessage.Id)
+                && !string.IsNullOrWhiteSpace(fromUserMessage.Content)
+                && source.Messages.Contains(fromUserMessage);
+        }
+
+        public static CopilotConversationPromptEditPreparation PreparePromptEditBranch(
+            CopilotConversationRecord source,
+            CopilotChatMessage fromUserMessage,
+            string? requestedTitle = null)
+        {
+            if (!CanPreparePromptEditBranch(source, fromUserMessage))
+                throw new InvalidOperationException("Editing a previous prompt requires a visible user message from the source conversation.");
+
+            var restoredAttachments = fromUserMessage.AttachmentSnapshotCaptured
+                ? fromUserMessage.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray()
+                : Array.Empty<CopilotAttachmentItem>();
+            if (restoredAttachments.Length > CopilotComposerAttachmentService.MaximumAttachmentCount)
+            {
+                throw new InvalidOperationException(
+                    $"The historical prompt contains more than {CopilotComposerAttachmentService.MaximumAttachmentCount:N0} attachments and cannot be restored safely.");
+            }
+
+            var requestMode = Enum.IsDefined(fromUserMessage.RequestMode)
+                ? fromUserMessage.RequestMode
+                : CopilotAgentMode.Chat;
+            var branch = CreateRewindBranch(source, fromUserMessage, requestedTitle);
+            foreach (var attachment in restoredAttachments)
+                branch.Attachments.Add(attachment);
+            branch.DraftText = fromUserMessage.Content;
+            branch.DraftRequestMode = requestMode;
+            branch.DraftWorkspaceReviewTarget = requestMode == CopilotAgentMode.Review
+                && fromUserMessage.WorkspaceReviewTarget?.IsStructurallyValid() == true
+                    ? fromUserMessage.WorkspaceReviewTarget.CreateSnapshot()
+                    : null;
+            branch.DraftAgentSkillReference = fromUserMessage.AgentSkillReference?.IsStructurallyValid() == true
+                ? fromUserMessage.AgentSkillReference.CreateSnapshot()
+                : null;
+
+            return new CopilotConversationPromptEditPreparation(
+                branch,
+                restoredAttachments.Length,
+                !fromUserMessage.AttachmentSnapshotCaptured && fromUserMessage.HasAttachments);
         }
 
         private static CopilotConversationRecord CreateBranchCore(

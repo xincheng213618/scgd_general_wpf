@@ -311,18 +311,45 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request)
         {
             var instructions = (request.ConfiguredDeveloperInstructions ?? string.Empty).Trim();
-            if (instructions.Length == 0)
+            var sessionHookContext = CopilotCodexSessionStartHookExecutor.BuildDeveloperContext(
+                request.SessionStartAdditionalContexts ?? Array.Empty<string>());
+            var promptHookContext = CopilotCodexUserPromptSubmitHookExecutor.BuildDeveloperContext(
+                request.UserPromptSubmitAdditionalContexts ?? Array.Empty<string>());
+            var asyncHookContext = CopilotCodexAsyncHookResultDelivery.BuildDeveloperContext(
+                request.AsyncHookAdditionalContexts ?? Array.Empty<string>());
+            if (instructions.Length == 0
+                && sessionHookContext.Length == 0
+                && promptHookContext.Length == 0
+                && asyncHookContext.Length == 0)
                 return;
 
-            if (instructions.Length > CopilotProjectInstructionDiscoveryConfig.MaximumDeveloperInstructionCharacters)
+            if (instructions.Length > 0)
             {
-                instructions = instructions[..CopilotProjectInstructionDiscoveryConfig.MaximumDeveloperInstructionCharacters];
+                if (instructions.Length > CopilotProjectInstructionDiscoveryConfig.MaximumDeveloperInstructionCharacters)
+                {
+                    instructions = instructions[..CopilotProjectInstructionDiscoveryConfig.MaximumDeveloperInstructionCharacters];
+                }
+                builder.AppendLine()
+                    .AppendLine("# Configured Codex developer instructions")
+                    .AppendLine("Apply this request-start config.toml guidance before repository AGENTS.md guidance when it is consistent with the current user request and immutable ColorVision runtime policy. It never grants a tool, write, approval, external side effect, or broader path access.")
+                    .AppendLine(JsonSerializer.Serialize(instructions))
+                    .AppendLine("The host runtime's execution scope, native approval, evidence, and safety rules always prevail over this configured guidance.");
             }
-            builder.AppendLine()
-                .AppendLine("# Configured Codex developer instructions")
-                .AppendLine("Apply this request-start config.toml guidance before repository AGENTS.md guidance when it is consistent with the current user request and immutable ColorVision runtime policy. It never grants a tool, write, approval, external side effect, or broader path access.")
-                .AppendLine(JsonSerializer.Serialize(instructions))
-                .AppendLine("The host runtime's execution scope, native approval, evidence, and safety rules always prevail over this configured guidance.");
+            if (sessionHookContext.Length > 0)
+            {
+                builder.AppendLine()
+                    .AppendLine(sessionHookContext);
+            }
+            if (promptHookContext.Length > 0)
+            {
+                builder.AppendLine()
+                    .AppendLine(promptHookContext);
+            }
+            if (asyncHookContext.Length > 0)
+            {
+                builder.AppendLine()
+                    .AppendLine(asyncHookContext);
+            }
         }
 
         private static string BuildActiveBackgroundCommandContext(

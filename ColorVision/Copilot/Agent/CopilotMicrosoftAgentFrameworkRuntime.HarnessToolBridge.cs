@@ -41,6 +41,8 @@ namespace ColorVision.Copilot
             private readonly CopilotAgentToolBudgetCompletionGate _toolBudgetCompletionGate;
             private CopilotTokenUsage _delegatedUsage;
             private int _reservedToolCalls;
+            private MessageInjectingChatClient? _messageInjector;
+            private AgentSession? _messageInjectionSession;
 
             public HarnessToolBridge(
                 CopilotAgentRequest request,
@@ -98,6 +100,70 @@ namespace ColorVision.Copilot
                     functions.Add(RequiresNativeApproval(tool) ? new ApprovalRequiredAIFunction(function) : function);
                 }
                 return functions;
+            }
+
+            public void AttachMessageInjection(
+                MessageInjectingChatClient messageInjector,
+                AgentSession session)
+            {
+                ArgumentNullException.ThrowIfNull(messageInjector);
+                ArgumentNullException.ThrowIfNull(session);
+                lock (_syncRoot)
+                {
+                    if (_messageInjector != null || _messageInjectionSession != null)
+                        throw new InvalidOperationException("Hook message injection is already attached.");
+                    _messageInjector = messageInjector;
+                    _messageInjectionSession = session;
+                }
+            }
+
+            internal static IReadOnlyList<ChatMessage> CreateHookAdditionalContextMessages(
+                IReadOnlyList<string> contexts)
+            {
+                return (contexts ?? Array.Empty<string>())
+                    .Where(context => !string.IsNullOrWhiteSpace(context))
+                    .Select(context => new ChatMessage(new ChatRole("developer"), context))
+                    .ToArray();
+            }
+
+            private async Task EnqueueHookAdditionalContextAsync(
+                IReadOnlyList<string> contexts,
+                CancellationToken cancellationToken)
+            {
+                var messages = CreateHookAdditionalContextMessages(contexts);
+                if (messages.Count == 0)
+                    return;
+
+                MessageInjectingChatClient? messageInjector;
+                AgentSession? session;
+                lock (_syncRoot)
+                {
+                    messageInjector = _messageInjector;
+                    session = _messageInjectionSession;
+                }
+                if (messageInjector == null || session == null)
+                {
+                    _emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        "Hook additional context could not be delivered because the Agent message-injection session was unavailable."));
+                    return;
+                }
+
+                try
+                {
+                    await messageInjector.EnqueueMessagesAsync(
+                        session,
+                        messages,
+                        cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        $"Hook additional context could not be delivered to the Agent. ErrorType={ex.GetType().Name}"));
+                }
             }
 
         }

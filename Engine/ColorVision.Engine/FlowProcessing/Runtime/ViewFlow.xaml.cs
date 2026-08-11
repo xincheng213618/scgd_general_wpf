@@ -980,11 +980,53 @@ namespace ColorVision.Engine.FlowProcessing
             GC.SuppressFinalize(this);
         }
 
-        private void RunFlow()
+        private async void RunFlow()
         {
-            if (_isStandalone)
-                _executionSession.SelectStartNode(RefreshStandaloneStartNodeSelection());
-            _ = _executionSession.RunFlowAsync();
+            await ExecuteRunCommandAsync(
+                async () =>
+                {
+                    if (_isStandalone)
+                    {
+                        _executionSession.SelectStartNode(
+                            RefreshStandaloneStartNodeSelection());
+                    }
+                    await _executionSession.RunFlowAsync();
+                },
+                ReportRunFlowFailure);
+        }
+
+        internal static async Task ExecuteRunCommandAsync(
+            Func<Task> runAsync,
+            Action<Exception> reportFailure)
+        {
+            try
+            {
+                await runAsync();
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    reportFailure(ex);
+                }
+                catch (Exception reportException)
+                {
+                    log.Error("报告流程执行失败时发生异常。", reportException);
+                }
+            }
+        }
+
+        private void ReportRunFlowFailure(Exception ex)
+        {
+            string message = $"流程执行失败：{ex.Message}";
+            log.Error("流程命令执行失败。", ex);
+            ShowExecutionSummary(message);
+            MessageBox.Show(
+                Application.Current?.GetActiveWindow(),
+                message,
+                "ColorVision",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
 
         private void StopFlow()

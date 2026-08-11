@@ -36,6 +36,8 @@ namespace ColorVision.Copilot
             @"^\s*complete\s*:\s*yes\b",
             RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Multiline);
         private readonly Func<CopilotProfileConfig, IChatClient> _chatClientFactory;
+        private readonly CopilotCodexSubagentStartHookExecutor _subagentStartHookExecutor;
+        private readonly CopilotCodexStopHookExecutor _stopHookExecutor;
 
         public CopilotSubagentRunner()
             : this(CopilotMicrosoftAgentFrameworkRuntime.CreateChatClient)
@@ -43,8 +45,23 @@ namespace ColorVision.Copilot
         }
 
         public CopilotSubagentRunner(Func<CopilotProfileConfig, IChatClient> chatClientFactory)
+            : this(
+                chatClientFactory,
+                new CopilotCodexSubagentStartHookExecutor(),
+                new CopilotCodexStopHookExecutor())
+        {
+        }
+
+        internal CopilotSubagentRunner(
+            Func<CopilotProfileConfig, IChatClient> chatClientFactory,
+            CopilotCodexSubagentStartHookExecutor subagentStartHookExecutor,
+            CopilotCodexStopHookExecutor stopHookExecutor)
         {
             _chatClientFactory = chatClientFactory ?? throw new ArgumentNullException(nameof(chatClientFactory));
+            _subagentStartHookExecutor = subagentStartHookExecutor
+                ?? throw new ArgumentNullException(nameof(subagentStartHookExecutor));
+            _stopHookExecutor = stopHookExecutor
+                ?? throw new ArgumentNullException(nameof(stopHookExecutor));
         }
 
         public async Task<CopilotSubagentResult> RunAsync(
@@ -61,13 +78,30 @@ namespace ColorVision.Copilot
             var catalog = new CopilotCapabilityCatalog();
             catalog.PublishSource(CopilotCapabilitySourceKind.BuiltIn, role.Id, "ColorVision " + role.DisplayName, tools);
             var childRequest = CreateChildRequest(parentRequest, role, runRequest);
+            var subagentStartOutcome = await _subagentStartHookExecutor.RunAsync(
+                childRequest,
+                diagnostic => Trace.TraceInformation("Copilot {0}", diagnostic),
+                cancellationToken).ConfigureAwait(false);
+            if (subagentStartOutcome.AdditionalContexts.Count > 0)
+            {
+                childRequest = CreateChildRequest(
+                    parentRequest,
+                    role,
+                    runRequest,
+                    subagentStartOutcome.AdditionalContexts);
+            }
             var toolExecutor = new CopilotToolExecutor();
             var resumeCompatibility = runRequest.ResumeCheckpoint?.EvaluateFor(
                 childRequest.Profile,
                 catalog.GetSnapshot(),
                 tools.Select(tool => tool.Name).ToArray(),
                 CopilotAgentEnvironmentContext.Capture(childRequest),
-                toolExecutor.GetHookSurfaceSnapshot(childRequest.CodexExtensionHooksEnabled));
+                toolExecutor.GetHookSurfaceSnapshot(
+                    childRequest.CodexHooksEnabled,
+                    childRequest.CodexPluginsEnabled,
+                    childRequest.CodexCommandHooks),
+                projectInstructions: childRequest.ProjectInstructions,
+                configuredDeveloperInstructions: childRequest.ConfiguredDeveloperInstructions);
             if (resumeCompatibility != null && !resumeCompatibility.CanResume)
             {
                 return CreateResumeFailureResult(
@@ -106,7 +140,8 @@ namespace ColorVision.Copilot
                     toolExecutor,
                     _chatClientFactory,
                     EmptyExternalToolProvider.Instance,
-                    catalog);
+                    catalog,
+                    _stopHookExecutor);
                 using var steeringTarget = CopilotSubagentCoordination.TryAttachSteeringTarget(
                     parentRequest.ConversationId,
                     runRequest.RunId,
@@ -474,6 +509,7 @@ namespace ColorVision.Copilot
                 ReportedTotalTokens = reportedTotalTokens,
                 ReportedCachedInputTokens = reportedCachedInputTokens,
                 UsedEstimatedUsage = exploration.UsedEstimatedUsage || finalization.UsedEstimatedUsage,
+                UsedDelegatedDirectAnswer = exploration.UsedDelegatedDirectAnswer || finalization.UsedDelegatedDirectAnswer,
                 BudgetExhausted = totalRequestBudgetExhausted
                     || (!finalizationCompleted && (exploration.BudgetExhausted || finalization.BudgetExhausted)),
                 RequestTokenBudgetExhausted = totalRequestBudgetExhausted
@@ -505,7 +541,8 @@ namespace ColorVision.Copilot
         internal static CopilotAgentRequest CreateChildRequest(
             CopilotAgentRequest parentRequest,
             CopilotSubagentRoleDescriptor role,
-            CopilotSubagentRunRequest runRequest)
+            CopilotSubagentRunRequest runRequest,
+            IReadOnlyList<string>? subagentStartAdditionalContexts = null)
         {
             ArgumentNullException.ThrowIfNull(parentRequest);
             ArgumentNullException.ThrowIfNull(role);
@@ -537,12 +574,26 @@ namespace ColorVision.Copilot
             var customSubagent = CopilotCodexCustomSubagentSelection.Find(
                 parentRequest.CodexCustomSubagents,
                 runRequest.Agent);
+            var subagentHookContext = new CopilotCodexSubagentHookContext(
+                runRequest.RunId.Trim(),
+                customSubagent?.Name?.Trim() is { Length: > 0 } customAgentName
+                    ? customAgentName
+                    : role.Id,
+                runRequest.RunId.Trim());
+            var canInheritParentModelMetadata = string.Equals(
+                childProfile.Model,
+                parentRequest.Profile.Model,
+                StringComparison.OrdinalIgnoreCase);
             var childReasoningSummary = customSubagent != null
                 && customSubagent.ReasoningSummary != CopilotCodexReasoningSummary.Unspecified
                     ? customSubagent.ReasoningSummary
-                    : parentRequest.CodexReasoningSummary;
+                    : canInheritParentModelMetadata
+                        ? parentRequest.CodexReasoningSummary
+                        : CopilotCodexReasoningSummary.Unspecified;
             var childSupportsReasoningSummaries = customSubagent?.SupportsReasoningSummaries
-                ?? parentRequest.CodexModelSupportsReasoningSummaries;
+                ?? (canInheritParentModelMetadata
+                    ? parentRequest.CodexModelSupportsReasoningSummaries
+                    : null);
             var childServiceTier = parentRequest.CodexFastModeEnabled
                 ? !string.IsNullOrWhiteSpace(customSubagent?.ServiceTier)
                     ? customSubagent.ServiceTier
@@ -551,7 +602,9 @@ namespace ColorVision.Copilot
             var childModelVerbosity = customSubagent != null
                 && customSubagent.ModelVerbosity != CopilotCodexModelVerbosity.Unspecified
                     ? customSubagent.ModelVerbosity
-                    : parentRequest.CodexModelVerbosity;
+                    : canInheritParentModelMetadata
+                        ? parentRequest.CodexModelVerbosity
+                        : CopilotCodexModelVerbosity.Unspecified;
             childProfile.MaxTokens = Math.Min(childProfile.MaxTokens, MaximumExplorationOutputTokens);
             var childExecutionScope = CopilotExecutionScope.ForAgentRun(parentRequest)
                 .DeriveChild(CopilotAgentTaskEventIds.CreateRunId());
@@ -576,12 +629,29 @@ namespace ColorVision.Copilot
                         .ToArray()
                     : Array.Empty<string>(),
                 ActiveDocumentPath = activeDocumentPath,
-                ConfiguredDeveloperInstructions = parentRequest.ConfiguredDeveloperInstructions,
+                ConfiguredDeveloperInstructions =
+                    CopilotCodexSubagentStartHookExecutor.MergeDeveloperInstructions(
+                        parentRequest.ConfiguredDeveloperInstructions,
+                        subagentStartAdditionalContexts ?? Array.Empty<string>()),
+                SessionStartAdditionalContexts = (parentRequest.SessionStartAdditionalContexts
+                        ?? Array.Empty<string>())
+                    .ToArray(),
+                AsyncHookAdditionalContexts = (parentRequest.AsyncHookAdditionalContexts
+                        ?? Array.Empty<string>())
+                    .ToArray(),
                 CodexWebSearchMode = parentRequest.CodexWebSearchMode,
                 CodexSandboxMode = CopilotCodexSandboxMode.ReadOnly,
                 CodexShellToolEnabled = parentRequest.CodexShellToolEnabled,
                 CodexHooksEnabled = parentRequest.CodexHooksEnabled,
+                CodexCommandHooks = parentRequest.CodexCommandHooks
+                    .Select(definition => definition.CreateSnapshot())
+                    .ToArray(),
+                CodexExecPolicyRules = parentRequest.CodexExecPolicyRules
+                    .Select(rule => rule.CreateSnapshot())
+                    .ToArray(),
+                CodexSubagentHookContext = subagentHookContext,
                 CodexPluginsEnabled = parentRequest.CodexPluginsEnabled,
+                CodexErrorOnToolCollisions = parentRequest.CodexErrorOnToolCollisions,
                 CodexShellEnvironmentPolicy = parentRequest.CodexShellEnvironmentPolicy.CreateSnapshot(),
                 CodexExperimentalRequestUserInputEnabled = parentRequest.CodexExperimentalRequestUserInputEnabled,
                 CodexDefaultModeRequestUserInputEnabled = parentRequest.CodexDefaultModeRequestUserInputEnabled,
@@ -705,7 +775,8 @@ namespace ColorVision.Copilot
             CopilotSubagentRoleDescriptor role,
             CopilotCodexCustomSubagentDefinition? customSubagent)
         {
-            if (customSubagent == null)
+            if (customSubagent == null
+                || string.IsNullOrWhiteSpace(customSubagent.DeveloperInstructions))
                 return role.RuntimeInstructions;
 
             return string.Join(Environment.NewLine, new[]

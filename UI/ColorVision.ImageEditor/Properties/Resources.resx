@@ -79,6 +79,9 @@
   <data name="Clear" xml:space="preserve">
     <value>清空(_C)</value>
   </data>
+  <data name="RestoreOriginalImage" xml:space="preserve">
+    <value>一键还原</value>
+  </data>
   <data name="Rotate" xml:space="preserve">
     <value>图像旋转</value>
   </data>

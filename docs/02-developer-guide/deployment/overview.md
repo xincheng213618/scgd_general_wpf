@@ -4,10 +4,12 @@
 
 ## 当前部署对象
 
-- `ColorVision/`：主程序本体
-- `ColorVisionSetup/`：安装与更新相关程序
+- `ColorVision/`：主程序本体，当前客户端更新实现位于 `ColorVision/Update/`
 - `Scripts/`：构建、打包、发布辅助脚本
+- 仓库外的 Advanced Installer `ColorVision.aip`：由 `Scripts\release.bat` 发布链调用，生成完整安装包
 - `Plugins/`：运行时加载的插件目录
+
+`src/ColorVisionSetup/` 是历史保留的安装/更新程序源码，未接入当前 `build.sln`、外部 `ColorVision.aip` 或 `Scripts\release.bat` 发布链，不是当前部署入口。当前实现与发布方式分别见 [自动更新系统](./auto-update.md) 和 [构建与发布脚本](../scripts/README.md)。
 
 ## 当前推荐路径
 
@@ -16,8 +18,8 @@
 直接从源码构建并运行主程序：
 
 ```powershell
-dotnet restore
-dotnet build -p:Platform=x64
+dotnet restore .\ColorVision\ColorVision.csproj
+dotnet build .\ColorVision\ColorVision.csproj -p:Platform=x64
 dotnet run --project ColorVision/ColorVision.csproj
 ```
 
@@ -27,6 +29,8 @@ dotnet run --project ColorVision/ColorVision.csproj
 - 按需携带插件目录和运行时依赖
 - 若涉及在线更新，查看 [自动更新系统](./auto-update.md)
 - 启动检查与手动检查并发访问主程序版本接口时共享进行中的请求，部署侧无需为同一客户端的重复探测预留额外连接
+- 带清单插件更新前会创建按安装目录隔离的校验备份，并以完整目录事务替换；旧式无清单包仍使用兼容覆盖路径
+- 上次启动未完成时会进入独立恢复窗口，用户可先更新/修复主程序，或跳过、禁用、回退插件
 
 ## 部署前确认项
 

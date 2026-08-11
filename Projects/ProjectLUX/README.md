@@ -8,8 +8,8 @@ LUX 亮度测试系统 — 基于 ColorVision 平台的显示设备光学质量�
 |------|------|
 | 框架 | .NET 10.0 / WPF (Windows x64) |
 | 架构 | ColorVision 平台插件 |
-| 版本 | 1.1.5.2 |
-| 插件要求 | ColorVision >= 1.4.12.21 |
+| 版本 | 1.1.5.4 |
+| 插件要求 | ColorVision >= 1.4.12.36 |
 | 数据库 | MySQL (SqlSugar) — 批次/算法数据；SQLite — 本地测试结果 |
 | 配置持久化 | JSON 文件 (ProcessGroups / Recipe / Fix / Summary) |
 
@@ -110,15 +110,17 @@ ProjectLUX
 
 外部系统通过 TCP Socket 发送命令，格式：`T00XX,SN;`。
 
+完整的传输参数、命令/响应格式、异步时序、现场配置要求和异常行为见 [ProjectLUX TCP 通讯协议手册](ProjectLUX%20TCP%20通讯协议手册.md)。
+
 | 命令码 | 功能 | 说明 |
 |--------|------|------|
-| `T0000` | 握手/初始化 | 初始化测试，设置 SN |
+| `T0000` | 握手/设置 SN | 设置当前 SN；现版本不重置累计测试结果 |
 | `T0001` | VID 虚像距 | 自动对焦测量，返回 VID 位置值 |
 | `T0002` | 光学中心 | OC 测试（仅 AR 模式） |
 | `T0031` | 光通量 | 光谱仪测量，返回光通量值 |
 | `T00XX` | 流程执行 | 在当前活动组内按 SocketCode 匹配 ProcessMeta 执行对应测试 |
 
-响应格式：`H03XX,SN,状态;[数据]`
+通用响应格式：`<MachineNO><XX>,<SN>,00;`。VID、光通量和 AR 光学中心使用各自的专用响应格式，详见完整协议手册。
 
 ## 依赖关系
 

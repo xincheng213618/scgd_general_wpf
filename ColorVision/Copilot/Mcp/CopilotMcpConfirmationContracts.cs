@@ -106,6 +106,9 @@ namespace ColorVision.Copilot.Mcp
         {
             ArgumentNullException.ThrowIfNull(request);
             executionScope ??= CopilotExecutionScope.ForAgentRequest(request);
+            var workspacePath = FirstNonEmpty(
+                executionScope.WorkspacePath,
+                request.WorkspacePath);
             return new CopilotConfirmationRequestContext
             {
                 Scope = executionScope,
@@ -116,7 +119,7 @@ namespace ColorVision.Copilot.Mcp
                 TaskLabel = string.IsNullOrWhiteSpace(request.TaskIntentText)
                     ? request.UserText
                     : request.TaskIntentText,
-                WorkspacePath = request.WorkspacePath,
+                WorkspacePath = workspacePath,
                 ImpactSummary = FirstNonEmpty(presentation?.ImpactSummary, presentation?.Description),
                 Reversibility = presentation?.Reversibility ?? CopilotApprovalReversibility.Unknown,
                 ReversibilitySummary = presentation?.ReversibilitySummary ?? string.Empty,

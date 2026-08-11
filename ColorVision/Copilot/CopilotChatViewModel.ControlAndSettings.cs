@@ -154,22 +154,25 @@ namespace ColorVision.Copilot
         }
 
         private int ResolveContextWindowTokens(
-            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
+            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null,
+            CopilotAgentDefaultsConfig? agentDefaults = null)
         {
+            agentDefaults ??= _config.AgentDefaults;
             return codexConfigOptions?.ResolveContextWindowTokens(
-                    _config.AgentDefaults.ContextWindowTokens)
+                    agentDefaults.ContextWindowTokens)
                 ?? Math.Clamp(
-                    _config.AgentDefaults.ContextWindowTokens,
+                    agentDefaults.ContextWindowTokens,
                     CopilotAgentTokenBudget.MinimumContextWindowTokens,
                     CopilotAgentTokenBudget.MaximumContextWindowTokens);
         }
 
         private CopilotConversationHistoryLimits ResolveConversationHistoryLimits(
             CopilotProfileConfig? profile,
-            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
+            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null,
+            CopilotAgentDefaultsConfig? agentDefaults = null)
         {
             return CopilotConversationRequestBuilder.ResolveHistoryLimits(
-                ResolveContextWindowTokens(codexConfigOptions),
+                ResolveContextWindowTokens(codexConfigOptions, agentDefaults),
                 profile?.MaxTokens ?? CopilotProfileConfig.DefaultMaxTokens);
         }
     }

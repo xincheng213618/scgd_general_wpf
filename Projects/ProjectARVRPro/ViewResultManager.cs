@@ -341,6 +341,7 @@ namespace ProjectARVRPro
             _db.Ado.ExecuteCommand("PRAGMA journal_mode = WAL;");
             // 确保表存在
             _db.CodeFirst.InitTables<ProjectARVRReuslt, ObjectiveTestResultRecord>();
+            ResultJsonPayloadStorage.EnsureSchema(_db);
             LoadAll(Config.Count);
             DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
     "sqlite.projectarvr",
@@ -415,17 +416,72 @@ namespace ProjectARVRPro
         {
             if (item == null) return;
 
+            ResultImageDimensions.TryPopulateFromFile(item);
+
+            bool isNew = item.Id <= 0;
+            bool savePayload = item.ViewResultJson != null;
+            ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+            {
+                _db.Ado.BeginTran();
+                try
+                {
+                    if (isNew)
+                    {
+                        item.Id = _db.Insertable(item).ExecuteReturnIdentity();
+                    }
+                    else
+                    {
+                        _db.Updateable(item).ExecuteCommand();
+                    }
+
+                    if (savePayload)
+                        ResultJsonPayloadStorage.SaveViewResultJson(_db, item.Id, item.ViewResultJson);
+                    _db.Ado.CommitTran();
+                }
+                catch
+                {
+                    _db.Ado.RollbackTran();
+                    if (isNew)
+                        item.Id = 0;
+                    throw;
+                }
+            });
+
+            if (isNew || !ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
+                AddViewResult(item);
+        }
+
+        public bool UpdateImageDimensions(ProjectARVRReuslt item, int width, int height)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            if (width <= 0 || height <= 0)
+                return false;
+            if (item.ImageWidth == width && item.ImageHeight == height)
+                return false;
+
+            item.ImageWidth = width;
+            item.ImageHeight = height;
             if (item.Id > 0)
             {
-                _db.Updateable(item).ExecuteCommand();
-                if (!ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
-                    AddViewResult(item);
-                return;
+                _db.Updateable<ProjectARVRReuslt>()
+                    .SetColumns(result => new ProjectARVRReuslt
+                    {
+                        ImageWidth = width,
+                        ImageHeight = height,
+                    })
+                    .Where(result => result.Id == item.Id)
+                    .ExecuteCommand();
             }
 
-            int id = _db.Insertable(item).ExecuteReturnIdentity();
-            item.Id = id; // 更新ID
-            AddViewResult(item);
+            return true;
+        }
+
+        public string? LoadViewResultJson(ProjectARVRReuslt item)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            if (item.ViewResultJson == null && item.Id > 0)
+                item.ViewResultJson = ResultJsonPayloadStorage.LoadViewResultJson(_db, item.Id) ?? string.Empty;
+            return item.ViewResultJson;
         }
 
         private void AddViewResult(ProjectARVRReuslt item)
@@ -439,21 +495,45 @@ namespace ProjectARVRPro
             if (result == null || objectiveTestResult == null) return currentRecordId;
 
             var record = ObjectiveTestResultRecord.Create(result, objectiveTestResult);
-            if (currentRecordId > 0)
+            return ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
             {
-                var oldRecord = _db.Queryable<ObjectiveTestResultRecord>().Where(x => x.Id == currentRecordId).First();
-                if (oldRecord != null)
+                if (currentRecordId > 0)
                 {
-                    record.Id = currentRecordId;
-                    record.CreateTime = oldRecord.CreateTime;
-                    record.IsFinalized = oldRecord.IsFinalized;
-                    _db.Updateable(record).Where(x => x.Id == record.Id).ExecuteCommand();
+                    var oldRecord = _db.Queryable<ObjectiveTestResultRecord>()
+                        .Where(x => x.Id == currentRecordId)
+                        .Select(x => new ObjectiveTestResultRecord
+                        {
+                            Id = x.Id,
+                            CreateTime = x.CreateTime,
+                            IsFinalized = x.IsFinalized,
+                        })
+                        .First();
+                    if (oldRecord != null)
+                    {
+                        record.Id = currentRecordId;
+                        record.CreateTime = oldRecord.CreateTime;
+                        record.IsFinalized = oldRecord.IsFinalized;
+                    }
+                }
+
+                _db.Ado.BeginTran();
+                try
+                {
+                    if (record.Id > 0)
+                        _db.Updateable(record).Where(x => x.Id == record.Id).ExecuteCommand();
+                    else
+                        record.Id = _db.Insertable(record).ExecuteReturnIdentity();
+
+                    ResultJsonPayloadStorage.SaveObjectiveTestResultJson(_db, record.Id, record.ObjectiveTestResultJson);
+                    _db.Ado.CommitTran();
                     return record.Id;
                 }
-            }
-
-            record.Id = _db.Insertable(record).ExecuteReturnIdentity();
-            return record.Id;
+                catch
+                {
+                    _db.Ado.RollbackTran();
+                    throw;
+                }
+            });
         }
 
         public int FinalizeObjectiveTestResult(int recordId, DateTime completedAt)
@@ -461,12 +541,15 @@ namespace ProjectARVRPro
             if (recordId <= 0)
                 return 0;
 
-            using SqlSugarClient db = CreateSqliteClient();
-            return db.Updateable<ObjectiveTestResultRecord>()
-                .SetColumns(item => item.IsFinalized == true)
-                .SetColumns(item => item.UpdateTime == completedAt)
-                .Where(item => item.Id == recordId)
-                .ExecuteCommand();
+            return ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+            {
+                using SqlSugarClient db = CreateSqliteClient();
+                return db.Updateable<ObjectiveTestResultRecord>()
+                    .SetColumns(item => item.IsFinalized == true)
+                    .SetColumns(item => item.UpdateTime == completedAt)
+                    .Where(item => item.Id == recordId)
+                    .ExecuteCommand();
+            });
         }
 
         public List<ObjectiveTestResultRecord> QueryObjectiveTestResultRecords(string sn = null, int count = 100)

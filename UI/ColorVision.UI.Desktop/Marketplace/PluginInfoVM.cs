@@ -265,7 +265,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                     return;
                 }
 
-                MarketplacePluginDetail? detail = await MarketplaceClient.GetInstance().GetPluginDetailAsync(PackageName!, cancellationToken);
+                MarketplacePluginDetail? detail = await MarketplaceClient.GetInstance().GetPluginUpdateMetadataAsync(PackageName!, cancellationToken: cancellationToken);
                 MarketplacePluginVersionInfo? candidate = PluginUpdateCompatibility.SelectLatestCompatibleVersion(AssemblyVersion, detail, hostVersion);
                 if (candidate == null)
                 {

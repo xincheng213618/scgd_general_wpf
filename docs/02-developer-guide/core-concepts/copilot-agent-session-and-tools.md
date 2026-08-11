@@ -6,14 +6,12 @@
 
 只有最新 Assistant 消息且当前 Conversation 仍持有兼容 Session 检查点时，“继续”按钮才可用。点击后会创建一个正常的可见用户轮次，要求先复核当前状态；它不会从历史任务生成写授权。
 
-运行中的补充要求走 Harness 自带的 `MessageInjectingChatClient`：
+运行中的补充要求走 Harness 自带的 [`MessageInjectingChatClient`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.agents.ai.messageinjectingchatclient?view=agent-framework-dotnet-latest)：
 
 - Runtime 在活动 `AgentSession` 上注册短生命周期 steering context，结束或异常时自动移除。
 - 用户在生成过程中输入内容并按 Enter/点击 `↳` 后，只以 `ChatRole.User` 入队，不允许客户端构造 system、assistant 或工具消息。
 - 注入队列按 Session 隔离，并在线程安全的 `EnqueueMessages` 中等待下一个模型调用机会；立即停止仍使用原有取消令牌和方形停止按钮。
 - steering 只改变模型后续决策，所有业务工具仍通过同一 Schema、预算、并发闸门和访问策略边界；临时自动批准只覆盖当前任务中路径和哈希绑定的工作区补丁及回滚，不扩大工具权限。
-
-具体注入语义见官方 [MessageInjectingChatClient](https://learn.microsoft.com/en-us/dotnet/api/microsoft.agents.ai.messageinjectingchatclient?view=agent-framework-dotnet-latest)。
 
 `CopilotAgentTaskHost` 另外提供同一活动 Agent 会话的 follow-up 队列，对应 [Codex 的交互快捷键语义](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-interactive-shortcuts)：运行中按 Enter 注入当前轮，按 Tab/点击 `⇥` 才排到下一轮。它有以下边界：
 

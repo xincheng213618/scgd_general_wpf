@@ -51,22 +51,24 @@ namespace ProjectKB
 
             string newHeaders = string.Join(",", properties);
             var item = KBItems;
-            RecipeManager recipeManager = RecipeManager.GetInstance();
-            KBRecipeConfig recipe = recipeManager.RecipeConfigs.TryGetValue(item.Model, out KBRecipeConfig? matchedRecipe)
-                ? matchedRecipe
-                : recipeManager.RecipeConfig;
+            KBRecipeSnapshot? recipeSnapshot = item.RecipeSnapshot;
+            KBRecipeConfig? recipe = recipeSnapshot?.Recipe;
             var darkestByLv = item.Items.OrderBy(x => x.Lv).FirstOrDefault();
             var brightestByLv = item.Items.OrderByDescending(x => x.Lv).FirstOrDefault();
             var darkestByLc = item.Items.OrderBy(x => x.Lc).FirstOrDefault();
             var brightestByLc = item.Items.OrderByDescending(x => x.Lc).FirstOrDefault();
 
-            int lvFailures = recipe.EnableKeyLvLimit
-                ? item.Items.Count(key => key.Lv < recipe.MinKeyLv || key.Lv > recipe.MaxKeyLv)
-                : 0;
+            string lvFailures = recipe == null
+                ? string.Empty
+                : (recipe.EnableKeyLvLimit
+                    ? item.Items.Count(key => key.Lv < recipe.MinKeyLv || key.Lv > recipe.MaxKeyLv)
+                    : 0).ToString(CultureInfo.InvariantCulture);
 
-            int localContrastFailures = recipe.EnableKeyLcLimit
-                ? item.Items.Count(key => key.Lc < recipe.MinKeyLc / 100 || key.Lc > recipe.MaxKeyLc / 100)
-                : 0;
+            string localContrastFailures = recipe == null
+                ? string.Empty
+                : (recipe.EnableKeyLcLimit
+                    ? item.Items.Count(key => key.Lc < recipe.MinKeyLc / 100 || key.Lc > recipe.MaxKeyLc / 100)
+                    : 0).ToString(CultureInfo.InvariantCulture);
             List<string> values = new()
                 {
                     item.Id.ToString(),
@@ -81,8 +83,8 @@ namespace ProjectKB
                     EscapeCsv(item.BrightestKey),
                     "",
                     item.NbrFailPoints.ToString(CultureInfo.InvariantCulture),
-                    lvFailures.ToString(CultureInfo.InvariantCulture),
-                    localContrastFailures.ToString(CultureInfo.InvariantCulture),
+                    lvFailures,
+                    localContrastFailures,
                     ((darkestByLv?.Lc ?? 0) * 100).ToString("F2", CultureInfo.InvariantCulture),
                     ((brightestByLv?.Lc ?? 0) * 100).ToString("F2", CultureInfo.InvariantCulture),
                     EscapeCsv(darkestByLc?.Name ?? string.Empty),
@@ -96,9 +98,19 @@ namespace ProjectKB
             {
                 values.Add(item.Items[i].Lv.ToString("F2"));
             }
-            values.Add("");
-            values.Add(item.MaxLv.ToString("F2"));
-            values.Add(item.MinLv.ToString("F2"));
+            values.Add(EscapeCsv(GetLimitProfile(recipeSnapshot)));
+            values.Add(FormatRecipeValue(recipe, value => value.MinKeyLv));
+            values.Add(FormatRecipeValue(recipe, value => value.MaxKeyLv));
+            values.Add(FormatRecipeValue(recipe, value => value.MinAvgLv));
+            values.Add(FormatRecipeValue(recipe, value => value.MaxAvgLv));
+            values.Add(FormatRecipeValue(recipe, value => value.MinUniformity));
+            values.Add(FormatRecipeValue(recipe, value => value.MinKeyLc));
+            values.Add(FormatRecipeValue(recipe, value => value.MaxKeyLc));
+            values.Add(string.Empty);
+            values.Add(string.Empty);
+            values.Add(string.Empty);
+            values.Add(string.Empty);
+            values.Add(string.Empty);
 
             List<string> outputLines = LoadAppendableLines(FileName, newHeaders, out bool appendData);
             if (!appendData)
@@ -118,6 +130,23 @@ namespace ProjectKB
             csvBuilder.Append(string.Join(Environment.NewLine, outputLines));
             csvBuilder.Append(Environment.NewLine);
             File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
+        }
+
+        private static string GetLimitProfile(KBRecipeSnapshot? snapshot)
+        {
+            if (snapshot == null)
+                return string.Empty;
+
+            return snapshot.Origin == KBRecipeSnapshotOrigin.RebuiltFromCurrentRecipe
+                ? $"{snapshot.RecipeName} (RebuiltFromCurrentRecipe)"
+                : snapshot.RecipeName;
+        }
+
+        private static string FormatRecipeValue(KBRecipeConfig? recipe, Func<KBRecipeConfig, double> selector)
+        {
+            return recipe == null
+                ? string.Empty
+                : selector(recipe).ToString("F2", CultureInfo.InvariantCulture);
         }
 
         private static List<string> LoadAppendableLines(string fileName, string headers, out bool appendData)

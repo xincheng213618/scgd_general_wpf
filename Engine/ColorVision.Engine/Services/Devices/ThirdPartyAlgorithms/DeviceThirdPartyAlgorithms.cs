@@ -9,6 +9,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.Themes.Controls.Uploads;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -21,6 +22,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
     public class DeviceThirdPartyAlgorithms : DeviceService<ConfigThirdPartyAlgorithms>
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(DeviceThirdPartyAlgorithms));
+
         public MQTTThirdPartyAlgorithms DService { get; set; }
         public ThirdPartyAlgorithmsView View { get; set; }
         public IDisplayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisplayConfigBase>(Config.Code);
@@ -72,19 +75,36 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         public void UploadPlugin()
         {
             UploadWindow uploadwindow = new("插件(*.zip, *.dll,*.*)|*.zip;*.dll;*.*") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
-            uploadwindow.OnUpload += (s, e) =>
+            uploadwindow.OnUpload += async (s, e) =>
             {
-                UploadMsg uploadMsg = new UploadMsg(UploadMsgManager);
-                uploadMsg.Show();
-                string uploadfilepath = e.UploadFilePath;
-                Task.Run(() => UploadPluginData(uploadfilepath));
+                await RunUploadAsync(async () =>
+                {
+                    UploadMsg uploadMsg = new UploadMsg(UploadMsgManager);
+                    uploadMsg.Show();
+                    await UploadPluginDataAsync(e.UploadFilePath);
+                }, ex => log.Error("Third-party algorithm plugin upload failed.", ex));
             };
             uploadwindow.ShowDialog();
         }
 
-        public async void UploadPluginData(string path)
+        internal static async Task RunUploadAsync(Func<Task> uploadAsync, Action<Exception> onFailure)
         {
-            Application.Current.Dispatcher.Invoke(UploadMsgManager.UploadList.Clear);
+            ArgumentNullException.ThrowIfNull(uploadAsync);
+            ArgumentNullException.ThrowIfNull(onFailure);
+
+            try
+            {
+                await uploadAsync();
+            }
+            catch (Exception ex)
+            {
+                onFailure(ex);
+            }
+        }
+
+        public async Task UploadPluginDataAsync(string path)
+        {
+            await InvokeOnApplicationDispatcherAsync(UploadMsgManager.UploadList.Clear);
             await Task.Delay(10);
             if (File.Exists(path))
             {
@@ -93,16 +113,28 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 uploadMeta.FileName = Path.GetFileName(path);
                 uploadMeta.FileSize = MemorySize.MemorySizeText(MemorySize.FileSize(path));
                 uploadMeta.UploadStatus = UploadStatus.CheckingMD5;
-                Application.Current.Dispatcher.Invoke(()=> UploadMsgManager.UploadList.Add(uploadMeta));
-                ;
+                await InvokeOnApplicationDispatcherAsync(() => UploadMsgManager.UploadList.Add(uploadMeta));
                 await Task.Delay(1);
-                UploadMsgManager.Msg = Properties.Resources.CloseWindowInSeconds;
+                await InvokeOnApplicationDispatcherAsync(() => UploadMsgManager.Msg = Properties.Resources.CloseWindowInSeconds);
                 await Task.Delay(1000);
-                UploadMsgManager.Close();
+                await InvokeOnApplicationDispatcherAsync(UploadMsgManager.Close);
             }
-
         }
 
+        private static async Task InvokeOnApplicationDispatcherAsync(Action action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+                return;
+
+            if (dispatcher.CheckAccess())
+            {
+                action();
+                return;
+            }
+
+            await dispatcher.InvokeAsync(action);
+        }
 
         readonly Lazy<DisplayThirdPartyAlgorithms> DisplayAlgorithmControlLazy;
         public DisplayThirdPartyAlgorithms DisplayAlgorithmControl { get; set; }

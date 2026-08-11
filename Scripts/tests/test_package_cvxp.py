@@ -5,6 +5,9 @@ import zipfile
 from pathlib import Path
 
 from Scripts.package_cvxp import (
+    REPO_ROOT,
+    ensure_default_shared_files_are_current,
+    is_repository_package_project,
     package_plugin,
     resolve_primary_dll_path,
     synchronize_manifest_version,
@@ -104,11 +107,58 @@ class PackageCvxManifestValidationTests(unittest.TestCase):
             self.assertIn("company.plugin/DifferentAssembly.dll", archive.namelist())
             self.assertFalse(any(name.startswith("ProjectName/") for name in archive.namelist()))
 
+    def test_project_owned_npoi_runtime_is_packaged_and_not_reported_as_stripped(self) -> None:
+        plugin_root = Path(self._temp_directory.name) / "plugin"
+        output_dir = Path(self._temp_directory.name) / "output"
+        plugin_root.mkdir()
+        output_dir.mkdir()
+        (plugin_root / "manifest.json").write_text(json.dumps({
+            "id": "ProjectARVRPro",
+            "dllpath": "ProjectARVRPro.dll",
+        }), encoding="utf-8")
+
+        npoi_runtime_files = {
+            "NPOI.Core.dll",
+            "NPOI.OOXML.dll",
+            "NPOI.OpenXml4Net.dll",
+            "NPOI.OpenXmlFormats.dll",
+        }
+        for file_name in npoi_runtime_files | {"ProjectARVRPro.dll", "Host.Shared.dll"}:
+            (output_dir / file_name).write_bytes(file_name.encode("ascii"))
+
+        package_path = Path(self._temp_directory.name) / "ProjectARVRPro.cvxp"
+        package_plugin(output_dir, plugin_root, {"Host.Shared.dll"}, package_path, "ProjectARVRPro")
+
+        with zipfile.ZipFile(package_path) as archive:
+            entries = set(archive.namelist())
+            stripped_files = set(json.loads(archive.read("ProjectARVRPro/stripped_files.json")))
+
+        self.assertEqual({"Host.Shared.dll"}, stripped_files)
+        for file_name in npoi_runtime_files:
+            self.assertIn(f"ProjectARVRPro/{file_name}", entries)
+            self.assertNotIn(file_name, stripped_files)
+
     def test_invalid_json_is_rejected_before_packaging(self) -> None:
         self.manifest_path.write_text('{"id": "broken",}', encoding="utf-8")
 
         with self.assertRaisesRegex(ValueError, "invalid UTF-8 JSON"):
             validate_plugin_manifest(self.manifest_path)
+
+    def test_repository_plugin_and_project_paths_enable_live_shared_file_gate(self) -> None:
+        self.assertTrue(is_repository_package_project(REPO_ROOT / "Plugins" / "Sample" / "Sample.csproj"))
+        self.assertTrue(is_repository_package_project(REPO_ROOT / "Projects" / "Sample" / "Sample.csproj"))
+        self.assertFalse(is_repository_package_project(Path(self._temp_directory.name) / "Sample.csproj"))
+        self.assertFalse(is_repository_package_project(None))
+
+    def test_default_shared_file_gate_fails_closed_on_runtime_drift(self) -> None:
+        host_root = Path(self._temp_directory.name) / "host"
+        host_root.mkdir()
+        (host_root / "Current.dll").write_bytes(b"runtime")
+        shared_files_path = Path(self._temp_directory.name) / "shared_files.json"
+        shared_files_path.write_text(json.dumps({"shared_files": ["Old.dll"]}), encoding="utf-8")
+
+        with self.assertRaisesRegex(RuntimeError, "manifest-only=1, runtime-only=1"):
+            ensure_default_shared_files_are_current(shared_files_path, host_root)
 
     def _write_manifest(self, manifest: dict) -> None:
         self.manifest_path.write_text(json.dumps(manifest), encoding="utf-8")

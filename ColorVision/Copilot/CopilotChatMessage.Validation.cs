@@ -57,6 +57,13 @@ namespace ColorVision.Copilot
                 RequestMode = CopilotAgentMode.Chat;
                 changed = true;
             }
+            if ((IsUser || RequestMode == CopilotAgentMode.Chat)
+                && _appliedCodexSandboxMode.Length > 0)
+            {
+                _appliedCodexSandboxMode = string.Empty;
+                OnAgentRunMetricsChanged();
+                changed = true;
+            }
             if (WorkspaceReviewTarget != null
                 && (!IsUser
                     || RequestMode != CopilotAgentMode.Review
@@ -268,6 +275,7 @@ namespace ColorVision.Copilot
                 changed = true;
             }
 
+            changed |= EnsureCodeReviewSnapshotValid();
             changed |= EnsureWorkspaceDiffValid();
 
             OnResponseTimelineChanged();
@@ -295,6 +303,8 @@ namespace ColorVision.Copilot
 
         private void OnAgentRunMetricsChanged()
         {
+            OnPropertyChanged(nameof(HasAppliedCodexSandboxMode));
+            OnPropertyChanged(nameof(AppliedCodexSandboxModeLabel));
             OnPropertyChanged(nameof(HasAgentRunMetrics));
             OnPropertyChanged(nameof(AgentRunCompactLabel));
             OnPropertyChanged(nameof(AgentRunMetricsToolTip));

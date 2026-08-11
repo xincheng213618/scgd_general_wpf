@@ -10,6 +10,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 {
     public class MQTTCalibration : MQTTDeviceService<ConfigCalibration>
     {
+        private bool _isDisposed;
+
         public MQTTCalibration(ConfigCalibration config) : base(config)
         {
             MsgReturnReceived += ProcessingReceived;
@@ -49,5 +51,15 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             return PublishAsyncClient(msg);
         }
 
+        public override void Dispose()
+        {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
+            MsgReturnReceived = null!;
+            base.Dispose();
+            GC.SuppressFinalize(this);
+        }
     }
 }

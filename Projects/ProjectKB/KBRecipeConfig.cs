@@ -115,7 +115,31 @@ namespace ProjectKB
         public double BacklightAutotuneUniformityQ3 { get => _BacklightAutotuneUniformityQ3; set { _BacklightAutotuneUniformityQ3 = value; OnPropertyChanged(); } }
         private double _BacklightAutotuneUniformityQ3 = -1;
 
+        public void CopyFrom(KBRecipeConfig source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
 
-
+            EnableKeyLvLimit = source.EnableKeyLvLimit;
+            MinKeyLv = source.MinKeyLv;
+            MaxKeyLv = source.MaxKeyLv;
+            EnableAvgLvLimit = source.EnableAvgLvLimit;
+            MaxAvgLv = source.MaxAvgLv;
+            MinAvgLv = source.MinAvgLv;
+            EnableUniformityLimit = source.EnableUniformityLimit;
+            MinUniformity = source.MinUniformity;
+            EnableKeyLcLimit = source.EnableKeyLcLimit;
+            MinKeyLc = source.MinKeyLc;
+            MaxKeyLc = source.MaxKeyLc;
+            KeyLcNeighborhoodRadiusMm = source.KeyLcNeighborhoodRadiusMm;
+            KeyLcPixelsPerMillimeter = source.KeyLcPixelsPerMillimeter;
+            EnableBacklightAutotune = source.EnableBacklightAutotune;
+            BacklightAutotuneSteepness = source.BacklightAutotuneSteepness;
+            BacklightAutotuneAvgLvQ1 = source.BacklightAutotuneAvgLvQ1;
+            BacklightAutotuneAvgLvQ3 = source.BacklightAutotuneAvgLvQ3;
+            BacklightAutotuneMinLvQ1 = source.BacklightAutotuneMinLvQ1;
+            BacklightAutotuneMinLvQ3 = source.BacklightAutotuneMinLvQ3;
+            BacklightAutotuneUniformityQ1 = source.BacklightAutotuneUniformityQ1;
+            BacklightAutotuneUniformityQ3 = source.BacklightAutotuneUniformityQ3;
+        }
     }
 }

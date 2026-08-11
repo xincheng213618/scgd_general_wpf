@@ -169,6 +169,20 @@ namespace ColorVision.Copilot
             ApplyProviderRetry(assistantMessage, retry);
         }
 
+        private void ApplyProviderConnectionRecoveryOnUiThread(
+            CopilotChatMessage assistantMessage,
+            CopilotProviderConnectionRecoveryInfo recovery)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(() => ApplyProviderConnectionRecovery(assistantMessage, recovery));
+                return;
+            }
+
+            ApplyProviderConnectionRecovery(assistantMessage, recovery);
+        }
+
         private static void ApplyPreparedTurnRequestOnUiThread(
             CopilotChatMessage userMessage,
             CopilotPreparedTurnRequest preparedRequest)
@@ -219,6 +233,19 @@ namespace ColorVision.Copilot
             });
         }
 
+        private void ApplyCodeReviewSnapshotUpdatedOnUiThread(
+            CopilotChatMessage assistantMessage,
+            CopilotCodeReviewSnapshot snapshot)
+        {
+            CopilotUiDispatcher.Invoke(() =>
+            {
+                var result = CopilotAssistantMessagePresenter.ApplyCodeReviewSnapshotUpdated(
+                    assistantMessage,
+                    snapshot);
+                PersistState(immediate: result.PersistenceMode == CopilotAgentEventPersistenceMode.Immediate);
+            });
+        }
+
         private static void ApplyTokenUsageUpdatedOnUiThread(
             CopilotChatMessage assistantMessage,
             CopilotTokenUsage usage)
@@ -231,6 +258,17 @@ namespace ColorVision.Copilot
             var result = CopilotAssistantMessagePresenter.ApplyAgentEvent(
                 assistantMessage,
                 CopilotAgentEvent.RuntimeDiagnostic(retry.ToDiagnosticText()));
+            if (result.PersistenceMode != CopilotAgentEventPersistenceMode.None)
+                PersistState(immediate: result.PersistenceMode == CopilotAgentEventPersistenceMode.Immediate);
+        }
+
+        private void ApplyProviderConnectionRecovery(
+            CopilotChatMessage assistantMessage,
+            CopilotProviderConnectionRecoveryInfo recovery)
+        {
+            var result = CopilotAssistantMessagePresenter.ApplyAgentEvent(
+                assistantMessage,
+                CopilotAgentEvent.FromProviderConnectionRecovery(recovery));
             if (result.PersistenceMode != CopilotAgentEventPersistenceMode.None)
                 PersistState(immediate: result.PersistenceMode == CopilotAgentEventPersistenceMode.Immediate);
         }
@@ -251,11 +289,9 @@ namespace ColorVision.Copilot
                 {
                     if (agentEvent.Type == CopilotAgentEventType.SteeringDelivered)
                     {
-                        if (CopilotSteeringRecovery.RemovePending(conversation, agentEvent.SteeringMessages))
-                        {
-                            persistState = true;
-                            persistImmediately = true;
-                        }
+                        hostedRun.RecordDeliveredSteeringAwaitingCheckpoint(
+                            agentEvent.SteeringMessages,
+                            conversation.AgentSessionCheckpoint);
                         continue;
                     }
 
@@ -283,6 +319,21 @@ namespace ColorVision.Copilot
 
                         conversation.AgentSessionCheckpoint = agentEvent.SessionCheckpoint;
                         conversation.UpdateLatestAgentTaskEventJournal(agentEvent.SessionCheckpoint.TaskEventJournal);
+                        var deliveredBatch = hostedRun.GetDeliveredSteeringAwaitingCheckpoint();
+                        if (deliveredBatch.Messages.Count > 0
+                            && CopilotSteeringRecovery.AreNewMessagesIncludedInCheckpoint(
+                                deliveredBatch.BaselineCheckpoint,
+                                agentEvent.SessionCheckpoint,
+                                deliveredBatch.Messages))
+                        {
+                            // Commit the recovery records in the same persisted state
+                            // update as the checkpoint so a process exit cannot lose or
+                            // replay an instruction.
+                            var committedBatch = hostedRun.TakeDeliveredSteeringAwaitingCheckpoint();
+                            CopilotSteeringRecovery.RemovePending(
+                                conversation,
+                                committedBatch.Messages);
+                        }
                         persistState = true;
                         persistImmediately = true;
                         continue;
@@ -358,6 +409,37 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        private void ResolveDeliveredSteeringAtTerminal(
+            CopilotHostedAgentRun hostedRun,
+            CopilotConversationRecord conversation,
+            CopilotAgentSessionCheckpoint? checkpoint,
+            bool discard)
+        {
+            var deliveredBatch = hostedRun.TakeDeliveredSteeringAwaitingCheckpoint();
+            if (deliveredBatch.Messages.Count == 0)
+                return;
+            if (discard
+                || CopilotSteeringRecovery.AreNewMessagesIncludedInCheckpoint(
+                    deliveredBatch.BaselineCheckpoint,
+                    checkpoint,
+                    deliveredBatch.Messages))
+            {
+                CopilotSteeringRecovery.RemovePending(conversation, deliveredBatch.Messages);
+                return;
+            }
+
+            if (!CopilotSteeringRecovery.RestorePendingMessagesToDraft(
+                conversation,
+                deliveredBatch.Messages))
+                return;
+
+            if (ReferenceEquals(conversation, SelectedConversation))
+                InputText = conversation.DraftText;
+            RefreshCompactHistoryConversations();
+            if (HasConversationSearchQuery)
+                RefreshFilteredConversations();
+        }
+
         private async Task<CopilotGoalPostTurnResult> ProcessGoalAfterTurnAsync(
             CopilotHostedAgentRun hostedRun,
             CopilotConversationRecord conversation,
@@ -374,18 +456,33 @@ namespace ColorVision.Copilot
                 () =>
                 {
                     var goal = conversation.Goal;
-                    if (goal?.IsActive != true
+                    if (goal == null
                         || !string.Equals(goal.Id, boundGoalId, StringComparison.Ordinal))
                     {
                         return null;
                     }
+                    if (!goal.IsActive)
+                    {
+                        TryAccountPausedBoundGoalTurn(
+                            conversation,
+                            assistantMessage,
+                            boundGoalId,
+                            turnUsage,
+                            hostedRun.ElapsedSeconds);
+                        return null;
+                    }
 
+                    var taskEventJournal = conversation.LatestAgentTaskEventJournal;
+                    if (taskEventJournal?.IsStructurallyValid() != true)
+                        taskEventJournal = conversation.AgentSessionCheckpoint?.TaskEventJournal;
                     return new CopilotGoalEvaluationContext(
                         goal,
                         CopilotConversationRequestBuilder
                             .CaptureHistorySnapshot(conversation)
                             .VisibleMessages,
-                        CopilotGoalTurnEvidence.Capture(assistantMessage));
+                        CopilotGoalTurnEvidence.Capture(
+                            assistantMessage,
+                            taskEventJournal));
                 },
                 fallback: null as CopilotGoalEvaluationContext);
             if (context == null)
@@ -396,12 +493,28 @@ namespace ColorVision.Copilot
                 && !context.TurnEvidence.WasResponseInterrupted
                 && userMessage.RequestMode is CopilotAgentMode.Auto or CopilotAgentMode.Code)
             {
-                evaluation = await _goalCompletionEvaluator.EvaluateAsync(
-                    requestProfile,
-                    context.Goal,
-                    context.Transcript,
-                    context.TurnEvidence,
-                    hostedRun.CancellationToken).ConfigureAwait(false);
+                try
+                {
+                    evaluation = await _goalCompletionEvaluator.EvaluateAsync(
+                        requestProfile,
+                        context.Goal,
+                        context.Transcript,
+                        context.TurnEvidence,
+                        hostedRun.CancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (hostedRun.CancellationToken.IsCancellationRequested)
+                {
+                    hostedRun.SuppressAutomaticFollowUpDispatch();
+                    CopilotUiDispatcher.Invoke(
+                        () => TryAccountBoundGoalAfterEvaluationCancellation(
+                            conversation,
+                            assistantMessage,
+                            boundGoalId,
+                            turnUsage,
+                            hostedRun.ElapsedSeconds),
+                        fallback: false);
+                    return CopilotGoalPostTurnResult.Empty;
+                }
             }
 
             var evaluationUsage = evaluation?.Usage ?? CopilotTokenUsage.Empty;
@@ -413,13 +526,36 @@ namespace ColorVision.Copilot
                 turnUsage.Add(evaluationUsage),
                 hostedRun.ElapsedSeconds,
                 evaluation,
+                context.TurnEvidence,
                 DateTimeOffset.UtcNow);
             var applied = CopilotUiDispatcher.Invoke(
                 () =>
                 {
-                    if (conversation.Goal?.IsActive != true
-                        || !string.Equals(conversation.Goal.Id, context.Goal.Id, StringComparison.Ordinal))
+                    var currentGoal = conversation.Goal;
+                    if (currentGoal == null
+                        || !string.Equals(currentGoal.Id, context.Goal.Id, StringComparison.Ordinal))
                     {
+                        return false;
+                    }
+                    if (hostedRun.CancellationToken.IsCancellationRequested)
+                    {
+                        hostedRun.SuppressAutomaticFollowUpDispatch();
+                        TryAccountBoundGoalAfterEvaluationCancellation(
+                            conversation,
+                            assistantMessage,
+                            boundGoalId,
+                            turnUsage.Add(evaluationUsage),
+                            hostedRun.ElapsedSeconds);
+                        return false;
+                    }
+                    if (!currentGoal.IsActive)
+                    {
+                        TryAccountPausedBoundGoalTurn(
+                            conversation,
+                            assistantMessage,
+                            boundGoalId,
+                            turnUsage.Add(evaluationUsage),
+                            hostedRun.ElapsedSeconds);
                         return false;
                     }
 
@@ -443,12 +579,99 @@ namespace ColorVision.Copilot
                 decision.Action == CopilotGoalTurnAction.QueueContinuation);
         }
 
-        private bool TryQueueGoalContinuation(
+        private static bool TryAccountBoundGoalAfterEvaluationCancellation(
             CopilotConversationRecord conversation,
+            CopilotChatMessage assistantMessage,
+            string boundGoalId,
+            CopilotTokenUsage usage,
+            long elapsedSeconds)
+        {
+            var goal = conversation.Goal;
+            if (goal?.State == CopilotConversationGoalState.Paused)
+            {
+                return TryAccountPausedBoundGoalTurn(
+                    conversation,
+                    assistantMessage,
+                    boundGoalId,
+                    usage,
+                    elapsedSeconds);
+            }
+            if (goal?.IsActive != true
+                || !string.Equals(goal.Id, boundGoalId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            const string reason =
+                "主 Agent 轮次已经完成，但持续目标的独立完成判定被取消；本轮结果与用量已保留，目标已暂停，也不会自动续作。";
+            conversation.Goal = goal.WithTurnOutcome(
+                CopilotConversationGoalState.Paused,
+                usage,
+                elapsedSeconds,
+                evaluated: false,
+                continued: false,
+                reason,
+                DateTimeOffset.UtcNow);
+            CopilotAssistantMessagePresenter.AppendExecutionTrace(
+                assistantMessage,
+                "Goal paused · completion evaluation cancelled after the bound turn completed; usage retained.");
+            return true;
+        }
+
+        private static bool TryAccountPausedBoundGoalTurn(
+            CopilotConversationRecord conversation,
+            CopilotChatMessage assistantMessage,
+            string boundGoalId,
+            CopilotTokenUsage usage,
+            long elapsedSeconds)
+        {
+            var goal = conversation.Goal;
+            if (goal?.State != CopilotConversationGoalState.Paused
+                || !string.Equals(goal.Id, boundGoalId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            const string reason =
+                "用户在本轮收尾前暂停了持续目标；本轮用量已记入历史，完成判定未应用，也不会自动续作。";
+            conversation.Goal = goal.WithTurnOutcome(
+                CopilotConversationGoalState.Paused,
+                usage,
+                elapsedSeconds,
+                evaluated: false,
+                continued: false,
+                reason,
+                DateTimeOffset.UtcNow);
+            CopilotAssistantMessagePresenter.AppendExecutionTrace(
+                assistantMessage,
+                "Goal paused · completed bound turn accounted without evaluation or continuation.");
+            return true;
+        }
+
+        private bool TryQueueGoalContinuation(
+            CopilotHostedAgentRun hostedRun,
+            CopilotConversationRecord conversation,
+            CopilotChatMessage assistantMessage,
             CopilotProfileConfig requestProfile,
+            CopilotAgentHostContextSnapshot completedTurnSnapshot,
+            CopilotTurnRuntimeConfigSnapshot completedTurnRuntimeConfig,
             string goalId,
             string reason)
         {
+            if (hostedRun.CancellationToken.IsCancellationRequested)
+            {
+                if (TryPauseBoundGoalBeforeContinuationQueueing(
+                    hostedRun,
+                    conversation,
+                    assistantMessage,
+                    goalId))
+                {
+                    _followUpQueue.CancelAutomaticGoalContinuations(conversation.Id);
+                    PersistState(immediate: true);
+                }
+                return false;
+            }
+
             var goal = conversation.Goal;
             if (goal?.IsActive != true
                 || !string.Equals(goal.Id, goalId, StringComparison.Ordinal))
@@ -456,34 +679,33 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            if (_queuedFollowUpsByRunId.Values.Any(item =>
-                string.Equals(item.ConversationId, conversation.Id, StringComparison.Ordinal)))
+            if (_followUpQueue.HasContinuationForGoal(conversation.Id, goalId))
             {
                 return true;
             }
 
-            var prompt =
-                "继续处理当前持续目标。独立完成评估认为目标尚未达成："
-                + CopilotConversationGoal.NormalizeReason(reason)
-                + Environment.NewLine
-                + "根据现有证据选择下一项最有价值的工作并验证结果；不要把持续目标当作工具、写入、审批复用或扩大范围的授权。";
+            var prompt = CopilotGoalContinuationPrompt.Build(goal, reason);
             var requestProfileSnapshot = requestProfile.Clone();
-            var submissionContext = CaptureHostedTurnSnapshot(
-                conversation,
-                attachmentOverride: conversation.Attachments);
-            var itemReady = new TaskCompletionSource<CopilotQueuedFollowUp>(
-                TaskCreationOptions.RunContinuationsAsynchronously);
-            if (!_taskHost.TryScheduleFollowUp(
+            var submissionContext = CopilotGoalContinuationContext.Capture(
+                completedTurnSnapshot,
+                conversation);
+            var queueRequest = new CopilotQueuedFollowUpRequest(
                 conversation.Id,
+                conversation.Title,
+                prompt,
                 CopilotAgentMode.Auto,
-                async run =>
-                {
-                    var queuedItem = await itemReady.Task.ConfigureAwait(false);
-                    await ExecuteQueuedFollowUpAsync(run, queuedItem).ConfigureAwait(false);
-                },
-                out var queuedRun,
-                out var admission)
-                || queuedRun == null)
+                requestProfileSnapshot,
+                submissionContext,
+                AgentSkillReference: null,
+                RuntimeConfigSnapshot: completedTurnRuntimeConfig,
+                WorkspaceReviewTarget: null,
+                GoalId: goalId);
+            if (!_followUpQueue.TrySchedule(
+                queueRequest,
+                runNext: false,
+                ExecuteQueuedFollowUpAsync,
+                out _,
+                out var admission))
             {
                 var pauseReason = "无法排入下一轮持续目标任务："
                     + GetRequestAdmissionText(admission)
@@ -496,21 +718,39 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            var queuedFollowUp = new CopilotQueuedFollowUp(
-                queuedRun.Id,
-                conversation.Id,
-                conversation.Title,
-                prompt,
-                CopilotAgentMode.Auto,
-                requestProfileSnapshot,
-                submissionContext,
-                goalId);
-            _queuedFollowUpsByRunId.Add(queuedRun.Id, queuedFollowUp);
-            QueuedFollowUps.Add(queuedFollowUp);
-            AddQueuedFollowUpRecovery(queuedFollowUp);
-            itemReady.SetResult(queuedFollowUp);
-            RefreshQueuedFollowUpPositions();
             PersistState(immediate: true);
+            return true;
+        }
+
+        private static bool TryPauseBoundGoalBeforeContinuationQueueing(
+            CopilotHostedAgentRun hostedRun,
+            CopilotConversationRecord conversation,
+            CopilotChatMessage assistantMessage,
+            string goalId)
+        {
+            var goal = conversation.Goal;
+            if (goal?.IsActive != true
+                || !string.Equals(goal.Id, goalId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var reason = hostedRun.RunControl?.Intent switch
+            {
+                CopilotAgentControlIntent.Pause =>
+                    "用户在完成判定后暂停了当前 Agent；本轮结果已保留，自动续作未排队，持续目标已暂停。",
+                CopilotAgentControlIntent.Cancel =>
+                    "用户在完成判定后取消了当前 Agent；本轮结果已保留，自动续作未排队，持续目标已暂停。",
+                _ =>
+                    "完成判定后的 Agent 收尾被中止；本轮结果已保留，自动续作未排队，持续目标已安全暂停。",
+            };
+            conversation.Goal = goal.WithState(
+                CopilotConversationGoalState.Paused,
+                DateTimeOffset.UtcNow,
+                reason);
+            CopilotAssistantMessagePresenter.AppendExecutionTrace(
+                assistantMessage,
+                "Goal paused · continuation queueing cancelled after the completed turn.");
             return true;
         }
     }

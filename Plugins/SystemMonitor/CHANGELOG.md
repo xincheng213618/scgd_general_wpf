@@ -5,6 +5,15 @@ All notable changes to the SystemMonitor plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3.5] - 2026-08-12
+
+### Changed
+- Defer status-source and performance-counter initialization until a detail view or status-bar item is visible.
+- Rebind the monitor and status provider to the current configuration after import or reload.
+
+### Fixed
+- Keep timer policy, status metadata, and imported visibility settings on the same configuration instance.
+
 ## [1.4.3.4] - 2026-07-29
 
 ### Changed

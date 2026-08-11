@@ -245,6 +245,11 @@ namespace ColorVision.Copilot
                     && result.Snapshot.IsActive,
                 ObservationProgressSignature =
                     CreateObservationProgressSignature(result.Snapshot),
+                BackgroundShellCommands =
+                [
+                    CopilotBackgroundShellCommandEvidence.FromSnapshot(
+                        result.Snapshot),
+                ],
             };
         }
 
@@ -531,6 +536,9 @@ namespace ColorVision.Copilot
                     CreateObservationProgressSignature(
                         result.Mode,
                         result.Snapshots),
+                BackgroundShellCommands = result.Snapshots
+                    .Select(CopilotBackgroundShellCommandEvidence.FromSnapshot)
+                    .ToArray(),
             };
         }
 

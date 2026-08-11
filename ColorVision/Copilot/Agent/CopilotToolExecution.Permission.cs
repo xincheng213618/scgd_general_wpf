@@ -24,9 +24,10 @@ namespace ColorVision.Copilot
             invocation = NormalizeInvocation(invocation, callId);
             var hooks = ResolveInvocationHooks(
                 invocation.Tool.Name,
-                invocation.AgentRequest.CodexExtensionHooksEnabled);
+                invocation.AgentRequest);
             var permissionHooks = hooks
-                .Where(binding => binding.Hook is ICopilotToolPermissionRequestHook)
+                .Where(binding => binding.Hook is ICopilotToolPermissionRequestHook
+                    && binding.Phases.HasFlag(CopilotToolExecutionHookPhases.PermissionRequest))
                 .ToArray();
             var hookRuns = new List<CopilotToolExecutionHookRun>(
                 Math.Min(permissionHooks.Length, MaxRecordedHookRuns));
@@ -42,9 +43,10 @@ namespace ColorVision.Copilot
                     WasCancelled = true,
                 };
             }
+            var approvalPromptCategory = invocation.EffectiveApprovalPromptCategory;
             if (!CopilotCodexApprovalPolicySelection.AllowsApprovalPrompt(
                 invocation.AgentRequest.CodexApprovalPolicy,
-                invocation.Tool.Capability.ApprovalPromptCategory))
+                approvalPromptCategory))
             {
                 return CreatePermissionRequestOutcome(
                     hooks,
@@ -52,9 +54,16 @@ namespace ColorVision.Copilot
                     CopilotToolPermissionRequestDecision.Deny(
                         CopilotCodexApprovalPolicySelection.GetApprovalDenialReason(
                             invocation.AgentRequest.CodexApprovalPolicy,
-                            invocation.Tool.Capability.ApprovalPromptCategory),
+                            approvalPromptCategory),
                         "codex_approval_prompt_disabled"));
             }
+
+            var approvalReason = CopilotCodexApprovalPolicySelection.GetApprovalPromptReason(
+                invocation.AgentRequest.CodexApprovalPolicy,
+                invocation.Tool);
+            approvalReason = CopilotApprovalRequestReason.Combine(
+                invocation.ApprovalPromptReasonOverride,
+                approvalReason);
 
             var context = new CopilotToolPermissionRequestContext
             {
@@ -73,12 +82,57 @@ namespace ColorVision.Copilot
                     _hookPhaseTimeout));
             foreach (var binding in permissionHooks)
             {
+                if (binding.ExecutionMode == CopilotToolExecutionHookMode.Async)
+                {
+                    var asyncPermissionHook =
+                        (ICopilotToolPermissionRequestHook)binding.Hook;
+                    ScheduleAsyncHook(
+                        binding,
+                        CopilotToolExecutionHookPhase.PermissionRequest,
+                        invocation,
+                        hookRuns,
+                        async token =>
+                        {
+                            CopilotToolPermissionRequestOutput? output = null;
+                            CopilotToolPermissionRequestDecision decision;
+                            if (asyncPermissionHook is ICopilotToolPermissionRequestOutputHook outputHook)
+                            {
+                                output = await outputHook.OnPermissionRequestWithOutputAsync(
+                                    context,
+                                    token).ConfigureAwait(false);
+                                decision = output?.Decision
+                                    ?? CopilotToolPermissionRequestDecision.Prompt;
+                            }
+                            else
+                            {
+                                decision = await asyncPermissionHook.OnPermissionRequestAsync(
+                                    context,
+                                    token).ConfigureAwait(false)
+                                    ?? CopilotToolPermissionRequestDecision.Prompt;
+                            }
+                            if (!decision.ShouldPrompt
+                                || !string.IsNullOrWhiteSpace(decision.Reason))
+                            {
+                                Log.Warn(
+                                    $"Copilot async permission-hook control decision was ignored. Tool={invocation.Tool.Name} CallId={invocation.CallId} HookSource={binding.SourceId}");
+                            }
+                            if (output?.HasOutput == true
+                                && binding.Hook is not CopilotCodexCommandHook)
+                            {
+                                Log.Warn(
+                                    $"Copilot async permission-hook output was ignored by the notification-only execution mode. Tool={invocation.Tool.Name} CallId={invocation.CallId} HookSource={binding.SourceId}");
+                            }
+                            return CopilotCodexAsyncHookOutput.From(output, decision);
+                        });
+                    continue;
+                }
+
                 BeginHookRun(
                     hookRuns,
                     hookEvents,
                     binding.SourceId,
                     CopilotToolExecutionHookPhase.PermissionRequest);
-                var remaining = _hookPhaseTimeout - phaseStopwatch.Elapsed;
+                var remaining = GetHookTimeout(binding, phaseStopwatch);
                 if (remaining <= TimeSpan.Zero)
                 {
                     RecordHookRun(
@@ -100,13 +154,35 @@ namespace ColorVision.Copilot
                 var hook = (ICopilotToolPermissionRequestHook)binding.Hook;
                 CancellationTokenSource? hookCancellation =
                     CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                Task<CopilotToolPermissionRequestDecision>? hookTask = null;
+                Task? hookTask = null;
                 var hookStopwatch = Stopwatch.StartNew();
                 try
                 {
-                    hookTask = hook.OnPermissionRequestAsync(context, hookCancellation.Token);
-                    var decision = await hookTask.WaitAsync(remaining, cancellationToken)
-                        ?? CopilotToolPermissionRequestDecision.Prompt;
+                    CopilotToolPermissionRequestOutput? output = null;
+                    CopilotToolPermissionRequestDecision decision;
+                    if (hook is ICopilotToolPermissionRequestOutputHook outputHook)
+                    {
+                        var outputTask = outputHook.OnPermissionRequestWithOutputAsync(
+                            context,
+                            hookCancellation.Token);
+                        hookTask = outputTask;
+                        output = await outputTask.WaitAsync(remaining, cancellationToken);
+                        decision = output?.Decision
+                            ?? CopilotToolPermissionRequestDecision.Prompt;
+                    }
+                    else
+                    {
+                        var decisionTask = hook.OnPermissionRequestAsync(
+                            context,
+                            hookCancellation.Token);
+                        hookTask = decisionTask;
+                        decision = await decisionTask.WaitAsync(remaining, cancellationToken)
+                            ?? CopilotToolPermissionRequestDecision.Prompt;
+                    }
+                    ApplyPermissionRequestOutput(
+                        output,
+                        binding.SourceId,
+                        hookEvents);
                     if (!decision.ShouldPrompt)
                     {
                         var failureCode = string.IsNullOrWhiteSpace(decision.FailureCode)
@@ -127,8 +203,12 @@ namespace ColorVision.Copilot
                                 string.IsNullOrWhiteSpace(decision.Reason)
                                     ? "A permission-request hook denied this protected tool call."
                                     : CopilotUserFacingErrorFormatter.Sanitize(decision.Reason),
-                                failureCode));
+                            failureCode));
                     }
+
+                    approvalReason = CopilotApprovalRequestReason.Combine(
+                        approvalReason,
+                        decision.Reason);
 
                     RecordHookRun(
                         hookRuns,
@@ -154,7 +234,7 @@ namespace ColorVision.Copilot
                         hooks,
                         hookRuns,
                         CopilotToolPermissionRequestDecision.Deny(
-                            $"A permission-request hook exceeded the {FormatTimeout(_hookPhaseTimeout)} phase timeout.",
+                            $"A permission-request hook exceeded its {FormatTimeout(remaining)} timeout.",
                             "permission_hook_timeout"));
                 }
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -228,7 +308,23 @@ namespace ColorVision.Copilot
             return CreatePermissionRequestOutcome(
                 hooks,
                 hookRuns,
-                CopilotToolPermissionRequestDecision.Prompt);
+                CopilotToolPermissionRequestDecision.PromptWithReason(approvalReason));
+        }
+
+        private static void ApplyPermissionRequestOutput(
+            CopilotToolPermissionRequestOutput? output,
+            string sourceId,
+            CopilotToolExecutionHookEventPublisher hookEvents)
+        {
+            if (output == null)
+                return;
+
+            var systemMessage = CopilotApprovalRequestReason.Normalize(output.SystemMessage);
+            if (systemMessage.Length > 0)
+            {
+                hookEvents.Diagnostic(
+                    $"PermissionRequest hook warning · {sourceId}: {systemMessage}");
+            }
         }
     }
 }

@@ -15,7 +15,10 @@
     </CudaCompile>
     <Link>
       <AdditionalLibraryDirectories>$(ColorVisionCudaRoot)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>cudart.lib;cufft.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <!-- ColorVision.Core ships opencv_cuda without the CUDA runtime DLL. Keep cudart static;
+           the CUDA static archive names LIBCMT while this DLL uses /MD, so retain the dynamic CRT. -->
+      <AdditionalDependencies>cudart_static.lib;cufft.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>LIBCMT;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

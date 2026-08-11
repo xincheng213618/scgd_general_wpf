@@ -35,7 +35,8 @@ ColorVision 是一个 Windows WPF 视觉检测平台，面向光电检测、设�
 - 当前主线使用 .NET 10 SDK
 - 文档站需要 Node.js 20+
 - 发布、打包和后端脚本需要 Python 3.9+
-- 常规桌面交付以 x64 为主
+- ColorVision 桌面宿主运行时、官方插件和客户项目交付包当前仅支持 Windows x64；显式非 x64 Platform/PlatformTarget、非空且非 `win-x64` 的 RID 或混合 RID 构建会直接失败
+- `ColorVision.FileIO` 是唯一 AnyCPU 例外；它使用独立的纯托管 NuGet 包坐标且只允许 IL-only AnyCPU 资产，可跨架构使用但不代表桌面宿主支持其他架构
 
 运行时依赖的 vendor/native 文件以安装和交付文档为准。
 
@@ -63,6 +64,7 @@ msbuild build.sln /p:Configuration=Release /p:Platform=x64
 
 ```powershell
 dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64
+dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -c Release -p:Platform=x64
 ```
 
 后端测试：

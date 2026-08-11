@@ -15,6 +15,17 @@ using System.Windows;
 
 namespace ProjectKB
 {
+    public sealed class KBProductionStatisticsWindowState
+    {
+        public int SelectedTabIndex { get; set; }
+        public KBProductionPeriodMode PeriodMode { get; set; } = KBProductionPeriodMode.Day;
+        public DateTime AnchorDate { get; set; } = DateTime.Today;
+        public string Model { get; set; } = string.Empty;
+        public string SN { get; set; } = string.Empty;
+        public int ResultIndex { get; set; }
+        public int PageNumber { get; set; } = 1;
+    }
+
     public sealed class ProjectKBLogConfig : RealtimeLogViewConfig, IConfig
     {
         public static ProjectKBLogConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBLogConfig>();
@@ -67,6 +78,9 @@ namespace ProjectKB
         [Description("开启后，PLC自动触发时如果SN为空，只记录日志并忽略本次指令；手动检测不受影响。")]
         public bool IgnoreAutoRunWhenSnEmpty { get => _IgnoreAutoRunWhenSnEmpty; set { _IgnoreAutoRunWhenSnEmpty = value; OnPropertyChanged(); } }
         private bool _IgnoreAutoRunWhenSnEmpty;
+
+        [Browsable(false)]
+        public KBProductionStatisticsWindowState ProductionStatisticsWindowState { get; set; } = new();
 
         [JsonIgnore]
         [DisplayName("启用权限控制"), Category("KB权限")]

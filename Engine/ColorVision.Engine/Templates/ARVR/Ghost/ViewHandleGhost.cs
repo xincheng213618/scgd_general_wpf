@@ -1,20 +1,20 @@
 ﻿#pragma warning disable CA1725
 
-using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services;
 using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.ImageEditor.Draw.Rasterized;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Templates.Ghost
 {
@@ -81,52 +81,19 @@ namespace ColorVision.Engine.Templates.Ghost
             {
                 try
                 {
-                    List<Point1> generatedPointsGhostPixel = new List<Point1>();
+                    List<Point1> generatedPoints = new();
                     if (viewResultGhost.GhostPixel !=null)
                         foreach (var item in viewResultGhost.GhostPixel)
                             foreach (var item1 in item)
-                                generatedPointsGhostPixel.Add(item1);
-                    Draw(generatedPointsGhostPixel);
-                    List<Point1> generatedPointsLedPixel = new List<Point1>();
+                                generatedPoints.Add(item1);
                     if (viewResultGhost.LedPixel !=null)
                         foreach (var item in viewResultGhost.LedPixel)
                             foreach (var item1 in item)
-                                generatedPointsLedPixel.Add(item1);
-                    Draw(generatedPointsLedPixel);
-                    void Draw(List<Point1> generatedPoints)
-                    {
-                        // 2. 获取全局画布尺寸（假设 DrawCanvas.ActualWidth/ActualHeight）
-                        int canvasWidth = (int)Math.Ceiling(ctx.ImageView.ActualWidth);
-                        int canvasHeight = (int)Math.Ceiling(ctx.ImageView.ActualHeight);
-                        if (canvasWidth == 0 || canvasHeight == 0) return;
-                        var fullRect = new Rect(0, 0, canvasWidth, canvasHeight);
-                        // 3. 新建全局大图
-                        var rtb = new RenderTargetBitmap(canvasWidth, canvasHeight, 144, 144, PixelFormats.Pbgra32);
+                                generatedPoints.Add(item1);
 
-                        // 4. 渲染所有选中的Visual到全局
-                        var dv = new DrawingVisual();
-                        using (var dc = dv.RenderOpen())
-                        {
-                            for (int i = 0; i < generatedPoints.Count; i++)
-                            {
-                                var point = generatedPoints[i];
-                                RectangleProperties rectangleTextProperties = new RectangleProperties();
-                                rectangleTextProperties.Rect = new Rect(point.X, point.Y, 1, 1);
-                                rectangleTextProperties.Brush = Brushes.Transparent;
-                                rectangleTextProperties.Pen = new Pen(Brushes.Red, 1);
-                                rectangleTextProperties.Id = i;
-                                rectangleTextProperties.Name = i.ToString();
-                                DVRectangle Rectangle = new DVRectangle(rectangleTextProperties);
-                                Rectangle.Render();
-                                dc.DrawDrawing(Rectangle.Drawing);
-                            }
-                        }
-
-                        rtb.Render(dv);
-                        var rasterVisual = new RasterizedSelectVisual(rtb, fullRect);
-                        rasterVisual.Attribute.Tag = generatedPoints;
-                        ctx.ImageView.ImageShow.AddVisualCommand(rasterVisual);
-                    }
+                    VectorizedSelectVisual? visual = CreatePixelVisual(generatedPoints, ctx.ImageView.ImageShow.Source);
+                    if (visual != null)
+                        ctx.ImageView.ImageShow.AddVisualCommand(visual);
                 }
                 catch (Exception ex)
                 {
@@ -145,6 +112,46 @@ namespace ColorVision.Engine.Templates.Ghost
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
                 ctx.ListView.ItemsSource = result.ViewResults;
             }
+        }
+
+        internal static VectorizedSelectVisual? CreatePixelVisual(IReadOnlyList<Point1> points, ImageSource? imageSource)
+        {
+            ArgumentNullException.ThrowIfNull(points);
+            if (points.Count == 0)
+                return null;
+
+            const double markerSize = 1;
+            StreamGeometry geometry = new();
+            using (StreamGeometryContext geometryContext = geometry.Open())
+            {
+                foreach (Point1 point in points)
+                {
+                    geometryContext.BeginFigure(new Point(point.X, point.Y), isFilled: true, isClosed: true);
+                    geometryContext.LineTo(new Point(point.X + markerSize, point.Y), isStroked: true, isSmoothJoin: false);
+                    geometryContext.LineTo(new Point(point.X + markerSize, point.Y + markerSize), isStroked: true, isSmoothJoin: false);
+                    geometryContext.LineTo(new Point(point.X, point.Y + markerSize), isStroked: true, isSmoothJoin: false);
+                }
+            }
+            geometry.Freeze();
+
+            GeometryDrawing drawing = new(Brushes.Transparent, new Pen(Brushes.Red, 1), geometry);
+            drawing.Freeze();
+
+            VectorizedSelectVisual visual = new(drawing, GetPixelVisualBounds(points, imageSource, markerSize));
+            visual.Attribute.Tag = points;
+            return visual;
+        }
+
+        private static Rect GetPixelVisualBounds(IReadOnlyList<Point1> points, ImageSource? imageSource, double markerSize)
+        {
+            if (ImageUtils.TryGetImageSize(imageSource, out int width, out int height))
+                return new Rect(0, 0, width, height);
+
+            int minX = points.Min(point => point.X);
+            int minY = points.Min(point => point.Y);
+            int maxX = points.Max(point => point.X);
+            int maxY = points.Max(point => point.Y);
+            return new Rect(minX, minY, maxX - minX + markerSize, maxY - minY + markerSize);
         }
 
 

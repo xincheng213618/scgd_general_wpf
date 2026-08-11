@@ -3,6 +3,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using MQTTMessageLib.FileServer;
+using System;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
@@ -10,6 +11,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
     public class MQTTAlgorithm : MQTTDeviceService<ConfigAlgorithm>
     {
+        private bool _isDisposed;
+
         public DeviceAlgorithm Device { get; set; }
 
 
@@ -23,7 +26,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void MQTTAlgorithm_MsgReturnReceived(MsgReturn msg)
         {
-            if (msg.DeviceCode != Config.Code) return;
+            if (_isDisposed || Device.IsDisposed || msg.DeviceCode != Config.Code) return;
             switch (msg.EventName)
             {
                 default:
@@ -37,7 +40,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                             log.Debug($"FileUrl：{model.ImgFile}");
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                Device.View.AddAlgResultMasterModel(model);
+                                if (!_isDisposed && !Device.IsDisposed)
+                                    Device.View.AddAlgResultMasterModel(model);
                             });
                         }
                         else
@@ -56,6 +60,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             return PublishAsyncClient(new MsgSend { EventName = "" });
         }
 
+        public override void Dispose()
+        {
+            if (_isDisposed)
+                return;
 
+            _isDisposed = true;
+            MsgReturnReceived = null!;
+            base.Dispose();
+            GC.SuppressFinalize(this);
+        }
     }
 }

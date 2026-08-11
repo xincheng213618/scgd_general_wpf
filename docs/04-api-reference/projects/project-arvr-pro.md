@@ -22,7 +22,7 @@
 | `ProjectARVRPro` | JSON `EventName` | `ProcessGroup` + `ProcessMeta` | 切图、Legacy 输出、SocketRelay |
 | `ProjectLUX` | 文本命令 | 流程组 + `SocketCode` | 文本返码、客户命令映射 |
 
-客户项目判定逻辑应留在 `Projects/ProjectARVRPro/Process/` 和 Recipe 体系里，不要回写到 Engine 通用模板或 UI 基础库。当前 `manifest.json` 版本是 `1.1.7.23`，`requires=1.3.15.15`，`ProjectARVRPro.csproj` `VersionPrefix=1.1.7.23`；发包前要确认是否同步。
+客户项目判定逻辑应留在 `Projects/ProjectARVRPro/Process/` 和 Recipe 体系里，不要回写到 Engine 通用模板或 UI 基础库。插件版本和最低宿主要求以 [manifest.json](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Projects/ProjectARVRPro/manifest.json) 为准，程序集版本以 [ProjectARVRPro.csproj](https://github.com/xincheng213618/scgd_general_wpf/blob/master/Projects/ProjectARVRPro/ProjectARVRPro.csproj) 的 `VersionPrefix` 为准；发包前确认二者同步。
 
 ## 主链路
 

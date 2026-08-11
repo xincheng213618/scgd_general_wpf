@@ -170,9 +170,13 @@ namespace ColorVision.ImageEditor.EditorTools.AppCommand
         public List<MenuItemMetadata> GetContextMenuItems()
         {
             RelayCommand openSettingsCommand = new RelayCommand(a => context.OpenSettingsWindow(Properties.Resources.Settings_GroupContext));
+            RelayCommand restoreOriginalCommand = new(
+                _ => context.ImageView.RestoreOriginalImage(),
+                _ => context.ImageView.CanRestoreOriginalImage);
 
             return new List<MenuItemMetadata>
             {
+                new MenuItemMetadata() { GuidId = "RestoreOriginalImage", Order = 12, Header = Properties.Resources.RestoreOriginalImage, Command = restoreOriginalCommand, Icon = MenuItemIcon.TryFindResource("DIRedo") },
                 new MenuItemMetadata() { GuidId = "ImageViewSettings", Order = 303, Header = "设置", Command = openSettingsCommand, Icon = MenuItemIcon.TryFindResource("DIExpand") },
             };
         }

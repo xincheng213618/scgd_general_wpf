@@ -25,7 +25,7 @@ namespace ColorVision.Copilot
                     {
                         type = "string",
                         @enum = new[] { "unstaged", "staged", "both" },
-                        description = "Working-tree diff scope. Defaults to unstaged and is valid only when target is working_tree.",
+                        description = "Working-tree diff scope. Defaults to unstaged; unstaged and both also include untracked file contents. Valid only when target is working_tree.",
                     },
                     ["target"] = new
                     {
@@ -56,7 +56,7 @@ namespace ColorVision.Copilot
 
         public string Name => "InspectGitDiff";
 
-        public string Description => "Read a bounded Git patch for the working tree, the merge base of a selected base branch through HEAD, or one selected commit. The optional path must remain inside a current request root. Revisions are validated and resolved before fixed git diff/show arguments are used; command text and raw Git arguments are never accepted. Native approval is required because Git can evaluate repository-defined attributes and filters.";
+        public string Description => "Read bounded Git review evidence for the working tree, the merge base of a selected base branch through HEAD, or one selected commit. Working-tree unstaged evidence includes bounded untracked file contents. The optional path must remain inside a current request root. Revisions are validated and resolved before fixed Git arguments are used; command text and raw Git arguments are never accepted. Native approval is required because Git can evaluate repository-defined attributes and filters.";
 
         public CopilotToolCapabilityDescriptor Capability { get; } = new()
         {

@@ -71,8 +71,7 @@ def _refresh_failure_result(
     errors: list[str],
 ) -> dict[str, Any]:
     elapsed_ms = int((time.monotonic() - started) * 1000)
-    _update_index_state(
-        cache,
+    cache.index_states.update(
         scope,
         status="error",
         finished_at=_now_iso(),
@@ -204,7 +203,7 @@ def _refresh_release_index_unlocked(cache: CacheManager, storage: Path) -> dict[
     """Refresh release_index from one pre-scan filesystem snapshot signature."""
     started = time.monotonic()
     now = _now_iso()
-    _update_index_state(cache, "releases", status="refreshing", started_at=now)
+    cache.index_states.update("releases", status="refreshing", started_at=now)
 
     errors: list[str] = []
     try:
@@ -291,8 +290,7 @@ def _refresh_release_index_unlocked(cache: CacheManager, storage: Path) -> dict[
     elapsed_ms = int((time.monotonic() - started) * 1000)
     finished_at = _now_iso()
 
-    _update_index_state(
-        cache,
+    cache.index_states.update(
         "releases",
         status="ready",
         signature=sig,
@@ -351,11 +349,9 @@ def _prepare_release_read_db(db) -> None:
     db.create_function("release_version_key", 1, _release_version_sql_key)
 
 
-def _release_index_ready(db) -> bool:
-    row = db.execute(
-        "SELECT status FROM index_state WHERE scope = 'releases'"
-    ).fetchone()
-    return bool(row and row["status"] == "ready")
+def _release_index_ready(cache: CacheManager) -> bool:
+    state = cache.index_states.get("releases")
+    return bool(state and state["status"] == "ready")
 
 
 def _release_row_payload(row: Any) -> dict[str, Any]:
@@ -433,7 +429,7 @@ def get_compact_home_releases_from_index(
     db = cache.get_db()
     try:
         _prepare_release_read_db(db)
-        if not _release_index_ready(db):
+        if not _release_index_ready(cache):
             return None
 
         counts = _release_counts(db)
@@ -616,7 +612,7 @@ def get_compact_releases_from_index(
     db = cache.get_db()
     try:
         _prepare_release_read_db(db)
-        if not _release_index_ready(db):
+        if not _release_index_ready(cache):
             return None
 
         counts = _release_counts(db)
@@ -837,7 +833,7 @@ def _refresh_update_index_unlocked(cache: CacheManager, storage: Path) -> dict[s
     """Refresh update_index from one pre-scan filesystem signature."""
     started = time.monotonic()
     now = _now_iso()
-    _update_index_state(cache, "updates", status="refreshing", started_at=now)
+    cache.index_states.update("updates", status="refreshing", started_at=now)
 
     errors: list[str] = []
     try:
@@ -901,8 +897,7 @@ def _refresh_update_index_unlocked(cache: CacheManager, storage: Path) -> dict[s
     elapsed_ms = int((time.monotonic() - started) * 1000)
     finished_at = _now_iso()
 
-    _update_index_state(
-        cache,
+    cache.index_states.update(
         "updates",
         status="ready",
         signature=sig,
@@ -1020,7 +1015,7 @@ def _refresh_tool_index_unlocked(cache: CacheManager, storage: Path) -> dict[str
     """Refresh tool_index from one pre-scan filesystem signature."""
     started = time.monotonic()
     now = _now_iso()
-    _update_index_state(cache, "tools", status="refreshing", started_at=now)
+    cache.index_states.update("tools", status="refreshing", started_at=now)
 
     errors: list[str] = []
     try:
@@ -1086,8 +1081,7 @@ def _refresh_tool_index_unlocked(cache: CacheManager, storage: Path) -> dict[str
     elapsed_ms = int((time.monotonic() - started) * 1000)
     finished_at = _now_iso()
 
-    _update_index_state(
-        cache,
+    cache.index_states.update(
         "tools",
         status="ready",
         signature=sig,
@@ -1154,19 +1148,9 @@ def get_all_index_states_summary(cache: CacheManager) -> dict[str, Any]:
     """Get a summary of all index states for dashboard display."""
     db = cache.get_db()
     try:
-        states = {}
-        for scope in ("plugins", "releases", "updates", "tools", "docs"):
-            row = db.execute("SELECT * FROM index_state WHERE scope = ?", (scope,)).fetchone()
-            states[scope] = dict(row) if row else {
-                "scope": scope,
-                "status": "not_initialized",
-                "signature": "",
-                "last_started_at": None,
-                "last_finished_at": None,
-                "last_error": "",
-                "item_count": 0,
-                "duration_ms": 0,
-            }
+        states = cache.index_states.get_many(
+            ("plugins", "releases", "updates", "tools", "docs")
+        )
 
         # Item counts from actual tables
         counts = {}
@@ -1188,42 +1172,6 @@ def get_all_index_states_summary(cache: CacheManager) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Index state helpers (shared with plugin_index)
 # ---------------------------------------------------------------------------
-
-def _update_index_state(
-    cache: CacheManager,
-    scope: str,
-    *,
-    status: str = "ready",
-    signature: str = "",
-    started_at: str = "",
-    finished_at: str = "",
-    item_count: int = 0,
-    duration_ms: int = 0,
-    error: str = "",
-):
-    db = cache.get_db()
-    try:
-        db.execute(
-            """INSERT INTO index_state (scope, signature, status, last_started_at, last_finished_at,
-                                        last_error, item_count, duration_ms)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-               ON CONFLICT(scope) DO UPDATE SET
-                   signature = CASE WHEN excluded.signature != '' THEN excluded.signature ELSE index_state.signature END,
-                   status = excluded.status,
-                   last_started_at = COALESCE(excluded.last_started_at, index_state.last_started_at),
-                   last_finished_at = COALESCE(excluded.last_finished_at, index_state.last_finished_at),
-                   last_error = excluded.last_error,
-                   item_count = excluded.item_count,
-                   duration_ms = excluded.duration_ms
-            """,
-            (scope, signature or "", status, started_at or None, finished_at or None, error, item_count, duration_ms),
-        )
-        db.commit()
-    except Exception as exc:
-        print(f"[index_state] update failed for {scope}: {exc}")
-    finally:
-        db.close()
-
 
 def is_index_populated(cache: CacheManager, scope: str) -> bool:
     """Check if a given index table has any entries."""
@@ -1248,14 +1196,7 @@ def is_index_populated(cache: CacheManager, scope: str) -> bool:
 
 def get_index_state(cache: CacheManager, scope: str) -> dict[str, Any] | None:
     """Get the index_state for a given scope."""
-    db = cache.get_db()
-    try:
-        row = db.execute("SELECT * FROM index_state WHERE scope = ?", (scope,)).fetchone()
-        return dict(row) if row else None
-    except Exception:
-        return None
-    finally:
-        db.close()
+    return cache.index_states.get(scope)
 
 
 # ---------------------------------------------------------------------------

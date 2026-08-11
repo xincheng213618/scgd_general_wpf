@@ -402,6 +402,7 @@ namespace ColorVision.Copilot
                 Name = Name,
                 ProviderType = ProviderType,
                 ApiKey = ApiKey,
+                CredentialNeedsReentry = CredentialNeedsReentry,
                 BaseUrl = BaseUrl,
                 AllowInsecureHttp = AllowInsecureHttp,
                 Model = Model,

@@ -10,6 +10,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from services.request_context import Actor
+
 
 def on_storage_change(
     cache: Any,
@@ -20,7 +22,7 @@ def on_storage_change(
     get_cache_entry: Any = None,
     set_cache_entry: Any = None,
     ttl_seconds: int = 86400,
-    get_request_username: Any = None,
+    actor: Actor | None = None,
 ):
     """Dispatch index refresh based on which storage area changed.
 
@@ -41,7 +43,7 @@ def on_storage_change(
             get_cache_entry=get_cache_entry,
             set_cache_entry=set_cache_entry,
             ttl_seconds=ttl_seconds,
-            get_request_username=get_request_username,
+            actor=actor,
         )
     elif top_dir == "Update":
         _refresh_artifact_scope(cache, storage, "updates")
@@ -88,7 +90,7 @@ def _refresh_plugin_index(
     get_cache_entry: Any = None,
     set_cache_entry: Any = None,
     ttl_seconds: int = 86400,
-    get_request_username: Any = None,
+    actor: Actor | None = None,
 ):
     """Refresh plugin index for a specific plugin after publish."""
     parts = normalized_path.replace("\\", "/").split("/")
@@ -112,10 +114,15 @@ def _refresh_plugin_index(
                 ttl_seconds=ttl_seconds,
             )
 
-        actor = get_request_username() if get_request_username else "system"
+        audit_actor = actor or Actor(
+            actor_type="system",
+            actor_id="system",
+            auth_method="system",
+            authenticated=True,
+        )
         cache.write_audit(
-            actor_type="user",
-            actor_id=actor,
+            actor_type=audit_actor.actor_type,
+            actor_id=audit_actor.actor_id,
             action="index_refresh_plugin",
             target_type="plugin_index",
             target_id=plugin_id,

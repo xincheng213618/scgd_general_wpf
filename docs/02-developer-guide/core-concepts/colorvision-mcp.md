@@ -90,6 +90,6 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 ## 验证
 
 ```powershell
-dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~CopilotMcp|FullyQualifiedName~CopilotApprovalReview" -v minimal
+dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -p:Platform=x64 --filter "FullyQualifiedName~CopilotMcp|FullyQualifiedName~CopilotApprovalReview" -v minimal
 dotnet build ColorVision/ColorVision.csproj -v minimal
 ```

@@ -53,7 +53,7 @@
                             <Button Command="{Binding ViewResultManager.SaveCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
                                 <Image Width="16" Height="16" Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
                             </Button>
-                            <Button  Click="Button_Click_Clear" Command="{Binding ViewResultManager.ViewReslutsClearCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
+                            <Button Click="Button_Click_Clear" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
                                 <Button.Triggers>
                                     <EventTrigger RoutedEvent="Button.Click">
                                         <BeginStoryboard>
@@ -295,7 +295,7 @@
                             </StackPanel>
                         </DockPanel>
                     </StackPanel>
-                    <Border Grid.Row="1" Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5">
+                    <Border Grid.Row="1" Margin="0,5,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5">
                         <TextBox x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0" VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
                     </Border>
                 </Grid>

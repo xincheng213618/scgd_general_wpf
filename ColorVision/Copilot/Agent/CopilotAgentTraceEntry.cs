@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
 {
     public sealed partial class CopilotAgentTraceEntry : ViewModelBase
     {
-        public const int CurrentSchemaVersion = 15;
+        public const int CurrentSchemaVersion = 18;
         private const int MaxSummaryLength = 800;
         private const int MaxDelegatedAnswerLength = 20_000;
         internal const int MaxPersistedHookRuns = 64;
@@ -50,6 +50,12 @@ namespace ColorVision.Copilot
         public CopilotToolFailureKind FailureKind { get; set; }
 
         public string FailureCode { get; set; } = string.Empty;
+
+        public string ProcessOperation { get; set; } = string.Empty;
+
+        public int? ProcessExitCode { get; set; }
+
+        public bool ProcessTimedOut { get; set; }
 
         public bool RetryEligible { get; set; }
 
@@ -96,6 +102,16 @@ namespace ColorVision.Copilot
         public int DelegatedRequestTokenBudget { get; set; }
 
         public long DelegatedConsumedTokens { get; set; }
+
+        public bool DelegatedUsageIncludesEstimates { get; set; }
+
+        public int DelegatedReportedInputTokens { get; set; }
+
+        public int DelegatedReportedOutputTokens { get; set; }
+
+        public int DelegatedReportedTotalTokens { get; set; }
+
+        public int? DelegatedReportedCachedInputTokens { get; set; }
 
         public int DelegatedProviderCalls { get; set; }
 
@@ -171,6 +187,12 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeFailureCode() => !string.IsNullOrWhiteSpace(FailureCode);
 
+        public bool ShouldSerializeProcessOperation() => !string.IsNullOrWhiteSpace(ProcessOperation);
+
+        public bool ShouldSerializeProcessExitCode() => ProcessExitCode.HasValue;
+
+        public bool ShouldSerializeProcessTimedOut() => ProcessTimedOut;
+
         public bool ShouldSerializeRetryEligible() => RetryEligible;
 
         public bool ShouldSerializeStartedAtUtc() => StartedAtUtc != default;
@@ -214,6 +236,16 @@ namespace ColorVision.Copilot
         public bool ShouldSerializeDelegatedRequestTokenBudget() => DelegatedRequestTokenBudget != 0;
 
         public bool ShouldSerializeDelegatedConsumedTokens() => DelegatedConsumedTokens != 0;
+
+        public bool ShouldSerializeDelegatedUsageIncludesEstimates() => DelegatedUsageIncludesEstimates;
+
+        public bool ShouldSerializeDelegatedReportedInputTokens() => DelegatedReportedInputTokens != 0;
+
+        public bool ShouldSerializeDelegatedReportedOutputTokens() => DelegatedReportedOutputTokens != 0;
+
+        public bool ShouldSerializeDelegatedReportedTotalTokens() => DelegatedReportedTotalTokens != 0;
+
+        public bool ShouldSerializeDelegatedReportedCachedInputTokens() => DelegatedReportedCachedInputTokens.HasValue;
 
         public bool ShouldSerializeDelegatedProviderCalls() => DelegatedProviderCalls != 0;
 
@@ -358,8 +390,19 @@ namespace ColorVision.Copilot
                         .Append(" · tool calls: ").Append(DelegatedToolCalls);
                     builder.AppendLine().Append("Child budget: ").Append(DelegatedConsumedTokens)
                         .Append('/').Append(DelegatedRequestTokenBudget).Append(" tokens");
+                    if (DelegatedUsageIncludesEstimates)
+                        builder.Append(" · includes estimates");
                     if (DelegatedQueueDurationMs > 0)
                         builder.Append(" · queued ").Append(FormatDuration(DelegatedQueueDurationMs));
+                    if (DelegatedReportedTotalTokens > 0)
+                    {
+                        builder.AppendLine().Append("Child reported usage: ")
+                            .Append(DelegatedReportedInputTokens).Append(" input · ")
+                            .Append(DelegatedReportedOutputTokens).Append(" output · ")
+                            .Append(DelegatedReportedTotalTokens).Append(" total");
+                        if (DelegatedReportedCachedInputTokens.HasValue)
+                            builder.Append(" · ").Append(DelegatedReportedCachedInputTokens.Value).Append(" cached input");
+                    }
                     if (DelegatedRegisteredToolCount > 0
                         || DelegatedAvailableToolCount > 0
                         || DelegatedAvailableToolDefinitionCharacters > 0
@@ -396,7 +439,10 @@ namespace ColorVision.Copilot
                             .Append("- ")
                             .Append(FormatHookPhase(hookRun.Phase))
                             .Append(' ')
-                            .Append(hookRun.SourceId)
+                            .Append(hookRun.SourceId);
+                        if (hookRun.ExecutionMode == CopilotToolExecutionHookMode.Async)
+                            builder.Append(" · async");
+                        builder
                             .Append(" · ")
                             .Append(FormatHookState(hookRun.State))
                             .Append(" · ")
@@ -479,8 +525,33 @@ namespace ColorVision.Copilot
                 entry.ResultSummary = Sanitize(summary);
                 entry.ErrorMessage = result.Success ? string.Empty : Sanitize(result.ErrorMessage);
                 entry.FailureCode = result.Success ? string.Empty : CopilotToolFailureCode.Normalize(result.FailureCode);
+                if (CopilotToolProcessEvidence.TryNormalizeForResult(
+                        result.ToolName,
+                        result.Success,
+                        result.FailureCode,
+                        result.ProcessOperation,
+                        result.ProcessExitCode,
+                        result.ProcessTimedOut,
+                        out var processEvidence)
+                    && CopilotToolProcessEvidence.TryNormalizeForExecution(
+                        execution.ToolName,
+                        execution.State,
+                        entry.FailureCode,
+                        processEvidence.Operation,
+                        processEvidence.ExitCode,
+                        processEvidence.TimedOut,
+                        out processEvidence))
+                {
+                    entry.ProcessOperation = processEvidence.Operation;
+                    entry.ProcessExitCode = processEvidence.ExitCode;
+                    entry.ProcessTimedOut = processEvidence.TimedOut;
+                }
                 if (result.DelegatedRunUsage != null)
                 {
+                    var reportedUsage = result.DelegatedRunUsage.Usage;
+                    var reportedInputTokens = Math.Max(0, reportedUsage.InputTokens);
+                    var reportedOutputTokens = Math.Max(0, reportedUsage.OutputTokens);
+                    var reportedTotalTokens = Math.Max(0, reportedUsage.EffectiveTotalTokens);
                     entry.DelegatedRoleId = SanitizeIdentifier(result.DelegatedRunUsage.RoleId);
                     entry.DelegatedAgentName = SanitizeIdentifier(result.DelegatedRunUsage.AgentName);
                     entry.DelegatedRunId = SanitizeIdentifier(result.DelegatedRunUsage.RunId);
@@ -489,7 +560,17 @@ namespace ColorVision.Copilot
                     entry.DelegatedReasoningEffort = SanitizeIdentifier(result.DelegatedRunUsage.ReasoningEffort);
                     entry.DelegatedStopReason = result.DelegatedRunUsage.StopReason;
                     entry.DelegatedRequestTokenBudget = Math.Max(0, result.DelegatedRunUsage.RequestTokenBudget);
-                    entry.DelegatedConsumedTokens = Math.Max(0, result.DelegatedRunUsage.ConsumedTokens);
+                    entry.DelegatedConsumedTokens = Math.Max(
+                        Math.Max(0, result.DelegatedRunUsage.ConsumedTokens),
+                        reportedTotalTokens);
+                    entry.DelegatedUsageIncludesEstimates = result.DelegatedRunUsage.UsedEstimatedUsage;
+                    entry.DelegatedReportedInputTokens = reportedInputTokens;
+                    entry.DelegatedReportedOutputTokens = reportedOutputTokens;
+                    entry.DelegatedReportedTotalTokens = reportedTotalTokens;
+                    entry.DelegatedReportedCachedInputTokens = reportedInputTokens > 0
+                        && reportedUsage.CachedInputTokens.HasValue
+                            ? reportedUsage.EffectiveCachedInputTokens
+                            : null;
                     entry.DelegatedProviderCalls = Math.Max(0, result.DelegatedRunUsage.ProviderCalls);
                     entry.DelegatedToolCalls = Math.Max(0, result.DelegatedRunUsage.ToolCalls);
                     entry.DelegatedDeliveredSteeringCount = Math.Max(0, result.DelegatedRunUsage.DeliveredSteeringCount);

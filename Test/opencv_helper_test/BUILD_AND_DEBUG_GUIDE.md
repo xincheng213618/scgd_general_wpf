@@ -16,9 +16,12 @@
    - 顶部工具栏选择：`Debug | x64` 或 `Release | x64`
    - 推荐使用 Debug 配置进行调试
 
+   > [!IMPORTANT]
+   > 使用完整 `scgd_general_wpf.sln` 的 `Debug | x64` 时，托管项目按 Debug 构建，`opencv_helper_test` 也映射到 `Debug | x64`，但 `opencv_helper` 有意映射并构建为 `Release | x64`。托管输出复用 `x64\Release\opencv_helper.dll`，因此“生成解决方案”不会生成 Debug 原生 DLL，这是既定构建策略。若需要调试 Debug 原生 helper，请直接构建其 `.vcxproj`，不要修改解决方案映射。
+
 4. **编译项目**
    - 按 `F7` 或点击"生成" → "生成解决方案"
-   - 确保先编译了 `opencv_helper` 项目（它会自动编译）
+   - 完整解决方案会按上述 `Release | x64` 映射自动编译 `opencv_helper`
 
 5. **运行测试**
    
@@ -36,50 +39,29 @@
 
 ### 方法二：命令行编译（高级用户）
 
-1. **打开 Developer Command Prompt for VS 2022**
+1. **打开 Visual Studio Developer PowerShell，并切换到仓库根目录**
 
-2. **编译 opencv_helper.dll（如果还没编译）**
-   ```cmd
-   cd Core\opencv_helper
-   msbuild opencv_helper.vcxproj /p:Configuration=Debug /p:Platform=x64
+2. **按解决方案映射编译**
+   ```powershell
+   msbuild .\scgd_general_wpf.sln /m /p:Configuration=Debug /p:Platform=x64
    ```
 
-3. **编译测试程序**
-   ```cmd
-   cd ..\..\Test\opencv_helper_test
-   msbuild opencv_helper_test.vcxproj /p:Configuration=Debug /p:Platform=x64
-   ```
+   该命令会构建 Debug 测试程序，但原生 `opencv_helper` 仍按 `Release | x64` 构建。
 
-4. **运行测试**
-   ```cmd
-   cd ..\..\x64\Debug
-   opencv_helper_test.exe
+3. **运行测试**
+   ```powershell
+   & .\x64\Debug\opencv_helper_test.exe
    ```
 
 ## 单独编译和运行 FindLuminousArea 测试
 
-### 创建独立测试程序
+### 显式调试原生 helper
 
-我已经创建了 `build_test_find_luminous.bat` 批处理文件，可以快速编译独立测试：
+只有在确实需要进入 Debug 原生代码时，才直接构建两个 `.vcxproj`。这条路径与完整解决方案的映射相互独立：
 
-```cmd
-# 双击运行或在命令行执行
-build_test_find_luminous.bat
-```
-
-运行后会在当前目录生成 `test_find_luminous_area.exe`
-
-### 手动编译独立测试
-
-```cmd
-cl /EHsc /std:c++17 ^
-   /I"..\..\include" ^
-   /I"..\..\packages\opencv\include" ^
-   /I"..\..\packages\nlohmann\include" ^
-   test_find_luminous_area.cpp ^
-   /link ^
-   /LIBPATH:"..\..\x64\Debug" opencv_helper.lib ^
-   /LIBPATH:"..\..\packages\opencv\lib" opencv_world4100d.lib
+```powershell
+msbuild .\Native\opencv_helper\opencv_helper.vcxproj /p:Configuration=Debug /p:Platform=x64
+msbuild .\Test\opencv_helper_test\opencv_helper_test.vcxproj /p:Configuration=Debug /p:Platform=x64
 ```
 
 ## 调试技巧
@@ -109,9 +91,9 @@ cl /EHsc /std:c++17 ^
 
 测试程序会自动生成合成图像，但你也可以使用真实图像：
 
-```cmd
+```powershell
 # 运行时指定图像路径
-test_find_luminous_area.exe "C:\path\to\your\image.tif"
+& .\x64\Debug\opencv_helper_test.exe 'C:\path\to\your\image.tif'
 ```
 
 支持的图像格式：
@@ -125,7 +107,8 @@ test_find_luminous_area.exe "C:\path\to\your\image.tif"
 
 **解决方案：**
 - 确保已编译 `opencv_helper` 项目
-- DLL 应该在：`x64\Debug\opencv_helper.dll` 或 `x64\Release\opencv_helper.dll`
+- 完整 `scgd_general_wpf.sln` 的 `Debug | x64` 使用 `x64\Release\opencv_helper.dll`
+- 只有直接构建 `opencv_helper.vcxproj` 的 `Debug | x64` 时才会生成 Debug 原生 DLL
 - 将 DLL 复制到测试程序目录，或确保系统能找到它
 
 ### 问题2：找不到 OpenCV DLL
@@ -138,8 +121,8 @@ test_find_luminous_area.exe "C:\path\to\your\image.tif"
 ### 问题3：链接错误 LNK2019
 
 **解决方案：**
-- 确保配置（Debug/Release）和平台（x64）一致
-- 检查 `opencv_helper.lib` 是否存在于 `x64\Debug` 或 `x64\Release`
+- 使用完整解决方案时保持既定映射：Debug 测试程序链接 Release 原生库
+- 检查 `x64\Release\opencv_helper.lib` 是否存在
 - 重新编译 `opencv_helper` 项目
 
 ### 问题4：无法加载项目
@@ -155,6 +138,7 @@ test_find_luminous_area.exe "C:\path\to\your\image.tif"
 - 包含完整调试信息
 - 没有优化，速度较慢
 - 可以单步调试进入函数
+- 上述描述不适用于完整解决方案中的 `opencv_helper`；它在 `Debug | x64` 下仍使用 Release 原生构建
 
 ### Release 配置
 - 用于性能测试

@@ -52,6 +52,7 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             ICopilotTool tool,
             ConfirmableAction action,
+            string approvalReason,
             CancellationToken cancellationToken);
     }
 
@@ -90,6 +91,7 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             ICopilotTool tool,
             ConfirmableAction action,
+            string approvalReason,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(chatClient);
@@ -126,7 +128,7 @@ namespace ColorVision.Copilot
                     [
                         new Microsoft.Extensions.AI.ChatMessage(
                             ChatRole.User,
-                            BuildEvidencePrompt(request, tool, action, actionEvidence)),
+                            BuildEvidencePrompt(request, tool, action, approvalReason, actionEvidence)),
                     ],
                     new ChatOptions
                     {
@@ -206,6 +208,7 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             ICopilotTool tool,
             ConfirmableAction action,
+            string approvalReason,
             string actionEvidence)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -241,12 +244,18 @@ namespace ColorVision.Copilot
             builder.Append("Access: ").AppendLine(tool.Capability.Access.ToString());
             builder.Append("Declared risk: ").AppendLine(tool.Capability.RiskLevel.ToString());
             builder.Append("Idempotency: ").AppendLine(tool.Capability.Idempotency.ToString());
-            builder.Append("Workspace: ").AppendLine(BoundInline(request.WorkspacePath, 2_000));
+            builder.Append("Workspace: ").AppendLine(BoundInline(action.RequestContext.WorkspacePath, 2_000));
             builder.Append("Impact: ").AppendLine(BoundInline(action.RequestContext.ImpactSummary, 2_000));
             builder.Append("Reversibility: ")
                 .Append(action.RequestContext.Reversibility)
                 .Append(" · ")
                 .AppendLine(BoundInline(action.RequestContext.ReversibilitySummary, 2_000));
+            var boundedApprovalReason = CopilotApprovalRequestReason.Normalize(approvalReason);
+            if (boundedApprovalReason.Length > 0)
+            {
+                builder.AppendLine("Approval trigger:");
+                builder.AppendLine(boundedApprovalReason);
+            }
             builder.AppendLine("Complete native approval details:");
             builder.AppendLine(actionEvidence);
             return builder.ToString().TrimEnd();

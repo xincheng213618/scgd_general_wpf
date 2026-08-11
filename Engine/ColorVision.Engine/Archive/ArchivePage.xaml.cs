@@ -3,7 +3,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
-using NPOI.SS.Formula.Functions;
+using log4net;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
@@ -20,6 +20,8 @@ namespace ColorVision.Engine.Archive.Dao
     [Page(nameof(ArchivePage))]
     public partial class ArchivePage : Page, IPage
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ArchivePage));
+
         public Frame Frame { get; set; }
         public ArchivePage() { }
         public ArchivePage(Frame MainFrame)
@@ -45,7 +47,6 @@ namespace ColorVision.Engine.Archive.Dao
 
                 try
                 {
-                    var list = DB.Queryable<T>();
                     foreach (var item in DB.Queryable<ArchivedMasterModel>().ToList())
                     {
                         ViewResults.Add(item);
@@ -89,7 +90,6 @@ namespace ColorVision.Engine.Archive.Dao
                     IsAutoCloseConnection = true
                 });
 
-                var list = DB.Queryable<T>();
                 foreach (var item in DB.Queryable<ArchivedMasterModel>().Where(x=>x.Code.Contains(SearchBox.Text)).ToList())
                 {
                     ViewResults.Add(item);
@@ -110,7 +110,6 @@ namespace ColorVision.Engine.Archive.Dao
                     IsAutoCloseConnection = true
                 });
 
-                var list = DB.Queryable<T>();
                 foreach (var item in DB.Queryable<ArchivedMasterModel>().Where(x => x.Code.Contains(SearchBox.Text)).ToList())
                 {
                     ViewResults.Add(item);
@@ -161,8 +160,15 @@ namespace ColorVision.Engine.Archive.Dao
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ArchiveServerConfigNotFound_Resetting, "ColorVision");
                 string sql = "INSERT INTO `cv`.`t_scgd_sys_globle_cfg` (`id`, `code`, `name`, `cfg_type`, `cfg_value`, `is_deleted`, `is_enabled`, `remark`, `tenant_id`) VALUES (3, 'arch_db', '归档服务数据库', 10, '{\\\"Name\\\":null,\\\"Host\\\":\\\"localhost\\\",\\\"Port\\\":3306,\\\"UserName\\\":\\\"cv\\\",\\\"UserPwd\\\":\\\"9p9DMdywXwaTbAXt0oJkUnAb\\\",\\\"Database\\\":\\\"color_vision_arch_2025\\\"}', 0, 1, NULL, 0);\r\n";
-                MySqlControl.BatchExecuteNonQuery(sql);
-                globleCfgdModel = GlobleCfgdDao.Instance.GetArchDB();
+                try
+                {
+                    globleCfgdModel = BatchSqlConsumer.ExecuteAfterCommit(sql, GlobleCfgdDao.Instance.GetArchDB);
+                }
+                catch (BatchExecuteNonQueryException ex)
+                {
+                    ShowBatchFailure("初始化归档服务数据库配置", ex);
+                    return;
+                }
             }
             if (globleCfgdModel == null)
                 return;
@@ -174,9 +180,23 @@ namespace ColorVision.Engine.Archive.Dao
 
         private void ArchiveConfiguration_Click(object sender, RoutedEventArgs e)
         {
-            string sql = "ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `excluding_images` TINYINT(1) NOT NULL DEFAULT '0' AFTER `data_save_days`;  ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `del_local_file` tinyint(1) NOT NULL DEFAULT '0';  ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `data_save_hours` int(11) NOT NULL DEFAULT '0';";
-            MySqlControl.BatchExecuteNonQuery(sql);
+            const string operation = "更新归档配置数据库结构";
+            try
+            {
+                ArchiveConfigurationSchemaMigration.EnsureColumnsAndExecute(OpenArchiveConfigurationEditor);
+            }
+            catch (BatchExecuteNonQueryException ex)
+            {
+                ShowBatchFailure(operation, ex);
+            }
+            catch (ArchiveSchemaMigrationException ex)
+            {
+                ShowSchemaInspectionFailure(operation, ex);
+            }
+        }
 
+        private void OpenArchiveConfigurationEditor()
+        {
             SysConfigRcModel? sysConfigRcModel = SysConfigRcDao.Instance.GetByCode(RCSetting.Instance.Config.RCName);
             if (sysConfigRcModel == null)
             {
@@ -193,6 +213,20 @@ namespace ColorVision.Engine.Archive.Dao
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configArchivedModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             propertyEditorWindow.Submited += (s, e) => { ConfigArchivedDao.Instance.Save(configArchivedModel); };
             propertyEditorWindow.ShowDialog();
+        }
+
+        private static void ShowBatchFailure(string operation, BatchExecuteNonQueryException exception)
+        {
+            BatchSqlConsumer.ReportUiFailure(log, operation, exception);
+        }
+
+        private static void ShowSchemaInspectionFailure(string operation, ArchiveSchemaMigrationException exception)
+        {
+            log.Error($"{operation}失败。{exception.GetDiagnosticSummary()}");
+            MessageBox.Show(
+                Application.Current.GetActiveWindow(),
+                $"{operation}失败，后续操作已停止。\r\n错误标识：{exception.Stage} / {exception.FailureType} ({exception.ErrorCode})。\r\n请检查日志或联系管理员。",
+                "ColorVision");
         }
 
         private void ServiceRegistryCenterConfig_Click(object sender, RoutedEventArgs e)

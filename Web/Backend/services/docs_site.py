@@ -262,11 +262,10 @@ def build_docs_index(source: Path | None = None) -> dict[str, Any]:
 
 def refresh_docs_index(cache) -> dict[str, Any]:
     from db_cache import now_iso
-    from services.artifact_index import _update_index_state
 
     started = time.monotonic()
     started_at = now_iso()
-    _update_index_state(cache, "docs", status="refreshing", started_at=started_at)
+    cache.index_states.update("docs", status="refreshing", started_at=started_at)
     try:
         index = build_docs_index()
         duration_ms = int((time.monotonic() - started) * 1000)
@@ -276,8 +275,7 @@ def refresh_docs_index(cache) -> dict[str, Any]:
             ttl_seconds=DOCS_INDEX_TTL_SECONDS,
             signature=str(index["signature"]),
         )
-        _update_index_state(
-            cache,
+        cache.index_states.update(
             "docs",
             status="ready",
             signature=str(index["signature"]),
@@ -295,8 +293,7 @@ def refresh_docs_index(cache) -> dict[str, Any]:
         }
     except Exception as exc:
         duration_ms = int((time.monotonic() - started) * 1000)
-        _update_index_state(
-            cache,
+        cache.index_states.update(
             "docs",
             status="error",
             finished_at=now_iso(),

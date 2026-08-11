@@ -33,6 +33,8 @@ namespace ColorVision.Copilot
                 TryCompletePromptHistorySearch();
                 return;
             }
+            if (_queuedLocalCommandExecution != null)
+                return;
             if (_isCompactingConversation)
             {
                 _compactConversationCts?.RequestCancellation();
@@ -66,11 +68,19 @@ namespace ColorVision.Copilot
                 TryCompletePromptHistorySearch();
                 return;
             }
+            if (_queuedLocalCommandExecution != null)
+                return;
             if (IsViewingActiveRun)
             {
                 if (IsAnsweringUserQuestion)
                 {
                     TryAnswerCurrentUserQuestion(InputText);
+                    return;
+                }
+
+                if (DefaultFollowUpBehavior == CopilotFollowUpBehavior.Queue)
+                {
+                    TryQueueCurrentRunFollowUp();
                     return;
                 }
 
@@ -80,10 +90,7 @@ namespace ColorVision.Copilot
                     return;
                 }
 
-                if (DefaultFollowUpBehavior == CopilotFollowUpBehavior.Queue)
-                    TryQueueCurrentRunFollowUp();
-                else
-                    TrySteerCurrentRun();
+                TrySteerCurrentRun();
                 return;
             }
             if (IsViewingQueuedRun)

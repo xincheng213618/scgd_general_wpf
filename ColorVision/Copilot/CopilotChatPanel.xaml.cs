@@ -115,6 +115,20 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            if (key == Key.U
+                && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Alt)
+                && DataContext is CopilotChatViewModel activityViewModel)
+            {
+                if (_isCompactSidebar && !_isConversationSidebarExpanded)
+                {
+                    _isConversationSidebarExpanded = true;
+                    UpdateResponsiveLayout();
+                }
+                activityViewModel.ToggleActivityViewCommand.Execute(null);
+                e.Handled = true;
+                return;
+            }
+
             if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
             {
                 if (DataContext is CopilotChatViewModel openFindViewModel)

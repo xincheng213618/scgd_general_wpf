@@ -373,6 +373,7 @@ FodyWeavers.xsd
 /.bevel
 /.vscode
 /.workbuddy
+/.codex-artifacts/
 
 
 # Node.js / npm
@@ -408,4 +409,9 @@ Web/Backend/__pycache__/
 
 dist/
 build/
+
+# Repository-local generated and personal artifacts
+/_codeql_detected_source_root
+/.claude/settings.local.json
+/Test/opencv_helper_test/out.png
 

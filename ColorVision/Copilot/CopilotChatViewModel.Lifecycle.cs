@@ -81,10 +81,21 @@ namespace ColorVision.Copilot
 
         private void Application_Exit(object? sender, ExitEventArgs e)
         {
-            RestoreQueuedFollowUpsToDrafts();
+            PreserveQueuedFollowUpsForRestart();
             CopilotSteeringRecovery.RestorePendingToDrafts(_state);
             var scheduledRuns = _taskHost.ScheduledRuns;
             _taskHost.Shutdown();
+            try
+            {
+                EndOpenSessionsForShutdownAsync()
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (Exception exception)
+            {
+                System.Diagnostics.Trace.TraceError(
+                    $"Copilot SessionEnd hook shutdown failed open: {CopilotAgentTraceEntry.Sanitize(exception.Message)}");
+            }
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted -= BackgroundShellCommandRegistry_CommandCompleted;
             CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent -= BackgroundShellCommandRegistry_OutputMonitorEvent;
             try
@@ -111,21 +122,9 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void RestoreQueuedFollowUpsToDrafts()
+        private void PreserveQueuedFollowUpsForRestart()
         {
-            _state.QueuedFollowUpRecoveries ??= new ObservableCollection<CopilotQueuedFollowUpRecoveryRecord>();
-            var persistedRunIds = _state.QueuedFollowUpRecoveries
-                .Where(record => record != null)
-                .Select(record => record.RunId)
-                .ToHashSet(StringComparer.Ordinal);
-            foreach (var queuedFollowUp in QueuedFollowUps.OrderBy(item => item.QueuePosition))
-            {
-                if (!persistedRunIds.Add(queuedFollowUp.RunId))
-                    continue;
-
-                AddQueuedFollowUpRecovery(queuedFollowUp);
-            }
-            CopilotQueuedFollowUpRecovery.RestoreToDrafts(_state);
+            _followUpQueue.BeginShutdown();
         }
 
         private void FinalizeUnstartedRunsForShutdown(IReadOnlyList<CopilotHostedAgentRun> scheduledRuns)
@@ -149,26 +148,28 @@ namespace ColorVision.Copilot
                 return;
 
             _conversationTitleCoordinator.Dispose();
+            _followUpQueue.Changed -= FollowUpQueue_Changed;
             CancelAllAuxiliaryOperations();
             if (Application.Current != null)
                 Application.Current.Exit -= Application_Exit;
             WorkspaceManager.ContentIdSelected -= WorkspaceManager_ContentIdSelected;
             CopilotLiveContextRegistry.CurrentChanged -= CopilotLiveContextRegistry_CurrentChanged;
-            CopilotMcpConfirmationStore.Instance.ActionsChanged -= ConfirmationStore_ActionsChanged;
-            CopilotMcpConfirmationStore.Instance.ActionStatusChanged -= ConfirmationStore_ActionStatusChanged;
+            _approvalCoordinator.PendingActionsInvalidated -= ApprovalCoordinator_PendingActionsInvalidated;
+            _approvalCoordinator.ActionTransitioned -= ApprovalCoordinator_ActionTransitioned;
+            _approvalCoordinator.Dispose();
             CopilotAgentSkillCatalog.CatalogChanged -= AgentSkillCatalog_CatalogChanged;
             WeakEventManager<CopilotAgentTaskHost, CopilotAgentTaskHostChangedEventArgs>.RemoveHandler(_taskHost, nameof(CopilotAgentTaskHost.Changed), TaskHost_Changed);
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted -= BackgroundShellCommandRegistry_CommandCompleted;
             CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent -= BackgroundShellCommandRegistry_OutputMonitorEvent;
 
             Conversations.CollectionChanged -= Conversations_CollectionChanged;
-            if (_selectedConversation != null)
+            if (SelectedConversation != null)
             {
-                _selectedConversation.Attachments.CollectionChanged -= Attachments_CollectionChanged;
-                _selectedConversation.Messages.CollectionChanged -= Messages_CollectionChanged;
+                SelectedConversation.Attachments.CollectionChanged -= Attachments_CollectionChanged;
+                SelectedConversation.Messages.CollectionChanged -= Messages_CollectionChanged;
             }
-            if (_selectedProfile != null)
-                _selectedProfile.PropertyChanged -= SelectedProfile_PropertyChanged;
+            if (SelectedProfile != null)
+                SelectedProfile.PropertyChanged -= SelectedProfile_PropertyChanged;
 
             _conversationSearchDebounceTimer.Stop();
             _conversationSearchDebounceTimer.Tick -= ConversationSearchDebounceTimer_Tick;

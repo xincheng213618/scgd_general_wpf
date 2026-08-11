@@ -46,6 +46,37 @@ namespace ColorVision.Copilot
             }
         }
 
+        private bool CanOpenCodeReviewPane(CopilotChatMessage? message) =>
+            Volatile.Read(ref _disposeState) == 0
+            && message?.IsUser == false
+            && message.RequestMode == CopilotAgentMode.Review
+            && message.HasCodeReviewSnapshot
+            && SelectedConversation?.Messages.Contains(message) == true;
+
+        private void OpenCodeReviewPane(CopilotChatMessage? message)
+        {
+            if (!CanOpenCodeReviewPane(message))
+                return;
+
+            try
+            {
+                var window = new CopilotCodeReviewWindow(message!);
+                var owner = Application.Current.GetActiveWindow();
+                if (owner != null)
+                    window.Owner = owner;
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "无法打开代码审查详情：" + CopilotUserFacingErrorFormatter.Sanitize(ex.Message),
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
         private static bool TrySetClipboardText(string text, out string errorMessage)
         {
             try
@@ -63,9 +94,17 @@ namespace ColorVision.Copilot
 
         private bool CanEditMessage(CopilotChatMessage? message)
         {
-            return !IsBusy
-                && message?.IsUser == true
-                && TryResolveLatestTurn(message, out _, out _, out _);
+            if (IsBusy || message?.IsUser != true)
+                return false;
+
+            if (TryResolveLatestTurn(message, out _, out _, out _))
+                return true;
+
+            return !IsEditingMessage
+                && CanSwitchConversation
+                && CopilotConversationBranchService.CanPreparePromptEditBranch(
+                    SelectedConversation,
+                    message);
         }
 
         private bool CanBranchConversation(CopilotChatMessage? message)
@@ -185,34 +224,18 @@ namespace ColorVision.Copilot
 
             try
             {
-                var restoredAttachments = point.UserMessage.AttachmentSnapshotCaptured
-                    ? point.UserMessage.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray()
-                    : Array.Empty<CopilotAttachmentItem>();
-                if (restoredAttachments.Length > CopilotComposerAttachmentService.MaximumAttachmentCount)
-                    throw new InvalidOperationException($"历史请求包含超过 {CopilotComposerAttachmentService.MaximumAttachmentCount:N0} 个附件，不能安全恢复到输入框。");
-
-                var branch = CopilotConversationBranchService.CreateRewindBranch(
+                var preparation = CopilotConversationBranchService.PreparePromptEditBranch(
                     source,
                     point.UserMessage);
-                foreach (var attachment in restoredAttachments)
-                    branch.Attachments.Add(attachment);
-                branch.DraftText = point.UserMessage.Content;
-                branch.DraftAgentSkillReference = point.UserMessage.AgentSkillReference?.CreateSnapshot();
+                var branch = preparation.Branch;
                 InsertAndSelectConversationBranch(branch);
 
                 _pendingAgentRecoveryRequest = null;
-                ClearPendingRequestModeOverride();
-                SetPendingRequestModeOverride(Enum.IsDefined(point.UserMessage.RequestMode)
-                    ? point.UserMessage.RequestMode
-                    : CopilotAgentMode.Chat);
-                SetPendingWorkspaceReviewTarget(point.UserMessage.WorkspaceReviewTarget);
-                InputText = point.UserMessage.Content;
-                SetPendingAgentSkillReference(point.UserMessage.AgentSkillReference);
                 UpdateAttachmentsState(branch);
 
-                var attachmentText = point.AttachmentCount > 0
-                    ? $"，并恢复 {point.AttachmentCount:N0} 个附件快照"
-                    : point.UserMessage.HasAttachments
+                var attachmentText = preparation.RestoredAttachmentCount > 0
+                    ? $"，并恢复 {preparation.RestoredAttachmentCount:N0} 个附件快照"
+                    : preparation.HasUnrestorableAttachments
                         ? "；该旧请求没有可靠的附件快照，附件未恢复"
                         : string.Empty;
                 ShowLocalCommandResult(
@@ -271,6 +294,9 @@ namespace ColorVision.Copilot
         private CopilotConversationRecord InsertAndSelectConversationBranch(CopilotConversationRecord branch)
         {
             CopilotConversationService.Insert(Conversations, branch);
+            _turnRuntime.QueueSessionStart(
+                branch.Id,
+                CopilotCodexSessionStartSource.Startup);
             SelectConversation(branch, persist: false, preferredProfileId: branch.ProfileId);
             PersistState(immediate: true);
             return branch;
@@ -278,9 +304,12 @@ namespace ColorVision.Copilot
 
         private void BeginEditMessage(CopilotChatMessage? message)
         {
-            if (!CanEditMessage(message)
-                || !TryResolveLatestTurn(message, out var conversation, out var userMessage, out _))
+            if (!CanEditMessage(message))
+                return;
+
+            if (!TryResolveLatestTurn(message, out var conversation, out var userMessage, out _))
             {
+                BeginHistoricalPromptEdit(message!);
                 return;
             }
 
@@ -302,12 +331,13 @@ namespace ColorVision.Copilot
                     return;
             }
 
+            var composerCapture = _composerSession.Capture();
             _composerDraftBeforeMessageEdit = new CopilotComposerDraftSnapshot(
-                conversation.Id,
-                InputText,
-                ResolveComposerRequestMode(),
-                _pendingWorkspaceReviewTarget?.CreateSnapshot(),
-                _pendingAgentSkillReference?.CreateSnapshot(),
+                composerCapture.ConversationId,
+                composerCapture.Text,
+                composerCapture.RequestMode,
+                composerCapture.WorkspaceReviewTarget,
+                composerCapture.AgentSkillReference,
                 conversation.Attachments.Select(attachment => attachment.CreateSnapshot()).ToArray());
             var messageAttachments = (userMessage.AttachmentSnapshotCaptured
                     ? userMessage.Attachments
@@ -326,6 +356,47 @@ namespace ColorVision.Copilot
             InputText = userMessage.Content;
             SetPendingAgentSkillReference(userMessage.AgentSkillReference);
             UpdateAttachmentsState(conversation);
+        }
+
+        private void BeginHistoricalPromptEdit(CopilotChatMessage userMessage)
+        {
+            var source = SelectedConversation;
+            if (source == null
+                || !CopilotConversationBranchService.CanPreparePromptEditBranch(source, userMessage))
+            {
+                return;
+            }
+
+            try
+            {
+                var preparation = CopilotConversationBranchService.PreparePromptEditBranch(
+                    source,
+                    userMessage);
+                var branch = preparation.Branch;
+                InsertAndSelectConversationBranch(branch);
+
+                _pendingAgentRecoveryRequest = null;
+                UpdateAttachmentsState(branch);
+                var attachmentText = preparation.RestoredAttachmentCount > 0
+                    ? $"，已恢复 {preparation.RestoredAttachmentCount:N0} 个附件快照"
+                    : preparation.HasUnrestorableAttachments
+                        ? "；旧请求没有可靠的附件快照，附件未恢复"
+                        : string.Empty;
+                LocalCommandResultTitle = "已创建历史编辑分支";
+                LocalCommandResultText =
+                    $"原请求已恢复到“{branch.Title}”的输入框{attachmentText}，可修改后发送；不会自动执行。"
+                    + Environment.NewLine
+                    + $"源会话“{source.Title}”、当前文件和外部操作保持不变；Agent checkpoint 与临时授权未继承。";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"无法创建历史编辑分支：{CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
 
         private void CancelMessageEdit()
@@ -397,8 +468,9 @@ namespace ColorVision.Copilot
                     CopilotCapabilityCatalog.Shared.GetSnapshot(
                         _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                     CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                        _currentCodexConfigOptions.ConfiguredHooksEnabled
-                            && _currentCodexConfigOptions.ConfiguredPluginsEnabled));
+                        _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                        _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                        _currentCodexConfigOptions.ConfiguredCommandHooks));
         }
 
         private async Task RetryMessageAsync(CopilotChatMessage? message, bool refreshExternalContext)
@@ -418,8 +490,9 @@ namespace ColorVision.Copilot
                 CopilotCapabilityCatalog.Shared.GetSnapshot(
                     _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
-                    _currentCodexConfigOptions.ConfiguredHooksEnabled
-                        && _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
+                    _currentCodexConfigOptions.ConfiguredHooksEnabled,
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
+                    _currentCodexConfigOptions.ConfiguredCommandHooks)))
             {
                 return;
             }
@@ -429,7 +502,24 @@ namespace ColorVision.Copilot
             if (string.IsNullOrWhiteSpace(prompt))
                 return;
 
-            var turnSnapshot = CaptureHostedTurnSnapshot(conversation, userMessage);
+            var initialTurnSnapshot = CaptureHostedTurnSnapshot(conversation, userMessage);
+            if (!TryResolveProjectTrustForSubmission(
+                initialTurnSnapshot,
+                () => CaptureHostedTurnSnapshot(conversation, userMessage),
+                out var turnSnapshot))
+            {
+                return;
+            }
+            if (!TryPrepareExplicitSkillMcpDependencies(
+                prompt,
+                userMessage.AgentSkillReference,
+                turnSnapshot.ProjectInstructionDiscoveryOptions,
+                conversation.Id))
+            {
+                return;
+            }
+            var runtimeConfigSnapshot = CaptureTurnRuntimeConfigSnapshot();
+            var agentDefaultsSnapshot = runtimeConfigSnapshot.CreateAgentDefaultsSnapshot();
             var requestProfile = CreateConversationRequestProfile(
                 SelectedProfile,
                 conversation,
@@ -440,7 +530,8 @@ namespace ColorVision.Copilot
                     modelPrompt,
                     userMessage.RequestMode,
                     requestProfile,
-                    turnSnapshot.ProjectInstructionDiscoveryOptions))
+                    turnSnapshot.ProjectInstructionDiscoveryOptions,
+                    agentDefaultsSnapshot))
             {
                 return;
             }
@@ -452,10 +543,40 @@ namespace ColorVision.Copilot
             conversation.AgentSessionCheckpoint = null;
             PersistState();
 
-            var hostedRun = _taskHost.Start(
-                conversation.Id,
-                userMessage.RequestMode,
-                run => ExecuteHostedRetryAsync(run, conversation, requestProfile, userMessage, assistantMessage, turnSnapshot, refreshExternalContext));
+            Task ExecuteAsync(CopilotHostedAgentRun run) => ExecuteHostedRetryAsync(
+                run,
+                conversation,
+                requestProfile,
+                userMessage,
+                assistantMessage,
+                turnSnapshot,
+                runtimeConfigSnapshot,
+                refreshExternalContext);
+            var queuedCommandExecution = _queuedLocalCommandExecution;
+            CopilotHostedAgentRun? hostedRun;
+            if (queuedCommandExecution == null)
+            {
+                hostedRun = _taskHost.Start(
+                    conversation.Id,
+                    userMessage.RequestMode,
+                    ExecuteAsync);
+            }
+            else if (!_taskHost.TryScheduleQueuedCommandSuccessor(
+                         queuedCommandExecution.HostedRun.Id,
+                         conversation.Id,
+                         userMessage.RequestMode,
+                         ExecuteAsync,
+                         out hostedRun,
+                         out var admission)
+                     || hostedRun == null)
+            {
+                ReportRequestAdmissionFailure(admission);
+                return;
+            }
+            else
+            {
+                return;
+            }
             await AwaitHostedRunCompletionAsync(hostedRun);
         }
 
@@ -466,6 +587,7 @@ namespace ColorVision.Copilot
             CopilotChatMessage userMessage,
             CopilotChatMessage? assistantMessage,
             CopilotAgentHostContextSnapshot turnSnapshot,
+            CopilotTurnRuntimeConfigSnapshot runtimeConfigSnapshot,
             bool refreshExternalContext)
         {
             CopilotChatMessage? replacementAssistantMessage = null;
@@ -492,15 +614,16 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            await ExecuteHostedPreparedTurnAsync(
-                hostedRun,
+            var preparedTurn = new CopilotPreparedHostedTurn(
                 conversation,
                 requestProfile,
                 userMessage,
                 replacementAssistantMessage,
                 turnSnapshot,
+                runtimeConfigSnapshot,
                 refreshExternalContext,
                 isAutomaticGoalContinuation: false);
+            await ExecuteHostedPreparedTurnAsync(hostedRun, preparedTurn);
         }
 
         private bool TryResolveLatestTurn(CopilotChatMessage? message, out CopilotConversationRecord conversation, out CopilotChatMessage userMessage, out CopilotChatMessage? assistantMessage)

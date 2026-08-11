@@ -5,17 +5,32 @@ using Newtonsoft.Json;
 
 namespace ColorVisionServiceHost;
 
-internal sealed class ApplicationUpdateScanProtectionService : IDisposable
+internal interface IApplicationUpdateScanProtectionLifetime : IDisposable
+{
+    Task Start();
+
+    Task StopAsync();
+}
+
+internal sealed class ApplicationUpdateScanProtectionService : IApplicationUpdateScanProtectionLifetime
 {
     private const int DefaultLifetimeSeconds = 180;
     private const int MinimumLifetimeSeconds = 30;
     private const int MaximumLifetimeSeconds = 300;
     private static readonly TimeSpan CleanupInterval = TimeSpan.FromSeconds(15);
-    private readonly object _syncRoot = new();
+    private readonly object _lifecycleLock = new();
+    private readonly object _operationLock = new();
     private readonly IDefenderExclusionManager _defenderExclusions;
     private readonly string _stateDirectory;
     private readonly Func<DateTimeOffset> _utcNow;
-    private Timer? _cleanupTimer;
+    private readonly TimeProvider _timeProvider;
+    private readonly CancellationTokenSource _cleanupCancellation = new();
+    private ITimer? _cleanupTimer;
+    private Task? _initialCleanupTask;
+    private Task? _activeCleanupTask;
+    private Task? _stopTask;
+    private bool _cleanupAdmissionOpen;
+    private bool _disposed;
 
     public static ApplicationUpdateScanProtectionService Default { get; } = new(
         new PowerShellDefenderExclusionManager(),
@@ -28,28 +43,67 @@ internal sealed class ApplicationUpdateScanProtectionService : IDisposable
     internal ApplicationUpdateScanProtectionService(
         IDefenderExclusionManager defenderExclusions,
         string stateDirectory,
-        Func<DateTimeOffset>? utcNow = null)
+        Func<DateTimeOffset>? utcNow = null,
+        TimeProvider? timeProvider = null)
     {
         _defenderExclusions = defenderExclusions;
         _stateDirectory = Path.GetFullPath(stateDirectory);
         _utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
-    public void Start()
+    public Task Start()
     {
-        lock (_syncRoot)
+        lock (_lifecycleLock)
         {
-            if (_cleanupTimer != null)
-                return;
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_initialCleanupTask != null)
+                return _initialCleanupTask;
+            if (_stopTask != null)
+                throw new InvalidOperationException("Application update scan protection cleanup has already stopped.");
 
-            Directory.CreateDirectory(_stateDirectory);
-            CleanupExpiredStatesCore();
-            _cleanupTimer = new Timer(
-                _ => CleanupExpiredStates(),
-                null,
-                CleanupInterval,
-                CleanupInterval);
+            _cleanupAdmissionOpen = true;
+            try
+            {
+                _cleanupTimer = _timeProvider.CreateTimer(
+                    static state => ((ApplicationUpdateScanProtectionService)state!).OnCleanupTimer(),
+                    this,
+                    CleanupInterval,
+                    CleanupInterval);
+            }
+            catch
+            {
+                _cleanupAdmissionOpen = false;
+                throw;
+            }
+
+            _initialCleanupTask = StartCleanupLocked();
+            return _initialCleanupTask;
         }
+    }
+
+    public Task StopAsync()
+    {
+        ITimer? cleanupTimer;
+        Task activeCleanupTask;
+        TaskCompletionSource stopCompletion;
+
+        lock (_lifecycleLock)
+        {
+            if (_stopTask != null)
+                return _stopTask;
+
+            _cleanupAdmissionOpen = false;
+            cleanupTimer = _cleanupTimer;
+            _cleanupTimer = null;
+            activeCleanupTask = _activeCleanupTask ?? Task.CompletedTask;
+            stopCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _stopTask = stopCompletion.Task;
+        }
+
+        _cleanupCancellation.Cancel();
+        _ = CompleteStopAsync(cleanupTimer, activeCleanupTask, stopCompletion);
+        return stopCompletion.Task;
     }
 
     public ServiceHostResponse Begin(
@@ -64,7 +118,7 @@ internal sealed class ApplicationUpdateScanProtectionService : IDisposable
             MinimumLifetimeSeconds,
             MaximumLifetimeSeconds);
 
-        lock (_syncRoot)
+        lock (_operationLock)
         {
             Directory.CreateDirectory(_stateDirectory);
             if (!CleanupApplicationStatesCore(paths.ApplicationDirectory))
@@ -149,7 +203,7 @@ internal sealed class ApplicationUpdateScanProtectionService : IDisposable
             return ServiceHostResponse.FromObject(request.RequestId, false, "invalid application update scan protection id");
 
         string applicationDirectory = ResolveApplicationDirectory(context);
-        lock (_syncRoot)
+        lock (_operationLock)
         {
             string statePath = GetStatePath(protectionId);
             if (!File.Exists(statePath))
@@ -187,18 +241,27 @@ internal sealed class ApplicationUpdateScanProtectionService : IDisposable
 
     public void Dispose()
     {
-        lock (_syncRoot)
+        lock (_lifecycleLock)
         {
-            _cleanupTimer?.Dispose();
-            _cleanupTimer = null;
+            if (_disposed)
+                return;
+            if (_stopTask?.IsCompleted != true)
+            {
+                throw new InvalidOperationException(
+                    "StopAsync must reach a terminal state before disposing application update scan protection cleanup.");
+            }
+
+            _disposed = true;
         }
+
+        _cleanupCancellation.Dispose();
     }
 
     internal void CleanupExpiredStatesNow()
     {
-        lock (_syncRoot)
+        lock (_operationLock)
         {
-            CleanupExpiredStatesCore();
+            CleanupExpiredStatesCore(CancellationToken.None);
         }
     }
 
@@ -250,13 +313,41 @@ internal sealed class ApplicationUpdateScanProtectionService : IDisposable
         return roots.ToArray();
     }
 
-    private void CleanupExpiredStates()
+    private void OnCleanupTimer()
+    {
+        lock (_lifecycleLock)
+        {
+            if (!_cleanupAdmissionOpen)
+                return;
+
+            StartCleanupLocked();
+        }
+    }
+
+    private Task StartCleanupLocked()
+    {
+        if (_activeCleanupTask is { IsCompleted: false })
+            return _activeCleanupTask;
+
+        CancellationToken cancellationToken = _cleanupCancellation.Token;
+        _activeCleanupTask = Task.Run(() => CleanupExpiredStates(cancellationToken));
+        return _activeCleanupTask;
+    }
+
+    private void CleanupExpiredStates(CancellationToken cancellationToken)
     {
         try
         {
-            lock (_syncRoot)
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            lock (_operationLock)
             {
-                CleanupExpiredStatesCore();
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                Directory.CreateDirectory(_stateDirectory);
+                CleanupExpiredStatesCore(cancellationToken);
             }
         }
         catch (Exception ex)
@@ -265,15 +356,49 @@ internal sealed class ApplicationUpdateScanProtectionService : IDisposable
         }
     }
 
-    private void CleanupExpiredStatesCore()
+    private static async Task CompleteStopAsync(
+        ITimer? cleanupTimer,
+        Task activeCleanupTask,
+        TaskCompletionSource stopCompletion)
+    {
+        Task timerDisposalTask;
+        try
+        {
+            timerDisposalTask = cleanupTimer == null
+                ? Task.CompletedTask
+                : cleanupTimer.DisposeAsync().AsTask();
+        }
+        catch (Exception ex)
+        {
+            timerDisposalTask = Task.FromException(ex);
+        }
+
+        try
+        {
+            await Task.WhenAll(timerDisposalTask, activeCleanupTask).ConfigureAwait(false);
+            stopCompletion.TrySetResult();
+        }
+        catch (Exception ex)
+        {
+            stopCompletion.TrySetException(ex);
+        }
+    }
+
+    private void CleanupExpiredStatesCore(CancellationToken cancellationToken)
     {
         if (!Directory.Exists(_stateDirectory))
             return;
 
-        CleanupRecoveryJournalsCore();
+        CleanupRecoveryJournalsCore(cancellationToken);
+        if (cancellationToken.IsCancellationRequested)
+            return;
+
         DateTimeOffset utcNow = _utcNow();
         foreach (string statePath in Directory.EnumerateFiles(_stateDirectory, "*.json", SearchOption.TopDirectoryOnly))
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             try
             {
                 ApplicationUpdateScanProtectionState state = ReadState(statePath);
@@ -287,13 +412,16 @@ internal sealed class ApplicationUpdateScanProtectionService : IDisposable
         }
     }
 
-    private void CleanupRecoveryJournalsCore()
+    private void CleanupRecoveryJournalsCore(CancellationToken cancellationToken)
     {
         foreach (string recoveryJournalPath in Directory.EnumerateFiles(
             _stateDirectory,
             "*.pending",
             SearchOption.TopDirectoryOnly))
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             try
             {
                 CleanupRecoveryJournalCore(recoveryJournalPath);

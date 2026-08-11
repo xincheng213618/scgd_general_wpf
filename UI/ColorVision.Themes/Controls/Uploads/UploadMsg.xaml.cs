@@ -8,7 +8,10 @@ namespace ColorVision.Themes.Controls.Uploads
     /// </summary>
     public partial class UploadMsg : Window
     {
+        private IUploadMsg? _subscribedUploadMsg;
+
         public IUploadMsg IUploadMsg1 { get; set; }
+
         public UploadMsg(IUploadMsg iUploadMsg)
         {
             IUploadMsg1 = iUploadMsg;
@@ -19,7 +22,22 @@ namespace ColorVision.Themes.Controls.Uploads
         private void Window_Initialized(object sender, EventArgs e)
         {
             DataContext = IUploadMsg1;
-            IUploadMsg1.UploadClosed += (s, e) => Close();
+            _subscribedUploadMsg = IUploadMsg1;
+            _subscribedUploadMsg.UploadClosed += UploadMsg_UploadClosed;
+        }
+
+        private void UploadMsg_UploadClosed(object? sender, EventArgs e) => Close();
+
+        protected override void OnClosed(EventArgs e)
+        {
+            if (_subscribedUploadMsg is not null)
+            {
+                _subscribedUploadMsg.UploadClosed -= UploadMsg_UploadClosed;
+                _subscribedUploadMsg = null;
+            }
+
+            DataContext = null;
+            base.OnClosed(e);
         }
     }
 }

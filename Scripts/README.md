@@ -12,7 +12,8 @@ Full reader-facing guide: `docs/02-developer-guide/scripts/README.md`.
 | Publish Spectrum ZIP + plugin | `Scripts\Spectrum.bat --release-notes "<notes>"` |
 | Publish an existing output directory | `py Scripts\package_cvxp.py --src-dir <output-dir>` |
 | Validate plugin manifest only | `py Scripts\package_cvxp.py --project-file <plugin.csproj> --validate-only` |
-| Refresh host shared-file manifest | `py Scripts\generate_shared_files.py` |
+| Refresh host shared-file manifests | `py Scripts\generate_shared_files.py` |
+| Verify manifests against the current host output | `py Scripts\generate_shared_files.py --check` |
 
 `build.py` and `build_update.py` are release internals. Do not use them as normal manual release entry points; `build_update.py` executes package generation and upload when run.
 
@@ -65,7 +66,7 @@ The backend HTTP upload endpoint is the only release distribution channel. A mai
 | `package_cvxp.py` | Plugin manifest validation plus `.cvxp` package creation, upload, and cleanup |
 | `package_plugin.bat` | Repo plugin wrapper around `package_cvxp.py --build` |
 | `package_project.bat` | Repo project wrapper around `package_cvxp.py --build` |
-| `generate_shared_files.py` | Generate `shared_files.json` from a host output directory |
+| `generate_shared_files.py` | Generate or set-check the repository and Plugin Kit `shared_files.json` mirrors from one host output scan |
 | `build_spectrum.py` | Spectrum ZIP + `.cvxp` build, signed dual-feed publish, and remote verification |
 | `backend_client.py` | Shared upload/auth/preflight client |
 

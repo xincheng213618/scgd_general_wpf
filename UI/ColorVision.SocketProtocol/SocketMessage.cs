@@ -41,10 +41,32 @@ namespace ColorVision.SocketProtocol
             : Properties.Resources.FilterSent;
 
         /// <summary>
-        /// 消息内容
+        /// 消息内容。正文仅在新增消息或明确查看、复制、重发时存在于内存，
+        /// SQLite 长期存储只使用未映射到列表实体的 GZip BLOB。
         /// </summary>
-        [SugarColumn(ColumnName = "Content", IsNullable = true, ColumnDataType = "text")]
-        public string Content { get; set; }
+        [Browsable(false)]
+        [SugarColumn(IsIgnore = true)]
+        public string? Content
+        {
+            get => _content;
+            set
+            {
+                _content = value;
+                IsContentLoaded = true;
+                OnPropertyChanged();
+            }
+        }
+        private string? _content;
+
+        /// <summary>
+        /// 列表使用的短预览，避免查询或解压完整正文。
+        /// </summary>
+        [SugarColumn(ColumnName = "ContentPreview", IsNullable = true, ColumnDataType = "text")]
+        public string? ContentPreview { get; set; }
+
+        [Browsable(false)]
+        [SugarColumn(IsIgnore = true)]
+        public bool IsContentLoaded { get; private set; }
 
         /// <summary>
         /// 消息时间
@@ -73,7 +95,9 @@ namespace ColorVision.SocketProtocol
         public override string ToString()
         {
             var directionText = Direction == SocketMessageDirection.Received ? "←" : "→";
-            var shortContent = Content?.Length > 50 ? string.Concat(Content.AsSpan(0, 50), "...") : Content;
+            var shortContent = ContentPreview?.Length > 50
+                ? string.Concat(ContentPreview.AsSpan(0, 50), "...")
+                : ContentPreview;
             return $"[{MessageTime:HH:mm:ss}] {directionText} {shortContent}";
         }
     }

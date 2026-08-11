@@ -86,6 +86,32 @@ namespace ColorVision.Copilot
             }
         }
 
+        /// <summary>
+        /// Removes this job's kill-on-close limit after the root process has completed so an
+        /// intentionally detached hook helper can outlive the runner. Failure stays fail-closed:
+        /// disposing the job will still terminate any remaining descendants.
+        /// </summary>
+        public bool TryPreserveDescendants()
+        {
+            var handle = _handle;
+            if (handle == null || handle.IsClosed || handle.IsInvalid)
+                return false;
+
+            try
+            {
+                var information = new JobObjectExtendedLimitInformation();
+                return SetInformationJobObject(
+                    handle,
+                    JobObjectInformationClass.ExtendedLimitInformation,
+                    ref information,
+                    (uint)Marshal.SizeOf<JobObjectExtendedLimitInformation>());
+            }
+            catch (ObjectDisposedException)
+            {
+                return false;
+            }
+        }
+
         public async Task<bool> TryWaitForExitAsync(TimeSpan timeout)
         {
             var handle = _handle;

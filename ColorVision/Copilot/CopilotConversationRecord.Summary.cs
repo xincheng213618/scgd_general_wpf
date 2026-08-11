@@ -84,6 +84,11 @@ namespace ColorVision.Copilot
                     : $"{Goal.TokensUsed:N0} Token")
                 + " · 累计 "
                 + CopilotConversationGoalUsageText.FormatElapsed(Goal.TimeUsedSeconds)
+                + CopilotConversationGoalScoreText.FormatLine(Goal)
+                + (Goal.LastProgressReport == null
+                    ? string.Empty
+                    : Environment.NewLine
+                        + CopilotConversationGoalProgressReportText.Format(Goal.LastProgressReport))
                 + (string.IsNullOrWhiteSpace(Goal.LastEvaluationReason)
                     ? string.Empty
                     : Environment.NewLine + "最近判断：" + Goal.LastEvaluationReason)
@@ -91,9 +96,34 @@ namespace ColorVision.Copilot
                 + "目标约束完成判定，但不授权写入、工具调用、审批复用或外部副作用。";
 
         [JsonIgnore]
+        public string GoalProgressText => Goal == null
+            ? string.Empty
+            : $"{Goal.TurnCount:N0} 轮 · {Goal.EvaluationCount:N0} 次评估 · "
+                + (Goal.HasTokenBudget
+                    ? $"{Goal.TokensUsed:N0} / {Goal.TokenBudget:N0} Token"
+                    : $"{Goal.TokensUsed:N0} Token")
+                + " · 累计 "
+                + CopilotConversationGoalUsageText.FormatElapsed(Goal.TimeUsedSeconds)
+                + CopilotConversationGoalScoreText.FormatSuffix(Goal);
+
+        [JsonIgnore]
+        public bool CanPauseGoal => HasGoal && Goal is { IsActive: true };
+
+        [JsonIgnore]
+        public bool CanResumeGoal => HasGoal
+            && Goal is
+            {
+                IsActive: false,
+                IsAchieved: false,
+                IsTokenBudgetExhausted: false,
+            };
+
+        [JsonIgnore]
         public string AgentRunStatusLabel
         {
-            get => _agentRunStatusLabel;
+            get => !string.IsNullOrWhiteSpace(_agentRunStatusLabel)
+                ? _agentRunStatusLabel
+                : AgentActivity?.StatusLabel ?? string.Empty;
             internal set
             {
                 if (SetProperty(ref _agentRunStatusLabel, value ?? string.Empty))

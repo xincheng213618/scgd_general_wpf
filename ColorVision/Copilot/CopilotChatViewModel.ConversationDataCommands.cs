@@ -206,7 +206,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void DeleteCurrentConversation(CopilotLocalCommand command)
+        private async Task DeleteCurrentConversationAsync(CopilotLocalCommand command)
         {
             var target = SelectedConversation;
             if (!CanDeleteConversation(target))
@@ -217,24 +217,27 @@ namespace ColorVision.Copilot
                 return;
             }
 
-            if (TryDeleteConversation(target, out var deletedTitle))
+            var result = await TryDeleteConversationAsync(target);
+            if (result.Deleted)
             {
                 ShowLocalCommandResult(
                     command,
-                    $"已永久删除“{deletedTitle}”。本地消息、草稿和托管附件已移除，不能通过 /unarchive 恢复。");
+                    $"已永久删除“{result.DeletedTitle}”。本地消息、草稿和托管附件已移除，不能通过 /unarchive 恢复。"
+                    + FormatSessionEndHookDiagnostics(result.HookDiagnostics));
             }
         }
 
-        private void DeleteConversation(CopilotConversationRecord? conversation) =>
-            TryDeleteConversation(conversation, out _);
-
-        private bool TryDeleteConversation(
-            CopilotConversationRecord? conversation,
-            out string deletedTitle)
+        private async Task DeleteConversationAsync(
+            CopilotConversationRecord? conversation)
         {
-            deletedTitle = string.Empty;
+            await TryDeleteConversationAsync(conversation);
+        }
+
+        private async Task<CopilotConversationDeletionResult> TryDeleteConversationAsync(
+            CopilotConversationRecord? conversation)
+        {
             if (!CanDeleteConversation(conversation))
-                return false;
+                return CopilotConversationDeletionResult.NotDeleted;
 
             var target = conversation!;
             var activeBackgroundCommands =
@@ -249,7 +252,7 @@ namespace ColorVision.Copilot
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
-                return false;
+                return CopilotConversationDeletionResult.NotDeleted;
             }
             var retentionBlocker = GetConversationRetentionBlocker(target);
             if (retentionBlocker != CopilotConversationRetentionBlocker.None)
@@ -261,7 +264,7 @@ namespace ColorVision.Copilot
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
-                return false;
+                return CopilotConversationDeletionResult.NotDeleted;
             }
 
             if (MessageBox.Show(
@@ -273,40 +276,68 @@ namespace ColorVision.Copilot
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
-                return false;
+                return CopilotConversationDeletionResult.NotDeleted;
             }
 
-            deletedTitle = target.Title;
-            var wasSelected = ReferenceEquals(target, SelectedConversation);
-            _conversationTitleCoordinator.Cancel(target.Id);
-            var managedAttachments = target.EnumerateReferencedAttachments().ToArray();
-            ClearAgentRunNoticeForConversation(target.Id);
-            AcknowledgeCompletionNotices(target.Id);
-
-            var currentIndex = Conversations.IndexOf(target);
-            if (!Conversations.Remove(target))
+            _isEndingConversation = true;
+            CommandManager.InvalidateRequerySuggested();
+            try
             {
-                deletedTitle = string.Empty;
-                return false;
+                var hookDiagnostics = await EndConversationSessionAsync(target);
+                if (!Conversations.Contains(target))
+                    return CopilotConversationDeletionResult.NotDeleted;
+
+                var deletedTitle = target.Title;
+                var wasSelected = ReferenceEquals(target, SelectedConversation);
+                _conversationTitleCoordinator.Cancel(target.Id);
+                var managedAttachments = target.EnumerateReferencedAttachments().ToArray();
+                ClearAgentRunNoticeForConversation(target.Id);
+                AcknowledgeCompletionNotices(target.Id);
+
+                var currentIndex = Conversations.IndexOf(target);
+                if (!Conversations.Remove(target))
+                {
+                    _turnRuntime.QueueSessionStart(
+                        target.Id,
+                        CopilotCodexSessionStartSource.Resume);
+                    return CopilotConversationDeletionResult.NotDeleted;
+                }
+
+                RemoveQueuedFollowUpRecoveryRecords(target.Id);
+                CopilotBackgroundShellCommandRegistry.Shared.ClearCompleted(target.Id);
+                CopilotShellCommandOutputArchiveRegistry.Shared.ClearConversation(
+                    target.Id);
+                RemoveManagedAttachmentFiles(managedAttachments);
+
+                if (wasSelected)
+                {
+                    var replacement = CopilotConversationRetentionPolicy.FindNearestActive(
+                        Conversations,
+                        currentIndex)
+                        ?? CreateConversation();
+                    SelectConversation(replacement, persist: false);
+                }
+
+                PersistState(immediate: true);
+                return new CopilotConversationDeletionResult(
+                    true,
+                    deletedTitle,
+                    hookDiagnostics);
             }
-
-            RemoveQueuedFollowUpRecoveryRecords(target.Id);
-            CopilotBackgroundShellCommandRegistry.Shared.ClearCompleted(target.Id);
-            CopilotShellCommandOutputArchiveRegistry.Shared.ClearConversation(
-                target.Id);
-            RemoveManagedAttachmentFiles(managedAttachments);
-
-            if (wasSelected)
+            finally
             {
-                var replacement = CopilotConversationRetentionPolicy.FindNearestActive(
-                    Conversations,
-                    currentIndex)
-                    ?? CreateConversation();
-                SelectConversation(replacement, persist: false);
+                _isEndingConversation = false;
+                CommandManager.InvalidateRequerySuggested();
             }
+        }
 
-            PersistState(immediate: true);
-            return true;
+        private sealed record CopilotConversationDeletionResult(
+            bool Deleted,
+            string DeletedTitle,
+            IReadOnlyList<string> HookDiagnostics)
+        {
+            public static CopilotConversationDeletionResult NotDeleted { get; } =
+                new(false, string.Empty, Array.Empty<string>());
         }
 
         private bool CanDeleteConversation(CopilotConversationRecord? conversation) =>
@@ -319,19 +350,7 @@ namespace ColorVision.Copilot
 
         private void RemoveQueuedFollowUpRecoveryRecords(string conversationId)
         {
-            if (_state.QueuedFollowUpRecoveries == null)
-                return;
-
-            for (var index = _state.QueuedFollowUpRecoveries.Count - 1; index >= 0; index--)
-            {
-                if (string.Equals(
-                    _state.QueuedFollowUpRecoveries[index]?.ConversationId,
-                    conversationId,
-                    StringComparison.Ordinal))
-                {
-                    _state.QueuedFollowUpRecoveries.RemoveAt(index);
-                }
-            }
+            _followUpQueue.RemoveRecoveriesForConversation(conversationId);
         }
 
         private void TogglePinConversation(CopilotConversationRecord? conversation)

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Database;
 using ColorVision.Themes;
+using log4net;
 using System;
 using System.Windows;
 
@@ -10,6 +11,8 @@ namespace ColorVision.Engine.Templates
     /// </summary>
     public partial class TemplateSettingEdit : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(TemplateSettingEdit));
+
         public static TemplateSetting Config => TemplateSetting.Instance;
         public ITemplate ITemplate { get; set; }
         public TemplateSettingEdit(ITemplate template)
@@ -30,8 +33,14 @@ namespace ColorVision.Engine.Templates
             {
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), $"Reset {mysqlCommand.GetMysqlCommandName()} in Database\r\n?", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
-                    MySqlControl.BatchExecuteNonQuery(mysqlCommand.GetRecover());
-                    SymbolCache.Instance.Reload();
+                    try
+                    {
+                        BatchSqlConsumer.ExecuteAfterCommit(mysqlCommand.GetRecover(), SymbolCache.Instance.Reload);
+                    }
+                    catch (BatchExecuteNonQueryException ex)
+                    {
+                        BatchSqlConsumer.ReportUiFailure(log, "重置模板数据库", ex);
+                    }
                 }
             }
             else

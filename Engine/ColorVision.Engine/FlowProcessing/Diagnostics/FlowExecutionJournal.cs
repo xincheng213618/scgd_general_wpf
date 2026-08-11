@@ -12,7 +12,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     internal sealed class FlowExecutionJournal : IFlowExecutionJournal
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowExecutionJournal));
-        private static readonly object WriteLock = new object();
+        private static readonly object WriteLock =
+            FlowDiagnosticsMaintenanceGate.SyncRoot;
 
         private readonly SqlSugarClient db;
         private readonly bool ownsDb;

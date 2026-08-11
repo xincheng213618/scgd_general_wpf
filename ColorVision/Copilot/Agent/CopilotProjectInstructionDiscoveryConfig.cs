@@ -268,6 +268,22 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> AppliedProjectConfigFilePaths { get; init; } = Array.Empty<string>();
 
+        public IReadOnlyList<string> AppliedHookFilePaths { get; init; } = Array.Empty<string>();
+
+        internal IReadOnlyList<CopilotCodexCommandHookDefinition> ConfiguredCommandHooks { get; init; } =
+            Array.Empty<CopilotCodexCommandHookDefinition>();
+
+        internal IReadOnlyList<CopilotCodexConfiguredHookIssue> ConfiguredHookIssues { get; init; } =
+            Array.Empty<CopilotCodexConfiguredHookIssue>();
+
+        public IReadOnlyList<string> AppliedExecPolicyFilePaths { get; init; } = Array.Empty<string>();
+
+        internal IReadOnlyList<CopilotCodexExecPolicyRule> ConfiguredExecPolicyRules { get; init; } =
+            Array.Empty<CopilotCodexExecPolicyRule>();
+
+        internal IReadOnlyList<CopilotCodexExecPolicyIssue> ConfiguredExecPolicyIssues { get; init; } =
+            Array.Empty<CopilotCodexExecPolicyIssue>();
+
         internal IReadOnlyList<CopilotCodexCustomSubagentDefinition> CustomSubagents { get; init; } =
             Array.Empty<CopilotCodexCustomSubagentDefinition>();
 
@@ -394,11 +410,25 @@ namespace ColorVision.Copilot
         public CopilotProjectInstructionConfigSources PluginsEnabledSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
+        public bool ConfiguredErrorOnToolCollisions { get; init; }
+
+        public bool HasErrorOnToolCollisionsOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources ErrorOnToolCollisionsSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
         public bool ConfiguredMentionsV2Enabled { get; init; } = true;
 
         public bool HasMentionsV2EnabledOverride { get; init; }
 
         public CopilotProjectInstructionConfigSources MentionsV2EnabledSource { get; init; } =
+            CopilotProjectInstructionConfigSources.None;
+
+        public bool ConfiguredSkillMcpDependencyInstallEnabled { get; init; } = true;
+
+        public bool HasSkillMcpDependencyInstallEnabledOverride { get; init; }
+
+        public CopilotProjectInstructionConfigSources SkillMcpDependencyInstallEnabledSource { get; init; } =
             CopilotProjectInstructionConfigSources.None;
 
         internal CopilotCodexShellEnvironmentPolicy ConfiguredShellEnvironmentPolicy { get; init; } =
@@ -724,7 +754,9 @@ namespace ColorVision.Copilot
             || HasShellToolEnabledOverride
             || HasHooksEnabledOverride
             || HasPluginsEnabledOverride
+            || HasErrorOnToolCollisionsOverride
             || HasMentionsV2EnabledOverride
+            || HasSkillMcpDependencyInstallEnabledOverride
             || HasShellEnvironmentPolicyOverride
             || HasGoalsEnabledOverride
             || HasDefaultModeRequestUserInputEnabledOverride
@@ -753,7 +785,11 @@ namespace ColorVision.Copilot
             || HasModelAutoCompactTokenLimitOverride
             || HasModelAutoCompactTokenLimitScopeOverride
             || HasModelInstructionsOverride
-            || HasCompactPromptOverride;
+            || HasCompactPromptOverride
+            || ConfiguredCommandHooks.Count > 0
+            || ConfiguredHookIssues.Count > 0
+            || ConfiguredExecPolicyRules.Count > 0
+            || ConfiguredExecPolicyIssues.Count > 0;
 
         public string ConfigSourceLabel => ConfigSources switch
         {
@@ -764,8 +800,7 @@ namespace ColorVision.Copilot
             _ => UsesCodexConfig ? "Codex config.toml" : "ColorVision 默认",
         };
 
-        public bool AllowsProjectCodexConfig => ProjectTrustLevel is not (
-            CopilotCodexProjectTrustLevel.Untrusted or CopilotCodexProjectTrustLevel.Invalid);
+        public bool AllowsProjectCodexConfig => ProjectTrustLevel == CopilotCodexProjectTrustLevel.Trusted;
 
         public string DeveloperInstructionsSourceLabel => DeveloperInstructionsSource switch
         {
@@ -895,10 +930,26 @@ namespace ColorVision.Copilot
             _ => string.Empty,
         };
 
+        public string ErrorOnToolCollisionsSourceLabel => ErrorOnToolCollisionsSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome =>
+                "Codex Home config.toml features.tool_registry.error_on_tool_collisions",
+            CopilotProjectInstructionConfigSources.TrustedProject =>
+                "受信项目 .codex/config.toml features.tool_registry.error_on_tool_collisions",
+            _ => string.Empty,
+        };
+
         public string MentionsV2EnabledSourceLabel => MentionsV2EnabledSource switch
         {
             CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.mentions_v2",
             CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.mentions_v2",
+            _ => string.Empty,
+        };
+
+        public string SkillMcpDependencyInstallEnabledSourceLabel => SkillMcpDependencyInstallEnabledSource switch
+        {
+            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.skill_mcp_dependency_install",
+            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.skill_mcp_dependency_install",
             _ => string.Empty,
         };
 
@@ -1134,7 +1185,7 @@ namespace ColorVision.Copilot
                 "Codex Home trust_level=untrusted；已跳过项目 .codex/config.toml",
             CopilotCodexProjectTrustLevel.Invalid =>
                 "Codex Home trust_level 无效；已保守跳过项目 .codex/config.toml",
-            _ => string.Empty,
+            _ => "项目目录信任未决定；已跳过项目 .codex/config.toml",
         };
     }
 
@@ -1197,8 +1248,12 @@ namespace ColorVision.Copilot
         private const string HooksEnabledFeatureKey = "hooks";
         private const string PluginsEnabledKey = "features.plugins";
         private const string PluginsEnabledFeatureKey = "plugins";
+        private const string ErrorOnToolCollisionsKey = "features.tool_registry.error_on_tool_collisions";
+        private const string ErrorOnToolCollisionsTableKey = "error_on_tool_collisions";
         private const string MentionsV2EnabledKey = "features.mentions_v2";
         private const string MentionsV2EnabledFeatureKey = "mentions_v2";
+        private const string SkillMcpDependencyInstallEnabledKey = "features.skill_mcp_dependency_install";
+        private const string SkillMcpDependencyInstallEnabledFeatureKey = "skill_mcp_dependency_install";
         private const string GoalsEnabledKey = "features.goals";
         private const string GoalsEnabledFeatureKey = "goals";
         private const string DefaultModeRequestUserInputEnabledKey = "features.default_mode_request_user_input";
@@ -1282,11 +1337,29 @@ namespace ColorVision.Copilot
 
             var customSubagents = DiscoverCodexHomeCustomSubagents(
                 normalizedRoot,
+                globalSource,
+                globalConfigPath,
                 out var customSubagentDiscoveryIssues);
+            var configuredHooks = normalizedRoot.Length == 0
+                ? CopilotCodexConfiguredHookDiscoveryResult.Empty
+                : DiscoverConfiguredHooksForLayer(
+                    normalizedRoot,
+                    globalConfigPath,
+                    globalSource,
+                    Path.Combine(normalizedRoot, HooksFileName),
+                    CopilotProjectInstructionConfigSources.CodexHome,
+                    startingOrder: 0);
+            var execPolicy = DiscoverCodexHomeExecPolicy(normalizedRoot);
             options = options with
             {
                 CustomSubagents = customSubagents,
                 CustomSubagentDiscoveryIssues = customSubagentDiscoveryIssues,
+                ConfiguredCommandHooks = configuredHooks.CommandHooks,
+                ConfiguredHookIssues = configuredHooks.Issues,
+                AppliedHookFilePaths = configuredHooks.SourceFilePaths,
+                ConfiguredExecPolicyRules = execPolicy.Rules,
+                ConfiguredExecPolicyIssues = execPolicy.Issues,
+                AppliedExecPolicyFilePaths = execPolicy.SourceFilePaths,
             };
 
             return new CopilotCodexHomeConfigSnapshot(globalSource, options);
@@ -1313,48 +1386,116 @@ namespace ColorVision.Copilot
             if (!options.AllowsProjectCodexConfig)
                 return options;
 
-            var appliedConfigFilePaths = new List<string>();
-            foreach (var directoryPath in EnumerateProjectConfigDirectories(
+            var configDirectories = EnumerateProjectConfigDirectories(
                 normalizedProjectRoot,
-                workingDirectoryPath))
+                workingDirectoryPath);
+            var appliedConfigFilePaths = new List<string>();
+            var appliedHookFilePaths = options.AppliedHookFilePaths.ToList();
+            var configuredCommandHooks = options.ConfiguredCommandHooks
+                .Select(definition => definition.CreateSnapshot())
+                .ToList();
+            var configuredHookIssues = options.ConfiguredHookIssues.ToList();
+            foreach (var directoryPath in configDirectories)
             {
                 var configPath = Path.Combine(directoryPath, ".codex", ConfigFileName);
-                if (!TryReadConfigSource(normalizedProjectRoot, configPath, out var projectSource)
-                    || !TryParseInstructionLayer(projectSource, out var projectLayer))
+                var hasProjectConfig = TryReadConfigSource(
+                    normalizedProjectRoot,
+                    configPath,
+                    out var projectSource);
+                ProjectInstructionConfigLayer? projectLayer = null;
+                if (hasProjectConfig
+                    && TryParseInstructionLayer(projectSource, out var parsedProjectLayer))
                 {
-                    continue;
+                    projectLayer = parsedProjectLayer;
                 }
-                projectLayer = ResolveCompactPromptFile(
-                    projectLayer,
-                    configPath,
-                    normalizedProjectRoot,
-                    allowOutsideRoot: false);
-                projectLayer = ResolveModelInstructionsFile(
-                    projectLayer,
-                    configPath,
-                    normalizedProjectRoot,
-                    allowOutsideRoot: false);
-                if (!HasApplicableOverrides(projectLayer, includeProjectRootMarkers: false))
-                    continue;
+                var hasInstructionAssignments = projectLayer != null;
+                var hasCustomSubagentDeclarations = hasProjectConfig
+                    && HasValidCustomSubagentDeclarations(projectSource);
+                var hasApplicableOverrides = false;
 
-                options = ApplyLayer(
-                    options,
-                    projectLayer,
+                if (hasInstructionAssignments && projectLayer != null)
+                {
+                    projectLayer = ResolveCompactPromptFile(
+                        projectLayer,
+                        configPath,
+                        normalizedProjectRoot,
+                        allowOutsideRoot: false);
+                    projectLayer = ResolveModelInstructionsFile(
+                        projectLayer,
+                        configPath,
+                        normalizedProjectRoot,
+                        allowOutsideRoot: false);
+                    hasApplicableOverrides = HasApplicableOverrides(
+                        projectLayer,
+                        includeProjectRootMarkers: false);
+                    if (hasApplicableOverrides)
+                    {
+                        options = ApplyLayer(
+                            options,
+                            projectLayer,
+                            CopilotProjectInstructionConfigSources.TrustedProject,
+                        includeProjectRootMarkers: false);
+                    }
+                }
+                if (hasApplicableOverrides || hasCustomSubagentDeclarations)
+                    appliedConfigFilePaths.Add(Path.GetFullPath(configPath));
+
+                var hookDiscovery = DiscoverConfiguredHooksForLayer(
+                    normalizedProjectRoot,
+                    configPath,
+                    hasProjectConfig ? projectSource : string.Empty,
+                    Path.Combine(directoryPath, ".codex", HooksFileName),
                     CopilotProjectInstructionConfigSources.TrustedProject,
-                    includeProjectRootMarkers: false);
-                appliedConfigFilePaths.Add(Path.GetFullPath(configPath));
+                    configuredCommandHooks.Count);
+                var remainingHookSlots = Math.Max(
+                    0,
+                    MaximumConfiguredHookHandlers - configuredCommandHooks.Count);
+                configuredCommandHooks.AddRange(hookDiscovery.CommandHooks.Take(remainingHookSlots));
+                configuredHookIssues.AddRange(hookDiscovery.Issues);
+                if (hookDiscovery.CommandHooks.Count > remainingHookSlots)
+                {
+                    configuredHookIssues.Add(new CopilotCodexConfiguredHookIssue(
+                        hookDiscovery.SourceFilePaths.FirstOrDefault() ?? directoryPath,
+                        $"Configured command hooks are limited to {MaximumConfiguredHookHandlers} handlers across active layers."));
+                }
+                appliedHookFilePaths.AddRange(hookDiscovery.SourceFilePaths);
             }
+
+            var projectExecPolicy = DiscoverTrustedProjectExecPolicy(
+                normalizedProjectRoot,
+                configDirectories,
+                options.ConfiguredExecPolicyRules.Count);
+            var configuredExecPolicyRules = options.ConfiguredExecPolicyRules
+                .Select(rule => rule.CreateSnapshot())
+                .Concat(projectExecPolicy.Rules)
+                .Take(MaximumConfiguredExecPolicyRules)
+                .ToArray();
+            var configuredExecPolicyIssues = options.ConfiguredExecPolicyIssues
+                .Concat(projectExecPolicy.Issues)
+                .ToArray();
+            var appliedExecPolicyFilePaths = options.AppliedExecPolicyFilePaths
+                .Concat(projectExecPolicy.SourceFilePaths)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
 
             var customSubagents = ApplyTrustedProjectCustomSubagents(
                 options.CustomSubagents,
                 options.CustomSubagentDiscoveryIssues,
                 normalizedProjectRoot,
-                EnumerateProjectConfigDirectories(normalizedProjectRoot, workingDirectoryPath),
+                configDirectories,
                 out var customSubagentDiscoveryIssues);
             options = options with
             {
                 CustomSubagents = customSubagents,
                 CustomSubagentDiscoveryIssues = customSubagentDiscoveryIssues,
+                ConfiguredCommandHooks = configuredCommandHooks.ToArray(),
+                ConfiguredHookIssues = configuredHookIssues.ToArray(),
+                AppliedHookFilePaths = appliedHookFilePaths
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray(),
+                ConfiguredExecPolicyRules = configuredExecPolicyRules,
+                ConfiguredExecPolicyIssues = configuredExecPolicyIssues,
+                AppliedExecPolicyFilePaths = appliedExecPolicyFilePaths,
             };
 
             return options with
@@ -1515,6 +1656,14 @@ namespace ColorVision.Copilot
                 PluginsEnabledSource = layer.HasPluginsEnabledOverride
                     ? source
                     : current.PluginsEnabledSource,
+                ConfiguredErrorOnToolCollisions = layer.HasErrorOnToolCollisionsOverride
+                    ? layer.ErrorOnToolCollisions
+                    : current.ConfiguredErrorOnToolCollisions,
+                HasErrorOnToolCollisionsOverride = current.HasErrorOnToolCollisionsOverride
+                    || layer.HasErrorOnToolCollisionsOverride,
+                ErrorOnToolCollisionsSource = layer.HasErrorOnToolCollisionsOverride
+                    ? source
+                    : current.ErrorOnToolCollisionsSource,
                 ConfiguredMentionsV2Enabled = layer.HasMentionsV2EnabledOverride
                     ? layer.MentionsV2Enabled
                     : current.ConfiguredMentionsV2Enabled,
@@ -1523,6 +1672,14 @@ namespace ColorVision.Copilot
                 MentionsV2EnabledSource = layer.HasMentionsV2EnabledOverride
                     ? source
                     : current.MentionsV2EnabledSource,
+                ConfiguredSkillMcpDependencyInstallEnabled = layer.HasSkillMcpDependencyInstallEnabledOverride
+                    ? layer.SkillMcpDependencyInstallEnabled
+                    : current.ConfiguredSkillMcpDependencyInstallEnabled,
+                HasSkillMcpDependencyInstallEnabledOverride = current.HasSkillMcpDependencyInstallEnabledOverride
+                    || layer.HasSkillMcpDependencyInstallEnabledOverride,
+                SkillMcpDependencyInstallEnabledSource = layer.HasSkillMcpDependencyInstallEnabledOverride
+                    ? source
+                    : current.SkillMcpDependencyInstallEnabledSource,
                 ConfiguredShellEnvironmentPolicy = layer.ShellEnvironmentPolicyLayer.HasAssignment
                     && current.ShellEnvironmentPolicyError.Length == 0
                         ? CopilotCodexShellEnvironmentPolicyMerge.Apply(
@@ -1808,7 +1965,9 @@ namespace ColorVision.Copilot
                 || layer.HasShellToolEnabledOverride
                 || layer.HasHooksEnabledOverride
                 || layer.HasPluginsEnabledOverride
+                || layer.HasErrorOnToolCollisionsOverride
                 || layer.HasMentionsV2EnabledOverride
+                || layer.HasSkillMcpDependencyInstallEnabledOverride
                 || layer.ShellEnvironmentPolicyLayer.HasAssignment
                 || layer.HasGoalsEnabledOverride
                 || layer.HasDefaultModeRequestUserInputEnabledOverride
@@ -2113,7 +2272,9 @@ namespace ColorVision.Copilot
             var shellToolEnabled = true;
             var hooksEnabled = true;
             var pluginsEnabled = true;
+            var errorOnToolCollisions = false;
             var mentionsV2Enabled = true;
+            var skillMcpDependencyInstallEnabled = true;
             var goalsEnabled = true;
             var defaultModeRequestUserInputEnabled = false;
             var experimentalRequestUserInputEnabled = true;
@@ -2169,7 +2330,9 @@ namespace ColorVision.Copilot
             var hasShellToolEnabledOverride = false;
             var hasHooksEnabledOverride = false;
             var hasPluginsEnabledOverride = false;
+            var hasErrorOnToolCollisionsOverride = false;
             var hasMentionsV2EnabledOverride = false;
+            var hasSkillMcpDependencyInstallEnabledOverride = false;
             var hasGoalsEnabledOverride = false;
             var hasDefaultModeRequestUserInputEnabledOverride = false;
             var hasExperimentalRequestUserInputEnabledOverride = false;
@@ -2452,6 +2615,18 @@ namespace ColorVision.Copilot
                     continue;
                 }
 
+                if (string.Equals(assignment.Key, ErrorOnToolCollisionsKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out errorOnToolCollisions))
+                    {
+                        continue;
+                    }
+                    hasErrorOnToolCollisionsOverride = true;
+                    continue;
+                }
+
                 if (string.Equals(assignment.Key, MentionsV2EnabledKey, StringComparison.Ordinal))
                 {
                     if (!TryParseTomlBoolean(
@@ -2461,6 +2636,18 @@ namespace ColorVision.Copilot
                         continue;
                     }
                     hasMentionsV2EnabledOverride = true;
+                    continue;
+                }
+
+                if (string.Equals(assignment.Key, SkillMcpDependencyInstallEnabledKey, StringComparison.Ordinal))
+                {
+                    if (!TryParseTomlBoolean(
+                        assignment.Value,
+                        out skillMcpDependencyInstallEnabled))
+                    {
+                        continue;
+                    }
+                    hasSkillMcpDependencyInstallEnabledOverride = true;
                     continue;
                 }
 
@@ -2943,8 +3130,12 @@ namespace ColorVision.Copilot
                 HasHooksEnabledOverride = hasHooksEnabledOverride,
                 PluginsEnabled = pluginsEnabled,
                 HasPluginsEnabledOverride = hasPluginsEnabledOverride,
+                ErrorOnToolCollisions = errorOnToolCollisions,
+                HasErrorOnToolCollisionsOverride = hasErrorOnToolCollisionsOverride,
                 MentionsV2Enabled = mentionsV2Enabled,
                 HasMentionsV2EnabledOverride = hasMentionsV2EnabledOverride,
+                SkillMcpDependencyInstallEnabled = skillMcpDependencyInstallEnabled,
+                HasSkillMcpDependencyInstallEnabledOverride = hasSkillMcpDependencyInstallEnabledOverride,
                 ShellEnvironmentPolicyLayer = shellEnvironmentPolicyLayer,
                 GoalsEnabled = goalsEnabled,
                 HasGoalsEnabledOverride = hasGoalsEnabledOverride,
@@ -3019,7 +3210,9 @@ namespace ColorVision.Copilot
                 || hasShellToolEnabledOverride
                 || hasHooksEnabledOverride
                 || hasPluginsEnabledOverride
+                || hasErrorOnToolCollisionsOverride
                 || hasMentionsV2EnabledOverride
+                || hasSkillMcpDependencyInstallEnabledOverride
                 || shellEnvironmentPolicyLayer.HasAssignment
                 || hasGoalsEnabledOverride
                 || hasDefaultModeRequestUserInputEnabledOverride
@@ -3105,7 +3298,7 @@ namespace ColorVision.Copilot
             return result;
         }
 
-        private static bool TryParseProjectTableHeader(string line, out string normalizedProjectPath)
+        internal static bool TryParseProjectTableHeader(string line, out string normalizedProjectPath)
         {
             normalizedProjectPath = string.Empty;
             if (line.Length < 4
@@ -3177,6 +3370,7 @@ namespace ColorVision.Copilot
             var lines = NormalizeLines(source);
             var inRootTable = true;
             var inFeaturesTable = false;
+            var inToolRegistryTable = false;
             var inAgentsTable = false;
             var inAutoReviewTable = false;
             var inExperimentalRequestUserInputTable = false;
@@ -3191,6 +3385,7 @@ namespace ColorVision.Copilot
                 {
                     inRootTable = false;
                     inFeaturesTable = IsExactTableHeader(line, "features");
+                    inToolRegistryTable = IsExactTableHeader(line, "features.tool_registry");
                     inAgentsTable = IsExactTableHeader(line, "agents");
                     inAutoReviewTable = IsExactTableHeader(line, "auto_review");
                     inExperimentalRequestUserInputTable = IsExactTableHeader(
@@ -3213,6 +3408,7 @@ namespace ColorVision.Copilot
                         HooksEnabledFeatureKey => HooksEnabledKey,
                         PluginsEnabledFeatureKey => PluginsEnabledKey,
                         MentionsV2EnabledFeatureKey => MentionsV2EnabledKey,
+                        SkillMcpDependencyInstallEnabledFeatureKey => SkillMcpDependencyInstallEnabledKey,
                         GuardianApprovalEnabledFeatureKey => GuardianApprovalEnabledKey,
                         PersonalityEnabledFeatureKey => PersonalityEnabledKey,
                         FastModeEnabledFeatureKey => FastModeEnabledKey,
@@ -3224,6 +3420,9 @@ namespace ColorVision.Copilot
                         LegacyWebSearchRequestFeatureKey => LegacyWebSearchRequestKey,
                         _ => string.Empty,
                     }
+                        : inToolRegistryTable
+                            && string.Equals(parsedKey, ErrorOnToolCollisionsTableKey, StringComparison.Ordinal)
+                                ? ErrorOnToolCollisionsKey
                         : inAgentsTable
                             ? parsedKey switch
                             {
@@ -3271,7 +3470,9 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, ShellToolEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, HooksEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, PluginsEnabledKey, StringComparison.Ordinal)
+                    && !string.Equals(key, ErrorOnToolCollisionsKey, StringComparison.Ordinal)
                     && !string.Equals(key, MentionsV2EnabledKey, StringComparison.Ordinal)
+                    && !string.Equals(key, SkillMcpDependencyInstallEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, GoalsEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, DefaultModeRequestUserInputEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, ExperimentalRequestUserInputEnabledKey, StringComparison.Ordinal)
@@ -3393,7 +3594,7 @@ namespace ColorVision.Copilot
                 .Replace('\r', '\n')
                 .Split('\n');
 
-        private static string StripComment(string line)
+        internal static string StripComment(string line)
         {
             var quote = '\0';
             var escaped = false;
@@ -4209,9 +4410,17 @@ namespace ColorVision.Copilot
 
             public bool HasPluginsEnabledOverride { get; init; }
 
+            public bool ErrorOnToolCollisions { get; init; }
+
+            public bool HasErrorOnToolCollisionsOverride { get; init; }
+
             public bool MentionsV2Enabled { get; init; } = true;
 
             public bool HasMentionsV2EnabledOverride { get; init; }
+
+            public bool SkillMcpDependencyInstallEnabled { get; init; } = true;
+
+            public bool HasSkillMcpDependencyInstallEnabledOverride { get; init; }
 
             public CopilotCodexShellEnvironmentPolicyLayer ShellEnvironmentPolicyLayer { get; init; } =
                 CopilotCodexShellEnvironmentPolicyLayer.Empty;

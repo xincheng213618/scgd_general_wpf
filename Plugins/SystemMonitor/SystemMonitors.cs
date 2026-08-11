@@ -145,11 +145,30 @@ namespace ColorVision.UI.Configs
         private bool _IsShowDisk;
     }
 
-    public class SystemMonitors : ViewModelBase, IDisposable
+    public interface ISystemMonitorStatusSource
+    {
+        double GetMaximumDiskUsage();
+    }
+
+    public interface ISystemMonitorConfigurable
+    {
+        void UpdateConfiguration(SystemMonitorSetting config);
+    }
+
+    public class SystemMonitors : ViewModelBase, IDisposable, ISystemMonitorStatusSource, ISystemMonitorConfigurable
     {
         private static SystemMonitors? _instance;
         private static readonly object _locker = new();
-        public static SystemMonitors GetInstance() { lock (_locker) { return _instance ??= new SystemMonitors(); } }
+        public static SystemMonitors GetInstance()
+        {
+            lock (_locker)
+            {
+                var config = ConfigService.Instance.GetRequiredService<SystemMonitorSetting>();
+                var monitor = _instance ??= new SystemMonitors(config);
+                monitor.UpdateConfiguration(config);
+                return monitor;
+            }
+        }
 
         private volatile bool _isDisposed;
         private readonly object _perfCounterLock = new();
@@ -286,8 +305,13 @@ namespace ColorVision.UI.Configs
         }
 
         public SystemMonitors()
+            : this(ConfigService.Instance.GetRequiredService<SystemMonitorSetting>())
         {
-            Config = ConfigService.Instance.GetRequiredService<SystemMonitorSetting>();
+        }
+
+        private SystemMonitors(SystemMonitorSetting config)
+        {
+            Config = config;
             Config.PropertyChanged += Config_PropertyChanged;
             _totalRAMGB = (double)Common.NativeMethods.PerformanceInfo.GetTotalMemoryInMiB() / 1024;
             CPUStatusText = FormatUsageStatus(Resources.CPU, 0);
@@ -341,6 +365,23 @@ namespace ColorVision.UI.Configs
             LoadTopProcesses();
 
             UpdateTimerState();
+        }
+
+        public void UpdateConfiguration(SystemMonitorSetting config)
+        {
+            if (ReferenceEquals(Config, config))
+                return;
+
+            Config.PropertyChanged -= Config_PropertyChanged;
+            Config = config;
+            Config.PropertyChanged += Config_PropertyChanged;
+            OnPropertyChanged(nameof(UpdateSpeed));
+            UpdateTimerState(restart: true);
+        }
+
+        public double GetMaximumDiskUsage()
+        {
+            return Drives.Any() ? Drives.Max(drive => drive.UsagePercent) : 0;
         }
 
         private bool IsDetailViewActive => Volatile.Read(ref _activeDetailViewCount) > 0;

@@ -162,21 +162,6 @@ namespace ColorVision.Common.Utilities
             return bitmapSource;
         }
 
-        private static BitmapImage ToBitmapImage(System.Drawing.Bitmap bitmap)
-        {
-            BitmapImage bitmapImage = new BitmapImage();
-            using (MemoryStream memory = new())
-            {
-                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
-                memory.Position = 0;
-                bitmapImage.BeginInit();
-                bitmapImage.StreamSource = memory;
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.EndInit();
-            }
-            return bitmapImage;
-        }
-
         public static BitmapImage CreateBitmapImage(byte[] imageData)
         {
             BitmapImage bitmapImage = new BitmapImage();

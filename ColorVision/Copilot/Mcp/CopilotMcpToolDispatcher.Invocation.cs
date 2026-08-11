@@ -54,24 +54,24 @@ namespace ColorVision.Copilot.Mcp
             executionScope = EnsureWorkspaceScope(executionScope);
             var normalizedToolName = NormalizeToolName(toolName);
             var stopwatch = Stopwatch.StartNew();
-            CopilotMcpAuditLogger.ToolCallStarted(normalizedToolName, BuildArgumentSummary(arguments), executionScope);
+            CopilotMcpAuditLogger.ToolCallStarted(normalizedToolName, BuildAuditArgumentSummary(arguments), executionScope);
 
             try
             {
                 var result = await _router.DispatchAsync(normalizedToolName, arguments, executionScope, cancellationToken);
 
-                CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, result.Success, stopwatch.Elapsed, result.Success ? "OK" : result.Text);
+                CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, result.Success, stopwatch.Elapsed, result.Success ? "OK" : FirstNonEmpty(result.ErrorCode, "tool_call_failed"));
                 return result;
             }
             catch (OperationCanceledException)
             {
-                CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, false, stopwatch.Elapsed, "The MCP tool call was canceled.");
+                CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, false, stopwatch.Elapsed, "operation_canceled");
                 throw;
             }
             catch (Exception ex)
             {
-                CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, false, stopwatch.Elapsed, ex.Message);
-                return CopilotMcpToolCallResult.Fail("internal_error", $"The MCP tool call failed: {ex.Message}");
+                CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, false, stopwatch.Elapsed, "internal_error");
+                return CopilotMcpToolCallResult.Fail("internal_error", $"The MCP tool call failed: {CopilotMcpAuditLogger.RedactText(ex.Message)}");
             }
         }
 

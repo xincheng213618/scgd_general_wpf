@@ -515,9 +515,12 @@ namespace ColorVision.Copilot
             }
             AppendPreventIdleSleep(builder, codexConfigOptions);
             AppendShellToolEnabled(builder, codexConfigOptions);
+            AppendExecPolicy(builder, codexConfigOptions);
             AppendHooksEnabled(builder, codexConfigOptions);
             AppendPluginsEnabled(builder, codexConfigOptions);
+            AppendToolRegistryCollisionPolicy(builder, codexConfigOptions);
             AppendMentionsV2Enabled(builder, codexConfigOptions);
+            AppendSkillMcpDependencyInstallEnabled(builder, codexConfigOptions);
             AppendShellEnvironmentPolicy(builder, codexConfigOptions);
             AppendGoalsEnabled(builder, codexConfigOptions);
             AppendDefaultModeRequestUserInputEnabled(builder, codexConfigOptions);
@@ -837,6 +840,10 @@ namespace ColorVision.Copilot
             StringBuilder builder,
             CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
         {
+            var synchronousHookCount = codexConfigOptions.ConfiguredCommandHooks.Count(
+                hook => hook.ExecutionMode == CopilotToolExecutionHookMode.Sync);
+            var asynchronousHookCount = codexConfigOptions.ConfiguredCommandHooks.Count(
+                hook => hook.ExecutionMode == CopilotToolExecutionHookMode.Async);
             builder.Append("- Codex features.hooks：")
                 .Append(codexConfigOptions.ConfiguredHooksEnabled ? "true" : "false");
             if (codexConfigOptions.HasHooksEnabledOverride)
@@ -851,12 +858,41 @@ namespace ColorVision.Copilot
             {
                 builder.Append(" · 官方默认");
             }
-            builder.AppendLine(codexConfigOptions.ConfiguredHooksEnabled
-                    && codexConfigOptions.ConfiguredPluginsEnabled
-                ? " · ColorVision 模块扩展授权与生命周期 Hook 可运行；内置写入安全策略始终保留"
-                : codexConfigOptions.ConfiguredHooksEnabled
-                    ? " · features.plugins=false，模块扩展 Hook 已省略；内置写入安全策略仍保留"
-                    : " · 模块扩展授权与生命周期 Hook 已省略；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
+            if (codexConfigOptions.ConfiguredHooksEnabled)
+            {
+                builder.Append(codexConfigOptions.ConfiguredPluginsEnabled
+                    ? " · ColorVision 模块扩展 Hook 可运行"
+                    : " · features.plugins=false，模块扩展 Hook 已省略");
+                builder.Append("；受信任 hooks.json 命令 Hook 可运行");
+            }
+            else
+            {
+                builder.Append(" · 模块扩展与 hooks.json 命令 Hook 已省略");
+            }
+            builder.Append("；已加载命令 Hook ")
+                .Append(codexConfigOptions.ConfiguredCommandHooks.Count)
+                .Append(" 个（同步 ")
+                .Append(synchronousHookCount)
+                .Append(" / 异步 ")
+                .Append(asynchronousHookCount)
+                .Append("） / 来源文件 ")
+                .Append(codexConfigOptions.AppliedHookFilePaths.Count)
+                .Append(" 个 / 配置问题 ")
+                .Append(codexConfigOptions.ConfiguredHookIssues.Count)
+                .AppendLine(" 个；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
+        }
+
+        private static void AppendExecPolicy(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex exec policy：已加载规则 ")
+                .Append(codexConfigOptions.ConfiguredExecPolicyRules.Count)
+                .Append(" 个 / 来源文件 ")
+                .Append(codexConfigOptions.AppliedExecPolicyFilePaths.Count)
+                .Append(" 个 / 配置问题 ")
+                .Append(codexConfigOptions.ConfiguredExecPolicyIssues.Count)
+                .AppendLine(" 个 · 全局与受信任项目 rules/*.rules · 提交时冻结 · forbidden > prompt > allow");
         }
 
         private static void AppendPluginsEnabled(
@@ -903,6 +939,52 @@ namespace ColorVision.Copilot
             builder.AppendLine(codexConfigOptions.ConfiguredMentionsV2Enabled
                 ? " · @ 使用统一候选，合并 Skill、模板、菜单与工作区文件"
                 : " · @ 回退为旧版文件候选，不列出 Skill、模板或菜单；已有附件与已关联上下文不受影响");
+        }
+
+        private static void AppendToolRegistryCollisionPolicy(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex features.tool_registry.error_on_tool_collisions：")
+                .Append(codexConfigOptions.ConfiguredErrorOnToolCollisions ? "true" : "false");
+            if (codexConfigOptions.HasErrorOnToolCollisionsOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.ErrorOnToolCollisionsSourceLabel.Length == 0
+                        ? "Codex config.toml features.tool_registry.error_on_tool_collisions"
+                        : codexConfigOptions.ErrorOnToolCollisionsSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredErrorOnToolCollisions
+                ? " · 重复有效工具名会在模型请求前终止本轮"
+                : " · 保留先注册工具并诊断跳过重复项");
+        }
+
+        private static void AppendSkillMcpDependencyInstallEnabled(
+            StringBuilder builder,
+            CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
+        {
+            builder.Append("- Codex features.skill_mcp_dependency_install：")
+                .Append(codexConfigOptions.ConfiguredSkillMcpDependencyInstallEnabled ? "true" : "false");
+            if (codexConfigOptions.HasSkillMcpDependencyInstallEnabledOverride)
+            {
+                builder.Append(" · 来源 ")
+                    .Append(codexConfigOptions.SkillMcpDependencyInstallEnabledSourceLabel.Length == 0
+                        ? "Codex config.toml features.skill_mcp_dependency_install"
+                        : codexConfigOptions.SkillMcpDependencyInstallEnabledSourceLabel)
+                    .Append(" · 提交快照");
+            }
+            else
+            {
+                builder.Append(" · 官方默认");
+            }
+            builder.AppendLine(codexConfigOptions.ConfiguredSkillMcpDependencyInstallEnabled
+                ? " · 显式 Skill 的缺失 MCP 仅在原生确认后写入；继续执行不会修改配置"
+                : " · 不提示或安装 Skill MCP 依赖；已有外部 MCP 配置保持有效");
         }
 
         private static void AppendIncludePermissionsInstructions(

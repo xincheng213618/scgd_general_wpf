@@ -130,7 +130,9 @@ namespace ProjectKB
 
         public KBRecipeConfig CreateRecipeFromDefault()
         {
-            return DefaultRecipeConfig.Clone();
+            KBRecipeConfig recipeConfig = new();
+            recipeConfig.CopyFrom(DefaultRecipeConfig);
+            return recipeConfig;
         }
 
         public void CopyRecipe(KBRecipeConfig source, KBRecipeConfig target)
@@ -141,6 +143,15 @@ namespace ProjectKB
         public void ApplyDefaultTo(KBRecipeConfig target)
         {
             target.CopyFrom(DefaultRecipeConfig);
+        }
+
+        public void ApplyDefaultToAll()
+        {
+            SyncTemplateRecipes(removeDeletedRecipes: true);
+            foreach (KBRecipeConfig config in RecipeConfigs.Values)
+            {
+                ApplyDefaultTo(config);
+            }
         }
 
         public void SetDefaultFrom(KBRecipeConfig source)

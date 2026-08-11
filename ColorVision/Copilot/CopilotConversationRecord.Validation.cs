@@ -180,9 +180,22 @@ namespace ColorVision.Copilot
             }
 
             var lastUserRequestMode = CopilotAgentMode.Chat;
+            var messageIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var message in Messages)
             {
                 changed |= message.EnsureValid();
+                if (!messageIds.Add(message.Id))
+                {
+                    string replacementId;
+                    do
+                    {
+                        replacementId = Guid.NewGuid().ToString("N");
+                    }
+                    while (!messageIds.Add(replacementId));
+
+                    message.Id = replacementId;
+                    changed = true;
+                }
                 if (message.IsUser)
                 {
                     lastUserRequestMode = message.RequestMode;
@@ -192,6 +205,11 @@ namespace ColorVision.Copilot
                     message.RequestMode = lastUserRequestMode;
                     changed = true;
                 }
+            }
+            if (AgentActivity != null && !HasValidAgentActivitySource())
+            {
+                AgentActivity = null;
+                changed = true;
             }
             var lastAssistantMessage = Messages.LastOrDefault(message =>
                 !message.IsUser

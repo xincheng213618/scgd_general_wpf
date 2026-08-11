@@ -5,6 +5,7 @@ using OpenAI.Responses;
 using System;
 using System.ClientModel.Primitives;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -147,7 +148,7 @@ namespace ColorVision.Copilot
 
         private static bool TryGetMessageHistoryJson(
             AdditionalPropertiesDictionary? properties,
-            out string? json)
+            [NotNullWhen(true)] out string? json)
         {
             json = null;
             if (properties?.TryGetValue(ResponseMessageJsonKey, out var value) != true)

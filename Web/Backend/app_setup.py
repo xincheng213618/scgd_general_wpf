@@ -7,10 +7,10 @@ Extracted from app.py to keep the main module as a thin assembly layer.
 from __future__ import annotations
 
 import atexit
-import json
 import sqlite3
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from flask import Flask, jsonify, request
 from markupsafe import Markup
@@ -62,32 +62,38 @@ def render_markdown(text: str | None) -> Markup:
     return Markup(_markdown_mod.markdown(text, extensions=["extra", "sane_lists", "nl2br"], output_format="html5"))
 
 
-def _dynamic_storage():
-    """Read storage from app.STORAGE so test mutations are reflected."""
-    import app as _app
-    return _app.STORAGE
+@dataclass
+class RuntimeState:
+    """Mutable runtime values owned by the composition root."""
+
+    config: dict[str, Any]
+    storage: Path
+    db_path: Path
 
 
-def _dynamic_config():
-    """Read config from app.CONFIG so test mutations are reflected."""
-    import app as _app
-    return _app.CONFIG
+@dataclass(frozen=True)
+class RuntimeOverrides:
+    """Outermost compatibility adapter for legacy ``app`` mutations.
+
+    Remove after external consumers stop assigning ``app.CONFIG``,
+    ``app.STORAGE`` and ``app.DB_PATH`` directly.
+    """
+
+    config: Callable[[], dict[str, Any] | None]
+    storage: Callable[[], Path | None]
+    db_path: Callable[[], Path | None]
 
 
-def _dynamic_db_path():
-    """Read the active DB path so queued analytics never cross test databases."""
-    import app as _app
-    return Path(_app.DB_PATH)
-
-
-def create_app_and_context():
+def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
     """Create Flask app, CacheManager, services, and context.
 
     Returns (app, ctx, SERVICES) where ctx is a MarketplaceContext.
     """
     from db.schema_version import ensure_schema_version
     from marketplace_services import MarketplaceCacheSettings, MarketplaceDataService
-    from services.auth_middleware import check_web_session_auth, make_require_upload_auth
+    from routes.auth_adapters import check_web_session_auth, make_require_upload_auth
+    from routes.request_context import current_request_context
+    from services.auth_policy import AuthPolicy
 
     base_dir = Path(__file__).resolve().parent
     config = load_config()
@@ -98,6 +104,20 @@ def create_app_and_context():
     app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_SIZE_BYTES
 
     db_path = base_dir / "marketplace.db"
+    runtime = RuntimeState(config=config, storage=storage, db_path=db_path)
+
+    def active_config() -> dict[str, Any]:
+        override = runtime_overrides.config() if runtime_overrides else None
+        return override if override is not None else runtime.config
+
+    def active_storage() -> Path:
+        override = runtime_overrides.storage() if runtime_overrides else None
+        return Path(override) if override is not None else runtime.storage
+
+    def active_db_path() -> Path:
+        override = runtime_overrides.db_path() if runtime_overrides else None
+        return Path(override) if override is not None else runtime.db_path
+
     cache = CacheManager(db_path)
     cache.init_db()
 
@@ -116,16 +136,13 @@ def create_app_and_context():
     )
     atexit.register(access_recorder.close)
 
-    # Helpers — get_db reads from app.DB_PATH so test mutations are reflected
     def get_db():
-        import app as _app
-        db = sqlite3.connect(str(_app.DB_PATH))
+        db = sqlite3.connect(str(active_db_path()))
         db.row_factory = sqlite3.Row
         return db
 
     def get_upload_auth():
-        import app as _app
-        return get_upload_auth_impl(_app.CONFIG)
+        return get_upload_auth_impl(active_config())
 
     def json_error(message, status_code, **details):
         payload = {"error": message, "status": status_code}
@@ -149,12 +166,12 @@ def create_app_and_context():
         except (OSError, UnicodeDecodeError):
             return None
 
-    require_upload_auth = make_require_upload_auth(cache, get_upload_auth, json_error)
+    auth_policy = AuthPolicy(cache, get_upload_auth)
+    require_upload_auth = make_require_upload_auth(auth_policy, json_error)
 
-    # Service layer — storage_getter reads from app.STORAGE so test mutations are reflected
     services = MarketplaceDataService(
-        storage_getter=_dynamic_storage,
-        config_getter=_dynamic_config,
+        storage_getter=active_storage,
+        config_getter=active_config,
         get_cache_entry=cache.get_cache_entry,
         set_cache_entry=cache.set_cache_entry,
         refresh_related_caches=cache.refresh_related_caches,
@@ -182,14 +199,18 @@ def create_app_and_context():
 
     ctx = MarketplaceContext(
         config=config, _storage=storage, db_path=db_path, cache=cache,
+        storage_getter=active_storage, config_getter=active_config,
+        db_path_getter=active_db_path,
         get_db=get_db, init_db=lambda: None,
         is_safe_id=is_safe_id, is_safe_version=is_safe_version,
         sanitize_filename=sanitize_filename, normalize_relative_path=normalize_relative_path,
-        storage_target=lambda rp: storage_target_impl(storage, rp),
+        storage_target=lambda rp: storage_target_impl(active_storage(), rp),
         get_cache_entry=cache.get_cache_entry, set_cache_entry=cache.set_cache_entry,
         invalidate_cache_prefix=cache.invalidate_cache_prefix,
         refresh_related_caches=cache.refresh_related_caches,
         get_upload_auth=get_upload_auth,
+        auth_policy=auth_policy,
+        request_context_factory=current_request_context,
         services=services, human_size=human_size, render_markdown=render_markdown,
         render_markdown_cached=render_markdown_cached,
         json_error=json_error,
@@ -199,6 +220,10 @@ def create_app_and_context():
         "config": config, "storage": storage, "db_path": db_path, "cache": cache,
         "get_db": get_db, "get_upload_auth": get_upload_auth, "json_error": json_error,
         "require_upload_auth": require_upload_auth, "read_text_file": read_text_file,
+        "auth_policy": auth_policy, "request_context_factory": current_request_context,
+        "check_web_session_auth": check_web_session_auth,
+        "runtime": runtime, "active_config": active_config,
+        "active_storage": active_storage, "active_db_path": active_db_path,
         "render_markdown_cached": render_markdown_cached,
         "access_recorder": access_recorder,
     }
@@ -245,7 +270,7 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
                     )
 
                     route_rule = request.url_rule.rule if request.url_rule is not None else None
-                    config = _dynamic_config()
+                    config = getattr(ctx, "active_config", None) or load_config()
                     if (
                         config.get("access_analytics_enabled", True)
                         and should_record_access(route_rule, request.method)
@@ -269,7 +294,11 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
                         )
                         access_recorder.submit(
                             event,
-                            db_path=_dynamic_db_path(),
+                            db_path=getattr(
+                                ctx,
+                                "active_db_path",
+                                Path(__file__).resolve().parent / "marketplace.db",
+                            ),
                             synchronous=bool(app.config.get("TESTING")),
                         )
                 except Exception as exc:
@@ -293,24 +322,22 @@ def register_all_blueprints(app, ctx, services, helpers):
     from routes.docs_site import register_docs_site
     from routes.frontend_spa import FrontendSpaContext, register_frontend_spa
     from marketplace_api_routes import MarketplaceApiRouteContext, register_marketplace_api_routes
-    from catalog_view_models import (
-        ALLOWED_CATALOG_SORTS, ALLOWED_CATALOG_SORT_ORDERS,
-        build_plugin_search_api_result, build_plugin_detail_api_result,
-        collect_catalog_categories, normalize_catalog_sort_name,
+    from services.marketplace_api import (
+        MarketplaceApiServices,
+        MarketplaceCatalogService,
+        MarketplacePackageService,
+        MarketplaceStorageService,
     )
-    from package_publish import extract_package_version as _extract_pkg_ver
-    from plugin_marketplace import prewarm_plugin_metadata
-    from services.storage_events import _refresh_plugin_index
 
     cache = helpers["cache"]
     config = helpers["config"]
-    storage = _dynamic_storage()  # Always reads from app.STORAGE
+    storage = ctx.storage
 
     # Public pages (login/logout)
     register_public_pages(app, PublicPageContext(
         cache=cache, storage=storage, config=config,
         get_upload_auth=helpers["get_upload_auth"],
-        check_web_session_auth=lambda: __import__("flask").session.get("authenticated", False),
+        check_web_session_auth=helpers["check_web_session_auth"],
         dist_dir=Path(__file__).resolve().parents[1] / "Frontend" / "dist",
     ))
 
@@ -321,7 +348,7 @@ def register_all_blueprints(app, ctx, services, helpers):
     register_public_api(app, ctx)
 
     # Page routes
-    register_pages(app, services)
+    register_pages(app, ctx)
 
     # CVWindowsService
     register_cvws_api(app, ctx)
@@ -330,106 +357,67 @@ def register_all_blueprints(app, ctx, services, helpers):
     register_spectrum_api(app, ctx)
 
     # Marketplace API (plugin search, publish, download)
-    def _refresh_plugin_index_on_publish(plugin_id):
-        _refresh_plugin_index(
-            cache, _dynamic_storage(), f"Plugins/{plugin_id}",
-            get_download_counts=services.get_download_counts,
-            get_cache_entry=cache.get_cache_entry,
-            set_cache_entry=cache.set_cache_entry,
-            ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
-            get_request_username=ctx.get_request_username,
-        )
-
-    from flask import request as _req
-    register_marketplace_api_routes(app, MarketplaceApiRouteContext(
-        get_storage=_dynamic_storage,
-        max_upload_size_bytes=MAX_UPLOAD_SIZE_BYTES,
-        parse_int_arg=lambda *a, **kw: _parse_int_arg(_req, *a, **kw),
-        normalize_catalog_sort_name=normalize_catalog_sort_name,
-        allowed_catalog_sorts=ALLOWED_CATALOG_SORTS,
-        allowed_catalog_sort_orders=ALLOWED_CATALOG_SORT_ORDERS,
-        build_plugin_search_api_result=build_plugin_search_api_result,
-        build_plugin_detail_api_result=lambda info, *, icon_url_builder: build_plugin_detail_api_result(
-            info,
-            icon_url_builder=icon_url_builder,
+    marketplace_storage = MarketplaceStorageService(lambda: ctx.storage)
+    marketplace_api_services = MarketplaceApiServices(
+        catalog=MarketplaceCatalogService(
+            services,
+            cache,
+            storage_getter=lambda: ctx.storage,
             render_markdown=helpers["render_markdown_cached"],
         ),
-        collect_catalog_categories=collect_catalog_categories,
-        get_request_plugin_catalog=lambda: services.get_request_plugin_catalog(),
-        build_plugin_icon_url=lambda pid: f"/plugins/{pid}/icon",
-        get_plugin_info=services.get_plugin_info,
-        get_request_download_counts=services.get_request_download_counts,
-        read_text_file=helpers["read_text_file"],
-        is_safe_id=is_safe_id, is_safe_version=is_safe_version,
-        sanitize_filename=sanitize_filename,
-        version_tuple=lambda v: tuple(int(x) for x in v.split(".") if x.isdigit()),
-        extract_package_version=lambda fn, pid: _extract_pkg_ver(fn, pid, sanitize_filename=sanitize_filename, validate_version=is_safe_version),
-        load_manifest=lambda p: json.loads(p.read_text(encoding="utf-8")) if p.exists() else {},
-        refresh_related_caches=cache.refresh_related_caches,
-        get_download_counts=services.get_download_counts,
-        get_cache_entry=cache.get_cache_entry,
-        set_cache_entry=cache.set_cache_entry,
-        record_download=lambda pid, ver: services.record_download(pid, ver),
-        normalize_relative_path=normalize_relative_path,
-        is_root_release_file=lambda p: p.parent == storage and p.suffix.lower() in (".exe", ".zip", ".rar"),
-        reconcile_app_release_history=services.reconcile_app_release_history,
-        reconcile_plugin_package_history=services.reconcile_plugin_package_history,
+        packages=MarketplacePackageService(
+            services,
+            cache,
+            marketplace_storage,
+            max_upload_size_bytes=MAX_UPLOAD_SIZE_BYTES,
+        ),
+        storage=marketplace_storage,
+    )
+    register_marketplace_api_routes(app, MarketplaceApiRouteContext(
+        services=marketplace_api_services,
         require_upload_auth=helpers["require_upload_auth"],
-        refresh_plugin_index_on_publish=_refresh_plugin_index_on_publish,
-        cache=cache,
+        request_context_factory=helpers["request_context_factory"],
     ))
 
-    # Admin API
-    import hmac as _hmac
-
     def _check_admin_auth(required_scopes=None):
-        from flask import session as _session
-        if _session.get("authenticated"):
-            return True
-        auth_header = _req.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            token = auth_header[7:].strip()
-            if token:
-                from services.api_key_service import verify_api_key
-                scopes = required_scopes or ["admin:*"]
-                if verify_api_key(cache, token, required_scopes=scopes):
-                    return True
-        auth = _req.authorization
-        if auth and (auth.type or "").lower() == "basic" and auth.username and auth.password:
-            eu, ep = helpers["get_upload_auth"]()
-            if eu and ep and _hmac.compare_digest(auth.username, eu) and _hmac.compare_digest(auth.password, ep):
-                return True
-        return False
+        from routes.request_context import set_authenticated_request_context
+
+        request_context = helpers["request_context_factory"]()
+        decision = helpers["auth_policy"].authorize(
+            request_context,
+            required_scopes or ["admin:*"],
+        )
+        if decision.allowed:
+            set_authenticated_request_context(request_context.with_actor(decision.principal))
+        return decision.allowed
 
     def _check_transfer_auth(required_scopes=None):
-        from flask import session as _session
-        if _session.get("authenticated") or _session.get("user_authenticated"):
-            return True
-        auth_header = _req.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            token = auth_header[7:].strip()
-            if token:
-                from services.api_key_service import verify_api_key
-                scopes = required_scopes or ["file:transfer"]
-                if verify_api_key(cache, token, required_scopes=scopes):
-                    return True
-        auth = _req.authorization
-        if auth and (auth.type or "").lower() == "basic" and auth.username and auth.password:
-            eu, ep = helpers["get_upload_auth"]()
-            if eu and ep and _hmac.compare_digest(auth.username, eu) and _hmac.compare_digest(auth.password, ep):
-                return True
-        return False
+        from routes.request_context import set_authenticated_request_context
+
+        request_context = helpers["request_context_factory"]()
+        decision = helpers["auth_policy"].authorize(
+            request_context,
+            required_scopes or ["file:transfer"],
+            allow_user_session=True,
+        )
+        if decision.allowed:
+            set_authenticated_request_context(request_context.with_actor(decision.principal))
+        return decision.allowed
 
     from routes.transfer import TransferRouteContext, register_transfer_routes
     register_transfer_routes(app, TransferRouteContext(
-        cache=cache, storage_getter=_dynamic_storage, config_getter=_dynamic_config,
+        cache=cache, storage_getter=lambda: ctx.storage,
+        config_getter=lambda: ctx.active_config,
         check_auth=_check_transfer_auth, human_size=human_size,
     ))
 
     register_admin_api_routes(app, AdminApiContext(
-        cache=cache, storage_getter=_dynamic_storage, config_getter=_dynamic_config,
-        get_db=helpers["get_db"], check_auth=_check_admin_auth,
-        require_auth_decorator=helpers["require_upload_auth"],
+        cache=cache, jobs=cache.jobs,
+        storage_getter=lambda: ctx.storage,
+        config_getter=lambda: ctx.active_config,
+        get_db=helpers["get_db"],
+        auth_policy=helpers["auth_policy"],
+        request_context_factory=helpers["request_context_factory"],
         refresh_plugin_index=lambda c, s, pid, **kw: __import__("services.plugin_index", fromlist=["refresh_plugin_index"]).refresh_plugin_index(c, s, pid, **kw),
         refresh_all_plugin_index=lambda c, s, **kw: __import__("services.plugin_index", fromlist=["refresh_all_plugin_index"]).refresh_all_plugin_index(c, s, **kw),
         get_plugin_index_state=lambda c: __import__("services.plugin_index", fromlist=["get_plugin_index_state"]).get_plugin_index_state(c),
@@ -441,7 +429,7 @@ def register_all_blueprints(app, ctx, services, helpers):
     ))
     register_copilot_config_api_routes(app, CopilotConfigApiContext(
         cache=cache,
-        config_getter=_dynamic_config,
+        config_getter=lambda: ctx.active_config,
     ))
 
     from routes.operations_relay import OperationsRelayContext, register_operations_relay_routes
@@ -459,32 +447,9 @@ def register_all_blueprints(app, ctx, services, helpers):
             warm_latest_version_cache,
             warm_plugin_latest_versions_cache,
         )
-        warm_latest_version_cache(_dynamic_storage())
-        warm_plugin_latest_versions_cache(_dynamic_storage(), cache)
+        warm_latest_version_cache(ctx.storage)
+        warm_plugin_latest_versions_cache(ctx.storage, cache)
         from services.docs_site import get_docs_index
         get_docs_index(cache, refresh_if_missing=True)
     except Exception as exc:
         print(f"[version_cache] startup warm failed: {exc}")
-
-
-def _parse_int_arg(req, *names, default, minimum=None, maximum=None):
-    raw = None
-    for name in names:
-        if name in req.args:
-            raw = req.args.get(name)
-            break
-    if raw is None or str(raw).strip() == "":
-        value = default
-    else:
-        try:
-            value = int(str(raw).strip())
-        except (TypeError, ValueError):
-            from flask import abort
-            abort(400, description=f"Invalid integer parameter: {names[0]}")
-    if minimum is not None and value < minimum:
-        from flask import abort
-        abort(400, description=f"{names[0]} must be >= {minimum}")
-    if maximum is not None and value > maximum:
-        from flask import abort
-        abort(400, description=f"{names[0]} must be <= {maximum}")
-    return value

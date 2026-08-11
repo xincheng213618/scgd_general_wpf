@@ -1,5 +1,7 @@
 ﻿using ColorVision.UI.Properties;
 
+using System.Windows;
+
 namespace ColorVision.UI.Menus.Base.File
 {
     public class MenuExit : MenuItemFileBase
@@ -10,7 +12,7 @@ namespace ColorVision.UI.Menus.Base.File
         public override int Order => 1000000;
         public override void Execute()
         {
-            Environment.Exit(0);
+            Application.Current?.Shutdown();
         }
     }
 

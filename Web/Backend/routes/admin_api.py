@@ -40,6 +40,10 @@ from typing import Any, Callable
 from flask import Blueprint, jsonify, request
 
 from db_cache import CacheManager, now_iso
+from ports.jobs import JobRepository
+from routes.request_context import current_request_context, set_authenticated_request_context
+from services.auth_policy import AuthPolicy
+from services.request_context import RequestContext
 
 
 # Per-endpoint scope requirements
@@ -80,11 +84,12 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
 @dataclass(frozen=True)
 class AdminApiContext:
     cache: CacheManager
+    jobs: JobRepository
     storage_getter: Callable[[], Path]
     config_getter: Callable[[], dict[str, Any]]
     get_db: Callable[[], Any]
-    check_auth: Callable[[list[str] | None], bool]
-    require_auth_decorator: Any
+    auth_policy: AuthPolicy
+    request_context_factory: Callable[[], RequestContext]
     refresh_plugin_index: Callable[..., Any]
     refresh_all_plugin_index: Callable[..., Any]
     get_plugin_index_state: Callable[..., Any]
@@ -108,57 +113,33 @@ def _get_ctx() -> AdminApiContext:
 
 def _require_admin_auth(required_scopes: list[str] | None = None):
     """Check authentication for admin endpoints with optional scope check."""
-    import hmac as _hmac
     ctx = _get_ctx()
+    request_context = ctx.request_context_factory()
+    scopes_to_check = required_scopes or ["admin:*"]
+    decision = ctx.auth_policy.authorize(request_context, scopes_to_check)
+    if decision.allowed:
+        set_authenticated_request_context(request_context.with_actor(decision.principal))
+        return None
+    if decision.forbidden:
+        ctx.cache.write_audit(
+            actor_type=decision.principal.actor_type,
+            actor_id=decision.principal.actor_id,
+            action="auth_forbidden",
+            target_type="admin_endpoint",
+            detail=f"Insufficient scope. Required: {required_scopes}",
+            ip=request_context.remote_addr or "",
+            user_agent=request_context.user_agent,
+        )
+        return jsonify({"error": "Insufficient scope", "required": required_scopes, "status": 403}), 403
 
-    # First check if authenticated at all
-    from flask import session
-    if session.get("authenticated"):
-        return None  # Session auth always has full access
-
-    # Check Basic Auth — must validate against config upload_auth
-    auth = request.authorization
-    if auth and (auth.type or "").lower() == "basic" and auth.username and auth.password:
-        config = ctx.config_getter()
-        expected_username, expected_password = config.get("upload_auth", {}).get("username", ""), config.get("upload_auth", {}).get("password", "")
-        if expected_username and expected_password and _hmac.compare_digest(auth.username, expected_username) and _hmac.compare_digest(auth.password, expected_password):
-            return None  # Valid Basic Auth
-
-    # Check Bearer API Key
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        token = auth_header[7:].strip()
-        if token:
-            from services.api_key_service import verify_api_key
-            scopes_to_check = required_scopes if required_scopes else ["admin:*"]
-            key_info = verify_api_key(ctx.cache, token, required_scopes=scopes_to_check)
-            if key_info:
-                return None
-            # Token was provided but invalid or insufficient scope
-            # Check if token is valid at all (without scope check)
-            key_info_no_scope = verify_api_key(ctx.cache, token, required_scopes=None)
-            if key_info_no_scope:
-                # Valid key but insufficient scope
-                ctx.cache.write_audit(
-                    actor_type="api_key",
-                    actor_id=f"key:{token.split('_')[1] if '_' in token else 'unknown'}",
-                    action="auth_forbidden",
-                    target_type="admin_endpoint",
-                    detail=f"Insufficient scope. Required: {required_scopes}",
-                    ip=request.remote_addr or "",
-                    user_agent=request.headers.get("User-Agent", "")[:200],
-                )
-                return jsonify({"error": "Insufficient scope", "required": required_scopes, "status": 403}), 403
-
-    # No valid authentication at all
     ctx.cache.write_audit(
         actor_type="anonymous",
         actor_id="",
         action="auth_unauthorized",
         target_type="admin_endpoint",
-        detail=f"Path: {request.path}",
-        ip=request.remote_addr or "",
-        user_agent=request.headers.get("User-Agent", "")[:200],
+        detail=f"Path: {request_context.path}",
+        ip=request_context.remote_addr or "",
+        user_agent=request_context.user_agent,
     )
     return jsonify({"error": "Authentication required", "status": 401}), 401
 
@@ -513,36 +494,17 @@ def backup_db():
 @admin_api.route("/jobs", methods=["GET"])
 def list_jobs():
     ctx = _get_ctx()
-    db = ctx.get_db()
     try:
-        rows = db.execute("SELECT * FROM scheduled_jobs ORDER BY id").fetchall()
-        jobs = [dict(r) for r in rows]
-
-        # Attach latest run info
-        for job in jobs:
-            run = db.execute(
-                "SELECT * FROM job_runs WHERE job_id = ? ORDER BY id DESC LIMIT 1",
-                (job["id"],),
-            ).fetchone()
-            job["latest_run"] = dict(run) if run else None
-
-        return jsonify(jobs)
+        return jsonify(ctx.jobs.list_with_latest_runs())
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
-    finally:
-        db.close()
 
 
 @admin_api.route("/jobs/<job_id>/run", methods=["POST"])
 def run_job(job_id: str):
     ctx = _get_ctx()
-    db = ctx.get_db()
-    try:
-        row = db.execute("SELECT * FROM scheduled_jobs WHERE id = ?", (job_id,)).fetchone()
-        if not row:
-            return jsonify({"error": "Job not found"}), 404
-    finally:
-        db.close()
+    if ctx.jobs.get(job_id) is None:
+        return jsonify({"error": "Job not found"}), 404
 
     from services.scheduler import run_job_now
     result = run_job_now(ctx.cache, ctx.storage_getter(), ctx.config_getter, ctx.get_db, job_id)
@@ -564,17 +526,8 @@ def run_job(job_id: str):
 @admin_api.route("/jobs/<job_id>/enable", methods=["POST"])
 def enable_job(job_id: str):
     ctx = _get_ctx()
-    db = ctx.get_db()
-    try:
-        cursor = db.execute(
-            "UPDATE scheduled_jobs SET enabled = 1, updated_at = ? WHERE id = ?",
-            (now_iso(), job_id),
-        )
-        if cursor.rowcount == 0:
-            return jsonify({"error": "Job not found"}), 404
-        db.commit()
-    finally:
-        db.close()
+    if not ctx.jobs.set_enabled(job_id, True, now_iso()):
+        return jsonify({"error": "Job not found"}), 404
 
     ctx.cache.write_audit(
         actor_type=_actor_type(),
@@ -592,17 +545,8 @@ def enable_job(job_id: str):
 @admin_api.route("/jobs/<job_id>/disable", methods=["POST"])
 def disable_job(job_id: str):
     ctx = _get_ctx()
-    db = ctx.get_db()
-    try:
-        cursor = db.execute(
-            "UPDATE scheduled_jobs SET enabled = 0, updated_at = ? WHERE id = ?",
-            (now_iso(), job_id),
-        )
-        if cursor.rowcount == 0:
-            return jsonify({"error": "Job not found"}), 404
-        db.commit()
-    finally:
-        db.close()
+    if not ctx.jobs.set_enabled(job_id, False, now_iso()):
+        return jsonify({"error": "Job not found"}), 404
 
     ctx.cache.write_audit(
         actor_type=_actor_type(),
@@ -886,34 +830,11 @@ def api_key_usage(key_id: int):
 # ---------------------------------------------------------------------------
 
 def _actor_type() -> str:
-    from flask import session
-    if session.get("authenticated"):
-        return "user"
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        return "api_key"
-    auth = request.authorization
-    if auth and auth.type and auth.type.lower() == "basic":
-        return "user"
-    return "system"
+    return current_request_context().actor.actor_type or "system"
 
 
 def _actor_id() -> str:
-    from flask import session
-    if session.get("username"):
-        return session["username"]
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        token = auth_header[7:].strip()
-        # Return key_prefix for identification (never the full key)
-        parts = token.split("_", 2)
-        if len(parts) >= 2:
-            return f"key:{parts[1]}"
-        return "key:unknown"
-    auth = request.authorization
-    if auth and auth.username:
-        return auth.username
-    return "system"
+    return current_request_context().actor.actor_id or "system"
 
 
 # ---------------------------------------------------------------------------
@@ -923,7 +844,6 @@ def _actor_id() -> str:
 @admin_api.route("/perf/summary", methods=["GET"])
 def perf_summary():
     ctx = _get_ctx()
-    db = ctx.get_db()
     try:
         # Recent slow requests from in-memory buffer
         slow_requests = []
@@ -931,12 +851,8 @@ def perf_summary():
             slow_requests = ctx.get_slow_requests()[-20:]
 
         # Recent slow job runs
-        rows = db.execute(
-            "SELECT * FROM job_runs ORDER BY id DESC LIMIT 20"
-        ).fetchall()
         slow_jobs = []
-        for row in rows:
-            r = dict(row)
+        for r in ctx.jobs.recent_runs(20):
             if r.get("duration_ms", 0) >= 1000 or r.get("status") == "error":
                 slow_jobs.append(r)
 
@@ -947,5 +863,3 @@ def perf_summary():
         })
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
-    finally:
-        db.close()

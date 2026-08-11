@@ -8,6 +8,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
     [SugarIndex("idx_flow_run_template_completed", nameof(TemplateId), OrderByType.Asc, nameof(CompletedTime), OrderByType.Desc)]
     [SugarIndex("ux_flow_run_run_key", nameof(RunKey), OrderByType.Asc, true)]
     [SugarIndex("idx_flow_run_status_owner", nameof(Status), OrderByType.Asc, nameof(OwnerMachine), OrderByType.Asc)]
+    [SugarIndex("idx_flow_run_batch_started", nameof(BatchId), OrderByType.Asc, nameof(StartedTimeUtc), OrderByType.Desc)]
+    [SugarIndex("idx_flow_run_flow_key_completed", nameof(FlowKey), OrderByType.Asc, nameof(CompletedTime), OrderByType.Desc)]
     public sealed class FlowRunRecord
     {
         [SugarColumn(ColumnName = "id", IsPrimaryKey = true, IsIdentity = true)]

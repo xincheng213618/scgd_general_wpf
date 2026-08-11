@@ -38,6 +38,11 @@ namespace ColorVision.Copilot
             var taskEventJournalBuilder = new CopilotAgentTaskEventJournalBuilder(
                 requestedCheckpoint?.TaskEventJournal,
                 baseExecutionScope.RunId);
+            var runStartBackgroundShellCommandSnapshots =
+                (_backgroundShellCommandSnapshotProvider(request.ConversationId)
+                    ?? Array.Empty<CopilotBackgroundShellCommandSnapshot>())
+                .Where(snapshot => snapshot?.IsActive == true)
+                .ToArray();
             var answerText = new StringBuilder();
             var emit = CreateEventEmitter(agentEvent =>
             {
@@ -60,10 +65,29 @@ namespace ColorVision.Copilot
                     var remaining = CopilotAgentSessionCheckpoint.MaxConversationMemoryContentLength - answerText.Length;
                     answerText.Append(agentEvent.Text.AsSpan(0, Math.Min(agentEvent.Text.Length, remaining)));
                 }
+                if (agentEvent.Type == CopilotAgentEventType.ToolStarted
+                    && agentEvent.ToolExecution != null
+                    && string.Equals(
+                        agentEvent.ToolExecution.ToolName,
+                        "RunWorkspaceValidation",
+                        StringComparison.Ordinal))
+                {
+                    var activeBackgroundCommands =
+                        (_backgroundShellCommandSnapshotProvider(
+                                request.ConversationId)
+                            ?? Array.Empty<CopilotBackgroundShellCommandSnapshot>())
+                        .Where(snapshot => snapshot?.IsActive == true)
+                        .ToArray();
+                    taskEventJournalBuilder
+                        .RecordValidationBackgroundCommandSnapshot(
+                            agentEvent.ToolExecution.CallId,
+                            activeBackgroundCommands);
+                }
                 taskEventJournalBuilder.Observe(agentEvent);
                 onEvent(agentEvent);
             });
-            taskEventJournalBuilder.RecordRunStarted();
+            taskEventJournalBuilder.RecordRunStarted(
+                runStartBackgroundShellCommandSnapshots);
             var capabilitySnapshot = _capabilityCatalog.GetSnapshot(request.CodexPluginsEnabled);
             var finalAnswerRecovery = NormalizeFinalAnswerRecoveryRequest(
                 request.Recovery,
@@ -115,16 +139,20 @@ namespace ColorVision.Copilot
                         StringComparison.OrdinalIgnoreCase));
             var backgroundShellCommandSnapshots =
                 hasBackgroundShellObservationTool
-                    ? CopilotBackgroundShellCommandRegistry.Shared.GetSnapshots(
+                    ? (_backgroundShellCommandSnapshotProvider(
                             request.ConversationId)
-                        .Where(snapshot => snapshot.IsActive)
+                            ?? Array.Empty<CopilotBackgroundShellCommandSnapshot>())
+                        .Where(snapshot => snapshot?.IsActive == true)
                         .ToArray()
                     : Array.Empty<CopilotBackgroundShellCommandSnapshot>();
             var environmentContext = CopilotAgentEnvironmentContext.Capture(request);
             var checkpointEnvironmentContext = request.CodexIncludeEnvironmentContext
                 ? environmentContext
                 : null;
-            var hookSurfaceSnapshot = _toolExecutor.GetHookSurfaceSnapshot(request.CodexExtensionHooksEnabled);
+            var hookSurfaceSnapshot = _toolExecutor.GetHookSurfaceSnapshot(
+                request.CodexHooksEnabled,
+                request.CodexPluginsEnabled,
+                request.CodexCommandHooks);
             var executionScope = baseExecutionScope.WithRuntimeSnapshot(
                 environmentContext.Fingerprint,
                 capabilitySnapshot.Revision);
@@ -135,7 +163,9 @@ namespace ColorVision.Copilot
                 checkpointToolNames,
                 checkpointEnvironmentContext,
                 hookSurfaceSnapshot,
-                requireEnvironmentContextMatch: true);
+                requireEnvironmentContextMatch: true,
+                projectInstructions: request.ProjectInstructions,
+                configuredDeveloperInstructions: request.ConfiguredDeveloperInstructions);
             var requiresCheckpointReplan = checkpointCompatibility?.Kind == CopilotAgentCheckpointCompatibilityKind.ProfileChanged
                 || checkpointCompatibility?.RequiresReplan == true;
             var recovery = NormalizeRecoveryRequest(request.Recovery, requestedCheckpoint, availableTools, requiresCheckpointReplan);
@@ -335,6 +365,7 @@ namespace ColorVision.Copilot
                 cancellationToken);
             using var sessionPreparationLifetime = sessionPreparation;
             var session = sessionPreparation.Session;
+            bridge.AttachMessageInjection(messageInjector, session);
             var sessionResumed = sessionPreparation.SessionResumed;
             var steeringRegistration = sessionPreparation.SteeringRegistration;
             liveCheckpointPublisher = sessionPreparation.LiveCheckpointPublisher;
@@ -388,109 +419,235 @@ namespace ColorVision.Copilot
                 ? "Agent Framework is generating an answer without tools."
                 : $"Agent Framework can use {frameworkTools.Count} request-scoped tool(s)."));
 
-            var loopResult = await RunAgentStreamingLoopAsync(
-                request,
-                runBudget,
-                stopwatch,
-                timeBudgetCancellation,
-                callerCancellationToken,
-                cancellationToken,
-                toolBudgetCancellation.Token,
-                agentLoopCancellation.Token,
-                agent,
-                initialMessages,
-                session,
-                bridge,
-                contextRecoveryChatClient,
-                taskEventJournalBuilder,
-                emit,
-                steeringRegistration,
-                liveCheckpointPublisher,
-                messageInjector,
-                answerText,
-                deferredBackgroundOutputDelivery,
-                deferredBackgroundCompletionDelivery,
-                deferredBackgroundOutputEvents,
-                deferredBackgroundCompletions,
-                deferredBackgroundSignalMessages);
-            usage = loopResult.Usage;
-            var controlIntent = loopResult.ControlIntent;
-            var timeBudgetExhausted = loopResult.TimeBudgetExhausted;
-            var providerInterrupted = loopResult.ProviderInterrupted;
-            var contextWindowExceeded = loopResult.ContextWindowExceeded;
-            var toolBudgetForcedFinalization = loopResult.ToolBudgetForcedFinalization;
-            var providerFinishReason = loopResult.ProviderFinishReason;
-            var automaticReviewCircuitBreaker = loopResult.AutomaticReviewCircuitBreaker;
-            var automaticReviewCircuitBreakerTripped = automaticReviewCircuitBreaker?.IsTripped == true;
-            var outputLengthLimitReached = IsLengthLimitedOutput(providerFinishReason);
-            var outputContentFiltered = IsContentFilteredOutput(providerFinishReason);
-            var outputFinishReasonIncomplete = IsUnexpectedIncompleteOutput(providerFinishReason);
-            if (outputLengthLimitReached)
+            var stopHookActive = false;
+            var stopContinuationCount = 0;
+            var asyncHookContinuationCount = 0;
+            var loopMessages = initialMessages;
+            var controlIntent = CopilotAgentControlIntent.None;
+            var timeBudgetExhausted = false;
+            var providerInterrupted = false;
+            var contextWindowExceeded = false;
+            var automaticReviewCircuitBreakerTripped = false;
+            CopilotAutomaticApprovalDenialCircuitBreakerSnapshot? automaticReviewCircuitBreaker = null;
+            var outputLengthLimitReached = false;
+            var outputContentFiltered = false;
+            var outputFinishReasonIncomplete = false;
+            var hasModelFinalAnswer = false;
+            while (true)
             {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    "The provider reached its maximum output length before completing the Agent answer; starting one bounded no-tools finalization call instead of accepting partial text."));
-            }
-            else if (outputContentFiltered)
-            {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    "The provider content filter stopped the Agent answer; allowed partial text will be retained without an automatic retry."));
-            }
-            else if (outputFinishReasonIncomplete)
-            {
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    "The provider ended the Agent answer with an explicit non-success finish reason; starting one bounded no-tools finalization call instead of accepting partial text."));
-            }
-            var hasModelFinalAnswer = !providerInterrupted
-                && !automaticReviewCircuitBreakerTripped
-                && !outputLengthLimitReached
-                && !outputContentFiltered
-                && !outputFinishReasonIncomplete
-                && !string.IsNullOrWhiteSpace(answerText.ToString());
-            if (controlIntent == CopilotAgentControlIntent.None
-                && !timeBudgetExhausted
-                && !providerInterrupted
-                && !contextWindowExceeded
-                && !automaticReviewCircuitBreakerTripped
-                && !outputContentFiltered
-                && (!hasModelFinalAnswer || toolBudgetForcedFinalization))
-            {
-                var recoveredFinalAnswer = await RecoverFinalAnswerAsync(
+                var finalAnswerRecoveredOutsideSession = false;
+                var isStopContinuation = stopContinuationCount > 0;
+                var loopResult = await RunAgentStreamingLoopAsync(
+                    request,
+                    runBudget,
+                    stopwatch,
+                    timeBudgetCancellation,
+                    callerCancellationToken,
+                    cancellationToken,
+                    toolBudgetCancellation.Token,
+                    agentLoopCancellation.Token,
+                    agent,
+                    loopMessages,
+                    session,
+                    bridge,
+                    contextRecoveryChatClient,
+                    taskEventJournalBuilder,
+                    emit,
+                    steeringRegistration,
+                    liveCheckpointPublisher,
+                    messageInjector,
+                    answerText,
+                    deferredBackgroundOutputDelivery,
+                    deferredBackgroundCompletionDelivery,
+                    isStopContinuation
+                        ? Array.Empty<CopilotDeferredBackgroundShellOutputEvent>()
+                        : deferredBackgroundOutputEvents,
+                    isStopContinuation
+                        ? Array.Empty<CopilotDeferredBackgroundShellCompletion>()
+                        : deferredBackgroundCompletions,
+                    isStopContinuation
+                        ? Array.Empty<string>()
+                        : deferredBackgroundSignalMessages);
+                usage = usage.Add(loopResult.Usage);
+                controlIntent = loopResult.ControlIntent;
+                timeBudgetExhausted = loopResult.TimeBudgetExhausted;
+                providerInterrupted = loopResult.ProviderInterrupted;
+                contextWindowExceeded = loopResult.ContextWindowExceeded;
+                var toolBudgetForcedFinalization = loopResult.ToolBudgetForcedFinalization;
+                var providerFinishReason = loopResult.ProviderFinishReason;
+                automaticReviewCircuitBreaker = loopResult.AutomaticReviewCircuitBreaker;
+                automaticReviewCircuitBreakerTripped = automaticReviewCircuitBreaker?.IsTripped == true;
+                outputLengthLimitReached = IsLengthLimitedOutput(providerFinishReason);
+                outputContentFiltered = IsContentFilteredOutput(providerFinishReason);
+                outputFinishReasonIncomplete = IsUnexpectedIncompleteOutput(providerFinishReason);
+                if (outputLengthLimitReached)
+                {
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        "The provider reached its maximum output length before completing the Agent answer; starting one bounded no-tools finalization call instead of accepting partial text."));
+                }
+                else if (outputContentFiltered)
+                {
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        "The provider content filter stopped the Agent answer; allowed partial text will be retained without an automatic retry."));
+                }
+                else if (outputFinishReasonIncomplete)
+                {
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        "The provider ended the Agent answer with an explicit non-success finish reason; starting one bounded no-tools finalization call instead of accepting partial text."));
+                }
+                hasModelFinalAnswer = !providerInterrupted
+                    && !automaticReviewCircuitBreakerTripped
+                    && !outputLengthLimitReached
+                    && !outputContentFiltered
+                    && !outputFinishReasonIncomplete
+                    && !string.IsNullOrWhiteSpace(answerText.ToString());
+                if (controlIntent == CopilotAgentControlIntent.None
+                    && !timeBudgetExhausted
+                    && !providerInterrupted
+                    && !contextWindowExceeded
+                    && !automaticReviewCircuitBreakerTripped
+                    && !outputContentFiltered
+                    && (!hasModelFinalAnswer || toolBudgetForcedFinalization))
+                {
+                    var recoveredFinalAnswer = await RecoverFinalAnswerAsync(
+                        request,
+                        emit,
+                        bridge,
+                        todoProvider,
+                        modeProvider,
+                        session,
+                        sessionResumed,
+                        contextRecoveryChatClient,
+                        cancellationToken,
+                        toolBudgetForcedFinalization,
+                        answerText.Length > 0,
+                        usage,
+                        outputLengthLimitReached,
+                        outputContentFiltered,
+                        outputFinishReasonIncomplete);
+                    usage = recoveredFinalAnswer.Usage;
+                    outputLengthLimitReached = recoveredFinalAnswer.OutputLengthLimitReached;
+                    outputContentFiltered = recoveredFinalAnswer.OutputContentFiltered;
+                    outputFinishReasonIncomplete = recoveredFinalAnswer.OutputFinishReasonIncomplete;
+                    hasModelFinalAnswer = recoveredFinalAnswer.HasModelFinalAnswer;
+                    finalAnswerRecoveredOutsideSession = recoveredFinalAnswer.HasModelFinalAnswer;
+                }
+                hasModelFinalAnswer = ApplyFinalAnswerQualityGates(
                     request,
                     emit,
                     bridge,
-                    todoProvider,
-                    modeProvider,
-                    session,
-                    sessionResumed,
-                    contextRecoveryChatClient,
-                    cancellationToken,
-                    toolBudgetForcedFinalization,
-                    answerText.Length > 0,
-                    usage,
+                    availableTools,
+                    () => answerText.ToString(),
+                    controlIntent,
+                    timeBudgetExhausted,
+                    providerInterrupted,
+                    contextWindowExceeded,
+                    automaticReviewCircuitBreakerTripped,
+                    hasModelFinalAnswer,
                     outputLengthLimitReached,
                     outputContentFiltered,
                     outputFinishReasonIncomplete);
-                usage = recoveredFinalAnswer.Usage;
-                outputLengthLimitReached = recoveredFinalAnswer.OutputLengthLimitReached;
-                outputContentFiltered = recoveredFinalAnswer.OutputContentFiltered;
-                outputFinishReasonIncomplete = recoveredFinalAnswer.OutputFinishReasonIncomplete;
-                hasModelFinalAnswer = recoveredFinalAnswer.HasModelFinalAnswer;
+                var completedAsyncHookResults =
+                    CopilotCodexLifecycleHookBackgroundScheduler.Shared.DrainCompleted(
+                        request.ConversationId);
+                CopilotCodexAsyncHookResultDelivery.PublishDiagnostics(
+                    completedAsyncHookResults,
+                    diagnostic => emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic)));
+                var asyncHookContinuation = CopilotCodexAsyncHookResultDelivery
+                    .BuildContinuationMessage(completedAsyncHookResults);
+                if (asyncHookContinuation.Length > 0)
+                {
+                    var asyncHookBudgetExhausted = chatClient.Snapshot.BudgetExhausted
+                        || bridge.ToolBudgetExhausted
+                        || timeBudgetCancellation.IsCancellationRequested
+                        || agentLoopCancellation.IsCancellationRequested;
+                    if (!hasModelFinalAnswer
+                        || asyncHookBudgetExhausted
+                        || asyncHookContinuationCount
+                            >= CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations)
+                    {
+                        CopilotCodexLifecycleHookBackgroundScheduler.Shared.RequeueContexts(
+                            request.ConversationId,
+                            completedAsyncHookResults);
+                        emit(CopilotAgentEvent.RuntimeDiagnostic(!hasModelFinalAnswer
+                            ? "Completed async hook context was buffered for the next user request because the Agent did not reach a safe completed-answer boundary."
+                            : asyncHookBudgetExhausted
+                                ? "Completed async hook context was buffered for the next user request because the Agent run's existing time, token, or tool-call budget is exhausted."
+                                : $"Async hook continuation limit reached · {CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations} continuation(s); remaining context was buffered for the next user request."));
+                    }
+                    else
+                    {
+                        asyncHookContinuationCount++;
+                        var asyncHookCompletedAnswer = answerText.ToString();
+                        emit(CopilotAgentEvent.RuntimeDiagnostic(
+                            $"Async hook continuation {asyncHookContinuationCount}/{CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations} · Agent is delivering completed notification-only hook context at the post-sampling boundary."));
+                        emit(CopilotAgentEvent.AnswerReset());
+                        loopMessages = finalAnswerRecoveredOutsideSession
+                            ?
+                            [
+                                new ChatMessage(ChatRole.Assistant, asyncHookCompletedAnswer),
+                                new ChatMessage(ChatRole.User, asyncHookContinuation),
+                            ]
+                            :
+                            [
+                                new ChatMessage(ChatRole.User, asyncHookContinuation),
+                            ];
+                        continue;
+                    }
+                }
+                if (!hasModelFinalAnswer)
+                    break;
+
+                var stopOutcome = await _stopHookExecutor.RunAsync(
+                    request,
+                    stopHookActive,
+                    answerText.ToString(),
+                    diagnostic => emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic)),
+                    cancellationToken).ConfigureAwait(false);
+                if (!stopOutcome.ShouldContinue)
+                    break;
+
+                if (stopContinuationCount >= CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations)
+                {
+                    var eventName = request.CodexSubagentHookContext == null
+                        ? "Stop"
+                        : "SubagentStop";
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        $"{eventName} hook continuation limit reached · {CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations} consecutive continuation(s); the Agent turn is finalizing to avoid an unbounded hook loop."));
+                    break;
+                }
+
+                var budgetExhausted = chatClient.Snapshot.BudgetExhausted;
+                if (budgetExhausted
+                    || bridge.ToolBudgetExhausted
+                    || timeBudgetCancellation.IsCancellationRequested
+                    || agentLoopCancellation.IsCancellationRequested)
+                {
+                    emit(CopilotAgentEvent.RuntimeDiagnostic(
+                        "Stop hook requested continuation, but the Agent run's existing time, token, or tool-call budget is exhausted; the current answer is finalizing."));
+                    break;
+                }
+
+                stopContinuationCount++;
+                stopHookActive = true;
+                var stopEventName = request.CodexSubagentHookContext == null
+                    ? "Stop"
+                    : "SubagentStop";
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"{stopEventName} hook continuation {stopContinuationCount}/{CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations} · Agent is asking the current Harness session to revise the completed answer."));
+                var completedAnswer = answerText.ToString();
+                emit(CopilotAgentEvent.AnswerReset());
+                loopMessages = finalAnswerRecoveredOutsideSession
+                    ?
+                    [
+                        new ChatMessage(ChatRole.Assistant, completedAnswer),
+                        new ChatMessage(ChatRole.User, stopOutcome.ContinuationPrompt),
+                    ]
+                    :
+                    [
+                        new ChatMessage(ChatRole.User, stopOutcome.ContinuationPrompt),
+                    ];
             }
-            hasModelFinalAnswer = ApplyFinalAnswerQualityGates(
-                request,
-                emit,
-                bridge,
-                availableTools,
-                () => answerText.ToString(),
-                controlIntent,
-                timeBudgetExhausted,
-                providerInterrupted,
-                contextWindowExceeded,
-                automaticReviewCircuitBreakerTripped,
-                hasModelFinalAnswer,
-                outputLengthLimitReached,
-                outputContentFiltered,
-                outputFinishReasonIncomplete);
             var budgetSnapshot = runBudget.CreateSnapshot(
                 chatClient.Snapshot,
                 stopwatch.Elapsed,

@@ -14,6 +14,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from ports.index_state import IndexStateRepository
+from ports.jobs import JobRepository
+
 
 def now_ts() -> int:
     """Current UTC timestamp as integer seconds."""
@@ -30,10 +33,25 @@ class CacheManager:
 
     def __init__(self, db_path: Path):
         self._db_path = db_path
+        from db.repositories.index_state import SqliteIndexStateRepository
+        from db.repositories.jobs import SqliteJobRepository
+
+        self._index_states: IndexStateRepository = SqliteIndexStateRepository(self.get_db)
+        self._jobs: JobRepository = SqliteJobRepository(self.get_db)
 
     @property
     def db_path(self) -> Path:
         return self._db_path
+
+    @property
+    def index_states(self) -> IndexStateRepository:
+        """Index-state persistence port shared by all index services."""
+        return self._index_states
+
+    @property
+    def jobs(self) -> JobRepository:
+        """Scheduled-job persistence port."""
+        return self._jobs
 
     def get_db(self) -> sqlite3.Connection:
         db = sqlite3.connect(str(self._db_path), timeout=15)
@@ -492,13 +510,7 @@ class CacheManager:
 
     def get_all_index_states(self) -> dict[str, dict[str, Any]]:
         """Return all index_state rows keyed by scope."""
-        try:
-            db = self.get_db()
-            rows = db.execute("SELECT * FROM index_state").fetchall()
-            db.close()
-            return {row["scope"]: dict(row) for row in rows}
-        except Exception:
-            return {}
+        return self.index_states.get_all()
 
     # -------------------------------------------------------------------
     # Cache cleanup
@@ -601,14 +613,9 @@ class CacheManager:
             row = db.execute("SELECT COUNT(*) AS cnt FROM tool_index WHERE is_deleted = 0").fetchone()
             status["tool_index_count"] = row["cnt"] if row else 0
 
-            row = db.execute("SELECT * FROM index_state WHERE scope = 'plugins'").fetchone()
-            status["plugin_index_state"] = dict(row) if row else None
-
-            # All index states for dashboard
-            rows = db.execute("SELECT * FROM index_state").fetchall()
-            status["index_states"] = {row["scope"]: dict(row) for row in rows}
-
             db.close()
+            status["plugin_index_state"] = self.index_states.get("plugins")
+            status["index_states"] = self.index_states.get_all()
         except Exception as exc:
             status["error"] = str(exc)
         return status

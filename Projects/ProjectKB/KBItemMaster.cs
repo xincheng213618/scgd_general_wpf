@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.FlowProcessing;
-using Newtonsoft.Json;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -30,20 +29,33 @@ namespace ProjectKB
         public ObservableCollection<KBItem> Items { get; set; } = new ObservableCollection<KBItem>();
 
         [Browsable(false)]
-        public string ItemsJson
-        {
-            get => JsonConvert.SerializeObject(Items);
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                    Items = JsonConvert.DeserializeObject<ObservableCollection<KBItem>>(value);
-            }
-        }
+        [SugarColumn(ColumnName = "ItemsJson", QuerySql = "NULL", IsOnlyIgnoreUpdate = true, IsDisabledAlterColumn = true)]
+        public string LegacyItemsJson { get; set; } = string.Empty;
 
+        [Browsable(false)]
+        [SugarColumn(IsIgnore = true)]
+        public KBRecipeSnapshot? RecipeSnapshot { get; set; }
 
+        [Browsable(false)]
+        [SugarColumn(IsIgnore = true)]
+        public bool IsResultPayloadLoaded { get; set; }
 
         public string ResultImagFile { get => _ResultImagFile; set { _ResultImagFile = value; OnPropertyChanged(); } }
         private string _ResultImagFile = string.Empty;
+
+        /// <summary>
+        /// 原始结果图像的像素宽度。原图被清理后仍用于恢复按键叠图的坐标空间。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public int? ImageWidth { get => _ImageWidth; set { _ImageWidth = value; OnPropertyChanged(); } }
+        private int? _ImageWidth;
+
+        /// <summary>
+        /// 原始结果图像的像素高度。原图被清理后仍用于恢复按键叠图的坐标空间。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public int? ImageHeight { get => _ImageHeight; set { _ImageHeight = value; OnPropertyChanged(); } }
+        private int? _ImageHeight;
 
         public string Model { get => _Model; set { _Model = value; OnPropertyChanged(); } }
         private string _Model =string.Empty;
@@ -88,12 +100,15 @@ namespace ProjectKB
         public double LvUniformity { get => _LvUniformity; set { _LvUniformity = value; OnPropertyChanged(); } }
         private double _LvUniformity;
 
+        [SugarColumn(IsNullable = true)]
         public double? KeyLcNeighborhoodRadiusMm { get => _KeyLcNeighborhoodRadiusMm; set { _KeyLcNeighborhoodRadiusMm = value; OnPropertyChanged(); } }
         private double? _KeyLcNeighborhoodRadiusMm;
 
+        [SugarColumn(IsNullable = true)]
         public double? KeyLcPixelsPerMillimeter { get => _KeyLcPixelsPerMillimeter; set { _KeyLcPixelsPerMillimeter = value; OnPropertyChanged(); } }
         private double? _KeyLcPixelsPerMillimeter;
 
+        [SugarColumn(IsNullable = true)]
         public int? KeyLcNeighborhoodVersion { get => _KeyLcNeighborhoodVersion; set { _KeyLcNeighborhoodVersion = value; OnPropertyChanged(); } }
         private int? _KeyLcNeighborhoodVersion;
 

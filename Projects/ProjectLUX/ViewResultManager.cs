@@ -7,7 +7,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ProjectLUX
 {
@@ -57,12 +56,10 @@ namespace ProjectLUX
 
         public ObservableCollection<ProjectLUXReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectLUXReuslt>();
 
-        public int ViewReslutsSelectedIndex { get => _ViewReslutsSelectedIndex; set { _ViewReslutsSelectedIndex = value; OnPropertyChanged(); } }
+        public int ViewReslutsSelectedIndex { get => _ViewReslutsSelectedIndex; set { if (_ViewReslutsSelectedIndex == value) return; _ViewReslutsSelectedIndex = value; OnPropertyChanged(); } }
         private int _ViewReslutsSelectedIndex = -1;
-        public ListView ListView { get; set; }
 
         public RelayCommand EditConfigCommand { get; set; }
-        public RelayCommand ViewReslutsClearCommand { get; set; }
         public RelayCommand QueryCommand { get; set; }
         public RelayCommand GenericQueryCommand { get; set; }
 
@@ -74,7 +71,6 @@ namespace ProjectLUX
         {
             Config = ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
             EditConfigCommand = new RelayCommand(a => EditConfig());
-            ViewReslutsClearCommand = new RelayCommand(a => ViewReslutsClear());
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
             SaveCommand = new RelayCommand(a => Save());
@@ -117,11 +113,6 @@ namespace ProjectLUX
         {
             new PropertyEditorWindow(Config) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             ConfigService.Instance.SaveConfigs();
-        }
-        public void ViewReslutsClear()
-        {
-            ViewReslutsSelectedIndex = -1;
-            ViewResluts.Clear();
         }
         public void Query()
         {
@@ -188,7 +179,6 @@ namespace ProjectLUX
                 if (Config.AutoRefresh)
                 {
                     ViewReslutsSelectedIndex = ViewResluts.Count - 1;
-                    ListView?.ScrollIntoView(item);
                 }
             }
 

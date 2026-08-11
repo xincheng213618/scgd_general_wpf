@@ -21,7 +21,16 @@ namespace ColorVision.Copilot
         long ProviderFirstResponseLatencyTotalMs,
         long ProviderFirstResponseLatencyMaxMs,
         long ProviderCallDurationTotalMs,
-        long ElapsedMs);
+        long ElapsedMs,
+        IReadOnlyList<CopilotConversationDelegatedModelUsageSnapshot> DelegatedModels);
+
+    internal sealed record CopilotConversationDelegatedModelUsageSnapshot(
+        string Model,
+        int Runs,
+        int ReportedUsageRuns,
+        int EstimatedUsageRuns,
+        long ConsumedTokens,
+        CopilotTokenUsage ReportedUsage);
 
     internal sealed record CopilotConversationUsageSnapshot(
         CopilotTokenUsage TotalUsage,
@@ -38,6 +47,8 @@ namespace ColorVision.Copilot
 
     internal static class CopilotConversationUsageDiagnostics
     {
+        private const int MaximumDelegatedModelsInReport = 8;
+
         public static CopilotConversationUsageSnapshot Capture(CopilotConversationRecord? conversation)
         {
             if (conversation == null)
@@ -238,7 +249,8 @@ namespace ColorVision.Copilot
             0,
             0,
             0,
-            0);
+            0,
+            Array.Empty<CopilotConversationDelegatedModelUsageSnapshot>());
 
         private static CopilotConversationAgentUsageSnapshot CaptureAgentUsage(
             IReadOnlyList<CopilotChatMessage> assistantMessages)
@@ -258,9 +270,21 @@ namespace ColorVision.Copilot
             var providerCallDurationTotalMs = 0L;
             var elapsedMs = 0L;
             var delegatedRunIds = new HashSet<string>(StringComparer.Ordinal);
+            var delegatedModels = new Dictionary<string, DelegatedModelUsageAccumulator>(
+                StringComparer.OrdinalIgnoreCase);
 
-            foreach (var message in assistantMessages.Where(message => message?.HasAgentRunMetrics == true))
+            foreach (var message in assistantMessages)
             {
+                if (message == null)
+                    continue;
+                var traces = (message.AgentTraceEntries ?? [])
+                    .Where(trace => trace != null)
+                    .ToArray();
+                var hasDelegatedTrace = traces.Any(trace =>
+                    !string.IsNullOrWhiteSpace(trace.DelegatedRunId));
+                if (!message.HasAgentRunMetrics && !hasDelegatedTrace)
+                    continue;
+
                 runs++;
                 if (message.IsResponsePending
                     || message.IsThinkingInProgress
@@ -272,14 +296,15 @@ namespace ColorVision.Copilot
                 var budget = message.AgentRunBudget;
                 var delegatedProviderCalls = 0L;
                 var delegatedToolCalls = 0L;
-                foreach (var trace in message.AgentTraceEntries ?? [])
+                foreach (var trace in traces)
                 {
-                    if (trace == null)
-                        continue;
                     delegatedProviderCalls = AddClamped(delegatedProviderCalls, trace.DelegatedProviderCalls);
                     delegatedToolCalls = AddClamped(delegatedToolCalls, trace.DelegatedToolCalls);
-                    if (!string.IsNullOrWhiteSpace(trace.DelegatedRunId))
-                        delegatedRunIds.Add(trace.DelegatedRunId);
+                    if (!string.IsNullOrWhiteSpace(trace.DelegatedRunId)
+                        && delegatedRunIds.Add(trace.DelegatedRunId))
+                    {
+                        AddDelegatedModelUsage(delegatedModels, trace);
+                    }
                 }
 
                 providerCalls = AddClamped(
@@ -288,7 +313,8 @@ namespace ColorVision.Copilot
                 toolCalls = AddClamped(
                     toolCalls,
                     AddClamped(Math.Max(0, budget.ToolCalls), delegatedToolCalls));
-                if (budget.UsedEstimatedUsage)
+                if (budget.UsedEstimatedUsage
+                    || traces.Any(trace => trace.DelegatedUsageIncludesEstimates))
                     estimatedUsageRuns++;
                 providerRetries = AddClamped(providerRetries, budget.ProviderRetryCount);
                 providerRateLimitRetries = AddClamped(
@@ -328,7 +354,14 @@ namespace ColorVision.Copilot
                 providerFirstResponseLatencyTotalMs,
                 providerFirstResponseLatencyMaxMs,
                 providerCallDurationTotalMs,
-                elapsedMs);
+                elapsedMs,
+                delegatedModels.Values
+                    .Select(item => item.CreateSnapshot())
+                    .OrderByDescending(item => Math.Max(
+                        item.ConsumedTokens,
+                        item.ReportedUsage.EffectiveTotalTokens))
+                    .ThenBy(item => item.Model, StringComparer.OrdinalIgnoreCase)
+                    .ToArray());
         }
 
         private static void AppendAgentUsage(
@@ -437,6 +470,120 @@ namespace ColorVision.Copilot
                 }
                 builder.AppendLine();
             }
+
+            AppendDelegatedModelUsage(builder, usage.DelegatedModels);
+        }
+
+        private static void AddDelegatedModelUsage(
+            IDictionary<string, DelegatedModelUsageAccumulator> models,
+            CopilotAgentTraceEntry trace)
+        {
+            var model = (trace.DelegatedModel ?? string.Empty).Trim();
+            if (!models.TryGetValue(model, out var accumulator))
+            {
+                accumulator = new DelegatedModelUsageAccumulator(model);
+                models.Add(model, accumulator);
+            }
+            accumulator.Add(trace);
+        }
+
+        private static void AppendDelegatedModelUsage(
+            StringBuilder builder,
+            IReadOnlyList<CopilotConversationDelegatedModelUsageSnapshot> models)
+        {
+            if (models.Count == 0)
+                return;
+
+            builder.AppendLine("子代理模型归因（Provider 明细已包含在会话回答用量；预算消耗仅作本地诊断，不重复累加）：");
+            foreach (var model in models.Take(MaximumDelegatedModelsInReport))
+            {
+                builder.Append("- ")
+                    .Append(model.Model.Length > 0 ? model.Model : "未记录模型")
+                    .Append('：')
+                    .Append(FormatCount(model.Runs))
+                    .Append(" 次");
+                if (model.ReportedUsage.HasAny)
+                {
+                    builder.Append(" · 输入 ")
+                        .Append(FormatTokens(model.ReportedUsage.InputTokens))
+                        .Append(" · 输出 ")
+                        .Append(FormatTokens(model.ReportedUsage.OutputTokens))
+                        .Append(" · 总计 ")
+                        .Append(FormatTokens(model.ReportedUsage.EffectiveTotalTokens));
+                    if (model.ReportedUsage.CachedInputTokens.HasValue)
+                    {
+                        builder.Append(" · 缓存输入 ")
+                            .Append(FormatTokens(model.ReportedUsage.EffectiveCachedInputTokens));
+                    }
+                }
+                else
+                {
+                    builder.Append(" · Provider Token 元数据缺失");
+                }
+                builder.Append(" · 预算消耗 ")
+                    .Append(FormatCount(model.ConsumedTokens));
+                var unreportedRuns = Math.Max(0, model.Runs - model.ReportedUsageRuns);
+                if (unreportedRuns > 0)
+                {
+                    builder.Append(" · 未报告 ")
+                        .Append(FormatCount(unreportedRuns))
+                        .Append(" 次");
+                }
+                if (model.EstimatedUsageRuns > 0)
+                {
+                    builder.Append(" · 含估算 ")
+                        .Append(FormatCount(model.EstimatedUsageRuns))
+                        .Append(" 次");
+                }
+                builder.AppendLine();
+            }
+            if (models.Count > MaximumDelegatedModelsInReport)
+            {
+                builder.Append("- 另有 ")
+                    .Append(FormatCount(models.Count - MaximumDelegatedModelsInReport))
+                    .AppendLine(" 个子代理模型未展开。");
+            }
+        }
+
+        private sealed class DelegatedModelUsageAccumulator(string model)
+        {
+            private int _runs;
+            private int _reportedUsageRuns;
+            private int _estimatedUsageRuns;
+            private long _consumedTokens;
+            private CopilotTokenUsage _reportedUsage = CopilotTokenUsage.Empty;
+
+            public void Add(CopilotAgentTraceEntry trace)
+            {
+                _runs = _runs == int.MaxValue ? int.MaxValue : _runs + 1;
+                var usage = new CopilotTokenUsage(
+                    trace.DelegatedReportedInputTokens,
+                    trace.DelegatedReportedOutputTokens,
+                    trace.DelegatedReportedTotalTokens,
+                    trace.DelegatedReportedCachedInputTokens);
+                if (usage.HasAny)
+                {
+                    _reportedUsageRuns = _reportedUsageRuns == int.MaxValue
+                        ? int.MaxValue
+                        : _reportedUsageRuns + 1;
+                    _reportedUsage = _reportedUsage.Add(usage);
+                }
+                if (trace.DelegatedUsageIncludesEstimates)
+                {
+                    _estimatedUsageRuns = _estimatedUsageRuns == int.MaxValue
+                        ? int.MaxValue
+                        : _estimatedUsageRuns + 1;
+                }
+                _consumedTokens = AddClamped(_consumedTokens, trace.DelegatedConsumedTokens);
+            }
+
+            public CopilotConversationDelegatedModelUsageSnapshot CreateSnapshot() => new(
+                model,
+                _runs,
+                _reportedUsageRuns,
+                _estimatedUsageRuns,
+                _consumedTokens,
+                _reportedUsage);
         }
 
         private static long AddClamped(long total, long value)

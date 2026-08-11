@@ -1518,9 +1518,9 @@ class AuthIntegrationTests(unittest.TestCase):
         return {"Authorization": f"Basic {token}"}
 
     def test_login_page_renders(self):
-        response = self.client.get("/login")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('<div id="root">', response.get_data(as_text=True))
+        with self.client.get("/login") as response:
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('<div id="root">', response.get_data(as_text=True))
 
     def test_login_success_redirects(self):
         response = self.client.post("/login", data={

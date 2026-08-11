@@ -2,7 +2,6 @@
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using SqlSugar;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -42,7 +41,6 @@ namespace ColorVision.Engine.Archive.Dao
                     IsAutoCloseConnection = true
                 });
 
-                var list = DB.Queryable<T>();
                 foreach (var item in DB.Queryable<ArchivedDetailModel>().Where(x => x.PGuid == ArchivedMasterModel.Code).ToList())
                 {
                     ViewResults.Add(item);

@@ -310,7 +310,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             _navigateHistoryRecord(historyItem.Record);
         }
 
-        private void MessageListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void MessageListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (MessageListView.SelectedItem is not FlowNodeMessage message)
             {
@@ -326,6 +326,32 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 : message.RecvTopic;
             SendPayloadTextBox.Text = FormatJsonSafe(message.SendPayload);
             RecvPayloadTextBox.Text = FormatJsonSafe(message.RecvPayload);
+            if (message.Id <= 0)
+                return;
+            SendPayloadTextBox.Text = "正在加载 Payload…";
+            RecvPayloadTextBox.Text = "正在加载 Payload…";
+
+            try
+            {
+                FlowNodeMessagePayloads payloads = await Task.Run(
+                    () => FlowNodeRecordDataBaseHelper.GetMessagePayloads(message.Id));
+                if (!ReferenceEquals(MessageListView.SelectedItem, message))
+                    return;
+
+                message.SendPayload = payloads.SendPayload;
+                message.RecvPayload = payloads.RecvPayload;
+                SendPayloadTextBox.Text = FormatJsonSafe(message.SendPayload);
+                RecvPayloadTextBox.Text = FormatJsonSafe(message.RecvPayload);
+            }
+            catch (Exception ex)
+            {
+                if (!ReferenceEquals(MessageListView.SelectedItem, message))
+                    return;
+
+                string error = $"Payload 读取失败：{ex.Message}";
+                SendPayloadTextBox.Text = error;
+                RecvPayloadTextBox.Text = error;
+            }
         }
 
         private void ClearMessageDetails()

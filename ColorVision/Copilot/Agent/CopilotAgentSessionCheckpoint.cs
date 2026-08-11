@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -20,6 +21,8 @@ namespace ColorVision.Copilot
         EnvironmentDrift,
         HookSurfaceSnapshotMissing,
         HookSurfaceDrift,
+        ProjectInstructionSnapshotMissing,
+        ProjectInstructionDrift,
     }
 
     public sealed class CopilotAgentCheckpointCapability
@@ -54,7 +57,9 @@ namespace ColorVision.Copilot
             or CopilotAgentCheckpointCompatibilityKind.EnvironmentSnapshotMissing
             or CopilotAgentCheckpointCompatibilityKind.EnvironmentDrift
             or CopilotAgentCheckpointCompatibilityKind.HookSurfaceSnapshotMissing
-            or CopilotAgentCheckpointCompatibilityKind.HookSurfaceDrift;
+            or CopilotAgentCheckpointCompatibilityKind.HookSurfaceDrift
+            or CopilotAgentCheckpointCompatibilityKind.ProjectInstructionSnapshotMissing
+            or CopilotAgentCheckpointCompatibilityKind.ProjectInstructionDrift;
     }
 
     public sealed class CopilotAgentSessionCheckpoint
@@ -72,6 +77,7 @@ namespace ColorVision.Copilot
         public const int CurrentToolSurfaceVersion = 1;
         public const int CurrentEnvironmentVersion = CopilotAgentEnvironmentContext.CurrentVersion;
         public const int CurrentHookSurfaceVersion = 1;
+        public const int CurrentProjectInstructionSurfaceVersion = 2;
 
         private string _serializedSessionJson = string.Empty;
         private string _serializedSessionPayload = string.Empty;
@@ -129,6 +135,10 @@ namespace ColorVision.Copilot
 
         public string HookSurfaceFingerprint { get; init; } = string.Empty;
 
+        public int ProjectInstructionSurfaceVersion { get; init; }
+
+        public string ProjectInstructionSurfaceFingerprint { get; init; } = string.Empty;
+
         public IReadOnlyList<CopilotAgentEvidenceArtifact> EvidenceArtifacts { get; init; } = Array.Empty<CopilotAgentEvidenceArtifact>();
 
         public IReadOnlyList<CopilotRequestMessage> ConversationMemory { get; init; } = Array.Empty<CopilotRequestMessage>();
@@ -172,7 +182,9 @@ namespace ColorVision.Copilot
             IReadOnlyCollection<string>? availableToolNames = null,
             CopilotAgentEnvironmentContext? environmentContext = null,
             CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null,
-            bool requireEnvironmentContextMatch = false)
+            bool requireEnvironmentContextMatch = false,
+            IReadOnlyList<CopilotProjectInstructionDocument>? projectInstructions = null,
+            string? configuredDeveloperInstructions = null)
         {
             ArgumentNullException.ThrowIfNull(capabilitySnapshot);
             if (profile == null || !IsStructurallyValid())
@@ -246,6 +258,21 @@ namespace ColorVision.Copilot
                     return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.HookSurfaceDrift, capabilitySnapshot);
             }
 
+            if (projectInstructions != null)
+            {
+                if (!TryCreateProjectInstructionSurfaceFingerprint(
+                        projectInstructions,
+                        configuredDeveloperInstructions,
+                        out var currentProjectInstructionFingerprint)
+                    || ProjectInstructionSurfaceVersion != CurrentProjectInstructionSurfaceVersion
+                    || !IsSha256(ProjectInstructionSurfaceFingerprint))
+                {
+                    return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.ProjectInstructionSnapshotMissing, capabilitySnapshot);
+                }
+                if (!string.Equals(ProjectInstructionSurfaceFingerprint, currentProjectInstructionFingerprint, StringComparison.OrdinalIgnoreCase))
+                    return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.ProjectInstructionDrift, capabilitySnapshot);
+            }
+
             return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.Compatible, capabilitySnapshot);
         }
 
@@ -272,6 +299,9 @@ namespace ColorVision.Copilot
                 || HookSurfaceVersion is < 0 or > CurrentHookSurfaceVersion
                 || (HookSurfaceVersion == 0 && !string.IsNullOrEmpty(HookSurfaceFingerprint))
                 || (HookSurfaceVersion == CurrentHookSurfaceVersion && !IsSha256(HookSurfaceFingerprint))
+                || ProjectInstructionSurfaceVersion is < 0 or > CurrentProjectInstructionSurfaceVersion
+                || (ProjectInstructionSurfaceVersion == 0 && !string.IsNullOrEmpty(ProjectInstructionSurfaceFingerprint))
+                || (ProjectInstructionSurfaceVersion == CurrentProjectInstructionSurfaceVersion && !IsSha256(ProjectInstructionSurfaceFingerprint))
                 || (Capabilities?.Any(capability => capability == null
                     || string.IsNullOrWhiteSpace(capability.Id)
                     || capability.Id.Length > 200
@@ -282,6 +312,7 @@ namespace ColorVision.Copilot
                 || (Capabilities?.Select(capability => capability.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != Capabilities?.Count)
                 || EvidenceArtifacts == null
                 || EvidenceArtifacts?.Count > CopilotAgentEvidenceArtifact.MaxArtifacts
+                || (EvidenceArtifacts?.Any(artifact => artifact?.IsStructurallyValid() != true) ?? false)
                 || ConversationMemory == null
                 || ConversationMemory.Count > MaxConversationMemoryMessages
                 || ConversationMemory.Sum(message => message.Content?.Length ?? 0) > MaxConversationMemoryCharacters
@@ -321,7 +352,9 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotRequestMessage>? conversationMemory = null,
             CopilotAgentEnvironmentContext? environmentContext = null,
             string? taskIntentText = null,
-            CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null)
+            CopilotToolExecutionHookRegistrySnapshot? hookSurfaceSnapshot = null,
+            IReadOnlyList<CopilotProjectInstructionDocument>? projectInstructions = null,
+            string? configuredDeveloperInstructions = null)
         {
             ArgumentNullException.ThrowIfNull(profile);
             var json = serializedSessionJson?.Trim() ?? string.Empty;
@@ -356,6 +389,17 @@ namespace ColorVision.Copilot
                 return null;
             if (hookSurfaceSnapshot?.IsStructurallyValid() == false)
                 return null;
+            var projectInstructionSurfaceVersion = 0;
+            var projectInstructionSurfaceFingerprint = string.Empty;
+            if (projectInstructions != null)
+            {
+                if (!TryCreateProjectInstructionSurfaceFingerprint(
+                        projectInstructions,
+                        configuredDeveloperInstructions,
+                        out projectInstructionSurfaceFingerprint))
+                    return null;
+                projectInstructionSurfaceVersion = CurrentProjectInstructionSurfaceVersion;
+            }
 
             var checkpoint = new CopilotAgentSessionCheckpoint
             {
@@ -376,6 +420,8 @@ namespace ColorVision.Copilot
                 EnvironmentFingerprint = environmentContext?.Fingerprint ?? string.Empty,
                 HookSurfaceVersion = hookSurfaceSnapshot == null ? 0 : CurrentHookSurfaceVersion,
                 HookSurfaceFingerprint = hookSurfaceSnapshot?.Fingerprint ?? string.Empty,
+                ProjectInstructionSurfaceVersion = projectInstructionSurfaceVersion,
+                ProjectInstructionSurfaceFingerprint = projectInstructionSurfaceFingerprint,
                 EvidenceArtifacts = persistedEvidence,
                 ConversationMemory = persistedConversationMemory,
                 TaskIntentText = persistedTaskIntentText,
@@ -387,20 +433,30 @@ namespace ColorVision.Copilot
 
         internal CopilotAgentSessionCheckpoint? CopyWithTaskEventJournal(CopilotAgentTaskEventJournalSnapshot taskEventJournal)
         {
+            return CopyWithOutcome(taskEventJournal, ConversationMemory);
+        }
+
+        internal CopilotAgentSessionCheckpoint? CopyWithOutcome(
+            CopilotAgentTaskEventJournalSnapshot taskEventJournal,
+            IReadOnlyList<CopilotRequestMessage> conversationMemory)
+        {
             ArgumentNullException.ThrowIfNull(taskEventJournal);
+            ArgumentNullException.ThrowIfNull(conversationMemory);
             var checkpoint = new CopilotAgentSessionCheckpoint(this)
             {
                 ProfileKey = ProfileKey,
                 CapabilityCatalogRevision = CapabilityCatalogRevision,
-                Capabilities = Capabilities,
+                Capabilities = (Capabilities ?? Array.Empty<CopilotAgentCheckpointCapability>()).ToArray(),
                 ToolSurfaceVersion = ToolSurfaceVersion,
-                AvailableToolNames = AvailableToolNames,
+                AvailableToolNames = (AvailableToolNames ?? Array.Empty<string>()).ToArray(),
                 EnvironmentVersion = EnvironmentVersion,
                 EnvironmentFingerprint = EnvironmentFingerprint,
                 HookSurfaceVersion = HookSurfaceVersion,
                 HookSurfaceFingerprint = HookSurfaceFingerprint,
-                EvidenceArtifacts = EvidenceArtifacts,
-                ConversationMemory = ConversationMemory,
+                ProjectInstructionSurfaceVersion = ProjectInstructionSurfaceVersion,
+                ProjectInstructionSurfaceFingerprint = ProjectInstructionSurfaceFingerprint,
+                EvidenceArtifacts = (EvidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()).ToArray(),
+                ConversationMemory = conversationMemory.ToArray(),
                 TaskIntentText = TaskIntentText,
                 TaskEventJournal = taskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
@@ -424,6 +480,49 @@ namespace ColorVision.Copilot
                 ChangedCapabilityIds = changed ?? Array.Empty<string>(),
                 RemovedToolNames = removedTools ?? Array.Empty<string>(),
             };
+        }
+
+        private static bool TryCreateProjectInstructionSurfaceFingerprint(
+            IReadOnlyList<CopilotProjectInstructionDocument> projectInstructions,
+            string? configuredDeveloperInstructions,
+            out string fingerprint)
+        {
+            fingerprint = string.Empty;
+            if (projectInstructions.Count > CopilotAgentProjectInstructions.MaxDocuments
+                || projectInstructions.Any(document => document?.IsStructurallyValid() != true))
+            {
+                return false;
+            }
+
+            using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            Span<byte> version = stackalloc byte[sizeof(int)];
+            BinaryPrimitives.WriteInt32BigEndian(version, CurrentProjectInstructionSurfaceVersion);
+            hash.AppendData(version);
+            var effectiveDeveloperInstructions = (configuredDeveloperInstructions ?? string.Empty).Trim();
+            if (effectiveDeveloperInstructions.Length > CopilotProjectInstructionDiscoveryConfig.MaximumDeveloperInstructionCharacters
+                || effectiveDeveloperInstructions.Contains('\0'))
+            {
+                return false;
+            }
+            AppendFingerprintValue(hash, effectiveDeveloperInstructions);
+            foreach (var document in projectInstructions)
+            {
+                AppendFingerprintValue(hash, document.Path);
+                AppendFingerprintValue(hash, document.Content);
+                hash.AppendData([document.IsTruncated ? (byte)1 : (byte)0]);
+            }
+
+            fingerprint = Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
+            return true;
+        }
+
+        private static void AppendFingerprintValue(IncrementalHash hash, string value)
+        {
+            var bytes = Encoding.UTF8.GetBytes(value);
+            Span<byte> length = stackalloc byte[sizeof(int)];
+            BinaryPrimitives.WriteInt32BigEndian(length, bytes.Length);
+            hash.AppendData(length);
+            hash.AppendData(bytes);
         }
 
         public static string CreateProfileKey(CopilotProfileConfig profile)

@@ -1,9 +1,12 @@
 using ColorVision.Copilot.Mcp;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,6 +42,7 @@ namespace ColorVision.Copilot
         public const int MaxEntries = 100;
         private const int MaxPathLength = 2_048;
         private static readonly TimeSpan ExecutionTimeout = TimeSpan.FromSeconds(15);
+        private static readonly ConcurrentDictionary<string, Lazy<Task<CopilotShellProcessResult>>> ActiveStatusRuns = new(StringComparer.OrdinalIgnoreCase);
         private readonly ICopilotShellProcessRunner _runner;
         private readonly Func<string?> _gitExecutableProvider;
 
@@ -82,7 +86,7 @@ namespace ColorVision.Copilot
             CopilotShellProcessResult processResult;
             try
             {
-                processResult = await _runner.RunAsync(new CopilotShellProcessCommand(
+                var command = new CopilotShellProcessCommand(
                     CopilotShellKind.PowerShell,
                     gitExecutable,
                     BuildArguments(repositoryRoot),
@@ -92,7 +96,8 @@ namespace ColorVision.Copilot
                     EnvironmentVariables = request.CodexShellEnvironmentPolicy
                         .CreateEnvironmentVariables(request.ConversationId),
                     EnvironmentOverrides = CopilotGitProcessSupport.EnvironmentOverrides,
-                }, cancellationToken);
+                };
+                processResult = await RunSharedStatusAsync(gitExecutable, repositoryRoot, command, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -127,6 +132,107 @@ namespace ColorVision.Copilot
                 Summary = BuildSummary(snapshot),
                 Content = BuildContent(snapshot),
             };
+        }
+
+        private async Task<CopilotShellProcessResult> RunSharedStatusAsync(
+            string gitExecutable,
+            string repositoryRoot,
+            CopilotShellProcessCommand command,
+            CancellationToken cancellationToken)
+        {
+            var key = BuildStatusRunKey(gitExecutable, repositoryRoot, command.EnvironmentVariables);
+            while (true)
+            {
+                if (ActiveStatusRuns.TryGetValue(key, out var existingRun))
+                {
+                    Task<CopilotShellProcessResult> existingTask;
+                    try
+                    {
+                        existingTask = existingRun.Value;
+                    }
+                    catch
+                    {
+                        RemoveActiveRun(key, existingRun);
+                        throw;
+                    }
+
+                    if (existingTask.IsCompleted)
+                    {
+                        RemoveActiveRun(key, existingRun);
+                        continue;
+                    }
+                    return await existingTask.WaitAsync(cancellationToken);
+                }
+
+                var newRun = new Lazy<Task<CopilotShellProcessResult>>(
+                    () => _runner.RunAsync(command, CancellationToken.None),
+                    LazyThreadSafetyMode.ExecutionAndPublication);
+                if (!ActiveStatusRuns.TryAdd(key, newRun))
+                    continue;
+
+                Task<CopilotShellProcessResult> newTask;
+                try
+                {
+                    newTask = newRun.Value;
+                }
+                catch
+                {
+                    RemoveActiveRun(key, newRun);
+                    throw;
+                }
+
+                _ = RemoveCompletedRunAsync(key, newRun, newTask);
+                return await newTask.WaitAsync(cancellationToken);
+            }
+        }
+
+        private static string BuildStatusRunKey(
+            string gitExecutable,
+            string repositoryRoot,
+            IReadOnlyDictionary<string, string>? environmentVariables)
+        {
+            using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            // CODEX_THREAD_ID is tracing metadata; hashing it would prevent equivalent scans in
+            // separate conversations from sharing the same active Git process.
+            foreach (var pair in (environmentVariables ?? new Dictionary<string, string>())
+                .Where(pair => !string.Equals(pair.Key, "CODEX_THREAD_ID", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                AppendHashValue(hash, pair.Key.ToUpperInvariant());
+                AppendHashValue(hash, pair.Value);
+            }
+            var environmentFingerprint = Convert.ToHexString(hash.GetHashAndReset());
+            return gitExecutable + "\0" + repositoryRoot + "\0" + environmentFingerprint;
+        }
+
+        private static void AppendHashValue(IncrementalHash hash, string value)
+        {
+            hash.AppendData(Encoding.UTF8.GetBytes(value));
+            hash.AppendData([0]);
+        }
+
+        private static async Task RemoveCompletedRunAsync(
+            string key,
+            Lazy<Task<CopilotShellProcessResult>> run,
+            Task<CopilotShellProcessResult> task)
+        {
+            try
+            {
+                await task;
+            }
+            catch
+            {
+            }
+            finally
+            {
+                RemoveActiveRun(key, run);
+            }
+        }
+
+        private static void RemoveActiveRun(string key, Lazy<Task<CopilotShellProcessResult>> run)
+        {
+            ((ICollection<KeyValuePair<string, Lazy<Task<CopilotShellProcessResult>>>>)ActiveStatusRuns)
+                .Remove(new KeyValuePair<string, Lazy<Task<CopilotShellProcessResult>>>(key, run));
         }
 
         private static IReadOnlyList<string> BuildArguments(string repositoryRoot)

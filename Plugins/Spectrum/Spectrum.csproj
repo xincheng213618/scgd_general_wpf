@@ -7,7 +7,7 @@
     <UseWPF>true</UseWPF>
     <Company>Spectromer</Company>
 	<ApplicationIcon>pic.ico</ApplicationIcon>
-	<VersionPrefix>2.3.3.7</VersionPrefix>
+	<VersionPrefix>2.3.3.9</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
@@ -50,33 +50,6 @@
     <None Include="DirectSpectrometer\Native\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>%(Filename)%(Extension)</TargetPath>
-    </None>
-    <None Update="C:\Users\Xin\.nuget\packages\cvcolorvision\1.3.11.3\contentFiles\any\net8.0-windows7.0\libusb0.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="C:\Users\Xin\.nuget\packages\cvcolorvision\1.3.11.3\contentFiles\any\net8.0-windows7.0\SpectraArsenal.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="C:\Users\Xin\.nuget\packages\cvcolorvision\1.3.11.3\contentFiles\any\net8.0-windows7.0\USB_Driver.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="C:\Users\Xin\.nuget\packages\cvcolorvision\1.3.5.1\contentFiles\any\net8.0-windows7.0\libusb0.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="C:\Users\Xin\.nuget\packages\cvcolorvision\1.3.5.1\contentFiles\any\net8.0-windows7.0\SpectraArsenal.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="C:\Users\Xin\.nuget\packages\cvcolorvision\1.3.5.1\contentFiles\any\net8.0-windows7.0\USB_Driver.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="C:\Users\Xin\.nuget\packages\cvcolorvision\2025.8.9.5\contentFiles\any\net8.0-windows7.0\libusb0.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="C:\Users\Xin\.nuget\packages\cvcolorvision\2025.8.9.5\contentFiles\any\net8.0-windows7.0\SpectraArsenal.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="C:\Users\Xin\.nuget\packages\cvcolorvision\2025.8.9.5\contentFiles\any\net8.0-windows7.0\USB_Driver.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="CHANGELOG.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
