@@ -1,8 +1,11 @@
+import os
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
+import Scripts.build_update as build_update_module
 from Scripts.build_update import (
     REQUIRED_SERVICE_HOST_RUNTIME_PATHS,
     create_full_zip,
@@ -10,6 +13,119 @@ from Scripts.build_update import (
     make_incremental_zip,
     validate_service_host_runtime,
 )
+from Scripts.verify_native_contracts import NativeContractError
+
+
+class UpdateBuildOrchestrationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._temporary_directory = tempfile.TemporaryDirectory(prefix="update-build-order-tests-")
+        self.root = Path(self._temporary_directory.name)
+        self.runtime = self.root / "runtime"
+        self.history = self.root / "history"
+        self.update = self.history / "update"
+        self.executable = self.runtime / "ColorVision.exe"
+        self.history.mkdir()
+
+    def tearDown(self) -> None:
+        self._temporary_directory.cleanup()
+
+    def test_main_validates_full_zip_before_incremental_upload(self) -> None:
+        events: list[str] = []
+        validated_packages: list[tuple[Path, ...]] = []
+        real_replace = os.replace
+        full_zip = self.history / "ColorVision-[1.2.3.4].zip"
+        pending_full_zip = self.history / "ColorVision-[1.2.3.4].zip.pending"
+        full_zip.write_bytes(b"previous validated package")
+
+        def create_full(_runtime, output):
+            events.append("full")
+            self.assertEqual(pending_full_zip, Path(output))
+            Path(output).write_bytes(b"validated full package")
+
+        def native_gate(_root, *, package_files):
+            events.append("gate")
+            self.assertEqual(b"previous validated package", full_zip.read_bytes())
+            validated_packages.append(tuple(Path(path) for path in package_files))
+            return mock.Mock(sha256="ABCD")
+
+        def promote(source, destination):
+            events.append("promote")
+            self.assertEqual(pending_full_zip, Path(source))
+            self.assertEqual(full_zip, Path(destination))
+            real_replace(source, destination)
+
+        def make_incremental(_old, _runtime, output):
+            events.append("incremental")
+            self.assertEqual(self.update / "ColorVision-Update-[1.2.3.4].cvx", Path(output))
+
+        def upload(_path, _folder):
+            events.append("upload")
+            return True
+
+        with (
+            self._patch_main_environment(),
+            mock.patch.object(build_update_module, "create_full_zip", side_effect=create_full),
+            mock.patch.object(build_update_module, "validate_native_contracts", side_effect=native_gate),
+            mock.patch.object(build_update_module.os, "replace", side_effect=promote),
+            mock.patch.object(build_update_module, "find_incremental_baseline", return_value=str(self.history / "old.zip")),
+            mock.patch.object(build_update_module, "make_incremental_zip", side_effect=make_incremental),
+            mock.patch.object(build_update_module, "upload_file", side_effect=upload),
+        ):
+            result = build_update_module.main()
+
+        self.assertEqual(0, result)
+        self.assertEqual(["full", "gate", "promote", "incremental", "upload"], events)
+        self.assertEqual([(pending_full_zip,)], validated_packages)
+        self.assertEqual(b"validated full package", full_zip.read_bytes())
+        self.assertFalse(pending_full_zip.exists())
+
+    def test_main_gate_failure_preserves_existing_full_zip_and_removes_pending(self) -> None:
+        events: list[str] = []
+        full_zip = self.history / "ColorVision-[1.2.3.4].zip"
+        pending_full_zip = self.history / "ColorVision-[1.2.3.4].zip.pending"
+        full_zip.write_bytes(b"previous validated package")
+
+        def create_full(_runtime, output):
+            events.append("full")
+            self.assertEqual(pending_full_zip, Path(output))
+            Path(output).write_bytes(b"rejected pending package")
+
+        def native_gate(_root, *, package_files):
+            self.assertEqual((pending_full_zip,), tuple(Path(path) for path in package_files))
+            events.append("gate")
+            raise NativeContractError("mutated ABI")
+
+        with (
+            self._patch_main_environment(),
+            mock.patch.object(build_update_module, "create_full_zip", side_effect=create_full),
+            mock.patch.object(build_update_module, "validate_native_contracts", side_effect=native_gate),
+            mock.patch.object(build_update_module.os, "replace") as replace_mock,
+            mock.patch.object(build_update_module, "find_incremental_baseline") as baseline_mock,
+            mock.patch.object(build_update_module, "make_incremental_zip") as incremental_mock,
+            mock.patch.object(build_update_module, "upload_file") as upload_mock,
+        ):
+            result = build_update_module.main()
+
+        self.assertEqual(1, result)
+        self.assertEqual(["full", "gate"], events)
+        self.assertEqual(b"previous validated package", full_zip.read_bytes())
+        self.assertFalse(pending_full_zip.exists())
+        replace_mock.assert_not_called()
+        baseline_mock.assert_not_called()
+        incremental_mock.assert_not_called()
+        upload_mock.assert_not_called()
+
+    def _patch_main_environment(self):
+        return mock.patch.multiple(
+            build_update_module,
+            exe_path=str(self.executable),
+            new_version_dir=str(self.runtime),
+            history_dir=str(self.history),
+            update_dir=str(self.update),
+            get_file_version=mock.Mock(return_value="1.2.3.4"),
+            validate_service_host_runtime=mock.Mock(return_value=None),
+            create_directory_if_not_exists=mock.Mock(return_value=None),
+        )
 
 
 class IncrementalBaselineTests(unittest.TestCase):

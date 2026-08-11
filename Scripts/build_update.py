@@ -244,6 +244,18 @@ def create_full_zip(version_dir, output_zip):
             zipf.write(str(file), str(os.path.relpath(file, version_dir)))
 
 
+def remove_file_best_effort(file_path):
+    """清理未通过校验的临时包，不覆盖原始异常。"""
+    try:
+        os.remove(file_path)
+        return True
+    except FileNotFoundError:
+        return True
+    except OSError as exc:
+        print(f"Warning: could not remove pending package {file_path}: {exc}")
+        return False
+
+
 def remove_directory_best_effort(directory, retries=5, delay_seconds=0.5):
     """清理临时目录；短暂文件占用不应阻断增量包上传。"""
     if not os.path.exists(directory):
@@ -347,25 +359,32 @@ def main() -> int:
     create_directory_if_not_exists(history_dir)
     create_directory_if_not_exists(update_dir)
 
+    print("创建全量包")
+    full_zip = os.path.join(history_dir, f'ColorVision-[{version}].zip')
+    pending_full_zip = f'{full_zip}.pending'
+    try:
+        create_full_zip(new_version_dir, pending_full_zip)
+        contract = validate_native_contracts(base_path, package_files=(pending_full_zip,))
+        os.replace(pending_full_zip, full_zip)
+    except NativeContractError as exc:
+        print(f"全量包 CUDA 原生契约校验失败: {exc}")
+        return 1
+    except OSError as exc:
+        print(f"全量包生成或原子晋升失败: {exc}")
+        return 1
+    finally:
+        remove_file_best_effort(pending_full_zip)
+    print(f"全量包 CUDA 校验通过: SHA256 {contract.sha256}")
+
     old_zip = find_incremental_baseline(history_dir, version)
     print(f"Incremental baseline: {old_zip or 'none (full installer only)'}")
     incremental_zip = os.path.join(update_dir, f'ColorVision-Update-[{version}].cvx')
-
     if old_zip:
         print(f"创建增量包: {incremental_zip}")
         make_incremental_zip(old_zip, new_version_dir, incremental_zip)
         if not upload_file(incremental_zip, "ColorVision/Update"):
             print("增量包上传失败，终止发布。")
             return 1
-    print("创建全量包")
-    full_zip = os.path.join(history_dir, f'ColorVision-[{version}].zip')
-    create_full_zip(new_version_dir, full_zip)
-    try:
-        contract = validate_native_contracts(base_path, package_files=(full_zip,))
-    except NativeContractError as exc:
-        print(f"全量包 CUDA 原生契约校验失败: {exc}")
-        return 1
-    print(f"全量包 CUDA 校验通过: SHA256 {contract.sha256}")
     return 0
 
 

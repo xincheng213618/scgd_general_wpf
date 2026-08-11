@@ -24,7 +24,10 @@ This directory contains the repository's native C++ and CUDA source tree.
 `UI/ColorVision.Core` must be reviewed against that DLL. The repository checker structurally
 validates exported function return/parameter types and calling conventions, the managed library
 name and P/Invoke signatures, the AMD64 `HImage` field/pack/offset/size contract, and native log
-callback delegates. It also reads the tracked PE export table directly. The check never loads the
+callback delegates. `HImage` uses an explicit native `pack(push, 8)` scope and managed `Pack = 8`;
+the native build also asserts standard layout, one-byte `bool`, size, and every x64 offset. The
+export build branch must expand `COLORVISIONCORE_API` to `__declspec(dllexport)`, and Release|x64
+must define `OPENCVCUDA_EXPORTS`. The checker also reads the tracked PE export table directly. It never loads the
 DLL, so it does not require a GPU, CUDA Toolkit, `dumpbin`, or another Python package:
 
 ```powershell

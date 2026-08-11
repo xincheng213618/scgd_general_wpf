@@ -15,6 +15,7 @@ CUDA_MANAGED_WRAPPER = Path("UI/ColorVision.Core/OpenCVCuda.cs")
 CUDA_MANAGED_STRUCTS = Path("UI/ColorVision.Core/HImage.cs")
 CUDA_NATIVE_LOG_BRIDGE = Path("UI/ColorVision.Core/NativeLogBridge.cs")
 CUDA_PROJECT = Path("UI/ColorVision.Core/ColorVision.Core.csproj")
+CUDA_NATIVE_PROJECT = Path("Native/opencv_cuda/opencv_cuda.vcxproj")
 CUDA_TRACKED_DLL = Path("x64/Release/opencv_cuda.dll")
 CUDA_PACKAGE_MEMBER = "runtimes/win-x64/native/opencv_cuda.dll"
 CUDA_DYNAMIC_MANAGED_EXPORTS = frozenset({
@@ -210,6 +211,195 @@ class NativeContractReport:
     package_files: tuple[Path, ...]
 
 
+def _mask_non_code(source: str) -> str:
+    result = list(source)
+    index = 0
+
+    def mask(start: int, end: int, *, preserve_quotes: tuple[int, ...] = ()) -> None:
+        preserved = set(preserve_quotes)
+        for position in range(start, end):
+            if position not in preserved and source[position] not in "\r\n":
+                result[position] = " "
+
+    while index < len(source):
+        character = source[index]
+        following = source[index + 1] if index + 1 < len(source) else ""
+        if character == "/" and following == "/":
+            end = source.find("\n", index + 2)
+            end = len(source) if end < 0 else end
+            mask(index, end)
+            index = end
+            continue
+        if character == "/" and following == "*":
+            end = source.find("*/", index + 2)
+            if end < 0:
+                raise NativeContractError("Unterminated block comment in ABI contract source.")
+            end += 2
+            mask(index, end)
+            index = end
+            continue
+
+        cpp_raw = re.match(r'(?:(?:u8|u|U|L)?R)"(?P<delimiter>[^ ()\\\t\r\n]{0,16})\(', source[index:])
+        if cpp_raw and (index == 0 or not (source[index - 1].isalnum() or source[index - 1] == "_")):
+            terminator = ")" + cpp_raw.group("delimiter") + '"'
+            end = source.find(terminator, index + cpp_raw.end())
+            if end < 0:
+                raise NativeContractError("Unterminated C++ raw string in ABI contract source.")
+            end += len(terminator)
+            mask(index, end)
+            index = end
+            continue
+
+        cs_raw = re.match(r'\$*(?P<quotes>"{3,})', source[index:])
+        if cs_raw:
+            terminator = cs_raw.group("quotes")
+            end = source.find(terminator, index + cs_raw.end())
+            if end < 0:
+                raise NativeContractError("Unterminated C# raw string in ABI contract source.")
+            end += len(terminator)
+            mask(index, end)
+            index = end
+            continue
+
+        verbatim_prefix = next(
+            (prefix for prefix in ("$@\"", "@$\"", "@\"") if source.startswith(prefix, index)),
+            None,
+        )
+        if verbatim_prefix:
+            cursor = index + len(verbatim_prefix)
+            while cursor < len(source):
+                if source.startswith('""', cursor):
+                    cursor += 2
+                    continue
+                if source[cursor] == '"':
+                    cursor += 1
+                    break
+                cursor += 1
+            else:
+                raise NativeContractError("Unterminated C# verbatim string in ABI contract source.")
+            mask(index, cursor)
+            index = cursor
+            continue
+
+        if character == '"':
+            cursor = index + 1
+            while cursor < len(source):
+                if source[cursor] in "\r\n":
+                    raise NativeContractError("Unexpected newline in ABI contract string literal.")
+                if source[cursor] == "\\":
+                    cursor += 2
+                    continue
+                if source[cursor] == '"':
+                    break
+                cursor += 1
+            if cursor >= len(source):
+                raise NativeContractError("Unterminated string in ABI contract source.")
+            mask(index, cursor + 1, preserve_quotes=(index, cursor))
+            index = cursor + 1
+            continue
+
+        if character == "'":
+            cursor = index + 1
+            while cursor < len(source):
+                if source[cursor] in "\r\n":
+                    raise NativeContractError("Unexpected newline in ABI contract character literal.")
+                if source[cursor] == "\\":
+                    cursor += 2
+                    continue
+                if source[cursor] == "'":
+                    cursor += 1
+                    break
+                cursor += 1
+            else:
+                raise NativeContractError("Unterminated character literal in ABI contract source.")
+            mask(index, cursor)
+            index = cursor
+            continue
+        index += 1
+    return "".join(result)
+
+
+def _original_group(source: str, match: re.Match[str], group: str) -> str:
+    start, end = match.span(group)
+    return source[start:end]
+
+
+def _reject_contract_token_aliases(source: str, context: str) -> None:
+    if re.search(r"\\\r?\n", source):
+        raise NativeContractError(
+            f"{context} must not use preprocessor line splicing in ABI contract source."
+        )
+    code = _mask_non_code(source)
+    aliases = []
+    if re.search(r"\b(?:__pragma|_Pragma)\s*\(", code):
+        aliases.append("pragma operator")
+    if "%:" in code:
+        aliases.append("preprocessor digraph")
+    if aliases:
+        raise NativeContractError(
+            f"{context} must not use alternate preprocessor tokens: {aliases}."
+        )
+
+
+def _read_source_directives(source: str) -> list[tuple[str, str]]:
+    code = _mask_non_code(source)
+    directives: list[tuple[str, str]] = []
+    for match in re.finditer(
+        r"^\s*#\s*(?P<name>[A-Za-z_]\w*)\b(?P<body>[^\r\n]*)$",
+        code,
+        flags=re.MULTILINE,
+    ):
+        directives.append(
+            (
+                match.group("name").casefold(),
+                re.sub(r"\s+", " ", _original_group(source, match, "body").strip()),
+            )
+        )
+    return directives
+
+
+def _validate_custom_struct_directives(source: str) -> None:
+    expected = [
+        ("pragma", "once"),
+        ("include", "<opencv2/core.hpp>"),
+        ("include", "<combaseapi.h>"),
+        ("include", "<cstddef>"),
+        ("include", "<cstdint>"),
+        ("include", "<cstring>"),
+        ("include", "<limits>"),
+        ("include", "<type_traits>"),
+    ]
+    directives = [
+        directive
+        for directive in _read_source_directives(source)
+        if not (directive[0] == "pragma" and directive[1].startswith("pack("))
+    ]
+    if directives != expected:
+        raise NativeContractError(
+            f"custom_structs.h preprocessor/include contract drift: found={directives!r}."
+        )
+
+
+def _reject_csharp_type_aliases(source: str, context: str) -> None:
+    code = _mask_non_code(source)
+    if re.search(r"^\s*(?:global\s+)?using\s+[A-Za-z_]\w*\s*=", code, re.MULTILINE):
+        raise NativeContractError(f"{context} must not use C# type aliases in ABI contract source.")
+
+
+def _reject_contract_preprocessor_mutation(source: str, context: str) -> None:
+    _reject_contract_token_aliases(source, context)
+    code = _mask_non_code(source)
+    matches = re.findall(
+        r"^\s*#\s*(if|ifdef|ifndef|elif|else|endif|define|undef)\b",
+        code,
+        flags=re.MULTILINE | re.IGNORECASE,
+    )
+    if matches:
+        raise NativeContractError(
+            f"{context} must not use conditional compilation or token-rewriting directives: {matches}."
+        )
+
+
 def _unpack_from(data: bytes, format_string: str, offset: int, description: str):
     size = struct.calcsize(format_string)
     if offset < 0 or offset + size > len(data):
@@ -379,24 +569,102 @@ def _parse_cpp_function(name: str, prefix: str, parameters: str) -> AbiFunction:
 
 
 def read_header_functions(source: str) -> dict[str, AbiFunction]:
-    declarations = re.findall(
-        r'extern\s+"C"\s+COLORVISIONCORE_API\s+'
+    code = _mask_non_code(source)
+    declarations = list(re.finditer(
+        r'extern\s+"(?P<linkage>[^"]*)"\s+COLORVISIONCORE_API\s+'
         r"(?P<prefix>[^;()]+?)\s+(?P<name>[A-Za-z_]\w*)\s*"
         r"\((?P<parameters>[^;()]*)\)\s*;",
-        source,
+        code,
         flags=re.MULTILINE,
-    )
-    if not declarations:
-        raise NativeContractError("No CUDA exports were found in cuda_export.h.")
+    ))
+    extern_declarations = list(re.finditer(r'\bextern\s+"[^"]*"', code))
+    if [match.start() for match in extern_declarations] != [
+        match.start() for match in declarations
+    ]:
+        raise NativeContractError(
+            "cuda_export.h may declare extern language-linkage functions only through "
+            "COLORVISIONCORE_API."
+        )
     functions: dict[str, AbiFunction] = {}
-    for prefix, name, parameters in declarations:
+    for declaration in declarations:
+        linkage = _original_group(source, declaration, "linkage")
+        if linkage != "C":
+            raise NativeContractError(f"CUDA export uses unsupported language linkage: {linkage!r}.")
+        prefix = declaration.group("prefix")
+        name = declaration.group("name")
+        parameters = declaration.group("parameters")
         if name in functions:
             raise NativeContractError(f"cuda_export.h contains duplicate export declaration: {name}.")
         functions[name] = _parse_cpp_function(name, prefix, parameters)
+    if not functions:
+        raise NativeContractError("No CUDA exports were found in cuda_export.h.")
+    macro_uses = re.findall(r"\bCOLORVISIONCORE_API\b", code)
+    if len(macro_uses) != len(functions) + 2:
+        raise NativeContractError(
+            "cuda_export.h contains an unparsed COLORVISIONCORE_API export declaration."
+        )
+    if code.count(";") != len(functions) + 1 or "{" in code or "}" in code:
+        raise NativeContractError(
+            "cuda_export.h contains an unparsed declaration or inline export definition."
+        )
     return functions
 
 
+def validate_windows_export_macro(source: str) -> None:
+    _reject_contract_token_aliases(source, "cuda_export.h")
+    expected_all_directives = [
+        ("pragma", "once"),
+        ("include", "<string>"),
+        ("include", "<opencv2/opencv.hpp>"),
+        ("include", '"custom_structs.h"'),
+        ("ifdef", "OPENCVCUDA_EXPORTS"),
+        ("define", "COLORVISIONCORE_API __declspec(dllexport)"),
+        ("else", ""),
+        ("define", "COLORVISIONCORE_API __declspec(dllimport)"),
+        ("endif", ""),
+    ]
+    code = _mask_non_code(source)
+    directives = []
+    for match in re.finditer(
+        r"^\s*#\s*(?P<name>if|ifdef|ifndef|elif|else|endif|define|undef)\b(?P<body>[^\r\n]*)$",
+        code,
+        flags=re.MULTILINE | re.IGNORECASE,
+    ):
+        directives.append(
+            (
+                match.group("name").casefold(),
+                re.sub(r"\s+", " ", match.group("body").strip()),
+            )
+        )
+    expected = [
+        ("ifdef", "OPENCVCUDA_EXPORTS"),
+        ("define", "COLORVISIONCORE_API __declspec(dllexport)"),
+        ("else", ""),
+        ("define", "COLORVISIONCORE_API __declspec(dllimport)"),
+        ("endif", ""),
+    ]
+    if directives != expected:
+        raise NativeContractError(
+            "cuda_export.h must contain only the exact OPENCVCUDA_EXPORTS "
+            f"dllexport/dllimport branch; found={directives!r}."
+        )
+    all_directives = _read_source_directives(source)
+    if all_directives != expected_all_directives:
+        raise NativeContractError(
+            f"cuda_export.h preprocessor/include contract drift: found={all_directives!r}."
+        )
+    if len(re.findall(r"__declspec\s*\(\s*dllexport\s*\)", code, re.IGNORECASE)) != 1:
+        raise NativeContractError(
+            "cuda_export.h must use __declspec(dllexport) only in COLORVISIONCORE_API."
+        )
+    if len(re.findall(r"__declspec\s*\(\s*dllimport\s*\)", code, re.IGNORECASE)) != 1:
+        raise NativeContractError(
+            "cuda_export.h must use __declspec(dllimport) only in COLORVISIONCORE_API."
+        )
+
+
 def read_header_callback(source: str) -> AbiFunction:
+    source = _mask_non_code(source)
     matches = re.findall(
         r"typedef\s+(?P<return>[^;()]+?)\s*\(\s*"
         r"(?P<convention>__(?:cdecl|stdcall|fastcall|vectorcall))\s*\*\s*"
@@ -454,33 +722,53 @@ def _parse_cs_parameters(value: str, context: str) -> tuple[AbiParameter, ...]:
     return tuple(parameters)
 
 
-def _read_const_string(source: str, name: str, context: str) -> str:
-    matches = re.findall(
-        rf"\bconst\s+string\s+{re.escape(name)}\s*=\s*\"([^\"]+)\"\s*;",
-        source,
-    )
+def _read_const_string(source: str, code: str, name: str, context: str) -> str:
+    matches = list(re.finditer(
+        rf"\bconst\s+string\s+{re.escape(name)}\s*=\s*\"(?P<value>[^\"]*)\"\s*;",
+        code,
+    ))
     if len(matches) != 1:
         raise NativeContractError(f"{context} must declare exactly one const string {name}.")
-    return matches[0]
+    value = _original_group(source, matches[0], "value")
+    if "\\" in value or "\r" in value or "\n" in value:
+        raise NativeContractError(f"{context}.{name} must use a simple literal value.")
+    return value
 
 
 def read_managed_import_contract(source: str) -> tuple[str, dict[str, AbiFunction]]:
-    library_name = _read_const_string(source, "LibPath", "OpenCVCuda")
-    declarations = re.findall(
+    _reject_contract_preprocessor_mutation(source, "OpenCVCuda")
+    _reject_csharp_type_aliases(source, "OpenCVCuda")
+    code = _mask_non_code(source)
+    if re.search(r"\bLibraryImport(?:Attribute)?\b", code):
+        raise NativeContractError(
+            "OpenCVCuda supports only the reviewed DllImport declarations, not LibraryImport."
+        )
+    library_name = _read_const_string(source, code, "LibPath", "OpenCVCuda")
+    declarations = list(re.finditer(
         r"\[DllImport\((?P<arguments>.*?)\)\]\s*"
         r"private\s+static\s+extern\s+"
         r"(?P<return>[A-Za-z_]\w*(?:\[\])?)\s+"
         r"(?P<method>[A-Za-z_]\w*)\s*"
         r"\((?P<parameters>[^;()]*)\)\s*;",
-        source,
+        code,
         flags=re.DOTALL,
-    )
-    import_attributes = re.findall(r"\[DllImport\((.*?)\)\]", source, flags=re.DOTALL)
+    ))
+    import_attributes = re.findall(r"\[DllImport\((.*?)\)\]", code, flags=re.DOTALL)
     if not declarations or len(declarations) != len(import_attributes):
         raise NativeContractError("Could not pair every CUDA DllImport attribute with its declaration.")
+    extern_tokens = re.findall(r"\bextern\b", code)
+    dllimport_tokens = re.findall(r"\bDllImport(?:Attribute)?\b", code)
+    if len(extern_tokens) != len(declarations) or len(dllimport_tokens) != len(declarations):
+        raise NativeContractError(
+            "OpenCVCuda contains an unparsed extern method or DllImport attribute spelling."
+        )
 
     functions: dict[str, AbiFunction] = {}
-    for arguments, return_type, method_name, parameters in declarations:
+    for declaration in declarations:
+        arguments = declaration.group("arguments")
+        return_type = declaration.group("return")
+        method_name = declaration.group("method")
+        parameters = declaration.group("parameters")
         argument_parts = _split_top_level(arguments)
         if not argument_parts or argument_parts[0].strip() != "LibPath":
             raise NativeContractError(f"CUDA DllImport {method_name} must reference OpenCVCuda.LibPath.")
@@ -494,8 +782,21 @@ def read_managed_import_contract(source: str) -> tuple[str, dict[str, AbiFunctio
             raise NativeContractError(
                 f"CUDA DllImport {method_name} must use ANSI string marshalling for const char*."
             )
-        entry_point_match = re.search(r'\bEntryPoint\s*=\s*"([A-Za-z_]\w*)"', arguments)
-        export_name = entry_point_match.group(1) if entry_point_match else method_name
+        entry_point_match = re.search(
+            r'\bEntryPoint\s*=\s*"(?P<value>[^"]*)"', arguments
+        )
+        if entry_point_match:
+            argument_start = declaration.start("arguments")
+            export_name = source[
+                argument_start + entry_point_match.start("value"):
+                argument_start + entry_point_match.end("value")
+            ]
+            if not re.fullmatch(r"[A-Za-z_]\w*", export_name):
+                raise NativeContractError(
+                    f"CUDA DllImport {method_name} has an invalid EntryPoint literal."
+                )
+        else:
+            export_name = method_name
         if export_name in functions:
             raise NativeContractError(f"Duplicate CUDA DllImport entry point: {export_name}.")
         functions[export_name] = AbiFunction(
@@ -515,15 +816,29 @@ def read_managed_dllimports(source: str) -> frozenset[str]:
 def read_native_log_bridge_contract(
     source: str,
 ) -> tuple[str, dict[str, AbiFunction], dict[str, str]]:
-    library_name = _read_const_string(source, "CudaLib", "NativeLogBridge")
+    _reject_contract_preprocessor_mutation(source, "NativeLogBridge")
+    _reject_csharp_type_aliases(source, "NativeLogBridge")
+    code = _mask_non_code(source)
+    library_name = _read_const_string(source, code, "CudaLib", "NativeLogBridge")
     delegate_matches = re.findall(
         r"\[UnmanagedFunctionPointer\(\s*CallingConvention\.([A-Za-z_]+)\s*\)\]\s*"
         r"(?:public|private)\s+delegate\s+"
         r"(?P<return>[A-Za-z_]\w*)\s+(?P<name>[A-Za-z_]\w*)\s*"
         r"\((?P<parameters>[^;()]*)\)\s*;",
-        source,
+        code,
         flags=re.DOTALL,
     )
+    delegate_tokens = re.findall(r"\bdelegate\b", code)
+    unmanaged_attribute_tokens = re.findall(
+        r"\bUnmanagedFunctionPointer(?:Attribute)?\b", code
+    )
+    if (
+        len(delegate_tokens) != len(delegate_matches)
+        or len(unmanaged_attribute_tokens) != len(delegate_matches)
+    ):
+        raise NativeContractError(
+            "NativeLogBridge contains an unparsed native callback delegate contract."
+        )
     delegates: dict[str, AbiFunction] = {}
     for convention, return_type, name, parameters in delegate_matches:
         if name in delegates:
@@ -535,28 +850,39 @@ def read_native_log_bridge_contract(
             _parse_cs_parameters(parameters, name),
         )
 
-    binding_matches = re.findall(
+    binding_matches = re.finditer(
         r"GetExport<(?P<delegate>[A-Za-z_]\w*)>\(\s*module\s*,\s*"
-        r'\$"\{exportPrefix\}(?P<suffix>[A-Za-z_]\w*)"\s*\)',
-        source,
+        r'\$"(?P<literal>[^"]*)"\s*\)',
+        code,
     )
     bindings: dict[str, str] = {}
-    for delegate_name, suffix in binding_matches:
+    for binding in binding_matches:
+        delegate_name = binding.group("delegate")
+        literal = _original_group(source, binding, "literal")
+        literal_match = re.fullmatch(r"\{exportPrefix\}(?P<suffix>[A-Za-z_]\w*)", literal)
+        if not literal_match:
+            raise NativeContractError(
+                f"NativeLogBridge contains an invalid dynamic export literal: {literal!r}."
+            )
+        suffix = literal_match.group("suffix")
         if suffix in bindings:
             raise NativeContractError(f"Duplicate NativeLogBridge export binding: {suffix}.")
         bindings[suffix] = delegate_name
 
     prefix_match = re.search(
         r"return\s+source\s*==\s*NativeLogSource\.OpencvCuda\s*"
-        r'\?\s*"([^"]+)"\s*:\s*"([^"]+)"\s*;',
-        source,
+        r'\?\s*"(?P<cuda>[^"]*)"\s*:\s*"(?P<helper>[^"]*)"\s*;',
+        code,
     )
-    if not prefix_match or prefix_match.groups() != ("CM_", "M_"):
+    if not prefix_match or (
+        _original_group(source, prefix_match, "cuda"),
+        _original_group(source, prefix_match, "helper"),
+    ) != ("CM_", "M_"):
         raise NativeContractError("NativeLogBridge must map OpencvCuda exports to the CM_ prefix.")
     return library_name, delegates, bindings
 
 
-def _extract_braced_body(source: str, opening_brace: int, context: str) -> str:
+def _extract_braced_region(source: str, opening_brace: int, context: str) -> tuple[str, int]:
     depth = 0
     for index in range(opening_brace, len(source)):
         character = source[index]
@@ -565,30 +891,8 @@ def _extract_braced_body(source: str, opening_brace: int, context: str) -> str:
         elif character == "}":
             depth -= 1
             if depth == 0:
-                return source[opening_brace + 1:index]
+                return source[opening_brace + 1:index], index
     raise NativeContractError(f"Unterminated braced declaration for {context}.")
-
-
-def _native_pack_at(source: str, position: int) -> int:
-    current = 0
-    stack: list[int] = []
-    for match in re.finditer(r"^\s*#\s*pragma\s+pack\s*\(([^)]*)\)", source[:position], re.MULTILINE):
-        parts = [part.strip() for part in match.group(1).split(",") if part.strip()]
-        if not parts:
-            current = 0
-        elif parts[0] == "push":
-            stack.append(current)
-            if len(parts) > 1:
-                current = int(parts[-1])
-        elif parts[0] == "pop":
-            if not stack:
-                raise NativeContractError("custom_structs.h contains an unmatched #pragma pack(pop).")
-            current = stack.pop()
-        elif parts[0].isdigit():
-            current = int(parts[0])
-        else:
-            raise NativeContractError(f"Unsupported #pragma pack form before HImage: {match.group(0)!r}.")
-    return current
 
 
 def _top_level_lines(body: str):
@@ -600,6 +904,36 @@ def _top_level_lines(body: str):
         depth += line.count("{") - line.count("}")
         if depth < 0:
             raise NativeContractError("Unexpected closing brace while parsing ABI structure.")
+    if depth != 0:
+        raise NativeContractError("Unbalanced nested braces while parsing ABI structure.")
+
+
+def _native_pack_state(source: str) -> tuple[int, tuple[int, ...]]:
+    current = 0
+    stack: list[int] = []
+    for match in re.finditer(
+        r"^\s*#\s*pragma\s+pack\s*\((?P<arguments>[^)]*)\)",
+        source,
+        flags=re.MULTILINE,
+    ):
+        parts = [part.strip() for part in match.group("arguments").split(",") if part.strip()]
+        if not parts:
+            current = 0
+        elif parts[0] == "push" and len(parts) in {1, 2}:
+            stack.append(current)
+            if len(parts) == 2 and parts[1].isdigit():
+                current = int(parts[1])
+            elif len(parts) == 2:
+                raise NativeContractError(f"Unsupported #pragma pack value: {match.group(0)!r}.")
+        elif parts == ["pop"]:
+            if not stack:
+                raise NativeContractError("custom_structs.h contains an unmatched #pragma pack(pop).")
+            current = stack.pop()
+        elif len(parts) == 1 and parts[0].isdigit():
+            current = int(parts[0])
+        else:
+            raise NativeContractError(f"Unsupported #pragma pack form: {match.group(0)!r}.")
+    return current, tuple(stack)
 
 
 def _calculate_layout(
@@ -626,59 +960,163 @@ def _calculate_layout(
 
 
 def read_native_himage_layout(source: str) -> AbiStructLayout:
-    match = re.search(r"typedef\s+struct\s+HImage\s*\{", source)
-    if not match:
+    _reject_contract_preprocessor_mutation(source, "custom_structs.h")
+    _validate_custom_struct_directives(source)
+    source = _mask_non_code(source)
+    if _native_pack_state(source) != (0, ()):
+        raise NativeContractError(
+            "custom_structs.h must restore the default pack state at end of file."
+        )
+    matches = list(re.finditer(r"typedef\s+struct\s+HImage(?P<suffix>[^\{;]*)\{", source))
+    if len(matches) != 1:
         raise NativeContractError("custom_structs.h does not declare typedef struct HImage.")
+    match = matches[0]
+    if match.group("suffix").strip():
+        raise NativeContractError(
+            "Native HImage must not use inheritance or declaration modifiers."
+        )
+
+    pack_match = re.search(
+        r"#\s*pragma\s+pack\s*\(\s*push\s*,\s*(?P<pack>\d+)\s*\)\s*$",
+        source[:match.start()],
+    )
+    if not pack_match:
+        raise NativeContractError(
+            "Native HImage must be immediately preceded by #pragma pack(push, 8)."
+        )
+    pack = int(pack_match.group("pack"))
+    if _native_pack_state(source[:pack_match.start()]) != (0, ()):
+        raise NativeContractError(
+            "Native HImage pack scope must start from the balanced Windows default state."
+        )
+
     opening_brace = source.find("{", match.start())
-    body = _extract_braced_body(source, opening_brace, "native HImage")
+    body, closing_brace = _extract_braced_region(source, opening_brace, "native HImage")
+    trailer = re.match(
+        r"\s*HImage\s*;\s*#\s*pragma\s+pack\s*\(\s*pop\s*\)",
+        source[closing_brace + 1:],
+    )
+    if not trailer:
+        raise NativeContractError(
+            "Native HImage must be immediately followed by a matching #pragma pack(pop)."
+        )
+
     fields: list[AbiField] = []
+    method_names: set[str] = set()
+    awaiting_method_body = False
     for line in _top_level_lines(body):
+        if not line or line.startswith("//"):
+            continue
+        if line == "{":
+            if not awaiting_method_body:
+                raise NativeContractError(
+                    "Native HImage contains an unexpected top-level method body."
+                )
+            awaiting_method_body = False
+            continue
+        method_match = re.fullmatch(r"int\s+(type|elemSize)\s*\(\s*\)\s+const", line)
+        if method_match:
+            method_name = method_match.group(1)
+            if awaiting_method_body or method_name in method_names:
+                raise NativeContractError(
+                    f"Native HImage contains a duplicate or unterminated {method_name} method."
+                )
+            method_names.add(method_name)
+            awaiting_method_body = True
+            continue
         field_match = re.fullmatch(
             r"(?P<type>(?:unsigned\s+char|int|bool)\s*\*?)\s*"
-            r"(?P<name>[A-Za-z_]\w*)(?:\s*=\s*[^;]+)?\s*;",
+            r"(?P<name>[A-Za-z_]\w*)(?:\s*=\s*[^;]+)?\s*;"
+            r"(?:\s*//.*)?",
             line,
         )
         if field_match:
-            fields.append(
-                AbiField(_normalize_cpp_type(field_match.group("type")), field_match.group("name"))
+            if awaiting_method_body:
+                raise NativeContractError("Native HImage method declaration is missing its body.")
+            field = AbiField(
+                _normalize_cpp_type(field_match.group("type")), field_match.group("name")
             )
+            field_index = len(fields)
+            if (
+                field_index >= len(EXPECTED_NATIVE_HIMAGE_FIELDS)
+                or field != EXPECTED_NATIVE_HIMAGE_FIELDS[field_index]
+            ):
+                raise NativeContractError(
+                    f"Native HImage contains an unknown or reordered instance field: {field!r}."
+                )
+            fields.append(field)
+            continue
+        raise NativeContractError(
+            f"Native HImage contains unsupported top-level declaration: {line!r}."
+        )
+    if awaiting_method_body:
+        raise NativeContractError("Native HImage method declaration is missing its body.")
     return _calculate_layout(
         "native HImage",
-        _native_pack_at(source, match.start()),
+        pack,
         tuple(fields),
         {"int": (4, 4), "bool": (1, 1), "unsigned char*": (8, 8)},
     )
 
 
 def read_managed_himage_layout(source: str) -> AbiStructLayout:
-    match = re.search(
+    _reject_contract_preprocessor_mutation(source, "HImage.cs")
+    _reject_csharp_type_aliases(source, "HImage.cs")
+    source = _mask_non_code(source)
+    matches = list(re.finditer(
         r"\[StructLayout\((?P<layout>[^]]+)\)\]\s*"
-        r"public\s+struct\s+HImage\b[^\{]*\{",
+        r"public\s+struct\s+HImage(?P<suffix>[^\{]*)\{",
         source,
         flags=re.DOTALL,
-    )
-    if not match:
+    ))
+    if len(matches) != 1:
         raise NativeContractError("HImage.cs does not declare a StructLayout for HImage.")
+    match = matches[0]
+    if re.sub(r"\s+", "", match.group("suffix")) != ":IDisposable":
+        raise NativeContractError(
+            "Managed HImage must implement only IDisposable and must not use declaration modifiers."
+        )
     layout_parts = _split_top_level(match.group("layout"))
     if not layout_parts or layout_parts[0].strip() != "LayoutKind.Sequential":
         raise NativeContractError("Managed HImage must use LayoutKind.Sequential.")
     pack = 0
+    pack_seen = False
     for part in layout_parts[1:]:
         pack_match = re.fullmatch(r"Pack\s*=\s*(\d+)", part)
         if pack_match:
+            if pack_seen:
+                raise NativeContractError("Managed HImage StructLayout must declare Pack exactly once.")
+            pack_seen = True
             pack = int(pack_match.group(1))
         else:
             raise NativeContractError(f"Unsupported managed HImage StructLayout option: {part!r}.")
 
     opening_brace = source.find("{", match.start())
-    body = _extract_braced_body(source, opening_brace, "managed HImage")
+    body, _ = _extract_braced_region(source, opening_brace, "managed HImage")
     fields: list[AbiField] = []
     pending_attributes: list[str] = []
+    dispose_seen = False
+    awaiting_method_body = False
     for line in _top_level_lines(body):
-        if not line:
+        if not line or line.startswith("//"):
+            continue
+        if line == "{":
+            if not awaiting_method_body:
+                raise NativeContractError(
+                    "Managed HImage contains an unexpected top-level method body."
+                )
+            awaiting_method_body = False
+            continue
+        if re.fullmatch(r"public\s+void\s+Dispose\s*\(\s*\)", line):
+            if pending_attributes or awaiting_method_body or dispose_seen:
+                raise NativeContractError("Managed HImage contains an invalid Dispose declaration.")
+            dispose_seen = True
+            awaiting_method_body = True
             continue
         attribute_match = re.fullmatch(r"\[(.+)\]", line)
         if attribute_match:
+            if awaiting_method_body:
+                raise NativeContractError("Managed HImage Dispose declaration is missing its body.")
             pending_attributes.append(_normalize_cs_attribute(attribute_match.group(1)))
             continue
         field_match = re.fullmatch(
@@ -687,16 +1125,31 @@ def read_managed_himage_layout(source: str) -> AbiStructLayout:
             line,
         )
         if field_match:
-            fields.append(
-                AbiField(
-                    field_match.group("type"),
-                    field_match.group("name"),
-                    tuple(pending_attributes),
-                )
+            if awaiting_method_body:
+                raise NativeContractError("Managed HImage Dispose declaration is missing its body.")
+            field = AbiField(
+                field_match.group("type"),
+                field_match.group("name"),
+                tuple(pending_attributes),
             )
+            field_index = len(fields)
+            if (
+                field_index >= len(EXPECTED_MANAGED_HIMAGE_FIELDS)
+                or field != EXPECTED_MANAGED_HIMAGE_FIELDS[field_index]
+            ):
+                raise NativeContractError(
+                    f"Managed HImage contains an unknown or reordered instance field: {field!r}."
+                )
+            fields.append(field)
             pending_attributes.clear()
-        elif not line.startswith("//"):
-            pending_attributes.clear()
+            continue
+        raise NativeContractError(
+            f"Managed HImage contains unsupported top-level declaration: {line!r}."
+        )
+    if pending_attributes:
+        raise NativeContractError("Managed HImage contains an attribute without a field.")
+    if awaiting_method_body:
+        raise NativeContractError("Managed HImage Dispose declaration is missing its body.")
     return _calculate_layout(
         "managed HImage",
         pack,
@@ -712,6 +1165,7 @@ def validate_cuda_source_contracts(
     managed_struct_source: str,
     log_bridge_source: str,
 ) -> tuple[dict[str, AbiFunction], AbiStructLayout]:
+    validate_windows_export_macro(header_source)
     header_functions = read_header_functions(header_source)
     if header_functions != EXPECTED_HEADER_FUNCTIONS:
         raise NativeContractError(
@@ -738,9 +1192,9 @@ def validate_cuda_source_contracts(
 
     native_layout = read_native_himage_layout(native_struct_source)
     managed_layout = read_managed_himage_layout(managed_struct_source)
-    if native_layout.pack != 0 or native_layout.fields != EXPECTED_NATIVE_HIMAGE_FIELDS:
+    if native_layout.pack != 8 or native_layout.fields != EXPECTED_NATIVE_HIMAGE_FIELDS:
         raise NativeContractError(f"Native HImage layout/pack drift: found={native_layout!r}.")
-    if managed_layout.pack != 0 or managed_layout.fields != EXPECTED_MANAGED_HIMAGE_FIELDS:
+    if managed_layout.pack != 8 or managed_layout.fields != EXPECTED_MANAGED_HIMAGE_FIELDS:
         raise NativeContractError(f"Managed HImage layout/pack drift: found={managed_layout!r}.")
     if (
         native_layout.offsets != EXPECTED_HIMAGE_OFFSETS
@@ -808,6 +1262,103 @@ def validate_cuda_package_binding(project_path: Path) -> None:
         raise NativeContractError(f"Unexpected opencv_cuda.dll Link path: {link_path!r}.")
 
 
+def validate_cuda_native_export_build(project_path: Path) -> None:
+    try:
+        root = ElementTree.parse(project_path).getroot()
+    except (ElementTree.ParseError, OSError) as exc:
+        raise NativeContractError(f"Could not read CUDA native project: {project_path}: {exc}") from exc
+
+    all_definition_groups = [
+        element
+        for element in root.iter()
+        if element.tag.rsplit("}", 1)[-1] == "ItemDefinitionGroup"
+    ]
+    direct_definition_groups = [
+        element
+        for element in root
+        if element.tag.rsplit("}", 1)[-1] == "ItemDefinitionGroup"
+    ]
+    if len(all_definition_groups) != len(direct_definition_groups):
+        raise NativeContractError(
+            "opencv_cuda ItemDefinitionGroup contracts must be unconditional direct Project children."
+        )
+
+    allowed_definition_conditions = {
+        "'$(configuration)|$(platform)'=='debug|win32'",
+        "'$(configuration)|$(platform)'=='release|win32'",
+        "'$(configuration)|$(platform)'=='debug|x64'",
+        "'$(configuration)|$(platform)'=='release|x64'",
+    }
+    release_groups = []
+    for element in direct_definition_groups:
+        condition = re.sub(r"\s+", "", element.attrib.get("Condition") or "").casefold()
+        compile_elements = [
+            child for child in element
+            if child.tag.rsplit("}", 1)[-1] == "ClCompile"
+        ]
+        definitions = [
+            child
+            for compile_element in compile_elements
+            for child in compile_element
+            if child.tag.rsplit("}", 1)[-1] == "PreprocessorDefinitions"
+        ]
+        if definitions:
+            if condition not in allowed_definition_conditions:
+                raise NativeContractError(
+                    "opencv_cuda.vcxproj contains an unreviewed preprocessor-definition group: "
+                    f"{element.attrib.get('Condition')!r}."
+                )
+            if len(compile_elements) != 1 or len(definitions) != 1:
+                raise NativeContractError(
+                    "Each opencv_cuda configuration must define preprocessor symbols once."
+                )
+            if (compile_elements[0].attrib.get("Condition") or "").strip() or (
+                definitions[0].attrib.get("Condition") or ""
+            ).strip():
+                raise NativeContractError(
+                    "opencv_cuda preprocessor definitions must be unconditional inside their configuration group."
+                )
+        if condition == "'$(configuration)|$(platform)'=='release|x64'":
+            release_groups.append(element)
+    if len(release_groups) != 1:
+        raise NativeContractError(
+            "opencv_cuda.vcxproj must define exactly one Release|x64 ItemDefinitionGroup."
+        )
+
+    release_compile_elements = [
+        child for child in release_groups[0]
+        if child.tag.rsplit("}", 1)[-1] == "ClCompile"
+    ]
+    if len(release_compile_elements) != 1:
+        raise NativeContractError("opencv_cuda Release|x64 must define one ClCompile contract.")
+    release_definitions = [
+        child for child in release_compile_elements[0]
+        if child.tag.rsplit("}", 1)[-1] == "PreprocessorDefinitions"
+    ]
+    if len(release_definitions) != 1:
+        raise NativeContractError(
+            "opencv_cuda Release|x64 must define PreprocessorDefinitions exactly once."
+        )
+    release_definitions_element = release_definitions[0]
+    definitions = [
+        token.strip()
+        for token in (release_definitions_element.text or "").split(";")
+        if token.strip()
+    ]
+    expected_release_definitions = [
+        "NDEBUG",
+        "OPENCVCUDA_EXPORTS",
+        "_WINDOWS",
+        "_USRDLL",
+        "%(PreprocessorDefinitions)",
+    ]
+    if definitions != expected_release_definitions:
+        raise NativeContractError(
+            "opencv_cuda Release|x64 preprocessor definitions drifted: "
+            f"expected={expected_release_definitions!r}, found={definitions!r}."
+        )
+
+
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest().upper()
 
@@ -870,6 +1421,7 @@ def validate_native_contracts(
     managed_struct_path = root / CUDA_MANAGED_STRUCTS
     log_bridge_path = root / CUDA_NATIVE_LOG_BRIDGE
     project_path = root / CUDA_PROJECT
+    native_project_path = root / CUDA_NATIVE_PROJECT
     tracked_path = root / CUDA_TRACKED_DLL
     try:
         header_source = header_path.read_text(encoding="utf-8-sig")
@@ -895,6 +1447,7 @@ def validate_native_contracts(
     validate_cuda_export_sets(header_exports, managed_exports, binary_exports)
 
     validate_cuda_package_binding(project_path)
+    validate_cuda_native_export_build(native_project_path)
     tracked_hash = _sha256(tracked_bytes)
     verified_runtime_files: list[Path] = []
     for runtime_file in runtime_files:

@@ -26,7 +26,7 @@ namespace ColorVision.Core
         public int Height;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public struct HImage : IDisposable
     {
         public int rows;

@@ -2,13 +2,17 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
+import Scripts.build as build_module
 from Scripts.build import (
+    ProjectConfig,
     RemoteUploadSettings,
     ensure_runtime_copy_integrity,
     get_installer_for_version,
     publish_primary_release,
+    rebuild_project,
     validate_cuda_release_runtime,
     validate_installer_runtime_dlls,
     validate_runtime_copy_integrity,
@@ -16,6 +20,115 @@ from Scripts.build import (
 )
 from Scripts.service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS
 from Scripts.verify_native_contracts import CUDA_PACKAGE_MEMBER, CUDA_TRACKED_DLL
+
+
+class ReleaseBuildOrchestrationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._temporary_directory = tempfile.TemporaryDirectory(prefix="release-build-order-tests-")
+        self.root = Path(self._temporary_directory.name)
+        self.msbuild = self.root / "MSBuild.exe"
+        self.solution = self.root / "build.sln"
+        self.advanced_installer = self.root / "AdvancedInstaller.com"
+        self.aip = self.root / "ColorVision.aip"
+
+    def tearDown(self) -> None:
+        self._temporary_directory.cleanup()
+
+    def test_rebuild_project_runs_native_gate_before_installer_build(self) -> None:
+        events: list[str] = []
+
+        def run(command, *, check):
+            self.assertTrue(check)
+            events.append("msbuild" if Path(command[0]) == self.msbuild else "advanced-installer")
+
+        def successful(name: str):
+            def invoke(*_args, **_kwargs):
+                events.append(name)
+                return True
+            return invoke
+
+        def native_gate(*_args, **_kwargs):
+            events.append("native-gate")
+            return mock.Mock(size=123, sha256="ABCD")
+
+        with (
+            mock.patch.object(build_module.subprocess, "run", side_effect=run),
+            mock.patch.object(build_module, "ensure_runtime_copy_integrity", side_effect=successful("runtime-copy")),
+            mock.patch.object(build_module, "validate_native_contracts", side_effect=native_gate),
+            mock.patch.object(build_module, "validate_shared_files_manifests", side_effect=successful("shared-files")),
+            mock.patch.object(build_module, "validate_installer_runtime_dlls", side_effect=successful("installer-map")),
+        ):
+            result = rebuild_project(self.msbuild, self.solution, self.advanced_installer, self.aip)
+
+        self.assertTrue(result)
+        self.assertEqual(
+            [
+                "msbuild",
+                "runtime-copy",
+                "native-gate",
+                "shared-files",
+                "installer-map",
+                "advanced-installer",
+            ],
+            events,
+        )
+
+    def test_build_main_returns_one_when_native_gate_rejects_runtime(self) -> None:
+        events: list[str] = []
+        project = ProjectConfig(
+            name="ColorVision",
+            msbuild_path=self.msbuild,
+            solution_path=self.solution,
+            advanced_installer_path=self.advanced_installer,
+            aip_path=self.aip,
+            setup_files_dir=self.root / "setup",
+            changelog_src=self.root / "CHANGELOG.md",
+        )
+        args = SimpleNamespace(
+            project="ColorVision",
+            upload_url=None,
+            upload_folder="ColorVision",
+            upload_user="user",
+            upload_password="password",
+            upload_use_system_proxy=False,
+            connect_timeout=10,
+            read_timeout=30,
+            upload_retries=1,
+        )
+
+        def run(command, *, check):
+            self.assertTrue(check)
+            events.append("msbuild" if Path(command[0]) == self.msbuild else "advanced-installer")
+
+        def runtime_copy(*_args, **_kwargs):
+            events.append("runtime-copy")
+            return True
+
+        def native_gate(*_args, **_kwargs):
+            events.append("native-gate")
+            raise build_module.NativeContractError("mutated ABI")
+
+        with (
+            mock.patch.object(build_module, "parse_args", return_value=args),
+            mock.patch.object(build_module, "build_projects", return_value={"ColorVision": project}),
+            mock.patch.object(build_module, "preflight_remote_upload", return_value=True),
+            mock.patch.object(build_module.subprocess, "run", side_effect=run) as run_mock,
+            mock.patch.object(build_module, "ensure_runtime_copy_integrity", side_effect=runtime_copy),
+            mock.patch.object(build_module, "validate_native_contracts", side_effect=native_gate),
+            mock.patch.object(build_module, "validate_shared_files_manifests") as shared_mock,
+            mock.patch.object(build_module, "validate_installer_runtime_dlls") as installer_mock,
+            mock.patch.object(build_module, "get_file_version") as version_mock,
+            mock.patch.object(build_module, "publish_primary_release") as publish_mock,
+        ):
+            result = build_module.main()
+
+        self.assertEqual(1, result)
+        self.assertEqual(["msbuild", "runtime-copy", "native-gate"], events)
+        self.assertEqual(1, run_mock.call_count)
+        shared_mock.assert_not_called()
+        installer_mock.assert_not_called()
+        version_mock.assert_not_called()
+        publish_mock.assert_not_called()
 
 
 class InstallerRuntimeValidationTests(unittest.TestCase):

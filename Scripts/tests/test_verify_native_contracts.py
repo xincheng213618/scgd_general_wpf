@@ -13,6 +13,7 @@ from Scripts.verify_native_contracts import (
     read_managed_dllimports,
     read_pe_exports,
     validate_cuda_export_sets,
+    validate_cuda_native_export_build,
     validate_cuda_source_contracts,
     validate_native_contracts,
 )
@@ -62,6 +63,58 @@ class SourceContractTests(unittest.TestCase):
 
         with self.assertRaisesRegex(NativeContractError, r"missing=\['CM_Fusion'\]"):
             validate_cuda_export_sets(header, managed, binary)
+
+    def test_rejects_conditional_or_overridden_native_export_definitions(self) -> None:
+        project_source = (REPO_ROOT / "Native/opencv_cuda/opencv_cuda.vcxproj").read_text(
+            encoding="utf-8-sig"
+        )
+        mutations = (
+            (
+                "conditional-definition",
+                "<PreprocessorDefinitions>NDEBUG;OPENCVCUDA_EXPORTS;",
+                '<PreprocessorDefinitions Condition="\'Never\' == \'true\'">NDEBUG;OPENCVCUDA_EXPORTS;',
+            ),
+            (
+                "later-override",
+                "</Project>",
+                "<ItemDefinitionGroup Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\">"
+                "<ClCompile><PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)"
+                "</PreprocessorDefinitions></ClCompile></ItemDefinitionGroup></Project>",
+            ),
+            (
+                "extra-export-macro",
+                "<PreprocessorDefinitions>NDEBUG;OPENCVCUDA_EXPORTS;",
+                "<PreprocessorDefinitions>NDEBUG;OPENCVCUDA_EXPORTS;"
+                "CV_EXTRA_EXPORT=__declspec(dllexport);",
+            ),
+        )
+        for name, old, new in mutations:
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                prefix="cuda-native-project-mutation-"
+            ) as directory:
+                self.assertEqual(1, project_source.count(old))
+                project = Path(directory) / "opencv_cuda.vcxproj"
+                project.write_text(project_source.replace(old, new, 1), encoding="utf-8")
+                with self.assertRaises(NativeContractError):
+                    validate_cuda_native_export_build(project)
+
+        release_marker = '<ItemDefinitionGroup Condition="\'$(Configuration)|$(Platform)\'==\'Release|x64\'">'
+        release_start = project_source.index(release_marker)
+        release_end = project_source.index("</ItemDefinitionGroup>", release_start) + len(
+            "</ItemDefinitionGroup>"
+        )
+        conditional_ancestor = (
+            project_source[:release_start]
+            + '<Choose><When Condition="\'Never\' == \'true\'">'
+            + project_source[release_start:release_end]
+            + "</When></Choose>"
+            + project_source[release_end:]
+        )
+        with tempfile.TemporaryDirectory(prefix="cuda-native-project-ancestor-mutation-") as directory:
+            project = Path(directory) / "opencv_cuda.vcxproj"
+            project.write_text(conditional_ancestor, encoding="utf-8")
+            with self.assertRaises(NativeContractError):
+                validate_cuda_native_export_build(project)
 
 
 class StaticAbiMutationTests(unittest.TestCase):
@@ -115,28 +168,365 @@ class StaticAbiMutationTests(unittest.TestCase):
             "    int cols;\n    int rows;",
         )
 
-        with self.assertRaisesRegex(NativeContractError, "Native HImage layout/pack drift"):
+        with self.assertRaisesRegex(NativeContractError, "unknown or reordered instance field"):
             self._validate(native_struct=mutated)
 
     def test_rejects_native_himage_pack_mutation(self) -> None:
         mutated = self._replace_once(
             self.native_struct,
-            "typedef struct HImage\n{",
-            "#pragma pack(push, 1)\ntypedef struct HImage\n{",
+            "#pragma pack(push, 8)\ntypedef struct HImage",
+            "#pragma pack(push, 1)\ntypedef struct HImage",
         )
 
         with self.assertRaisesRegex(NativeContractError, "Native HImage layout/pack drift"):
             self._validate(native_struct=mutated)
 
+    def test_rejects_native_himage_missing_pack_pop(self) -> None:
+        mutated = self._replace_once(
+            self.native_struct,
+            "} HImage;\n#pragma pack(pop)",
+            "} HImage;",
+        )
+
+        with self.assertRaisesRegex(NativeContractError, "default pack state"):
+            self._validate(native_struct=mutated)
+
+    def test_rejects_native_himage_nested_pack_scope(self) -> None:
+        mutated = self._replace_once(
+            self.native_struct,
+            "#pragma pack(push, 8)\ntypedef struct HImage",
+            "#pragma pack(push, 1)\n#pragma pack(push, 8)\ntypedef struct HImage",
+        )
+
+        with self.assertRaisesRegex(NativeContractError, "default pack state"):
+            self._validate(native_struct=mutated)
+
+    def test_rejects_pack_leaks_after_himage(self) -> None:
+        mutations = (
+            ("leaked-push", self.native_struct + "\n#pragma pack(push, 1)\n", "default pack state"),
+            ("extra-pop", self.native_struct + "\n#pragma pack(pop)\n", "unmatched"),
+        )
+        for name, mutated, error in mutations:
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(NativeContractError, error):
+                    self._validate(native_struct=mutated)
+
     def test_rejects_managed_himage_pack_mutation(self) -> None:
         mutated = self._replace_once(
             self.managed_struct,
-            "[StructLayout(LayoutKind.Sequential)]\n    public struct HImage",
+            "[StructLayout(LayoutKind.Sequential, Pack = 8)]\n    public struct HImage",
             "[StructLayout(LayoutKind.Sequential, Pack = 1)]\n    public struct HImage",
         )
 
         with self.assertRaisesRegex(NativeContractError, "Managed HImage layout/pack drift"):
             self._validate(managed_struct=mutated)
+
+    def test_rejects_duplicate_managed_himage_pack(self) -> None:
+        mutated = self._replace_once(
+            self.managed_struct,
+            "[StructLayout(LayoutKind.Sequential, Pack = 8)]\n    public struct HImage",
+            "[StructLayout(LayoutKind.Sequential, Pack = 1, Pack = 8)]\n    public struct HImage",
+        )
+
+        with self.assertRaisesRegex(NativeContractError, "declare Pack exactly once"):
+            self._validate(managed_struct=mutated)
+
+    def test_rejects_unknown_himage_instance_fields(self) -> None:
+        mutations = (
+            (
+                "native",
+                self.native_struct,
+                "    int rows;",
+                "    int rows;\n    int generation;",
+            ),
+            (
+                "managed",
+                self.managed_struct,
+                "        public int rows;",
+                "        public int rows;\n        public int generation;",
+            ),
+        )
+        for name, source, old, new in mutations:
+            with self.subTest(name=name):
+                mutated = self._replace_once(source, old, new)
+                with self.assertRaisesRegex(NativeContractError, "unknown or reordered instance field"):
+                    if name == "native":
+                        self._validate(native_struct=mutated)
+                    else:
+                        self._validate(managed_struct=mutated)
+
+    def test_rejects_double_and_long_himage_fields(self) -> None:
+        mutations = (
+            ("native-double", "native", "    int rows;", "    int rows;\n    double scale;"),
+            ("native-long", "native", "    int rows;", "    int rows;\n    long generation;"),
+            ("managed-double", "managed", "        public int rows;", "        public int rows;\n        public double scale;"),
+            ("managed-long", "managed", "        public int rows;", "        public int rows;\n        private long generation;"),
+        )
+        for name, kind, old, new in mutations:
+            with self.subTest(name=name):
+                source = self.native_struct if kind == "native" else self.managed_struct
+                mutated = self._replace_once(source, old, new)
+                with self.assertRaisesRegex(NativeContractError, "unsupported top-level declaration"):
+                    if kind == "native":
+                        self._validate(native_struct=mutated)
+                    else:
+                        self._validate(managed_struct=mutated)
+
+    def test_rejects_virtual_inheritance_and_non_standard_layout_mutations(self) -> None:
+        mutations = (
+            (
+                "virtual",
+                "    int type() const",
+                "    virtual int type() const",
+                "unsupported top-level declaration",
+            ),
+            (
+                "inheritance",
+                "typedef struct HImage\n{",
+                "typedef struct HImage : HImageBase\n{",
+                "must not use inheritance",
+            ),
+            (
+                "mixed-access",
+                "    int rows;",
+                "private:\n    int rows;\npublic:",
+                "unsupported top-level declaration",
+            ),
+        )
+        for name, old, new, error in mutations:
+            with self.subTest(name=name):
+                mutated = self._replace_once(self.native_struct, old, new)
+                with self.assertRaisesRegex(NativeContractError, error):
+                    self._validate(native_struct=mutated)
+
+    def test_rejects_windows_export_macro_mutations(self) -> None:
+        mutations = (
+            ("missing-export", "#define COLORVISIONCORE_API __declspec(dllexport)", "#define COLORVISIONCORE_API"),
+            ("import-in-export-branch", "#define COLORVISIONCORE_API __declspec(dllexport)", "#define COLORVISIONCORE_API __declspec(dllimport)"),
+        )
+        for name, old, new in mutations:
+            with self.subTest(name=name):
+                mutated = self._replace_once(self.header, old, new)
+                with self.assertRaisesRegex(NativeContractError, "OPENCVCUDA_EXPORTS"):
+                    self._validate(header=mutated)
+
+    def test_rejects_export_macro_post_override_and_raw_string_decoy(self) -> None:
+        post_override = (
+            self.header
+            + "\n#undef COLORVISIONCORE_API\n#define COLORVISIONCORE_API\n"
+        )
+        with self.assertRaisesRegex(NativeContractError, "exact OPENCVCUDA_EXPORTS"):
+            self._validate(header=post_override)
+
+        real_header = self._replace_once(
+            self.header,
+            "#ifdef OPENCVCUDA_EXPORTS",
+            "#if defined(OPENCVCUDA_EXPORTS)",
+        )
+        real_header = self._replace_once(
+            real_header,
+            "#define COLORVISIONCORE_API __declspec(dllexport)",
+            "#define COLORVISIONCORE_API __declspec(dllimport)",
+        )
+        raw_decoy = f'const char* AbiDecoy = R"CVABI({self.header})CVABI";\n{real_header}'
+        with self.assertRaisesRegex(NativeContractError, "exact OPENCVCUDA_EXPORTS"):
+            self._validate(header=raw_decoy)
+
+    def test_rejects_direct_dllexport_outside_the_contract_macro(self) -> None:
+        mutated = (
+            self.header
+            + '\nextern "C" __declspec(dllexport) long CM_Unexpected(long value);\n'
+        )
+
+        with self.assertRaises(NativeContractError):
+            self._validate(header=mutated)
+
+    def test_rejects_unparsed_macro_export_declaration(self) -> None:
+        mutated = self.header + "\nEXTERN_C CV_EXTRA_EXPORT long CM_Unexpected(long value);\n"
+
+        with self.assertRaises(NativeContractError):
+            self._validate(header=mutated)
+
+    def test_rejects_unreviewed_native_contract_includes(self) -> None:
+        native_struct = self._replace_once(
+            self.native_struct,
+            "#include <type_traits>",
+            '#include <type_traits>\n#include "himage_abi_override.h"',
+        )
+        with self.assertRaises(NativeContractError):
+            self._validate(native_struct=native_struct)
+
+        header = self._replace_once(
+            self.header,
+            '#include "custom_structs.h"',
+            '#include "custom_structs.h"\n#include "cuda_export_override.h"',
+        )
+        with self.assertRaises(NativeContractError):
+            self._validate(header=header)
+
+    def test_rejects_string_literal_himage_decoys(self) -> None:
+        native_real = self._replace_once(
+            self.native_struct,
+            "typedef struct HImage",
+            "struct HImage",
+        )
+        native_real = self._replace_once(native_real, "    int rows;", "    long rows;")
+        native_decoy = (
+            f'const char* AbiDecoy = R"CVABI({self.native_struct})CVABI";\n'
+            f"{native_real}"
+        )
+        with self.assertRaisesRegex(NativeContractError, "does not declare typedef struct HImage"):
+            self._validate(native_struct=native_decoy)
+
+        managed_real = self._replace_once(
+            self.managed_struct,
+            "public struct HImage",
+            "public partial struct HImage",
+        )
+        managed_real = self._replace_once(
+            managed_real,
+            "        public int rows;",
+            "        public long rows;",
+        )
+        managed_decoy = f'const string AbiDecoy = """\n{self.managed_struct}\n""";\n{managed_real}'
+        with self.assertRaisesRegex(NativeContractError, "does not declare a StructLayout"):
+            self._validate(managed_struct=managed_decoy)
+
+    def test_rejects_conditional_and_token_rewriting_himage_mutations(self) -> None:
+        mutations = (
+            (
+                "native-int-macro",
+                "native",
+                "#define int long\n" + self.native_struct + "\n#undef int\n",
+            ),
+            (
+                "native-field-macro",
+                "native",
+                "#define rows rows; int generation\n" + self.native_struct + "\n#undef rows\n",
+            ),
+            (
+                "native-conditional-decoy",
+                "native",
+                "#if 0\ntypedef struct HImage { int rows; } HImage;\n#endif\n" + self.native_struct,
+            ),
+            (
+                "managed-conditional-decoy",
+                "managed",
+                "#if ABI_DECOY\n[StructLayout(LayoutKind.Sequential, Pack = 8)] "
+                "public struct HImage : IDisposable { public long rows; }\n#endif\n"
+                + self.managed_struct,
+            ),
+        )
+        for name, kind, mutated in mutations:
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(NativeContractError, "conditional compilation|token-rewriting"):
+                    if kind == "native":
+                        self._validate(native_struct=mutated)
+                    else:
+                        self._validate(managed_struct=mutated)
+
+    def test_rejects_line_spliced_native_token_rewriting(self) -> None:
+        line_splice = "\\" + "\n"
+        mutated = self._replace_once(
+            self.native_struct,
+            "#pragma pack(push, 8)\ntypedef struct HImage",
+            f"#defi{line_splice}ne int long\n#pragma pack(push, 8)\ntypedef struct HImage",
+        )
+        mutated = self._replace_once(
+            mutated,
+            "} HImage;\n#pragma pack(pop)",
+            f"}} HImage;\n#pragma pack(pop)\n#un{line_splice}def int",
+        )
+
+        with self.assertRaises(NativeContractError):
+            self._validate(native_struct=mutated)
+
+    def test_rejects_alternate_native_pack_pragmas(self) -> None:
+        for name, directive in (
+            ("msvc-intrinsic", "__pragma(pack(push, 1))"),
+            ("preprocessor-digraph", "%:pragma pack(push, 1)"),
+        ):
+            with self.subTest(name=name):
+                mutated = self._replace_once(
+                    self.native_struct,
+                    "} HImage;\n#pragma pack(pop)",
+                    f"}} HImage;\n#pragma pack(pop)\n{directive}",
+                )
+                with self.assertRaises(NativeContractError):
+                    self._validate(native_struct=mutated)
+
+    def test_rejects_unparsed_fully_qualified_dllimport(self) -> None:
+        unexpected_import = (
+            "        [System.Runtime.InteropServices.DllImport(LibPath, EntryPoint = \"CM_Unexpected\", "
+            "CallingConvention = CallingConvention.StdCall)]\n"
+            "        private static extern long UnexpectedNative(long value);\n\n"
+        )
+        mutated = self._replace_once(
+            self.managed,
+            "        private static void PrepareNativeLogging()",
+            unexpected_import + "        private static void PrepareNativeLogging()",
+        )
+
+        with self.assertRaises(NativeContractError):
+            self._validate(managed=mutated)
+
+    def test_rejects_unreviewed_library_import_source_generator(self) -> None:
+        unexpected_import = (
+            "        [System.Runtime.InteropServices.LibraryImport(LibPath, "
+            "EntryPoint = \"CM_Unexpected\")]\n"
+            "        private static partial long UnexpectedNative(long value);\n\n"
+        )
+        mutated = self._replace_once(
+            self.managed,
+            "public static class OpenCVCuda",
+            "public static partial class OpenCVCuda",
+        )
+        mutated = self._replace_once(
+            mutated,
+            "        private static void PrepareNativeLogging()",
+            unexpected_import + "        private static void PrepareNativeLogging()",
+        )
+
+        with self.assertRaises(NativeContractError):
+            self._validate(managed=mutated)
+
+    def test_rejects_csharp_type_aliases_that_rebind_abi_tokens(self) -> None:
+        managed = self._replace_once(
+            self.managed,
+            "using System.Runtime.InteropServices;",
+            "using System.Runtime.InteropServices;\nusing HImage = System.IntPtr;",
+        )
+        with self.assertRaises(NativeContractError):
+            self._validate(managed=managed)
+
+        managed_struct = self._replace_once(
+            self.managed_struct,
+            "using System.Runtime.InteropServices;",
+            "using System.Runtime.InteropServices;\nusing IntPtr = System.Int64;",
+        )
+        with self.assertRaises(NativeContractError):
+            self._validate(managed_struct=managed_struct)
+
+    def test_commented_out_contract_declarations_do_not_count(self) -> None:
+        header_mutation = self._replace_once(
+            self.header,
+            'extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage);',
+            '// extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage);',
+        )
+        with self.assertRaisesRegex(NativeContractError, "function signature drift"):
+            self._validate(header=header_mutation)
+
+        managed_declaration = (
+            '[DllImport(LibPath, EntryPoint = "CM_Fusion", CallingConvention = CallingConvention.Cdecl)]\n'
+            '        private static extern int CM_FusionNative(string fusionjson, out HImage hImage);'
+        )
+        managed_mutation = self._replace_once(
+            self.managed,
+            managed_declaration,
+            f"/* {managed_declaration} */",
+        )
+        with self.assertRaisesRegex(NativeContractError, "DllImport signature drift"):
+            self._validate(managed=managed_mutation)
 
     def test_rejects_native_log_callback_convention_mutation(self) -> None:
         mutated = self._replace_once(
