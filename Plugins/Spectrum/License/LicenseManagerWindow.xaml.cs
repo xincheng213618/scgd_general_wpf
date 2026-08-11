@@ -3,7 +3,6 @@ using Microsoft.Win32;
 using Newtonsoft.Json;
 using Spectrum.Menus;
 using System.IO;
-using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,82 +30,6 @@ namespace Spectrum.License
     /// </summary>
     public static class LicenseHelper
     {
-        /// <summary>
-        /// RSA 公钥（用于验证许可证签名）
-        /// </summary>
-        private const string PublicKeyXml = "<RSAKeyValue><Modulus>5sf/agoe+/hryIfvt7v6o9aNldWSkUoPkW6se8VbEo7B4JBT0vIUQqku635RU+0vhaF/IJ7TQw6pYerHacA83XYBy90KEN4twOBs1Gy3XfEBcjYheQO919Hif1gENzqzQEg47G36VdmWzmhjreq2YQQQN+p/ezIbYtrPXGNU4fE=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
-
-        /// <summary>
-        /// 获取机器码（基于机器名的十六进制编码）
-        /// </summary>
-        /// <returns>机器码的十六进制字符串表示</returns>
-        public static string GetMachineCode()
-        {
-            byte[] code = Encoding.UTF8.GetBytes(Environment.MachineName);
-            StringBuilder reg = new StringBuilder(code.Length * 2);
-
-            foreach (byte a in code)
-            {
-                reg.Append(a.ToString("x2"));
-            }
-
-            return reg.ToString();
-        }
-        /// <summary>
-        /// 验证增强型许可证
-        /// </summary>
-        /// <param name="base64License">Base64 编码的许可证</param>
-        /// <param name="machineCode">要验证的机器码</param>
-        /// <returns>如果许可证有效返回 true，否则返回 false</returns>
-        public static bool VerifyEnhancedLicense(string base64License, string machineCode)
-        {
-            if (string.IsNullOrWhiteSpace(base64License) || string.IsNullOrWhiteSpace(machineCode))
-            {
-                return false;
-            }
-
-            try
-            {
-                // Base64 解码
-                byte[] jsonBytes = Convert.FromBase64String(base64License);
-                string jsonLicense = Encoding.UTF8.GetString(jsonBytes);
-
-                // 反序列化
-                var license = JsonConvert.DeserializeObject<EnhancedLicenseModel>(jsonLicense);
-                if (license == null)
-                {
-                    return false;
-                }
-
-                // 验证机器码
-                if (license.LicenseeSignature != machineCode)
-                {
-                    return false;
-                }
-
-                // 验证是否过期
-                if (license.IsExpired())
-                {
-                    return false;
-                }
-
-                // 验证授权签名
-                string dataToVerify = $"{machineCode}:{license.ExpiryDate}";
-                byte[] dataBytes = Encoding.UTF8.GetBytes(dataToVerify);
-                byte[] signatureBytes = Convert.FromBase64String(license.AuthoritySignature);
-
-                using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
-                {
-                    rsa.FromXmlString(PublicKeyXml);
-                    return rsa.VerifyData(dataBytes, signatureBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         /// <summary>
         /// 解析增强型许可证（不验证）
         /// </summary>
