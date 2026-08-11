@@ -992,12 +992,12 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             UploadList.Clear();
             UploadWindow uploadwindow = new UploadWindow(Properties.Resources.CalibrationFileFilter) { WindowStartupLocation = WindowStartupLocation.CenterScreen };
-            uploadwindow.OnUpload += (s, e) =>
+            uploadwindow.OnUpload += async (s, e) =>
             {
                 UploadMsg uploadMsg = new UploadMsg(this);
                 uploadMsg.Show();
                 string uploadfilepath = e.UploadFilePath;
-                Task.Run(() => UploadData(DesPath, uploadfilepath));
+                await UploadDataAsync(DesPath, uploadfilepath);
             };
             uploadwindow.ShowDialog();
         }
@@ -1008,16 +1008,34 @@ namespace ColorVision.Engine.Services.PhyCameras
         public event EventHandler UploadClosed;
         public ObservableCollection<FileUploadInfo> UploadList { get; set; } = new ObservableCollection<FileUploadInfo>();
 
-        public async void UploadData(string DesPath, string UploadFilePath)
+        public void UploadData(string DesPath, string UploadFilePath) => _ = UploadDataAsync(DesPath, UploadFilePath);
+
+        public async Task UploadDataAsync(string DesPath, string UploadFilePath)
+        {
+            try
+            {
+                await Task.Run(() => UploadDataCoreAsync(DesPath, UploadFilePath));
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                Msg = ex.Message;
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, Properties.Resources.CalibrationFileManagement);
+                    UploadClosed?.Invoke(this, EventArgs.Empty);
+                });
+            }
+        }
+
+        private async Task UploadDataCoreAsync(string DesPath, string UploadFilePath)
         {
             Msg = Properties.Resources.ExtractingFilePleaseWait;
             await Task.Delay(10);
             if (File.Exists(UploadFilePath))
             {
-                string path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ColorVision\\Cache";
-                if (Directory.Exists(path))
-                    Directory.Delete(path, true);
-                Directory.CreateDirectory(path);
+                using CalibrationUploadWorkspace workspace = CalibrationUploadWorkspace.Create();
+                string path = workspace.DirectoryPath;
                 Msg = Properties.Resources.ParsingCalibrationFilePleaseWait;
                 bool sss = ZIPHelper.ExtractToDirectoryWithOverwrite(UploadFilePath, path);
                 if (!sss)
