@@ -15,6 +15,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using static MvCamCtrl.NET.MyCamera;
 
 namespace Conoscope.MVS
@@ -47,14 +48,34 @@ namespace Conoscope.MVS
         MyCamera.MV_CC_DEVICE_INFO_LIST m_stDeviceList = new MyCamera.MV_CC_DEVICE_INFO_LIST();
         private MyCamera m_MyCamera = new MyCamera();
         private readonly List<int> displayedDeviceIndices = new();
-        bool m_bGrabbing = false;
-        Thread m_hReceiveThread = null;
+        private static readonly TimeSpan CaptureStopTimeout = TimeSpan.FromSeconds(2);
+        private readonly MvsCaptureSession captureSession;
+        private readonly MvsDeferredCleanup deferredCleanup;
+        private readonly object nativeCleanupGate = new();
+        private MvsSdkLease? sdkLease;
+        private bool deviceCreated;
+        private bool deviceOpen;
+        private bool nativeCleanupCompleted;
+        private readonly MvsFrameUiUpdateGate frameUiUpdateGate = new();
+        private volatile bool windowClosing;
         IntPtr displayHandle = IntPtr.Zero;
         private readonly MVSGratingOverlayVisual gratingOverlay = new MVSGratingOverlayVisual();
         private Core.ConoscopeModelProfile? hookedObservationCameraProfile;
 
         public MVSViewWindow()
         {
+            captureSession = new MvsCaptureSession(
+                () => m_MyCamera.MV_CC_StartGrabbing_NET(),
+                () => m_MyCamera.MV_CC_StopGrabbing_NET(),
+                ReceiveThreadProcess,
+                ex => log.Error("Observation camera capture thread failed", ex),
+                CaptureStopTimeout,
+                action => Dispatcher.BeginInvoke(DispatcherPriority.Send, action),
+                HandleCaptureFault);
+            deferredCleanup = new MvsDeferredCleanup(
+                captureSession.WaitForExit,
+                CloseDeviceAndFinalizeSdk,
+                ex => log.Error("Observation camera deferred cleanup failed", ex));
             InitializeComponent();
             this.Closing += Window_Closing;
             this.Loaded += new RoutedEventHandler(BasicDemoWindow_Load);
@@ -239,8 +260,19 @@ namespace Conoscope.MVS
 
         private void BasicDemoWindow_Load(object sender, RoutedEventArgs e)
         {
-            // ch: 初始化 SDK | en: Initialize SDK
-            MyCamera.MV_CC_Initialize_NET();
+            if (sdkLease == null)
+            {
+                // The SDK is process-global. Keep this lease until this window's
+                // last native camera worker and device have both been released.
+                MvsSdkAcquireResult acquireResult = MvsSdkLifetime.Shared.Acquire();
+                if (!acquireResult.Acquired)
+                {
+                    ShowErrorMsg("Initialize SDK failed", acquireResult.NativeResult);
+                    return;
+                }
+
+                sdkLease = acquireResult.Lease;
+            }
 
             // ch: 枚举设备 | en: Enum Device List
             DeviceListAcq();
@@ -399,7 +431,7 @@ namespace Conoscope.MVS
         }
         private void bnOpen_Click(object sender, RoutedEventArgs e)
         {
-            writeableBitmap = null;
+            imgDisplay.Realtime.Reset();
             if (m_stDeviceList.nDeviceNum == 0 || cbDeviceList.SelectedIndex == -1)
             {
                 ShowErrorMsg("No device, please select", 0);
@@ -426,14 +458,17 @@ namespace Conoscope.MVS
             {
                 return;
             }
+            deviceCreated = true;
 
             nRet = m_MyCamera.MV_CC_OpenDevice_NET();
             if (MyCamera.MV_OK != nRet)
             {
                 m_MyCamera.MV_CC_DestroyDevice_NET();
+                deviceCreated = false;
                 ShowErrorMsg("Device open fail!", nRet);
                 return;
             }
+            deviceOpen = true;
 
             // ch:探测网络最佳包大小(只对GigE相机有效) | en:Detection network optimal package size(It only works for the GigE camera)
             if (device.nTLayerType == MyCamera.MV_GIGE_DEVICE)
@@ -479,15 +514,15 @@ namespace Conoscope.MVS
 
         private void bnClose_Click(object sender, RoutedEventArgs e)
         {
-            // ch:取流标志位清零 | en:Reset flow flag bit
-            if (m_bGrabbing == true)
+            MvsCaptureStopResult stopResult = StopCapture(showNativeError: true);
+            if (!stopResult.WorkerExited)
             {
-                m_bGrabbing = false;
+                ShowErrorMsg("Capture thread did not stop; device remains open", 0);
+                return;
             }
 
             // ch:关闭设备 | en:Close Device
-            m_MyCamera.MV_CC_CloseDevice_NET();
-            m_MyCamera.MV_CC_DestroyDevice_NET();
+            CloseDevice();
 
             // ch:控件操作 | en:Control Operation
             bnOpen.IsEnabled = true;
@@ -528,7 +563,7 @@ namespace Conoscope.MVS
                 if (true == cbSoftTrigger.IsChecked)
                 {
                     m_MyCamera.MV_CC_SetEnumValue_NET("TriggerSource", (uint)MyCamera.MV_CAM_TRIGGER_SOURCE.MV_TRIGGER_SOURCE_SOFTWARE);
-                    if (m_bGrabbing)
+                    if (captureSession.IsWorkerAlive)
                     {
                         bnTriggerExec.IsEnabled = true;
                     }
@@ -540,13 +575,9 @@ namespace Conoscope.MVS
                 cbSoftTrigger.IsEnabled = true;
             }
         }
-        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
-        private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
-
-        WriteableBitmap writeableBitmap { get; set; }
-
-        public void ReceiveThreadProcess()
+        private void ReceiveThreadProcess(CancellationToken cancellationToken)
         {
+            long generation = frameUiUpdateGate.BeginGeneration();
             MyCamera.MV_FRAME_OUT stFrameInfo = new MyCamera.MV_FRAME_OUT();
             MV_PIXEL_CONVERT_PARAM stConvertParam = new MV_PIXEL_CONVERT_PARAM();
             IntPtr pImageBuffer = IntPtr.Zero;
@@ -554,78 +585,89 @@ namespace Conoscope.MVS
 
             try
             {
-                while (m_bGrabbing)
+                while (!cancellationToken.IsCancellationRequested)
                 {
                     int nRet = m_MyCamera.MV_CC_GetImageBuffer_NET(ref stFrameInfo, 1000);
                     if (nRet == MyCamera.MV_OK)
                     {
-                        IntPtr pRenderData = IntPtr.Zero;
-                        uint renderDataSize = 0;
-                        PixelFormat pixelFormat = PixelFormats.Gray8;
-                        bool shouldRender = false;
-
-                        // 1. 根据不同像素格式准备数据指针和参数
-                        if (stFrameInfo.stFrameInfo.enPixelType == MyCamera.MvGvspPixelType.PixelType_Gvsp_BayerGB8)
+                        try
                         {
-                            if (MVSViewManager.Config.IsCoverBayer)
+                            if (cancellationToken.IsCancellationRequested)
                             {
-                                uint nConvertDataSize = (uint)(stFrameInfo.stFrameInfo.nWidth * stFrameInfo.stFrameInfo.nHeight * 3);
+                                continue;
+                            }
 
-                                // 动态分配或调整非托管内存大小
-                                if (pImageBuffer == IntPtr.Zero || currentImageBufferSize != nConvertDataSize)
+                            IntPtr pRenderData = IntPtr.Zero;
+                            uint renderDataSize = 0;
+                            PixelFormat pixelFormat = PixelFormats.Gray8;
+                            bool shouldRender = false;
+
+                            // 1. 根据不同像素格式准备数据指针和参数
+                            if (stFrameInfo.stFrameInfo.enPixelType == MyCamera.MvGvspPixelType.PixelType_Gvsp_BayerGB8)
+                            {
+                                if (MVSViewManager.Config.IsCoverBayer)
                                 {
-                                    if (pImageBuffer != IntPtr.Zero) Marshal.FreeHGlobal(pImageBuffer);
-                                    pImageBuffer = Marshal.AllocHGlobal((int)nConvertDataSize);
-                                    currentImageBufferSize = nConvertDataSize;
+                                    uint nConvertDataSize = (uint)(stFrameInfo.stFrameInfo.nWidth * stFrameInfo.stFrameInfo.nHeight * 3);
+
+                                    // 动态分配或调整非托管内存大小
+                                    if (pImageBuffer == IntPtr.Zero || currentImageBufferSize != nConvertDataSize)
+                                    {
+                                        if (pImageBuffer != IntPtr.Zero) Marshal.FreeHGlobal(pImageBuffer);
+                                        pImageBuffer = Marshal.AllocHGlobal((int)nConvertDataSize);
+                                        currentImageBufferSize = nConvertDataSize;
+                                    }
+
+                                    stConvertParam.nWidth = stFrameInfo.stFrameInfo.nWidth;
+                                    stConvertParam.nHeight = stFrameInfo.stFrameInfo.nHeight;
+                                    stConvertParam.pSrcData = stFrameInfo.pBufAddr;
+                                    stConvertParam.nSrcDataLen = stFrameInfo.stFrameInfo.nFrameLen;
+                                    stConvertParam.enSrcPixelType = stFrameInfo.stFrameInfo.enPixelType;
+                                    stConvertParam.enDstPixelType = MyCamera.MvGvspPixelType.PixelType_Gvsp_RGB8_Packed;
+                                    stConvertParam.nDstBufferSize = nConvertDataSize;
+                                    stConvertParam.pDstBuffer = pImageBuffer;
+
+                                    if (m_MyCamera.MV_CC_ConvertPixelType_NET(ref stConvertParam) == MyCamera.MV_OK)
+                                    {
+                                        pRenderData = pImageBuffer;
+                                        renderDataSize = nConvertDataSize;
+                                        pixelFormat = PixelFormats.Rgb24;
+                                        shouldRender = true;
+                                    }
                                 }
-
-                                stConvertParam.nWidth = stFrameInfo.stFrameInfo.nWidth;
-                                stConvertParam.nHeight = stFrameInfo.stFrameInfo.nHeight;
-                                stConvertParam.pSrcData = stFrameInfo.pBufAddr;
-                                stConvertParam.nSrcDataLen = stFrameInfo.stFrameInfo.nFrameLen;
-                                stConvertParam.enSrcPixelType = stFrameInfo.stFrameInfo.enPixelType;
-                                stConvertParam.enDstPixelType = MyCamera.MvGvspPixelType.PixelType_Gvsp_RGB8_Packed;
-                                stConvertParam.nDstBufferSize = nConvertDataSize;
-                                stConvertParam.pDstBuffer = pImageBuffer;
-
-                                if (m_MyCamera.MV_CC_ConvertPixelType_NET(ref stConvertParam) == MyCamera.MV_OK)
+                                else
                                 {
-                                    pRenderData = pImageBuffer;
-                                    renderDataSize = nConvertDataSize;
-                                    pixelFormat = PixelFormats.Rgb24;
+                                    pRenderData = stFrameInfo.pBufAddr;
+                                    renderDataSize = stFrameInfo.stFrameInfo.nFrameLen;
+                                    pixelFormat = PixelFormats.Gray8;
                                     shouldRender = true;
                                 }
                             }
-                            else
+                            else if (stFrameInfo.stFrameInfo.enPixelType == MyCamera.MvGvspPixelType.PixelType_Gvsp_RGB8_Packed)
                             {
                                 pRenderData = stFrameInfo.pBufAddr;
                                 renderDataSize = stFrameInfo.stFrameInfo.nFrameLen;
-                                pixelFormat = PixelFormats.Gray8;
+                                pixelFormat = PixelFormats.Rgb24;
                                 shouldRender = true;
                             }
-                        }
-                        else if (stFrameInfo.stFrameInfo.enPixelType == MyCamera.MvGvspPixelType.PixelType_Gvsp_RGB8_Packed)
-                        {
-                            pRenderData = stFrameInfo.pBufAddr;
-                            renderDataSize = stFrameInfo.stFrameInfo.nFrameLen;
-                            pixelFormat = PixelFormats.Rgb24;
-                            shouldRender = true;
-                        }
 
-                        // 2. 统一交由UI线程进行渲染更新
-                        if (shouldRender && pRenderData != IntPtr.Zero)
-                        {
-                            int width = stFrameInfo.stFrameInfo.nWidth;
-                            int height = stFrameInfo.stFrameInfo.nHeight;
-
-                            Application.Current.Dispatcher.Invoke(() =>
+                            // Realtime copies the native buffer before returning, then posts a
+                            // coalesced render without making this worker wait for the UI thread.
+                            if (shouldRender && pRenderData != IntPtr.Zero && !cancellationToken.IsCancellationRequested)
                             {
-                                UpdateImageDisplay(width, height, pixelFormat, pRenderData, renderDataSize);
-                            });
+                                int width = stFrameInfo.stFrameInfo.nWidth;
+                                int height = stFrameInfo.stFrameInfo.nHeight;
+                                int stride = (width * pixelFormat.BitsPerPixel + 7) / 8;
+                                if (imgDisplay.Realtime.SubmitFrame(pRenderData, width, height, pixelFormat, stride, checked((int)renderDataSize)))
+                                {
+                                    QueueFrameUiUpdate(generation, cancellationToken);
+                                }
+                            }
                         }
-
-                        // 3. 释放相机内部缓存
-                        m_MyCamera.MV_CC_FreeImageBuffer_NET(ref stFrameInfo);
+                        finally
+                        {
+                            // ch:释放相机内部缓存 | en:Release camera-owned frame buffer
+                            m_MyCamera.MV_CC_FreeImageBuffer_NET(ref stFrameInfo);
+                        }
                     }
                 }
             }
@@ -640,50 +682,28 @@ namespace Conoscope.MVS
             }
         }
 
-        // 提取出的UI更新公共方法
-        private void UpdateImageDisplay(int width, int height, PixelFormat format, IntPtr pData, uint dataSize)
+        private void QueueFrameUiUpdate(long generation, CancellationToken cancellationToken)
         {
-            if (!m_bGrabbing) return;
-
-            MVSViewManager.Count++;
-            bool sourceChanged = false;
-
-            // 检查是否需要重新创建 WriteableBitmap (宽高或像素格式改变)
-            if (writeableBitmap == null ||
-                writeableBitmap.PixelWidth != width ||
-                writeableBitmap.PixelHeight != height ||
-                writeableBitmap.Format != format)
+            if (!frameUiUpdateGate.TryQueue(generation))
             {
-                writeableBitmap = new WriteableBitmap(width, height, 96, 96, format, null);
-                imgDisplay.ImageShow.Source = writeableBitmap;
-                imgDisplay.UpdateZoomAndScale();
-                sourceChanged = true;
-            }
-            else if (imgDisplay.ImageShow.Source != writeableBitmap)
-            {
-                imgDisplay.ImageShow.Source = writeableBitmap;
-                sourceChanged = true;
+                return;
             }
 
-            if (sourceChanged)
+            imgDisplay.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
             {
+                if (!frameUiUpdateGate.TryComplete(generation))
+                {
+                    return;
+                }
+
+                if (windowClosing || cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                MVSViewManager.Count++;
                 UpdateGratingOverlay();
-            }
-
-            try
-            {
-                writeableBitmap.Lock();
-
-                uint bufferSize = (uint)(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * writeableBitmap.Format.BitsPerPixel / 8);
-                uint bytesToCopy = Math.Min(bufferSize, dataSize);
-
-                RtlMoveMemory(writeableBitmap.BackBuffer, pData, bytesToCopy);
-                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
-            }
-            finally
-            {
-                writeableBitmap.Unlock();
-            }
+            }));
         }
 
         public Int32 ConvertToRGB(object obj, IntPtr pSrc, ushort nHeight, ushort nWidth, MyCamera.MvGvspPixelType nPixelType, IntPtr pDst)
@@ -724,20 +744,17 @@ namespace Conoscope.MVS
 
         private void bnStartGrab_Click(object sender, RoutedEventArgs e)
         {
-            //displayHandle = displayArea.Handle;
-
-            // ch:标志位置位true | en:Set position bit true
-            m_bGrabbing = true;
-
-            m_hReceiveThread = new Thread(ReceiveThreadProcess);
-            m_hReceiveThread.Start();
-
-            // ch:开始采集 | en:Start Grabbing
-            int nRet = m_MyCamera.MV_CC_StartGrabbing_NET();
-            if (MyCamera.MV_OK != nRet)
+            MvsCaptureStartResult startResult = captureSession.Start();
+            if (!startResult.Started)
             {
-                m_bGrabbing = false;
-                ShowErrorMsg("Start Grabbing Fail!", nRet);
+                if (startResult.AlreadyRunning)
+                {
+                    log.Warn("Observation camera capture is already running or still stopping");
+                }
+                else
+                {
+                    ShowErrorMsg("Start Grabbing Fail!", startResult.NativeResult);
+                }
                 return;
             }
 
@@ -753,14 +770,14 @@ namespace Conoscope.MVS
 
         private void bnStopGrab_Click(object sender, RoutedEventArgs e)
         {
-            // ch:标志位设为false | en:Set flag bit false
-            m_bGrabbing = false;
-
-            // ch:停止采集 | en:Stop Grabbing
-            int nRet = m_MyCamera.MV_CC_StopGrabbing_NET();
-            if (nRet != MyCamera.MV_OK)
+            MvsCaptureStopResult stopResult = StopCapture(showNativeError: true);
+            if (!stopResult.WorkerExited)
             {
-                ShowErrorMsg("Stop Grabbing Fail!", nRet);
+                ShowErrorMsg("Capture thread did not stop within the shutdown timeout", 0);
+                bnStartGrab.IsEnabled = false;
+                bnStopGrab.IsEnabled = false;
+                bnTriggerExec.IsEnabled = false;
+                return;
             }
 
             // ch:控件操作 | en:Control Operation
@@ -786,7 +803,7 @@ namespace Conoscope.MVS
             {
                 // ch:触发源设为软触发 | en:Set trigger source as Software
                 m_MyCamera.MV_CC_SetEnumValue_NET("TriggerSource", (uint)MyCamera.MV_CAM_TRIGGER_SOURCE.MV_TRIGGER_SOURCE_SOFTWARE);
-                if (m_bGrabbing)
+                if (captureSession.IsWorkerAlive)
                 {
                     bnTriggerExec.IsEnabled = true;
                 }
@@ -858,8 +875,8 @@ namespace Conoscope.MVS
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            m_bGrabbing = false;
-            writeableBitmap = null;
+            windowClosing = true;
+            MvsCaptureStopResult stopResult = StopCapture(showNativeError: false);
             MVSViewManager.Config.PropertyChanged -= MVSConfig_PropertyChanged;
             MVSViewManager.PropertyChanged -= MVSViewManager_PropertyChanged;
             if (hookedObservationCameraProfile != null)
@@ -870,10 +887,106 @@ namespace Conoscope.MVS
             imgDisplay.Zoombox1.ContentMatrixChanged -= ImageDisplay_ContentMatrixChanged;
             imgDisplay.ImageShow.RemoveOverlayVisual(gratingOverlay);
             imgDisplay.Dispose();
-            bnClose_Click(null, null);
+            MVSViewManager.IsOpen = false;
 
-            // ch: 反初始化SDK | en: Finalize SDK
-            MyCamera.MV_CC_Finalize_NET();
+            if (stopResult.WorkerExited)
+            {
+                CloseDeviceAndFinalizeSdk();
+            }
+            else
+            {
+                log.Warn("Observation camera worker did not stop in time; native cleanup is deferred until it exits");
+                deferredCleanup.Schedule();
+            }
+        }
+
+        private MvsCaptureStopResult StopCapture(bool showNativeError)
+        {
+            MvsCaptureStopResult result = captureSession.Stop();
+            if (showNativeError && result.StopRequested && result.NativeResult != MyCamera.MV_OK)
+            {
+                ShowErrorMsg("Stop Grabbing Fail!", result.NativeResult);
+            }
+
+            if (result.WorkerExited)
+            {
+                imgDisplay.Realtime.Reset();
+            }
+
+            return result;
+        }
+
+        private void HandleCaptureFault(Exception exception, MvsCaptureStopResult stopResult)
+        {
+            if (windowClosing)
+            {
+                return;
+            }
+
+            imgDisplay.Realtime.Reset();
+            bnStartGrab.IsEnabled = stopResult.WorkerExited && deviceOpen;
+            bnStopGrab.IsEnabled = false;
+            bnTriggerExec.IsEnabled = false;
+
+            if (stopResult.NativeResult != MyCamera.MV_OK)
+            {
+                ShowErrorMsg("Stop Grabbing Fail!", stopResult.NativeResult);
+            }
+
+            ShowErrorMsg($"Capture stopped because the receive thread failed: {exception.Message}", 0);
+        }
+
+        private void CloseDevice()
+        {
+            lock (nativeCleanupGate)
+            {
+                if (deviceOpen)
+                {
+                    m_MyCamera.MV_CC_CloseDevice_NET();
+                    deviceOpen = false;
+                }
+
+                if (deviceCreated)
+                {
+                    m_MyCamera.MV_CC_DestroyDevice_NET();
+                    deviceCreated = false;
+                }
+            }
+        }
+
+        private void CloseDeviceAndFinalizeSdk()
+        {
+            lock (nativeCleanupGate)
+            {
+                if (nativeCleanupCompleted)
+                {
+                    return;
+                }
+
+                if (deviceOpen)
+                {
+                    m_MyCamera.MV_CC_CloseDevice_NET();
+                    deviceOpen = false;
+                }
+
+                if (deviceCreated)
+                {
+                    m_MyCamera.MV_CC_DestroyDevice_NET();
+                    deviceCreated = false;
+                }
+
+                if (sdkLease != null)
+                {
+                    int releaseResult = sdkLease.Release();
+                    sdkLease = null;
+                    if (releaseResult != MyCamera.MV_OK)
+                    {
+                        log.Error($"Finalize MVS SDK failed: 0x{releaseResult:X8}");
+                    }
+                }
+
+                nativeCleanupCompleted = true;
+            }
         }
 
         private void tbGain_TextChanged(object sender, TextChangedEventArgs e)
