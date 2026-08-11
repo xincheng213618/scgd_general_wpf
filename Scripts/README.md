@@ -15,7 +15,7 @@ Full reader-facing guide: `docs/02-developer-guide/scripts/README.md`.
 | Refresh host shared-file manifests | `py Scripts\generate_shared_files.py` |
 | Verify manifests against the current host output | `py Scripts\generate_shared_files.py --check` |
 
-`release.py`, `build.py`, and `build_update.py` are release internals. Do not use them as normal manual release entry points. `release.bat` calls the orchestrator, which completes every local build/package gate before the first upload.
+`build.py` and `build_update.py` are release internals. Do not use them as normal manual release entry points; `build_update.py` executes package generation and upload when run.
 
 The main application and ServiceHost inherit the same `VersionPrefix` from `Directory.Build.props`; a normal release has only this one core version source. Every incremental package carries the complete `ServiceHost/` runtime so ZIP deployments can install the service into an empty ProgramData directory.
 
@@ -54,18 +54,15 @@ $env:COLORVISION_UPLOAD_USE_SYSTEM_PROXY = "1"
 
 Do not put real credentials in docs or checked-in command examples.
 
-The backend HTTP upload endpoint is the only release distribution channel. A main release first prepares and validates the installer, full ZIP, and incremental package without remote writes. It then uploads the installer, the incremental package when one was produced, and `CHANGELOG.md`; `LATEST_RELEASE` is written last. It does not copy artifacts to WeDrive or Baidu Cloud. The local `Desktop\History` directory remains an incremental-package build baseline, not a distribution channel.
-
-Before Advanced Installer runs, the release gate resolves every required AIP `File -> Component -> Directory` mapping, verifies the source entity exists, rejects case/slash-equivalent target collisions, and compares the AIP, tracked, and runtime `opencv_cuda.dll` bytes. After the installer EXE is built, the gate extracts its unique MSI and performs an administrative MSI extraction, then requires exactly one `runtimes/win-x64/native/opencv_cuda.dll` with the expected bytes. Missing extraction tools or an ambiguous/failed extraction stops the release; the source-map check alone is not final installer proof.
+The backend HTTP upload endpoint is the only release distribution channel. A main release uploads the installer and `CHANGELOG.md` first, then updates `LATEST_RELEASE`; it does not copy artifacts to WeDrive or Baidu Cloud. The local `Desktop\History` directory remains an incremental-package build baseline, not a distribution channel.
 
 ## Current script map
 
 | Script | Purpose |
 | --- | --- |
-| `release.bat` | Normal release wrapper around the two-phase orchestrator |
-| `release.py` | Release internal: prepare all local artifacts/gates, then publish in visibility-safe order |
-| `build.py` | Release internal: primary installer prepare/gates and final publish operations |
-| `build_update.py` | Release internal: local full/incremental package preparation and validation; no upload |
+| `release.bat` | Normal release wrapper |
+| `build.py` | Release internal: main installer build/upload |
+| `build_update.py` | Release internal: incremental package build/upload |
 | `package_cvxp.py` | Plugin manifest validation plus `.cvxp` package creation, upload, and cleanup |
 | `package_plugin.bat` | Repo plugin wrapper around `package_cvxp.py --build` |
 | `package_project.bat` | Repo project wrapper around `package_cvxp.py --build` |

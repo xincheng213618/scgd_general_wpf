@@ -1,11 +1,8 @@
-import os
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
-from unittest import mock
 
-import Scripts.build_update as build_update_module
 from Scripts.build_update import (
     REQUIRED_SERVICE_HOST_RUNTIME_PATHS,
     create_full_zip,
@@ -13,209 +10,6 @@ from Scripts.build_update import (
     make_incremental_zip,
     validate_service_host_runtime,
 )
-from Scripts.verify_native_contracts import CUDA_PACKAGE_MEMBER, NativeContractError
-
-
-class UpdateBuildOrchestrationTests(unittest.TestCase):
-    def setUp(self) -> None:
-        self._temporary_directory = tempfile.TemporaryDirectory(prefix="update-build-order-tests-")
-        self.root = Path(self._temporary_directory.name)
-        self.runtime = self.root / "runtime"
-        self.history = self.root / "history"
-        self.update = self.history / "update"
-        self.executable = self.runtime / "ColorVision.exe"
-        self.update.mkdir(parents=True, exist_ok=True)
-
-    def tearDown(self) -> None:
-        self._temporary_directory.cleanup()
-
-    def test_prepare_validates_and_promotes_incremental_then_full_without_upload(self) -> None:
-        events: list[str] = []
-        validated_packages: list[tuple[Path, ...]] = []
-        real_replace = os.replace
-        full_zip = self.history / "ColorVision-[1.2.3.4].zip"
-        pending_full_zip = self.history / "ColorVision-[1.2.3.4].zip.pending"
-        incremental_zip = self.update / "ColorVision-Update-[1.2.3.4].cvx"
-        pending_incremental_zip = self.update / "ColorVision-Update-[1.2.3.4].cvx.pending"
-        full_zip.write_bytes(b"previous validated package")
-
-        def create_full(_runtime, output):
-            events.append("full")
-            self.assertEqual(pending_full_zip, Path(output))
-            Path(output).write_bytes(b"validated full package")
-
-        def native_gate(_root, *, package_files):
-            package = Path(package_files[0])
-            events.append("gate-full" if package == pending_full_zip else "gate-incremental")
-            self.assertEqual(b"previous validated package", full_zip.read_bytes())
-            validated_packages.append(tuple(Path(path) for path in package_files))
-            return mock.Mock(sha256="ABCD")
-
-        def promote(source, destination):
-            events.append("promote-full" if Path(source) == pending_full_zip else "promote-incremental")
-            real_replace(source, destination)
-
-        def make_incremental(_old, _runtime, output):
-            events.append("incremental")
-            self.assertEqual(pending_incremental_zip, Path(output))
-            Path(output).write_bytes(b"validated incremental package")
-
-        def archive_gate(path):
-            events.append("zip-gate-full" if Path(path) == pending_full_zip else "zip-gate-incremental")
-
-        with (
-            self._patch_main_environment(),
-            mock.patch.object(build_update_module, "create_full_zip", side_effect=create_full),
-            mock.patch.object(build_update_module, "validate_native_contracts", side_effect=native_gate),
-            mock.patch.object(build_update_module, "validate_zip_archive", side_effect=archive_gate),
-            mock.patch.object(build_update_module.os, "replace", side_effect=promote),
-            mock.patch.object(build_update_module, "find_incremental_baseline", return_value=str(self.history / "old.zip")),
-            mock.patch.object(build_update_module, "make_incremental_zip", side_effect=make_incremental),
-        ):
-            result = build_update_module.prepare_update_release()
-
-        self.assertIsNotNone(result)
-        self.assertEqual(
-            [
-                "full", "gate-full", "zip-gate-full",
-                "incremental", "gate-incremental", "zip-gate-incremental",
-                "promote-incremental", "promote-full",
-            ],
-            events,
-        )
-        self.assertEqual([(pending_full_zip,), (pending_incremental_zip,)], validated_packages)
-        self.assertEqual(b"validated full package", full_zip.read_bytes())
-        self.assertEqual(b"validated incremental package", incremental_zip.read_bytes())
-        self.assertFalse(pending_full_zip.exists())
-        self.assertFalse(pending_incremental_zip.exists())
-
-    def test_main_gate_failure_preserves_existing_full_zip_and_removes_pending(self) -> None:
-        events: list[str] = []
-        full_zip = self.history / "ColorVision-[1.2.3.4].zip"
-        pending_full_zip = self.history / "ColorVision-[1.2.3.4].zip.pending"
-        full_zip.write_bytes(b"previous validated package")
-
-        def create_full(_runtime, output):
-            events.append("full")
-            self.assertEqual(pending_full_zip, Path(output))
-            Path(output).write_bytes(b"rejected pending package")
-
-        def native_gate(_root, *, package_files):
-            self.assertEqual((pending_full_zip,), tuple(Path(path) for path in package_files))
-            events.append("gate")
-            raise NativeContractError("mutated ABI")
-
-        with (
-            self._patch_main_environment(),
-            mock.patch.object(build_update_module, "create_full_zip", side_effect=create_full),
-            mock.patch.object(build_update_module, "validate_native_contracts", side_effect=native_gate),
-            mock.patch.object(build_update_module.os, "replace") as replace_mock,
-            mock.patch.object(build_update_module, "find_incremental_baseline") as baseline_mock,
-            mock.patch.object(build_update_module, "make_incremental_zip") as incremental_mock,
-        ):
-            result = build_update_module.prepare_update_release()
-
-        self.assertIsNone(result)
-        self.assertEqual(["full", "gate"], events)
-        self.assertEqual(b"previous validated package", full_zip.read_bytes())
-        self.assertFalse(pending_full_zip.exists())
-        replace_mock.assert_not_called()
-        baseline_mock.assert_not_called()
-        incremental_mock.assert_not_called()
-
-    def test_incremental_failure_preserves_existing_package_and_removes_pending(self) -> None:
-        full_zip = self.history / "ColorVision-[1.2.3.4].zip"
-        pending_full_zip = Path(f"{full_zip}.pending")
-        incremental_zip = self.update / "ColorVision-Update-[1.2.3.4].cvx"
-        pending_incremental_zip = Path(f"{incremental_zip}.pending")
-        self.update.mkdir(parents=True, exist_ok=True)
-        full_zip.write_bytes(b"previous full package")
-        incremental_zip.write_bytes(b"previous update")
-
-        def create_full(_runtime, output):
-            with zipfile.ZipFile(output, "w") as archive:
-                archive.writestr("runtimes/win-x64/native/opencv_cuda.dll", b"cuda")
-
-        def make_incremental(_old, _runtime, output):
-            Path(output).write_bytes(b"partial")
-            raise OSError("disk full")
-
-        with (
-            self._patch_main_environment(),
-            mock.patch.object(build_update_module, "create_full_zip", side_effect=create_full),
-            mock.patch.object(build_update_module, "validate_native_contracts", return_value=mock.Mock(sha256="ABCD")),
-            mock.patch.object(build_update_module, "find_incremental_baseline", return_value=str(self.history / "old.zip")),
-            mock.patch.object(build_update_module, "make_incremental_zip", side_effect=make_incremental),
-        ):
-            result = build_update_module.prepare_update_release()
-
-        self.assertIsNone(result)
-        self.assertEqual(b"previous full package", full_zip.read_bytes())
-        self.assertEqual(b"previous update", incremental_zip.read_bytes())
-        self.assertFalse(pending_full_zip.exists())
-        self.assertFalse(pending_incremental_zip.exists())
-
-    def test_incremental_native_gate_failure_preserves_existing_package(self) -> None:
-        baseline_zip = self.history / "ColorVision-[1.2.3.1].zip"
-        baseline_zip.write_bytes(b"published baseline")
-        full_zip = self.history / "ColorVision-[1.2.3.4].zip"
-        pending_full_zip = Path(f"{full_zip}.pending")
-        incremental_zip = self.update / "ColorVision-Update-[1.2.3.4].cvx"
-        pending_incremental_zip = Path(f"{incremental_zip}.pending")
-        incremental_zip.write_bytes(b"previous update")
-
-        def create_full(_runtime, output):
-            Path(output).write_bytes(b"validated full package")
-
-        def make_incremental(_old, _runtime, output):
-            Path(output).write_bytes(b"stale CUDA update")
-
-        def native_gate(_root, *, package_files):
-            if Path(package_files[0]) == pending_incremental_zip:
-                raise NativeContractError("stale incremental CUDA")
-            return mock.Mock(sha256="ABCD")
-
-        with (
-            self._patch_main_environment(),
-            mock.patch.object(build_update_module, "create_full_zip", side_effect=create_full),
-            mock.patch.object(build_update_module, "validate_native_contracts", side_effect=native_gate),
-            mock.patch.object(build_update_module, "validate_zip_archive"),
-            mock.patch.object(build_update_module, "find_incremental_baseline", return_value=str(baseline_zip)),
-            mock.patch.object(build_update_module, "make_incremental_zip", side_effect=make_incremental),
-        ):
-            result = build_update_module.prepare_update_release()
-
-        self.assertIsNone(result)
-        self.assertFalse(full_zip.exists())
-        self.assertFalse(pending_full_zip.exists())
-        self.assertEqual(b"previous update", incremental_zip.read_bytes())
-        self.assertFalse(pending_incremental_zip.exists())
-        self.assertEqual(
-            baseline_zip,
-            Path(find_incremental_baseline(self.history, "1.2.3.5")),
-        )
-
-    def test_rejects_version_mismatch_before_creating_packages(self) -> None:
-        with (
-            self._patch_main_environment(),
-            mock.patch.object(build_update_module, "create_full_zip") as create_mock,
-        ):
-            result = build_update_module.prepare_update_release(expected_version="9.9.9.9")
-
-        self.assertIsNone(result)
-        create_mock.assert_not_called()
-
-    def _patch_main_environment(self):
-        return mock.patch.multiple(
-            build_update_module,
-            exe_path=str(self.executable),
-            new_version_dir=str(self.runtime),
-            history_dir=str(self.history),
-            update_dir=str(self.update),
-            get_file_version=mock.Mock(return_value="1.2.3.4"),
-            validate_service_host_runtime=mock.Mock(return_value=None),
-            create_directory_if_not_exists=mock.Mock(return_value=None),
-        )
 
 
 class IncrementalBaselineTests(unittest.TestCase):
@@ -281,8 +75,6 @@ class IncrementalServiceHostPackageTests(unittest.TestCase):
             self._write_file(self.new_directory / relative_path, b"same-runtime")
         self._write_file(self.old_directory / "unchanged.dll", b"same")
         self._write_file(self.new_directory / "unchanged.dll", b"same")
-        self._write_file(self.old_directory / CUDA_PACKAGE_MEMBER, b"same-cuda")
-        self._write_file(self.new_directory / CUDA_PACKAGE_MEMBER, b"same-cuda")
 
         old_zip = self.root / "old.zip"
         with zipfile.ZipFile(old_zip, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -297,7 +89,6 @@ class IncrementalServiceHostPackageTests(unittest.TestCase):
             names = {name.replace("\\", "/") for name in archive.namelist()}
 
         self.assertTrue(set(REQUIRED_SERVICE_HOST_RUNTIME_PATHS).issubset(names))
-        self.assertIn(CUDA_PACKAGE_MEMBER, names)
         self.assertNotIn("unchanged.dll", names)
 
     def test_runtime_validation_rejects_incomplete_service_host(self) -> None:
@@ -305,15 +96,6 @@ class IncrementalServiceHostPackageTests(unittest.TestCase):
 
         with self.assertRaisesRegex(FileNotFoundError, "ServiceHost runtime is incomplete"):
             validate_service_host_runtime(self.new_directory)
-
-    def test_incremental_packaging_rejects_runtime_without_cuda_contract_file(self) -> None:
-        old_zip = self.root / "old.zip"
-        with zipfile.ZipFile(old_zip, "w") as archive:
-            archive.writestr("unchanged.dll", b"same")
-        self._write_file(self.new_directory / "unchanged.dll", b"same")
-
-        with self.assertRaisesRegex(ValueError, "opencv_cuda.dll"):
-            make_incremental_zip(old_zip, self.new_directory, self.root / "incremental.cvx")
 
     @staticmethod
     def _write_file(path: Path, content: bytes) -> None:
@@ -366,17 +148,15 @@ class CopilotSkillsPackageTests(unittest.TestCase):
             "Copilot/Skills/added-skill/references/deep/checklist.md": b"new-deep-reference\n",
         }
         new_files = old_files | changed_files | added_files
-        cuda_files = {CUDA_PACKAGE_MEMBER: b"same-cuda"}
         self._write_files(self.old_directory, old_files)
-        self._write_files(self.old_directory, cuda_files)
-        self._write_files(self.new_directory, new_files | cuda_files)
+        self._write_files(self.new_directory, new_files)
 
         old_zip = self.root / "old.zip"
         create_full_zip(self.old_directory, old_zip)
         incremental_zip = self.root / "incremental.cvx"
         make_incremental_zip(old_zip, self.new_directory, incremental_zip)
 
-        self.assertEqual(changed_files | added_files | cuda_files, self._read_zip(incremental_zip))
+        self.assertEqual(changed_files | added_files, self._read_zip(incremental_zip))
 
     @staticmethod
     def _write_files(root: Path, files: dict[str, bytes]) -> None:

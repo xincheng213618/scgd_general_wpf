@@ -4,8 +4,7 @@ import os
 import re
 import shutil
 import subprocess
-import tempfile
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 from xml.etree import ElementTree
@@ -25,21 +24,13 @@ try:
         upload_file as backend_upload_file,
     )
     from .service_host_runtime import (
-        InstallerFileEntry,
         REQUIRED_SERVICE_HOST_RUNTIME_PATHS,
-        normalize_installer_path,
-        read_installer_file_entries,
+        installer_contains_relative_path,
+        read_installer_source_paths,
         validate_service_host_runtime,
     )
     from .generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
     from .build_update import get_file_version
-    from .release_artifacts import PreparedArtifact, PreparedArtifactError
-    from .verify_native_contracts import (
-        CUDA_PACKAGE_MEMBER,
-        CUDA_TRACKED_DLL,
-        NativeContractError,
-        validate_native_contracts,
-    )
 except ImportError:
     from backend_client import (
         DEFAULT_CONNECT_TIMEOUT,
@@ -55,21 +46,13 @@ except ImportError:
         upload_file as backend_upload_file,
     )
     from service_host_runtime import (
-        InstallerFileEntry,
         REQUIRED_SERVICE_HOST_RUNTIME_PATHS,
-        normalize_installer_path,
-        read_installer_file_entries,
+        installer_contains_relative_path,
+        read_installer_source_paths,
         validate_service_host_runtime,
     )
     from generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
     from build_update import get_file_version
-    from release_artifacts import PreparedArtifact, PreparedArtifactError
-    from verify_native_contracts import (
-        CUDA_PACKAGE_MEMBER,
-        CUDA_TRACKED_DLL,
-        NativeContractError,
-        validate_native_contracts,
-    )
 from tqdm import tqdm
 
 VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
@@ -109,21 +92,6 @@ class ProjectConfig:
     aip_path: Path
     setup_files_dir: Path
     changelog_src: Path
-
-
-@dataclass(frozen=True)
-class PreparedPrimaryRelease:
-    version: str
-    installer: PreparedArtifact
-    changelog: PreparedArtifact
-
-    @property
-    def installer_file(self) -> Path:
-        return self.installer.path
-
-    @property
-    def changelog_src(self) -> Path:
-        return self.changelog.path
 
 
 def sha256_file(path: Path) -> str:
@@ -204,222 +172,47 @@ def ensure_runtime_copy_integrity(
     )
 
 
-def _installer_entries_by_target(entries: tuple[InstallerFileEntry, ...]) -> dict[str, list[InstallerFileEntry]]:
-    result: dict[str, list[InstallerFileEntry]] = {}
-    for entry in entries:
-        key = normalize_installer_path(entry.target_path).casefold()
-        result.setdefault(key, []).append(entry)
-    return result
-
-
-def _require_unique_installer_target(
-    entries_by_target: dict[str, list[InstallerFileEntry]],
-    relative_path: str,
-) -> InstallerFileEntry:
-    matches = entries_by_target.get(normalize_installer_path(relative_path).casefold(), [])
-    if len(matches) != 1:
-        raise ValueError(
-            f"Advanced Installer target must have exactly one file entry: {relative_path} (found {len(matches)})"
-        )
-    return matches[0]
-
-
 def validate_installer_runtime_dlls(
-    solution_root: str | Path,
     runtime_directory: str | Path,
     aip_path: str | Path,
     *,
     report: Callable[[str], None] = print,
 ) -> bool:
-    root_path = Path(solution_root).resolve()
-    runtime_path = Path(runtime_directory).resolve()
+    runtime_path = Path(runtime_directory)
     if not runtime_path.is_dir():
         report(f"Release runtime directory does not exist: {runtime_path}")
         return False
 
     try:
-        installer_entries = read_installer_file_entries(aip_path)
+        installer_source_paths = read_installer_source_paths(aip_path)
         validate_service_host_runtime(runtime_path)
-        entries_by_target = _installer_entries_by_target(installer_entries)
-        ambiguous_targets = sorted(
-            entries[0].target_path
-            for entries in entries_by_target.values()
-            if len(entries) != 1
-        )
-        if ambiguous_targets:
-            raise ValueError(
-                "Advanced Installer contains duplicate case/slash-normalized targets: "
-                + ", ".join(ambiguous_targets)
-            )
-
-        required_targets = [
-            file_path.name
-            for file_path in runtime_path.glob("*.dll")
-            if file_path.is_file()
-        ]
-        required_targets.extend(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
-        required_targets.append(CUDA_PACKAGE_MEMBER)
-        required_entries = [
-            _require_unique_installer_target(entries_by_target, relative_path)
-            for relative_path in required_targets
-        ]
-        missing_sources = sorted(
-            str(entry.source_path)
-            for entry in required_entries
-            if not entry.source_path.is_file()
-        )
-        if missing_sources:
-            raise FileNotFoundError("Advanced Installer source files do not exist: " + ", ".join(missing_sources))
-
-        cuda_entry = _require_unique_installer_target(entries_by_target, CUDA_PACKAGE_MEMBER)
-        cuda_named_entries = [
-            entry
-            for entry in installer_entries
-            if Path(entry.target_path).name.casefold() == "opencv_cuda.dll"
-            or entry.source_path.name.casefold() == "opencv_cuda.dll"
-        ]
-        if len(cuda_named_entries) != 1 or cuda_named_entries[0] != cuda_entry:
-            raise ValueError(
-                "Advanced Installer must contain exactly one opencv_cuda.dll source and target entry "
-                f"(found {len(cuda_named_entries)})."
-            )
-
-        cuda_runtime_path = runtime_path.joinpath(*Path(CUDA_PACKAGE_MEMBER).parts)
-        tracked_cuda_path = root_path / CUDA_TRACKED_DLL
-        if not cuda_runtime_path.is_file():
-            raise FileNotFoundError(f"Release runtime is missing required native DLL: {CUDA_PACKAGE_MEMBER}")
-        if not tracked_cuda_path.is_file():
-            raise FileNotFoundError(f"Tracked CUDA DLL does not exist: {tracked_cuda_path}")
-        if not files_match(tracked_cuda_path, cuda_runtime_path):
-            raise ValueError(f"Release CUDA runtime differs from tracked DLL: {cuda_runtime_path}")
-        if not files_match(tracked_cuda_path, cuda_entry.source_path):
-            raise ValueError(
-                "Advanced Installer CUDA source differs from tracked/runtime DLL: "
-                f"{cuda_entry.source_path}"
-            )
-    except (ElementTree.ParseError, OSError, ValueError) as exc:
+    except (ElementTree.ParseError, OSError) as exc:
         report(f"Could not validate Advanced Installer runtime: {exc}")
         return False
 
-    report(
-        "Verified pre-build Advanced Installer source files and target mappings; "
-        "opencv_cuda.dll source bytes match the tracked/runtime DLL."
+    installer_sources = {
+        source_path.rsplit("/", 1)[-1]
+        for source_path in installer_source_paths
+    }
+    missing_dlls = sorted(
+        file_path.name
+        for file_path in runtime_path.glob("*.dll")
+        if file_path.is_file() and file_path.name.casefold() not in installer_sources
     )
-    return True
-
-
-def validate_built_installer_cuda(
-    installer_file: str | Path,
-    solution_root: str | Path,
-    runtime_directory: str | Path,
-    *,
-    command_runner: Callable[..., Any] = subprocess.run,
-    msiexec_path: str | Path | None = None,
-    report: Callable[[str], None] = print,
-) -> bool:
-    installer_path = Path(installer_file).resolve()
-    tracked_path = Path(solution_root).resolve() / CUDA_TRACKED_DLL
-    runtime_path = Path(runtime_directory).resolve().joinpath(*Path(CUDA_PACKAGE_MEMBER).parts)
-    if installer_path.suffix.casefold() != ".exe" or not installer_path.is_file():
-        report(f"Built Advanced Installer EXE does not exist: {installer_path}")
-        return False
-    if not tracked_path.is_file() or not runtime_path.is_file():
-        report(f"Tracked/runtime CUDA input is missing: {tracked_path} / {runtime_path}")
-        return False
-    if not files_match(tracked_path, runtime_path):
-        report(f"Release CUDA runtime differs from tracked DLL: {runtime_path}")
+    if missing_dlls:
+        report("Advanced Installer does not include runtime DLLs: " + ", ".join(missing_dlls))
         return False
 
-    resolved_msiexec = Path(msiexec_path).resolve() if msiexec_path else None
-    if resolved_msiexec is None:
-        discovered_msiexec = shutil.which("msiexec.exe")
-        if not discovered_msiexec:
-            report("Could not verify built installer: msiexec.exe was not found.")
-            return False
-        resolved_msiexec = Path(discovered_msiexec).resolve()
-    if not resolved_msiexec.is_file():
-        report(f"Could not verify built installer: msiexec.exe does not exist: {resolved_msiexec}")
+    missing_service_host_paths = [
+        relative_path
+        for relative_path in REQUIRED_SERVICE_HOST_RUNTIME_PATHS
+        if not installer_contains_relative_path(installer_source_paths, relative_path)
+    ]
+    if missing_service_host_paths:
+        report("Advanced Installer does not include ServiceHost runtime files: " + ", ".join(missing_service_host_paths))
         return False
 
-    try:
-        with tempfile.TemporaryDirectory(prefix="colorvision-installer-contract-") as temp_dir_name:
-            temp_dir = Path(temp_dir_name)
-            msi_directory = temp_dir / "msi"
-            image_directory = temp_dir / "image"
-            msi_directory.mkdir()
-            image_directory.mkdir()
-
-            extraction_environment = os.environ.copy()
-            # The setup EXE requests elevation for installation, but /extract only writes the caller-owned temp directory.
-            extraction_environment["__COMPAT_LAYER"] = "RunAsInvoker"
-            command_runner(
-                [str(installer_path), "/extract", str(msi_directory)],
-                check=True,
-                env=extraction_environment,
-            )
-            msi_files = sorted(
-                path for path in msi_directory.rglob("*")
-                if path.is_file() and path.suffix.casefold() == ".msi"
-            )
-            if len(msi_files) != 1:
-                raise ValueError(f"installer extraction produced {len(msi_files)} MSI files; expected exactly one")
-
-            command_runner(
-                [str(resolved_msiexec), "/a", str(msi_files[0]), "/qn", f"TARGETDIR={image_directory}"],
-                check=True,
-            )
-            cuda_files = sorted(
-                path for path in image_directory.rglob("*")
-                if path.is_file() and path.name.casefold() == "opencv_cuda.dll"
-            )
-            if len(cuda_files) != 1:
-                raise ValueError(
-                    f"administrative installer image contains {len(cuda_files)} opencv_cuda.dll files; expected exactly one"
-                )
-            installed_cuda = cuda_files[0]
-            installed_relative = normalize_installer_path(installed_cuda.relative_to(image_directory).as_posix())
-            expected_suffix = normalize_installer_path(CUDA_PACKAGE_MEMBER).casefold()
-            if not (
-                installed_relative.casefold() == expected_suffix
-                or installed_relative.casefold().endswith("/" + expected_suffix)
-            ):
-                raise ValueError(
-                    "installer opencv_cuda.dll target is not under runtimes/win-x64/native: "
-                    f"{installed_relative}"
-                )
-            if not files_match(tracked_path, installed_cuda):
-                raise ValueError(f"installer opencv_cuda.dll differs from tracked/runtime DLL: {installed_cuda}")
-    except (OSError, subprocess.CalledProcessError, ValueError) as exc:
-        report(f"Could not verify built installer payload: {exc}")
-        return False
-
-    report(
-        "Verified final installer payload: exactly one runtimes/win-x64/native/opencv_cuda.dll "
-        f"with SHA256 {sha256_file(tracked_path)}."
-    )
-    return True
-
-
-def validate_cuda_release_runtime(
-    solution_root: str | Path,
-    runtime_directory: str | Path,
-    *,
-    report: Callable[[str], None] = print,
-) -> bool:
-    runtime_path = Path(runtime_directory) / Path(CUDA_PACKAGE_MEMBER)
-    try:
-        contract = validate_native_contracts(
-            solution_root,
-            runtime_files=(runtime_path,),
-        )
-    except NativeContractError as exc:
-        report(f"CUDA native contract validation failed: {exc}")
-        return False
-
-    report(
-        f"Verified CUDA runtime against tracked PE: {contract.size} bytes, "
-        f"SHA256 {contract.sha256}."
-    )
+    report("Verified root runtime DLLs and the complete ServiceHost runtime in Advanced Installer.")
     return True
 
 
@@ -466,11 +259,9 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
         runtime_directory = solution_path.parent / "ColorVision" / "bin" / "x64" / "Release" / "net10.0-windows"
         if not ensure_runtime_copy_integrity(solution_path.parent, runtime_directory):
             return False
-        if not validate_cuda_release_runtime(solution_path.parent, runtime_directory):
-            return False
         if not validate_shared_files_manifests(runtime_directory):
             return False
-        if not validate_installer_runtime_dlls(solution_path.parent, runtime_directory, aip_path):
+        if not validate_installer_runtime_dlls(runtime_directory, aip_path):
             return False
 
         print(f"Running Advanced Installer: {advanced_installer_path} /rebuild {aip_path}")
@@ -546,127 +337,43 @@ def preflight_remote_upload(
 
 def publish_primary_release(
     latest_version: str,
-    latest_file: PreparedArtifact | str | Path,
-    changelog_src: PreparedArtifact | str | Path,
+    latest_file: str | Path,
+    changelog_src: str | Path,
     remote_settings: RemoteUploadSettings,
     *,
-    incremental_file: PreparedArtifact | str | Path | None = None,
-    required_local_artifacts: tuple[PreparedArtifact | str | Path, ...] = (),
     upload_func: Callable[[str | Path, RemoteUploadSettings], bool] = upload_file,
     upload_content_func: Callable[[str | bytes, str, RemoteUploadSettings], bool] = backend_upload_content,
 ) -> bool:
-    try:
-        latest_file = (
-            latest_file if isinstance(latest_file, PreparedArtifact) else PreparedArtifact.capture(latest_file)
-        )
-        changelog_src = (
-            changelog_src if isinstance(changelog_src, PreparedArtifact) else PreparedArtifact.capture(changelog_src)
-        )
-        incremental_file = (
-            incremental_file
-            if incremental_file is None or isinstance(incremental_file, PreparedArtifact)
-            else PreparedArtifact.capture(incremental_file)
-        )
-        required_local_artifacts = tuple(
-            artifact if isinstance(artifact, PreparedArtifact) else PreparedArtifact.capture(artifact)
-            for artifact in required_local_artifacts
-        )
-    except PreparedArtifactError as exc:
-        print(f"Prepared release artifact validation failed before publication: {exc}")
+    latest_file = Path(latest_file)
+    changelog_src = Path(changelog_src)
+
+    if not changelog_src.is_file():
+        print(f"Release changelog is missing: {changelog_src}")
         return False
 
-    if extract_version_from_filename(latest_file.path.name) != latest_version:
-        print(
-            f"Prepared installer filename does not match release version {latest_version}: "
-            f"{latest_file.path.name}"
-        )
-        return False
-    if incremental_file is not None and extract_version_from_filename(incremental_file.path.name) != latest_version:
-        print(
-            f"Prepared incremental filename does not match release version {latest_version}: "
-            f"{incremental_file.path.name}"
-        )
-        return False
-    mismatched_required_artifacts = [
-        artifact.path.name
-        for artifact in required_local_artifacts
-        if extract_version_from_filename(artifact.path.name) != latest_version
-    ]
-    if mismatched_required_artifacts:
-        print(
-            f"Prepared local release artifact filename does not match release version {latest_version}: "
-            + ", ".join(mismatched_required_artifacts)
-        )
+    current_version = backend_fetch_latest_version(remote_settings)
+    if not should_update_version(latest_version, current_version):
+        print(f"The current version ({current_version}) is up to date.")
         return False
 
-    try:
-        with tempfile.TemporaryDirectory(prefix="colorvision-release-publish-") as temp_dir_name:
-            stage_root = Path(temp_dir_name)
-            staged_installer = latest_file.stage_to(stage_root / "primary" / latest_file.path.name)
-            staged_changelog = changelog_src.stage_to(stage_root / "primary" / changelog_src.path.name)
-            staged_incremental = (
-                incremental_file.stage_to(stage_root / "update" / incremental_file.path.name)
-                if incremental_file is not None
-                else None
-            )
-            staged_required_artifacts = tuple(
-                artifact.stage_to(stage_root / "required" / str(index) / artifact.path.name)
-                for index, artifact in enumerate(required_local_artifacts)
-            )
-
-            print(
-                "Verified and privately staged all publishable release artifacts before remote writes: "
-                f"installer={latest_file.sha256}, "
-                f"incremental={incremental_file.sha256 if incremental_file else 'none'}, "
-                f"changelog={changelog_src.sha256}, "
-                f"local-only={len(staged_required_artifacts)}."
-            )
-
-            current_version = backend_fetch_latest_version(remote_settings)
-            if current_version is None:
-                print("Could not verify the current remote release marker; aborting before uploads.")
-                return False
-            if version_tuple(latest_version) == version_tuple(current_version):
-                print(
-                    f"Release {latest_version} is already published; "
-                    "treating the retry as successful without overwriting live artifacts."
-                )
-                return True
-            if not should_update_version(latest_version, current_version):
-                print(f"The current version ({current_version}) is newer than {latest_version}.")
-                return False
-
-            print(f"Uploading primary release package: {staged_installer.name}")
-            if not upload_func(staged_installer, remote_settings):
-                print("Primary release package upload failed; update, CHANGELOG.md and LATEST_RELEASE will not be updated.")
-                return False
-
-            if staged_incremental is not None:
-                update_settings = replace(
-                    remote_settings,
-                    folder_name=remote_settings.folder_name.rstrip("/") + "/Update",
-                )
-                print(f"Uploading incremental update package: {staged_incremental.name}")
-                if not upload_func(staged_incremental, update_settings):
-                    print("Incremental update upload failed; CHANGELOG.md and LATEST_RELEASE will not be updated.")
-                    return False
-
-            print(f"Uploading release changelog: {staged_changelog.name}")
-            if not upload_func(staged_changelog, remote_settings):
-                print("CHANGELOG.md upload failed; LATEST_RELEASE will not be updated.")
-                return False
-
-            print("Uploading release marker: LATEST_RELEASE")
-            if not upload_content_func(latest_version, "LATEST_RELEASE", remote_settings):
-                print("LATEST_RELEASE upload failed.")
-                return False
-
-            print(f"Updated the release version to {latest_version}")
-            print(f"Upload {latest_file.path}")
-            return True
-    except PreparedArtifactError as exc:
-        print(f"Prepared release artifact validation failed before publication: {exc}")
+    print(f"Uploading primary release package: {latest_file.name}")
+    if not upload_func(latest_file, remote_settings):
+        print("Primary release package upload failed; CHANGELOG.md and LATEST_RELEASE will not be updated.")
         return False
+
+    print(f"Uploading release changelog: {changelog_src.name}")
+    if not upload_func(changelog_src, remote_settings):
+        print("CHANGELOG.md upload failed; LATEST_RELEASE will not be updated.")
+        return False
+
+    print("Uploading release marker: LATEST_RELEASE")
+    if not upload_content_func(latest_version, "LATEST_RELEASE", remote_settings):
+        print("LATEST_RELEASE upload failed.")
+        return False
+
+    print(f"Updated the release version to {latest_version}")
+    print(f"Upload {latest_file}")
+    return True
 
 
 def resolve_msbuild_path() -> Path:
@@ -700,7 +407,7 @@ def build_projects(base_path: Path) -> dict[str, ProjectConfig]:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Prepare and publish the complete ColorVision release")
+    parser = argparse.ArgumentParser(description="Build and publish the ColorVision installer")
     parser.add_argument("--project", default=DEFAULT_PROJECT_NAME, help="Project name to build")
     parser.add_argument("--upload-url", default=None, help="Backend base URL for remote uploads")
     parser.add_argument("--upload-folder", default=os.environ.get("COLORVISION_UPLOAD_FOLDER", DEFAULT_UPLOAD_FOLDER), help="Remote folder path used by the backend upload endpoint")
@@ -713,15 +420,28 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def build_remote_settings(args: argparse.Namespace) -> RemoteUploadSettings:
+def main() -> int:
+    args = parse_args()
+    script_path = Path(__file__).resolve().parent
+    base_path = script_path.parent
+    projects = build_projects(base_path)
+
+    if args.project not in projects:
+        print(f"Unknown project: {args.project}")
+        print(f"Available projects: {', '.join(sorted(projects))}")
+        return 2
+
+    project = projects[args.project]
+    setup_files_dir = project.setup_files_dir
     if getattr(args, "upload_use_system_proxy", False):
         os.environ["COLORVISION_UPLOAD_USE_SYSTEM_PROXY"] = "1"
+
     upload_url = resolve_upload_base_url(args.upload_url)
     upload_username, upload_password = resolve_upload_credentials(
         args.upload_user,
         args.upload_password,
     )
-    return RemoteUploadSettings(
+    remote_settings = RemoteUploadSettings(
         base_url=upload_url,
         folder_name=args.upload_folder,
         username=upload_username,
@@ -732,62 +452,61 @@ def build_remote_settings(args: argparse.Namespace) -> RemoteUploadSettings:
         max_retries=max(args.upload_retries, 1),
     )
 
+    if not remote_settings.username or not remote_settings.password:
+        print(
+            "Remote upload requires Basic Auth credentials. "
+            "Set COLORVISION_UPLOAD_USERNAME and COLORVISION_UPLOAD_PASSWORD."
+        )
+        return 2
 
-def prepare_primary_release(project: ProjectConfig) -> PreparedPrimaryRelease | None:
+    if not preflight_remote_upload(remote_settings):
+        print("Remote upload preflight failed; aborting before build/upload.")
+        return 2
+
     if not rebuild_project(
         project.msbuild_path,
         project.solution_path,
         project.advanced_installer_path,
         project.aip_path,
     ):
-        return None
+        return 1
 
-    runtime_directory = project.solution_path.parent / "ColorVision" / "bin" / "x64" / "Release" / "net10.0-windows"
-    runtime_executable = runtime_directory / "ColorVision.exe"
+    runtime_executable = (
+        project.solution_path.parent
+        / "ColorVision"
+        / "bin"
+        / "x64"
+        / "Release"
+        / "net10.0-windows"
+        / "ColorVision.exe"
+    )
     built_version = get_file_version(runtime_executable)
     if not built_version:
         print(f"Could not read FileVersion from the built executable: {runtime_executable}")
-        return None
+        return 1
 
     latest_version = extract_version_from_filename(built_version)
     if not latest_version:
         print(f"Built executable has an invalid FileVersion: {built_version!r}")
-        return None
+        return 1
 
-    latest_file = get_installer_for_version(project.setup_files_dir, latest_version)
-    print(project.setup_files_dir)
+    latest_file = get_installer_for_version(setup_files_dir, latest_version)
+    print(setup_files_dir)
     print(f"Built FileVersion: {latest_version}")
     print(f"installer_file: {latest_file}")
 
     if not latest_file or not latest_file.exists():
         print(f"No installer file matches the built FileVersion {latest_version}.")
-        return None
-    try:
-        installer_artifact = PreparedArtifact.capture(latest_file)
-    except PreparedArtifactError as exc:
-        print(str(exc))
-        return None
-    if not validate_built_installer_cuda(
+        return 1
+
+    if not publish_primary_release(
+        latest_version,
         latest_file,
-        project.solution_path.parent,
-        runtime_directory,
+        project.changelog_src,
+        remote_settings,
     ):
-        return None
-    try:
-        installer_artifact.verify()
-        changelog_artifact = PreparedArtifact.capture(project.changelog_src)
-    except PreparedArtifactError as exc:
-        print(str(exc))
-        return None
-    return PreparedPrimaryRelease(latest_version, installer_artifact, changelog_artifact)
-
-
-def main() -> int:
-    try:
-        from .release import main as release_main
-    except ImportError:
-        from release import main as release_main
-    return release_main()
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

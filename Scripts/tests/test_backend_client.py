@@ -100,57 +100,5 @@ class UploadContentTests(unittest.TestCase):
         self.assertEqual(("user", "password"), kwargs["auth"])
 
 
-class FetchLatestVersionTests(unittest.TestCase):
-    class RequestsStub:
-        RequestException = RuntimeError
-
-    def setUp(self):
-        self.settings = backend_client.RemoteUploadSettings(
-            base_url="http://example.test:9998",
-            folder_name="ColorVision",
-            username="user",
-            password="password",
-        )
-
-    def test_empty_marker_is_the_only_first_release_fallback(self):
-        response = mock.Mock(status_code=200)
-        response.json.return_value = {"version": ""}
-        session = mock.Mock()
-        session.get.return_value = response
-
-        with mock.patch.object(backend_client, "get_requests_module", return_value=self.RequestsStub):
-            result = backend_client.fetch_latest_version(self.settings, session=session)
-
-        self.assertEqual("0.0.0.0", result)
-
-    def test_transport_http_and_payload_failures_are_not_first_release(self):
-        cases = (
-            (mock.Mock(status_code=503), None),
-            (mock.Mock(status_code=200), ValueError("invalid json")),
-            (mock.Mock(status_code=200), {"version": 123}),
-        )
-        for response, payload in cases:
-            with self.subTest(status=response.status_code, payload=payload):
-                if isinstance(payload, Exception):
-                    response.json.side_effect = payload
-                elif payload is not None:
-                    response.json.return_value = payload
-                session = mock.Mock()
-                session.get.return_value = response
-                with mock.patch.object(
-                    backend_client,
-                    "get_requests_module",
-                    return_value=self.RequestsStub,
-                ):
-                    self.assertIsNone(
-                        backend_client.fetch_latest_version(self.settings, session=session)
-                    )
-
-        session = mock.Mock()
-        session.get.side_effect = RuntimeError("offline")
-        with mock.patch.object(backend_client, "get_requests_module", return_value=self.RequestsStub):
-            self.assertIsNone(backend_client.fetch_latest_version(self.settings, session=session))
-
-
 if __name__ == "__main__":
     unittest.main()

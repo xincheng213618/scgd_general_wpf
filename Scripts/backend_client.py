@@ -417,12 +417,12 @@ def fetch_latest_version(
     settings: RemoteUploadSettings,
     *,
     session: Any | None = None,
-) -> str | None:
+) -> str:
     """Fetch the current LATEST_RELEASE version from the backend API."""
     requests = get_requests_module()
     if requests is None:
         print("Fetching latest version requires the requests package.")
-        return None
+        return "0.0.0.0"
 
     url = f"{settings.base_url.rstrip('/')}/api/app/latest-version"
     http_client = session or create_http_session(requests_module=requests)
@@ -433,17 +433,10 @@ def fetch_latest_version(
             timeout=(settings.connect_timeout, min(settings.read_timeout, 15)),
         )
         if response.status_code == 200:
-            try:
-                payload = response.json()
-            except ValueError:
-                print("Failed to fetch latest version: invalid JSON response.")
-                return None
-            if not isinstance(payload, dict) or not isinstance(payload.get("version", ""), str):
-                print("Failed to fetch latest version: invalid response payload.")
-                return None
+            payload = response.json()
             return payload.get("version", "").strip() or "0.0.0.0"
         print(f"Failed to fetch latest version: HTTP {response.status_code}")
     except requests.RequestException as exc:
         print(f"Failed to fetch latest version: {exc}")
-    return None
+    return "0.0.0.0"
 
