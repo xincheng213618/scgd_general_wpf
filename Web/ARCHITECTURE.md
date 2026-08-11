@@ -27,6 +27,19 @@ app_setup / composition
   audit, analytics, and artifact indexes are separate responsibilities even
   when they share one SQLite file.
 
+### Known transitional route SQL
+
+The following route handlers predate these boundaries and remain explicit
+migration debt:
+
+- `routes/admin_api.py`: `stats_overview` and `create_api_key`.
+- `routes/operations_relay.py`: the operations relay handlers backed by the
+  `operations_*` tables.
+
+Architecture tests freeze the current direct-SQL call count in these handlers.
+Do not add new route SQL or expand these exceptions. Reduce the allowlist as
+each complete service/repository boundary is introduced with contract tests.
+
 ## Product modules
 
 New work should converge on feature-owned modules instead of expanding the

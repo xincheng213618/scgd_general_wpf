@@ -26,6 +26,23 @@ def _imports_module(tree: ast.AST, module_name: str) -> bool:
     return False
 
 
+def _direct_sql_execute_counts(relative_path: str) -> dict[str, int]:
+    counts = {}
+    for node in ast.walk(_tree(relative_path)):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        execute_count = sum(
+            1
+            for child in ast.walk(node)
+            if isinstance(child, ast.Call)
+            and isinstance(child.func, ast.Attribute)
+            and child.func.attr in {"execute", "executemany", "executescript"}
+        )
+        if execute_count:
+            counts[node.name] = execute_count
+    return counts
+
+
 class ArchitectureBoundaryTests(unittest.TestCase):
     def test_app_setup_does_not_reverse_import_app(self):
         self.assertFalse(_imports_module(_tree("app_setup.py"), "app"))
@@ -89,6 +106,28 @@ class ArchitectureBoundaryTests(unittest.TestCase):
                 )
                 for keyword in ("SELECT ", "INSERT ", "UPDATE ", "DELETE "):
                     self.assertNotIn(keyword, string_literals)
+
+    def test_transitional_route_sql_does_not_expand(self):
+        expected_counts = {
+            "routes/admin_api.py": {
+                "stats_overview": 4,
+                "create_api_key": 1,
+            },
+            "routes/operations_relay.py": {
+                "heartbeat": 1,
+                "poll_tasks": 2,
+                "create_task": 5,
+                "task_receipt": 3,
+                "list_hosts": 1,
+                "list_receipts": 2,
+                "list_support_events": 2,
+                "support_event": 1,
+            },
+        }
+
+        for relative_path, expected in expected_counts.items():
+            with self.subTest(path=relative_path):
+                self.assertEqual(expected, _direct_sql_execute_counts(relative_path))
 
     def test_index_refresh_services_do_not_own_index_state_sql(self):
         for relative_path in (
