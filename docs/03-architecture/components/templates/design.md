@@ -67,7 +67,7 @@ Flow 既是模板，又是流程图载体，不能和普通参数模板完全等
 | 任务 | 先看 |
 | --- | --- |
 | 模板基类 | `ITemplate.cs` |
-| 注册中心 | `TemplateContorl.cs`、`TemplateInitializer` |
+| 注册中心 | `TemplateControl.cs`、`TemplateInitializer` |
 | 编辑窗口 | `TemplateEditorWindow.xaml.cs` |
 | Flow 模板 | `Flow/TemplateFlow.cs` |
 | 节点模板入口 | `Flow/NodeConfigurator/NodePanelBuilder.cs` |

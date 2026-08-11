@@ -43,7 +43,7 @@
 
 从现状看，模板与算法链路最值得先认识的是这几类文件：
 
-- `Templates/TemplateContorl.cs`：模板发现与注册入口。
+- `Templates/TemplateControl.cs`：模板发现与注册入口。
 - `Templates/TemplateEditorWindow.xaml.cs`：模板编辑窗口。
 - `Templates/Flow/TemplateFlow.cs`：流程模板与流程编辑器接入点。
 - `Templates/Jsons/ITemplateJson.cs`：JSON 模板的公共装载/导入导出逻辑。

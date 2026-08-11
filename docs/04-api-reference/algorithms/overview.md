@@ -15,7 +15,7 @@
 
 ## 主链路
 
-1. `TemplateContorl` 扫描已加载程序集中的 `IITemplateLoad`，并把模板注册进系统。
+1. `TemplateControl` 扫描已加载程序集中的 `IITemplateLoad`，并把模板注册进系统。
 2. 各模板菜单入口和 `TemplateEditorWindow` 让用户打开、创建、编辑模板。
 3. 业务算法 UI 通常继承 `DisplayAlgorithmBase`，并暴露 `OpenTemplateCommand` 一类入口。
 4. `SendCommand(...)` 组装 `CVTemplateParam`、文件路径、设备信息等参数。
@@ -28,7 +28,7 @@
 
 | 模块 | 关键入口 | 关注点 |
 | --- | --- | --- |
-| 模板注册与管理 | `ITemplate.cs`、`TemplateContorl.cs`、`TemplateEditorWindow` | 模板怎么出现、打开和编辑 |
+| 模板注册与管理 | `ITemplate.cs`、`TemplateControl.cs`、`TemplateEditorWindow` | 模板怎么出现、打开和编辑 |
 | Flow 模板 | `TemplateFlow.cs`、`FlowEngineToolWindow`、`DisplayFlow` | 流程图、流程编辑、导入导出和批次执行 |
 | JSON 模板 | `ITemplateJson<T>`、`TemplateJsonParam`、`EditTemplateJson` | JSON 装载、保存、导入导出、文本/属性编辑 |
 | 业务模板族 | `POI/`、`ARVR/`、`LedCheck/`、`Jsons/` | 不同历史阶段的业务算法接入 |
@@ -46,7 +46,7 @@
 
 | 顺序 | 入口 |
 | --- | --- |
-| 1 | `Engine/ColorVision.Engine/Templates/TemplateContorl.cs` |
+| 1 | `Engine/ColorVision.Engine/Templates/TemplateControl.cs` |
 | 2 | `TemplateEditorWindow.xaml.cs`、`Templates/Menus/` |
 | 3 | `Templates/Flow/TemplateFlow.cs` |
 | 4 | `Templates/Jsons/ITemplateJson.cs`、`EditTemplateJson.xaml.cs` |

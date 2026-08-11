@@ -66,4 +66,4 @@ DisplayFlow -> FlowControl -> FlowEngineLib -> MQTTRCService -> 设备/算法服
 | 插件加载 | `UI/ColorVision.UI/Plugins/PluginLoader.cs` |
 | 服务树 | `Engine/ColorVision.Engine/Services/ServiceManager.cs` |
 | 注册中心 | `Engine/ColorVision.Engine/Services/RC/MQTTRCService.cs` |
-| 模板注册 | `Engine/ColorVision.Engine/Templates/TemplateContorl.cs` |
+| 模板注册 | `Engine/ColorVision.Engine/Templates/TemplateControl.cs` |

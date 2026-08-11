@@ -8,7 +8,7 @@
 
 ## 当前最关键的文件
 
-- `Engine/ColorVision.Engine/Templates/TemplateContorl.cs`
+- `Engine/ColorVision.Engine/Templates/TemplateControl.cs`
 - `Engine/ColorVision.Engine/Templates/ITemplate.cs`
 - `Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs`
 - `Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs`
@@ -46,7 +46,7 @@
 ## 推荐阅读顺序
 
 1. `Engine/ColorVision.Engine/Templates/ITemplate.cs`
-2. `Engine/ColorVision.Engine/Templates/TemplateContorl.cs`
+2. `Engine/ColorVision.Engine/Templates/TemplateControl.cs`
 3. `Engine/ColorVision.Engine/Templates/TemplateEditorWindow.xaml.cs`
 4. `Engine/ColorVision.Engine/Templates/TemplateCreate.xaml.cs`
 5. `Engine/ColorVision.Engine/Templates/TemplateSearchProvider.cs`

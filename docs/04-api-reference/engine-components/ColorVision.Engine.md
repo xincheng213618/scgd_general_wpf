@@ -63,7 +63,7 @@
 
 | 任务 | 先看 |
 | --- | --- |
-| 模板注册 | `Templates/TemplateContorl.cs`、`Templates/Jsons/ITemplateJson.cs` |
+| 模板注册 | `Templates/TemplateControl.cs`、`Templates/Jsons/ITemplateJson.cs` |
 | JSON 编辑 | `Templates/Jsons/EditTemplateJson.xaml.cs` |
 | 设备服务 | `Services/DeviceService.cs`、`Services/Devices/DeviceServiceFactory.cs` |
 | MQTT/RC | `Services/Core/MQTTServiceBase.cs`、`Services/RC/MQTTRCService.cs` |
