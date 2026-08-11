@@ -9,29 +9,78 @@ namespace SystemMonitor
 {
     public class SystemMonitorIStatusBarProvider : IStatusBarProviderUpdatable
     {
+        private readonly Func<SystemMonitorSetting> _configFactory;
+        private readonly Func<ISystemMonitorStatusSource> _monitorFactory;
+        private readonly IConfigReloadNotifier? _configReloadNotifier;
+        private SystemMonitorSetting? _config;
+        private ISystemMonitorStatusSource? _monitor;
+
         public event EventHandler? StatusBarItemsChanged;
 
         public SystemMonitorIStatusBarProvider()
+            : this(
+                () => ConfigService.Instance.GetRequiredService<SystemMonitorSetting>(),
+                SystemMonitors.GetInstance,
+                ConfigService.Instance as IConfigReloadNotifier)
         {
-            // 仅在可见性配置变更时刷新状态栏项，数据更新由绑定自动处理
-            var monitor = SystemMonitors.GetInstance();
-            monitor.Config.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(SystemMonitorSetting.IsShowTime)
-                 || e.PropertyName == nameof(SystemMonitorSetting.IsShowRAM)
-                 || e.PropertyName == nameof(SystemMonitorSetting.IsShowCPU)
-                 || e.PropertyName == nameof(SystemMonitorSetting.IsShowUptime)
-                 || e.PropertyName == nameof(SystemMonitorSetting.IsShowDisk))
-                {
-                    StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
-                }
-            };
+        }
+
+        private SystemMonitorIStatusBarProvider(
+            Func<SystemMonitorSetting> configFactory,
+            Func<ISystemMonitorStatusSource> monitorFactory,
+            IConfigReloadNotifier? configReloadNotifier = null)
+        {
+            _configFactory = configFactory;
+            _monitorFactory = monitorFactory;
+            _configReloadNotifier = configReloadNotifier;
+            BindCurrentConfig();
+            if (_configReloadNotifier != null)
+                _configReloadNotifier.ConfigsReloaded += ConfigReloadNotifier_ConfigsReloaded;
+        }
+
+        private SystemMonitorSetting BindCurrentConfig()
+        {
+            var config = _configFactory();
+            if (ReferenceEquals(_config, config))
+                return config;
+
+            // Import and ReloadFromDisk replace ConfigHandler.Configs. Rebind both the
+            // provider and an existing monitor so metadata and timer policy share C1.
+            if (_config != null)
+                _config.PropertyChanged -= Config_PropertyChanged;
+
+            _config = config;
+            _config.PropertyChanged += Config_PropertyChanged;
+            UpdateMonitorConfiguration(config);
+            return config;
+        }
+
+        private void ConfigReloadNotifier_ConfigsReloaded(object? sender, EventArgs e)
+        {
+            BindCurrentConfig();
+            StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void Config_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (IsStatusBarVisibilityProperty(e.PropertyName))
+                StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void UpdateMonitorConfiguration(SystemMonitorSetting config)
+        {
+            if (_monitor is ISystemMonitorConfigurable configurableMonitor)
+                configurableMonitor.UpdateConfiguration(config);
         }
 
         public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
-            var monitor = SystemMonitors.GetInstance();
-            var config = monitor.Config;
+            var config = BindCurrentConfig();
+            if (!HasVisibleStatusItem(config))
+                return Array.Empty<StatusBarMeta>();
+
+            var monitor = _monitor ??= _monitorFactory();
+            UpdateMonitorConfiguration(config);
             var items = new List<StatusBarMeta>();
 
             // 时间
@@ -106,7 +155,7 @@ namespace SystemMonitor
             if (config.IsShowDisk)
             {
                 // 磁盘健康图标 - 根据最大使用率选择图标颜色
-                double maxDiskUsage = monitor.Drives.Any() ? monitor.Drives.Max(d => d.UsagePercent) : 0;
+                double maxDiskUsage = monitor.GetMaximumDiskUsage();
                 string diskIcon = maxDiskUsage > 90 ? "DrawingImageHardDiskFull"
                                 : maxDiskUsage > 70 ? "DrawingImageHardDiskRed"
                                 : "DrawingImageHardDisk";
@@ -126,6 +175,24 @@ namespace SystemMonitor
 
             }
             return items;
+        }
+
+        private static bool HasVisibleStatusItem(SystemMonitorSetting config)
+        {
+            return config.IsShowTime
+                || config.IsShowRAM
+                || config.IsShowCPU
+                || config.IsShowUptime
+                || config.IsShowDisk;
+        }
+
+        private static bool IsStatusBarVisibilityProperty(string? propertyName)
+        {
+            return propertyName == nameof(SystemMonitorSetting.IsShowTime)
+                || propertyName == nameof(SystemMonitorSetting.IsShowRAM)
+                || propertyName == nameof(SystemMonitorSetting.IsShowCPU)
+                || propertyName == nameof(SystemMonitorSetting.IsShowUptime)
+                || propertyName == nameof(SystemMonitorSetting.IsShowDisk);
         }
     }
 }

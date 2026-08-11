@@ -11,7 +11,7 @@ using System.Windows;
 
 namespace ColorVision.UI
 {
-    public class ConfigHandler : IConfigService
+    public class ConfigHandler : IConfigService, IConfigReloadNotifier
     {
         private const string BackupFolderName = "Backup";
         private const int MaxBackupCount = 10;
@@ -129,6 +129,8 @@ namespace ColorVision.UI
 
         public bool IsAutoSave { get; set; } = true;
 
+        public event EventHandler? ConfigsReloaded;
+
         public void Reload()
         {
             SaveConfigs();
@@ -143,6 +145,7 @@ namespace ColorVision.UI
             jsonObject = loadedJson;
             Configs = new ConcurrentDictionary<Type, IConfig>();
             Authorization.Instance = GetRequiredService<Authorization>();
+            ConfigsReloaded?.Invoke(this, EventArgs.Empty);
         }
 
         public void SaveConfigs() => SaveConfigs(ConfigFilePath);
@@ -405,6 +408,8 @@ namespace ColorVision.UI
                 jsonObject = loadedJson;
             else
                 LoadDefaultConfigs();
+
+            ConfigsReloaded?.Invoke(this, EventArgs.Empty);
         }
 
         public void Save<T1>() where T1 : IConfig

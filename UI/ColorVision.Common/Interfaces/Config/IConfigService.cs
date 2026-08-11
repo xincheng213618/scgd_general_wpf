@@ -2,6 +2,11 @@
 
 namespace ColorVision.UI
 {
+    public interface IConfigReloadNotifier
+    {
+        event EventHandler? ConfigsReloaded;
+    }
+
     public interface IConfigService
     {
         /// <summary>
