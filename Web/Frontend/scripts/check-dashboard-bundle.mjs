@@ -1,10 +1,11 @@
-import { readFileSync } from 'node:fs'
-import { gzipSync } from 'node:zlib'
+import { existsSync, readFileSync, statSync } from 'node:fs'
+import { resolve } from 'node:path'
 
-const manifest = JSON.parse(readFileSync('dist/.vite/manifest.json', 'utf8'))
+const dist = resolve(process.argv[2] || 'dist')
+const manifest = JSON.parse(readFileSync(`${dist}/.vite/manifest.json`, 'utf8'))
 // Dynamic imports are intentionally explicit roots: this is the JavaScript needed after routing to /admin.
 const entryKeys = ['index.html', 'src/layouts/AdminLayout.tsx', 'src/pages/Dashboard.tsx']
-const maximumSyntheticGzipBytes = 450 * 1024
+const maximumGzipBytes = 450 * 1024
 
 function dependencyClosure(keys, result = new Set()) {
   for (const key of keys) {
@@ -25,32 +26,34 @@ function dependencyClosure(keys, result = new Set()) {
 const files = [...new Set([...dependencyClosure(entryKeys)].map((key) => manifest[key].file))]
 const sizes = files.reduce(
   (total, file) => {
-    const content = readFileSync(`dist/${file}`)
+    const content = readFileSync(`${dist}/${file}`)
     total.rawBytes += content.length
-    // This independently compresses every static file. It estimates potential gzip transfer bytes,
-    // not actual Flask response bytes: the local backend does not serve Content-Encoding: gzip.
-    total.syntheticGzipBytes += gzipSync(content).length
+    const gzipPath = `${dist}/${file}.gz`
+    const brotliPath = `${dist}/${file}.br`
+    total.gzipBytes += existsSync(gzipPath) ? statSync(gzipPath).size : content.length
+    total.brotliBytes += existsSync(brotliPath) ? statSync(brotliPath).size : content.length
     return total
   },
-  { rawBytes: 0, syntheticGzipBytes: 0 },
+  { rawBytes: 0, gzipBytes: 0, brotliBytes: 0 },
 )
-const syntheticGzipHeadroomBytes = maximumSyntheticGzipBytes - sizes.syntheticGzipBytes
+const gzipHeadroomBytes = maximumGzipBytes - sizes.gzipBytes
 const report = {
   route: '/admin',
-  metric: 'estimated-static-route-closure',
+  metric: 'precompressed-static-route-closure',
   javascriptRequests: files.length,
   staticBytes: sizes.rawBytes,
-  syntheticGzipBytes: sizes.syntheticGzipBytes,
-  maximumSyntheticGzipBytes,
-  syntheticGzipHeadroomBytes,
-  syntheticGzipHeadroomPercent: Number(
-    ((syntheticGzipHeadroomBytes / sizes.syntheticGzipBytes) * 100).toFixed(1),
+  gzipBytes: sizes.gzipBytes,
+  brotliBytes: sizes.brotliBytes,
+  maximumGzipBytes,
+  gzipHeadroomBytes,
+  gzipHeadroomPercent: Number(
+    ((gzipHeadroomBytes / sizes.gzipBytes) * 100).toFixed(1),
   ),
 }
 
-console.log(`Dashboard static route closure estimate: ${JSON.stringify(report)}`)
-if (sizes.syntheticGzipBytes > maximumSyntheticGzipBytes) {
+console.log(`Dashboard static route closure: ${JSON.stringify(report)}`)
+if (sizes.gzipBytes > maximumGzipBytes) {
   throw new Error(
-    `Dashboard static route closure estimate is ${sizes.syntheticGzipBytes} synthetic gzip bytes; budget is ${maximumSyntheticGzipBytes}`,
+    `Dashboard static route closure is ${sizes.gzipBytes} gzip bytes; budget is ${maximumGzipBytes}`,
   )
 }

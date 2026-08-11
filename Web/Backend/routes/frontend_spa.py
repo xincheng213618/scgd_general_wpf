@@ -37,6 +37,40 @@ def _current_internal_path() -> str:
     return request.full_path.rstrip("?")
 
 
+def _send_static_file(dist: Path, asset_path: str, *, max_age: int):
+    """Serve a build artifact, preferring an available precompressed variant."""
+    available_encodings = [
+        encoding
+        for encoding, suffix in (("br", ".br"), ("gzip", ".gz"))
+        if (dist / f"{asset_path}{suffix}").is_file()
+    ]
+    has_variants = bool(available_encodings)
+    selected_encoding = None
+    selected_path = asset_path
+
+    # Preserve the existing byte-range contract against the identity file.
+    # A compressed range addresses different bytes and a different total size.
+    if has_variants and not request.headers.get("Range"):
+        best_match = request.accept_encodings.best_match(
+            [*available_encodings, "identity"],
+        )
+        if best_match in available_encodings:
+            selected_encoding = best_match
+            selected_path = f"{asset_path}{'.br' if best_match == 'br' else '.gz'}"
+
+    response = send_from_directory(
+        dist,
+        selected_path,
+        download_name=Path(asset_path).name,
+        max_age=max_age,
+    )
+    if has_variants:
+        response.vary.add("Accept-Encoding")
+    if selected_encoding:
+        response.headers["Content-Encoding"] = selected_encoding
+    return response
+
+
 def _serve_spa():
     ctx = _get_ctx()
     dist = ctx.dist_dir
@@ -52,7 +86,7 @@ def _serve_spa():
             503,
             {"Content-Type": "text/plain; charset=utf-8"},
         )
-    response = send_from_directory(dist, "index.html", max_age=0)
+    response = _send_static_file(dist, "index.html", max_age=0)
     # The HTML names hashed chunks, so it must revalidate on every navigation
     # while those immutable chunks can be cached aggressively.
     response.headers["Cache-Control"] = "no-cache, must-revalidate"
@@ -64,10 +98,8 @@ def _serve_asset(asset_path: str, *, immutable: bool = False):
     dist = ctx.dist_dir
     target = dist / asset_path
     if target.is_file():
-        response = send_from_directory(
-            dist,
-            asset_path,
-            max_age=31_536_000 if immutable else 3_600,
+        response = _send_static_file(
+            dist, asset_path, max_age=31_536_000 if immutable else 3_600,
         )
         if immutable:
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"

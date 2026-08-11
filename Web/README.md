@@ -18,6 +18,10 @@ Web/
 `Frontend/dist`. `Backend` serves the compiled React app, JSON APIs, auth,
 downloads, and storage/index services.
 
+Production frontend builds also emit verified `.br` and `.gz` variants for
+compressible static files. Flask negotiates those files from `Accept-Encoding`;
+byte-range requests continue to address the identity representation.
+
 Common commands:
 
 ```powershell
