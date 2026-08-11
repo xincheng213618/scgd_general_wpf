@@ -3,6 +3,7 @@ import {
   BookOutlined,
   CloudDownloadOutlined,
   DashboardOutlined,
+  EllipsisOutlined,
   FolderOpenOutlined,
   HomeOutlined,
   InboxOutlined,
@@ -25,14 +26,14 @@ const { Header, Content } = Layout
 const docsUrl = '/scgd_general_wpf/'
 
 const menuItems: Array<{ key: string; icon: ReactNode; label: string; href?: string }> = [
-  { key: '/', icon: <HomeOutlined />, label: '首页' },
-  { key: '/plugins', icon: <AppstoreOutlined />, label: '插件市场' },
-  { key: '/releases', icon: <CloudDownloadOutlined />, label: '版本中心' },
-  { key: '/updates', icon: <ProductOutlined />, label: '增量更新' },
-  { key: '/tools', icon: <ToolOutlined />, label: '工具下载' },
-  { key: 'docs', icon: <BookOutlined />, label: '文档中心', href: docsUrl },
-  { key: '/transfer', icon: <InboxOutlined />, label: '文件中转' },
-  { key: '/browse', icon: <FolderOpenOutlined />, label: '文件浏览' },
+  { key: '/', icon: <HomeOutlined aria-hidden />, label: '首页' },
+  { key: '/plugins', icon: <AppstoreOutlined aria-hidden />, label: '插件市场' },
+  { key: '/releases', icon: <CloudDownloadOutlined aria-hidden />, label: '版本中心' },
+  { key: '/updates', icon: <ProductOutlined aria-hidden />, label: '增量更新' },
+  { key: '/tools', icon: <ToolOutlined aria-hidden />, label: '工具下载' },
+  { key: 'docs', icon: <BookOutlined aria-hidden />, label: '文档中心', href: docsUrl },
+  { key: '/transfer', icon: <InboxOutlined aria-hidden />, label: '文件中转' },
+  { key: '/browse', icon: <FolderOpenOutlined aria-hidden />, label: '文件浏览' },
 ]
 
 function selectedKey(pathname: string) {
@@ -95,9 +96,11 @@ export function PublicLayout({
             </span>
           </Link>
           <Menu
+            aria-label="主导航"
             mode="horizontal"
             selectedKeys={[selectedKey(location.pathname)]}
             items={publicMenuItems}
+            overflowedIndicator={<EllipsisOutlined aria-label="更多导航" />}
             onClick={(item) => {
               const target = menuItems.find((entry) => entry.key === item.key)
               if (target?.href) {

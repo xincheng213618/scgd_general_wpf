@@ -1,13 +1,53 @@
 import { App as AntApp, ConfigProvider, theme } from 'antd'
 import { Component, lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { PublicLayout } from './layouts/PublicLayout'
 import { getSession } from './services/auth'
 import type { ThemeMode } from './types/admin'
 import type { AuthSession } from './types/site'
 
 const themeStorageKey = 'colorvision-web-theme'
+
+const documentTitles: Record<string, string> = {
+  '/': 'ColorVision - 下载与插件中心',
+  '/plugins': '插件市场 - ColorVision',
+  '/releases': '版本中心 - ColorVision',
+  '/changelog': '更新说明 - ColorVision',
+  '/updates': '增量更新 - ColorVision',
+  '/tools': '工具下载 - ColorVision',
+  '/transfer': '文件中转 - ColorVision',
+  '/login': '登录 / 注册 - ColorVision',
+  '/admin': '管理控制台 - ColorVision',
+  '/admin/publish': '发布中心 - ColorVision',
+  '/admin/files': '文件管理 - ColorVision',
+  '/admin/cache': '缓存与索引 - ColorVision',
+  '/admin/jobs': '任务调度 - ColorVision',
+  '/admin/api-keys': 'API Key - ColorVision',
+  '/admin/copilot': 'Copilot 配置 - ColorVision',
+  '/admin/audit': '审计日志 - ColorVision',
+  '/admin/traffic': '访问统计 - ColorVision',
+  '/admin/settings': '系统设置 - ColorVision',
+}
+
+function documentTitle(pathname: string) {
+  const exactTitle = documentTitles[pathname]
+  if (exactTitle) return exactTitle
+  if (pathname.startsWith('/plugins/')) return '插件详情 - ColorVision'
+  if (pathname.startsWith('/browse')) return '文件浏览 - ColorVision'
+  if (pathname.startsWith('/admin')) return '管理控制台 - ColorVision'
+  return 'ColorVision'
+}
+
+function RouteDocumentTitle() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    document.title = documentTitle(pathname)
+  }, [pathname])
+
+  return null
+}
 
 const AdminLayout = lazy(() => import('./layouts/AdminLayout').then((module) => ({ default: module.AdminLayout })))
 const ApiKeysPage = lazy(() => import('./pages/ApiKeysPage').then((module) => ({ default: module.ApiKeysPage })))
@@ -158,6 +198,7 @@ function App() {
     <ConfigProvider theme={configTheme}>
       <AntApp>
         <BrowserRouter>
+          <RouteDocumentTitle />
           <RouteErrorBoundary>
             <Routes>
             <Route element={publicLayout}>
