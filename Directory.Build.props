@@ -1,12 +1,15 @@
 <Project>
 	<PropertyGroup>
+		<_ColorVisionFileIOProjectPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', 'Engine', 'ColorVision.FileIO', 'ColorVision.FileIO.csproj'))</_ColorVisionFileIOProjectPath>
+	</PropertyGroup>
+	<PropertyGroup>
 		<AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)ColorVision.snk</AssemblyOriginatorKeyFile>
 		<SignAssembly Condition="Exists('$(AssemblyOriginatorKeyFile)')">True</SignAssembly>
 		<SignAssembly Condition="!Exists('$(AssemblyOriginatorKeyFile)')">False</SignAssembly>
 		<!-- PLATFORM_SUPPORT_POLICY: ColorVision 宿主运行时、官方插件和客户项目交付包当前仅支持 x64。 -->
 		<Platforms>x64</Platforms>
-		<Platform Condition="'$(MSBuildProjectExtension)' == '.csproj' and ('$(Platform)' == '' or '$(Platform)' == 'AnyCPU')">x64</Platform>
-		<PlatformTarget Condition="'$(MSBuildProjectExtension)' == '.csproj'">x64</PlatformTarget>
+		<Platform Condition="'$(MSBuildProjectExtension)' == '.csproj' and '$(MSBuildProjectFullPath)' != '$(_ColorVisionFileIOProjectPath)' and ('$(Platform)' == '' or '$(Platform)' == 'AnyCPU')">x64</Platform>
+		<PlatformTarget Condition="'$(MSBuildProjectExtension)' == '.csproj' and '$(MSBuildProjectFullPath)' != '$(_ColorVisionFileIOProjectPath)'">x64</PlatformTarget>
 		<PackageTags>ColorVision</PackageTags>
 		<EnableNETAnalyzers>true</EnableNETAnalyzers>
 		<AnalysisMode>Recommended</AnalysisMode>

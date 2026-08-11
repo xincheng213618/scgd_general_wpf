@@ -1,6 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="Platform;PlatformTarget;RuntimeIdentifier;RuntimeIdentifiers;_ColorVisionFileIORequestedPlatform;_ColorVisionFileIORequestedPlatformTarget;_ColorVisionFileIORequestedRuntimeIdentifier;_ColorVisionFileIORequestedRuntimeIdentifiers">
 
   <PropertyGroup>
+	  <!-- Preserve direct command-line requests before canonical AnyCPU values replace them. -->
+	  <_ColorVisionFileIORequestedPlatform>$(Platform)</_ColorVisionFileIORequestedPlatform>
+	  <_ColorVisionFileIORequestedPlatformTarget>$(PlatformTarget)</_ColorVisionFileIORequestedPlatformTarget>
+	  <_ColorVisionFileIORequestedRuntimeIdentifier>$(RuntimeIdentifier)</_ColorVisionFileIORequestedRuntimeIdentifier>
+	  <_ColorVisionFileIORequestedRuntimeIdentifiers>$(RuntimeIdentifiers)</_ColorVisionFileIORequestedRuntimeIdentifiers>
 	  <TargetFrameworks>net10.0;net8.0;net6.0;net461</TargetFrameworks>
 	  <VersionPrefix>1.5.1.1</VersionPrefix>
 	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -13,6 +18,8 @@
 	  <Platforms>AnyCPU</Platforms>
 	  <Platform>AnyCPU</Platform>
 	  <PlatformTarget>AnyCPU</PlatformTarget>
+	  <RuntimeIdentifier></RuntimeIdentifier>
+	  <RuntimeIdentifiers></RuntimeIdentifiers>
   </PropertyGroup>
 
 	<ItemGroup>

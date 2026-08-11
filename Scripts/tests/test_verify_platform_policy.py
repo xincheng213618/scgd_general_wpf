@@ -29,8 +29,7 @@ from Scripts.verify_platform_policy import (
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 POLICY_INITIAL_TARGETS = (
-    "ValidateColorVisionPlatformRole;ValidateColorVisionHostPlatform;"
-    "ValidateColorVisionFileIOAnyCpuPackage"
+    "ValidateColorVisionPlatformRole;ValidateColorVisionHostPlatform"
 )
 
 
@@ -204,12 +203,11 @@ class PlatformPolicyTests(unittest.TestCase):
             ("missing", None),
             (
                 "missing-host",
-                "ValidateColorVisionPlatformRole;ValidateColorVisionFileIOAnyCpuPackage",
+                "ValidateColorVisionPlatformRole",
             ),
             (
                 "reordered",
-                "ValidateColorVisionHostPlatform;ValidateColorVisionPlatformRole;"
-                "ValidateColorVisionFileIOAnyCpuPackage",
+                "ValidateColorVisionHostPlatform;ValidateColorVisionPlatformRole",
             ),
             ("extra", f"{POLICY_INITIAL_TARGETS};UnexpectedTarget"),
         )
@@ -275,6 +273,11 @@ class PlatformPolicyTests(unittest.TestCase):
         baseline = (REPO_ROOT / "ColorVision.PlatformPolicy.targets").read_text(encoding="utf-8")
         mutations = (
             ("role", "'@(ColorVisionPlatformRole)' == 'AnyCPU'", "'@(ColorVisionPlatformRole)' != ''"),
+            (
+                "restore-entry",
+                'BeforeTargets="PrepareForBuild;Pack;Restore"',
+                'BeforeTargets="PrepareForBuild;Pack"',
+            ),
             ("platform", "'$(Platform)' != 'AnyCPU'", "'$(Platform)' == ''"),
             ("platform-target", "'$(PlatformTarget)' != 'AnyCPU'", "'$(PlatformTarget)' == ''"),
             (
@@ -350,7 +353,14 @@ class PlatformPolicyTests(unittest.TestCase):
 
     def test_rejects_architecture_specific_fileio_package_project_mutations(self) -> None:
         baseline = (
-            "<Project><PropertyGroup>"
+            '<Project TreatAsLocalProperty="Platform;PlatformTarget;RuntimeIdentifier;RuntimeIdentifiers;'
+            '_ColorVisionFileIORequestedPlatform;_ColorVisionFileIORequestedPlatformTarget;'
+            '_ColorVisionFileIORequestedRuntimeIdentifier;_ColorVisionFileIORequestedRuntimeIdentifiers">'
+            "<PropertyGroup>"
+            "<_ColorVisionFileIORequestedPlatform>$(Platform)</_ColorVisionFileIORequestedPlatform>"
+            "<_ColorVisionFileIORequestedPlatformTarget>$(PlatformTarget)</_ColorVisionFileIORequestedPlatformTarget>"
+            "<_ColorVisionFileIORequestedRuntimeIdentifier>$(RuntimeIdentifier)</_ColorVisionFileIORequestedRuntimeIdentifier>"
+            "<_ColorVisionFileIORequestedRuntimeIdentifiers>$(RuntimeIdentifiers)</_ColorVisionFileIORequestedRuntimeIdentifiers>"
             "<TargetFrameworks>net10.0;net8.0;net6.0;net461</TargetFrameworks>"
             "<VersionPrefix>1.5.1.1</VersionPrefix>"
             "<GeneratePackageOnBuild>True</GeneratePackageOnBuild>"
@@ -358,6 +368,8 @@ class PlatformPolicyTests(unittest.TestCase):
             "<Platforms>AnyCPU</Platforms>"
             "<Platform>AnyCPU</Platform>"
             "<PlatformTarget>AnyCPU</PlatformTarget>"
+            "<RuntimeIdentifier></RuntimeIdentifier>"
+            "<RuntimeIdentifiers></RuntimeIdentifiers>"
             "</PropertyGroup><ItemGroup>"
             '<ColorVisionPlatformRole Remove="@(ColorVisionPlatformRole)" />'
             '<ColorVisionPlatformRole Include="AnyCPU" />'
@@ -368,6 +380,12 @@ class PlatformPolicyTests(unittest.TestCase):
             ("missing-target", "<PlatformTarget>AnyCPU</PlatformTarget>", ""),
             ("missing-platform", "<Platform>AnyCPU</Platform>", ""),
             ("missing-role", '<ColorVisionPlatformRole Include="AnyCPU" />', ""),
+            ("missing-local-property", "Platform;PlatformTarget", "Platform"),
+            (
+                "conditional-capture",
+                "<_ColorVisionFileIORequestedPlatform>$(Platform)</_ColorVisionFileIORequestedPlatform>",
+                "<_ColorVisionFileIORequestedPlatform Condition=\"'false'\">$(Platform)</_ColorVisionFileIORequestedPlatform>",
+            ),
             ("legacy-exception", "</PropertyGroup>", "<AllowStandaloneArm64Build>true</AllowStandaloneArm64Build></PropertyGroup>"),
         )
         for name, old, new in mutations:
@@ -532,6 +550,58 @@ class EvaluatedPlatformPolicyTests(unittest.TestCase):
                 removals = set(reference.get("GlobalPropertiesToRemove", "").split(";"))
                 self.assertNotIn("Platform", removals)
                 self.assertNotIn("PlatformTarget", removals)
+
+    def test_spectrum_x64_restore_graph_keeps_fileio_anycpu(self) -> None:
+        result = subprocess.run(
+            [
+                "dotnet",
+                "restore",
+                str(REPO_ROOT / "Test/Spectrum.Tests/Spectrum.Tests.csproj"),
+                "-p:Platform=x64",
+                "--verbosity",
+                "minimal",
+            ],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            check=False,
+        )
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+
+    def test_fileio_direct_x64_cannot_spoof_restore_or_capture_properties(self) -> None:
+        spoofed_properties = (
+            ("ColorVisionFileIOProjectReference", "true"),
+            ("ExcludeRestorePackageImports", "true"),
+            ("_ColorVisionFileIORequestedPlatform", "AnyCPU"),
+        )
+        with tempfile.TemporaryDirectory(prefix="fileio-direct-spoof-") as output_directory:
+            for name, value in spoofed_properties:
+                with self.subTest(name=name):
+                    package_output = Path(output_directory) / name
+                    package_output.mkdir()
+                    result = subprocess.run(
+                        [
+                            "dotnet",
+                            "build",
+                            str(REPO_ROOT / "Engine/ColorVision.FileIO/ColorVision.FileIO.csproj"),
+                            "--no-restore",
+                            "-p:Platform=x64",
+                            f"-p:{name}={value}",
+                            f"-p:PackageOutputPath={package_output}",
+                            "--verbosity",
+                            "minimal",
+                        ],
+                        cwd=REPO_ROOT,
+                        capture_output=True,
+                        text=True,
+                        errors="replace",
+                        check=False,
+                    )
+                    output = result.stdout + result.stderr
+                    self.assertNotEqual(0, result.returncode, output)
+                    self.assertIn("must remain an AnyCPU", output)
+                    self.assertEqual([], list(package_output.iterdir()))
 
     def test_fileio_architecture_overrides_fail_without_creating_a_package(self) -> None:
         with tempfile.TemporaryDirectory(prefix="fileio-invalid-package-tests-") as output_directory:
