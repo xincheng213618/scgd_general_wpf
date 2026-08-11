@@ -392,10 +392,9 @@ namespace ColorVision.UI.Tests
                 scanProtectionId])!);
         }
 
+        // Keep the production cleanup delay: its detached process must outlive the parent batch.
         private static string ShortenBatchWaits(string batch) => batch
-            .Replace("ping -n 2 127.0.0.1", "ping -n 1 127.0.0.1", StringComparison.Ordinal)
-            // Keep one real delay before the detached cleanup process removes the batch's own directory.
-            .Replace("ping -n 4 127.0.0.1", "ping -n 2 127.0.0.1", StringComparison.Ordinal);
+            .Replace("ping -n 2 127.0.0.1", "ping -n 1 127.0.0.1", StringComparison.Ordinal);
 
         private static void ShortenBatchWaits(string batchPath, Encoding encoding)
         {
