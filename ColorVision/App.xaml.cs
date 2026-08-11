@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Core;
+using ColorVision.Engine.MQTT;
 using ColorVision.Properties;
 using ColorVision.Recovery;
 using ColorVision.Themes;
@@ -49,6 +51,10 @@ namespace ColorVision
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Design",
+        "CA1001:Types that own disposable fields should be disposable",
+        Justification = "WPF owns the Application lifetime; App_Exit disposes the process-lifetime configuration owner.")]
     public partial class App : Application
     {
         private static readonly TimeSpan SocketShutdownTimeout = TimeSpan.FromSeconds(2);
@@ -58,6 +64,7 @@ namespace ColorVision
         private ModuleCatalog? _moduleCatalog;
         private bool _ownsSingleInstanceMutex;
         private SingleInstanceRuntimeCoordinator? _singleInstanceRuntimeCoordinator;
+        private AppConfigRuntimeOwner? _appConfigRuntimeOwner;
 
         public App()
         {
@@ -263,13 +270,26 @@ namespace ColorVision
             _singleInstanceRuntimeCoordinator = new SingleInstanceRuntimeCoordinator(
                 () => Task.Run(Update.ApplicationUpdateProcessCoordinator.CloseOtherApplicationProcesses),
                 TryAcquireSingleInstanceMutex,
-                () => ConfigHandler.GetInstance().Save<APPConfig>());
-            appConfig.PropertyChanged += AppConfig_PropertyChanged;
+                () => { });
+            _appConfigRuntimeOwner = new AppConfigRuntimeOwner(
+                _singleInstanceRuntimeCoordinator.EnforceSingleInstanceAsync,
+                PersistCurrentAppConfig,
+                closedInstanceCount => log.Info(
+                    $"Multiple-instance mode disabled. Closed {closedInstanceCount} other " +
+                    "ColorVision instance(s) from the current installation."),
+                ex => log.Error("Unable to disable multiple-instance mode. Restoring the previous setting.", ex),
+                () => _isSingleInstanceReplacement);
 
             Rbac.ApplicationUsageTracker.StartSession();
 
-            CopilotMcpServer.Instance.ApplyConfig();
-            LanRemoteControlService.Instance.ApplyConfig();
+            ConfigReloadResult initialConfigBinding = configHandler.RegisterReloadParticipants(
+                _appConfigRuntimeOwner,
+                MQTTControl.GetInstance(),
+                CopilotMcpServer.Instance,
+                LanRemoteControlService.Instance,
+                CopilotPanelService.GetInstance());
+            foreach (ConfigReloadFailure failure in initialConfigBinding.Failures)
+                log.Error($"Initial configuration binding failed for '{failure.OwnerName}'.", failure.Exception);
 
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
 
@@ -355,36 +375,22 @@ namespace ColorVision
             }
         }
 
-        private async void AppConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        private void PersistCurrentAppConfig(APPConfig expectedConfig)
         {
-            if (e.PropertyName != nameof(APPConfig.IsMute)
-                || sender is not APPConfig appConfig
-                || appConfig.IsMute
-                || _isSingleInstanceReplacement
-                || _singleInstanceRuntimeCoordinator == null)
+            void PersistIfCurrent()
             {
-                return;
+                if (_appConfigRuntimeOwner?.OwnsCurrentConfig(expectedConfig) != true)
+                    return;
+
+                ConfigHandler configHandler = ConfigHandler.GetInstance();
+                if (ReferenceEquals(configHandler.GetRequiredService<APPConfig>(), expectedConfig))
+                    configHandler.Save<APPConfig>();
             }
 
-            try
-            {
-                int? closedInstanceCount = await _singleInstanceRuntimeCoordinator.EnforceSingleInstanceAsync();
-                if (closedInstanceCount.HasValue)
-                {
-                    log.Info(
-                        $"Multiple-instance mode disabled. Closed {closedInstanceCount.Value} other " +
-                        "ColorVision instance(s) from the current installation.");
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error("Unable to disable multiple-instance mode. Restoring the previous setting.", ex);
-                if (!appConfig.IsMute)
-                {
-                    appConfig.IsMute = true;
-                    ConfigHandler.GetInstance().Save<APPConfig>();
-                }
-            }
+            if (Dispatcher.CheckAccess())
+                PersistIfCurrent();
+            else
+                Dispatcher.Invoke(PersistIfCurrent);
         }
 
         private bool TryCloseSingleInstanceReplacement()
@@ -544,6 +550,7 @@ namespace ColorVision
                             log.Info("Skipped exit-time prefetched update because an external update is already active.");
                         }
                     }),
+                    new("application config runtime owner", () => _appConfigRuntimeOwner?.Dispose()),
                     new("Copilot MCP server", () => CopilotMcpServer.Instance.Stop()),
                     new("LAN remote control", () => LanRemoteControlService.Instance.Stop()),
                     new("startup recovery registry", () =>
