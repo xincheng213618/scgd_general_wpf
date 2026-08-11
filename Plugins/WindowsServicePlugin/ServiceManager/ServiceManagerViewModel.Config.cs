@@ -140,11 +140,12 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void UpdateMysqlCfgFile(string configPath)
         {
-            MySqlSetting.Instance.MySqlConfig.Host = MySqlServiceConfig.Instance.Host;
-            MySqlSetting.Instance.MySqlConfig.Port = MySqlServiceConfig.Instance.Port;
-            MySqlSetting.Instance.MySqlConfig.UserName = MySqlServiceConfig.Instance.AppUser;
-            MySqlSetting.Instance.MySqlConfig.UserPwd = MySqlServiceConfig.Instance.AppPassword;
-            MySqlSetting.Instance.MySqlConfig.Database = MySqlServiceConfig.Instance.Database;
+            MySqlServiceConfig serviceConfig = MySqlManager.Config;
+            MySqlSetting.Instance.MySqlConfig.Host = serviceConfig.Host;
+            MySqlSetting.Instance.MySqlConfig.Port = serviceConfig.Port;
+            MySqlSetting.Instance.MySqlConfig.UserName = serviceConfig.AppUser;
+            MySqlSetting.Instance.MySqlConfig.UserPwd = serviceConfig.AppPassword;
+            MySqlSetting.Instance.MySqlConfig.Database = serviceConfig.Database;
 
             if (!File.Exists(configPath)) return;
             try

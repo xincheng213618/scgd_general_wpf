@@ -51,9 +51,11 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private static void SaveServiceManagerConfig()
+        private void SaveServiceManagerConfig()
         {
-            ConfigHandler.GetInstance().Save<ServiceManagerConfig>();
+            ServiceManagerConfig current = ConfigService.Instance.GetRequiredService<ServiceManagerConfig>();
+            if (ReferenceEquals(current, Config))
+                ConfigHandler.GetInstance().Save<ServiceManagerConfig>();
         }
 
         private void OpenInstallManager()

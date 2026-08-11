@@ -6,7 +6,7 @@ namespace WindowsServicePlugin.ServiceManager
 {
     public class MqttServiceManager
     {
-        public MqttServiceConfig Config { get; } = MqttServiceConfig.Instance;
+        public MqttServiceConfig Config { get; private set; } = MqttServiceConfig.Instance;
 
         public MqttServiceManager()
         {
@@ -15,6 +15,12 @@ namespace WindowsServicePlugin.ServiceManager
 
         public void Initialize()
         {
+            MigrateFromLegacySettings();
+        }
+
+        internal void RebindConfiguration(MqttServiceConfig config)
+        {
+            Config = config ?? throw new ArgumentNullException(nameof(config));
             MigrateFromLegacySettings();
         }
 
@@ -86,9 +92,11 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private static void SaveConfig()
+        private void SaveConfig()
         {
-            ConfigHandler.GetInstance().Save<MqttServiceConfig>();
+            MqttServiceConfig current = ConfigService.Instance.GetRequiredService<MqttServiceConfig>();
+            if (ReferenceEquals(current, Config))
+                ConfigHandler.GetInstance().Save<MqttServiceConfig>();
         }
 
     }

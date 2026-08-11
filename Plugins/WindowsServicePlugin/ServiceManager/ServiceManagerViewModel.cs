@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using log4net;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -16,20 +17,22 @@ namespace WindowsServicePlugin.ServiceManager
     ///   - ServiceManagerViewModel.MySql.cs     MySQL 操作
     ///   - ServiceManagerViewModel.Helpers.cs   辅助方法
     /// </summary>
-    public partial class ServiceManagerViewModel : ViewModelBase
+    public partial class ServiceManagerViewModel : ViewModelBase, IDisposable
     {
         private readonly ILog log = LogManager.GetLogger(typeof(ServiceManagerViewModel));
 
         public static ServiceManagerViewModel Instance { get; } = new ServiceManagerViewModel();
 
-        private readonly ServiceManagerConfig _config = ServiceManagerConfig.Instance;
+        private readonly RuntimeConfigOwner<ServiceManagerConfig> configOwner;
+        private ServiceManagerConfig _config;
+        private ServiceManagerConfig? pendingConfig;
         public ServiceManagerConfig Config => _config;
 
         public ObservableCollection<ServiceEntry> Services { get; set; } = [];
 
-        public MySqlServiceManager MySqlManager { get; } = new MySqlServiceManager();
+        public MySqlServiceManager MySqlManager { get; }
 
-        public MqttServiceManager MqttManager { get; } = new MqttServiceManager();
+        public MqttServiceManager MqttManager { get; }
 
         public string CurrentVersion { get => _CurrentVersion; set { _CurrentVersion = value; OnPropertyChanged(); } }
         private string _CurrentVersion = string.Empty;
@@ -79,6 +82,15 @@ namespace WindowsServicePlugin.ServiceManager
 
         public ServiceManagerViewModel()
         {
+            configOwner = new RuntimeConfigOwner<ServiceManagerConfig>(
+                () => ConfigService.Instance.GetRequiredService<ServiceManagerConfig>(),
+                ConfigService.Instance as IConfigReloadNotifier,
+                ex => log.Error("重新加载服务管理器配置失败", ex));
+            _config = configOwner.Current;
+            MySqlManager = new MySqlServiceManager(_config, ConfigService.Instance.GetRequiredService<MySqlServiceConfig>());
+            MqttManager = new MqttServiceManager();
+            configOwner.ConfigurationChanged += ConfigOwner_ConfigurationChanged;
+
             // Commands
             OneKeyStartCommand = new RelayCommand(a => _ = OneKeyStartAsync(), a => !IsBusy);
             OneKeyStopCommand = new RelayCommand(a => _ = OneKeyStopAsync(), a => !IsBusy);
@@ -111,6 +123,36 @@ namespace WindowsServicePlugin.ServiceManager
             MySqlGenerateRandomRootPasswordCommand = new RelayCommand(a => GenerateRandomRootPassword());
 
             Initialize();
+        }
+
+        private void ConfigOwner_ConfigurationChanged(object? sender, RuntimeConfigChangedEventArgs<ServiceManagerConfig> e)
+        {
+            void ApplyOrDefer()
+            {
+                if (IsBusy)
+                {
+                    pendingConfig = e.Current;
+                    return;
+                }
+
+                ApplyConfiguration(e.Current);
+            }
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+                ApplyOrDefer();
+            else
+                dispatcher.Invoke(ApplyOrDefer);
+        }
+
+        private void ApplyConfiguration(ServiceManagerConfig config)
+        {
+            _config = config;
+            pendingConfig = null;
+            MySqlManager.RebindConfiguration(config, ConfigService.Instance.GetRequiredService<MySqlServiceConfig>());
+            MqttManager.RebindConfiguration(ConfigService.Instance.GetRequiredService<MqttServiceConfig>());
+            OnPropertyChanged(nameof(Config));
+            RefreshAll();
         }
 
         private void Initialize()
@@ -192,12 +234,20 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void SetBusy(bool busy, string text = "")
         {
-            Application.Current?.Dispatcher.Invoke(() =>
+            void SetBusyCore()
             {
                 IsBusy = busy;
                 ProgressText = text;
                 if (!busy) Progress = 0;
-            });
+                if (!busy && pendingConfig != null)
+                    ApplyConfiguration(pendingConfig);
+            }
+
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+                SetBusyCore();
+            else
+                dispatcher.Invoke(SetBusyCore);
         }
 
         private void SetProgress(double value, string text = "")
@@ -207,6 +257,13 @@ namespace WindowsServicePlugin.ServiceManager
                 Progress = value;
                 if (!string.IsNullOrEmpty(text)) ProgressText = text;
             });
+        }
+
+        public void Dispose()
+        {
+            configOwner.ConfigurationChanged -= ConfigOwner_ConfigurationChanged;
+            configOwner.Dispose();
+            GC.SuppressFinalize(this);
         }
 
     }

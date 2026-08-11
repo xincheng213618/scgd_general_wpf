@@ -149,7 +149,7 @@ namespace WindowsServicePlugin.ServiceManager
                 return;
             }
 
-            string? sqlFilePath = MySqlServiceManager.ResolveResetDatabaseSqlPath();
+            string? sqlFilePath = MySqlManager.ResolveResetDatabaseSqlPath();
             if (string.IsNullOrWhiteSpace(sqlFilePath))
             {
                 ShowUiMessage("未找到 color_vision_all.sql，请确认服务安装目录下存在 SQL 目录。", "重置数据库", MessageBoxButton.OK, MessageBoxImage.Warning);

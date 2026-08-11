@@ -10,12 +10,27 @@ namespace WindowsServicePlugin.ServiceManager
     {
         private static readonly string[] ResetPreservedTables = MySqlLocalServicesManager.MigrationBackupTableNames.ToArray();
 
-        public MySqlServiceConfig Config { get; } = MySqlServiceConfig.Instance;
+        private ServiceManagerConfig serviceManagerConfig;
+        public MySqlServiceConfig Config { get; private set; }
 
         public MySqlServiceHelper Helper { get; } = new MySqlServiceHelper();
 
         public MySqlServiceManager()
+            : this(ServiceManagerConfig.Instance, MySqlServiceConfig.Instance)
         {
+        }
+
+        internal MySqlServiceManager(ServiceManagerConfig serviceManagerConfig, MySqlServiceConfig config)
+        {
+            this.serviceManagerConfig = serviceManagerConfig ?? throw new ArgumentNullException(nameof(serviceManagerConfig));
+            Config = config ?? throw new ArgumentNullException(nameof(config));
+            MigrateFromLegacySettings();
+        }
+
+        internal void RebindConfiguration(ServiceManagerConfig nextServiceManagerConfig, MySqlServiceConfig config)
+        {
+            serviceManagerConfig = nextServiceManagerConfig ?? throw new ArgumentNullException(nameof(nextServiceManagerConfig));
+            Config = config ?? throw new ArgumentNullException(nameof(config));
             MigrateFromLegacySettings();
         }
 
@@ -35,7 +50,7 @@ namespace WindowsServicePlugin.ServiceManager
         {
             string targetDir = Directory.GetParent(baseLocation)?.FullName ?? baseLocation;
             var credentials = CreateFreshInstallCredentials(database);
-            int port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+            int port = GetConfiguredPort(serviceManagerConfig.MySqlPort);
             Helper.Port = port;
 
             try
@@ -105,7 +120,7 @@ namespace WindowsServicePlugin.ServiceManager
             Config.AppUser = appUser;
             Config.AppPassword = appPassword;
             Config.Database = database;
-            Config.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+            Config.Port = GetConfiguredPort(serviceManagerConfig.MySqlPort);
 
             if (!string.IsNullOrWhiteSpace(installedBasePath))
             {
@@ -160,7 +175,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private async Task<bool> RepairMySqlViaServiceHostAsync(string startMessage, Action<string> logCallback)
         {
-            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+            Helper.Port = GetConfiguredPort(serviceManagerConfig.MySqlPort);
             if (!ResolveSavedMySqlBasePath(logCallback))
             {
                 return false;
@@ -260,9 +275,9 @@ namespace WindowsServicePlugin.ServiceManager
             return ExecuteRootSqlFile(filePath, logCallback, Config.Database);
         }
 
-        public static string? ResolveResetDatabaseSqlPath()
+        public string? ResolveResetDatabaseSqlPath()
         {
-            return ResolveColorVisionAllSqlPath(ServiceManagerConfig.Instance.BaseLocation);
+            return ResolveColorVisionAllSqlPath(serviceManagerConfig.BaseLocation);
         }
 
         public bool ResetDatabaseFromServiceSql(Action<string> logCallback)
@@ -331,7 +346,7 @@ namespace WindowsServicePlugin.ServiceManager
                 return false;
             }
 
-            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+            Helper.Port = GetConfiguredPort(serviceManagerConfig.MySqlPort);
             if (!ResolveSavedMySqlBasePath(logCallback))
             {
                 return false;
@@ -612,7 +627,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private bool EnsureRootPasswordReady(Action<string> logCallback)
         {
-            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+            Helper.Port = GetConfiguredPort(serviceManagerConfig.MySqlPort);
             if (!ResolveSavedMySqlBasePath(logCallback))
             {
                 return false;
@@ -655,7 +670,7 @@ namespace WindowsServicePlugin.ServiceManager
         {
             backupFile = null;
 
-            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+            Helper.Port = GetConfiguredPort(serviceManagerConfig.MySqlPort);
             if (!File.Exists(Helper.MysqlExePath))
             {
                 Helper.DetectFromRegistry();
@@ -752,7 +767,7 @@ namespace WindowsServicePlugin.ServiceManager
 
             if (changed)
             {
-                Config.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+                Config.Port = GetConfiguredPort(serviceManagerConfig.MySqlPort);
                 SaveConfig();
             }
         }
@@ -918,9 +933,11 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private static void SaveConfig()
+        private void SaveConfig()
         {
-            ConfigHandler.GetInstance().Save<MySqlServiceConfig>();
+            MySqlServiceConfig current = ConfigService.Instance.GetRequiredService<MySqlServiceConfig>();
+            if (ReferenceEquals(current, Config))
+                ConfigHandler.GetInstance().Save<MySqlServiceConfig>();
         }
     }
 }
