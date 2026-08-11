@@ -8,8 +8,8 @@ AR/VR 显示设备光学性能专业测试系统 — 基于 ColorVision 平台�
 |------|------|
 | 框架 | .NET 10.0 / WPF (Windows x64) |
 | 架构 | ColorVision 平台插件 |
-| 版本 | 1.1.7.97 |
-| 插件要求 | ColorVision >= 1.4.12.30 |
+| 版本 | 1.1.7.98 |
+| 插件要求 | ColorVision >= 1.4.12.37 |
 | 数据库 | MySQL (SqlSugar) — 批次/算法数据；SQLite — 本地测试结果 |
 | 配置持久化 | JSON 文件 (ProcessGroups / Recipe) |
 
