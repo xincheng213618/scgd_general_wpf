@@ -310,18 +310,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                 // 3. 打包压缩为 .cvcal
 
-                // 如果目标文件已存在，先删除
-                if (File.Exists(finalZipPath))
-                {
-                    File.Delete(finalZipPath);
-                }
-
-                await Task.Run(async () => 
-                {
-                    // 核心压缩代码
-                    ZipFile.CreateFromDirectory(workingPath, finalZipPath, CompressionLevel.NoCompression, false);
-                }
-                );
+                await Task.Run(() => PhyCameraRestoreArchive.CreateOrReplace(workingPath, finalZipPath));
 
 
 
