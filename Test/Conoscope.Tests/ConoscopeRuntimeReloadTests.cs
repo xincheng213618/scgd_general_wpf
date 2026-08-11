@@ -31,7 +31,7 @@ public sealed class ConoscopeRuntimeReloadTests : IDisposable
         current = configB;
         notifier.RaiseConfigsReloaded();
 
-        Assert.Same(configB, manager.Config);
+        Assert.Equal(configB.ColorDifferenceReferenceUMatPath, manager.Config.ColorDifferenceReferenceUMatPath);
         Assert.Equal(10, manager.GlobalReferences.ColorDifferenceReferenceUMat!.At<float>(0, 0));
         Assert.Equal(20, manager.GlobalReferences.ColorDifferenceReferenceVMat!.At<float>(0, 0));
         Assert.Equal(1, runningA.GlobalReferences.ColorDifferenceReferenceUMat!.At<float>(0, 0));
@@ -50,6 +50,50 @@ public sealed class ConoscopeRuntimeReloadTests : IDisposable
         Assert.Equal(41, ReadValue(configB.ContrastBlackReferenceYMatPath));
         Assert.Equal("saved-a", configA.ContrastBlackReferenceDisplayName);
         Assert.Equal("saved-b", configB.ContrastBlackReferenceDisplayName);
+    }
+
+    [Fact]
+    public async Task SlowGenerationBCannotOverwriteFasterGenerationCAndItsStoreIsDisposed()
+    {
+        Directory.CreateDirectory(tempRoot);
+        ConoscopeConfig configA = CreateConfig("race-A", 1, 2);
+        ConoscopeConfig configB = CreateConfig("race-B", 10, 20);
+        ConoscopeConfig configC = CreateConfig("race-C", 100, 200);
+        var notifier = new TestConfigReloadNotifier();
+        ConoscopeConfig current = configA;
+        using var bStoreEntered = new ManualResetEventSlim();
+        using var releaseBStore = new ManualResetEventSlim();
+        ConoscopeGlobalReferenceStore? bStore = null;
+
+        using var manager = new ConoscopeManager(
+            () => Volatile.Read(ref current),
+            notifier,
+            config =>
+            {
+                var store = new ConoscopeGlobalReferenceStore(config);
+                if (string.Equals(config.ColorDifferenceReferenceUMatPath, configB.ColorDifferenceReferenceUMatPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    bStore = store;
+                    bStoreEntered.Set();
+                    releaseBStore.Wait();
+                }
+                return store;
+            });
+
+        Volatile.Write(ref current, configB);
+        Task slowB = Task.Run(notifier.RaiseConfigsReloaded);
+        Assert.True(bStoreEntered.Wait(TimeSpan.FromSeconds(5)));
+
+        Volatile.Write(ref current, configC);
+        notifier.RaiseConfigsReloaded();
+        releaseBStore.Set();
+        await slowB.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(configC.ColorDifferenceReferenceUMatPath, manager.Config.ColorDifferenceReferenceUMatPath);
+        Assert.Equal(100, manager.GlobalReferences.ColorDifferenceReferenceUMat!.At<float>(0, 0));
+        Assert.NotNull(bStore);
+        Assert.Null(bStore!.ColorDifferenceReferenceUMat);
+        Assert.Null(bStore.ColorDifferenceReferenceVMat);
     }
 
     private ConoscopeConfig CreateConfig(string name, float u, float v)

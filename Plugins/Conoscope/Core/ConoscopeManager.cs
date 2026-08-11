@@ -1,6 +1,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using ColorVision.UI.Json;
 using log4net;
+using Newtonsoft.Json;
 using System;
 using System.Threading;
 using System.Windows;
@@ -11,14 +13,17 @@ namespace Conoscope.Core
     {
         private ConoscopeManager? owner;
         private readonly ConoscopeManager.RuntimeState state;
+        private readonly ConoscopeConfig config;
 
-        internal ConoscopeRuntimeSnapshot(ConoscopeManager owner, ConoscopeManager.RuntimeState state)
+        internal ConoscopeRuntimeSnapshot(ConoscopeManager owner, ConoscopeManager.RuntimeState state, ConoscopeConfig config)
         {
             this.owner = owner;
             this.state = state;
+            this.config = config;
         }
 
-        public ConoscopeConfig Config => state.Config;
+        public long Generation => state.Generation;
+        public ConoscopeConfig Config => config;
         public ConoscopeGlobalReferenceStore GlobalReferences => state.GlobalReferences;
 
         public void Dispose()
@@ -30,6 +35,7 @@ namespace Conoscope.Core
     public class ConoscopeManager : ViewModelBase, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeManager));
+        private static readonly JsonSerializerSettings SnapshotSerializerSettings = CreateSnapshotSerializerSettings();
         private static ConoscopeManager _instance;
         private static readonly object _locker = new();
         public static ConoscopeManager GetInstance() { lock (_locker) { return _instance ??= new ConoscopeManager(); } }
@@ -40,7 +46,7 @@ namespace Conoscope.Core
         private RuntimeState state;
         private bool isDisposed;
 
-        public ConoscopeConfig Config => Volatile.Read(ref state).Config;
+        public ConoscopeConfig Config => Volatile.Read(ref state).LiveConfig;
         public ConoscopeGlobalReferenceStore GlobalReferences => Volatile.Read(ref state).GlobalReferences;
         public RelayCommand EditConoscopeConfigCommand { get; }
 
@@ -60,8 +66,12 @@ namespace Conoscope.Core
             Func<ConoscopeConfig, ConoscopeGlobalReferenceStore> globalReferenceFactory)
         {
             this.globalReferenceFactory = globalReferenceFactory ?? throw new ArgumentNullException(nameof(globalReferenceFactory));
-            configOwner = new RuntimeConfigOwner<ConoscopeConfig>(configFactory, reloadNotifier, ex => log.Error("重新加载 Conoscope 配置失败", ex));
-            state = new RuntimeState(configOwner.Current, this.globalReferenceFactory(configOwner.Current));
+            configOwner = new RuntimeConfigOwner<ConoscopeConfig>(
+                configFactory,
+                reloadNotifier,
+                ex => log.Error("重新加载 Conoscope 配置失败", ex),
+                CloneConfig);
+            state = new RuntimeState(configOwner.Current, this.globalReferenceFactory(configOwner.Current), configOwner.Generation);
             configOwner.ConfigurationChanged += ConfigOwner_ConfigurationChanged;
             EditConoscopeConfigCommand = new RelayCommand(a => EditConoscopeConfig());
         }
@@ -72,7 +82,7 @@ namespace Conoscope.Core
             {
                 ObjectDisposedException.ThrowIf(isDisposed, this);
                 state.LeaseCount++;
-                return new ConoscopeRuntimeSnapshot(this, state);
+                return new ConoscopeRuntimeSnapshot(this, state, configOwner.CreateSnapshot(state.LiveConfig));
             }
         }
 
@@ -106,8 +116,14 @@ namespace Conoscope.Core
                     return;
                 }
 
+                if (e.Generation <= state.Generation)
+                {
+                    nextReferences.Dispose();
+                    return;
+                }
+
                 previous = state;
-                state = new RuntimeState(e.Current, nextReferences);
+                state = new RuntimeState(e.Current, nextReferences, e.Generation);
                 previous.IsRetired = true;
                 disposePrevious = previous.LeaseCount == 0;
             }
@@ -117,9 +133,25 @@ namespace Conoscope.Core
 
             OnPropertyChanged(nameof(Config));
             OnPropertyChanged(nameof(GlobalReferences));
-            ConfigurationChanged?.Invoke(this, e);
+            NotifyConfigurationChanged(e);
             ConoscopeModuleService.RefreshAllConoscopeConfiguration();
             ConoscopeModuleService.RefreshAllReferenceState();
+        }
+
+        private void NotifyConfigurationChanged(RuntimeConfigChangedEventArgs<ConoscopeConfig> args)
+        {
+            Delegate[] subscribers = ConfigurationChanged?.GetInvocationList() ?? [];
+            foreach (Delegate subscriber in subscribers)
+            {
+                try
+                {
+                    ((EventHandler<RuntimeConfigChangedEventArgs<ConoscopeConfig>>)subscriber)(this, args);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("通知 Conoscope 配置切换失败", ex);
+                }
+            }
         }
 
         internal void Release(RuntimeState releasedState)
@@ -157,16 +189,32 @@ namespace Conoscope.Core
             GC.SuppressFinalize(this);
         }
 
+        private static JsonSerializerSettings CreateSnapshotSerializerSettings()
+        {
+            var settings = new JsonSerializerSettings { ContractResolver = new WpfContractResolver() };
+            settings.Converters.Add(new BrushJsonConverter());
+            return settings;
+        }
+
+        private static ConoscopeConfig CloneConfig(ConoscopeConfig config)
+        {
+            string json = JsonConvert.SerializeObject(config, SnapshotSerializerSettings);
+            return JsonConvert.DeserializeObject<ConoscopeConfig>(json, SnapshotSerializerSettings)
+                ?? throw new InvalidOperationException("Could not create a detached ConoscopeConfig snapshot.");
+        }
+
         internal sealed class RuntimeState
         {
-            public RuntimeState(ConoscopeConfig config, ConoscopeGlobalReferenceStore globalReferences)
+            public RuntimeState(ConoscopeConfig liveConfig, ConoscopeGlobalReferenceStore globalReferences, long generation)
             {
-                Config = config;
+                LiveConfig = liveConfig;
                 GlobalReferences = globalReferences;
+                Generation = generation;
             }
 
-            public ConoscopeConfig Config { get; }
+            public ConoscopeConfig LiveConfig { get; }
             public ConoscopeGlobalReferenceStore GlobalReferences { get; }
+            public long Generation { get; }
             public int LeaseCount { get; set; }
             public bool IsRetired { get; set; }
         }
