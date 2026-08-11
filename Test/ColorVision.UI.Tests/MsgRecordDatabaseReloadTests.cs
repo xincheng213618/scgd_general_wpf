@@ -1,4 +1,5 @@
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services;
 using Microsoft.Data.Sqlite;
 using System.IO;
 
@@ -109,6 +110,50 @@ public sealed class MsgRecordDatabaseReloadTests : IDisposable
         Assert.Equal(Path.GetFullPath(configB.SqliteDbPath), manager.CaptureDatabasePath(), ignoreCase: true);
         Assert.Equal(1, CountRows(configA.SqliteDbPath));
         Assert.Equal(0, CountRows(configB.SqliteDbPath));
+    }
+
+    [Fact]
+    public async Task ListeningMqttInsertFromOldAGenerationCannotReenterViewAfterAToBToA()
+    {
+        WpfTestHost.Invoke(() => { });
+        Directory.CreateDirectory(_tempRoot);
+        MsgRecordManagerConfig configA = CreateConfig("A-cycle");
+        MsgRecordManagerConfig configB = CreateConfig("B-cycle");
+        MsgRecordManagerConfig reloadedA = CreateConfig("A-cycle");
+        var notifier = new TestConfigReloadNotifier();
+        MsgRecordManagerConfig current = configA;
+        using var queuedInsertEntered = new ManualResetEventSlim();
+        using var releaseQueuedInsert = new ManualResetEventSlim();
+
+        using var manager = new MessagesListManager(() => current, notifier, registerDatabaseBrowser: false);
+        manager.StartListening();
+        Task queuedInsert = MQTTServiceBase.QueueMessageRecordInsert(
+            new MsgRecord(),
+            manager,
+            insert => Task.Run(() =>
+            {
+                queuedInsertEntered.Set();
+                releaseQueuedInsert.Wait();
+                insert();
+            }));
+
+        Assert.True(queuedInsertEntered.Wait(TimeSpan.FromSeconds(5)));
+        current = configB;
+        notifier.RaiseConfigsReloaded();
+        current = reloadedA;
+        notifier.RaiseConfigsReloaded();
+        Assert.Equal(Path.GetFullPath(reloadedA.SqliteDbPath), manager.CaptureDatabasePath(), ignoreCase: true);
+        Assert.Empty(manager.MsgRecords);
+        Assert.Equal(0, manager.TotalCount);
+
+        releaseQueuedInsert.Set();
+        await queuedInsert.WaitAsync(TimeSpan.FromSeconds(5));
+        WpfTestHost.Invoke(() => { });
+
+        Assert.Equal(1, CountRows(configA.SqliteDbPath));
+        Assert.Equal(0, CountRows(configB.SqliteDbPath));
+        Assert.Empty(manager.MsgRecords);
+        Assert.Equal(0, manager.TotalCount);
     }
 
     private MsgRecordManagerConfig CreateConfig(string name)

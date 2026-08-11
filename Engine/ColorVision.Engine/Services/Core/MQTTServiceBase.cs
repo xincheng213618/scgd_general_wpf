@@ -123,13 +123,25 @@ namespace ColorVision.Engine.Services
                 _msgTimers.Add(msg.MsgID, timer);
             }
 
-            string messageDatabasePath = MessagesListManager.GetInstance().CaptureDatabasePath();
-            Action insertMessageRecord = MsgRecordDataBaseHelper.CreateInsertAction(msgRecord, messageDatabasePath);
-            _ = Task.Run(insertMessageRecord);
+            _ = QueueMessageRecordInsert(msgRecord, MessagesListManager.GetInstance(), Task.Run);
 
             timer.Start();
             _ = MQTTControl.PublishAsyncClient(SendTopic, json, false);
             return msgRecord;
+        }
+
+        internal static Task QueueMessageRecordInsert(
+            MsgRecord msgRecord,
+            MessagesListManager messagesListManager,
+            Func<Action, Task> scheduler)
+        {
+            ArgumentNullException.ThrowIfNull(msgRecord);
+            ArgumentNullException.ThrowIfNull(messagesListManager);
+            ArgumentNullException.ThrowIfNull(scheduler);
+
+            MessageDatabaseWriteTarget writeTarget = messagesListManager.CaptureDatabaseWriteTarget();
+            Action insertMessageRecord = MsgRecordDataBaseHelper.CreateInsertAction(msgRecord, writeTarget);
+            return scheduler(insertMessageRecord);
         }
 
         public virtual void Dispose()

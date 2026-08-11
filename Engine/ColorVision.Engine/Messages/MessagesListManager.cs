@@ -125,6 +125,16 @@ namespace ColorVision.Engine.Messages
 
         internal string CaptureDatabasePath() => Volatile.Read(ref _activeState).DatabasePath;
 
+        internal MessageDatabaseWriteTarget CaptureDatabaseWriteTarget()
+        {
+            ActiveDatabaseState state = Volatile.Read(ref _activeState);
+            return new MessageDatabaseWriteTarget(
+                state.DatabasePath,
+                state.Generation,
+                state,
+                state.Config.OrderByType);
+        }
+
         private DatabaseTaskSnapshot CaptureDatabaseSnapshot()
         {
             ActiveDatabaseState state = Volatile.Read(ref _activeState);
@@ -183,27 +193,29 @@ namespace ColorVision.Engine.Messages
 
         private void OnMsgRecordInserted(object? sender, MsgRecordInsertedEventArgs e)
         {
-            DatabaseTaskSnapshot snapshot = CaptureDatabaseSnapshot();
-            if (!string.Equals(
-                e.DatabasePath,
-                snapshot.DatabasePath,
-                StringComparison.OrdinalIgnoreCase))
+            MessageDatabaseWriteTarget? writeTarget = e.WriteTarget;
+            if (writeTarget == null || !IsCurrent(writeTarget))
                 return;
 
             Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (!string.Equals(
-                    e.DatabasePath,
-                    CaptureDatabasePath(),
-                    StringComparison.OrdinalIgnoreCase))
+                if (!IsCurrent(writeTarget))
                     return;
 
-                if (snapshot.Config.OrderByType == OrderByType.Desc)
+                if (writeTarget.OrderByType == OrderByType.Desc)
                     MsgRecords.Insert(0, e.Item);
                 else
                     MsgRecords.Add(e.Item);
                 TotalCount++;
             }));
+        }
+
+        private bool IsCurrent(MessageDatabaseWriteTarget writeTarget)
+        {
+            ActiveDatabaseState current = Volatile.Read(ref _activeState);
+            return ReferenceEquals(writeTarget.StateReference, current)
+                && writeTarget.Generation == current.Generation
+                && string.Equals(writeTarget.DatabasePath, current.DatabasePath, StringComparison.OrdinalIgnoreCase);
         }
 
         public void EditConfig()

@@ -71,8 +71,8 @@ namespace ColorVision.Engine.Messages
             {
                 if (item == null) return;
 
-                string databasePath = MessagesListManager.GetInstance().CaptureDatabasePath();
-                Insert(item, databasePath);
+                MessageDatabaseWriteTarget writeTarget = MessagesListManager.GetInstance().CaptureDatabaseWriteTarget();
+                Insert(item, writeTarget);
             }
             catch (Exception ex)
             {
@@ -96,7 +96,24 @@ namespace ColorVision.Engine.Messages
             return () => Insert(item, capturedPath);
         }
 
+        internal static Action CreateInsertAction(MsgRecord item, MessageDatabaseWriteTarget writeTarget)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            ArgumentNullException.ThrowIfNull(writeTarget);
+            return () => Insert(item, writeTarget);
+        }
+
+        private static void Insert(MsgRecord item, MessageDatabaseWriteTarget writeTarget)
+        {
+            Insert(item, writeTarget.DatabasePath, writeTarget);
+        }
+
         internal static void Insert(MsgRecord item, string databasePath)
+        {
+            Insert(item, databasePath, null);
+        }
+
+        private static void Insert(MsgRecord item, string databasePath, MessageDatabaseWriteTarget? writeTarget)
         {
             ArgumentNullException.ThrowIfNull(item);
             databasePath = EnsureDatabaseInitialized(databasePath);
@@ -108,20 +125,45 @@ namespace ColorVision.Engine.Messages
                 updateDb.Updateable(item).ExecuteCommand();
             };
 
-            InsertedForDatabase?.Invoke(null, new MsgRecordInsertedEventArgs(databasePath, item));
+            InsertedForDatabase?.Invoke(null, new MsgRecordInsertedEventArgs(databasePath, item, writeTarget));
             Inserted?.Invoke(null, item);
         }
     }
 
+    internal sealed class MessageDatabaseWriteTarget
+    {
+        internal MessageDatabaseWriteTarget(
+            string databasePath,
+            long generation,
+            object stateReference,
+            OrderByType orderByType)
+        {
+            DatabasePath = databasePath;
+            Generation = generation;
+            StateReference = stateReference;
+            OrderByType = orderByType;
+        }
+
+        public string DatabasePath { get; }
+        public long Generation { get; }
+        public object StateReference { get; }
+        public OrderByType OrderByType { get; }
+    }
+
     internal sealed class MsgRecordInsertedEventArgs : EventArgs
     {
-        public MsgRecordInsertedEventArgs(string databasePath, MsgRecord item)
+        public MsgRecordInsertedEventArgs(
+            string databasePath,
+            MsgRecord item,
+            MessageDatabaseWriteTarget? writeTarget)
         {
             DatabasePath = databasePath;
             Item = item;
+            WriteTarget = writeTarget;
         }
 
         public string DatabasePath { get; }
         public MsgRecord Item { get; }
+        public MessageDatabaseWriteTarget? WriteTarget { get; }
     }
 }
