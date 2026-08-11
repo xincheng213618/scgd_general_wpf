@@ -6,8 +6,7 @@ import {
   FolderOpenOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
-import { ProDescriptions } from '@ant-design/pro-components'
-import { Alert, App, Badge, Button, Card, Col, List, Popconfirm, Row, Space, Statistic, Tag, Typography } from 'antd'
+import { Alert, App, Badge, Button, Card, Col, Descriptions, List, Popconfirm, Row, Space, Statistic, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { cleanupCache, getAdminStats, getCacheStatus, getDocsStatus, refreshAllIndexes, refreshDocsIndex } from '../services/admin'
 import type { AdminStats, CacheStatus, DocsStatus } from '../types/admin'
@@ -154,46 +153,46 @@ export function Dashboard() {
             }
           />
         )}
-        <ProDescriptions column={{ xs: 1, md: 2, xl: 3 }} dataSource={{ ...stats, ...cache }}>
-          <ProDescriptions.Item label="最新版本" dataIndex="latestReleaseVersion">
+        <Descriptions column={{ xs: 1, md: 2, xl: 3 }} styles={{ content: { minWidth: 0 } }}>
+          <Descriptions.Item label="最新版本">
             {stats?.latestReleaseVersion || '未检测到'}
-          </ProDescriptions.Item>
-          <ProDescriptions.Item label="插件目录">
+          </Descriptions.Item>
+          <Descriptions.Item label="插件目录">
             <Badge status={cache?.plugins_dir_exists ? 'success' : 'warning'} text={cache?.plugins_dir_exists ? '可用' : '待创建'} />
-          </ProDescriptions.Item>
-          <ProDescriptions.Item label="插件目录缓存">
+          </Descriptions.Item>
+          <Descriptions.Item label="插件目录缓存">
             <Tag color={stats?.pluginCatalogCached ? 'green' : 'default'}>
               {stats?.pluginCatalogCached ? '已缓存' : '未缓存'}
             </Tag>
-          </ProDescriptions.Item>
-          <ProDescriptions.Item label="缓存条目">{cache?.cache_entry_count ?? 0}</ProDescriptions.Item>
-          <ProDescriptions.Item label="过期缓存">{cache?.expired_cache_entry_count ?? 0}</ProDescriptions.Item>
-          <ProDescriptions.Item label="文档站">
+          </Descriptions.Item>
+          <Descriptions.Item label="缓存条目">{cache?.cache_entry_count ?? 0}</Descriptions.Item>
+          <Descriptions.Item label="过期缓存">{cache?.expired_cache_entry_count ?? 0}</Descriptions.Item>
+          <Descriptions.Item label="文档站">
             <Badge status={docs?.built ? 'success' : 'warning'} text={docs?.built ? '已构建' : '待构建'} />
-          </ProDescriptions.Item>
-          <ProDescriptions.Item label="Markdown 文档">{docs?.sourceDocumentCount ?? 0}</ProDescriptions.Item>
-          <ProDescriptions.Item label="文档索引">{docs?.indexedDocumentCount ?? 0}</ProDescriptions.Item>
-          <ProDescriptions.Item label="构建页面">{docs?.builtPageCount ?? 0}</ProDescriptions.Item>
-          <ProDescriptions.Item label="文档搜索">
+          </Descriptions.Item>
+          <Descriptions.Item label="Markdown 文档">{docs?.sourceDocumentCount ?? 0}</Descriptions.Item>
+          <Descriptions.Item label="文档索引">{docs?.indexedDocumentCount ?? 0}</Descriptions.Item>
+          <Descriptions.Item label="构建页面">{docs?.builtPageCount ?? 0}</Descriptions.Item>
+          <Descriptions.Item label="文档搜索">
             <Tag color={docs?.searchIndexExists ? 'green' : 'default'}>
               {docs?.searchIndexExists ? '可用' : '未生成'}
             </Tag>
-          </ProDescriptions.Item>
-          <ProDescriptions.Item label="最近构建">{docs?.lastBuildUpdate || '-'}</ProDescriptions.Item>
-          <ProDescriptions.Item label="索引缓存">
+          </Descriptions.Item>
+          <Descriptions.Item label="最近构建">{docs?.lastBuildUpdate || '-'}</Descriptions.Item>
+          <Descriptions.Item label="索引缓存">
             <Tag color={docs?.indexCached ? 'green' : 'blue'}>{docs?.indexCached ? '命中' : '已刷新'}</Tag>
-          </ProDescriptions.Item>
-          <ProDescriptions.Item label="索引更新时间">{docs?.indexUpdatedAt || '-'}</ProDescriptions.Item>
-          <ProDescriptions.Item label="存储路径" span={3}>
+          </Descriptions.Item>
+          <Descriptions.Item label="索引更新时间">{docs?.indexUpdatedAt || '-'}</Descriptions.Item>
+          <Descriptions.Item label="存储路径" span={3}>
             <div className="mono-line">{cache?.storage_path || '-'}</div>
-          </ProDescriptions.Item>
-          <ProDescriptions.Item label="文档路径" span={3}>
+          </Descriptions.Item>
+          <Descriptions.Item label="文档路径" span={3}>
             <div className="mono-line">{docs?.sourcePath || '-'}</div>
-          </ProDescriptions.Item>
-          <ProDescriptions.Item label="构建命令" span={3}>
+          </Descriptions.Item>
+          <Descriptions.Item label="构建命令" span={3}>
             <div className="mono-line">{docs?.buildCommand || 'npm run docs:build'}</div>
-          </ProDescriptions.Item>
-        </ProDescriptions>
+          </Descriptions.Item>
+        </Descriptions>
       </Card>
 
       <Row gutter={[16, 16]}>
