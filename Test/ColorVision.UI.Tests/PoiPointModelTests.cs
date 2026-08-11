@@ -3,8 +3,6 @@ using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
-using System.Runtime.ExceptionServices;
-using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using AlgorithmPoiShape = CVCommCore.CVAlgorithm.POIPointTypes;
@@ -62,7 +60,7 @@ public class PoiPointModelTests
     [Fact]
     public void CreatesCircleRectangleAndPointVisualsFromOneModel()
     {
-        RunOnStaThread(() =>
+        WpfTestHost.Invoke(() =>
         {
             PoiOverlayStyle style = new() { Stroke = Brushes.Blue, StrokeThickness = 2, FontSize = 12, PointRadius = 4 };
             PoiPoint circlePoint = new(7, -1, "C7", PoiShape.Circle, 100, 80, 20, 20);
@@ -82,25 +80,9 @@ public class PoiPointModelTests
         });
     }
 
-    private static void RunOnStaThread(Action action)
+    [Fact]
+    public void DefaultBrushIsFrozenForCrossDispatcherUse()
     {
-        Exception? failure = null;
-        Thread thread = new(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        if (failure != null)
-            ExceptionDispatchInfo.Capture(failure).Throw();
+        Assert.True(BaseProperties.DefaultBrush.IsFrozen);
     }
 }
