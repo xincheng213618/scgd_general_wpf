@@ -110,9 +110,11 @@ namespace ColorVision.ImageEditor.Tif
         {
             if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
 
+            string requestedFilePath = filePath;
+
             // Get file metadata
-            FileInfo fileInfo = new FileInfo(filePath);
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSource, filePath, nameof(Opentif), "打开器接收到的源文件路径");
+            FileInfo fileInfo = new FileInfo(requestedFilePath);
+            context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSource, requestedFilePath, nameof(Opentif), "打开器接收到的源文件路径");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileName, fileInfo.Name, nameof(Opentif), "当前文件名");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileInfo.Length, nameof(Opentif), "当前文件大小（字节）");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileCreationTime, fileInfo.CreationTime, nameof(Opentif), "当前文件创建时间");
@@ -125,7 +127,7 @@ namespace ColorVision.ImageEditor.Tif
             {
                 try
                 {
-                    using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    using var stream = new FileStream(requestedFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                     var decoder = new TiffBitmapDecoder(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
 
                     if (decoder.Frames.Count > 0)
@@ -166,6 +168,10 @@ namespace ColorVision.ImageEditor.Tif
             });
 
             if (source == null) return;
+
+            string? activeFilePath = context.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
+            if (!string.Equals(activeFilePath, requestedFilePath, StringComparison.OrdinalIgnoreCase))
+                return;
 
             // Gray32Float TIFF 可按打开器配置决定是否先归一化转换为 Gray16。
             if (source.Format == PixelFormats.Gray32Float)

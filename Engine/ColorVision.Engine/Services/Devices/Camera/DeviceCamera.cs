@@ -24,6 +24,7 @@ using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
+using ColorVision.UI.Views;
 using cvColorVision;
 using SqlSugar;
 using System;
@@ -32,6 +33,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -47,9 +49,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
     public class DeviceCamera : DeviceService<ConfigCamera>
     {
-        public PhyCamera? PhyCamera { get => _PhyCamera; set { _PhyCamera = value; OnPropertyChanged(); } }
+        public PhyCamera? PhyCamera { get => _PhyCamera; set => AttachPhyCamera(value); }
         private PhyCamera? _PhyCamera;
+        private PhyCamera? _subscribedPhyCamera;
         private readonly Lazy<ViewCamera> _view;
+        private int _disposeState;
+        private bool IsDisposed => Volatile.Read(ref _disposeState) != 0;
         public ViewCamera View => _view.Value;
         public MQTTCamera DService { get; set; }
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
@@ -70,9 +75,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 : Application.Current.Dispatcher.Invoke(() => new ViewCamera(this)));
             this.SetIconResource("DrawingImageCamera");
 
-            EditCommand = new RelayCommand(a => EditCameraAction() ,b => AccessControl.Check(EditCameraAction));
+            EditCommand = new RelayCommand(a => EditCameraAction(), b => AccessControl.Check(EditCameraAction));
 
-            FetchLatestTemperatureCommand =  new RelayCommand(a => FetchLatestTemperature(a));
+            FetchLatestTemperatureCommand = new RelayCommand(a => FetchLatestTemperature(a));
 
             DisplayCameraControlLazy = new Lazy<DisplayCamera>(() => new DisplayCamera(this));
 
@@ -82,11 +87,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
 
             PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
-            if (PhyCamera != null)
-            {
-                PhyCamera.ConfigChanged += PhyCameraConfigChanged;
-                PhyCamera.DeviceCamera = this;
-            }
 
             EditAutoExpTimeCommand = new RelayCommand(a => EditAutoExpTime());
 
@@ -164,7 +164,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
-        [CommandDisplay("AutoExploreTemplate",Order =100)]
+        [CommandDisplay("AutoExploreTemplate", Order = 100)]
         public RelayCommand EditAutoExpTimeCommand { get; set; }
 
         public static void EditAutoExpTime()
@@ -172,16 +172,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
             var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime()) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
-        [CommandDisplay("AutoFocusTemplate",Order =100)]
+        [CommandDisplay("AutoFocusTemplate", Order = 100)]
         public RelayCommand EditAutoFocusCommand { get; set; }
         public static void EditAutoFocus()
         {
             var windowTemplate = new TemplateEditorWindow(new TemplateAutoFocus()) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
-        [CommandDisplay("CameraParameterTemplate",Order =100)]
+        [CommandDisplay("CameraParameterTemplate", Order = 100)]
         public RelayCommand EditCameraExpousureCommand { get; set; }
-        
+
         public static void EditCameraExpousure()
         {
             var windowTemplate = new TemplateEditorWindow(new TemplateCameraRunParam()) { Owner = Application.Current.GetActiveWindow() };
@@ -202,17 +202,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }.ShowDialog();
         }
 
-        private PhyCamera lastPhyCamera;
-
         public void PhyCameraConfigChanged(object? sender, PhyCameras.Configs.ConfigPhyCamera e)
         {
-            if (lastPhyCamera !=null && sender is PhyCamera phyCamera && phyCamera != lastPhyCamera)
-            {
-                lastPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
-                lastPhyCamera = phyCamera;
-                lastPhyCamera.DeviceCamera = this;
-                lastPhyCamera.DeviceCamera = null;
-            }
+            if (IsDisposed || !ReferenceEquals(sender, _subscribedPhyCamera)) return;
+
             e.ApplyTo(Config);
 
             DisplayConfig.Gain = e.CameraParameterLimit.GainDefault;
@@ -221,6 +214,31 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DisplayConfig.ExpTimeG = e.CameraParameterLimit.ExpDefalut;
             DisplayConfig.ExpTimeB = e.CameraParameterLimit.ExpDefalut;
             Save();
+        }
+
+        private void AttachPhyCamera(PhyCamera? phyCamera)
+        {
+            if (IsDisposed && phyCamera != null) return;
+            if (ReferenceEquals(_subscribedPhyCamera, phyCamera)) return;
+
+            if (_subscribedPhyCamera != null)
+            {
+                _subscribedPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
+                if (ReferenceEquals(_subscribedPhyCamera.DeviceCamera, this))
+                {
+                    _subscribedPhyCamera.ReleaseDeviceCamera();
+                }
+            }
+
+            _subscribedPhyCamera = phyCamera;
+            _PhyCamera = phyCamera;
+            OnPropertyChanged(nameof(PhyCamera));
+
+            if (_subscribedPhyCamera != null)
+            {
+                _subscribedPhyCamera.ConfigChanged += PhyCameraConfigChanged;
+                _subscribedPhyCamera.SetDeviceCamera(this);
+            }
         }
 
         [RequiresPermission(PermissionMode.Administrator)]
@@ -247,8 +265,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             else
             {
-            }  
-            PhyCameraManagerWindow phyCameraManager = new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() ,WindowStartupLocation =WindowStartupLocation.CenterOwner};
+            }
+            PhyCameraManagerWindow phyCameraManager = new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             phyCameraManager.ShowDialog();
         }
 
@@ -261,11 +279,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public override void Save()
         {
+            if (IsDisposed) return;
+
             PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
             if (PhyCamera != null)
             {
-                PhyCamera.SetDeviceCamera(this);
-
                 PhyCamera.Config.ApplyTo(Config);
 
                 OnPropertyChanged(nameof(PhyCamera));
@@ -298,17 +316,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             catch (Exception ex)
             {
-                MessageBox1.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.ErrorQueryingTemperatureData+" : " + ex.Message);
+                MessageBox1.Show(Application.Current.MainWindow, ColorVision.Engine.Properties.Resources.ErrorQueryingTemperatureData + " : " + ex.Message);
             }
         }
 
         public override UserControl GetDeviceInfo() => new InfoCamera(this);
-        
+
         public Lazy<DisplayCamera> DisplayCameraControlLazy { get; set; }
 
         public override UserControl GetDisplayControl() => DisplayCameraControlLazy.Value;
 
-        public DisplayCamera GetDisplayCamera()=> new DisplayCamera(this);
+        public DisplayCamera GetDisplayCamera() => new DisplayCamera(this);
 
         internal bool TryGetCalibrationTemplateFiles(CalibrationParam? param, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles, out string? errorMessage)
         {
@@ -393,12 +411,34 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         public override void Dispose()
         {
+            if (Interlocked.Exchange(ref _disposeState, 1) != 0) return;
+
+            if (DisplayCameraControlLazy.IsValueCreated)
+            {
+                DisplayCameraControlLazy.Value.Dispose();
+            }
+
+            if (_view.IsValueCreated)
+            {
+                ViewCamera view = _view.Value;
+                void DisposeView()
+                {
+                    DockViewManager.GetInstance().RemoveView(view);
+                    view.Dispose();
+                }
+
+                if (view.Dispatcher.CheckAccess())
+                    DisposeView();
+                else
+                    view.Dispatcher.Invoke(DisposeView);
+            }
+
+            AttachPhyCamera(null);
+
             LocalCalibrationCacheManager.Dispose();
             LocalCameraSession.Dispose();
-            this.PhyCamera?.ReleaseDeviceCamera();
             DService?.Dispose();
             base.Dispose();
-            GC.SuppressFinalize(this);
         }
     }
 }

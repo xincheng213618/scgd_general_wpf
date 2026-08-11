@@ -32,6 +32,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -65,10 +66,12 @@ namespace ProjectKB
         private static readonly Regex OutputDetailRowRegex = new(@"^\s*(?<key>\[[^\]\r\n]+\])\s+(?<lv>\S+)\s+(?<lc>\S+%)\s*(?<result>Fail)?\s*$", RegexOptions.CultureInvariant);
         private readonly SemaphoreSlim _refreshGate = new(1, 1);
         private readonly FlowNodeExecutionRecorder _flowNodeExecutionRecorder = new();
+        private readonly CancellationTokenSource _lifetimeCancellation = new();
         private readonly Dictionary<KBItem, DVRectangle> _keyVisuals = new();
         private bool _isDisposed;
         private bool _isFlowStartPending;
         private bool _isFlowLifecycleActive;
+        private bool _modbusStatusSubscribed;
         private int _resultImageRequestId;
         private KBItemMaster? _displayedKeyResult;
         private DVCircle? _lcNeighborhoodCircle;
@@ -99,9 +102,9 @@ namespace ProjectKB
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            // 先挂载集合，再恢复共享的选中索引，避免空列表把校正后的索引写回单例。
+            listView1.ItemsSource = ViewResluts;
             this.DataContext = ProjectKBConfig.Instance;
-
-            ViewResultManager.ListView = listView1;
             listView1.CommandBindings.Add(new CommandBinding(
                 ApplicationCommands.Delete,
                 (s, e) =>
@@ -112,42 +115,63 @@ namespace ProjectKB
                 (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
-            listView1.ItemsSource = ViewResluts;
             BuildListViewContextMenu();
             ImageView.EditorContext.DrawEditorContext.DrawCanvas.PreviewMouseLeftButtonDown += ImageCanvas_PreviewMouseLeftButtonDown;
             InitFlow();
             EnsureTimedButtonOperations();
             logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline", ProjectKBLogConfig.Instance);
             LogGrid.Children.Add(logOutput);
-            Task.Run(async () =>
+            if (ProjectKBConfig.Instance.AutoModbusConnect)
             {
-                if (ProjectKBConfig.Instance.AutoModbusConnect)
-                {
-                    bool con = await ModbusControl.GetInstance().Connect();
-                    if (con)
-                    {
-                        log.Debug("初始化寄存器设置为0");
-                        ModbusControl.GetInstance().SetRegisterValue(0);
-                    }
-                    ModbusControl.GetInstance().StatusChanged += ProjectKBWindow_StatusChanged;
-                }
-            });
+                _ = InitializeModbusAsync();
+            }
 
             // 初始化权限系统
             InitAuth();
 
             this.Closed += (s, e) =>
             {
-                ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
-
                 SummaryManager.GetInstance().Save();
-                ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
                 AuthManager.IsAdminChanged -= AuthManager_IsAdminChanged;
                 AuthManager.AutoLoggedOut -= AuthManager_AutoLoggedOut;
                 AuthManager.Dispose();
                 this.Dispose();
             };
 
+        }
+
+        private async Task InitializeModbusAsync()
+        {
+            bool connected = await ModbusControl.GetInstance().Connect();
+            if (_isDisposed)
+                return;
+
+            if (connected)
+            {
+                log.Debug("初始化寄存器设置为0");
+                ModbusControl.GetInstance().SetRegisterValue(0);
+            }
+
+            if (!_isDisposed)
+                SubscribeModbusStatus();
+        }
+
+        private void SubscribeModbusStatus()
+        {
+            if (_isDisposed || _modbusStatusSubscribed)
+                return;
+
+            ModbusControl.GetInstance().StatusChanged += ProjectKBWindow_StatusChanged;
+            _modbusStatusSubscribed = true;
+        }
+
+        private void UnsubscribeModbusStatus()
+        {
+            if (!_modbusStatusSubscribed)
+                return;
+
+            ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
+            _modbusStatusSubscribed = false;
         }
 
         #region Auth
@@ -587,6 +611,9 @@ namespace ProjectKB
 
         public async Task RunTemplate()
         {
+            if (_isDisposed)
+                return;
+
             if (!Dispatcher.CheckAccess())
             {
                 Task dispatchedTask = await Dispatcher.InvokeAsync(RunTemplate);
@@ -611,6 +638,8 @@ namespace ProjectKB
                 LastFlowTime = await Task.Run(
                     () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
                         new FlowIdentity(template.Id, template.Key, template.Key)));
+                if (_isDisposed)
+                    return;
 
                 CurrentFlowResult = new KBItemMaster
                 {
@@ -625,8 +654,13 @@ namespace ProjectKB
                 CurrentFlowResult.RecipeSnapshot = KBRecipeSnapshot.Capture(FlowName, currentRecipe);
                 CurrentFlowResult.IsResultPayloadLoaded = true;
                 await Refresh(template);
+                if (_isDisposed)
+                    return;
 
-                if (!await PreProcessingAsync(FlowName, CurrentFlowResult.SN))
+                bool preprocessingSucceeded = await PreProcessingAsync(FlowName, CurrentFlowResult.SN);
+                if (_isDisposed)
+                    return;
+                if (!preprocessingSucceeded)
                 {
                     CurrentFlowResult.FlowStatus = FlowStatus.Failed;
                     CurrentFlowResult.Msg = "PreProcessFailed";
@@ -643,7 +677,15 @@ namespace ProjectKB
                 CreateCurrentFlowBatch();
                 _isFlowLifecycleActive = true;
 
-                if (!await flowControl.TryStartAsync(CurrentFlowResult.Code))
+                bool started = await flowControl.TryStartAsync(CurrentFlowResult.Code, _lifetimeCancellation.Token);
+                if (_isDisposed)
+                {
+                    flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                    if (started && flowControl.IsFlowRun)
+                        flowControl.Stop();
+                    return;
+                }
+                if (!started)
                 {
                     flowControl.FlowCompleted -= FlowControl_FlowCompleted;
                     await HandleFlowCompletedAsync(new FlowControlData
@@ -659,6 +701,11 @@ namespace ProjectKB
             }
             catch (Exception ex)
             {
+                if (_isDisposed)
+                {
+                    log.Debug("窗口已关闭，忽略迟到的流程启动结果", ex);
+                    return;
+                }
                 log.Error("运行流程失败", ex);
                 flowControl?.FlowCompleted -= FlowControl_FlowCompleted;
                 stopwatch.Stop();
@@ -718,6 +765,10 @@ namespace ProjectKB
                 completedFlowControl.FlowCompleted -= FlowControl_FlowCompleted;
             else if (flowControl != null)
                 flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+
+            // FlowControl 会在派发到 UI 前快照订阅者；窗口关闭时的 -= 无法取消已经排队的回调。
+            if (_isDisposed)
+                return;
 
             try
             {
@@ -1583,6 +1634,7 @@ namespace ProjectKB
 
             Interlocked.Increment(ref _resultImageRequestId);
             ClearKeyOverlayState();
+            ViewResultManager.ViewReslutsSelectedIndex = -1;
             ViewResluts.Clear();
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
@@ -1591,14 +1643,14 @@ namespace ProjectKB
 
         private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
+            if (_isDisposed) return;
             if (sender is not ListView listView) return;
 
             int requestId = Interlocked.Increment(ref _resultImageRequestId);
             ClearKeyOverlayState();
             ImageView.Clear();
-            if (listView.SelectedIndex > -1)
+            if (listView.SelectedItem is KBItemMaster kBItem)
             {
-                var kBItem = ViewResluts[listView.SelectedIndex];
                 try
                 {
                     ViewResultManager.LoadResultPayload(kBItem);
@@ -1609,6 +1661,7 @@ namespace ProjectKB
                     MessageBox.Show(this, $"结果明细读取失败：{ex.Message}", "ProjectKB");
                     return;
                 }
+                listView.ScrollIntoView(kBItem);
                 GenoutputText(kBItem);
 
                 _ = Task.Run(async () =>
@@ -1630,6 +1683,15 @@ namespace ProjectKB
                     }
                 });
             }
+        }
+
+        internal static void DetachResultListView(ListView listView, SelectionChangedEventHandler selectionChangedHandler)
+        {
+            listView.SelectionChanged -= selectionChangedHandler;
+            BindingOperations.ClearBinding(listView, System.Windows.Controls.Primitives.Selector.SelectedIndexProperty);
+            listView.ItemsSource = null;
+            listView.ContextMenu = null;
+            listView.CommandBindings.Clear();
         }
 
         private static WriteableBitmap? TryLoadResultBitmap(string filePath)
@@ -1937,12 +1999,15 @@ namespace ProjectKB
         {
             if (_isDisposed) return;
             _isDisposed = true;
+            _lifetimeCancellation.Cancel();
 
             Interlocked.Increment(ref _resultImageRequestId);
+            DetachResultListView(listView1, listView1_SelectionChanged);
             ImageView.EditorContext.DrawEditorContext.DrawCanvas.PreviewMouseLeftButtonDown -= ImageCanvas_PreviewMouseLeftButtonDown;
             ClearKeyOverlayState();
             ProjectKBConfig.Instance.SNChanged -= Instance_SNChanged;
-            ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
+            UnsubscribeModbusStatus();
+            ImageView.Dispose();
             if (flowControl != null)
             {
                 flowControl.FlowCompleted -= FlowControl_FlowCompleted;
@@ -1955,6 +2020,7 @@ namespace ProjectKB
             logOutput?.Dispose();
             logOutput = null;
             this.DisposeTimedButtonOperations();
+            DataContext = null;
             GC.SuppressFinalize(this);
         }
 

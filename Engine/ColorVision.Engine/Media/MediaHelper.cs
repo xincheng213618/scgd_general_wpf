@@ -153,29 +153,38 @@ namespace ColorVision.Engine.Media
         }
         public static bool MatUpdateWriteableBitmap(this Mat srcMat, WriteableBitmap writeableBitmap)
         {
-            // 1. 基础尺寸校验
             if (writeableBitmap.PixelWidth != srcMat.Cols || writeableBitmap.PixelHeight != srcMat.Rows)
                 return false;
 
-            // 2. 严格的格式校验 (同时检查通道数和位深)
-            // ElemSize() 返回一个像素的总字节数 (例如: 8位3通道=3, 16位1通道=2)
-            int srcPixelBytes = (int)srcMat.ElemSize();
-            int dstPixelBytes = writeableBitmap.Format.BitsPerPixel / 8;
+            // 相同的每像素字节数不代表格式兼容，例如 CV_32FC1 和 BGRA32 都是 4 字节。
+            // 这里只复用 OpenCvSharp 转换器会为该 MatType 创建的精确 WPF 格式。
+            MatType type = srcMat.Type();
+            PixelFormat expectedFormat;
+            if (type == MatType.CV_8UC1)
+                expectedFormat = PixelFormats.Gray8;
+            else if (type == MatType.CV_16UC1)
+                expectedFormat = PixelFormats.Gray16;
+            else if (type == MatType.CV_32FC1)
+                expectedFormat = PixelFormats.Gray32Float;
+            else if (type == MatType.CV_8UC3)
+                expectedFormat = PixelFormats.Bgr24;
+            else if (type == MatType.CV_8UC4)
+                expectedFormat = PixelFormats.Bgra32;
+            else if (type == MatType.CV_16UC3 || type == MatType.CV_16SC3)
+                expectedFormat = PixelFormats.Rgb48;
+            else if (type == MatType.CV_16UC4 || type == MatType.CV_16SC4)
+                expectedFormat = PixelFormats.Rgba64;
+            else
+                return false;
 
-            if (srcPixelBytes != dstPixelBytes)
-                return false; // 字节对齐不一致，直接拷贝会导致错位
+            if (writeableBitmap.Format != expectedFormat)
+                return false;
 
-            // 可选：如果你想保留严格的格式映射，可以保留你的 switch，
-            // 但建议加上对 Depth 的判断，或者直接信赖上面的字节数判断（通用性更强）。
-            // 例如：即便是 BGR 转 RGB，字节数一样，拷贝过去只是颜色反了，不会崩；但字节数不对必定崩。
-
-            // 3. 安全的内存操作
             writeableBitmap.Lock();
             try
             {
                 // 使用 srcMat.Type() 确保 dstMat 的元数据与源完全一致
                 using var dstMat = Mat.FromPixelData(srcMat.Rows, srcMat.Cols, srcMat.Type(), writeableBitmap.BackBuffer, writeableBitmap.BackBufferStride);
-                var type = srcMat.Type();
                 if (type == MatType.CV_16UC3 || type == MatType.CV_16SC3) // PixelFormats.Rgb48
                 {
                     Cv2.CvtColor(srcMat, dstMat, ColorConversionCodes.BGR2RGB);

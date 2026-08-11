@@ -27,6 +27,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
     public partial class AlgorithmView : UserControl,IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AlgorithmView));
+        private bool _isInitialized;
+        private bool _isDisposed;
 
         public ImageView ImageView { get; set; }
 
@@ -45,6 +47,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public ViewResultContext ViewResultContext { get; set; }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            if (_isInitialized || _isDisposed)
+                return;
+
+            _isInitialized = true;
             this.DataContext = Config;
             ImageView = new ImageView();
             ImageView.Initialized += ImageView_Initialized;
@@ -79,6 +85,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private void ImageView_Initialized(object sender, EventArgs e)
         {
             ImageView.Initialized -= ImageView_Initialized;
+            if (_isDisposed)
+                return;
+
             AttachDisplayFilterConfig();
         }
 
@@ -170,7 +179,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void AddAlgResultMasterModel(AlgResultMasterModel result)
         {
-            if (result != null)
+            if (!_isDisposed && result != null)
             {
                 ViewResultAlg ViewResultAlg = new ViewResultAlg(result);
 
@@ -191,6 +200,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void RefreshResultListView()
         {
+            if (_isDisposed)
+                return;
+
             if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning? 0: listView1.Items.Count - 1;
             listView1.ScrollIntoView(listView1.SelectedItem);
         }
@@ -198,17 +210,21 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (listView1.SelectedIndex < 0) return;
+            if (_isDisposed)
+                return;
 
-            if (ViewResults[listView1.SelectedIndex] is not ViewResultAlg result) return;
+            ImageView.Clear();
+            listViewSide.ItemsSource = null;
+            SideTextBox.Visibility = Visibility.Collapsed;
+            SideTextBox.Clear();
+
+            if (listView1.SelectedItem is not ViewResultAlg result)
+                return;
 
             var ResultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(result));
 
             if (ResultHandle != null)
             {
-                ImageView.ImageShow.Clear();
-                SideTextBox.Visibility = Visibility.Collapsed;
-                SideTextBox.Clear();
                 ResultHandle.Load(ViewResultContext, result);
                 ResultHandle.Handle(ViewResultContext, result);
                 return;
@@ -332,7 +348,20 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void Dispose()
         {
-            ImageView?.Dispose();
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
+
+            listView1.SelectionChanged -= listView1_SelectionChanged;
+            listView1.PreviewKeyDown -= listView1_PreviewKeyDown;
+            listView1.ItemsSource = null;
+            listView1.CommandBindings.Clear();
+            listViewSide.ItemsSource = null;
+            ImageView.Initialized -= ImageView_Initialized;
+            ImageView.Dispose();
+            Grid1.Children.Remove(ImageView);
+            DataContext = null;
 
             GC.SuppressFinalize(this);
         }

@@ -708,7 +708,8 @@ namespace ColorVision.Engine.Media
 
                         context.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, cVCIEFile.Rows, nameof(CVRawOpen), "当前 CVCIE 图像行数");
                         context.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, cVCIEFile.Cols, nameof(CVRawOpen), "当前 CVCIE 图像列数");
-                        context.Config.SetImageMetadata(ImageViewPropertyKeys.Channel, cVCIEFile.Channels, nameof(CVRawOpen), "当前 CVCIE 图像通道数");
+                        context.Config.SetImageMetadata("CVRawSourceChannel", cVCIEFile.Channels, nameof(CVRawOpen), "CVCIE 文件原始通道数");
+                        context.Config.SetImageMetadata("CVRawSourceBpp", cVCIEFile.Bpp, nameof(CVRawOpen), "CVCIE 文件原始位深");
                         context.Config.SetImageMetadata("Gain", cVCIEFile.Gain, nameof(CVRawOpen), "CVCIE 采集增益");
                         context.Config.SetImageMetadata("exp", cVCIEFile.Exp, nameof(CVRawOpen), "CVCIE 曝光数组");
                         context.Config.SetImageMetadata("FileExtType", cVCIEFile.FileExtType, nameof(CVRawOpen), "CVCIE 文件扩展类型");
@@ -724,7 +725,13 @@ namespace ColorVision.Engine.Media
                             }
                             else
                             {
-                                context.Config.SetImageMetadata(ImageViewPropertyKeys.Depth, cVCIEFile.Bpp, nameof(CVRawOpen), "当前 CVCIE 图像位深");
+                                int displayChannels = mat.Channels();
+                                int displayDepth = checked((int)mat.ElemSize1() * 8);
+                                int displayStride = checked(mat.Cols * displayChannels * (displayDepth / 8));
+                                context.Config.SetImageMetadata(ImageViewPropertyKeys.PixelFormat, writeableBitmap.Format, nameof(CVRawOpen), "当前显示位图像素格式");
+                                context.Config.SetImageMetadata(ImageViewPropertyKeys.Channel, displayChannels, nameof(CVRawOpen), "当前显示位图通道数");
+                                context.Config.SetImageMetadata(ImageViewPropertyKeys.Depth, displayDepth, nameof(CVRawOpen), "当前显示位图位深");
+                                context.Config.SetImageMetadata(ImageViewPropertyKeys.Stride, displayStride, nameof(CVRawOpen), "当前显示位图行跨度");
                                 context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiX, writeableBitmap.DpiX, nameof(CVRawOpen), "当前 CVCIE 图像水平 DPI");
                                 context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(CVRawOpen), "当前 CVCIE 图像垂直 DPI");
                                 //这里需要强制切换过来

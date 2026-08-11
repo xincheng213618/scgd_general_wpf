@@ -9,7 +9,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ProjectKB
 {
@@ -74,12 +73,10 @@ namespace ProjectKB
 
         public ObservableCollection<KBItemMaster> ViewResluts { get; set; } = new ObservableCollection<KBItemMaster>();
 
-        public int ViewReslutsSelectedIndex { get => _ViewReslutsSelectedIndex; set { _ViewReslutsSelectedIndex = value; OnPropertyChanged(); } }
+        public int ViewReslutsSelectedIndex { get => _ViewReslutsSelectedIndex; set { if (_ViewReslutsSelectedIndex == value) return; _ViewReslutsSelectedIndex = value; OnPropertyChanged(); } }
         private int _ViewReslutsSelectedIndex = -1;
-        public ListView ListView { get; set; }
 
         public RelayCommand EditConfigCommand { get; set; }
-        public RelayCommand ViewReslutsClearCommand { get; set; }
         public RelayCommand QueryCommand { get; set; }
         public RelayCommand GenericQueryCommand { get; set; }
 
@@ -91,7 +88,6 @@ namespace ProjectKB
         {
             Config = ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
             EditConfigCommand = new RelayCommand(a => EditConfig());
-            ViewReslutsClearCommand = new RelayCommand(a => ViewReslutsClear());
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
             SaveCommand = new RelayCommand(a => Save());
@@ -116,14 +112,6 @@ namespace ProjectKB
 
             new PropertyEditorWindow(Config) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             ConfigService.Instance.SaveConfigs();
-        }
-
-        public void ViewReslutsClear()
-        {
-            if (!RequireAdmin()) return;
-
-            ViewReslutsSelectedIndex = -1;
-            ViewResluts.Clear();
         }
 
         public void Query()
@@ -249,7 +237,6 @@ namespace ProjectKB
                 if (Config.AutoRefresh)
                 {
                     ViewReslutsSelectedIndex = ViewResluts.Count - 1;
-                    ListView?.ScrollIntoView(item);
                 }
             }
         }

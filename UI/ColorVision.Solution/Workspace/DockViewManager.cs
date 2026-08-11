@@ -47,6 +47,7 @@ namespace ColorVision.Solution.Workspace
             };
 
             manager.ViewAddedHandler = control => EnsureDocument(control);
+            manager.ViewRemovedHandler = RemoveDocument;
             manager.ViewTitleChangedHandler = (control, title) =>
             {
                 if (_viewDocuments.TryGetValue(control, out var document))
@@ -121,6 +122,25 @@ namespace ColorVision.Solution.Workspace
 
             log.Debug($"DockViewManagerHost: 创建视图文档 '{title}' (ContentId={contentId})");
             return doc;
+        }
+
+        /// <summary>
+        /// 移除视图对应的文档并断开文档对控件的引用。
+        /// </summary>
+        private static void RemoveDocument(Control control)
+        {
+            if (!_viewDocuments.Remove(control, out LayoutDocument? document))
+                return;
+
+            try
+            {
+                if (document.Parent != null)
+                    document.Close();
+            }
+            finally
+            {
+                document.Content = null;
+            }
         }
 
         /// <summary>

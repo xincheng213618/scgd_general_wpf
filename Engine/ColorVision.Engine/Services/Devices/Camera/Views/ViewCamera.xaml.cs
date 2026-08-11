@@ -17,9 +17,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
@@ -28,9 +30,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewCamera : UserControl
+    public partial class ViewCamera : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
+        private int _disposeState;
+        private int _imageRequestId;
+        private bool _messageSubscribed;
+
+        private bool IsDisposed => Volatile.Read(ref _disposeState) != 0;
 
         public DeviceCamera Device { get; set; }
 
@@ -45,6 +52,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            if (IsDisposed) return;
+
             this.DataContext = Config;
             AttachDisplayFilterConfig();
             if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
@@ -61,7 +70,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 ViewCameraConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
-            Device.DService.MsgReturnReceived += DeviceService_OnMessageRecved;
+            if (!_messageSubscribed)
+            {
+                Device.DService.MsgReturnReceived += DeviceService_OnMessageRecved;
+                _messageSubscribed = true;
+            }
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
@@ -95,7 +108,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
-            if (arg.DeviceCode != Device.Config.Code) return;
+            if (IsDisposed || arg.DeviceCode != Device.Config.Code) return;
 
             if (arg.Code == 102)
             {
@@ -104,11 +117,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                     case "AutoFocus":
                         try
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher.Invoke(() =>
                             {
+                                if (IsDisposed) return;
+
                                 Device.Config.MotorConfig.Position = arg.Data.Position;
-                                string Filepath = arg.Data.ImageTmpFile;
-                                ImageView.OpenImage(Filepath);
+                                int requestId = Interlocked.Increment(ref _imageRequestId);
+                                OpenImageOrClear((string?)arg.Data.ImageTmpFile, requestId);
                             });
                         }
                         catch (Exception ex)
@@ -142,6 +157,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         {
                             Application.Current?.Dispatcher.BeginInvoke(() =>
                             {
+                                if (IsDisposed) return;
                                 ShowResult(result);
                             });
                         }
@@ -154,7 +170,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0&& listView1.View is GridView gridView)
+            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && listView1.View is GridView gridView)
                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
         }
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
@@ -182,19 +198,28 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (listView1.SelectedIndex > -1)
+            if (IsDisposed || sender is not ListView listView) return;
+
+            int requestId = Interlocked.Increment(ref _imageRequestId);
+            string? filePath = (listView.SelectedItem as ViewResultImage)?.FileUrl;
+            OpenImageOrClear(filePath, requestId);
+        }
+
+        private void OpenImageOrClear(string? filePath, int requestId)
+        {
+            if (IsDisposed || requestId != Volatile.Read(ref _imageRequestId)) return;
+
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
             {
-                var data = ViewResults[listView1.SelectedIndex];
-                if (string.IsNullOrWhiteSpace(data.FileUrl)) return;
-
-                if (data.FileUrl.Equals(ImageView.Config.FilePath, StringComparison.Ordinal)) return;
-
-                if (File.Exists(data.FileUrl))
-                {
-                    ImageView.OpenImage(data.FileUrl);
-                }
-
+                ImageView.Clear();
+                return;
             }
+
+            if (filePath.Equals(ImageView.Config.FilePath, StringComparison.OrdinalIgnoreCase)) return;
+
+            ImageView.Clear();
+            if (IsDisposed || requestId != Volatile.Read(ref _imageRequestId)) return;
+            ImageView.OpenImage(filePath);
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -208,6 +233,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public void ShowResult(MeasureResultImgModel model)
         {
+            if (IsDisposed) return;
+
             ViewResultImage result = new(model);
             if (Config.InsertAtBeginning)
                 ViewResults.Insert(0, result);
@@ -247,7 +274,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            GenericQuery<MeasureResultImgModel,ViewResultImage> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultImage>(Db, ViewResults,t=> new ViewResultImage(t));
+            GenericQuery<MeasureResultImgModel, ViewResultImage> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultImage>(Db, ViewResults, t => new ViewResultImage(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
             Db.Dispose();
@@ -260,6 +287,44 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             listView1.Height = MainGridRow2.ActualHeight - 32;
             MainGridRow1.Height = new GridLength(1, GridUnitType.Star);
             MainGridRow2.Height = GridLength.Auto;
+        }
+
+        internal static void DetachResultListView(ListView listView, SelectionChangedEventHandler selectionChangedHandler, KeyEventHandler previewKeyDownHandler)
+        {
+            listView.SelectionChanged -= selectionChangedHandler;
+            listView.PreviewKeyDown -= previewKeyDownHandler;
+            BindingOperations.ClearAllBindings(listView);
+            listView.ItemsSource = null;
+            listView.ContextMenu = null;
+            listView.CommandBindings.Clear();
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposeState, 1) != 0) return;
+
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(DisposeCore);
+                return;
+            }
+
+            DisposeCore();
+        }
+
+        private void DisposeCore()
+        {
+            Interlocked.Increment(ref _imageRequestId);
+            if (_messageSubscribed)
+            {
+                Device.DService.MsgReturnReceived -= DeviceService_OnMessageRecved;
+                _messageSubscribed = false;
+            }
+
+            DetachResultListView(listView1, listView1_SelectionChanged, listView1_PreviewKeyDown);
+            ImageView.Dispose();
+            DataContext = null;
+            GC.SuppressFinalize(this);
         }
     }
 }

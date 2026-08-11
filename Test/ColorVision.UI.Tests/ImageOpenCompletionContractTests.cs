@@ -75,6 +75,53 @@ public sealed class ImageOpenCompletionContractTests
         }
     }
 
+    [Theory]
+    [InlineData(".png")]
+    [InlineData(".tiff")]
+    public async Task OpenImage_WhenPathChangesBeforeDecodeCompletes_DiscardsStaleFrame(string extension)
+    {
+        string filePath = Path.Combine(
+            Path.GetTempPath(),
+            $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}{extension}");
+        string missingFilePath = Path.Combine(
+            Path.GetTempPath(),
+            $"{nameof(ImageOpenCompletionContractTests)}-missing-{Guid.NewGuid():N}{extension}");
+        ImageView? imageView = null;
+        int completionCount = 0;
+
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                WriteEncodedImage(filePath);
+
+                imageView = new ImageView();
+                imageView.ImageSourceLoaded += (_, _) => completionCount++;
+
+                imageView.OpenImage(filePath);
+                imageView.OpenImage(missingFilePath);
+            });
+
+            await Task.Delay(TimeSpan.FromSeconds(1));
+
+            WpfTestHost.Invoke(() =>
+            {
+                Assert.Equal(missingFilePath, imageView!.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath));
+                Assert.Null(imageView.ViewBitmapSource);
+                Assert.Equal(0, completionCount);
+            });
+        }
+        finally
+        {
+            if (imageView != null)
+                WpfTestHost.Invoke(imageView.Dispose);
+
+            if (File.Exists(filePath))
+                File.Delete(filePath);
+        }
+    }
+
     private static OpenedImageState CaptureState(ImageView imageView, int completionCount)
     {
         BitmapSource source = Assert.IsAssignableFrom<BitmapSource>(imageView.ViewBitmapSource);

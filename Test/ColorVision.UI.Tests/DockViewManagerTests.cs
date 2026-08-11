@@ -92,6 +92,37 @@ public class DockViewManagerTests
     }
 
     [Fact]
+    public void RemoveView_ClearsManagerStateAndHostedDocument()
+    {
+        RunOnStaThread(() =>
+        {
+            DockViewManager manager = DockViewManager.GetInstance();
+            ResetDockViewManager(manager);
+            var pane = new LayoutDocumentPane();
+            WorkspaceManager.LayoutDocumentPane = pane;
+            DockViewManagerHost.ClearViewDocuments();
+            DockViewManagerHost.Initialize();
+
+            var view = new UserControl();
+            manager.SetViewTitle(view, "Camera");
+            manager.AddView(view);
+            manager.ActiveView(view);
+            LayoutDocument document = Assert.IsType<LayoutDocument>(Assert.Single(pane.Children));
+
+            manager.RemoveView(view);
+
+            Assert.DoesNotContain(view, manager.Views);
+            Assert.False(manager.ViewTitles.ContainsKey(view));
+            Assert.Null(manager.LastActiveView);
+            Assert.Empty(pane.Children);
+            Assert.Null(document.Content);
+
+            DockViewManagerHost.ClearViewDocuments();
+            ResetDockViewManager(manager);
+        });
+    }
+
+    [Fact]
     public void ReplaceControls_RestoresLastSelectedIndexAfterDeferredCreation()
     {
         RunOnStaThread(() =>
@@ -135,6 +166,7 @@ public class DockViewManagerTests
         manager.ActiveViewHandler = null;
         manager.SelectViewHandler = null;
         manager.ViewAddedHandler = null;
+        manager.ViewRemovedHandler = null;
         manager.ViewTitleChangedHandler = null;
         manager.ShowAllViewsHandler = null;
     }

@@ -29,6 +29,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -163,6 +164,8 @@ namespace ProjectLUX
         private FlowEngineControl flowEngine;
         private Timer timer;
         private bool _isDisposed;
+        private readonly CancellationTokenSource _lifetimeCancellation = new();
+        private int _resultImageRequestId;
         Stopwatch stopwatch = new Stopwatch();
 
 
@@ -173,6 +176,8 @@ namespace ProjectLUX
             ProcessManager.ActiveGroupChanged += ProcessManager_ActiveGroupChanged;
             UpdateActiveGroupDisplay();
 
+            // 先挂载集合，再恢复共享的选中索引，避免空列表把校正后的索引写回单例。
+            listView1.ItemsSource = ViewResluts;
             this.DataContext = ProjectLUXConfig.Instance;
 
             flowEngine = new FlowEngineControl(false);
@@ -199,8 +204,6 @@ namespace ProjectLUX
             {
                 Dispose();
             };
-            ViewResultManager.ListView = listView1;
-            listView1.ItemsSource = ViewResluts;
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
@@ -210,8 +213,12 @@ namespace ProjectLUX
 
         private void ProcessManager_ActiveGroupChanged(object? sender, EventArgs e)
         {
+            if (_isDisposed) return;
+
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
+                if (_isDisposed) return;
+
                 ProcessManager.GenStepBar(stepBar);
                 ProjectLUXConfig.Instance.StepIndex = 0;
                 UpdateActiveGroupDisplay();
@@ -276,8 +283,12 @@ namespace ProjectLUX
         string FlowName;
         private void UpdateMsg(object? sender)
         {
+            if (_isDisposed) return;
+
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
+                if (_isDisposed) return;
+
                 try
                 {
                     long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
@@ -329,83 +340,115 @@ namespace ProjectLUX
 
         public async Task RunTemplate()
         {
-            if (flowControl != null && flowControl.IsFlowRun) return;
-            if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template) return;
-
-            TryCount++;
-            _currentFlowTemplateId = template.Id;
-            string flowName = template.Key;
-            LastFlowTime = await Task.Run(
-                () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
-                    new FlowIdentity(template.Id, template.Value.FlowKey, flowName)));
-
-            CurrentFlowResult = new ProjectLUXReuslt();
-            CurrentFlowResult.SN = ProjectLUXConfig.Instance.SN;
-            CurrentFlowResult.Model = flowName;
-
-            Application.Current.Dispatcher.Invoke(() =>
+            if (_isDisposed) return;
+            try
             {
-                if (ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, flowName, StringComparison.OrdinalIgnoreCase)) is ProcessMeta processMeta)
-                {
-                    CurrentFlowResult.TestType = ProcessMetas.IndexOf(processMeta);
-                    ProjectLUXConfig.Instance.StepIndex = CurrentFlowResult.TestType;
+                if (flowControl != null && flowControl.IsFlowRun) return;
+                if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template) return;
 
-                }
-                else
-                {
-                    CurrentFlowResult.TestType = -1;
-                    ProjectLUXConfig.Instance.StepIndex = CurrentFlowResult.TestType;
-                }
-            });
+                TryCount++;
+                _currentFlowTemplateId = template.Id;
+                string flowName = template.Key;
+                LastFlowTime = await Task.Run(
+                    () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
+                        new FlowIdentity(template.Id, template.Value.FlowKey, flowName)));
+                if (_isDisposed) return;
 
-            FlowName = flowName;
+                CurrentFlowResult = new ProjectLUXReuslt();
+                CurrentFlowResult.SN = ProjectLUXConfig.Instance.SN;
+                CurrentFlowResult.Model = flowName;
 
-            ProcessMeta? processMeta = ProcessManager.ProcessMetas.FirstOrDefault(a => a.FlowTemplate == FlowName);
-            if (processMeta != null)
-            {
-               int index =  ProcessManager.ProcessMetas.IndexOf(processMeta);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ProjectLUXConfig.Instance.StepIndex = index;
+                    if (ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, flowName, StringComparison.OrdinalIgnoreCase)) is ProcessMeta processMeta)
+                    {
+                        CurrentFlowResult.TestType = ProcessMetas.IndexOf(processMeta);
+                        ProjectLUXConfig.Instance.StepIndex = CurrentFlowResult.TestType;
+                    }
+                    else
+                    {
+                        CurrentFlowResult.TestType = -1;
+                        ProjectLUXConfig.Instance.StepIndex = CurrentFlowResult.TestType;
+                    }
                 });
-            }
 
-            CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                FlowName = flowName;
 
-            await Refresh();
-
-            if (!await PreProcessing(FlowName, CurrentFlowResult.Code))
-            {
-                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                CurrentFlowResult.Msg = "PreProcessFailed";
-                logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
-                TryCount = 0;
-                return;
-            }
-
-            CurrentFlowResult.FlowStatus = FlowStatus.Ready;
-
-            flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
-            flowControl.FlowCompleted += FlowControl_FlowCompleted;
-            stopwatch.Reset();
-            stopwatch.Start();
-            MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
-            CurrentFlowResult.BatchId = id;
-
-            if (!await flowControl.TryStartAsync(CurrentFlowResult.Code))
-            {
-                FlowControl_FlowCompleted(flowControl, new FlowControlData
+                ProcessMeta? processMeta = ProcessManager.ProcessMetas.FirstOrDefault(a => a.FlowTemplate == FlowName);
+                if (processMeta != null)
                 {
-                    EventName = "Failed",
-                    Status = StatusTypeEnum.Failed,
-                    SerialNumber = CurrentFlowResult.Code,
-                    Params = "FlowStartRejected"
-                });
-                return;
+                    int index = ProcessManager.ProcessMetas.IndexOf(processMeta);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        ProjectLUXConfig.Instance.StepIndex = index;
+                    });
+                }
+
+                CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+
+                await Refresh();
+                if (_isDisposed) return;
+
+                bool preprocessingSucceeded = await PreProcessing(FlowName, CurrentFlowResult.Code);
+                if (_isDisposed) return;
+                if (!preprocessingSucceeded)
+                {
+                    CurrentFlowResult.FlowStatus = FlowStatus.Failed;
+                    CurrentFlowResult.Msg = "PreProcessFailed";
+                    logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
+                    TryCount = 0;
+                    return;
+                }
+
+                CurrentFlowResult.FlowStatus = FlowStatus.Ready;
+
+                flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
+                flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                flowControl.FlowCompleted += FlowControl_FlowCompleted;
+                stopwatch.Reset();
+                stopwatch.Start();
+                MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
+                CurrentFlowResult.BatchId = id;
+
+                bool started = await flowControl.TryStartAsync(CurrentFlowResult.Code, _lifetimeCancellation.Token);
+                if (_isDisposed)
+                {
+                    flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                    if (started && flowControl.IsFlowRun)
+                        flowControl.Stop();
+                    return;
+                }
+                if (!started)
+                {
+                    FlowControl_FlowCompleted(flowControl, new FlowControlData
+                    {
+                        EventName = "Failed",
+                        Status = StatusTypeEnum.Failed,
+                        SerialNumber = CurrentFlowResult.Code,
+                        Params = "FlowStartRejected"
+                    });
+                    return;
+                }
+                timer.Change(0, 500); // 启动定时器
             }
-            timer.Change(0, 500); // 启动定时器
+            catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+            {
+                if (flowControl != null)
+                    flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                log.Debug("窗口已关闭，已取消流程启动等待");
+            }
+            catch (Exception ex) when (_isDisposed)
+            {
+                if (flowControl != null)
+                {
+                    flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                    if (flowControl.IsFlowRun)
+                        flowControl.Stop();
+                }
+                log.Debug("窗口已关闭，忽略迟到的流程启动结果", ex);
+            }
         }
 
 
@@ -421,6 +464,8 @@ namespace ProjectLUX
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+            if (_isDisposed) return;
+
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
@@ -661,6 +706,9 @@ namespace ProjectLUX
 
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
+            Interlocked.Increment(ref _resultImageRequestId);
+            ViewResultManager.ViewReslutsSelectedIndex = -1;
+            ViewResluts.Clear();
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
             outputText.Background = Brushes.White;
@@ -668,9 +716,14 @@ namespace ProjectLUX
 
         private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1)
+            if (_isDisposed) return;
+            if (sender is not ListView listView) return;
+
+            int requestId = Interlocked.Increment(ref _resultImageRequestId);
+            ImageView.Clear();
+            if (listView.SelectedItem is ProjectLUXReuslt result)
             {
-                var result = ViewResluts[listView.SelectedIndex];
+                listView.ScrollIntoView(result);
                 try
                 {
                     if (result.FlowStatus == FlowStatus.Completed)
@@ -690,50 +743,63 @@ namespace ProjectLUX
                     log.Error(ex);
                 }
 
-                Task.Run(async () =>
+                _ = Task.Run(() =>
                 {
-                    if (File.Exists(result.FileName))
+                    if (_isDisposed || requestId != Volatile.Read(ref _resultImageRequestId) || !File.Exists(result.FileName))
+                        return;
+
+                    _ = Application.Current.Dispatcher.BeginInvoke(() =>
                     {
-                        _ = Application.Current.Dispatcher.BeginInvoke(() =>
+                        if (_isDisposed ||
+                            requestId != Volatile.Read(ref _resultImageRequestId) ||
+                            !ReferenceEquals(listView1.SelectedItem, result))
+                            return;
+
+                        ImageView.OpenImage(result.FileName);
+                        ImageView.ImageShow.Clear();
+
+                        if (result.FlowStatus != FlowStatus.Completed)
+                            return;
+
+                        var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
+                        if (meta?.Process != null)
                         {
-                            ImageView.OpenImage(result.FileName);
-                            ImageView.ImageShow.Clear();
-
-                            if (result.FlowStatus != FlowStatus.Completed)
-                                return;
-
-                            var meta = ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, result.Model, StringComparison.OrdinalIgnoreCase));
-                            if (meta?.Process != null)
+                            try
                             {
-                                bool executed = false;
-                                try
+                                var ctx = new IProcessExecutionContext
                                 {
-                                    var ctx = new IProcessExecutionContext
-                                    {
-                                        Result = result,
-                                        ObjectiveTestResult = ObjectiveTestResult,
-                                        FixConfig = ObjectiveTestResultFix,
-                                        RecipeConfig = RecipeConfig,
-                                        ImageView = ImageView,
-                                        Logger = log
-                                    };
-                                    meta.Process.Render(ctx);
-                                }
-                                catch (Exception ex)
-                                {
-                                    log.Error("自定义 IProcess 执行异常", ex);
-                                }
+                                    Result = result,
+                                    ObjectiveTestResult = ObjectiveTestResult,
+                                    FixConfig = ObjectiveTestResultFix,
+                                    RecipeConfig = RecipeConfig,
+                                    ImageView = ImageView,
+                                    Logger = log
+                                };
+                                meta.Process.Render(ctx);
                             }
+                            catch (Exception ex)
+                            {
+                                log.Error("自定义 IProcess 执行异常", ex);
+                            }
+                        }
 
-                            SaveImageResultIfNeeded(result);
-                        });
-                    }
+                        SaveImageResultIfNeeded(result, requestId);
+                    });
                 });
 
             }
         }
 
-        private void SaveImageResultIfNeeded(ProjectLUXReuslt result)
+        internal static void DetachResultListView(ListView listView, SelectionChangedEventHandler selectionChangedHandler)
+        {
+            listView.SelectionChanged -= selectionChangedHandler;
+            BindingOperations.ClearBinding(listView, System.Windows.Controls.Primitives.Selector.SelectedIndexProperty);
+            listView.ItemsSource = null;
+            listView.ContextMenu = null;
+            listView.CommandBindings.Clear();
+        }
+
+        private void SaveImageResultIfNeeded(ProjectLUXReuslt result, int requestId)
         {
             if (!IsSaveImageReuslt) return;
 
@@ -744,6 +810,13 @@ namespace ProjectLUX
                 try
                 {
                     await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
+                    if (_isDisposed || requestId != Volatile.Read(ref _resultImageRequestId)) return;
+
+                    bool isCurrentSelection = Application.Current?.Dispatcher.Invoke(() =>
+                        !_isDisposed &&
+                        requestId == Volatile.Read(ref _resultImageRequestId) &&
+                        ReferenceEquals(listView1.SelectedItem, result)) ?? false;
+                    if (!isCurrentSelection) return;
 
                     string linkPath = ViewResultManager.Config.CsvSavePath;
                     string sn = result.SN;
@@ -774,6 +847,11 @@ namespace ProjectLUX
                     log.Info(filePath);
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
+                        if (_isDisposed ||
+                            requestId != Volatile.Read(ref _resultImageRequestId) ||
+                            !ReferenceEquals(listView1.SelectedItem, result))
+                            return;
+
                         ImageView.Save(filePath);
                     });
                 }
@@ -874,7 +952,11 @@ namespace ProjectLUX
                 return;
 
             _isDisposed = true;
+            _lifetimeCancellation.Cancel();
+            Interlocked.Increment(ref _resultImageRequestId);
+            DetachResultListView(listView1, listView1_SelectionChanged);
             ProcessManager.ActiveGroupChanged -= ProcessManager_ActiveGroupChanged;
+            ImageView.Dispose();
             if (flowControl != null)
             {
                 flowControl.FlowCompleted -= FlowControl_FlowCompleted;
@@ -885,6 +967,7 @@ namespace ProjectLUX
             timer?.Change(Timeout.Infinite, 500);
             timer?.Dispose();
             logOutput?.Dispose();
+            DataContext = null;
             GC.SuppressFinalize(this);
         }
 

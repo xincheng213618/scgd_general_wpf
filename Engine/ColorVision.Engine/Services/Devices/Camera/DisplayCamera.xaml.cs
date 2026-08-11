@@ -36,6 +36,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -231,6 +232,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private bool _localVideoImageEditModeSnapshot;
         private bool _isLocalVideoRoiVisualRemoveSubscribed;
         private bool _crossGuideOverlayAdded;
+        private readonly object _localVideoHandleSync = new();
+        private int _disposeState;
+        private bool _isInitialized;
+
+        private bool IsDisposed => Volatile.Read(ref _disposeState) != 0;
 
         private enum AutoExpTimeTemplateKind
         {
@@ -258,20 +264,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            if (IsDisposed || _isInitialized) return;
+            _isInitialized = true;
+
             DataContext = Device;
             this.AddViewConfig(View, DisPlayName);
             EnsureTimedButtonOperations();
 
-            void UpdateTemplate()
-            {
-                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
-                ComboxCalibrationTemplate.SelectedIndex = 0;
-            }
-            UpdateTemplate();
-            Device.ConfigChanged += (s, e) => UpdateTemplate();
+            UpdateCalibrationTemplates();
+            Device.ConfigChanged += Device_ConfigChanged;
 
             ComboxCalibrationTemplate.DataContext = Device.DisplayConfig;
-            PhyCameraManager.GetInstance().Loaded += (s, e) => UpdateTemplate();
+            PhyCameraManager.GetInstance().Loaded += PhyCameraManager_Loaded;
             BindAutoExpTimeTemplateSources();
 
             ComboxAutoExpTimeParamTemplate.ItemsSource = _autoExpTimeTemplateOptions;
@@ -318,6 +322,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
             vb.ConverterParameter = DeviceStatusType.Closed;
             LocalVideo.SetBinding(StackPanel.VisibilityProperty, vb);
 
+        }
+
+        private void Device_ConfigChanged(object? sender, EventArgs e) => UpdateCalibrationTemplates();
+
+        private void PhyCameraManager_Loaded(object? sender, EventArgs e) => UpdateCalibrationTemplates();
+
+        private void UpdateCalibrationTemplates()
+        {
+            if (IsDisposed) return;
+
+            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
+            ComboxCalibrationTemplate.SelectedIndex = 0;
         }
 
         private void BindAutoExpTimeTemplateSources()
@@ -400,7 +416,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void DisplayCameraConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (_isSyncingLocalVideoRoi) return;
+            if (IsDisposed || _isSyncingLocalVideoRoi) return;
 
             if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(DisplayCameraConfig.LocalVideoRoi))
             {
@@ -483,6 +499,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void EnsureLocalVideoRoiVisual(bool select = true)
         {
+            if (IsDisposed) return;
+
             if (!IsLocalVideoRoiVisualNeeded)
             {
                 RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
@@ -574,6 +592,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void RealtimeCameraConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (IsDisposed) return;
             if (!string.IsNullOrEmpty(e.PropertyName) && e.PropertyName != nameof(DefaultRealtimeCameraConfig.IsCalArtculation)) return;
 
             RefreshLocalVideoRoiVisual(selectNewVisual: true);
@@ -711,6 +730,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void RefreshCrossGuideOverlay()
         {
+            if (IsDisposed) return;
+
             _localRealtimePipeline.IsMetricsVisible = !Device.DisplayConfig.IsCrossGuideEnabled;
 
             if (!Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled)
@@ -728,6 +749,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void EnsureCrossGuideOverlay()
         {
+            if (IsDisposed) return;
+
             var imageView = Device.View.ImageView;
             if (!imageView.Dispatcher.CheckAccess())
             {
@@ -784,9 +807,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void HandleCrossGuideResult(VideoCrossGuideResult result)
         {
+            if (IsDisposed) return;
+
             Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (!Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled)
+                if (IsDisposed || !Device.DisplayConfig.IsLocalVideoOpen || !Device.DisplayConfig.IsCrossGuideEnabled)
                     return;
 
                 EnsureCrossGuideOverlay();
@@ -805,6 +830,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
         {
+            if (IsDisposed) return;
+
             void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
             void HideAllButtons()
             {
@@ -1191,6 +1218,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     var msgRecord = DService.GetAutoExpTime(param);
                     msgRecord.MsgRecordStateChanged += (s, e) =>
                     {
+                        if (IsDisposed) return;
+
                         if (e == MsgRecordState.Timeout)
                         {
                             MessageBox1.Show(Properties.Resources.AutoExposureTimeoutCheckLog, "ColorVision");
@@ -1214,20 +1243,23 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             return await Task.Run(() =>
             {
-                try
+                lock (_localVideoHandleSync)
                 {
-                    if (m_hCamHandle != IntPtr.Zero)
+                    try
                     {
-                        cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
-                        cvCameraCSLib.CM_Close(m_hCamHandle);
-                    }
+                        if (m_hCamHandle != IntPtr.Zero)
+                        {
+                            cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
+                            cvCameraCSLib.CM_Close(m_hCamHandle);
+                        }
 
-                    return (true, string.Empty);
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex);
-                    return (false, ex.Message);
+                        return (true, string.Empty);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex);
+                        return (false, ex.Message);
+                    }
                 }
             });
         }
@@ -1238,6 +1270,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             MsgRecord msgRecord = DService.AutoFocus(param);
             msgRecord.MsgRecordStateChanged += (s, e) =>
             {
+                if (IsDisposed) return;
+
                 if (e == MsgRecordState.Fail)
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
@@ -1374,6 +1408,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void ComboxAutoExpTimeParamTemplate1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (IsDisposed) return;
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not ParamBase autoExpTimeParam) return;
 
             Device.Config.IsAutoExpose = autoExpTimeParam.Id != -1;
@@ -1395,6 +1430,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             MsgRecord msgRecord = DService.GetPort();
             msgRecord.MsgRecordStateChanged += (s, e) =>
             {
+                if (IsDisposed) return;
+
                 if (e == MsgRecordState.Success)
                 {
                     int port = msgRecord.MsgReturn.Data.Port;
@@ -1409,19 +1446,79 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref _disposeState, 1) != 0) return;
+
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(DisposeCore);
+            }
+            else
+            {
+                DisposeCore();
+            }
+
+            GC.SuppressFinalize(this);
+        }
+
+        private void DisposeCore()
+        {
+            Device.ConfigChanged -= Device_ConfigChanged;
+            PhyCameraManager.GetInstance().Loaded -= PhyCameraManager_Loaded;
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
             TemplateAutoExpTime.Params.CollectionChanged -= AutoExpTimeTemplateParams_CollectionChanged;
             TemplateAutoExpTimeV2.Params.CollectionChanged -= AutoExpTimeTemplateParams_CollectionChanged;
             DisplayCameraConfig.PropertyChanged -= DisplayCameraConfig_PropertyChanged;
             Device.RealtimeCameraConfig.PropertyChanged -= RealtimeCameraConfig_PropertyChanged;
+
+            Device.DisplayConfig.IsLocalVideoOpen = false;
+            SetLocalVideoPoiTemplateSupported(false);
             RemoveLocalVideoRoiVisual(restoreImageEditMode: true);
             RemoveCrossGuideOverlay();
+            Device.DisplayConfig.CrossGuideStatus = string.Empty;
+            _localRealtimePipeline.Stop(resetRealtime: true);
+            ReleaseLocalVideoHandle();
 
-            // Clean up video display resources
             _localRealtimePipeline.Dispose();
             _crossGuideProcessor.Dispose();
             this.DisposeTimedButtonOperations();
-            GC.SuppressFinalize(this);
+
+            BindingOperations.ClearBinding(LocalVideo, StackPanel.VisibilityProperty);
+            ComboxCalibrationTemplate.ItemsSource = null;
+            ComboxCalibrationTemplate.DataContext = null;
+            ComboxAutoExpTimeParamTemplate.ItemsSource = null;
+            ComboxAutoExpTimeParamTemplate.DataContext = null;
+            ComboxAutoExpTimeParamTemplate1.ItemsSource = null;
+            ComboxAutoExpTimeParamTemplate1.DataContext = null;
+            ComboxAutoFocus.ItemsSource = null;
+            ComboxAutoFocus.DataContext = null;
+            ComboBoxHDRTemplate.ItemsSource = null;
+            ComboBoxHDRTemplate.DataContext = null;
+            DataContext = null;
+        }
+
+        private void ReleaseLocalVideoHandle()
+        {
+            lock (_localVideoHandleSync)
+            {
+                IntPtr handle = m_hCamHandle;
+                m_hCamHandle = IntPtr.Zero;
+                if (handle == IntPtr.Zero) return;
+
+                try
+                {
+                    if (cvCameraCSLib.CM_IsOpen(handle))
+                    {
+                        cvCameraCSLib.CM_UnregisterCallBack(handle);
+                        cvCameraCSLib.CM_Close(handle);
+                    }
+                    _ = cvCameraCSLib.CM_UnInitXYZ(handle);
+                    _ = cvCameraCSLib.ReleaseCameraManager(handle);
+                }
+                catch (Exception ex)
+                {
+                    logger.Error("释放本地视频相机资源失败", ex);
+                }
+            }
         }
 
         public IntPtr m_hCamHandle;
@@ -1508,7 +1605,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
-            if (!Device.DisplayConfig.IsLocalVideoOpen)
+            if (IsDisposed || !Device.DisplayConfig.IsLocalVideoOpen)
             {
                 return 0;
             }
@@ -1530,7 +1627,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private async void Video1_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button button) return;
+            if (IsDisposed || sender is not Button button) return;
             TimedButtonOperationRegistry operations = EnsureTimedButtonOperations();
             if (Device.DisplayConfig.IsLocalVideoOpen)
             {
@@ -1552,11 +1649,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
                 finally
                 {
-                    localVideoCloseScope?.Complete(false);
-                    operations.RefreshIdleState(LocalVideoButton);
-                    OpenButton.Visibility = closeSucceeded ? Visibility.Visible : Visibility.Collapsed;
+                    if (!IsDisposed)
+                    {
+                        localVideoCloseScope?.Complete(false);
+                        operations.RefreshIdleState(LocalVideoButton);
+                        OpenButton.Visibility = closeSucceeded ? Visibility.Visible : Visibility.Collapsed;
+                    }
                 }
 
+                if (IsDisposed) return;
                 if (!closeSucceeded && !string.IsNullOrWhiteSpace(closeError))
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), closeError, "ColorVision");
@@ -1579,6 +1680,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             try
             {
                 (bool isSuccess, string errorMessage) = await Task.Run(OpenLocalVideoInternal);
+                if (IsDisposed) return;
                 if (!isSuccess)
                 {
                     if (!string.IsNullOrWhiteSpace(errorMessage))
@@ -1600,17 +1702,29 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             finally
             {
-                localVideoScope?.Complete(localVideoOpened);
-                operations.RefreshIdleState(LocalVideoButton);
                 _isOpeningLocalVideo = false;
-                if (!localVideoOpened)
+                if (!IsDisposed)
                 {
-                    OpenButton.Visibility = Visibility.Visible;
+                    localVideoScope?.Complete(localVideoOpened);
+                    operations.RefreshIdleState(LocalVideoButton);
+                    if (!localVideoOpened)
+                    {
+                        OpenButton.Visibility = Visibility.Visible;
+                    }
                 }
             }
         }
 
         private (bool isSuccess, string errorMessage) OpenLocalVideoInternal()
+        {
+            lock (_localVideoHandleSync)
+            {
+                if (IsDisposed) return (false, string.Empty);
+                return OpenLocalVideoInternalCore();
+            }
+        }
+
+        private (bool isSuccess, string errorMessage) OpenLocalVideoInternalCore()
         {
             string configuredCameraId = Device.Config.CameraID ?? string.Empty;
             if (m_hCamHandle == IntPtr.Zero)
@@ -1727,6 +1841,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             void Apply()
             {
+                if (IsDisposed && isSupported) return;
+
                 imageView.Config.SetViewState(
                     PoiImageViewComponent.IsTemplateSupportedRuntimeKey,
                     isSupported,
@@ -1798,16 +1914,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void PreviewSliderLocalExp_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            if (IsDisposed) return;
             cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
         }
 
         private void PreviewSliderLocalGain_ValueChanged1(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            if (IsDisposed) return;
             cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
         }
 
         private void CBFilp2_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (IsDisposed) return;
+
             if (sender is ComboBox { SelectedValue: int transform })
             {
                 _localRealtimePipeline.Transform = transform;

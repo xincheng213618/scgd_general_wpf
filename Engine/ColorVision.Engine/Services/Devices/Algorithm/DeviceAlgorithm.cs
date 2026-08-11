@@ -6,14 +6,19 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
+using ColorVision.UI.Views;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
     public class DeviceAlgorithm : DeviceService<ConfigAlgorithm>
     {
+        private bool _isDisposed;
+
         public MQTTAlgorithm DService { get; set; }
         private readonly Lazy<AlgorithmView> _view;
         public AlgorithmView View => _view.Value;
+
+        internal bool IsDisposed => _isDisposed;
 
         public DisplayAlgorithmConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplayAlgorithmConfig>(Config.Code);
 
@@ -48,5 +53,26 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public override UserControl GetDisplayControl() => DisplayAlgorithmControlLazy.Value;
         public override MQTTServiceBase? GetMQTTService() => DService;
+
+        public override void Dispose()
+        {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
+
+            if (DisplayAlgorithmControlLazy.IsValueCreated)
+                DisplayAlgorithmControlLazy.Value.Dispose();
+
+            if (_view.IsValueCreated)
+            {
+                DockViewManager.GetInstance().RemoveView(_view.Value);
+                _view.Value.Dispose();
+            }
+
+            DService.Dispose();
+            base.Dispose();
+            GC.SuppressFinalize(this);
+        }
     }
 }
