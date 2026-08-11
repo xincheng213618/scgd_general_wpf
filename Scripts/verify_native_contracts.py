@@ -7,6 +7,8 @@ import shutil
 import struct
 import subprocess
 import sys
+import tempfile
+import uuid
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,7 +34,7 @@ CUDA_ALLOWED_BINARY_ONLY_EXPORTS = frozenset({"NvOptimusEnablementCuda"})
 AMD64_MACHINE = 0x8664
 DEFAULT_WINDOWS_X64_PACK = 8
 CUDA_EXPORT_SOURCE = "cuda_export.cpp"
-EXPECTED_DLLIMPORT_NAMED_ARGUMENTS = frozenset({"EntryPoint", "CallingConvention"})
+EXPECTED_DLLIMPORT_NAMED_ARGUMENTS = frozenset({"EntryPoint", "CallingConvention", "CharSet"})
 DEFAULT_MSBUILD_CANDIDATES = (
     Path(r"C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\amd64\MSBuild.exe"),
     Path(r"C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\MSBuild.exe"),
@@ -400,6 +402,45 @@ def _reject_csharp_type_aliases(source: str, context: str) -> None:
     code = _mask_non_code(source)
     if re.search(r"^\s*(?:global\s+)?using\s+[A-Za-z_]\w*\s*=", code, re.MULTILINE):
         raise NativeContractError(f"{context} must not use C# type aliases in ABI contract source.")
+
+
+def _reject_csharp_module_attributes(source: str, context: str) -> None:
+    code = _mask_non_code(source)
+    if re.search(r"\[\s*module\s*:", code):
+        raise NativeContractError(
+            f"{context} must not use module-level attributes that can alter P/Invoke defaults."
+        )
+
+
+def validate_colorvision_core_module_attributes(project_directory: Path) -> None:
+    try:
+        source_paths = sorted(
+            path
+            for path in project_directory.rglob("*.cs")
+            if {part.casefold() for part in path.relative_to(project_directory).parts}.isdisjoint(
+                {"bin", "obj"}
+            )
+        )
+    except OSError as exc:
+        raise NativeContractError(
+            f"Could not enumerate ColorVision.Core C# contract sources: {exc}"
+        ) from exc
+    if not source_paths:
+        raise NativeContractError(
+            f"ColorVision.Core contains no C# contract sources: {project_directory}."
+        )
+
+    for source_path in source_paths:
+        try:
+            source = source_path.read_text(encoding="utf-8-sig")
+        except OSError as exc:
+            raise NativeContractError(
+                f"Could not read ColorVision.Core C# contract source {source_path}: {exc}"
+            ) from exc
+        _reject_csharp_module_attributes(
+            source,
+            f"ColorVision.Core/{source_path.relative_to(project_directory).as_posix()}",
+        )
 
 
 def _reject_contract_preprocessor_mutation(source: str, context: str) -> None:
@@ -790,6 +831,7 @@ def _read_dllimport_named_arguments(arguments: str, method_name: str) -> dict[st
 def read_managed_import_contract(source: str) -> tuple[str, dict[str, AbiFunction]]:
     _reject_contract_preprocessor_mutation(source, "OpenCVCuda")
     _reject_csharp_type_aliases(source, "OpenCVCuda")
+    _reject_csharp_module_attributes(source, "OpenCVCuda")
     code = _mask_non_code(source)
     if re.search(r"\bLibraryImport(?:Attribute)?\b", code):
         raise NativeContractError(
@@ -824,6 +866,10 @@ def read_managed_import_contract(source: str) -> tuple[str, dict[str, AbiFunctio
         named_arguments = _read_dllimport_named_arguments(arguments, method_name)
         if named_arguments["CallingConvention"] != "CallingConvention.Cdecl":
             raise NativeContractError(f"CUDA DllImport {method_name} is not declared Cdecl.")
+        if named_arguments["CharSet"] != "CharSet.Ansi":
+            raise NativeContractError(
+                f"CUDA DllImport {method_name} must declare exactly CharSet.Ansi."
+            )
         entry_point_match = re.fullmatch(
             r'"(?P<value>[A-Za-z_]\w*)"', named_arguments["EntryPoint"]
         )
@@ -1324,57 +1370,142 @@ def _read_evaluated_cuda_build_items(
     *,
     msbuild_path: str | Path | None = None,
 ) -> dict[str, list[dict[str, str]]]:
+    project_path = project_path.resolve()
     executable = Path(msbuild_path) if msbuild_path is not None else _resolve_vs_msbuild_path()
-    command = [
-        str(executable),
-        str(project_path),
-        "-nologo",
-        "-p:Configuration=Release",
-        "-p:Platform=x64",
-        "-t:AddCudaCompileMetadata",
-        "-getItem:_CudaCompileHostDefinition",
-        "-getItem:ClCompile",
-        "-getItem:CudaCompile",
-    ]
+    token = uuid.uuid4().hex
+    cuda_capture_item = f"_ColorVisionCudaContract_{token}"
+    cl_capture_item = f"_ColorVisionClContract_{token}"
+    cuda_capture_target = f"ColorVisionCaptureCudaContract_{token}"
+    cl_capture_target = f"ColorVisionCaptureClContract_{token}"
+    shadow_path: Path | None = None
+    probe_path: Path | None = None
     try:
-        result = subprocess.run(
-            command,
-            cwd=project_path.parent,
-            capture_output=True,
-            text=True,
-            errors="replace",
-            check=False,
+        project_source = project_path.read_text(encoding="utf-8-sig")
+        if project_source.count("</Project>") != 1:
+            raise NativeContractError(
+                "opencv_cuda.vcxproj must contain exactly one closing Project element "
+                "for evaluated contract probing."
+            )
+
+        shadow_descriptor, shadow_name = tempfile.mkstemp(
+            prefix=f".{project_path.stem}.contract-",
+            suffix=project_path.suffix,
+            dir=project_path.parent,
         )
-    except OSError as exc:
-        raise NativeContractError(
-            f"Could not run Visual Studio MSBuild for CUDA contract evaluation: {exc}"
-        ) from exc
-    if result.returncode != 0:
-        diagnostic = (result.stderr or result.stdout).strip()
-        raise NativeContractError(
-            "Visual Studio MSBuild could not evaluate the Release|x64 CUDA contract"
-            + (f": {diagnostic}" if diagnostic else ".")
+        os.close(shadow_descriptor)
+        shadow_path = Path(shadow_name)
+        probe_descriptor, probe_name = tempfile.mkstemp(
+            prefix=f".{project_path.stem}.contract-",
+            suffix=".targets",
+            dir=project_path.parent,
         )
-    try:
+        os.close(probe_descriptor)
+        probe_path = Path(probe_name)
+
+        probe_path.write_text(
+            f'''<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <CudaCompileDependsOn>AddCudaCompileMetadata</CudaCompileDependsOn>
+  </PropertyGroup>
+  <Target Name="{cuda_capture_target}" BeforeTargets="CudaBuild">
+    <ItemGroup>
+      <{cuda_capture_item} Include="@(CudaCompile)" />
+      <CudaCompile Remove="@(CudaCompile)" />
+    </ItemGroup>
+  </Target>
+  <Target Name="{cl_capture_target}" BeforeTargets="ClCompile">
+    <ItemGroup>
+      <{cl_capture_item} Include="@(ClCompile)" />
+      <ClCompile Remove="@(ClCompile)" />
+    </ItemGroup>
+  </Target>
+  <Target Name="ClCompile" />
+</Project>
+''',
+            encoding="utf-8",
+        )
+        shadow_source = project_source.replace(
+            "</Project>",
+            f'  <Import Project="{probe_path.name}" />\n</Project>',
+            1,
+        )
+        shadow_path.write_text(shadow_source, encoding="utf-8")
+
+        with tempfile.TemporaryDirectory(prefix="colorvision-cuda-contract-") as output_directory:
+            output_root = Path(output_directory)
+            command = [
+                str(executable),
+                str(shadow_path),
+                "-nologo",
+                "-p:Configuration=Release",
+                "-p:Platform=x64",
+                f"-p:IntDir={output_root / 'obj'}{os.sep}",
+                f"-p:OutDir={output_root / 'out'}{os.sep}",
+                "-t:CudaBuild;ClCompile",
+                "-getItem:_CudaCompileHostDefinition",
+                f"-getItem:{cl_capture_item}",
+                f"-getItem:{cuda_capture_item}",
+            ]
+            try:
+                result = subprocess.run(
+                    command,
+                    cwd=project_path.parent,
+                    capture_output=True,
+                    text=True,
+                    errors="replace",
+                    check=False,
+                )
+            except OSError as exc:
+                raise NativeContractError(
+                    f"Could not run Visual Studio MSBuild for CUDA contract evaluation: {exc}"
+                ) from exc
+        if result.returncode != 0:
+            diagnostic = (result.stderr or result.stdout).strip()
+            raise NativeContractError(
+                "Visual Studio MSBuild could not evaluate the Release|x64 CUDA contract"
+                + (f": {diagnostic}" if diagnostic else ".")
+            )
         payload = json.loads(result.stdout)
         items = payload["Items"]
+        if not isinstance(items, dict):
+            raise NativeContractError(
+                "Visual Studio MSBuild evaluated CUDA contract payload does not contain an item map."
+            )
+        result_items: dict[str, list[dict[str, str]]] = {}
+        for result_name, item_type in (
+            ("_CudaCompileHostDefinition", "_CudaCompileHostDefinition"),
+            ("ClCompile", cl_capture_item),
+            ("CudaCompile", cuda_capture_item),
+        ):
+            values = items.get(item_type)
+            if not isinstance(values, list) or any(not isinstance(value, dict) for value in values):
+                raise NativeContractError(
+                    f"Visual Studio MSBuild did not return a valid {result_name} item list."
+                )
+            result_items[result_name] = values
+        return result_items
     except (json.JSONDecodeError, KeyError, TypeError) as exc:
         raise NativeContractError(
             "Visual Studio MSBuild returned an invalid evaluated CUDA contract payload."
         ) from exc
-    if not isinstance(items, dict):
+    except OSError as exc:
         raise NativeContractError(
-            "Visual Studio MSBuild evaluated CUDA contract payload does not contain an item map."
-        )
-    result_items: dict[str, list[dict[str, str]]] = {}
-    for item_type in ("_CudaCompileHostDefinition", "ClCompile", "CudaCompile"):
-        values = items.get(item_type)
-        if not isinstance(values, list) or any(not isinstance(value, dict) for value in values):
+            f"Could not prepare the evaluated CUDA contract probe: {exc}"
+        ) from exc
+    finally:
+        cleanup_errors: list[str] = []
+        for temporary_path in (shadow_path, probe_path):
+            if temporary_path is None:
+                continue
+            try:
+                temporary_path.unlink(missing_ok=True)
+            except OSError as exc:
+                cleanup_errors.append(f"{temporary_path}: {exc}")
+        if cleanup_errors:
             raise NativeContractError(
-                f"Visual Studio MSBuild did not return a valid {item_type} item list."
+                "Could not remove evaluated CUDA contract probe files: "
+                + "; ".join(cleanup_errors)
             )
-        result_items[item_type] = values
-    return result_items
 
 
 def _validate_export_definition(metadata: dict[str, str], context: str, field: str) -> None:
@@ -1731,6 +1862,7 @@ def validate_native_contracts(
     project_path = root / CUDA_PROJECT
     native_project_path = root / CUDA_NATIVE_PROJECT
     tracked_path = root / CUDA_TRACKED_DLL
+    validate_colorvision_core_module_attributes(project_path.parent)
     try:
         header_source = header_path.read_text(encoding="utf-8-sig")
         managed_source = managed_path.read_text(encoding="utf-8-sig")

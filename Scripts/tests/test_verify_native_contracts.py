@@ -50,7 +50,7 @@ class SourceContractTests(unittest.TestCase):
     def test_rejects_non_cdecl_cuda_import(self) -> None:
         source = '''
             private const string LibPath = "opencv_cuda.dll";
-            [DllImport(LibPath, EntryPoint = "CM_Fusion", CallingConvention = CallingConvention.StdCall)]
+            [DllImport(LibPath, EntryPoint = "CM_Fusion", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
             private static extern int CM_FusionNative(string value);
         '''
 
@@ -214,6 +214,24 @@ class SourceContractTests(unittest.TestCase):
 </Project>""",
                 "StructMemberAlignment",
             ),
+            (
+                "late-cuda-host-defines",
+                """<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="MutateBeforeCudaBuild" BeforeTargets="CudaBuild">
+    <ItemGroup><CudaCompile Update="cuda_export.cpp"><UseHostDefines>false</UseHostDefines><Defines>NDEBUG</Defines></CudaCompile></ItemGroup>
+  </Target>
+</Project>""",
+                "UseHostDefines",
+            ),
+            (
+                "late-cl-abi-metadata",
+                """<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="MutateBeforeClCompile" BeforeTargets="ClCompile">
+    <ItemGroup><ClCompile Update="@(ClCompile)"><CallingConvention>StdCall</CallingConvention><StructMemberAlignment>1Byte</StructMemberAlignment></ClCompile></ItemGroup>
+  </Target>
+</Project>""",
+                "CallingConvention",
+            ),
         )
         for name, mutation_target, diagnostic in mutations:
             with self.subTest(name=name), tempfile.TemporaryDirectory(
@@ -225,8 +243,19 @@ class SourceContractTests(unittest.TestCase):
                     evaluation_target=mutation_target,
                 )
                 validate_cuda_native_export_build(project, require_evaluated=False)
+                files_before = {
+                    path.relative_to(directory)
+                    for path in Path(directory).rglob("*")
+                    if path.is_file()
+                }
                 with self.assertRaisesRegex(NativeContractError, diagnostic):
                     validate_cuda_native_export_build(project)
+                files_after = {
+                    path.relative_to(directory)
+                    for path in Path(directory).rglob("*")
+                    if path.is_file()
+                }
+                self.assertEqual(files_before, files_after)
 
     def test_current_release_x64_evaluated_metadata_is_healthy_when_available(self) -> None:
         try:
@@ -332,19 +361,21 @@ class StaticAbiMutationTests(unittest.TestCase):
     def test_rejects_unreviewed_or_malformed_dllimport_named_arguments(self) -> None:
         original = (
             '[DllImport(LibPath, EntryPoint = "M_FreeHImageData", '
-            'CallingConvention = CallingConvention.Cdecl)]'
+            'CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]'
         )
         mutations = (
             (
                 "fully-qualified-charset",
-                original[:-2]
-                + ", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]",
-                "unsupported named argument: CharSet",
+                original.replace(
+                    "CharSet = CharSet.Ansi",
+                    "CharSet = System.Runtime.InteropServices.CharSet.Unicode",
+                ),
+                "must declare exactly CharSet.Ansi",
             ),
             (
                 "numeric-charset-cast",
-                original[:-2] + ", CharSet = (CharSet)3)]",
-                "unsupported named argument: CharSet",
+                original.replace("CharSet = CharSet.Ansi", "CharSet = (CharSet)3"),
+                "must declare exactly CharSet.Ansi",
             ),
             (
                 "preserve-sig-false",
@@ -366,11 +397,32 @@ class StaticAbiMutationTests(unittest.TestCase):
                 original[:-2] + ", CallingConvention = CallingConvention.Cdecl)]",
                 "duplicate named argument: CallingConvention",
             ),
+            (
+                "duplicate-char-set",
+                original[:-2] + ", CharSet = CharSet.Ansi)]",
+                "duplicate named argument: CharSet",
+            ),
         )
         for name, replacement, diagnostic in mutations:
             with self.subTest(name=name):
                 mutated = self._replace_once(self.managed, original, replacement)
                 with self.assertRaisesRegex(NativeContractError, diagnostic):
+                    self._validate(managed=mutated)
+
+    def test_rejects_open_cv_cuda_module_attributes(self) -> None:
+        marker = "using System.Runtime.InteropServices;"
+        mutations = (
+            "[module: DefaultCharSet(CharSet.Unicode)]",
+            "[module: System.Runtime.InteropServices.DefaultCharSet((CharSet)3)]",
+        )
+        for mutation in mutations:
+            with self.subTest(mutation=mutation):
+                mutated = self._replace_once(
+                    self.managed,
+                    marker,
+                    f"{marker}\n{mutation}",
+                )
+                with self.assertRaisesRegex(NativeContractError, "module-level attributes"):
                     self._validate(managed=mutated)
 
     def test_rejects_native_himage_field_order_mutation(self) -> None:
@@ -729,7 +781,8 @@ class StaticAbiMutationTests(unittest.TestCase):
             self._validate(header=header_mutation)
 
         managed_declaration = (
-            '[DllImport(LibPath, EntryPoint = "CM_Fusion", CallingConvention = CallingConvention.Cdecl)]\n'
+            '[DllImport(LibPath, EntryPoint = "CM_Fusion", CallingConvention = CallingConvention.Cdecl, '
+            'CharSet = CharSet.Ansi)]\n'
             '        private static extern int CM_FusionNative(string fusionjson, out HImage hImage);'
         )
         managed_mutation = self._replace_once(
@@ -850,6 +903,35 @@ class RepositoryNativeContractTests(unittest.TestCase):
 
         self.assertEqual(AMD64_MACHINE, read_pe_exports(report.tracked_dll.read_bytes())[0])
         self.assertEqual(10, len(report.exports))
+
+    def test_rejects_cross_file_colorvision_core_module_attribute(self) -> None:
+        fixture_root = self.root / "repository"
+        contract_files = (
+            "Native/include/cuda_export.h",
+            "Native/include/custom_structs.h",
+            "Native/opencv_cuda/cuda_export.cpp",
+            "Native/opencv_cuda/opencv_cuda.vcxproj",
+            "UI/ColorVision.Core/ColorVision.Core.csproj",
+            "UI/ColorVision.Core/HImage.cs",
+            "UI/ColorVision.Core/NativeLogBridge.cs",
+            "UI/ColorVision.Core/OpenCVCuda.cs",
+            "x64/Release/opencv_cuda.dll",
+        )
+        for relative_path in contract_files:
+            destination = fixture_root / relative_path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(REPO_ROOT / relative_path, destination)
+        (fixture_root / "UI/ColorVision.Core/ModuleDefaults.cs").write_text(
+            "using System.Runtime.InteropServices;\n"
+            "[module: DefaultCharSet(CharSet.Unicode)]\n",
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(NativeContractError, "module-level attributes"):
+            validate_native_contracts(
+                fixture_root,
+                require_evaluated_native_build=False,
+            )
 
     def test_accepts_exact_runtime_and_nupkg_bytes(self) -> None:
         tracked_bytes = (REPO_ROOT / CUDA_TRACKED_DLL).read_bytes()

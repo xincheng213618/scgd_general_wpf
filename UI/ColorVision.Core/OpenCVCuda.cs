@@ -9,19 +9,19 @@ namespace ColorVision.Core
         private const string LibPath = "opencv_cuda.dll";
 
 
-        [DllImport(LibPath, EntryPoint = "M_FreeHImageData", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LibPath, EntryPoint = "M_FreeHImageData", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern void M_FreeHImageDataNative(IntPtr data);
 
-        [DllImport(LibPath, EntryPoint = "M_Fusion", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LibPath, EntryPoint = "M_Fusion", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern int M_FusionNative(string fusionjson, out HImage hImage);
 
-        [DllImport(LibPath, EntryPoint = "CM_Fusion", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LibPath, EntryPoint = "CM_Fusion", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern int CM_FusionNative(string fusionjson, out HImage hImage);
 
-        [DllImport(LibPath, EntryPoint = "CM_Fusion_Async", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LibPath, EntryPoint = "CM_Fusion_Async", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern int CM_FusionAsyncNative(string fusionjson, out HImage hImage);
 
-        [DllImport(LibPath, EntryPoint = "CM_Fusion_Batch", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LibPath, EntryPoint = "CM_Fusion_Batch", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern int CM_Fusion_BatchNative(string batchjson, [Out] HImage[] outImages, int outCapacity, out int outCount);
 
         public static void M_FreeHImageData(IntPtr data)
