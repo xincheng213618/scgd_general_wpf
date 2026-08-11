@@ -15,7 +15,7 @@ using System.Windows;
 namespace ColorVision.Engine.Messages
 {
 
-    public class MessagesListManager : ViewModelBase,IDisposable
+    public class MessagesListManager : ViewModelBase, IConfigReloadParticipant, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MessagesListManager));
 
@@ -69,22 +69,19 @@ namespace ColorVision.Engine.Messages
         public MessagesListManager()
             : this(
                 () => ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>(),
-                ConfigService.Instance as IConfigReloadNotifier)
+                registerDatabaseBrowser: true)
         {
         }
 
         internal MessagesListManager(
             Func<MsgRecordManagerConfig> configFactory,
-            IConfigReloadNotifier? reloadNotifier,
             bool registerDatabaseBrowser = true)
         {
             _configOwner = new RuntimeConfigOwner<MsgRecordManagerConfig>(
                 configFactory,
-                reloadNotifier,
                 ex => log.Error("切换消息记录数据库失败，保留上一代运行态", ex));
             string initialDatabasePath = MsgRecordDataBaseHelper.EnsureDatabaseInitialized(_configOwner.Current);
             _activeState = new ActiveDatabaseState(_configOwner.Current, initialDatabasePath, _configOwner.Generation);
-            _configOwner.ConfigurationChanged += ConfigOwner_ConfigurationChanged;
             EditConfigCommand = new RelayCommand(_ => EditConfig());
             MsgRecordsClearCommand = new RelayCommand(_ => MsgRecords.Clear());
             GenericQueryCommand = new RelayCommand(_ => GenericQuery());
@@ -125,6 +122,12 @@ namespace ColorVision.Engine.Messages
 
         internal string CaptureDatabasePath() => Volatile.Read(ref _activeState).DatabasePath;
 
+        internal long CaptureDatabaseGeneration() => Volatile.Read(ref _activeState).Generation;
+
+        public string ConfigReloadName => nameof(MessagesListManager);
+
+        public int ConfigReloadOrder => 100;
+
         internal MessageDatabaseWriteTarget CaptureDatabaseWriteTarget()
         {
             ActiveDatabaseState state = Volatile.Read(ref _activeState);
@@ -141,24 +144,32 @@ namespace ColorVision.Engine.Messages
             return new DatabaseTaskSnapshot(_configOwner.CreateSnapshot(state.Config), state.DatabasePath, state.Generation);
         }
 
-        private void ConfigOwner_ConfigurationChanged(object? sender, RuntimeConfigChangedEventArgs<MsgRecordManagerConfig> e)
+        public void BindCurrentConfig(IConfigService currentConfig)
         {
-            string databasePath = MsgRecordDataBaseHelper.EnsureDatabaseInitialized(e.Current);
-            PreparedDatabaseView prepared = ReadDatabaseView(e.Current, databasePath, e.Current.Count);
+            ArgumentNullException.ThrowIfNull(currentConfig);
+            using PreparedRuntimeConfig<MsgRecordManagerConfig> preparedConfig = _configOwner.PrepareCurrentConfig(currentConfig);
+            string databasePath = MsgRecordDataBaseHelper.EnsureDatabaseInitialized(preparedConfig.Config);
+            PreparedDatabaseView preparedView = ReadDatabaseView(
+                preparedConfig.Config,
+                databasePath,
+                preparedConfig.Config.Count);
 
             void CommitPreparedView()
             {
-                lock (_activeStateLocker)
+                bool committed = _configOwner.Commit(preparedConfig, e =>
                 {
-                    if (e.Generation <= _activeState.Generation)
-                        return;
+                    lock (_activeStateLocker)
+                    {
+                        MsgRecords.Clear();
+                        foreach (MsgRecord row in preparedView.Rows)
+                            MsgRecords.Add(row);
+                        TotalCount = preparedView.TotalCount;
+                        Volatile.Write(ref _activeState, new ActiveDatabaseState(e.Current, databasePath, e.Generation));
+                    }
+                });
 
-                    MsgRecords.Clear();
-                    foreach (MsgRecord row in prepared.Rows)
-                        MsgRecords.Add(row);
-                    TotalCount = prepared.TotalCount;
-                    Volatile.Write(ref _activeState, new ActiveDatabaseState(e.Current, databasePath, e.Generation));
-                }
+                if (!committed)
+                    return;
 
                 OnPropertyChanged(nameof(Config));
                 OnPropertyChanged(nameof(MsgRecords));
@@ -348,7 +359,6 @@ namespace ColorVision.Engine.Messages
         public void Dispose()
         {
             StopListening();
-            _configOwner.ConfigurationChanged -= ConfigOwner_ConfigurationChanged;
             _configOwner.Dispose();
             GC.SuppressFinalize(this);
         }

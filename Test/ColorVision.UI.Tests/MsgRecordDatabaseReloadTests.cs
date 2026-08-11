@@ -1,6 +1,7 @@
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using Microsoft.Data.Sqlite;
+using Newtonsoft.Json.Linq;
 using System.IO;
 
 namespace ColorVision.UI.Tests;
@@ -16,19 +17,16 @@ public sealed class MsgRecordDatabaseReloadTests : IDisposable
         Directory.CreateDirectory(_tempRoot);
         MsgRecordManagerConfig configA = CreateConfig("A");
         MsgRecordManagerConfig configB = CreateConfig("B");
-        var notifier = new TestConfigReloadNotifier();
-        MsgRecordManagerConfig current = configA;
 
         var runningRecord = new MsgRecord();
         MsgRecordDataBaseHelper.Insert(runningRecord, configA);
         Assert.Equal(1, CountRows(configA.SqliteDbPath));
 
-        using var manager = new MessagesListManager(() => current, notifier, registerDatabaseBrowser: false);
+        using var manager = new MessagesListManager(() => configA, registerDatabaseBrowser: false);
         manager.LoadAll();
         Assert.Single(manager.MsgRecords);
 
-        current = configB;
-        notifier.RaiseConfigsReloaded();
+        manager.BindCurrentConfig(new TestConfigService(configB));
 
         Assert.Equal(configB.DirectoryPath, manager.Config.DirectoryPath);
         Assert.Empty(manager.MsgRecords);
@@ -69,17 +67,14 @@ public sealed class MsgRecordDatabaseReloadTests : IDisposable
         string blockedParent = Path.Combine(_tempRoot, "blocked-parent");
         File.WriteAllText(blockedParent, "not a directory");
         var configB = new MsgRecordManagerConfig { DirectoryPath = Path.Combine(blockedParent, "B") };
-        var notifier = new TestConfigReloadNotifier();
-        MsgRecordManagerConfig current = configA;
 
-        using var manager = new MessagesListManager(() => current, notifier, registerDatabaseBrowser: false);
+        using var manager = new MessagesListManager(() => configA, registerDatabaseBrowser: false);
         manager.LoadAll();
         string activePathA = manager.CaptureDatabasePath();
 
-        current = configB;
-        Exception? reloadException = Record.Exception(notifier.RaiseConfigsReloaded);
+        Exception? reloadException = Record.Exception(() => manager.BindCurrentConfig(new TestConfigService(configB)));
 
-        Assert.Null(reloadException);
+        Assert.NotNull(reloadException);
         Assert.Equal(configA.DirectoryPath, manager.Config.DirectoryPath);
         Assert.Equal(Path.GetFullPath(configA.SqliteDbPath), activePathA, ignoreCase: true);
         Assert.Equal(activePathA, manager.CaptureDatabasePath(), ignoreCase: true);
@@ -95,15 +90,12 @@ public sealed class MsgRecordDatabaseReloadTests : IDisposable
         Directory.CreateDirectory(_tempRoot);
         MsgRecordManagerConfig configA = CreateConfig("A-queued");
         MsgRecordManagerConfig configB = CreateConfig("B-queued");
-        var notifier = new TestConfigReloadNotifier();
-        MsgRecordManagerConfig current = configA;
 
-        using var manager = new MessagesListManager(() => current, notifier, registerDatabaseBrowser: false);
+        using var manager = new MessagesListManager(() => configA, registerDatabaseBrowser: false);
         string queuedPath = manager.CaptureDatabasePath();
         Action queuedInsert = MsgRecordDataBaseHelper.CreateInsertAction(new MsgRecord(), queuedPath);
 
-        current = configB;
-        notifier.RaiseConfigsReloaded();
+        manager.BindCurrentConfig(new TestConfigService(configB));
         queuedInsert();
 
         Assert.Equal(Path.GetFullPath(configA.SqliteDbPath), queuedPath, ignoreCase: true);
@@ -120,12 +112,26 @@ public sealed class MsgRecordDatabaseReloadTests : IDisposable
         MsgRecordManagerConfig configA = CreateConfig("A-cycle");
         MsgRecordManagerConfig configB = CreateConfig("B-cycle");
         MsgRecordManagerConfig reloadedA = CreateConfig("A-cycle");
-        var notifier = new TestConfigReloadNotifier();
-        MsgRecordManagerConfig current = configA;
+        string configPath = Path.Combine(_tempRoot, "ColorVisionConfig.json");
+        WriteConfig(configPath, configA);
+        var configHandler = new ConfigHandler
+        {
+            ConfigFilePath = configPath,
+            BackupFolderPath = Path.Combine(_tempRoot, "Backup"),
+            ConfigDIFileName = "MsgReload",
+            IsAutoSave = false,
+        };
+        Directory.CreateDirectory(configHandler.BackupFolderPath);
+        Assert.True(configHandler.LoadConfigsWithResult().Succeeded);
         using var queuedInsertEntered = new ManualResetEventSlim();
         using var releaseQueuedInsert = new ManualResetEventSlim();
 
-        using var manager = new MessagesListManager(() => current, notifier, registerDatabaseBrowser: false);
+        using var manager = new MessagesListManager(
+            () => configHandler.GetRequiredService<MsgRecordManagerConfig>(),
+            registerDatabaseBrowser: false);
+        ConfigReloadResult initialBind = configHandler.RegisterReloadParticipants(manager);
+        Assert.True(initialBind.Succeeded, initialBind.BuildFailureSummary());
+        Assert.Equal(1, manager.CaptureDatabaseGeneration());
         manager.StartListening();
         Task queuedInsert = MQTTServiceBase.QueueMessageRecordInsert(
             new MsgRecord(),
@@ -138,10 +144,13 @@ public sealed class MsgRecordDatabaseReloadTests : IDisposable
             }));
 
         Assert.True(queuedInsertEntered.Wait(TimeSpan.FromSeconds(5)));
-        current = configB;
-        notifier.RaiseConfigsReloaded();
-        current = reloadedA;
-        notifier.RaiseConfigsReloaded();
+        WriteConfig(configPath, configB);
+        ConfigReloadResult bindB = configHandler.LoadConfigsWithResult();
+        Assert.True(bindB.Succeeded, bindB.BuildFailureSummary());
+        WriteConfig(configPath, reloadedA);
+        ConfigReloadResult bindA = configHandler.LoadConfigsWithResult();
+        Assert.True(bindA.Succeeded, bindA.BuildFailureSummary());
+        Assert.Equal(3, manager.CaptureDatabaseGeneration());
         Assert.Equal(Path.GetFullPath(reloadedA.SqliteDbPath), manager.CaptureDatabasePath(), ignoreCase: true);
         Assert.Empty(manager.MsgRecords);
         Assert.Equal(0, manager.TotalCount);
@@ -154,6 +163,15 @@ public sealed class MsgRecordDatabaseReloadTests : IDisposable
         Assert.Equal(0, CountRows(configB.SqliteDbPath));
         Assert.Empty(manager.MsgRecords);
         Assert.Equal(0, manager.TotalCount);
+    }
+
+    private static void WriteConfig(string path, MsgRecordManagerConfig config)
+    {
+        var root = new JObject
+        {
+            [nameof(MsgRecordManagerConfig)] = JObject.FromObject(config),
+        };
+        File.WriteAllText(path, root.ToString());
     }
 
     private MsgRecordManagerConfig CreateConfig(string name)
@@ -187,10 +205,23 @@ public sealed class MsgRecordDatabaseReloadTests : IDisposable
             Directory.Delete(_tempRoot, recursive: true);
     }
 
-    private sealed class TestConfigReloadNotifier : IConfigReloadNotifier
+    private sealed class TestConfigService : IConfigService
     {
-        public event EventHandler? ConfigsReloaded;
+        private readonly MsgRecordManagerConfig config;
 
-        public void RaiseConfigsReloaded() => ConfigsReloaded?.Invoke(this, EventArgs.Empty);
+        public TestConfigService(MsgRecordManagerConfig config)
+        {
+            this.config = config;
+        }
+
+        public IConfig GetRequiredService(Type type) => type == typeof(MsgRecordManagerConfig)
+            ? config
+            : throw new InvalidOperationException(type.FullName);
+
+        public T GetRequiredService<T>() where T : IConfig => (T)GetRequiredService(typeof(T));
+
+        public void SaveConfigs() { }
+        public void LoadConfigs() { }
+        public void Save<T>() where T : IConfig { }
     }
 }
