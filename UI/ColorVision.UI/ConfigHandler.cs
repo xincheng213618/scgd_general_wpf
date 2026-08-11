@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using System.Windows;
 
 namespace ColorVision.UI
@@ -24,6 +25,12 @@ namespace ColorVision.UI
         private static readonly ILog log = LogManager.GetLogger(typeof(ConfigHandler));
         private static ConfigHandler? _instance;
         private static readonly object _locker = new();
+        private readonly object _reloadExecutionGate = new();
+        private readonly AsyncLocal<long?> _reloadExecutionContext = new();
+        private bool _reloadExecutionActive;
+        private long _activeReloadExecutionId;
+        private long _nextReloadExecutionId;
+        private bool _suppressReloadDispatcher;
 
         public static ConfigHandler GetInstance() => GetInstance(null);
 
@@ -40,10 +47,27 @@ namespace ColorVision.UI
         private static ConfigHandler CreateInstance(string? configDIFileName)
         {
             var instance = new ConfigHandler { ConfigDIFileName = configDIFileName };
-            instance.Load();
+            instance.LoadBeforeSingletonPublication();
             ConfigService.SetInstance(instance);
             AssemblyHandler.GetInstance();
             return instance;
+        }
+
+        private void LoadBeforeSingletonPublication()
+        {
+            // GetInstance still owns _locker here. Marshalling this first load to the UI thread
+            // could invert that lock with a simultaneous UI GetInstance call. No participant or
+            // legacy subscriber can observe this unpublished instance, so keep only this initial
+            // load on its creating thread; every public reload and registration still marshals.
+            _suppressReloadDispatcher = true;
+            try
+            {
+                Load();
+            }
+            finally
+            {
+                _suppressReloadDispatcher = false;
+            }
         }
 
         public string ConfigFilePath { get; set; } = string.Empty;
@@ -55,6 +79,97 @@ namespace ColorVision.UI
 
         public ConfigHandler()
         {
+            ReloadCoordinator = new ConfigReloadCoordinator(this);
+        }
+
+        public ConfigReloadCoordinator ReloadCoordinator { get; }
+
+        public ConfigReloadResult LastReloadResult { get; private set; } = ConfigReloadResult.Empty;
+
+        /// <summary>
+        /// Registers process-lifetime owners and performs their initial bind under the same gate
+        /// used by file reloads, so registration cannot observe a partially installed generation.
+        /// Only references newly registered by this call are bound.
+        /// </summary>
+        public ConfigReloadResult RegisterReloadParticipants(params IConfigReloadParticipant[] participants) =>
+            ExecuteReload(() => ReloadCoordinator.RegisterAndBind(participants));
+
+        /// <summary>
+        /// Reloads from independent callers are queued. A reload requested from a participant or
+        /// legacy callback in the active reload execution is rejected instead of waiting on itself.
+        /// </summary>
+        private T ExecuteReload<T>(Func<T> action)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+
+            ThrowIfReloadIsReentrant();
+            var dispatcher = Application.Current?.Dispatcher;
+            if (!_suppressReloadDispatcher && dispatcher != null && !dispatcher.CheckAccess())
+                return dispatcher.Invoke(() => ExecuteReloadCore(action));
+
+            return ExecuteReloadCore(action);
+        }
+
+        private void ThrowIfReloadIsReentrant()
+        {
+            long? inheritedExecutionId = _reloadExecutionContext.Value;
+            if (!inheritedExecutionId.HasValue)
+                return;
+
+            lock (_reloadExecutionGate)
+            {
+                if (_reloadExecutionActive && inheritedExecutionId == _activeReloadExecutionId)
+                {
+                    throw new InvalidOperationException(
+                        "A configuration reload cannot be started from inside an active configuration reload callback.");
+                }
+            }
+        }
+
+        private T ExecuteReloadCore<T>(Func<T> action)
+        {
+            long? inheritedExecutionId = _reloadExecutionContext.Value;
+            long executionId;
+            lock (_reloadExecutionGate)
+            {
+                if (_reloadExecutionActive && inheritedExecutionId == _activeReloadExecutionId)
+                {
+                    throw new InvalidOperationException(
+                        "A configuration reload cannot be started from inside an active configuration reload callback.");
+                }
+
+                while (_reloadExecutionActive)
+                    Monitor.Wait(_reloadExecutionGate);
+
+                executionId = ++_nextReloadExecutionId;
+                _reloadExecutionActive = true;
+                _activeReloadExecutionId = executionId;
+            }
+
+            _reloadExecutionContext.Value = executionId;
+            try
+            {
+                return action();
+            }
+            finally
+            {
+                _reloadExecutionContext.Value = inheritedExecutionId;
+                lock (_reloadExecutionGate)
+                {
+                    _reloadExecutionActive = false;
+                    _activeReloadExecutionId = 0;
+                    Monitor.PulseAll(_reloadExecutionGate);
+                }
+            }
+        }
+
+        private void ExecuteReload(Action action)
+        {
+            ExecuteReload(() =>
+            {
+                action();
+                return true;
+            });
         }
 
         public void Load()
@@ -131,21 +246,46 @@ namespace ColorVision.UI
 
         public event EventHandler? ConfigsReloaded;
 
-        public void Reload()
+        public void Reload() => ReloadWithResult().ThrowIfFailed();
+
+        public ConfigReloadResult ReloadWithResult()
         {
-            SaveConfigs();
-            LoadConfigs(ConfigFilePath);
+            return ExecuteReload(() =>
+            {
+                try
+                {
+                    SaveConfigs();
+                }
+                catch (Exception ex)
+                {
+                    return SetSourceInstallFailure(
+                        ConfigFilePath,
+                        ConfigSourceReadStatus.NotAttempted,
+                        ex,
+                        "Unable to save the active configuration before reload.");
+                }
+
+                return LoadConfigsCore(ConfigFilePath, allowRecovery: true);
+            });
         }
 
-        public void ReloadFromDisk()
-        {
-            if (!TryReadConfigFile(ConfigFilePath, out JObject loadedJson, ex => log.Warn(ex)))
-                throw new InvalidOperationException($"Unable to reload configuration file '{ConfigFilePath}'.");
+        public void ReloadFromDisk() => ReloadFromDiskWithResult().ThrowIfFailed();
 
-            jsonObject = loadedJson;
-            Configs = new ConcurrentDictionary<Type, IConfig>();
-            Authorization.Instance = GetRequiredService<Authorization>();
-            ConfigsReloaded?.Invoke(this, EventArgs.Empty);
+        public ConfigReloadResult ReloadFromDiskWithResult()
+        {
+            return ExecuteReload(() =>
+            {
+                ConfigSourceReadStatus sourceReadStatus = ReadConfigFile(
+                    ConfigFilePath,
+                    out JObject loadedJson,
+                    out Exception? sourceException);
+                if (sourceReadStatus != ConfigSourceReadStatus.Succeeded)
+                    return SetSourceReadFailure(ConfigFilePath, sourceReadStatus, sourceException);
+
+                InstallConfigDocument(loadedJson);
+                Authorization.Instance = GetRequiredService<Authorization>();
+                return NotifyConfigsReloaded(sourceReadStatus, ConfigRecoveryStatus.NotRequired);
+            });
         }
 
         public void SaveConfigs() => SaveConfigs(ConfigFilePath);
@@ -268,21 +408,48 @@ namespace ColorVision.UI
 
         private static bool TryReadConfigFile(string fileName, out JObject jObject, Action<Exception> logException)
         {
+            ConfigSourceReadStatus status = ReadConfigFile(fileName, out jObject, out Exception? exception);
+            if (exception != null)
+                logException(exception);
+            return status == ConfigSourceReadStatus.Succeeded;
+        }
+
+        private static ConfigSourceReadStatus ReadConfigFile(
+            string fileName,
+            out JObject jObject,
+            out Exception? exception)
+        {
             jObject = new JObject();
+            exception = null;
             if (!File.Exists(fileName))
-                return false;
+            {
+                exception = new FileNotFoundException("The configuration source file does not exist.", fileName);
+                return ConfigSourceReadStatus.Missing;
+            }
 
             try
             {
                 using StreamReader file = File.OpenText(fileName);
-                using JsonTextReader reader = new(file);
-                jObject = JObject.Load(reader);
-                return true;
+                using StrictJsonTextReader reader = new(file);
+                if (!reader.Read())
+                    throw new JsonReaderException("The configuration source is empty.");
+                if (reader.TokenType != JsonToken.StartObject)
+                    throw new JsonReaderException("The configuration source root must be a JSON object.");
+
+                jObject = JObject.Load(
+                    reader,
+                    new JsonLoadSettings
+                    {
+                        DuplicatePropertyNameHandling = DuplicatePropertyNameHandling.Error,
+                    });
+                if (reader.Read())
+                    throw new JsonReaderException("Additional content was found after the root configuration object.");
+                return ConfigSourceReadStatus.Succeeded;
             }
             catch (Exception ex)
             {
-                logException(ex);
-                return false;
+                exception = ex;
+                return ConfigSourceReadStatus.Invalid;
             }
         }
 
@@ -297,35 +464,69 @@ namespace ColorVision.UI
             jObject.WriteTo(writer);
         }
 
-        public void LoadDefaultConfigs()
+        private static void WriteConfigFileAtomically(string fileName, JObject jObject)
+        {
+            string fullPath = Path.GetFullPath(fileName);
+            string directory = Path.GetDirectoryName(fullPath)
+                ?? throw new InvalidOperationException($"Unable to resolve the configuration directory for '{fileName}'.");
+            Directory.CreateDirectory(directory);
+
+            string temporaryPath = Path.Combine(
+                directory,
+                $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
+            try
+            {
+                WriteConfigFile(temporaryPath, jObject);
+                File.Move(temporaryPath, fullPath, overwrite: true);
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(temporaryPath))
+                        File.Delete(temporaryPath);
+                }
+                catch (Exception ex)
+                {
+                    log.Warn($"Unable to remove temporary configuration file '{temporaryPath}'.", ex);
+                }
+            }
+        }
+
+        public void LoadDefaultConfigs() => LoadDefaultConfigsWithResult().ThrowIfFailed();
+
+        public ConfigReloadResult LoadDefaultConfigsWithResult()
+        {
+            return ExecuteReload(() =>
+            {
+                ConfigRecoveryStatus recoveryStatus = LoadRecoveryConfigNoLock();
+                return NotifyConfigsReloaded(ConfigSourceReadStatus.NotAttempted, recoveryStatus);
+            });
+        }
+
+        private ConfigRecoveryStatus LoadRecoveryConfigNoLock()
         {
             try
             {
-                if (TryRestoreLatestBackup())
-                    return;
+                foreach (string backupFile in GetBackupFiles())
+                {
+                    if (!TryReadConfigFile(backupFile, out var backupJson, ex => log.Warn(ex)))
+                        continue;
 
-                LoadDefaultConfigInstances();
+                    InstallConfigDocument(backupJson);
+                    WriteConfigFileAtomically(ConfigFilePath, backupJson);
+                    return ConfigRecoveryStatus.RestoredBackup;
+                }
             }
             catch (Exception ex)
             {
                 log.Error(Properties.Resources.RestoreConfigFileFailed, ex);
             }
-        }
 
-        private bool TryRestoreLatestBackup()
-        {
-            foreach (string backupFile in GetBackupFiles())
-            {
-                if (!TryReadConfigFile(backupFile, out var backupJson, ex => log.Warn(ex)))
-                    continue;
-
-                jsonObject = backupJson;
-                Configs = new ConcurrentDictionary<Type, IConfig>();
-                File.Copy(backupFile, ConfigFilePath, true);
-                return true;
-            }
-
-            return false;
+            jsonObject = new JObject();
+            Configs = new ConcurrentDictionary<Type, IConfig>();
+            LoadDefaultConfigInstances();
+            return ConfigRecoveryStatus.LoadedDefaults;
         }
 
         private void LoadDefaultConfigInstances()
@@ -383,6 +584,23 @@ namespace ColorVision.UI
             }
         }
 
+        private void BackupConfigsForImport()
+        {
+            if (string.IsNullOrWhiteSpace(BackupFolderPath))
+                throw new InvalidOperationException("A configuration backup folder must be configured before import.");
+
+            string backupFileName = $"{ConfigDIFileName}Backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            string backupPath = Path.Combine(BackupFolderPath, backupFileName);
+            JObject backupJson = (JObject)jsonObject.DeepClone();
+            RemoveObsoleteConfigSections(backupJson);
+            JsonSerializer jsonSerializer = JsonSerializer.Create(JsonSerializerSettings);
+            foreach (var configPair in Configs.ToArray())
+                SaveConfig(backupJson, configPair.Key, configPair.Value, jsonSerializer);
+
+            WriteConfigFileAtomically(backupPath, backupJson);
+            CleanupOldBackups();
+        }
+
         private void CleanupOldBackups()
         {
             try
@@ -396,20 +614,170 @@ namespace ColorVision.UI
             }
         }
 
-        public void LoadConfigs() => LoadConfigs(ConfigFilePath);
+        public void LoadConfigs() => LoadConfigsWithResult().ThrowIfFailed();
+
+        public ConfigReloadResult LoadConfigsWithResult() =>
+            ExecuteReload(() => LoadConfigsCore(ConfigFilePath, allowRecovery: true));
         private JObject jsonObject = new JObject();
 
-        public void LoadConfigs(string fileName)
+        public void LoadConfigs(string fileName) => LoadConfigsWithResult(fileName).ThrowIfFailed();
+
+        public ConfigReloadResult LoadConfigsWithResult(string fileName) =>
+            ExecuteReload(() => LoadConfigsCore(fileName, allowRecovery: true));
+
+        /// <summary>
+        /// Requires one complete JSON object and rejects duplicate properties, JSON comments
+        /// (including trailing comments), or any other trailing content before changing the official file.
+        /// Unknown or unmaterialized plugin sections are kept
+        /// as JSON; import deliberately does not instantiate every <see cref="IConfig"/> type as a
+        /// schema-validation side effect. Source recovery never substitutes a backup or defaults
+        /// for an invalid selected file.
+        /// </summary>
+        public ConfigReloadResult ImportConfigsWithResult(string fileName)
         {
-            Configs = new ConcurrentDictionary<Type, IConfig>();
-            jsonObject = new JObject();
+            ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+            return ExecuteReload(() =>
+            {
+                ConfigSourceReadStatus sourceReadStatus = ReadConfigFile(
+                    fileName,
+                    out JObject loadedJson,
+                    out Exception? sourceException);
+                if (sourceReadStatus != ConfigSourceReadStatus.Succeeded)
+                    return SetSourceReadFailure(fileName, sourceReadStatus, sourceException);
 
-            if (TryReadConfigFile(fileName, out var loadedJson, ex => log.Warn(ex)))
-                jsonObject = loadedJson;
+                try
+                {
+                    BackupConfigsForImport();
+                    WriteConfigFileAtomically(ConfigFilePath, loadedJson);
+                }
+                catch (Exception ex)
+                {
+                    return SetSourceInstallFailure(
+                        ConfigFilePath,
+                        sourceReadStatus,
+                        ex,
+                        $"Configuration import source '{fileName}' could not be backed up or installed.");
+                }
+
+                InstallConfigDocument(loadedJson);
+                return NotifyConfigsReloaded(sourceReadStatus, ConfigRecoveryStatus.NotRequired);
+            });
+        }
+
+        private ConfigReloadResult LoadConfigsCore(string fileName, bool allowRecovery)
+        {
+            ConfigSourceReadStatus sourceReadStatus = ReadConfigFile(
+                fileName,
+                out JObject loadedJson,
+                out Exception? sourceException);
+
+            ConfigRecoveryStatus recoveryStatus;
+            if (sourceReadStatus == ConfigSourceReadStatus.Succeeded)
+            {
+                InstallConfigDocument(loadedJson);
+                recoveryStatus = ConfigRecoveryStatus.NotRequired;
+            }
+            else if (allowRecovery)
+            {
+                if (sourceException != null)
+                    log.Warn(sourceException);
+                recoveryStatus = LoadRecoveryConfigNoLock();
+            }
             else
-                LoadDefaultConfigs();
+            {
+                return SetSourceReadFailure(fileName, sourceReadStatus, sourceException);
+            }
 
-            ConfigsReloaded?.Invoke(this, EventArgs.Empty);
+            return NotifyConfigsReloaded(sourceReadStatus, recoveryStatus);
+        }
+
+        private void InstallConfigDocument(JObject loadedJson)
+        {
+            jsonObject = (JObject)loadedJson.DeepClone();
+            Configs = new ConcurrentDictionary<Type, IConfig>();
+        }
+
+        private ConfigReloadResult SetSourceReadFailure(
+            string fileName,
+            ConfigSourceReadStatus sourceReadStatus,
+            Exception? exception)
+        {
+            var failure = new ConfigReloadFailure(
+                ConfigReloadFailureKind.SourceRead,
+                $"Config source '{fileName}'",
+                exception ?? new InvalidOperationException($"Unable to read configuration source '{fileName}'."));
+            LastReloadResult = ConfigReloadResult.FromSource(
+                sourceReadStatus,
+                ConfigRecoveryStatus.NotAttempted,
+                failure);
+            log.Error($"Unable to read configuration source '{fileName}'.", failure.Exception);
+            return LastReloadResult;
+        }
+
+        private ConfigReloadResult SetSourceInstallFailure(
+            string fileName,
+            ConfigSourceReadStatus sourceReadStatus,
+            Exception exception,
+            string message)
+        {
+            var failure = new ConfigReloadFailure(
+                ConfigReloadFailureKind.SourceInstall,
+                $"Config destination '{fileName}'",
+                exception);
+            LastReloadResult = ConfigReloadResult.FromSource(
+                sourceReadStatus,
+                ConfigRecoveryStatus.NotAttempted,
+                failure);
+            log.Error($"{message} Destination: '{fileName}'.", exception);
+            return LastReloadResult;
+        }
+
+        private ConfigReloadResult NotifyConfigsReloaded(
+            ConfigSourceReadStatus sourceReadStatus,
+            ConfigRecoveryStatus recoveryStatus)
+        {
+            ConfigReloadResult result = ReloadCoordinator
+                .BindCurrentConfigs()
+                .WithSourceStatus(sourceReadStatus, recoveryStatus);
+            Delegate[] subscribers = ConfigsReloaded?.GetInvocationList() ?? Array.Empty<Delegate>();
+            var subscriberFailures = new List<ConfigReloadFailure>();
+
+            foreach (EventHandler subscriber in subscribers.Cast<EventHandler>())
+            {
+                try
+                {
+                    subscriber(this, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    string ownerName = subscriber.Method.DeclaringType?.FullName ?? subscriber.Method.Name;
+                    subscriberFailures.Add(new ConfigReloadFailure(
+                        ConfigReloadFailureKind.LegacySubscriber,
+                        $"{ownerName}.{subscriber.Method.Name}",
+                        ex));
+                }
+            }
+
+            LastReloadResult = result.AppendLegacySubscriberResults(subscribers.Length, subscriberFailures);
+            foreach (ConfigReloadFailure failure in LastReloadResult.Failures)
+                log.Error($"Configuration reload failed for '{failure.OwnerName}'.", failure.Exception);
+            return LastReloadResult;
+        }
+
+        private sealed class StrictJsonTextReader : JsonTextReader
+        {
+            public StrictJsonTextReader(TextReader reader)
+                : base(reader)
+            {
+            }
+
+            public override bool Read()
+            {
+                bool hasToken = base.Read();
+                if (hasToken && TokenType == JsonToken.Comment)
+                    throw new JsonReaderException("JSON comments are not valid configuration content.");
+                return hasToken;
+            }
         }
 
         public void Save<T1>() where T1 : IConfig

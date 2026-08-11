@@ -1,6 +1,5 @@
 using ColorVision.Common.Utilities;
 using Microsoft.Win32;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -42,10 +41,27 @@ namespace ColorVision.UI.Desktop.Settings.ExportAndImport
             if (openFileDialog.ShowDialog() == true)
             {
                 var configHandler = ConfigHandler.GetInstance();
-                configHandler.BackupConfigs();
-                File.Copy(openFileDialog.FileName, configHandler.ConfigFilePath, true);
-                configHandler.LoadConfigs();
+                ConfigReloadResult reloadResult = configHandler.ImportConfigsWithResult(openFileDialog.FileName);
+                if (reloadResult.SourceReadStatus != ConfigSourceReadStatus.Succeeded
+                    || reloadResult.Failures.Any(failure => failure.Kind == ConfigReloadFailureKind.SourceInstall))
+                {
+                    MessageBox.Show(
+                        $"配置文件未导入，当前配置保持不变。\n\n{reloadResult.BuildFailureSummary()}",
+                        "ColorVision",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    return;
+                }
+
                 ConfigSettingManager.GetInstance().InvalidateCache();
+                if (!reloadResult.Succeeded)
+                {
+                    MessageBox.Show(
+                        $"配置已导入，但 {reloadResult.Failures.Count} 个运行时组件未能应用新配置。\n\n{reloadResult.BuildFailureSummary()}",
+                        "ColorVision",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
             }
         }
 

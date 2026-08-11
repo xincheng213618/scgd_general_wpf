@@ -1,4 +1,5 @@
 using ColorVision.UI.Authorizations;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
 
@@ -105,7 +106,10 @@ namespace ColorVision.UI.Tests
             FirstConfig loadedConfig = configHandler.GetRequiredService<FirstConfig>();
             File.WriteAllText(configFilePath, "{");
 
-            Assert.Throws<InvalidOperationException>(configHandler.ReloadFromDisk);
+            AggregateException exception = Assert.Throws<AggregateException>(configHandler.ReloadFromDisk);
+            Assert.IsType<JsonReaderException>(Assert.Single(exception.InnerExceptions));
+            Assert.Equal(ConfigSourceReadStatus.Invalid, configHandler.LastReloadResult.SourceReadStatus);
+            Assert.Equal(ConfigRecoveryStatus.NotAttempted, configHandler.LastReloadResult.RecoveryStatus);
             Assert.Same(loadedConfig, configHandler.GetRequiredService<FirstConfig>());
             Assert.Equal("before", loadedConfig.Value);
             Assert.Equal(["before-item"], loadedConfig.Items);
