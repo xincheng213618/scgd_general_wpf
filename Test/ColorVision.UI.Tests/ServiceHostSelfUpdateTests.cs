@@ -45,6 +45,17 @@ namespace ColorVision.UI.Tests
             Assert.Contains("Remove-Item -LiteralPath $scriptPath -Force", script, StringComparison.Ordinal);
             Assert.Contains("Service host restarted after failed self update.", script, StringComparison.Ordinal);
             Assert.Contains("exit $exitCode", script, StringComparison.Ordinal);
+
+            int stopService = script.IndexOf("Stop-Service", StringComparison.Ordinal);
+            int copyPayload = script.IndexOf("Get-ChildItem -LiteralPath $source -Force | Copy-Item", StringComparison.Ordinal);
+            int startService = script.IndexOf("Start-Service", StringComparison.Ordinal);
+            Assert.True(stopService >= 0, "The self-update script must synchronously stop the service.");
+            string stopServiceLine = Assert.Single(
+                script.Split([Environment.NewLine], StringSplitOptions.RemoveEmptyEntries),
+                line => line.Contains("Stop-Service", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain("-NoWait", stopServiceLine, StringComparison.OrdinalIgnoreCase);
+            Assert.True(stopService < copyPayload, "The service must stop before the staged payload is copied.");
+            Assert.True(copyPayload < startService, "The staged payload must be copied before the service restarts.");
         }
 
         [Fact]

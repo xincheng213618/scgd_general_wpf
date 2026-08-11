@@ -33,32 +33,98 @@ internal static class Program
     private static async Task<int> RunConsoleAsync()
     {
         using CancellationTokenSource cts = new();
-        ApplicationUpdateScanProtectionService.Default.Start();
-        Console.CancelKeyPress += (_, e) =>
+        ApplicationUpdateScanProtectionService scanProtection = ApplicationUpdateScanProtectionService.Default;
+        ServiceHostPipeServer? server = null;
+        ConsoleCancelEventHandler cancelHandler = (_, e) =>
         {
             e.Cancel = true;
-            cts.Cancel();
+            ObserveConsoleShutdownFailure(BeginConsoleShutdown(cts, scanProtection));
         };
-
-        ServiceHostLog.Write("Starting console host.");
-        ServiceHostPipeServer server = new(new ServiceHostCommandHandler());
-        Task runTask = server.RunAsync(cts.Token);
-
-        Console.WriteLine("ColorVisionServiceHost is running in console mode.");
-        Console.WriteLine($"Pipe: {ServiceHostConstants.PipeName}");
-        Console.WriteLine("Press Ctrl+C to stop.");
 
         try
         {
+            _ = scanProtection.Start();
+            Console.CancelKeyPress += cancelHandler;
+            ServiceHostLog.Write("Starting console host.");
+            server = new ServiceHostPipeServer(new ServiceHostCommandHandler());
+            Task runTask = server.RunAsync(cts.Token);
+
+            Console.WriteLine("ColorVisionServiceHost is running in console mode.");
+            Console.WriteLine($"Pipe: {ServiceHostConstants.PipeName}");
+            Console.WriteLine("Press Ctrl+C to stop.");
             await runTask.ConfigureAwait(false);
         }
-        catch (OperationCanceledException)
+        finally
         {
+            Console.CancelKeyPress -= cancelHandler;
+            Task scanStopTask = BeginConsoleShutdown(cts, scanProtection);
+            Task serverStopTask = server == null
+                ? Task.CompletedTask
+                : InvokeStop(server.StopAsync);
+            try
+            {
+                await Task.WhenAll(serverStopTask, scanStopTask).ConfigureAwait(false);
+            }
+            finally
+            {
+                try
+                {
+                    server?.Dispose();
+                }
+                finally
+                {
+                    scanProtection.Dispose();
+                }
+            }
         }
 
         ServiceHostLog.Write("Console host stopped.");
-        ApplicationUpdateScanProtectionService.Default.Dispose();
         return 0;
+    }
+
+    internal static Task BeginConsoleShutdown(
+        CancellationTokenSource pipeCancellation,
+        IApplicationUpdateScanProtectionLifetime scanProtection)
+    {
+        ArgumentNullException.ThrowIfNull(pipeCancellation);
+        ArgumentNullException.ThrowIfNull(scanProtection);
+        Task pipeCancellationTask;
+        try
+        {
+            pipeCancellation.Cancel();
+            pipeCancellationTask = Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            pipeCancellationTask = Task.FromException(ex);
+        }
+
+        return Task.WhenAll(
+            pipeCancellationTask,
+            InvokeStop(scanProtection.StopAsync));
+    }
+
+    private static Task InvokeStop(Func<Task> stop)
+    {
+        try
+        {
+            return stop() ?? Task.FromException(
+                new InvalidOperationException("A console shutdown component returned a null task."));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromException(ex);
+        }
+    }
+
+    private static void ObserveConsoleShutdownFailure(Task shutdownTask)
+    {
+        _ = shutdownTask.ContinueWith(
+            static failedTask =>
+                ServiceHostLog.Write($"Console shutdown request failed: {failedTask.Exception!.Flatten()}"),
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.Default);
     }
 
     private static async Task<int> SendCommandAsync(string command)
