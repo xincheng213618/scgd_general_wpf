@@ -7,6 +7,7 @@ from unittest import mock
 from Scripts.build import (
     RemoteUploadSettings,
     ensure_runtime_copy_integrity,
+    get_installer_for_version,
     publish_primary_release,
     validate_installer_runtime_dlls,
     validate_runtime_copy_integrity,
@@ -210,6 +211,39 @@ class PrimaryReleasePublishTests(unittest.TestCase):
 
         self.assertFalse(result)
         uploaded_content.assert_not_called()
+
+
+class InstallerSelectionTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._temp_directory = tempfile.TemporaryDirectory(prefix="build-selection-tests-")
+        self.root = Path(self._temp_directory.name)
+
+    def tearDown(self) -> None:
+        self._temp_directory.cleanup()
+
+    def test_selects_installer_matching_built_file_version_instead_of_highest_version(self) -> None:
+        expected_installer = self.root / "ColorVision-1.2.3.4.exe"
+        expected_installer.write_bytes(b"current build")
+        (self.root / "ColorVision-9.9.9.9.exe").write_bytes(b"stale higher version")
+
+        selected = get_installer_for_version(self.root, "1.2.3.4")
+
+        self.assertEqual(expected_installer, selected)
+
+    def test_rejects_directory_without_installer_matching_built_file_version(self) -> None:
+        (self.root / "ColorVision-9.9.9.9.exe").write_bytes(b"stale higher version")
+
+        selected = get_installer_for_version(self.root, "1.2.3.4")
+
+        self.assertIsNone(selected)
+
+    def test_rejects_ambiguous_installers_for_built_file_version(self) -> None:
+        (self.root / "ColorVision-1.2.3.4.exe").write_bytes(b"exe")
+        (self.root / "ColorVision-1.2.3.4.msi").write_bytes(b"msi")
+
+        selected = get_installer_for_version(self.root, "1.2.3.4")
+
+        self.assertIsNone(selected)
 
 
 if __name__ == "__main__":

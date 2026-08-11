@@ -30,6 +30,7 @@ try:
         validate_service_host_runtime,
     )
     from .generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
+    from .build_update import get_file_version
 except ImportError:
     from backend_client import (
         DEFAULT_CONNECT_TIMEOUT,
@@ -51,6 +52,7 @@ except ImportError:
         validate_service_host_runtime,
     )
     from generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
+    from build_update import get_file_version
 from tqdm import tqdm
 
 VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
@@ -272,9 +274,13 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
     return False
 
 
-def get_latest_file(directory: str | Path) -> Path | None:
+def get_installer_for_version(directory: str | Path, expected_version: str) -> Path | None:
     directory_path = Path(directory)
     if not directory_path.is_dir():
+        return None
+
+    normalized_version = extract_version_from_filename(expected_version)
+    if not normalized_version:
         return None
 
     candidates = [
@@ -282,22 +288,15 @@ def get_latest_file(directory: str | Path) -> Path | None:
         for path in directory_path.iterdir()
         if path.is_file()
         and path.suffix.lower() in INSTALLER_EXTENSIONS
-        and extract_version_from_filename(path.name)
+        and extract_version_from_filename(path.name) == normalized_version
     ]
-    if not candidates:
-        candidates = [path for path in directory_path.iterdir() if path.is_file()]
     if not candidates:
         return None
 
-    if all(extract_version_from_filename(item.name) for item in candidates):
-        return max(
-            candidates,
-            key=lambda item: (
-                version_tuple(extract_version_from_filename(item.name) or "0.0.0.0"),
-                item.stat().st_ctime,
-            ),
-        )
-    return max(candidates, key=lambda item: item.stat().st_ctime)
+    if len(candidates) != 1:
+        return None
+
+    return candidates[0]
 
 
 def extract_version_from_filename(filename: str | Path) -> str | None:
@@ -472,17 +471,32 @@ def main() -> int:
     ):
         return 1
 
-    latest_file = get_latest_file(setup_files_dir)
-    print(setup_files_dir)
-    print(f"latest_file: {latest_file}")
-
-    if not latest_file or not latest_file.exists():
-        print("No installer files found in the directory.")
+    runtime_executable = (
+        project.solution_path.parent
+        / "ColorVision"
+        / "bin"
+        / "x64"
+        / "Release"
+        / "net10.0-windows"
+        / "ColorVision.exe"
+    )
+    built_version = get_file_version(runtime_executable)
+    if not built_version:
+        print(f"Could not read FileVersion from the built executable: {runtime_executable}")
         return 1
 
-    latest_version = extract_version_from_filename(latest_file)
+    latest_version = extract_version_from_filename(built_version)
     if not latest_version:
-        print("Could not extract the version from the filename.")
+        print(f"Built executable has an invalid FileVersion: {built_version!r}")
+        return 1
+
+    latest_file = get_installer_for_version(setup_files_dir, latest_version)
+    print(setup_files_dir)
+    print(f"Built FileVersion: {latest_version}")
+    print(f"installer_file: {latest_file}")
+
+    if not latest_file or not latest_file.exists():
+        print(f"No installer file matches the built FileVersion {latest_version}.")
         return 1
 
     if not publish_primary_release(
