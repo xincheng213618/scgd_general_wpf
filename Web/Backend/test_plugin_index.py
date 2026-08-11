@@ -189,7 +189,8 @@ class PluginIndexTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         items = response.get_json()["items"]
-        self.assertTrue(any(item["pluginId"] == "IndexPlugin" for item in items))
+        indexed = next(item for item in items if item["pluginId"] == "IndexPlugin")
+        self.assertEqual(indexed["latestVersion"], "1.0.0")
 
     def test_api_plugins_falls_back_to_disk_scan_when_index_empty(self):
         self._create_plugin("FallbackPlugin", "1.0.0")
