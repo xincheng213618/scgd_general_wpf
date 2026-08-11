@@ -1,5 +1,8 @@
+using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes.Controls.Uploads;
 using System.Collections.ObjectModel;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -9,6 +12,9 @@ namespace ColorVision.UI.Tests;
 public class UploadMsgLifecycleTests
 {
     private static readonly string[] ThemeResourceKeys = ["GlobalBackground", "ListViewItemBaseStyle", "InputElementBaseStyle"];
+    private static readonly FieldInfo PhyCameraUploadClosedField = typeof(PhyCamera).GetField(
+        nameof(PhyCamera.UploadClosed),
+        BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new InvalidOperationException("PhyCamera.UploadClosed backing field was not found.");
 
     [Fact]
     public void UploadClosed_ClosesWindowAndReleasesPublisherSubscription()
@@ -42,6 +48,84 @@ public class UploadMsgLifecycleTests
         });
     }
 
+    [Fact]
+    public void PhyCameraManualClose_AllowsLaterCompletionWithoutSubscriber()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            var previousResources = CaptureThemeResources();
+            UploadMsg? window = null;
+
+            try
+            {
+                EnsureThemeResources();
+                PhyCamera camera = CreatePhyCameraWithoutRuntimeDependencies();
+                window = new UploadMsg(camera);
+                window.Show();
+                Assert.Equal(1, GetPhyCameraUploadClosedSubscriptionCount(camera));
+
+                window.Close();
+                Assert.Equal(0, GetPhyCameraUploadClosedSubscriptionCount(camera));
+                Assert.False(window.IsVisible);
+                Assert.Null(window.DataContext);
+
+                Assert.Null(Record.Exception(camera.NotifyUploadClosed));
+                Assert.Equal(0, GetPhyCameraUploadClosedSubscriptionCount(camera));
+                Assert.False(window.IsVisible);
+            }
+            finally
+            {
+                if (window?.IsVisible == true)
+                    window.Close();
+
+                RestoreThemeResources(previousResources);
+            }
+        });
+    }
+
+    [Fact]
+    public async Task PhyCameraSuccessNotification_RunsSubscriberOnUiThread()
+    {
+        int uiThreadId = WpfTestHost.Invoke(() => Environment.CurrentManagedThreadId);
+        PhyCamera camera = CreatePhyCameraWithoutRuntimeDependencies();
+        int subscriberThreadId = 0;
+        int notificationCount = 0;
+        camera.UploadClosed += (_, _) =>
+        {
+            subscriberThreadId = Environment.CurrentManagedThreadId;
+            notificationCount++;
+        };
+
+        await Task.Run(camera.NotifyUploadClosed);
+
+        Assert.Equal(1, notificationCount);
+        Assert.Equal(uiThreadId, subscriberThreadId);
+    }
+
+    [Fact]
+    public void PhyCameraFailureNotification_DoesNotReplaceOriginalException()
+    {
+        WpfTestHost.Invoke(() => { });
+        PhyCamera camera = CreatePhyCameraWithoutRuntimeDependencies();
+        var originalException = new InvalidOperationException("original upload failure");
+        camera.UploadClosed += (_, _) => throw new ApplicationException("completion subscriber failed");
+
+        Exception? observedException = Record.Exception((Action)(() =>
+        {
+            try
+            {
+                throw originalException;
+            }
+            catch
+            {
+                camera.NotifyUploadClosed();
+                throw;
+            }
+        }));
+
+        Assert.Same(originalException, observedException);
+    }
+
     private static Dictionary<string, object?> CaptureThemeResources()
     {
         var resources = Application.Current.Resources;
@@ -73,6 +157,12 @@ public class UploadMsgLifecycleTests
                 resources.Remove(key);
         }
     }
+
+    private static PhyCamera CreatePhyCameraWithoutRuntimeDependencies() =>
+        (PhyCamera)RuntimeHelpers.GetUninitializedObject(typeof(PhyCamera));
+
+    private static int GetPhyCameraUploadClosedSubscriptionCount(PhyCamera camera) =>
+        (PhyCameraUploadClosedField.GetValue(camera) as MulticastDelegate)?.GetInvocationList().Length ?? 0;
 
     private sealed class TrackingUploadMsg : IUploadMsg
     {

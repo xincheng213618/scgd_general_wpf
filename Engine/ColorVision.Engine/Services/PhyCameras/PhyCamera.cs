@@ -998,6 +998,38 @@ namespace ColorVision.Engine.Services.PhyCameras
         public event EventHandler UploadClosed;
         public ObservableCollection<FileUploadInfo> UploadList { get; set; } = new ObservableCollection<FileUploadInfo>();
 
+        internal void NotifyUploadClosed()
+        {
+            void RaiseUploadClosed()
+            {
+                try
+                {
+                    UploadClosed?.Invoke(this, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("Failed to notify calibration upload completion.", ex);
+                }
+            }
+
+            try
+            {
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher is null || dispatcher.CheckAccess())
+                {
+                    RaiseUploadClosed();
+                }
+                else if (!dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished)
+                {
+                    dispatcher.Invoke(RaiseUploadClosed);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Failed to dispatch calibration upload completion.", ex);
+            }
+        }
+
         public void UploadData(string DesPath, string UploadFilePath) => _ = UploadDataAsync(DesPath, UploadFilePath);
 
         public async Task UploadDataAsync(string DesPath, string UploadFilePath)
@@ -1021,8 +1053,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, Properties.Resources.CalibrationFileManagement);
-                        UploadClosed?.Invoke(this, EventArgs.Empty);
                     });
+                    NotifyUploadClosed();
                 }
             });
 
@@ -1084,7 +1116,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     Msg = Properties.Resources.ExtractionFailedMessage;
                     MessageBox.Show(Properties.Resources.ExtractionFailedMessage);
                     await Task.Delay(100);
-                    Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                    NotifyUploadClosed();
                     return;
                 }
 
@@ -1333,7 +1365,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     if (!UploadList.Any(a => a.UploadStatus == UploadStatus.Failed))
                     {
                         await Task.Delay(500);
-                        Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                        NotifyUploadClosed();
                     }
                 }
                 catch(Exception ex)
@@ -1344,8 +1376,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                     Application.Current.Dispatcher.Invoke(() => 
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, Properties.Resources.CalibrationFileManagement);
-                        UploadClosed.Invoke(this, new EventArgs());
                     } );
+                    NotifyUploadClosed();
                     return;
                 }
             }
