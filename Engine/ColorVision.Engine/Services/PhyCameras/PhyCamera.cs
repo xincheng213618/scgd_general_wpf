@@ -515,15 +515,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 PhyLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();
 
-                if (CameraLicenseModel.DevCaliId != null)
+                if (CameraLicenseModel.DevCaliId is int calibrationId)
                 {
-                    ServiceManager.GetInstance().DeviceServices.Where(a => a.SysResourceModel.Id == CameraLicenseModel.DevCaliId).ToList().ForEach(a =>
-                    {
-                        if (a is DeviceCalibration deviceCalibration)
-                        {
-                            deviceCalibration.RestartRCService();
-                        }
-                    });
+                    DeviceCalibration? deviceCalibration = ServiceManager.Current?.DeviceServices
+                        .OfType<DeviceCalibration>()
+                        .FirstOrDefault(device => device.SysResourceModel.Id == calibrationId);
+                    deviceCalibration?.RestartRCService();
                 }
             }
         }
@@ -537,15 +534,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 CameraLicenseModel.DevCaliId = deviceCalibration.SysResourceModel.Id;
                 PhyLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();
-                if (CameraLicenseModel.DevCameraId != null)
+                if (CameraLicenseModel.DevCameraId is int cameraId)
                 {
-                    ServiceManager.GetInstance().DeviceServices.Where(a => a.SysResourceModel.Id == CameraLicenseModel.DevCameraId).ToList().ForEach(a =>
-                    {
-                        if (a is DeviceCamera deviceCamera)
-                        {
-                            deviceCamera.RestartRCService();
-                        }
-                    });
+                    DeviceCamera? deviceCamera = ServiceManager.Current?.DeviceServices
+                        .OfType<DeviceCamera>()
+                        .FirstOrDefault(device => device.SysResourceModel.Id == cameraId);
+                    deviceCamera?.RestartRCService();
                 }
             }
         }

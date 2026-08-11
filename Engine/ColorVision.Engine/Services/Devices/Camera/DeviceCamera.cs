@@ -221,13 +221,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (IsDisposed && phyCamera != null) return;
             if (ReferenceEquals(_subscribedPhyCamera, phyCamera)) return;
 
+            // Construction, reload, and disposal all pass through here. Keep persistence and service restarts in Save/Delete.
             if (_subscribedPhyCamera != null)
             {
                 _subscribedPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
                 if (ReferenceEquals(_subscribedPhyCamera.DeviceCamera, this))
-                {
-                    _subscribedPhyCamera.ReleaseDeviceCamera();
-                }
+                    _subscribedPhyCamera.DeviceCamera = null;
             }
 
             _subscribedPhyCamera = phyCamera;
@@ -237,7 +236,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (_subscribedPhyCamera != null)
             {
                 _subscribedPhyCamera.ConfigChanged += PhyCameraConfigChanged;
-                _subscribedPhyCamera.SetDeviceCamera(this);
+                _subscribedPhyCamera.DeviceCamera = this;
             }
         }
 
@@ -281,14 +280,29 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (IsDisposed) return;
 
+            PhyCamera? previousPhyCamera = _subscribedPhyCamera;
             PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
+            if (!ReferenceEquals(previousPhyCamera, PhyCamera))
+                previousPhyCamera?.ReleaseDeviceCamera();
             if (PhyCamera != null)
             {
+                PhyCamera.SetDeviceCamera(this);
                 PhyCamera.Config.ApplyTo(Config);
 
                 OnPropertyChanged(nameof(PhyCamera));
             }
             base.Save();
+        }
+
+        public override void Delete()
+        {
+            PhyCamera? associatedPhyCamera = _subscribedPhyCamera;
+            bool wasDisposed = IsDisposed;
+
+            base.Delete();
+
+            if (!wasDisposed && IsDisposed)
+                associatedPhyCamera?.ReleaseDeviceCamera();
         }
 
         private void FetchLatestTemperature(object a)
