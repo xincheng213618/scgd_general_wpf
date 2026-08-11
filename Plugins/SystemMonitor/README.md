@@ -188,7 +188,7 @@ dotnet build .\Plugins\SystemMonitor\SystemMonitor.csproj -c Release -p:Platform
 
 ### 目标框架
 - 目标框架: `net10.0-windows`
-- 平台支持: x64, ARM64
+- 平台支持: x64（随 ColorVision 宿主交付）
 - WPF 应用程序: 启用
 - 代码签名: 启用 (使用 ColorVision.snk)
 
@@ -446,13 +446,13 @@ public void Dispose()
 ## 13. 兼容性
 
 ### 运行要求
-- **操作系统**: Windows 10/11 x64 或 ARM64
+- **操作系统**: Windows 10/11 x64
 - **.NET 运行时**: .NET 10 Desktop Runtime
 - **权限要求**: 读取系统性能计数器权限
 
 ### 平台支持
 - **x64**: 完全支持
-- **ARM64**: 完全支持
+- **ARM64**: 当前不支持；宿主和 native runtime 尚无 ARM64 发布链
 - **Windows 性能计数器**: 必需
 
 ## 14. 约束与限制

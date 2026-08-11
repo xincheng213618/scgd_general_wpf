@@ -35,7 +35,7 @@ ColorVision 是一个 Windows WPF 视觉检测平台，面向光电检测、设�
 - 当前主线使用 .NET 10 SDK
 - 文档站需要 Node.js 20+
 - 发布、打包和后端脚本需要 Python 3.9+
-- 常规桌面交付以 x64 为主
+- ColorVision 桌面宿主、官方插件和发布包当前仅支持 x64；ARM64 不是受支持的交付目标
 
 运行时依赖的 vendor/native 文件以安装和交付文档为准。
 

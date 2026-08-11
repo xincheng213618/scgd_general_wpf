@@ -20,7 +20,7 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Platforms>x64;ARM64</Platforms>
+    <Platforms>x64</Platforms>
     <PlatformTarget>$(Platform)</PlatformTarget>
     <GenerateDependencyFile>true</GenerateDependencyFile>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

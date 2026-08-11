@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
-	<Platforms>x64;ARM64</Platforms>
+	<!-- 官方插件随 x64 宿主构建和打包；ARM64 尚无完整 native/runtime 发布链。 -->
+	<Platforms>x64</Platforms>
     <PackageTags>ColorVision</PackageTags>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>Recommended</AnalysisMode>

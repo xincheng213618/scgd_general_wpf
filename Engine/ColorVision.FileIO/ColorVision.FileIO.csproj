@@ -9,6 +9,8 @@
 	  <PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 	  <PackageReadmeFile>README.md</PackageReadmeFile>
 	  <Platforms>x64;ARM64;x86;AnyCPU</Platforms>
+	  <!-- 独立纯托管包的显式例外；不表示 ColorVision 宿主支持 ARM64。 -->
+	  <AllowStandaloneArm64Build>true</AllowStandaloneArm64Build>
   </PropertyGroup>
 
 	<ItemGroup>

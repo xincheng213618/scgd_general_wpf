@@ -21,7 +21,7 @@
 ## 开发前确认
 
 - 当前主线是 Windows WPF，目标框架以 `net10.0-windows` 为主。
-- 常规桌面交付以 x64 为主。
+- ColorVision 桌面宿主、官方插件和发布包当前仅支持 x64。
 - 根目录存在 `ColorVision.snk` 时构建会启用强名称签名。
 - 插件和项目包运行时进入主程序输出目录的 `Plugins/<Name>/`。
 - 修改公开行为时，同步更新对应 README 或 `docs/` 页面。
@@ -50,6 +50,24 @@ Scripts\package_project.bat ProjectLUX
 ```powershell
 Scripts\release.bat
 ```
+
+## 平台支持策略
+
+当前支持边界是 Windows x64。`build.sln`、主安装器、全量/增量更新包、官方插件包和
+`runtimes/win-x64/native` 资产均按 x64 验证。ARM64 目前不受支持；不要使用
+`-p:Platform=ARM64` 生成宿主或插件交付物。个别不含本地依赖的纯托管库可以在自身
+项目文件中显式声明更多平台，但这不代表 ColorVision 宿主支持这些平台。
+
+```powershell
+python Scripts\verify_platform_policy.py
+```
+
+真正增加 ARM64 支持必须分阶段完成：
+
+1. 为全部必需的 C++、COM、OpenCV、设备厂商和算法 DLL 提供 ARM64 构建或受支持替代，并完成 ABI 测试；CUDA 能力必须有厂商支持的 Windows ARM64 技术路径，不能用 x64 DLL 代替。
+2. 消除源码、项目引用和复制脚本中的 x64 固定路径，为 NuGet/插件/项目包增加独立的 `win-arm64` 资产。
+3. 增加 ARM64 solution 配置和 CI 交叉编译，并在 Windows ARM64 设备上验证启动、插件加载、图像算法、设备通信和更新回滚。
+4. 生成独立 ARM64 安装器与更新源，验证安装、升级、卸载和包签名后，才能把 ARM64 列为受支持平台。
 
 ## 目录说明
 
