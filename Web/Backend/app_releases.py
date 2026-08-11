@@ -46,6 +46,10 @@ _PLATFORM_LABELS = {
 _logger = logging.getLogger(__name__)
 
 
+def is_app_release_history_bucket(name: str) -> bool:
+    return _APP_RELEASE_HISTORY_BUCKET_RE.fullmatch(str(name or "")) is not None
+
+
 def _format_modified(timestamp: float) -> tuple[str, str, str]:
     dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
     return dt.isoformat(), dt.strftime("%Y-%m-%d %H:%M"), dt.strftime("%Y-%m-%d")
@@ -319,7 +323,7 @@ def scan_app_release_artifacts(
     history_dir = storage / "History"
     if history_dir.is_dir():
         for bucket_dir in history_dir.iterdir():
-            if not bucket_dir.is_dir() or not _APP_RELEASE_HISTORY_BUCKET_RE.match(bucket_dir.name):
+            if not bucket_dir.is_dir() or not is_app_release_history_bucket(bucket_dir.name):
                 continue
             for entry in bucket_dir.rglob("*"):
                 if not entry.is_file():

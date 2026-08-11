@@ -88,7 +88,7 @@ def _refresh_failure_result(
 
 def _scan_release_artifacts(storage: Path) -> list[dict[str, Any]]:
     """Scan storage for release artifacts (current + History/)."""
-    from app_releases import build_release_artifact
+    from app_releases import build_release_artifact, is_app_release_history_bucket
 
     artifacts: list[dict[str, Any]] = []
     if not storage.is_dir():
@@ -104,7 +104,7 @@ def _scan_release_artifacts(storage: Path) -> list[dict[str, Any]]:
     history_dir = storage / "History"
     if history_dir.is_dir():
         for major_dir in history_dir.iterdir():
-            if not major_dir.is_dir():
+            if not major_dir.is_dir() or not is_app_release_history_bucket(major_dir.name):
                 continue
             for branch_dir in major_dir.iterdir():
                 if not branch_dir.is_dir():
@@ -127,7 +127,9 @@ def _release_signature(storage: Path) -> str:
     Uses a two-level directory walk instead of rglob to avoid deep recursion.
     History layout: History/{major.minor}/{major.minor.patch}/file
     """
-    entries: list[tuple[str, int, int]] = []
+    from app_releases import is_app_release_history_bucket
+
+    entries: list[tuple[str, int, int]] = [("release-index-contract-v2", 0, 0)]
     if storage.is_dir():
         for entry in storage.iterdir():
             if entry.is_file():
@@ -139,15 +141,12 @@ def _release_signature(storage: Path) -> str:
     history_dir = storage / "History"
     if history_dir.is_dir():
         try:
-            history_mtime = history_dir.stat().st_mtime_ns
-        except OSError:
-            history_mtime = 0
-        entries.append(("History", 0, history_mtime))
-
-        try:
             with os.scandir(history_dir) as major_entries:
                 for major_entry in major_entries:
-                    if not major_entry.is_dir(follow_symlinks=False):
+                    if (
+                        not major_entry.is_dir(follow_symlinks=False)
+                        or not is_app_release_history_bucket(major_entry.name)
+                    ):
                         continue
                     try:
                         major_stat = major_entry.stat(follow_symlinks=False)

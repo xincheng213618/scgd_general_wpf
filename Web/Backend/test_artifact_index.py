@@ -107,6 +107,38 @@ class ArtifactIndexTests(unittest.TestCase):
         db.close()
         self.assertEqual(len(rows), 2)
 
+    def test_refresh_release_index_ignores_plugin_history(self):
+        app_release = self._create_release("1.0.0.1", in_history=True)
+        plugin_dir = self.storage / "History" / "Plugins" / "Spectrum"
+        plugin_dir.mkdir(parents=True)
+        (plugin_dir / "Spectrum-2.3.3.6.cvxp").write_bytes(b"plugin")
+        (plugin_dir / "ColorVisionPlugin-9.9.9.9.zip").write_bytes(b"plugin")
+
+        from services.artifact_index import refresh_release_index
+        result = refresh_release_index(self.cache, self.storage)
+
+        self.assertEqual(result["indexed_count"], 1)
+        db = self.cache.get_db()
+        rows = db.execute(
+            "SELECT relative_path FROM release_index WHERE is_deleted = 0"
+        ).fetchall()
+        db.close()
+        self.assertEqual(
+            [row["relative_path"] for row in rows],
+            [app_release.relative_to(self.storage).as_posix()],
+        )
+
+    def test_release_signature_ignores_plugin_history(self):
+        self._create_release("1.0.0.1", in_history=True)
+        from services.artifact_index import _release_signature
+
+        before = _release_signature(self.storage)
+        plugin_dir = self.storage / "History" / "Plugins" / "Spectrum"
+        plugin_dir.mkdir(parents=True)
+        (plugin_dir / "Spectrum-2.3.3.6.cvxp").write_bytes(b"plugin")
+
+        self.assertEqual(_release_signature(self.storage), before)
+
     def test_get_releases_from_index_returns_none_when_empty(self):
         from services.artifact_index import get_releases_from_index
         result = get_releases_from_index(self.cache)
