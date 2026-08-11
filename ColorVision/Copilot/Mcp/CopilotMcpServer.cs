@@ -1,5 +1,6 @@
 #pragma warning disable CA1001,CA1861 // The client gate has the same process-wide lifetime as the singleton server.
 using log4net;
+using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot.Mcp
 {
-    internal sealed class CopilotMcpServer : IDisposable
+    internal sealed class CopilotMcpServer : IDisposable, IConfigReloadParticipant
     {
         public const int MaximumConcurrentClients = 16;
         private const int MaxRequestHeaderBytes = 64 * 1024;
@@ -24,14 +25,25 @@ namespace ColorVision.Copilot.Mcp
         private readonly object _syncRoot = new();
         private readonly CopilotMcpRequestHandler _requestHandler;
         private readonly SemaphoreSlim _clientSlots = new(MaximumConcurrentClients, MaximumConcurrentClients);
+        private readonly Func<IPAddress, int, TcpListener> _listenerFactory;
+        private readonly Func<CancellationTokenSource> _cancellationTokenSourceFactory;
         private CancellationTokenSource? _cts;
         private TcpListener? _listener;
         private Task? _acceptLoopTask;
         private CopilotMcpRuntimeSettings _settings = new();
 
         private CopilotMcpServer()
+            : this((address, port) => new TcpListener(address, port))
         {
-            _requestHandler = new CopilotMcpRequestHandler(() => _settings);
+        }
+
+        internal CopilotMcpServer(
+            Func<IPAddress, int, TcpListener> listenerFactory,
+            Func<CancellationTokenSource>? cancellationTokenSourceFactory = null)
+        {
+            _listenerFactory = listenerFactory ?? throw new ArgumentNullException(nameof(listenerFactory));
+            _cancellationTokenSourceFactory = cancellationTokenSourceFactory ?? (() => new CancellationTokenSource());
+            _requestHandler = new CopilotMcpRequestHandler(() => Volatile.Read(ref _settings));
         }
 
         public static CopilotMcpServer Instance => LazyInstance.Value;
@@ -42,51 +54,96 @@ namespace ColorVision.Copilot.Mcp
 
         public string LastStatusMessage { get; private set; } = "ColorVision MCP server is stopped.";
 
+        public string ConfigReloadName => nameof(CopilotMcpServer);
+
+        public int ConfigReloadOrder => 200;
+
         public void ApplyConfig()
         {
-            var config = CopilotConfig.Instance;
-            if (config.EnsureInitialized())
-                ColorVision.UI.ConfigHandler.GetInstance().Save<CopilotConfig>();
+            ApplyCurrentConfig(ConfigHandler.GetInstance(), throwOnStartFailure: false);
+        }
 
-            ApplySettings(new CopilotMcpRuntimeSettings
+        public void BindCurrentConfig(IConfigService currentConfig)
+        {
+            ApplyCurrentConfig(currentConfig, throwOnStartFailure: true);
+        }
+
+        private void ApplyCurrentConfig(IConfigService currentConfig, bool throwOnStartFailure)
+        {
+            ArgumentNullException.ThrowIfNull(currentConfig);
+
+            CopilotMcpRuntimeSettings settings;
+            try
             {
-                Enabled = config.McpEnabled,
-                Host = "127.0.0.1",
-                Port = config.McpPort,
-                BearerToken = config.McpBearerToken,
-            });
+                var config = currentConfig.GetRequiredService<CopilotConfig>();
+                if (config.EnsureInitialized())
+                    currentConfig.Save<CopilotConfig>();
+
+                settings = new CopilotMcpRuntimeSettings
+                {
+                    Enabled = config.McpEnabled,
+                    Host = "127.0.0.1",
+                    Port = config.McpPort,
+                    BearerToken = config.McpBearerToken,
+                };
+            }
+            catch (Exception ex)
+            {
+                const string statusMessage = "ColorVision MCP configuration binding failed; the server was stopped.";
+                lock (_syncRoot)
+                {
+                    Volatile.Write(ref _settings, new CopilotMcpRuntimeSettings());
+                    StopNoLock(statusMessage);
+                }
+                Log.Error(statusMessage, ex);
+                if (throwOnStartFailure)
+                    throw new InvalidOperationException(statusMessage, ex);
+                return;
+            }
+
+            lock (_syncRoot)
+            {
+                ApplySettingsNoLock(settings);
+                if (throwOnStartFailure && settings.Enabled && !IsRunning)
+                    throw new InvalidOperationException(LastStatusMessage);
+            }
         }
 
         public void ApplySettings(CopilotMcpRuntimeSettings settings)
         {
             lock (_syncRoot)
             {
-                var previousPort = _settings.Port;
-                var previousBearerToken = _settings.BearerToken;
-                _settings = settings ?? new CopilotMcpRuntimeSettings();
-
-                if (!_settings.Enabled)
-                {
-                    StopNoLock("ColorVision MCP server is disabled.");
-                    return;
-                }
-
-                if (string.IsNullOrWhiteSpace(_settings.BearerToken))
-                {
-                    StopNoLock("ColorVision MCP server token is missing.");
-                    return;
-                }
-
-                if (IsRunning && _listener != null && previousPort == _settings.Port)
-                {
-                    if (!string.Equals(previousBearerToken, _settings.BearerToken, StringComparison.Ordinal))
-                        _requestHandler.ClearSessions();
-                    LastStatusMessage = $"ColorVision MCP server is running at {_settings.Endpoint}.";
-                    return;
-                }
-
-                StartNoLock();
+                ApplySettingsNoLock(settings);
             }
+        }
+
+        private void ApplySettingsNoLock(CopilotMcpRuntimeSettings? settings)
+        {
+            CopilotMcpRuntimeSettings previousSettings = Volatile.Read(ref _settings);
+            CopilotMcpRuntimeSettings currentSettings = settings ?? new CopilotMcpRuntimeSettings();
+            Volatile.Write(ref _settings, currentSettings);
+
+            if (!currentSettings.Enabled)
+            {
+                StopNoLock("ColorVision MCP server is disabled.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(currentSettings.BearerToken))
+            {
+                StopNoLock("ColorVision MCP server token is missing.");
+                return;
+            }
+
+            if (IsRunning && _listener != null && previousSettings.Port == currentSettings.Port)
+            {
+                if (!string.Equals(previousSettings.BearerToken, currentSettings.BearerToken, StringComparison.Ordinal))
+                    _requestHandler.ClearSessions();
+                LastStatusMessage = $"ColorVision MCP server is running at {currentSettings.Endpoint}.";
+                return;
+            }
+
+            StartNoLock(currentSettings);
         }
 
         public void Stop()
@@ -97,24 +154,25 @@ namespace ColorVision.Copilot.Mcp
             }
         }
 
-        private void StartNoLock()
+        private void StartNoLock(CopilotMcpRuntimeSettings settings)
         {
             StopNoLock("Restarting ColorVision MCP server.");
 
             try
             {
-                _cts = new CancellationTokenSource();
-                _listener = new TcpListener(IPAddress.Loopback, _settings.Port);
+                _cts = _cancellationTokenSourceFactory()
+                    ?? throw new InvalidOperationException("The cancellation-token-source factory returned null.");
+                _listener = _listenerFactory(IPAddress.Loopback, settings.Port);
                 _listener.Start();
                 IsRunning = true;
-                LastStatusMessage = $"ColorVision MCP server is running at {_settings.Endpoint}.";
+                LastStatusMessage = $"ColorVision MCP server is running at {settings.Endpoint}.";
                 Log.Info(LastStatusMessage);
                 _acceptLoopTask = Task.Run(() => AcceptLoopAsync(_cts.Token));
             }
             catch (SocketException ex)
             {
                 IsRunning = false;
-                LastStatusMessage = $"ColorVision MCP server port unavailable at {_settings.Endpoint}: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}";
+                LastStatusMessage = $"ColorVision MCP server port unavailable at {settings.Endpoint}: {CopilotUserFacingErrorFormatter.Sanitize(ex.Message)}";
                 Log.Error(LastStatusMessage, ex);
                 StopNoLock(LastStatusMessage);
             }
@@ -132,10 +190,19 @@ namespace ColorVision.Copilot.Mcp
             try
             {
                 _cts?.Cancel();
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("ColorVision MCP failed to cancel active work; listener shutdown will continue.", ex);
+            }
+
+            try
+            {
                 _listener?.Stop();
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Warn("ColorVision MCP failed to stop its listener.", ex);
             }
             finally
             {
