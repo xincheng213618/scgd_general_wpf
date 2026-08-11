@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1863,CS8601,CS8604
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Logging;
 using ColorVision.Engine.Messages;
@@ -18,6 +19,7 @@ using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
 using cvColorVision;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -97,10 +99,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(DeviceSpectrum));
+        private static readonly TimeSpan FeatureOperationTimeout = TimeSpan.FromSeconds(35);
         private const int CalibrationRestartDebounceMilliseconds = 1000;
         private const int CalibrationRestartCooldownMilliseconds = 4000;
         private readonly object calibrationRestartSync = new object();
         private readonly SemaphoreSlim calibrationRestartGate = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim featureExecutionGate = new SemaphoreSlim(1, 1);
         private CancellationTokenSource? calibrationRestartCts;
 
         public MQTTSpectrum DService { get; set; }
@@ -188,6 +193,304 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             OpenSpectrumLogCommand = new RelayCommand(a => OpenSpectrumLog());
             ContextMenu.Items.Add(new MenuItem() { Header = "SpectrumLog", Command = OpenSpectrumLogCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "CalibrationGroup", Command = OpenCalibrationGroupWindowCommand });
+        }
+
+        public async Task ExecuteFeatureAsync(
+            ISpectrometerFeatureProvider provider,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(provider);
+
+            bool entered;
+            try
+            {
+                entered = await featureExecutionGate.WaitAsync(0, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            if (!entered)
+            {
+                ShowFeatureMessage("光谱仪扩展功能正在执行，请稍候。", MessageBoxImage.Information);
+                return;
+            }
+
+            SpectrometerFeatureResult? result = null;
+            string? errorMessage = null;
+            string featureName = provider.GetType().Name;
+            bool showCompletionMessage = true;
+
+            try
+            {
+                SpectrometerFeatureMetadata metadata = provider.Metadata;
+                featureName = string.IsNullOrWhiteSpace(metadata.DisplayName) ? featureName : metadata.DisplayName;
+                showCompletionMessage = metadata.ShowCompletionMessage;
+                SpectrometerConfigurationSnapshot snapshot = CreateFeatureConfigurationSnapshot();
+                bool canExecuteProvider = true;
+
+                if (metadata.RequiresExclusiveDeviceAccess)
+                {
+                    DeviceStatusType originalStatus = DService.DeviceStatus;
+                    if (originalStatus == DeviceStatusType.Closing)
+                    {
+                        if (!await WaitForLegacyServiceReleasedAsync(cancellationToken))
+                        {
+                            errorMessage = $"等待服务释放光谱仪超时（{FeatureOperationTimeout.TotalSeconds:0} 秒），请稍后重试。";
+                            canExecuteProvider = false;
+                        }
+                    }
+                    else if (originalStatus is DeviceStatusType.Opening or DeviceStatusType.Busy)
+                    {
+                        errorMessage = "光谱仪服务正在连接或测量，请等待当前操作完成后重试。";
+                        canExecuteProvider = false;
+                    }
+                    else if (!IsConnectedLegacyStatus(originalStatus) && !IsDisconnectedLegacyStatus(originalStatus))
+                    {
+                        errorMessage = $"光谱仪服务当前状态为“{originalStatus.ToDescription()}”，暂时不能安全切换到插件直连。";
+                        canExecuteProvider = false;
+                    }
+
+                    bool isContinuousMeasurement = originalStatus == DeviceStatusType.SP_Continuous_Mode;
+
+                    if (canExecuteProvider && isContinuousMeasurement)
+                    {
+                        errorMessage = await ExecuteLegacyCommandAsync(
+                            DService.GetDataAutoStop,
+                            "停止连续测量",
+                            CancellationToken.None);
+                        canExecuteProvider = errorMessage == null;
+                    }
+
+                    if (canExecuteProvider && IsConnectedLegacyStatus(originalStatus))
+                    {
+                        errorMessage = await ExecuteLegacyCommandAsync(
+                            DService.Close,
+                            "关闭光谱仪",
+                            CancellationToken.None);
+                        canExecuteProvider = errorMessage == null;
+
+                        if (canExecuteProvider && !await WaitForLegacyServiceReleasedAsync(CancellationToken.None))
+                        {
+                            errorMessage = $"服务已响应关闭命令，但等待光谱仪释放超时（{FeatureOperationTimeout.TotalSeconds:0} 秒），请稍后重试。";
+                            canExecuteProvider = false;
+                        }
+                    }
+                }
+
+                if (canExecuteProvider)
+                {
+                    result = await provider.ExecuteAsync(snapshot, cancellationToken);
+                    if (result == null)
+                    {
+                        errorMessage = $"“{featureName}”未返回执行结果。";
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                result = SpectrometerFeatureResult.Cancel("操作已取消。", Config.ActiveCalibrationGroupName);
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Spectrometer feature '{featureName}' failed.", ex);
+                errorMessage = $"执行“{featureName}”时发生错误：{ex.Message}";
+            }
+            finally
+            {
+                featureExecutionGate.Release();
+            }
+
+            if (showCompletionMessage || !string.IsNullOrWhiteSpace(errorMessage) || result?.Status == SpectrometerFeatureStatus.Failed)
+                ShowFeatureOutcome(featureName, result, errorMessage);
+        }
+
+        internal SpectrometerConfigurationSnapshot CreateFeatureConfigurationSnapshot()
+        {
+            Config.EnsureCalibrationGroups();
+            bool isComPort = int.TryParse(Config.ComPort, out int comPort) && comPort > 0;
+            string sourceBaseDirectory = ResolveSpectrumSourceBaseDirectory();
+
+            return new SpectrometerConfigurationSnapshot
+            {
+                ContractVersion = 1,
+                DeviceCode = Config.Code ?? string.Empty,
+                SerialNumber = Config.SN ?? string.Empty,
+                SpectrometerType = MapSpectrometerType(Config.SpectrometerType),
+                IsComPort = isComPort,
+                ComPortName = string.IsNullOrWhiteSpace(Config.ComPortView) ? string.Empty : Config.ComPortView,
+                BaudRate = Config.BaudRate,
+                IntegrationTime = (float)DisplayConfig.IntTime,
+                Average = DisplayConfig.AveNum,
+                ActiveCalibrationGroupName = Config.ActiveCalibrationGroupName ?? string.Empty,
+                SourceBaseDirectory = sourceBaseDirectory,
+                CalibrationGroups = Config.CalibrationGroups.Select(group => new SpectrometerCalibrationGroupSnapshot(
+                    group.GroupName ?? string.Empty,
+                    group.WavelengthFile ?? string.Empty,
+                    group.MaguideFile ?? string.Empty,
+                    group.NDHoleIndex)).ToArray(),
+            };
+        }
+
+        private static cvColorVision.SpectrometerType MapSpectrometerType(Configs.SpectrometerType type)
+        {
+            return type switch
+            {
+                Configs.SpectrometerType.CMvSpectra => cvColorVision.SpectrometerType.CMvSpectra,
+                Configs.SpectrometerType.LightModule => cvColorVision.SpectrometerType.LightModule,
+                Configs.SpectrometerType.Gaolitong => cvColorVision.SpectrometerType.Gaolitong,
+                _ => throw new NotSupportedException($"Unsupported spectrometer type: {type}"),
+            };
+        }
+
+        private static string ResolveSpectrumSourceBaseDirectory()
+        {
+            try
+            {
+                string? servicePath = ServiceConfig.Instance.CVMainService_x64;
+                string? serviceDirectory = string.IsNullOrWhiteSpace(servicePath)
+                    ? null
+                    : Path.GetDirectoryName(servicePath);
+                return string.IsNullOrWhiteSpace(serviceDirectory)
+                    ? string.Empty
+                    : Path.Combine(serviceDirectory, "plugin", "Spectrum");
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Unable to resolve the Spectrum service plugin directory.", ex);
+                return string.Empty;
+            }
+        }
+
+        private static async Task<string?> ExecuteLegacyCommandAsync(
+            Func<MsgRecord> sendCommand,
+            string operationName,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                MsgRecord msgRecord = sendCommand();
+                MsgRecordState state = await ScheduledDeviceJobHelper.WaitForTerminalStateAsync(
+                    msgRecord,
+                    FeatureOperationTimeout,
+                    cancellationToken);
+                if (state == MsgRecordState.Success)
+                    return null;
+
+                string? detail = msgRecord.MsgReturn?.Message;
+                return string.IsNullOrWhiteSpace(detail)
+                    ? $"{operationName}失败（{state}）。"
+                    : $"{operationName}失败：{detail}";
+            }
+            catch (TimeoutException)
+            {
+                return $"{operationName}超时（{FeatureOperationTimeout.TotalSeconds:0} 秒）。";
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Legacy Spectrum command '{operationName}' failed.", ex);
+                return $"{operationName}失败：{ex.Message}";
+            }
+        }
+
+        private async Task<bool> WaitForLegacyServiceReleasedAsync(CancellationToken cancellationToken)
+        {
+            if (DService.DeviceStatus == DeviceStatusType.Closed || IsUnavailableLegacyStatus(DService.DeviceStatus))
+                return true;
+
+            var completion = new TaskCompletionSource<DeviceStatusType>(TaskCreationOptions.RunContinuationsAsynchronously);
+            EventHandler<DeviceStatusType>? statusChanged = null;
+            statusChanged = (_, status) =>
+            {
+                if (status == DeviceStatusType.Closed || IsUnavailableLegacyStatus(status))
+                    completion.TrySetResult(status);
+            };
+
+            DService.DeviceStatusChanged += statusChanged;
+            try
+            {
+                statusChanged(DService, DService.DeviceStatus);
+                DeviceStatusType status = await completion.Task.WaitAsync(FeatureOperationTimeout, cancellationToken);
+                return status == DeviceStatusType.Closed || IsUnavailableLegacyStatus(status);
+            }
+            catch (TimeoutException)
+            {
+                return false;
+            }
+            finally
+            {
+                DService.DeviceStatusChanged -= statusChanged;
+            }
+        }
+
+        private static bool IsUnavailableLegacyStatus(DeviceStatusType status)
+        {
+            return status is DeviceStatusType.Unknown or DeviceStatusType.Unauthorized or DeviceStatusType.OffLine;
+        }
+
+        private static bool IsDisconnectedLegacyStatus(DeviceStatusType status)
+        {
+            return status is DeviceStatusType.Closed or DeviceStatusType.UnInit || IsUnavailableLegacyStatus(status);
+        }
+
+        private static bool IsConnectedLegacyStatus(DeviceStatusType status)
+        {
+            return status is DeviceStatusType.Opened
+                or DeviceStatusType.Free
+                or DeviceStatusType.LiveOpened
+                or DeviceStatusType.SP_Continuous_Mode;
+        }
+
+        private static void ShowFeatureOutcome(
+            string featureName,
+            SpectrometerFeatureResult? result,
+            string? errorMessage)
+        {
+            string message;
+            MessageBoxImage image;
+            if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                message = errorMessage;
+                image = MessageBoxImage.Error;
+            }
+            else if (result?.Status == SpectrometerFeatureStatus.Succeeded)
+            {
+                message = string.IsNullOrWhiteSpace(result.Message)
+                    ? string.IsNullOrWhiteSpace(result.GeneratedMagnitudeFile)
+                        ? $"“{featureName}”执行完成。"
+                        : $"“{featureName}”执行完成，已生成幅值标定文件：\n{result.GeneratedMagnitudeFile}"
+                    : result.Message;
+                image = MessageBoxImage.Information;
+            }
+            else if (result?.Status == SpectrometerFeatureStatus.Cancelled)
+            {
+                message = string.IsNullOrWhiteSpace(result.Message) ? "操作已取消。" : result.Message;
+                image = MessageBoxImage.Information;
+            }
+            else
+            {
+                message = string.IsNullOrWhiteSpace(result?.Message)
+                    ? $"“{featureName}”执行失败。"
+                    : result.Message;
+                image = MessageBoxImage.Error;
+            }
+
+            ShowFeatureMessage(message, image);
+        }
+
+        private static void ShowFeatureMessage(string message, MessageBoxImage image)
+        {
+            MessageBox.Show(
+                Application.Current.GetActiveWindow(),
+                message,
+                "ColorVision",
+                MessageBoxButton.OK,
+                image);
         }
 
         [CommandDisplay("SpectrumLog")]
