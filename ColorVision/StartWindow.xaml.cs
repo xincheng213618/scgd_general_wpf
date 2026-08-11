@@ -280,6 +280,7 @@ namespace ColorVision
 
             foreach (var initializer in _IComponentInitializers)
             {
+                StartupRegistryChecker.MarkStage("StartupInitializer", initializer.Name);
                 double stepWeight = GetStartupStepWeight(initializer);
                 UpdateStartupProgress(completedWeight, initializerRunning: true, runningWeight: stepWeight);
                 stopwatch.Restart();
@@ -302,6 +303,7 @@ namespace ColorVision
                 await YieldToUiIfDueAsync();
 
             }
+            StartupRegistryChecker.MarkStage("StartupInitializersCompleted");
             SaveStartupProgressProfile();
             await CompleteStartupProgressAsync();
         }
@@ -379,13 +381,15 @@ namespace ColorVision
                     List<IFeatureLauncher> IFeatureLaunchers = AssemblyHandler.GetInstance().LoadImplementations<IFeatureLauncher>();
                     if (IFeatureLaunchers.Find(a => a.Header == feature) is IFeatureLauncher project1)
                     {
-                        StartupRegistryChecker.Clear();
+                        StartupRegistryChecker.MarkStage("FeatureLauncher", project1.GetType().FullName);
                         project1.Execute();
+                        StartupRegistryChecker.Clear();
                     }
                     else if (IFeatureLaunchers.Find(a => a.GetType().ToString().contains(feature)) is IFeatureLauncher project2)
                     {
-                        StartupRegistryChecker.Clear();
+                        StartupRegistryChecker.MarkStage("FeatureLauncher", project2.GetType().FullName);
                         project2.Execute();
+                        StartupRegistryChecker.Clear();
                     }
                     else
                     {

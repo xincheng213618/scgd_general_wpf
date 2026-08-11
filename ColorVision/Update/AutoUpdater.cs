@@ -395,7 +395,8 @@ namespace ColorVision.Update
             string? cachedInstaller = GetCachedFullInstallerPath(version);
             if (cachedInstaller != null)
             {
-                StartDownloadedFullInstaller(cachedInstaller);
+                if (!StartDownloadedFullInstaller(cachedInstaller))
+                    downloadFailedAction?.Invoke();
                 return;
             }
 
@@ -428,13 +429,15 @@ namespace ColorVision.Update
                         return;
                     }
 
-                    UpdateIncrementalApplications(packagePaths);
+                    if (!UpdateIncrementalApplications(packagePaths))
+                        PostToUiThread(() => downloadFailedAction?.Invoke());
                     return;
                 }
 
                 if (packagePaths.Count == 1)
                 {
-                    StartDownloadedFullInstaller(packagePaths[0]);
+                    if (!StartDownloadedFullInstaller(packagePaths[0]))
+                        PostToUiThread(() => downloadFailedAction?.Invoke());
                     return;
                 }
 
@@ -628,10 +631,15 @@ namespace ColorVision.Update
             return availablePackageCount != expectedPackageCount;
         }
 
-        private static void UpdateIncrementalApplications(IReadOnlyList<string> downloadPaths)
+        private static bool UpdateIncrementalApplications(IReadOnlyList<string> downloadPaths)
         {
             ConfigHandler.GetInstance().SaveConfigs();
-            RestartIsIncrementApplication(downloadPaths, null);
+            return TryStartIncrementalApplicationUpdate(
+                downloadPaths,
+                pluginDownloadPaths: null,
+                restartApplication: true,
+                allowElevationFallback: true,
+                showErrors: true);
         }
 
         private static List<Version> BuildIncrementalUpdateChain(Version currentVersion, Version latestVersion)
@@ -852,10 +860,19 @@ namespace ColorVision.Update
             }
         }
 
-        private static void StartDownloadedFullInstaller(string downloadPath)
+        private static bool StartDownloadedFullInstaller(string downloadPath)
         {
-            ConfigHandler.GetInstance().SaveConfigs();
-            RestartApplication(downloadPath);
+            try
+            {
+                ConfigHandler.GetInstance().SaveConfigs();
+                return TryRestartApplication(downloadPath, showError: true);
+            }
+            catch (Exception ex)
+            {
+                log.Error("Failed to prepare the downloaded full installer.", ex);
+                MessageBox.Show(ex.Message);
+                return false;
+            }
         }
 
         public static void RestartIsIncrementApplication(IEnumerable<string> downloadPaths, IEnumerable<string>? pluginDownloadPaths)
@@ -878,6 +895,7 @@ namespace ColorVision.Update
             string? tempRoot = null;
             ExitUpdateHandoffState? handoffState = null;
             string? scanProtectionId = null;
+            bool handoffStarted = false;
             try
             {
                 List<string> applicationPackagePaths = downloadPaths?
@@ -905,6 +923,8 @@ namespace ColorVision.Update
 
                 string stageDirectory = Path.Combine(tempRoot, "ColorVision");
                 Directory.CreateDirectory(stageDirectory);
+                string manifestPluginStageDirectory = Path.Combine(tempRoot, "ManifestPlugins");
+                string manifestPluginPackageStageDirectory = Path.Combine(tempRoot, "ManifestPluginPackages");
 
                 bool hasAnyPackage = false;
                 foreach (string downloadPath in applicationPackagePaths)
@@ -916,14 +936,36 @@ namespace ColorVision.Update
                 if (pluginPackagePaths.Count > 0)
                 {
                     string pluginsDirectory = Path.Combine(stageDirectory, "Plugins");
-                    PluginUpdater.StagePluginPackages(pluginPackagePaths, pluginsDirectory, Path.Combine(tempRoot, "Packages"));
+                    PluginUpdater.StagePluginPackagesForUpdate(
+                        pluginPackagePaths,
+                        manifestPluginPackageStageDirectory,
+                        pluginsDirectory,
+                        Path.Combine(tempRoot, "Packages"));
                     hasAnyPackage = true;
                 }
 
                 if (!hasAnyPackage)
                     throw new InvalidOperationException("Unable to locate incremental update package.");
 
-                int skippedShellExtensionFiles = RemoveShellExtensionFilesFromUpdateStage(stageDirectory);
+                // Application incremental packages contain only changed files. Build complete
+                // manifest-plugin directories in an isolated transaction stage, using the installed
+                // directory as the base and any full cvxp package as the final authoritative source.
+                string stagedPluginsDirectory = Path.Combine(stageDirectory, "Plugins");
+                string installedPluginsDirectory = Path.Combine(programDirectory, "Plugins");
+                IReadOnlyList<string> manifestPluginIds = PluginUpdater.PrepareCombinedManifestPluginDirectoriesForTransaction(
+                    stagedPluginsDirectory,
+                    manifestPluginPackageStageDirectory,
+                    installedPluginsDirectory,
+                    manifestPluginStageDirectory);
+                foreach (string pluginId in manifestPluginIds)
+                {
+                    if (!PluginUpdater.TryGetPluginTargetDirectory(installedPluginsDirectory, pluginId, out string targetPluginDirectory))
+                        throw new InvalidDataException($"Plugin manifest id '{pluginId}' does not resolve inside the installation Plugins directory.");
+                    PluginRecoveryBackupService.Instance.CreateVerifiedBackup(pluginId, targetPluginDirectory);
+                }
+
+                int skippedShellExtensionFiles = RemoveShellExtensionFilesFromUpdateStage(stageDirectory)
+                    + RemoveShellExtensionFilesFromUpdateStage(manifestPluginStageDirectory);
                 if (skippedShellExtensionFiles > 0)
                 {
                     log.Info($"Skipped {skippedShellExtensionFiles} shell extension file(s) during incremental update.");
@@ -972,35 +1014,56 @@ namespace ColorVision.Update
                 if (!canUpdateWithoutElevation && allowElevationFallback)
                 {
                     startInfo.Verb = "runas"; // 请求管理员权限
-                    startInfo.WindowStyle = ProcessWindowStyle.Normal;
                 }
                 try
                 {
                     using Process updateProcess = ExitUpdateHandoff.Start(handoffState, startInfo);
+                    handoffStarted = true;
                     if (restartApplication)
-                        ApplicationUpdateShutdown.Request();
+                    {
+                        try
+                        {
+                            ApplicationUpdateShutdown.Request();
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("Incremental updater started, but application shutdown could not be requested. The handoff remains active.", ex);
+                        }
+                    }
                     return true;
                 }
                 catch (Exception ex)
                 {
-                    log.Error("Failed to start incremental update batch.", ex);
+                    if (!handoffStarted)
+                    {
+                        log.Error("Failed to start incremental update batch.", ex);
+                        if (showErrors)
+                            MessageBox.Show(ex.Message);
+                        ApplicationUpdateScanProtection.TryComplete(scanProtectionId);
+                        ExitUpdateHandoff.Clear(handoffState);
+                        TryDeleteUpdateStage(tempRoot);
+                        return false;
+                    }
+
+                    log.Error("Incremental update handoff is active; updater staging and marker were preserved.", ex);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (!handoffStarted)
+                {
+                    log.Error("Failed to prepare incremental update.", ex);
                     if (showErrors)
-                        MessageBox.Show(ex.Message);
+                        MessageBox.Show(ColorVision.Properties.Resources.UpdateFailed+$": {ex.Message}");
                     ApplicationUpdateScanProtection.TryComplete(scanProtectionId);
                     ExitUpdateHandoff.Clear(handoffState);
                     TryDeleteUpdateStage(tempRoot);
                     return false;
                 }
-            }
-            catch (Exception ex)
-            {
-                log.Error("Failed to prepare incremental update.", ex);
-                if (showErrors)
-                    MessageBox.Show(ColorVision.Properties.Resources.UpdateFailed+$": {ex.Message}");
-                ApplicationUpdateScanProtection.TryComplete(scanProtectionId);
-                ExitUpdateHandoff.Clear(handoffState);
-                TryDeleteUpdateStage(tempRoot);
-                return false;
+
+                log.Error("Incremental update handoff is active; updater staging and marker were preserved.", ex);
+                return true;
             }
         }
 
@@ -1080,6 +1143,11 @@ namespace ColorVision.Update
             sb.AppendLine();
             sb.AppendLine("call :copy_application_files");
             sb.AppendLine("if errorlevel 1 goto fail");
+            PluginUpdater.AppendPreparedManifestDirectoryTransaction(
+                sb,
+                Path.Combine(cleanupDirectory, "ManifestPlugins"),
+                Path.Combine(programDirectory, "Plugins"),
+                failureLabel: "fail");
             sb.AppendLine("call :repair_service_host");
             sb.AppendLine("goto success");
             sb.AppendLine();
@@ -1191,6 +1259,11 @@ namespace ColorVision.Update
 
         public static void RestartApplication(string downloadPath)
         {
+            _ = TryRestartApplication(downloadPath, showError: true);
+        }
+
+        private static bool TryRestartApplication(string downloadPath, bool showError)
+        {
             ProcessStartInfo startInfo = new()
             {
                 UseShellExecute = true,
@@ -1202,11 +1275,33 @@ namespace ColorVision.Update
             {
                 ApplicationSnapshotService.Instance.CreateUpdateSnapshotIfEnabled();
                 Process.Start(startInfo);
-                ApplicationUpdateShutdown.Request();
+                try
+                {
+                    StartupRegistryChecker.CompleteForRecoveryRestart();
+                }
+                catch (Exception ex)
+                {
+                    // A registry cleanup failure must not strand a successfully launched installer.
+                    log.Warn("Unable to clear the startup recovery marker before launching the full installer.", ex);
+                }
+                try
+                {
+                    ApplicationUpdateShutdown.Request();
+                }
+                catch (Exception ex)
+                {
+                    // The installer is already running. Keep the operation in progress and let the
+                    // user or installer finish closing the application instead of reporting failure.
+                    log.Error("The full installer started, but application shutdown could not be requested.", ex);
+                }
+                return true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                log.Error("Failed to start the full installer.", ex);
+                if (showError)
+                    MessageBox.Show(ex.Message);
+                return false;
             }
         }
 

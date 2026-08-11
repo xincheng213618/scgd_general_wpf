@@ -265,8 +265,6 @@ namespace ColorVision
             InitRightMenuItemPanel();
             log.Info($"Main window right-side menu phase took {phaseStopwatch.ElapsedMilliseconds} ms.");
 
-            StartupRegistryChecker.Clear();
-
             this.AllowDrop = true;
             this.Drop += MainWindow_Drop;
 
@@ -424,6 +422,7 @@ namespace ColorVision
             List<IMainWindowInitialized> initializers = AssemblyHandler.GetInstance().LoadImplementations<IMainWindowInitialized>();
             foreach (var componentInitialize in initializers.OrderBy(a => a.Order))
             {
+                StartupRegistryChecker.MarkStage("MainWindowInitializer", componentInitialize.Name);
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 try
                 {
@@ -439,6 +438,7 @@ namespace ColorVision
                     log.Info($"Main window initializer {componentInitialize.Name} took {stopwatch.ElapsedMilliseconds} ms.");
                 }
             }
+            StartupRegistryChecker.Clear();
         }
 
     }

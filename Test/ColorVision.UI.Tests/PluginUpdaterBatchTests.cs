@@ -57,6 +57,48 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void ManifestUpdateBatchUsesDirectoryTransactionAndRollback()
+        {
+            string updateRoot = Path.Combine(_tempDirectory, "Manifest Update 100%! & Caret^");
+            string batchFilePath = Path.Combine(updateRoot, "update.bat");
+            string baseDirectory = Path.Combine(_tempDirectory, "ColorVision Target 100%! & Caret^");
+            string stagedPluginDirectory = Path.Combine(updateRoot, "ColorVision", "Plugins", "third.party");
+            Directory.CreateDirectory(stagedPluginDirectory);
+            Directory.CreateDirectory(baseDirectory);
+            File.WriteAllText(Path.Combine(stagedPluginDirectory, "manifest.json"), "{}");
+            File.WriteAllText(batchFilePath, string.Empty);
+            ExitUpdateHandoffState handoffState = ExitUpdateHandoff.Prepare(baseDirectory, updateRoot, Path.Combine(_tempDirectory, "ManifestState"));
+
+            try
+            {
+                PluginUpdater.GenerateBatchFile(
+                    batchFilePath,
+                    baseDirectory,
+                    "ColorVision.exe",
+                    Environment.ProcessId,
+                    handoffState,
+                    restartArguments: null,
+                    manifestPluginIds: ["third.party"],
+                    legacyStageDirectory: null);
+            }
+            finally
+            {
+                ExitUpdateHandoff.Clear(handoffState);
+            }
+
+            string batch = File.ReadAllText(batchFilePath, Encoding.GetEncoding(936));
+            Assert.Contains("Preparing 1 manifest plugin directory replacement(s).", batch, StringComparison.Ordinal);
+            Assert.Contains("\\Plugins\\.ColorVisionUpdate-", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("move /y \"%PLUGIN_TARGET_0%\" \"%PLUGIN_ROLLBACK_0%\"", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Plugin directory transaction failed; rolling back switched plugins.", batch, StringComparison.Ordinal);
+            Assert.Contains("persistent recovery backup was preserved", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(PluginUpdater.EscapeForBatchValue(stagedPluginDirectory), batch, StringComparison.Ordinal);
+            Assert.DoesNotContain("robocopy \"%STAGE%\" \"%TARGET%\"", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("/MIR", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("taskkill /f /im", batch, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
         public void PluginDeletionUsesOriginalProcessHandoff()
         {
             string batchFilePath = Path.Combine(_tempDirectory, "delete.bat");
@@ -124,6 +166,8 @@ namespace ColorVision.UI.Tests
             Assert.False(PluginUpdater.TryGetPluginTargetDirectory(pluginsDirectory, @"..\Other", out _));
             Assert.False(PluginUpdater.TryGetPluginTargetDirectory(pluginsDirectory, @"Group\Pattern", out _));
             Assert.False(PluginUpdater.TryGetPluginTargetDirectory(pluginsDirectory, _tempDirectory, out _));
+            Assert.False(PluginUpdater.TryGetPluginTargetDirectory(pluginsDirectory, "Pattern.", out _));
+            Assert.False(PluginUpdater.TryGetPluginTargetDirectory(pluginsDirectory, "Pattern ", out _));
         }
 
         [Fact]
@@ -189,6 +233,134 @@ namespace ColorVision.UI.Tests
                 new[] { firstPackage, secondPackage },
                 Path.Combine(_tempDirectory, "Stage", "Plugins"),
                 Path.Combine(_tempDirectory, "Extract")));
+        }
+
+        [Fact]
+        public void UpdateStagingSeparatesLegacyOverlayFromManifestDirectories()
+        {
+            string manifestPackage = CreatePluginPackage("Manifest", "third.party", wrapped: false);
+            string legacySource = Path.Combine(_tempDirectory, "LegacySource");
+            Directory.CreateDirectory(Path.Combine(legacySource, "LegacyPlugin"));
+            File.WriteAllText(Path.Combine(legacySource, "LegacyPlugin", "Legacy.dll"), "legacy");
+            string legacyPackage = Path.Combine(_tempDirectory, "Legacy.cvxp");
+            ZipFile.CreateFromDirectory(legacySource, legacyPackage);
+
+            string manifestStage = Path.Combine(_tempDirectory, "Stage", "ColorVision", "Plugins");
+            string legacyStage = Path.Combine(_tempDirectory, "Stage", "LegacyOverlay");
+            PluginPackageStagingPlan plan = PluginUpdater.StagePluginPackagesForUpdate(
+                [manifestPackage, legacyPackage],
+                manifestStage,
+                legacyStage,
+                Path.Combine(_tempDirectory, "Stage", "Extract"));
+
+            Assert.Equal(["third.party"], plan.ManifestPluginIds);
+            Assert.True(plan.HasLegacyPackages);
+            Assert.True(File.Exists(Path.Combine(manifestStage, "third.party", "manifest.json")));
+            Assert.False(Directory.Exists(Path.Combine(manifestStage, "LegacyPlugin")));
+            Assert.True(File.Exists(Path.Combine(legacyStage, "LegacyPlugin", "Legacy.dll")));
+        }
+
+        [Fact]
+        public void CombinedUpdateMovesOnlyMatchingManifestDirectoriesOutOfApplicationOverlay()
+        {
+            string pluginsStage = Path.Combine(_tempDirectory, "Combined", "ColorVision", "Plugins");
+            string manifestDirectory = Path.Combine(pluginsStage, "third.party");
+            string legacyDirectory = Path.Combine(pluginsStage, "LegacyPlugin");
+            string transactionStage = Path.Combine(_tempDirectory, "Combined", "ManifestPlugins");
+            Directory.CreateDirectory(manifestDirectory);
+            Directory.CreateDirectory(legacyDirectory);
+            File.WriteAllText(
+                Path.Combine(manifestDirectory, "manifest.json"),
+                "{\"id\":\"third.party\",\"name\":\"Third Party\",\"version\":\"2.0\"}");
+            File.WriteAllText(Path.Combine(manifestDirectory, "HostOnly.dll"), "host");
+            File.WriteAllText(Path.Combine(legacyDirectory, "Legacy.dll"), "legacy");
+
+            IReadOnlyList<string> pluginIds = PluginUpdater.PrepareManifestPluginDirectoriesForTransaction(
+                pluginsStage,
+                transactionStage);
+
+            Assert.Equal(["third.party"], pluginIds);
+            Assert.False(Directory.Exists(manifestDirectory));
+            Assert.True(File.Exists(Path.Combine(transactionStage, "third.party", "HostOnly.dll")));
+            Assert.True(File.Exists(Path.Combine(legacyDirectory, "Legacy.dll")));
+        }
+
+        [Fact]
+        public void CombinedUpdateRejectsManifestIdThatDoesNotMatchItsDirectory()
+        {
+            string pluginsStage = Path.Combine(_tempDirectory, "Mismatched", "ColorVision", "Plugins");
+            string manifestDirectory = Path.Combine(pluginsStage, "folder.name");
+            Directory.CreateDirectory(manifestDirectory);
+            File.WriteAllText(Path.Combine(manifestDirectory, "manifest.json"), "{\"id\":\"other.name\"}");
+
+            Assert.Throws<InvalidDataException>(() => PluginUpdater.PrepareManifestPluginDirectoriesForTransaction(
+                pluginsStage,
+                Path.Combine(_tempDirectory, "Mismatched", "ManifestPlugins")));
+            Assert.True(Directory.Exists(manifestDirectory));
+        }
+
+        [Fact]
+        public void CombinedIncrementalPluginDirectoryIsSeededFromInstalledContent()
+        {
+            string applicationPluginsStage = Path.Combine(_tempDirectory, "Delta", "ColorVision", "Plugins");
+            string deltaDirectory = Path.Combine(applicationPluginsStage, "third.party");
+            string installedPluginsRoot = Path.Combine(_tempDirectory, "DeltaInstall", "Plugins");
+            string installedDirectory = Path.Combine(installedPluginsRoot, "third.party");
+            string packageStage = Path.Combine(_tempDirectory, "Delta", "ManifestPluginPackages");
+            string transactionStage = Path.Combine(_tempDirectory, "Delta", "ManifestPlugins");
+            Directory.CreateDirectory(deltaDirectory);
+            Directory.CreateDirectory(installedDirectory);
+            File.WriteAllText(Path.Combine(installedDirectory, "manifest.json"), "{\"id\":\"third.party\",\"version\":\"1.0\"}");
+            File.WriteAllText(Path.Combine(installedDirectory, "unchanged.dll"), "unchanged");
+            File.WriteAllText(Path.Combine(installedDirectory, "changed.dll"), "old");
+            // The main application delta need not contain manifest.json when it did not change.
+            File.WriteAllText(Path.Combine(deltaDirectory, "changed.dll"), "new");
+
+            IReadOnlyList<string> pluginIds = PluginUpdater.PrepareCombinedManifestPluginDirectoriesForTransaction(
+                applicationPluginsStage,
+                packageStage,
+                installedPluginsRoot,
+                transactionStage);
+
+            Assert.Equal(["third.party"], pluginIds);
+            Assert.False(Directory.Exists(deltaDirectory));
+            Assert.Equal("new", File.ReadAllText(Path.Combine(transactionStage, "third.party", "changed.dll")));
+            Assert.Equal("unchanged", File.ReadAllText(Path.Combine(transactionStage, "third.party", "unchanged.dll")));
+            Assert.True(File.Exists(Path.Combine(transactionStage, "third.party", "manifest.json")));
+        }
+
+        [Fact]
+        public void FullManifestPackageOverridesInstalledAndApplicationDeltaAssembly()
+        {
+            string applicationPluginsStage = Path.Combine(_tempDirectory, "Full", "ColorVision", "Plugins");
+            string deltaDirectory = Path.Combine(applicationPluginsStage, "third.party");
+            string installedPluginsRoot = Path.Combine(_tempDirectory, "FullInstall", "Plugins");
+            string installedDirectory = Path.Combine(installedPluginsRoot, "third.party");
+            string packageStage = Path.Combine(_tempDirectory, "Full", "ManifestPluginPackages");
+            string packageDirectory = Path.Combine(packageStage, "third.party");
+            string transactionStage = Path.Combine(_tempDirectory, "Full", "ManifestPlugins");
+            Directory.CreateDirectory(deltaDirectory);
+            Directory.CreateDirectory(installedDirectory);
+            Directory.CreateDirectory(packageDirectory);
+            File.WriteAllText(Path.Combine(installedDirectory, "manifest.json"), "{\"id\":\"third.party\",\"version\":\"1.0\"}");
+            File.WriteAllText(Path.Combine(installedDirectory, "obsolete.dll"), "obsolete");
+            File.WriteAllText(Path.Combine(deltaDirectory, "application-only.dll"), "application delta");
+            File.WriteAllText(Path.Combine(packageDirectory, "manifest.json"), "{\"id\":\"third.party\",\"version\":\"2.0\"}");
+            File.WriteAllText(Path.Combine(packageDirectory, "package.dll"), "complete package");
+
+            IReadOnlyList<string> pluginIds = PluginUpdater.PrepareCombinedManifestPluginDirectoriesForTransaction(
+                applicationPluginsStage,
+                packageStage,
+                installedPluginsRoot,
+                transactionStage);
+
+            string preparedDirectory = Path.Combine(transactionStage, "third.party");
+            Assert.Equal(["third.party"], pluginIds);
+            Assert.True(File.Exists(Path.Combine(preparedDirectory, "package.dll")));
+            Assert.False(File.Exists(Path.Combine(preparedDirectory, "obsolete.dll")));
+            Assert.False(File.Exists(Path.Combine(preparedDirectory, "application-only.dll")));
+            Assert.False(Directory.Exists(deltaDirectory));
+            Assert.False(Directory.Exists(packageDirectory));
         }
 
         [Fact]

@@ -1,0 +1,365 @@
+<Window x:Class="ColorVision.Recovery.StartupRecoveryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        Width="1060"
+        Height="720"
+        MinWidth="920"
+        MinHeight="620"
+        Title="ColorVision 启动恢复"
+        Background="{DynamicResource UpdateDialog.WindowBorder}"
+        ResizeMode="CanResizeWithGrip"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True"
+        WindowStartupLocation="CenterScreen"
+        mc:Ignorable="d">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision;component/Update/UpdateDialogTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+
+            <Style x:Key="RecoveryLinkButtonStyle"
+                   BasedOn="{StaticResource UpdateDialogTextButtonStyle}"
+                   TargetType="{x:Type Button}">
+                <Setter Property="Padding" Value="8,5" />
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border Background="{DynamicResource UpdateDialog.Background}">
+        <Grid Margin="28,24,28,20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="0,0,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <TextBlock FontSize="28"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                               Text="ColorVision 启动恢复" />
+                    <TextBlock Margin="0,7,0,0"
+                               FontSize="14"
+                               Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                               Opacity="0.82"
+                               Text="上次启动未完成。请先检查更新，或选择插件恢复方式后继续启动。"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="1"
+                           Margin="24,4,0,0"
+                           VerticalAlignment="Top"
+                           FontSize="13"
+                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                           Text="{Binding CurrentApplicationVersionText}" />
+            </Grid>
+
+            <Border Grid.Row="1"
+                    Margin="0,0,0,12"
+                    Padding="14,10"
+                    Background="{DynamicResource UpdateDialog.SurfaceAlt}"
+                    BorderBrush="{DynamicResource UpdateDialog.WeakBorder}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Visibility="{Binding FailureVisibility}">
+                <TextBlock FontSize="13"
+                           Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                           Text="{Binding FailureSummary}"
+                           TextWrapping="Wrap" />
+            </Border>
+
+            <Border Grid.Row="2"
+                    Margin="0,0,0,16"
+                    Padding="16,14"
+                    Style="{StaticResource UpdateDialogCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Width="42"
+                            Height="42"
+                            VerticalAlignment="Top"
+                            Background="{DynamicResource UpdateDialog.SurfaceAlt}"
+                            BorderBrush="{DynamicResource UpdateDialog.WeakBorder}"
+                            BorderThickness="1"
+                            CornerRadius="9">
+                        <TextBlock HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="18"
+                                   Foreground="{DynamicResource UpdateDialog.Accent}"
+                                   Text="&#xE895;" />
+                    </Border>
+
+                    <StackPanel Grid.Column="1" Margin="14,0,20,0">
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                                   Text="{Binding UpdateStatusTitle}" />
+                        <TextBlock Margin="0,5,0,0"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                   Opacity="0.82"
+                                   Text="{Binding UpdateStatusDetail}"
+                                   TextWrapping="Wrap" />
+                        <ProgressBar Width="320"
+                                     Height="4"
+                                     Margin="0,10,0,0"
+                                     HorizontalAlignment="Left"
+                                     IsIndeterminate="True"
+                                     Visibility="{Binding UpdateProgressVisibility}" />
+                    </StackPanel>
+
+                    <Button Grid.Column="2"
+                            MinWidth="170"
+                            VerticalAlignment="Center"
+                            Click="ApplicationUpdate_Click"
+                            Content="{Binding UpdateActionText}"
+                            IsEnabled="{Binding CanRunApplicationUpdate}"
+                            Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="3">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel>
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                                   Text="插件恢复" />
+                        <TextBlock Margin="0,4,0,0"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                   Opacity="0.76"
+                                   Text="仅从 Plugins 目录读取清单和文件时间；此窗口不会加载插件程序集。" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1"
+                                VerticalAlignment="Bottom"
+                                Orientation="Horizontal">
+                        <TextBlock Margin="0,0,12,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                                   Text="{Binding PluginSummaryText}" />
+                        <Button Click="RefreshPlugins_Click"
+                                Content="重新扫描"
+                                IsEnabled="{Binding CanRefreshPlugins}"
+                                Style="{StaticResource RecoveryLinkButtonStyle}" />
+                    </StackPanel>
+                </Grid>
+
+                <DataGrid Grid.Row="1"
+                          AutoGenerateColumns="False"
+                          Background="{DynamicResource UpdateDialog.Surface}"
+                          BorderBrush="{DynamicResource UpdateDialog.WeakBorder}"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          EnableColumnVirtualization="True"
+                          EnableRowVirtualization="True"
+                          Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                          GridLinesVisibility="Horizontal"
+                          HeadersVisibility="Column"
+                          IsReadOnly="False"
+                          ItemsSource="{Binding Plugins}"
+                          RowHeaderWidth="0"
+                          SelectionMode="Extended">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Width="42" Header="选">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                        <CheckBox.Style>
+                                            <Style TargetType="{x:Type CheckBox}">
+                                                <Setter Property="IsEnabled" Value="True" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsBackupOnly}" Value="True">
+                                                        <Setter Property="IsEnabled" Value="False" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding DataContext.CanContinueStartup, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                                                 Value="False">
+                                                        <Setter Property="IsEnabled" Value="False" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </CheckBox.Style>
+                                    </CheckBox>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Width="1.3*"
+                                            Binding="{Binding DisplayName}"
+                                            Header="名称"
+                                            IsReadOnly="True" />
+                        <DataGridTextColumn Width="1.2*"
+                                            Binding="{Binding IdText}"
+                                            Header="ID / 目录"
+                                            IsReadOnly="True" />
+                        <DataGridTextColumn Width="100"
+                                            Binding="{Binding VersionText}"
+                                            Header="版本"
+                                            IsReadOnly="True" />
+                        <DataGridTextColumn Width="82"
+                                            Binding="{Binding EnabledText}"
+                                            Header="状态"
+                                            IsReadOnly="True" />
+                        <DataGridTextColumn Width="112"
+                                            Binding="{Binding SourceText}"
+                                            Header="来源"
+                                            IsReadOnly="True" />
+                        <DataGridTextColumn Width="145"
+                                            Binding="{Binding LastWriteTimeText}"
+                                            Header="最近写入"
+                                            IsReadOnly="True" />
+                        <DataGridTemplateColumn Width="72" Header="判断">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border HorizontalAlignment="Left"
+                                            Style="{StaticResource UpdateDialogTagBorderStyle}"
+                                            Visibility="{Binding IsSuspected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <TextBlock FontSize="11"
+                                                   Foreground="{DynamicResource UpdateDialog.TagForeground}"
+                                                   Text="疑似" />
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Width="102" Header="备份">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Padding="9,4"
+                                            Click="RestorePluginBackup_Click"
+                                            CommandParameter="{Binding}"
+                                            Content="{Binding BackupText}">
+                                        <Button.Style>
+                                            <Style BasedOn="{StaticResource UpdateDialogSecondaryButtonStyle}"
+                                                   TargetType="{x:Type Button}">
+                                                <Setter Property="IsEnabled" Value="True" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding CanRestoreBackup}" Value="False">
+                                                        <Setter Property="IsEnabled" Value="False" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding DataContext.CanOpenOtherRecovery, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                                                 Value="False">
+                                                        <Setter Property="IsEnabled" Value="False" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+
+            <Grid Grid.Row="4" Margin="0,12,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock VerticalAlignment="Center"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource UpdateDialog.TextPrimary}"
+                           Text="其他恢复" />
+                <StackPanel Grid.Column="1"
+                            Margin="12,0,0,0"
+                            Orientation="Horizontal">
+                    <Button Click="OpenApplicationSnapshots_Click"
+                            Content="程序快照"
+                            IsEnabled="{Binding CanOpenOtherRecovery}"
+                            Style="{StaticResource RecoveryLinkButtonStyle}" />
+                    <Button Margin="6,0,0,0"
+                            Click="OpenApplicationLog_Click"
+                            Content="主日志目录"
+                            IsEnabled="{Binding CanOpenOtherRecovery}"
+                            Style="{StaticResource RecoveryLinkButtonStyle}" />
+                    <Button Margin="6,0,0,0"
+                            Click="OpenUpdateLog_Click"
+                            Content="更新日志目录"
+                            IsEnabled="{Binding CanOpenOtherRecovery}"
+                            Style="{StaticResource RecoveryLinkButtonStyle}" />
+                </StackPanel>
+                <TextBlock Grid.Column="2"
+                           VerticalAlignment="Center"
+                           FontSize="12"
+                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                           Text="{Binding OperationStatusText}"
+                           TextTrimming="CharacterEllipsis" />
+            </Grid>
+
+            <Grid Grid.Row="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock VerticalAlignment="Center"
+                           FontSize="12"
+                           Foreground="{DynamicResource UpdateDialog.TextSecondary}"
+                           Opacity="0.75"
+                           Text="关闭此窗口将退出 ColorVision，不会继续加载插件。" />
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Margin="0,0,8,0"
+                            Click="Exit_Click"
+                            Content="退出"
+                            IsEnabled="{Binding CanContinueStartup}"
+                            Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
+                    <Button Margin="0,0,8,0"
+                            Click="NormalStart_Click"
+                            Content="正常启动"
+                            IsEnabled="{Binding CanContinueStartup}"
+                            Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
+                    <Button Margin="0,0,8,0"
+                            Click="SkipAll_Click"
+                            Content="本次跳过全部"
+                            IsEnabled="{Binding CanContinueStartup}"
+                            Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
+                    <Button Margin="0,0,8,0"
+                            Click="DisableSelected_Click"
+                            Content="禁用选中并启动"
+                            IsEnabled="{Binding CanUseSelection}"
+                            Style="{StaticResource UpdateDialogSecondaryButtonStyle}" />
+                    <Button Click="SkipSelected_Click"
+                            Content="本次跳过选中"
+                            IsEnabled="{Binding CanUseSelection}"
+                            Style="{StaticResource UpdateDialogPrimaryButtonStyle}" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

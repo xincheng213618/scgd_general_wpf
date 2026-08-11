@@ -40,7 +40,6 @@ namespace ColorVision.UI.Tests
             int closedCount = ApplicationUpdateProcessCoordinator.CloseOtherApplicationProcesses(
                 executableA,
                 currentProcessId: -1,
-                gracefulShutdownTimeout: TimeSpan.FromMilliseconds(100),
                 forcedShutdownTimeout: TimeSpan.FromSeconds(5));
 
             Assert.Equal(2, closedCount);
@@ -73,7 +72,6 @@ namespace ColorVision.UI.Tests
             int closedCount = ApplicationUpdateProcessCoordinator.CloseOtherApplicationProcesses(
                 executableA,
                 currentProcess.Id,
-                gracefulShutdownTimeout: TimeSpan.FromMilliseconds(100),
                 forcedShutdownTimeout: TimeSpan.FromSeconds(5));
 
             Assert.Equal(1, closedCount);
