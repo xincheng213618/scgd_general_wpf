@@ -148,7 +148,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 window.ShowDialog();
             });
 
-            UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()),a=> AccessControl.Check(PermissionMode.SuperAdministrator));
+            UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()));
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code)));
             CreatResotreCommand = new RelayCommand(a => CreateRestore());
             LoadResotreCommand = new RelayCommand(a => LoadResotre());
