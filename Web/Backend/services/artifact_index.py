@@ -1145,6 +1145,8 @@ def refresh_all_indexes(cache: CacheManager, storage: Path) -> dict[str, Any]:
 
 def get_all_index_states_summary(cache: CacheManager) -> dict[str, Any]:
     """Get a summary of all index states for dashboard display."""
+    from services.docs_site import DOCS_INDEX_CACHE_KEY
+
     db = cache.get_db()
     try:
         states = cache.index_states.get_many(
@@ -1158,7 +1160,7 @@ def get_all_index_states_summary(cache: CacheManager) -> dict[str, Any]:
         counts["releases"] = db.execute("SELECT COUNT(*) AS cnt FROM release_index WHERE is_deleted = 0").fetchone()["cnt"]
         counts["updates"] = db.execute("SELECT COUNT(*) AS cnt FROM update_index WHERE is_deleted = 0").fetchone()["cnt"]
         counts["tools"] = db.execute("SELECT COUNT(*) AS cnt FROM tool_index WHERE is_deleted = 0").fetchone()["cnt"]
-        docs_index = cache.get_cache_entry("docs_index:v1")
+        docs_index = cache.get_cache_entry(DOCS_INDEX_CACHE_KEY)
         counts["docs"] = int(((docs_index or {}).get("value") or {}).get("summary", {}).get("total") or 0)
 
         return {"states": states, "counts": counts}

@@ -12,7 +12,7 @@ from typing import Any
 
 DOCS_BASE_PATH = "/scgd_general_wpf/"
 DOCS_REDIRECT_PATH = "/docs"
-DOCS_INDEX_CACHE_KEY = "docs_index:v1"
+DOCS_INDEX_CACHE_KEY = "docs_index:v2"
 DOCS_INDEX_TTL_SECONDS = 60 * 60 * 24 * 30
 DOCS_LOCALES = frozenset({"en", "ja", "ko", "zh-tw"})
 
@@ -174,6 +174,7 @@ def _read_doc_excerpt(path: Path, title: str) -> str:
 
     pieces: list[str] = []
     in_frontmatter = False
+    in_fenced_code = False
     for index, line in enumerate(lines):
         stripped = line.strip()
         if index == 0 and stripped == "---":
@@ -183,12 +184,23 @@ def _read_doc_excerpt(path: Path, title: str) -> str:
             if stripped == "---":
                 in_frontmatter = False
             continue
-        if not stripped or stripped.startswith("#") or stripped.startswith("|"):
+
+        if re.match(r"^(?:`{3,}|~{3,})", stripped):
+            in_fenced_code = not in_fenced_code
+            continue
+        if in_fenced_code:
+            continue
+
+        if not stripped:
+            if pieces:
+                break
+            continue
+        if stripped.startswith(("#", "|", ":::")) or line.startswith(("    ", "\t")):
             continue
         text = _strip_markdown_inline(stripped)
         if text and text != title:
             pieces.append(text)
-        if len(" ".join(pieces)) >= 140:
+        if len(" ".join(pieces)) >= 180:
             break
     return " ".join(pieces)[:180]
 
