@@ -5,6 +5,7 @@ using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
 using log4net;
 using log4net.Config;
+using Spectrum.Data;
 using Spectrum.License;
 using System.Diagnostics;
 using System.IO;
@@ -74,12 +75,17 @@ namespace Spectrum
 
 
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
-            ConfigHandler.GetInstance();
+            ConfigHandler configHandler = ConfigHandler.GetInstance();
             Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
             LogConfig.Instance.SetLog();
             LicenseSync.EnsureLicensesSynchronized();
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
+
+            ConfigReloadResult initialConfigBinding = configHandler.RegisterReloadParticipants(
+                ViewResultManager.GetInstance());
+            foreach (ConfigReloadFailure failure in initialConfigBinding.Failures)
+                log.Error($"Initial configuration binding failed for '{failure.OwnerName}'.", failure.Exception);
 
             new SocketInitializer().InitializeAsync();
             log.Info($"启动基础配置完成，耗时 {startupStopwatch.ElapsedMilliseconds} ms");

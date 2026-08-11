@@ -156,7 +156,7 @@ namespace Spectrum.Data
         public string? StepDetailsJson { get; set; }
     }
 
-    public class ViewResultManager : ViewModelBase, IDisposable
+    public class ViewResultManager : ViewModelBase, IConfigReloadParticipant, IDisposable
     {
         private static ViewResultManager _instance;
         private static readonly object _locker = new();
@@ -216,8 +216,7 @@ namespace Spectrum.Data
         public ViewResultManager()
         {
             configOwner = new RuntimeConfigOwner<ViewResultManagerConfig>(
-                () => ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>(),
-                ConfigService.Instance as IConfigReloadNotifier);
+                () => ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>());
             configOwner.ConfigurationChanged += ConfigOwner_ConfigurationChanged;
             EditConfigCommand = new RelayCommand(a => EditConfig());
             QueryCommand = new RelayCommand(a => Query());
@@ -250,8 +249,16 @@ namespace Spectrum.Data
 
         public ViewResultManagerConfig CaptureConfig() => configOwner.Capture();
 
+        public string ConfigReloadName => "Spectrum.ViewResultManager";
+
+        public int ConfigReloadOrder => 300;
+
+        public void BindCurrentConfig(IConfigService currentConfig) => configOwner.BindCurrentConfig(currentConfig);
+
         private void ConfigOwner_ConfigurationChanged(object? sender, RuntimeConfigChangedEventArgs<ViewResultManagerConfig> e)
         {
+            if (e.Generation != configOwner.Generation)
+                return;
             OnPropertyChanged(nameof(Config));
         }
 
