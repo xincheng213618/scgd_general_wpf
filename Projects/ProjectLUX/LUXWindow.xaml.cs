@@ -279,8 +279,6 @@ namespace ProjectLUX
 
         string Msg1;
         private long LastFlowTime;
-        private int _currentFlowTemplateId;
-        string FlowName;
         private void UpdateMsg(object? sender)
         {
             if (_isDisposed) return;
@@ -294,10 +292,11 @@ namespace ProjectLUX
                     long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
                     TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
                     string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                    string flowName = Volatile.Read(ref activeFlowRun)?.FlowName ?? string.Empty;
                     string msg;
                     if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                     {
-                        msg = $"{FlowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
+                        msg = $"{flowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
                     }
                     else
                     {
@@ -305,7 +304,7 @@ namespace ProjectLUX
                         TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                         string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                        msg = $"{FlowName}{Environment.NewLine}上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
+                        msg = $"{flowName}{Environment.NewLine}上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
                     }
                     logTextBox.Text = msg;
                 }
@@ -334,49 +333,64 @@ namespace ProjectLUX
         }
 
 
-        ProjectLUXReuslt CurrentFlowResult { get; set; }
-        int TryCount = 0;
-        private ViewResultManagerConfig? currentFlowResultConfig;
+        private LUXFlowRunSession? activeFlowRun;
+        private readonly Dictionary<string, LUXFlowRunSession> flowRunSessions = new(StringComparer.Ordinal);
         private readonly Dictionary<ProjectLUXReuslt, ViewResultManagerConfig> automaticImageExportConfigs = new(ReferenceEqualityComparer.Instance);
+        internal Func<ViewResultManagerConfig>? ResultConfigCaptureOverride { get; set; }
+        internal Func<LUXFlowRunSession, Task>? RunTemplateCaptureBarrier { get; set; }
 
-        public async Task RunTemplate()
+        public Task RunTemplate() => RunTemplateCore(attempt: 1, retainedResultConfig: null);
+
+        private async Task RunTemplateCore(int attempt, ViewResultManagerConfig? retainedResultConfig)
         {
             if (_isDisposed) return;
+            LUXFlowRunSession? session = null;
+            bool handedToFlow = false;
             try
             {
-                if (flowControl != null && flowControl.IsFlowRun) return;
                 if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template) return;
-                currentFlowResultConfig = ViewResultManager.CaptureConfig();
+                if (Volatile.Read(ref activeFlowRun) != null || (flowControl != null && flowControl.IsFlowRun)) return;
 
-                TryCount++;
-                _currentFlowTemplateId = template.Id;
+                ViewResultManagerConfig resultConfig = retainedResultConfig
+                    ?? ResultConfigCaptureOverride?.Invoke()
+                    ?? ViewResultManager.CaptureConfig();
                 string flowName = template.Key;
+                var result = new ProjectLUXReuslt
+                {
+                    SN = ProjectLUXConfig.Instance.SN,
+                    Model = flowName,
+                    Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff")
+                };
+                session = new LUXFlowRunSession(template.Id, flowName, attempt, result, resultConfig);
+                if (Interlocked.CompareExchange(ref activeFlowRun, session, null) != null)
+                    return;
+                lock (flowRunSessions)
+                    flowRunSessions.Add(result.Code, session);
+
+                if (RunTemplateCaptureBarrier != null)
+                    await RunTemplateCaptureBarrier(session);
+                if (_isDisposed) return;
+
                 LastFlowTime = await Task.Run(
                     () => FlowNodeRecordDataBaseHelper.GetLastCompletedFlowElapsed(
                         new FlowIdentity(template.Id, template.Value.FlowKey, flowName)));
                 if (_isDisposed) return;
 
-                CurrentFlowResult = new ProjectLUXReuslt();
-                CurrentFlowResult.SN = ProjectLUXConfig.Instance.SN;
-                CurrentFlowResult.Model = flowName;
-
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, flowName, StringComparison.OrdinalIgnoreCase)) is ProcessMeta processMeta)
                     {
-                        CurrentFlowResult.TestType = ProcessMetas.IndexOf(processMeta);
-                        ProjectLUXConfig.Instance.StepIndex = CurrentFlowResult.TestType;
+                        result.TestType = ProcessMetas.IndexOf(processMeta);
+                        ProjectLUXConfig.Instance.StepIndex = result.TestType;
                     }
                     else
                     {
-                        CurrentFlowResult.TestType = -1;
-                        ProjectLUXConfig.Instance.StepIndex = CurrentFlowResult.TestType;
+                        result.TestType = -1;
+                        ProjectLUXConfig.Instance.StepIndex = result.TestType;
                     }
                 });
 
-                FlowName = flowName;
-
-                ProcessMeta? processMeta = ProcessManager.ProcessMetas.FirstOrDefault(a => a.FlowTemplate == FlowName);
+                ProcessMeta? processMeta = ProcessManager.ProcessMetas.FirstOrDefault(a => a.FlowTemplate == flowName);
                 if (processMeta != null)
                 {
                     int index = ProcessManager.ProcessMetas.IndexOf(processMeta);
@@ -386,37 +400,36 @@ namespace ProjectLUX
                     });
                 }
 
-                CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-
                 await Refresh();
                 if (_isDisposed) return;
 
-                bool preprocessingSucceeded = await PreProcessing(FlowName, CurrentFlowResult.Code);
+                bool preprocessingSucceeded = await PreProcessing(flowName, result.Code);
                 if (_isDisposed) return;
                 if (!preprocessingSucceeded)
                 {
-                    CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                    CurrentFlowResult.Msg = "PreProcessFailed";
-                    logTextBox.Text = FlowName + Environment.NewLine + "预处理失败";
-                    TryCount = 0;
+                    result.FlowStatus = FlowStatus.Failed;
+                    result.Msg = "PreProcessFailed";
+                    logTextBox.Text = flowName + Environment.NewLine + "预处理失败";
                     return;
                 }
 
-                CurrentFlowResult.FlowStatus = FlowStatus.Ready;
+                result.FlowStatus = FlowStatus.Ready;
 
                 flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
                 flowControl.FlowCompleted -= FlowControl_FlowCompleted;
                 flowControl.FlowCompleted += FlowControl_FlowCompleted;
                 stopwatch.Reset();
                 stopwatch.Start();
-                MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
+                MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = result.SN, Code = result.Code };
                 using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
-                CurrentFlowResult.BatchId = id;
+                result.BatchId = id;
 
-                bool started = await flowControl.TryStartAsync(CurrentFlowResult.Code, _lifetimeCancellation.Token);
+                bool started = await flowControl.TryStartAsync(result.Code, _lifetimeCancellation.Token);
+                handedToFlow = started;
                 if (_isDisposed)
                 {
+                    handedToFlow = false;
                     flowControl.FlowCompleted -= FlowControl_FlowCompleted;
                     if (started && flowControl.IsFlowRun)
                         flowControl.Stop();
@@ -428,7 +441,7 @@ namespace ProjectLUX
                     {
                         EventName = "Failed",
                         Status = StatusTypeEnum.Failed,
-                        SerialNumber = CurrentFlowResult.Code,
+                        SerialNumber = result.Code,
                         Params = "FlowStartRejected"
                     });
                     return;
@@ -451,6 +464,24 @@ namespace ProjectLUX
                 }
                 log.Debug("窗口已关闭，忽略迟到的流程启动结果", ex);
             }
+            finally
+            {
+                if (session != null && !handedToFlow)
+                    ReleaseFlowRun(session);
+            }
+        }
+
+        private void ReleaseFlowRun(LUXFlowRunSession session)
+        {
+            lock (flowRunSessions)
+            {
+                if (flowRunSessions.TryGetValue(session.Result.Code, out LUXFlowRunSession? current)
+                    && ReferenceEquals(current, session))
+                {
+                    flowRunSessions.Remove(session.Result.Code);
+                }
+            }
+            Interlocked.CompareExchange(ref activeFlowRun, null, session);
         }
 
 
@@ -468,53 +499,64 @@ namespace ProjectLUX
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             if (_isDisposed) return;
 
+            LUXFlowRunSession? session;
+            lock (flowRunSessions)
+                flowRunSessions.TryGetValue(FlowControlData.SerialNumber, out session);
+            if (session == null)
+            {
+                log.Warn($"忽略没有运行会话的流程完成事件: {FlowControlData.SerialNumber}");
+                return;
+            }
+            ProjectLUXReuslt flowResult = session.Result;
+
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
-            CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
+            flowResult.RunTime = stopwatch.ElapsedMilliseconds;
             FlowNodeRecordDataBaseHelper.RecordFlowRun(
-                _currentFlowTemplateId,
-                FlowName,
+                session.TemplateId,
+                session.FlowName,
                 FlowControlData.SerialNumber,
                 FlowControlData.FlowStatus,
-                CurrentFlowResult.RunTime);
-            logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName;
+                flowResult.RunTime);
+            logTextBox.Text = session.FlowName + Environment.NewLine + FlowControlData.EventName;
+
+            ReleaseFlowRun(session);
 
             if (FlowControlData.EventName == "Completed")
             {
-                CurrentFlowResult.Msg = "Completed";
+                flowResult.Msg = "Completed";
                 try
                 {
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
-                        Processing(FlowControlData.SerialNumber);
+                        Processing(FlowControlData.SerialNumber, session);
                     });
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
                 }
-                TryCount = 0;
             }
             else if (FlowControlData.EventName == "OverTime")
             {
                 log.Info("流程运行超时，正在重新尝试");
-                CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
-                CurrentFlowResult.Msg = logTextBox.Text;
-                ViewResultManager.Save(CurrentFlowResult, currentFlowResultConfig);
+                flowResult.FlowStatus = FlowStatus.OverTime;
+                flowResult.Msg = logTextBox.Text;
+                ViewResultManager.Save(flowResult, session.ResultConfig);
 
                 flowEngine.LoadFromBase64(string.Empty);
                 Refresh();
 
-                if (TryCount < ProjectLUXConfig.Instance.TryCountMax)
+                if (session.Attempt < ProjectLUXConfig.Instance.TryCountMax)
                 {
                     Task.Delay(200).ContinueWith(t =>
                     {
                         log.Info("重新尝试运行流程");
                         Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            RunTemplate();
+                            _ = RunTemplateCore(session.Attempt + 1, session.ResultConfig);
                         });
                     });
                     return;
@@ -534,7 +576,6 @@ namespace ProjectLUX
                             Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                     }
                 }
-                TryCount = 0;
             }
             else
             {
@@ -552,11 +593,11 @@ namespace ProjectLUX
                 }
 
                 log.Error("流程运行失败" + FlowControlData.EventName + FlowControlData.Params);
-                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                CurrentFlowResult.Msg = FlowControlData.Params;
+                flowResult.FlowStatus = FlowStatus.Failed;
+                flowResult.Msg = FlowControlData.Params;
 
                 //算法失败但是图像是有的，可以帮助用户即使发现原因
-                if (CurrentFlowResult.Msg.Contains("SDK return failed") || CurrentFlowResult.Msg.Contains("BinocularFusion calculation failed") || CurrentFlowResult.Msg.Contains("Not get cie file"))
+                if (flowResult.Msg.Contains("SDK return failed") || flowResult.Msg.Contains("BinocularFusion calculation failed") || flowResult.Msg.Contains("Not get cie file"))
                 {
                     MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                     if (Batch != null)
@@ -564,19 +605,18 @@ namespace ProjectLUX
                         var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                         if (values.Count > 0)
                         {
-                            CurrentFlowResult.FileName = values[0].FileUrl;
+                            flowResult.FileName = values[0].FileUrl;
                         }
                     }
                 }
-                logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
-                ViewResultManager.Save(CurrentFlowResult, currentFlowResultConfig);
-                TryCount = 0;
+                logTextBox.Text = session.FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
+                ViewResultManager.Save(flowResult, session.ResultConfig);
             }
         }
 
-        private void Processing(string SerialNumber)
+        private void Processing(string SerialNumber, LUXFlowRunSession session)
         {
-            ViewResultManagerConfig resultConfig = currentFlowResultConfig ?? ViewResultManager.CaptureConfig();
+            ViewResultManagerConfig resultConfig = session.ResultConfig;
             MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
 
             if (Batch == null)
@@ -584,7 +624,7 @@ namespace ProjectLUX
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
                 return;
             }
-            ProjectLUXReuslt result = CurrentFlowResult ?? new ProjectLUXReuslt();
+            ProjectLUXReuslt result = session.Result;
 
             result.BatchId = Batch.Id;
             result.FlowStatus = FlowStatus.Completed;
@@ -641,7 +681,7 @@ namespace ProjectLUX
 
                         if (!string.IsNullOrWhiteSpace(ReturnCode))
                         {
-                            if (SummaryManager.GetInstance().Summary.MachineNO == "H03AR"&&CurrentFlowResult?.TestType == 0)
+                            if (SummaryManager.GetInstance().Summary.MachineNO == "H03AR" && result.TestType == 0)
                             {
                                 log.Info("IsOC");
                                 if(ObjectiveTestResult.OpticCenterTestResult != null)
@@ -957,6 +997,9 @@ namespace ProjectLUX
             _lifetimeCancellation.Cancel();
             Interlocked.Increment(ref _resultImageRequestId);
             automaticImageExportConfigs.Clear();
+            lock (flowRunSessions)
+                flowRunSessions.Clear();
+            Interlocked.Exchange(ref activeFlowRun, null);
             DetachResultListView(listView1, listView1_SelectionChanged);
             ProcessManager.ActiveGroupChanged -= ProcessManager_ActiveGroupChanged;
             ImageView.Dispose();
@@ -972,6 +1015,29 @@ namespace ProjectLUX
             logOutput?.Dispose();
             DataContext = null;
             GC.SuppressFinalize(this);
+        }
+
+        internal sealed class LUXFlowRunSession
+        {
+            public LUXFlowRunSession(
+                int templateId,
+                string flowName,
+                int attempt,
+                ProjectLUXReuslt result,
+                ViewResultManagerConfig resultConfig)
+            {
+                TemplateId = templateId;
+                FlowName = flowName;
+                Attempt = attempt;
+                Result = result;
+                ResultConfig = resultConfig;
+            }
+
+            public int TemplateId { get; }
+            public string FlowName { get; }
+            public int Attempt { get; }
+            public ProjectLUXReuslt Result { get; }
+            public ViewResultManagerConfig ResultConfig { get; }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
