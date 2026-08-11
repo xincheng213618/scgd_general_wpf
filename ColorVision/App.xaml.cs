@@ -51,6 +51,7 @@ namespace ColorVision
     /// </summary>
     public partial class App : Application
     {
+        private static readonly TimeSpan SocketShutdownTimeout = TimeSpan.FromSeconds(2);
         private bool _isSessionEnding;
         private bool _isSingleInstanceReplacement;
         private bool _startupWizardWasShown;
@@ -505,29 +506,67 @@ namespace ColorVision
         {
             Stopwatch exitStopwatch = Stopwatch.StartNew();
             log.Info("Application exit cleanup started.");
-            Rbac.ApplicationUsageTracker.StopSession();
-            log.Info(ColorVision.Properties.Resources.ApplicationExit);
-            bool updateIsActive = Update.ExitUpdateHandoff.IsUpdateActive(AppDomain.CurrentDomain.BaseDirectory);
-            bool replacementIsActive = _isSingleInstanceReplacement
-                || Update.ApplicationUpdateProcessCoordinator.IsSingleInstanceReplacementRequested(Environment.ProcessId);
-            if (!_isSessionEnding && !replacementIsActive && !updateIsActive)
-                Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();
-            else if (replacementIsActive)
-                log.Info("Skipped exit-time prefetched update because a newer ColorVision instance is taking over.");
-            else if (updateIsActive)
-                log.Info("Skipped exit-time prefetched update because an external update is already active.");
-            CopilotMcpServer.Instance.Stop();
-            LanRemoteControlService.Instance.Stop();
-            // 外部更新或恢复已经完成交接时，不应在重启后再次进入恢复窗口。
-            // 其他启动阶段退出则保留现场，供下次启动继续恢复。
-            if (_isSessionEnding
-                || replacementIsActive
-                || updateIsActive
-                || (_startupWizardWasShown && WizardWindowConfig.Instance.WizardCompletionKey))
-                StartupRegistryChecker.CompleteForRecoveryRestart();
-            else
-                StartupRegistryChecker.OnApplicationExit();
-            NativeLogBridge.Shutdown();
+            bool exitStateResolved = false;
+            bool updateIsActive = false;
+            bool replacementIsActive = false;
+            ApplicationExitCleanup.Run(
+                [
+                    new("application usage session", Rbac.ApplicationUsageTracker.StopSession),
+                    new("application exit log", () => log.Info(ColorVision.Properties.Resources.ApplicationExit)),
+                    new("update handoff state", () =>
+                    {
+                        updateIsActive = Update.ExitUpdateHandoff.IsUpdateActive(AppDomain.CurrentDomain.BaseDirectory);
+                        replacementIsActive = _isSingleInstanceReplacement
+                            || Update.ApplicationUpdateProcessCoordinator.IsSingleInstanceReplacementRequested(Environment.ProcessId);
+                        exitStateResolved = true;
+                    }),
+                    new("socket server", () =>
+                    {
+                        if (!SocketProtocol.SocketManager.ShutdownExisting(SocketShutdownTimeout))
+                            log.Warn("Socket shutdown did not fully complete within the application exit budget.");
+                    }),
+                    new("prefetched update", () =>
+                    {
+                        if (!exitStateResolved)
+                        {
+                            log.Warn("Skipped exit-time prefetched update because the exit handoff state could not be resolved.");
+                        }
+                        else if (!_isSessionEnding && !replacementIsActive && !updateIsActive)
+                        {
+                            Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();
+                        }
+                        else if (replacementIsActive)
+                        {
+                            log.Info("Skipped exit-time prefetched update because a newer ColorVision instance is taking over.");
+                        }
+                        else if (updateIsActive)
+                        {
+                            log.Info("Skipped exit-time prefetched update because an external update is already active.");
+                        }
+                    }),
+                    new("Copilot MCP server", () => CopilotMcpServer.Instance.Stop()),
+                    new("LAN remote control", () => LanRemoteControlService.Instance.Stop()),
+                    new("startup recovery registry", () =>
+                    {
+                        if (!exitStateResolved)
+                        {
+                            log.Warn("Preserved startup recovery state because the exit handoff state could not be resolved.");
+                            return;
+                        }
+
+                        // 外部更新或恢复已经完成交接时，不应在重启后再次进入恢复窗口。
+                        // 其他启动阶段退出则保留现场，供下次启动继续恢复。
+                        if (_isSessionEnding
+                            || replacementIsActive
+                            || updateIsActive
+                            || (_startupWizardWasShown && WizardWindowConfig.Instance.WizardCompletionKey))
+                            StartupRegistryChecker.CompleteForRecoveryRestart();
+                        else
+                            StartupRegistryChecker.OnApplicationExit();
+                    }),
+                    new("native log bridge", NativeLogBridge.Shutdown)
+                ],
+                (step, exception) => log.Error($"Application exit cleanup step '{step}' failed.", exception));
             log.Info($"Application exit cleanup completed in {exitStopwatch.ElapsedMilliseconds} ms.");
             //Environment.Exit(0);
         }

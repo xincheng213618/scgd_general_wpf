@@ -145,6 +145,7 @@ public sealed class SocketServerLifecycleTests
         long startVersion = lifecycle.OperationVersion;
         Task<bool> stopCall = Task.Run(() => lifecycle.Stop(isServerEnabled: true));
         Assert.True(SpinWait.SpinUntil(() => lifecycle.OperationVersion > startVersion, TestTimeout));
+        Assert.False(stopCall.IsCompleted);
         oldListener.ReleaseStart.Set();
         Assert.True(await stopCall.WaitAsync(TestTimeout));
         lifecycle.Start(CreateSettings(6102));
@@ -203,6 +204,107 @@ public sealed class SocketServerLifecycleTests
     }
 
     [Fact]
+    public async Task AcceptFailureCleansOldListenerBeforeErrorCallbackRestarts()
+    {
+        var work = new ManualWorkQueue();
+        var oldListener = new GatedStopAfterAcceptFailureListener();
+        var replacementListener = new FailingStartListener(new InvalidOperationException("replacement finished"));
+        var factory = new SequencedListenerFactory(oldListener, replacementListener);
+        var transitions = new ConcurrentQueue<SocketServerTransition>();
+        SocketServerLifecycle? lifecycle = null;
+        bool restartObservedOldListenerStopped = false;
+        int restartTriggered = 0;
+        lifecycle = new SocketServerLifecycle(
+            SocketServerState.Stopped,
+            factory,
+            work.Enqueue,
+            new SocketWorkerTracker(),
+            transition =>
+            {
+                transitions.Enqueue(transition);
+                if (transition.State == SocketServerState.Error
+                    && Interlocked.CompareExchange(ref restartTriggered, 1, 0) == 0)
+                {
+                    restartObservedOldListenerStopped = oldListener.StopCompleted.IsSet;
+                    lifecycle.Start(CreateSettings(6251));
+                }
+            },
+            _ => { },
+            connection => connection.Client.Dispose());
+
+        lifecycle.Start(CreateSettings(6250));
+        Task oldWorker = Task.Run(work.Dequeue());
+        Assert.True(oldListener.StopEntered.Wait(TestTimeout));
+        Assert.DoesNotContain(transitions, transition => transition.State == SocketServerState.Error);
+
+        oldListener.AllowStop.Set();
+        await oldWorker.WaitAsync(TestTimeout);
+
+        Assert.True(restartObservedOldListenerStopped);
+        Assert.Equal(SocketServerState.Starting, lifecycle.State);
+        Assert.Equal(1, work.Count);
+        work.RunNext();
+        Assert.Equal(SocketServerState.Error, lifecycle.State);
+    }
+
+    [Fact]
+    public void StartInlineProjectionFailureDoesNotLeakWorkerOrCreateListener()
+    {
+        var tracker = new SocketWorkerTracker();
+        var factory = new CountingListenerFactory();
+        var lifecycle = new SocketServerLifecycle(
+            SocketServerState.Stopped,
+            factory,
+            _ => throw new InvalidOperationException("queue should not be used"),
+            tracker,
+            _ => throw new InvalidOperationException("simulated projection failure"),
+            _ => { },
+            connection => connection.Client.Dispose());
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => lifecycle.StartInline(CreateSettings(6252)));
+
+        Assert.Contains("projection failure", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(SocketServerState.Stopped, lifecycle.State);
+        Assert.Equal(0, factory.CreateCalls);
+        lifecycle.BeginShutdown();
+        Assert.True(tracker.Wait(TimeSpan.Zero));
+        Assert.Equal(0, tracker.ActiveWorkers);
+    }
+
+    [Fact]
+    public void InlineWorkerFailureIsNotScheduledTwice()
+    {
+        var tracker = new SocketWorkerTracker();
+        var factory = new CountingListenerFactory(
+            new FailingStartListener(new InvalidOperationException("simulated listener failure")));
+        int errorCallbacks = 0;
+        var lifecycle = new SocketServerLifecycle(
+            SocketServerState.Stopped,
+            factory,
+            action => action(),
+            tracker,
+            transition =>
+            {
+                if (transition.State == SocketServerState.Error
+                    && Interlocked.Increment(ref errorCallbacks) == 1)
+                    throw new InvalidOperationException("simulated inline callback failure");
+            },
+            _ => { },
+            connection => connection.Client.Dispose());
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => lifecycle.Start(CreateSettings(6253)));
+
+        Assert.Contains("inline callback failure", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(1, factory.CreateCalls);
+        Assert.Equal(1, errorCallbacks);
+        lifecycle.BeginShutdown();
+        Assert.True(tracker.Wait(TimeSpan.Zero));
+        Assert.Equal(0, tracker.ActiveWorkers);
+    }
+
+    [Fact]
     public async Task QueuedWorkerUsesConfigSnapshotAndStopClearsRegisteredClients()
     {
         var work = new ManualWorkQueue();
@@ -223,6 +325,7 @@ public sealed class SocketServerLifecycleTests
             SocketServerState.Stopped,
             factory,
             work.Enqueue,
+            new SocketWorkerTracker(),
             _ => { },
             connection => accepted.SetResult(connection),
             closedClients.Enqueue);
@@ -268,6 +371,7 @@ public sealed class SocketServerLifecycleTests
             SocketServerState.Stopped,
             factory,
             work.Enqueue,
+            new SocketWorkerTracker(),
             transitions.Enqueue,
             connection => accepted.SetResult(connection),
             closedClients.Enqueue);
@@ -288,6 +392,59 @@ public sealed class SocketServerLifecycleTests
         Assert.Equal(SocketServerFailureStage.Stop, failure.FailureStage);
     }
 
+    [Fact]
+    public async Task ShutdownClosesCurrentAndRetiringGenerationClients()
+    {
+        var work = new ManualWorkQueue();
+        var tracker = new SocketWorkerTracker();
+        using var oldClient = new TcpClient();
+        using var currentClient = new TcpClient();
+        var oldListener = new BlockingListener(oldClient);
+        var currentListener = new BlockingListener(currentClient);
+        var factory = new SequencedListenerFactory(oldListener, currentListener);
+        using var accepted = new CountdownEvent(2);
+        var connections = new ConcurrentQueue<SocketServerClient>();
+        var closed = new ConcurrentQueue<SocketServerClient>();
+        var lifecycle = new SocketServerLifecycle(
+            SocketServerState.Stopped,
+            factory,
+            work.Enqueue,
+            tracker,
+            _ => { },
+            connection =>
+            {
+                connections.Enqueue(connection);
+                accepted.Signal();
+            },
+            connection =>
+            {
+                closed.Enqueue(connection);
+                connection.Client.Dispose();
+            });
+
+        lifecycle.Start(CreateSettings(6400));
+        Task oldWorker = Task.Run(work.Dequeue());
+        Assert.True(SpinWait.SpinUntil(() => accepted.CurrentCount == 1, TestTimeout));
+        lifecycle.Stop(isServerEnabled: true);
+        lifecycle.Start(CreateSettings(6401));
+
+        Action oldStopCleanup = work.Dequeue();
+        Task currentWorker = Task.Run(work.Dequeue());
+        Assert.True(accepted.Wait(TestTimeout));
+
+        lifecycle.BeginShutdown();
+        Assert.True(SpinWait.SpinUntil(() => closed.Count == 2, TestTimeout));
+        Assert.False(tracker.Wait(TimeSpan.Zero));
+        oldStopCleanup();
+
+        Assert.True(tracker.Wait(TestTimeout));
+        await oldWorker.WaitAsync(TestTimeout);
+        await currentWorker.WaitAsync(TestTimeout);
+        Assert.Equal(2, closed.Count);
+        Assert.All(connections, connection => Assert.Equal(0, connection.Session.ClientCount));
+        Assert.False(lifecycle.Start(CreateSettings(6402)));
+    }
+
     private static SocketServerLifecycle CreateLifecycle(
         ManualWorkQueue work,
         ISocketServerListenerFactory factory,
@@ -295,6 +452,7 @@ public sealed class SocketServerLifecycleTests
             SocketServerState.Stopped,
             factory,
             work.Enqueue,
+            new SocketWorkerTracker(),
             transitions.Enqueue,
             _ => { },
             connection => connection.Client.Dispose());
@@ -424,5 +582,37 @@ public sealed class SocketServerLifecycleTests
 
         public TcpClient AcceptTcpClient() => throw new NotSupportedException();
         public void Stop() { }
+    }
+
+    private sealed class GatedStopAfterAcceptFailureListener : ISocketServerListener
+    {
+        public ManualResetEventSlim StopEntered { get; } = new();
+        public ManualResetEventSlim AllowStop { get; } = new();
+        public ManualResetEventSlim StopCompleted { get; } = new();
+
+        public void Start() { }
+
+        public TcpClient AcceptTcpClient() => throw new InvalidOperationException("simulated accept failure");
+
+        public void Stop()
+        {
+            StopEntered.Set();
+            if (!AllowStop.Wait(TestTimeout))
+                throw new TimeoutException("The test did not release old listener cleanup.");
+            StopCompleted.Set();
+        }
+    }
+
+    private sealed class CountingListenerFactory(ISocketServerListener? listener = null) : ISocketServerListenerFactory
+    {
+        private int _createCalls;
+
+        public int CreateCalls => Volatile.Read(ref _createCalls);
+
+        public ISocketServerListener Create(SocketServerSettings settings)
+        {
+            Interlocked.Increment(ref _createCalls);
+            return listener ?? throw new InvalidOperationException("No listener was configured.");
+        }
     }
 }

@@ -22,23 +22,26 @@ namespace ColorVision.SocketProtocol
     public class SocketManager:ViewModelBase
     {
         private static ILog log = LogManager.GetLogger(typeof(SocketManager));
-        private static SocketManager? _instance;
-        private static readonly object _locker = new();
+        private static readonly SocketManagerApplicationLifetime ApplicationLifetime = new();
 
         /// <summary>
         /// 获取SocketManager单例实例
         /// </summary>
         /// <returns>SocketManager实例</returns>
-        public static SocketManager GetInstance() { lock (_locker) { return _instance ??= new SocketManager(); } }
+        public static SocketManager GetInstance() => ApplicationLifetime.GetOrCreate(static () => new SocketManager());
 
+        public static bool ShutdownExisting(TimeSpan timeout) => ApplicationLifetime.ShutdownExisting(timeout);
+
+        private readonly SocketWorkerTracker _workerTracker;
         private readonly SocketServerLifecycle _serverLifecycle;
         private long _appliedTransitionSequence;
         private int _firewallRefreshVersion;
+        private int _shutdownStarted;
 
         /// <summary>
         /// Socket配置信息
         /// </summary>
-        public SocketConfig Config { get; set; } = SocketConfig.Instance;
+        public SocketConfig Config { get; set; }
 
         /// <summary>
         /// 编辑配置命令
@@ -66,14 +69,38 @@ namespace ColorVision.SocketProtocol
         public SocketMessageManager MessageManager { get; set; }
 
         public SocketManager()
-        {
-            JsonDispatcher = new SocketJsonDispatcher();
-            TextDispatcher = new SocketTextDispatcher();
-            MessageManager = SocketMessageManager.GetInstance();
-            _serverLifecycle = new SocketServerLifecycle(
-                Config.IsServerEnabled ? SocketServerState.Stopped : SocketServerState.Disabled,
+            : this(
+                SocketConfig.Instance,
                 TcpSocketServerListenerFactory.Instance,
                 action => _ = Task.Run(action),
+                new SocketWorkerTracker(),
+                new SocketJsonDispatcher(),
+                new SocketTextDispatcher(),
+                SocketMessageManager.GetInstance(),
+                refreshNetworkAccessStatus: true)
+        {
+        }
+
+        internal SocketManager(
+            SocketConfig config,
+            ISocketServerListenerFactory listenerFactory,
+            Action<Action> queueWork,
+            SocketWorkerTracker workerTracker,
+            SocketJsonDispatcher jsonDispatcher,
+            SocketTextDispatcher textDispatcher,
+            SocketMessageManager messageManager,
+            bool refreshNetworkAccessStatus)
+        {
+            Config = config;
+            _workerTracker = workerTracker;
+            JsonDispatcher = jsonDispatcher;
+            TextDispatcher = textDispatcher;
+            MessageManager = messageManager;
+            _serverLifecycle = new SocketServerLifecycle(
+                Config.IsServerEnabled ? SocketServerState.Stopped : SocketServerState.Disabled,
+                listenerFactory,
+                queueWork,
+                _workerTracker,
                 ApplyServerTransition,
                 AcceptClient,
                 CloseClient);
@@ -85,7 +112,8 @@ namespace ColorVision.SocketProtocol
             };
             TcpClients.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ClientCountText));
             ServerState = Config.IsServerEnabled ? SocketServerState.Stopped : SocketServerState.Disabled;
-            RefreshNetworkAccessStatus();
+            if (refreshNetworkAccessStatus)
+                RefreshNetworkAccessStatus();
         }
 
         /// <summary>
@@ -117,6 +145,8 @@ namespace ColorVision.SocketProtocol
         {
             get
             {
+                if (ServerState == SocketServerState.Error)
+                    return Properties.Resources.OpenFailed;
                 if (!Config.IsServerEnabled)
                     return Properties.Resources.Disabled;
 
@@ -137,14 +167,14 @@ namespace ColorVision.SocketProtocol
         {
             get
             {
+                if (ServerState == SocketServerState.Error)
+                    return Properties.Resources.OpenFailed;
                 if (!Config.IsServerEnabled)
                     return Properties.Resources.Stopped;
 
                 return IsConnect
                     ? Properties.Resources.Running
-                    : ServerState == SocketServerState.Error
-                        ? Properties.Resources.OpenFailed
-                        : Properties.Resources.Stopped;
+                    : Properties.Resources.Stopped;
             }
         }
 
@@ -278,7 +308,7 @@ namespace ColorVision.SocketProtocol
             ? FormatResource(Properties.Resources.UpdatedAtFormat, LastStatusChangedTime.Value)
             : string.Empty;
 
-        public bool HasLastError => Config.IsServerEnabled && ServerState == SocketServerState.Error && !string.IsNullOrWhiteSpace(LastErrorMessage);
+        public bool HasLastError => ServerState == SocketServerState.Error && !string.IsNullOrWhiteSpace(LastErrorMessage);
 
         public string LastErrorDisplay => HasLastError ? LastErrorMessage : Properties.Resources.NoError;
 
@@ -325,34 +355,54 @@ namespace ColorVision.SocketProtocol
             }
         }
 
+        private static void PostOnUiThread(Action action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                action();
+            }
+            else if (!dispatcher.HasShutdownStarted && !dispatcher.HasShutdownFinished)
+            {
+                _ = dispatcher.BeginInvoke(action);
+            }
+        }
+
         private void ApplyServerTransition(SocketServerTransition transition)
         {
-            RunOnUiThread(() =>
+            if (Volatile.Read(ref _shutdownStarted) != 0)
+                return;
+
+            PostOnUiThread(() => ApplyServerTransitionCore(transition));
+        }
+
+        internal void ApplyServerTransitionCore(SocketServerTransition transition)
+        {
+            if (Volatile.Read(ref _shutdownStarted) != 0)
+                return;
+            if (transition.Sequence <= _appliedTransitionSequence)
+                return;
+
+            bool wasConnected = IsConnect;
+            _appliedTransitionSequence = transition.Sequence;
+            ServerState = transition.State;
+            LastStatusChangedTime = DateTime.Now;
+            LastErrorMessage = transition.State == SocketServerState.Error && transition.Exception != null
+                ? BuildFailureMessage(transition)
+                : string.Empty;
+
+            if (transition.State == SocketServerState.Running)
+                log.Info("Server started. Listening on port: " + transition.Settings!.ServerPort);
+            else if (transition.State is SocketServerState.Stopped or SocketServerState.Disabled)
+                log.Info("Server stopped.");
+            else if (transition.State == SocketServerState.Error)
+                log.Error(LastErrorMessage, transition.Exception);
+
+            if (wasConnected != IsConnect)
             {
-                if (transition.Sequence <= _appliedTransitionSequence)
-                    return;
-
-                bool wasConnected = IsConnect;
-                _appliedTransitionSequence = transition.Sequence;
-                ServerState = transition.State;
-                LastStatusChangedTime = DateTime.Now;
-                LastErrorMessage = transition.State == SocketServerState.Error && transition.Exception != null
-                    ? BuildFailureMessage(transition)
-                    : string.Empty;
-
-                if (transition.State == SocketServerState.Running)
-                    log.Info("Server started. Listening on port: " + transition.Settings!.ServerPort);
-                else if (transition.State is SocketServerState.Stopped or SocketServerState.Disabled)
-                    log.Info("Server stopped.");
-                else if (transition.State == SocketServerState.Error)
-                    log.Error(LastErrorMessage, transition.Exception);
-
-                if (wasConnected != IsConnect)
-                {
-                    OnPropertyChanged(nameof(IsConnect));
-                    SocketConnectChanged?.Invoke(this, IsConnect);
-                }
-            });
+                OnPropertyChanged(nameof(IsConnect));
+                SocketConnectChanged?.Invoke(this, IsConnect);
+            }
         }
 
         private string BuildFailureMessage(SocketServerTransition transition)
@@ -464,6 +514,29 @@ namespace ColorVision.SocketProtocol
                 NotifyServerStatusChanged();
         }
 
+        internal bool Shutdown(TimeSpan timeout)
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            Interlocked.Exchange(ref _shutdownStarted, 1);
+            _serverLifecycle.BeginShutdown();
+
+            TimeSpan remaining = timeout - stopwatch.Elapsed;
+            if (remaining < TimeSpan.Zero)
+                remaining = TimeSpan.Zero;
+            bool workersCompleted = _workerTracker.Wait(remaining);
+            Exception? cleanupException = _serverLifecycle.ShutdownException;
+            int remainingWorkers = _workerTracker.ActiveWorkers;
+
+            if (cleanupException != null)
+                log.Error("Socket shutdown completed with a resource cleanup error.", cleanupException);
+            if (!workersCompleted)
+                log.Warn($"Socket shutdown timed out after {stopwatch.ElapsedMilliseconds} ms with {remainingWorkers} worker(s) still active.");
+            else
+                log.Info($"Socket shutdown completed in {stopwatch.ElapsedMilliseconds} ms.");
+
+            return workersCompleted && cleanupException == null;
+        }
+
         /// <summary>
         /// 已连接的TCP客户端集合
         /// </summary>
@@ -493,22 +566,46 @@ namespace ColorVision.SocketProtocol
 
         private void AcceptClient(SocketServerClient connection)
         {
-            RunOnUiThread(() =>
-            {
-                if (!connection.IsClosed)
-                    TcpClients.Add(connection.Client);
-            });
-            if (connection.IsClosed)
+            if (Volatile.Read(ref _shutdownStarted) != 0 || connection.IsClosed)
                 return;
 
-            Thread clientThread = new Thread(new ParameterizedThreadStart(HandleClient));
-            clientThread.Start(connection);
+            PostOnUiThread(() =>
+            {
+                if (Volatile.Read(ref _shutdownStarted) == 0 && !connection.IsClosed)
+                    TcpClients.Add(connection.Client);
+            });
+            if (Volatile.Read(ref _shutdownStarted) != 0
+                || connection.IsClosed
+                || !_workerTracker.TryRegister(out SocketWorkerLease? workerLease))
+                return;
+
+            Thread clientThread = CreateClientThread(() => HandleClient(connection, workerLease));
+            try
+            {
+                clientThread.Start();
+            }
+            catch
+            {
+                workerLease.Dispose();
+                _serverLifecycle.ReleaseClient(connection);
+                throw;
+            }
         }
 
-        private void HandleClient(object? obj)
+        internal static Thread CreateClientThread(ThreadStart start) => new(start)
         {
-            if (obj is not SocketServerClient connection) return;
+            IsBackground = true,
+            Name = "ColorVision.SocketClient"
+        };
 
+        private void HandleClient(SocketServerClient connection, SocketWorkerLease workerLease)
+        {
+            using (workerLease)
+                HandleClientCore(connection);
+        }
+
+        private void HandleClientCore(SocketServerClient connection)
+        {
             TcpClient client = connection.Client;
             SocketServerSettings settings = connection.Settings;
             string clientEndPoint = GetClientEndPoint(client);
@@ -677,7 +774,6 @@ namespace ColorVision.SocketProtocol
         private void CloseClient(SocketServerClient connection)
         {
             TcpClient client = connection.Client;
-            RemoveClient(client);
             try
             {
                 if (client.Connected)
@@ -689,6 +785,8 @@ namespace ColorVision.SocketProtocol
             }
 
             DisposeClient(client);
+            if (Volatile.Read(ref _shutdownStarted) == 0)
+                RemoveClient(client);
         }
 
         private static string GetClientEndPoint(TcpClient client)
@@ -710,7 +808,7 @@ namespace ColorVision.SocketProtocol
         {
             try
             {
-                RunOnUiThread(() => TcpClients.Remove(client));
+                PostOnUiThread(() => TcpClients.Remove(client));
             }
             catch (Exception ex)
             {
