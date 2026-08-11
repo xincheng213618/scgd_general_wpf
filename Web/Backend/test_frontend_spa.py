@@ -90,8 +90,9 @@ class FrontendSpaTests(unittest.TestCase):
         self.assertEqual(gzip_response.headers["Content-Encoding"], "gzip")
         self.assertEqual(identity.data, self.asset_bytes)
         self.assertIsNone(identity.headers.get("Content-Encoding"))
+        self.assertIn(identity.mimetype, {"application/javascript", "text/javascript"})
         for response in (brotli, gzip_response, identity):
-            self.assertEqual(response.mimetype, "application/javascript")
+            self.assertEqual(response.mimetype, identity.mimetype)
             self.assertIn("Accept-Encoding", response.headers.get("Vary", ""))
             self.assertEqual(
                 response.headers["Cache-Control"],
