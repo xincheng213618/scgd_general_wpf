@@ -25,6 +25,8 @@ class FrontendSpaContext:
 frontend_spa = Blueprint("frontend_spa", __name__)
 
 _ctx: FrontendSpaContext | None = None
+_PRECOMPRESSED_SUFFIXES = (("br", ".br"), ("gzip", ".gz"))
+_PRECOMPRESSED_FILE_SUFFIXES = tuple(suffix for _, suffix in _PRECOMPRESSED_SUFFIXES)
 
 
 def _get_ctx() -> FrontendSpaContext:
@@ -37,26 +39,51 @@ def _current_internal_path() -> str:
     return request.full_path.rstrip("?")
 
 
+def _identity_is_acceptable() -> bool:
+    header = request.headers.get("Accept-Encoding")
+    if not header:
+        return True
+    qualities = {
+        encoding.lower(): quality
+        for encoding, quality in request.accept_encodings
+    }
+    if "identity" in qualities:
+        return qualities["identity"] > 0
+    return qualities.get("*") != 0
+
+
 def _send_static_file(dist: Path, asset_path: str, *, max_age: int):
     """Serve a build artifact, preferring an available precompressed variant."""
     available_encodings = [
         encoding
-        for encoding, suffix in (("br", ".br"), ("gzip", ".gz"))
+        for encoding, suffix in _PRECOMPRESSED_SUFFIXES
         if (dist / f"{asset_path}{suffix}").is_file()
     ]
     has_variants = bool(available_encodings)
     selected_encoding = None
     selected_path = asset_path
+    identity_is_acceptable = _identity_is_acceptable()
 
     # Preserve the existing byte-range contract against the identity file.
-    # A compressed range addresses different bytes and a different total size.
-    if has_variants and not request.headers.get("Range"):
+    # If identity is explicitly refused, the range correctly addresses the
+    # selected encoded representation instead.
+    should_negotiate = has_variants and (
+        not request.headers.get("Range") or not identity_is_acceptable
+    )
+    if should_negotiate:
         best_match = request.accept_encodings.best_match(
-            [*available_encodings, "identity"],
+            [
+                *available_encodings,
+                *(("identity",) if identity_is_acceptable else ()),
+            ],
         )
         if best_match in available_encodings:
             selected_encoding = best_match
             selected_path = f"{asset_path}{'.br' if best_match == 'br' else '.gz'}"
+    if selected_encoding is None and not identity_is_acceptable:
+        response = current_app.make_response(("", 406))
+        response.vary.add("Accept-Encoding")
+        return response
 
     response = send_from_directory(
         dist,
@@ -96,12 +123,14 @@ def _serve_spa():
 def _serve_asset(asset_path: str, *, immutable: bool = False):
     ctx = _get_ctx()
     dist = ctx.dist_dir
+    if asset_path.endswith(_PRECOMPRESSED_FILE_SUFFIXES):
+        abort(404)
     target = dist / asset_path
     if target.is_file():
         response = _send_static_file(
             dist, asset_path, max_age=31_536_000 if immutable else 3_600,
         )
-        if immutable:
+        if immutable and response.status_code in (200, 206, 304):
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return response
     # A missing hashed Vite chunk must stay a real miss. Returning index.html

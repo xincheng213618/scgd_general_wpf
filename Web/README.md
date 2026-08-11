@@ -20,7 +20,8 @@ downloads, and storage/index services.
 
 Production frontend builds also emit verified `.br` and `.gz` variants for
 compressible static files. Flask negotiates those files from `Accept-Encoding`;
-byte-range requests continue to address the identity representation.
+the variant suffixes are not public URLs. Byte-range requests continue to
+address the identity representation unless the client explicitly rejects it.
 
 Common commands:
 

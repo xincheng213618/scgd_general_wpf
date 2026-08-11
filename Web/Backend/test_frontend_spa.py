@@ -15,10 +15,16 @@ class FrontendSpaTests(unittest.TestCase):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.dist = Path(self.temp_dir.name)
         (self.dist / "assets").mkdir()
-        (self.dist / "index.html").write_text(
-            '<!doctype html><div id="root"></div>',
-            encoding="utf-8",
+        self.index_bytes = (
+            b'<!doctype html><div id="root"></div>'
+            + b"<!-- compressed SPA fallback fixture -->" * 50
         )
+        self.index = self.dist / "index.html"
+        self.index.write_bytes(self.index_bytes)
+        self.index_gzip_bytes = gzip.compress(
+            self.index_bytes, compresslevel=9, mtime=0,
+        )
+        self.index.with_name("index.html.gz").write_bytes(self.index_gzip_bytes)
         self.asset = self.dist / "assets" / "app-deadbeef.js"
         self.asset_bytes = b"export default true;" * 200
         self.asset.write_bytes(self.asset_bytes)
@@ -92,6 +98,50 @@ class FrontendSpaTests(unittest.TestCase):
                 "public, max-age=31536000, immutable",
             )
 
+    def test_accept_encoding_quality_wildcard_and_identity_contract(self):
+        cases = (
+            ("br;q=0, gzip;q=1", 200, "gzip", self.gzip_bytes),
+            ("gzip;q=0, *;q=0.5", 200, "br", self.brotli_bytes),
+            ("br;q=0, gzip;q=0, identity;q=1", 200, None, self.asset_bytes),
+            ("identity", 200, None, self.asset_bytes),
+            ("*", 200, "br", self.brotli_bytes),
+            ("*;q=0", 406, None, b""),
+            ("br;q=0, gzip;q=0, identity;q=0", 406, None, b""),
+        )
+
+        for accept_encoding, status, content_encoding, body in cases:
+            with self.subTest(accept_encoding=accept_encoding):
+                response = self.client.get(
+                    "/assets/app-deadbeef.js",
+                    headers={"Accept-Encoding": accept_encoding},
+                )
+                self.responses.append(response)
+                self.assertEqual(response.status_code, status)
+                self.assertEqual(response.headers.get("Content-Encoding"), content_encoding)
+                self.assertEqual(response.data, body)
+                self.assertIn("Accept-Encoding", response.headers.get("Vary", ""))
+                if status == 406:
+                    self.assertIsNone(response.headers.get("Cache-Control"))
+
+    def test_head_uses_the_same_compressed_representation_without_a_body(self):
+        get_response = self.client.get(
+            "/assets/app-deadbeef.js",
+            headers={"Accept-Encoding": "gzip"},
+        )
+        head_response = self.client.head(
+            "/assets/app-deadbeef.js",
+            headers={"Accept-Encoding": "gzip"},
+        )
+        self.responses.extend((get_response, head_response))
+
+        self.assertEqual(head_response.status_code, 200)
+        self.assertEqual(head_response.data, b"")
+        self.assertEqual(head_response.headers["Content-Encoding"], "gzip")
+        self.assertEqual(
+            head_response.headers["Content-Length"], str(len(self.gzip_bytes)),
+        )
+        self.assertEqual(head_response.headers["ETag"], get_response.headers["ETag"])
+
     def test_compressed_assets_keep_conditional_get_contract(self):
         compressed = self.client.get(
             "/assets/app-deadbeef.js",
@@ -128,32 +178,93 @@ class FrontendSpaTests(unittest.TestCase):
 
         self.assertNotEqual(compressed_etag, identity.headers["ETag"])
         self.assertEqual(etag_match.status_code, 304)
+        self.assertEqual(etag_match.data, b"")
+        self.assertEqual(etag_match.headers["ETag"], compressed_etag)
         self.assertEqual(modified_match.status_code, 304)
+        self.assertEqual(modified_match.data, b"")
         self.assertEqual(different_representation.status_code, 200)
         self.assertIn("Accept-Encoding", etag_match.headers.get("Vary", ""))
 
-    def test_range_requests_keep_identity_byte_offsets(self):
-        response = self.client.get(
+    def test_range_and_if_range_keep_representation_byte_offsets(self):
+        identity = self.client.get(
             "/assets/app-deadbeef.js",
-            headers={"Accept-Encoding": "gzip, br", "Range": "bytes=0-99"},
+            headers={"Accept-Encoding": "identity"},
         )
-        self.responses.append(response)
+        matched = self.client.get(
+            "/assets/app-deadbeef.js",
+            headers={
+                "Accept-Encoding": "gzip, br",
+                "Range": "bytes=0-99",
+                "If-Range": identity.headers["ETag"],
+            },
+        )
+        stale = self.client.get(
+            "/assets/app-deadbeef.js",
+            headers={
+                "Accept-Encoding": "gzip, br",
+                "Range": "bytes=0-99",
+                "If-Range": '"stale-etag"',
+            },
+        )
+        encoded = self.client.get(
+            "/assets/app-deadbeef.js",
+            headers={
+                "Accept-Encoding": "gzip, identity;q=0",
+                "Range": "bytes=0-99",
+            },
+        )
+        self.responses.extend((identity, matched, stale, encoded))
 
-        self.assertEqual(response.status_code, 206)
-        self.assertEqual(response.data, self.asset_bytes[:100])
+        self.assertEqual(matched.status_code, 206)
+        self.assertEqual(matched.data, self.asset_bytes[:100])
         self.assertEqual(
-            response.headers["Content-Range"],
+            matched.headers["Content-Range"],
             f"bytes 0-99/{len(self.asset_bytes)}",
         )
-        self.assertIsNone(response.headers.get("Content-Encoding"))
-        self.assertIn("Accept-Encoding", response.headers.get("Vary", ""))
+        self.assertIsNone(matched.headers.get("Content-Encoding"))
+        self.assertEqual(stale.status_code, 200)
+        self.assertEqual(stale.data, self.asset_bytes)
+        self.assertIsNone(stale.headers.get("Content-Range"))
+        self.assertEqual(encoded.status_code, 206)
+        self.assertEqual(encoded.data, self.gzip_bytes[:100])
+        self.assertEqual(encoded.headers["Content-Encoding"], "gzip")
+        self.assertEqual(
+            encoded.headers["Content-Range"],
+            f"bytes 0-{min(99, len(self.gzip_bytes) - 1)}/{len(self.gzip_bytes)}",
+        )
+        for response in (matched, stale, encoded):
+            self.assertIn("Accept-Encoding", response.headers.get("Vary", ""))
+
+    def test_precompressed_variants_are_not_public_paths(self):
+        gzip_path = self.client.get("/assets/app-deadbeef.js.gz")
+        brotli_path = self.client.get("/assets/app-deadbeef.js.br")
+        self.responses.extend((gzip_path, brotli_path))
+
+        self.assertEqual(gzip_path.status_code, 404)
+        self.assertEqual(brotli_path.status_code, 404)
+        self.assertNotIn(b'<div id="root">', gzip_path.data)
+        self.assertNotIn(b'<div id="root">', brotli_path.data)
 
     def test_spa_html_always_revalidates(self):
-        response = self.client.get("/plugins/DemoPlugin")
-        self.responses.append(response)
+        plugin_response = self.client.get(
+            "/plugins/DemoPlugin",
+            headers={"Accept-Encoding": "gzip"},
+        )
+        admin_response = self.client.get(
+            "/admin/settings",
+            headers={"Accept-Encoding": "gzip"},
+        )
+        unknown_response = self.client.get("/not-an-application-route")
+        self.responses.extend((plugin_response, admin_response, unknown_response))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers["Cache-Control"], "no-cache, must-revalidate")
+        for response in (plugin_response, admin_response):
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.data, self.index_gzip_bytes)
+            self.assertEqual(response.headers["Content-Encoding"], "gzip")
+            self.assertEqual(
+                response.headers["Cache-Control"], "no-cache, must-revalidate",
+            )
+        self.assertEqual(unknown_response.status_code, 404)
 
 
 if __name__ == "__main__":
