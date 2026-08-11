@@ -148,7 +148,7 @@ namespace ProjectARVRPro.Process.Chessboard
 
         private static string GetExportDirectory(IProcessExecutionContext ctx)
         {
-            var config = ViewResultManager.GetInstance().Config;
+            ViewResultManagerConfig config = ctx.ResultConfig ?? ViewResultManager.GetInstance().CaptureConfig();
             string exportDir = string.IsNullOrWhiteSpace(config.CsvSavePath)
                 ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR")
                 : config.CsvSavePath;

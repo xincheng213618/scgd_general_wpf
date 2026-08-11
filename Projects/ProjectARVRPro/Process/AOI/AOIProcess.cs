@@ -82,7 +82,7 @@ namespace ProjectARVRPro.Process.AOI
                     }
                 }
 
-                string exportDir = GetExportDirectory(ctx.Batch.Name ?? ctx.Batch.Id.ToString());
+                string exportDir = GetExportDirectory(ctx, ctx.Batch.Name ?? ctx.Batch.Id.ToString());
                 if (Config.ExportOriginalImage)
                 {
                     ExportOriginalImages(values, exportDir, Config.ExportOriginalAsTif, log);
@@ -243,9 +243,10 @@ namespace ProjectARVRPro.Process.AOI
             AppendPlainText(paragraph, sb.ToString(), foreground, fontSize);
         }
 
-        private static string GetExportDirectory(string batchName)
+        private static string GetExportDirectory(IProcessExecutionContext ctx, string batchName)
         {
-            string dir = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, batchName);
+            ViewResultManagerConfig config = ctx.ResultConfig ?? ViewResultManager.GetInstance().CaptureConfig();
+            string dir = Path.Combine(config.CsvSavePath, batchName);
             if (!Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);

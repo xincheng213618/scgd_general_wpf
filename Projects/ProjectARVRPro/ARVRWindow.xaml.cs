@@ -1056,6 +1056,7 @@ namespace ProjectARVRPro
                     Batch = batch,
                     Result = CurrentFlowResult,
                     ObjectiveTestResult = ObjectiveTestResult,
+                    ResultConfig = _objectiveSessionViewResultConfig ?? ViewResultManager.CaptureConfig(),
                     ImageView = ImageView
                 };
 
@@ -1308,6 +1309,7 @@ namespace ProjectARVRPro
                             Batch = Batch,
                             Result = result,
                             ObjectiveTestResult = ObjectiveTestResult,
+                            ResultConfig = exportConfig,
                             ImageView =ImageView,
                         };
                         executed = await process.Execute(ctx);
@@ -1728,6 +1730,7 @@ namespace ProjectARVRPro
                         Batch = batch,
                         Result = result,
                         ObjectiveTestResult = ObjectiveTestResult,
+                        ResultConfig = _objectiveSessionViewResultConfig ?? ViewResultManager.CaptureConfig(),
                         ImageView = ImageView
                     };
                     bool executed = await process.Execute(ctx);
@@ -1943,6 +1946,9 @@ namespace ProjectARVRPro
                 {
                     Result = result,
                     ObjectiveTestResult = ObjectiveTestResult,
+                    ResultConfig = _automaticImageExportConfigs.TryGetValue(result, out ViewResultManagerConfig? exportConfig)
+                        ? exportConfig
+                        : _objectiveSessionViewResultConfig ?? ViewResultManager.CaptureConfig(),
                     ImageView = ImageView,
                 };
                 process.Render(ctx);
@@ -2357,6 +2363,7 @@ namespace ProjectARVRPro
                     {
                         Result = result,
                         ObjectiveTestResult = ObjectiveTestResult,
+                        ResultConfig = _objectiveSessionViewResultConfig ?? ViewResultManager.CaptureConfig(),
                         ImageView = ImageView,
                     };
                     process.GenText(ctx, paragraph, foreground, outputFontSize);

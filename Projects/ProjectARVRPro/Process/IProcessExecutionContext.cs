@@ -11,6 +11,7 @@ namespace ProjectARVRPro.Process
         public MeasureBatchModel Batch { get; set; } = null!;
         public ProjectARVRReuslt Result { get; set; } = null!;
         public ObjectiveTestResult ObjectiveTestResult { get; set; } = null!;
+        public ViewResultManagerConfig? ResultConfig { get; set; }
 
         public RecipeConfig RecipeConfig { get; } = ProcessManager.GetInstance().RecipeConfig;
 
