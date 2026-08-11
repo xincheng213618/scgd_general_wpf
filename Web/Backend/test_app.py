@@ -395,6 +395,19 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertTrue(keep_latest.exists())
         self.assertFalse(dropped.exists())
 
+    def test_prune_update_packages_preserves_version_named_by_live_marker(self):
+        current = self._create_update_package("1.4.12.35")
+        pending_new = self._create_update_package("1.4.12.36")
+        (self.storage / "LATEST_RELEASE").write_text("1.4.12.35", encoding="utf-8")
+
+        result = prune_update_packages(self.storage)
+
+        retained_names = {item["filename"] for item in result["retained"]}
+        self.assertIn(current.name, retained_names)
+        self.assertIn(pending_new.name, retained_names)
+        self.assertTrue(current.exists())
+        self.assertTrue(pending_new.exists())
+
     def test_repair_update_storage_layout_moves_misplaced_files(self):
         legacy_dir = self.storage / "ColorVision" / "Update"
         legacy_dir.mkdir(parents=True, exist_ok=True)

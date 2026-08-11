@@ -182,18 +182,35 @@ def scan_update_packages(storage: Path) -> tuple[list[dict[str, Any]], list[dict
     return canonical, others
 
 
-def determine_retained_update_filenames(packages: list[dict[str, Any]]) -> set[str]:
+def determine_retained_update_filenames(
+    packages: list[dict[str, Any]],
+    *,
+    published_version: str | None = None,
+) -> set[str]:
     if not packages:
         return set()
 
     retained = {packages[0]["filename"]}
     retained.update(package["filename"] for package in packages if package["fix"] == 1)
+    if published_version:
+        retained.update(
+            package["filename"]
+            for package in packages
+            if package["version"] == published_version
+        )
     return retained
 
 
 def prune_update_packages(storage: Path) -> dict[str, Any]:
     canonical_packages, other_files = scan_update_packages(storage)
-    retained_filenames = determine_retained_update_filenames(canonical_packages)
+    try:
+        published_version = (storage / "LATEST_RELEASE").read_text(encoding="utf-8").strip()
+    except (OSError, UnicodeDecodeError):
+        published_version = None
+    retained_filenames = determine_retained_update_filenames(
+        canonical_packages,
+        published_version=published_version,
+    )
     deleted: list[str] = []
 
     for package in canonical_packages:

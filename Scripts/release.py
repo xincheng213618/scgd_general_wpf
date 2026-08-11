@@ -32,13 +32,20 @@ def run_release(args) -> int:
     update = build_update.prepare_update_release(expected_version=primary.version)
     if update is None:
         return 1
+    if update.version != primary.version:
+        print(
+            f"Prepared release version mismatch: installer {primary.version}, "
+            f"update {update.version}."
+        )
+        return 1
 
     if not build.publish_primary_release(
         primary.version,
-        primary.installer_file,
-        primary.changelog_src,
+        primary.installer,
+        primary.changelog,
         remote_settings,
-        incremental_file=update.incremental_zip,
+        incremental_file=update.incremental_package,
+        required_local_artifacts=(update.full_package,),
     ):
         return 1
     return 0

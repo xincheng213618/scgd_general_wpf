@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 from Scripts import build, build_update, release
+from Scripts.release_artifacts import PreparedArtifact
 
 
 class TwoPhaseReleaseOrchestrationTests(unittest.TestCase):
@@ -18,15 +19,23 @@ class TwoPhaseReleaseOrchestrationTests(unittest.TestCase):
             username="user",
             password="password",
         )
+        installer = self.root / "ColorVision-1.2.3.4.exe"
+        changelog = self.root / "CHANGELOG.md"
+        full_zip = self.root / "ColorVision-[1.2.3.4].zip"
+        incremental_zip = self.root / "ColorVision-Update-[1.2.3.4].cvx"
+        installer.write_bytes(b"installer")
+        changelog.write_text("## 1.2.3.4", encoding="utf-8")
+        full_zip.write_bytes(b"full")
+        incremental_zip.write_bytes(b"incremental")
         self.primary = build.PreparedPrimaryRelease(
             "1.2.3.4",
-            self.root / "ColorVision-1.2.3.4.exe",
-            self.root / "CHANGELOG.md",
+            PreparedArtifact.capture(installer),
+            PreparedArtifact.capture(changelog),
         )
         self.update = build_update.PreparedUpdateRelease(
             "1.2.3.4",
-            self.root / "ColorVision-[1.2.3.4].zip",
-            self.root / "ColorVision-Update-[1.2.3.4].cvx",
+            PreparedArtifact.capture(full_zip),
+            PreparedArtifact.capture(incremental_zip),
         )
         self.args = SimpleNamespace(project="ColorVision")
 
@@ -46,11 +55,12 @@ class TwoPhaseReleaseOrchestrationTests(unittest.TestCase):
             events.append("update-prepare")
             return self.update
 
-        def publish(version, installer, changelog, settings, *, incremental_file):
+        def publish(version, installer, changelog, settings, *, incremental_file, required_local_artifacts):
             self.assertEqual(self.primary.version, version)
-            self.assertEqual(self.primary.installer_file, installer)
-            self.assertEqual(self.primary.changelog_src, changelog)
-            self.assertEqual(self.update.incremental_zip, incremental_file)
+            self.assertEqual(self.primary.installer, installer)
+            self.assertEqual(self.primary.changelog, changelog)
+            self.assertEqual(self.update.incremental_package, incremental_file)
+            self.assertEqual((self.update.full_package,), required_local_artifacts)
             self.assertIs(self.settings, settings)
             events.append("publish")
             return True
@@ -90,6 +100,25 @@ class TwoPhaseReleaseOrchestrationTests(unittest.TestCase):
             mock.patch.object(build, "preflight_remote_upload", return_value=True),
             mock.patch.object(build, "prepare_primary_release", return_value=self.primary),
             mock.patch.object(build_update, "prepare_update_release", return_value=None),
+            mock.patch.object(build, "publish_primary_release") as publish_mock,
+        ):
+            result = release.run_release(self.args)
+
+        self.assertEqual(1, result)
+        publish_mock.assert_not_called()
+
+    def test_prepared_version_mismatch_performs_no_upload(self) -> None:
+        mismatched_update = build_update.PreparedUpdateRelease(
+            "9.9.9.9",
+            self.update.full_package,
+            self.update.incremental_package,
+        )
+        with (
+            mock.patch.object(build, "build_projects", return_value={"ColorVision": self.project}),
+            mock.patch.object(build, "build_remote_settings", return_value=self.settings),
+            mock.patch.object(build, "preflight_remote_upload", return_value=True),
+            mock.patch.object(build, "prepare_primary_release", return_value=self.primary),
+            mock.patch.object(build_update, "prepare_update_release", return_value=mismatched_update),
             mock.patch.object(build, "publish_primary_release") as publish_mock,
         ):
             result = release.run_release(self.args)

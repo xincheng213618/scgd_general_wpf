@@ -20,6 +20,7 @@ from Scripts.build import (
     validate_shared_files_manifests,
 )
 from Scripts.service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS
+from Scripts.release_artifacts import PreparedArtifact
 from Scripts.verify_native_contracts import CUDA_PACKAGE_MEMBER, CUDA_TRACKED_DLL
 
 
@@ -97,6 +98,38 @@ class ReleaseBuildOrchestrationTests(unittest.TestCase):
 
         self.assertIsNone(prepared)
         final_gate.assert_called_once()
+
+    def test_prepare_primary_rejects_installer_changed_during_final_payload_gate(self) -> None:
+        changelog = self.root / "CHANGELOG.md"
+        changelog.write_text("## 1.2.3.4", encoding="utf-8")
+        project = ProjectConfig(
+            "ColorVision",
+            self.msbuild,
+            self.solution,
+            self.advanced_installer,
+            self.aip,
+            self.setup,
+            changelog,
+        )
+        installer = self.setup / "ColorVision-1.2.3.4.exe"
+        installer.write_bytes(b"validated installer")
+
+        def mutate_installer(*_args, **_kwargs):
+            installer.write_bytes(b"different installer")
+            return True
+
+        with (
+            mock.patch.object(build_module, "rebuild_project", return_value=True),
+            mock.patch.object(build_module, "get_file_version", return_value="1.2.3.4"),
+            mock.patch.object(
+                build_module,
+                "validate_built_installer_cuda",
+                side_effect=mutate_installer,
+            ),
+        ):
+            prepared = prepare_primary_release(project)
+
+        self.assertIsNone(prepared)
 
 class InstallerRuntimeValidationTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -191,15 +224,132 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
             'Directory_="APPDIR" KeyPath="duplicate_cuda_file"/>'
             '<ROW File="duplicate_cuda_file" Component_="duplicate_cuda_component" '
             f'FileName="Alias.dll" SourcePath="{source_path}"/>'
+            '<ROW Feature_="MainFeature" Component_="duplicate_cuda_component"/>'
         )
         aip_path.write_text(
             aip_path.read_text(encoding="utf-8").replace("</DOCUMENT>", duplicate_rows + "</DOCUMENT>"),
             encoding="utf-8",
         )
 
+        messages: list[str] = []
+        self.assertFalse(validate_installer_runtime_dlls(
+            self.solution_root, self.runtime_directory, aip_path, report=messages.append,
+        ))
+        self.assertIn("exactly one opencv_cuda.dll", messages[-1])
+
+    def test_rejects_cuda_component_without_feature_membership(self) -> None:
+        aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
+        membership = '<ROW Feature_="MainFeature" Component_="component_11"/>'
+        aip_text = aip_path.read_text(encoding="utf-8")
+        self.assertIn(membership, aip_text)
+        aip_path.write_text(aip_text.replace(membership, ""), encoding="utf-8")
+
         self.assertFalse(validate_installer_runtime_dlls(
             self.solution_root, self.runtime_directory, aip_path, report=lambda _: None,
         ))
+
+    def test_rejects_cuda_component_in_feature_excluded_from_active_build(self) -> None:
+        aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
+        aip_text = aip_path.read_text(encoding="utf-8")
+        aip_text = aip_text.replace(
+            '<ROW BuildKey="DefaultBuild" BuildName="DefaultBuild"/>',
+            '<ROW BuildKey="DefaultBuild" BuildName="DefaultBuild"/>'
+            '<ROW BuildKey="OtherBuild" BuildName="OtherBuild"/>',
+        )
+        aip_text = aip_text.replace(
+            '<ROW Feature="MainFeature" Title="MainFeature" Level="1"/>',
+            '<ROW Feature="MainFeature" Title="MainFeature" Level="1"/>'
+            '<ROW Feature="CudaFeature" Title="CUDA" Level="1" Builds="OtherBuild"/>',
+        )
+        aip_text = aip_text.replace(
+            '<ROW Feature_="MainFeature" Component_="component_11"/>',
+            '<ROW Feature_="CudaFeature" Component_="component_11"/>',
+        )
+        aip_path.write_text(aip_text, encoding="utf-8")
+
+        self.assertFalse(validate_installer_runtime_dlls(
+            self.solution_root, self.runtime_directory, aip_path, report=lambda _: None,
+        ))
+
+    def test_rejects_cuda_file_component_or_required_directory_excluded_from_active_build(self) -> None:
+        for entity, identifier in (
+            ("File", "file_11"),
+            ("Component", "component_11"),
+            ("Directory", "dir_1"),
+        ):
+            with self.subTest(entity=entity):
+                aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
+                aip_text = aip_path.read_text(encoding="utf-8")
+                aip_text = aip_text.replace(
+                    '<ROW BuildKey="DefaultBuild" BuildName="DefaultBuild"/>',
+                    '<ROW BuildKey="DefaultBuild" BuildName="DefaultBuild"/>'
+                    '<ROW BuildKey="OtherBuild" BuildName="OtherBuild"/>',
+                )
+                marker = f'<ROW {entity}="{identifier}"'
+                self.assertIn(marker, aip_text)
+                aip_path.write_text(
+                    aip_text.replace(marker, f'{marker} Builds="OtherBuild"', 1),
+                    encoding="utf-8",
+                )
+
+                self.assertFalse(validate_installer_runtime_dlls(
+                    self.solution_root, self.runtime_directory, aip_path, report=lambda _: None,
+                ))
+
+    def test_rejects_cuda_feature_membership_excluded_from_active_build(self) -> None:
+        aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
+        aip_text = aip_path.read_text(encoding="utf-8")
+        aip_text = aip_text.replace(
+            '<ROW BuildKey="DefaultBuild" BuildName="DefaultBuild"/>',
+            '<ROW BuildKey="DefaultBuild" BuildName="DefaultBuild"/>'
+            '<ROW BuildKey="OtherBuild" BuildName="OtherBuild"/>',
+        )
+        membership = '<ROW Feature_="MainFeature" Component_="component_11"/>'
+        self.assertIn(membership, aip_text)
+        aip_path.write_text(
+            aip_text.replace(
+                membership,
+                '<ROW Feature_="MainFeature" Component_="component_11" Builds="OtherBuild"/>',
+            ),
+            encoding="utf-8",
+        )
+
+        self.assertFalse(validate_installer_runtime_dlls(
+            self.solution_root, self.runtime_directory, aip_path, report=lambda _: None,
+        ))
+
+    def test_rejects_ambiguous_feature_membership(self) -> None:
+        aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
+        aip_text = aip_path.read_text(encoding="utf-8").replace(
+            '</DOCUMENT>',
+            '<ROW Feature="SecondFeature" Title="Second" Level="1"/>'
+            '<ROW Feature_="SecondFeature" Component_="component_11"/>'
+            '</DOCUMENT>',
+        )
+        aip_path.write_text(aip_text, encoding="utf-8")
+
+        self.assertFalse(validate_installer_runtime_dlls(
+            self.solution_root, self.runtime_directory, aip_path, report=lambda _: None,
+        ))
+
+    def test_rejects_case_colliding_aip_entity_identifiers(self) -> None:
+        duplicate_rows = (
+            '<ROW Directory="appdir" Directory_Parent="TARGETDIR" DefaultDir="APPDIR:."/>',
+            '<ROW Component="COMPONENT_11" Directory_="APPDIR"/>',
+            '<ROW File="FILE_11" Component_="component_11" FileName="Alias.dll" SourcePath="alias.dll"/>',
+        )
+        for duplicate_row in duplicate_rows:
+            with self.subTest(duplicate_row=duplicate_row):
+                aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
+                aip_text = aip_path.read_text(encoding="utf-8").replace(
+                    '</DOCUMENT>',
+                    duplicate_row + '</DOCUMENT>',
+                )
+                aip_path.write_text(aip_text, encoding="utf-8")
+
+                self.assertFalse(validate_installer_runtime_dlls(
+                    self.solution_root, self.runtime_directory, aip_path, report=lambda _: None,
+                ))
 
     def test_cuda_release_gate_accepts_tracked_runtime_copy(self) -> None:
         repository_root = Path(__file__).resolve().parents[2]
@@ -332,6 +482,7 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
         directory_ids: dict[str, str] = {"": "APPDIR"}
         component_rows: list[str] = []
         file_rows: list[str] = []
+        feature_component_rows: list[str] = []
         for index, target in enumerate(targets):
             target_path = Path(target.replace("\\", "/"))
             parent_key = ""
@@ -363,10 +514,17 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
                 f'<ROW File="{file_id}" Component_="{component_id}" FileName="{target_path.name}" '
                 f'SourcePath="{source_path}"/>'
             )
+            feature_component_rows.append(
+                f'<ROW Feature_="MainFeature" Component_="{component_id}"/>'
+            )
 
         aip_path = self.root / "ColorVision.aip"
         aip_path.write_text(
-            '<DOCUMENT RootPath=".">' + ''.join(directory_rows + component_rows + file_rows) + '</DOCUMENT>',
+            '<DOCUMENT RootPath=".">'
+            '<ROW BuildKey="DefaultBuild" BuildName="DefaultBuild"/>'
+            '<ROW Feature="MainFeature" Title="MainFeature" Level="1"/>'
+            + ''.join(directory_rows + component_rows + file_rows + feature_component_rows)
+            + '</DOCUMENT>',
             encoding="utf-8",
         )
         return aip_path
@@ -514,6 +672,12 @@ class PrimaryReleasePublishTests(unittest.TestCase):
         )
         self.incremental = self.root / "ColorVision-Update-[1.2.3.4].cvx"
         self.incremental.write_bytes(b"update")
+        self.full_zip = self.root / "ColorVision-[1.2.3.4].zip"
+        self.full_zip.write_bytes(b"full")
+        self.installer_artifact = PreparedArtifact.capture(self.installer)
+        self.changelog_artifact = PreparedArtifact.capture(self.changelog)
+        self.incremental_artifact = PreparedArtifact.capture(self.incremental)
+        self.full_artifact = PreparedArtifact.capture(self.full_zip)
 
     def tearDown(self) -> None:
         self._temp_directory.cleanup()
@@ -581,8 +745,8 @@ class PrimaryReleasePublishTests(unittest.TestCase):
         with mock.patch("Scripts.build.backend_fetch_latest_version", return_value="1.2.3.3"):
             result = publish_primary_release(
                 "1.2.3.4",
-                self.installer,
-                self.changelog,
+                self.installer_artifact,
+                self.changelog_artifact,
                 self.settings,
                 incremental_file=self.incremental,
                 upload_func=upload_file,
@@ -599,7 +763,7 @@ class PrimaryReleasePublishTests(unittest.TestCase):
 
         def upload_file(path, _settings):
             events.append(Path(path).name)
-            return Path(path) != self.incremental
+            return Path(path).name != self.incremental.name
 
         with mock.patch("Scripts.build.backend_fetch_latest_version", return_value="1.2.3.3"):
             result = publish_primary_release(
@@ -636,6 +800,136 @@ class PrimaryReleasePublishTests(unittest.TestCase):
 
         self.assertFalse(result)
         self.assertEqual([self.installer.name, self.incremental.name, self.changelog.name], uploaded_files)
+
+    def test_equal_version_retry_is_idempotent_and_performs_no_remote_write(self) -> None:
+        upload_file = mock.Mock(return_value=True)
+        upload_content = mock.Mock(return_value=True)
+
+        with mock.patch("Scripts.build.backend_fetch_latest_version", return_value="1.2.3.4"):
+            result = publish_primary_release(
+                "1.2.3.4",
+                self.installer_artifact,
+                self.changelog_artifact,
+                self.settings,
+                incremental_file=self.incremental_artifact,
+                required_local_artifacts=(self.full_artifact,),
+                upload_func=upload_file,
+                upload_content_func=upload_content,
+            )
+
+        self.assertTrue(result)
+        upload_file.assert_not_called()
+        upload_content.assert_not_called()
+
+    def test_remote_marker_read_failure_blocks_all_uploads(self) -> None:
+        upload_file = mock.Mock(return_value=True)
+        upload_content = mock.Mock(return_value=True)
+
+        with mock.patch("Scripts.build.backend_fetch_latest_version", return_value=None):
+            result = publish_primary_release(
+                "1.2.3.4",
+                self.installer_artifact,
+                self.changelog_artifact,
+                self.settings,
+                incremental_file=self.incremental_artifact,
+                required_local_artifacts=(self.full_artifact,),
+                upload_func=upload_file,
+                upload_content_func=upload_content,
+            )
+
+        self.assertFalse(result)
+        upload_file.assert_not_called()
+        upload_content.assert_not_called()
+
+    def test_mismatched_full_package_version_blocks_all_remote_access(self) -> None:
+        wrong_full = self.root / "ColorVision-[9.9.9.9].zip"
+        wrong_full.write_bytes(b"full")
+        upload_file = mock.Mock(return_value=True)
+
+        with mock.patch("Scripts.build.backend_fetch_latest_version") as fetch_latest:
+            result = publish_primary_release(
+                "1.2.3.4",
+                self.installer_artifact,
+                self.changelog_artifact,
+                self.settings,
+                incremental_file=self.incremental_artifact,
+                required_local_artifacts=(PreparedArtifact.capture(wrong_full),),
+                upload_func=upload_file,
+            )
+
+        self.assertFalse(result)
+        fetch_latest.assert_not_called()
+        upload_file.assert_not_called()
+
+    def test_mutated_prepared_incremental_blocks_all_remote_writes(self) -> None:
+        self.incremental.write_bytes(b"mutated after prepare")
+        upload = mock.Mock(return_value=True)
+        upload_content = mock.Mock(return_value=True)
+
+        with mock.patch("Scripts.build.backend_fetch_latest_version") as fetch_latest:
+            result = publish_primary_release(
+                "1.2.3.4",
+                self.installer_artifact,
+                self.changelog_artifact,
+                self.settings,
+                incremental_file=self.incremental_artifact,
+                required_local_artifacts=(self.full_artifact,),
+                upload_func=upload,
+                upload_content_func=upload_content,
+            )
+
+        self.assertFalse(result)
+        fetch_latest.assert_not_called()
+        upload.assert_not_called()
+        upload_content.assert_not_called()
+
+    def test_mutated_required_full_package_blocks_all_remote_writes(self) -> None:
+        self.full_zip.write_bytes(b"mutated full package")
+        upload = mock.Mock(return_value=True)
+
+        with mock.patch("Scripts.build.backend_fetch_latest_version") as fetch_latest:
+            result = publish_primary_release(
+                "1.2.3.4",
+                self.installer_artifact,
+                self.changelog_artifact,
+                self.settings,
+                incremental_file=self.incremental_artifact,
+                required_local_artifacts=(self.full_artifact,),
+                upload_func=upload,
+            )
+
+        self.assertFalse(result)
+        fetch_latest.assert_not_called()
+        upload.assert_not_called()
+
+    def test_private_staging_survives_source_changes_during_remote_uploads(self) -> None:
+        uploaded: dict[str, bytes] = {}
+        expected_changelog = self.changelog.read_bytes()
+
+        def upload_file(path, _settings):
+            staged_path = Path(path)
+            uploaded[staged_path.name] = staged_path.read_bytes()
+            if staged_path.name == self.installer.name:
+                self.incremental.unlink()
+                self.changelog.write_bytes(b"changed after publication started")
+                self.full_zip.unlink()
+            return True
+
+        with mock.patch("Scripts.build.backend_fetch_latest_version", return_value="1.2.3.3"):
+            result = publish_primary_release(
+                "1.2.3.4",
+                self.installer_artifact,
+                self.changelog_artifact,
+                self.settings,
+                incremental_file=self.incremental_artifact,
+                required_local_artifacts=(self.full_artifact,),
+                upload_func=upload_file,
+                upload_content_func=mock.Mock(return_value=True),
+            )
+
+        self.assertTrue(result)
+        self.assertEqual(b"update", uploaded[self.incremental.name])
+        self.assertEqual(expected_changelog, uploaded[self.changelog.name])
 
 
 class InstallerSelectionTests(unittest.TestCase):

@@ -33,6 +33,7 @@ try:
     )
     from .generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
     from .build_update import get_file_version
+    from .release_artifacts import PreparedArtifact, PreparedArtifactError
     from .verify_native_contracts import (
         CUDA_PACKAGE_MEMBER,
         CUDA_TRACKED_DLL,
@@ -62,6 +63,7 @@ except ImportError:
     )
     from generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
     from build_update import get_file_version
+    from release_artifacts import PreparedArtifact, PreparedArtifactError
     from verify_native_contracts import (
         CUDA_PACKAGE_MEMBER,
         CUDA_TRACKED_DLL,
@@ -112,8 +114,16 @@ class ProjectConfig:
 @dataclass(frozen=True)
 class PreparedPrimaryRelease:
     version: str
-    installer_file: Path
-    changelog_src: Path
+    installer: PreparedArtifact
+    changelog: PreparedArtifact
+
+    @property
+    def installer_file(self) -> Path:
+        return self.installer.path
+
+    @property
+    def changelog_src(self) -> Path:
+        return self.changelog.path
 
 
 def sha256_file(path: Path) -> str:
@@ -536,55 +546,127 @@ def preflight_remote_upload(
 
 def publish_primary_release(
     latest_version: str,
-    latest_file: str | Path,
-    changelog_src: str | Path,
+    latest_file: PreparedArtifact | str | Path,
+    changelog_src: PreparedArtifact | str | Path,
     remote_settings: RemoteUploadSettings,
     *,
-    incremental_file: str | Path | None = None,
+    incremental_file: PreparedArtifact | str | Path | None = None,
+    required_local_artifacts: tuple[PreparedArtifact | str | Path, ...] = (),
     upload_func: Callable[[str | Path, RemoteUploadSettings], bool] = upload_file,
     upload_content_func: Callable[[str | bytes, str, RemoteUploadSettings], bool] = backend_upload_content,
 ) -> bool:
-    latest_file = Path(latest_file)
-    changelog_src = Path(changelog_src)
-
-    if not changelog_src.is_file():
-        print(f"Release changelog is missing: {changelog_src}")
-        return False
-
-    current_version = backend_fetch_latest_version(remote_settings)
-    if not should_update_version(latest_version, current_version):
-        print(f"The current version ({current_version}) is up to date.")
-        return False
-
-    print(f"Uploading primary release package: {latest_file.name}")
-    if not upload_func(latest_file, remote_settings):
-        print("Primary release package upload failed; update, CHANGELOG.md and LATEST_RELEASE will not be updated.")
-        return False
-
-    if incremental_file is not None:
-        update_file = Path(incremental_file)
-        update_settings = replace(
-            remote_settings,
-            folder_name=remote_settings.folder_name.rstrip("/") + "/Update",
+    try:
+        latest_file = (
+            latest_file if isinstance(latest_file, PreparedArtifact) else PreparedArtifact.capture(latest_file)
         )
-        print(f"Uploading incremental update package: {update_file.name}")
-        if not upload_func(update_file, update_settings):
-            print("Incremental update upload failed; CHANGELOG.md and LATEST_RELEASE will not be updated.")
-            return False
-
-    print(f"Uploading release changelog: {changelog_src.name}")
-    if not upload_func(changelog_src, remote_settings):
-        print("CHANGELOG.md upload failed; LATEST_RELEASE will not be updated.")
+        changelog_src = (
+            changelog_src if isinstance(changelog_src, PreparedArtifact) else PreparedArtifact.capture(changelog_src)
+        )
+        incremental_file = (
+            incremental_file
+            if incremental_file is None or isinstance(incremental_file, PreparedArtifact)
+            else PreparedArtifact.capture(incremental_file)
+        )
+        required_local_artifacts = tuple(
+            artifact if isinstance(artifact, PreparedArtifact) else PreparedArtifact.capture(artifact)
+            for artifact in required_local_artifacts
+        )
+    except PreparedArtifactError as exc:
+        print(f"Prepared release artifact validation failed before publication: {exc}")
         return False
 
-    print("Uploading release marker: LATEST_RELEASE")
-    if not upload_content_func(latest_version, "LATEST_RELEASE", remote_settings):
-        print("LATEST_RELEASE upload failed.")
+    if extract_version_from_filename(latest_file.path.name) != latest_version:
+        print(
+            f"Prepared installer filename does not match release version {latest_version}: "
+            f"{latest_file.path.name}"
+        )
+        return False
+    if incremental_file is not None and extract_version_from_filename(incremental_file.path.name) != latest_version:
+        print(
+            f"Prepared incremental filename does not match release version {latest_version}: "
+            f"{incremental_file.path.name}"
+        )
+        return False
+    mismatched_required_artifacts = [
+        artifact.path.name
+        for artifact in required_local_artifacts
+        if extract_version_from_filename(artifact.path.name) != latest_version
+    ]
+    if mismatched_required_artifacts:
+        print(
+            f"Prepared local release artifact filename does not match release version {latest_version}: "
+            + ", ".join(mismatched_required_artifacts)
+        )
         return False
 
-    print(f"Updated the release version to {latest_version}")
-    print(f"Upload {latest_file}")
-    return True
+    try:
+        with tempfile.TemporaryDirectory(prefix="colorvision-release-publish-") as temp_dir_name:
+            stage_root = Path(temp_dir_name)
+            staged_installer = latest_file.stage_to(stage_root / "primary" / latest_file.path.name)
+            staged_changelog = changelog_src.stage_to(stage_root / "primary" / changelog_src.path.name)
+            staged_incremental = (
+                incremental_file.stage_to(stage_root / "update" / incremental_file.path.name)
+                if incremental_file is not None
+                else None
+            )
+            staged_required_artifacts = tuple(
+                artifact.stage_to(stage_root / "required" / str(index) / artifact.path.name)
+                for index, artifact in enumerate(required_local_artifacts)
+            )
+
+            print(
+                "Verified and privately staged all publishable release artifacts before remote writes: "
+                f"installer={latest_file.sha256}, "
+                f"incremental={incremental_file.sha256 if incremental_file else 'none'}, "
+                f"changelog={changelog_src.sha256}, "
+                f"local-only={len(staged_required_artifacts)}."
+            )
+
+            current_version = backend_fetch_latest_version(remote_settings)
+            if current_version is None:
+                print("Could not verify the current remote release marker; aborting before uploads.")
+                return False
+            if version_tuple(latest_version) == version_tuple(current_version):
+                print(
+                    f"Release {latest_version} is already published; "
+                    "treating the retry as successful without overwriting live artifacts."
+                )
+                return True
+            if not should_update_version(latest_version, current_version):
+                print(f"The current version ({current_version}) is newer than {latest_version}.")
+                return False
+
+            print(f"Uploading primary release package: {staged_installer.name}")
+            if not upload_func(staged_installer, remote_settings):
+                print("Primary release package upload failed; update, CHANGELOG.md and LATEST_RELEASE will not be updated.")
+                return False
+
+            if staged_incremental is not None:
+                update_settings = replace(
+                    remote_settings,
+                    folder_name=remote_settings.folder_name.rstrip("/") + "/Update",
+                )
+                print(f"Uploading incremental update package: {staged_incremental.name}")
+                if not upload_func(staged_incremental, update_settings):
+                    print("Incremental update upload failed; CHANGELOG.md and LATEST_RELEASE will not be updated.")
+                    return False
+
+            print(f"Uploading release changelog: {staged_changelog.name}")
+            if not upload_func(staged_changelog, remote_settings):
+                print("CHANGELOG.md upload failed; LATEST_RELEASE will not be updated.")
+                return False
+
+            print("Uploading release marker: LATEST_RELEASE")
+            if not upload_content_func(latest_version, "LATEST_RELEASE", remote_settings):
+                print("LATEST_RELEASE upload failed.")
+                return False
+
+            print(f"Updated the release version to {latest_version}")
+            print(f"Upload {latest_file.path}")
+            return True
+    except PreparedArtifactError as exc:
+        print(f"Prepared release artifact validation failed before publication: {exc}")
+        return False
 
 
 def resolve_msbuild_path() -> Path:
@@ -680,13 +762,24 @@ def prepare_primary_release(project: ProjectConfig) -> PreparedPrimaryRelease | 
     if not latest_file or not latest_file.exists():
         print(f"No installer file matches the built FileVersion {latest_version}.")
         return None
+    try:
+        installer_artifact = PreparedArtifact.capture(latest_file)
+    except PreparedArtifactError as exc:
+        print(str(exc))
+        return None
     if not validate_built_installer_cuda(
         latest_file,
         project.solution_path.parent,
         runtime_directory,
     ):
         return None
-    return PreparedPrimaryRelease(latest_version, latest_file, project.changelog_src)
+    try:
+        installer_artifact.verify()
+        changelog_artifact = PreparedArtifact.capture(project.changelog_src)
+    except PreparedArtifactError as exc:
+        print(str(exc))
+        return None
+    return PreparedPrimaryRelease(latest_version, installer_artifact, changelog_artifact)
 
 
 def main() -> int:

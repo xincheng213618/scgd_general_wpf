@@ -2,6 +2,7 @@ import io
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from werkzeug.exceptions import Forbidden
 
@@ -182,6 +183,93 @@ class UploadServiceTests(unittest.TestCase):
                 prune_update_packages=lambda storage: None,
                 refresh_related_caches=lambda **kwargs: None,
             )
+
+    def test_store_legacy_upload_interruption_preserves_live_marker_and_cleans_temp(self):
+        marker = self.storage / "LATEST_RELEASE"
+        marker.write_bytes(b"1.2.3.3")
+        observations: list[bytes] = []
+
+        class InterruptedStream:
+            reads = 0
+
+            def read(self, _size):
+                self.reads += 1
+                observations.append(marker.read_bytes())
+                if self.reads == 1:
+                    return b"1.2"
+                raise OSError("simulated disconnect")
+
+        with self.assertRaises(UploadWorkflowError) as context:
+            store_legacy_upload(
+                storage=self.storage,
+                raw_filepath="ColorVision/LATEST_RELEASE",
+                stream=InterruptedStream(),
+                max_size=64,
+                normalize_relative_path=lambda value: value.replace("\\", "/").strip("/"),
+                validate_plugin_id=self._validate_plugin_id,
+                extract_package_version=lambda filename, plugin_id: None,
+                is_root_release_file=lambda path: False,
+                reconcile_app_release_history=lambda: [],
+                reconcile_plugin_package_history=lambda plugin_id: [],
+                prune_update_packages=lambda storage: None,
+                refresh_related_caches=lambda **kwargs: None,
+            )
+
+        self.assertEqual(500, context.exception.status_code)
+        self.assertEqual([b"1.2.3.3", b"1.2.3.3"], observations)
+        self.assertEqual(b"1.2.3.3", marker.read_bytes())
+        self.assertEqual([], list(self.storage.glob(".LATEST_RELEASE.*.uploading")))
+
+    def test_store_legacy_upload_oversize_preserves_existing_payload(self):
+        target = self.storage / "Update" / "ColorVision-Update-[1.2.3.4].cvx"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(b"previous verified payload")
+
+        with self.assertRaises(UploadTooLargeError):
+            store_legacy_upload(
+                storage=self.storage,
+                raw_filepath="ColorVision/Update/ColorVision-Update-[1.2.3.4].cvx",
+                stream=io.BytesIO(b"payload exceeds the configured limit"),
+                max_size=4,
+                normalize_relative_path=lambda value: value.replace("\\", "/").strip("/"),
+                validate_plugin_id=self._validate_plugin_id,
+                extract_package_version=lambda filename, plugin_id: None,
+                is_root_release_file=lambda path: False,
+                reconcile_app_release_history=lambda: [],
+                reconcile_plugin_package_history=lambda plugin_id: [],
+                prune_update_packages=lambda storage: None,
+                refresh_related_caches=lambda **kwargs: None,
+            )
+
+        self.assertEqual(b"previous verified payload", target.read_bytes())
+        self.assertEqual([], list(target.parent.glob(f".{target.name}.*.uploading")))
+
+    def test_store_legacy_upload_replace_failure_preserves_existing_marker_and_cleans_temp(self):
+        marker = self.storage / "LATEST_RELEASE"
+        marker.write_bytes(b"1.2.3.3")
+
+        with (
+            mock.patch("storage_uploads.os.replace", side_effect=OSError("replace failed")),
+            self.assertRaises(UploadWorkflowError) as context,
+        ):
+            store_legacy_upload(
+                storage=self.storage,
+                raw_filepath="ColorVision/LATEST_RELEASE",
+                stream=io.BytesIO(b"1.2.3.4"),
+                max_size=64,
+                normalize_relative_path=lambda value: value.replace("\\", "/").strip("/"),
+                validate_plugin_id=self._validate_plugin_id,
+                extract_package_version=lambda filename, plugin_id: None,
+                is_root_release_file=lambda path: False,
+                reconcile_app_release_history=lambda: [],
+                reconcile_plugin_package_history=lambda plugin_id: [],
+                prune_update_packages=lambda storage: None,
+                refresh_related_caches=lambda **kwargs: None,
+            )
+
+        self.assertEqual(500, context.exception.status_code)
+        self.assertEqual(b"1.2.3.3", marker.read_bytes())
+        self.assertEqual([], list(self.storage.glob(".LATEST_RELEASE.*.uploading")))
 
     def test_store_legacy_upload_rejects_invalid_plugin_package_filename(self):
         with self.assertRaises(UploadWorkflowError) as context:

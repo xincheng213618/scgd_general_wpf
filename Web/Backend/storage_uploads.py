@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Callable, IO
+from uuid import uuid4
 
 
 @dataclass(frozen=True)
@@ -75,18 +77,30 @@ def store_legacy_upload(
             raise UploadWorkflowError("Invalid plugin package filename", 400)
 
     target.parent.mkdir(parents=True, exist_ok=True)
+    temp_target = target.parent / f".{target.name}.{uuid4().hex}.uploading"
     total = 0
-    with open(target, "wb") as file_handle:
-        while True:
-            chunk = stream.read(8192)
-            if not chunk:
-                break
-            total += len(chunk)
-            if total > max_size:
-                file_handle.close()
-                target.unlink(missing_ok=True)
-                raise UploadTooLargeError("File too large", 413)
-            file_handle.write(chunk)
+    try:
+        with open(temp_target, "xb") as file_handle:
+            while True:
+                chunk = stream.read(8192)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > max_size:
+                    raise UploadTooLargeError("File too large", 413)
+                file_handle.write(chunk)
+            file_handle.flush()
+            os.fsync(file_handle.fileno())
+        os.replace(temp_target, target)
+    except UploadTooLargeError:
+        temp_target.unlink(missing_ok=True)
+        raise
+    except OSError as exc:
+        temp_target.unlink(missing_ok=True)
+        raise UploadWorkflowError(f"Upload failed: {exc}", 500) from exc
+    except Exception:
+        temp_target.unlink(missing_ok=True)
+        raise
 
     if is_root_release_file(target):
         reconcile_app_release_history()

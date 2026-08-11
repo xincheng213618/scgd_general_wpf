@@ -9,11 +9,13 @@ from pathlib import Path
 from pathlib import PurePosixPath
 
 try:
+    from .release_artifacts import PreparedArtifact, PreparedArtifactError
     from .service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS, validate_service_host_runtime
-    from .verify_native_contracts import NativeContractError, validate_native_contracts
+    from .verify_native_contracts import CUDA_PACKAGE_MEMBER, NativeContractError, validate_native_contracts
 except ImportError:
+    from release_artifacts import PreparedArtifact, PreparedArtifactError
     from service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS, validate_service_host_runtime
-    from verify_native_contracts import NativeContractError, validate_native_contracts
+    from verify_native_contracts import CUDA_PACKAGE_MEMBER, NativeContractError, validate_native_contracts
 
 ALLOWED_RUNTIME_PREFIXES = (
     'runtimes/win/',
@@ -30,8 +32,16 @@ FULL_RELEASE_ZIP_RE = re.compile(
 @dataclass(frozen=True)
 class PreparedUpdateRelease:
     version: str
-    full_zip: Path
-    incremental_zip: Path | None
+    full_package: PreparedArtifact
+    incremental_package: PreparedArtifact | None
+
+    @property
+    def full_zip(self) -> Path:
+        return self.full_package.path
+
+    @property
+    def incremental_zip(self) -> Path | None:
+        return self.incremental_package.path if self.incremental_package is not None else None
 # ----------------------
 # 动态路径计算（去除用户名硬编码）
 # ----------------------
@@ -310,6 +320,19 @@ def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
             if rel_path.lower().startswith(service_host_prefix):
                 files_to_zip[rel_path] = new_file
 
+        cuda_matches = [
+            (rel_path, new_file)
+            for rel_path, new_file in new_files_dict.items()
+            if normalize_archive_relative_path(rel_path).casefold() == CUDA_PACKAGE_MEMBER.casefold()
+        ]
+        if len(cuda_matches) != 1:
+            raise ValueError(
+                f"Incremental runtime must contain exactly one {CUDA_PACKAGE_MEMBER}; "
+                f"found {len(cuda_matches)}."
+            )
+        cuda_relative_path, cuda_file = cuda_matches[0]
+        files_to_zip[cuda_relative_path] = cuda_file
+
         with zipfile.ZipFile(str(incremental_zip), 'w', zipfile.ZIP_DEFLATED) as zipf:
             for rel_path, file in sorted(files_to_zip.items()):
                 zipf.write(str(file), str(rel_path))
@@ -393,38 +416,53 @@ def prepare_update_release(
     print("创建全量包")
     full_zip = release_history_directory / f'ColorVision-[{version}].zip'
     pending_full_zip = Path(f'{full_zip}.pending')
+    incremental_zip: Path | None = None
+    pending_incremental_zip: Path | None = None
+    incremental_contract = None
     try:
         create_full_zip(version_directory, pending_full_zip)
         contract = validate_native_contracts(base_path, package_files=(pending_full_zip,))
         validate_zip_archive(pending_full_zip)
+
+        # Keep the validated full package under its non-baseline .pending name
+        # until every incremental gate has passed. Otherwise a failed release
+        # could silently become the baseline for a later incremental package.
+        old_zip = find_incremental_baseline(str(release_history_directory), version)
+        print(f"Incremental baseline: {old_zip or 'none (full installer only)'}")
+        if old_zip:
+            incremental_zip = release_update_directory / f'ColorVision-Update-[{version}].cvx'
+            pending_incremental_zip = Path(f'{incremental_zip}.pending')
+            print(f"创建增量包: {incremental_zip}")
+            make_incremental_zip(old_zip, str(version_directory), str(pending_incremental_zip))
+            incremental_contract = validate_native_contracts(base_path, package_files=(pending_incremental_zip,))
+            validate_zip_archive(pending_incremental_zip)
+
+            # Promote the incremental first. The history scanner only sees the
+            # full package after the complete local release is ready.
+            os.replace(pending_incremental_zip, incremental_zip)
         os.replace(pending_full_zip, full_zip)
     except NativeContractError as exc:
-        print(f"全量包 CUDA 原生契约校验失败: {exc}")
+        print(f"更新包 CUDA 原生契约校验失败: {exc}")
         return None
     except (OSError, ValueError, zipfile.BadZipFile) as exc:
-        print(f"全量包生成或原子晋升失败: {exc}")
+        print(f"更新包生成或原子晋升失败: {exc}")
         return None
     finally:
         remove_file_best_effort(pending_full_zip)
-    print(f"全量包 CUDA 校验通过: SHA256 {contract.sha256}")
-
-    old_zip = find_incremental_baseline(str(release_history_directory), version)
-    print(f"Incremental baseline: {old_zip or 'none (full installer only)'}")
-    incremental_zip: Path | None = None
-    if old_zip:
-        incremental_zip = release_update_directory / f'ColorVision-Update-[{version}].cvx'
-        pending_incremental_zip = Path(f'{incremental_zip}.pending')
-        print(f"创建增量包: {incremental_zip}")
-        try:
-            make_incremental_zip(old_zip, str(version_directory), str(pending_incremental_zip))
-            validate_zip_archive(pending_incremental_zip)
-            os.replace(pending_incremental_zip, incremental_zip)
-        except (OSError, ValueError, zipfile.BadZipFile) as exc:
-            print(f"增量包生成或原子晋升失败: {exc}")
-            return None
-        finally:
+        if pending_incremental_zip is not None:
             remove_file_best_effort(pending_incremental_zip)
-    return PreparedUpdateRelease(version, full_zip, incremental_zip)
+
+    print(f"全量包 CUDA 校验通过: SHA256 {contract.sha256}")
+    if incremental_contract is not None:
+        print(f"增量包 CUDA 校验通过: SHA256 {incremental_contract.sha256}")
+
+    try:
+        full_package = PreparedArtifact.capture(full_zip)
+        incremental_package = PreparedArtifact.capture(incremental_zip) if incremental_zip is not None else None
+    except PreparedArtifactError as exc:
+        print(str(exc))
+        return None
+    return PreparedUpdateRelease(version, full_package, incremental_package)
 
 
 def main() -> int:
