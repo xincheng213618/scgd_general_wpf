@@ -18,6 +18,22 @@ namespace ColorVision.SocketProtocol
             config.IsServerEnabled);
 
         public string ListenAddress => $"{IPAddress}:{ServerPort}";
+
+        public bool ConflictsWith(SocketServerSettings other)
+        {
+            if (ServerPort == 0 || other.ServerPort == 0 || ServerPort != other.ServerPort)
+                return false;
+
+            if (!System.Net.IPAddress.TryParse(IPAddress, out System.Net.IPAddress? address)
+                || !System.Net.IPAddress.TryParse(other.IPAddress, out System.Net.IPAddress? otherAddress))
+                return string.Equals(IPAddress, other.IPAddress, StringComparison.OrdinalIgnoreCase);
+
+            return address.Equals(otherAddress)
+                || address.Equals(System.Net.IPAddress.Any)
+                || address.Equals(System.Net.IPAddress.IPv6Any)
+                || otherAddress.Equals(System.Net.IPAddress.Any)
+                || otherAddress.Equals(System.Net.IPAddress.IPv6Any);
+        }
     }
 
     internal enum SocketServerFailureStage
@@ -91,18 +107,29 @@ namespace ColorVision.SocketProtocol
     /// </summary>
     internal sealed class SocketServerLifecycle
     {
+        private sealed record DeferredStart(long Version, SocketServerSettings Settings);
+
         private readonly object _stateLock = new();
+        private readonly object _shutdownLock = new();
         private readonly ISocketServerListenerFactory _listenerFactory;
         private readonly Action<Action> _queueWork;
+        private readonly Action<Action> _queueShutdownWork;
         private readonly SocketWorkerTracker _workerTracker;
         private readonly Action<SocketServerTransition> _stateChanged;
         private readonly Action<SocketServerClient> _clientAccepted;
         private readonly Action<SocketServerClient> _clientClosed;
         private readonly HashSet<SocketServerSession> _sessions = new();
+        private readonly HashSet<SocketServerSession> _listenerReleasePending = new();
         private SocketServerSession? _currentSession;
+        private DeferredStart? _deferredStart;
+        private SocketWorkerLease? _shutdownCoordinatorLease;
         private Exception? _shutdownException;
         private SocketServerState _state;
-        private bool _shutdownStarted;
+        private bool _shutdownAttemptRunning;
+        private bool _shutdownCompleted;
+        private bool _shutdownRetryRequested;
+        private int _shutdownStarted;
+        private long _intentVersion;
         private long _sessionVersion;
         private long _transitionSequence;
 
@@ -113,7 +140,8 @@ namespace ColorVision.SocketProtocol
             SocketWorkerTracker workerTracker,
             Action<SocketServerTransition> stateChanged,
             Action<SocketServerClient> clientAccepted,
-            Action<SocketServerClient> clientClosed)
+            Action<SocketServerClient> clientClosed,
+            Action<Action>? queueShutdownWork = null)
         {
             _state = initialState;
             _listenerFactory = listenerFactory;
@@ -122,6 +150,7 @@ namespace ColorVision.SocketProtocol
             _stateChanged = stateChanged;
             _clientAccepted = clientAccepted;
             _clientClosed = clientClosed;
+            _queueShutdownWork = queueShutdownWork ?? (action => _ = Task.Run(action));
         }
 
         public SocketServerState State
@@ -148,10 +177,28 @@ namespace ColorVision.SocketProtocol
             SocketWorkerLease workerLease;
             lock (_stateLock)
             {
-                if (_shutdownStarted || _state is SocketServerState.Starting or SocketServerState.Running)
+                long intentVersion = _intentVersion;
+                if (!runInline)
+                {
+                    intentVersion = ++_intentVersion;
+                    _deferredStart = null;
+                }
+                if (Volatile.Read(ref _shutdownStarted) != 0
+                    || _state is SocketServerState.Starting or SocketServerState.Running)
                     return false;
+                if (HasPendingListenerLocked(settings))
+                {
+                    if (!runInline)
+                        _deferredStart = new DeferredStart(intentVersion, settings);
+                    return false;
+                }
                 if (!_workerTracker.TryRegister(out SocketWorkerLease? registeredLease))
                     return false;
+                if (runInline)
+                {
+                    ++_intentVersion;
+                    _deferredStart = null;
+                }
 
                 session = new SocketServerSession(++_sessionVersion, settings);
                 _sessions.Add(session);
@@ -160,6 +207,16 @@ namespace ColorVision.SocketProtocol
                 workerLease = registeredLease;
             }
 
+            RunStartOperation(session, transition, workerLease, runInline);
+            return true;
+        }
+
+        private void RunStartOperation(
+            SocketServerSession session,
+            SocketServerTransition transition,
+            SocketWorkerLease workerLease,
+            bool runInline)
+        {
             if (runInline)
             {
                 try
@@ -179,7 +236,6 @@ namespace ColorVision.SocketProtocol
                 QueueTrackedWork(workerLease, () => RunSession(session));
                 _stateChanged(transition);
             }
-            return true;
         }
 
         public bool Stop(bool isServerEnabled)
@@ -191,26 +247,34 @@ namespace ColorVision.SocketProtocol
             SocketWorkerLease workerLease;
             lock (_stateLock)
             {
-                if (_shutdownStarted || _state == SocketServerState.Stopping)
+                ++_intentVersion;
+                _deferredStart = null;
+                if (Volatile.Read(ref _shutdownStarted) != 0 || _state == SocketServerState.Stopping)
                     return false;
                 if (!_workerTracker.TryRegister(out SocketWorkerLease? registeredLease))
                     return false;
 
-                session = _currentSession;
+                session = _currentSession ?? _listenerReleasePending.FirstOrDefault();
                 session?.RequestStop();
+                if (session != null)
+                    _listenerReleasePending.Add(session);
                 _currentSession = null;
                 stopVersion = ++_sessionVersion;
                 transition = ChangeStateLocked(SocketServerState.Stopping);
-
-                try
-                {
-                    session?.StopListener();
-                }
-                catch (Exception exception)
-                {
-                    listenerStopException = exception;
-                }
                 workerLease = registeredLease;
+            }
+
+            try
+            {
+                if (session != null)
+                {
+                    CloseSessionResources(session);
+                    MarkListenerReleased(session);
+                }
+            }
+            catch (Exception exception)
+            {
+                listenerStopException = exception;
             }
 
             QueueTrackedWork(
@@ -222,37 +286,118 @@ namespace ColorVision.SocketProtocol
 
         public void BeginShutdown()
         {
-            List<(SocketServerSession Session, SocketWorkerLease Lease)> cleanupWork = new();
-            lock (_stateLock)
+            if (Volatile.Read(ref _shutdownStarted) == 0)
             {
-                if (_shutdownStarted)
+                if (!_workerTracker.TryRegister(out SocketWorkerLease? coordinatorLease))
                     return;
 
-                _shutdownStarted = true;
-                _currentSession = null;
-                ++_sessionVersion;
-                _state = SocketServerState.Stopping;
-                foreach (SocketServerSession session in _sessions)
+                bool ownsShutdown = false;
+                lock (_shutdownLock)
                 {
-                    session.RequestStop();
-                    if (_workerTracker.TryRegister(out SocketWorkerLease? lease))
-                        cleanupWork.Add((session, lease));
+                    if (Volatile.Read(ref _shutdownStarted) == 0)
+                    {
+                        // The coordinator lease is installed before the terminal flag
+                        // becomes visible, so no waiter can observe shutdown without an
+                        // incomplete tracker. It remains owned across failed attempts.
+                        _shutdownCoordinatorLease = coordinatorLease;
+                        _shutdownAttemptRunning = true;
+                        Volatile.Write(ref _shutdownStarted, 1);
+                        ownsShutdown = true;
+                    }
                 }
-                _workerTracker.BeginShutdown();
+
+                if (ownsShutdown)
+                {
+                    _workerTracker.BeginShutdown();
+                    QueueShutdownAttempt();
+                    return;
+                }
+
+                coordinatorLease.Dispose();
             }
 
-            foreach ((SocketServerSession session, SocketWorkerLease lease) in cleanupWork)
+            TryQueueShutdownRetry();
+        }
+
+        private void TryQueueShutdownRetry()
+        {
+            lock (_shutdownLock)
             {
-                try
+                if (_shutdownCompleted || _shutdownCoordinatorLease == null)
+                    return;
+                if (_shutdownAttemptRunning)
                 {
-                    _ = Task.Run(() => RunTracked(lease, () => CleanupForShutdown(session)));
+                    _shutdownRetryRequested = true;
+                    return;
                 }
-                catch (Exception exception)
+
+                _shutdownAttemptRunning = true;
+            }
+
+            QueueShutdownAttempt();
+        }
+
+        private void QueueShutdownAttempt()
+        {
+            try
+            {
+                _queueShutdownWork(RunShutdownAttempt);
+            }
+            catch (Exception exception)
+            {
+                CompleteShutdownAttempt(exception, resourcesReleased: false);
+            }
+        }
+
+        private void RunShutdownAttempt()
+        {
+            Exception? failure;
+            try
+            {
+                failure = ShutdownSessions();
+            }
+            catch (Exception exception)
+            {
+                failure = exception;
+            }
+
+            bool resourcesReleased;
+            lock (_stateLock)
+                resourcesReleased = _sessions.Count == 0;
+            CompleteShutdownAttempt(failure, resourcesReleased);
+        }
+
+        private void CompleteShutdownAttempt(Exception? failure, bool resourcesReleased)
+        {
+            SocketWorkerLease? completedLease = null;
+            bool queueRetry = false;
+            lock (_shutdownLock)
+            {
+                if (failure == null && resourcesReleased)
                 {
-                    lease.Dispose();
-                    RecordShutdownException(exception);
+                    Volatile.Write(ref _shutdownException, null);
+                    _shutdownCompleted = true;
+                    completedLease = _shutdownCoordinatorLease;
+                    _shutdownCoordinatorLease = null;
+                    _shutdownRetryRequested = false;
+                    _shutdownAttemptRunning = false;
+                }
+                else
+                {
+                    Volatile.Write(
+                        ref _shutdownException,
+                        failure ?? new InvalidOperationException("Socket shutdown left resources pending."));
+                    queueRetry = _shutdownRetryRequested;
+                    _shutdownRetryRequested = false;
+                    _shutdownAttemptRunning = queueRetry;
                 }
             }
+
+            // Error/success publication precedes lease completion. A waiter that sees
+            // the tracker finish therefore also sees the final cleanup result.
+            completedLease?.Dispose();
+            if (queueRetry)
+                QueueShutdownAttempt();
         }
 
         public void ReleaseClient(SocketServerClient connection)
@@ -306,13 +451,17 @@ namespace ColorVision.SocketProtocol
             {
                 if (!session.IsStopRequested)
                 {
+                    bool resourcesReleased = false;
                     try
                     {
                         CloseSessionResources(session);
+                        resourcesReleased = true;
+                        MarkListenerReleased(session);
                     }
                     catch (Exception exception)
                     {
                         failure ??= exception;
+                        MarkListenerReleasePending(session);
                     }
 
                     try
@@ -330,7 +479,11 @@ namespace ColorVision.SocketProtocol
                     }
                     finally
                     {
-                        RemoveSession(session);
+                        if (resourcesReleased)
+                        {
+                            RemoveSession(session);
+                            TryStartDeferred();
+                        }
                     }
                 }
             }
@@ -343,18 +496,25 @@ namespace ColorVision.SocketProtocol
             Exception? listenerStopException)
         {
             Exception? failure = listenerStopException;
+            bool resourcesReleased = false;
             try
             {
                 if (session != null)
+                {
                     CloseSessionResources(session);
+                    resourcesReleased = true;
+                    MarkListenerReleased(session);
+                }
             }
             catch (Exception exception)
             {
                 failure ??= exception;
+                if (session != null)
+                    MarkListenerReleasePending(session);
             }
             finally
             {
-                if (session != null)
+                if (session != null && resourcesReleased)
                     RemoveSession(session);
             }
 
@@ -362,24 +522,46 @@ namespace ColorVision.SocketProtocol
                 TryCompleteStop(stopVersion, isServerEnabled ? SocketServerState.Stopped : SocketServerState.Disabled);
             else
                 TryFailStop(stopVersion, failure);
+
+            if (resourcesReleased)
+                TryStartDeferred();
+        }
+
+        private void TryStartDeferred()
+        {
+            SocketServerSession session;
+            SocketServerTransition transition;
+            SocketWorkerLease workerLease;
+            lock (_stateLock)
+            {
+                DeferredStart? deferred = _deferredStart;
+                if (deferred == null
+                    || deferred.Version != _intentVersion
+                    || Volatile.Read(ref _shutdownStarted) != 0
+                    || _state is SocketServerState.Starting or SocketServerState.Running
+                    || HasPendingListenerLocked(deferred.Settings))
+                    return;
+                if (!_workerTracker.TryRegister(out SocketWorkerLease? registeredLease))
+                    return;
+
+                _deferredStart = null;
+                session = new SocketServerSession(++_sessionVersion, deferred.Settings);
+                _sessions.Add(session);
+                _currentSession = session;
+                transition = ChangeStateLocked(SocketServerState.Starting, deferred.Settings);
+                workerLease = registeredLease;
+            }
+
+            RunStartOperation(session, transition, workerLease, runInline: false);
         }
 
         private void CloseSessionResources(SocketServerSession session)
         {
-            Exception? firstException = null;
-            ISocketServerListener? listener = session.TakeListener();
-            if (listener != null)
-            {
-                try
-                {
-                    listener.Stop();
-                }
-                catch (Exception exception)
-                {
-                    firstException = exception;
-                }
-            }
+            using SocketSessionCleanupClaim cleanup = session.ClaimCleanup();
+            if (cleanup.IsCompleted)
+                return;
 
+            Exception? firstException = null;
             foreach (SocketServerClient client in session.TakeClients())
             {
                 try
@@ -392,30 +574,107 @@ namespace ColorVision.SocketProtocol
                 }
             }
 
-            if (firstException != null)
-                throw firstException;
-        }
-
-        private void CleanupForShutdown(SocketServerSession session)
-        {
             try
             {
-                CloseSessionResources(session);
+                session.StopListener();
             }
             catch (Exception exception)
             {
-                RecordShutdownException(exception);
+                firstException ??= exception;
+            }
+
+            if (firstException != null)
+                throw firstException;
+
+            cleanup.Complete();
+        }
+
+        private Exception? CleanupForShutdown(SocketServerSession session)
+        {
+            bool resourcesReleased = false;
+            try
+            {
+                CloseSessionResources(session);
+                resourcesReleased = true;
+                MarkListenerReleased(session);
+                return null;
+            }
+            catch (Exception exception)
+            {
+                MarkListenerReleasePending(session);
+                return exception;
             }
             finally
             {
-                RemoveSession(session);
+                if (resourcesReleased)
+                    RemoveSession(session);
             }
+        }
+
+        private Exception? ShutdownSessions()
+        {
+            SocketServerSession[] sessions;
+            lock (_stateLock)
+            {
+                ++_intentVersion;
+                _deferredStart = null;
+                _currentSession = null;
+                ++_sessionVersion;
+                _state = SocketServerState.Stopping;
+                sessions = _sessions.ToArray();
+                foreach (SocketServerSession session in sessions)
+                    session.RequestStop();
+            }
+
+            var cleanupTasks = new List<Task<Exception?>>(sessions.Length);
+            Exception? firstFailure = null;
+            foreach (SocketServerSession session in sessions)
+            {
+                try
+                {
+                    cleanupTasks.Add(Task.Run(() => CleanupForShutdown(session)));
+                }
+                catch (Exception exception)
+                {
+                    firstFailure ??= exception;
+                }
+            }
+
+            try
+            {
+                Exception?[] failures = Task.WhenAll(cleanupTasks).GetAwaiter().GetResult();
+                firstFailure ??= failures.FirstOrDefault(exception => exception != null);
+            }
+            catch (Exception exception)
+            {
+                firstFailure ??= exception;
+            }
+
+            return firstFailure;
         }
 
         private void RemoveSession(SocketServerSession session)
         {
             lock (_stateLock)
+            {
                 _sessions.Remove(session);
+                _listenerReleasePending.Remove(session);
+            }
+        }
+
+        private bool HasPendingListenerLocked(SocketServerSettings settings) =>
+            _listenerReleasePending.Any(session => session.Settings.ConflictsWith(settings));
+
+        private void MarkListenerReleasePending(SocketServerSession session)
+        {
+            lock (_stateLock)
+                _listenerReleasePending.Add(session);
+        }
+
+        private void MarkListenerReleased(SocketServerSession session)
+        {
+            lock (_stateLock)
+                _listenerReleasePending.Remove(session);
         }
 
         private void CancelUnstartedSession(SocketServerSession session)
@@ -431,11 +690,6 @@ namespace ColorVision.SocketProtocol
                     ? SocketServerState.Stopped
                     : SocketServerState.Disabled;
             }
-        }
-
-        private void RecordShutdownException(Exception exception)
-        {
-            Interlocked.CompareExchange(ref _shutdownException, exception, null);
         }
 
         private void QueueTrackedWork(SocketWorkerLease lease, Action action)
@@ -579,8 +833,12 @@ namespace ColorVision.SocketProtocol
     internal sealed class SocketServerSession
     {
         private readonly object _resourceLock = new();
+        private readonly object _cleanupLock = new();
         private readonly HashSet<SocketServerClient> _clients = new();
+        private readonly TaskCompletionSource<bool> _resourcesReleased = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
         private ISocketServerListener? _listener;
+        private bool _cleanupCompleted;
         private int _stopRequested;
 
         public SocketServerSession(long version, SocketServerSettings settings)
@@ -617,20 +875,28 @@ namespace ColorVision.SocketProtocol
             }
         }
 
-        public ISocketServerListener? TakeListener()
+        public void StopListener()
         {
+            ISocketServerListener? listener;
+            lock (_resourceLock)
+                listener = _listener;
+            if (listener == null)
+                return;
+
+            listener.Stop();
             lock (_resourceLock)
             {
-                ISocketServerListener? listener = _listener;
-                _listener = null;
-                return listener;
+                if (ReferenceEquals(_listener, listener))
+                    _listener = null;
             }
         }
 
-        public void StopListener()
+        public Task ResourcesReleased => _resourcesReleased.Task;
+
+        public SocketSessionCleanupClaim ClaimCleanup()
         {
-            ISocketServerListener? listener = TakeListener();
-            listener?.Stop();
+            Monitor.Enter(_cleanupLock);
+            return new SocketSessionCleanupClaim(this, _cleanupCompleted);
         }
 
         public bool TryRegisterClient(SocketServerClient connection)
@@ -657,6 +923,39 @@ namespace ColorVision.SocketProtocol
                 _clients.Clear();
                 return clients;
             }
+        }
+
+        internal void CompleteCleanup()
+        {
+            _cleanupCompleted = true;
+            _resourcesReleased.TrySetResult(true);
+        }
+
+        internal void ReleaseCleanupClaim() => Monitor.Exit(_cleanupLock);
+    }
+
+    internal sealed class SocketSessionCleanupClaim : IDisposable
+    {
+        private SocketServerSession? _session;
+
+        internal SocketSessionCleanupClaim(SocketServerSession session, bool isCompleted)
+        {
+            _session = session;
+            IsCompleted = isCompleted;
+        }
+
+        public bool IsCompleted { get; }
+
+        public void Complete()
+        {
+            SocketServerSession session = _session
+                ?? throw new ObjectDisposedException(nameof(SocketSessionCleanupClaim));
+            session.CompleteCleanup();
+        }
+
+        public void Dispose()
+        {
+            Interlocked.Exchange(ref _session, null)?.ReleaseCleanupClaim();
         }
     }
 }

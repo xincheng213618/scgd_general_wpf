@@ -89,7 +89,8 @@ namespace ColorVision.SocketProtocol
             SocketJsonDispatcher jsonDispatcher,
             SocketTextDispatcher textDispatcher,
             SocketMessageManager messageManager,
-            bool refreshNetworkAccessStatus)
+            bool refreshNetworkAccessStatus,
+            Action<Action>? queueShutdownWork = null)
         {
             Config = config;
             _workerTracker = workerTracker;
@@ -103,7 +104,8 @@ namespace ColorVision.SocketProtocol
                 _workerTracker,
                 ApplyServerTransition,
                 AcceptClient,
-                CloseClient);
+                CloseClient,
+                queueShutdownWork);
             EditCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             AllowFirewallRuleCommand = new RelayCommand(a => _ = AllowFirewallRuleAsync(a?.ToString()));
             Config.PropertyChanged += (_, _) =>
@@ -514,27 +516,58 @@ namespace ColorVision.SocketProtocol
                 NotifyServerStatusChanged();
         }
 
-        internal bool Shutdown(TimeSpan timeout)
+        internal void BeginShutdown()
         {
-            Stopwatch stopwatch = Stopwatch.StartNew();
             Interlocked.Exchange(ref _shutdownStarted, 1);
             _serverLifecycle.BeginShutdown();
+        }
 
-            TimeSpan remaining = timeout - stopwatch.Elapsed;
-            if (remaining < TimeSpan.Zero)
-                remaining = TimeSpan.Zero;
-            bool workersCompleted = _workerTracker.Wait(remaining);
+        internal bool Shutdown(TimeSpan timeout) => Shutdown(SocketShutdownDeadline.Start(timeout));
+
+        internal bool Shutdown(SocketShutdownDeadline deadline)
+        {
+            BeginShutdown();
+
+            bool workersCompleted = _workerTracker.Wait(deadline.Remaining);
             Exception? cleanupException = _serverLifecycle.ShutdownException;
             int remainingWorkers = _workerTracker.ActiveWorkers;
-
-            if (cleanupException != null)
-                log.Error("Socket shutdown completed with a resource cleanup error.", cleanupException);
-            if (!workersCompleted)
-                log.Warn($"Socket shutdown timed out after {stopwatch.ElapsedMilliseconds} ms with {remainingWorkers} worker(s) still active.");
-            else
-                log.Info($"Socket shutdown completed in {stopwatch.ElapsedMilliseconds} ms.");
+            QueueShutdownResultLog(
+                workersCompleted,
+                cleanupException,
+                remainingWorkers,
+                deadline.Elapsed.TotalMilliseconds);
 
             return workersCompleted && cleanupException == null;
+        }
+
+        private static void QueueShutdownResultLog(
+            bool workersCompleted,
+            Exception? cleanupException,
+            int remainingWorkers,
+            double elapsedMilliseconds)
+        {
+            try
+            {
+                _ = Task.Run(() =>
+                {
+                    try
+                    {
+                        if (cleanupException != null)
+                            log.Error("Socket shutdown completed with a resource cleanup error.", cleanupException);
+                        if (!workersCompleted)
+                            log.Warn($"Socket shutdown timed out after {elapsedMilliseconds:F0} ms with {remainingWorkers} worker(s) still active.");
+                        else
+                            log.Info($"Socket shutdown completed in {elapsedMilliseconds:F0} ms.");
+                    }
+                    catch
+                    {
+                    }
+                });
+            }
+            catch
+            {
+                // Logging must not extend or fail the application shutdown deadline.
+            }
         }
 
         /// <summary>

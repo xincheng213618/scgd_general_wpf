@@ -505,41 +505,41 @@ namespace ColorVision
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             Stopwatch exitStopwatch = Stopwatch.StartNew();
-            log.Info("Application exit cleanup started.");
-            bool exitStateResolved = false;
-            bool updateIsActive = false;
-            bool replacementIsActive = false;
+            ApplicationExitHandoffState? handoffState = null;
+            Action<string, Exception> reportCleanupFailure =
+                (step, exception) => log.Error($"Application exit cleanup step '{step}' failed.", exception);
             ApplicationExitCleanup.Run(
                 [
+                    new("application exit cleanup start log", () => log.Info("Application exit cleanup started.")),
                     new("application usage session", Rbac.ApplicationUsageTracker.StopSession),
                     new("application exit log", () => log.Info(ColorVision.Properties.Resources.ApplicationExit)),
-                    new("update handoff state", () =>
+                    new("update, socket, and prefetched update handoff", () =>
                     {
-                        updateIsActive = Update.ExitUpdateHandoff.IsUpdateActive(AppDomain.CurrentDomain.BaseDirectory);
-                        replacementIsActive = _isSingleInstanceReplacement
-                            || Update.ApplicationUpdateProcessCoordinator.IsSingleInstanceReplacementRequested(Environment.ProcessId);
-                        exitStateResolved = true;
-                    }),
-                    new("socket server", () =>
-                    {
-                        if (!SocketProtocol.SocketManager.ShutdownExisting(SocketShutdownTimeout))
-                            log.Warn("Socket shutdown did not fully complete within the application exit budget.");
-                    }),
-                    new("prefetched update", () =>
-                    {
-                        if (!exitStateResolved)
+                        handoffState = ApplicationExitCleanup.RunSocketBeforePrefetchedUpdate(
+                            _isSessionEnding,
+                            () => new ApplicationExitHandoffState(
+                                Update.ExitUpdateHandoff.IsUpdateActive(AppDomain.CurrentDomain.BaseDirectory),
+                                _isSingleInstanceReplacement
+                                    || Update.ApplicationUpdateProcessCoordinator.IsSingleInstanceReplacementRequested(Environment.ProcessId)),
+                            () =>
+                            {
+                                bool completed = SocketProtocol.SocketManager.ShutdownExisting(SocketShutdownTimeout);
+                                if (!completed)
+                                    log.Warn("Socket shutdown did not fully complete within the application exit budget.");
+                                return completed;
+                            },
+                            () => _ = Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit(),
+                            reportCleanupFailure);
+
+                        if (handoffState == null)
                         {
                             log.Warn("Skipped exit-time prefetched update because the exit handoff state could not be resolved.");
                         }
-                        else if (!_isSessionEnding && !replacementIsActive && !updateIsActive)
-                        {
-                            Update.CombinedUpdateCoordinator.TryApplyPrefetchedUpdateOnExit();
-                        }
-                        else if (replacementIsActive)
+                        else if (handoffState.Value.ReplacementIsActive)
                         {
                             log.Info("Skipped exit-time prefetched update because a newer ColorVision instance is taking over.");
                         }
-                        else if (updateIsActive)
+                        else if (handoffState.Value.UpdateIsActive)
                         {
                             log.Info("Skipped exit-time prefetched update because an external update is already active.");
                         }
@@ -548,7 +548,7 @@ namespace ColorVision
                     new("LAN remote control", () => LanRemoteControlService.Instance.Stop()),
                     new("startup recovery registry", () =>
                     {
-                        if (!exitStateResolved)
+                        if (handoffState == null)
                         {
                             log.Warn("Preserved startup recovery state because the exit handoff state could not be resolved.");
                             return;
@@ -557,17 +557,18 @@ namespace ColorVision
                         // 外部更新或恢复已经完成交接时，不应在重启后再次进入恢复窗口。
                         // 其他启动阶段退出则保留现场，供下次启动继续恢复。
                         if (_isSessionEnding
-                            || replacementIsActive
-                            || updateIsActive
+                            || handoffState.Value.ReplacementIsActive
+                            || handoffState.Value.UpdateIsActive
                             || (_startupWizardWasShown && WizardWindowConfig.Instance.WizardCompletionKey))
                             StartupRegistryChecker.CompleteForRecoveryRestart();
                         else
                             StartupRegistryChecker.OnApplicationExit();
                     }),
-                    new("native log bridge", NativeLogBridge.Shutdown)
+                    new("native log bridge", NativeLogBridge.Shutdown),
+                    new("application exit cleanup completion log", () =>
+                        log.Info($"Application exit cleanup completed in {exitStopwatch.ElapsedMilliseconds} ms."))
                 ],
-                (step, exception) => log.Error($"Application exit cleanup step '{step}' failed.", exception));
-            log.Info($"Application exit cleanup completed in {exitStopwatch.ElapsedMilliseconds} ms.");
+                reportCleanupFailure);
             //Environment.Exit(0);
         }
     }

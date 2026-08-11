@@ -268,7 +268,7 @@ public sealed class SocketServerLifecycleTests
         Assert.Equal(SocketServerState.Stopped, lifecycle.State);
         Assert.Equal(0, factory.CreateCalls);
         lifecycle.BeginShutdown();
-        Assert.True(tracker.Wait(TimeSpan.Zero));
+        Assert.True(tracker.Wait(TestTimeout));
         Assert.Equal(0, tracker.ActiveWorkers);
     }
 
@@ -300,7 +300,7 @@ public sealed class SocketServerLifecycleTests
         Assert.Equal(1, factory.CreateCalls);
         Assert.Equal(1, errorCallbacks);
         lifecycle.BeginShutdown();
-        Assert.True(tracker.Wait(TimeSpan.Zero));
+        Assert.True(tracker.Wait(TestTimeout));
         Assert.Equal(0, tracker.ActiveWorkers);
     }
 
