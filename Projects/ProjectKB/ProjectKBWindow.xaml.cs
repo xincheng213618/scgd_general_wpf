@@ -652,6 +652,7 @@ namespace ProjectKB
                     Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff"),
                     FlowStatus = FlowStatus.Ready,
                 };
+                currentFlowResultConfig = ViewResultManager.CaptureConfig();
 
                 KBRecipeConfig currentRecipe = RecipeManager.SetCurrentTemplate(FlowName);
                 CurrentFlowResult.RecipeSnapshot = KBRecipeSnapshot.Capture(FlowName, currentRecipe);
@@ -734,6 +735,7 @@ namespace ProjectKB
         }
 
         private MeasureBatchModel? _currentFlowBatch;
+        private ViewResultManagerConfig? currentFlowResultConfig;
         private void CreateCurrentFlowBatch()
         {
             _currentFlowBatch = new MeasureBatchModel
@@ -892,7 +894,7 @@ namespace ProjectKB
                     }
 
                     CurrentFlowResult.RunTime = Math.Max(0, stopwatch.ElapsedMilliseconds);
-                    ViewResultManager.Save(CurrentFlowResult);
+                    ViewResultManager.Save(CurrentFlowResult, currentFlowResultConfig);
                     logTextBox.Text = FlowName + Environment.NewLine + flowControlData.EventName + Environment.NewLine + failureMessage;
 
                     // 先让失败状态完成一次 UI 渲染，再等待节点统计写入和批次落库。
@@ -902,7 +904,7 @@ namespace ProjectKB
                 await FinalizeCurrentFlowRunAsync(flowControlData);
 
                 if (!isCompleted)
-                    ViewResultManager.Save(CurrentFlowResult);
+                    ViewResultManager.Save(CurrentFlowResult, currentFlowResultConfig);
 
                 if (isCompleted)
                 {
@@ -932,6 +934,7 @@ namespace ProjectKB
         #endregion
         private void Processing(string SerialNumber)
         {
+            ViewResultManagerConfig resultConfig = currentFlowResultConfig ?? ViewResultManager.CaptureConfig();
             KBItemMaster KBItemMaster = CurrentFlowResult ?? new KBItemMaster();
             KBItemMaster.Model = CurrentFlowResult?.Model ?? FlowName;
             KBItemMaster.SN = CurrentFlowResult?.SN ?? string.Empty;
@@ -943,7 +946,7 @@ namespace ProjectKB
             if (Batch == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
-                ViewResultManager.Save(KBItemMaster);
+                ViewResultManager.Save(KBItemMaster, resultConfig);
                 return;
             }
             KBItemMaster.BatchId = Batch.Id;
@@ -1037,7 +1040,7 @@ namespace ProjectKB
             if (KBItemMaster.Items.Count == 0)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对映的按键，请检查流程配置是否计算KB模板", "ColorVision");
-                ViewResultManager.Save(KBItemMaster);
+                ViewResultManager.Save(KBItemMaster, resultConfig);
                 return;
             }
 
@@ -1110,25 +1113,25 @@ namespace ProjectKB
 
             KBItemMaster.Exposure = "50";
 
-            ViewResultManager.Save(KBItemMaster);
+            ViewResultManager.Save(KBItemMaster, resultConfig);
 
-            if (ViewResultManager.Config.SaveText)
+            if (resultConfig.SaveText)
             {
-                string resultPath = Path.Combine(ViewResultManager.Config.TextSavePath, $"{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt");
+                string resultPath = Path.Combine(resultConfig.TextSavePath, $"{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt");
                 string result = $"{KBItemMaster.SN},{(KBItemMaster.Result ? "Pass" : "Fail")}, ,";
                 log.Info($"结果正在写入{resultPath},result:{result}");
                 File.WriteAllText(resultPath, result);
             }
 
 
-            if (ViewResultManager.Config.SaveSummary)
+            if (resultConfig.SaveSummary)
             {
                 try
                 {
                     string invalidChars2 = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
                     string regexPattern2 = $"[{Regex.Escape(invalidChars2)}]";
                     string safeModel = Regex.Replace(KBItemMaster.Model ?? string.Empty, regexPattern2, "");
-                    string summaryDir = Path.Combine(ViewResultManager.Config.SummarySavePath, safeModel);
+                    string summaryDir = Path.Combine(resultConfig.SummarySavePath, safeModel);
                     Directory.CreateDirectory(summaryDir);
                     string summaryPath = Path.Combine(summaryDir, $"{KBItemMaster.SN}-{KBItemMaster.CreateTime:yyyyMMddHHmmssffff}.txt");
                     string summaryText = BuildSummaryText(KBItemMaster);
@@ -1146,9 +1149,9 @@ namespace ProjectKB
                 string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
                 string regexPattern = $"[{Regex.Escape(invalidChars)}]";
 
-                string csvpath = ViewResultManager.Config.CsvSavePath + $"\\{Regex.Replace(KBItemMaster.Model, regexPattern, "")}_{KBItemMaster.CreateTime:yyyyMMdd}.csv";
+                string csvpath = resultConfig.CsvSavePath + $"\\{Regex.Replace(KBItemMaster.Model, regexPattern, "")}_{KBItemMaster.CreateTime:yyyyMMdd}.csv";
 
-                KBItemMaster.SaveCsv(csvpath, ViewResultManager.Config.AppendFalloutSummary);
+                KBItemMaster.SaveCsv(csvpath, resultConfig.AppendFalloutSummary);
                 log.Info($"writecsv:{csvpath}");
             });
             Application.Current.Dispatcher.BeginInvoke(() =>

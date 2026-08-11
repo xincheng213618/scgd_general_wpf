@@ -156,7 +156,7 @@ namespace Spectrum.Data
         public string? StepDetailsJson { get; set; }
     }
 
-    public class ViewResultManager : ViewModelBase
+    public class ViewResultManager : ViewModelBase, IDisposable
     {
         private static ViewResultManager _instance;
         private static readonly object _locker = new();
@@ -167,7 +167,8 @@ namespace Spectrum.Data
 
         public static string SqliteDbPath { get; set; } = DirectoryPath + "Spectrum.db";
 
-        public ViewResultManagerConfig Config { get; set; }
+        private readonly RuntimeConfigOwner<ViewResultManagerConfig> configOwner;
+        public ViewResultManagerConfig Config => configOwner.Current;
 
         public ObservableCollection<ViewResultSpectrum> ViewResluts { get; set; } = new ObservableCollection<ViewResultSpectrum>();
 
@@ -214,7 +215,10 @@ namespace Spectrum.Data
 
         public ViewResultManager()
         {
-            Config = ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
+            configOwner = new RuntimeConfigOwner<ViewResultManagerConfig>(
+                () => ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>(),
+                ConfigService.Instance as IConfigReloadNotifier);
+            configOwner.ConfigurationChanged += ConfigOwner_ConfigurationChanged;
             EditConfigCommand = new RelayCommand(a => EditConfig());
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
@@ -242,6 +246,13 @@ namespace Spectrum.Data
                         IsAutoCloseConnection = true,
                         InitKeyType = InitKeyType.Attribute
                     })));
+        }
+
+        public ViewResultManagerConfig CaptureConfig() => configOwner.Capture();
+
+        private void ConfigOwner_ConfigurationChanged(object? sender, RuntimeConfigChangedEventArgs<ViewResultManagerConfig> e)
+        {
+            OnPropertyChanged(nameof(Config));
         }
 
 
@@ -365,6 +376,7 @@ namespace Spectrum.Data
         /// </summary>
         public void LoadAll(int count = 100)
         {
+            ViewResultManagerConfig config = CaptureConfig();
             EnsureDatabaseInitialized();
             ViewResluts.Clear();
             using var db = CreateDb();
@@ -375,30 +387,35 @@ namespace Spectrum.Data
                     .OrderBy(x => x.Id, OrderByType.Desc)
                     .Take(count)
                     .ToList();
-                if (Config.OrderByType == OrderByType.Asc)
+                if (config.OrderByType == OrderByType.Asc)
                     dbList.Reverse();
             }
             else
             {
                 dbList = db.Queryable<SprectrumModel>()
-                    .OrderBy(x => x.Id, Config.OrderByType)
+                    .OrderBy(x => x.Id, config.OrderByType)
                     .ToList();
             }
 
             foreach (var dbItem in dbList)
             {
-                ViewResluts.Add(new ViewResultSpectrum(dbItem));
+                ViewResluts.Add(new ViewResultSpectrum(dbItem, config));
             }
         }
 
-        public ViewResultSpectrum Save(SprectrumModel item, float? eqeVoltage, float? eqeCurrentMA)
+        public ViewResultSpectrum Save(
+            SprectrumModel item,
+            float? eqeVoltage,
+            float? eqeCurrentMA,
+            ViewResultManagerConfig? configSnapshot = null)
         {
             ArgumentNullException.ThrowIfNull(item);
+            ViewResultManagerConfig config = configSnapshot ?? CaptureConfig();
             long preparationStarted = Stopwatch.GetTimestamp();
             item.ColorParam = ViewResultSpectrum.NormalizeColorParam(item.ColorParam);
-            ViewResultSpectrum viewResultSpectrum = new(item);
+            ViewResultSpectrum viewResultSpectrum = new(item, config);
             if (eqeVoltage.HasValue && eqeCurrentMA.HasValue)
-                viewResultSpectrum.CalculateEqeParams(eqeVoltage.Value, eqeCurrentMA.Value);
+                viewResultSpectrum.CalculateEqeParams(eqeVoltage.Value, eqeCurrentMA.Value, config);
 
             item.EqeVoltage = eqeVoltage;
             item.EqeCurrentMA = eqeCurrentMA;
@@ -417,16 +434,16 @@ namespace Spectrum.Data
             item.Id = id;
             viewResultSpectrum.Id = id;
 
-            PublishResult(viewResultSpectrum);
+            PublishResult(viewResultSpectrum, config);
             return viewResultSpectrum;
         }
 
-        private void PublishResult(ViewResultSpectrum viewResultSpectrum)
+        private void PublishResult(ViewResultSpectrum viewResultSpectrum, ViewResultManagerConfig config)
         {
             void Publish()
             {
                 ViewResultSpectrum? publishedResult = ViewResluts.FirstOrDefault(item => item.Id == viewResultSpectrum.Id);
-                if (publishedResult == null && Config.OrderByType == OrderByType.Desc)
+                if (publishedResult == null && config.OrderByType == OrderByType.Desc)
                 {
                     ViewResluts.Insert(0, viewResultSpectrum);
                     publishedResult = viewResultSpectrum;
@@ -437,8 +454,8 @@ namespace Spectrum.Data
                     publishedResult = viewResultSpectrum;
                 }
 
-                TrimVisibleResults();
-                if (!Config.AutoRefresh)
+                TrimVisibleResults(config);
+                if (!config.AutoRefresh)
                     return;
 
                 ViewReslutsSelectedIndex = ViewResluts.IndexOf(publishedResult);
@@ -451,25 +468,26 @@ namespace Spectrum.Data
                 Publish();
         }
 
-        private void TrimVisibleResults()
+        private void TrimVisibleResults(ViewResultManagerConfig config)
         {
-            if (Config.Count <= 0)
+            if (config.Count <= 0)
                 return;
 
-            while (ViewResluts.Count > Config.Count)
+            while (ViewResluts.Count > config.Count)
             {
-                int removeIndex = Config.OrderByType == OrderByType.Desc ? ViewResluts.Count - 1 : 0;
+                int removeIndex = config.OrderByType == OrderByType.Desc ? ViewResluts.Count - 1 : 0;
                 ViewResluts.RemoveAt(removeIndex);
             }
         }
 
         public void GenericQuery()
         {
+            ViewResultManagerConfig config = CaptureConfig();
             EnsureDatabaseInitialized();
             var db = CreateDb();
             try
             {
-                GenericQuery<SprectrumModel, ViewResultSpectrum> genericQuery = new GenericQuery<SprectrumModel, ViewResultSpectrum>(db, ViewResluts, a => new ViewResultSpectrum(a));
+                GenericQuery<SprectrumModel, ViewResultSpectrum> genericQuery = new GenericQuery<SprectrumModel, ViewResultSpectrum>(db, ViewResluts, a => new ViewResultSpectrum(a, config));
                 GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 genericQueryWindow.Closed += (s, e) => db.Dispose();
                 genericQueryWindow.ShowDialog();
@@ -479,6 +497,13 @@ namespace Spectrum.Data
                 db.Dispose();
                 throw;
             }
+        }
+
+        public void Dispose()
+        {
+            configOwner.ConfigurationChanged -= ConfigOwner_ConfigurationChanged;
+            configOwner.Dispose();
+            GC.SuppressFinalize(this);
         }
 
     }

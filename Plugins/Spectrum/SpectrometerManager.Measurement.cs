@@ -91,6 +91,7 @@ namespace Spectrum
 
         private async Task<SpectrumMeasurementResult> MeasureTrackedAsync(CancellationToken cancellationToken)
         {
+            ViewResultManagerConfig resultConfig = ViewResultManager.CaptureConfig();
             Stopwatch totalStopwatch = Stopwatch.StartNew();
             SpectrumMeasurementProfile profile = new()
             {
@@ -133,7 +134,7 @@ namespace Spectrum
                     ColorParam = capture.ColorParam.Value,
                     TotalDurationMs = totalStopwatch.ElapsedMilliseconds
                 };
-                ViewResultSpectrum viewResult = ViewResultManager.Save(model, capture.EqeVoltage, capture.EqeCurrent);
+                ViewResultSpectrum viewResult = ViewResultManager.Save(model, capture.EqeVoltage, capture.EqeCurrent, resultConfig);
                 profile.PersistDurationMs = persistStopwatch.ElapsedMilliseconds;
                 profile.SpectrumId = model.Id;
                 profile.IsSuccess = true;

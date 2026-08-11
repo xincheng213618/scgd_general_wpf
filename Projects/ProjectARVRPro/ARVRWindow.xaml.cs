@@ -102,6 +102,7 @@ namespace ProjectARVRPro
         private string _objectiveSessionSerialNumber = string.Empty;
         private bool _objectiveSessionCompleted;
         private bool _objectiveSessionPrepared;
+        private ViewResultManagerConfig? _objectiveSessionViewResultConfig;
         private (int Code, string Message)? _firstFlowFailure;
         private string _lastFlowFailureMessage = string.Empty;
         private IProcess? _currentFlowProcess;
@@ -157,6 +158,7 @@ namespace ProjectARVRPro
             ObjectiveTestResultRecordId = 0;
             _objectiveSessionCompleted = false;
             _objectiveSessionPrepared = true;
+            _objectiveSessionViewResultConfig = ViewResultManager.CaptureConfig();
             _firstFlowFailure = null;
             _lastFlowFailureMessage = string.Empty;
             _currentFlowProcess = null;
@@ -705,8 +707,9 @@ namespace ProjectARVRPro
 
                 FlowName = flowTemplate.Key;
 
-                string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
-                CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
+                ViewResultManagerConfig resultConfig = _objectiveSessionViewResultConfig ?? ViewResultManager.CaptureConfig();
+                string sn = resultConfig.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
+                CurrentFlowResult.Code = sn + DateTime.Now.ToString(resultConfig.CodeDateFormat);
                 _currentFlowProcess = runProcessMeta?.Process ?? ProcessManager.CreateBlankProcess();
                 ResultProcessResolver.Capture(CurrentFlowResult, _currentFlowProcess);
 
@@ -1019,7 +1022,7 @@ namespace ProjectARVRPro
                 SendProjectResultResponse(
                     _firstFlowFailure?.Code ?? -1,
                     _firstFlowFailure?.Message ?? message,
-                    ViewResultManager.Config.UseLegacyARVROutput
+                    (_objectiveSessionViewResultConfig ?? ViewResultManager.CaptureConfig()).UseLegacyARVROutput
                         ? LegacyARVRConverter.ToLegacy(ObjectiveTestResult)
                         : ObjectiveTestResult);
             }
@@ -1263,6 +1266,7 @@ namespace ProjectARVRPro
 
         private async Task<bool> Processing(string SerialNumber)
         {
+            ViewResultManagerConfig exportConfig = _objectiveSessionViewResultConfig ?? ViewResultManager.CaptureConfig();
             MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
 
 
@@ -1314,21 +1318,20 @@ namespace ProjectARVRPro
                     }
                     if (executed)
                     {
-                        ViewResultManagerConfig exportConfig = ViewResultManager.Config;
                         if (exportConfig.IsSaveImageReuslt || exportConfig.IsSaveSourceImage)
                         {
-                            _automaticImageExportResults.Add(result);
+                            _automaticImageExportConfigs[result] = exportConfig;
                         }
                         ViewResultManager.Save(result);
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
                         SaveObjectiveTestResultRecord(result);
 
-                        if (ViewResultManager.Config.IsSaveLink)
+                        if (exportConfig.IsSaveLink)
                         {
-                            string linkPath = ViewResultManager.Config.CsvSavePath;
+                            string linkPath = exportConfig.CsvSavePath;
                             string sn = result.SN;
 
-                            if (ViewResultManager.Config.SaveByDate)
+                            if (exportConfig.SaveByDate)
                             {
                                 string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
                                 linkPath = Path.Combine(linkPath, dateFolder);
@@ -1491,7 +1494,8 @@ namespace ProjectARVRPro
             }
 
             //如果开启了UseLegacyARVROutput，则说明第一个ProcessMeta是LegacyARVROutput，不参与测试流程，所以需要+1
-            if (ViewResultManager.GetInstance().Config.UseLegacyARVROutput)
+            ViewResultManagerConfig taskConfig = _objectiveSessionViewResultConfig ?? ViewResultManager.CaptureConfig();
+            if (taskConfig.UseLegacyARVROutput)
             {
                 log.Info("UseLegacyARVROutput + nextTestType 1");
                 nextTestType = nextTestType + 1;
@@ -1541,7 +1545,7 @@ namespace ProjectARVRPro
 
             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
-            var outputConfig = ViewResultManager.Config;
+            ViewResultManagerConfig outputConfig = _objectiveSessionViewResultConfig ?? ViewResultManager.CaptureConfig();
             DateTime exportTime = DateTime.Now;
             string timeStr = exportTime.ToString("yyyyMMdd_HHmmss");
             string csvOutputDirectory = outputConfig.CsvSavePath;
@@ -1766,6 +1770,7 @@ namespace ProjectARVRPro
             ObjectiveTestResultRecordId = 0;
             _objectiveSessionCompleted = false;
             _objectiveSessionSerialNumber = serialNumber;
+            _objectiveSessionViewResultConfig = ViewResultManager.CaptureConfig();
         }
 
         private void SelectViewResult(ProjectARVRReuslt result)
@@ -1893,7 +1898,7 @@ namespace ProjectARVRPro
                     }
                     catch (OperationCanceledException) when (requestCancellation.IsCancellationRequested)
                     {
-                        _automaticImageExportResults.Remove(result);
+                        _automaticImageExportConfigs.Remove(result);
                     }
                     catch (Exception ex)
                     {
@@ -1977,7 +1982,7 @@ namespace ProjectARVRPro
         }
 
         private readonly SemaphoreSlim _resultImagePresentationGate = new(1, 1);
-        private readonly HashSet<ProjectARVRReuslt> _automaticImageExportResults = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<ProjectARVRReuslt, ViewResultManagerConfig> _automaticImageExportConfigs = new(ReferenceEqualityComparer.Instance);
 
         private bool IsCurrentResultImageRequest(long requestVersion, ProjectARVRReuslt result)
         {
@@ -2076,7 +2081,7 @@ namespace ProjectARVRPro
             ImageViewExternalRenderCompletedEventArgs e)
         {
             if (e.Context is not ProjectARVRReuslt result
-                || !_automaticImageExportResults.Remove(result))
+                || !_automaticImageExportConfigs.Remove(result, out ViewResultManagerConfig? config))
                 return;
 
             if (_isDisposed
@@ -2089,7 +2094,7 @@ namespace ProjectARVRPro
             }
 
             log.Info("ImageEditor图像加载及外部点位渲染已完成，开始捕获本次结果快照。");
-            StartImageExportFromLoadedImage(result);
+            StartImageExportFromLoadedImage(result, config);
         }
 
         private bool CanCurrentSourceExportBmp()
@@ -2101,9 +2106,8 @@ namespace ProjectARVRPro
             return source != null && ColorVision.ImageEditor.ImageView.CanBmpPreserveSourceBitDepth(source.Format);
         }
 
-        private void StartImageExportFromLoadedImage(ProjectARVRReuslt result)
+        private void StartImageExportFromLoadedImage(ProjectARVRReuslt result, ViewResultManagerConfig config)
         {
-            ViewResultManagerConfig config = ViewResultManager.Config;
             bool saveResultImage = config.IsSaveImageReuslt;
             bool saveSourceImage = config.IsSaveSourceImage;
             ResultImageFormat resultFormat = config.ResultSnapshotFormat;
@@ -2606,8 +2610,9 @@ namespace ProjectARVRPro
                         TestType = CurrentTestType,
                     };
                     FlowName = CurrentFlowResult.Model;
-                    string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
-                    CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
+                    ViewResultManagerConfig resultConfig = _objectiveSessionViewResultConfig ?? ViewResultManager.CaptureConfig();
+                    string sn = resultConfig.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
+                    CurrentFlowResult.Code = sn + DateTime.Now.ToString(resultConfig.CodeDateFormat);
                     cancellationToken.ThrowIfCancellationRequested();
 
                     log.Info($"一键执行 [{i + 1}/{enabledMetas.Count}]: {meta.Name} ({meta.FlowTemplate})");
@@ -2895,7 +2900,7 @@ namespace ProjectARVRPro
             _continuousTestCancellation?.Cancel();
             Interlocked.Increment(ref _resultImagePresentationVersion);
             Interlocked.Exchange(ref _resultImagePresentationCancellation, null)?.Cancel();
-            _automaticImageExportResults.Clear();
+            _automaticImageExportConfigs.Clear();
             ImageView.ExternalRenderCompleted -= ImageView_ExternalRenderCompleted;
             ViewResluts.CollectionChanged -= ViewResults_CollectionChanged;
             var wasCurrentCopilotSession = _copilotContextSession?.IsCurrent == true;

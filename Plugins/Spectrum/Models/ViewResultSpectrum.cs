@@ -58,7 +58,7 @@ namespace Spectrum.Models
         [Browsable(false)]
         public int SpectrumPointCount => fPL.Length;
 
-        public void Gen()
+        public void Gen(ViewResultManagerConfig? configSnapshot = null)
         {
             NormalizeSpectrumData();
             _spectralDatas = null;
@@ -67,7 +67,7 @@ namespace Spectrum.Models
 
             IP = Math.Round(fIp / 65535 * 100, 2).ToString() + "%";
 
-            float safeLuminance = GetSafeLuminanceValue(fPh);
+            float safeLuminance = GetSafeLuminanceValue(fPh, configSnapshot);
             Lv = safeLuminance.ToString();
 
             double sum1 = 0, sum2 = 0;
@@ -237,6 +237,11 @@ namespace Spectrum.Models
         }
 
         public ViewResultSpectrum(SprectrumModel sprectrumModel)
+            : this(sprectrumModel, null)
+        {
+        }
+
+        internal ViewResultSpectrum(SprectrumModel sprectrumModel, ViewResultManagerConfig? configSnapshot)
         {
             Id = sprectrumModel.Id;
             CreateTime = sprectrumModel.CreateTime;
@@ -251,7 +256,7 @@ namespace Spectrum.Models
             RadiantFlux = sprectrumModel.RadiantFlux;
             LuminousEfficacy = sprectrumModel.LuminousEfficacy;
             IsRecalculated = sprectrumModel.IsRecalculated ?? false;
-            Gen();
+            Gen(configSnapshot);
 
             if (sprectrumModel.ExcitationPurity.HasValue)
                 ExcitationPurity = sprectrumModel.ExcitationPurity.Value;
@@ -350,7 +355,7 @@ namespace Spectrum.Models
             OnPropertyChanged(nameof(EqePercent));
         }
 
-        public void CalculateEqeParams(float voltage, float currentMA)
+        public void CalculateEqeParams(float voltage, float currentMA, ViewResultManagerConfig? configSnapshot = null)
         {
             V = voltage;
             I = currentMA;
@@ -364,7 +369,7 @@ namespace Spectrum.Models
                 Eqe = 0;
             }
 
-            float safeLuminance = GetSafeLuminanceValue(fPh);
+            float safeLuminance = GetSafeLuminanceValue(fPh, configSnapshot);
             LuminousFlux = safeLuminance;
 
             if (fPL != null && fPL.Length > 0)
@@ -397,11 +402,11 @@ namespace Spectrum.Models
             OnPropertyChanged(nameof(I));
         }
 
-        private static float GetSafeLuminanceValue(float rawLuminance)
+        private static float GetSafeLuminanceValue(float rawLuminance, ViewResultManagerConfig? configSnapshot = null)
         {
             try
             {
-                ViewResultManagerConfig config = ViewResultManagerConfig.Instance;
+                ViewResultManagerConfig config = configSnapshot ?? ViewResultManagerConfig.Instance;
                 if (config.EnableNegativeLuminanceGuard && rawLuminance < config.MinLuminanceValue)
                 {
                     return (float)config.MinLuminanceValue;

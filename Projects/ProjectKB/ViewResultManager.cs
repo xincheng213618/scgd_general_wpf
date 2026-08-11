@@ -69,7 +69,8 @@ namespace ProjectKB
 
         public static string SqliteDbPath { get; set; } = DirectoryPath + "ProjectKB.db";
 
-        public ViewResultManagerConfig Config { get; set; }
+        private readonly RuntimeConfigOwner<ViewResultManagerConfig> configOwner;
+        public ViewResultManagerConfig Config => configOwner.Current;
 
         public ObservableCollection<KBItemMaster> ViewResluts { get; set; } = new ObservableCollection<KBItemMaster>();
 
@@ -86,7 +87,10 @@ namespace ProjectKB
 
         public ViewResultManager()
         {
-            Config = ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
+            configOwner = new RuntimeConfigOwner<ViewResultManagerConfig>(
+                () => ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>(),
+                ConfigService.Instance as IConfigReloadNotifier);
+            configOwner.ConfigurationChanged += ConfigOwner_ConfigurationChanged;
             EditConfigCommand = new RelayCommand(a => EditConfig());
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
@@ -105,6 +109,13 @@ namespace ProjectKB
             LoadAll(Config.Count);
         }
 
+        public ViewResultManagerConfig CaptureConfig() => configOwner.Capture();
+
+        private void ConfigOwner_ConfigurationChanged(object? sender, RuntimeConfigChangedEventArgs<ViewResultManagerConfig> e)
+        {
+            OnPropertyChanged(nameof(Config));
+        }
+
 
         public void EditConfig()
         {
@@ -118,7 +129,8 @@ namespace ProjectKB
         {
             if (!RequireAdmin()) return;
 
-            QueryCore(null,null,Config.Count);
+            ViewResultManagerConfig config = CaptureConfig();
+            QueryCore(null,null,config.Count);
         }
 
         public void Delete(int index)
@@ -132,6 +144,7 @@ namespace ProjectKB
         public void Save()
         {
             if (!RequireAdmin()) return;
+            ViewResultManagerConfig config = CaptureConfig();
 
             if (ViewResluts.Count >0 &&  ViewReslutsSelectedIndex > -1)
             {
@@ -151,14 +164,14 @@ namespace ProjectKB
                     }
                     string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
                     string regexPattern = $"[{Regex.Escape(invalidChars)}]";
-                    string csvpath = Config.CsvSavePath + $"\\{Regex.Replace(kbItemMaster.Model, regexPattern, "")}_{kbItemMaster.CreateTime:yyyyMMdd}.csv";
+                    string csvpath = config.CsvSavePath + $"\\{Regex.Replace(kbItemMaster.Model, regexPattern, "")}_{kbItemMaster.CreateTime:yyyyMMdd}.csv";
                     
                     using var dialog = new System.Windows.Forms.SaveFileDialog();
                     dialog.Filter = "CSV files (*.csv) | *.csv";
                     dialog.FileName = csvpath;
                     dialog.RestoreDirectory = true;
                     if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                    kbItemMaster.SaveCsv(dialog.FileName, Config.AppendFalloutSummary);
+                    kbItemMaster.SaveCsv(dialog.FileName, config.AppendFalloutSummary);
                 }
             }
 
@@ -169,8 +182,9 @@ namespace ProjectKB
         /// </summary>
         public void LoadAll(int count = 100)
         {
+            ViewResultManagerConfig config = CaptureConfig();
             ViewResluts.Clear();
-            var query = _db.Queryable<KBItemMaster>().OrderBy(x => x.Id, Config.OrderByType);
+            var query = _db.Queryable<KBItemMaster>().OrderBy(x => x.Id, config.OrderByType);
             var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
             foreach (var dbItem in dbList)
             {
@@ -178,9 +192,10 @@ namespace ProjectKB
             }
         }
 
-        public void Save(KBItemMaster item)
+        public void Save(KBItemMaster item, ViewResultManagerConfig? configSnapshot = null)
         {
             if (item == null) return;
+            ViewResultManagerConfig config = configSnapshot ?? CaptureConfig();
 
             KBResultImageDimensions.TryPopulate(item);
             bool isNew = item.Id <= 0;
@@ -213,7 +228,7 @@ namespace ProjectKB
             });
 
             if (isNew || !ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
-                AddViewResult(item);
+                AddViewResult(item, config);
         }
 
         public bool UpdateImageDimensions(KBItemMaster item, int width, int height)
@@ -249,12 +264,12 @@ namespace ProjectKB
             KBResultPayloadStorage.LoadResult(_db, item);
         }
 
-        private void AddViewResult(KBItemMaster item)
+        private void AddViewResult(KBItemMaster item, ViewResultManagerConfig config)
         {
-            if (Config.OrderByType == OrderByType.Desc)
+            if (config.OrderByType == OrderByType.Desc)
             {
                 ViewResluts.Insert(0, item); //倒序插入
-                if (Config.AutoRefresh)
+                if (config.AutoRefresh)
                 {
                     ViewReslutsSelectedIndex = 0;
                 }
@@ -262,7 +277,7 @@ namespace ProjectKB
             else
             {
                 ViewResluts.Add(item);
-                if (Config.AutoRefresh)
+                if (config.AutoRefresh)
                 {
                     ViewReslutsSelectedIndex = ViewResluts.Count - 1;
                 }
@@ -290,10 +305,11 @@ namespace ProjectKB
 
         private void QueryCore(string model = null, string sn = null, int count = -1)
         {
+            ViewResultManagerConfig config = CaptureConfig();
             ViewResluts.Clear();
 
             var query = _db.Queryable<KBItemMaster>();
-            query = query.OrderBy(x => x.Id, Config.OrderByType);
+            query = query.OrderBy(x => x.Id, config.OrderByType);
             var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
 
             foreach (var dbItem in dbList)
@@ -305,6 +321,8 @@ namespace ProjectKB
         public void Dispose()
         {
             _db?.Dispose();
+            configOwner.ConfigurationChanged -= ConfigOwner_ConfigurationChanged;
+            configOwner.Dispose();
             GC.SuppressFinalize(this);
         }
 

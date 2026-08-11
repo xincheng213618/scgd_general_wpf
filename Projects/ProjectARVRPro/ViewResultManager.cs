@@ -301,7 +301,8 @@ namespace ProjectARVRPro
 
         public static string SqliteDbPath { get; set; } = DirectoryPath + "ProjectARVRPro.db";
 
-        public ViewResultManagerConfig Config { get; set; }
+        private readonly RuntimeConfigOwner<ViewResultManagerConfig> configOwner;
+        public ViewResultManagerConfig Config => configOwner.Current;
         public Func<bool>? SourceBmpAvailabilityProvider { get; set; }
 
         public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
@@ -322,7 +323,10 @@ namespace ProjectARVRPro
 
         public ViewResultManager()
         {
-            Config = ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
+            configOwner = new RuntimeConfigOwner<ViewResultManagerConfig>(
+                () => ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>(),
+                ConfigService.Instance as IConfigReloadNotifier);
+            configOwner.ConfigurationChanged += ConfigOwner_ConfigurationChanged;
             EditConfigCommand = new RelayCommand(a => EditConfig());
             ViewReslutsClearCommand = new RelayCommand(a => ViewReslutsClear());
             QueryCommand = new RelayCommand(a => Query());
@@ -355,6 +359,13 @@ namespace ProjectARVRPro
         InitKeyType = InitKeyType.Attribute
     })));
         }
+
+        public ViewResultManagerConfig CaptureConfig() => configOwner.Capture();
+
+        private void ConfigOwner_ConfigurationChanged(object? sender, RuntimeConfigChangedEventArgs<ViewResultManagerConfig> e)
+        {
+            OnPropertyChanged(nameof(Config));
+        }
         public void SlectSqlLiteDb()
         {
             PlatformHelper.OpenFolderAndSelectFile(SqliteDbPath);
@@ -381,7 +392,8 @@ namespace ProjectARVRPro
         }
         public void Query()
         {
-            Query(null,null,Config.Count);
+            ViewResultManagerConfig config = CaptureConfig();
+            Query(null,null,config.Count);
         }
 
 
@@ -670,6 +682,8 @@ namespace ProjectARVRPro
         public void Dispose()
         {
             _db?.Dispose();
+            configOwner.ConfigurationChanged -= ConfigOwner_ConfigurationChanged;
+            configOwner.Dispose();
             GC.SuppressFinalize(this);
         }
     }

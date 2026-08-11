@@ -52,7 +52,8 @@ namespace ProjectLUX
 
         public static string SqliteDbPath { get; set; } = DirectoryPath + "ProjectLUX.db";
 
-        public ViewResultManagerConfig Config { get; set; }
+        private readonly RuntimeConfigOwner<ViewResultManagerConfig> configOwner;
+        public ViewResultManagerConfig Config => configOwner.Current;
 
         public ObservableCollection<ProjectLUXReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectLUXReuslt>();
 
@@ -69,7 +70,10 @@ namespace ProjectLUX
 
         public ViewResultManager()
         {
-            Config = ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
+            configOwner = new RuntimeConfigOwner<ViewResultManagerConfig>(
+                () => ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>(),
+                ConfigService.Instance as IConfigReloadNotifier);
+            configOwner.ConfigurationChanged += ConfigOwner_ConfigurationChanged;
             EditConfigCommand = new RelayCommand(a => EditConfig());
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
@@ -97,8 +101,9 @@ namespace ProjectLUX
 
             try
             {
-                if (!Directory.Exists(Config.CsvSavePath))
-                    Directory.CreateDirectory(Config.CsvSavePath);
+                ViewResultManagerConfig config = CaptureConfig();
+                if (!Directory.Exists(config.CsvSavePath))
+                    Directory.CreateDirectory(config.CsvSavePath);
             }
             catch(Exception ex)
             {
@@ -106,6 +111,13 @@ namespace ProjectLUX
             }
 
 
+        }
+
+        public ViewResultManagerConfig CaptureConfig() => configOwner.Capture();
+
+        private void ConfigOwner_ConfigurationChanged(object? sender, RuntimeConfigChangedEventArgs<ViewResultManagerConfig> e)
+        {
+            OnPropertyChanged(nameof(Config));
         }
 
 
@@ -116,7 +128,8 @@ namespace ProjectLUX
         }
         public void Query()
         {
-            Query(null,null,Config.Count);
+            ViewResultManagerConfig config = CaptureConfig();
+            Query(null,null,config.Count);
         }
 
         public void Delete(int index)
@@ -150,8 +163,9 @@ namespace ProjectLUX
         /// </summary>
         public void LoadAll(int count = 100)
         {
+            ViewResultManagerConfig config = CaptureConfig();
             ViewResluts.Clear();
-            var query = _db.Queryable<ProjectLUXReuslt>().OrderBy(x => x.Id, Config.OrderByType);
+            var query = _db.Queryable<ProjectLUXReuslt>().OrderBy(x => x.Id, config.OrderByType);
             var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
             foreach (var dbItem in dbList)
             {
@@ -162,13 +176,14 @@ namespace ProjectLUX
         public void Save(ProjectLUXReuslt item)
         {
             if (item == null) return;
+            ViewResultManagerConfig config = CaptureConfig();
             int id = _db.Insertable(item).ExecuteReturnIdentity();
             item.Id = id; // 更新ID
 
-            if (Config.OrderByType == OrderByType.Desc)
+            if (config.OrderByType == OrderByType.Desc)
             {
                 ViewResluts.Insert(0, item); //倒序插入
-                if (Config.AutoRefresh)
+                if (config.AutoRefresh)
                 {
                     ViewReslutsSelectedIndex = 0;
                 }
@@ -176,7 +191,7 @@ namespace ProjectLUX
             else
             {
                 ViewResluts.Add(item);
-                if (Config.AutoRefresh)
+                if (config.AutoRefresh)
                 {
                     ViewReslutsSelectedIndex = ViewResluts.Count - 1;
                 }
@@ -229,10 +244,11 @@ namespace ProjectLUX
         /// </summary>
         public void Query(string model = null, string sn = null, int count = -1)
         {
+            ViewResultManagerConfig config = CaptureConfig();
             ViewResluts.Clear();
 
             var query = _db.Queryable<ProjectLUXReuslt>();
-            query = query.OrderBy(x => x.Id, Config.OrderByType);
+            query = query.OrderBy(x => x.Id, config.OrderByType);
             var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
 
             foreach (var dbItem in dbList)
@@ -244,6 +260,8 @@ namespace ProjectLUX
         public void Dispose()
         {
             _db?.Dispose();
+            configOwner.ConfigurationChanged -= ConfigOwner_ConfigurationChanged;
+            configOwner.Dispose();
             GC.SuppressFinalize(this);
         }
     }
