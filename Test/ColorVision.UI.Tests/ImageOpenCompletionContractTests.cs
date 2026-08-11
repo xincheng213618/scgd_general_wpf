@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using AppCommandContextMenu = ColorVision.ImageEditor.EditorTools.AppCommand.ImageViewSettingsEditorToolContextMenu;
 
 namespace ColorVision.UI.Tests;
 
@@ -116,6 +117,101 @@ public sealed class ImageOpenCompletionContractTests
         {
             if (imageView != null)
                 WpfTestHost.Invoke(imageView.Dispose);
+
+            if (File.Exists(filePath))
+                File.Delete(filePath);
+        }
+    }
+
+    [Fact]
+    public async Task RestoreOriginalImageAfterProcessingReloadsCurrentSourceThroughMenuCommand()
+    {
+        string filePath = Path.Combine(
+            Path.GetTempPath(),
+            $"{nameof(ImageOpenCompletionContractTests)}-{Guid.NewGuid():N}.png");
+        ImageView? imageView = null;
+        EventHandler<ImageViewImageSourceLoadedEventArgs>? loadedHandler = null;
+        TaskCompletionSource firstLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource restoredLoad = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int completionCount = 0;
+
+        try
+        {
+            WpfTestHost.Invoke(() =>
+            {
+                EnsureImageViewTestResources();
+                WriteEncodedImage(filePath);
+
+                imageView = new ImageView();
+                loadedHandler = (_, _) =>
+                {
+                    completionCount++;
+                    if (completionCount == 1)
+                        firstLoad.TrySetResult();
+                    else if (completionCount == 2)
+                        restoredLoad.TrySetResult();
+                };
+                imageView.ImageSourceLoaded += loadedHandler;
+                imageView.OpenImage(filePath);
+            });
+
+            await firstLoad.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            WpfTestHost.Invoke(() =>
+            {
+                byte[] processedPixels = new byte[2 * 3 * 4];
+                for (int offset = 3; offset < processedPixels.Length; offset += 4)
+                    processedPixels[offset] = 0xFF;
+
+                WriteableBitmap processed = new(BitmapSource.Create(
+                    2,
+                    3,
+                    96,
+                    96,
+                    PixelFormats.Bgra32,
+                    null,
+                    processedPixels,
+                    8));
+                imageView!.ViewBitmapSource = processed;
+                imageView.ImageShow.Source = processed;
+                imageView.NotifySourcePixelsChanged();
+
+                Assert.True(imageView.CanRestoreOriginalImage);
+                AppCommandContextMenu menuProvider = Assert.Single(
+                    imageView.IEditorToolFactory.IIEditorToolContextMenus.OfType<AppCommandContextMenu>());
+                var restoreMenuItem = Assert.Single(
+                    menuProvider.GetContextMenuItems(),
+                    item => item.GuidId == "RestoreOriginalImage");
+                Assert.True(restoreMenuItem.Command!.CanExecute(null));
+                restoreMenuItem.Command.Execute(null);
+            });
+
+            await restoredLoad.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            WpfTestHost.Invoke(() =>
+            {
+                BitmapSource restored = Assert.IsAssignableFrom<BitmapSource>(imageView!.ViewBitmapSource);
+                byte[] pixel = new byte[4];
+                restored.CopyPixels(new Int32Rect(0, 0, 1, 1), pixel, 4, 0);
+
+                Assert.Equal(0x00, pixel[0]);
+                Assert.Equal(0x00, pixel[1]);
+                Assert.Equal(0xFF, pixel[2]);
+                Assert.Equal(0xFF, pixel[3]);
+                Assert.Equal(2, completionCount);
+            });
+        }
+        finally
+        {
+            if (imageView != null)
+            {
+                WpfTestHost.Invoke(() =>
+                {
+                    if (loadedHandler != null)
+                        imageView.ImageSourceLoaded -= loadedHandler;
+                    imageView.Dispose();
+                });
+            }
 
             if (File.Exists(filePath))
                 File.Delete(filePath);
