@@ -416,6 +416,8 @@ namespace ProjectARVRPro
         {
             if (item == null) return;
 
+            ResultImageDimensions.TryPopulateFromFile(item);
+
             bool isNew = item.Id <= 0;
             bool savePayload = item.ViewResultJson != null;
             ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
@@ -447,6 +449,31 @@ namespace ProjectARVRPro
 
             if (isNew || !ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
                 AddViewResult(item);
+        }
+
+        public bool UpdateImageDimensions(ProjectARVRReuslt item, int width, int height)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            if (width <= 0 || height <= 0)
+                return false;
+            if (item.ImageWidth == width && item.ImageHeight == height)
+                return false;
+
+            item.ImageWidth = width;
+            item.ImageHeight = height;
+            if (item.Id > 0)
+            {
+                _db.Updateable<ProjectARVRReuslt>()
+                    .SetColumns(result => new ProjectARVRReuslt
+                    {
+                        ImageWidth = width,
+                        ImageHeight = height,
+                    })
+                    .Where(result => result.Id == item.Id)
+                    .ExecuteCommand();
+            }
+
+            return true;
         }
 
         public string? LoadViewResultJson(ProjectARVRReuslt item)

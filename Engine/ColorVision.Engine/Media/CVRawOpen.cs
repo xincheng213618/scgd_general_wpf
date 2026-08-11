@@ -684,55 +684,69 @@ namespace ColorVision.Engine.Media
         }
 
 
-        public async void OpenImage(EditorContext context, string? filePath)  
+        public async void OpenImage(EditorContext context, string? filePath)
         {
-            await Task.Run((Action)(() =>
-            {
-                CVCIEFile cVCIEFile = CVFileUtil.OpenLocalCVFile(filePath);
-                context.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, cVCIEFile.Rows, nameof(CVRawOpen), "当前 CVCIE 图像行数");
-                context.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, cVCIEFile.Cols, nameof(CVRawOpen), "当前 CVCIE 图像列数");
-                context.Config.SetImageMetadata(ImageViewPropertyKeys.Channel, cVCIEFile.Channels, nameof(CVRawOpen), "当前 CVCIE 图像通道数");
-                context.Config.SetImageMetadata("Gain", cVCIEFile.Gain, nameof(CVRawOpen), "CVCIE 采集增益");
-                context.Config.SetImageMetadata("exp", cVCIEFile.Exp, nameof(CVRawOpen), "CVCIE 曝光数组");
-                context.Config.SetImageMetadata("FileExtType", cVCIEFile.FileExtType, nameof(CVRawOpen), "CVCIE 文件扩展类型");
-                context.Config.SetImageMetadata("srcFileName", cVCIEFile.SrcFileName, nameof(CVRawOpen), "CVCIE 关联源文件名");
-                OpenCvSharp.Mat mat = cVCIEFile.ToMat();
-                cVCIEFile.Dispose();
+            if (string.IsNullOrWhiteSpace(filePath))
+                return;
 
-                Application.Current.Dispatcher.Invoke(() =>
+            string requestedFilePath = filePath;
+            try
+            {
+                await Task.Run(() =>
                 {
-                    if (context.ImageView.ViewBitmapSource is WriteableBitmap writeableBitmap)
+                    using CVCIEFile cVCIEFile = CVFileUtil.OpenLocalCVFile(requestedFilePath);
+                    using OpenCvSharp.Mat mat = cVCIEFile.ToMat();
+
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        if (!mat.MatUpdateWriteableBitmap(writeableBitmap))
+                        string? activeFilePath = context.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
+                        if (!string.Equals(activeFilePath, requestedFilePath, StringComparison.OrdinalIgnoreCase))
                         {
-                            WriteableBitmap writeableBitmap1 = OpenCvSharp.WpfExtensions.WriteableBitmapConverter.ToWriteableBitmap(mat);
-                            mat.Dispose();
-                            context.ImageView.OpenImage(writeableBitmap1);
-                            context.ImageView.UpdateZoomAndScale();
+                            log.Info($"图像目标已切换，丢弃迟到的 CVCIE 加载结果：{requestedFilePath}");
+                            return;
+                        }
+
+                        context.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, cVCIEFile.Rows, nameof(CVRawOpen), "当前 CVCIE 图像行数");
+                        context.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, cVCIEFile.Cols, nameof(CVRawOpen), "当前 CVCIE 图像列数");
+                        context.Config.SetImageMetadata(ImageViewPropertyKeys.Channel, cVCIEFile.Channels, nameof(CVRawOpen), "当前 CVCIE 图像通道数");
+                        context.Config.SetImageMetadata("Gain", cVCIEFile.Gain, nameof(CVRawOpen), "CVCIE 采集增益");
+                        context.Config.SetImageMetadata("exp", cVCIEFile.Exp, nameof(CVRawOpen), "CVCIE 曝光数组");
+                        context.Config.SetImageMetadata("FileExtType", cVCIEFile.FileExtType, nameof(CVRawOpen), "CVCIE 文件扩展类型");
+                        context.Config.SetImageMetadata("srcFileName", cVCIEFile.SrcFileName, nameof(CVRawOpen), "CVCIE 关联源文件名");
+
+                        if (context.ImageView.ViewBitmapSource is WriteableBitmap writeableBitmap)
+                        {
+                            if (!mat.MatUpdateWriteableBitmap(writeableBitmap))
+                            {
+                                WriteableBitmap replacement = OpenCvSharp.WpfExtensions.WriteableBitmapConverter.ToWriteableBitmap(mat);
+                                context.ImageView.OpenImage(replacement);
+                                context.ImageView.UpdateZoomAndScale();
+                            }
+                            else
+                            {
+                                context.Config.SetImageMetadata(ImageViewPropertyKeys.Depth, cVCIEFile.Bpp, nameof(CVRawOpen), "当前 CVCIE 图像位深");
+                                context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiX, writeableBitmap.DpiX, nameof(CVRawOpen), "当前 CVCIE 图像水平 DPI");
+                                context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(CVRawOpen), "当前 CVCIE 图像垂直 DPI");
+                                //这里需要强制切换过来
+                                context.ImageView.ImageShow.Source = writeableBitmap;
+                                context.ImageView.NotifySourcePixelsChanged();
+                                context.ImageView.NotifyImageSourceLoaded();
+                            }
                         }
                         else
                         {
-                            context.Config.SetImageMetadata(ImageViewPropertyKeys.Depth, cVCIEFile.Bpp, nameof(CVRawOpen), "当前 CVCIE 图像位深");
-                            context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiX, writeableBitmap.DpiX, nameof(CVRawOpen), "当前 CVCIE 图像水平 DPI");
-                            context.Config.SetImageMetadata(ImageViewPropertyKeys.DpiY, writeableBitmap.DpiY, nameof(CVRawOpen), "当前 CVCIE 图像垂直 DPI");
-                            //这里需要强制切换过来
-                            context.ImageView.ImageShow.Source = writeableBitmap;
-                            context.ImageView.NotifySourcePixelsChanged();
-                            context.ImageView.NotifyImageSourceLoaded();
-                            mat.Dispose();
+                            WriteableBitmap replacement = mat.ToWriteableBitmap();
+                            context.ImageView.OpenImage(replacement);
+                            context.ImageView.UpdateZoomAndScale();
                         }
-                    }
-                    else
-                    {
-                        WriteableBitmap writeableBitmap1 = mat.ToWriteableBitmap();
-                        context.ImageView.OpenImage(writeableBitmap1);
-                        context.ImageView.UpdateZoomAndScale();
-                    }
-                    InitializeCvFileView(context.ImageView, filePath);
+                        InitializeCvFileView(context.ImageView, requestedFilePath);
+                    });
                 });
-            }));
-
-
+            }
+            catch (Exception ex)
+            {
+                log.Error($"打开 CVCIE 图像失败：{requestedFilePath}", ex);
+            }
         }
     }
 }

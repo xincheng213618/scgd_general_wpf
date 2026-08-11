@@ -690,6 +690,29 @@ public sealed class ResultStatisticsTests
         Assert.True(database.FirstFinalizationValueIsNull());
     }
 
+    [Fact]
+    public void DataStoreUpgradesLegacyFlowTableWithNullableImageDimensions()
+    {
+        using var database = new TemporaryResultDatabase();
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+        database.InsertFlow(new ProjectARVRReuslt
+        {
+            SN = "SN-LEGACY",
+            Model = "White255_Fast_Test",
+            FileName = @"C:\missing\legacy.cvraw",
+        });
+        database.DropFlowImageDimensionColumnsForLegacySchema();
+
+        Assert.DoesNotContain(nameof(ProjectARVRReuslt.ImageWidth), database.QueryFlowColumnNames());
+        Assert.DoesNotContain(nameof(ProjectARVRReuslt.ImageHeight), database.QueryFlowColumnNames());
+
+        new ResultStatisticsDataStore(database.Path).InitializeSchema();
+
+        Assert.Contains(nameof(ProjectARVRReuslt.ImageWidth), database.QueryFlowColumnNames());
+        Assert.Contains(nameof(ProjectARVRReuslt.ImageHeight), database.QueryFlowColumnNames());
+        Assert.True(database.FirstFlowImageDimensionsAreNull());
+    }
+
     private static ResultStatisticsSample CreateSample(int id, string sn, bool result, DateTime start, double milliseconds)
     {
         return new ResultStatisticsSample
@@ -770,6 +793,15 @@ public sealed class ResultStatisticsTests
                 .ToHashSet(StringComparer.Ordinal);
         }
 
+        public HashSet<string> QueryFlowColumnNames()
+        {
+            using SqlSugarClient db = CreateClient();
+            DataTable table = db.Ado.GetDataTable("PRAGMA table_info('ARVRReuslt');");
+            return table.Rows.Cast<DataRow>()
+                .Select(row => Convert.ToString(row["name"]) ?? string.Empty)
+                .ToHashSet(StringComparer.Ordinal);
+        }
+
         public void DropFinalizedColumnForLegacySchema()
         {
             using SqlSugarClient db = CreateClient();
@@ -778,12 +810,29 @@ public sealed class ResultStatisticsTests
             db.Ado.ExecuteCommand("ALTER TABLE \"ObjectiveTestResultRecord\" DROP COLUMN \"IsFinalized\";");
         }
 
+        public void DropFlowImageDimensionColumnsForLegacySchema()
+        {
+            using SqlSugarClient db = CreateClient();
+            db.Ado.ExecuteCommand("ALTER TABLE \"ARVRReuslt\" DROP COLUMN \"ImageWidth\";");
+            db.Ado.ExecuteCommand("ALTER TABLE \"ARVRReuslt\" DROP COLUMN \"ImageHeight\";");
+        }
+
         public bool FirstFinalizationValueIsNull()
         {
             using SqlSugarClient db = CreateClient();
             DataTable table = db.Ado.GetDataTable(
                 "SELECT \"IsFinalized\" FROM \"ObjectiveTestResultRecord\" ORDER BY \"Id\" LIMIT 1;");
             return table.Rows.Count == 1 && table.Rows[0].IsNull("IsFinalized");
+        }
+
+        public bool FirstFlowImageDimensionsAreNull()
+        {
+            using SqlSugarClient db = CreateClient();
+            DataTable table = db.Ado.GetDataTable(
+                "SELECT \"ImageWidth\", \"ImageHeight\" FROM \"ARVRReuslt\" ORDER BY \"Id\" LIMIT 1;");
+            return table.Rows.Count == 1
+                && table.Rows[0].IsNull("ImageWidth")
+                && table.Rows[0].IsNull("ImageHeight");
         }
 
         public void Dispose()

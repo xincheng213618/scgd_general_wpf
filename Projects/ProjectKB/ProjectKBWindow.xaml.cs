@@ -1615,30 +1615,7 @@ namespace ProjectKB
                 {
                     if (File.Exists(kBItem.ResultImagFile))
                     {
-                        bool imageReady = false;
-                        try
-                        {
-                            var fileInfo = new FileInfo(kBItem.ResultImagFile);
-                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
-                            {
-                            }
-                            imageReady = fileInfo.Length > 0;
-                        }
-                        catch
-                        {
-                            log.Warn("文件还在写入");
-                            await Task.Delay(ViewResultManager.Config.ViewImageReadDelay);
-                            try
-                            {
-                                imageReady = File.Exists(kBItem.ResultImagFile) && new FileInfo(kBItem.ResultImagFile).Length > 0;
-                            }
-                            catch
-                            {
-                                imageReady = false;
-                            }
-                        }
 
-                        if (!imageReady) return;
                         WriteableBitmap? resultBitmap = TryLoadResultBitmap(kBItem.ResultImagFile);
                         if (resultBitmap == null) return;
 
