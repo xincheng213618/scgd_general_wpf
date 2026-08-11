@@ -3,7 +3,6 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
-using NPOI.SS.Formula.Functions;
 using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
@@ -45,7 +44,6 @@ namespace ColorVision.Engine.Archive.Dao
 
                 try
                 {
-                    var list = DB.Queryable<T>();
                     foreach (var item in DB.Queryable<ArchivedMasterModel>().ToList())
                     {
                         ViewResults.Add(item);
@@ -89,7 +87,6 @@ namespace ColorVision.Engine.Archive.Dao
                     IsAutoCloseConnection = true
                 });
 
-                var list = DB.Queryable<T>();
                 foreach (var item in DB.Queryable<ArchivedMasterModel>().Where(x=>x.Code.Contains(SearchBox.Text)).ToList())
                 {
                     ViewResults.Add(item);
@@ -110,7 +107,6 @@ namespace ColorVision.Engine.Archive.Dao
                     IsAutoCloseConnection = true
                 });
 
-                var list = DB.Queryable<T>();
                 foreach (var item in DB.Queryable<ArchivedMasterModel>().Where(x => x.Code.Contains(SearchBox.Text)).ToList())
                 {
                     ViewResults.Add(item);
