@@ -2738,6 +2738,16 @@ body.cv-home-light .workflow-icon {
     flex-direction: column;
   }
 
+  .resource-row > div:first-child {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .resource-row .muted-line {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
   .resource-row .ant-btn {
     width: 100%;
   }

@@ -74,10 +74,24 @@ export function UpdatesPage() {
         </Space>
       </Card>
       <Card title="标准增量包">
-        <Table rowKey="relative_path" columns={updateColumns} dataSource={data.update_packages} pagination={{ pageSize: 12 }} />
+        <Table
+          rowKey="relative_path"
+          columns={updateColumns}
+          dataSource={data.update_packages}
+          className="file-table"
+          pagination={{ pageSize: 12 }}
+          scroll={{ x: 900 }}
+        />
       </Card>
       <Card title="其它 Update 文件">
-        <Table rowKey="relative_path" columns={otherColumns} dataSource={data.other_update_items} pagination={{ pageSize: 12 }} />
+        <Table
+          rowKey="relative_path"
+          columns={otherColumns}
+          dataSource={data.other_update_items}
+          className="file-table"
+          pagination={{ pageSize: 12 }}
+          scroll={{ x: 760 }}
+        />
       </Card>
     </Space>
   )
