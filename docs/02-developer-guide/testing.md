@@ -8,6 +8,8 @@
 | --- | --- | --- | --- | --- |
 | Copilot 与 Agent 测试 | `Test/ColorVision.Copilot.Tests/` | xUnit、`net10.0-windows`、WPF | Copilot、Codex 配置、Agent、MCP、审批、Hook、Skill、会话恢复与工作区安全边界 | `dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64` |
 | UI 与主程序逻辑测试 | `Test/ColorVision.UI.Tests/` | xUnit、`net10.0-windows`、WPF | UI 基础设施、日志、Marketplace、PropertyGrid、终端缓冲、STNode、排序和编辑器辅助逻辑 | `dotnet test Test/ColorVision.UI.Tests/ -p:Platform=x64` |
+| Spectrum、Conoscope 与客户项目测试 | `Test/Spectrum.Tests/`、`Test/Conoscope.Tests/`、`Test/ProjectARVRPro.Tests/`、`Test/ProjectKB.Tests/`、`Test/ProjectLUX.Tests/` | xUnit、`net10.0-windows`、WPF | 光谱、Conoscope 和三个客户项目的可脱离设备运行的领域回归 | 分别对目标 `.csproj` 执行 `dotnet test -c Release -p:Platform=x64` |
+| 构建、发布和打包脚本测试 | `Scripts/tests/` | Python `unittest` | ABI、平台、安装器、更新包、插件包、后端客户端和发布编排的静态及合成制品门禁 | `python -m unittest discover -s Scripts/tests -p "test_*.py" -v` |
 | native OpenCV helper 验证 | `Test/opencv_helper_test/` | Visual C++、OpenCV、x64 | `opencv_helper` 侧函数，例如 `M_FindLuminousArea` | Visual Studio 2022 或 `msbuild opencv_helper_test.vcxproj` |
 | 插件市场后端测试 | `Web/Backend/` | Python/Flask | Marketplace API、release 记录、上传下载和存储行为 | `python test_app.py`、`python test_app_releases.py` |
 | 文档站验证 | `docs/` | VitePress | 导航、Markdown、搜索索引、静态页面生成 | `npm run docs:build` |
@@ -50,6 +52,8 @@ dotnet test Test/ColorVision.Copilot.Tests/ -p:Platform=x64 --filter "FullyQuali
 | 后端 | `cd Web/Backend` 后运行 `python test_app.py`、`python test_app_releases.py` | 改插件市场 API、release、上传下载或存储 |
 
 如果当前机器没有 Python 依赖，先按 [插件市场后端](./backend/README.md) 和 [构建与发布脚本](./scripts/README.md) 准备环境。不要把“依赖没装”误写成业务逻辑失败。
+
+仓库的 Windows `.NET` 工作流会运行两套公共 managed 测试、上表五套领域测试以及 `Scripts/tests` 的完整 discover。它仍不是“仓库全部测试”：需要 CUDA/OpenCV 或真实设备的 native 验证、插件市场后端测试、文档构建和现场硬件验收继续使用各自入口。
 
 ## 按变更选择验证
 

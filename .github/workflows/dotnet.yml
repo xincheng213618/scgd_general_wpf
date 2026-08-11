@@ -17,7 +17,7 @@ jobs:
   build:
 
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
     - uses: actions/checkout@v6
@@ -30,16 +30,21 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v6
       with:
-        python-version: '3.13'
+        python-version: '3.14'
 
     - name: Install Python test dependencies
-      run: python -m pip install "tqdm==4.67.3"
+      run: python -m pip install "pefile==2024.8.26" "requests==2.33.0" "tqdm==4.67.3"
 
     - name: Restore dependencies
       run: |
         dotnet restore build.sln
         dotnet restore Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64
         dotnet restore Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -p:Platform=x64
+        dotnet restore Test/Spectrum.Tests/Spectrum.Tests.csproj -p:Platform=x64
+        dotnet restore Test/Conoscope.Tests/Conoscope.Tests.csproj -p:Platform=x64
+        dotnet restore Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj -p:Platform=x64
+        dotnet restore Test/ProjectKB.Tests/ProjectKB.Tests.csproj -p:Platform=x64
+        dotnet restore Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj -p:Platform=x64
 
     - name: Setup MSBuild path
       uses: microsoft/setup-msbuild@v3
@@ -51,19 +56,35 @@ jobs:
     - name: Verify host shared-file manifests
       run: |
         python Scripts/generate_shared_files.py --check
-        python -m unittest Scripts.tests.test_generate_shared_files Scripts.tests.test_repository_packaging_contracts -v
 
     - name: Verify native ABI and packages
       run: |
-        python Scripts/verify_native_contracts.py --runtime ColorVision/bin/x64/Release/net10.0-windows/runtimes/win-x64/native/opencv_cuda.dll --package-directory UI/ColorVision.Core/bin/x64/Release
-        python Scripts/verify_platform_policy.py --fileio-package-directory Engine/ColorVision.FileIO/bin/x64/Release
-        python -m unittest Scripts.tests.test_build Scripts.tests.test_build_update Scripts.tests.test_verify_native_contracts Scripts.tests.test_verify_platform_policy -v
+        python Scripts/verify_native_contracts.py --static-native-project-only --runtime ColorVision/bin/x64/Release/net10.0-windows/runtimes/win-x64/native/opencv_cuda.dll --package-directory UI/ColorVision.Core/bin/x64/Release
+        python Scripts/verify_platform_policy.py --fileio-package-directory Engine/ColorVision.FileIO/bin/Release
+
+    - name: Run Python tests
+      run: python -m unittest discover -s Scripts/tests -p "test_*.py" -v
 
     - name: Run UI tests
       run: dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ColorVision.UI.Tests.trx"
 
     - name: Run Copilot tests
       run: dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ColorVision.Copilot.Tests.trx"
+
+    - name: Run Spectrum tests
+      run: dotnet test Test/Spectrum.Tests/Spectrum.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=Spectrum.Tests.trx"
+
+    - name: Run Conoscope tests
+      run: dotnet test Test/Conoscope.Tests/Conoscope.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=Conoscope.Tests.trx"
+
+    - name: Run ProjectARVRPro tests
+      run: dotnet test Test/ProjectARVRPro.Tests/ProjectARVRPro.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ProjectARVRPro.Tests.trx"
+
+    - name: Run ProjectKB tests
+      run: dotnet test Test/ProjectKB.Tests/ProjectKB.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ProjectKB.Tests.trx"
+
+    - name: Run ProjectLUX tests
+      run: dotnet test Test/ProjectLUX.Tests/ProjectLUX.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ProjectLUX.Tests.trx"
 
     - name: Upload test diagnostics
       if: failure()
@@ -92,5 +113,5 @@ jobs:
         dotnet nuget push .\UI\ColorVision.UI.Desktop\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         dotnet nuget push .\UI\ColorVision.ImageTools\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         dotnet nuget push .\UI\ColorVision.Rbac\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-        dotnet nuget push .\Engine\ColorVision.FileIO\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        dotnet nuget push .\Engine\ColorVision.FileIO\bin\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         dotnet nuget push .\Engine\cvColorVision\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
