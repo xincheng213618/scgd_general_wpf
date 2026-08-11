@@ -150,7 +150,7 @@ namespace WindowsServicePlugin.CVWinSMS
             }
         }
 
-        public async void Download()
+        public async Task Download()
         {
             var downloadFile = new DownloadFile();
             Version version = await downloadFile.GetLatestVersionNumber(LatestReleaseUrl);
@@ -204,7 +204,42 @@ namespace WindowsServicePlugin.CVWinSMS
             });
         }
 
-        public override void Execute()
+        public override async void Execute()
+        {
+            await ExecuteMenuActionAsync(ExecuteCoreAsync, ReportMenuFailure);
+        }
+
+        internal static async Task ExecuteMenuActionAsync(Func<Task> action, Action<Exception> reportFailure)
+        {
+            try
+            {
+                await action();
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    reportFailure(ex);
+                }
+                catch (Exception reportException)
+                {
+                    log.Error("报告服务管理工具启动失败时发生异常。", reportException);
+                }
+            }
+        }
+
+        private static void ReportMenuFailure(Exception ex)
+        {
+            log.Error("打开或下载服务管理工具失败。", ex);
+            MessageBox.Show(
+                Application.Current?.GetActiveWindow(),
+                $"打开或下载服务管理工具失败：{ex.Message}",
+                "ColorVision",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+
+        private async Task ExecuteCoreAsync()
         {
             if (!File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
             {
@@ -229,7 +264,7 @@ namespace WindowsServicePlugin.CVWinSMS
                 }
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), "找不到管理工具，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
-                    Task.Run(() => Download());
+                    await Download();
                     return;
                 }
 
