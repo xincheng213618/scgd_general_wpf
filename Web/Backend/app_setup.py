@@ -102,6 +102,9 @@ def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
     app = Flask(__name__, static_folder=None)
     app.secret_key = config["secret_key"]
     app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_SIZE_BYTES
+    # JSON is UTF-8 on the wire. Escaping every Chinese character only inflates
+    # public API responses without adding browser compatibility.
+    app.json.ensure_ascii = False
 
     db_path = base_dir / "marketplace.db"
     runtime = RuntimeState(config=config, storage=storage, db_path=db_path)

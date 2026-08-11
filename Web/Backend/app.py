@@ -38,6 +38,7 @@ from app_setup import (
     human_size, render_markdown, RuntimeOverrides,
 )
 from db_cache import CacheManager
+from services.http_compression import register_response_compression
 
 app, _ctx, SERVICES, _helpers = create_app_and_context(RuntimeOverrides(
     config=lambda: CONFIG,
@@ -127,6 +128,7 @@ require_upload_auth = _helpers["require_upload_auth"]
 
 register_error_handlers(app)
 register_slow_request_logging(app, _ctx, _helpers["access_recorder"])
+register_response_compression(app)
 register_all_blueprints(app, _ctx, SERVICES, _helpers)
 
 # ---------------------------------------------------------------------------
