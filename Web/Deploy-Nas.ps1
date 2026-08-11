@@ -271,10 +271,19 @@ function Remove-SafeDeployDirectory {
 }
 
 function Get-ResponseSize {
-    param([Parameter(Mandatory)][string]$Uri)
+    param(
+        [Parameter(Mandatory)][string]$Uri,
+        [string]$AcceptEncoding = 'identity'
+    )
 
-    $response = Invoke-WebRequest -Uri $Uri -UseBasicParsing -TimeoutSec 30
-    return [Text.Encoding]::UTF8.GetByteCount([string]$response.Content)
+    $response = Invoke-WebRequest -Uri $Uri -UseBasicParsing -Headers @{
+        'Accept-Encoding' = $AcceptEncoding
+    } -TimeoutSec 30
+    $contentLength = 0L
+    if ([long]::TryParse([string]$response.Headers['Content-Length'], [ref]$contentLength)) {
+        return $contentLength
+    }
+    return [long]$response.RawContentLength
 }
 
 try {
@@ -432,7 +441,7 @@ try {
     Invoke-NativeCommand -FilePath $nodeExe -ArgumentList @('scripts/check-dashboard-bundle.mjs', $stagedDistPath) -WorkingDirectory $frontendPath
 
     if (-not $skipTests) {
-        Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @('-m', 'unittest', 'test_access_analytics', 'test_frontend_spa', 'test_page_contexts', 'test_copilot_config_api', 'test_spectrum_api') -WorkingDirectory $backendPath
+        Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @('-m', 'unittest', 'test_access_analytics', 'test_frontend_spa', 'test_http_compression', 'test_page_contexts', 'test_copilot_config_api', 'test_spectrum_api') -WorkingDirectory $backendPath
     }
 
     $listenerBeforeRestart = Get-WebListener
@@ -461,6 +470,9 @@ try {
     $compactHomeBytes = Get-ResponseSize -Uri "$baseUrl/api/site/home?view=compact"
     $compactReleaseBytes = Get-ResponseSize -Uri "$baseUrl/api/site/releases?view=compact&page=1&page_size=20"
     $compactChangelogBytes = Get-ResponseSize -Uri "$baseUrl/api/site/changelog?view=compact&page=1&page_size=20"
+    $compactHomeGzipBytes = Get-ResponseSize -Uri "$baseUrl/api/site/home?view=compact" -AcceptEncoding 'gzip'
+    $compactReleaseGzipBytes = Get-ResponseSize -Uri "$baseUrl/api/site/releases?view=compact&page=1&page_size=20" -AcceptEncoding 'gzip'
+    $compactChangelogGzipBytes = Get-ResponseSize -Uri "$baseUrl/api/site/changelog?view=compact&page=1&page_size=20" -AcceptEncoding 'gzip'
     $trafficAssets = @(Get-ChildItem -LiteralPath (Join-Path $liveDistPath 'assets') -Filter 'TrafficPage-*.js' -File)
     if ($trafficAssets.Count -eq 0) {
         throw 'TrafficPage frontend asset is missing from the live build.'
@@ -495,6 +507,9 @@ try {
         compact_home_bytes = $compactHomeBytes
         compact_releases_bytes = $compactReleaseBytes
         compact_changelog_bytes = $compactChangelogBytes
+        compact_home_gzip_bytes = $compactHomeGzipBytes
+        compact_releases_gzip_bytes = $compactReleaseGzipBytes
+        compact_changelog_gzip_bytes = $compactChangelogGzipBytes
         analytics = $analytics
     }
     Write-DeploymentHistory -Record $successRecord
