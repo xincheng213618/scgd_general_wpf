@@ -182,10 +182,10 @@ public class AvalonEditorSupportTests
         try
         {
             string command = TerminalControl.BuildScriptStartupCommand(scriptPath, "powershell");
-            string output = RunWindowsPowerShell(command);
+            string output = RunWindowsPowerShell(command + "; Write-Output ('COLORVISION_TEST_EXIT_CODE=' + $scriptExitCode)");
 
             Assert.Contains("BAT_LITERAL_OK", output, StringComparison.Ordinal);
-            Assert.Contains("[进程已结束，退出代码: 0]", output, StringComparison.Ordinal);
+            Assert.Contains("COLORVISION_TEST_EXIT_CODE=0", output, StringComparison.Ordinal);
         }
         finally
         {

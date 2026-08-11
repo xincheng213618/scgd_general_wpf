@@ -36,6 +36,7 @@ jobs:
       run: |
         dotnet restore build.sln
         dotnet restore Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -p:Platform=x64
+        dotnet restore Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -p:Platform=x64
 
     - name: Setup MSBuild path
       uses: microsoft/setup-msbuild@v3
@@ -49,8 +50,11 @@ jobs:
         python Scripts/generate_shared_files.py --check
         python -m unittest Scripts.tests.test_generate_shared_files Scripts.tests.test_repository_packaging_contracts -v
 
-    - name: Run .NET tests
+    - name: Run UI tests
       run: dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ColorVision.UI.Tests.trx"
+
+    - name: Run Copilot tests
+      run: dotnet test Test/ColorVision.Copilot.Tests/ColorVision.Copilot.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ColorVision.Copilot.Tests.trx"
 
     - name: Upload test diagnostics
       if: failure()
