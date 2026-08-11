@@ -330,8 +330,10 @@ public sealed class SocketRelayLifecycleTests
     }
 
     [Fact]
-    public async Task PublicStopDeadlineIncludesSynchronousStateNotification()
+    public async Task PublicStopDeadlineDoesNotWaitForBlockedStateNotification()
     {
+        using ManualResetEventSlim stateNotificationEntered = new();
+        using ManualResetEventSlim releaseStateNotification = new();
         using ManualResetEventSlim listeningStoppedEntered = new();
         using ManualResetEventSlim releaseListeningStopped = new();
         SocketRelayGeneration? generation = null;
@@ -351,7 +353,8 @@ public sealed class SocketRelayLifecycleTests
             }
         };
         SocketRelayManager manager = new(new SocketRelayConfig(), runtime);
-        int delayedNotification = 0;
+        int blockedNotification = 0;
+        Task<(SocketRelayStopResult Result, TimeSpan Elapsed)>? stopTask = null;
 
         try
         {
@@ -361,28 +364,142 @@ public sealed class SocketRelayLifecycleTests
             {
                 if (args.PropertyName == nameof(SocketRelayManager.IsListening) &&
                     !manager.IsListening &&
-                    Interlocked.Exchange(ref delayedNotification, 1) == 0)
+                    Interlocked.Exchange(ref blockedNotification, 1) == 0)
                 {
-                    Thread.Sleep(200);
+                    stateNotificationEntered.Set();
+                    releaseStateNotification.Wait(TestTimeout);
                 }
             };
 
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            SocketRelayStopResult result = manager.StopServerAndWait(TimeSpan.FromMilliseconds(250));
-            stopwatch.Stop();
+            stopTask = Task.Run(() =>
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                SocketRelayStopResult result = manager.StopServerAndWait(TimeSpan.FromMilliseconds(150));
+                stopwatch.Stop();
+                return (result, stopwatch.Elapsed);
+            });
 
-            Assert.True(listeningStoppedEntered.IsSet);
+            Assert.True(stateNotificationEntered.Wait(TimeSpan.FromSeconds(1)));
+            Assert.True(listeningStoppedEntered.Wait(TimeSpan.FromSeconds(1)));
+            (SocketRelayStopResult result, TimeSpan elapsed) =
+                await stopTask.WaitAsync(TimeSpan.FromMilliseconds(750));
+
             Assert.False(result.Completed);
             Assert.True(result.RemainingWorkerCount >= 1);
-            Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(180), TimeSpan.FromMilliseconds(400));
+            Assert.Null(manager.ActiveGenerationId);
+            Assert.InRange(elapsed, TimeSpan.FromMilliseconds(75), TimeSpan.FromMilliseconds(600));
         }
         finally
         {
+            releaseStateNotification.Set();
             releaseListeningStopped.Set();
+            if (stopTask != null)
+            {
+                await stopTask.WaitAsync(TestTimeout);
+            }
+
             manager.StopServerAndWait(TimeSpan.FromSeconds(2));
             if (generation != null)
             {
                 Assert.True(generation.StopAndWait(TimeSpan.FromSeconds(2)).Completed);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task BlockedOldWriterBoundsReplacementStartAndCannotPublishAcrossRetry()
+    {
+        using ManualResetEventSlim writerEntered = new();
+        using ManualResetEventSlim releaseWriter = new();
+        ConcurrentQueue<string> socketMessages = new();
+        SocketRelayGeneration? oldGeneration = null;
+        int generationCount = 0;
+        SocketRelayRuntime runtime = new()
+        {
+            StateDispatcher = action => action(),
+            GenerationFactory = (address, port) =>
+            {
+                SocketRelayGeneration generation = new(address, port);
+                if (Interlocked.Increment(ref generationCount) == 1)
+                {
+                    oldGeneration = generation;
+                }
+
+                return generation;
+            },
+            ExternalClientWriter = _ =>
+            {
+                writerEntered.Set();
+                releaseWriter.Wait(TestTimeout);
+                return new SocketRelayWriteResult(SocketRelayWriteStatus.Sent);
+            },
+            SocketMessagePublisher = message => socketMessages.Enqueue(message.Content ?? string.Empty)
+        };
+        SocketRelayManager manager = new(new SocketRelayConfig(), runtime);
+        using TcpClient oldFlowClient = new();
+        Task<(Exception? Error, TimeSpan Elapsed)>? replacementStart = null;
+
+        try
+        {
+            manager.StartServer("127.0.0.1", 0);
+            IPEndPoint endpoint = await WaitForListeningEndpointAsync(manager);
+            await oldFlowClient.ConnectAsync(endpoint.Address, endpoint.Port);
+            await WaitUntilAsync(() => manager.ActiveFlowConnectionId.HasValue && manager.IsFlowConnected);
+            long oldGenerationId = Assert.IsType<long>(manager.ActiveGenerationId);
+
+            await oldFlowClient.GetStream().WriteAsync(Encoding.UTF8.GetBytes("1"));
+            Assert.True(writerEntered.Wait(TestTimeout));
+
+            replacementStart = Task.Run(() =>
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                try
+                {
+                    manager.StartServer("127.0.0.1", 0);
+                    return ((Exception?)null, stopwatch.Elapsed);
+                }
+                catch (Exception ex)
+                {
+                    return (ex, stopwatch.Elapsed);
+                }
+            });
+
+            (Exception? error, TimeSpan elapsed) =
+                await replacementStart.WaitAsync(TimeSpan.FromSeconds(3));
+            Assert.IsType<TimeoutException>(error);
+            Assert.InRange(elapsed, TimeSpan.FromSeconds(1.5), TimeSpan.FromSeconds(2.8));
+            Assert.Null(manager.ActiveGenerationId);
+            Assert.Equal(1, Volatile.Read(ref generationCount));
+            Assert.Empty(socketMessages);
+            Assert.DoesNotContain(
+                manager.Messages,
+                message => message.Direction == RelayMessageDirection.RelayToClient && message.Content == "1");
+
+            releaseWriter.Set();
+            Assert.NotNull(oldGeneration);
+            Assert.True(oldGeneration.StopAndWait(TimeSpan.FromSeconds(2)).Completed);
+
+            manager.StartServer("127.0.0.1", 0);
+            await WaitUntilAsync(() => manager.IsListening && manager.ActiveGenerationId != oldGenerationId);
+
+            Assert.Equal(2, Volatile.Read(ref generationCount));
+            Assert.Empty(socketMessages);
+            Assert.DoesNotContain(
+                manager.Messages,
+                message => message.Direction == RelayMessageDirection.RelayToClient && message.Content == "1");
+        }
+        finally
+        {
+            releaseWriter.Set();
+            if (replacementStart != null)
+            {
+                await replacementStart.WaitAsync(TestTimeout);
+            }
+
+            manager.StopServerAndWait(TimeSpan.FromSeconds(2));
+            if (oldGeneration != null)
+            {
+                Assert.True(oldGeneration.StopAndWait(TimeSpan.FromSeconds(2)).Completed);
             }
         }
     }
