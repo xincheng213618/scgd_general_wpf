@@ -12,17 +12,19 @@ namespace WindowsServicePlugin.ServiceManager
     {
         private void UpdateConfig()
         {
+            using ServiceManagerOperationLease operation = BeginOperation();
+            ServiceConfigurationSnapshot snapshot = operation.Snapshot;
             try
             {
                 log.Info("开始更新配置...");
-                string baseLocation = Config.BaseLocation;
+                string baseLocation = snapshot.ServiceManager.BaseLocation;
                 if (string.IsNullOrEmpty(baseLocation) || !Directory.Exists(baseLocation))
                 {
                     MessageBox.Show("安装根目录不存在，请先设置", "更新配置", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
-                SyncAllConfigs(false);
+                SyncAllConfigs(false, snapshot);
 
                 log.Info("配置更新完成");
 
@@ -46,15 +48,16 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        public void ApplyConfigAndRefreshAfterInstall()
+        internal void ApplyConfigAndRefreshAfterInstall(ServiceConfigurationSnapshot snapshot)
         {
+            ArgumentNullException.ThrowIfNull(snapshot);
             try
             {
-                string baseLocation = Config.BaseLocation;
+                string baseLocation = snapshot.ServiceManager.BaseLocation;
                 if (string.IsNullOrEmpty(baseLocation) || !Directory.Exists(baseLocation))
                     throw new DirectoryNotFoundException($"安装根目录不存在: {baseLocation}");
 
-                SyncAllConfigs(false);
+                SyncAllConfigs(false, snapshot);
                 log.Info("已执行安装后配置同步(UpdateConfig)");
                 Application.Current?.Dispatcher.Invoke(() => RefreshAll());
             }
@@ -65,14 +68,14 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private void SyncManagedServiceConfigs()
+        private void SyncManagedServiceConfigs(ServiceConfigurationSnapshot snapshot)
         {
-            string baseLocation = ResolveManagedServiceInstallRoot() ?? Config.BaseLocation;
+            string baseLocation = ResolveManagedServiceInstallRoot(snapshot.ServiceManager) ?? snapshot.ServiceManager.BaseLocation;
             if (string.IsNullOrWhiteSpace(baseLocation) || !Directory.Exists(baseLocation))
                 return;
 
             string regDir = Path.Combine(baseLocation, "RegWindowsService");
-            if (Directory.Exists(regDir)) UpdateServiceConfigFiles(regDir, isRC: true);
+            if (Directory.Exists(regDir)) UpdateServiceConfigFiles(regDir, isRC: true, snapshot);
 
             string[] serviceFolders = ["CVMainWindowsService_x64", "CVMainWindowsService_dev", "TPAWindowsService", "TPAWindowsService32", "CVFlowWindowsService"];
             foreach (var folderName in serviceFolders)
@@ -80,20 +83,20 @@ namespace WindowsServicePlugin.ServiceManager
                 string svcDir = Path.Combine(baseLocation, folderName);
                 if (!Directory.Exists(svcDir)) continue;
 
-                UpdateServiceConfigFiles(svcDir, isRC: false);
+                UpdateServiceConfigFiles(svcDir, isRC: false, snapshot);
             }
         }
 
-        private void UpdateServiceConfigFiles(string serviceDir, bool isRC)
+        private void UpdateServiceConfigFiles(string serviceDir, bool isRC, ServiceConfigurationSnapshot snapshot)
         {
             string cfgDir = Path.Combine(serviceDir, "cfg");
-            UpdateMysqlCfgFile(Path.Combine(cfgDir, "MySql.config"));
-            UpdateMqttCfgFile(Path.Combine(cfgDir, "MQTT.config"));
-            UpdateWinServiceCfgFile(Path.Combine(cfgDir, "WinService.config"), isRC);
+            UpdateMysqlCfgFile(Path.Combine(cfgDir, "MySql.config"), snapshot.MySql);
+            UpdateMqttCfgFile(Path.Combine(cfgDir, "MQTT.config"), snapshot.Mqtt);
+            UpdateWinServiceCfgFile(Path.Combine(cfgDir, "WinService.config"), isRC, snapshot.RCSetting);
             UpdateLog4NetConfigFiles(serviceDir);
         }
 
-        private string? ResolveManagedServiceInstallRoot()
+        private static string? ResolveManagedServiceInstallRoot(ServiceManagerConfig serviceManagerConfig)
         {
             var candidates = new List<string>();
 
@@ -115,10 +118,10 @@ namespace WindowsServicePlugin.ServiceManager
                 }
             }
 
-            AddCandidate(Config.BaseLocation);
-            if (!string.IsNullOrWhiteSpace(Config.BaseLocation))
+            AddCandidate(serviceManagerConfig.BaseLocation);
+            if (!string.IsNullOrWhiteSpace(serviceManagerConfig.BaseLocation))
             {
-                AddCandidate(Path.Combine(Config.BaseLocation, "CVWindowsService"));
+                AddCandidate(Path.Combine(serviceManagerConfig.BaseLocation, "CVWindowsService"));
             }
 
             foreach (string serviceName in new[] { "RegistrationCenterService", "CVMainService_x64", "CVMainService_dev" })
@@ -138,15 +141,8 @@ namespace WindowsServicePlugin.ServiceManager
                 || Directory.Exists(Path.Combine(path, "CVMainWindowsService_dev"));
         }
 
-        private void UpdateMysqlCfgFile(string configPath)
+        private void UpdateMysqlCfgFile(string configPath, MySqlServiceConfig serviceConfig)
         {
-            MySqlServiceConfig serviceConfig = MySqlManager.Config;
-            MySqlSetting.Instance.MySqlConfig.Host = serviceConfig.Host;
-            MySqlSetting.Instance.MySqlConfig.Port = serviceConfig.Port;
-            MySqlSetting.Instance.MySqlConfig.UserName = serviceConfig.AppUser;
-            MySqlSetting.Instance.MySqlConfig.UserPwd = serviceConfig.AppPassword;
-            MySqlSetting.Instance.MySqlConfig.Database = serviceConfig.Database;
-
             if (!File.Exists(configPath)) return;
             try
             {
@@ -155,18 +151,17 @@ namespace WindowsServicePlugin.ServiceManager
                 if (settings == null)
                     throw new InvalidDataException($"MySql.config 缺少 appSettings: {configPath}");
 
-                var mySqlConfig = MySqlSetting.Instance.MySqlConfig;
                 foreach (var setting in settings)
                 {
                     var key = setting.Attribute("key")?.Value;
                     if (key == null) continue;
                     string? value = key switch
                     {
-                        "Host" => mySqlConfig.Host,
-                        "Port" => mySqlConfig.Port.ToString(),
-                        "User" => mySqlConfig.UserName,
-                        "Password" => mySqlConfig.UserPwd,
-                        "Database" => mySqlConfig.Database,
+                        "Host" => serviceConfig.Host,
+                        "Port" => serviceConfig.Port.ToString(),
+                        "User" => serviceConfig.AppUser,
+                        "Password" => serviceConfig.AppPassword,
+                        "Database" => serviceConfig.Database,
                         _ => null
                     };
                     if (value != null)
@@ -236,7 +231,7 @@ namespace WindowsServicePlugin.ServiceManager
             return element.Name.LocalName == "level" && (parentName == "root" || parentName == "logger");
         }
 
-        private void UpdateMqttCfgFile(string configPath)
+        private void UpdateMqttCfgFile(string configPath, MqttServiceConfig mqttConfig)
         {
             if (!File.Exists(configPath)) return;
             try
@@ -246,7 +241,6 @@ namespace WindowsServicePlugin.ServiceManager
                 if (settings == null)
                     throw new InvalidDataException($"MQTT.config 缺少 appSettings: {configPath}");
 
-                var mqttConfig = MqttManager.Config;
                 foreach (var setting in settings)
                 {
                     var key = setting.Attribute("key")?.Value;
@@ -272,7 +266,7 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private void UpdateWinServiceCfgFile(string configPath, bool isRC)
+        private void UpdateWinServiceCfgFile(string configPath, bool isRC, ColorVision.Engine.Services.RC.RCSetting rcSetting)
         {
             if (!File.Exists(configPath)) return;
             try
@@ -282,7 +276,7 @@ namespace WindowsServicePlugin.ServiceManager
                 if (settings == null)
                     throw new InvalidDataException($"WinService.config 缺少 appSettings: {configPath}");
 
-                var rcConfig = ColorVision.Engine.Services.RC.RCSetting.Instance.Config;
+                var rcConfig = rcSetting.Config;
                 foreach (var setting in settings)
                 {
                     var key = setting.Attribute("key")?.Value;
@@ -310,15 +304,15 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private void SyncAllConfigs(bool restartRegistrationCenter)
+        private void SyncAllConfigs(bool restartRegistrationCenter, ServiceConfigurationSnapshot snapshot)
         {
-            string baseLocation = Config.BaseLocation;
+            string baseLocation = snapshot.ServiceManager.BaseLocation;
             if (string.IsNullOrWhiteSpace(baseLocation) || !Directory.Exists(baseLocation))
                 return;
 
-            SyncManagedServiceConfigs();
+            SyncManagedServiceConfigs(snapshot);
 
-            SyncLegacyAppConfig();
+            SyncLegacyAppConfig(snapshot);
 
             if (restartRegistrationCenter)
             {
@@ -329,9 +323,9 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private void SyncLegacyAppConfig()
+        private void SyncLegacyAppConfig(ServiceConfigurationSnapshot snapshot)
         {
-            string? filePath = GetLegacyAppConfigPath();
+            string? filePath = GetLegacyAppConfigPath(snapshot.CVWinSMS);
             if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
                 return;
 
@@ -356,16 +350,16 @@ namespace WindowsServicePlugin.ServiceManager
                     }
                 }
 
-                var dbCfg = MySqlManager.Config;
-                SetSetting("BaseLocation", Config.BaseLocation);
+                var dbCfg = snapshot.MySql;
+                SetSetting("BaseLocation", snapshot.ServiceManager.BaseLocation);
                 SetSetting("MysqlHost", dbCfg.Host);
                 SetSetting("MysqlPort", dbCfg.Port.ToString());
-                SetSetting("MysqlServiceName", MySqlManager.Helper.ServiceName);
+                SetSetting("MysqlServiceName", snapshot.MySqlLocal.ServiceName);
                 SetSetting("MysqlUser", dbCfg.AppUser);
                 SetSetting("MysqlPwd", dbCfg.AppPassword);
                 SetSetting("MysqlRootPwd", dbCfg.RootPassword);
                 SetSetting("MysqlDatabase", dbCfg.Database);
-                SetSetting("RCName", ColorVision.Engine.Services.RC.RCSetting.Instance.Config.RCName);
+                SetSetting("RCName", snapshot.RCSetting.Config.RCName);
 
                 config.Save(filePath);
                 log.Info($"已同步旧版配置: {filePath}");
@@ -376,12 +370,12 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private static string? GetLegacyAppConfigPath()
+        private static string? GetLegacyAppConfigPath(CVWinSMS.CVWinSMSConfig cvWinSmsConfig)
         {
-            if (string.IsNullOrWhiteSpace(CVWinSMS.CVWinSMSConfig.Instance.CVWinSMSPath))
+            if (string.IsNullOrWhiteSpace(cvWinSmsConfig.CVWinSMSPath))
                 return null;
 
-            string? dir = Directory.GetParent(CVWinSMS.CVWinSMSConfig.Instance.CVWinSMSPath)?.FullName;
+            string? dir = Directory.GetParent(cvWinSmsConfig.CVWinSMSPath)?.FullName;
             if (string.IsNullOrWhiteSpace(dir))
                 return null;
 

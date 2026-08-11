@@ -6,16 +6,18 @@ namespace WindowsServicePlugin.ServiceManager
 {
     public class MqttServiceManager
     {
-        public MqttServiceConfig Config { get; private set; } = MqttServiceConfig.Instance;
+        private MQTTSetting mqttSetting;
+        public MqttServiceConfig Config { get; private set; }
 
         public MqttServiceManager()
-            : this(MqttServiceConfig.Instance)
+            : this(MqttServiceConfig.Instance, MQTTSetting.Instance)
         {
         }
 
-        internal MqttServiceManager(MqttServiceConfig config)
+        internal MqttServiceManager(MqttServiceConfig config, MQTTSetting mqttSetting)
         {
             Config = config ?? throw new ArgumentNullException(nameof(config));
+            this.mqttSetting = mqttSetting ?? throw new ArgumentNullException(nameof(mqttSetting));
             MigrateFromLegacySettings();
         }
 
@@ -24,9 +26,10 @@ namespace WindowsServicePlugin.ServiceManager
             MigrateFromLegacySettings();
         }
 
-        internal void RebindConfiguration(MqttServiceConfig config)
+        internal void RebindConfiguration(MqttServiceConfig config, MQTTSetting nextMqttSetting)
         {
             Config = config ?? throw new ArgumentNullException(nameof(config));
+            mqttSetting = nextMqttSetting ?? throw new ArgumentNullException(nameof(nextMqttSetting));
             MigrateFromLegacySettings();
         }
 
@@ -69,7 +72,7 @@ namespace WindowsServicePlugin.ServiceManager
         private void MigrateFromLegacySettings()
         {
             bool changed = false;
-            var legacy = MQTTSetting.Instance.MQTTConfig;
+            var legacy = mqttSetting.MQTTConfig;
 
             if (string.IsNullOrWhiteSpace(Config.Host) && !string.IsNullOrWhiteSpace(legacy.Host))
             {

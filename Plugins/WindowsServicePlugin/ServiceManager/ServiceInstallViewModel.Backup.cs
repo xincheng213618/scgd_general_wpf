@@ -13,8 +13,8 @@ namespace WindowsServicePlugin.ServiceManager
         {
             try
             {
-                var mySqlManager = ServiceManagerViewModel.Instance.MySqlManager;
-                mySqlManager.RefreshStatus(ServiceManagerViewModel.Instance.Services, ServiceManagerViewModel.Instance.Config.MySqlPort);
+                MySqlServiceManager mySqlManager = OperationMySqlManager;
+                mySqlManager.RefreshStatus(ServiceManagerViewModel.Instance.Services, Config.MySqlPort);
                 if (!mySqlManager.Config.IsRunning)
                 {
                     log.Info("MySQL 未运行，跳过备份");
@@ -50,8 +50,8 @@ namespace WindowsServicePlugin.ServiceManager
 
             try
             {
-                var mySqlManager = ServiceManagerViewModel.Instance.MySqlManager;
-                mySqlManager.RefreshStatus(ServiceManagerViewModel.Instance.Services, ServiceManagerViewModel.Instance.Config.MySqlPort);
+                MySqlServiceManager mySqlManager = OperationMySqlManager;
+                mySqlManager.RefreshStatus(ServiceManagerViewModel.Instance.Services, Config.MySqlPort);
                 if (!mySqlManager.Config.IsRunning)
                 {
                     log.Info("MySQL 未运行，无法恢复");

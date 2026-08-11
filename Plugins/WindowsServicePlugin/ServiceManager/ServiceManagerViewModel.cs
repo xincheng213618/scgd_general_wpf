@@ -1,6 +1,10 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Database;
+using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using log4net;
+using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
@@ -17,16 +21,18 @@ namespace WindowsServicePlugin.ServiceManager
     ///   - ServiceManagerViewModel.MySql.cs     MySQL 操作
     ///   - ServiceManagerViewModel.Helpers.cs   辅助方法
     /// </summary>
-    public partial class ServiceManagerViewModel : ViewModelBase, IDisposable
+    public partial class ServiceManagerViewModel : ViewModelBase, IConfigReloadParticipant, IDisposable
     {
         private readonly ILog log = LogManager.GetLogger(typeof(ServiceManagerViewModel));
 
         public static ServiceManagerViewModel Instance { get; } = new ServiceManagerViewModel();
 
-        private readonly RuntimeConfigOwner<ServiceManagerConfig> configOwner;
         private readonly ServiceConfigurationLeaseGate configurationGate;
         private ServiceManagerConfig _config;
+        private long nextConfigurationGeneration;
         private ServiceManagerOperationLease? mainOperationLease;
+        private ServiceConfigurationSnapshot MainOperationSnapshot => mainOperationLease?.Snapshot
+            ?? throw new InvalidOperationException("The service operation has not captured its configuration snapshot.");
         public ServiceManagerConfig Config => _config;
 
         public ObservableCollection<ServiceEntry> Services { get; set; } = [];
@@ -83,18 +89,11 @@ namespace WindowsServicePlugin.ServiceManager
 
         public ServiceManagerViewModel()
         {
-            configOwner = new RuntimeConfigOwner<ServiceManagerConfig>(
-                () => ConfigService.Instance.GetRequiredService<ServiceManagerConfig>(),
-                ConfigService.Instance as IConfigReloadNotifier,
-                ex => log.Error("重新加载服务管理器配置失败", ex));
-            _config = configOwner.Current;
-            MySqlServiceConfig mySqlConfig = ConfigService.Instance.GetRequiredService<MySqlServiceConfig>();
-            MqttServiceConfig mqttConfig = ConfigService.Instance.GetRequiredService<MqttServiceConfig>();
-            configurationGate = new ServiceConfigurationLeaseGate(
-                new ServiceConfigurationGeneration(configOwner.Generation, _config, mySqlConfig, mqttConfig));
-            MySqlManager = new MySqlServiceManager(_config, mySqlConfig);
-            MqttManager = new MqttServiceManager(mqttConfig);
-            configOwner.ConfigurationChanged += ConfigOwner_ConfigurationChanged;
+            ServiceConfigurationGeneration initial = ServiceConfigurationGeneration.Capture(ConfigService.Instance, 0);
+            _config = initial.ServiceManager;
+            configurationGate = new ServiceConfigurationLeaseGate(initial);
+            MySqlManager = new MySqlServiceManager(_config, initial.MySql, initial.MySqlLocal, initial.MySqlSetting);
+            MqttManager = new MqttServiceManager(initial.Mqtt, initial.MQTTSetting);
 
             // Commands
             OneKeyStartCommand = new RelayCommand(a => _ = OneKeyStartAsync(), a => !IsBusy);
@@ -130,29 +129,31 @@ namespace WindowsServicePlugin.ServiceManager
             Initialize();
         }
 
-        private void ConfigOwner_ConfigurationChanged(object? sender, RuntimeConfigChangedEventArgs<ServiceManagerConfig> e)
+        public string ConfigReloadName => nameof(ServiceManagerViewModel);
+
+        public int ConfigReloadOrder => 400;
+
+        public void BindCurrentConfig(IConfigService currentConfig)
         {
-            ServiceConfigurationGeneration prepared = new(
-                e.Generation,
-                e.Current,
-                ConfigService.Instance.GetRequiredService<MySqlServiceConfig>(),
-                ConfigService.Instance.GetRequiredService<MqttServiceConfig>());
+            ArgumentNullException.ThrowIfNull(currentConfig);
+            long generation = Interlocked.Increment(ref nextConfigurationGeneration);
+            ServiceConfigurationGeneration prepared = ServiceConfigurationGeneration.Capture(currentConfig, generation);
 
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher == null || dispatcher.CheckAccess())
-                PublishConfiguration(prepared);
+                PublishConfiguration(prepared, propagateFailure: true);
             else
-                dispatcher.Invoke(() => PublishConfiguration(prepared));
+                dispatcher.Invoke(() => PublishConfiguration(prepared, propagateFailure: true));
         }
 
-        private void PublishConfiguration(ServiceConfigurationGeneration candidate)
+        private void PublishConfiguration(ServiceConfigurationGeneration candidate, bool propagateFailure)
         {
             ServiceConfigurationGeneration? transition = configurationGate.QueueOrBeginTransition(candidate);
             if (transition != null)
-                ApplyStartedTransitions(transition);
+                ApplyStartedTransitions(transition, propagateFailure);
         }
 
-        private void ApplyStartedTransitions(ServiceConfigurationGeneration candidate)
+        private void ApplyStartedTransitions(ServiceConfigurationGeneration candidate, bool propagateFailure = false)
         {
             ServiceConfigurationGeneration? transition = candidate;
             while (transition != null)
@@ -166,6 +167,11 @@ namespace WindowsServicePlugin.ServiceManager
                 catch (Exception ex)
                 {
                     log.Error("应用服务管理器配置失败，保留上一代运行态", ex);
+                    if (propagateFailure)
+                    {
+                        transition = configurationGate.CompleteTransition(transition, applied: false);
+                        throw;
+                    }
                 }
 
                 transition = configurationGate.CompleteTransition(transition, applied);
@@ -177,16 +183,16 @@ namespace WindowsServicePlugin.ServiceManager
             ServiceConfigurationGeneration previous = configurationGate.Active;
             try
             {
-                MySqlManager.RebindConfiguration(candidate.ServiceManager, candidate.MySql);
-                MqttManager.RebindConfiguration(candidate.Mqtt);
+                MySqlManager.RebindConfiguration(candidate.ServiceManager, candidate.MySql, candidate.MySqlLocal, candidate.MySqlSetting);
+                MqttManager.RebindConfiguration(candidate.Mqtt, candidate.MQTTSetting);
                 _config = candidate.ServiceManager;
                 OnPropertyChanged(nameof(Config));
                 RefreshAll();
             }
             catch
             {
-                MySqlManager.RebindConfiguration(previous.ServiceManager, previous.MySql);
-                MqttManager.RebindConfiguration(previous.Mqtt);
+                MySqlManager.RebindConfiguration(previous.ServiceManager, previous.MySql, previous.MySqlLocal, previous.MySqlSetting);
+                MqttManager.RebindConfiguration(previous.Mqtt, previous.MQTTSetting);
                 _config = previous.ServiceManager;
                 OnPropertyChanged(nameof(Config));
                 throw;
@@ -196,6 +202,42 @@ namespace WindowsServicePlugin.ServiceManager
         internal ServiceManagerOperationLease BeginOperation()
         {
             return new ServiceManagerOperationLease(this, configurationGate.BeginOperation());
+        }
+
+        internal bool TryPersistOperationConfiguration(ServiceConfigurationSnapshot snapshot)
+        {
+            ArgumentNullException.ThrowIfNull(snapshot);
+            ServiceConfigurationGeneration active = configurationGate.Active;
+            IConfigService currentConfig = ConfigService.Instance;
+            if (active.Generation != snapshot.Generation
+                || !ReferenceEquals(currentConfig.GetRequiredService<ServiceManagerConfig>(), active.ServiceManager)
+                || !ReferenceEquals(currentConfig.GetRequiredService<MySqlServiceConfig>(), active.MySql)
+                || !ReferenceEquals(currentConfig.GetRequiredService<MqttServiceConfig>(), active.Mqtt)
+                || !ReferenceEquals(currentConfig.GetRequiredService<RCSetting>(), active.RCSetting)
+                || !ReferenceEquals(currentConfig.GetRequiredService<CVWinSMSConfig>(), active.CVWinSMS)
+                || !ReferenceEquals(currentConfig.GetRequiredService<MySqlLocalConfig>(), active.MySqlLocal)
+                || !ReferenceEquals(currentConfig.GetRequiredService<MySqlSetting>(), active.MySqlSetting)
+                || !ReferenceEquals(currentConfig.GetRequiredService<MQTTSetting>(), active.MQTTSetting))
+            {
+                log.Info($"配置代 {snapshot.Generation} 已不是当前代，跳过回写但继续使用该快照完成本次操作");
+                return false;
+            }
+
+            Populate(snapshot.ServiceManager, active.ServiceManager);
+            Populate(snapshot.MySql, active.MySql);
+            Populate(snapshot.Mqtt, active.Mqtt);
+            Populate(snapshot.RCSetting, active.RCSetting);
+            Populate(snapshot.CVWinSMS, active.CVWinSMS);
+            Populate(snapshot.MySqlLocal, active.MySqlLocal);
+            Populate(snapshot.MySqlSetting, active.MySqlSetting);
+            Populate(snapshot.MQTTSetting, active.MQTTSetting);
+            ConfigHandler.GetInstance().SaveConfigs();
+            return true;
+        }
+
+        private static void Populate<T>(T source, T destination) where T : class
+        {
+            JsonConvert.PopulateObject(JsonConvert.SerializeObject(source), destination);
         }
 
         internal void ReleaseOperation()
@@ -241,9 +283,10 @@ namespace WindowsServicePlugin.ServiceManager
             }
 
             // 尝试从CVWinSMS配置读取
-            if (string.IsNullOrEmpty(Config.BaseLocation) && File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
+            CVWinSMSConfig cvWinSmsConfig = configurationGate.Active.CVWinSMS;
+            if (string.IsNullOrEmpty(Config.BaseLocation) && File.Exists(cvWinSmsConfig.CVWinSMSPath))
             {
-                if (Config.ReadFromCVWinSMSConfig(CVWinSMSConfig.Instance.CVWinSMSPath))
+                if (Config.ReadFromCVWinSMSConfig(cvWinSmsConfig.CVWinSMSPath))
                 {
                     SaveServiceManagerConfig();
                 }
@@ -341,8 +384,6 @@ namespace WindowsServicePlugin.ServiceManager
         {
             mainOperationLease?.Dispose();
             mainOperationLease = null;
-            configOwner.ConfigurationChanged -= ConfigOwner_ConfigurationChanged;
-            configOwner.Dispose();
             GC.SuppressFinalize(this);
         }
 

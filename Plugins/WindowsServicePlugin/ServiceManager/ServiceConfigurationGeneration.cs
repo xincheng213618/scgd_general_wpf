@@ -1,6 +1,11 @@
 using Newtonsoft.Json;
+using ColorVision.Database;
+using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services.RC;
+using ColorVision.UI;
 using System;
 using System.Threading;
+using WindowsServicePlugin.CVWinSMS;
 
 namespace WindowsServicePlugin.ServiceManager
 {
@@ -10,18 +15,37 @@ namespace WindowsServicePlugin.ServiceManager
             long generation,
             ServiceManagerConfig serviceManager,
             MySqlServiceConfig mySql,
-            MqttServiceConfig mqtt)
+            MqttServiceConfig mqtt,
+            RCSetting rcSetting,
+            CVWinSMSConfig cvWinSms,
+            MySqlLocalConfig mySqlLocal,
+            MySqlSetting mySqlSetting,
+            MQTTSetting mqttSetting)
         {
             Generation = generation;
             ServiceManager = serviceManager;
             MySql = mySql;
             Mqtt = mqtt;
+            RCSetting = rcSetting;
+            CVWinSMS = cvWinSms;
+            MySqlLocal = mySqlLocal;
+            MySqlSetting = mySqlSetting;
+            MQTTSetting = mqttSetting;
+            MySqlManager = new MySqlServiceManager(ServiceManager, MySql, MySqlLocal, MySqlSetting);
+            MqttManager = new MqttServiceManager(Mqtt, MQTTSetting);
         }
 
         public long Generation { get; }
         public ServiceManagerConfig ServiceManager { get; }
         public MySqlServiceConfig MySql { get; }
         public MqttServiceConfig Mqtt { get; }
+        public RCSetting RCSetting { get; }
+        public CVWinSMSConfig CVWinSMS { get; }
+        public MySqlLocalConfig MySqlLocal { get; }
+        public MySqlSetting MySqlSetting { get; }
+        public MQTTSetting MQTTSetting { get; }
+        public MySqlServiceManager MySqlManager { get; }
+        public MqttServiceManager MqttManager { get; }
     }
 
     internal sealed class ServiceConfigurationGeneration
@@ -30,23 +54,59 @@ namespace WindowsServicePlugin.ServiceManager
             long generation,
             ServiceManagerConfig serviceManager,
             MySqlServiceConfig mySql,
-            MqttServiceConfig mqtt)
+            MqttServiceConfig mqtt,
+            RCSetting rcSetting,
+            CVWinSMSConfig cvWinSms,
+            MySqlLocalConfig mySqlLocal,
+            MySqlSetting mySqlSetting,
+            MQTTSetting mqttSetting)
         {
             Generation = generation;
             ServiceManager = serviceManager;
             MySql = mySql;
             Mqtt = mqtt;
+            RCSetting = rcSetting;
+            CVWinSMS = cvWinSms;
+            MySqlLocal = mySqlLocal;
+            MySqlSetting = mySqlSetting;
+            MQTTSetting = mqttSetting;
         }
 
         public long Generation { get; }
         public ServiceManagerConfig ServiceManager { get; }
         public MySqlServiceConfig MySql { get; }
         public MqttServiceConfig Mqtt { get; }
+        public RCSetting RCSetting { get; }
+        public CVWinSMSConfig CVWinSMS { get; }
+        public MySqlLocalConfig MySqlLocal { get; }
+        public MySqlSetting MySqlSetting { get; }
+        public MQTTSetting MQTTSetting { get; }
+
+        public static ServiceConfigurationGeneration Capture(IConfigService currentConfig, long generation)
+        {
+            ArgumentNullException.ThrowIfNull(currentConfig);
+            return new ServiceConfigurationGeneration(
+                generation,
+                currentConfig.GetRequiredService<ServiceManagerConfig>(),
+                currentConfig.GetRequiredService<MySqlServiceConfig>(),
+                currentConfig.GetRequiredService<MqttServiceConfig>(),
+                currentConfig.GetRequiredService<RCSetting>(),
+                currentConfig.GetRequiredService<CVWinSMSConfig>(),
+                currentConfig.GetRequiredService<MySqlLocalConfig>(),
+                currentConfig.GetRequiredService<MySqlSetting>(),
+                currentConfig.GetRequiredService<MQTTSetting>());
+        }
+
         public ServiceConfigurationSnapshot CreateOperationSnapshot() => new(
             Generation,
             Clone(ServiceManager),
             Clone(MySql),
-            Clone(Mqtt));
+            Clone(Mqtt),
+            Clone(RCSetting),
+            Clone(CVWinSMS),
+            Clone(MySqlLocal),
+            Clone(MySqlSetting),
+            Clone(MQTTSetting));
 
         private static T Clone<T>(T config) where T : class
         {

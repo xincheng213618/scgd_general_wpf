@@ -19,6 +19,12 @@ namespace WindowsServicePlugin.ServiceManager
         private readonly ILog log = LogManager.GetLogger(typeof(ServiceInstallViewModel));
         private ServiceManagerOperationLease? operationLease;
         public ServiceManagerConfig Config => operationLease?.Snapshot.ServiceManager ?? ServiceManagerViewModel.Instance.Config;
+        private ServiceConfigurationSnapshot OperationSnapshot => operationLease?.Snapshot
+            ?? throw new InvalidOperationException("The install operation has not captured its configuration snapshot.");
+        private MySqlServiceManager OperationMySqlManager => operationLease?.Snapshot.MySqlManager
+            ?? ServiceManagerViewModel.Instance.MySqlManager;
+        private MqttServiceManager OperationMqttManager => operationLease?.Snapshot.MqttManager
+            ?? ServiceManagerViewModel.Instance.MqttManager;
 
         public bool IsBusy { get => _isBusy; set { _isBusy = value; OnPropertyChanged(); } }
         private bool _isBusy;

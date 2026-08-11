@@ -11,26 +11,39 @@ namespace WindowsServicePlugin.ServiceManager
         private static readonly string[] ResetPreservedTables = MySqlLocalServicesManager.MigrationBackupTableNames.ToArray();
 
         private ServiceManagerConfig serviceManagerConfig;
+        private MySqlSetting mySqlSetting;
         public MySqlServiceConfig Config { get; private set; }
 
-        public MySqlServiceHelper Helper { get; } = new MySqlServiceHelper();
+        public MySqlServiceHelper Helper { get; }
 
         public MySqlServiceManager()
-            : this(ServiceManagerConfig.Instance, MySqlServiceConfig.Instance)
+            : this(ServiceManagerConfig.Instance, MySqlServiceConfig.Instance, MySqlLocalConfig.Instance, MySqlSetting.Instance)
         {
         }
 
-        internal MySqlServiceManager(ServiceManagerConfig serviceManagerConfig, MySqlServiceConfig config)
+        internal MySqlServiceManager(
+            ServiceManagerConfig serviceManagerConfig,
+            MySqlServiceConfig config,
+            MySqlLocalConfig localConfig,
+            MySqlSetting mySqlSetting)
         {
             this.serviceManagerConfig = serviceManagerConfig ?? throw new ArgumentNullException(nameof(serviceManagerConfig));
             Config = config ?? throw new ArgumentNullException(nameof(config));
+            this.mySqlSetting = mySqlSetting ?? throw new ArgumentNullException(nameof(mySqlSetting));
+            Helper = new MySqlServiceHelper(localConfig);
             MigrateFromLegacySettings();
         }
 
-        internal void RebindConfiguration(ServiceManagerConfig nextServiceManagerConfig, MySqlServiceConfig config)
+        internal void RebindConfiguration(
+            ServiceManagerConfig nextServiceManagerConfig,
+            MySqlServiceConfig config,
+            MySqlLocalConfig localConfig,
+            MySqlSetting nextMySqlSetting)
         {
             serviceManagerConfig = nextServiceManagerConfig ?? throw new ArgumentNullException(nameof(nextServiceManagerConfig));
             Config = config ?? throw new ArgumentNullException(nameof(config));
+            mySqlSetting = nextMySqlSetting ?? throw new ArgumentNullException(nameof(nextMySqlSetting));
+            Helper.RebindConfiguration(localConfig);
             MigrateFromLegacySettings();
         }
 
@@ -727,7 +740,7 @@ namespace WindowsServicePlugin.ServiceManager
         private void MigrateFromLegacySettings()
         {
             bool changed = false;
-            var legacyConfig = MySqlSetting.Instance.MySqlConfig;
+            var legacyConfig = mySqlSetting.MySqlConfig;
 
             if (string.IsNullOrWhiteSpace(Config.Host) && !string.IsNullOrWhiteSpace(legacyConfig.Host))
             {
@@ -755,7 +768,7 @@ namespace WindowsServicePlugin.ServiceManager
                 changed = true;
             }
 
-            var legacyRoot = MySqlSetting.Instance.MySqlConfigs.FirstOrDefault(item =>
+            var legacyRoot = mySqlSetting.MySqlConfigs.FirstOrDefault(item =>
                 string.Equals(item.Name, MySqlServiceConfig.RootProfileName, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(item.UserName, "root", StringComparison.OrdinalIgnoreCase));
 
@@ -886,7 +899,7 @@ namespace WindowsServicePlugin.ServiceManager
             string normalizedDatabase = database.Trim();
             Config.Database = normalizedDatabase;
 
-            MySqlSetting databaseSetting = MySqlSetting.Instance;
+            MySqlSetting databaseSetting = mySqlSetting;
             databaseSetting.MySqlConfig.Database = normalizedDatabase;
             foreach (MySqlConfig item in databaseSetting.MySqlConfigs.Where(item =>
                          string.Equals(item.Name, MySqlServiceConfig.RootProfileName, StringComparison.OrdinalIgnoreCase)

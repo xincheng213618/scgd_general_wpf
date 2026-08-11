@@ -54,7 +54,7 @@ namespace WindowsServicePlugin.ServiceManager
 
                         string sourceDatabase = ServiceDatabaseVersionMap.ResolveDatabaseName(
                             sourceServiceVersion,
-                            serviceManager.MySqlManager.Config.Database);
+                            OperationMySqlManager.Config.Database);
                         Version? targetServiceVersion = sourceServiceVersion;
 
                         if (InstallServiceChecked)
@@ -81,8 +81,8 @@ namespace WindowsServicePlugin.ServiceManager
                             ? $"未读取到目标 CVWindowsService 版本，目标数据库沿用源数据库: {targetDatabase}"
                             : $"目标 CVWindowsService 版本: {targetServiceVersion}，目标数据库: {targetDatabase}");
 
-                        serviceManager.MySqlManager.RefreshStatus(serviceManager.Services, serviceManager.Config.MySqlPort);
-                        bool mysqlWasInstalledAtStart = serviceManager.MySqlManager.Config.IsInstalled || serviceManager.MySqlManager.Helper.IsInstalled;
+                        OperationMySqlManager.RefreshStatus(serviceManager.Services, Config.MySqlPort);
+                        bool mysqlWasInstalledAtStart = OperationMySqlManager.Config.IsInstalled || OperationMySqlManager.Helper.IsInstalled;
                         if (mysqlWasInstalledAtStart && crossesDatabaseBoundary && !AutoUpdateDatabase)
                         {
                             throw new InvalidOperationException(
@@ -124,7 +124,7 @@ namespace WindowsServicePlugin.ServiceManager
                                 throw new InvalidOperationException("已勾选 MySQL，但未选择有效的 MySQL ZIP 安装包");
 
                             SetProgress(progress += 15, "安装 MySQL...");
-                            bool mysqlInstalled = serviceManager.MySqlManager
+                            bool mysqlInstalled = OperationMySqlManager
                                 .InstallFromZipViaServiceHostAsync(MySqlPackagePath, basePath, log.Info, targetDatabase)
                                 .GetAwaiter()
                                 .GetResult();
@@ -228,17 +228,18 @@ namespace WindowsServicePlugin.ServiceManager
                         }
 
                         // 7. 数据库成功后再切换配置，避免失败时让服务提前指向空的目标库。
-                        if (databaseUpdated && !serviceManager.MySqlManager.CreateOrUpdateUser(targetDatabase, log.Info))
+                        if (databaseUpdated && !OperationMySqlManager.CreateOrUpdateUser(targetDatabase, log.Info))
                         {
                             throw new InvalidOperationException($"业务用户无法访问目标数据库 {targetDatabase}");
                         }
 
-                        serviceManager.MySqlManager.ApplyDatabaseName(targetDatabase);
+                        OperationMySqlManager.ApplyDatabaseName(targetDatabase);
+                        serviceManager.TryPersistOperationConfiguration(OperationSnapshot);
                         log.Info($"已应用目标数据库配置: {targetDatabase}");
                         if (hasServiceWork || databaseUpdated)
                         {
                             SetProgress(progress += 10, "同步配置...");
-                            serviceManager.ApplyConfigAndRefreshAfterInstall();
+                            serviceManager.ApplyConfigAndRefreshAfterInstall(OperationSnapshot);
                         }
 
                         // 8. 启动服务
@@ -937,7 +938,7 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void InstallMqttFromExe(string exeFile)
         {
-            ServiceManagerViewModel.Instance.MqttManager.InstallFromExe(exeFile, log.Info);
+            OperationMqttManager.InstallFromExe(exeFile, log.Info);
             Application.Current.Dispatcher.Invoke(() => ServiceManagerViewModel.Instance.RefreshAll());
         }
 
@@ -1023,18 +1024,18 @@ namespace WindowsServicePlugin.ServiceManager
             var serviceManager = ServiceManagerViewModel.Instance;
             Application.Current.Dispatcher.Invoke(() => serviceManager.RefreshAll());
 
-            serviceManager.MySqlManager.RefreshStatus(serviceManager.Services, serviceManager.Config.MySqlPort);
-            if (serviceManager.MySqlManager.Config.IsInstalled && !serviceManager.MySqlManager.Config.IsRunning)
+            OperationMySqlManager.RefreshStatus(serviceManager.Services, Config.MySqlPort);
+            if (OperationMySqlManager.Config.IsInstalled && !OperationMySqlManager.Config.IsRunning)
             {
-                log.Info($"启动 MySQL 服务: {serviceManager.MySqlManager.Helper.ServiceName}");
-                serviceManager.MySqlManager.StartViaServiceHostAsync(log.Info).GetAwaiter().GetResult();
+                log.Info($"启动 MySQL 服务: {OperationMySqlManager.Helper.ServiceName}");
+                OperationMySqlManager.StartViaServiceHostAsync(log.Info).GetAwaiter().GetResult();
             }
 
-            serviceManager.MqttManager.RefreshStatus(serviceManager.Services);
-            if (serviceManager.MqttManager.Config.IsInstalled && !serviceManager.MqttManager.Config.IsRunning)
+            OperationMqttManager.RefreshStatus(serviceManager.Services);
+            if (OperationMqttManager.Config.IsInstalled && !OperationMqttManager.Config.IsRunning)
             {
-                log.Info($"启动 MQTT 服务: {serviceManager.MqttManager.Config.ServiceName}");
-                serviceManager.MqttManager.StartViaServiceHostAsync(log.Info).GetAwaiter().GetResult();
+                log.Info($"启动 MQTT 服务: {OperationMqttManager.Config.ServiceName}");
+                OperationMqttManager.StartViaServiceHostAsync(log.Info).GetAwaiter().GetResult();
             }
 
             StartPackagedServices();
@@ -1349,12 +1350,12 @@ namespace WindowsServicePlugin.ServiceManager
 
         private bool ExecuteColorVisionAllSql(string basePath, string sourceDatabase, string targetDatabase)
         {
-            return ServiceManagerViewModel.Instance.MySqlManager.ExecuteColorVisionAllSql(basePath, sourceDatabase, targetDatabase, log.Info);
+            return OperationMySqlManager.ExecuteColorVisionAllSql(basePath, sourceDatabase, targetDatabase, log.Info);
         }
 
         private bool InitializeColorVisionDatabase(string basePath, string targetDatabase)
         {
-            return ServiceManagerViewModel.Instance.MySqlManager.InitializeColorVisionDatabase(basePath, targetDatabase, log.Info);
+            return OperationMySqlManager.InitializeColorVisionDatabase(basePath, targetDatabase, log.Info);
         }
 
         private bool InstallVc2013Runtime()

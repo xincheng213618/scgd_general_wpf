@@ -14,6 +14,26 @@ namespace WindowsServicePlugin.ServiceManager
     public class MySqlServiceHelper
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MySqlServiceHelper));
+        private MySqlLocalConfig localConfig;
+
+        public MySqlServiceHelper()
+            : this(MySqlLocalConfig.Instance)
+        {
+        }
+
+        internal MySqlServiceHelper(MySqlLocalConfig localConfig)
+        {
+            this.localConfig = localConfig ?? throw new ArgumentNullException(nameof(localConfig));
+            if (!string.IsNullOrWhiteSpace(localConfig.ServiceName))
+                ServiceName = localConfig.ServiceName;
+        }
+
+        internal void RebindConfiguration(MySqlLocalConfig nextLocalConfig)
+        {
+            localConfig = nextLocalConfig ?? throw new ArgumentNullException(nameof(nextLocalConfig));
+            if (!string.IsNullOrWhiteSpace(nextLocalConfig.ServiceName))
+                ServiceName = nextLocalConfig.ServiceName;
+        }
 
         public string ServiceName { get; set; } = "MySQL";
         public string BasePath { get; set; } = string.Empty;
@@ -94,7 +114,7 @@ namespace WindowsServicePlugin.ServiceManager
                 logCallback($"正在执行 SQL 脚本: {Path.GetFileName(sqlFilePath)}...");
                 string mysqlPath = File.Exists(MysqlExePath)
                     ? MysqlExePath
-                    : MySqlLocalConfig.Instance.MysqlPath;
+                    : localConfig.MysqlPath;
 
                 if (string.IsNullOrWhiteSpace(mysqlPath) || !File.Exists(mysqlPath))
                 {
@@ -290,7 +310,7 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 string dumpPath = File.Exists(MysqldumpExePath)
                     ? MysqldumpExePath
-                    : MySqlLocalConfig.Instance.MysqldumpPath;
+                    : localConfig.MysqldumpPath;
 
                 if (string.IsNullOrWhiteSpace(dumpPath) || !File.Exists(dumpPath))
                 {
@@ -474,7 +494,7 @@ namespace WindowsServicePlugin.ServiceManager
                 logCallback($"正在备份数据库 {database}...");
                 string dumpPath = File.Exists(MysqldumpExePath)
                     ? MysqldumpExePath
-                    : MySqlLocalConfig.Instance.MysqldumpPath;
+                    : localConfig.MysqldumpPath;
 
                 if (string.IsNullOrEmpty(dumpPath) || !File.Exists(dumpPath))
                 {
@@ -513,7 +533,7 @@ namespace WindowsServicePlugin.ServiceManager
                 logCallback($"正在还原数据库 {database}...");
                 string mysqlPath = File.Exists(MysqlExePath)
                     ? MysqlExePath
-                    : MySqlLocalConfig.Instance.MysqlPath;
+                    : localConfig.MysqlPath;
 
                 if (string.IsNullOrEmpty(mysqlPath) || !File.Exists(mysqlPath))
                 {
