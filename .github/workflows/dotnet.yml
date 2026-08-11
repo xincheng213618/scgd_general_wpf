@@ -50,6 +50,11 @@ jobs:
         python Scripts/generate_shared_files.py --check
         python -m unittest Scripts.tests.test_generate_shared_files Scripts.tests.test_repository_packaging_contracts -v
 
+    - name: Verify native ABI and packages
+      run: |
+        python Scripts/verify_native_contracts.py --runtime ColorVision/bin/x64/Release/net10.0-windows/runtimes/win-x64/native/opencv_cuda.dll --package-directory UI/ColorVision.Core/bin/x64/Release
+        python -m unittest Scripts.tests.test_verify_native_contracts -v
+
     - name: Run UI tests
       run: dotnet test Test/ColorVision.UI.Tests/ColorVision.UI.Tests.csproj -c Release -p:Platform=x64 --no-restore --verbosity minimal --blame-hang --blame-hang-timeout 5m --blame-hang-dump-type none --results-directory TestResults --logger "trx;LogFileName=ColorVision.UI.Tests.trx"
 

@@ -31,6 +31,11 @@ try:
     )
     from .generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
     from .build_update import get_file_version
+    from .verify_native_contracts import (
+        CUDA_PACKAGE_MEMBER,
+        NativeContractError,
+        validate_native_contracts,
+    )
 except ImportError:
     from backend_client import (
         DEFAULT_CONNECT_TIMEOUT,
@@ -53,6 +58,11 @@ except ImportError:
     )
     from generate_shared_files import DEFAULT_OUTPUT_FILES as SHARED_FILES_MANIFESTS, check_manifest
     from build_update import get_file_version
+    from verify_native_contracts import (
+        CUDA_PACKAGE_MEMBER,
+        NativeContractError,
+        validate_native_contracts,
+    )
 from tqdm import tqdm
 
 VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
@@ -212,7 +222,38 @@ def validate_installer_runtime_dlls(
         report("Advanced Installer does not include ServiceHost runtime files: " + ", ".join(missing_service_host_paths))
         return False
 
-    report("Verified root runtime DLLs and the complete ServiceHost runtime in Advanced Installer.")
+    cuda_runtime_path = runtime_path / Path(CUDA_PACKAGE_MEMBER)
+    if not cuda_runtime_path.is_file():
+        report(f"Release runtime is missing required native DLL: {CUDA_PACKAGE_MEMBER}")
+        return False
+    if not installer_contains_relative_path(installer_source_paths, CUDA_PACKAGE_MEMBER):
+        report(f"Advanced Installer does not include required native DLL: {CUDA_PACKAGE_MEMBER}")
+        return False
+
+    report("Verified root runtime DLLs, CUDA runtime, and complete ServiceHost runtime in Advanced Installer.")
+    return True
+
+
+def validate_cuda_release_runtime(
+    solution_root: str | Path,
+    runtime_directory: str | Path,
+    *,
+    report: Callable[[str], None] = print,
+) -> bool:
+    runtime_path = Path(runtime_directory) / Path(CUDA_PACKAGE_MEMBER)
+    try:
+        contract = validate_native_contracts(
+            solution_root,
+            runtime_files=(runtime_path,),
+        )
+    except NativeContractError as exc:
+        report(f"CUDA native contract validation failed: {exc}")
+        return False
+
+    report(
+        f"Verified CUDA runtime against tracked PE: {contract.size} bytes, "
+        f"SHA256 {contract.sha256}."
+    )
     return True
 
 
@@ -258,6 +299,8 @@ def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_
 
         runtime_directory = solution_path.parent / "ColorVision" / "bin" / "x64" / "Release" / "net10.0-windows"
         if not ensure_runtime_copy_integrity(solution_path.parent, runtime_directory):
+            return False
+        if not validate_cuda_release_runtime(solution_path.parent, runtime_directory):
             return False
         if not validate_shared_files_manifests(runtime_directory):
             return False

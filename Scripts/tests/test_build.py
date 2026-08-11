@@ -9,11 +9,13 @@ from Scripts.build import (
     ensure_runtime_copy_integrity,
     get_installer_for_version,
     publish_primary_release,
+    validate_cuda_release_runtime,
     validate_installer_runtime_dlls,
     validate_runtime_copy_integrity,
     validate_shared_files_manifests,
 )
 from Scripts.service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS
+from Scripts.verify_native_contracts import CUDA_PACKAGE_MEMBER, CUDA_TRACKED_DLL
 
 
 class InstallerRuntimeValidationTests(unittest.TestCase):
@@ -27,6 +29,9 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
             path = self.runtime_directory / relative_path
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b"service-host")
+        cuda_runtime = self.runtime_directory / CUDA_PACKAGE_MEMBER
+        cuda_runtime.parent.mkdir(parents=True, exist_ok=True)
+        cuda_runtime.write_bytes(b"cuda-runtime")
 
     def tearDown(self) -> None:
         self._temp_directory.cleanup()
@@ -46,6 +51,31 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
         aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS)
 
         self.assertFalse(validate_installer_runtime_dlls(self.runtime_directory, aip_path, report=lambda _: None))
+
+    def test_rejects_cuda_runtime_missing_from_installer_mapping(self) -> None:
+        aip_path = self._write_aip(REQUIRED_SERVICE_HOST_RUNTIME_PATHS, include_cuda=False)
+
+        self.assertFalse(validate_installer_runtime_dlls(self.runtime_directory, aip_path, report=lambda _: None))
+
+    def test_cuda_release_gate_accepts_tracked_runtime_copy(self) -> None:
+        repository_root = Path(__file__).resolve().parents[2]
+        cuda_runtime = self.runtime_directory / CUDA_PACKAGE_MEMBER
+        cuda_runtime.write_bytes((repository_root / CUDA_TRACKED_DLL).read_bytes())
+
+        self.assertTrue(validate_cuda_release_runtime(
+            repository_root,
+            self.runtime_directory,
+            report=lambda _: None,
+        ))
+
+    def test_cuda_release_gate_rejects_stale_runtime_copy(self) -> None:
+        repository_root = Path(__file__).resolve().parents[2]
+
+        self.assertFalse(validate_cuda_release_runtime(
+            repository_root,
+            self.runtime_directory,
+            report=lambda _: None,
+        ))
 
     def test_shared_files_release_gate_accepts_matching_set(self) -> None:
         manifest_path = self.root / "shared_files.json"
@@ -136,8 +166,10 @@ class InstallerRuntimeValidationTests(unittest.TestCase):
         ))
         self.assertEqual(runtime_output.read_bytes(), project_output.read_bytes())
 
-    def _write_aip(self, service_host_paths: tuple[str, ...]) -> Path:
+    def _write_aip(self, service_host_paths: tuple[str, ...], *, include_cuda: bool = True) -> Path:
         source_paths = ["C:\\build\\ColorVision.UI.dll", *[f"C:\\build\\{path}" for path in service_host_paths]]
+        if include_cuda:
+            source_paths.append(f"C:\\build\\{CUDA_PACKAGE_MEMBER}")
         rows = "".join(f'<ROW SourcePath="{path}" />' for path in source_paths)
         aip_path = self.root / "ColorVision.aip"
         aip_path.write_text(f"<DOCUMENT>{rows}</DOCUMENT>", encoding="utf-8")

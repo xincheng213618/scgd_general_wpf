@@ -9,9 +9,11 @@ from pathlib import PurePosixPath
 try:
     from .backend_client import upload_file_to_folder
     from .service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS, validate_service_host_runtime
+    from .verify_native_contracts import NativeContractError, validate_native_contracts
 except ImportError:
     from backend_client import upload_file_to_folder
     from service_host_runtime import REQUIRED_SERVICE_HOST_RUNTIME_PATHS, validate_service_host_runtime
+    from verify_native_contracts import NativeContractError, validate_native_contracts
 
 ALLOWED_RUNTIME_PREFIXES = (
     'runtimes/win/',
@@ -358,6 +360,12 @@ def main() -> int:
     print("创建全量包")
     full_zip = os.path.join(history_dir, f'ColorVision-[{version}].zip')
     create_full_zip(new_version_dir, full_zip)
+    try:
+        contract = validate_native_contracts(base_path, package_files=(full_zip,))
+    except NativeContractError as exc:
+        print(f"全量包 CUDA 原生契约校验失败: {exc}")
+        return 1
+    print(f"全量包 CUDA 校验通过: SHA256 {contract.sha256}")
     return 0
 
 
