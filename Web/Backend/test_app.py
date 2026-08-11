@@ -348,13 +348,12 @@ class MarketplaceAppTests(unittest.TestCase):
             """# CHANGELOG\n\n## [1.2.0.1] 2026.03.24\n\n1.新增插件市场\n2.优化下载中心\n3.重构更新逻辑\n\n## [1.1.0.1] 2026.03.01\n\n1.修复更新逻辑\n"""
         )
 
-        response = self.client.get("/")
-
-        self.assertEqual(response.status_code, 200)
-        html = response.get_data(as_text=True)
-        self.assertIn('<div id="root">', html)
-        self.assertNotIn("迭代过程图表", html)
-        self.assertNotIn("管理登录", html)
+        with self.client.get("/") as response:
+            self.assertEqual(response.status_code, 200)
+            html = response.get_data(as_text=True)
+            self.assertIn('<div id="root">', html)
+            self.assertNotIn("迭代过程图表", html)
+            self.assertNotIn("管理登录", html)
 
     def test_site_changelog_api_returns_release_history_payload(self):
         self._create_changelog(

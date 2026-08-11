@@ -39,10 +39,10 @@ class WebLoginTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_login_page_renders(self):
-        resp = self.client.get("/login")
-        self.assertEqual(resp.status_code, 200)
-        html = resp.get_data(as_text=True)
-        self.assertIn('<div id="root">', html)
+        with self.client.get("/login") as resp:
+            self.assertEqual(resp.status_code, 200)
+            html = resp.get_data(as_text=True)
+            self.assertIn('<div id="root">', html)
 
     def test_login_with_wrong_credentials_returns_json_error(self):
         resp = self.client.post("/api/auth/login", json={"username": "bad", "password": "bad"})
@@ -91,10 +91,10 @@ class WebLoginTests(unittest.TestCase):
         self.assertIn("/admin", location)
 
     def test_login_get_with_external_next_ignored(self):
-        resp = self.client.get("/login?next=https://evil.com")
-        html = resp.get_data(as_text=True)
-        # The hidden next field should be empty, not the external URL
-        self.assertNotIn("evil.com", html)
+        with self.client.get("/login?next=https://evil.com") as resp:
+            html = resp.get_data(as_text=True)
+            # The hidden next field should be empty, not the external URL
+            self.assertNotIn("evil.com", html)
 
     def test_admin_page_requires_backend_login(self):
         resp = self.client.get("/admin/", follow_redirects=False)
@@ -110,11 +110,10 @@ class WebLoginTests(unittest.TestCase):
     def test_admin_dashboard_serves_react_shell_after_login(self):
         self.client.post("/login", data={"username": "tester", "password": "secret123"})
 
-        resp = self.client.get("/admin/")
-
-        self.assertEqual(resp.status_code, 200)
-        html = resp.get_data(as_text=True)
-        self.assertIn('<div id="root">', html)
+        with self.client.get("/admin/") as resp:
+            self.assertEqual(resp.status_code, 200)
+            html = resp.get_data(as_text=True)
+            self.assertIn('<div id="root">', html)
 
 
 class AdminPublishRouteAuthTests(unittest.TestCase):
@@ -159,10 +158,10 @@ class AdminPublishRouteAuthTests(unittest.TestCase):
 
     def test_admin_publish_accessible_after_login(self):
         self.client.post("/login", data={"username": "tester", "password": "secret123"})
-        resp = self.client.get("/admin/publish")
-        self.assertEqual(resp.status_code, 200)
-        html = resp.get_data(as_text=True)
-        self.assertIn('<div id="root">', html)
+        with self.client.get("/admin/publish") as resp:
+            self.assertEqual(resp.status_code, 200)
+            html = resp.get_data(as_text=True)
+            self.assertIn('<div id="root">', html)
 
 
 class CVWSUploadPageTests(unittest.TestCase):
@@ -434,8 +433,8 @@ class CVWSAPICompatTests(unittest.TestCase):
         self.assertEqual(data["version"], "1.0.0.0")
 
     def test_download_api(self):
-        resp = self.client.get("/api/tool/cvwindowsservice/download/1.0.0.0")
-        self.assertEqual(resp.status_code, 200)
+        with self.client.get("/api/tool/cvwindowsservice/download/1.0.0.0") as resp:
+            self.assertEqual(resp.status_code, 200)
 
     def test_basic_auth_legacy_upload_still_works(self):
         auth = base64.b64encode(b"tester:secret123").decode()

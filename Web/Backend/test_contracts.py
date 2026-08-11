@@ -384,8 +384,8 @@ class CVWSApiContracts(ContractTestBase):
         self.assertGreaterEqual(len(data["packages"]), 1)
 
     def test_download_returns_file(self):
-        resp = self.client.get("/api/tool/cvwindowsservice/download/1.0.0.0")
-        self.assertEqual(resp.status_code, 200)
+        with self.client.get("/api/tool/cvwindowsservice/download/1.0.0.0") as resp:
+            self.assertEqual(resp.status_code, 200)
 
     def test_download_404_for_missing_version(self):
         resp = self.client.get("/api/tool/cvwindowsservice/download/9.9.9.9")
@@ -531,8 +531,8 @@ class AuthContracts(ContractTestBase):
     """Contract tests for authentication behavior."""
 
     def test_login_page_renders(self):
-        resp = self.client.get("/login")
-        self.assertEqual(resp.status_code, 200)
+        with self.client.get("/login") as resp:
+            self.assertEqual(resp.status_code, 200)
 
     def test_login_success_redirects(self):
         resp = self.client.post("/login", data={

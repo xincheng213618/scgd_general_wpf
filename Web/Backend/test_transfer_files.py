@@ -91,10 +91,9 @@ class TransferRouteTests(unittest.TestCase):
         return {"Authorization": f"Basic {token}"}
 
     def test_transfer_page_route_returns_spa(self):
-        response = self.client.get("/transfer", follow_redirects=False)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("text/html", response.content_type)
+        with self.client.get("/transfer", follow_redirects=False) as response:
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("text/html", response.content_type)
 
     def test_admin_files_route_requires_login(self):
         response = self.client.get("/admin/files", follow_redirects=False)
