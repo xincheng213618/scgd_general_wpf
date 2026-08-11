@@ -37,6 +37,7 @@ namespace ColorVision
         private const double MinimumProfiledStepWeightMs = 20d;
         private const double MaximumProfiledStepWeightMs = 12000d;
         private const double StartupProfileSmoothing = 0.35d;
+        private ThemeManager? _subscribedThemeManager;
 
         public StartWindow()
         {
@@ -44,7 +45,6 @@ namespace ColorVision
             InitializeComponent();
             _startupProgressTimer.Interval = TimeSpan.FromMilliseconds(100);
             _startupProgressTimer.Tick += StartupProgressTimer_Tick;
-            Closed += (s, e) => _startupProgressTimer.Stop();
             ContentRendered += StartWindow_ContentRendered;
             Left = SystemParameters.WorkArea.Right - Width;
             Top = SystemParameters.WorkArea.Bottom - Height;
@@ -71,11 +71,27 @@ namespace ColorVision
             Hierarchy.Root.AddAppender(TextBoxAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
 
-            ThemeManager.Current.SystemThemeChanged += (e) => {
-                Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
-            };
-            if (ThemeManager.Current.SystemTheme == Theme.Dark)
+            _subscribedThemeManager = ThemeManager.Current;
+            _subscribedThemeManager.SystemThemeChanged += ThemeManager_SystemThemeChanged;
+            if (_subscribedThemeManager.SystemTheme == Theme.Dark)
                 Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
+        }
+
+        private void ThemeManager_SystemThemeChanged(Theme theme)
+        {
+            Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(theme == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _startupProgressTimer.Stop();
+            if (_subscribedThemeManager != null)
+            {
+                _subscribedThemeManager.SystemThemeChanged -= ThemeManager_SystemThemeChanged;
+                _subscribedThemeManager = null;
+            }
+
+            base.OnClosed(e);
         }
 
         private async void StartWindow_ContentRendered(object? sender, EventArgs e)
