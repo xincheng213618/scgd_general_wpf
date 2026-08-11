@@ -10,8 +10,11 @@ using Newtonsoft.Json;
 using ProjectARVRPro.SocketRelay;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
 using System.Text;
 
 namespace ProjectARVRPro.Services
@@ -64,6 +67,18 @@ namespace ProjectARVRPro.Services
         private bool _AutoStart;
     }
 
+    internal readonly record struct SocketRelaySensorResetResult(bool Completed, string? WarningMessage = null);
+
+    internal sealed class SocketRelayRuntime
+    {
+        internal Action<Action>? StateDispatcher { get; init; }
+        internal Func<IPAddress, int, SocketRelayGeneration>? GenerationFactory { get; init; }
+        internal Func<string, SocketRelayWriteResult>? ExternalClientWriter { get; init; }
+        internal Action<SocketMessage>? SocketMessagePublisher { get; init; }
+        internal Func<Task<SocketRelaySensorResetResult>>? SensorResetOperation { get; init; }
+        internal Action<string>? SensorResetPrompt { get; init; }
+    }
+
     /// <summary>
     /// Socket中转服务器
     /// 作为TCP Server，Flow Engine作为Client连接进来。
@@ -75,36 +90,79 @@ namespace ProjectARVRPro.Services
         private static readonly ILog log = LogManager.GetLogger(typeof(SocketRelayManager));
         private static SocketRelayManager _instance;
         private static readonly object _locker = new();
+        private static readonly TimeSpan DefaultStopTimeout = TimeSpan.FromSeconds(2);
 
         public static SocketRelayManager GetInstance() { lock (_locker) { return _instance ??= new SocketRelayManager(); } }
 
-        public SocketRelayConfig Config => SocketRelayConfig.Instance;
-        public RelayCommand EditCommand { get; }
+        private readonly object _lifecycleLock = new();
+        private readonly object _generationSideEffectLock = new();
+        private readonly SocketRelayConfig? _configOverride;
+        private readonly bool _enableHostIntegration;
+        private readonly bool _enableSensorReset;
+        private readonly Action<Action>? _stateDispatcher;
+        private readonly Func<IPAddress, int, SocketRelayGeneration> _generationFactory;
+        private readonly Func<string, SocketRelayWriteResult> _externalClientWriter;
+        private readonly Action<SocketMessage> _socketMessagePublisher;
+        private readonly Func<Task<SocketRelaySensorResetResult>> _sensorResetOperation;
+        private readonly Action<string> _sensorResetPrompt;
+        private readonly object _sensorResetSingleFlightLock = new();
+        private SocketRelayGeneration? _currentGeneration;
+        private SocketRelayGeneration? _pendingSensorResetGeneration;
+        private long _lifecycleVersion;
+        private bool _sensorResetRunning;
 
-        private TcpListener _listener;
-        private TcpClient _flowClient;
-        private NetworkStream _flowStream;
-        private Thread _listenThread;
-        private Thread _readThread;
-        private volatile bool _running;
-        private readonly object _sendLock = new();
+        public SocketRelayConfig Config => _configOverride ?? SocketRelayConfig.Instance;
+        public RelayCommand EditCommand { get; }
 
         /// <summary>
         /// 等待外部Client响应的信号量, Flow发消息转给Client后, 等Client回消息再转给Flow
         /// </summary>
         private ManualResetEventSlim _responseWaiter = new(false);
         private SocketResponse _pendingResponse;
-        private readonly object _generalSensorResetPatchLock = new();
-        private bool _generalSensorResetPatchCompletedForSocketOpen;
-        private bool _generalSensorResetPatchRunning;
 
         private const string DefaultGeneralSensorCode = "DEV.Sensor.Default";
         private const string DefaultGeneralSensorCategory = "Sensor.Default";
 
-        private SocketRelayManager()
+        private SocketRelayManager() : this(null, true, null)
         {
+        }
+
+        internal SocketRelayManager(
+            SocketRelayConfig config,
+            Action<Action>? stateDispatcher = null,
+            Func<IPAddress, int, SocketRelayGeneration>? generationFactory = null)
+            : this(config, false, new SocketRelayRuntime
+            {
+                StateDispatcher = stateDispatcher,
+                GenerationFactory = generationFactory
+            })
+        {
+        }
+
+        internal SocketRelayManager(SocketRelayConfig config, SocketRelayRuntime runtime)
+            : this(config, false, runtime)
+        {
+        }
+
+        private SocketRelayManager(
+            SocketRelayConfig? config,
+            bool enableHostIntegration,
+            SocketRelayRuntime? runtime)
+        {
+            _configOverride = config;
+            _enableHostIntegration = enableHostIntegration;
+            _enableSensorReset = enableHostIntegration || runtime?.SensorResetOperation != null;
+            _stateDispatcher = runtime?.StateDispatcher;
+            _generationFactory = runtime?.GenerationFactory ?? ((address, port) => new SocketRelayGeneration(address, port));
+            _externalClientWriter = runtime?.ExternalClientWriter ?? WriteToExternalClient;
+            _socketMessagePublisher = runtime?.SocketMessagePublisher ?? (message => SocketMessageManager.GetInstance().AddMessage(message));
+            _sensorResetOperation = runtime?.SensorResetOperation ?? ApplyGeneralSensorResetPatchAsync;
+            _sensorResetPrompt = runtime?.SensorResetPrompt ?? ShowSensorResetPrompt;
             EditCommand = new RelayCommand(_ => SocketRelayWindow.OpenWindow());
-            ServiceManager.GetInstance().ServiceChanged += OnServiceChanged;
+            if (enableHostIntegration)
+            {
+                ServiceManager.GetInstance().ServiceChanged += OnServiceChanged;
+            }
         }
 
         public bool IsListening { get => _IsListening; private set { _IsListening = value; OnPropertyChanged(); } }
@@ -117,19 +175,176 @@ namespace ProjectARVRPro.Services
 
         public event Action<RelayMessage> MessageReceived;
 
+        internal long? ActiveGenerationId => Volatile.Read(ref _currentGeneration)?.Id;
+
+        internal long? ActiveFlowConnectionId => Volatile.Read(ref _currentGeneration)?.CurrentConnectionId;
+
+        internal int ActiveFlowReaderCount => Volatile.Read(ref _currentGeneration)?.ActiveConnectionCount ?? 0;
+
+        internal IPEndPoint? ListeningEndpoint => Volatile.Read(ref _currentGeneration)?.ListeningEndpoint;
+
+        internal bool ActiveGenerationSensorResetCompleted => Volatile.Read(ref _currentGeneration)?.IsSensorResetCompleted == true;
+
+        internal long? PendingSensorResetGenerationId
+        {
+            get
+            {
+                lock (_sensorResetSingleFlightLock)
+                {
+                    return _pendingSensorResetGeneration?.Id;
+                }
+            }
+        }
+
         /// <summary>
         /// 启动中转服务器
         /// </summary>
         public void StartServer(string ip, int port)
         {
-            StopServer();
-            _running = true;
-            Config.ListenIP = ip;
-            Config.ListenPort = port;
-            ConfigService.Instance.SaveConfigs();
+            IPAddress address = IPAddress.Parse(ip);
+            Stopwatch stopDeadline = Stopwatch.StartNew();
+            (SocketRelayGeneration? previousGeneration, long lifecycleVersion) = BeginLifecycleTransition();
+            QueueStoppedState(lifecycleVersion);
 
-            _listenThread = new Thread(ListenLoop) { IsBackground = true, Name = "RelayServerListener" };
-            _listenThread.Start();
+            if (previousGeneration != null)
+            {
+                SocketRelayStopResult previousStop = previousGeneration.StopAndWait(GetRemainingTimeout(DefaultStopTimeout, stopDeadline));
+                DisposeAfterStop(previousGeneration, previousStop);
+                if (!previousStop.Completed)
+                {
+                    log.Warn($"旧中转服务器线程未在限定时间内退出，剩余线程数: {previousStop.RemainingWorkerCount}");
+                }
+            }
+
+            if (!IsLifecycleIntentCurrent(lifecycleVersion))
+            {
+                return;
+            }
+
+            if (!TryRunForLifecycleIntent(lifecycleVersion, () => Config.ListenIP = ip))
+            {
+                return;
+            }
+
+            if (!TryRunForLifecycleIntent(lifecycleVersion, () => Config.ListenPort = port))
+            {
+                return;
+            }
+
+            if (_enableHostIntegration)
+            {
+                if (!TryRunForLifecycleIntent(lifecycleVersion, ConfigService.Instance.SaveConfigs))
+                {
+                    return;
+                }
+            }
+
+            SocketRelayGeneration generation = CreateGeneration(address, port);
+            if (!TryPublishGeneration(generation, lifecycleVersion))
+            {
+                DisposeAfterStop(generation, generation.StopAndWait(GetRemainingTimeout(DefaultStopTimeout, stopDeadline)));
+                return;
+            }
+
+            QueueGenerationStartingState(generation, lifecycleVersion);
+            if (!TryStartPublishedGeneration(generation, lifecycleVersion, out Exception? startError))
+            {
+                if (startError != null)
+                {
+                    ExceptionDispatchInfo.Capture(startError).Throw();
+                }
+
+                return;
+            }
+        }
+
+        private (SocketRelayGeneration? Generation, long LifecycleVersion) BeginLifecycleTransition()
+        {
+            lock (_lifecycleLock)
+            {
+                SocketRelayGeneration? generation = _currentGeneration;
+                _currentGeneration = null;
+                long lifecycleVersion = ++_lifecycleVersion;
+
+                // Cancellation happens in the same short critical section as the detach. It does
+                // not publish manager state or invoke manager subscribers synchronously.
+                generation?.RequestStop();
+                return (generation, lifecycleVersion);
+            }
+        }
+
+        private bool IsLifecycleIntentCurrent(long lifecycleVersion)
+        {
+            return Volatile.Read(ref _lifecycleVersion) == lifecycleVersion;
+        }
+
+        private bool TryRunForLifecycleIntent(long lifecycleVersion, Action action)
+        {
+            lock (_generationSideEffectLock)
+            {
+                if (!IsLifecycleIntentCurrent(lifecycleVersion))
+                {
+                    return false;
+                }
+
+                action();
+                return IsLifecycleIntentCurrent(lifecycleVersion);
+            }
+        }
+
+        private bool TryPublishGeneration(SocketRelayGeneration generation, long lifecycleVersion)
+        {
+            // Old-generation side effects and new-generation publication share this gate. A
+            // callback that entered first is linearized before publication; one that enters later
+            // sees the new generation and is ignored.
+            lock (_generationSideEffectLock)
+            {
+                lock (_lifecycleLock)
+                {
+                    if (_lifecycleVersion != lifecycleVersion || _currentGeneration != null)
+                    {
+                        generation.RequestStop();
+                        return false;
+                    }
+
+                    _currentGeneration = generation;
+                    return true;
+                }
+            }
+        }
+
+        private bool TryStartPublishedGeneration(
+            SocketRelayGeneration generation,
+            long lifecycleVersion,
+            out Exception? startError)
+        {
+            startError = null;
+            long stoppedVersion = 0;
+
+            lock (_lifecycleLock)
+            {
+                if (_lifecycleVersion != lifecycleVersion || !ReferenceEquals(_currentGeneration, generation))
+                {
+                    return false;
+                }
+
+                try
+                {
+                    generation.Start();
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    _currentGeneration = null;
+                    stoppedVersion = ++_lifecycleVersion;
+                    generation.RequestStop();
+                    startError = ex;
+                }
+            }
+
+            DisposeAfterStop(generation, generation.StopAndWait(DefaultStopTimeout));
+            QueueStoppedState(stoppedVersion);
+            return false;
         }
 
         public void SetAutoStart(bool autoStart)
@@ -140,115 +355,191 @@ namespace ProjectARVRPro.Services
             }
 
             Config.AutoStart = autoStart;
-            ConfigService.Instance.SaveConfigs();
+            if (_enableHostIntegration)
+            {
+                ConfigService.Instance.SaveConfigs();
+            }
         }
 
-        private void ListenLoop()
+        private SocketRelayGeneration CreateGeneration(IPAddress address, int port)
         {
-            try
+            SocketRelayGeneration generation = _generationFactory(address, port);
+            generation.Listening += OnGenerationListening;
+            generation.ListeningStopped += OnGenerationListeningStopped;
+            generation.FlowConnected += OnGenerationFlowConnected;
+            generation.FlowDisconnected += OnGenerationFlowDisconnected;
+            generation.FlowMessageReceived += OnGenerationFlowMessageReceived;
+            generation.ListenerError += OnGenerationListenerError;
+            generation.FlowReadError += OnGenerationFlowReadError;
+            return generation;
+        }
+
+        private void OnGenerationListening(SocketRelayGeneration generation)
+        {
+            if (!IsCurrentGeneration(generation))
             {
-                _listener = new TcpListener(IPAddress.Parse(Config.ListenIP), Config.ListenPort);
-                _listener.Start();
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() => IsListening = true);
-                TryRunGeneralSensorResetPatch();
-
-                log.Info($"中转服务器启动, 监听 {Config.ListenIP}:{Config.ListenPort}");
-                AddMessage(new RelayMessage
-                {
-                    Time = DateTime.Now,
-                    Direction = RelayMessageDirection.RelayToFlow,
-                    EventName = "System",
-                    Content = $"服务器已启动, 监听 {Config.ListenIP}:{Config.ListenPort}"
-                });
-
-                while (_running)
-                {
-                    TcpClient client = _listener.AcceptTcpClient();
-                    // 只保留最新的Flow连接
-                    CloseFlowClient();
-                    _flowClient = client;
-                    _flowStream = client.GetStream();
-                    SetFlowConnectionState(true);
-
-                    string endpoint = client.Client.RemoteEndPoint?.ToString() ?? "Unknown";
-                    log.Info($"Flow已连接: {endpoint}");
-                    AddMessage(new RelayMessage
-                    {
-                        Time = DateTime.Now,
-                        Direction = RelayMessageDirection.FlowToRelay,
-                        EventName = "System",
-                        Content = $"Flow已连接: {endpoint}"
-                    });
-
-                    _readThread = new Thread(ReadFlowMessages) { IsBackground = true, Name = "RelayFlowReader" };
-                    _readThread.Start();
-                }
+                return;
             }
-            catch (SocketException ex) when (_running)
+
+            QueueListeningState(generation, true);
+            if (_enableSensorReset)
+            {
+                TryRunGeneralSensorResetPatch(generation);
+            }
+
+            IPEndPoint endpoint = generation.ListeningEndpoint ?? new IPEndPoint(IPAddress.Parse(Config.ListenIP), Config.ListenPort);
+            log.Info($"中转服务器启动, 监听 {endpoint.Address}:{endpoint.Port}");
+            AddMessage(generation, new RelayMessage
+            {
+                Time = DateTime.Now,
+                Direction = RelayMessageDirection.RelayToFlow,
+                EventName = "System",
+                Content = $"服务器已启动, 监听 {endpoint.Address}:{endpoint.Port}"
+            });
+        }
+
+        private void OnGenerationListeningStopped(SocketRelayGeneration generation)
+        {
+            QueueListeningState(generation, false);
+        }
+
+        private void OnGenerationFlowConnected(SocketRelayGeneration generation, SocketRelayConnection connection)
+        {
+            if (!IsCurrentConnection(generation, connection))
+            {
+                return;
+            }
+
+            QueueFlowConnectionState(generation, connection, true);
+            log.Info($"Flow已连接: {connection.RemoteEndpoint}");
+            AddMessage(generation, new RelayMessage
+            {
+                Time = DateTime.Now,
+                Direction = RelayMessageDirection.FlowToRelay,
+                EventName = "System",
+                Content = $"Flow已连接: {connection.RemoteEndpoint}"
+            });
+        }
+
+        private void OnGenerationFlowDisconnected(SocketRelayGeneration generation, SocketRelayConnection connection)
+        {
+            QueueFlowConnectionState(generation, connection, false);
+        }
+
+        private void OnGenerationFlowMessageReceived(SocketRelayGeneration generation, SocketRelayConnection connection, string message)
+        {
+            if (!IsCurrentConnection(generation, connection))
+            {
+                return;
+            }
+
+            log.Info($"收到Flow消息: {message}");
+            AddMessage(generation, new RelayMessage
+            {
+                Time = DateTime.Now,
+                Direction = RelayMessageDirection.FlowToRelay,
+                EventName = TryGetEventName(message),
+                Content = message
+            });
+
+            ForwardToClient(generation, connection, message);
+        }
+
+        private void OnGenerationListenerError(SocketRelayGeneration generation, Exception ex)
+        {
+            if (IsCurrentGeneration(generation))
             {
                 log.Error($"中转服务器异常: {ex.Message}");
             }
-            finally
-            {
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() => IsListening = false);
-            }
         }
 
-        /// <summary>
-        /// 持续读取Flow发来的消息，转发给外部Client
-        /// </summary>
-        private void ReadFlowMessages()
+        private void OnGenerationFlowReadError(SocketRelayGeneration generation, SocketRelayConnection connection, Exception ex)
         {
-            byte[] buffer = new byte[4096];
-            try
+            if (!IsCurrentConnection(generation, connection))
             {
-                while (_running && _flowStream != null)
-                {
-                    int bytesRead = _flowStream.Read(buffer, 0, buffer.Length);
-                    if (bytesRead == 0) break;
-
-                    string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    log.Info($"收到Flow消息: {message}");
-
-                    AddMessage(new RelayMessage
-                    {
-                        Time = DateTime.Now,
-                        Direction = RelayMessageDirection.FlowToRelay,
-                        EventName = TryGetEventName(message),
-                        Content = message
-                    });
-
-                    // 转发给外部Client
-                    ForwardToClient(message);
-                }
+                return;
             }
-            catch (Exception ex) when (_running)
+
+            log.Error($"读取Flow消息异常: {ex.Message}");
+            AddMessage(generation, new RelayMessage
             {
-                log.Error($"读取Flow消息异常: {ex.Message}");
-                AddMessage(new RelayMessage
-                {
-                    Time = DateTime.Now,
-                    Direction = RelayMessageDirection.FlowToRelay,
-                    EventName = "Error",
-                    Content = $"Flow连接断开: {ex.Message}"
-                });
-            }
-            finally
-            {
-                SetFlowConnectionState(false);
-            }
+                Time = DateTime.Now,
+                Direction = RelayMessageDirection.FlowToRelay,
+                EventName = "Error",
+                Content = $"Flow连接断开: {ex.Message}"
+            });
         }
 
         /// <summary>
         /// 将Flow的消息转发到外部Client (SocketControl.Current.Stream)
         /// </summary>
-        private void ForwardToClient(string message)
+        private void ForwardToClient(
+            SocketRelayGeneration generation,
+            SocketRelayConnection connection,
+            string message)
         {
-            var clientStream = SocketControl.Current.Stream;
-            if (clientStream == null)
+            ForwardToClient(message, generation, connection);
+        }
+
+        private void ForwardToClient(
+            string message,
+            SocketRelayGeneration? generation = null,
+            SocketRelayConnection? connection = null)
+        {
+            string forwardedMessage = message;
+            SocketMessage? socketMessage = null;
+
+            if (message == "1")
+            {
+                var response = new SocketResponse
+                {
+                    Version = "1.0",
+                    MsgID = string.Empty,
+                    EventName = "AoiSwitchPG",
+                    Code = 0,
+                    Msg = "AoiSwitchPG",
+                };
+
+                forwardedMessage = JsonConvert.SerializeObject(response);
+                socketMessage = new SocketMessage
+                {
+                    Direction = SocketMessageDirection.Sent,
+                    Content = forwardedMessage,
+                    MessageTime = DateTime.Now,
+                    EventName = response.EventName,
+                    MsgID = response.MsgID,
+                    ResponseCode = response.Code
+                };
+            }
+
+            SocketRelayWriteResult writeResult;
+            try
+            {
+                if (generation != null)
+                {
+                    if (connection == null || !TryRunForCurrentConnection(
+                        generation,
+                        connection,
+                        () => _externalClientWriter(forwardedMessage),
+                        out writeResult))
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    writeResult = _externalClientWriter(forwardedMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                writeResult = new SocketRelayWriteResult(SocketRelayWriteStatus.Failed, ex);
+            }
+
+            if (writeResult.Status == SocketRelayWriteStatus.NoConnection)
             {
                 log.Warn("外部Client未连接, 无法转发");
-                AddMessage(new RelayMessage
+                PublishRelayMessage(generation, new RelayMessage
                 {
                     Time = DateTime.Now,
                     Direction = RelayMessageDirection.RelayToClient,
@@ -258,68 +549,108 @@ namespace ProjectARVRPro.Services
                 return;
             }
 
-            try
+            if (writeResult.Status == SocketRelayWriteStatus.Failed)
             {
-                if (message == "1")
-                {
-                    var response = new SocketResponse
-                    {
-                        Version = "1.0",
-                        MsgID = string.Empty,
-                        EventName = "AoiSwitchPG",
-                        Code = 0,
-                        Msg = "AoiSwitchPG",
-                    };
-
-                    string respString = JsonConvert.SerializeObject(response);
-                    log.Info(respString);
-                    var sentMsg = new SocketMessage
-                    {
-                        Direction = SocketMessageDirection.Sent,
-                        Content = respString,
-                        MessageTime = DateTime.Now,
-                        EventName = response.EventName,
-                        MsgID = response.MsgID,
-                        ResponseCode = response.Code
-                    };
-                    SocketMessageManager.GetInstance().AddMessage(sentMsg);
-                    clientStream.Write(Encoding.UTF8.GetBytes(respString));
-                    AddMessage(new RelayMessage
-                    {
-                        Time = DateTime.Now,
-                        Direction = RelayMessageDirection.RelayToClient,
-                        EventName = TryGetEventName(message),
-                        Content = message
-                    });
-                    log.Info($"已转发给外部Client: {message}");
-                }
-                else
-                {
-                    byte[] sendBytes = Encoding.UTF8.GetBytes(message);
-                    clientStream.Write(sendBytes, 0, sendBytes.Length);
-                    clientStream.Flush();
-
-                    AddMessage(new RelayMessage
-                    {
-                        Time = DateTime.Now,
-                        Direction = RelayMessageDirection.RelayToClient,
-                        EventName = TryGetEventName(message),
-                        Content = message
-                    });
-                    log.Info($"已转发给外部Client: {message}");
-                }
-
-            }
-            catch (Exception ex)
-            {
-                log.Error($"转发到外部Client失败: {ex.Message}");
-                AddMessage(new RelayMessage
+                Exception error = writeResult.Error ?? new IOException("Unknown socket write failure.");
+                log.Error($"转发到外部Client失败: {error.Message}");
+                PublishRelayMessage(generation, new RelayMessage
                 {
                     Time = DateTime.Now,
                     Direction = RelayMessageDirection.RelayToClient,
                     EventName = "Error",
-                    Content = $"转发失败: {ex.Message}"
+                    Content = $"转发失败: {error.Message}"
                 });
+                return;
+            }
+
+            if (socketMessage != null)
+            {
+                if (generation == null)
+                {
+                    _socketMessagePublisher(socketMessage);
+                }
+                else if (connection != null)
+                {
+                    QueueSocketMessage(generation, connection, socketMessage);
+                }
+            }
+
+            PublishRelayMessage(generation, new RelayMessage
+            {
+                Time = DateTime.Now,
+                Direction = RelayMessageDirection.RelayToClient,
+                EventName = TryGetEventName(message),
+                Content = message
+            });
+            log.Info($"已转发给外部Client: {message}");
+        }
+
+        private static SocketRelayWriteResult WriteToExternalClient(string message)
+        {
+            NetworkStream? clientStream = SocketControl.Current.Stream;
+            if (clientStream == null)
+            {
+                return new SocketRelayWriteResult(SocketRelayWriteStatus.NoConnection);
+            }
+
+            try
+            {
+                byte[] sendBytes = Encoding.UTF8.GetBytes(message);
+                clientStream.Write(sendBytes, 0, sendBytes.Length);
+                clientStream.Flush();
+                return new SocketRelayWriteResult(SocketRelayWriteStatus.Sent);
+            }
+            catch (Exception ex)
+            {
+                return new SocketRelayWriteResult(SocketRelayWriteStatus.Failed, ex);
+            }
+        }
+
+        private bool TryRunForCurrentConnection<T>(
+            SocketRelayGeneration generation,
+            SocketRelayConnection connection,
+            Func<T> action,
+            out T result)
+        {
+            lock (_generationSideEffectLock)
+            {
+                if (!IsCurrentConnection(generation, connection))
+                {
+                    result = default!;
+                    return false;
+                }
+
+                result = action();
+                return true;
+            }
+        }
+
+        private void QueueSocketMessage(
+            SocketRelayGeneration generation,
+            SocketRelayConnection connection,
+            SocketMessage message)
+        {
+            DispatchMessage(() =>
+            {
+                lock (_generationSideEffectLock)
+                {
+                    if (IsCurrentConnection(generation, connection))
+                    {
+                        _socketMessagePublisher(message);
+                    }
+                }
+            });
+        }
+
+        private void PublishRelayMessage(SocketRelayGeneration? generation, RelayMessage message)
+        {
+            if (generation == null)
+            {
+                AddMessage(message);
+            }
+            else
+            {
+                AddMessage(generation, message);
             }
         }
 
@@ -328,10 +659,14 @@ namespace ProjectARVRPro.Services
         /// </summary>
         public void ForwardToFlow(string message)
         {
-            if (_flowStream == null || !IsFlowConnected)
+            SocketRelayGeneration? generation = Volatile.Read(ref _currentGeneration);
+            SocketRelayWriteResult writeResult = generation?.WriteToCurrent(message)
+                ?? new SocketRelayWriteResult(SocketRelayWriteStatus.NoConnection);
+
+            if (writeResult.Status == SocketRelayWriteStatus.NoConnection)
             {
                 log.Warn("Flow未连接, 无法转发");
-                AddMessage(new RelayMessage
+                PublishRelayMessage(generation, new RelayMessage
                 {
                     Time = DateTime.Now,
                     Direction = RelayMessageDirection.RelayToFlow,
@@ -341,35 +676,28 @@ namespace ProjectARVRPro.Services
                 return;
             }
 
-            lock (_sendLock)
+            if (writeResult.Status == SocketRelayWriteStatus.Failed)
             {
-                try
+                Exception error = writeResult.Error ?? new IOException("Unknown socket write failure.");
+                log.Error($"转发到Flow失败: {error.Message}");
+                PublishRelayMessage(generation, new RelayMessage
                 {
-                    byte[] sendBytes = Encoding.UTF8.GetBytes(message);
-                    _flowStream.Write(sendBytes, 0, sendBytes.Length);
-                    _flowStream.Flush();
-
-                    AddMessage(new RelayMessage
-                    {
-                        Time = DateTime.Now,
-                        Direction = RelayMessageDirection.RelayToFlow,
-                        EventName = TryGetEventName(message),
-                        Content = message
-                    });
-                    log.Info($"已转发给Flow: {message}");
-                }
-                catch (Exception ex)
-                {
-                    log.Error($"转发到Flow失败: {ex.Message}");
-                    AddMessage(new RelayMessage
-                    {
-                        Time = DateTime.Now,
-                        Direction = RelayMessageDirection.RelayToFlow,
-                        EventName = "Error",
-                        Content = $"转发失败: {ex.Message}"
-                    });
-                }
+                    Time = DateTime.Now,
+                    Direction = RelayMessageDirection.RelayToFlow,
+                    EventName = "Error",
+                    Content = $"转发失败: {error.Message}"
+                });
+                return;
             }
+
+            PublishRelayMessage(generation, new RelayMessage
+            {
+                Time = DateTime.Now,
+                Direction = RelayMessageDirection.RelayToFlow,
+                EventName = TryGetEventName(message),
+                Content = message
+            });
+            log.Info($"已转发给Flow: {message}");
         }
 
         /// <summary>
@@ -402,104 +730,294 @@ namespace ProjectARVRPro.Services
         /// </summary>
         public void StopServer()
         {
-            _running = false;
-            ResetGeneralSensorResetPatchForSocketOpen();
-            try
+            SocketRelayStopResult stopResult = StopServerAndWait(DefaultStopTimeout);
+            if (!stopResult.Completed)
             {
-                CloseFlowClient();
-                _listener?.Stop();
-            }
-            catch { }
-            finally
-            {
-                _listener = null;
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
-                {
-                    IsListening = false;
-                });
-                SetFlowConnectionState(false);
+                log.Warn($"中转服务器线程未在限定时间内退出，剩余线程数: {stopResult.RemainingWorkerCount}");
             }
         }
 
-        private void CloseFlowClient()
+        internal SocketRelayStopResult StopServerAndWait(TimeSpan timeout)
         {
-            try
+            if (timeout < TimeSpan.Zero && timeout != Timeout.InfiniteTimeSpan)
             {
-                _flowStream?.Close();
-                _flowClient?.Close();
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             }
-            catch { }
-            finally
+
+            Stopwatch stopDeadline = Stopwatch.StartNew();
+            (SocketRelayGeneration? generation, long lifecycleVersion) = BeginLifecycleTransition();
+            QueueStoppedState(lifecycleVersion);
+
+            if (generation == null)
             {
-                _flowStream = null;
-                _flowClient = null;
-                SetFlowConnectionState(false);
+                return new SocketRelayStopResult(true, 0);
             }
+
+            SocketRelayStopResult stopResult = generation.StopAndWait(GetRemainingTimeout(timeout, stopDeadline));
+            DisposeAfterStop(generation, stopResult);
+            return stopResult;
         }
 
-        private void SetFlowConnectionState(bool isConnected)
+        private static TimeSpan GetRemainingTimeout(TimeSpan timeout, Stopwatch stopwatch)
         {
-            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(() =>
+            if (timeout == Timeout.InfiniteTimeSpan)
             {
-                IsFlowConnected = isConnected;
-            });
-        }
-
-        private void ResetGeneralSensorResetPatchForSocketOpen()
-        {
-            lock (_generalSensorResetPatchLock)
-            {
-                _generalSensorResetPatchCompletedForSocketOpen = false;
+                return Timeout.InfiniteTimeSpan;
             }
+
+            TimeSpan remaining = timeout - stopwatch.Elapsed;
+            return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
         }
 
-        private void OnServiceChanged(object? sender, EventArgs e)
+        private static void DisposeAfterStop(SocketRelayGeneration generation, SocketRelayStopResult stopResult)
         {
-            if (IsListening)
+            if (stopResult.Completed)
             {
-                TryRunGeneralSensorResetPatch();
+                generation.Dispose();
+                return;
             }
+
+            new Thread(generation.Dispose)
+            {
+                IsBackground = true,
+                Name = $"RelayGenerationCleanup-{generation.Id}"
+            }.Start();
         }
 
-        private void TryRunGeneralSensorResetPatch()
+        private bool IsCurrentGeneration(SocketRelayGeneration generation)
         {
-            lock (_generalSensorResetPatchLock)
+            return ReferenceEquals(Volatile.Read(ref _currentGeneration), generation);
+        }
+
+        private bool IsCurrentConnection(SocketRelayGeneration generation, SocketRelayConnection connection)
+        {
+            return IsCurrentGeneration(generation) && generation.IsCurrentConnection(connection);
+        }
+
+        private void QueueGenerationStartingState(SocketRelayGeneration generation, long lifecycleVersion)
+        {
+            DispatchState(() =>
             {
-                if (_generalSensorResetPatchCompletedForSocketOpen || _generalSensorResetPatchRunning)
+                if (Volatile.Read(ref _lifecycleVersion) != lifecycleVersion || !IsCurrentGeneration(generation))
                 {
                     return;
                 }
 
-                _generalSensorResetPatchRunning = true;
-            }
+                IsListening = false;
+                if (Volatile.Read(ref _lifecycleVersion) != lifecycleVersion || !IsCurrentGeneration(generation))
+                {
+                    return;
+                }
 
-            _ = RunGeneralSensorResetPatchAsync();
+                IsFlowConnected = false;
+            });
         }
 
-        private async Task RunGeneralSensorResetPatchAsync()
+        private void QueueStoppedState(long lifecycleVersion)
         {
-            bool completed = false;
-            try
+            DispatchState(() =>
             {
-                completed = await ApplyGeneralSensorResetPatchAsync();
-            }
-            finally
-            {
-                lock (_generalSensorResetPatchLock)
+                if (Volatile.Read(ref _lifecycleVersion) != lifecycleVersion || Volatile.Read(ref _currentGeneration) != null)
                 {
-                    if (completed)
-                    {
-                        _generalSensorResetPatchCompletedForSocketOpen = true;
-                    }
+                    return;
+                }
 
-                    _generalSensorResetPatchRunning = false;
+                IsListening = false;
+                if (Volatile.Read(ref _lifecycleVersion) != lifecycleVersion || Volatile.Read(ref _currentGeneration) != null)
+                {
+                    return;
+                }
+
+                IsFlowConnected = false;
+            });
+        }
+
+        private void QueueListeningState(SocketRelayGeneration generation, bool isListening)
+        {
+            if (!IsCurrentGeneration(generation))
+            {
+                return;
+            }
+
+            DispatchState(() =>
+            {
+                if (IsCurrentGeneration(generation))
+                {
+                    IsListening = isListening;
+                }
+            });
+        }
+
+        private void QueueFlowConnectionState(SocketRelayGeneration generation, SocketRelayConnection connection, bool isConnected)
+        {
+            if (!IsCurrentGeneration(generation))
+            {
+                return;
+            }
+
+            DispatchState(() =>
+            {
+                if (!IsCurrentGeneration(generation))
+                {
+                    return;
+                }
+
+                if (isConnected)
+                {
+                    if (generation.IsCurrentConnection(connection))
+                    {
+                        IsFlowConnected = true;
+                    }
+                }
+                else if (generation.CurrentConnectionId == null)
+                {
+                    IsFlowConnected = false;
+                }
+            });
+        }
+
+        private void DispatchState(Action action)
+        {
+            if (_stateDispatcher != null)
+            {
+                _stateDispatcher(action);
+                return;
+            }
+
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                action();
+            }
+            else
+            {
+                dispatcher.BeginInvoke(action);
+            }
+        }
+
+        private void DispatchMessage(Action action)
+        {
+            if (_stateDispatcher != null)
+            {
+                _stateDispatcher(action);
+                return;
+            }
+
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(action);
+        }
+
+        private void OnServiceChanged(object? sender, EventArgs e)
+        {
+            SocketRelayGeneration? generation = Volatile.Read(ref _currentGeneration);
+            if (generation?.IsListening == true)
+            {
+                TryRunGeneralSensorResetPatch(generation);
+            }
+        }
+
+        private void TryRunGeneralSensorResetPatch(SocketRelayGeneration generation)
+        {
+            if (!IsCurrentGeneration(generation) || generation.IsSensorResetCompleted)
+            {
+                return;
+            }
+
+            lock (_sensorResetSingleFlightLock)
+            {
+                if (!IsCurrentGeneration(generation) || generation.IsSensorResetCompleted)
+                {
+                    return;
+                }
+
+                if (_sensorResetRunning)
+                {
+                    // Keep only the newest intent. If A is still running while B/C starts, the
+                    // current generation is retried as soon as the single-flight slot is released.
+                    _pendingSensorResetGeneration = generation;
+                    return;
+                }
+
+                _sensorResetRunning = true;
+                if (ReferenceEquals(_pendingSensorResetGeneration, generation))
+                {
+                    _pendingSensorResetGeneration = null;
                 }
             }
+
+            _ = RunGeneralSensorResetPatchAsync(generation);
+        }
+
+        private async Task RunGeneralSensorResetPatchAsync(SocketRelayGeneration generation)
+        {
+            SocketRelaySensorResetResult result;
+            try
+            {
+                result = await _sensorResetOperation();
+            }
+            catch (Exception ex)
+            {
+                log.Error("Socket 打开后重置通用传感器异常", ex);
+                result = new SocketRelaySensorResetResult(
+                    true,
+                    $"通用传感器自动重置异常：{ex.Message}\n请手动关闭后重新打开通用传感器。");
+            }
+
+            try
+            {
+                if (IsCurrentGeneration(generation))
+                {
+                    generation.CompleteSensorReset(result.Completed);
+                    if (!string.IsNullOrWhiteSpace(result.WarningMessage))
+                    {
+                        QueueSensorResetPrompt(generation, result.WarningMessage);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("发布通用传感器自动重置结果失败", ex);
+            }
+
+            SocketRelayGeneration? retryGeneration;
+            lock (_sensorResetSingleFlightLock)
+            {
+                _sensorResetRunning = false;
+                retryGeneration = _pendingSensorResetGeneration;
+                _pendingSensorResetGeneration = null;
+            }
+
+            if (retryGeneration != null)
+            {
+                TryRunGeneralSensorResetPatch(retryGeneration);
+            }
+        }
+
+        private void QueueSensorResetPrompt(SocketRelayGeneration generation, string message)
+        {
+            DispatchState(() =>
+            {
+                lock (_generationSideEffectLock)
+                {
+                    if (!IsCurrentGeneration(generation))
+                    {
+                        return;
+                    }
+
+                    try
+                    {
+                        _sensorResetPrompt(message);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("显示通用传感器自动重置提示失败", ex);
+                    }
+                }
+            });
         }
 
         // TEMP PATCH: Socket 服务打开后，重置一次通用传感器。
         // 后续后台修好连接状态判断后，可以连同本方法和相关 helper 一起删除。
-        private static async Task<bool> ApplyGeneralSensorResetPatchAsync()
+        private static async Task<SocketRelaySensorResetResult> ApplyGeneralSensorResetPatchAsync()
         {
             try
             {
@@ -507,7 +1025,7 @@ namespace ProjectARVRPro.Services
                 if (deviceSensor == null)
                 {
                     log.Info("Socket 打开后通用传感器尚未创建，暂不执行自动重置");
-                    return false;
+                    return new SocketRelaySensorResetResult(false);
                 }
 
                 log.Info($"Socket 打开后开始重置通用传感器: {deviceSensor.Name} ({deviceSensor.Code})");
@@ -522,19 +1040,21 @@ namespace ProjectARVRPro.Services
                 if (openState == MsgRecordState.Success)
                 {
                     log.Info($"Socket 打开后重置通用传感器成功: {deviceSensor.Name} ({deviceSensor.Code})");
-                    return true;
+                    return new SocketRelaySensorResetResult(true);
                 }
 
                 string failureMessage = BuildSensorResetFailureMessage(openRecord, openState);
                 log.Warn($"Socket 打开后重置通用传感器失败: {deviceSensor.Name} ({deviceSensor.Code}), {failureMessage}");
-                ShowSensorResetPrompt($"通用传感器自动重置失败：{failureMessage}\n请手动关闭后重新打开通用传感器。");
-                return true;
+                return new SocketRelaySensorResetResult(
+                    true,
+                    $"通用传感器自动重置失败：{failureMessage}\n请手动关闭后重新打开通用传感器。");
             }
             catch (Exception ex)
             {
                 log.Error("Socket 打开后重置通用传感器异常", ex);
-                ShowSensorResetPrompt($"通用传感器自动重置异常：{ex.Message}\n请手动关闭后重新打开通用传感器。");
-                return true;
+                return new SocketRelaySensorResetResult(
+                    true,
+                    $"通用传感器自动重置异常：{ex.Message}\n请手动关闭后重新打开通用传感器。");
             }
         }
 
@@ -617,23 +1137,25 @@ namespace ProjectARVRPro.Services
         private static void ShowSensorResetPrompt(string message)
         {
             var application = System.Windows.Application.Current;
-            application?.Dispatcher?.BeginInvoke(() =>
+            if (application == null)
             {
-                System.Windows.Window? owner = null;
-                foreach (System.Windows.Window window in application.Windows)
-                {
-                    if (!window.IsActive)
-                    {
-                        continue;
-                    }
+                return;
+            }
 
-                    owner = window;
-                    break;
+            System.Windows.Window? owner = null;
+            foreach (System.Windows.Window window in application.Windows)
+            {
+                if (!window.IsActive)
+                {
+                    continue;
                 }
 
-                owner ??= application.MainWindow;
-                System.Windows.MessageBox.Show(owner, message, "ColorVision", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
-            });
+                owner = window;
+                break;
+            }
+
+            owner ??= application.MainWindow;
+            System.Windows.MessageBox.Show(owner, message, "ColorVision", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
         }
 
         private string TryGetEventName(string json)
@@ -649,9 +1171,34 @@ namespace ProjectARVRPro.Services
             }
         }
 
+        private void AddMessage(SocketRelayGeneration generation, RelayMessage msg)
+        {
+            if (!IsCurrentGeneration(generation))
+            {
+                return;
+            }
+
+            DispatchMessage(() =>
+            {
+                lock (_generationSideEffectLock)
+                {
+                    if (!IsCurrentGeneration(generation))
+                    {
+                        return;
+                    }
+
+                    Messages.Add(msg);
+                    if (IsCurrentGeneration(generation))
+                    {
+                        MessageReceived?.Invoke(msg);
+                    }
+                }
+            });
+        }
+
         private void AddMessage(RelayMessage msg)
         {
-            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(() =>
+            DispatchMessage(() =>
             {
                 Messages.Add(msg);
                 MessageReceived?.Invoke(msg);
