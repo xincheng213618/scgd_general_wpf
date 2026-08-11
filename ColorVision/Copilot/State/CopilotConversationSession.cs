@@ -31,7 +31,7 @@ namespace ColorVision.Copilot
     internal sealed class CopilotConversationSession
     {
         private readonly CopilotChatState _state;
-        private readonly CopilotConfig _config;
+        private CopilotConfig _config;
 
         public CopilotConversationSession(CopilotChatState state, CopilotConfig config)
         {
@@ -48,6 +48,11 @@ namespace ColorVision.Copilot
         public CopilotConversationRecord? SelectedConversation { get; private set; }
 
         public CopilotProfileConfig? SelectedProfile { get; private set; }
+
+        public void BindCurrentConfig(CopilotConfig currentConfig)
+        {
+            _config = currentConfig ?? throw new ArgumentNullException(nameof(currentConfig));
+        }
 
         public CopilotConversationRecord CreateConversation()
         {

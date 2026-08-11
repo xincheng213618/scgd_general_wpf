@@ -654,7 +654,6 @@ namespace ColorVision.Copilot
             CopilotChatMessage assistantMessage,
             CopilotProfileConfig requestProfile,
             CopilotAgentHostContextSnapshot completedTurnSnapshot,
-            CopilotTurnRuntimeConfigSnapshot completedTurnRuntimeConfig,
             string goalId,
             string reason)
         {
@@ -685,7 +684,27 @@ namespace ColorVision.Copilot
             }
 
             var prompt = CopilotGoalContinuationPrompt.Build(goal, reason);
-            var requestProfileSnapshot = requestProfile.Clone();
+            var currentProfile = _config.FindProfile(conversation.ProfileId)
+                ?? _config.FindProfile(requestProfile.Id)
+                ?? _config.GetPreferredDefaultProfile();
+            if (currentProfile?.IsConfigured != true)
+            {
+                const string pauseReason =
+                    "当前配置没有可用于下一轮持续目标任务的模型，目标已暂停。";
+                conversation.Goal = goal.WithState(
+                    CopilotConversationGoalState.Paused,
+                    DateTimeOffset.UtcNow,
+                    pauseReason);
+                PersistState(immediate: true);
+                return false;
+            }
+
+            var requestProfileSnapshot = CreateConversationRequestProfile(
+                currentProfile,
+                conversation,
+                CopilotAgentMode.Auto,
+                completedTurnSnapshot.ProjectInstructionDiscoveryOptions);
+            var runtimeConfigSnapshot = CaptureTurnRuntimeConfigSnapshot();
             var submissionContext = CopilotGoalContinuationContext.Capture(
                 completedTurnSnapshot,
                 conversation);
@@ -697,7 +716,7 @@ namespace ColorVision.Copilot
                 requestProfileSnapshot,
                 submissionContext,
                 AgentSkillReference: null,
-                RuntimeConfigSnapshot: completedTurnRuntimeConfig,
+                RuntimeConfigSnapshot: runtimeConfigSnapshot,
                 WorkspaceReviewTarget: null,
                 GoalId: goalId);
             if (!_followUpQueue.TrySchedule(

@@ -40,7 +40,7 @@ namespace ColorVision.Copilot
         private readonly CopilotLocalGitDiffService _localGitDiffService;
         private readonly CopilotPromptHistoryNavigator _promptHistoryNavigator = new();
         private readonly CopilotConversationFindSession _conversationFindSession = new();
-        private readonly CopilotConfig _config;
+        private CopilotConfig _config;
         private readonly ICopilotChatStateStore _stateStore;
         private readonly CopilotChatStatePersistenceCoordinator _statePersistenceCoordinator;
         private readonly CopilotConversationSession _conversationSession;

@@ -9,7 +9,7 @@ namespace ColorVision.Copilot
 {
     public readonly record struct CopilotPromptQueueResult(bool Accepted, bool WasSent);
 
-    public sealed class CopilotPanelService : ICopilotService
+    public sealed class CopilotPanelService : ICopilotService, IConfigReloadParticipant
     {
         private static readonly Lazy<CopilotPanelService> Instance = new(() => new CopilotPanelService());
 
@@ -28,6 +28,10 @@ namespace ColorVision.Copilot
         public bool CanShowPanel => WorkspaceManager.LayoutManager != null;
 
         public bool IsAvailable => CanShowPanel;
+
+        public string ConfigReloadName => nameof(CopilotPanelService);
+
+        public int ConfigReloadOrder => 400;
 
         public bool IsConfigured
         {
@@ -64,6 +68,17 @@ namespace ColorVision.Copilot
                 };
                 return _panel;
             }, fallback: null) ?? throw new InvalidOperationException("The Copilot UI is shutting down.");
+        }
+
+        public void BindCurrentConfig(IConfigService currentConfig)
+        {
+            ArgumentNullException.ThrowIfNull(currentConfig);
+            var viewModel = _viewModel;
+            if (viewModel == null)
+                return;
+
+            var config = currentConfig.GetRequiredService<CopilotConfig>();
+            CopilotUiDispatcher.Invoke(() => viewModel.BindCurrentConfig(config));
         }
 
         public void ShowPanel()

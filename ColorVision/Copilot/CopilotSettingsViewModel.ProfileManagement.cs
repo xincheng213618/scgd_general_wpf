@@ -24,6 +24,8 @@ namespace ColorVision.Copilot
     {
         public bool Save()
         {
+            if (!EnsureCurrentConfigGeneration())
+                return false;
             if (!ApplyMcpPortText(updateNotice: true))
                 return false;
             if (!CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var externalMcpServers, out var externalMcpError))
@@ -37,7 +39,7 @@ namespace ColorVision.Copilot
             _isSavingSettings = true;
             try
             {
-                var config = CopilotConfig.Instance;
+                var config = _sourceConfig;
                 config.Profiles.Clear();
                 foreach (var profile in Profiles.Select(profile => profile.Clone()))
                 {
@@ -82,8 +84,17 @@ namespace ColorVision.Copilot
                 McpPortText = config.McpPort.ToString(CultureInfo.InvariantCulture);
                 McpEndpoint = BuildMcpEndpoint();
                 McpBearerToken = config.McpBearerToken;
-                ConfigHandler.GetInstance().Save<CopilotConfig>();
-                CopilotMcpServer.Instance.ApplyConfig();
+                if (!EnsureCurrentConfigGeneration())
+                    return false;
+
+                _persistConfig();
+                if (!EnsureCurrentConfigGeneration())
+                    return false;
+
+                _applyMcpConfig();
+                if (!EnsureCurrentConfigGeneration())
+                    return false;
+
                 RefreshMcpStatusText();
                 RefreshMcpDiagnostics();
                 _activeProfileId = SelectedProfile?.Id ?? _activeProfileId;
@@ -277,9 +288,9 @@ namespace ColorVision.Copilot
             RunUiOperation(TestSelectedProfileConnectionAsync, "测试模型连接");
         }
 
-        private async Task TestSelectedProfileConnectionAsync()
+        internal async Task TestSelectedProfileConnectionAsync()
         {
-            if (_disposed || IsTestingSelectedProfileConnection)
+            if (_disposed || IsTestingSelectedProfileConnection || !EnsureCurrentConfigGeneration())
                 return;
 
             var sourceProfile = SelectedProfile;
@@ -306,27 +317,40 @@ namespace ColorVision.Copilot
             SetSettingsNotice($"Testing {sourceProfile.DisplayLabel}...");
             try
             {
-                var result = await _modelConnectionDiagnostic.TestAsync(
+                var result = await _testModelConnectionAsync(
                     sourceProfile,
                     cancellation.Token);
+                if (!EnsureCurrentConfigGeneration())
+                    return;
+
                 SelectedProfileConnectionTestText = result.FormatStatus();
                 SetSettingsNotice($"Model test succeeded for {sourceProfile.DisplayLabel}. {SelectedProfileConnectionTestText}");
             }
             catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
             {
+                EnsureCurrentConfigGeneration();
             }
             catch (OperationCanceledException)
             {
+                if (!EnsureCurrentConfigGeneration())
+                    return;
+
                 SelectedProfileConnectionTestText = "Connection test cancelled.";
                 SetSettingsNotice(SelectedProfileConnectionTestText);
             }
             catch (CopilotModelConnectionDiagnosticException exception)
             {
+                if (!EnsureCurrentConfigGeneration())
+                    return;
+
                 SelectedProfileConnectionTestText = FormatModelConnectionDiagnosticFailure(exception);
                 SetSettingsNotice(SelectedProfileConnectionTestText);
             }
             catch (Exception ex)
             {
+                if (!EnsureCurrentConfigGeneration())
+                    return;
+
                 SelectedProfileConnectionTestText = "Connection failed: " + SanitizeError(ex.Message);
                 SetSettingsNotice(SanitizeError(SelectedProfileConnectionTestText));
             }

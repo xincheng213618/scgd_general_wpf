@@ -129,11 +129,23 @@ namespace ColorVision.Copilot
             OpenSettings(page);
         }
 
-        private void ReloadStateFromConfig(string? preferredProfileId)
+        internal void BindCurrentConfig(CopilotConfig currentConfig)
+        {
+            ArgumentNullException.ThrowIfNull(currentConfig);
+            if (Volatile.Read(ref _disposeState) != 0 || ReferenceEquals(_config, currentConfig))
+                return;
+
+            var preferredProfileId = SelectedProfile?.Id ?? _state.ActiveProfileId;
+            _config = currentConfig;
+            _conversationSession.BindCurrentConfig(currentConfig);
+            ReloadStateFromConfig(preferredProfileId, persistConfigChanges: false);
+        }
+
+        private void ReloadStateFromConfig(string? preferredProfileId, bool persistConfigChanges = true)
         {
             var preferredConversationId = SelectedConversation?.Id ?? _state.ActiveConversationId;
 
-            if (_config.EnsureInitialized())
+            if (_config.EnsureInitialized() && persistConfigChanges)
                 PersistConfig();
 
             var requestedProfile = CopilotChatStateProfileReconciler.Apply(_state, _config, preferredProfileId);
@@ -142,6 +154,7 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(Conversations));
             OnPropertyChanged(nameof(EmptyStateText));
             OnPropertyChanged(nameof(CanSelectProfile));
+            OnPropertyChanged(nameof(CanShowCompactHistory));
             RefreshLocalCommandSuggestions();
             RefreshMcpStatus();
 

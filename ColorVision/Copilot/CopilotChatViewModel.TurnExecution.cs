@@ -362,7 +362,6 @@ namespace ColorVision.Copilot
                             assistantMessage,
                             requestProfile,
                             turnSnapshot,
-                            runtimeConfigSnapshot,
                             goalResult.GoalId,
                             goalResult.Reason));
                 }

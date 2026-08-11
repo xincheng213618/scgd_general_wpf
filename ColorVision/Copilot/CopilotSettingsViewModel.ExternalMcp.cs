@@ -143,7 +143,7 @@ namespace ColorVision.Copilot
 
         private async Task RefreshExternalMcpClientsAsync()
         {
-            if (_disposed || IsRefreshingExternalMcpClients)
+            if (_disposed || IsRefreshingExternalMcpClients || !EnsureCurrentConfigGeneration())
                 return;
             if (!CopilotMcpClientConfigurationText.TryParse(ExternalMcpServersText, out var servers, out var error))
             {
@@ -169,6 +169,8 @@ namespace ColorVision.Copilot
                     ExternalMcpServers = servers.Select(server => server.Clone()).ToArray(),
                     ForceExternalMcpToolRefresh = true,
                 }, _lifetimeCancellation.Token);
+                if (!EnsureCurrentConfigGeneration())
+                    return;
 
                 RefreshExternalMcpClientsStatus(servers);
                 var connectedCount = servers.Count(server =>
@@ -176,11 +178,15 @@ namespace ColorVision.Copilot
                     && health.State == CopilotMcpClientHealthState.Connected);
                 SetSettingsNotice($"External MCP discovery refreshed: {connectedCount}/{servers.Count} server(s) connected.");
             }
-            catch (OperationCanceledException) when (_disposed)
+            catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
             {
+                EnsureCurrentConfigGeneration();
             }
             catch (Exception ex)
             {
+                if (!EnsureCurrentConfigGeneration())
+                    return;
+
                 var message = CopilotMcpAuditLogger.RedactText(ex.Message);
                 ExternalMcpClientsStatusText = "External MCP discovery refresh failed.";
                 SetSettingsNotice(message);

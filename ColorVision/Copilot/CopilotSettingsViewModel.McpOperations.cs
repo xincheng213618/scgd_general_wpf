@@ -98,7 +98,7 @@ namespace ColorVision.Copilot
 
         public async Task TestMcpConnectionAsync()
         {
-            if (_disposed || IsTestingMcpConnection)
+            if (_disposed || IsTestingMcpConnection || !EnsureCurrentConfigGeneration())
                 return;
 
             if (!ApplyMcpPortText(updateNotice: true))
@@ -140,10 +140,13 @@ namespace ColorVision.Copilot
                 });
                 request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
 
-                using var response = await McpHttpClient.SendAsync(
+                using var response = await _sendMcpRequestAsync(
                     request,
                     HttpCompletionOption.ResponseHeadersRead,
                     _lifetimeCancellation.Token);
+                if (!EnsureCurrentConfigGeneration())
+                    return;
+
                 if (!response.IsSuccessStatusCode)
                 {
                     McpConnectionTestText = $"Connection failed: HTTP {(int)response.StatusCode} {response.ReasonPhrase}.";
@@ -158,6 +161,9 @@ namespace ColorVision.Copilot
                     MaximumMcpStatusResponseBytes,
                     "MCP status response",
                     _lifetimeCancellation.Token);
+                if (!EnsureCurrentConfigGeneration())
+                    return;
+
                 using var document = JsonDocument.Parse(body);
                 var root = document.RootElement;
                 if (root.TryGetProperty("error", out var errorElement))
@@ -184,11 +190,15 @@ namespace ColorVision.Copilot
                 RefreshMcpStatusText();
                 RefreshMcpDiagnostics();
             }
-            catch (OperationCanceledException) when (_disposed)
+            catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
             {
+                EnsureCurrentConfigGeneration();
             }
             catch (Exception ex)
             {
+                if (!EnsureCurrentConfigGeneration())
+                    return;
+
                 McpConnectionTestText = "Connection failed: " + SanitizeError(ex.Message);
                 SetSettingsNotice(SanitizeError(McpConnectionTestText));
                 RefreshMcpStatusText();

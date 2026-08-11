@@ -125,21 +125,48 @@ namespace ColorVision.Copilot
                 },
             });
 
-        private readonly CopilotModelConnectionDiagnostic _modelConnectionDiagnostic = new();
-        private readonly CopilotBackendSyncClient _backendSyncClient = new();
+        internal const string StaleConfigGenerationMessage =
+            "Configuration was reloaded. Close and reopen Copilot settings before testing or saving changes.";
+
+        private readonly CopilotConfig _sourceConfig;
+        private readonly Func<CopilotConfig> _currentConfigProvider;
+        private readonly Action _persistConfig;
+        private readonly Action _applyMcpConfig;
+        private readonly Func<CopilotProfileConfig, CancellationToken, Task<CopilotModelConnectionDiagnosticResult>> _testModelConnectionAsync;
+        private readonly Func<string, bool, CancellationToken, Task<CopilotBackendConfigResponse>> _fetchBackendConfigAsync;
+        private readonly Func<HttpRequestMessage, HttpCompletionOption, CancellationToken, Task<HttpResponseMessage>> _sendMcpRequestAsync;
+        private readonly Action<EventHandler>? _subscribeConfigsReloaded;
+        private readonly Action<EventHandler>? _unsubscribeConfigsReloaded;
         private readonly CancellationTokenSource _lifetimeCancellation = new();
         private CancellationTokenSource? _modelConnectionTestCancellation;
         private bool _isApplyingPreset;
         private bool _isReadyForUserChanges;
         private bool _isSavingSettings;
         private bool _disposed;
+        private int _configGenerationInvalidated;
         private string _activeProfileId = string.Empty;
 
         public CopilotSettingsViewModel()
+            : this(CreateProductionBindings())
         {
-            var config = CopilotConfig.Instance;
-            if (config.EnsureInitialized())
-                ConfigHandler.GetInstance().Save<CopilotConfig>();
+        }
+
+        internal CopilotSettingsViewModel(CopilotSettingsRuntimeBindings bindings)
+        {
+            ArgumentNullException.ThrowIfNull(bindings);
+            _sourceConfig = bindings.SourceConfig;
+            _currentConfigProvider = bindings.CurrentConfigProvider;
+            _persistConfig = bindings.PersistConfig;
+            _applyMcpConfig = bindings.ApplyMcpConfig;
+            _testModelConnectionAsync = bindings.TestModelConnectionAsync;
+            _fetchBackendConfigAsync = bindings.FetchBackendConfigAsync;
+            _sendMcpRequestAsync = bindings.SendMcpRequestAsync;
+            _subscribeConfigsReloaded = bindings.SubscribeConfigsReloaded;
+            _unsubscribeConfigsReloaded = bindings.UnsubscribeConfigsReloaded;
+
+            var config = _sourceConfig;
+            if (config.EnsureInitialized() && IsCurrentConfigGeneration)
+                _persistConfig();
 
             ProviderOptions = new ReadOnlyCollection<CopilotProviderOption>(new[]
             {
@@ -234,6 +261,9 @@ namespace ColorVision.Copilot
             RefreshMcpDiagnostics();
             RefreshAgentSkillDiagnostics();
             _isReadyForUserChanges = true;
+            _subscribeConfigsReloaded?.Invoke(ConfigHandler_ConfigsReloaded);
+            if (!IsCurrentConfigGeneration)
+                InvalidateConfigGeneration();
         }
 
         public ObservableCollection<CopilotProfileConfig> Profiles { get; } = new();
@@ -298,6 +328,7 @@ namespace ColorVision.Copilot
         private bool _isSyncingBackendConfig;
 
         public bool CanSyncBackendConfig => !_disposed
+            && IsCurrentConfigGeneration
             && !IsSyncingBackendConfig
             && !string.IsNullOrWhiteSpace(BackendSyncUrl);
 
@@ -359,7 +390,10 @@ namespace ColorVision.Copilot
         public ICommand RemoveAgentSkillOverrideCommand { get; }
 
 
-        public bool CanTestMcpConnection => !_disposed && !IsTestingMcpConnection && IsMcpPortValid;
+        public bool CanTestMcpConnection => !_disposed
+            && IsCurrentConfigGeneration
+            && !IsTestingMcpConnection
+            && IsMcpPortValid;
 
         public string SelectedProfileConnectionTestText
         {
@@ -384,6 +418,7 @@ namespace ColorVision.Copilot
         private bool _isTestingSelectedProfileConnection;
 
         public bool CanTestSelectedProfile => !_disposed
+            && IsCurrentConfigGeneration
             && (IsTestingSelectedProfileConnection || SelectedProfile?.IsConfigured == true);
 
         public string SelectedProfileConnectionTestActionText =>
@@ -449,9 +484,14 @@ namespace ColorVision.Copilot
         }
         private bool _hasUnsavedSettings;
 
-        public bool CanApplySettings => HasUnsavedSettings && IsMcpPortValid && IsExternalMcpServersValid;
+        public bool CanApplySettings => IsCurrentConfigGeneration
+            && HasUnsavedSettings
+            && IsMcpPortValid
+            && IsExternalMcpServersValid;
 
-        public bool CanSaveSettings => IsMcpPortValid && IsExternalMcpServersValid;
+        public bool CanSaveSettings => IsCurrentConfigGeneration
+            && IsMcpPortValid
+            && IsExternalMcpServersValid;
 
         public string SettingsCancelButtonText => HasUnsavedSettings ? "Cancel" : "Close";
 
@@ -460,7 +500,7 @@ namespace ColorVision.Copilot
 
         private void RunUiOperation(Func<Task> operation, string operationName)
         {
-            if (_disposed)
+            if (_disposed || !EnsureCurrentConfigGeneration())
                 return;
 
             CopilotUiTaskObserver.Run(
@@ -469,12 +509,13 @@ namespace ColorVision.Copilot
                 message => SetSettingsNotice($"{operationName}失败：{message}"));
         }
 
-       public void Dispose()
+        public void Dispose()
         {
             if (_disposed)
                 return;
 
             _disposed = true;
+            _unsubscribeConfigsReloaded?.Invoke(ConfigHandler_ConfigsReloaded);
             try
             {
                 _lifetimeCancellation.Cancel();
@@ -487,6 +528,85 @@ namespace ColorVision.Copilot
             OnPropertyChanged(nameof(CanTestSelectedProfile));
             OnPropertyChanged(nameof(CanSyncBackendConfig));
             CommandManager.InvalidateRequerySuggested();
+        }
+
+        private bool IsCurrentConfigGeneration
+        {
+            get
+            {
+                if (Volatile.Read(ref _configGenerationInvalidated) != 0)
+                    return false;
+
+                try
+                {
+                    return ReferenceEquals(_sourceConfig, _currentConfigProvider());
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
+        private bool EnsureCurrentConfigGeneration()
+        {
+            if (_disposed)
+                return false;
+            if (IsCurrentConfigGeneration)
+                return true;
+
+            InvalidateConfigGeneration();
+            return false;
+        }
+
+        private void ConfigHandler_ConfigsReloaded(object? sender, EventArgs e)
+        {
+            if (!IsCurrentConfigGeneration)
+                InvalidateConfigGeneration();
+        }
+
+        private void InvalidateConfigGeneration()
+        {
+            if (Interlocked.Exchange(ref _configGenerationInvalidated, 1) != 0)
+                return;
+
+            try
+            {
+                _lifetimeCancellation.Cancel();
+            }
+            catch (Exception)
+            {
+            }
+
+            SettingsStatusText = StaleConfigGenerationMessage;
+            BackendSyncStatusText = StaleConfigGenerationMessage;
+            McpConnectionTestText = StaleConfigGenerationMessage;
+            SelectedProfileConnectionTestText = StaleConfigGenerationMessage;
+            OnPropertyChanged(nameof(CanApplySettings));
+            OnPropertyChanged(nameof(CanSaveSettings));
+            OnPropertyChanged(nameof(CanTestMcpConnection));
+            OnPropertyChanged(nameof(CanTestSelectedProfile));
+            OnPropertyChanged(nameof(CanSyncBackendConfig));
+            OnSelectedProfileUsageChanged();
+            CommandManager.InvalidateRequerySuggested();
+        }
+
+        private static CopilotSettingsRuntimeBindings CreateProductionBindings()
+        {
+            var configHandler = ConfigHandler.GetInstance();
+            var modelDiagnostic = new CopilotModelConnectionDiagnostic();
+            var backendSyncClient = new CopilotBackendSyncClient();
+            return new CopilotSettingsRuntimeBindings(
+                configHandler.GetRequiredService<CopilotConfig>(),
+                () => configHandler.GetRequiredService<CopilotConfig>(),
+                () => configHandler.Save<CopilotConfig>(),
+                () => CopilotMcpServer.Instance.ApplyConfig(),
+                modelDiagnostic.TestAsync,
+                backendSyncClient.FetchAsync,
+                (request, completionOption, cancellationToken) =>
+                    McpHttpClient.SendAsync(request, completionOption, cancellationToken),
+                handler => configHandler.ConfigsReloaded += handler,
+                handler => configHandler.ConfigsReloaded -= handler);
         }
 
         private string BuildCodexMcpConfigSnippet()
@@ -696,4 +816,15 @@ namespace ColorVision.Copilot
                 .Replace("\"", "`\"");
         }
     }
+
+    internal sealed record CopilotSettingsRuntimeBindings(
+        CopilotConfig SourceConfig,
+        Func<CopilotConfig> CurrentConfigProvider,
+        Action PersistConfig,
+        Action ApplyMcpConfig,
+        Func<CopilotProfileConfig, CancellationToken, Task<CopilotModelConnectionDiagnosticResult>> TestModelConnectionAsync,
+        Func<string, bool, CancellationToken, Task<CopilotBackendConfigResponse>> FetchBackendConfigAsync,
+        Func<HttpRequestMessage, HttpCompletionOption, CancellationToken, Task<HttpResponseMessage>> SendMcpRequestAsync,
+        Action<EventHandler>? SubscribeConfigsReloaded = null,
+        Action<EventHandler>? UnsubscribeConfigsReloaded = null);
 }

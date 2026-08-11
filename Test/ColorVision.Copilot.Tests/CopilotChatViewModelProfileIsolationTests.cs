@@ -1,7 +1,9 @@
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Channels;
 using ColorVision.Copilot;
 using ColorVision.Solution;
 using Newtonsoft.Json.Linq;
@@ -105,6 +107,246 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 {
                 }
             }
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task ConfigRebindKeepsActiveTurnSnapshotAndUsesCurrentConfigForTheNextTurn()
+    {
+        var profileC1 = CreateProfile("reload-profile", "Profile C1", "model-c1");
+        profileC1.ApiKey = "api-key-c1";
+        profileC1.BaseUrl = "https://c1.unit.test/v1";
+        var configC1 = CreateConfig(profileC1, "mcp-token-c1");
+        configC1.AgentDefaults.ContextWindowTokens = 96_000;
+        configC1.AgentDefaults.RequestTokenBudget = 24_000;
+        configC1.ExternalMcpServers.Add(new CopilotMcpClientServerConfig
+        {
+            Name = "external-c1",
+            Endpoint = "https://mcp-c1.unit.test/mcp",
+            BearerTokenEnvironmentVariable = "COPILOT_MCP_TOKEN_C1",
+        });
+
+        var profileC2 = CreateProfile("reload-profile", "Profile C2", "model-c2");
+        profileC2.ApiKey = "api-key-c2";
+        profileC2.BaseUrl = "https://c2.unit.test/v1";
+        var configC2 = CreateConfig(profileC2, "mcp-token-c2");
+        configC2.AgentDefaults.ContextWindowTokens = 64_000;
+        configC2.AgentDefaults.RequestTokenBudget = 16_000;
+        configC2.ExternalMcpServers.Add(new CopilotMcpClientServerConfig
+        {
+            Name = "external-c2",
+            Endpoint = "https://mcp-c2.unit.test/mcp",
+            BearerTokenEnvironmentVariable = "COPILOT_MCP_TOKEN_C2",
+        });
+
+        var conversation = CreateConversation(profileC1, "reload-conversation", string.Empty);
+        var runtime = new SequencedGatedFailingTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        using var codexHomeScope = new EnvironmentVariableScope(
+            "CODEX_HOME",
+            Path.Combine(Path.GetTempPath(), $"ColorVision.Copilot.Tests-{Guid.NewGuid():N}"));
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(conversation, configC1, runtime, taskHost);
+        CopilotHostedAgentRun? activeRun = null;
+        try
+        {
+            var firstQueueResult = viewModel.QueueExternalPrompt(
+                "Run with C1.",
+                startNewConversation: false,
+                sendNow: true,
+                mode: CopilotAgentMode.Chat);
+            Assert.True(firstQueueResult.Accepted);
+            Assert.True(firstQueueResult.WasSent);
+
+            var firstInvocation = await runtime.WaitForNextAsync().WaitAsync(TestTimeout);
+            activeRun = taskHost.ActiveRun;
+            Assert.NotNull(activeRun);
+            AssertRequestUsesConfig(
+                firstInvocation.Request,
+                expectedModel: "model-c1",
+                expectedApiKey: "api-key-c1",
+                expectedBaseUrl: "https://c1.unit.test/v1",
+                expectedContextWindowTokens: 96_000,
+                expectedRequestTokenBudget: 24_000,
+                expectedExternalMcpServerName: "external-c1",
+                expectedExternalMcpEndpoint: "https://mcp-c1.unit.test/mcp",
+                expectedBearerTokenEnvironmentVariable: "COPILOT_MCP_TOKEN_C1");
+
+            var propertyChanges = new ConcurrentQueue<string?>();
+            viewModel.PropertyChanged += (_, args) => propertyChanges.Enqueue(args.PropertyName);
+            viewModel.BindCurrentConfig(configC2);
+
+            Assert.Same(configC2.Profiles, viewModel.Profiles);
+            Assert.Same(profileC2, viewModel.SelectedProfile);
+            Assert.Equal(profileC2.DisplayLabel, conversation.ProfileDisplayName);
+            Assert.Contains(nameof(CopilotChatViewModel.CanShowCompactHistory), propertyChanges);
+
+            propertyChanges.Clear();
+            profileC1.Model = "stale-model-c1";
+            Assert.DoesNotContain(nameof(CopilotChatViewModel.SelectedProfileToolTip), propertyChanges);
+            profileC2.Model = "updated-model-c2";
+            Assert.Contains(nameof(CopilotChatViewModel.SelectedProfileToolTip), propertyChanges);
+
+            AssertRequestUsesConfig(
+                firstInvocation.Request,
+                expectedModel: "model-c1",
+                expectedApiKey: "api-key-c1",
+                expectedBaseUrl: "https://c1.unit.test/v1",
+                expectedContextWindowTokens: 96_000,
+                expectedRequestTokenBudget: 24_000,
+                expectedExternalMcpServerName: "external-c1",
+                expectedExternalMcpEndpoint: "https://mcp-c1.unit.test/mcp",
+                expectedBearerTokenEnvironmentVariable: "COPILOT_MCP_TOKEN_C1");
+
+            firstInvocation.Release();
+            await activeRun.Completion.WaitAsync(TestTimeout);
+            activeRun = null;
+
+            var secondQueueResult = viewModel.QueueExternalPrompt(
+                "Run with C2.",
+                startNewConversation: false,
+                sendNow: true,
+                mode: CopilotAgentMode.Chat);
+            Assert.True(secondQueueResult.Accepted);
+            Assert.True(secondQueueResult.WasSent);
+
+            var secondInvocation = await runtime.WaitForNextAsync().WaitAsync(TestTimeout);
+            activeRun = taskHost.ActiveRun;
+            Assert.NotNull(activeRun);
+            AssertRequestUsesConfig(
+                secondInvocation.Request,
+                expectedModel: "updated-model-c2",
+                expectedApiKey: "api-key-c2",
+                expectedBaseUrl: "https://c2.unit.test/v1",
+                expectedContextWindowTokens: 64_000,
+                expectedRequestTokenBudget: 16_000,
+                expectedExternalMcpServerName: "external-c2",
+                expectedExternalMcpEndpoint: "https://mcp-c2.unit.test/mcp",
+                expectedBearerTokenEnvironmentVariable: "COPILOT_MCP_TOKEN_C2");
+
+            secondInvocation.Release();
+            await activeRun.Completion.WaitAsync(TestTimeout);
+            activeRun = null;
+        }
+        finally
+        {
+            runtime.ReleaseAll();
+            var pendingRun = activeRun ?? taskHost.ActiveRun;
+            if (pendingRun != null && !pendingRun.Completion.IsCompleted)
+            {
+                try
+                {
+                    await pendingRun.Completion.WaitAsync(TestTimeout);
+                }
+                catch
+                {
+                }
+            }
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task GoalContinuationQueuedAfterConfigRebindCapturesCurrentConfig()
+    {
+        var profileC1 = CreateProfile("goal-reload-profile-c1", "Goal Profile C1", "goal-model-c1");
+        profileC1.ApiKey = "goal-api-key-c1";
+        profileC1.BaseUrl = "https://goal-c1.unit.test/v1";
+        var configC1 = CreateConfig(profileC1, "goal-reload-token-c1");
+        configC1.AgentDefaults.ContextWindowTokens = 96_000;
+        configC1.ExternalMcpServers.Add(new CopilotMcpClientServerConfig
+        {
+            Name = "goal-external-c1",
+            Endpoint = "https://goal-mcp-c1.unit.test/mcp",
+        });
+
+        var profileC2 = CreateProfile("goal-reload-profile-c2", "Goal Profile C2", "goal-model-c2");
+        profileC2.ApiKey = "goal-api-key-c2";
+        profileC2.BaseUrl = "https://goal-c2.unit.test/v1";
+        var configC2 = CreateConfig(profileC2, "goal-reload-token-c2");
+        configC2.Profiles.Add(CreateProfile(
+            profileC1.Id,
+            "Reloaded old-id profile",
+            "goal-model-c2-old-id"));
+        configC2.AgentDefaults.ContextWindowTokens = 64_000;
+        configC2.ExternalMcpServers.Add(new CopilotMcpClientServerConfig
+        {
+            Name = "goal-external-c2",
+            Endpoint = "https://goal-mcp-c2.unit.test/mcp",
+        });
+
+        var conversation = CreateConversation(profileC1, "goal-reload-conversation", string.Empty);
+        var continuedGoal = CopilotConversationGoal.Create(
+                "Continue after configuration reload",
+                DateTimeOffset.UtcNow)
+            .WithTurnOutcome(
+                CopilotConversationGoalState.Active,
+                new CopilotTokenUsage(10, 5, 15),
+                elapsedSeconds: 1,
+                evaluated: true,
+                continued: true,
+                "More work remains.",
+                DateTimeOffset.UtcNow);
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, "C1 turn complete")
+        {
+            AgentStopReason = CopilotAgentStopReason.Completed,
+        };
+        var taskHost = new CopilotAgentTaskHost();
+        var activeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseActive = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(
+            conversation,
+            configC1,
+            new GatedFailingTurnRuntime(),
+            taskHost);
+        conversation.Goal = continuedGoal;
+        var hostedRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            async _ =>
+            {
+                activeStarted.TrySetResult();
+                await releaseActive.Task;
+            });
+        try
+        {
+            await activeStarted.Task.WaitAsync(TestTimeout);
+            var completedTurnSnapshot = new CopilotAgentHostContextSnapshot("", "", []);
+
+            viewModel.BindCurrentConfig(configC2);
+            viewModel.SelectedProfile = profileC2;
+            Assert.Equal(profileC2.Id, conversation.ProfileId);
+            Assert.True(TryQueueGoalContinuation(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                profileC1,
+                completedTurnSnapshot,
+                continuedGoal.Id,
+                "More work remains."));
+
+            CopilotQueuedFollowUp queuedContinuation = Assert.Single(viewModel.QueuedFollowUps);
+            Assert.Equal("goal-model-c2", queuedContinuation.Profile.Model);
+            Assert.Equal("goal-api-key-c2", queuedContinuation.Profile.ApiKey);
+            Assert.Equal("https://goal-c2.unit.test/v1", queuedContinuation.Profile.BaseUrl);
+            Assert.Equal(
+                64_000,
+                queuedContinuation.RuntimeConfigSnapshot.CreateAgentDefaultsSnapshot().ContextWindowTokens);
+            CopilotMcpClientServerConfig externalMcp = Assert.Single(
+                queuedContinuation.RuntimeConfigSnapshot.CreateExternalMcpServerSnapshots());
+            Assert.Equal("goal-external-c2", externalMcp.Name);
+            Assert.Equal("https://goal-mcp-c2.unit.test/mcp", externalMcp.Endpoint);
+        }
+        finally
+        {
+            foreach (CopilotHostedAgentRun queuedRun in taskHost.QueuedRuns.ToArray())
+                taskHost.RequestCancel(queuedRun.Id);
+            releaseActive.TrySetResult();
+            if (!hostedRun.Completion.IsCompleted)
+                await hostedRun.Completion.WaitAsync(TestTimeout);
             viewModel.Dispose();
         }
     }
@@ -536,9 +778,6 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         {
             await activeStarted.Task.WaitAsync(TestTimeout);
             var completedTurnSnapshot = new CopilotAgentHostContextSnapshot("", "", []);
-            var completedTurnRuntimeConfig = new CopilotTurnRuntimeConfigSnapshot(
-                new CopilotAgentDefaultsConfig(),
-                []);
             Assert.True(TryQueueGoalContinuation(
                 viewModel,
                 hostedRun,
@@ -546,7 +785,6 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 assistantMessage,
                 profile,
                 completedTurnSnapshot,
-                completedTurnRuntimeConfig,
                 continuedGoal.Id,
                 "More verified work remains."));
             Assert.Single(taskHost.QueuedRuns);
@@ -560,7 +798,6 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 assistantMessage,
                 profile,
                 completedTurnSnapshot,
-                completedTurnRuntimeConfig,
                 continuedGoal.Id,
                 "More verified work remains.");
 
@@ -1480,7 +1717,6 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         CopilotChatMessage assistantMessage,
         CopilotProfileConfig profile,
         CopilotAgentHostContextSnapshot completedTurnSnapshot,
-        CopilotTurnRuntimeConfigSnapshot completedTurnRuntimeConfig,
         string goalId,
         string reason)
     {
@@ -1496,7 +1732,6 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 assistantMessage,
                 profile,
                 completedTurnSnapshot,
-                completedTurnRuntimeConfig,
                 goalId,
                 reason,
             ]));
@@ -1533,6 +1768,85 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         BaseUrl = "https://unit.test/v1",
         Model = model,
     };
+
+    private static void AssertRequestUsesConfig(
+        CopilotTurnRequest request,
+        string expectedModel,
+        string expectedApiKey,
+        string expectedBaseUrl,
+        int expectedContextWindowTokens,
+        int expectedRequestTokenBudget,
+        string expectedExternalMcpServerName,
+        string expectedExternalMcpEndpoint,
+        string expectedBearerTokenEnvironmentVariable)
+    {
+        Assert.Equal(expectedModel, request.Profile.Model);
+        Assert.Equal(expectedApiKey, request.Profile.ApiKey);
+        Assert.Equal(expectedBaseUrl, request.Profile.BaseUrl);
+        Assert.Equal(expectedContextWindowTokens, request.AgentDefaults.ContextWindowTokens);
+        Assert.Equal(expectedRequestTokenBudget, request.AgentDefaults.RequestTokenBudget);
+        var externalMcpServer = Assert.Single(request.ExternalMcpServers);
+        Assert.Equal(expectedExternalMcpServerName, externalMcpServer.Name);
+        Assert.Equal(expectedExternalMcpEndpoint, externalMcpServer.Endpoint);
+        Assert.Equal(expectedBearerTokenEnvironmentVariable, externalMcpServer.BearerTokenEnvironmentVariable);
+    }
+
+    private sealed class SequencedGatedFailingTurnRuntime : ICopilotTurnRuntime
+    {
+        private readonly Channel<TurnInvocation> _invocations = Channel.CreateUnbounded<TurnInvocation>();
+        private readonly TaskCompletionSource _releaseAll =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<TurnInvocation> WaitForNextAsync()
+        {
+            return await _invocations.Reader.ReadAsync();
+        }
+
+        public async IAsyncEnumerable<CopilotTurnEvent> RunAsync(
+            CopilotTurnRequest request,
+            [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            var invocation = new TurnInvocation(request);
+            await _invocations.Writer.WriteAsync(invocation, cancellationToken);
+            await Task.WhenAny(invocation.Released, _releaseAll.Task).WaitAsync(cancellationToken);
+            yield return new CopilotTurnStartedEvent("config-reload-turn", request.Mode);
+            throw new InvalidOperationException("Expected config-reload test failure.");
+        }
+
+        public void ReleaseAll() => _releaseAll.TrySetResult();
+
+        public CopilotSteeringAdmissionResult EnqueueSteeringMessage(string taskId, string message) =>
+            new(CopilotSteeringAdmissionReason.RuntimeUnavailable);
+
+        public bool TryEnqueueBackgroundShellCommandCompletion(CopilotBackgroundShellCommandSnapshot snapshot) => false;
+
+        public bool TryEnqueueBackgroundShellCommandOutput(CopilotBackgroundShellOutputMonitorEventArgs eventArgs) => false;
+
+        public bool TryAnswerUserQuestion(string taskId, string requestId, string answer) => false;
+
+        public Task<CopilotWorkspaceRollbackActionResult> RequestWorkspaceRollbackAsync(
+            CopilotWorkspaceRollbackActionRequest request,
+            Action<CopilotAgentEvent> onEvent,
+            CancellationToken cancellationToken) =>
+            Task.FromException<CopilotWorkspaceRollbackActionResult>(new NotSupportedException());
+
+        public sealed class TurnInvocation
+        {
+            private readonly TaskCompletionSource _released =
+                new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public TurnInvocation(CopilotTurnRequest request)
+            {
+                Request = request;
+            }
+
+            public CopilotTurnRequest Request { get; }
+
+            public Task Released => _released.Task;
+
+            public void Release() => _released.TrySetResult();
+        }
+    }
 
     private sealed class GatedFailingTurnRuntime : ICopilotTurnRuntime
     {
@@ -1662,6 +1976,24 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         {
             if (ReferenceEquals(InstanceField.GetValue(null), _testInstance))
                 InstanceField.SetValue(null, _previousInstance);
+        }
+    }
+
+    private sealed class EnvironmentVariableScope : IDisposable
+    {
+        private readonly string _name;
+        private readonly string? _previousValue;
+
+        public EnvironmentVariableScope(string name, string value)
+        {
+            _name = name;
+            _previousValue = Environment.GetEnvironmentVariable(name);
+            Environment.SetEnvironmentVariable(name, value);
+        }
+
+        public void Dispose()
+        {
+            Environment.SetEnvironmentVariable(_name, _previousValue);
         }
     }
 }

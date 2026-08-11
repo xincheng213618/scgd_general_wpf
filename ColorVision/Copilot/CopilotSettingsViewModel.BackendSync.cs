@@ -7,9 +7,9 @@ namespace ColorVision.Copilot
 {
     public sealed partial class CopilotSettingsViewModel
     {
-        private async Task SyncBackendConfigAsync()
+        internal async Task SyncBackendConfigAsync()
         {
-            if (!CanSyncBackendConfig)
+            if (!EnsureCurrentConfigGeneration() || !CanSyncBackendConfig)
                 return;
 
             IsSyncingBackendConfig = true;
@@ -17,10 +17,12 @@ namespace ColorVision.Copilot
             SetSettingsNotice("Downloading backend Copilot configuration...");
             try
             {
-                var response = await _backendSyncClient.FetchAsync(
+                var response = await _fetchBackendConfigAsync(
                     BackendSyncUrl,
                     AllowInsecureBackendSync,
                     _lifetimeCancellation.Token);
+                if (!EnsureCurrentConfigGeneration())
+                    return;
 
                 var previousSelectedId = SelectedProfile?.Id ?? string.Empty;
                 CopilotBackendMergeResult mergeResult;
@@ -53,16 +55,22 @@ namespace ColorVision.Copilot
                 var revision = string.IsNullOrWhiteSpace(response.Revision) ? "unknown" : response.Revision;
                 BackendSyncStatusText =
                     $"Revision {revision}: {mergeResult.Added} added, {mergeResult.Updated} updated, {mergeResult.Removed} removed and saved.";
-                SaveSynchronizedProfiles();
+                if (!SaveSynchronizedProfiles())
+                    return;
+
                 SetSettingsNotice(HasUnsavedSettings
                     ? BackendSyncStatusText + " Other settings still have unsaved changes."
                     : BackendSyncStatusText);
             }
-            catch (OperationCanceledException) when (_disposed)
+            catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
             {
+                EnsureCurrentConfigGeneration();
             }
             catch (Exception ex)
             {
+                if (!EnsureCurrentConfigGeneration())
+                    return;
+
                 BackendSyncStatusText = "Sync failed: " + SanitizeError(ex.Message);
                 SetSettingsNotice(BackendSyncStatusText);
             }
@@ -72,9 +80,12 @@ namespace ColorVision.Copilot
             }
         }
 
-        private void SaveSynchronizedProfiles()
+        private bool SaveSynchronizedProfiles()
         {
-            var config = CopilotConfig.Instance;
+            if (!EnsureCurrentConfigGeneration())
+                return false;
+
+            var config = _sourceConfig;
             config.Profiles.Clear();
             foreach (var profile in Profiles.Select(profile => profile.Clone()))
             {
@@ -83,9 +94,16 @@ namespace ColorVision.Copilot
             }
 
             config.EnsureInitialized();
-            ConfigHandler.GetInstance().Save<CopilotConfig>();
+            if (!EnsureCurrentConfigGeneration())
+                return false;
+
+            _persistConfig();
+            if (!EnsureCurrentConfigGeneration())
+                return false;
+
             _activeProfileId = SelectedProfile?.Id ?? _activeProfileId;
             HasAppliedChanges = true;
+            return true;
         }
     }
 }
