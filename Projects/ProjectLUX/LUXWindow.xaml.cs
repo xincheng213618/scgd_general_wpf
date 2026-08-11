@@ -336,7 +336,8 @@ namespace ProjectLUX
 
         ProjectLUXReuslt CurrentFlowResult { get; set; }
         int TryCount = 0;
-        public bool IsSaveImageReuslt { get; set; }
+        private ViewResultManagerConfig? currentFlowResultConfig;
+        private readonly Dictionary<ProjectLUXReuslt, ViewResultManagerConfig> automaticImageExportConfigs = new(ReferenceEqualityComparer.Instance);
 
         public async Task RunTemplate()
         {
@@ -345,6 +346,7 @@ namespace ProjectLUX
             {
                 if (flowControl != null && flowControl.IsFlowRun) return;
                 if (FlowTemplate.SelectedItem is not TemplateModel<FlowParam> template) return;
+                currentFlowResultConfig = ViewResultManager.CaptureConfig();
 
                 TryCount++;
                 _currentFlowTemplateId = template.Id;
@@ -500,7 +502,7 @@ namespace ProjectLUX
                 log.Info("流程运行超时，正在重新尝试");
                 CurrentFlowResult.FlowStatus = FlowStatus.OverTime;
                 CurrentFlowResult.Msg = logTextBox.Text;
-                ViewResultManager.Save(CurrentFlowResult);
+                ViewResultManager.Save(CurrentFlowResult, currentFlowResultConfig);
 
                 flowEngine.LoadFromBase64(string.Empty);
                 Refresh();
@@ -567,13 +569,14 @@ namespace ProjectLUX
                     }
                 }
                 logTextBox.Text = FlowName + Environment.NewLine + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params;
-                ViewResultManager.Save(CurrentFlowResult);
+                ViewResultManager.Save(CurrentFlowResult, currentFlowResultConfig);
                 TryCount = 0;
             }
         }
 
         private void Processing(string SerialNumber)
         {
+            ViewResultManagerConfig resultConfig = currentFlowResultConfig ?? ViewResultManager.CaptureConfig();
             MeasureBatchModel Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
 
             if (Batch == null)
@@ -630,10 +633,11 @@ namespace ProjectLUX
                             log.Info("无法连接到" + ProjectLUXConfig.Instance.ResultSavePath);
                         }
 
-                        ViewResultManager.Save(result);
+                        if (resultConfig.IsSaveImageReuslt)
+                            automaticImageExportConfigs[result] = resultConfig;
+                        ViewResultManager.Save(result, resultConfig);
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
                         SaveObjectiveTestResultRecord(result);
-                        IsSaveImageReuslt = ViewResultManager.Config.IsSaveImageReuslt;
 
                         if (!string.IsNullOrWhiteSpace(ReturnCode))
                         {
@@ -680,7 +684,9 @@ namespace ProjectLUX
             {
                 log.Error("匹配/执行自定义 IProcess 出错，回退内置逻辑", ex);
             }
-            ViewResultManager.Save(result);
+            if (resultConfig.IsSaveImageReuslt)
+                automaticImageExportConfigs[result] = resultConfig;
+            ViewResultManager.Save(result, resultConfig);
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
             SaveObjectiveTestResultRecord(result);
         }
@@ -801,15 +807,15 @@ namespace ProjectLUX
 
         private void SaveImageResultIfNeeded(ProjectLUXReuslt result, int requestId)
         {
-            if (!IsSaveImageReuslt) return;
+            if (!automaticImageExportConfigs.Remove(result, out ViewResultManagerConfig? resultConfig))
+                return;
 
-            log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
-            IsSaveImageReuslt = false;
+            log.Info($"IsSaveImageReuslt:{resultConfig.IsSaveImageReuslt}");
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
+                    await Task.Delay(resultConfig.SaveImageReusltDelay);
                     if (_isDisposed || requestId != Volatile.Read(ref _resultImageRequestId)) return;
 
                     bool isCurrentSelection = Application.Current?.Dispatcher.Invoke(() =>
@@ -818,32 +824,10 @@ namespace ProjectLUX
                         ReferenceEquals(listView1.SelectedItem, result)) ?? false;
                     if (!isCurrentSelection) return;
 
-                    string linkPath = ViewResultManager.Config.CsvSavePath;
-                    string sn = result.SN;
-
-                    if (ViewResultManager.Config.SaveByDate)
-                    {
-                        string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-                        linkPath = Path.Combine(linkPath, dateFolder);
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(sn))
-                    {
-                        foreach (char c in Path.GetInvalidFileNameChars())
-                        {
-                            sn = sn.Replace(c.ToString(), "");
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(sn))
-                        {
-                            linkPath = Path.Combine(linkPath, sn);
-                        }
-                    }
-
-                    if (!Directory.Exists(linkPath))
+                    string filePath = BuildAutomaticImageSavePath(resultConfig, result, DateTime.Now);
+                    string? linkPath = Path.GetDirectoryName(filePath);
+                    if (!string.IsNullOrWhiteSpace(linkPath) && !Directory.Exists(linkPath))
                         Directory.CreateDirectory(linkPath);
-
-                    string filePath = Path.Combine(linkPath, $"{result.Model}.png");
                     log.Info(filePath);
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
@@ -860,6 +844,24 @@ namespace ProjectLUX
                     log.Error("保存结果截图失败", ex);
                 }
             });
+        }
+
+        internal static string BuildAutomaticImageSavePath(ViewResultManagerConfig config, ProjectLUXReuslt result, DateTime saveTime)
+        {
+            string linkPath = config.CsvSavePath;
+            if (config.SaveByDate)
+                linkPath = Path.Combine(linkPath, saveTime.ToString("yyyy-MM-dd"));
+
+            string sn = result.SN;
+            if (!string.IsNullOrWhiteSpace(sn))
+            {
+                foreach (char c in Path.GetInvalidFileNameChars())
+                    sn = sn.Replace(c.ToString(), string.Empty);
+                if (!string.IsNullOrWhiteSpace(sn))
+                    linkPath = Path.Combine(linkPath, sn);
+            }
+
+            return Path.Combine(linkPath, $"{result.Model}.png");
         }
 
         public void GenoutputText(ProjectLUXReuslt result)
@@ -954,6 +956,7 @@ namespace ProjectLUX
             _isDisposed = true;
             _lifetimeCancellation.Cancel();
             Interlocked.Increment(ref _resultImageRequestId);
+            automaticImageExportConfigs.Clear();
             DetachResultListView(listView1, listView1_SelectionChanged);
             ProcessManager.ActiveGroupChanged -= ProcessManager_ActiveGroupChanged;
             ImageView.Dispose();

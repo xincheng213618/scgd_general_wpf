@@ -173,10 +173,10 @@ namespace ProjectLUX
             }
         }
 
-        public void Save(ProjectLUXReuslt item)
+        public void Save(ProjectLUXReuslt item, ViewResultManagerConfig? configSnapshot = null)
         {
             if (item == null) return;
-            ViewResultManagerConfig config = CaptureConfig();
+            ViewResultManagerConfig config = configSnapshot ?? CaptureConfig();
             int id = _db.Insertable(item).ExecuteReturnIdentity();
             item.Id = id; // 更新ID
 
