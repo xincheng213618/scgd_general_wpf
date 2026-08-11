@@ -28,6 +28,8 @@ public class KBResultPayloadStorageTests
             {
                 Model = "MODEL-A",
                 SN = "SN-1",
+                ImageWidth = 9680,
+                ImageHeight = 5460,
                 Items = new ObservableCollection<KBItem>
                 {
                     new() { Name = "A", Lv = 12.5, Lc = 0.18, Result = false },
@@ -53,6 +55,8 @@ public class KBResultPayloadStorageTests
             Assert.Empty(metadata.Items);
             Assert.Null(metadata.RecipeSnapshot);
             Assert.False(metadata.IsResultPayloadLoaded);
+            Assert.Equal(9680, metadata.ImageWidth);
+            Assert.Equal(5460, metadata.ImageHeight);
 
             KBResultPayloadStorage.LoadResult(db, metadata);
 

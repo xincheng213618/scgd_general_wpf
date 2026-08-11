@@ -33,6 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
     public partial class ViewCamera : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
+        private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
         private int _disposeState;
         private int _imageRequestId;
         private bool _messageSubscribed;
@@ -123,7 +124,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
                                 Device.Config.MotorConfig.Position = arg.Data.Position;
                                 int requestId = Interlocked.Increment(ref _imageRequestId);
-                                OpenImageOrClear((string?)arg.Data.ImageTmpFile, requestId);
+                                OpenImageOrPlaceholder((string?)arg.Data.ImageTmpFile, null, requestId);
                             });
                         }
                         catch (Exception ex)
@@ -201,25 +202,53 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (IsDisposed || sender is not ListView listView) return;
 
             int requestId = Interlocked.Increment(ref _imageRequestId);
-            string? filePath = (listView.SelectedItem as ViewResultImage)?.FileUrl;
-            OpenImageOrClear(filePath, requestId);
+            ViewResultImage? result = listView.SelectedItem as ViewResultImage;
+            OpenImageOrPlaceholder(result?.FileUrl, result?.ImgFrameInfo, requestId);
         }
 
-        private void OpenImageOrClear(string? filePath, int requestId)
+        private void OpenImageOrPlaceholder(string? filePath, string? imgFrameInfo, int requestId)
         {
             if (IsDisposed || requestId != Volatile.Read(ref _imageRequestId)) return;
 
             if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
             {
+                ShowPlaceholderOrClear(imgFrameInfo);
+                return;
+            }
+
+            if (filePath.Equals(ImageView.Config.FilePath, StringComparison.OrdinalIgnoreCase) && ImageView.ImageShow.Source != null) return;
+
+            ImageView.Clear();
+            if (IsDisposed || requestId != Volatile.Read(ref _imageRequestId)) return;
+            if (!File.Exists(filePath))
+            {
+                ShowPlaceholderOrClear(imgFrameInfo);
+                return;
+            }
+            ImageView.OpenImage(filePath);
+        }
+
+        private void ShowPlaceholderOrClear(string? imgFrameInfo)
+        {
+            if (!ResultImageDimensions.TryReadFrameInfo(imgFrameInfo, out int width, out int height))
+            {
                 ImageView.Clear();
                 return;
             }
 
-            if (filePath.Equals(ImageView.Config.FilePath, StringComparison.OrdinalIgnoreCase)) return;
+            if (_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
+            {
+                ImageView.ClearAnnotations();
+                return;
+            }
 
             ImageView.Clear();
-            if (IsDisposed || requestId != Volatile.Read(ref _imageRequestId)) return;
-            ImageView.OpenImage(filePath);
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(ViewCamera), "历史结果坐标空间宽度");
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(ViewCamera), "历史结果坐标空间高度");
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(ViewCamera), "历史结果图像像素宽度");
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(ViewCamera), "历史结果图像像素高度");
+            ImageView.SetImageSource(_resultImagePlaceholderCache.GetOrCreate(width, height), enableEditorImageServices: false, configureDefaultLayerController: false);
+            ImageView.UpdateZoomAndScale();
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)

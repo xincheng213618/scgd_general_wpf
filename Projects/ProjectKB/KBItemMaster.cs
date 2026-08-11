@@ -43,6 +43,20 @@ namespace ProjectKB
         public string ResultImagFile { get => _ResultImagFile; set { _ResultImagFile = value; OnPropertyChanged(); } }
         private string _ResultImagFile = string.Empty;
 
+        /// <summary>
+        /// 原始结果图像的像素宽度。原图被清理后仍用于恢复按键叠图的坐标空间。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public int? ImageWidth { get => _ImageWidth; set { _ImageWidth = value; OnPropertyChanged(); } }
+        private int? _ImageWidth;
+
+        /// <summary>
+        /// 原始结果图像的像素高度。原图被清理后仍用于恢复按键叠图的坐标空间。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public int? ImageHeight { get => _ImageHeight; set { _ImageHeight = value; OnPropertyChanged(); } }
+        private int? _ImageHeight;
+
         public string Model { get => _Model; set { _Model = value; OnPropertyChanged(); } }
         private string _Model =string.Empty;
 

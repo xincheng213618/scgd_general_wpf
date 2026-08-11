@@ -8,6 +8,7 @@ using ColorVision.UI.Sorts;
 using log4net;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -29,6 +30,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private static readonly ILog log = LogManager.GetLogger(typeof(AlgorithmView));
         private bool _isInitialized;
         private bool _isDisposed;
+        private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
+        private readonly Dictionary<int, (int Width, int Height)> _resultImageDimensions = new();
 
         public ImageView ImageView { get; set; }
 
@@ -213,22 +216,92 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (_isDisposed)
                 return;
 
-            ImageView.Clear();
             listViewSide.ItemsSource = null;
             SideTextBox.Visibility = Visibility.Collapsed;
             SideTextBox.Clear();
 
             if (listView1.SelectedItem is not ViewResultAlg result)
+            {
+                ImageView.Clear();
                 return;
+            }
 
             var ResultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(result));
 
             if (ResultHandle != null)
             {
                 ResultHandle.Load(ViewResultContext, result);
+                PrepareResultImageSurface(result);
                 ResultHandle.Handle(ViewResultContext, result);
                 return;
             }
+
+            ImageView.Clear();
+        }
+
+        private void PrepareResultImageSurface(ViewResultAlg result)
+        {
+            ImageView.ImageShow.Clear();
+
+            if (AlgorithmResultImageDimensions.TryReadExistingSourceImage(result, out int width, out int height))
+            {
+                CacheResultImageDimensions(result, width, height);
+                ImageView.Clear();
+                return;
+            }
+
+            if (AlgorithmResultImageDimensions.TryReadExistingRenderedImage(result, out width, out height))
+            {
+                CacheResultImageDimensions(result, width, height);
+                ShowResultImagePlaceholder(width, height);
+                return;
+            }
+
+            if (!TryGetResultImageDimensions(result, out width, out height))
+            {
+                ImageView.Clear();
+                log.Warn($"算法结果图像不存在且没有可恢复尺寸，已清除旧底图：resultId={result.Id}, file={result.FilePath}");
+                return;
+            }
+
+            ShowResultImagePlaceholder(width, height);
+        }
+
+        private bool TryGetResultImageDimensions(ViewResultAlg result, out int width, out int height)
+        {
+            if (result.Id > 0 && _resultImageDimensions.TryGetValue(result.Id, out var cached))
+            {
+                width = cached.Width;
+                height = cached.Height;
+                return true;
+            }
+
+            if (!AlgorithmResultImageDimensions.TryRecoverFromMeasureResults(result, out width, out height))
+                return false;
+
+            CacheResultImageDimensions(result, width, height);
+            return true;
+        }
+
+        private void CacheResultImageDimensions(ViewResultAlg result, int width, int height)
+        {
+            if (result.Id > 0 && ResultImageDimensions.IsValid(width, height))
+                _resultImageDimensions[result.Id] = (width, height);
+        }
+
+        private void ShowResultImagePlaceholder(int width, int height)
+        {
+            var placeholder = _resultImagePlaceholderCache.GetOrCreate(width, height);
+            if (_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
+                return;
+
+            ImageView.Clear();
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(AlgorithmView), "历史算法结果坐标空间宽度");
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(AlgorithmView), "历史算法结果坐标空间高度");
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(AlgorithmView), "历史算法结果图像像素宽度");
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(AlgorithmView), "历史算法结果图像像素高度");
+            ImageView.SetImageSource(placeholder, enableEditorImageServices: false, configureDefaultLayerController: false);
+            ImageView.UpdateZoomAndScale();
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -358,6 +431,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             listView1.ItemsSource = null;
             listView1.CommandBindings.Clear();
             listViewSide.ItemsSource = null;
+            _resultImageDimensions.Clear();
             ImageView.Initialized -= ImageView_Initialized;
             ImageView.Dispose();
             Grid1.Children.Remove(ImageView);

@@ -6,6 +6,7 @@ using ColorVision.Engine.FlowProcessing.Diagnostics;
 using ColorVision.Engine.FlowProcessing.PreProcess;
 using ColorVision.Engine;
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
@@ -13,6 +14,7 @@ using ColorVision.Engine.FlowProcessing;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
@@ -68,6 +70,7 @@ namespace ProjectKB
         private readonly FlowNodeExecutionRecorder _flowNodeExecutionRecorder = new();
         private readonly CancellationTokenSource _lifetimeCancellation = new();
         private readonly Dictionary<KBItem, DVRectangle> _keyVisuals = new();
+        private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
         private bool _isDisposed;
         private bool _isFlowStartPending;
         private bool _isFlowLifecycleActive;
@@ -1641,47 +1644,73 @@ namespace ProjectKB
             outputText.SetResourceReference(Control.BackgroundProperty, "RegionBrush");
         }
 
-        private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private async void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (_isDisposed) return;
             if (sender is not ListView listView) return;
 
             int requestId = Interlocked.Increment(ref _resultImageRequestId);
             ClearKeyOverlayState();
-            ImageView.Clear();
-            if (listView.SelectedItem is KBItemMaster kBItem)
+            if (listView.SelectedItem is not KBItemMaster kBItem)
             {
-                try
-                {
-                    ViewResultManager.LoadResultPayload(kBItem);
-                }
-                catch (Exception ex)
-                {
-                    log.Error($"读取 KB 历史结果失败，Id={kBItem.Id}", ex);
-                    MessageBox.Show(this, $"结果明细读取失败：{ex.Message}", "ProjectKB");
-                    return;
-                }
-                listView.ScrollIntoView(kBItem);
-                GenoutputText(kBItem);
+                ClearResultImageSurface();
+                return;
+            }
 
-                _ = Task.Run(async () =>
-                {
-                    if (File.Exists(kBItem.ResultImagFile))
-                    {
+            try
+            {
+                ViewResultManager.LoadResultPayload(kBItem);
+            }
+            catch (Exception ex)
+            {
+                ClearResultImageSurface();
+                log.Error($"读取 KB 历史结果失败，Id={kBItem.Id}", ex);
+                MessageBox.Show(this, $"结果明细读取失败：{ex.Message}", "ProjectKB");
+                return;
+            }
+            listView.ScrollIntoView(kBItem);
+            GenoutputText(kBItem);
 
-                        WriteableBitmap? resultBitmap = TryLoadResultBitmap(kBItem.ResultImagFile);
-                        if (resultBitmap == null) return;
+            if (!File.Exists(kBItem.ResultImagFile)
+                && ResultImageDimensions.IsValid(kBItem.ImageWidth, kBItem.ImageHeight))
+            {
+                ShowResultImagePlaceholder(kBItem.ImageWidth!.Value, kBItem.ImageHeight!.Value);
+                RenderKeyOverlays(kBItem);
+                return;
+            }
 
-                        _ = Application.Current.Dispatcher.BeginInvoke(() =>
-                        {
-                            if (requestId != _resultImageRequestId) return;
-                            ImageView.Config.FilePath = kBItem.ResultImagFile;
-                            ImageView.OpenImage(resultBitmap);
-                            ImageView.UpdateZoomAndScale();
-                            RenderKeyOverlays(kBItem);
-                        });
-                    }
-                });
+            ClearResultImageSurface();
+            (WriteableBitmap? Bitmap, int Width, int Height) presentation;
+            try
+            {
+                presentation = await Task.Run(() => LoadResultImagePresentation(kBItem));
+            }
+            catch (Exception ex)
+            {
+                log.Error($"准备 KB 历史结果图像失败，Id={kBItem.Id}", ex);
+                return;
+            }
+
+            if (_isDisposed || requestId != _resultImageRequestId) return;
+
+            if (presentation.Bitmap != null)
+            {
+                PersistResultImageDimensions(kBItem, presentation.Width, presentation.Height);
+                ImageView.Config.FilePath = kBItem.ResultImagFile;
+                ImageView.OpenImage(presentation.Bitmap);
+                ImageView.UpdateZoomAndScale();
+                RenderKeyOverlays(kBItem);
+            }
+            else if (ResultImageDimensions.IsValid(presentation.Width, presentation.Height))
+            {
+                PersistResultImageDimensions(kBItem, presentation.Width, presentation.Height);
+                ShowResultImagePlaceholder(presentation.Width, presentation.Height);
+                RenderKeyOverlays(kBItem);
+            }
+            else
+            {
+                ClearResultImageSurface();
+                log.Warn($"KB 结果图片不存在且没有可用尺寸，已清除旧底图：resultId={kBItem.Id}, file={kBItem.ResultImagFile}");
             }
         }
 
@@ -1710,6 +1739,62 @@ namespace ProjectKB
             {
                 log.Warn($"结果图像加载失败: {filePath}", ex);
                 return null;
+            }
+        }
+
+        private static (WriteableBitmap? Bitmap, int Width, int Height) LoadResultImagePresentation(KBItemMaster result)
+        {
+            WriteableBitmap? bitmap = File.Exists(result.ResultImagFile)
+                ? TryLoadResultBitmap(result.ResultImagFile)
+                : null;
+            if (bitmap != null)
+                return (bitmap, bitmap.PixelWidth, bitmap.PixelHeight);
+
+            if (ResultImageDimensions.IsValid(result.ImageWidth, result.ImageHeight))
+                return (null, result.ImageWidth!.Value, result.ImageHeight!.Value);
+
+            bool found = KBResultImageDimensions.TryReadFromFile(result.ResultImagFile, out int width, out int height)
+                || KBResultImageDimensions.TryReadFromMeasureResults(result.BatchId, result.ResultImagFile, out width, out height);
+            return found ? (null, width, height) : (null, 0, 0);
+        }
+
+        private static void PersistResultImageDimensions(KBItemMaster result, int width, int height)
+        {
+            try
+            {
+                ViewResultManager.UpdateImageDimensions(result, width, height);
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"保存 KB 历史结果图像尺寸失败：resultId={result.Id}, size={width}x{height}", ex);
+            }
+        }
+
+        private void ShowResultImagePlaceholder(int width, int height)
+        {
+            DrawingImage placeholder = _resultImagePlaceholderCache.GetOrCreate(width, height);
+            if (!_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
+            {
+                ImageView.Clear();
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(ProjectKBWindow), "历史结果坐标空间宽度");
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(ProjectKBWindow), "历史结果坐标空间高度");
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(ProjectKBWindow), "历史结果图像像素宽度");
+                ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(ProjectKBWindow), "历史结果图像像素高度");
+                ImageView.SetImageSource(placeholder, enableEditorImageServices: false, configureDefaultLayerController: false);
+                ImageView.UpdateZoomAndScale();
+            }
+        }
+
+        private void ClearResultImageSurface()
+        {
+            if (ImageView.ImageShow.Source != null
+                || !string.IsNullOrWhiteSpace(ImageView.Config.FilePath))
+            {
+                ImageView.Clear();
+            }
+            else
+            {
+                ImageView.ImageShow.Clear();
             }
         }
 

@@ -35,6 +35,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     public partial class ViewCalibration : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewCalibration));
+        private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
         private bool _isInitialized;
         private bool _isDisposed;
         private bool _messageSubscribed;
@@ -177,16 +178,20 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 return;
 
             int requestVersion = Interlocked.Increment(ref _imageRequestVersion);
-            if (listView1.SelectedItem is not ViewResultImage data ||
-                string.IsNullOrWhiteSpace(data.FileUrl) ||
-                !File.Exists(data.FileUrl))
+            if (listView1.SelectedItem is not ViewResultImage data)
             {
                 ImageView.Clear();
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(data.FileUrl) || !File.Exists(data.FileUrl))
+            {
+                ShowPlaceholderOrClear(data.ImgFrameInfo);
+                return;
+            }
+
             string filePath = data.FileUrl;
-            if (filePath.Equals(ImageView.Config.FilePath, StringComparison.Ordinal) && ImageView.ViewBitmapSource != null)
+            if (filePath.Equals(ImageView.Config.FilePath, StringComparison.OrdinalIgnoreCase) && ImageView.ViewBitmapSource != null)
                 return;
 
             ImageView.Clear();
@@ -204,8 +209,14 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                     await Task.Delay(Config.ViewImageReadDelay);
                 }
 
-                if (!IsCurrentImageRequest(filePath, requestVersion) || !File.Exists(filePath))
+                if (!IsCurrentImageRequest(filePath, requestVersion))
                     return;
+
+                if (!File.Exists(filePath))
+                {
+                    ShowSelectedPlaceholder(filePath, requestVersion);
+                    return;
+                }
 
                 await Dispatcher.InvokeAsync(() =>
                 {
@@ -216,8 +227,40 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             catch (Exception ex)
             {
                 if (IsCurrentImageRequest(filePath, requestVersion))
+                {
                     log.Warn($"Could not open calibration result image: {filePath}", ex);
+                    ShowSelectedPlaceholder(filePath, requestVersion);
+                }
             }
+        }
+
+        private void ShowSelectedPlaceholder(string filePath, int requestVersion)
+        {
+            if (IsCurrentImageRequest(filePath, requestVersion) && listView1.SelectedItem is ViewResultImage selected)
+                ShowPlaceholderOrClear(selected.ImgFrameInfo);
+        }
+
+        private void ShowPlaceholderOrClear(string? imgFrameInfo)
+        {
+            if (!ResultImageDimensions.TryReadFrameInfo(imgFrameInfo, out int width, out int height))
+            {
+                ImageView.Clear();
+                return;
+            }
+
+            if (_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
+            {
+                ImageView.ClearAnnotations();
+                return;
+            }
+
+            ImageView.Clear();
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(ViewCalibration), "历史结果坐标空间宽度");
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(ViewCalibration), "历史结果坐标空间高度");
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(ViewCalibration), "历史结果图像像素宽度");
+            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(ViewCalibration), "历史结果图像像素高度");
+            ImageView.SetImageSource(_resultImagePlaceholderCache.GetOrCreate(width, height), enableEditorImageServices: false, configureDefaultLayerController: false);
+            ImageView.UpdateZoomAndScale();
         }
 
         private bool IsCurrentImageRequest(string filePath, int requestVersion)
@@ -225,7 +268,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             return !_isDisposed &&
                    requestVersion == Volatile.Read(ref _imageRequestVersion) &&
                    listView1.SelectedItem is ViewResultImage selected &&
-                   string.Equals(selected.FileUrl, filePath, StringComparison.Ordinal);
+                   string.Equals(selected.FileUrl, filePath, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsImageReady(string filePath)

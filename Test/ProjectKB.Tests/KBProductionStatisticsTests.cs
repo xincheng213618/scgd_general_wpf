@@ -272,6 +272,8 @@ public class KBProductionStatisticsTests
             reader.Close();
 
             Assert.Contains(columns, column => string.Equals(column, "ProductionSessionId", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(columns, column => string.Equals(column, "ImageWidth", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(columns, column => string.Equals(column, "ImageHeight", StringComparison.OrdinalIgnoreCase));
 
             using SqliteCommand countCommand = verificationConnection.CreateCommand();
             countCommand.CommandText = "SELECT COUNT(*) FROM KBItemMaster";

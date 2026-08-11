@@ -182,6 +182,7 @@ namespace ProjectKB
         {
             if (item == null) return;
 
+            KBResultImageDimensions.TryPopulate(item);
             bool isNew = item.Id <= 0;
             bool savePayload = isNew || item.IsResultPayloadLoaded;
             KBResultPayloadStorage.RunDatabaseMaintenance(() =>
@@ -213,6 +214,33 @@ namespace ProjectKB
 
             if (isNew || !ViewResluts.Any(x => ReferenceEquals(x, item) || x.Id == item.Id))
                 AddViewResult(item);
+        }
+
+        public bool UpdateImageDimensions(KBItemMaster item, int width, int height)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            if (width <= 0 || height <= 0)
+                return false;
+            if (item.ImageWidth == width && item.ImageHeight == height)
+                return false;
+
+            if (item.Id > 0)
+            {
+                KBResultPayloadStorage.RunDatabaseMaintenance(() =>
+                    _db.Updateable<KBItemMaster>()
+                        .SetColumns(result => new KBItemMaster
+                        {
+                            ImageWidth = width,
+                            ImageHeight = height,
+                        })
+                        .Where(result => result.Id == item.Id)
+                        .ExecuteCommand());
+            }
+
+            item.ImageWidth = width;
+            item.ImageHeight = height;
+
+            return true;
         }
 
         public void LoadResultPayload(KBItemMaster item)
