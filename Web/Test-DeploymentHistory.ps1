@@ -59,6 +59,43 @@ try {
     $afterMalformed = [IO.File]::ReadAllBytes($malformedPath)
     Assert-Equal ([Convert]::ToBase64String($beforeMalformed)) ([Convert]::ToBase64String($afterMalformed)) 'Malformed history changed after rejection.'
 
+    $dryRunRepository = Join-Path $temporaryRoot 'dryrun-repo'
+    $dryRunStorage = Join-Path $temporaryRoot 'dryrun-storage'
+    New-Item -ItemType Directory -Path (Join-Path $dryRunRepository 'Web') -Force | Out-Null
+    New-Item -ItemType Directory -Path $dryRunStorage -Force | Out-Null
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'DeploymentHistory.psm1') -Destination (Join-Path $dryRunRepository 'Web\DeploymentHistory.psm1')
+    $deployScriptText = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Deploy-Nas.ps1') -Raw
+    $templateMatch = [regex]::Match($deployScriptText, "(?s)\`$remoteTemplate = @'\r?\n(.*?)\r?\n'@")
+    Assert-Equal $true $templateMatch.Success 'Deploy-Nas remote template was not found.'
+    $dryRunScript = $templateMatch.Groups[1].Value
+    $literalRepository = "'" + $dryRunRepository.Replace("'", "''") + "'"
+    $literalStorage = "'" + $dryRunStorage.Replace("'", "''") + "'"
+    $dryRunReplacements = [ordered]@{
+        '__REPO_PATH__' = $literalRepository
+        '__STORAGE_PATH__' = $literalStorage
+        '__BRANCH__' = "'develop'"
+        '__TASK_PATH__' = "'\ColorVision\'"
+        '__TASK_NAME__' = "'ColorVisionWeb'"
+        '__PORT__' = '9998'
+        '__KEEP_SUCCESSFUL_BACKUPS__' = '10'
+        '__KEEP_FAILED_BACKUPS__' = '3'
+        '__KEEP_GIT_BUNDLES__' = '3'
+        '__KEEP_HISTORY_RECORDS__' = '500'
+        '__REMOTE_GIT_BUNDLE__' = "''"
+        '__FORCE__' = '$false'
+        '__SKIP_TESTS__' = '$false'
+        '__DRY_RUN__' = '$true'
+    }
+    foreach ($replacement in $dryRunReplacements.GetEnumerator()) {
+        $dryRunScript = $dryRunScript.Replace($replacement.Key, [string]$replacement.Value)
+    }
+    $dryRunScriptPath = Join-Path $temporaryRoot 'dryrun-contract.ps1'
+    [IO.File]::WriteAllText($dryRunScriptPath, $dryRunScript, (New-Object Text.UTF8Encoding($false)))
+    $dryRunOutput = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $dryRunScriptPath 2>&1)
+    Assert-Equal 1 $LASTEXITCODE 'A failed dry run returned the wrong exit code.'
+    Assert-Equal $false (Test-Path -LiteralPath (Join-Path $dryRunStorage 'web-deploy-history.jsonl')) 'A failed dry run mutated deployment history.'
+    Assert-Equal $true (($dryRunOutput -join "`n").Contains('DRY_RUN_ERROR=')) 'A failed dry run did not report its distinct error contract.'
+
     Write-Output ($result | ConvertTo-Json -Compress)
 } finally {
     $resolvedCleanup = [IO.Path]::GetFullPath($temporaryRoot)

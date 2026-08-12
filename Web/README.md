@@ -53,6 +53,9 @@ SQLite database, and previous frontend build under
 `D:\ColorVision\web-deploy-backups`, then records the result in
 `D:\ColorVision\web-deploy-history.jsonl`.
 
+`-DryRun` remains read-only when remote Git inspection fails: it returns a
+`DRY_RUN_ERROR` without starting recovery or adding a deployment-history row.
+
 Deployment history keeps the newest 500 valid JSON records by default. Each
 write validates the existing file and replaces it atomically; malformed legacy
 content is preserved for manual repair instead of being silently discarded.

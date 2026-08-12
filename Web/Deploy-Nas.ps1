@@ -686,6 +686,10 @@ try {
     Write-Output ($successRecord | ConvertTo-Json -Depth 6)
 } catch {
     $failureMessage = $_.Exception.Message
+    if ($dryRun) {
+        Write-Output "DRY_RUN_ERROR=$failureMessage"
+        exit 1
+    }
     $recovery = @()
 
     try {
