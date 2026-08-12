@@ -2,7 +2,7 @@ namespace ColorVision.UI.Desktop.Operations
 {
     public static class OperationsCapabilityCatalog
     {
-        public const string SchemaVersion = "1.0";
+        public const string SchemaVersion = "1.1";
 
         private static readonly IReadOnlyList<OperationsCapabilityDescriptor> Capabilities =
         [
@@ -100,6 +100,31 @@ namespace ColorVision.UI.Desktop.Operations
                 TimeoutMs = 1500,
                 Audit = new OperationsAuditPolicy { Required = true },
                 Evidence = ["flow.lifecycle.aggregate", "flow.progress.estimate", "flow.last-outcome"],
+                Available = true,
+            },
+            new()
+            {
+                Id = "ops.flow.cancel",
+                Title = "Cancel the active primary flow",
+                Description = "Request cancellation of the currently active primary ColorVision flow through its canonical execution session. The request accepts no flow, template, batch, node, or parameter identity.",
+                Category = "flow-control",
+                Provider = "engine.flow-runtime",
+                RiskLevel = OperationsRiskLevels.ApprovalRequired,
+                Permission = "ops.jobs.create",
+                DiscoverableOn = ["desktop", "android"],
+                InputSchema = new { type = "object", additionalProperties = false },
+                TimeoutMs = 2000,
+                Idempotency = "state-dependent",
+                SupportsCancellation = false,
+                Approval = new OperationsApprovalPolicy
+                {
+                    Mode = "paired-device-confirmation",
+                    TtlSeconds = 300,
+                    SingleUse = true,
+                    RequiresLocalCoSign = false,
+                },
+                Audit = new OperationsAuditPolicy { Required = true },
+                Evidence = ["flow.cancel.request", "job.audit"],
                 Available = true,
             },
             new()

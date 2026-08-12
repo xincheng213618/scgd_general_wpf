@@ -45,6 +45,39 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void FlowCancellationCompletesAfterMobileApprovalWithoutLocalCoSign()
+        {
+            string path = NewPath();
+            try
+            {
+                OperationsWorkStore store = new(path);
+                OperationsJob job = store.CreateJob("ops.flow.cancel", "phone-1", "Cancel current flow",
+                    JsonSerializer.SerializeToElement(new { }), "correlation-1");
+
+                Assert.Equal("awaiting_mobile_approval", job.Status);
+                Assert.Null(store.LocalCoSign(job.JobId, true));
+
+                OperationsJob approved = Assert.IsType<OperationsJob>(store.DecideJob(
+                    job.JobId, "phone-1", true, "confirmed", "correlation-2"));
+                Assert.Equal("approved_mobile", approved.Status);
+                Assert.Null(approved.LocalCoSignedAt);
+
+                OperationsJob completed = Assert.IsType<OperationsJob>(store.CompleteJob(
+                    job.JobId, true, "flow_cancel:flow_cancel_requested"));
+                OperationsJobSummary summary = OperationsJobSummaryFactory.Create(completed);
+                Assert.Equal("completed", completed.Status);
+                Assert.False(summary.RequiresLocalCoSign);
+                Assert.Equal("flow-cancel-request-receipt", summary.Evidence.Kind);
+                Assert.Contains(summary.Timeline, item => item.Stage == "local_cosign" && item.State == "not_required");
+                Assert.Contains(summary.Timeline, item => item.Stage == "execution" && item.State == "completed");
+            }
+            finally
+            {
+                DeletePath(path);
+            }
+        }
+
+        [Fact]
         public void WebRelayTaskIsIdempotentAndStillNeedsHumanApproval()
         {
             string path = NewPath();

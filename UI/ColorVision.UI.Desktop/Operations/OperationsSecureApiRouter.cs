@@ -33,6 +33,7 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly OperationsWindowSnapshotService? _windowSnapshots;
         private readonly IOperationsRuntimePerformanceProvider _runtimePerformance;
         private readonly IOperationsFlowRuntimeStatusProvider _flowRuntimeStatus;
+        private readonly IOperationsFlowRuntimeController _flowRuntimeController;
 
         public OperationsSecureApiRouter(
             OperationsPairingService pairing,
@@ -45,7 +46,8 @@ namespace ColorVision.UI.Desktop.Operations
             OperationsDiagnosticBundleService? diagnosticBundles = null,
             OperationsWindowSnapshotService? windowSnapshots = null,
             IOperationsRuntimePerformanceProvider? runtimePerformance = null,
-            IOperationsFlowRuntimeStatusProvider? flowRuntimeStatus = null)
+            IOperationsFlowRuntimeStatusProvider? flowRuntimeStatus = null,
+            IOperationsFlowRuntimeController? flowRuntimeController = null)
         {
             _pairing = pairing;
             _authenticator = authenticator;
@@ -58,6 +60,7 @@ namespace ColorVision.UI.Desktop.Operations
             _windowSnapshots = windowSnapshots;
             _runtimePerformance = runtimePerformance ?? new OperationsRuntimePerformanceService();
             _flowRuntimeStatus = flowRuntimeStatus ?? UnavailableOperationsFlowRuntimeStatusProvider.Instance;
+            _flowRuntimeController = flowRuntimeController ?? UnavailableOperationsFlowRuntimeController.Instance;
         }
 
         public OperationsApiResponse Handle(OperationsSecureRequest request)
@@ -370,6 +373,10 @@ namespace ColorVision.UI.Desktop.Operations
                 string reason = OptionalString(root, "reason", 200);
                 JsonElement input = root.TryGetProperty("input", out JsonElement inputElement)
                     ? inputElement : JsonDocument.Parse("{}").RootElement;
+                if (capabilityId == "ops.flow.cancel"
+                    && (input.ValueKind != JsonValueKind.Object || input.EnumerateObject().Any()))
+                    return Error(400, correlationId, "flow_cancel_input_not_allowed",
+                        "Flow cancellation accepts no remote input fields.");
                 OperationsJob job = _workStore.CreateJob(capabilityId, device.DeviceId, reason, input, correlationId);
                 return Json(202, correlationId, new { job = OperationsJobSummaryFactory.Create(job) });
             }
@@ -393,7 +400,8 @@ namespace ColorVision.UI.Desktop.Operations
             string jobId = relative[..^"/decision".Length];
             if (jobId.Length != 32 || !jobId.All(char.IsLetterOrDigit))
                 return Error(400, correlationId, "invalid_job_id", "The job id is invalid.");
-            if (_workStore.GetJobForDevice(jobId, device.DeviceId) == null)
+            OperationsJob? currentJob = _workStore.GetJobForDevice(jobId, device.DeviceId);
+            if (currentJob == null)
                 return Error(404, correlationId, "job_not_found", "The job was not found for this device.");
             try
             {
@@ -403,7 +411,27 @@ namespace ColorVision.UI.Desktop.Operations
                     || approvedElement.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                     return Error(400, correlationId, "approval_decision_required", "approved must be a boolean.");
                 string reason = OptionalString(root, "reason", 200);
-                OperationsJob? job = _workStore.DecideJob(jobId, device.DeviceId, approvedElement.GetBoolean(), reason, correlationId);
+                bool approved = approvedElement.GetBoolean();
+                OperationsJob? job = approved
+                    && currentJob.CapabilityId == "ops.flow.cancel"
+                    && currentJob.Status == "approved_mobile"
+                        ? currentJob
+                        : _workStore.DecideJob(jobId, device.DeviceId, approved, reason, correlationId);
+                if (job?.CapabilityId == "ops.flow.cancel"
+                    && job.Status == "approved_mobile")
+                {
+                    OperationsFlowCancelResult result;
+                    try
+                    {
+                        result = _flowRuntimeController.RequestCancelCurrentFlow();
+                    }
+                    catch
+                    {
+                        result = new OperationsFlowCancelResult(false, "flow_control_failed",
+                            "The primary flow cancellation request failed.");
+                    }
+                    job = _workStore.CompleteJob(job.JobId, result.Accepted, $"flow_cancel:{result.Code}") ?? job;
+                }
                 return job == null
                     ? Error(409, correlationId, "job_not_awaiting_decision", "The job is not awaiting a mobile decision.")
                     : Json(200, correlationId, new { job = OperationsJobSummaryFactory.Create(job) });

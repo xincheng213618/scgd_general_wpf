@@ -22,6 +22,7 @@ namespace ColorVision.UI.Desktop.Operations
         public string Target { get; init; } = string.Empty;
         public string RiskLevel { get; init; } = string.Empty;
         public string Status { get; init; } = string.Empty;
+        public bool RequiresLocalCoSign { get; init; }
         public DateTimeOffset CreatedAt { get; init; }
         public DateTimeOffset UpdatedAt { get; init; }
         public OperationsJobEvidenceSummary Evidence { get; init; } = new();
@@ -41,6 +42,7 @@ namespace ColorVision.UI.Desktop.Operations
                 Target = Target(job.CapabilityId),
                 RiskLevel = job.RiskLevel,
                 Status = job.Status,
+                RequiresLocalCoSign = OperationsWorkStore.RequiresLocalCoSign(job.CapabilityId),
                 CreatedAt = job.CreatedAt,
                 UpdatedAt = job.UpdatedAt,
                 Evidence = Evidence(job),
@@ -68,7 +70,9 @@ namespace ColorVision.UI.Desktop.Operations
             items.Add(new OperationsJobTimelineItem
             {
                 Stage = "local_cosign",
-                State = job.Status switch
+                State = !OperationsWorkStore.RequiresLocalCoSign(job.CapabilityId)
+                    ? "not_required"
+                    : job.Status switch
                 {
                     "awaiting_mobile_approval" or "rejected" => "not_started",
                     "awaiting_local_cosign" => "pending",
@@ -101,6 +105,8 @@ namespace ColorVision.UI.Desktop.Operations
                 string value when value.StartsWith("servicehost_error:", StringComparison.Ordinal) => "service-host-error",
                 string value when value.StartsWith(OperationsWindowSnapshotService.EvidencePrefix, StringComparison.Ordinal)
                     => "window-snapshot-receipt",
+                string value when value.StartsWith("flow_cancel:", StringComparison.Ordinal)
+                    => "flow-cancel-request-receipt",
                 "service_not_in_operations_allowlist" => "policy-rejection",
                 string value when value.Length == 32 && value.All(char.IsLetterOrDigit) => "diagnostic-bundle-receipt",
                 "" => "none",
@@ -124,6 +130,7 @@ namespace ColorVision.UI.Desktop.Operations
             "ops.service.restart" => "重启白名单服务",
             "ops.diagnostics.bundle.create" => "生成安全诊断包",
             "ops.window.snapshot.capture" => "采集主窗口安全快照",
+            "ops.flow.cancel" => "取消当前检测",
             _ => "运维作业",
         };
 
@@ -132,6 +139,7 @@ namespace ColorVision.UI.Desktop.Operations
             "ops.service.restart" => "MQTT 消息服务",
             "ops.diagnostics.bundle.create" => "ColorVision 诊断摘要",
             "ops.window.snapshot.capture" => "ColorVision 主窗口",
+            "ops.flow.cancel" => "当前主检测流程",
             _ => "固定运维能力",
         };
     }

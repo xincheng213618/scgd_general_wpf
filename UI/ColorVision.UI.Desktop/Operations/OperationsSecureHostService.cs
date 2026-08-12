@@ -22,6 +22,7 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly OperationsRelayClientService _relay;
         private IOperationsServiceHealthProvider _serviceHealthProvider = UnavailableOperationsServiceHealthProvider.Instance;
         private IOperationsFlowRuntimeStatusProvider _flowRuntimeStatusProvider = UnavailableOperationsFlowRuntimeStatusProvider.Instance;
+        private IOperationsFlowRuntimeController _flowRuntimeController = UnavailableOperationsFlowRuntimeController.Instance;
         private Func<object>? _snapshotProvider;
         private CancellationTokenSource? _cts;
         private TcpListener? _listener;
@@ -85,6 +86,8 @@ namespace ColorVision.UI.Desktop.Operations
                 if (IsRunning)
                     throw new InvalidOperationException("Configure the Operations flow-runtime provider before starting the secure host.");
                 _flowRuntimeStatusProvider = provider;
+                _flowRuntimeController = provider as IOperationsFlowRuntimeController
+                    ?? UnavailableOperationsFlowRuntimeController.Instance;
             }
         }
 
@@ -102,7 +105,8 @@ namespace ColorVision.UI.Desktop.Operations
                         _workStore, snapshotProvider, actionExecutor: OperationsDesktopActionService.Execute,
                         serviceHealthProvider: _serviceHealthProvider, alerts: _alerts,
                         diagnosticBundles: _diagnosticBundles, windowSnapshots: _windowSnapshots,
-                        flowRuntimeStatus: _flowRuntimeStatusProvider);
+                        flowRuntimeStatus: _flowRuntimeStatusProvider,
+                        flowRuntimeController: _flowRuntimeController);
                     _snapshotProvider = snapshotProvider;
                     _listener = new TcpListener(IPAddress.Any, port);
                     _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);

@@ -29,6 +29,7 @@ namespace ColorVision.UI.Desktop.Operations
             "ops.window.snapshot.capture" => "采集 ColorVision 主窗口安全快照",
             "ops.diagnostics.bundle.create" => "生成脱敏安全诊断包",
             "ops.service.restart" => "重启白名单 MQTT 服务",
+            "ops.flow.cancel" => "取消当前主检测流程",
             _ => "现场运维作业",
         };
 
@@ -38,6 +39,7 @@ namespace ColorVision.UI.Desktop.Operations
             "ops.window.snapshot.capture" => "只捕获 ColorVision 主窗口；可能包含当前可见的检测数据。JPEG 仅保留 5 分钟，由申请设备读取一次后删除。",
             "ops.diagnostics.bundle.create" => "生成不含图像、凭据、用户名、机器名、网络地址或原始日志的脱敏 ZIP。",
             "ops.service.restart" => "仅允许通过 ServiceHost 重启白名单中的 Mosquitto 服务。",
+            "ops.flow.cancel" => "只向当前主工作区正在执行的检测发送取消请求，不接受流程、节点或参数。无需电脑端再次共签。",
             _ => "请确认作业来源和固定能力范围。",
         };
     }
@@ -142,7 +144,7 @@ namespace ColorVision.UI.Desktop.Operations
 
         public OperationsJob CreateJob(string capabilityId, string deviceId, string reason, JsonElement input, string correlationId)
         {
-            if (capabilityId is not ("ops.diagnostics.bundle.create" or "ops.window.snapshot.capture" or "ops.service.restart"))
+            if (capabilityId is not ("ops.diagnostics.bundle.create" or "ops.window.snapshot.capture" or "ops.service.restart" or "ops.flow.cancel"))
                 throw new InvalidOperationException("capability_not_allowed_for_remote_job");
             OperationsJob job = new()
             {
@@ -185,7 +187,9 @@ namespace ColorVision.UI.Desktop.Operations
                 job.DecisionReason = reason;
                 job.DecisionAt = DateTimeOffset.UtcNow;
                 job.UpdatedAt = DateTimeOffset.UtcNow;
-                job.Status = approved ? "awaiting_local_cosign" : "rejected";
+                job.Status = approved
+                    ? RequiresLocalCoSign(job.CapabilityId) ? "awaiting_local_cosign" : "approved_mobile"
+                    : "rejected";
                 AuditNoLock(deviceId, "device", approved ? "job.approve" : "job.reject", jobId, job.Status, correlationId);
                 SaveNoLock();
                 result = Clone(job);
@@ -221,7 +225,8 @@ namespace ColorVision.UI.Desktop.Operations
             lock (_syncRoot)
             {
                 OperationsJob? job = _state.Jobs.FirstOrDefault(item => item.JobId == jobId);
-                if (job == null || job.Status != "approved_local")
+                if (job == null || (job.Status != "approved_local"
+                    && (job.Status != "approved_mobile" || RequiresLocalCoSign(job.CapabilityId))))
                     return null;
                 job.Status = success ? "completed" : "failed";
                 job.ResultEvidenceId = evidenceId;
@@ -234,6 +239,8 @@ namespace ColorVision.UI.Desktop.Operations
             Changed?.Invoke(this, EventArgs.Empty);
             return result;
         }
+
+        internal static bool RequiresLocalCoSign(string capabilityId) => capabilityId != "ops.flow.cancel";
 
         public bool ClearJobEvidence(string jobId, string expectedEvidenceId)
         {

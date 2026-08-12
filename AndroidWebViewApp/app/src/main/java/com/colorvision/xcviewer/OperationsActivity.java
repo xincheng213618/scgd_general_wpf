@@ -53,6 +53,8 @@ public class OperationsActivity extends Activity {
     private boolean liveMonitorVisible;
     private boolean liveMonitorAutoRefresh;
     private boolean liveMonitorRefreshInFlight;
+    private boolean liveMonitorCancelAvailable;
+    private boolean liveMonitorCancelInFlight;
     private boolean activityResumed;
     private int liveMonitorGeneration;
     private final OperationsLiveMonitorTrend liveMonitorTrend = new OperationsLiveMonitorTrend();
@@ -158,7 +160,7 @@ public class OperationsActivity extends Activity {
                 pairingClient.submitClaim(payload, deviceName.trim());
                 runOnUiThread(() -> {
                     state.setText("已提交安全证明，请在电脑端批准这台设备");
-                    details.setText("设备：" + deviceName + "\n权限：状态、告警、诊断摘要、主窗口控制与受控窗口取证\n配对码：一次性，短时有效");
+                    details.setText("设备：" + deviceName + "\n权限：状态、告警、诊断摘要、主窗口控制、受控窗口取证与当前检测取消\n配对码：一次性，短时有效");
                 });
                 pollPairingApproval(payload, pairingClient);
             } catch (Exception ex) {
@@ -233,7 +235,7 @@ public class OperationsActivity extends Activity {
         progress.setVisibility(View.GONE);
         title.setText("现场运维概览");
         state.setText("已通过设备密钥与 TLS 证书指纹验证");
-        details.setText("状态、性能和告警可直接查看；显示/最小化窗口属于低风险审计操作。服务维护仍需手机明确确认和电脑端本机共签。");
+        details.setText("状态、性能和告警可直接查看；显示/最小化窗口属于低风险审计操作。取消当前主检测需要手机明确确认；服务维护仍需手机确认和电脑端本机共签。");
         actions.removeAllViews();
 
         Button connectionCheck = new Button(this);
@@ -580,7 +582,8 @@ public class OperationsActivity extends Activity {
                 if (jobs != null) {
                     for (int index = 0; index < jobs.length(); index++) {
                         JSONObject job = jobs.optJSONObject(index);
-                        if (job != null && "awaiting_mobile_approval".equals(job.optString("status"))) {
+                        if (job != null && ("awaiting_mobile_approval".equals(job.optString("status"))
+                                || "approved_mobile".equals(job.optString("status")))) {
                             if (waiting == null) {
                                 waiting = job;
                             }
@@ -655,13 +658,16 @@ public class OperationsActivity extends Activity {
 
     private void addApprovalActions(JSONObject job) {
         Button approve = new Button(this);
-        approve.setText("确认并批准此作业");
+        approve.setText("approved_mobile".equals(job.optString("status"))
+                ? "继续执行已批准作业" : "确认并批准此作业");
         approve.setOnClickListener(v -> confirmJobApproval(job));
         actions.addView(approve, actionParams());
-        Button reject = new Button(this);
-        reject.setText("拒绝此作业");
-        reject.setOnClickListener(v -> decideJob(job.optString("jobId", ""), false));
-        actions.addView(reject, actionParams());
+        if (!"approved_mobile".equals(job.optString("status"))) {
+            Button reject = new Button(this);
+            reject.setText("拒绝此作业");
+            reject.setOnClickListener(v -> decideJob(job.optString("jobId", ""), false));
+            actions.addView(reject, actionParams());
+        }
     }
 
     private void confirmJobApproval(JSONObject job) {
@@ -672,10 +678,13 @@ public class OperationsActivity extends Activity {
         }
         String title = job.optString("title", "现场运维作业");
         String target = job.optString("target", "固定运维能力");
+        boolean requiresLocalCoSign = job.optBoolean("requiresLocalCoSign", true);
         new AlertDialog.Builder(this)
                 .setTitle("确认批准：" + title)
                 .setMessage("目标：" + target
-                        + "\n\n批准只记录这台已配对手机的明确意图，不会立即执行。电脑端仍需本机人员再次确认；未共签前作业保持阻塞。")
+                        + (requiresLocalCoSign
+                        ? "\n\n批准只记录这台已配对手机的明确意图，不会立即执行。电脑端仍需本机人员再次确认；未共签前作业保持阻塞。"
+                        : "\n\n这是固定、无参数的远程动作。确认后会立即执行并写入审计，不需要电脑端再次共签。"))
                 .setNegativeButton("取消", null)
                 .setPositiveButton("确认批准", (dialog, which) -> decideJob(jobId, true))
                 .show();
@@ -688,10 +697,17 @@ public class OperationsActivity extends Activity {
                 JSONObject body = new JSONObject();
                 body.put("approved", approved);
                 body.put("reason", approved ? "已配对手机明确确认" : "现场运维人员拒绝");
-                client.post("/ops/v1/jobs/" + jobId + "/decision", body);
+                JSONObject response = client.post("/ops/v1/jobs/" + jobId + "/decision", body);
+                JSONObject data = response.optJSONObject("data");
+                JSONObject job = data == null ? null : data.optJSONObject("job");
+                boolean requiresLocalCoSign = job == null || job.optBoolean("requiresLocalCoSign", true);
+                String status = job == null ? "" : job.optString("status", "");
                 runOnUiThread(() -> {
                     Toast.makeText(this,
-                            approved ? "移动审批已记录，仍需电脑端本机共签" : "作业已拒绝",
+                            !approved ? "作业已拒绝"
+                                    : requiresLocalCoSign ? "移动审批已记录，仍需电脑端本机共签"
+                                    : "completed".equals(status) ? "远程动作已执行"
+                                    : "远程动作未执行，请查看作业结果",
                             Toast.LENGTH_LONG).show();
                     showJobs();
                 });
@@ -1162,10 +1178,12 @@ public class OperationsActivity extends Activity {
         dashboardVisible = true;
         liveMonitorVisible = true;
         liveMonitorAutoRefresh = true;
+        liveMonitorCancelAvailable = false;
+        liveMonitorCancelInFlight = false;
         liveMonitorTrend.reset();
         title.setText("远程持续观察");
         state.setText("正在采集第一份有界运行快照…");
-        details.setText("仅在此页面位于前台时每 10 秒刷新；切到后台会自动停止网络请求。服务器不保存采样历史。 ");
+        details.setText("仅在此页面位于前台时每 10 秒刷新；切到后台会自动停止网络请求。服务器不保存采样历史。只有主检测活动时才会提供有界取消动作。 ");
         renderLiveMonitorActions();
         loadLiveMonitor(true);
     }
@@ -1201,6 +1219,10 @@ public class OperationsActivity extends Activity {
                     }
                     progress.setVisibility(View.GONE);
                     liveMonitorTrend.add(createLiveMonitorSample(snapshot));
+                    JSONObject flow = snapshot.optJSONObject("flow");
+                    liveMonitorCancelAvailable = flow != null
+                            && flow.optBoolean("isActive", false)
+                            && flow.optBoolean("cancelAvailable", false);
                     state.setText(liveMonitorState(snapshot));
                     details.setText(formatLiveMonitorSnapshot(snapshot));
                     renderLiveMonitorActions();
@@ -1220,7 +1242,7 @@ public class OperationsActivity extends Activity {
                             ? "本轮观察失败 · 10 秒后自动重试"
                             : "本轮观察失败");
                     details.setText(readableError(ex)
-                            + "\n\n持续观察不会删除配对资料，也不会执行、停止或修改检测流程。 ");
+                            + "\n\n持续观察本身不会删除配对资料或修改检测流程；只有你明确确认取消动作后才会介入当前检测。 ");
                     renderLiveMonitorActions();
                     scheduleLiveMonitorRefresh();
                 });
@@ -1233,12 +1255,13 @@ public class OperationsActivity extends Activity {
 
         Button refresh = new Button(this);
         refresh.setText("立即刷新");
-        refresh.setEnabled(!liveMonitorRefreshInFlight);
+        refresh.setEnabled(!liveMonitorRefreshInFlight && !liveMonitorCancelInFlight);
         refresh.setOnClickListener(v -> loadLiveMonitor(true));
         actions.addView(refresh, actionParams());
 
         Button toggle = new Button(this);
         toggle.setText(liveMonitorAutoRefresh ? "暂停自动观察" : "恢复每 10 秒观察");
+        toggle.setEnabled(!liveMonitorCancelInFlight);
         toggle.setOnClickListener(v -> {
             liveMonitorAutoRefresh = !liveMonitorAutoRefresh;
             liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
@@ -1252,6 +1275,16 @@ public class OperationsActivity extends Activity {
             }
         });
         actions.addView(toggle, actionParams());
+
+        Button cancelFlow = new Button(this);
+        cancelFlow.setText(liveMonitorCancelAvailable
+                ? "取消当前检测"
+                : "当前没有可取消的主检测");
+        cancelFlow.setEnabled(liveMonitorCancelAvailable
+                && !liveMonitorRefreshInFlight
+                && !liveMonitorCancelInFlight);
+        cancelFlow.setOnClickListener(v -> confirmCancelCurrentFlow());
+        actions.addView(cancelFlow, actionParams());
 
         Button share = new Button(this);
         share.setText(liveMonitorTrend.size() < 2
@@ -1280,6 +1313,8 @@ public class OperationsActivity extends Activity {
         liveMonitorVisible = false;
         liveMonitorAutoRefresh = false;
         liveMonitorRefreshInFlight = false;
+        liveMonitorCancelAvailable = false;
+        liveMonitorCancelInFlight = false;
         liveMonitorTrend.reset();
         liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
     }
@@ -1302,6 +1337,72 @@ public class OperationsActivity extends Activity {
                 uiLatency,
                 flow == null ? "unavailable" : flow.optString("phase", "unavailable"),
                 alerts == null ? 0 : alerts.optInt("count", 0));
+    }
+
+    private void confirmCancelCurrentFlow() {
+        if (!liveMonitorCancelAvailable) {
+            Toast.makeText(this, "当前没有可取消的主检测", Toast.LENGTH_LONG).show();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("取消当前检测？")
+                .setMessage("只会向当前主工作区正在执行的检测发送取消请求，不会选择、启动或修改其他流程，也不接受远程参数。确认后立即执行并记录审计。")
+                .setNegativeButton("继续观察", null)
+                .setPositiveButton("确认取消检测", (dialog, which) -> requestCancelCurrentFlow())
+                .show();
+    }
+
+    private void requestCancelCurrentFlow() {
+        liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
+        liveMonitorCancelInFlight = true;
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在提交并确认取消请求…");
+        renderLiveMonitorActions();
+        executor.execute(() -> {
+            try {
+                JSONObject createBody = new JSONObject();
+                createBody.put("capabilityId", "ops.flow.cancel");
+                createBody.put("reason", "已配对手机明确取消当前主检测");
+                createBody.put("input", new JSONObject());
+                JSONObject createResponse = client.post("/ops/v1/jobs", createBody);
+                JSONObject createData = createResponse.optJSONObject("data");
+                JSONObject createdJob = createData == null ? null : createData.optJSONObject("job");
+                String jobId = createdJob == null ? "" : createdJob.optString("jobId", "");
+                if (jobId.isEmpty()) {
+                    throw new IllegalStateException("invalid_flow_cancel_job");
+                }
+
+                JSONObject decisionBody = new JSONObject();
+                decisionBody.put("approved", true);
+                decisionBody.put("reason", "已配对手机明确确认取消当前主检测");
+                JSONObject decisionResponse = client.post("/ops/v1/jobs/" + jobId + "/decision", decisionBody);
+                JSONObject decisionData = decisionResponse.optJSONObject("data");
+                JSONObject decidedJob = decisionData == null ? null : decisionData.optJSONObject("job");
+                String status = decidedJob == null ? "" : decidedJob.optString("status", "");
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    liveMonitorCancelAvailable = false;
+                    liveMonitorCancelInFlight = false;
+                    Toast.makeText(this,
+                            "completed".equals(status)
+                                    ? "已向当前检测发送取消请求"
+                                    : "当前检测未取消，已保留审计结果",
+                            Toast.LENGTH_LONG).show();
+                    if (liveMonitorVisible) {
+                        loadLiveMonitor(true);
+                    }
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> {
+                    liveMonitorCancelAvailable = false;
+                    liveMonitorCancelInFlight = false;
+                    showTransientError(ex);
+                    if (liveMonitorVisible) {
+                        scheduleLiveMonitorRefresh();
+                    }
+                });
+            }
+        });
     }
 
     private String liveMonitorState(JSONObject snapshot) {
@@ -1736,7 +1837,11 @@ public class OperationsActivity extends Activity {
         StringBuilder text = new StringBuilder();
         text.append("当前阶段：").append(flowPhaseLabel(phase))
                 .append("\n流程配置：")
-                .append(payload.optBoolean("hasConfiguredFlow", false) ? "电脑端已有可用流程" : "电脑端尚未加载可用流程");
+                .append(payload.optBoolean("hasConfiguredFlow", false) ? "电脑端已有可用流程" : "电脑端尚未加载可用流程")
+                .append("\n远程取消：")
+                .append(payload.optBoolean("cancelAvailable", false)
+                        ? "当前主检测可在持续观察页确认取消"
+                        : "当前不可用");
         if (payload.optBoolean("progressAvailable", false)
                 && payload.has("progressPercent")
                 && !payload.isNull("progressPercent")) {
@@ -1760,7 +1865,7 @@ public class OperationsActivity extends Activity {
             }
         }
         text.append("\n观测时间：").append(shortTime(payload.optString("observedAt", "")))
-                .append("\n\n此页面只读。进度来自历史耗时估算，长时间不变化不能单独证明流程卡住；可结合进程性能、主界面响应和近期日志判断。")
+                .append("\n\n状态内容只读。进度来自历史耗时估算，长时间不变化不能单独证明流程卡住；可结合进程性能、主界面响应和近期日志判断。取消动作只在持续观察页经明确确认后执行。")
                 .append("\n\n摘要不含流程名、模板 ID、批次号、节点名、参数、结果文本或检测数据。");
         return text.toString();
     }
@@ -1910,6 +2015,7 @@ public class OperationsActivity extends Activity {
             case "awaiting_mobile_approval": return "等待手机审批";
             case "awaiting_local_cosign": return "等待电脑端共签";
             case "approved_local": return "等待执行";
+            case "approved_mobile": return "手机已批准，等待执行";
             case "completed": return "已完成";
             case "failed": return "执行失败";
             case "rejected": return "手机已拒绝";
@@ -1936,6 +2042,7 @@ public class OperationsActivity extends Activity {
             case "rejected": return "已拒绝";
             case "failed": return "失败";
             case "not_started": return "未开始";
+            case "not_required": return "无需此步骤";
             default: return "未知";
         }
     }
@@ -1960,6 +2067,7 @@ public class OperationsActivity extends Activity {
             case "policy-rejection": return "白名单策略拒绝";
             case "diagnostic-bundle-receipt": return "安全诊断包回执";
             case "window-snapshot-receipt": return "一次性主窗口快照回执";
+            case "flow-cancel-request-receipt": return "检测取消请求回执";
             default: return "有界运维回执";
         }
     }

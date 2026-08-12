@@ -291,6 +291,7 @@ namespace ColorVision.UI.Tests
                 JsonElement flowData = flowDocument.RootElement.GetProperty("data");
                 Assert.Equal("running", flowData.GetProperty("phase").GetString());
                 Assert.True(flowData.GetProperty("isActive").GetBoolean());
+                Assert.True(flowData.GetProperty("cancelAvailable").GetBoolean());
                 Assert.Equal(37.5, flowData.GetProperty("progressPercent").GetDouble());
                 Assert.False(flowData.TryGetProperty("flowName", out _));
                 Assert.False(flowData.TryGetProperty("templateId", out _));
@@ -653,6 +654,82 @@ namespace ColorVision.UI.Tests
             }
         }
 
+        [Fact]
+        public void FlowCancellationRejectsRemoteParametersAndExecutesOnceAfterMobileApproval()
+        {
+            string devicePath = CreateStorePath();
+            string workPath = Path.Combine(Path.GetDirectoryName(devicePath)!, "work.json");
+            try
+            {
+                using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+                OperationsDeviceRegistry registry = new(devicePath);
+                registry.Approve("device-flow-cancel", "Phone", Convert.ToBase64String(key.ExportSubjectPublicKeyInfo()),
+                    OperationsPairingService.InitialScopes);
+                OperationsWorkStore workStore = new(workPath);
+                RecordingFlowRuntimeController controller = new();
+                OperationsSecureApiRouter router = new(new OperationsPairingService(registry),
+                    new OperationsRequestAuthenticator(registry), workStore, () => new { healthy = true },
+                    flowRuntimeController: controller);
+                const string jobsPath = "/ops/v1/jobs";
+
+                byte[] rejectedBody = Encoding.UTF8.GetBytes(
+                    "{\"capabilityId\":\"ops.flow.cancel\",\"input\":{\"flowId\":\"remote-value\"}}");
+                OperationsApiResponse rejected = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = jobsPath,
+                    Body = rejectedBody,
+                    Headers = Sign(key, "device-flow-cancel", "POST", jobsPath, rejectedBody),
+                });
+                Assert.Equal(400, rejected.StatusCode);
+                Assert.Empty(workStore.GetJobs());
+
+                byte[] createBody = Encoding.UTF8.GetBytes(
+                    "{\"capabilityId\":\"ops.flow.cancel\",\"reason\":\"confirmed\",\"input\":{}}");
+                OperationsApiResponse created = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = jobsPath,
+                    Body = createBody,
+                    Headers = Sign(key, "device-flow-cancel", "POST", jobsPath, createBody),
+                });
+                Assert.Equal(202, created.StatusCode);
+                using JsonDocument createdDocument = JsonDocument.Parse(created.Body);
+                JsonElement createdJob = createdDocument.RootElement.GetProperty("data").GetProperty("job");
+                string jobId = Assert.IsType<string>(createdJob.GetProperty("jobId").GetString());
+                Assert.False(createdJob.GetProperty("requiresLocalCoSign").GetBoolean());
+
+                string decisionPath = $"/ops/v1/jobs/{jobId}/decision";
+                byte[] decisionBody = Encoding.UTF8.GetBytes("{\"approved\":true,\"reason\":\"confirmed\"}");
+                OperationsApiResponse completed = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = decisionPath,
+                    Body = decisionBody,
+                    Headers = Sign(key, "device-flow-cancel", "POST", decisionPath, decisionBody),
+                });
+                Assert.Equal(200, completed.StatusCode);
+                using JsonDocument completedDocument = JsonDocument.Parse(completed.Body);
+                Assert.Equal("completed", completedDocument.RootElement.GetProperty("data")
+                    .GetProperty("job").GetProperty("status").GetString());
+                Assert.Equal(1, controller.RequestCount);
+
+                OperationsApiResponse repeated = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = decisionPath,
+                    Body = decisionBody,
+                    Headers = Sign(key, "device-flow-cancel", "POST", decisionPath, decisionBody),
+                });
+                Assert.Equal(409, repeated.StatusCode);
+                Assert.Equal(1, controller.RequestCount);
+            }
+            finally
+            {
+                DeleteStore(devicePath);
+            }
+        }
+
         private static Dictionary<string, string> Sign(ECDsa key, string deviceId, string method, string path, byte[] body)
         {
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -714,12 +791,24 @@ namespace ColorVision.UI.Tests
                 IsActive = true,
                 EngineRunning = true,
                 ProgressAvailable = true,
+                CancelAvailable = true,
                 ProgressPercent = 37.5,
                 ProgressIsHistoricalEstimate = true,
                 ElapsedMilliseconds = 12000,
                 LastRunStatus = "none",
                 ObservedAt = DateTimeOffset.UtcNow,
             };
+        }
+
+        private sealed class RecordingFlowRuntimeController : IOperationsFlowRuntimeController
+        {
+            public int RequestCount { get; private set; }
+
+            public OperationsFlowCancelResult RequestCancelCurrentFlow()
+            {
+                RequestCount++;
+                return new OperationsFlowCancelResult(true, "flow_cancel_requested", "accepted");
+            }
         }
 
         private sealed class FixedRuntimePerformanceProvider : IOperationsRuntimePerformanceProvider
