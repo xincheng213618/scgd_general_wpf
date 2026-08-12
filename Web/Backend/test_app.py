@@ -746,6 +746,21 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertEqual(api_response.status_code, 200)
         payload = api_response.get_json()
         self.assertEqual([item["pluginId"] for item in payload["items"]], ["AlphaPlugin", "BetaPlugin"])
+        self.assertEqual(payload["categories"], ["Other", "Tools"])
+
+    def test_plugins_frontend_uses_catalog_categories_without_second_request(self):
+        frontend_page = (
+            Path(__file__).resolve().parents[1]
+            / "Frontend"
+            / "src"
+            / "pages"
+            / "PluginsPage.tsx"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("data.categories.map", frontend_page)
+        self.assertNotIn("getPluginCategories", frontend_page)
+        self.assertIn("sortOrder: requestQuery.sort === 'name' ? 'asc' : 'desc'", frontend_page)
+        self.assertIn("pageSizeParam", frontend_page)
 
     def test_plugin_query_author_filter_and_paging_contract(self):
         alpha_dir = self._create_plugin("AuthorAlpha", "1.0.0")

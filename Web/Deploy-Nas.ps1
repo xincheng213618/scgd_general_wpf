@@ -456,6 +456,8 @@ try {
             'test_browser_auth',
             'test_app_changelog',
             'test_app.MarketplaceAppTests.test_site_changelog_compact_api_paginates_rendered_release_sections',
+            'test_app.MarketplaceAppTests.test_plugin_query_filter_and_sort_contract',
+            'test_app.MarketplaceAppTests.test_plugins_frontend_uses_catalog_categories_without_second_request',
             'test_artifact_index.BrowsePaginationTests.test_browse_search_matches_items_beyond_the_default_page',
             'test_artifact_index.BrowsePaginationTests.test_browse_search_does_not_expand_public_storage_policy',
             'test_artifact_index.BrowsePaginationTests.test_browse_file_payload_has_a_frontend_file_detail_contract',

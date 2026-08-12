@@ -100,10 +100,6 @@ export function getPlugins(params: {
   )
 }
 
-export function getPluginCategories(signal?: AbortSignal) {
-  return getJson<string[]>('/api/plugins/categories', signal)
-}
-
 export function getPluginDetail(pluginId: string, signal?: AbortSignal) {
   return getJson<PluginDetail>(`/api/plugins/${encodeURIComponent(pluginId)}`, signal)
 }

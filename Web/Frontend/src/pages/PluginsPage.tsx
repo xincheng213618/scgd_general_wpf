@@ -2,14 +2,29 @@ import { AppstoreOutlined, SearchOutlined } from '@ant-design/icons'
 import { Alert, Avatar, Button, Card, Col, Empty, Form, Input, Pagination, Row, Select, Skeleton, Space, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { getPluginCategories, getPlugins } from '../services/site'
+import { getPlugins } from '../services/site'
 import type { PluginListResponse } from '../types/site'
 import { shortDate } from '../utils/format'
+
+const pluginPageSizes = [12, 24, 48]
+
+function positiveIntegerParam(value: string | null, fallback: number) {
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
+}
+
+function pageSizeParam(value: string | null) {
+  const parsed = positiveIntegerParam(value, 12)
+  return pluginPageSizes.includes(parsed) ? parsed : 12
+}
+
+function sortParam(value: string | null) {
+  return value === 'name' || value === 'downloads' ? value : 'updated'
+}
 
 export function PluginsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [data, setData] = useState<PluginListResponse | null>(null)
-  const [categories, setCategories] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const searchKey = searchParams.toString()
@@ -18,9 +33,9 @@ export function PluginsPage() {
     keyword: searchParams.get('q') || '',
     category: searchParams.get('category') || '',
     author: searchParams.get('author') || '',
-    sort: searchParams.get('sort') || 'updated',
-    page: Number(searchParams.get('page') || 1),
-    pageSize: Number(searchParams.get('pageSize') || 12),
+    sort: sortParam(searchParams.get('sort')),
+    page: positiveIntegerParam(searchParams.get('page'), 1),
+    pageSize: pageSizeParam(searchParams.get('pageSize')),
   }
 
   useEffect(() => {
@@ -36,15 +51,16 @@ export function PluginsPage() {
       keyword: nextParams.get('q') || '',
       category: nextParams.get('category') || '',
       author: nextParams.get('author') || '',
-      sort: nextParams.get('sort') || 'updated',
-      page: Number(nextParams.get('page') || 1),
-      pageSize: Number(nextParams.get('pageSize') || 12),
+      sort: sortParam(nextParams.get('sort')),
+      page: positiveIntegerParam(nextParams.get('page'), 1),
+      pageSize: pageSizeParam(nextParams.get('pageSize')),
     }
-    Promise.all([getPlugins(requestQuery, controller.signal), getPluginCategories(controller.signal)])
-      .then(([plugins, nextCategories]) => {
-        if (!mounted) return
-        setData(plugins)
-        setCategories(nextCategories)
+    getPlugins({
+      ...requestQuery,
+      sortOrder: requestQuery.sort === 'name' ? 'asc' : 'desc',
+    }, controller.signal)
+      .then((plugins) => {
+        if (mounted) setData(plugins)
       })
       .catch((err) => {
         if (mounted) setError(err instanceof Error ? err.message : '插件市场加载失败')
@@ -64,23 +80,24 @@ export function PluginsPage() {
     if (values.category) next.set('category', values.category)
     if (values.author) next.set('author', values.author)
     if (values.sort && values.sort !== 'updated') next.set('sort', values.sort)
-    if (values.pageSize && values.pageSize !== 12) next.set('pageSize', String(values.pageSize))
+    if (query.pageSize !== 12) next.set('pageSize', String(query.pageSize))
     setSearchParams(next)
   }
 
-  if (loading) return <Skeleton active paragraph={{ rows: 8 }} />
-  if (error) return <Alert type="error" message={error} />
+  if (loading && !data) return <Skeleton active paragraph={{ rows: 8 }} />
+  if (error && !data) return <Alert type="error" message={error} />
   if (!data) return null
 
   return (
     <Space direction="vertical" size={16} className="page-stack">
+      {error && <Alert type="error" message={error} showIcon />}
       <Card>
         <Tag icon={<AppstoreOutlined />} color="blue">插件市场</Tag>
         <Typography.Title level={2}>插件市场</Typography.Title>
         <Typography.Paragraph type="secondary">浏览、搜索、下载插件扩展。</Typography.Paragraph>
       </Card>
       <Card>
-        <Form layout="inline" initialValues={query} onFinish={applyQuery}>
+        <Form key={searchKey} layout="inline" initialValues={query} onFinish={applyQuery}>
           <Form.Item name="keyword">
             <Input aria-label="搜索插件" prefix={<SearchOutlined />} placeholder="名称、ID、描述" allowClear />
           </Form.Item>
@@ -90,7 +107,7 @@ export function PluginsPage() {
               allowClear
               placeholder="分类"
               style={{ width: 150 }}
-              options={categories.map((category) => ({ label: category, value: category }))}
+              options={data.categories.map((category) => ({ label: category, value: category }))}
             />
           </Form.Item>
           <Form.Item name="author">
@@ -151,6 +168,7 @@ export function PluginsPage() {
       )}
       <Card>
         <Pagination
+          disabled={loading}
           current={data.page}
           pageSize={data.pageSize}
           total={data.totalCount}

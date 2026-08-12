@@ -253,6 +253,7 @@ export interface PluginSummary {
 
 export interface PluginListResponse {
   items: PluginSummary[]
+  categories: string[]
   totalCount: number
   page: number
   pageSize: number

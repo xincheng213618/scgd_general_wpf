@@ -41,6 +41,12 @@ only the first 200 rendered entries; the largest measured public directory had
 264 entries. The filesystem remains authoritative, and an indexed browse query
 is still reserved for directories that grow beyond this bounded scale.
 
+The plugin catalog response now carries the full category filter list derived
+from the same indexed snapshot used for search. The React catalog therefore
+loads with one request instead of immediately repeating the catalog read via
+`/api/plugins/categories`; that legacy endpoint remains available to existing
+clients.
+
 Public initial module-preload JavaScript fell from about 681.8 KiB to 233.5 KiB
 gzip (about 65.8%). Admin pages, Pro Components, traffic analytics, and DOMPurify
 are route chunks instead of public-entry dependencies. The 2.34 MiB decorative

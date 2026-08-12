@@ -347,8 +347,9 @@ def build_plugin_search_api_result(
     page_size: int = DEFAULT_API_PAGE_SIZE,
     icon_url_builder: Callable[[str], str | None],
 ) -> dict[str, Any]:
+    catalog = list(all_plugins)
     filtered_sorted, normalized_sort, normalized_order = filter_and_sort_plugins(
-        all_plugins,
+        catalog,
         keyword=keyword,
         category=category,
         author=author,
@@ -363,6 +364,7 @@ def build_plugin_search_api_result(
     )
     payload["sortBy"] = normalized_sort
     payload["sortOrder"] = normalized_order
+    payload["categories"] = collect_catalog_categories(catalog)
     return payload
 
 

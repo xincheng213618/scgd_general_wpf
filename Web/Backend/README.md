@@ -44,6 +44,7 @@ unchanged for legacy consumers:
 | `GET /api/site/home?view=compact` | Home-only release counters, previews, update/tool summaries, recent changes, and docs |
 | `GET /api/site/changelog?view=compact&page=1&page_size=20` | Latest version plus one bounded rendered changelog page; 5–50 releases per page |
 | `GET /api/site/releases?view=compact&page=1&page_size=100&android_page=1&android_page_size=100` | Independently paged Windows and Android archives |
+| `GET /api/plugins?Page=1&PageSize=20` | Paged plugin summaries plus the complete category filter list, so the web page needs one catalog request |
 | `GET /api/plugins/<id>?view=update` | Desktop update metadata without README or per-version changelog duplication |
 
 Windows filters (`major_minor`, `branch`, `kind`, and `era`) apply before exact
