@@ -60,8 +60,6 @@ namespace Spectrum
             log.Info($"cvCamera 资源初始化完成，耗时 {stopwatch.ElapsedMilliseconds} ms");
             return stopwatch.Elapsed;
         }));
-
-        internal static Task<TimeSpan> EnsureCvCameraResourceInitializedAsync() => CvCameraResourceInitialization.Value;
         private readonly Stopwatch startupStopwatch = Stopwatch.StartNew();
         private Task<ViewResultManager>? viewResultInitializationTask;
         private Task<string[]>? serialPortDiscoveryTask;

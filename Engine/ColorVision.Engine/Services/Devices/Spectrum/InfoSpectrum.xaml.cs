@@ -1,6 +1,8 @@
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using cvColorVision;
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -19,20 +21,22 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             Device = mqttDeviceSp;
             InitializeComponent();
         }
-
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
             PropertyEditorHelper.GenCommand(Device, CommandGrid);
-            AppendPluginFeatureButtons();
+            AppendCorrectionFeatureButtons();
             Device.RefreshEmptySpectrum();
         }
 
-        private void AppendPluginFeatureButtons()
+        private void AppendCorrectionFeatureButtons()
         {
-            foreach (SpectrometerFeatureProviderRegistration registration in SpectrumFeatureProviderRegistry.Registrations)
+            foreach (SpectrumCorrectionFeatureProviderRegistration registration in SpectrumCorrectionFeatureProviderRegistry.Registrations)
             {
-                var metadata = registration.Metadata;
+                if (CommandGrid.Children.OfType<FrameworkElement>().Any(element => Equals(element.Tag, registration.Metadata.Id)))
+                    continue;
+
+                SpectrumCorrectionFeatureMetadata metadata = registration.Metadata;
                 var button = new Button
                 {
                     Margin = new Thickness(5),
@@ -48,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     ToolTip = string.IsNullOrWhiteSpace(metadata.Description)
                         ? metadata.DisplayName
                         : $"{metadata.DisplayName}\n{metadata.Description}",
-                    Command = new RelayCommand(async _ => await Device.ExecuteFeatureAsync(registration.Provider)),
+                    Command = new RelayCommand(async _ => await Device.ExecuteCorrectionFeatureAsync(registration.Provider)),
                     Tag = metadata.Id,
                 };
 

@@ -540,17 +540,23 @@ namespace ColorVision.Engine.Services.RC
         
         public void RestartServices(string nodeType, string svrCode, string devCode)
         {
+            _ = TryRestartServices(nodeType, svrCode, devCode);
+        }
+
+        internal bool TryRestartServices(string nodeType, string svrCode, string devCode)
+        {
             log.Info($"RestartServices {nodeType} {svrCode} {devCode}");
 
-            if (TryGetUsableToken(out NodeToken? token) && token != null)
-            {
-                MQTTRCServicesRestartRequest reg = new(AppId, NodeName, nodeType, token.AccessToken, svrCode, devCode);
-                PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
-            }
+            if (!IsConnect || !TryGetUsableToken(out NodeToken? token) || token == null)
+                return false;
+
+            MQTTRCServicesRestartRequest reg = new(AppId, NodeName, nodeType, token.AccessToken, svrCode, devCode);
+            _ = PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
             Task.Factory.StartNew(async () => {
                 await Task.Delay(2000);
                 QueryServices();
             });
+            return true;
         }
 
         public async Task<bool> TryRegist(RCServiceConfig cfg)
