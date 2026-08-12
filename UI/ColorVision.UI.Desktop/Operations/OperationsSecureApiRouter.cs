@@ -397,7 +397,8 @@ namespace ColorVision.UI.Desktop.Operations
                     _runtimePerformance.Capture(),
                     _alerts.GetRecent(),
                     CaptureDeviceHealth(),
-                    messageChannel: CaptureMessageChannelHealth());
+                    messageChannel: CaptureMessageChannelHealth(),
+                    applicationRecovery: WindowsApplicationRestartRegistration.CaptureStatus());
                 _workStore.RecordAuditThrottled(
                     device.DeviceId,
                     "device",

@@ -1835,6 +1835,7 @@ public class OperationsActivity extends Activity {
         JSONObject performance = snapshot.optJSONObject("performance");
         JSONObject devices = snapshot.optJSONObject("devices");
         JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
+        JSONObject applicationRecovery = snapshot.optJSONObject("applicationRecovery");
         JSONObject alerts = snapshot.optJSONObject("alerts");
         StringBuilder text = new StringBuilder();
         if (flow == null || !flow.optBoolean("available", false)) {
@@ -1887,6 +1888,17 @@ public class OperationsActivity extends Activity {
                     && !mainUi.isNull("latencyMilliseconds")) {
                 text.append(" · ").append(mainUi.optLong("latencyMilliseconds", 0)).append(" ms");
             }
+        }
+
+        text.append("\n\n应用自动恢复：");
+        if (applicationRecovery == null || !applicationRecovery.optBoolean("supported", false)) {
+            text.append("当前系统不支持");
+        } else if (!applicationRecovery.optBoolean("registered", false)) {
+            text.append("未就绪");
+        } else if (applicationRecovery.optBoolean("restartedAfterFailure", false)) {
+            text.append("已就绪 · 本次启动由 Windows 在异常退出后恢复");
+        } else {
+            text.append("已就绪 · 仅恢复当前 ColorVision 的异常退出或卡死");
         }
 
         int alertCount = alerts == null ? 0 : alerts.optInt("count", 0);

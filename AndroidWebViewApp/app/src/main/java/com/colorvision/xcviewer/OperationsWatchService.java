@@ -42,6 +42,7 @@ public final class OperationsWatchService extends Service {
     private boolean checkInFlight;
     private int consecutiveFailures;
     private boolean lastCheckOnline;
+    private boolean hasCompletedCheck;
 
     static void start(Context context) {
         AppPreferences preferences = new AppPreferences(context);
@@ -154,12 +155,14 @@ public final class OperationsWatchService extends Service {
             return;
         }
         checkInFlight = false;
+        boolean reconnected = hasCompletedCheck && !lastCheckOnline;
+        hasCompletedCheck = true;
         consecutiveFailures = 0;
         if (!lastCheckOnline) {
             Log.i(LOG_TAG, "operations_watch_online");
         }
         lastCheckOnline = true;
-        updateNotification(status + " · 刚刚检查", true);
+        updateNotification((reconnected ? "连接已恢复 · " : "") + status + " · 刚刚检查", true);
         scheduleNext(OperationsWatchPolicy.HEALTHY_CHECK_MILLISECONDS);
     }
 
@@ -168,6 +171,7 @@ public final class OperationsWatchService extends Service {
             return;
         }
         checkInFlight = false;
+        hasCompletedCheck = true;
         if (code.contains("unknown_or_revoked_device")) {
             preferences.setOperationsWatchEnabled(false);
             Log.w(LOG_TAG, "operations_watch_pairing_revoked");

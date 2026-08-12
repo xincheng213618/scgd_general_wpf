@@ -1,5 +1,8 @@
 using ColorVision.UI.Desktop.Operations;
 using System.IO;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 
 namespace ColorVision.UI.Tests
@@ -98,6 +101,47 @@ namespace ColorVision.UI.Tests
             Assert.Equal(["-r", "sample.cv"], applicationArguments);
             Assert.Equal(jobId, ColorVision.OperationsApplicationRestartController.RestartJobId);
         }
+
+        [Fact]
+        public void FailureRecoveryArgumentIsInternalAndRegistrationTargetsCurrentApplicationOnly()
+        {
+            string[] applicationArguments = WindowsApplicationRestartRegistration
+                .CaptureAndRemoveRecoveryArguments(
+                    ["-r", WindowsApplicationRestartRegistration.RecoveryRestartArgument, "sample.cv"]);
+
+            Assert.Equal(["-r", "sample.cv"], applicationArguments);
+            Assert.True(WindowsApplicationRestartRegistration.RestartedAfterFailure);
+            Assert.True(WindowsApplicationRestartRegistration.TryRegister());
+            try
+            {
+                StringBuilder commandLine = new(1024);
+                uint commandLineLength = checked((uint)commandLine.Capacity);
+                int result = GetApplicationRestartSettings(
+                    Process.GetCurrentProcess().Handle,
+                    commandLine,
+                    ref commandLineLength,
+                    out uint flags);
+
+                Assert.True(result >= 0, $"GetApplicationRestartSettings failed with HRESULT 0x{result:X8}.");
+                Assert.Equal(WindowsApplicationRestartRegistration.RecoveryRestartArgument, commandLine.ToString());
+                Assert.Equal(0x3u, flags);
+                OperationsApplicationRecoveryStatus status =
+                    WindowsApplicationRestartRegistration.CaptureStatus();
+                Assert.True(status.Supported);
+                Assert.True(status.Registered);
+            }
+            finally
+            {
+                Assert.True(WindowsApplicationRestartRegistration.TryUnregisterForCleanExit());
+            }
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        private static extern int GetApplicationRestartSettings(
+            IntPtr process,
+            StringBuilder commandLine,
+            ref uint commandLineLength,
+            out uint flags);
 
         private static OperationsJob CreateExecutingJob(OperationsWorkStore store)
         {
