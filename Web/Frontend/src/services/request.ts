@@ -1,12 +1,22 @@
+export const authRequiredEventName = 'colorvision:auth-required'
+
 export class AuthRequiredError extends Error {
   constructor() {
-    super('Authentication required')
+    super('登录状态已失效，正在返回登录页')
     this.name = 'AuthRequiredError'
   }
 }
 
+export function notifyAuthRequired() {
+  window.dispatchEvent(new Event(authRequiredEventName))
+}
+
 let csrfToken = ''
 let csrfTokenRequest: Promise<string> | null = null
+
+interface ResponseOptions {
+  redirectOnUnauthorized?: boolean
+}
 
 function captureCsrfToken(payload: unknown) {
   if (payload && typeof payload === 'object' && 'csrf_token' in payload) {
@@ -18,14 +28,8 @@ function captureCsrfToken(payload: unknown) {
 export async function getCsrfToken() {
   if (csrfToken) return csrfToken
   if (!csrfTokenRequest) {
-    csrfTokenRequest = fetch('/api/auth/session', {
-      credentials: 'same-origin',
-      headers: { Accept: 'application/json' },
-    })
-      .then(async (response) => {
-        const payload = await response.json()
-        if (!response.ok) throw new Error(`Request failed with ${response.status}`)
-        captureCsrfToken(payload)
+    csrfTokenRequest = getJson<{ csrf_token?: string }>('/api/auth/session')
+      .then(() => {
         if (!csrfToken) throw new Error('CSRF token unavailable')
         return csrfToken
       })
@@ -36,11 +40,7 @@ export async function getCsrfToken() {
   return csrfTokenRequest
 }
 
-export async function parseResponse<T>(response: Response): Promise<T> {
-  if (response.status === 401) {
-    throw new AuthRequiredError()
-  }
-
+export async function parseResponse<T>(response: Response, options: ResponseOptions = {}): Promise<T> {
   const contentType = response.headers.get('content-type') || ''
   const payload = contentType.includes('application/json')
     ? await response.json()
@@ -48,6 +48,10 @@ export async function parseResponse<T>(response: Response): Promise<T> {
   captureCsrfToken(payload)
 
   if (!response.ok) {
+    if (response.status === 401 && options.redirectOnUnauthorized !== false) {
+      notifyAuthRequired()
+      throw new AuthRequiredError()
+    }
     const message =
       typeof payload === 'object' && payload && 'error' in payload
         ? String((payload as { error?: unknown }).error)
@@ -67,7 +71,11 @@ export async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> 
   return parseResponse<T>(response)
 }
 
-export async function postJson<T = unknown>(url: string, body?: unknown): Promise<T> {
+export async function postJson<T = unknown>(
+  url: string,
+  body?: unknown,
+  options: ResponseOptions = {},
+): Promise<T> {
   const token = await getCsrfToken()
   const response = await fetch(url, {
     method: 'POST',
@@ -79,7 +87,7 @@ export async function postJson<T = unknown>(url: string, body?: unknown): Promis
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
-  return parseResponse<T>(response)
+  return parseResponse<T>(response, options)
 }
 
 export async function putJson<T = unknown>(url: string, body?: unknown): Promise<T> {

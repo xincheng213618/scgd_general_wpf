@@ -1,12 +1,9 @@
 import { InboxOutlined } from '@ant-design/icons'
 import { Space, Tag, Typography } from 'antd'
-import { useNavigate } from 'react-router-dom'
 import { TransferPanel } from '../components/TransferPanel'
 import type { AuthSession } from '../types/site'
 
 export function TransferPage({ session }: { session: AuthSession | null }) {
-  const navigate = useNavigate()
-
   return (
     <Space direction="vertical" size={16} className="page-stack">
       <section className="compact-page-hero">
@@ -28,7 +25,7 @@ export function TransferPage({ session }: { session: AuthSession | null }) {
           <Tag color={session?.is_admin ? 'blue' : 'green'}>{session?.is_admin ? '管理员' : '普通用户'}</Tag>
         </div>
       </section>
-      <TransferPanel onAuthRequired={() => navigate('/login?next=/transfer', { replace: true })} />
+      <TransferPanel />
     </Space>
   )
 }

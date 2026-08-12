@@ -10,7 +10,7 @@ import type {
   UpdatesPayload,
   UploadContext,
 } from '../types/site'
-import { AuthRequiredError, deleteJson, getCsrfToken, getJson } from './request'
+import { AuthRequiredError, deleteJson, getCsrfToken, getJson, notifyAuthRequired } from './request'
 
 function queryString(params: Record<string, string | number | undefined>) {
   const search = new URLSearchParams()
@@ -123,6 +123,7 @@ async function postFormWithProgress<T>(url: string, formData: FormData, onProgre
         return
       }
       if (xhr.status === 401) {
+        notifyAuthRequired()
         reject(new AuthRequiredError())
         return
       }
@@ -167,6 +168,7 @@ export async function uploadTransferFile(file: File, onProgress?: (percent: numb
           return
         }
         if (xhr.status === 401) {
+          notifyAuthRequired()
           reject(new AuthRequiredError())
           return
         }
