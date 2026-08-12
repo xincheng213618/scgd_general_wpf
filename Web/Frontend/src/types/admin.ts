@@ -30,6 +30,11 @@ export interface TrafficSummary extends TrafficErrorBreakdown {
   periodStart: string
   periodEnd: string
   days: number
+  timeZone: string
+  utcOffsetMinutes: number
+  calendarBoundaryEffectiveAt: string | null
+  legacyCalendarDataThroughDay: string | null
+  hasLegacyCalendarData: boolean
   visits: number
   uniqueVisitorDays: number
   avgResponseMs: number

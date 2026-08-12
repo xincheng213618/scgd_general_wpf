@@ -27,6 +27,7 @@ class ConfigLoaderTests(unittest.TestCase):
         self.assertIn("copilot_sync", DEFAULT_CONFIG)
         self.assertEqual(DEFAULT_CONFIG["audit_log_retention_days"], 365)
         self.assertEqual(DEFAULT_CONFIG["admin_db_backup_keep_count"], 10)
+        self.assertEqual(DEFAULT_CONFIG["reporting_utc_offset_minutes"], 480)
 
     def test_max_upload_size_is_500mb(self):
         self.assertEqual(MAX_UPLOAD_SIZE_BYTES, 500 * 1024 * 1024)
@@ -111,6 +112,17 @@ class ConfigLoaderTests(unittest.TestCase):
         config = {"secret_key": "my-secret", "upload_auth": {"username": "u", "password": "p"}}
         issues = validate_runtime_config(config)
         self.assertEqual(len(issues), 0)
+
+    def test_validate_runtime_config_rejects_invalid_reporting_offset(self):
+        base = {
+            "secret_key": "my-secret",
+            "upload_auth": {"username": "u", "password": "p"},
+        }
+        for invalid in ("bad", -721, 841):
+            with self.subTest(invalid=invalid):
+                config = dict(base, reporting_utc_offset_minutes=invalid)
+                issues = validate_runtime_config(config)
+                self.assertTrue(any("reporting_utc_offset_minutes" in issue for issue in issues))
 
 
 if __name__ == "__main__":

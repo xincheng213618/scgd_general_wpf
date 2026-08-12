@@ -483,13 +483,18 @@ def backup_db():
     # database; otherwise an old snapshot could retain visitor identifiers
     # after the scheduled live cleanup has removed them.
     try:
-        from services.access_analytics import prune_access_analytics_database
+        from services.access_analytics import (
+            prune_access_analytics_database,
+            reporting_utc_offset_minutes,
+        )
         from services.admin_data_retention import run_admin_data_retention
 
         config = ctx.config_getter()
+        utc_offset_minutes = reporting_utc_offset_minutes(config)
         prune_access_analytics_database(
             backup_path,
             retention_days=int(config.get("access_analytics_retention_days", 90) or 90),
+            utc_offset_minutes=utc_offset_minutes,
         )
         admin_retention = run_admin_data_retention(
             ctx.cache.get_db,
@@ -660,13 +665,35 @@ def stats_overview():
     ctx = _get_ctx()
     db = ctx.get_db()
     try:
+        from services.access_analytics import (
+            analytics_calendar_day,
+            analytics_calendar_day_utc_bounds,
+            get_today_access_summary,
+            reporting_utc_offset_minutes,
+        )
+
+        utc_offset_minutes = reporting_utc_offset_minutes(ctx.config_getter())
+        reporting_day = analytics_calendar_day(
+            utc_offset_minutes=utc_offset_minutes,
+        )
+        day_start_utc, day_end_utc = analytics_calendar_day_utc_bounds(
+            reporting_day,
+            utc_offset_minutes=utc_offset_minutes,
+        )
         stats: dict[str, Any] = {}
 
         row = db.execute("SELECT COUNT(*) AS cnt FROM download_log").fetchone()
         stats["totalDownloads"] = row["cnt"] if row else 0
 
         row = db.execute(
-            "SELECT COUNT(*) AS cnt FROM download_log WHERE downloaded_at >= date('now')"
+            """
+            SELECT COUNT(*) AS cnt FROM download_log
+            WHERE downloaded_at >= ? AND downloaded_at < ?
+            """,
+            (
+                day_start_utc.strftime("%Y-%m-%d %H:%M:%S"),
+                day_end_utc.strftime("%Y-%m-%d %H:%M:%S"),
+            ),
         ).fetchone()
         stats["downloadsToday"] = row["cnt"] if row else 0
 
@@ -691,8 +718,10 @@ def stats_overview():
         except OSError:
             stats["dbSizeBytes"] = 0
 
-        from services.access_analytics import get_today_access_summary
-        stats.update(get_today_access_summary(db))
+        stats.update(get_today_access_summary(
+            db,
+            utc_offset_minutes=utc_offset_minutes,
+        ))
 
         return jsonify(stats)
     except Exception as exc:
@@ -707,6 +736,7 @@ def traffic_stats():
     from services.access_analytics import (
         SqliteAccessTrafficQuery,
         parse_bounded_int,
+        reporting_utc_offset_minutes,
     )
 
     try:
@@ -728,9 +758,11 @@ def traffic_stats():
         return jsonify({"error": str(exc), "status": 400}), 400
 
     ctx = _get_ctx()
+    utc_offset_minutes = reporting_utc_offset_minutes(ctx.config_getter())
     query = SqliteAccessTrafficQuery(
         ctx.get_db,
         recorder_status=ctx.get_access_recorder_status,
+        utc_offset_minutes=utc_offset_minutes,
     )
     return jsonify(query.get_traffic(days=days, limit=limit))
 

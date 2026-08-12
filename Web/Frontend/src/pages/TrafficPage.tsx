@@ -167,7 +167,10 @@ export function TrafficPage() {
       <Card>
         <div className="section-heading compact">
           <div>
-            <Tag icon={<BarChartOutlined />} color="blue">Traffic</Tag>
+            <Space size={4} wrap>
+              <Tag icon={<BarChartOutlined />} color="blue">Traffic</Tag>
+              <Tag>日界线 {data.summary.timeZone}</Tag>
+            </Space>
             <Typography.Title level={2}>访问统计</Typography.Title>
             <Typography.Paragraph type="secondary">
               {data.summary.periodStart} 至 {data.summary.periodEnd} 的页面与 API 请求概况。
@@ -200,6 +203,14 @@ export function TrafficPage() {
       </Card>
 
       {error && <Alert type="warning" showIcon message="刷新失败，当前展示上一次成功结果" description={error} />}
+      {data.summary.hasLegacyCalendarData && (
+        <Alert
+          type="info"
+          showIcon
+          message={`部分历史数据仍使用旧版日界线（截至 ${data.summary.legacyCalendarDataThroughDay}）`}
+          description={`自 ${data.summary.calendarBoundaryEffectiveAt ? shortDate(data.summary.calendarBoundaryEffectiveAt) : '本次升级'} 起，新请求按 ${data.summary.timeZone} 划分统计日；历史聚合无法可靠跨日重分配，因此保持原值。`}
+        />
+      )}
       {data.summary.unclassifiedErrorResponses > 0 && (
         <Alert
           type="info"

@@ -239,10 +239,14 @@ from both route and daily historical aggregates. Schema migration v7 adds exact
 4xx and 5xx counters for new requests. The compatible `errorResponses` total is
 retained; older errors that cannot be separated reliably are returned through
 `unclassifiedErrorResponses` instead of being guessed into either category.
+Schema migration v8 records when the reporting calendar changes from the old
+UTC boundary. New traffic and `downloadsToday` use the configured reporting
+offset; existing daily aggregates remain unchanged and are exposed through the
+summary's legacy-calendar metadata instead of being guessed into adjacent days.
 
 `summary.uniqueVisitorDays` is the sum of each day's unique visitors (visitor-days),
 not a cross-day unique-person count, because the privacy identifier rotates every
-UTC day. `today.uniqueVisitors` and each `daily[].uniqueVisitors` remain true
+configured reporting day. `today.uniqueVisitors` and each `daily[].uniqueVisitors` remain true
 within-day unique counts. Client aggregates therefore expose
 `clients[].uniqueVisitorDays`; the API deliberately does not publish a misleading
 multi-day `uniqueVisitors` field.
@@ -273,7 +277,8 @@ Configuration defaults:
 | `access_analytics_queue_size` | `4096` | Maximum queued events before non-blocking drops |
 | `access_analytics_batch_size` | `128` | Maximum events grouped per writer pass |
 | `access_analytics_flush_interval_seconds` | `0.5` | Writer wait/flush interval |
-| `access_analytics_retention_days` | `90` | UTC daily aggregates retained by the scheduled cleanup |
+| `access_analytics_retention_days` | `90` | Reporting-calendar days retained by the scheduled cleanup |
+| `reporting_utc_offset_minutes` | `480` | Fixed UTC offset used by daily dashboard metrics (`UTC+08:00`) |
 | `job_run_retention_days` | `30` | Completed scheduler runs retained; each job's latest run and running rows are always kept |
 | `audit_log_retention_days` | `365` | Administrator audit rows retained in the live database and recognized snapshots |
 | `admin_db_backup_keep_count` | `10` | Newest recognized administrator-created database snapshots retained; minimum 2 |

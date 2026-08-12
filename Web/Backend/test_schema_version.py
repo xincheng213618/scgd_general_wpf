@@ -127,6 +127,35 @@ class SchemaVersionTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_v8_creates_empty_access_analytics_metadata(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 7);
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            table = db.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type = 'table' AND name = 'access_analytics_metadata'"
+            ).fetchone()
+            self.assertIsNotNone(table)
+            self.assertEqual(
+                db.execute("SELECT COUNT(*) FROM access_analytics_metadata").fetchone()[0],
+                0,
+            )
+            ensure_schema_version(db)
+            self.assertEqual(
+                db.execute("SELECT COUNT(*) FROM access_analytics_metadata").fetchone()[0],
+                0,
+            )
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()

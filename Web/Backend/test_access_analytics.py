@@ -6,7 +6,7 @@ import tempfile
 import time
 import unittest
 from dataclasses import asdict
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -19,13 +19,18 @@ from db_cache import CacheManager
 from services.access_analytics import (
     AccessAnalyticsRecorder,
     SqliteAccessTrafficQuery,
+    analytics_calendar_day,
+    analytics_calendar_day_utc_bounds,
     build_access_event,
     classify_user_agent,
+    configure_access_analytics_calendar,
     daily_visitor_key,
     declared_response_body_bytes,
+    format_utc_offset,
     parse_bounded_int,
     prune_access_analytics,
     prune_access_analytics_backups,
+    reporting_utc_offset_minutes,
     should_record_access,
 )
 
@@ -98,6 +103,50 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
         self.assertIsNone(
             daily_visitor_key(secret_key="secret", day="2026-07-18", remote_addr=None)
         )
+
+    def test_reporting_calendar_uses_configured_offset_at_midnight(self):
+        before_midnight = self._event(
+            occurred_at=datetime(2026, 7, 18, 15, 59, 59, tzinfo=timezone.utc)
+        )
+        after_midnight = self._event(
+            occurred_at=datetime(2026, 7, 18, 16, 0, tzinfo=timezone.utc)
+        )
+
+        self.assertEqual(before_midnight.day, "2026-07-18")
+        self.assertEqual(after_midnight.day, "2026-07-19")
+        self.assertEqual(
+            after_midnight.occurred_at,
+            "2026-07-18T16:00:00+00:00",
+        )
+        self.assertNotEqual(before_midnight.visitor_key, after_midnight.visitor_key)
+        self.assertEqual(
+            analytics_calendar_day(
+                datetime(2026, 7, 18, 16, 0, tzinfo=timezone.utc),
+                utc_offset_minutes=480,
+            ),
+            date(2026, 7, 19),
+        )
+        start, end = analytics_calendar_day_utc_bounds(
+            date(2026, 7, 19),
+            utc_offset_minutes=480,
+        )
+        self.assertEqual(start.isoformat(), "2026-07-18T16:00:00+00:00")
+        self.assertEqual(end.isoformat(), "2026-07-19T16:00:00+00:00")
+
+    def test_reporting_offset_is_validated_and_formatted(self):
+        self.assertEqual(reporting_utc_offset_minutes({}), 480)
+        self.assertEqual(
+            reporting_utc_offset_minutes({"reporting_utc_offset_minutes": "330"}),
+            330,
+        )
+        self.assertEqual(format_utc_offset(330), "UTC+05:30")
+        self.assertEqual(format_utc_offset(-210), "UTC-03:30")
+        for invalid in ("bad", -721, 841):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(ValueError):
+                    reporting_utc_offset_minutes({
+                        "reporting_utc_offset_minutes": invalid,
+                    })
 
     def test_user_agent_is_reduced_to_coarse_device_classes(self):
         self.assertEqual(classify_user_agent("Googlebot/2.1"), "bot")
@@ -315,6 +364,87 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
             self.assertEqual(item["unclassifiedErrorResponses"], 1)
             self.assertEqual(item["unclassifiedErrorRate"], 100.0)
 
+    def test_calendar_configuration_marks_existing_aggregates_without_rewriting_them(self):
+        recorder = AccessAnalyticsRecorder(background_worker=False)
+        self.assertTrue(
+            recorder.submit(
+                self._event(),
+                db_path=self.db_path,
+                synchronous=True,
+            )
+        )
+        configured_at = datetime(2026, 7, 18, 16, 30, tzinfo=timezone.utc)
+        db = self.cache.get_db()
+        try:
+            before = tuple(db.execute(
+                "SELECT visits, error_responses, total_response_bytes FROM access_daily"
+            ).fetchone())
+            first = configure_access_analytics_calendar(
+                db,
+                utc_offset_minutes=480,
+                now=configured_at,
+            )
+            second = configure_access_analytics_calendar(
+                db,
+                utc_offset_minutes=480,
+                now=configured_at + timedelta(hours=1),
+            )
+            after = tuple(db.execute(
+                "SELECT visits, error_responses, total_response_bytes FROM access_daily"
+            ).fetchone())
+        finally:
+            db.close()
+
+        self.assertEqual(before, after)
+        self.assertEqual(first, second)
+        self.assertEqual(first["timeZone"], "UTC+08:00")
+        self.assertEqual(
+            first["calendarBoundaryEffectiveAt"],
+            "2026-07-18T16:30:00+00:00",
+        )
+        self.assertEqual(first["legacyCalendarDataThroughDay"], "2026-07-19")
+
+        payload = SqliteAccessTrafficQuery(
+            self.cache.get_db,
+            today_getter=lambda: date(2026, 7, 19),
+            utc_offset_minutes=480,
+        ).get_traffic(days=2, limit=10)
+        self.assertEqual(payload["summary"]["timeZone"], "UTC+08:00")
+        self.assertEqual(payload["summary"]["utcOffsetMinutes"], 480)
+        self.assertTrue(payload["summary"]["hasLegacyCalendarData"])
+        self.assertEqual(
+            payload["summary"]["legacyCalendarDataThroughDay"],
+            "2026-07-19",
+        )
+
+    def test_fresh_calendar_configuration_does_not_mark_new_data_as_legacy(self):
+        fresh_path = self.root / "fresh-calendar.db"
+        fresh_cache = CacheManager(fresh_path)
+        fresh_cache.init_db()
+        db = fresh_cache.get_db()
+        try:
+            metadata = configure_access_analytics_calendar(
+                db,
+                utc_offset_minutes=480,
+                now=FIXED_NOW,
+            )
+        finally:
+            db.close()
+        self.assertIsNone(metadata["legacyCalendarDataThroughDay"])
+
+        recorder = AccessAnalyticsRecorder(background_worker=False)
+        self.assertTrue(recorder.submit(
+            self._event(),
+            db_path=fresh_path,
+            synchronous=True,
+        ))
+        payload = SqliteAccessTrafficQuery(
+            fresh_cache.get_db,
+            today_getter=lambda: date(2026, 7, 18),
+            utc_offset_minutes=480,
+        ).get_traffic(days=1, limit=10)
+        self.assertFalse(payload["summary"]["hasLegacyCalendarData"])
+
     def test_async_writer_groups_events_by_submission_database(self):
         second_db_path = self.root / "second.db"
         recorder = AccessAnalyticsRecorder(
@@ -481,6 +611,8 @@ class AccessAnalyticsApiTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["visits"], 1)
         self.assertEqual(payload["summary"]["totalResponseBytes"], expected_response_bytes)
         self.assertEqual(payload["summary"]["errorResponses"], 1)
+        self.assertEqual(payload["summary"]["timeZone"], "UTC+08:00")
+        self.assertEqual(payload["summary"]["utcOffsetMinutes"], 480)
         self.assertEqual(payload["summary"]["clientErrorResponses"], 1)
         self.assertEqual(payload["summary"]["serverErrorResponses"], 0)
         self.assertEqual(payload["summary"]["unclassifiedErrorResponses"], 0)
@@ -564,6 +696,39 @@ class AccessAnalyticsApiTests(unittest.TestCase):
         self.assertIn("uniqueVisitorsToday", payload)
         self.assertIn("avgResponseMsToday", payload)
         self.assertIn("errorResponsesToday", payload)
+
+    def test_stats_overview_uses_reporting_day_for_downloads_today(self):
+        offset = reporting_utc_offset_minutes(marketplace_app.CONFIG)
+        reporting_day = analytics_calendar_day(utc_offset_minutes=offset)
+        start, _ = analytics_calendar_day_utc_bounds(
+            reporting_day,
+            utc_offset_minutes=offset,
+        )
+        db = sqlite3.connect(str(marketplace_app.DB_PATH))
+        try:
+            with db:
+                db.execute(
+                    "INSERT INTO download_log (plugin_id, version, downloaded_at) "
+                    "VALUES (?, ?, ?)",
+                    ("before-day", "1.0", (start - timedelta(seconds=1)).strftime("%Y-%m-%d %H:%M:%S")),
+                )
+                db.execute(
+                    "INSERT INTO download_log (plugin_id, version, downloaded_at) "
+                    "VALUES (?, ?, ?)",
+                    ("inside-day", "1.0", start.strftime("%Y-%m-%d %H:%M:%S")),
+                )
+        finally:
+            db.close()
+
+        response = self.client.get(
+            "/api/admin/stats/overview",
+            headers=self._basic_auth(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["totalDownloads"], 2)
+        self.assertEqual(payload["downloadsToday"], 1)
 
     def test_testing_requests_follow_current_db_path_without_crossing_databases(self):
         first_db_path = Path(marketplace_app.DB_PATH)

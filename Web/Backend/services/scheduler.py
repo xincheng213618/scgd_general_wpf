@@ -263,14 +263,21 @@ def _run_access_analytics_retention(
     from services.access_analytics import (
         prune_access_analytics,
         prune_access_analytics_backups,
+        reporting_utc_offset_minutes,
     )
 
     config = config_getter()
     retention_days = int(config.get("access_analytics_retention_days", 90) or 90)
-    result = prune_access_analytics(get_db, retention_days=retention_days)
+    utc_offset_minutes = reporting_utc_offset_minutes(config)
+    result = prune_access_analytics(
+        get_db,
+        retention_days=retention_days,
+        utc_offset_minutes=utc_offset_minutes,
+    )
     backup_result = prune_access_analytics_backups(
         cache.db_path.parent,
         retention_days=retention_days,
+        utc_offset_minutes=utc_offset_minutes,
     )
     if backup_result["errors"]:
         raise RuntimeError("; ".join(backup_result["errors"][:3]))

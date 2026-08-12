@@ -126,11 +126,20 @@ def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
     cache = CacheManager(db_path)
     cache.init_db()
 
+    from services.access_analytics import (
+        AccessAnalyticsRecorder,
+        configure_access_analytics_calendar,
+        reporting_utc_offset_minutes,
+    )
+
+    analytics_utc_offset_minutes = reporting_utc_offset_minutes(config)
     conn = cache.get_db()
     ensure_schema_version(conn)
+    configure_access_analytics_calendar(
+        conn,
+        utc_offset_minutes=analytics_utc_offset_minutes,
+    )
     conn.close()
-
-    from services.access_analytics import AccessAnalyticsRecorder
 
     access_recorder = AccessAnalyticsRecorder(
         queue_capacity=int(config.get("access_analytics_queue_size", 4096) or 4096),
@@ -272,6 +281,7 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
                     from services.access_analytics import (
                         build_access_event,
                         declared_response_body_bytes,
+                        reporting_utc_offset_minutes,
                         should_record_access,
                     )
 
@@ -295,6 +305,9 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
                             secret_key=str(config.get("secret_key", "")),
                             remote_addr=request.remote_addr,
                             user_agent=request.headers.get("User-Agent", ""),
+                            utc_offset_minutes=reporting_utc_offset_minutes(
+                                config
+                            ),
                         )
                         access_recorder.submit(
                             event,

@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 7
+CURRENT_SCHEMA_VERSION = 8
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -59,6 +59,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v6(db)
     if from_version < 7:
         _migration_v7(db)
+    if from_version < 8:
+        _migration_v8(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -213,6 +215,18 @@ def _migration_v7(db: sqlite3.Connection):
             table,
             "server_error_responses INTEGER NOT NULL DEFAULT 0",
         )
+
+
+def _migration_v8(db: sqlite3.Connection):
+    """v8: Persist the configured access-analytics calendar boundary."""
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS access_analytics_metadata (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+        """
+    )
 
 
 def _add_column_if_missing(db: sqlite3.Connection, table: str, column_def: str):
