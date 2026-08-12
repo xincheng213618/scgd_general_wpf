@@ -39,6 +39,8 @@ from app_setup import (
 )
 from db_cache import CacheManager
 from services.http_compression import register_response_compression
+from services.http_method_safety import disable_unsafe_automatic_head
+from services.http_security import register_response_security
 
 app, _ctx, SERVICES, _helpers = create_app_and_context(RuntimeOverrides(
     config=lambda: CONFIG,
@@ -129,7 +131,9 @@ require_upload_auth = _helpers["require_upload_auth"]
 register_error_handlers(app)
 register_slow_request_logging(app, _ctx, _helpers["access_recorder"])
 register_response_compression(app)
+register_response_security(app)
 register_all_blueprints(app, _ctx, SERVICES, _helpers)
+disable_unsafe_automatic_head(app)
 
 # ---------------------------------------------------------------------------
 # Entry point

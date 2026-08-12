@@ -594,11 +594,31 @@ class AuthContracts(ContractTestBase):
         with self.client.get("/login") as resp:
             self.assertEqual(resp.status_code, 200)
 
+    def test_login_head_is_read_only_and_matches_get_status(self):
+        before = len(marketplace_app._cache.get_audit_log(action="login_failed"))
+
+        with self.client.head("/login") as response:
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.get_data(), b"")
+        self.assertEqual(len(marketplace_app._cache.get_audit_log(action="login_failed")), before)
+
+    def test_global_security_headers_cover_spa_api_and_errors(self):
+        for path in ("/", "/api/health", "/api/not-found"):
+            with self.subTest(path=path):
+                with self.client.get(path) as response:
+                    self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+                    self.assertEqual(response.headers["X-Frame-Options"], "SAMEORIGIN")
+                    self.assertEqual(response.headers["Referrer-Policy"], "same-origin")
+                    self.assertIn("frame-ancestors 'self'", response.headers["Content-Security-Policy"])
+
     def test_login_success_redirects(self):
         resp = self.client.post("/login", data={
             "username": "admin", "password": "secret",
         }, follow_redirects=False)
         self.assertIn(resp.status_code, [302, 303])
+        session_cookie = resp.headers["Set-Cookie"]
+        self.assertIn("HttpOnly", session_cookie)
+        self.assertIn("SameSite=Lax", session_cookie)
 
     def test_login_failure_returns_401_json_error(self):
         resp = self.client.post("/api/auth/login", json={

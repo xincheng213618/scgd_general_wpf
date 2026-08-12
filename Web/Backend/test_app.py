@@ -826,6 +826,11 @@ class MarketplaceAppTests(unittest.TestCase):
             encoding="utf-8",
         )
 
+        head_response = self.client.head("/api/packages/StatPlugin/1.0.0")
+        self.assertEqual(head_response.status_code, 200)
+        head_response.close()
+        self.assertEqual(self.client.get("/api/stats").get_json()["totalDownloads"], 0)
+
         download_response = self.client.get("/api/packages/StatPlugin/1.0.0")
         self.assertEqual(download_response.status_code, 200)
         download_response.close()

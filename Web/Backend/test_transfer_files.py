@@ -153,6 +153,21 @@ class TransferRouteTests(unittest.TestCase):
         self.assertEqual(delete_response.status_code, 200)
         self.assertFalse(target.exists())
 
+    def test_transfer_file_head_does_not_delete_the_file(self):
+        target = transfer_root(self.storage, marketplace_app.CONFIG) / "head-check.bin"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(b"payload")
+
+        with self.client.head(
+            "/api/transfer/files/head-check.bin",
+            headers=self._auth_headers(),
+        ) as response:
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.get_data(), b"")
+            self.assertEqual(response.headers["Content-Length"], "7")
+
+        self.assertEqual(target.read_bytes(), b"payload")
+
     def test_transfer_upload_ignores_global_content_length_limit(self):
         marketplace_app.app.config["MAX_CONTENT_LENGTH"] = 1
 

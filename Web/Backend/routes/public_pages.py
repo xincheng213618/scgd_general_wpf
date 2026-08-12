@@ -127,7 +127,7 @@ def _login(username: str, password: str) -> dict[str, Any] | None:
 
 @public_pages.route("/login", methods=["GET", "POST"])
 def login_page():
-    if request.method == "GET":
+    if request.method in {"GET", "HEAD"}:
         return _serve_spa_index()
 
     if request.is_json:

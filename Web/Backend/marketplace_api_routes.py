@@ -159,11 +159,12 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
         package_path = ctx.services.packages.resolve_download(plugin_id, version)
         if package_path is None:
             return jsonify({"error": "Package not found"}), 404
-        ctx.services.packages.record_download(
-            plugin_id,
-            version,
-            ctx.request_context_factory(),
-        )
+        if request.method == "GET":
+            ctx.services.packages.record_download(
+                plugin_id,
+                version,
+                ctx.request_context_factory(),
+            )
         return send_from_directory(
             str(package_path.parent), package_path.name, as_attachment=True
         )

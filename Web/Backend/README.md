@@ -331,6 +331,19 @@ curl -u admin:password -X DELETE http://localhost:9998/api/transfer/files/big-fi
 
 If deployed behind a reverse proxy, configure that proxy to allow large request bodies as well.
 
+### Response Security and HEAD Semantics
+
+All responses carry a same-origin browser security baseline. React routes use a
+strict same-origin script policy; the VitePress documentation path separately
+allows its generated inline bootstrap scripts. Authentication, admin, transfer,
+and operations APIs default to `Cache-Control: no-store`. Session cookies are
+HttpOnly with `SameSite=Lax`.
+
+`HEAD` requests are read-only: they never submit a login, delete a transfer
+file, create or deliver an operations task, or increment plugin download
+statistics. File routes still return the same status and representation headers
+as `GET`, without a response body.
+
 ## Disk Scan Points
 
 When indexes are populated, most API requests read from SQLite instead of scanning disk. The following are the remaining real-time disk access points:

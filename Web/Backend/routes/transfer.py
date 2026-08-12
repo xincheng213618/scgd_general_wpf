@@ -124,7 +124,7 @@ def api_transfer_file(filename: str):
 
     root = _root()
     try:
-        if request.method == "GET":
+        if request.method in {"GET", "HEAD"}:
             target = resolve_transfer_file(root, filename)
             if not target.is_file():
                 return _json_error("File not found", 404)
