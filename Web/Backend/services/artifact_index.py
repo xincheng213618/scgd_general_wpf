@@ -126,10 +126,12 @@ def _release_signature(storage: Path) -> str:
 
     Uses a two-level directory walk instead of rglob to avoid deep recursion.
     History layout: History/{major.minor}/{major.minor.patch}/file
+    Directory mtimes are intentionally excluded because Windows may publish
+    them after the child write, causing an unrelated later scan to look changed.
     """
     from app_releases import is_app_release_history_bucket
 
-    entries: list[tuple[str, int, int]] = [("release-index-contract-v2", 0, 0)]
+    entries: list[tuple[str, int, int]] = [("release-index-contract-v3", 0, 0)]
     if storage.is_dir():
         for entry in storage.iterdir():
             if entry.is_file():
@@ -149,22 +151,10 @@ def _release_signature(storage: Path) -> str:
                     ):
                         continue
                     try:
-                        major_stat = major_entry.stat(follow_symlinks=False)
-                        entries.append((
-                            f"History/{major_entry.name}",
-                            0,
-                            major_stat.st_mtime_ns,
-                        ))
                         with os.scandir(major_entry.path) as branch_entries:
                             for branch_entry in branch_entries:
                                 if not branch_entry.is_dir(follow_symlinks=False):
                                     continue
-                                branch_stat = branch_entry.stat(follow_symlinks=False)
-                                entries.append((
-                                    f"History/{major_entry.name}/{branch_entry.name}",
-                                    0,
-                                    branch_stat.st_mtime_ns,
-                                ))
                                 with os.scandir(branch_entry.path) as children:
                                     for child in children:
                                         child_stat = child.stat(follow_symlinks=False)
