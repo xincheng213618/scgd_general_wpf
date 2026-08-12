@@ -1,9 +1,11 @@
 package com.colorvision.xcviewer;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -52,6 +54,7 @@ public class OperationsActivity extends Activity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
     private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
     private static final long CONNECTION_HEARTBEAT_MILLISECONDS = 30_000L;
+    private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 22023;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -322,7 +325,8 @@ public class OperationsActivity extends Activity {
         addDashboardSection("常用操作");
         addDashboardActionRow(
                 dashboardButton("远程排障", v -> showTriageCenter()),
-                dashboardButton("持续观察", v -> showLiveMonitor()));
+                dashboardButton(preferences.isOperationsWatchEnabled()
+                        ? "持续观察（后台）" : "持续观察（已停）", v -> showLiveMonitor()));
         addDashboardActionRow(
                 dashboardButton("显示主窗口", v -> runWindowAction("show", "主窗口已显示")),
                 dashboardButton("最小化窗口", v -> confirmMinimizeWindow()));
@@ -362,6 +366,23 @@ public class OperationsActivity extends Activity {
                 capabilityButton("能力目录", "/ops/v1/capabilities"));
         loadCapability("/ops/v1/snapshot");
         scheduleConnectionHeartbeat();
+        ensureOperationsWatchRunning();
+    }
+
+    private void ensureOperationsWatchRunning() {
+        if (!preferences.isOperationsWatchEnabled()) {
+            return;
+        }
+        OperationsWatchService.start(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+                && !preferences.hasRequestedOperationsNotificationPermission()) {
+            preferences.markOperationsNotificationPermissionRequested();
+            requestPermissions(
+                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    NOTIFICATION_PERMISSION_REQUEST_CODE);
+        }
     }
 
     private void scheduleConnectionHeartbeat() {
@@ -1539,7 +1560,7 @@ public class OperationsActivity extends Activity {
         liveMonitorTrend.reset();
         title.setText("远程持续观察");
         state.setText("正在采集第一份有界运行快照…");
-        details.setText("仅在此页面位于前台时每 10 秒刷新；切到后台会自动停止网络请求。服务器不保存采样历史。只有主检测活动时才会提供有界取消动作。 ");
+        details.setText("本页前台每 10 秒刷新详细快照；离开页面后，运维守护仍会每 60 秒检查已配对主机，并在断线时自动退避重试。服务器不保存采样历史。只有主检测活动时才会提供有界取消动作。 ");
         renderLiveMonitorActions();
         loadLiveMonitor(true);
     }
@@ -1609,6 +1630,25 @@ public class OperationsActivity extends Activity {
 
     private void renderLiveMonitorActions() {
         actions.removeAllViews();
+
+        Button backgroundWatch = new Button(this);
+        boolean backgroundWatchEnabled = preferences.isOperationsWatchEnabled();
+        backgroundWatch.setText(backgroundWatchEnabled
+                ? "后台守护已开启 · 点击暂停"
+                : "后台守护已暂停 · 点击恢复");
+        backgroundWatch.setEnabled(!liveMonitorCancelInFlight);
+        backgroundWatch.setOnClickListener(v -> {
+            if (preferences.isOperationsWatchEnabled()) {
+                OperationsWatchService.disable(this);
+                Toast.makeText(this, "后台守护已暂停，配对资料仍保留", Toast.LENGTH_SHORT).show();
+            } else {
+                OperationsWatchService.enable(this);
+                ensureOperationsWatchRunning();
+                Toast.makeText(this, "后台守护已恢复", Toast.LENGTH_SHORT).show();
+            }
+            renderLiveMonitorActions();
+        });
+        actions.addView(backgroundWatch, actionParams());
 
         Button refresh = new Button(this);
         refresh.setText("立即刷新");
@@ -1874,8 +1914,9 @@ public class OperationsActivity extends Activity {
         }
 
         text.append("\n\n采集时间：").append(shortTime(snapshot.optString("capturedAt", "")))
-                .append("\n刷新策略：仅当前台可见时每 ")
+                .append("\n页面刷新：前台每 ")
                 .append(snapshot.optInt("suggestedRefreshSeconds", 10)).append(" 秒")
+                .append(" · 后台守护每 60 秒，断线自动退避")
                 .append(formatLiveMonitorTrend(liveMonitorTrend.summarize()))
                 .append("\n\n服务器不保存采样历史；手机仅在内存保留最近 30 个样本，离开本页即清空。快照不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、设备身份、Topic、消息载荷、配置、凭据、原始设备状态、日志正文或检测数据。 ");
         return text.toString();
@@ -2962,6 +3003,7 @@ public class OperationsActivity extends Activity {
         leaveSupportCenter();
         leaveLiveMonitor();
         dashboardVisible = false;
+        OperationsWatchService.disable(this);
         try {
             String hostId = preferences.getOperationsHostId();
             if (!hostId.isEmpty()) {
@@ -3146,6 +3188,9 @@ public class OperationsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         activityResumed = true;
+        if (preferences != null && preferences.isOperationsWatchEnabled()) {
+            OperationsWatchService.start(this);
+        }
         if (supportCenterVisible) {
             scheduleSupportRefresh();
         }

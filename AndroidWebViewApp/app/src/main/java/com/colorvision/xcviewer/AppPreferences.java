@@ -19,6 +19,9 @@ final class AppPreferences {
     private static final String KEY_OPERATIONS_ENDPOINT = "operations_endpoint";
     private static final String KEY_OPERATIONS_PIN = "operations_certificate_pin";
     private static final String KEY_OPERATIONS_HOST_ID = "operations_host_id";
+    private static final String KEY_OPERATIONS_WATCH_ENABLED = "operations_watch_enabled";
+    private static final String KEY_OPERATIONS_NOTIFICATION_PERMISSION_REQUESTED =
+            "operations_notification_permission_requested";
 
     private final SharedPreferences preferences;
 
@@ -114,6 +117,7 @@ final class AppPreferences {
                 .putString(KEY_OPERATIONS_ENDPOINT, endpoint)
                 .putString(KEY_OPERATIONS_PIN, certificatePin)
                 .putString(KEY_OPERATIONS_HOST_ID, hostId)
+                .putBoolean(KEY_OPERATIONS_WATCH_ENABLED, true)
                 .apply();
     }
 
@@ -135,11 +139,34 @@ final class AppPreferences {
                 && !getOperationsHostId().isEmpty();
     }
 
+    boolean isOperationsWatchEnabled() {
+        if (!hasOperationsProfile()) {
+            return false;
+        }
+        return preferences.getBoolean(KEY_OPERATIONS_WATCH_ENABLED, true);
+    }
+
+    void setOperationsWatchEnabled(boolean enabled) {
+        preferences.edit().putBoolean(KEY_OPERATIONS_WATCH_ENABLED, enabled).apply();
+    }
+
+    boolean hasRequestedOperationsNotificationPermission() {
+        return preferences.getBoolean(KEY_OPERATIONS_NOTIFICATION_PERMISSION_REQUESTED, false);
+    }
+
+    void markOperationsNotificationPermissionRequested() {
+        preferences.edit()
+                .putBoolean(KEY_OPERATIONS_NOTIFICATION_PERMISSION_REQUESTED, true)
+                .apply();
+    }
+
     void clearOperationsProfile() {
         preferences.edit()
                 .remove(KEY_OPERATIONS_ENDPOINT)
                 .remove(KEY_OPERATIONS_PIN)
                 .remove(KEY_OPERATIONS_HOST_ID)
+                .remove(KEY_OPERATIONS_WATCH_ENABLED)
+                .remove(KEY_OPERATIONS_NOTIFICATION_PERMISSION_REQUESTED)
                 .apply();
     }
 
