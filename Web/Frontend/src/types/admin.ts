@@ -389,6 +389,31 @@ export interface ThemeSettingsFormValues {
   density: UiDensity
 }
 
+export interface RetentionSettingsValues {
+  app_release_keep_count: number
+  plugin_package_keep_count: number
+  access_analytics_retention_days: number
+  job_run_retention_days: number
+  audit_log_retention_days: number
+  admin_db_backup_keep_count: number
+}
+
+export interface RetentionSettingLimit {
+  minimum: number
+  maximum: number
+}
+
+export interface RetentionSettingsResponse {
+  values: RetentionSettingsValues
+  limits: Record<keyof RetentionSettingsValues, RetentionSettingLimit>
+  restart_required: boolean
+}
+
+export interface RetentionSettingsUpdateResponse extends RetentionSettingsResponse {
+  status: 'updated' | 'unchanged'
+  changed: Array<keyof RetentionSettingsValues>
+}
+
 export interface UserAccount {
   id: number
   username: string

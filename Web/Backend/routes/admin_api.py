@@ -24,6 +24,8 @@ Per-endpoint scope requirements:
   - POST /api-keys/*/revoke   → admin:*
   - POST /api-keys/*/rotate   → admin:*
   - GET  /api-keys/*/usage    → admin:*
+  - GET  /settings/retention  → admin:*
+  - PUT  /settings/retention  → admin:*
   - *    /copilot/profiles    → admin:*
 
 admin:* grants access to all endpoints.
@@ -92,6 +94,8 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "create_profile": ["admin:*"],
     "update_profile": ["admin:*"],
     "delete_profile": ["admin:*"],
+    "get_retention_settings": ["admin:*"],
+    "update_retention_settings": ["admin:*"],
 }
 
 
@@ -101,6 +105,7 @@ class AdminApiContext:
     jobs: JobRepository
     storage_getter: Callable[[], Path]
     config_getter: Callable[[], dict[str, Any]]
+    config_path_getter: Callable[[], Path]
     get_db: Callable[[], Any]
     auth_policy: AuthPolicy
     request_context_factory: Callable[[], RequestContext]
@@ -253,6 +258,71 @@ def publish_integrity():
     from services.publish_integrity import build_publish_integrity_report
 
     return jsonify(build_publish_integrity_report(ctx.storage_getter(), ctx.cache))
+
+
+# ---------------------------------------------------------------------------
+# Operational settings
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/settings/retention", methods=["GET"])
+def get_retention_settings():
+    from services.operational_settings import (
+        get_operational_retention_settings,
+        operational_retention_limits,
+    )
+
+    return jsonify({
+        "values": get_operational_retention_settings(_get_ctx().config_getter()),
+        "limits": operational_retention_limits(),
+        "restart_required": False,
+    })
+
+
+@admin_api.route("/settings/retention", methods=["PUT"])
+def update_retention_settings():
+    from services.operational_settings import (
+        operational_retention_limits,
+        persist_operational_retention_settings,
+        validate_operational_retention_payload,
+    )
+
+    ctx = _get_ctx()
+    try:
+        values = validate_operational_retention_payload(request.get_json(silent=True))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    try:
+        result = persist_operational_retention_settings(
+            ctx.config_path_getter(),
+            ctx.config_getter(),
+            values,
+        )
+    except (OSError, ValueError):
+        return jsonify({"error": "Unable to persist operational settings"}), 500
+
+    if result["changed"]:
+        detail = ", ".join(
+            f"{name}: {result['before'][name]} -> {values[name]}"
+            for name in result["changed"]
+        )
+        ctx.cache.write_audit(
+            actor_type=_actor_type(),
+            actor_id=_actor_id(),
+            action="retention_settings_update",
+            target_type="operational_settings",
+            detail=detail,
+            ip=request.remote_addr or "",
+            user_agent=request.headers.get("User-Agent", "")[:200],
+        )
+
+    return jsonify({
+        "status": "updated" if result["changed"] else "unchanged",
+        "values": result["values"],
+        "limits": operational_retention_limits(),
+        "changed": result["changed"],
+        "restart_required": False,
+    })
 
 
 # ---------------------------------------------------------------------------

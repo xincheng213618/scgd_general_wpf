@@ -126,6 +126,8 @@ continuous SQLite writes.
 | GET `/api/admin/stats/traffic` | `stats:read` |
 | GET `/api/admin/audit-log` | `admin:*` |
 | GET `/api/admin/deployments` | `admin:*` |
+| GET `/api/admin/settings/retention` | `admin:*` |
+| PUT `/api/admin/settings/retention` | `admin:*` |
 | User account management | `admin:*` |
 | API Key management | `admin:*` |
 
@@ -162,6 +164,20 @@ Only one `running` row is allowed per job. When the service starts, unfinished
 rows left by a previous process are marked `interrupted` before the startup
 check runs, so history remains truthful and a crashed run cannot block the job
 forever.
+
+### Operational Retention Settings
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/settings/retention` | Read the six allowlisted effective retention values and their limits |
+| PUT | `/api/admin/settings/retention` | Atomically replace all six values and apply them to the running service |
+
+The contract intentionally excludes credentials, secrets, storage paths,
+listener settings, and Copilot configuration. A write preserves every existing
+unexposed JSON key, replaces `config.json` atomically, then updates the live
+configuration only after the file is durable. Reducing a value may delete old
+artifacts or records when the corresponding publish or scheduled cleanup next
+runs; the administrator UI confirms the exact changes before saving.
 
 ### API Keys
 
@@ -299,6 +315,8 @@ Configuration defaults:
 
 | Key | Default | Meaning |
 |-----|---------|---------|
+| `app_release_keep_count` | `5` | Newest main application release packages retained after publishing |
+| `plugin_package_keep_count` | `3` | Newest package versions retained per plugin after publishing |
 | `access_analytics_enabled` | `true` | Enable request aggregation |
 | `access_analytics_queue_size` | `4096` | Maximum queued events before non-blocking drops |
 | `access_analytics_batch_size` | `128` | Maximum events grouped per writer pass |
@@ -336,6 +354,7 @@ and any rotation errors.
 | `/admin/deployments` | Sanitized NAS deployment history and retention results |
 | `/admin/audit` | Audit log viewer |
 | `/admin/traffic` | Privacy-preserving request traffic and recorder health |
+| `/admin/settings` | Browser appearance plus server-side operational retention policies |
 
 ## API Key Authentication
 
@@ -408,7 +427,7 @@ Signature-based check: each index check computes a directory signature and compa
    - Call `POST /api/admin/index/refresh-all`
 3. **Database backup**: `POST /api/admin/backup/db` creates, privacy-scrubs, integrity-checks, and rotates a timestamped backup of `marketplace.db`.
 4. **API Key security**: Keys are shown only once at creation. Revoke and rotate if compromised. Scopes are validated against a whitelist at creation time; expiry timestamps are normalized to UTC, and expired or malformed legacy records fail closed.
-5. **Config**: Edit `config.json` to set `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
+5. **Config**: Use `/admin/settings` for the six safe live retention policies. Edit `config.json` directly for protected or restart-bound values such as `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
 
 ### Large File Transfer
 

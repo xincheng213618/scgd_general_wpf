@@ -442,6 +442,7 @@ def register_all_blueprints(app, ctx, services, helpers):
         cache=cache, jobs=cache.jobs,
         storage_getter=lambda: ctx.storage,
         config_getter=lambda: ctx.active_config,
+        config_path_getter=lambda: ctx.active_db_path.parent / "config.json",
         get_db=helpers["get_db"],
         auth_policy=helpers["auth_policy"],
         request_context_factory=helpers["request_context_factory"],

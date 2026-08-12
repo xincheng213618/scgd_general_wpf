@@ -20,6 +20,9 @@ import type {
   JobRunPage,
   JobRunResult,
   ScheduledJob,
+  RetentionSettingsResponse,
+  RetentionSettingsUpdateResponse,
+  RetentionSettingsValues,
   TrafficStatsResponse,
   UserAccount,
 } from '../types/admin'
@@ -84,6 +87,14 @@ export function listDatabaseBackups() {
 
 export function backupDatabase() {
   return postJson<DatabaseBackupResult>('/api/admin/backup/db')
+}
+
+export function getRetentionSettings(signal?: AbortSignal) {
+  return getJson<RetentionSettingsResponse>('/api/admin/settings/retention', signal)
+}
+
+export function updateRetentionSettings(values: RetentionSettingsValues) {
+  return putJson<RetentionSettingsUpdateResponse>('/api/admin/settings/retention', { values })
 }
 
 export function listJobs() {

@@ -800,6 +800,99 @@ class AdminApiContracts(ContractTestBase):
         self.assertIn("db_path", data)
         self.assertIn("cache_entry_count", data)
 
+    def test_retention_settings_get_exposes_only_safe_effective_values(self):
+        from services.operational_settings import OPERATIONAL_RETENTION_SETTINGS
+
+        response = self.client.get(
+            "/api/admin/settings/retention",
+            headers=self.basic_auth(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(set(data["values"]), set(OPERATIONAL_RETENTION_SETTINGS))
+        self.assertEqual(set(data["limits"]), set(OPERATIONAL_RETENTION_SETTINGS))
+        self.assertFalse(data["restart_required"])
+        serialized = json.dumps(data)
+        for forbidden in ("secret", "password", "storage_path", "upload_auth", "copilot_sync"):
+            self.assertNotIn(forbidden, serialized)
+
+    def test_retention_settings_put_preserves_secrets_and_updates_live_config(self):
+        from services.operational_settings import OPERATIONAL_RETENTION_SETTINGS
+
+        config_path = self.root / "config.json"
+        config_path.write_text(json.dumps({
+            "secret_key": "preserved-secret",
+            "storage_path": str(self.storage),
+            "upload_auth": {"username": "admin", "password": "preserved-password"},
+            "copilot_sync": {"version_keys": ["stable"]},
+            "unrelated": {"enabled": True},
+        }), encoding="utf-8")
+        values = {
+            name: spec.default for name, spec in OPERATIONAL_RETENTION_SETTINGS.items()
+        }
+        values["job_run_retention_days"] = 45
+
+        response = self.client.put(
+            "/api/admin/settings/retention",
+            headers=self.basic_auth(),
+            json={"values": values},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data["status"], "updated")
+        self.assertEqual(data["changed"], ["job_run_retention_days"])
+        self.assertEqual(marketplace_app.CONFIG["job_run_retention_days"], 45)
+        persisted = json.loads(config_path.read_text(encoding="utf-8"))
+        self.assertEqual(persisted["secret_key"], "preserved-secret")
+        self.assertEqual(persisted["upload_auth"]["password"], "preserved-password")
+        self.assertEqual(persisted["copilot_sync"], {"version_keys": ["stable"]})
+        self.assertEqual(persisted["unrelated"], {"enabled": True})
+        audit = self.client.get(
+            "/api/admin/audit-log?action=retention_settings_update",
+            headers=self.basic_auth(),
+        ).get_json()
+        self.assertEqual(audit["total"], 1)
+        self.assertNotIn("secret", audit["entries"][0]["detail"])
+
+    def test_retention_settings_put_rejects_unknown_or_incomplete_values(self):
+        from services.operational_settings import OPERATIONAL_RETENTION_SETTINGS
+
+        values = {
+            name: spec.default for name, spec in OPERATIONAL_RETENTION_SETTINGS.items()
+        }
+        for payload in (
+            {"values": {**values, "secret_key": 1}},
+            {"values": {k: v for k, v in values.items() if k != "job_run_retention_days"}},
+            {"values": {**values, "audit_log_retention_days": False}},
+        ):
+            with self.subTest(payload=payload):
+                response = self.client.put(
+                    "/api/admin/settings/retention",
+                    headers=self.basic_auth(),
+                    json=payload,
+                )
+                self.assertEqual(response.status_code, 400)
+        self.assertFalse((self.root / "config.json").exists())
+
+    def test_retention_settings_require_full_admin_scope(self):
+        key = self.create_admin_key("stats:read")
+        headers = {"Authorization": f"Bearer {key['key']}"}
+
+        self.assertEqual(
+            self.client.get("/api/admin/settings/retention", headers=headers).status_code,
+            403,
+        )
+        self.assertEqual(
+            self.client.put(
+                "/api/admin/settings/retention",
+                headers=headers,
+                json={"values": {}},
+            ).status_code,
+            403,
+        )
+
     def test_user_accounts_can_be_listed_disabled_and_reenabled(self):
         from services.auth_service import create_user
 
