@@ -159,7 +159,6 @@ class ArchitectureBoundaryTests(unittest.TestCase):
         expected_counts = {
             "routes/admin_api.py": {
                 "stats_overview": 4,
-                "create_api_key": 1,
             },
             "routes/operations_relay.py": {
                 "heartbeat": 1,

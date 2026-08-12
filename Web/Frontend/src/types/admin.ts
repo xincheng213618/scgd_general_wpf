@@ -274,6 +274,7 @@ export type ApiKeyStatus = 'active' | 'expired' | 'revoked' | 'invalid_expiry'
 export interface ApiKeyItem {
   id: number
   name: string
+  description?: string
   key_prefix: string
   scopes: string
   created_by?: string
@@ -301,6 +302,36 @@ export interface ApiKeyFormValues {
 
 export interface CreateApiKeyResult extends ApiKeyItem {
   key: string
+}
+
+export type ApiKeyScopeAccess = 'read' | 'write' | 'service' | 'admin'
+
+export interface ApiKeyScopeDefinition {
+  value: string
+  label: string
+  description: string
+  category: string
+  access: ApiKeyScopeAccess
+}
+
+export interface ApiKeyScopeCatalog {
+  items: ApiKeyScopeDefinition[]
+  default_scopes: string[]
+}
+
+export interface ApiKeyAuditActivityItem {
+  action: string
+  target_type?: string
+  target_id?: string
+  detail?: string
+  created_at?: string
+}
+
+export interface ApiKeyUsage extends ApiKeyItem {
+  audit_activity: {
+    total: number
+    items: ApiKeyAuditActivityItem[]
+  }
 }
 
 export interface AuditLogEntry {

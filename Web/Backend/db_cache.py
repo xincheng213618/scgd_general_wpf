@@ -209,6 +209,7 @@ class CacheManager:
             CREATE TABLE IF NOT EXISTS api_keys (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 name            TEXT NOT NULL,
+                description     TEXT DEFAULT '',
                 key_prefix      TEXT UNIQUE NOT NULL,
                 key_hash        TEXT NOT NULL,
                 scopes          TEXT DEFAULT '',
@@ -256,6 +257,7 @@ class CacheManager:
             );
             CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log(action);
             CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
+            CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_log(actor_type, actor_id, id DESC);
 
             -- Operations relay: outbound-only host control plane. Tasks are catalog-bound,
             -- immutable intents and never contain arbitrary commands.

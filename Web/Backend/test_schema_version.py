@@ -206,6 +206,63 @@ class SchemaVersionTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_v10_persists_api_key_descriptions_and_indexes_audit_actor(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 9);
+                CREATE TABLE api_keys (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    key_prefix TEXT UNIQUE NOT NULL,
+                    key_hash TEXT NOT NULL,
+                    scopes TEXT DEFAULT '',
+                    created_by TEXT,
+                    created_at TEXT NOT NULL,
+                    expires_at TEXT,
+                    last_used_at TEXT,
+                    revoked_at TEXT,
+                    is_active INTEGER DEFAULT 1
+                );
+                CREATE TABLE audit_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    actor_type TEXT,
+                    actor_id TEXT,
+                    action TEXT NOT NULL,
+                    target_type TEXT,
+                    target_id TEXT,
+                    ip TEXT,
+                    user_agent TEXT,
+                    detail TEXT,
+                    created_at TEXT NOT NULL
+                );
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+
+            columns = {
+                row["name"] for row in db.execute("PRAGMA table_info(api_keys)").fetchall()
+            }
+            indexes = {
+                row["name"] for row in db.execute("PRAGMA index_list(audit_log)").fetchall()
+            }
+            self.assertIn("description", columns)
+            self.assertIn("idx_audit_actor", indexes)
+            ensure_schema_version(db)
+            self.assertEqual(
+                db.execute(
+                    "SELECT COUNT(*) FROM sqlite_master "
+                    "WHERE type = 'index' AND name = 'idx_audit_actor'"
+                ).fetchone()[0],
+                1,
+            )
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()

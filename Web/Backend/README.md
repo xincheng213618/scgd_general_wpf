@@ -184,16 +184,25 @@ runs; the administrator UI confirms the exact changes before saving.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/admin/api-keys` | List API keys |
+| GET | `/api/admin/api-keys/scopes` | List the authoritative scope catalog and default scopes |
 | POST | `/api/admin/api-keys` | Create new key (returns plaintext once) |
 | POST | `/api/admin/api-keys/<id>/revoke` | Revoke key |
 | POST | `/api/admin/api-keys/<id>/rotate` | Rotate key (revoke old, create new) |
-| GET | `/api/admin/api-keys/<id>/usage` | Get key usage info |
+| GET | `/api/admin/api-keys/<id>/usage` | Get public key metadata and recent audited writes |
 
 `expires_at` must be a future ISO 8601 timestamp. The service normalizes it to
 UTC; omitting it from the HTTP create request applies the default 90-day
 expiry. List and usage responses include the effective `status` (`active`,
-`expired`, `revoked`, or `invalid_expiry`) plus `last_used_at`. Legacy records
-with an invalid expiry fail closed and cannot authenticate.
+`expired`, `revoked`, or `invalid_expiry`) plus `last_used_at`. Descriptions are
+stored independently from names and survive key rotation. The scope catalog is
+the single source of truth for the admin UI and includes human-readable labels,
+categories, and least-privilege guidance.
+
+The usage response includes recent audited management writes attributed to the
+key prefix, but deliberately excludes request IP addresses and user agents. It
+is not a request counter: authenticated reads only update `last_used_at`, at
+most once per minute. Legacy records with an invalid expiry fail closed and
+cannot authenticate.
 
 ### User Accounts
 

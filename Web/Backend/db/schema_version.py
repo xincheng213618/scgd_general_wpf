@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 9
+CURRENT_SCHEMA_VERSION = 10
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -63,6 +63,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v8(db)
     if from_version < 9:
         _migration_v9(db)
+    if from_version < 10:
+        _migration_v10(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -292,6 +294,19 @@ def _migration_v9(db: sqlite3.Connection):
         """CREATE INDEX IF NOT EXISTS idx_job_runs_job_status_id
            ON job_runs(job_id, status, id DESC)"""
     )
+
+
+def _migration_v10(db: sqlite3.Connection):
+    """v10: Persist API key descriptions and index their audit identity."""
+    _add_column_if_missing(db, "api_keys", "description TEXT DEFAULT ''")
+    audit_table = db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'audit_log'"
+    ).fetchone()
+    if audit_table is not None:
+        db.execute(
+            """CREATE INDEX IF NOT EXISTS idx_audit_actor
+               ON audit_log(actor_type, actor_id, id DESC)"""
+        )
 
 
 def _add_column_if_missing(db: sqlite3.Connection, table: str, column_def: str):

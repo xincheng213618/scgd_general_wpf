@@ -2,6 +2,8 @@ import type {
   AdminStats,
   AllIndexRefreshResult,
   ApiKeyItem,
+  ApiKeyScopeCatalog,
+  ApiKeyUsage,
   AuditLogResponse,
   CacheStatus,
   DatabaseBackupInventory,
@@ -128,6 +130,14 @@ export function setJobEnabled(jobId: string, enabled: boolean) {
 
 export function listApiKeys() {
   return getJson<ApiKeyItem[]>('/api/admin/api-keys')
+}
+
+export function getApiKeyScopeCatalog(signal?: AbortSignal) {
+  return getJson<ApiKeyScopeCatalog>('/api/admin/api-keys/scopes', signal)
+}
+
+export function getApiKeyUsage(id: number, signal?: AbortSignal) {
+  return getJson<ApiKeyUsage>(`/api/admin/api-keys/${id}/usage`, signal)
 }
 
 export function createApiKey(payload: CreateApiKeyPayload) {

@@ -1224,6 +1224,7 @@ class AdminApiContracts(ContractTestBase):
         # Usage
         resp = self.client.get(f"/api/admin/api-keys/{key_id}/usage", headers=self.basic_auth())
         self.assertEqual(resp.status_code, 200)
+        self.assertIn("audit_activity", resp.get_json())
 
         # Rotate
         resp = self.client.post(f"/api/admin/api-keys/{key_id}/rotate", headers=self.basic_auth())
@@ -1237,6 +1238,77 @@ class AdminApiContracts(ContractTestBase):
         rid = resp.get_json()["id"]
         resp = self.client.post(f"/api/admin/api-keys/{rid}/revoke", headers=self.basic_auth())
         self.assertEqual(resp.status_code, 200)
+
+    def test_api_key_scope_catalog_is_complete_and_admin_only(self):
+        response = self.client.get(
+            "/api/admin/api-keys/scopes",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        values = [item["value"] for item in data["items"]]
+        self.assertEqual(len(values), len(set(values)))
+        self.assertIn("ops:relay", values)
+        self.assertIn("ops:operator", values)
+        self.assertEqual(data["default_scopes"], ["stats:read"])
+        for item in data["items"]:
+            self.assertTrue(item["label"])
+            self.assertTrue(item["description"])
+            self.assertIn(item["access"], {"read", "write", "service", "admin"})
+
+        limited = self.create_admin_key("stats:read")
+        denied = self.client.get(
+            "/api/admin/api-keys/scopes",
+            headers={"Authorization": f"Bearer {limited['key']}"},
+        )
+        self.assertEqual(denied.status_code, 403)
+
+    def test_api_key_description_and_audited_usage_are_independent_and_safe(self):
+        created = self.client.post(
+            "/api/admin/api-keys",
+            headers=self.basic_auth(),
+            json={
+                "name": "Desktop Relay",
+                "description": "Production line heartbeat",
+                "scopes": "ops:relay",
+            },
+        )
+        self.assertEqual(created.status_code, 201)
+        key = created.get_json()
+        self.assertEqual(key["name"], "Desktop Relay")
+        self.assertEqual(key["description"], "Production line heartbeat")
+
+        marketplace_app._cache.write_audit(
+            actor_type="api_key",
+            actor_id=f"key:{key['key_prefix']}",
+            action="operations.heartbeat",
+            target_type="operations_host",
+            target_id="line-1",
+            detail='{"status":"online"}',
+            ip="192.0.2.1",
+            user_agent="secret-client-fingerprint",
+        )
+        usage = self.client.get(
+            f"/api/admin/api-keys/{key['id']}/usage",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(usage.status_code, 200)
+        data = usage.get_json()
+        self.assertEqual(data["name"], "Desktop Relay")
+        self.assertEqual(data["description"], "Production line heartbeat")
+        self.assertEqual(data["audit_activity"]["total"], 1)
+        self.assertEqual(data["audit_activity"]["items"][0]["action"], "operations.heartbeat")
+        serialized_activity = json.dumps(data["audit_activity"])
+        self.assertNotIn("192.0.2.1", serialized_activity)
+        self.assertNotIn("secret-client-fingerprint", serialized_activity)
+
+        listed = self.client.get(
+            "/api/admin/api-keys",
+            headers=self.basic_auth(),
+        ).get_json()
+        listed_key = next(item for item in listed if item["id"] == key["id"])
+        self.assertEqual(listed_key["name"], "Desktop Relay")
+        self.assertEqual(listed_key["description"], "Production line heartbeat")
 
     def test_api_key_invalid_scope_rejected(self):
         resp = self.client.post(

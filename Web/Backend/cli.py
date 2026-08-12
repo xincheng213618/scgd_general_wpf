@@ -151,12 +151,15 @@ def handle_cli_args(
         raise SystemExit(0)
 
     if args.create_api_key:
-        from services.api_key_service import create_api_key
-        from routes.admin_api import validate_scopes, ALLOWED_SCOPES
+        from services.api_key_service import (
+            ALLOWED_SCOPES,
+            create_api_key,
+            validate_api_key_scopes,
+        )
         name = args.create_api_key
         scopes = args.scopes
         if scopes:
-            _, invalid = validate_scopes(scopes)
+            _, invalid = validate_api_key_scopes(scopes)
             if invalid:
                 print(f"ERROR: Invalid scopes: {', '.join(invalid)}")
                 print(f"Allowed scopes: {', '.join(sorted(ALLOWED_SCOPES))}")

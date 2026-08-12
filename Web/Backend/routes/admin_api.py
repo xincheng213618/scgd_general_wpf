@@ -20,6 +20,7 @@ Per-endpoint scope requirements:
   - GET  /docs/status         → cache:read
   - GET  /publish/integrity   → stats:read
   - GET  /api-keys            → admin:*
+  - GET  /api-keys/scopes     → admin:*
   - POST /api-keys            → admin:*
   - POST /api-keys/*/revoke   → admin:*
   - POST /api-keys/*/rotate   → admin:*
@@ -47,6 +48,12 @@ from db_cache import CacheManager, now_iso
 from ports.jobs import JobRepository
 from routes.request_context import current_request_context, set_authenticated_request_context
 from services.auth_policy import AuthPolicy
+from services.api_key_service import (
+    ALLOWED_SCOPES,
+    DEFAULT_API_KEY_SCOPES,
+    list_api_key_scope_definitions,
+    validate_api_key_scopes,
+)
 from services.deployment_history import query_deployment_history
 from services.performance_observability import (
     DEFAULT_SLOW_REQUEST_THRESHOLD_MS,
@@ -83,6 +90,7 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "enable_user": ["admin:*"],
     "disable_user": ["admin:*"],
     "list_api_keys": ["admin:*"],
+    "api_key_scopes": ["admin:*"],
     "create_api_key": ["admin:*"],
     "revoke_api_key": ["admin:*"],
     "rotate_api_key": ["admin:*"],
@@ -963,30 +971,17 @@ def list_api_keys():
     return jsonify(keys)
 
 
-# Allowed scopes for API key creation
-ALLOWED_SCOPES = {
-    "admin:*",
-    "cache:read",
-    "cache:refresh",
-    "jobs:read",
-    "jobs:write",
-    "stats:read",
-    "plugin:read",
-    "plugin:publish",
-    "release:publish",
-    "file:transfer",
-    "ops:relay",
-    "ops:operator",
-    "copilot:config:read",
-}
-
-
 def validate_scopes(scopes_str: str) -> tuple[list[str], list[str]]:
     """Validate scopes against ALLOWED_SCOPES. Returns (valid, invalid)."""
-    requested = {s.strip() for s in scopes_str.split(",") if s.strip()}
-    invalid = sorted(requested - ALLOWED_SCOPES)
-    valid = sorted(requested & ALLOWED_SCOPES)
-    return valid, invalid
+    return validate_api_key_scopes(scopes_str)
+
+
+@admin_api.route("/api-keys/scopes", methods=["GET"])
+def api_key_scopes():
+    return jsonify({
+        "items": list_api_key_scope_definitions(),
+        "default_scopes": list(DEFAULT_API_KEY_SCOPES),
+    })
 
 
 @admin_api.route("/api-keys", methods=["POST"])
@@ -1024,25 +1019,13 @@ def create_api_key():
         result = _create_key(
             ctx.cache,
             name=name,
+            description=description,
             scopes=scopes,
             created_by=_actor_id(),
             expires_at=expires_at,
         )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
-
-    # Store description if provided
-    if description:
-        db = ctx.cache.get_db()
-        try:
-            db.execute(
-                "UPDATE api_keys SET name = ? WHERE id = ?",
-                (f"{name} ({description})" if description else name, result["id"]),
-            )
-            db.commit()
-        finally:
-            db.close()
-        result["description"] = description
 
     ctx.cache.write_audit(
         actor_type=_actor_type(),
