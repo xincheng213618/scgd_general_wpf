@@ -62,6 +62,7 @@ class ArchitectureBoundaryTests(unittest.TestCase):
     def test_service_policy_and_marketplace_use_cases_are_flask_free(self):
         service_files = [
             "marketplace_services.py",
+            "services/artifact_delivery.py",
             "services/auth_policy.py",
             "services/request_context.py",
             "services/marketplace_api.py",
@@ -106,6 +107,44 @@ class ArchitectureBoundaryTests(unittest.TestCase):
                 )
                 for keyword in ("SELECT ", "INSERT ", "UPDATE ", "DELETE "):
                     self.assertNotIn(keyword, string_literals)
+
+    def test_download_routes_use_artifact_delivery_boundary(self):
+        route_files = (
+            "marketplace_api_routes.py",
+            "routes/cvws_api.py",
+            "routes/pages.py",
+            "routes/public_api.py",
+            "routes/spectrum_api.py",
+            "routes/transfer.py",
+        )
+        for relative_path in route_files:
+            tree = _tree(relative_path)
+            imported_names = {
+                alias.name
+                for node in ast.walk(tree)
+                if isinstance(node, ast.ImportFrom) and node.module == "flask"
+                for alias in node.names
+            }
+            direct_sends = [
+                node
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id in {"send_file", "send_from_directory"}
+            ]
+            delivery_calls = [
+                node
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "deliver_artifact"
+            ]
+            with self.subTest(path=relative_path):
+                self.assertTrue(
+                    {"send_file", "send_from_directory"}.isdisjoint(imported_names)
+                )
+                self.assertEqual([], direct_sends)
+                self.assertGreater(len(delivery_calls), 0)
 
     def test_transitional_route_sql_does_not_expand(self):
         expected_counts = {

@@ -198,6 +198,8 @@ class TransferRouteTests(unittest.TestCase):
         download_response = self.client.get("/api/transfer/files/demo.bin", headers=self._auth_headers())
         self.assertEqual(download_response.status_code, 200)
         self.assertEqual(download_response.get_data(), b"payload")
+        self.assertEqual(download_response.headers["Accept-Ranges"], "bytes")
+        self.assertEqual(download_response.headers["X-Content-Type-Options"], "nosniff")
         download_response.close()
 
         delete_response = self.client.delete("/api/transfer/files/demo.bin", headers=self._auth_headers())

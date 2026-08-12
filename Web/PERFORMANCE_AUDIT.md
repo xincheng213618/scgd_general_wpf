@@ -90,6 +90,15 @@ package hash costing about 381.9 ms moved to index refresh work.
   latest run and all running rows. A production preflight over 56,612 runs
   identified 34,229 removable rows; a same-scale synthetic indexed delete took
   62.26 ms and left 22,383 rows.
+- Routed plugin, application, update, tool, transfer, generic storage, and
+  legacy downloads through one `ArtifactDeliveryService`. A two-byte partial
+  plugin range previously incremented the full-download counter; completion is
+  now recorded only after a full `200` body or whole-file `206` body is
+  iterated, while HEAD, 304, partial ranges, and interrupted streams do not
+  count. In a local in-process 32 MiB streaming comparison with one warmup per
+  path and five measured passes, raw `send_file` had an 8.29 ms median versus
+  7.65 ms through the unified boundary; bytes were identical and the wrapper
+  did not buffer the file. This is not an end-to-end network benchmark.
 - Replaced raw SQLite file copies with SQLite online backup, integrity checking,
   and atomic replacement so committed WAL content is included.
 - Added bounded, batched access analytics with normalized route templates,
@@ -109,19 +118,16 @@ package hash costing about 381.9 ms moved to index refresh work.
 2. Finish the application-factory migration: remove route dependencies on
    mutable `app.py` globals, centralize the connection factory, and move SQL into
    feature repositories.
-3. Route every plugin/app/update/tool/transfer download through one
-   completion-aware `ArtifactDeliveryService`, with correct GET/HEAD/range
-   semantics and one download event contract.
-4. Add an indexed browse query instead of sorting/scanning an entire directory,
+3. Add an indexed browse query instead of sorting/scanning an entire directory,
    and throttle heartbeat write amplification.
-5. Add separate, versioned SPA page-view and Web Vitals ingestion. Server HTTP
+4. Add separate, versioned SPA page-view and Web Vitals ingestion. Server HTTP
    requests, page views, downloads, sessions, and visitors must remain distinct
    metrics; trusted-proxy client identity also needs explicit configuration.
-6. Add OpenAPI as the source of truth and generate TypeScript DTOs. The current
+5. Add OpenAPI as the source of truth and generate TypeScript DTOs. The current
    handwritten interfaces are contract-tested but still transitional.
-7. Add retention/rotation for audit rows and the number of DB backup files.
+6. Add retention/rotation for audit rows and the number of DB backup files.
    Access rows inside backups already obey analytics retention.
-8. Split the remaining 506.16 KiB minified `ProForm` admin chunk if publish-page
+7. Split the remaining 506.16 KiB minified `ProForm` admin chunk if publish-page
    navigation performance becomes material; it is lazy and does not affect the
    public preload today.
 

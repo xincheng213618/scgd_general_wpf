@@ -255,14 +255,16 @@ class MarketplaceDataService:
         self,
         plugin_id: str,
         version: str,
-        request_context: RequestContext,
+        *,
+        client_ip: str | None,
+        client_version: str,
     ):
         record_download(
             self._get_db,
             plugin_id=plugin_id,
             version=version,
-            client_ip=request_context.remote_addr,
-            client_version=request_context.client_version,
+            client_ip=client_ip,
+            client_version=client_version,
         )
 
     @staticmethod

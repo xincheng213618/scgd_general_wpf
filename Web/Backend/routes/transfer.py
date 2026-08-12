@@ -13,12 +13,14 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import quote, urlencode
 
-from flask import Blueprint, jsonify, redirect, request, send_from_directory
+from flask import Blueprint, jsonify, redirect, request
 from werkzeug.wsgi import get_input_stream
 
 from db_cache import CacheManager
 from routes.browser_auth import apply_basic_auth_challenge
+from routes.artifact_delivery import deliver_artifact
 from routes.request_context import current_request_context
+from services.artifact_delivery import ArtifactDeliveryService, ArtifactDownloadEvent
 from transfer_files import (
     TRANSFER_FILE_SCOPE,
     TransferFileError,
@@ -37,6 +39,7 @@ class TransferRouteContext:
     config_getter: Callable[[], dict[str, Any]]
     check_auth: Callable[[list[str] | None], bool]
     human_size: Callable[[int], str]
+    artifact_delivery: ArtifactDeliveryService
 
 
 transfer_routes = Blueprint("transfer_routes", __name__)
@@ -129,7 +132,16 @@ def api_transfer_file(filename: str):
             target = resolve_transfer_file(root, filename)
             if not target.is_file():
                 return _json_error("File not found", 404)
-            return send_from_directory(str(root), target.name, as_attachment=True)
+            return deliver_artifact(
+                _get_ctx().artifact_delivery,
+                target,
+                request_method=request.method,
+                event=ArtifactDownloadEvent(
+                    artifact_type="transfer",
+                    artifact_id=target.name,
+                    relative_path=f"Transfer/{target.name}",
+                ),
+            )
 
         if request.method in ("PUT", "POST"):
             # Stop at Content-Length on keep-alive connections without applying the

@@ -147,6 +147,8 @@ class MarketplaceAppTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_data(), b"installer")
+        self.assertEqual(response.headers["Accept-Ranges"], "bytes")
+        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
         response.close()
 
     def test_api_app_incremental_download_repairs_legacy_update_layout(self):
@@ -159,6 +161,8 @@ class MarketplaceAppTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_data(), b"incremental-update")
+        self.assertEqual(response.headers["Accept-Ranges"], "bytes")
+        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
         self.assertTrue((self.storage / "Update" / misplaced.name).exists())
         response.close()
 
@@ -964,8 +968,24 @@ class MarketplaceAppTests(unittest.TestCase):
         head_response.close()
         self.assertEqual(self.client.get("/api/stats").get_json()["totalDownloads"], 0)
 
-        download_response = self.client.get("/api/packages/StatPlugin/1.0.0")
+        partial_response = self.client.get(
+            "/api/packages/StatPlugin/1.0.0",
+            headers={"Range": "bytes=1-2"},
+            buffered=True,
+        )
+        self.assertEqual(partial_response.status_code, 206)
+        self.assertEqual(partial_response.get_data(), b"em")
+        partial_response.close()
+        self.assertEqual(self.client.get("/api/stats").get_json()["totalDownloads"], 0)
+
+        download_response = self.client.get(
+            "/api/packages/StatPlugin/1.0.0",
+            buffered=True,
+        )
         self.assertEqual(download_response.status_code, 200)
+        self.assertEqual(download_response.get_data(), b"demo-package")
+        self.assertEqual(download_response.headers["Accept-Ranges"], "bytes")
+        self.assertEqual(download_response.headers["X-Content-Type-Options"], "nosniff")
         download_response.close()
 
         stats_response = self.client.get("/api/stats")

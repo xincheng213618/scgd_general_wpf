@@ -376,6 +376,14 @@ file, create or deliver an operations task, or increment plugin download
 statistics. File routes still return the same status and representation headers
 as `GET`, without a response body.
 
+Plugin, application, update, tool, transfer, generic storage, and legacy file
+URLs share one artifact delivery boundary. It consistently supports validators
+and byte ranges and adds `Accept-Ranges: bytes` plus
+`X-Content-Type-Options: nosniff`. Plugin download statistics are written only
+after the complete body has been iterated. Conditional responses, partial
+ranges, and interrupted transfers do not increment the counter; `bytes=0-`
+counts when it delivers the complete representation.
+
 Logout state changes use POST. The legacy `GET /logout` URL only redirects to
 the public site and does not clear the session. Disabled database-backed users
 are rejected on their next authenticated page or API request.

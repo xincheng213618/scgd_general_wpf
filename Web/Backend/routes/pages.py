@@ -10,9 +10,11 @@ from __future__ import annotations
 import hashlib
 from urllib.parse import urlencode
 
-from flask import Blueprint, abort, current_app, jsonify, redirect, request, send_from_directory
+from flask import Blueprint, abort, current_app, jsonify, redirect, request
+from routes.artifact_delivery import deliver_artifact
 from routes.browser_auth import apply_basic_auth_challenge, is_browser_navigation
 from routes.request_context import current_request_context, set_authenticated_request_context
+from services.artifact_delivery import ArtifactDownloadEvent
 
 pages = Blueprint("pages", __name__)
 
@@ -266,7 +268,17 @@ def download_storage_file(relative_path):
     if not is_transfer_path and not is_public_storage_path(normalized) and not _has_admin_storage_auth():
         abort(404)
     target = _services().resolve_storage_file(normalized)
-    return send_from_directory(str(target.parent), target.name, as_attachment=True)
+    artifact_type = normalized.partition("/")[0].lower() or "storage"
+    return deliver_artifact(
+        _ctx.artifact_delivery,
+        target,
+        request_method=request.method,
+        event=ArtifactDownloadEvent(
+            artifact_type=artifact_type,
+            artifact_id=normalized,
+            relative_path=normalized,
+        ),
+    )
 
 
 @pages.route("/plugins/<plugin_id>/icon")
@@ -343,7 +355,17 @@ def api_app_release_download(version):
         return jsonify({"error": f"Installer for version {version} not found"}), 404
     best = max(candidates, key=lambda i: (i.get("source") == "current", str(i.get("modified", ""))))
     target = svc.resolve_storage_file(str(best.get("relative_path", "")))
-    return send_from_directory(str(target.parent), target.name, as_attachment=True)
+    return deliver_artifact(
+        _ctx.artifact_delivery,
+        target,
+        request_method=request.method,
+        event=ArtifactDownloadEvent(
+            artifact_type="application",
+            artifact_id="ColorVision",
+            version=version,
+            relative_path=str(best.get("relative_path", "")),
+        ),
+    )
 
 
 @pages.route("/api/app/updates/<version>/download")
@@ -357,4 +379,14 @@ def api_app_incremental_download(version):
     target = storage / "Update" / f"ColorVision-Update-[{version}].cvx"
     if not target.is_file():
         return jsonify({"error": f"Incremental package for version {version} not found"}), 404
-    return send_from_directory(str(target.parent), target.name, as_attachment=True)
+    return deliver_artifact(
+        _ctx.artifact_delivery,
+        target,
+        request_method=request.method,
+        event=ArtifactDownloadEvent(
+            artifact_type="update",
+            artifact_id="ColorVision",
+            version=version,
+            relative_path=f"Update/{target.name}",
+        ),
+    )

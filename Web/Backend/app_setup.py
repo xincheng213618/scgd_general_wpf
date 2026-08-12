@@ -333,10 +333,13 @@ def register_all_blueprints(app, ctx, services, helpers):
         MarketplacePackageService,
         MarketplaceStorageService,
     )
+    from services.artifact_delivery import ArtifactDeliveryService
 
     cache = helpers["cache"]
     config = helpers["config"]
     storage = ctx.storage
+    artifact_delivery = ArtifactDeliveryService()
+    ctx.artifact_delivery = artifact_delivery
 
     # Public pages (login/logout)
     register_public_pages(app, PublicPageContext(
@@ -377,6 +380,7 @@ def register_all_blueprints(app, ctx, services, helpers):
             max_upload_size_bytes=MAX_UPLOAD_SIZE_BYTES,
         ),
         storage=marketplace_storage,
+        delivery=artifact_delivery,
     )
     register_marketplace_api_routes(app, MarketplaceApiRouteContext(
         services=marketplace_api_services,
@@ -414,6 +418,7 @@ def register_all_blueprints(app, ctx, services, helpers):
         cache=cache, storage_getter=lambda: ctx.storage,
         config_getter=lambda: ctx.active_config,
         check_auth=_check_transfer_auth, human_size=human_size,
+        artifact_delivery=artifact_delivery,
     ))
 
     register_admin_api_routes(app, AdminApiContext(

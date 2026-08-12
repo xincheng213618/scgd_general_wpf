@@ -448,6 +448,8 @@ class CVWSAPICompatTests(unittest.TestCase):
     def test_download_api(self):
         with self.client.get("/api/tool/cvwindowsservice/download/1.0.0.0") as resp:
             self.assertEqual(resp.status_code, 200)
+            self.assertEqual(resp.headers["Accept-Ranges"], "bytes")
+            self.assertEqual(resp.headers["X-Content-Type-Options"], "nosniff")
 
     def test_basic_auth_legacy_upload_still_works(self):
         auth = base64.b64encode(b"tester:secret123").decode()

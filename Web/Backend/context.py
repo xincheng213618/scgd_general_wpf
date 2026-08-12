@@ -58,6 +58,7 @@ class MarketplaceContext:
 
     # Service layer (populated after construction)
     services: Any = None  # MarketplaceDataService
+    artifact_delivery: Any = None  # ArtifactDeliveryService
     human_size: Callable[[int], str] = lambda s: f"{s} B"
     render_markdown: Callable[[str | None], Any] = lambda t: str(t or "")
     render_markdown_cached: Callable[..., Any] = lambda **kw: ""

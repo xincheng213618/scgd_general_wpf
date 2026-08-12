@@ -3,9 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from flask import abort, jsonify, request, send_from_directory
+from flask import abort, jsonify, request
 
 from package_publish import PackageValidationError
+from routes.artifact_delivery import deliver_artifact
+from services.artifact_delivery import ArtifactDownloadEvent
 from services.marketplace_api import (
     MarketplaceApiServices,
     MarketplaceQueryError,
@@ -171,14 +173,25 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
         package_path = ctx.services.packages.resolve_download(plugin_id, version)
         if package_path is None:
             return jsonify({"error": "Package not found"}), 404
-        if request.method == "GET":
-            ctx.services.packages.record_download(
-                plugin_id,
-                version,
-                ctx.request_context_factory(),
-            )
-        return send_from_directory(
-            str(package_path.parent), package_path.name, as_attachment=True
+        request_context = ctx.request_context_factory()
+        client_ip = request_context.remote_addr
+        client_version = request_context.client_version
+        return deliver_artifact(
+            ctx.services.delivery,
+            package_path,
+            request_method=request.method,
+            event=ArtifactDownloadEvent(
+                artifact_type="plugin",
+                artifact_id=plugin_id,
+                version=version,
+                relative_path=f"Plugins/{plugin_id}/{package_path.name}",
+            ),
+            on_completed=lambda event: ctx.services.packages.record_download(
+                event.artifact_id,
+                event.version,
+                client_ip=client_ip,
+                client_version=client_version,
+            ),
         )
 
     @app.route("/api/packages/publish", methods=["POST"])
@@ -221,7 +234,17 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
         if not full_path.exists():
             abort(404)
         if full_path.is_file():
-            return send_from_directory(str(full_path.parent), full_path.name)
+            return deliver_artifact(
+                ctx.services.delivery,
+                full_path,
+                request_method=request.method,
+                event=ArtifactDownloadEvent(
+                    artifact_type="plugin",
+                    artifact_id=filepath,
+                    relative_path=f"Plugins/{filepath}",
+                ),
+                as_attachment=False,
+            )
         abort(404)
 
     @app.route("/D%3A/ColorVision/<path:filepath>")
@@ -238,7 +261,17 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
         if not full_path.exists():
             abort(404)
         if full_path.is_file():
-            return send_from_directory(str(full_path.parent), full_path.name)
+            return deliver_artifact(
+                ctx.services.delivery,
+                full_path,
+                request_method=request.method,
+                event=ArtifactDownloadEvent(
+                    artifact_type="storage",
+                    artifact_id=normalized,
+                    relative_path=normalized,
+                ),
+                as_attachment=False,
+            )
         abort(404)
 
     @app.route("/upload/<path:filepath>", methods=["PUT"])

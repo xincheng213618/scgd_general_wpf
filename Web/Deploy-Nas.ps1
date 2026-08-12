@@ -445,6 +445,7 @@ try {
             '-m',
             'unittest',
             'test_access_analytics',
+            'test_artifact_delivery',
             'test_docs_site',
             'test_frontend_spa',
             'test_http_compression',
@@ -461,6 +462,10 @@ try {
             'test_app.MarketplaceAppTests.test_plugins_frontend_uses_catalog_categories_without_second_request',
             'test_app.MarketplaceAppTests.test_plugin_web_detail_view_paginates_history_and_preserves_order',
             'test_app.MarketplaceAppTests.test_plugin_detail_frontend_uses_compact_history_pagination',
+            'test_app.MarketplaceAppTests.test_api_download_package_updates_stats_and_plugin_totals',
+            'test_app.MarketplaceAppTests.test_api_app_release_download_returns_matching_installer',
+            'test_app.MarketplaceAppTests.test_api_app_incremental_download_repairs_legacy_update_layout',
+            'test_app.MarketplaceAppTests.test_download_route_repairs_misplaced_update_file',
             'test_plugin_index.PluginIndexTests.test_api_key_last_used_writes_are_coalesced_per_minute',
             'test_plugin_index.PluginIndexTests.test_api_key_usage_write_failure_does_not_reject_verified_key',
             'test_artifact_index.BrowsePaginationTests.test_browse_search_matches_items_beyond_the_default_page',
@@ -471,7 +476,11 @@ try {
             'test_contracts.AuthContracts.test_same_origin_session_admin_write_requires_csrf_token',
             'test_transfer_files.TransferRouteTests.test_browser_session_transfer_write_requires_csrf_token',
             'test_transfer_files.TransferRouteTests.test_browser_transfer_auth_avoids_basic_challenge_and_redirects_navigation',
+            'test_transfer_files.TransferRouteTests.test_transfer_upload_download_list_and_delete_with_basic_auth',
+            'test_transfer_files.TransferRouteTests.test_storage_download_for_transfer_folder_requires_auth',
+            'test_contracts.PublicPageContracts.test_legacy_storage_route_only_exposes_public_artifacts',
             'test_app.MarketplaceAppTests.test_browser_publish_auth_does_not_trigger_basic_dialog',
+            'test_cvws_web.CVWSAPICompatTests.test_download_api',
             'test_cvws_web.CVWSUploadPageTests.test_browser_publish_auth_does_not_trigger_basic_dialog'
         ) -WorkingDirectory $backendPath
     }

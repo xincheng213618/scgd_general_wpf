@@ -7,9 +7,11 @@ This module handles /api/stats, /api/feedback, and legacy file serving.
 
 from __future__ import annotations
 
-from flask import Blueprint, abort, jsonify, request, send_from_directory
+from flask import Blueprint, abort, jsonify, request
 
 from context import MarketplaceContext
+from routes.artifact_delivery import deliver_artifact
+from services.artifact_delivery import ArtifactDownloadEvent
 
 
 public_api = Blueprint("public_api", __name__)
@@ -67,7 +69,17 @@ def legacy_plugin_files(filepath):
     if not target.exists():
         abort(404)
     if target.is_file():
-        return send_from_directory(str(target.parent), target.name)
+        return deliver_artifact(
+            ctx.artifact_delivery,
+            target,
+            request_method=request.method,
+            event=ArtifactDownloadEvent(
+                artifact_type="plugin",
+                artifact_id=filepath,
+                relative_path=f"Plugins/{filepath}",
+            ),
+            as_attachment=False,
+        )
     abort(404)
 
 
@@ -90,5 +102,15 @@ def legacy_files(filepath):
     if not full_path.exists():
         abort(404)
     if full_path.is_file():
-        return send_from_directory(str(full_path.parent), full_path.name)
+        return deliver_artifact(
+            ctx.artifact_delivery,
+            full_path,
+            request_method=request.method,
+            event=ArtifactDownloadEvent(
+                artifact_type="storage",
+                artifact_id=normalized,
+                relative_path=normalized,
+            ),
+            as_attachment=False,
+        )
     abort(404)

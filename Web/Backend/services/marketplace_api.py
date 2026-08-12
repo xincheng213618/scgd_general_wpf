@@ -26,6 +26,7 @@ from package_publish import (
     validate_api_publish_request,
 )
 from plugin_marketplace import prewarm_plugin_metadata
+from services.artifact_delivery import ArtifactDeliveryService
 from services.request_context import RequestContext
 from storage_paths import (
     is_safe_id,
@@ -203,9 +204,16 @@ class MarketplacePackageService:
         self,
         plugin_id: str,
         version: str,
-        request_context: RequestContext,
+        *,
+        client_ip: str | None,
+        client_version: str,
     ) -> None:
-        self._data.record_download(plugin_id, version, request_context)
+        self._data.record_download(
+            plugin_id,
+            version,
+            client_ip=client_ip,
+            client_version=client_version,
+        )
 
     def publish(
         self,
@@ -343,3 +351,4 @@ class MarketplaceApiServices:
     catalog: MarketplaceCatalogService
     packages: MarketplacePackageService
     storage: MarketplaceStorageService
+    delivery: ArtifactDeliveryService
