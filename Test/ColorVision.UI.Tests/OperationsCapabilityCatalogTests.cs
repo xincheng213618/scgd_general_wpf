@@ -32,6 +32,11 @@ namespace ColorVision.UI.Tests
             Assert.True(deviceHealth.Available);
             Assert.Equal(OperationsRiskLevels.ReadOnly, deviceHealth.RiskLevel);
             Assert.Equal("ops.diagnostics.read", deviceHealth.Permission);
+            OperationsCapabilityDescriptor messageChannel = Assert.Single(capabilities,
+                capability => capability.Id == "ops.messaging.health.read");
+            Assert.True(messageChannel.Available);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, messageChannel.RiskLevel);
+            Assert.Equal("ops.diagnostics.read", messageChannel.Permission);
         }
 
         [Fact]

@@ -53,7 +53,9 @@ namespace ColorVision.UI.Tests
                     new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Ready),
                     new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Unavailable),
                 ], capturedAt),
-                capturedAt);
+                capturedAt,
+                OperationsMessageChannelHealthSnapshotFactory.Create(
+                    new OperationsMessageChannelObservation(true, true, 5, 5), capturedAt));
 
             Assert.Equal(2, snapshot.Alerts.Count);
             Assert.Equal(1, snapshot.Alerts.WarningCount);
@@ -62,6 +64,8 @@ namespace ColorVision.UI.Tests
             Assert.Equal(10, snapshot.SuggestedRefreshSeconds);
             Assert.Equal(2, snapshot.Devices.TotalCount);
             Assert.Equal(1, snapshot.Devices.AttentionCount);
+            Assert.Equal(OperationsMessageChannelStates.Connected, snapshot.MessageChannel.State);
+            Assert.True(snapshot.MessageChannel.SubscriptionReady);
 
             string json = JsonSerializer.Serialize(snapshot);
             Assert.DoesNotContain("private-alert-id", json, StringComparison.Ordinal);

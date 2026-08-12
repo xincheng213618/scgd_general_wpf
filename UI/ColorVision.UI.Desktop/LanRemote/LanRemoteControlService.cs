@@ -59,6 +59,9 @@ namespace ColorVision.UI.Desktop.LanRemote
         public void ConfigureOperationsDeviceHealthProvider(IOperationsDeviceHealthProvider provider) =>
             _operationsHost.ConfigureDeviceHealthProvider(provider);
 
+        public void ConfigureOperationsMessageChannelHealthProvider(IOperationsMessageChannelHealthProvider provider) =>
+            _operationsHost.ConfigureMessageChannelHealthProvider(provider);
+
         public void ApplyConfig()
         {
             var config = LanRemoteControlConfig.Instance;

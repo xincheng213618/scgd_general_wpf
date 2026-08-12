@@ -27,10 +27,13 @@ namespace ColorVision.UI.Desktop.Operations
         public OperationsDeviceHealthSnapshot Devices { get; init; } =
             OperationsDeviceHealthSnapshot.CreateUnavailable();
 
+        public OperationsMessageChannelHealthSnapshot MessageChannel { get; init; } =
+            OperationsMessageChannelHealthSnapshot.CreateUnavailable();
+
         public OperationsLiveMonitorAlertSummary Alerts { get; init; } = new();
 
         public string PrivacyNotice { get; init; } =
-            "This live snapshot contains aggregate flow state, process counters, UI latency, normalized device-category state counts, and alert counts only. It excludes flow, template, batch, node, parameter, result, process identity, host, user, endpoint, device identity, topic, configuration, raw device status, log text, and inspection data.";
+            "This live snapshot contains aggregate flow state, process counters, UI latency, normalized message-channel and device-category state, and alert counts only. It excludes flow, template, batch, node, parameter, result, process identity, host, user, endpoint, device identity, topic, payload, configuration, credentials, raw device status, log text, and inspection data.";
     }
 
     public static class OperationsLiveMonitorSnapshotFactory
@@ -40,7 +43,8 @@ namespace ColorVision.UI.Desktop.Operations
             OperationsRuntimePerformanceSnapshot performance,
             IReadOnlyList<OperationsAlert> alerts,
             OperationsDeviceHealthSnapshot devices,
-            DateTimeOffset? capturedAt = null)
+            DateTimeOffset? capturedAt = null,
+            OperationsMessageChannelHealthSnapshot? messageChannel = null)
         {
             ArgumentNullException.ThrowIfNull(flow);
             ArgumentNullException.ThrowIfNull(performance);
@@ -53,6 +57,7 @@ namespace ColorVision.UI.Desktop.Operations
                 Flow = flow,
                 Performance = performance,
                 Devices = devices,
+                MessageChannel = messageChannel ?? OperationsMessageChannelHealthSnapshot.CreateUnavailable(),
                 Alerts = new OperationsLiveMonitorAlertSummary
                 {
                     Count = alerts.Count,

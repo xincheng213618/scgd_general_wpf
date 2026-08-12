@@ -232,7 +232,8 @@ namespace ColorVision.UI.Tests
                     new OperationsRequestAuthenticator(registry), new OperationsWorkStore(workPath), () => new { healthy = true },
                     runtimePerformance: new FixedRuntimePerformanceProvider(),
                     flowRuntimeStatus: new FixedFlowRuntimeStatusProvider(),
-                    deviceHealthProvider: new FixedDeviceHealthProvider());
+                    deviceHealthProvider: new FixedDeviceHealthProvider(),
+                    messageChannelHealthProvider: new FixedMessageChannelHealthProvider());
                 const string path = "/ops/v1/diagnostics/connection";
 
                 OperationsApiResponse response = router.Handle(new OperationsSecureRequest
@@ -257,6 +258,10 @@ namespace ColorVision.UI.Tests
                 Assert.Equal(1, data.GetProperty("readyDeviceCount").GetInt32());
                 Assert.Equal(1, data.GetProperty("busyDeviceCount").GetInt32());
                 Assert.Equal(1, data.GetProperty("deviceAttentionCount").GetInt32());
+                Assert.True(data.GetProperty("messageChannelAvailable").GetBoolean());
+                Assert.Equal("connected", data.GetProperty("messageChannelState").GetString());
+                Assert.True(data.GetProperty("messageChannelConnected").GetBoolean());
+                Assert.True(data.GetProperty("messageChannelSubscriptionReady").GetBoolean());
 
                 const string summaryPath = "/ops/v1/diagnostics/summary";
                 OperationsApiResponse summary = router.Handle(new OperationsSecureRequest
@@ -327,6 +332,26 @@ namespace ColorVision.UI.Tests
                 Assert.False(deviceCategory.TryGetProperty("topic", out _));
                 Assert.False(deviceCategory.TryGetProperty("address", out _));
 
+                const string messageChannelPath = "/ops/v1/messaging/health";
+                OperationsApiResponse messageChannel = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "GET",
+                    Path = messageChannelPath,
+                    Headers = Sign(key, "device-diagnostics", "GET", messageChannelPath, []),
+                });
+                Assert.Equal(200, messageChannel.StatusCode);
+                using JsonDocument messageChannelDocument = JsonDocument.Parse(messageChannel.Body);
+                JsonElement messageChannelData = messageChannelDocument.RootElement.GetProperty("data");
+                Assert.Equal("connected", messageChannelData.GetProperty("state").GetString());
+                Assert.Equal(6, messageChannelData.GetProperty("registeredSubscriptionCount").GetInt32());
+                Assert.Equal(6, messageChannelData.GetProperty("activeSubscriptionCount").GetInt32());
+                Assert.False(messageChannelData.TryGetProperty("host", out _));
+                Assert.False(messageChannelData.TryGetProperty("port", out _));
+                Assert.False(messageChannelData.TryGetProperty("topic", out _));
+                Assert.False(messageChannelData.TryGetProperty("payload", out _));
+                Assert.False(messageChannelData.TryGetProperty("username", out _));
+                Assert.False(messageChannelData.TryGetProperty("password", out _));
+
                 const string monitorPath = "/ops/v1/monitor";
                 OperationsApiResponse monitor = router.Handle(new OperationsSecureRequest
                 {
@@ -340,6 +365,7 @@ namespace ColorVision.UI.Tests
                 Assert.Equal("running", monitorData.GetProperty("flow").GetProperty("phase").GetString());
                 Assert.Equal(9.5, monitorData.GetProperty("performance").GetProperty("cpuPercent").GetDouble());
                 Assert.Equal(1, monitorData.GetProperty("devices").GetProperty("attentionCount").GetInt32());
+                Assert.Equal("connected", monitorData.GetProperty("messageChannel").GetProperty("state").GetString());
                 Assert.Equal(10, monitorData.GetProperty("suggestedRefreshSeconds").GetInt32());
                 Assert.False(monitorData.GetProperty("alerts").TryGetProperty("items", out _));
                 Assert.DoesNotContain(Environment.MachineName, monitor.Body, StringComparison.OrdinalIgnoreCase);
@@ -848,6 +874,13 @@ namespace ColorVision.UI.Tests
                 new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Busy),
                 new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Unavailable),
             ]);
+        }
+
+        private sealed class FixedMessageChannelHealthProvider : IOperationsMessageChannelHealthProvider
+        {
+            public OperationsMessageChannelHealthSnapshot Capture() =>
+                OperationsMessageChannelHealthSnapshotFactory.Create(
+                    new OperationsMessageChannelObservation(true, true, 6, 6, DateTimeOffset.UtcNow));
         }
 
         private sealed class FixedRuntimePerformanceProvider : IOperationsRuntimePerformanceProvider

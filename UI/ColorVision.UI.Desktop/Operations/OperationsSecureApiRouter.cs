@@ -35,6 +35,7 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly IOperationsFlowRuntimeStatusProvider _flowRuntimeStatus;
         private readonly IOperationsFlowRuntimeController _flowRuntimeController;
         private readonly IOperationsDeviceHealthProvider _deviceHealthProvider;
+        private readonly IOperationsMessageChannelHealthProvider _messageChannelHealthProvider;
 
         public OperationsSecureApiRouter(
             OperationsPairingService pairing,
@@ -49,7 +50,8 @@ namespace ColorVision.UI.Desktop.Operations
             IOperationsRuntimePerformanceProvider? runtimePerformance = null,
             IOperationsFlowRuntimeStatusProvider? flowRuntimeStatus = null,
             IOperationsFlowRuntimeController? flowRuntimeController = null,
-            IOperationsDeviceHealthProvider? deviceHealthProvider = null)
+            IOperationsDeviceHealthProvider? deviceHealthProvider = null,
+            IOperationsMessageChannelHealthProvider? messageChannelHealthProvider = null)
         {
             _pairing = pairing;
             _authenticator = authenticator;
@@ -64,6 +66,7 @@ namespace ColorVision.UI.Desktop.Operations
             _flowRuntimeStatus = flowRuntimeStatus ?? UnavailableOperationsFlowRuntimeStatusProvider.Instance;
             _flowRuntimeController = flowRuntimeController ?? UnavailableOperationsFlowRuntimeController.Instance;
             _deviceHealthProvider = deviceHealthProvider ?? UnavailableOperationsDeviceHealthProvider.Instance;
+            _messageChannelHealthProvider = messageChannelHealthProvider ?? UnavailableOperationsMessageChannelHealthProvider.Instance;
         }
 
         public OperationsApiResponse Handle(OperationsSecureRequest request)
@@ -114,6 +117,7 @@ namespace ColorVision.UI.Desktop.Operations
                 IReadOnlyList<OperationsAlert> alerts = _alerts.GetRecent();
                 OperationsServiceHealthReport serviceHealth = CaptureServiceHealth();
                 OperationsDeviceHealthSnapshot deviceHealth = CaptureDeviceHealth();
+                OperationsMessageChannelHealthSnapshot messageChannel = CaptureMessageChannelHealth();
                 int pendingJobCount = _workStore.GetJobsForDevice(authentication.Device.DeviceId).Count(item => item.Status is
                     "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local" or "approved_mobile");
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", new
@@ -133,6 +137,10 @@ namespace ColorVision.UI.Desktop.Operations
                     readyDeviceCount = deviceHealth.ReadyCount,
                     busyDeviceCount = deviceHealth.BusyCount,
                     deviceAttentionCount = deviceHealth.AttentionCount,
+                    messageChannelAvailable = messageChannel.Available,
+                    messageChannelState = messageChannel.State,
+                    messageChannelConnected = messageChannel.Connected,
+                    messageChannelSubscriptionReady = messageChannel.SubscriptionReady,
                 });
             }
 
@@ -145,13 +153,16 @@ namespace ColorVision.UI.Desktop.Operations
             if (request.Path.Equals($"{ApiPrefix}/devices/health", StringComparison.OrdinalIgnoreCase))
                 return HandleDeviceHealth(request, correlationId, authentication.Device);
 
+            if (request.Path.Equals($"{ApiPrefix}/messaging/health", StringComparison.OrdinalIgnoreCase))
+                return HandleMessageChannelHealth(request, correlationId, authentication.Device);
+
             if (request.Path.Equals($"{ApiPrefix}/triage", StringComparison.OrdinalIgnoreCase))
             {
                 int pendingJobCount = _workStore.GetJobsForDevice(authentication.Device.DeviceId).Count(item => item.Status is
                     "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local" or "approved_mobile");
                 OperationsTriageReport report = OperationsTriageService.Build(
                     _alerts.GetDigest(), OperationsDesktopActionService.CaptureState(), pendingJobCount,
-                    CaptureServiceHealth(), CaptureDeviceHealth());
+                    CaptureServiceHealth(), CaptureDeviceHealth(), CaptureMessageChannelHealth());
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", report);
             }
 
@@ -251,6 +262,37 @@ namespace ColorVision.UI.Desktop.Operations
             }
         }
 
+        private OperationsMessageChannelHealthSnapshot CaptureMessageChannelHealth()
+        {
+            try
+            {
+                return _messageChannelHealthProvider.Capture();
+            }
+            catch
+            {
+                return OperationsMessageChannelHealthSnapshot.CreateUnavailable();
+            }
+        }
+
+        private OperationsApiResponse HandleMessageChannelHealth(
+            OperationsSecureRequest request,
+            string correlationId,
+            OperationsPairedDevice device)
+        {
+            if (!string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return Error(405, correlationId, "method_not_allowed", "Use GET for this endpoint.", "GET");
+            if (!HasScope(device, "ops.diagnostics.read"))
+                return ScopeRequired(correlationId, "ops.diagnostics.read");
+
+            OperationsMessageChannelHealthSnapshot snapshot = CaptureMessageChannelHealth();
+            _workStore.RecordAudit(device.DeviceId, "device", "messaging.health.read",
+                "message-channel", snapshot.Available ? "completed" : "failed", correlationId);
+            return snapshot.Available
+                ? Json(200, correlationId, snapshot)
+                : Error(503, correlationId, "message_channel_health_unavailable",
+                    "The redacted ColorVision message-channel health snapshot is temporarily unavailable.");
+        }
+
         private OperationsApiResponse HandleDeviceHealth(
             OperationsSecureRequest request,
             string correlationId,
@@ -335,7 +377,8 @@ namespace ColorVision.UI.Desktop.Operations
                     _flowRuntimeStatus.Capture(),
                     _runtimePerformance.Capture(),
                     _alerts.GetRecent(),
-                    CaptureDeviceHealth());
+                    CaptureDeviceHealth(),
+                    messageChannel: CaptureMessageChannelHealth());
                 _workStore.RecordAuditThrottled(
                     device.DeviceId,
                     "device",

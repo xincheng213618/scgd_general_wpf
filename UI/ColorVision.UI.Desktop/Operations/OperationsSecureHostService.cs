@@ -22,6 +22,7 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly OperationsRelayClientService _relay;
         private IOperationsServiceHealthProvider _serviceHealthProvider = UnavailableOperationsServiceHealthProvider.Instance;
         private IOperationsDeviceHealthProvider _deviceHealthProvider = UnavailableOperationsDeviceHealthProvider.Instance;
+        private IOperationsMessageChannelHealthProvider _messageChannelHealthProvider = UnavailableOperationsMessageChannelHealthProvider.Instance;
         private IOperationsFlowRuntimeStatusProvider _flowRuntimeStatusProvider = UnavailableOperationsFlowRuntimeStatusProvider.Instance;
         private IOperationsFlowRuntimeController _flowRuntimeController = UnavailableOperationsFlowRuntimeController.Instance;
         private Func<object>? _snapshotProvider;
@@ -103,6 +104,17 @@ namespace ColorVision.UI.Desktop.Operations
             }
         }
 
+        public void ConfigureMessageChannelHealthProvider(IOperationsMessageChannelHealthProvider provider)
+        {
+            ArgumentNullException.ThrowIfNull(provider);
+            lock (_syncRoot)
+            {
+                if (IsRunning)
+                    throw new InvalidOperationException("Configure the Operations message-channel provider before starting the secure host.");
+                _messageChannelHealthProvider = provider;
+            }
+        }
+
         public void Start(int port, Func<object> snapshotProvider)
         {
             lock (_syncRoot)
@@ -119,7 +131,8 @@ namespace ColorVision.UI.Desktop.Operations
                         diagnosticBundles: _diagnosticBundles, windowSnapshots: _windowSnapshots,
                         flowRuntimeStatus: _flowRuntimeStatusProvider,
                         flowRuntimeController: _flowRuntimeController,
-                        deviceHealthProvider: _deviceHealthProvider);
+                        deviceHealthProvider: _deviceHealthProvider,
+                        messageChannelHealthProvider: _messageChannelHealthProvider);
                     _snapshotProvider = snapshotProvider;
                     _listener = new TcpListener(IPAddress.Any, port);
                     _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);

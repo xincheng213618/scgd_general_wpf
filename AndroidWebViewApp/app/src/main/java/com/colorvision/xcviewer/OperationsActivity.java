@@ -160,7 +160,7 @@ public class OperationsActivity extends Activity {
                 pairingClient.submitClaim(payload, deviceName.trim());
                 runOnUiThread(() -> {
                     state.setText("已提交安全证明，请在电脑端批准这台设备");
-                    details.setText("设备：" + deviceName + "\n权限：状态、告警、设备运行状态汇总、诊断摘要、主窗口控制、受控窗口取证与当前检测取消\n配对码：一次性，短时有效");
+                    details.setText("设备：" + deviceName + "\n权限：状态、告警、消息通道与设备运行状态汇总、诊断摘要、主窗口控制、受控窗口取证与当前检测取消\n配对码：一次性，短时有效");
                 });
                 pollPairingApproval(payload, pairingClient);
             } catch (Exception ex) {
@@ -235,7 +235,7 @@ public class OperationsActivity extends Activity {
         progress.setVisibility(View.GONE);
         title.setText("现场运维概览");
         state.setText("已通过设备密钥与 TLS 证书指纹验证");
-        details.setText("状态、性能、告警和设备运行状态汇总可直接查看；显示/最小化窗口属于低风险审计操作。取消当前主检测需要手机明确确认；服务维护仍需手机确认和电脑端本机共签。");
+        details.setText("状态、性能、告警、消息通道和设备运行状态汇总可直接查看；显示/最小化窗口属于低风险审计操作。取消当前主检测需要手机明确确认；服务维护仍需手机确认和电脑端本机共签。");
         actions.removeAllViews();
 
         Button connectionCheck = new Button(this);
@@ -254,6 +254,7 @@ public class OperationsActivity extends Activity {
         actions.addView(liveMonitor, actionParams());
 
         addAction("查看白名单服务健康", "/ops/v1/services/health");
+        addAction("查看消息通道健康", "/ops/v1/messaging/health");
         addAction("查看检测设备状态概览", "/ops/v1/devices/health");
         addAction("刷新运行状态", "/ops/v1/snapshot");
         addAction("查看当前检测状态", "/ops/v1/flow/runtime");
@@ -501,6 +502,10 @@ public class OperationsActivity extends Activity {
                 button.setText("查看检测设备状态概览");
                 button.setOnClickListener(v -> loadCapability("/ops/v1/devices/health"));
                 return button;
+            case "triage.messaging.view":
+                button.setText("查看消息通道健康");
+                button.setOnClickListener(v -> loadCapability("/ops/v1/messaging/health"));
+                return button;
             default:
                 return null;
         }
@@ -514,6 +519,10 @@ public class OperationsActivity extends Activity {
                 .append(" · 错误 ").append(report.optInt("errorCount", 0))
                 .append(" · 警告 ").append(report.optInt("warningCount", 0))
                 .append("\n待处理作业：").append(report.optInt("pendingJobCount", 0))
+                .append("\n消息通道：").append(messageChannelStateLabel(
+                        report.optString("messageChannelState", "unavailable")))
+                .append(" · 订阅 ").append(report.optInt("messageChannelActiveSubscriptionCount", 0))
+                .append('/').append(report.optInt("messageChannelRegisteredSubscriptionCount", 0))
                 .append("\n检测设备：就绪 ").append(report.optInt("deviceReadyCount", 0))
                 .append(" · 忙碌 ").append(report.optInt("deviceBusyCount", 0))
                 .append(" · 已关闭 ").append(report.optInt("deviceClosedCount", 0))
@@ -1421,6 +1430,7 @@ public class OperationsActivity extends Activity {
         JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
         JSONObject alerts = snapshot.optJSONObject("alerts");
         JSONObject devices = snapshot.optJSONObject("devices");
+        JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
         String uiState = mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable");
         int criticalCount = alerts == null ? 0 : alerts.optInt("criticalCount", 0);
         int errorCount = alerts == null ? 0 : alerts.optInt("errorCount", 0);
@@ -1429,10 +1439,15 @@ public class OperationsActivity extends Activity {
         String prefix;
         int deviceAttentionCount = devices == null || !devices.optBoolean("available", false)
                 ? 0 : devices.optInt("attentionCount", 0);
+        boolean messageChannelAttention = messageChannel != null
+                && messageChannel.optBoolean("available", false)
+                && messageChannel.optBoolean("attentionRequired", false);
         if ("unresponsive".equals(uiState)) {
             prefix = "主界面响应超时";
         } else if (criticalCount > 0) {
             prefix = "发现严重告警";
+        } else if (messageChannelAttention) {
+            prefix = "消息通道状态需要关注";
         } else if (deviceAttentionCount > 0) {
             prefix = "检测设备状态需要关注";
         } else if (errorCount > 0) {
@@ -1452,6 +1467,7 @@ public class OperationsActivity extends Activity {
         JSONObject flow = snapshot.optJSONObject("flow");
         JSONObject performance = snapshot.optJSONObject("performance");
         JSONObject devices = snapshot.optJSONObject("devices");
+        JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
         JSONObject alerts = snapshot.optJSONObject("alerts");
         StringBuilder text = new StringBuilder();
         if (flow == null || !flow.optBoolean("available", false)) {
@@ -1470,6 +1486,13 @@ public class OperationsActivity extends Activity {
             if (!"none".equals(lastStatus)) {
                 text.append("\n最近结果：").append(flowOutcomeLabel(lastStatus));
             }
+        }
+
+        text.append("\n\n消息通道：");
+        if (messageChannel == null) {
+            text.append("状态暂不可用");
+        } else {
+            text.append(formatMessageChannelHealth(messageChannel, false));
         }
 
         if (devices == null || !devices.optBoolean("available", false)) {
@@ -1514,7 +1537,7 @@ public class OperationsActivity extends Activity {
                 .append("\n刷新策略：仅当前台可见时每 ")
                 .append(snapshot.optInt("suggestedRefreshSeconds", 10)).append(" 秒")
                 .append(formatLiveMonitorTrend(liveMonitorTrend.summarize()))
-                .append("\n\n服务器不保存采样历史；手机仅在内存保留最近 30 个样本，离开本页即清空。快照不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、设备身份、Topic、配置、原始设备状态、时间戳、日志正文或检测数据。 ");
+                .append("\n\n服务器不保存采样历史；手机仅在内存保留最近 30 个样本，离开本页即清空。快照不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、设备身份、Topic、消息载荷、配置、凭据、原始设备状态、日志正文或检测数据。 ");
         return text.toString();
     }
 
@@ -1678,6 +1701,9 @@ public class OperationsActivity extends Activity {
         if ("/ops/v1/devices/health".equals(path)) {
             return formatDeviceHealth(payload);
         }
+        if ("/ops/v1/messaging/health".equals(path)) {
+            return formatMessageChannelHealth(payload, true);
+        }
         if ("/ops/v1/audit".equals(path)) {
             return formatAuditTimeline(payload);
         }
@@ -1742,6 +1768,9 @@ public class OperationsActivity extends Activity {
         if ("/ops/v1/devices/health".equals(path)) {
             return "检测设备状态概览已刷新";
         }
+        if ("/ops/v1/messaging/health".equals(path)) {
+            return "消息通道健康已刷新";
+        }
         if ("/ops/v1/audit".equals(path)) {
             return "近期远程操作记录已刷新";
         }
@@ -1798,6 +1827,7 @@ public class OperationsActivity extends Activity {
             case "diagnostics.performance.read": return "读取进程性能快照";
             case "flow.runtime.read": return "读取当前检测状态";
             case "monitor.read": return "持续观察运行状态";
+            case "messaging.health.read": return "读取消息通道健康";
             case "diagnostic.bundle.download": return "下载安全诊断包";
             case "window.snapshot.download": return "读取主窗口安全快照";
             case "deployment.receipt.create": return "提交部署确认";
@@ -2022,6 +2052,50 @@ public class OperationsActivity extends Activity {
         }
         text.append("\n\n状态来自设备实际 MQTT 运行状态的固定归类；不返回设备名称、编号、标识、地址、Topic、配置、原始状态载荷、时间戳或测量数据，也不会执行设备操作。");
         return text.toString();
+    }
+
+    private String formatMessageChannelHealth(JSONObject payload, boolean includePrivacyNotice) {
+        if (!payload.optBoolean("available", false)) {
+            return "当前无法读取 ColorVision 消息通道状态。\n\n不会据此自动重连或重启；请在电脑端复核。";
+        }
+
+        String channelState = payload.optString("state", "unavailable");
+        int registered = payload.optInt("registeredSubscriptionCount", 0);
+        int active = payload.optInt("activeSubscriptionCount", 0);
+        StringBuilder text = new StringBuilder();
+        text.append(messageChannelStateLabel(channelState))
+                .append("\n连接：").append(payload.optBoolean("connected", false) ? "已建立" : "未建立")
+                .append("\n订阅：").append(active).append('/').append(registered)
+                .append(payload.optBoolean("subscriptionReady", false) ? " · 已就绪" : " · 未就绪");
+        appendOptionalActivityTime(text, "最近连接", payload.optString("lastConnectedAt", ""));
+        appendOptionalActivityTime(text, "最近断开", payload.optString("lastDisconnectedAt", ""));
+        appendOptionalActivityTime(text, "最近接收活动", payload.optString("lastInboundActivityAt", ""));
+        appendOptionalActivityTime(text, "最近发送活动", payload.optString("lastOutboundActivityAt", ""));
+        String observedAt = shortTime(payload.optString("observedAt", ""));
+        if (!observedAt.isEmpty()) {
+            text.append("\n观测时间：").append(observedAt);
+        }
+        if (includePrivacyNotice) {
+            text.append("\n\n只显示 ColorVision 客户端的规范化连接状态、订阅计数和聚合活动时间；不返回地址、端口、端点、Topic、消息载荷、客户端或设备标识、配置、凭据、证书或原始日志，也不会执行重连或重启。");
+        }
+        return text.toString();
+    }
+
+    private void appendOptionalActivityTime(StringBuilder text, String label, String value) {
+        String timestamp = shortTime(value);
+        if (!timestamp.isEmpty()) {
+            text.append("\n").append(label).append("：").append(timestamp);
+        }
+    }
+
+    private String messageChannelStateLabel(String value) {
+        switch (value) {
+            case "connected": return "已连接 · 订阅就绪";
+            case "degraded": return "已连接 · 订阅未完全恢复";
+            case "disconnected": return "ColorVision 未连接消息服务";
+            case "unconfigured": return "消息通道未配置";
+            default: return "状态暂不可用";
+        }
     }
 
     private void appendDeviceStateCounts(StringBuilder text, JSONObject source) {
@@ -2358,11 +2432,13 @@ public class OperationsActivity extends Activity {
                 JSONObject performance = client.get("/ops/v1/diagnostics/performance").optJSONObject("data");
                 JSONObject flowRuntime = client.get("/ops/v1/flow/runtime").optJSONObject("data");
                 JSONObject devices = client.get("/ops/v1/devices/health").optJSONObject("data");
+                JSONObject messageChannel = client.get("/ops/v1/messaging/health").optJSONObject("data");
                 if (connection == null || events == null || services == null || performance == null
-                        || flowRuntime == null || devices == null) {
+                        || flowRuntime == null || devices == null || messageChannel == null) {
                     throw new IllegalStateException("incomplete_diagnostic_response");
                 }
-                String report = buildShareableDiagnostic(connection, events, services, performance, flowRuntime, devices);
+                String report = buildShareableDiagnostic(
+                        connection, events, services, performance, flowRuntime, devices, messageChannel);
                 runOnUiThread(() -> {
                     progress.setVisibility(View.GONE);
                     state.setText("安全诊断摘要已生成");
@@ -2381,7 +2457,8 @@ public class OperationsActivity extends Activity {
             JSONObject services,
             JSONObject performance,
             JSONObject flowRuntime,
-            JSONObject devices) {
+            JSONObject devices,
+            JSONObject messageChannel) {
         JSONObject desktop = connection.optJSONObject("desktop");
         String window = desktop == null ? "未知" : desktop.optString("windowState", "未知")
                 + (desktop.optBoolean("isVisible", false) ? "（可见）" : "（不可见）");
@@ -2395,11 +2472,13 @@ public class OperationsActivity extends Activity {
                 + "\n" + formatFlowRuntimeStatus(flowRuntime)
                 + "\n\n进程性能快照"
                 + "\n" + formatPerformanceSnapshot(performance)
+                + "\n\n消息通道健康"
+                + "\n" + formatMessageChannelHealth(messageChannel, true)
                 + "\n\n检测设备状态"
                 + "\n" + formatDeviceHealth(devices)
                 + "\n\n" + formatServiceHealth(services)
                 + "\n\n" + formatRecentEvents(events)
-                + "\n\n该文本不包含设备密钥、证书指纹、设备 ID、检测设备身份、用户名、机器名、端点、原始设备状态或完整日志。";
+                + "\n\n该文本不包含设备密钥、证书指纹、设备 ID、检测设备身份、用户名、机器名、地址、端口、端点、Topic、消息载荷、配置、凭据、原始设备状态或完整日志。";
     }
 
     private void shareSafeText(String subject, String report) {

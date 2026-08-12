@@ -26,6 +26,25 @@ namespace ColorVision.Engine.MQTT
         public bool Retain { get; set; }
     }
 
+    public sealed class MqttRuntimeDiagnostics
+    {
+        public bool Configured { get; init; }
+
+        public bool Connected { get; init; }
+
+        public int RegisteredSubscriptionCount { get; init; }
+
+        public int ActiveSubscriptionCount { get; init; }
+
+        public DateTimeOffset? LastConnectedAt { get; init; }
+
+        public DateTimeOffset? LastDisconnectedAt { get; init; }
+
+        public DateTimeOffset? LastInboundActivityAt { get; init; }
+
+        public DateTimeOffset? LastOutboundActivityAt { get; init; }
+    }
+
     public class MQTTControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
@@ -49,6 +68,11 @@ namespace ColorVision.Engine.MQTT
 
         private readonly object _messageTraceLocker = new();
         private readonly List<MqttMessageTraceEntry> _messageTraces = new();
+        private readonly object _runtimeDiagnosticsLocker = new();
+        private DateTimeOffset? _lastConnectedAt;
+        private DateTimeOffset? _lastDisconnectedAt;
+        private DateTimeOffset? _lastInboundActivityAt;
+        private DateTimeOffset? _lastOutboundActivityAt;
 
         private MQTTControl()
         {
@@ -68,6 +92,32 @@ namespace ColorVision.Engine.MQTT
             lock (_messageTraceLocker)
             {
                 return _messageTraces.ToList();
+            }
+        }
+
+        public MqttRuntimeDiagnostics CaptureRuntimeDiagnostics()
+        {
+            int registeredSubscriptionCount;
+            int activeSubscriptionCount;
+            lock (_subscribeTopicLocker)
+            {
+                registeredSubscriptionCount = _subscribeTopicCache.Count;
+                activeSubscriptionCount = SubscribeTopic.Count;
+            }
+
+            lock (_runtimeDiagnosticsLocker)
+            {
+                return new MqttRuntimeDiagnostics
+                {
+                    Configured = !string.IsNullOrWhiteSpace(Config.Host) && Config.Port > 0,
+                    Connected = MQTTClient?.IsConnected == true,
+                    RegisteredSubscriptionCount = registeredSubscriptionCount,
+                    ActiveSubscriptionCount = activeSubscriptionCount,
+                    LastConnectedAt = _lastConnectedAt,
+                    LastDisconnectedAt = _lastDisconnectedAt,
+                    LastInboundActivityAt = _lastInboundActivityAt,
+                    LastOutboundActivityAt = _lastOutboundActivityAt,
+                };
             }
         }
 
@@ -162,6 +212,7 @@ namespace ColorVision.Engine.MQTT
             }
 
             log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT connected");
+            RecordRuntimeActivity(RuntimeActivity.Connected);
             IsConnect = true;
             await ResubscribeTopics();
         }
@@ -170,6 +221,7 @@ namespace ColorVision.Engine.MQTT
         {
             string payload = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
             AddMessageTrace("RECV", e.ApplicationMessage.Topic, payload, e.ApplicationMessage.QualityOfServiceLevel.ToString(), e.ApplicationMessage.Retain);
+            RecordRuntimeActivity(RuntimeActivity.Inbound);
 
              if (log.IsDebugEnabled)
             {
@@ -185,6 +237,7 @@ namespace ColorVision.Engine.MQTT
         private async Task MQTTClient_DisconnectedAsync(MqttClientDisconnectedEventArgs arg)
         {
             log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT disconnected");
+            RecordRuntimeActivity(RuntimeActivity.Disconnected);
             IsConnect = false;
             await Task.Delay(3000);
             _ = Connect();
@@ -341,9 +394,41 @@ namespace ColorVision.Engine.MQTT
 
                 await MQTTClient.PublishAsync(message);
                 AddMessageTrace("SEND", topic, msg, message.QualityOfServiceLevel.ToString(), message.Retain);
+                RecordRuntimeActivity(RuntimeActivity.Outbound);
                 log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Debug, $"{DateTime.Now:HH:mm:ss.fff} Published to '{topic}', message: '{msg}'", null);
             }
             return;
+        }
+
+        private void RecordRuntimeActivity(RuntimeActivity activity)
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            lock (_runtimeDiagnosticsLocker)
+            {
+                switch (activity)
+                {
+                    case RuntimeActivity.Connected:
+                        _lastConnectedAt = now;
+                        break;
+                    case RuntimeActivity.Disconnected:
+                        _lastDisconnectedAt = now;
+                        break;
+                    case RuntimeActivity.Inbound:
+                        _lastInboundActivityAt = now;
+                        break;
+                    case RuntimeActivity.Outbound:
+                        _lastOutboundActivityAt = now;
+                        break;
+                }
+            }
+        }
+
+        private enum RuntimeActivity
+        {
+            Connected,
+            Disconnected,
+            Inbound,
+            Outbound,
         }
     }
 

@@ -104,6 +104,52 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void DisconnectedMessageChannelExplainsUnavailableDeviceStates()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                deviceHealth: OperationsDeviceHealthSnapshotFactory.Create(
+                [
+                    new OperationsDeviceHealthObservation(
+                        OperationsDeviceCategories.Camera, OperationsDeviceStates.Unavailable),
+                ]),
+                messageChannel: OperationsMessageChannelHealthSnapshotFactory.Create(
+                    new OperationsMessageChannelObservation(true, false, 3, 0)));
+
+            OperationsTriageFinding channelFinding = Assert.Single(report.Findings,
+                item => item.FindingId == "message-channel-attention");
+            Assert.Equal("error", channelFinding.Severity);
+            Assert.Contains(channelFinding.Actions,
+                action => action.ActionId == OperationsTriageActionIds.ViewMessageChannelHealth);
+            OperationsTriageFinding deviceFinding = Assert.Single(report.Findings,
+                item => item.FindingId == "inspection-devices-attention");
+            Assert.Contains("可能由通道问题引起", deviceFinding.Summary, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void ReadyMessageChannelPushesUnavailableDevicesToDeviceLayer()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                deviceHealth: OperationsDeviceHealthSnapshotFactory.Create(
+                [
+                    new OperationsDeviceHealthObservation(
+                        OperationsDeviceCategories.Camera, OperationsDeviceStates.Unavailable),
+                ]),
+                messageChannel: OperationsMessageChannelHealthSnapshotFactory.Create(
+                    new OperationsMessageChannelObservation(true, true, 3, 3)));
+
+            Assert.DoesNotContain(report.Findings, item => item.Category == "message-channel");
+            OperationsTriageFinding deviceFinding = Assert.Single(report.Findings,
+                item => item.FindingId == "inspection-devices-attention");
+            Assert.Contains("消息通道当前正常", deviceFinding.Summary, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public void BuildDoesNotRecommendWindowExecutionWhenWindowIsUnavailable()
         {
             OperationsTriageReport report = OperationsTriageService.Build(
