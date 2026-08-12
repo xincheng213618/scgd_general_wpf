@@ -97,10 +97,13 @@ public class OperationsActivity extends Activity {
     private Button dashboardPerformanceStatus;
     private Button dashboardRecoveryStatus;
     private Button dashboardCancelFlowButton;
+    private Button dashboardRestartApplicationButton;
     private boolean dashboardFlowAvailable;
     private boolean dashboardFlowActive;
     private boolean dashboardFlowCancelAvailable;
     private boolean dashboardFlowCancelCapabilityAvailable;
+    private boolean dashboardRestartCapabilityAvailable;
+    private boolean dashboardRemoteHostFresh;
     private boolean dashboardVisible;
     private volatile boolean remoteDashboard;
     private boolean showingDashboardSummary;
@@ -356,6 +359,8 @@ public class OperationsActivity extends Activity {
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
         dashboardFlowCancelCapabilityAvailable = true;
+        dashboardRestartCapabilityAvailable = true;
+        dashboardRemoteHostFresh = true;
 
         addDashboardSection("远程操作");
         addDashboardActionRow(
@@ -366,7 +371,8 @@ public class OperationsActivity extends Activity {
                 dashboardButton("最小化窗口", v -> confirmMinimizeWindow()));
         addDashboardActionRow(
                 dashboardButton("恢复消息通道", v -> confirmRecoverMessageChannel()),
-                dashboardButton("重启 ColorVision", v -> confirmRestartApplication()));
+                dashboardRestartApplicationButton = dashboardButton(
+                        "重启 ColorVision", v -> confirmRestartApplication()));
         dashboardCancelFlowButton = dashboardButton("取消检测（读取中）", v -> confirmCancelCurrentFlow());
         dashboardCancelFlowButton.setEnabled(false);
         addDashboardActionRow(
@@ -443,9 +449,14 @@ public class OperationsActivity extends Activity {
         boolean canRecoverMessageChannel = contains(
                 capabilities, OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL);
         boolean canCancelFlow = contains(capabilities, OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW);
+        boolean canRestartApplication = contains(
+                capabilities, OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION);
         boolean canRequestDiagnostics = contains(
                 capabilities, OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS);
         dashboardFlowCancelCapabilityAvailable = canCancelFlow;
+        dashboardRestartCapabilityAvailable = canRestartApplication;
+        dashboardRemoteHostFresh = host != null && OperationsRelayPolicy.isHostFresh(
+                host.optLong("signedAt", 0L), System.currentTimeMillis());
 
         addDashboardSection("远程操作");
         Button showWindow = dashboardButton("显示电脑主窗口", v -> runRemoteTask(
@@ -471,7 +482,10 @@ public class OperationsActivity extends Activity {
         dashboardCancelFlowButton = dashboardButton(
                 "取消检测（读取中）", v -> confirmCancelCurrentFlow());
         dashboardCancelFlowButton.setEnabled(false);
-        addDashboardWideAction(dashboardCancelFlowButton);
+        dashboardRestartApplicationButton = dashboardButton(
+                "重启 ColorVision", v -> confirmRestartApplication());
+        dashboardRestartApplicationButton.setEnabled(false);
+        addDashboardActionRow(dashboardCancelFlowButton, dashboardRestartApplicationButton);
 
         if (monitor != null) {
             addDashboardSection("电脑签名状态");
@@ -520,6 +534,7 @@ public class OperationsActivity extends Activity {
         }
         boolean fresh = OperationsRelayPolicy.isHostFresh(
                 host.optLong("signedAt", 0L), System.currentTimeMillis());
+        dashboardRemoteHostFresh = fresh;
         JSONObject snapshot = host.optJSONObject("snapshot");
         JSONObject monitor = snapshot == null ? null : snapshot.optJSONObject("monitor");
         JSONObject window = snapshot == null ? null : snapshot.optJSONObject("mainWindow");
@@ -557,6 +572,7 @@ public class OperationsActivity extends Activity {
         } else if (dashboardFlowStatus != null) {
             updateDashboardLiveStatus(monitor);
         }
+        updateDashboardRestartApplicationAction();
         text.append("\n\n控制请求由本机密钥签名，并由电脑再次核验；固定站点不持有设备私钥，也不接收命令文本。");
         details.setText(text.toString());
     }
@@ -762,7 +778,9 @@ public class OperationsActivity extends Activity {
             String idempotencyKey) throws Exception {
         JSONObject latest = null;
         String status = "queued";
-        for (int attempt = 0; attempt < 13 && !isFinishing(); attempt++) {
+        int maximumAttempts = OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION.equals(capabilityId)
+                ? 46 : 13;
+        for (int attempt = 0; attempt < maximumAttempts && !isFinishing(); attempt++) {
             latest = relayClient.getTask(taskId, idempotencyKey);
             JSONObject task = latest.optJSONObject("task");
             if (task == null) {
@@ -772,7 +790,7 @@ public class OperationsActivity extends Activity {
             if (isRemoteTaskResultReady(status)) {
                 break;
             }
-            if (attempt < 12) {
+            if (attempt < maximumAttempts - 1) {
                 Thread.sleep(2_000L);
             }
         }
@@ -815,6 +833,8 @@ public class OperationsActivity extends Activity {
                 dashboardFlowCancelAvailable = false;
                 updateDashboardCancelFlowAction();
                 state.setText("已向当前检测发送取消请求");
+            } else if (OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION.equals(capabilityId)) {
+                state.setText("ColorVision 已远程重启并重新上线");
             } else {
                 state.setText("远程诊断请求已完成");
             }
@@ -832,6 +852,10 @@ public class OperationsActivity extends Activity {
         } else if ("expired".equals(status)) {
             state.setText("远程请求已过期");
             details.setText("电脑未在 15 分钟有效期内领取该请求。配对资料仍然保留，可在电脑上线后重新提交。");
+        } else if ("accepted".equals(status)
+                && OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION.equals(capabilityId)) {
+            state.setText("重启已受理，等待电脑重新上线");
+            details.setText("电脑已复核当前检测为空闲并开始固定重启。配对资料已保留，可稍后通过“最近远程请求”继续查看最终签名结果。");
         } else {
             state.setText("远程请求已安全排队");
             details.setText("电脑暂未返回最终结果。后台中继会在有效期内继续等待；稍后点击“最近远程请求”即可继续查看。");
@@ -1115,6 +1139,7 @@ public class OperationsActivity extends Activity {
                 recovery != null && recovery.optBoolean("registered", false),
                 recovery != null && recovery.optBoolean("automaticWatchdogActive", false)));
         updateDashboardCancelFlowAction();
+        updateDashboardRestartApplicationAction();
     }
 
     private void markDashboardLiveStatusUnavailable() {
@@ -1131,6 +1156,7 @@ public class OperationsActivity extends Activity {
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
         updateDashboardCancelFlowAction();
+        updateDashboardRestartApplicationAction();
     }
 
     private void clearDashboardLiveStatusReferences() {
@@ -1141,10 +1167,13 @@ public class OperationsActivity extends Activity {
         dashboardPerformanceStatus = null;
         dashboardRecoveryStatus = null;
         dashboardCancelFlowButton = null;
+        dashboardRestartApplicationButton = null;
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
         dashboardFlowCancelCapabilityAvailable = false;
+        dashboardRestartCapabilityAvailable = false;
+        dashboardRemoteHostFresh = false;
     }
 
     private void updateDashboardCancelFlowAction() {
@@ -1161,6 +1190,17 @@ public class OperationsActivity extends Activity {
                 dashboardFlowActive,
                 dashboardFlowCancelAvailable,
                 liveMonitorCancelInFlight));
+    }
+
+    private void updateDashboardRestartApplicationAction() {
+        if (dashboardRestartApplicationButton == null) {
+            return;
+        }
+        dashboardRestartApplicationButton.setEnabled(
+                dashboardRestartCapabilityAvailable
+                        && dashboardRemoteHostFresh
+                        && dashboardFlowAvailable
+                        && !dashboardFlowActive);
     }
 
     private Button capabilityButton(String label, String path) {
@@ -1922,9 +1962,19 @@ public class OperationsActivity extends Activity {
     private void confirmRestartApplication() {
         new AlertDialog.Builder(this)
                 .setTitle("确认重启 ColorVision")
-                .setMessage("确认后只会干净重启当前 ColorVision 应用，不会选择程序、路径、命令或启动参数。正在执行检测时电脑端会拒绝；重启期间会短暂断线，应用将保留配对资料并自动等待恢复。")
+                .setMessage(remoteDashboard
+                        ? "确认后会通过设备签名中继重启当前 ColorVision。电脑先复核检测为空闲并返回已受理回执，新进程重新上线后再返回最终回执；不会选择程序、路径、命令或启动参数。"
+                        : "确认后只会干净重启当前 ColorVision 应用，不会选择程序、路径、命令或启动参数。正在执行检测时电脑端会拒绝；重启期间会短暂断线，应用将保留配对资料并自动等待恢复。")
                 .setNegativeButton("取消", null)
-                .setPositiveButton("确认重启", (dialog, which) -> restartApplication())
+                .setPositiveButton("确认重启", (dialog, which) -> {
+                    if (remoteDashboard) {
+                        runRemoteTask(
+                                OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION,
+                                new JSONObject());
+                    } else {
+                        restartApplication();
+                    }
+                })
                 .show();
     }
 

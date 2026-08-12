@@ -23,6 +23,8 @@ namespace ColorVision.UI.Desktop.Operations
         public string? ResultEvidenceId { get; set; }
         public string? SourceTaskId { get; set; }
 
+        public string? SourceIdempotencyKey { get; set; }
+
         [JsonIgnore]
         public string DisplayTitle => CapabilityId switch
         {
@@ -152,7 +154,8 @@ namespace ColorVision.UI.Desktop.Operations
             string reason,
             JsonElement input,
             string correlationId,
-            string? sourceTaskId = null)
+            string? sourceTaskId = null,
+            string? sourceIdempotencyKey = null)
         {
             if (capabilityId is not ("ops.diagnostics.bundle.create" or "ops.window.snapshot.capture" or "ops.service.restart" or "ops.application.restart" or "ops.messaging.reconnect" or "ops.flow.cancel"))
                 throw new InvalidOperationException("capability_not_allowed_for_remote_job");
@@ -175,6 +178,7 @@ namespace ColorVision.UI.Desktop.Operations
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow,
                 SourceTaskId = sourceTaskId ?? (deviceId == "web-relay" ? correlationId : null),
+                SourceIdempotencyKey = sourceIdempotencyKey,
             };
             lock (_syncRoot)
             {
@@ -535,6 +539,16 @@ namespace ColorVision.UI.Desktop.Operations
                     && string.Equals(item.CorrelationId, idempotencyKey, StringComparison.Ordinal))?.Outcome;
         }
 
+        public bool HasSentRelayRestartReceipt(string sourceTaskId, string status)
+        {
+            lock (_syncRoot)
+                return _state.Audit.Any(item =>
+                    string.Equals(item.ActorType, "system", StringComparison.Ordinal)
+                    && string.Equals(item.Action, "relay.restart.receipt", StringComparison.Ordinal)
+                    && string.Equals(item.TargetId, sourceTaskId, StringComparison.Ordinal)
+                    && string.Equals(item.Outcome, status, StringComparison.Ordinal));
+        }
+
         public bool RecordAuditThrottled(
             string actorId,
             string actorType,
@@ -618,6 +632,7 @@ namespace ColorVision.UI.Desktop.Operations
             CompletedAt = value.CompletedAt,
             ResultEvidenceId = value.ResultEvidenceId,
             SourceTaskId = value.SourceTaskId,
+            SourceIdempotencyKey = value.SourceIdempotencyKey,
         };
 
         private static bool CanAccessJob(OperationsJob job, string deviceId, bool allowWebRelay) =>

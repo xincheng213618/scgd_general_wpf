@@ -232,6 +232,41 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void RelayRestartCorrelationAndFinalReceiptMarkerSurviveProcessRestart()
+        {
+            string path = NewPath();
+            try
+            {
+                OperationsWorkStore firstStore = new(path);
+                OperationsJob created = firstStore.CreateJob(
+                    "ops.application.restart",
+                    "phone-1",
+                    "Restart current application",
+                    JsonSerializer.SerializeToElement(new { }),
+                    "restart-idempotency-1",
+                    "restart-task-1",
+                    "restart-idempotency-1");
+                firstStore.RecordAudit(
+                    "operations-relay", "system", "relay.restart.receipt",
+                    "restart-task-1", "completed", "restart-idempotency-1");
+
+                OperationsWorkStore reloadedStore = new(path);
+                OperationsJob reloaded = Assert.Single(reloadedStore.GetJobs());
+                Assert.Equal(created.JobId, reloaded.JobId);
+                Assert.Equal("restart-task-1", reloaded.SourceTaskId);
+                Assert.Equal("restart-idempotency-1", reloaded.SourceIdempotencyKey);
+                Assert.True(reloadedStore.HasSentRelayRestartReceipt(
+                    "restart-task-1", "completed"));
+                Assert.False(reloadedStore.HasSentRelayRestartReceipt(
+                    "restart-task-1", "failed"));
+            }
+            finally
+            {
+                DeletePath(path);
+            }
+        }
+
+        [Fact]
         public void DeploymentReceiptAndSupportRequestAreBoundedAndAudited()
         {
             string path = NewPath();

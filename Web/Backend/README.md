@@ -104,9 +104,13 @@ from approved devices retain their P-256 signature for a second verification
 on the desktop. Device tasks are limited to empty-payload show/minimize actions
 for the current ColorVision main window, an empty-payload recovery of the current
 configured message connection and subscriptions, an empty-payload cancellation
-request for the active primary flow, and a bounded diagnostic request; window
-handles, titles, process selectors, flow or node selectors, endpoints, topics,
-credentials, paths, commands, scripts, and arbitrary payload fields are rejected.
+request for the active primary flow, an empty-payload restart of the current
+ColorVision application, and a bounded diagnostic request. Application restart
+uses a signed accepted receipt before shutdown and a final signed receipt from
+the replacement process after persistent handoff; window handles, titles,
+process or program selectors, flow or node selectors, endpoints, topics,
+credentials, paths, arguments, commands, scripts, and arbitrary payload fields
+are rejected.
 The API-key relay remains available for compatible deployments.
 
 Successful Bearer authentication still checks the active flag, expiry, secret,

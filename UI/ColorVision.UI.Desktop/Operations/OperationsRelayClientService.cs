@@ -27,6 +27,8 @@ namespace ColorVision.UI.Desktop.Operations
             UnavailableOperationsMessageChannelRecoveryController.Instance;
         private IOperationsFlowRuntimeController _flowRuntimeController =
             UnavailableOperationsFlowRuntimeController.Instance;
+        private IOperationsApplicationRestartController _applicationRestartController =
+            UnavailableOperationsApplicationRestartController.Instance;
 
         public OperationsRelayClientService(
             OperationsServerIdentity identity,
@@ -82,6 +84,16 @@ namespace ColorVision.UI.Desktop.Operations
             _flowRuntimeController = controller;
         }
 
+        public void ConfigureApplicationRestartController(
+            IOperationsApplicationRestartController controller)
+        {
+            ArgumentNullException.ThrowIfNull(controller);
+            if (IsRunning)
+                throw new InvalidOperationException(
+                    "Configure the Operations application restart controller before starting the relay.");
+            _applicationRestartController = controller;
+        }
+
         public void Start(
             Func<object> snapshotProvider,
             Func<OperationsLiveMonitorSnapshot?> monitorProvider)
@@ -115,6 +127,8 @@ namespace ColorVision.UI.Desktop.Operations
                     if (_signedDeviceRelay)
                     {
                         await SyncSignedHostAsync(cancellationToken).ConfigureAwait(false);
+                        await FlushSignedApplicationRestartReceiptsAsync(cancellationToken).ConfigureAwait(false);
+                        await ResumeSignedApplicationRestartsAsync(cancellationToken).ConfigureAwait(false);
                         await PollSignedTasksAsync(cancellationToken).ConfigureAwait(false);
                         LastStatusMessage = "设备签名远程中继已连接。";
                     }
@@ -171,7 +185,7 @@ namespace ColorVision.UI.Desktop.Operations
                 _monitorProvider?.Invoke());
             string appVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty;
             string[] capabilities =
-                ["ops.window.show", "ops.window.minimize", "ops.messaging.reconnect", "ops.flow.cancel", "ops.diagnostics.request"];
+                ["ops.window.show", "ops.window.minimize", "ops.messaging.reconnect", "ops.flow.cancel", "ops.application.restart", "ops.diagnostics.request"];
             long signedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             string snapshotBody = JsonSerializer.Serialize(new
             {
@@ -239,6 +253,12 @@ namespace ColorVision.UI.Desktop.Operations
                 {
                     status = "rejected";
                     evidence = new { error };
+                }
+                else if (verified!.CapabilityId == "ops.application.restart")
+                {
+                    await HandleSignedApplicationRestartTaskAsync(verified, cancellationToken)
+                        .ConfigureAwait(false);
+                    continue;
                 }
                 else if (verified!.CapabilityId is "ops.window.show" or "ops.window.minimize")
                 {
@@ -345,6 +365,157 @@ namespace ColorVision.UI.Desktop.Operations
                     .ConfigureAwait(false);
             }
         }
+
+        private async Task HandleSignedApplicationRestartTaskAsync(
+            OperationsRelayVerifiedTask task,
+            CancellationToken cancellationToken)
+        {
+            OperationsJob? job;
+            try
+            {
+                job = _workStore.CreateJob(
+                    "ops.application.restart",
+                    task.Device.DeviceId,
+                    "已配对手机明确确认远程重启当前 ColorVision 应用",
+                    JsonSerializer.SerializeToElement(new { }),
+                    task.IdempotencyKey,
+                    task.TaskId,
+                    task.IdempotencyKey);
+                if (job.Status == "awaiting_mobile_approval")
+                    job = _workStore.DecideJob(
+                        job.JobId, task.Device.DeviceId, approved: true,
+                        "已配对手机已明确确认", task.IdempotencyKey);
+                if (job?.Status == "approved_mobile")
+                    job = _workStore.BeginExecution(job.JobId);
+                if (job == null)
+                    throw new InvalidOperationException("application_restart_job_transition_failed");
+            }
+            catch
+            {
+                await SendSignedTaskReceiptAsync(
+                    task.TaskId,
+                    "failed",
+                    new { evidenceId = "application_restart:relay_execution_failed" },
+                    task.IdempotencyKey,
+                    cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            if (job.Status == "executing")
+            {
+                await StartSignedApplicationRestartAsync(job, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+            if (job.Status is "completed" or "failed")
+            {
+                await SendSignedApplicationRestartFinalReceiptAsync(job, cancellationToken)
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            OperationsJob? failed = _workStore.CompleteJob(
+                job.JobId, false, "application_restart:invalid_job_state");
+            await SendSignedApplicationRestartFinalReceiptAsync(failed ?? job, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        private async Task ResumeSignedApplicationRestartsAsync(CancellationToken cancellationToken)
+        {
+            foreach (OperationsJob job in _workStore.GetJobs().Where(item =>
+                item.CapabilityId == "ops.application.restart"
+                && item.Status == "executing"
+                && IsSafeRelayIdentifier(item.SourceTaskId)
+                && IsSafeRelayIdentifier(item.SourceIdempotencyKey)))
+            {
+                await StartSignedApplicationRestartAsync(job, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private async Task StartSignedApplicationRestartAsync(
+            OperationsJob job,
+            CancellationToken cancellationToken)
+        {
+            await SendSignedTaskReceiptAsync(
+                job.SourceTaskId!,
+                "accepted",
+                new { jobId = job.JobId, state = "restart_validated" },
+                job.SourceIdempotencyKey!,
+                cancellationToken).ConfigureAwait(false);
+
+            OperationsApplicationRestartResult result;
+            try
+            {
+                result = _applicationRestartController.RequestRestart(job.JobId);
+            }
+            catch
+            {
+                result = new OperationsApplicationRestartResult(
+                    false, "application_restart:controller_failed");
+            }
+
+            _workStore.RecordAudit(
+                job.RequestedByDeviceId,
+                "device",
+                "relay.intent.execute",
+                job.CapabilityId,
+                result.Accepted ? "accepted" : "failed",
+                job.SourceIdempotencyKey!);
+            if (result.Accepted)
+                return;
+
+            OperationsJob? failed = _workStore.CompleteJob(job.JobId, false, result.EvidenceId);
+            await SendSignedApplicationRestartFinalReceiptAsync(failed ?? job, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        private async Task FlushSignedApplicationRestartReceiptsAsync(
+            CancellationToken cancellationToken)
+        {
+            foreach (OperationsJob job in _workStore.GetJobs().Where(item =>
+                item.CapabilityId == "ops.application.restart"
+                && item.Status is "completed" or "failed"
+                && IsSafeRelayIdentifier(item.SourceTaskId)
+                && IsSafeRelayIdentifier(item.SourceIdempotencyKey)))
+            {
+                await SendSignedApplicationRestartFinalReceiptAsync(job, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        private async Task SendSignedApplicationRestartFinalReceiptAsync(
+            OperationsJob job,
+            CancellationToken cancellationToken)
+        {
+            string status = job.Status == "completed" ? "completed" : "failed";
+            if (!IsSafeRelayIdentifier(job.SourceTaskId)
+                || !IsSafeRelayIdentifier(job.SourceIdempotencyKey)
+                || _workStore.HasSentRelayRestartReceipt(job.SourceTaskId!, status))
+                return;
+
+            await SendSignedTaskReceiptAsync(
+                job.SourceTaskId!,
+                status,
+                new
+                {
+                    jobId = job.JobId,
+                    evidenceId = string.IsNullOrWhiteSpace(job.ResultEvidenceId)
+                        ? "application_restart:result_unavailable"
+                        : job.ResultEvidenceId,
+                },
+                job.SourceIdempotencyKey!,
+                cancellationToken).ConfigureAwait(false);
+            _workStore.RecordAudit(
+                "operations-relay",
+                "system",
+                "relay.restart.receipt",
+                job.SourceTaskId!,
+                status,
+                job.SourceIdempotencyKey!);
+        }
+
+        private static bool IsSafeRelayIdentifier(string? value) =>
+            value is { Length: >= 1 and <= 64 }
+            && value.All(character => char.IsLetterOrDigit(character) || character is '_' or '-');
 
         private async Task SendSignedTaskReceiptAsync(
             string taskId,

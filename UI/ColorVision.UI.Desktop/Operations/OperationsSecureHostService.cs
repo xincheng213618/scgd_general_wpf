@@ -164,6 +164,7 @@ namespace ColorVision.UI.Desktop.Operations
                 if (IsRunning)
                     throw new InvalidOperationException("Configure the Operations application restart controller before starting the secure host.");
                 _applicationRestartController = controller;
+                _relay.ConfigureApplicationRestartController(controller);
             }
         }
 

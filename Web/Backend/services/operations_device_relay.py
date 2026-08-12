@@ -29,6 +29,7 @@ SAFE_NONCE = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
 ALLOWED_CLOCK_SKEW = timedelta(minutes=2)
 NONCE_LIFETIME = timedelta(minutes=5)
 ALLOWED_DEVICE_TASK_CAPABILITIES = {
+    "ops.application.restart": "ops.jobs.create",
     "ops.diagnostics.request": "ops.jobs.create",
     "ops.flow.cancel": "ops.jobs.create",
     "ops.messaging.reconnect": "ops.jobs.create",
@@ -326,7 +327,11 @@ class OperationsDeviceRelayService:
         if not required_scope:
             raise DeviceRelayError("task_capability_not_allowed")
         payload = request.get("payload", {})
-        if not isinstance(payload, dict) or any(name in payload for name in ("command", "executablePath", "shell", "script")):
+        if not isinstance(payload, dict):
+            raise DeviceRelayError("task_payload_not_allowed")
+        if capability_id == "ops.application.restart" and payload:
+            raise DeviceRelayError("application_restart_payload_not_allowed")
+        if any(name in payload for name in ("command", "executablePath", "shell", "script")):
             raise DeviceRelayError("task_payload_not_allowed")
         if capability_id == "ops.window.show" and payload:
             raise DeviceRelayError("window_show_payload_not_allowed")

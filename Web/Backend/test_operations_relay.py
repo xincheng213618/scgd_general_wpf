@@ -349,6 +349,7 @@ class OperationsRelayTests(unittest.TestCase):
             ("ops.window.minimize", "minimize-window"),
             ("ops.messaging.reconnect", "reconnect-message-channel"),
             ("ops.flow.cancel", "cancel-current-flow"),
+            ("ops.application.restart", "restart-application"),
         ):
             body = self.json_bytes({
                 "hostId": identity["host_id"],
@@ -415,6 +416,24 @@ class OperationsRelayTests(unittest.TestCase):
             "flow_cancel_payload_not_allowed",
         )
 
+        restart_payload_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.application.restart",
+            "payload": {"executablePath": "other.exe"},
+            "idempotencyKey": "restart-with-payload",
+        })
+        restart_rejected = self.client.post(
+            path,
+            data=restart_payload_body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, restart_payload_body),
+        )
+        self.assertEqual(restart_rejected.status_code, 400)
+        self.assertEqual(
+            restart_rejected.get_json()["error"],
+            "application_restart_payload_not_allowed",
+        )
+
     @staticmethod
     def json_bytes(value):
         return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -460,6 +479,7 @@ class OperationsRelayTests(unittest.TestCase):
             "ops.window.minimize",
             "ops.messaging.reconnect",
             "ops.flow.cancel",
+            "ops.application.restart",
             "ops.diagnostics.request",
         ]
         snapshot = {"isRunning": True, "mainWindow": {"state": "Normal"}}
