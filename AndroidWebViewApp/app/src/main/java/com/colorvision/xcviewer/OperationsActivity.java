@@ -428,9 +428,12 @@ public class OperationsActivity extends Activity {
         progress.setVisibility(View.GONE);
         title.setText("运维伴侣");
         actions.removeAllViews();
+        clearDashboardLiveStatusReferences();
         updateRemoteDashboardStatus(response);
 
         JSONObject host = response.optJSONObject("host");
+        JSONObject snapshot = host == null ? null : host.optJSONObject("snapshot");
+        JSONObject monitor = snapshot == null ? null : snapshot.optJSONObject("monitor");
         JSONArray capabilities = host == null ? null : host.optJSONArray("capabilities");
         boolean canShowWindow = contains(capabilities, OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW);
         boolean canRequestDiagnostics = contains(
@@ -450,6 +453,26 @@ public class OperationsActivity extends Activity {
         });
         diagnostics.setEnabled(canRequestDiagnostics);
         addDashboardActionRow(showWindow, diagnostics);
+
+        if (monitor != null) {
+            addDashboardSection("电脑签名状态");
+            addDashboardActionRow(
+                    dashboardFlowStatus = dashboardStatusButton("检测\n读取中…",
+                            v -> showLatestRemoteMonitorDetail("flow")),
+                    dashboardDeviceStatus = dashboardStatusButton("设备\n读取中…",
+                            v -> showLatestRemoteMonitorDetail("devices")));
+            addDashboardActionRow(
+                    dashboardMessageStatus = dashboardStatusButton("消息\n读取中…",
+                            v -> showLatestRemoteMonitorDetail("message")),
+                    dashboardAlertStatus = dashboardStatusButton("告警\n读取中…",
+                            v -> showLatestRemoteMonitorDetail("alerts")));
+            addDashboardActionRow(
+                    dashboardPerformanceStatus = dashboardStatusButton("性能\n读取中…",
+                            v -> showLatestRemoteMonitorDetail("performance")),
+                    dashboardRecoveryStatus = dashboardStatusButton("恢复\n读取中…",
+                            v -> showLatestRemoteMonitorDetail("recovery")));
+            updateDashboardLiveStatus(monitor);
+        }
 
         addDashboardSection("连接与记录");
         addDashboardActionRow(
@@ -479,6 +502,7 @@ public class OperationsActivity extends Activity {
         boolean fresh = OperationsRelayPolicy.isHostFresh(
                 host.optLong("signedAt", 0L), System.currentTimeMillis());
         JSONObject snapshot = host.optJSONObject("snapshot");
+        JSONObject monitor = snapshot == null ? null : snapshot.optJSONObject("monitor");
         JSONObject window = snapshot == null ? null : snapshot.optJSONObject("mainWindow");
         JSONObject secure = snapshot == null ? null : snapshot.optJSONObject("secureOperations");
         boolean running = snapshot != null && snapshot.optBoolean("isRunning", false);
@@ -509,8 +533,132 @@ public class OperationsActivity extends Activity {
             text.append("\n最近更新：").append(new SimpleDateFormat(
                     "MM-dd HH:mm:ss", Locale.getDefault()).format(new Date(signedAt * 1_000L)));
         }
+        if (monitor == null) {
+            text.append("\n远程状态摘要：等待电脑端更新");
+        } else if (dashboardFlowStatus != null) {
+            updateDashboardLiveStatus(monitor);
+        }
         text.append("\n\n控制请求由本机密钥签名，并由电脑再次核验；固定站点不持有设备私钥，也不接收命令文本。");
         details.setText(text.toString());
+    }
+
+    private void showRemoteMonitorDetail(String section, JSONObject monitor) {
+        showingDashboardSummary = false;
+        progress.setVisibility(View.GONE);
+        title.setText(remoteMonitorTitle(section));
+        state.setText("电脑签名远程状态");
+        details.setText(formatRemoteMonitorSection(section, monitor)
+                + "\n\n该摘要由电脑证书签名，手机按配对证书指纹核验后展示；固定站点无法修改或伪造。 ");
+        actions.removeAllViews();
+        addDashboardActionRow(
+                dashboardButton("刷新远程状态", v -> refreshRemoteMonitorDetail(section)),
+                dashboardButton("返回运维概览", v -> showCurrentDashboard()));
+        scheduleConnectionHeartbeat();
+    }
+
+    private void showLatestRemoteMonitorDetail(String section) {
+        JSONObject monitor = remoteMonitor(lastRelaySnapshotResponse);
+        if (monitor == null) {
+            Toast.makeText(this, "远程状态暂不可用，请刷新后重试", Toast.LENGTH_LONG).show();
+            return;
+        }
+        showRemoteMonitorDetail(section, monitor);
+    }
+
+    private void refreshRemoteMonitorDetail(String section) {
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在读取电脑签名状态…");
+        executor.execute(() -> {
+            try {
+                JSONObject response = relayClient.getSnapshot();
+                JSONObject monitor = remoteMonitor(response);
+                if (monitor == null) {
+                    throw new IllegalStateException("remote_monitor_unavailable");
+                }
+                runOnUiThread(() -> {
+                    lastRelaySnapshotResponse = response;
+                    showRemoteMonitorDetail(section, monitor);
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> showTransientError(ex));
+            }
+        });
+    }
+
+    private JSONObject remoteMonitor(JSONObject response) {
+        JSONObject host = response == null ? null : response.optJSONObject("host");
+        JSONObject snapshot = host == null ? null : host.optJSONObject("snapshot");
+        return snapshot == null ? null : snapshot.optJSONObject("monitor");
+    }
+
+    private String remoteMonitorTitle(String section) {
+        switch (section) {
+            case "flow": return "远程检测状态";
+            case "devices": return "远程设备状态";
+            case "message": return "远程消息状态";
+            case "alerts": return "远程告警摘要";
+            case "performance": return "远程性能快照";
+            case "recovery": return "远程恢复状态";
+            default: return "远程运行状态";
+        }
+    }
+
+    private String formatRemoteMonitorSection(String section, JSONObject monitor) {
+        JSONObject payload;
+        switch (section) {
+            case "flow":
+                payload = monitor.optJSONObject("flow");
+                return payload == null ? "当前无法读取检测状态。" : formatFlowRuntimeStatus(payload);
+            case "devices":
+                payload = monitor.optJSONObject("devices");
+                return payload == null ? "当前无法读取检测设备汇总。" : formatDeviceHealth(payload);
+            case "message":
+                payload = monitor.optJSONObject("messageChannel");
+                return payload == null ? "当前无法读取消息通道状态。" : formatMessageChannelHealth(payload, true);
+            case "alerts":
+                return formatRemoteAlertSummary(monitor.optJSONObject("alerts"));
+            case "performance":
+                payload = monitor.optJSONObject("performance");
+                return payload == null ? "当前无法读取进程性能快照。" : formatPerformanceSnapshot(payload);
+            case "recovery":
+                return formatRemoteRecoveryStatus(monitor.optJSONObject("applicationRecovery"));
+            default:
+                return "当前远程状态类别不可用。";
+        }
+    }
+
+    private String formatRemoteAlertSummary(JSONObject alerts) {
+        if (alerts == null) {
+            return "当前无法读取近期告警计数。";
+        }
+        int count = alerts.optInt("count", 0);
+        StringBuilder text = new StringBuilder("近期告警：").append(count).append(" 条")
+                .append("\n警告：").append(alerts.optInt("warningCount", 0))
+                .append(" · 错误：").append(alerts.optInt("errorCount", 0))
+                .append(" · 严重：").append(alerts.optInt("criticalCount", 0));
+        String latestAt = shortTime(alerts.optString("latestOccurredAt", ""));
+        if (!latestAt.isEmpty()) {
+            text.append("\n最近发生：").append(latestAt);
+        }
+        return text.append("\n\n只返回聚合计数和最近发生时间，不包含告警正文、日志、路径或身份信息。")
+                .toString();
+    }
+
+    private String formatRemoteRecoveryStatus(JSONObject recovery) {
+        if (recovery == null || !recovery.optBoolean("supported", false)) {
+            return "当前系统不支持 ColorVision 异常恢复。";
+        }
+        StringBuilder text = new StringBuilder();
+        if (!recovery.optBoolean("registered", false)) {
+            text.append("异常恢复尚未就绪。 ");
+        } else if (recovery.optBoolean("restartedAfterFailure", false)) {
+            text.append("本次启动已由固定目标看门狗或 Windows 异常恢复接管。 ");
+        } else if (recovery.optBoolean("automaticWatchdogActive", false)) {
+            text.append("本机异常看门狗已就绪，只会恢复同目录 ColorVision。 ");
+        } else {
+            text.append("Windows 异常恢复已登记。 ");
+        }
+        return text.append("手机不能指定程序、路径、命令或启动参数。 ").toString();
     }
 
     private void refreshRemoteDashboard() {
@@ -928,6 +1076,19 @@ public class OperationsActivity extends Activity {
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
         updateDashboardCancelFlowAction();
+    }
+
+    private void clearDashboardLiveStatusReferences() {
+        dashboardFlowStatus = null;
+        dashboardDeviceStatus = null;
+        dashboardMessageStatus = null;
+        dashboardAlertStatus = null;
+        dashboardPerformanceStatus = null;
+        dashboardRecoveryStatus = null;
+        dashboardCancelFlowButton = null;
+        dashboardFlowAvailable = false;
+        dashboardFlowActive = false;
+        dashboardFlowCancelAvailable = false;
     }
 
     private void updateDashboardCancelFlowAction() {

@@ -27,7 +27,7 @@ namespace ColorVision.UI.Desktop.Operations
         public bool RelayRunning { get; init; }
     }
 
-    public sealed class OperationsSafeSnapshot
+    public class OperationsSafeSnapshot
     {
         public string Application { get; init; } = "ColorVision";
 
@@ -44,6 +44,34 @@ namespace ColorVision.UI.Desktop.Operations
         public OperationsSafeWindowSnapshot MainWindow { get; init; } = new();
 
         public OperationsSafeChannelSnapshot SecureOperations { get; init; } = new();
+    }
+
+    public sealed class OperationsRelaySnapshot : OperationsSafeSnapshot
+    {
+        public OperationsLiveMonitorSnapshot? Monitor { get; init; }
+    }
+
+    public static class OperationsRelaySnapshotFactory
+    {
+        public static OperationsRelaySnapshot Create(
+            object snapshot,
+            OperationsLiveMonitorSnapshot? monitor,
+            DateTimeOffset? capturedAt = null)
+        {
+            OperationsSafeSnapshot safe = OperationsSafeSnapshotFactory.Create(snapshot, capturedAt);
+            return new OperationsRelaySnapshot
+            {
+                Application = safe.Application,
+                Version = safe.Version,
+                IsRunning = safe.IsRunning,
+                UptimeSeconds = safe.UptimeSeconds,
+                CapturedAt = safe.CapturedAt,
+                Process = safe.Process,
+                MainWindow = safe.MainWindow,
+                SecureOperations = safe.SecureOperations,
+                Monitor = monitor,
+            };
+        }
     }
 
     public static class OperationsSafeSnapshotFactory

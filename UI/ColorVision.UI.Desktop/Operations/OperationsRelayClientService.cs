@@ -21,6 +21,7 @@ namespace ColorVision.UI.Desktop.Operations
         private CancellationTokenSource? _cts;
         private Task? _loop;
         private Func<object>? _snapshotProvider;
+        private Func<OperationsLiveMonitorSnapshot?>? _monitorProvider;
 
         public OperationsRelayClientService(
             OperationsServerIdentity identity,
@@ -57,11 +58,16 @@ namespace ColorVision.UI.Desktop.Operations
 
         public string LastStatusMessage { get; private set; } = "Web 运维中继未配置。";
 
-        public void Start(Func<object> snapshotProvider)
+        public void Start(
+            Func<object> snapshotProvider,
+            Func<OperationsLiveMonitorSnapshot?> monitorProvider)
         {
             if (!IsConfigured || IsRunning)
                 return;
+            ArgumentNullException.ThrowIfNull(snapshotProvider);
+            ArgumentNullException.ThrowIfNull(monitorProvider);
             _snapshotProvider = snapshotProvider;
+            _monitorProvider = monitorProvider;
             _cts = new CancellationTokenSource();
             _loop = Task.Run(() => RunAsync(_cts.Token));
         }
@@ -73,6 +79,7 @@ namespace ColorVision.UI.Desktop.Operations
             _cts = null;
             _loop = null;
             _snapshotProvider = null;
+            _monitorProvider = null;
         }
 
         private async Task RunAsync(CancellationToken cancellationToken)
@@ -135,8 +142,9 @@ namespace ColorVision.UI.Desktop.Operations
 
         private async Task SyncSignedHostAsync(CancellationToken cancellationToken)
         {
-            OperationsSafeSnapshot snapshot = OperationsSafeSnapshotFactory.Create(
-                _snapshotProvider?.Invoke() ?? new { });
+            OperationsRelaySnapshot snapshot = OperationsRelaySnapshotFactory.Create(
+                _snapshotProvider?.Invoke() ?? new { },
+                _monitorProvider?.Invoke());
             string appVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty;
             string[] capabilities = ["ops.window.show", "ops.diagnostics.request"];
             long signedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();

@@ -17,6 +17,62 @@ public sealed class OperationsRelayProtocolTests
     }
 
     [Fact]
+    public void RelaySnapshotAddsOnlyTheBoundedLiveMonitorToTheSafeHostStatus()
+    {
+        DateTimeOffset capturedAt = new(2026, 8, 13, 8, 0, 0, TimeSpan.Zero);
+        OperationsLiveMonitorSnapshot monitor = OperationsLiveMonitorSnapshotFactory.Create(
+            new OperationsFlowRuntimeStatus { Available = true, Phase = "running", IsActive = true },
+            new OperationsRuntimePerformanceSnapshot
+            {
+                CapturedAt = capturedAt,
+                CpuPercent = 7.5,
+                MainUi = new OperationsUiResponsivenessSnapshot
+                {
+                    Available = true,
+                    State = "responsive",
+                    LatencyMilliseconds = 12,
+                },
+            },
+            [new OperationsAlert
+            {
+                AlertId = "private-alert-id",
+                Severity = "warning",
+                Summary = "private alert text",
+                OccurredAt = capturedAt,
+            }],
+            OperationsDeviceHealthSnapshot.CreateUnavailable(),
+            capturedAt,
+            OperationsMessageChannelHealthSnapshot.CreateUnavailable(),
+            new OperationsApplicationRecoveryStatus { Supported = true, Registered = true });
+        OperationsRelaySnapshot snapshot = OperationsRelaySnapshotFactory.Create(new
+        {
+            app = "ColorVision",
+            version = "1.2.3",
+            isRunning = true,
+            uptimeSeconds = 60,
+            privateConfiguration = "must-not-leak",
+            process = new { memoryMb = 128, processId = 1234 },
+            mainWindow = new { exists = true, state = "Normal", isVisible = true, title = "private" },
+            secureOperations = new { isRunning = true, pairedDeviceCount = 1, relayConfigured = true, relayRunning = true },
+        }, monitor, capturedAt);
+
+        string json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        });
+        using JsonDocument document = JsonDocument.Parse(json);
+
+        Assert.True(document.RootElement.TryGetProperty("monitor", out JsonElement signedMonitor));
+        Assert.Equal("running", signedMonitor.GetProperty("flow").GetProperty("phase").GetString());
+        Assert.Equal(1, signedMonitor.GetProperty("alerts").GetProperty("count").GetInt32());
+        Assert.DoesNotContain("privateConfiguration", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("processId", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("private-alert-id", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("private alert text", json, StringComparison.Ordinal);
+        Assert.True(Encoding.UTF8.GetByteCount(json) < 65_536);
+    }
+
+    [Fact]
     public void HostEnvelopeCanonicalSeparatesKindFromExactJsonBody()
     {
         Assert.Equal("colorvision-relay-snapshot-v1\n{\"status\":\"online\"}",

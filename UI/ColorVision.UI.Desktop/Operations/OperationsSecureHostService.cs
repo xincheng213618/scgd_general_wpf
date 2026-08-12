@@ -20,6 +20,7 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly OperationsDiagnosticBundleService _diagnosticBundles;
         private readonly OperationsWindowSnapshotService _windowSnapshots;
         private readonly OperationsRelayClientService _relay;
+        private readonly OperationsRuntimePerformanceService _runtimePerformanceProvider;
         private IOperationsServiceHealthProvider _serviceHealthProvider = UnavailableOperationsServiceHealthProvider.Instance;
         private IOperationsDeviceHealthProvider _deviceHealthProvider = UnavailableOperationsDeviceHealthProvider.Instance;
         private IOperationsMessageChannelHealthProvider _messageChannelHealthProvider = UnavailableOperationsMessageChannelHealthProvider.Instance;
@@ -47,6 +48,7 @@ namespace ColorVision.UI.Desktop.Operations
             _diagnosticBundles = new OperationsDiagnosticBundleService(_workStore);
             _windowSnapshots = new OperationsWindowSnapshotService();
             _relay = new OperationsRelayClientService(_identity, _registry, _workStore);
+            _runtimePerformanceProvider = new OperationsRuntimePerformanceService();
         }
 
         public event EventHandler? StateChanged;
@@ -178,6 +180,7 @@ namespace ColorVision.UI.Desktop.Operations
                         serviceHealthProvider: _serviceHealthProvider, alerts: _alerts,
                         diagnosticBundles: _diagnosticBundles, windowSnapshots: _windowSnapshots,
                         flowRuntimeStatus: _flowRuntimeStatusProvider,
+                        runtimePerformance: _runtimePerformanceProvider,
                         flowRuntimeController: _flowRuntimeController,
                         mqttRestartController: _mqttRestartController,
                         applicationRestartController: _applicationRestartController,
@@ -193,7 +196,7 @@ namespace ColorVision.UI.Desktop.Operations
                     IsRunning = true;
                     LastStatusMessage = $"安全运维通道运行中，HTTPS 端口 {port}。";
                     _acceptLoop = Task.Run(() => AcceptLoopAsync(_cts.Token));
-                    _relay.Start(snapshotProvider);
+                    _relay.Start(snapshotProvider, CaptureRelayMonitor);
                     Log.Info(LastStatusMessage);
                 }
                 catch (Exception ex)
@@ -265,6 +268,24 @@ namespace ColorVision.UI.Desktop.Operations
         }
 
         public OperationsWindowSnapshotResult CreateWindowSnapshot() => _windowSnapshots.Create();
+
+        private OperationsLiveMonitorSnapshot? CaptureRelayMonitor()
+        {
+            try
+            {
+                return OperationsLiveMonitorSnapshotFactory.Create(
+                    _flowRuntimeStatusProvider.Capture(),
+                    _runtimePerformanceProvider.Capture(),
+                    _alerts.GetRecent(),
+                    _deviceHealthProvider.Capture(),
+                    messageChannel: _messageChannelHealthProvider.Capture(),
+                    applicationRecovery: WindowsApplicationRestartRegistration.CaptureStatus());
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         private async Task AcceptLoopAsync(CancellationToken cancellationToken)
         {
