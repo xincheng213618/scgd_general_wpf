@@ -19,14 +19,19 @@ final class AppPreferences {
     private static final String KEY_OPERATIONS_ENDPOINT = "operations_endpoint";
     private static final String KEY_OPERATIONS_PIN = "operations_certificate_pin";
     private static final String KEY_OPERATIONS_HOST_ID = "operations_host_id";
-    private static final String KEY_OPERATIONS_WATCH_ENABLED = "operations_watch_enabled";
+    private static final String KEY_OPERATIONS_PROFILE_REVOKED = "operations_profile_revoked";
+    private static final String KEY_LEGACY_OPERATIONS_WATCH_ENABLED = "operations_watch_enabled";
 
     private final SharedPreferences preferences;
 
     AppPreferences(Context context) {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        if (preferences.contains(KEY_LEGACY_LAN_URL)) {
-            preferences.edit().remove(KEY_LEGACY_LAN_URL).apply();
+        if (preferences.contains(KEY_LEGACY_LAN_URL)
+                || preferences.contains(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)) {
+            preferences.edit()
+                    .remove(KEY_LEGACY_LAN_URL)
+                    .remove(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)
+                    .apply();
         }
     }
 
@@ -97,7 +102,7 @@ final class AppPreferences {
                 .putString(KEY_OPERATIONS_ENDPOINT, endpoint)
                 .putString(KEY_OPERATIONS_PIN, certificatePin)
                 .putString(KEY_OPERATIONS_HOST_ID, hostId)
-                .putBoolean(KEY_OPERATIONS_WATCH_ENABLED, true)
+                .putBoolean(KEY_OPERATIONS_PROFILE_REVOKED, false)
                 .apply();
     }
 
@@ -116,18 +121,12 @@ final class AppPreferences {
     boolean hasOperationsProfile() {
         return !getOperationsEndpoint().isEmpty()
                 && !getOperationsCertificatePin().isEmpty()
-                && !getOperationsHostId().isEmpty();
+                && !getOperationsHostId().isEmpty()
+                && !preferences.getBoolean(KEY_OPERATIONS_PROFILE_REVOKED, false);
     }
 
-    boolean isOperationsWatchEnabled() {
-        if (!hasOperationsProfile()) {
-            return false;
-        }
-        return preferences.getBoolean(KEY_OPERATIONS_WATCH_ENABLED, true);
-    }
-
-    void setOperationsWatchEnabled(boolean enabled) {
-        preferences.edit().putBoolean(KEY_OPERATIONS_WATCH_ENABLED, enabled).apply();
+    void markOperationsProfileRevoked() {
+        preferences.edit().putBoolean(KEY_OPERATIONS_PROFILE_REVOKED, true).apply();
     }
 
     void clearOperationsProfile() {
@@ -135,7 +134,8 @@ final class AppPreferences {
                 .remove(KEY_OPERATIONS_ENDPOINT)
                 .remove(KEY_OPERATIONS_PIN)
                 .remove(KEY_OPERATIONS_HOST_ID)
-                .remove(KEY_OPERATIONS_WATCH_ENABLED)
+                .remove(KEY_OPERATIONS_PROFILE_REVOKED)
+                .remove(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)
                 .apply();
     }
 

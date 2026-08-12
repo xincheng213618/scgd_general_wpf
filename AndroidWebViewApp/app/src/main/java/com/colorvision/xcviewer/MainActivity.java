@@ -32,7 +32,6 @@ import android.widget.Toast;
 
 public class MainActivity extends Activity {
     static final String EXTRA_START_TAB = "start_tab";
-    private static final String HOME_URL = "http://xc213618.ddns.me:9998/";
     private static final int REQUEST_QR_SCAN = 1001;
     private static final int REQUEST_WEB_CAMERA_PERMISSION = 1002;
     private static final int REQUEST_AUDIO_PICK = 1003;
@@ -66,6 +65,12 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         appPreferences = new AppPreferences(this);
+        int startTab = consumeStartTab(getIntent());
+        if (AppNavigationPolicy.shouldOpenOperationsDirectly(
+                appPreferences.hasOperationsProfile(), startTab == TAB_OPERATIONS)) {
+            openOperationsDirectly();
+            return;
+        }
         themeManager = new ThemeManager(this, appPreferences);
         musicController = new MusicPlayerController(this, appPreferences, this::chooseAudioFile);
         themeManager.applySystemBars(this);
@@ -84,7 +89,7 @@ public class MainActivity extends Activity {
         setContentView(root);
         configureHomeWebView();
 
-        showInitialTab();
+        showInitialTab(startTab);
     }
 
     private void configureHomeWebView() {
@@ -262,7 +267,7 @@ public class MainActivity extends Activity {
         shell.setBackgroundColor(shellBackgroundColor());
         shell.addView(createTopBar(), new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                getStatusBarHeight() + dp(64)));
+                getStatusBarHeight() + dp(48)));
 
         shell.addView(setupContainer, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -271,7 +276,7 @@ public class MainActivity extends Activity {
 
         shell.addView(createBottomNav(), new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(64)));
+                dp(56)));
         return shell;
     }
 
@@ -279,7 +284,7 @@ public class MainActivity extends Activity {
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(dp(18), getStatusBarHeight() + dp(4), dp(14), dp(4));
+        bar.setPadding(dp(18), getStatusBarHeight() + dp(2), dp(14), dp(2));
         bar.setBackgroundColor(shellBackgroundColor());
 
         LinearLayout titleBlock = new LinearLayout(this);
@@ -290,20 +295,15 @@ public class MainActivity extends Activity {
         headerTitle = new TextView(this);
         headerTitle.setText("ColorVision");
         headerTitle.setTextColor(Color.rgb(21, 152, 204));
-        headerTitle.setTextSize(23);
+        headerTitle.setTextSize(20);
         headerTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         titleBlock.addView(headerTitle, matchWidthWrapParams());
 
         headerSubtitle = new TextView(this);
-        headerSubtitle.setText("移动检测控制台");
+        headerSubtitle.setText("现场运维与固定下载站");
         headerSubtitle.setTextColor(secondaryTextColor());
-        headerSubtitle.setTextSize(12);
+        headerSubtitle.setTextSize(11);
         titleBlock.addView(headerSubtitle, matchWidthWrapParams());
-
-        ImageButton scanButton = makeTopIconButton(R.drawable.ic_qr_code_scanner_24);
-        scanButton.setContentDescription("扫描二维码");
-        scanButton.setOnClickListener(v -> startQrScan());
-        bar.addView(scanButton, topIconParams());
 
         return bar;
     }
@@ -338,11 +338,11 @@ public class MainActivity extends Activity {
 
         ImageView icon = new ImageView(this);
         icon.setImageResource(iconRes);
-        item.addView(icon, new LinearLayout.LayoutParams(dp(28), dp(28)));
+        item.addView(icon, new LinearLayout.LayoutParams(dp(22), dp(22)));
 
         TextView text = new TextView(this);
         text.setText(label);
-        text.setTextSize(13);
+        text.setTextSize(11);
         text.setGravity(Gravity.CENTER);
         text.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         item.addView(text, wrapParams());
@@ -387,11 +387,14 @@ public class MainActivity extends Activity {
         return button;
     }
 
-    private void showInitialTab() {
-        int requestedTab = getIntent().getIntExtra(EXTRA_START_TAB, -1);
-        getIntent().removeExtra(EXTRA_START_TAB);
-        int startTab = requestedTab >= TAB_OPERATIONS && requestedTab <= TAB_SETTINGS
+    private int consumeStartTab(Intent intent) {
+        int requestedTab = intent.getIntExtra(EXTRA_START_TAB, -1);
+        intent.removeExtra(EXTRA_START_TAB);
+        return requestedTab >= TAB_OPERATIONS && requestedTab <= TAB_SETTINGS
                 ? requestedTab : appPreferences.consumeStartTab(TAB_OPERATIONS);
+    }
+
+    private void showInitialTab(int startTab) {
         if (startTab == TAB_SETTINGS) {
             showProfileView();
             return;
@@ -408,7 +411,13 @@ public class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        showInitialTab();
+        int startTab = consumeStartTab(intent);
+        if (AppNavigationPolicy.shouldOpenOperationsDirectly(
+                appPreferences.hasOperationsProfile(), startTab == TAB_OPERATIONS)) {
+            openOperationsDirectly();
+            return;
+        }
+        showInitialTab(startTab);
     }
 
     private void showOperationsLanding() {
@@ -429,16 +438,16 @@ public class MainActivity extends Activity {
     private void showHomePage() {
         selectTab(TAB_DOWNLOADS);
         headerTitle.setText("固定下载站");
-        headerSubtitle.setText("xc213618.ddns.me · 无需选择网址");
+        headerSubtitle.setText("应用内置地址 · 自动加载");
         setupContainer.removeAllViews();
         setupContainer.setVisibility(View.VISIBLE);
         appShell.setVisibility(View.VISIBLE);
         progressBar.setVisibility(View.GONE);
 
         setupContainer.addView(homeWebView, matchParentParams());
-        if (!HOME_URL.equals(currentHomeUrl) || homeWebView.getUrl() == null) {
-            currentHomeUrl = HOME_URL;
-            homeWebView.loadUrl(HOME_URL);
+        if (!AppNavigationPolicy.FIXED_DOWNLOAD_URL.equals(currentHomeUrl) || homeWebView.getUrl() == null) {
+            currentHomeUrl = AppNavigationPolicy.FIXED_DOWNLOAD_URL;
+            homeWebView.loadUrl(AppNavigationPolicy.FIXED_DOWNLOAD_URL);
         }
     }
 
@@ -555,7 +564,7 @@ public class MainActivity extends Activity {
 
         LinearLayout appSection = makeSettingsSection();
         content.addView(appSection, settingsSectionParams());
-        addSettingsRow(appSection, "固定下载站", "xc213618.ddns.me", v -> showHomePage());
+        addSettingsRow(appSection, "固定下载站", "应用内置 · 无网址选项", v -> showHomePage());
         addSettingsRow(appSection, "音乐播放", musicController.getSavedAudioTitle(), v -> chooseAudioFile());
         addSettingsRow(appSection, "主题模式", getThemeModeLabel(), v -> showThemeDialog());
         addSettingsRow(appSection, "应用版本", getAppVersionName(), null);
@@ -732,12 +741,18 @@ public class MainActivity extends Activity {
 
     private void openOperations() {
         if (appPreferences.hasOperationsProfile()) {
-            startActivity(new Intent(this, OperationsActivity.class));
-            finish();
+            openOperationsDirectly();
         } else {
             Toast.makeText(this, "请扫描电脑端现场运维配对码", Toast.LENGTH_SHORT).show();
             startQrScan();
         }
+    }
+
+    private void openOperationsDirectly() {
+        OperationsWatchService.start(this);
+        startActivity(new Intent(this, OperationsActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+        finish();
     }
 
     @Override
@@ -929,12 +944,14 @@ public class MainActivity extends Activity {
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        homeWebView.saveState(outState);
+        if (homeWebView != null) {
+            homeWebView.saveState(outState);
+        }
     }
 
     @Override
     public void onBackPressed() {
-        if (currentTab == TAB_DOWNLOADS && homeWebView.canGoBack()) {
+        if (currentTab == TAB_DOWNLOADS && homeWebView != null && homeWebView.canGoBack()) {
             homeWebView.goBack();
             return;
         }
@@ -944,7 +961,9 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        musicController.release();
+        if (musicController != null) {
+            musicController.release();
+        }
         if (homeWebView != null) {
             homeWebView.destroy();
         }

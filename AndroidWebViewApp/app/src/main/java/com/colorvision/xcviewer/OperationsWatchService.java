@@ -26,8 +26,6 @@ import java.util.concurrent.Executors;
 public final class OperationsWatchService extends Service {
     private static final String ACTION_START =
             "com.colorvision.xcviewer.action.START_OPERATIONS_WATCH";
-    private static final String ACTION_STOP =
-            "com.colorvision.xcviewer.action.STOP_OPERATIONS_WATCH";
     private static final String NOTIFICATION_CHANNEL_ID = "operations_watch";
     private static final int NOTIFICATION_ID = 22023;
     private static final String LOG_TAG = "CVOperationsWatch";
@@ -46,24 +44,14 @@ public final class OperationsWatchService extends Service {
 
     static void start(Context context) {
         AppPreferences preferences = new AppPreferences(context);
-        if (!preferences.hasOperationsProfile() || !preferences.isOperationsWatchEnabled()) {
+        if (!preferences.hasOperationsProfile()) {
             return;
         }
         Intent intent = new Intent(context, OperationsWatchService.class).setAction(ACTION_START);
         ContextCompat.startForegroundService(context, intent);
     }
 
-    static void enable(Context context) {
-        AppPreferences preferences = new AppPreferences(context);
-        if (!preferences.hasOperationsProfile()) {
-            return;
-        }
-        preferences.setOperationsWatchEnabled(true);
-        start(context);
-    }
-
-    static void disable(Context context) {
-        new AppPreferences(context).setOperationsWatchEnabled(false);
+    static void stopForProfileRemoval(Context context) {
         context.stopService(new Intent(context, OperationsWatchService.class));
     }
 
@@ -76,12 +64,7 @@ public final class OperationsWatchService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && ACTION_STOP.equals(intent.getAction())) {
-            preferences.setOperationsWatchEnabled(false);
-            stopMonitoring(true);
-            return START_NOT_STICKY;
-        }
-        if (!preferences.hasOperationsProfile() || !preferences.isOperationsWatchEnabled()) {
+        if (!preferences.hasOperationsProfile()) {
             stopMonitoring(true);
             return START_NOT_STICKY;
         }
@@ -111,7 +94,7 @@ public final class OperationsWatchService extends Service {
         if (!monitoring || checkInFlight) {
             return;
         }
-        if (!preferences.hasOperationsProfile() || !preferences.isOperationsWatchEnabled()) {
+        if (!preferences.hasOperationsProfile()) {
             stopMonitoring(true);
             return;
         }
@@ -173,7 +156,7 @@ public final class OperationsWatchService extends Service {
         checkInFlight = false;
         hasCompletedCheck = true;
         if (code.contains("unknown_or_revoked_device")) {
-            preferences.setOperationsWatchEnabled(false);
+            preferences.markOperationsProfileRevoked();
             Log.w(LOG_TAG, "operations_watch_pairing_revoked");
             updateNotification("配对授权已失效 · 请打开应用重新配对", false);
             detachNotificationAndStop();
@@ -258,15 +241,6 @@ public final class OperationsWatchService extends Service {
                 .setWhen(System.currentTimeMillis())
                 .setPriority(NotificationCompat.PRIORITY_LOW);
 
-        if (ongoing) {
-            Intent stopIntent = new Intent(this, OperationsWatchService.class).setAction(ACTION_STOP);
-            PendingIntent stopPendingIntent = PendingIntent.getService(
-                    this,
-                    1,
-                    stopIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-            builder.addAction(0, "暂停守护", stopPendingIntent);
-        }
         return builder.build();
     }
 

@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -115,7 +116,7 @@ public class OperationsActivity extends Activity {
         scroll.setFillViewport(true);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(16), getStatusBarHeight() + dp(6), dp(16), dp(24));
+        root.setPadding(dp(14), getStatusBarHeight() + dp(4), dp(14), dp(20));
         root.setBackgroundColor(Color.rgb(245, 247, 250));
         scroll.addView(root, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
@@ -124,50 +125,40 @@ public class OperationsActivity extends Activity {
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
         root.addView(header, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(46)));
-
-        Button back = new Button(this);
-        back.setText("返回");
-        back.setTextSize(13);
-        back.setAllCaps(false);
-        back.setMinHeight(0);
-        back.setMinimumHeight(0);
-        back.setPadding(dp(8), 0, dp(8), 0);
-        back.setOnClickListener(v -> finish());
-        header.addView(back, new LinearLayout.LayoutParams(dp(72), dp(40)));
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(44)));
 
         title = new TextView(this);
-        title.setText("ColorVision 运维伴侣");
+        title.setText("运维伴侣");
         title.setTextSize(22);
         title.setTextColor(Color.rgb(24, 35, 49));
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         title.setSingleLine(true);
-        title.setPadding(dp(12), 0, 0, 0);
         header.addView(title, new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
         state = new TextView(this);
         state.setTextSize(14);
         state.setTextColor(Color.rgb(58, 75, 92));
-        state.setPadding(dp(12), dp(8), dp(12), dp(8));
-        state.setBackgroundColor(Color.WHITE);
+        state.setPadding(dp(12), dp(7), dp(12), dp(7));
+        state.setBackground(compactPanel(Color.rgb(232, 242, 255), Color.rgb(168, 204, 247)));
         LinearLayout.LayoutParams stateParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         stateParams.setMargins(0, dp(8), 0, 0);
         root.addView(state, stateParams);
 
-        progress = new ProgressBar(this);
-        LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(dp(32), dp(32));
-        progressParams.gravity = Gravity.CENTER_HORIZONTAL;
-        progressParams.setMargins(0, dp(8), 0, dp(4));
+        progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progress.setIndeterminate(true);
+        LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(3));
+        progressParams.setMargins(0, dp(4), 0, 0);
         root.addView(progress, progressParams);
 
         details = new TextView(this);
         details.setTextSize(13);
         details.setTextColor(Color.rgb(41, 53, 66));
         details.setLineSpacing(0, 1.08f);
-        details.setPadding(dp(12), dp(10), dp(12), dp(10));
-        details.setBackgroundColor(Color.WHITE);
+        details.setPadding(dp(12), dp(8), dp(12), dp(8));
+        details.setBackground(compactPanel(Color.WHITE, Color.rgb(224, 229, 235)));
         details.setTextIsSelectable(true);
         LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -178,13 +169,13 @@ public class OperationsActivity extends Activity {
         actions.setOrientation(LinearLayout.VERTICAL);
         LinearLayout.LayoutParams actionsParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        actionsParams.setMargins(0, dp(10), 0, 0);
+        actionsParams.setMargins(0, dp(7), 0, 0);
         root.addView(actions, actionsParams);
 
         shell.addView(scroll, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
         shell.addView(createBottomNavigation(), new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(60)));
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(54)));
         setContentView(shell);
     }
 
@@ -192,7 +183,7 @@ public class OperationsActivity extends Activity {
         LinearLayout navigation = new LinearLayout(this);
         navigation.setOrientation(LinearLayout.HORIZONTAL);
         navigation.setGravity(Gravity.CENTER);
-        navigation.setPadding(dp(12), dp(3), dp(12), dp(3));
+        navigation.setPadding(dp(12), dp(2), dp(12), dp(2));
         navigation.setBackgroundColor(Color.WHITE);
         navigation.setElevation(dp(8));
         navigation.addView(createBottomNavigationItem("运维", true, null),
@@ -314,27 +305,26 @@ public class OperationsActivity extends Activity {
         dashboardVisible = true;
         showingDashboardSummary = true;
         progress.setVisibility(View.GONE);
-        title.setText("ColorVision 运维伴侣");
-        state.setText("● 在线 · 安全通道已验证");
+        title.setText("运维伴侣");
+        state.setText("● 已连接 · 后台持续守护");
         details.setText("正在读取 ColorVision 运行摘要…");
         actions.removeAllViews();
 
-        addDashboardSection("常用操作");
+        addDashboardSection("远程操作");
         addDashboardActionRow(
                 dashboardButton("远程排障", v -> showTriageCenter()),
-                dashboardButton(preferences.isOperationsWatchEnabled()
-                        ? "持续观察（后台）" : "持续观察（已停）", v -> showLiveMonitor()));
+                dashboardButton("持续监控", v -> showLiveMonitor()));
         addDashboardActionRow(
                 dashboardButton("显示主窗口", v -> runWindowAction("show", "主窗口已显示")),
                 dashboardButton("最小化窗口", v -> confirmMinimizeWindow()));
         addDashboardActionRow(
-                dashboardButton("重启 MQTT", v -> confirmRestartMqtt()),
+                dashboardButton("恢复消息通道", v -> confirmRecoverMessageChannel()),
                 dashboardButton("重启 ColorVision", v -> confirmRestartApplication()));
         addDashboardActionRow(
-                dashboardButton("恢复消息通道", v -> confirmRecoverMessageChannel()),
+                dashboardButton("重启 MQTT", v -> confirmRestartMqtt()),
                 dashboardButton("连接自检", v -> runConnectionSelfCheck()));
 
-        addDashboardSection("状态与排障");
+        addDashboardSection("运行状态");
         addDashboardActionRow(
                 capabilityButton("当前检测", "/ops/v1/flow/runtime"),
                 capabilityButton("设备概览", "/ops/v1/devices/health"));
@@ -367,9 +357,6 @@ public class OperationsActivity extends Activity {
     }
 
     private void ensureOperationsWatchRunning() {
-        if (!preferences.isOperationsWatchEnabled()) {
-            return;
-        }
         OperationsWatchService.start(this);
     }
 
@@ -391,7 +378,7 @@ public class OperationsActivity extends Activity {
                 runOnUiThread(() -> {
                     connectionHeartbeatInFlight = false;
                     if (showingDashboardSummary) {
-                        state.setText("● 在线 · 安全通道已验证");
+                        state.setText("● 已连接 · 后台持续守护");
                     }
                     scheduleConnectionHeartbeat();
                 });
@@ -1619,25 +1606,6 @@ public class OperationsActivity extends Activity {
     private void renderLiveMonitorActions() {
         actions.removeAllViews();
 
-        Button backgroundWatch = new Button(this);
-        boolean backgroundWatchEnabled = preferences.isOperationsWatchEnabled();
-        backgroundWatch.setText(backgroundWatchEnabled
-                ? "后台守护已开启 · 点击暂停"
-                : "后台守护已暂停 · 点击恢复");
-        backgroundWatch.setEnabled(!liveMonitorCancelInFlight);
-        backgroundWatch.setOnClickListener(v -> {
-            if (preferences.isOperationsWatchEnabled()) {
-                OperationsWatchService.disable(this);
-                Toast.makeText(this, "后台守护已暂停，配对资料仍保留", Toast.LENGTH_SHORT).show();
-            } else {
-                OperationsWatchService.enable(this);
-                ensureOperationsWatchRunning();
-                Toast.makeText(this, "后台守护已恢复", Toast.LENGTH_SHORT).show();
-            }
-            renderLiveMonitorActions();
-        });
-        actions.addView(backgroundWatch, actionParams());
-
         Button refresh = new Button(this);
         refresh.setText("立即刷新");
         refresh.setEnabled(!liveMonitorRefreshInFlight && !liveMonitorCancelInFlight);
@@ -2142,22 +2110,23 @@ public class OperationsActivity extends Activity {
 
         StringBuilder summary = new StringBuilder();
         summary.append("ColorVision ").append(version)
-                .append(" · 已运行 ").append(formatDuration(uptimeSeconds))
-                .append("\n主窗口 ").append(windowVisible ? "可见" : windowExists ? "未显示" : "不可用")
-                .append(" · ").append(windowState);
+                .append(" · 运行 ").append(formatDuration(uptimeSeconds))
+                .append(" · 窗口 ").append(windowVisible ? "可见" : windowExists ? "未显示" : "不可用")
+                .append('/').append(windowState);
         if (memoryMb > 0) {
             summary.append(" · 内存 ").append(Math.round(memoryMb * 10) / 10.0).append(" MB");
         }
-        summary.append("\n运维通道 ").append(secureRunning ? "已连接" : "未运行")
-                .append(" · 已配对 ").append(pairedDevices).append(" 台")
-                .append(" · 中继 ")
-                .append(relayRunning ? "运行中" : relayConfigured ? "未启动" : "未配置");
+        summary.append("\n后台连接 ").append(secureRunning ? "持续" : "恢复中")
+                .append(" · 已配对 ").append(pairedDevices).append(" 台");
+        if (relayRunning || relayConfigured) {
+            summary.append(" · 中继 ").append(relayRunning ? "运行中" : "未启动");
+        }
         return summary.toString();
     }
 
     private String capabilityHeading(String path) {
         if ("/ops/v1/snapshot".equals(path)) {
-            return "电脑端在线 · 安全通道已验证";
+            return "● 已连接 · 后台持续守护";
         }
         if ("/ops/v1/alerts".equals(path)) {
             return "当前告警已刷新";
@@ -3005,7 +2974,7 @@ public class OperationsActivity extends Activity {
         leaveSupportCenter();
         leaveLiveMonitor();
         dashboardVisible = false;
-        OperationsWatchService.disable(this);
+        OperationsWatchService.stopForProfileRemoval(this);
         try {
             String hostId = preferences.getOperationsHostId();
             if (!hostId.isEmpty()) {
@@ -3168,6 +3137,14 @@ public class OperationsActivity extends Activity {
         }
     }
 
+    private GradientDrawable compactPanel(int fillColor, int strokeColor) {
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(fillColor);
+        background.setCornerRadius(dp(10));
+        background.setStroke(dp(1), strokeColor);
+        return background;
+    }
+
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
@@ -3190,7 +3167,7 @@ public class OperationsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         activityResumed = true;
-        if (preferences != null && preferences.isOperationsWatchEnabled()) {
+        if (preferences != null && preferences.hasOperationsProfile()) {
             OperationsWatchService.start(this);
         }
         if (supportCenterVisible) {
