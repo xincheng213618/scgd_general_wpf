@@ -7,7 +7,7 @@ This module handles /api/stats, /api/feedback, and legacy file serving.
 
 from __future__ import annotations
 
-from flask import Blueprint, abort, jsonify, request
+from flask import Blueprint, abort, current_app, jsonify, request
 
 from context import MarketplaceContext
 from routes.artifact_delivery import deliver_artifact
@@ -56,6 +56,42 @@ def api_feedback():
     except FeedbackValidationError as exc:
         return jsonify({"error": exc.message}), 400
     return jsonify({"feedbackId": result.feedback_id, "message": "Feedback received"}), 201
+
+
+@public_api.route("/api/v1/analytics/events", methods=["POST"])
+def api_web_experience_event():
+    """Queue one aggregate-only SPA page-view or Web Vital event."""
+    ctx = _get_ctx()
+    if request.content_length is not None and request.content_length > 4096:
+        return jsonify({"error": "Analytics payload too large"}), 413
+
+    from services.access_analytics import (
+        build_web_experience_event,
+        reporting_utc_offset_minutes,
+    )
+
+    try:
+        config = ctx.active_config
+        event = build_web_experience_event(
+            request.get_json(silent=True),
+            secret_key=str(config.get("secret_key", "")),
+            remote_addr=request.remote_addr,
+            user_agent=request.headers.get("User-Agent", ""),
+            utc_offset_minutes=reporting_utc_offset_minutes(config),
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    if event is None:
+        return jsonify({"accepted": True, "recorded": False}), 202
+    accepted = ctx.access_recorder.submit(
+        event,
+        db_path=ctx.active_db_path,
+        synchronous=bool(current_app.config.get("TESTING")),
+    )
+    if not accepted:
+        return jsonify({"error": "Analytics recorder is busy"}), 503
+    return jsonify({"accepted": True, "recorded": True}), 202
 
 
 @public_api.route("/D%3A/ColorVision/Plugins/<path:filepath>", methods=["GET"])

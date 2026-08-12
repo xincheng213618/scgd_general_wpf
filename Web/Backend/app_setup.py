@@ -229,6 +229,7 @@ def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
         get_upload_auth=get_upload_auth,
         auth_policy=auth_policy,
         request_context_factory=current_request_context,
+        access_recorder=access_recorder,
         services=services, human_size=human_size, render_markdown=render_markdown,
         render_markdown_cached=render_markdown_cached,
         json_error=json_error,

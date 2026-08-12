@@ -143,6 +143,13 @@ package hash costing about 381.9 ms moved to index refresh work.
   now move directly to `/login?next=/transfer` without a protected API request
   or a transient upload panel. A Node test runs in both local checks and NAS
   deployment before the frontend build.
+- Added separate SPA page-view and Core Web Vitals ingestion without treating
+  browser navigations as HTTP requests. React records first loads and route
+  changes against a fixed route allowlist, while `web-vitals` reports LCP, CLS,
+  and INP for hard and supported soft navigations. The backend rejects raw
+  URLs, queries, referrers, extra fields, and oversized values; stores only
+  daily aggregates plus the existing daily unlinkable visitor key; and exposes
+  the results as a separately labeled section of `/admin/traffic`.
 - Correct response-volume analytics for HTTP responses that cannot carry a
   body. The 2026-08-12 production audit found 45 `HEAD` requests contributing
   2,275,254,516 impossible bytes (5.96% of the recorded response volume), led
@@ -175,9 +182,8 @@ package hash costing about 381.9 ms moved to index refresh work.
    feature repositories.
 3. Add an indexed browse query instead of sorting/scanning an entire directory,
    and throttle heartbeat write amplification.
-4. Add separate, versioned SPA page-view and Web Vitals ingestion. Server HTTP
-   requests, page views, downloads, sessions, and visitors must remain distinct
-   metrics; trusted-proxy client identity also needs explicit configuration.
+4. Add explicit trusted-proxy client identity configuration before accepting
+   forwarded addresses for HTTP or browser analytics.
 5. Add OpenAPI as the source of truth and generate TypeScript DTOs. The current
    handwritten interfaces are contract-tested but still transitional.
 6. Split the remaining 506.16 KiB minified `ProForm` admin chunk if publish-page

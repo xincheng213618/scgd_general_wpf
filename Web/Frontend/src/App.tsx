@@ -5,6 +5,7 @@ import type { ErrorInfo, ReactNode } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { PublicLayout } from './layouts/PublicLayout'
 import { getSession } from './services/auth'
+import { startWebVitals, trackPageView } from './services/webExperience'
 import type { ThemeMode, UiDensity } from './types/admin'
 import type { AuthSession } from './types/site'
 
@@ -50,6 +51,20 @@ function RouteDocumentTitle() {
   useEffect(() => {
     document.title = documentTitle(pathname)
   }, [pathname])
+
+  return null
+}
+
+function WebExperienceTracker() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    trackPageView(pathname)
+  }, [pathname])
+
+  useEffect(() => {
+    startWebVitals()
+  }, [])
 
   return null
 }
@@ -223,6 +238,7 @@ function App() {
       <AntApp>
         <BrowserRouter>
           <RouteDocumentTitle />
+          <WebExperienceTracker />
           <RouteErrorBoundary>
             <Routes>
             <Route element={publicLayout}>

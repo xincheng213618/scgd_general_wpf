@@ -68,6 +68,34 @@ export interface TrafficClientStats extends TrafficErrorBreakdown {
   avgResponseMs: number
 }
 
+export interface WebPageStats {
+  route: string
+  pageViews: number
+  uniqueVisitorDays: number
+  hardNavigations: number
+  spaNavigations: number
+}
+
+export interface WebPageDayStats {
+  day: string
+  pageViews: number
+  uniqueVisitors: number
+  hardNavigations: number
+  spaNavigations: number
+}
+
+export interface WebVitalStats {
+  metric: 'LCP' | 'CLS' | 'INP'
+  unit: 'ms' | 'score'
+  samples: number
+  average: number
+  maximum: number
+  goodSamples: number
+  needsImprovementSamples: number
+  poorSamples: number
+  goodRate: number
+}
+
 export interface TrafficRecorderStatus {
   pending: number
   dropped: number
@@ -82,6 +110,17 @@ export interface TrafficStatsResponse {
   daily: TrafficDayStats[]
   topRoutes: TrafficRouteStats[]
   clients: TrafficClientStats[]
+  web: {
+    summary: {
+      pageViews: number
+      uniqueVisitorDays: number
+      hardNavigations: number
+      spaNavigations: number
+    }
+    daily: WebPageDayStats[]
+    topPages: WebPageStats[]
+    vitals: WebVitalStats[]
+  }
   recorder: TrafficRecorderStatus
 }
 
