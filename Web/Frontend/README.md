@@ -8,7 +8,10 @@ and `/admin` management system.
 ```powershell
 npm install
 npm run dev
+
+# Before submitting a frontend change
 npm run lint
+npm run test
 npm run build
 ```
 

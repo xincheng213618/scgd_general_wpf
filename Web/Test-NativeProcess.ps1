@@ -101,6 +101,12 @@ Assert-Equal $true $deploySource.Contains(
 ) 'Origin deployment is not merging the already-fetched ref.'
 Assert-Equal $false $deploySource.Contains("'pull', '--ff-only'") 'Origin deployment still opens a second network connection with pull.'
 Assert-Equal 1 ([regex]::Matches($deploySource, [regex]::Escape("'fetch', 'origin'")).Count) 'Origin fetch should occur exactly once.'
+$frontendTestCommand = "Invoke-NativeCommand -FilePath `$npmExe -ArgumentList @('run', 'test')"
+$frontendBuildCommand = "Invoke-NativeCommand -FilePath `$tscExe -ArgumentList @('-b')"
+$frontendTestIndex = $deploySource.IndexOf($frontendTestCommand, [StringComparison]::Ordinal)
+$frontendBuildIndex = $deploySource.IndexOf($frontendBuildCommand, [StringComparison]::Ordinal)
+Assert-Equal $true ($frontendTestIndex -ge 0) 'NAS deployment does not run the frontend behavior tests.'
+Assert-Equal $true ($frontendBuildIndex -gt $frontendTestIndex) 'Frontend tests must pass before the NAS build starts.'
 
 [ordered]@{
     status = 'success'
@@ -112,4 +118,5 @@ Assert-Equal 1 ([regex]::Matches($deploySource, [regex]::Escape("'fetch', 'origi
     process_tree_stopped = $true
     origin_fetch_count = 1
     duplicate_pull_removed = $true
+    frontend_tests_before_build = $true
 } | ConvertTo-Json -Compress

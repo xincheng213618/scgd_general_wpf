@@ -541,6 +541,7 @@ try {
     }
 
     Invoke-NativeCommand -FilePath $npmExe -ArgumentList @('ci', '--no-audit', '--no-fund') -WorkingDirectory $frontendPath
+    Invoke-NativeCommand -FilePath $npmExe -ArgumentList @('run', 'test') -WorkingDirectory $frontendPath
     $tscExe = Join-Path $frontendPath 'node_modules\.bin\tsc.cmd'
     $viteExe = Join-Path $frontendPath 'node_modules\.bin\vite.cmd'
     foreach ($buildTool in @($tscExe, $viteExe)) {

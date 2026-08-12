@@ -137,6 +137,12 @@ package hash costing about 381.9 ms moved to index refresh work.
   now fetches once and fast-forwards from `origin/<branch>` locally rather than
   reconnecting during `pull`; timeout guidance points directly to the verified
   Git-bundle path while DryRun remains read-only.
+- Gate the public transfer route on the already loaded Web session before the
+  protected file panel mounts. The 2026-08-12 production baseline showed 14
+  `GET /api/transfer/files` requests and all 14 returned 401; anonymous users
+  now move directly to `/login?next=/transfer` without a protected API request
+  or a transient upload panel. A Node test runs in both local checks and NAS
+  deployment before the frontend build.
 - Replaced the audit page's inferred row count with an exact filtered total from
   the existing `audit_log` query boundary. The production baseline had 378 rows
   while the first page claimed 40; the most common action had 347 rows and was
