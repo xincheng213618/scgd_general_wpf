@@ -92,6 +92,7 @@ namespace ColorVision.UI.Desktop.Operations
             string requiredScope = task.CapabilityId switch
             {
                 "ops.window.show" => "ops.window.control",
+                "ops.window.minimize" => "ops.window.control",
                 "ops.diagnostics.request" => "ops.jobs.create",
                 _ => string.Empty,
             };
@@ -149,6 +150,8 @@ namespace ColorVision.UI.Desktop.Operations
                     return Fail("expired_task_envelope", out error);
                 if (task.CapabilityId == "ops.window.show" && payload.EnumerateObject().Any())
                     return Fail("window_show_payload_not_allowed", out error);
+                if (task.CapabilityId == "ops.window.minimize" && payload.EnumerateObject().Any())
+                    return Fail("window_minimize_payload_not_allowed", out error);
                 if (task.CapabilityId == "ops.diagnostics.request"
                     && payload.EnumerateObject().Any(item => item.Name != "reason"
                         || item.Value.ValueKind != JsonValueKind.String

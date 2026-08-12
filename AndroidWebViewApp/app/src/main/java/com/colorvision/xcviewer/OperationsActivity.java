@@ -436,6 +436,8 @@ public class OperationsActivity extends Activity {
         JSONObject monitor = snapshot == null ? null : snapshot.optJSONObject("monitor");
         JSONArray capabilities = host == null ? null : host.optJSONArray("capabilities");
         boolean canShowWindow = contains(capabilities, OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW);
+        boolean canMinimizeWindow = contains(
+                capabilities, OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW);
         boolean canRequestDiagnostics = contains(
                 capabilities, OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS);
 
@@ -443,6 +445,10 @@ public class OperationsActivity extends Activity {
         Button showWindow = dashboardButton("显示电脑主窗口", v -> runRemoteTask(
                 OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW, new JSONObject()));
         showWindow.setEnabled(canShowWindow);
+        Button minimizeWindow = dashboardButton("最小化电脑主窗口",
+                v -> confirmRemoteMinimizeWindow());
+        minimizeWindow.setEnabled(canMinimizeWindow);
+        addDashboardActionRow(showWindow, minimizeWindow);
         Button diagnostics = dashboardButton("请求远程诊断", v -> {
             JSONObject payload = new JSONObject();
             try {
@@ -452,7 +458,7 @@ public class OperationsActivity extends Activity {
             runRemoteTask(OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS, payload);
         });
         diagnostics.setEnabled(canRequestDiagnostics);
-        addDashboardActionRow(showWindow, diagnostics);
+        addDashboardWideAction(diagnostics);
 
         if (monitor != null) {
             addDashboardSection("电脑签名状态");
@@ -674,6 +680,16 @@ public class OperationsActivity extends Activity {
         });
     }
 
+    private void confirmRemoteMinimizeWindow() {
+        new AlertDialog.Builder(this)
+                .setTitle("远程最小化电脑主窗口")
+                .setMessage("只会最小化已配对电脑上的 ColorVision 主窗口。请求由本机设备密钥签名，电脑核验后执行并返回签名收据。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("最小化", (dialog, which) -> runRemoteTask(
+                        OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW, new JSONObject()))
+                .show();
+    }
+
     private void runRemoteTask(String capabilityId, JSONObject payload) {
         showingDashboardSummary = false;
         progress.setVisibility(View.VISIBLE);
@@ -765,9 +781,13 @@ public class OperationsActivity extends Activity {
     private void renderRemoteTaskStatus(String capabilityId, String status) {
         progress.setVisibility(View.GONE);
         if ("completed".equals(status)) {
-            state.setText(OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW.equals(capabilityId)
-                    ? "电脑主窗口已显示"
-                    : "远程诊断请求已完成");
+            if (OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW.equals(capabilityId)) {
+                state.setText("电脑主窗口已显示");
+            } else if (OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW.equals(capabilityId)) {
+                state.setText("电脑主窗口已最小化");
+            } else {
+                state.setText("远程诊断请求已完成");
+            }
             details.setText("电脑已验证设备签名并完成请求，结果已写入运维审计。\n\n点击“刷新远程状态”可读取最新脱敏摘要。");
         } else if ("awaiting_local_consent".equals(status)) {
             state.setText("诊断请求已到达电脑");
@@ -1124,6 +1144,13 @@ public class OperationsActivity extends Activity {
         row.addView(right, rightParams);
         actions.addView(row, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void addDashboardWideAction(Button button) {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
+        params.setMargins(0, 0, 0, dp(4));
+        actions.addView(button, params);
     }
 
     private void showExistingProfileFailure(Exception localException, Exception relayException) {

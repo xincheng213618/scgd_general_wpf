@@ -30,6 +30,7 @@ ALLOWED_CLOCK_SKEW = timedelta(minutes=2)
 NONCE_LIFETIME = timedelta(minutes=5)
 ALLOWED_DEVICE_TASK_CAPABILITIES = {
     "ops.diagnostics.request": "ops.jobs.create",
+    "ops.window.minimize": "ops.window.control",
     "ops.window.show": "ops.window.control",
 }
 ALLOWED_RECEIPT_STATUSES = {
@@ -327,6 +328,8 @@ class OperationsDeviceRelayService:
             raise DeviceRelayError("task_payload_not_allowed")
         if capability_id == "ops.window.show" and payload:
             raise DeviceRelayError("window_show_payload_not_allowed")
+        if capability_id == "ops.window.minimize" and payload:
+            raise DeviceRelayError("window_minimize_payload_not_allowed")
         if capability_id == "ops.diagnostics.request":
             if not set(payload).issubset({"reason"}):
                 raise DeviceRelayError("invalid_diagnostics_payload")

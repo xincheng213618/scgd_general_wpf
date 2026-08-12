@@ -4,6 +4,7 @@ import java.net.URL;
 
 final class OperationsRelayPolicy {
     static final String CAPABILITY_SHOW_WINDOW = "ops.window.show";
+    static final String CAPABILITY_MINIMIZE_WINDOW = "ops.window.minimize";
     static final String CAPABILITY_REQUEST_DIAGNOSTICS = "ops.diagnostics.request";
     static final long HOST_FRESH_MILLISECONDS = 180_000L;
     private static final long FUTURE_TOLERANCE_MILLISECONDS = 125_000L;
@@ -42,6 +43,12 @@ final class OperationsRelayPolicy {
 
     static boolean isSafeIdentifier(String value) {
         return value != null && value.matches("[A-Za-z0-9_-]{1,64}");
+    }
+
+    static boolean isAllowedTaskCapability(String capabilityId) {
+        return CAPABILITY_SHOW_WINDOW.equals(capabilityId)
+                || CAPABILITY_MINIMIZE_WINDOW.equals(capabilityId)
+                || CAPABILITY_REQUEST_DIAGNOSTICS.equals(capabilityId);
     }
 
     static boolean isHostFresh(long signedAtSeconds, long nowMilliseconds) {

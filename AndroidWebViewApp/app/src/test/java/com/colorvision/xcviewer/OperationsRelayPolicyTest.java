@@ -35,4 +35,16 @@ public class OperationsRelayPolicyTest {
         assertFalse(OperationsRelayPolicy.isSafeIdentifier("../host"));
         assertFalse(OperationsRelayPolicy.isSafeIdentifier(""));
     }
+
+    @Test
+    public void remoteTaskCatalogAllowsOnlyTheThreeBoundedIntents() {
+        assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
+                OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW));
+        assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
+                OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW));
+        assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
+                OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS));
+        assertFalse(OperationsRelayPolicy.isAllowedTaskCapability("ops.application.restart"));
+        assertFalse(OperationsRelayPolicy.isAllowedTaskCapability("cmd.exe"));
+    }
 }

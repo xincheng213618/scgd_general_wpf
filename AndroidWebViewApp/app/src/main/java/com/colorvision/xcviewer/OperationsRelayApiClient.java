@@ -57,8 +57,7 @@ final class OperationsRelayApiClient {
     }
 
     JSONObject createTask(String capabilityId, JSONObject payload) throws Exception {
-        if (!OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW.equals(capabilityId)
-                && !OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS.equals(capabilityId)) {
+        if (!OperationsRelayPolicy.isAllowedTaskCapability(capabilityId)) {
             throw new SecurityException("task_capability_not_allowed");
         }
         JSONObject body = new JSONObject();

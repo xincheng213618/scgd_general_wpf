@@ -146,7 +146,7 @@ namespace ColorVision.UI.Desktop.Operations
                 _snapshotProvider?.Invoke() ?? new { },
                 _monitorProvider?.Invoke());
             string appVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty;
-            string[] capabilities = ["ops.window.show", "ops.diagnostics.request"];
+            string[] capabilities = ["ops.window.show", "ops.window.minimize", "ops.diagnostics.request"];
             long signedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             string snapshotBody = JsonSerializer.Serialize(new
             {
@@ -215,19 +215,22 @@ namespace ColorVision.UI.Desktop.Operations
                     status = "rejected";
                     evidence = new { error };
                 }
-                else if (verified!.CapabilityId == "ops.window.show")
+                else if (verified!.CapabilityId is "ops.window.show" or "ops.window.minimize")
                 {
                     string intentKey = $"relay-intent:{verified.Device.DeviceId}:{verified.IdempotencyKey}";
+                    string actionId = verified.CapabilityId == "ops.window.show"
+                        ? OperationsDesktopActionService.ShowWindowAction
+                        : OperationsDesktopActionService.MinimizeWindowAction;
                     if (_processedTasks.Contains(intentKey)
                         || _workStore.HasProcessedRelayIntent(verified.Device.DeviceId, verified.IdempotencyKey))
                     {
                         status = "completed";
-                        evidence = new { actionId = OperationsDesktopActionService.ShowWindowAction, deduplicated = true };
+                        evidence = new { actionId, deduplicated = true };
                     }
                     else
                     {
                         OperationsActionResult result = OperationsDesktopActionService.Execute(
-                            OperationsDesktopActionService.ShowWindowAction);
+                            actionId);
                         status = result.Success ? "completed" : "failed";
                         evidence = new { result.ActionId, result.Message };
                         _workStore.RecordAudit(verified.Device.DeviceId, "device", "relay.intent.execute",

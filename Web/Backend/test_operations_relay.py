@@ -339,6 +339,44 @@ class OperationsRelayTests(unittest.TestCase):
         self.assertEqual(revoked.status_code, 401)
         self.assertEqual(revoked.get_json()["error"], "unknown_or_revoked_device")
 
+    def test_device_relay_accepts_only_empty_bounded_window_actions(self):
+        identity = self.device_relay_identity()
+        self.assertEqual(self.sync_device_relay(identity).status_code, 200)
+        path = "/api/ops/v1/device-relay/tasks"
+
+        for capability_id, idempotency_key in (
+            ("ops.window.show", "show-window"),
+            ("ops.window.minimize", "minimize-window"),
+        ):
+            body = self.json_bytes({
+                "hostId": identity["host_id"],
+                "capabilityId": capability_id,
+                "payload": {},
+                "idempotencyKey": idempotency_key,
+            })
+            response = self.client.post(
+                path,
+                data=body,
+                content_type="application/json",
+                headers=self.device_headers(identity, "POST", path, body),
+            )
+            self.assertEqual(response.status_code, 202)
+
+        payload_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.window.minimize",
+            "payload": {"title": "another window"},
+            "idempotencyKey": "minimize-with-payload",
+        })
+        rejected = self.client.post(
+            path,
+            data=payload_body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, payload_body),
+        )
+        self.assertEqual(rejected.status_code, 400)
+        self.assertEqual(rejected.get_json()["error"], "window_minimize_payload_not_allowed")
+
     @staticmethod
     def json_bytes(value):
         return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -379,7 +417,7 @@ class OperationsRelayTests(unittest.TestCase):
         path = f"/api/ops/v1/device-relay/hosts/{identity['host_id']}/sync"
         app_version = "1.4.10.4"
         status = "online"
-        capabilities = ["ops.window.show", "ops.diagnostics.request"]
+        capabilities = ["ops.window.show", "ops.window.minimize", "ops.diagnostics.request"]
         snapshot = {"isRunning": True, "mainWindow": {"state": "Normal"}}
         signed_at = int(datetime.now(timezone.utc).timestamp())
         snapshot_envelope_body = self.json_bytes({

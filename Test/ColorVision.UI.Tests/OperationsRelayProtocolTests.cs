@@ -169,6 +169,58 @@ public sealed class OperationsRelayProtocolTests
         }
     }
 
+    [Fact]
+    public void WindowMinimizeRequiresTheWindowScopeAndAnEmptySignedPayload()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"cv-relay-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+            OperationsDeviceRegistry registry = new(Path.Combine(root, "devices.json"));
+            registry.Approve(
+                "device-1", "Test phone",
+                Convert.ToBase64String(key.ExportSubjectPublicKeyInfo()),
+                ["ops.window.control"]);
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            string body = JsonSerializer.Serialize(new
+            {
+                hostId = "host-1",
+                capabilityId = "ops.window.minimize",
+                payload = new { },
+                idempotencyKey = "minimize-1",
+                ttlSeconds = 300,
+            });
+            OperationsRelayDeviceTask task = CreateTask(
+                key, body, "ops.window.minimize", now, now.AddMinutes(5));
+
+            Assert.True(OperationsRelayProtocol.TryVerifyDeviceTask(
+                task, "host-1", registry, now,
+                out OperationsRelayVerifiedTask? verified, out string error), error);
+            Assert.NotNull(verified);
+            Assert.Equal("ops.window.minimize", verified.CapabilityId);
+            Assert.Equal("minimize-1", verified.IdempotencyKey);
+
+            string payloadBody = JsonSerializer.Serialize(new
+            {
+                hostId = "host-1",
+                capabilityId = "ops.window.minimize",
+                payload = new { title = "other-window" },
+                idempotencyKey = "minimize-2",
+                ttlSeconds = 300,
+            });
+            OperationsRelayDeviceTask payloadTask = CreateTask(
+                key, payloadBody, "ops.window.minimize", now, now.AddMinutes(5));
+            Assert.False(OperationsRelayProtocol.TryVerifyDeviceTask(
+                payloadTask, "host-1", registry, now, out _, out error));
+            Assert.Equal("window_minimize_payload_not_allowed", error);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static OperationsRelayDeviceTask CreateTask(
         ECDsa key,
         string body,
