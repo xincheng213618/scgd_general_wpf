@@ -113,9 +113,9 @@ namespace WindowsServicePlugin.ServiceManager
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    StandardInputEncoding = new UTF8Encoding(false),
-                    StandardOutputEncoding = Encoding.UTF8,
-                    StandardErrorEncoding = Encoding.UTF8
+                    StandardInputEncoding = MySqlProtocolDefaults.ScriptEncoding,
+                    StandardOutputEncoding = MySqlProtocolDefaults.ScriptEncoding,
+                    StandardErrorEncoding = MySqlProtocolDefaults.ScriptEncoding
                 };
                 psi.ArgumentList.Add("-P");
                 psi.ArgumentList.Add(Port.ToString());
@@ -125,7 +125,7 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     psi.ArgumentList.Add($"-p{password}");
                 }
-                psi.ArgumentList.Add("--default-character-set=utf8mb4");
+                MySqlProtocolDefaults.AddCharacterSetArgument(psi);
                 if (!string.IsNullOrWhiteSpace(database))
                 {
                     psi.ArgumentList.Add(database);
@@ -312,8 +312,8 @@ namespace WindowsServicePlugin.ServiceManager
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    StandardOutputEncoding = Encoding.UTF8,
-                    StandardErrorEncoding = Encoding.UTF8
+                    StandardOutputEncoding = MySqlProtocolDefaults.ScriptEncoding,
+                    StandardErrorEncoding = MySqlProtocolDefaults.ScriptEncoding
                 };
                 psi.ArgumentList.Add("-P");
                 psi.ArgumentList.Add(Port.ToString());
@@ -323,8 +323,7 @@ namespace WindowsServicePlugin.ServiceManager
                 {
                     psi.ArgumentList.Add($"-p{password}");
                 }
-
-                psi.ArgumentList.Add("--default-character-set=utf8mb4");
+                MySqlProtocolDefaults.AddCharacterSetArgument(psi);
                 psi.ArgumentList.Add("--single-transaction");
                 psi.ArgumentList.Add("--quick");
                 psi.ArgumentList.Add("--skip-triggers");
@@ -376,13 +375,16 @@ namespace WindowsServicePlugin.ServiceManager
                     return false;
                 }
 
-                StringBuilder sql = new();
-                sql.AppendLine("SET NAMES utf8mb4;");
-                sql.AppendLine("SET FOREIGN_KEY_CHECKS = 0;");
-                sql.AppendLine(stdout);
-                sql.AppendLine(MySqlLocalServicesManager.BuildMigrationDictionaryDependencySql(BuildDatabaseConnectionString(userName, password, database), logCallback));
-                sql.AppendLine("SET FOREIGN_KEY_CHECKS = 1;");
-                File.WriteAllText(outputFile, sql.ToString(), new UTF8Encoding(false));
+                string dependencyStatements = MySqlLocalServicesManager.BuildMigrationDictionaryDependencyStatements(
+                    BuildDatabaseConnectionString(userName, password, database),
+                    logCallback);
+                string sql = MySqlProtocolDefaults.CreateScript(
+                    "SET FOREIGN_KEY_CHECKS = 0;",
+                    stdout,
+                    "-- Referenced template dictionary dependencies",
+                    dependencyStatements,
+                    "SET FOREIGN_KEY_CHECKS = 1;");
+                File.WriteAllText(outputFile, sql, MySqlProtocolDefaults.ScriptEncoding);
                 logCallback($"资源数据备份完成: {outputFile}");
                 return true;
             }
@@ -402,7 +404,7 @@ namespace WindowsServicePlugin.ServiceManager
                 UserID = userName,
                 Password = password ?? string.Empty,
                 Database = database,
-                CharacterSet = "utf8mb4",
+                CharacterSet = MySqlProtocolDefaults.CharacterSet,
                 ConnectionTimeout = 5,
                 SslMode = MySqlSslMode.None,
                 Pooling = false
@@ -430,7 +432,7 @@ namespace WindowsServicePlugin.ServiceManager
                     UserID = userName,
                     Password = password ?? string.Empty,
                     Database = database ?? string.Empty,
-                    CharacterSet = "utf8",
+                    CharacterSet = MySqlProtocolDefaults.CharacterSet,
                     ConnectionTimeout = 5,
                     SslMode = MySqlSslMode.None,
                     Pooling = true,
@@ -469,6 +471,7 @@ namespace WindowsServicePlugin.ServiceManager
         /// </summary>
         public bool BackupDatabase(string user, string password, string database, string outputFile, Action<string> logCallback)
         {
+            string partFile = outputFile + ".part";
             try
             {
                 logCallback($"正在备份数据库 {database}...");
@@ -482,12 +485,63 @@ namespace WindowsServicePlugin.ServiceManager
                     return false;
                 }
 
-                string dir = Path.GetDirectoryName(outputFile);
+                string? dir = Path.GetDirectoryName(outputFile);
                 if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
 
-                string command = $"\"{dumpPath}\" -u {user} -p{password} {database} > \"{outputFile}\"";
-                Tool.ExecuteCommandUI(command);
+                var psi = new ProcessStartInfo
+                {
+                    FileName = dumpPath,
+                    WorkingDirectory = Path.GetDirectoryName(dumpPath) ?? BasePath,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardErrorEncoding = MySqlProtocolDefaults.ScriptEncoding
+                };
+                psi.ArgumentList.Add("-P");
+                psi.ArgumentList.Add(Port.ToString());
+                psi.ArgumentList.Add("-u");
+                psi.ArgumentList.Add(user);
+                if (!string.IsNullOrEmpty(password))
+                {
+                    psi.ArgumentList.Add($"-p{password}");
+                }
+                MySqlProtocolDefaults.AddCharacterSetArgument(psi);
+                psi.ArgumentList.Add("--single-transaction");
+                psi.ArgumentList.Add("--quick");
+                psi.ArgumentList.Add(database);
+
+                using FileStream output = new(partFile, FileMode.Create, FileAccess.Write, FileShare.None);
+                using var process = Process.Start(psi);
+                if (process == null)
+                {
+                    logCallback("无法启动 mysqldump");
+                    return false;
+                }
+
+                Task copyOutputTask = process.StandardOutput.BaseStream.CopyToAsync(output);
+                Task<string> stderrTask = process.StandardError.ReadToEndAsync();
+                if (!process.WaitForExit(600000))
+                {
+                    process.Kill(true);
+                    logCallback("数据库备份超时");
+                    return false;
+                }
+
+                copyOutputTask.GetAwaiter().GetResult();
+                string stderr = stderrTask.GetAwaiter().GetResult();
+                output.Flush(true);
+                if (process.ExitCode != 0)
+                {
+                    if (!string.IsNullOrWhiteSpace(stderr))
+                        logCallback(stderr.Trim());
+                    logCallback($"备份失败，退出码: {process.ExitCode}");
+                    return false;
+                }
+
+                output.Dispose();
+                File.Move(partFile, outputFile, true);
                 logCallback($"备份完成: {outputFile}");
                 return true;
             }
@@ -495,6 +549,18 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 logCallback($"备份失败: {ex.Message}");
                 return false;
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(partFile))
+                        File.Delete(partFile);
+                }
+                catch (Exception ex)
+                {
+                    log.Warn($"删除失败的 MySQL 临时备份文件失败: {partFile}", ex);
+                }
             }
         }
 
@@ -511,20 +577,10 @@ namespace WindowsServicePlugin.ServiceManager
             try
             {
                 logCallback($"正在还原数据库 {database}...");
-                string mysqlPath = File.Exists(MysqlExePath)
-                    ? MysqlExePath
-                    : MySqlLocalConfig.Instance.MysqlPath;
-
-                if (string.IsNullOrEmpty(mysqlPath) || !File.Exists(mysqlPath))
-                {
-                    logCallback("找不到 mysql 客户端");
-                    return false;
-                }
-
-                string command = $"\"{mysqlPath}\" -u {user} -p{password} {database} < \"{sqlFile}\"";
-                Tool.ExecuteCommandUI(command);
-                logCallback("数据库还原完成");
-                return true;
+                bool restored = ExecuteSqlFile(user, password, database, sqlFile, logCallback);
+                if (restored)
+                    logCallback("数据库还原完成");
+                return restored;
             }
             catch (Exception ex)
             {

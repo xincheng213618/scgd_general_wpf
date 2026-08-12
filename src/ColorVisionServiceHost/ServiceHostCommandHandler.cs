@@ -688,6 +688,7 @@ internal sealed class ServiceHostCommandHandler
         List<string> steps = [];
         bool stopped = StopServiceIfExists(serviceName, timeoutSeconds, steps);
         bool started = stopped && StartServiceAndWait(serviceName, timeoutSeconds, steps);
+        ServiceHostLog.Write($"Service restart result: service={serviceName}; success={started}; steps={string.Join(" | ", steps)}");
 
         return ServiceHostResponse.FromObject(request.RequestId, started, started ? "service restarted" : "service restart failed", new
         {

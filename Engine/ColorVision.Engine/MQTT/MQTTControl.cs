@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ColorVision.Engine.MQTT
@@ -26,6 +27,25 @@ namespace ColorVision.Engine.MQTT
         public bool Retain { get; set; }
     }
 
+    public sealed class MqttRuntimeDiagnostics
+    {
+        public bool Configured { get; init; }
+
+        public bool Connected { get; init; }
+
+        public int RegisteredSubscriptionCount { get; init; }
+
+        public int ActiveSubscriptionCount { get; init; }
+
+        public DateTimeOffset? LastConnectedAt { get; init; }
+
+        public DateTimeOffset? LastDisconnectedAt { get; init; }
+
+        public DateTimeOffset? LastInboundActivityAt { get; init; }
+
+        public DateTimeOffset? LastOutboundActivityAt { get; init; }
+    }
+
     public class MQTTControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MQTTControl));
@@ -33,6 +53,7 @@ namespace ColorVision.Engine.MQTT
 
         private static MQTTControl _instance;
         private static readonly object _locker = new();
+        private static readonly SemaphoreSlim ConnectGate = new(1, 1);
         public static MQTTControl GetInstance() { lock (_locker) { return _instance ??= new MQTTControl(); } }
 
         public static MQTTConfig Config => MQTTSetting.Instance.MQTTConfig;
@@ -49,6 +70,11 @@ namespace ColorVision.Engine.MQTT
 
         private readonly object _messageTraceLocker = new();
         private readonly List<MqttMessageTraceEntry> _messageTraces = new();
+        private readonly object _runtimeDiagnosticsLocker = new();
+        private DateTimeOffset? _lastConnectedAt;
+        private DateTimeOffset? _lastDisconnectedAt;
+        private DateTimeOffset? _lastInboundActivityAt;
+        private DateTimeOffset? _lastOutboundActivityAt;
 
         private MQTTControl()
         {
@@ -68,6 +94,32 @@ namespace ColorVision.Engine.MQTT
             lock (_messageTraceLocker)
             {
                 return _messageTraces.ToList();
+            }
+        }
+
+        public MqttRuntimeDiagnostics CaptureRuntimeDiagnostics()
+        {
+            int registeredSubscriptionCount;
+            int activeSubscriptionCount;
+            lock (_subscribeTopicLocker)
+            {
+                registeredSubscriptionCount = _subscribeTopicCache.Count;
+                activeSubscriptionCount = SubscribeTopic.Count;
+            }
+
+            lock (_runtimeDiagnosticsLocker)
+            {
+                return new MqttRuntimeDiagnostics
+                {
+                    Configured = !string.IsNullOrWhiteSpace(Config.Host) && Config.Port > 0,
+                    Connected = MQTTClient?.IsConnected == true,
+                    RegisteredSubscriptionCount = registeredSubscriptionCount,
+                    ActiveSubscriptionCount = activeSubscriptionCount,
+                    LastConnectedAt = _lastConnectedAt,
+                    LastDisconnectedAt = _lastDisconnectedAt,
+                    LastInboundActivityAt = _lastInboundActivityAt,
+                    LastOutboundActivityAt = _lastOutboundActivityAt,
+                };
             }
         }
 
@@ -120,6 +172,36 @@ namespace ColorVision.Engine.MQTT
         public async Task<bool> Connect()=> await Connect(Config);
         public async Task<bool> Connect(MQTTConfig mqttConfig)
         {
+            await ConnectGate.WaitAsync();
+            try
+            {
+                return await ConnectCore(mqttConfig, CancellationToken.None);
+            }
+            finally
+            {
+                ConnectGate.Release();
+            }
+        }
+
+        public async Task<bool> RecoverConnectionAsync(CancellationToken cancellationToken = default)
+        {
+            await ConnectGate.WaitAsync(cancellationToken);
+            try
+            {
+                if (IsConnectionReady())
+                    return true;
+
+                bool connected = await ConnectCore(Config, cancellationToken);
+                return connected && IsConnectionReady();
+            }
+            finally
+            {
+                ConnectGate.Release();
+            }
+        }
+
+        private async Task<bool> ConnectCore(MQTTConfig mqttConfig, CancellationToken cancellationToken)
+        {
             log.Info($"Connecting to MQTT: {mqttConfig}");
 
             IsConnect = false;
@@ -129,7 +211,7 @@ namespace ColorVision.Engine.MQTT
                 MQTTClient.ConnectedAsync -= MQTTClient_ConnectedAsync;
                 MQTTClient.DisconnectedAsync -= MQTTClient_DisconnectedAsync;
                 MQTTClient.ApplicationMessageReceivedAsync -= MQTTClient_ApplicationMessageReceivedAsync;
-                await MQTTClient.DisconnectAsync();
+                await MQTTClient.DisconnectAsync(cancellationToken: cancellationToken);
                 MQTTClient?.Dispose();
                 MQTTClient = new MqttClientFactory().CreateMqttClient();
 
@@ -138,7 +220,7 @@ namespace ColorVision.Engine.MQTT
                 MQTTClient.ConnectedAsync += MQTTClient_ConnectedAsync;
                 MQTTClient.DisconnectedAsync += MQTTClient_DisconnectedAsync;
                 MQTTClient.ApplicationMessageReceivedAsync += MQTTClient_ApplicationMessageReceivedAsync;
-                await MQTTClient.ConnectAsync(options);
+                await MQTTClient.ConnectAsync(options, cancellationToken);
                 IsConnect = true;
                 return true;
             }
@@ -147,6 +229,15 @@ namespace ColorVision.Engine.MQTT
                 log.Error(ex);
                 IsConnect = false;
                 return false;
+            }
+        }
+
+        private bool IsConnectionReady()
+        {
+            lock (_subscribeTopicLocker)
+            {
+                return MQTTClient?.IsConnected == true
+                    && SubscribeTopic.Count >= _subscribeTopicCache.Count;
             }
         }
 
@@ -162,6 +253,7 @@ namespace ColorVision.Engine.MQTT
             }
 
             log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT connected");
+            RecordRuntimeActivity(RuntimeActivity.Connected);
             IsConnect = true;
             await ResubscribeTopics();
         }
@@ -170,6 +262,7 @@ namespace ColorVision.Engine.MQTT
         {
             string payload = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
             AddMessageTrace("RECV", e.ApplicationMessage.Topic, payload, e.ApplicationMessage.QualityOfServiceLevel.ToString(), e.ApplicationMessage.Retain);
+            RecordRuntimeActivity(RuntimeActivity.Inbound);
 
              if (log.IsDebugEnabled)
             {
@@ -185,6 +278,7 @@ namespace ColorVision.Engine.MQTT
         private async Task MQTTClient_DisconnectedAsync(MqttClientDisconnectedEventArgs arg)
         {
             log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT disconnected");
+            RecordRuntimeActivity(RuntimeActivity.Disconnected);
             IsConnect = false;
             await Task.Delay(3000);
             _ = Connect();
@@ -341,9 +435,41 @@ namespace ColorVision.Engine.MQTT
 
                 await MQTTClient.PublishAsync(message);
                 AddMessageTrace("SEND", topic, msg, message.QualityOfServiceLevel.ToString(), message.Retain);
+                RecordRuntimeActivity(RuntimeActivity.Outbound);
                 log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Debug, $"{DateTime.Now:HH:mm:ss.fff} Published to '{topic}', message: '{msg}'", null);
             }
             return;
+        }
+
+        private void RecordRuntimeActivity(RuntimeActivity activity)
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            lock (_runtimeDiagnosticsLocker)
+            {
+                switch (activity)
+                {
+                    case RuntimeActivity.Connected:
+                        _lastConnectedAt = now;
+                        break;
+                    case RuntimeActivity.Disconnected:
+                        _lastDisconnectedAt = now;
+                        break;
+                    case RuntimeActivity.Inbound:
+                        _lastInboundActivityAt = now;
+                        break;
+                    case RuntimeActivity.Outbound:
+                        _lastOutboundActivityAt = now;
+                        break;
+                }
+            }
+        }
+
+        private enum RuntimeActivity
+        {
+            Connected,
+            Disconnected,
+            Inbound,
+            Outbound,
         }
     }
 

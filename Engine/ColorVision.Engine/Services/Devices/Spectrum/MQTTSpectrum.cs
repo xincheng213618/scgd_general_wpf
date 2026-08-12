@@ -42,6 +42,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     {
         public DeviceSpectrum Device { get; set; }
 
+        public override DeviceStatusType DeviceStatus
+        {
+            get => base.DeviceStatus;
+            set
+            {
+                base.DeviceStatus = value;
+                Device?.ObserveSpectrumDeviceStatus(value);
+            }
+        }
+
         public MQTTSpectrum(DeviceSpectrum DeviceSpectrum) : base(DeviceSpectrum.Config)
         {
             this.Device = DeviceSpectrum;
@@ -213,29 +223,41 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public MsgRecord GetEqe()
         {
-            var Param = new Dictionary<string, object>();
-            MsgSend msg = new()
+            if (!Device.TryEnterSpectrumMeasurement(out string rejectionReason))
+                return CreateRejectedMeasurementRecord("EQE.GetData", rejectionReason);
+
+            try
             {
-                EventName = "EQE.GetData",
-                Params = Param
-            };
-            Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
-            Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
-            Param.Add("AutoInitDark", Device.DisplayConfig.IsAutoDark);
-            Param.Add("SelfAdaptionInitDark", Device.DisplayConfig.IsShutter);
-            Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
-            Param.Add("AFactor", Device.DisplayConfig.Divisor);
-            Param.Add("OutputDataFilename", "EQEData.json");
+                var Param = new Dictionary<string, object>();
+                MsgSend msg = new()
+                {
+                    EventName = "EQE.GetData",
+                    Params = Param
+                };
+                Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
+                Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
+                Param.Add("AutoInitDark", Device.DisplayConfig.IsAutoDark);
+                Param.Add("SelfAdaptionInitDark", Device.DisplayConfig.IsShutter);
+                Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
+                Param.Add("AFactor", Device.DisplayConfig.Divisor);
+                Param.Add("OutputDataFilename", "EQEData.json");
 
-            var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            SMUResultModel sMUResultModel = new SMUResultModel() { VResult = (float)Device.DisplayConfig.V, IResult = (float)Device.DisplayConfig.I };
-            int MasterId = DB.Insertable(sMUResultModel).ExecuteReturnIdentity();
-            DB.Dispose();
+                var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                SMUResultModel sMUResultModel = new SMUResultModel() { VResult = (float)Device.DisplayConfig.V, IResult = (float)Device.DisplayConfig.I };
+                int MasterId = DB.Insertable(sMUResultModel).ExecuteReturnIdentity();
+                DB.Dispose();
 
-            var SMUData = new Dictionary<string, object>() { { "V", Device.DisplayConfig.V }, { "I", Device.DisplayConfig.I },{ "Channel",0 },{ "MasterId", MasterId },{ "MasterResultType", 200 } };
-            Param.Add("SMUData", SMUData);
-            MsgRecord msgRecord = PublishAsyncClient(msg);
-            return msgRecord;
+                var SMUData = new Dictionary<string, object>() { { "V", Device.DisplayConfig.V }, { "I", Device.DisplayConfig.I },{ "Channel",0 },{ "MasterId", MasterId },{ "MasterResultType", 200 } };
+                Param.Add("SMUData", SMUData);
+                MsgRecord msgRecord = PublishAsyncClient(msg);
+                Device.ReleaseSpectrumMeasurementWhenTerminal(msgRecord);
+                return msgRecord;
+            }
+            catch
+            {
+                Device.ReleaseSpectrumMeasurementLease();
+                throw;
+            }
         }
 
         public MsgRecord Open()
@@ -252,36 +274,50 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord GetData()
+        public MsgRecord GetData(double timeoutMilliseconds = 30000)
         {
-            var Param = new Dictionary<string, object>();
-            MsgSend msg = new()
-            {
-                EventName = "GetData",
-                Params = Param
-            };
-            Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
-            Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
-            Param.Add("AutoInitDark", Device.DisplayConfig.IsAutoDark);
-            Param.Add("SelfAdaptionInitDark", Device.DisplayConfig.IsShutter);
-            Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
-            Param.Add("IsWithND", Device.DisplayConfig.IsWithND);
-            if (Device.DisplayConfig.IsLuminousFluxMode)
-            {
-                msg.EventName = "EQE.GetData";
-                Param.Add("AFactor", Device.DisplayConfig.Divisor);
-                Param.Add("OutputDataFilename", "EQEData.json");
-                var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                SMUResultModel sMUResultModel = new SMUResultModel() { VResult = (float)Device.DisplayConfig.V, IResult = (float)Device.DisplayConfig.I };
-                int MasterId = DB.Insertable(sMUResultModel).ExecuteReturnIdentity();
-                DB.Dispose();
+            if (!Device.TryValidateMeasurementCalibrationFiles(out string calibrationError))
+                return CreateRejectedMeasurementRecord("GetData", calibrationError);
+            if (!Device.TryEnterSpectrumMeasurement(out string rejectionReason))
+                return CreateRejectedMeasurementRecord("GetData", rejectionReason);
 
-                var SMUData = new Dictionary<string, object>() { { "V", Device.DisplayConfig.V }, { "I", Device.DisplayConfig.I }, { "Channel", 0 }, { "MasterId", MasterId }, { "MasterResultType", 200 } };
-                Param.Add("SMUData", SMUData);
+            try
+            {
+                var Param = new Dictionary<string, object>();
+                MsgSend msg = new()
+                {
+                    EventName = "GetData",
+                    Params = Param
+                };
+                Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
+                Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
+                Param.Add("AutoInitDark", Device.DisplayConfig.IsAutoDark);
+                Param.Add("SelfAdaptionInitDark", Device.DisplayConfig.IsShutter);
+                Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
+                Param.Add("IsWithND", Device.DisplayConfig.IsWithND);
+                if (Device.DisplayConfig.IsLuminousFluxMode)
+                {
+                    msg.EventName = "EQE.GetData";
+                    Param.Add("AFactor", Device.DisplayConfig.Divisor);
+                    Param.Add("OutputDataFilename", "EQEData.json");
+                    var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                    SMUResultModel sMUResultModel = new SMUResultModel() { VResult = (float)Device.DisplayConfig.V, IResult = (float)Device.DisplayConfig.I };
+                    int MasterId = DB.Insertable(sMUResultModel).ExecuteReturnIdentity();
+                    DB.Dispose();
+
+                    var SMUData = new Dictionary<string, object>() { { "V", Device.DisplayConfig.V }, { "I", Device.DisplayConfig.I }, { "Channel", 0 }, { "MasterId", MasterId }, { "MasterResultType", 200 } };
+                    Param.Add("SMUData", SMUData);
+                }
+
+                MsgRecord msgRecord= PublishAsyncClient(msg, timeoutMilliseconds);
+                Device.ReleaseSpectrumMeasurementWhenTerminal(msgRecord);
+                return msgRecord;
             }
-
-            MsgRecord msgRecord= PublishAsyncClient(msg);
-            return msgRecord;
+            catch
+            {
+                Device.ReleaseSpectrumMeasurementLease();
+                throw;
+            }
         }
         public MsgRecord Close()
         {
@@ -341,34 +377,69 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public MsgRecord GetDataAuto()
         {
-            var Param = new Dictionary<string, object>();
-            MsgSend msg = new()
+            if (!Device.TryEnterSpectrumContinuousMeasurement(out string rejectionReason))
+                return CreateRejectedMeasurementRecord("GetDataAuto", rejectionReason);
+
+            try
             {
-                EventName = "GetDataAuto",
-                Params = Param
-            };
-            Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
-            Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
-            Param.Add("AutoInitDark", Device.DisplayConfig.IsAutoDark);
-            Param.Add("SelfAdaptionInitDark", Device.DisplayConfig.IsShutter);
-            Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
-            Param.Add("IsWithND", Device.DisplayConfig.IsWithND);
+                var Param = new Dictionary<string, object>();
+                MsgSend msg = new()
+                {
+                    EventName = "GetDataAuto",
+                    Params = Param
+                };
+                Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
+                Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
+                Param.Add("AutoInitDark", Device.DisplayConfig.IsAutoDark);
+                Param.Add("SelfAdaptionInitDark", Device.DisplayConfig.IsShutter);
+                Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
+                Param.Add("IsWithND", Device.DisplayConfig.IsWithND);
 
-            if (Device.DisplayConfig.IsLuminousFluxMode)
-            {
-                msg.EventName = "EQE.GetDataAuto";
+                if (Device.DisplayConfig.IsLuminousFluxMode)
+                {
+                    msg.EventName = "EQE.GetDataAuto";
 
-                Param.Add("AFactor", Device.DisplayConfig.Divisor);
-                Param.Add("OutputDataFilename", "EQEData.json");
-                var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                SMUResultModel sMUResultModel = new SMUResultModel() { VResult = (float)Device.DisplayConfig.V, IResult = (float)Device.DisplayConfig.I };
-                int MasterId = DB.Insertable(sMUResultModel).ExecuteReturnIdentity();
-                DB.Dispose();
+                    Param.Add("AFactor", Device.DisplayConfig.Divisor);
+                    Param.Add("OutputDataFilename", "EQEData.json");
+                    var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                    SMUResultModel sMUResultModel = new SMUResultModel() { VResult = (float)Device.DisplayConfig.V, IResult = (float)Device.DisplayConfig.I };
+                    int MasterId = DB.Insertable(sMUResultModel).ExecuteReturnIdentity();
+                    DB.Dispose();
 
-                var SMUData = new Dictionary<string, object>() { { "V", Device.DisplayConfig.V }, { "I", Device.DisplayConfig.I }, { "Channel", 0 }, { "MasterId", MasterId }, { "MasterResultType", 200 } };
-                Param.Add("SMUData", SMUData);
+                    var SMUData = new Dictionary<string, object>() { { "V", Device.DisplayConfig.V }, { "I", Device.DisplayConfig.I }, { "Channel", 0 }, { "MasterId", MasterId }, { "MasterResultType", 200 } };
+                    Param.Add("SMUData", SMUData);
+                }
+                MsgRecord msgRecord = PublishAsyncClient(msg);
+                Device.ReleaseSpectrumContinuousStartWhenTerminal(msgRecord);
+                return msgRecord;
             }
-            return PublishAsyncClient(msg);
+            catch
+            {
+                Device.ReleaseSpectrumContinuousMeasurementLease();
+                throw;
+            }
+        }
+
+        private MsgRecord CreateRejectedMeasurementRecord(string eventName, string message)
+        {
+            var record = new MsgRecord
+            {
+                MsgID = Guid.NewGuid().ToString(),
+                SendTime = DateTime.Now,
+                MsgSend = new MsgSend { EventName = eventName, ServiceName = Config.Code },
+                MsgReturn = new MsgReturn
+                {
+                    EventName = eventName,
+                    DeviceCode = Config.Code,
+                    Code = -1,
+                    Message = message,
+                },
+            };
+            if (Application.Current?.Dispatcher is { } dispatcher)
+                dispatcher.BeginInvoke(() => record.MsgRecordState = MsgRecordState.Fail);
+            else
+                record.MsgRecordState = MsgRecordState.Fail;
+            return record;
         }
 
         public MsgRecord GetDataAutoStop()
@@ -378,8 +449,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 EventName = "GetDataAutoStop",
                 ServiceName = Config.Code,
             };
-            return PublishAsyncClient(msg);
+            MsgRecord msgRecord = PublishAsyncClient(msg);
+            Device.ReleaseSpectrumContinuousStopWhenTerminal(msgRecord);
+            return msgRecord;
         }
+
 
 
         public MsgRecord ShutterConnect()

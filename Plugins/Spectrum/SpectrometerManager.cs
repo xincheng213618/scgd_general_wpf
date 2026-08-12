@@ -309,7 +309,7 @@ namespace Spectrum
         /// Calibration group config, loaded per-SN from Documents/Spectrometer/{SN}/
         /// </summary>
         [JsonIgnore]
-        public CalibrationGroupConfig CalibrationGroupConfig { get => _CalibrationGroupConfig; set { _CalibrationGroupConfig = value; OnPropertyChanged(); OnPropertyChanged(nameof(CalibrationGroupNames)); OnPropertyChanged(nameof(ActiveCalibrationGroupName)); } }
+        public CalibrationGroupConfig CalibrationGroupConfig { get => _CalibrationGroupConfig; set { _CalibrationGroupConfig = value; OnPropertyChanged(); OnPropertyChanged(nameof(CalibrationGroupNames)); } }
         private CalibrationGroupConfig _CalibrationGroupConfig = CreateDefaultCalibrationGroupConfig();
 
         private static CalibrationGroupConfig CreateDefaultCalibrationGroupConfig()

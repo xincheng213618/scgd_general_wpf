@@ -1,7 +1,7 @@
 """
 Admin API routes for ColorVision Marketplace.
 
-Provides management endpoints for cache, index, jobs, audit log, and stats.
+Provides management endpoints for cache, index, jobs, audit log, deployments, and stats.
 All endpoints require authentication (session, Basic Auth, or Bearer API Key).
 
 Per-endpoint scope requirements:
@@ -10,18 +10,34 @@ Per-endpoint scope requirements:
   - POST /index/plugins/*     → cache:refresh
   - POST /index/docs/refresh  → cache:refresh
   - GET  /jobs                → jobs:read
+  - GET  /jobs/*/runs         → jobs:read
   - POST /jobs/*/run          → jobs:write
   - POST /jobs/*/enable       → jobs:write
   - POST /jobs/*/disable      → jobs:write
   - GET  /audit-log           → admin:*
+  - GET  /deployments         → admin:*
+  - GET  /operations/overview → admin:*
+  - GET  /feedback            → admin:*
+  - GET  /feedback/*          → admin:*
+  - PUT  /feedback/*/status   → admin:*
   - GET  /stats/overview      → stats:read
   - GET  /docs/status         → cache:read
   - GET  /publish/integrity   → stats:read
   - GET  /api-keys            → admin:*
+  - GET  /api-keys/scopes     → admin:*
   - POST /api-keys            → admin:*
   - POST /api-keys/*/revoke   → admin:*
   - POST /api-keys/*/rotate   → admin:*
   - GET  /api-keys/*/usage    → admin:*
+  - GET  /settings/retention  → admin:*
+  - PUT  /settings/retention  → admin:*
+  - GET  /settings/accounts   → admin:*
+  - PUT  /settings/accounts   → admin:*
+  - GET  /users              → admin:*
+  - POST /users              → admin:*
+  - PUT  /users/*/role       → admin:*
+  - POST /users/*/password   → admin:*
+  - POST /users/*/(enable|disable) → admin:*
   - *    /copilot/profiles    → admin:*
 
 admin:* grants access to all endpoints.
@@ -37,12 +53,25 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file, session
 
 from db_cache import CacheManager, now_iso
 from ports.jobs import JobRepository
+from ports.operations_admin import OperationsAdminQuery
 from routes.request_context import current_request_context, set_authenticated_request_context
 from services.auth_policy import AuthPolicy
+from services.api_key_service import (
+    ALLOWED_SCOPES,
+    DEFAULT_API_KEY_SCOPES,
+    list_api_key_scope_definitions,
+    validate_api_key_scopes,
+)
+from services.deployment_history import query_deployment_history
+from services.performance_observability import (
+    DEFAULT_SLOW_REQUEST_THRESHOLD_MS,
+    SLOW_REQUEST_BUFFER_CAPACITY,
+    build_performance_summary,
+)
 from services.request_context import RequestContext
 
 
@@ -58,15 +87,30 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "refresh_docs_index": ["cache:refresh"],
     "refresh_all_indexes": ["cache:refresh"],
     "index_status": ["cache:read"],
+    "list_db_backups": ["admin:*"],
     "backup_db": ["admin:*"],
     "list_jobs": ["jobs:read"],
+    "list_job_runs": ["jobs:read"],
     "run_job": ["jobs:write"],
     "enable_job": ["jobs:write"],
     "disable_job": ["jobs:write"],
     "audit_log": ["admin:*"],
+    "deployment_history": ["admin:*"],
+    "operations_overview": ["admin:*"],
+    "feedback_inbox": ["admin:*"],
+    "feedback_detail": ["admin:*"],
+    "feedback_attachment": ["admin:*"],
+    "update_feedback_status": ["admin:*"],
     "stats_overview": ["stats:read"],
     "traffic_stats": ["stats:read"],
+    "list_users": ["admin:*"],
+    "create_user_account": ["admin:*"],
+    "update_user_role": ["admin:*"],
+    "reset_user_password": ["admin:*"],
+    "enable_user": ["admin:*"],
+    "disable_user": ["admin:*"],
     "list_api_keys": ["admin:*"],
+    "api_key_scopes": ["admin:*"],
     "create_api_key": ["admin:*"],
     "revoke_api_key": ["admin:*"],
     "rotate_api_key": ["admin:*"],
@@ -78,6 +122,10 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "create_profile": ["admin:*"],
     "update_profile": ["admin:*"],
     "delete_profile": ["admin:*"],
+    "get_retention_settings": ["admin:*"],
+    "update_retention_settings": ["admin:*"],
+    "get_account_settings": ["admin:*"],
+    "update_account_settings": ["admin:*"],
 }
 
 
@@ -87,9 +135,11 @@ class AdminApiContext:
     jobs: JobRepository
     storage_getter: Callable[[], Path]
     config_getter: Callable[[], dict[str, Any]]
+    config_path_getter: Callable[[], Path]
     get_db: Callable[[], Any]
     auth_policy: AuthPolicy
     request_context_factory: Callable[[], RequestContext]
+    operations_admin: OperationsAdminQuery
     refresh_plugin_index: Callable[..., Any]
     refresh_all_plugin_index: Callable[..., Any]
     get_plugin_index_state: Callable[..., Any]
@@ -98,6 +148,9 @@ class AdminApiContext:
     human_size: Callable[[int], str]
     get_slow_requests: Callable[[], list[dict[str, Any]]] | None = None
     get_access_recorder_status: Callable[[], dict[str, Any]] | None = None
+    slow_request_threshold_ms: int = DEFAULT_SLOW_REQUEST_THRESHOLD_MS
+    slow_request_buffer_capacity: int = SLOW_REQUEST_BUFFER_CAPACITY
+    process_started_at: datetime | None = None
 
 
 admin_api = Blueprint("admin_api", __name__, url_prefix="/api/admin")
@@ -109,6 +162,24 @@ def _get_ctx() -> AdminApiContext:
     if _ctx is None:
         raise RuntimeError("Admin API not initialized")
     return _ctx
+
+
+def _query_int_arg(
+    name: str,
+    default: int,
+    *,
+    minimum: int,
+    maximum: int | None = None,
+) -> int:
+    try:
+        value = int(request.args.get(name, default))
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be an integer") from exc
+    if value < minimum:
+        raise ValueError(f"{name} must be at least {minimum}")
+    if maximum is not None and value > maximum:
+        raise ValueError(f"{name} must be at most {maximum}")
+    return value
 
 
 def _require_admin_auth(required_scopes: list[str] | None = None):
@@ -218,6 +289,123 @@ def publish_integrity():
     from services.publish_integrity import build_publish_integrity_report
 
     return jsonify(build_publish_integrity_report(ctx.storage_getter(), ctx.cache))
+
+
+# ---------------------------------------------------------------------------
+# Operational settings
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/settings/accounts", methods=["GET"])
+def get_account_settings():
+    from services.account_settings import get_account_settings as _get_account_settings
+
+    return jsonify({
+        **_get_account_settings(_get_ctx().config_getter()),
+        "restart_required": False,
+    })
+
+
+@admin_api.route("/settings/accounts", methods=["PUT"])
+def update_account_settings():
+    from services.account_settings import (
+        persist_account_settings,
+        validate_account_settings_payload,
+    )
+
+    ctx = _get_ctx()
+    try:
+        values = validate_account_settings_payload(request.get_json(silent=True))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    try:
+        result = persist_account_settings(
+            ctx.config_path_getter(),
+            ctx.config_getter(),
+            values,
+        )
+    except (OSError, ValueError):
+        return jsonify({"error": "Unable to persist account settings"}), 500
+
+    if result["changed"]:
+        name = result["changed"][0]
+        ctx.cache.write_audit(
+            actor_type=_actor_type(),
+            actor_id=_actor_id(),
+            action="account_settings_update",
+            target_type="configuration",
+            target_id=name,
+            detail=f"{name}: {str(result['before'][name]).lower()} -> {str(values[name]).lower()}",
+            ip=request.remote_addr or "",
+            user_agent=request.headers.get("User-Agent", "")[:200],
+        )
+
+    return jsonify({
+        "status": "updated" if result["changed"] else "unchanged",
+        **result["values"],
+        "changed": result["changed"],
+        "restart_required": False,
+    })
+
+@admin_api.route("/settings/retention", methods=["GET"])
+def get_retention_settings():
+    from services.operational_settings import (
+        get_operational_retention_settings,
+        operational_retention_limits,
+    )
+
+    return jsonify({
+        "values": get_operational_retention_settings(_get_ctx().config_getter()),
+        "limits": operational_retention_limits(),
+        "restart_required": False,
+    })
+
+
+@admin_api.route("/settings/retention", methods=["PUT"])
+def update_retention_settings():
+    from services.operational_settings import (
+        operational_retention_limits,
+        persist_operational_retention_settings,
+        validate_operational_retention_payload,
+    )
+
+    ctx = _get_ctx()
+    try:
+        values = validate_operational_retention_payload(request.get_json(silent=True))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    try:
+        result = persist_operational_retention_settings(
+            ctx.config_path_getter(),
+            ctx.config_getter(),
+            values,
+        )
+    except (OSError, ValueError):
+        return jsonify({"error": "Unable to persist operational settings"}), 500
+
+    if result["changed"]:
+        detail = ", ".join(
+            f"{name}: {result['before'][name]} -> {values[name]}"
+            for name in result["changed"]
+        )
+        ctx.cache.write_audit(
+            actor_type=_actor_type(),
+            actor_id=_actor_id(),
+            action="retention_settings_update",
+            target_type="operational_settings",
+            detail=detail,
+            ip=request.remote_addr or "",
+            user_agent=request.headers.get("User-Agent", "")[:200],
+        )
+
+    return jsonify({
+        "status": "updated" if result["changed"] else "unchanged",
+        "values": result["values"],
+        "limits": operational_retention_limits(),
+        "changed": result["changed"],
+        "restart_required": False,
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -444,6 +632,23 @@ def index_status():
 # DB backup
 # ---------------------------------------------------------------------------
 
+@admin_api.route("/backup/db", methods=["GET"])
+def list_db_backups():
+    ctx = _get_ctx()
+    from services.admin_data_retention import (
+        list_manual_db_backups,
+        parse_admin_retention_config,
+    )
+
+    _, keep_count = parse_admin_retention_config(ctx.config_getter())
+    backups = list_manual_db_backups(ctx.cache.db_path.parent)
+    return jsonify({
+        "backups": backups,
+        "count": len(backups),
+        "keep_count": keep_count,
+    })
+
+
 @admin_api.route("/backup/db", methods=["POST"])
 def backup_db():
     ctx = _get_ctx()
@@ -459,31 +664,54 @@ def backup_db():
     # database; otherwise an old snapshot could retain visitor identifiers
     # after the scheduled live cleanup has removed them.
     try:
-        from services.access_analytics import prune_access_analytics_database
+        from services.access_analytics import (
+            prune_access_analytics_database,
+            reporting_utc_offset_minutes,
+        )
+        from services.admin_data_retention import run_admin_data_retention
 
         config = ctx.config_getter()
+        utc_offset_minutes = reporting_utc_offset_minutes(config)
         prune_access_analytics_database(
             backup_path,
             retention_days=int(config.get("access_analytics_retention_days", 90) or 90),
+            utc_offset_minutes=utc_offset_minutes,
+        )
+        admin_retention = run_admin_data_retention(
+            ctx.cache.get_db,
+            backup_path.parent,
+            config,
+            protected_paths=(backup_path,),
         )
     except Exception as exc:
         backup_path.unlink(missing_ok=True)
-        return jsonify({"error": f"Backup privacy cleanup failed: {exc}"}), 500
+        return jsonify({"error": f"Backup retention cleanup failed: {exc}"}), 500
+
+    backup_retention = dict(admin_retention["backupFiles"])
+    backup_retention["status"] = admin_retention["status"]
+    backup_retention["errors"] = admin_retention["errors"]
+    backup_retention["auditDeleted"] = admin_retention["audit"]["deleted"]
+    backup_retention["snapshotAuditDeleted"] = admin_retention["backupAudit"]["deleted"]
 
     ctx.cache.write_audit(
         actor_type=_actor_type(),
         actor_id=_actor_id(),
         action="db_backup",
         target_type="database",
-        detail=f"Backup to {backup_path.name}",
+        detail=(
+            f"Backup to {backup_path.name}; "
+            f"removed {backup_retention['removedCount']} old backup(s)"
+        ),
         ip=request.remote_addr or "",
         user_agent=request.headers.get("User-Agent", "")[:200],
     )
 
     return jsonify({
         "status": "ok",
+        "backup_name": backup_path.name,
         "backup_path": str(backup_path),
         "backup_size_bytes": backup_path.stat().st_size if backup_path.exists() else 0,
+        "backup_retention": backup_retention,
     })
 
 
@@ -498,6 +726,29 @@ def list_jobs():
         return jsonify(ctx.jobs.list_with_latest_runs())
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
+
+
+@admin_api.route("/jobs/<job_id>/runs", methods=["GET"])
+def list_job_runs(job_id: str):
+    ctx = _get_ctx()
+    if ctx.jobs.get(job_id) is None:
+        return jsonify({"error": "Job not found"}), 404
+
+    status = request.args.get("status", "").strip() or None
+    if status not in {None, "success", "error", "running", "interrupted"}:
+        return jsonify({"error": "status must be success, error, running, or interrupted"}), 400
+    try:
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    return jsonify(ctx.jobs.list_runs_page(
+        job_id,
+        status=status,
+        limit=limit,
+        offset=offset,
+    ))
 
 
 @admin_api.route("/jobs/<job_id>/run", methods=["POST"])
@@ -520,7 +771,7 @@ def run_job(job_id: str):
         user_agent=request.headers.get("User-Agent", "")[:200],
     )
 
-    return jsonify(result)
+    return jsonify(result), (409 if result.get("status") == "skipped" else 200)
 
 
 @admin_api.route("/jobs/<job_id>/enable", methods=["POST"])
@@ -573,15 +824,151 @@ def audit_log():
     target = request.args.get("target", "").strip() or None
     since = request.args.get("since", "").strip() or None
     until = request.args.get("until", "").strip() or None
-    limit = min(int(request.args.get("limit", 100)), 500)
-    offset = int(request.args.get("offset", 0))
+    try:
+        limit = _query_int_arg("limit", 100, minimum=1, maximum=500)
+        offset = _query_int_arg("offset", 0, minimum=0)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
 
-    entries = ctx.cache.get_audit_log(
+    page = ctx.cache.get_audit_log_page(
         action=action, actor=actor, target=target,
         since=since, until=until,
         limit=limit, offset=offset,
     )
-    return jsonify({"entries": entries, "limit": limit, "offset": offset})
+    return jsonify({**page, "limit": limit, "offset": offset})
+
+
+# ---------------------------------------------------------------------------
+# Deployment history
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/deployments", methods=["GET"])
+def deployment_history():
+    ctx = _get_ctx()
+    try:
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0)
+        result = query_deployment_history(
+            ctx.storage_getter(),
+            status=request.args.get("status"),
+            source=request.args.get("source"),
+            commit=request.args.get("commit"),
+            limit=limit,
+            offset=offset,
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify(result)
+
+
+# ---------------------------------------------------------------------------
+# Operations overview
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/operations/overview", methods=["GET"])
+def operations_overview():
+    ctx = _get_ctx()
+    try:
+        host_limit = _query_int_arg("hostLimit", 100, minimum=1, maximum=200)
+        activity_limit = _query_int_arg("activityLimit", 100, minimum=1, maximum=200)
+        result = ctx.operations_admin.get_overview(
+            now=datetime.now(timezone.utc),
+            host_limit=host_limit,
+            activity_limit=activity_limit,
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify(result)
+
+
+# ---------------------------------------------------------------------------
+# Feedback inbox
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/feedback", methods=["GET"])
+def feedback_inbox():
+    from services.feedback_admin import query_feedback
+
+    ctx = _get_ctx()
+    try:
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0)
+        result = query_feedback(
+            ctx.storage_getter(),
+            status=request.args.get("status", "").strip() or None,
+            query=request.args.get("query", "").strip() or None,
+            limit=limit,
+            offset=offset,
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify(result)
+
+
+@admin_api.route("/feedback/<feedback_id>", methods=["GET"])
+def feedback_detail(feedback_id: str):
+    from services.feedback_admin import get_feedback_detail
+
+    try:
+        return jsonify(get_feedback_detail(_get_ctx().storage_getter(), feedback_id))
+    except FileNotFoundError:
+        return jsonify({"error": "Feedback not found"}), 404
+
+
+@admin_api.route("/feedback/<feedback_id>/attachments/<path:filename>", methods=["GET"])
+def feedback_attachment(feedback_id: str, filename: str):
+    from services.feedback_admin import resolve_feedback_attachment
+
+    ctx = _get_ctx()
+    try:
+        target = resolve_feedback_attachment(ctx.storage_getter(), feedback_id, filename)
+    except FileNotFoundError:
+        return jsonify({"error": "Attachment not found"}), 404
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="feedback_attachment_download",
+        target_type="feedback",
+        target_id=feedback_id,
+        detail="diagnostic attachment downloaded",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return send_file(target, as_attachment=True, download_name=target.name)
+
+
+@admin_api.route("/feedback/<feedback_id>/status", methods=["PUT"])
+def update_feedback_status(feedback_id: str):
+    from services.feedback_admin import (
+        update_feedback_status as _update_feedback_status,
+        validate_feedback_status_payload,
+    )
+
+    ctx = _get_ctx()
+    try:
+        status = validate_feedback_status_payload(request.get_json(silent=True))
+        result = _update_feedback_status(ctx.storage_getter(), feedback_id, status)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except FileNotFoundError:
+        return jsonify({"error": "Feedback not found"}), 404
+    except OSError:
+        return jsonify({"error": "Unable to persist feedback status"}), 500
+
+    changed = result.pop("changed")
+    before = result.pop("before")
+    if changed:
+        ctx.cache.write_audit(
+            actor_type=_actor_type(),
+            actor_id=_actor_id(),
+            action="feedback_status_update",
+            target_type="feedback",
+            target_id=feedback_id,
+            detail=f"status: {before} -> {status}",
+            ip=request.remote_addr or "",
+            user_agent=request.headers.get("User-Agent", "")[:200],
+        )
+    return jsonify(result)
 
 
 # ---------------------------------------------------------------------------
@@ -593,13 +980,35 @@ def stats_overview():
     ctx = _get_ctx()
     db = ctx.get_db()
     try:
+        from services.access_analytics import (
+            analytics_calendar_day,
+            analytics_calendar_day_utc_bounds,
+            get_today_access_summary,
+            reporting_utc_offset_minutes,
+        )
+
+        utc_offset_minutes = reporting_utc_offset_minutes(ctx.config_getter())
+        reporting_day = analytics_calendar_day(
+            utc_offset_minutes=utc_offset_minutes,
+        )
+        day_start_utc, day_end_utc = analytics_calendar_day_utc_bounds(
+            reporting_day,
+            utc_offset_minutes=utc_offset_minutes,
+        )
         stats: dict[str, Any] = {}
 
         row = db.execute("SELECT COUNT(*) AS cnt FROM download_log").fetchone()
         stats["totalDownloads"] = row["cnt"] if row else 0
 
         row = db.execute(
-            "SELECT COUNT(*) AS cnt FROM download_log WHERE downloaded_at >= date('now')"
+            """
+            SELECT COUNT(*) AS cnt FROM download_log
+            WHERE downloaded_at >= ? AND downloaded_at < ?
+            """,
+            (
+                day_start_utc.strftime("%Y-%m-%d %H:%M:%S"),
+                day_end_utc.strftime("%Y-%m-%d %H:%M:%S"),
+            ),
         ).fetchone()
         stats["downloadsToday"] = row["cnt"] if row else 0
 
@@ -624,8 +1033,10 @@ def stats_overview():
         except OSError:
             stats["dbSizeBytes"] = 0
 
-        from services.access_analytics import get_today_access_summary
-        stats.update(get_today_access_summary(db))
+        stats.update(get_today_access_summary(
+            db,
+            utc_offset_minutes=utc_offset_minutes,
+        ))
 
         return jsonify(stats)
     except Exception as exc:
@@ -640,6 +1051,7 @@ def traffic_stats():
     from services.access_analytics import (
         SqliteAccessTrafficQuery,
         parse_bounded_int,
+        reporting_utc_offset_minutes,
     )
 
     try:
@@ -661,11 +1073,190 @@ def traffic_stats():
         return jsonify({"error": str(exc), "status": 400}), 400
 
     ctx = _get_ctx()
+    utc_offset_minutes = reporting_utc_offset_minutes(ctx.config_getter())
     query = SqliteAccessTrafficQuery(
         ctx.get_db,
         recorder_status=ctx.get_access_recorder_status,
+        utc_offset_minutes=utc_offset_minutes,
     )
     return jsonify(query.get_traffic(days=days, limit=limit))
+
+
+# ---------------------------------------------------------------------------
+# User management
+# ---------------------------------------------------------------------------
+
+def _admin_user_payload(user: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(user)
+    payload.pop("auth_version", None)
+    return payload
+
+
+def _is_current_session_user(user: dict[str, Any]) -> bool:
+    principal = current_request_context().actor
+    session_user_id = session.get("user_id")
+    try:
+        same_user_id = int(session_user_id) == int(user.get("id"))
+    except (TypeError, ValueError):
+        same_user_id = False
+    return (
+        principal.auth_method == "session"
+        and same_user_id
+        and principal.actor_id.casefold() == str(user.get("username") or "").casefold()
+    )
+
+
+@admin_api.route("/users", methods=["GET"])
+def list_users():
+    from services.auth_service import list_users as _list_users
+
+    users = _list_users(_get_ctx().cache)
+    for user in users:
+        user["is_current"] = _is_current_session_user(user)
+    return jsonify([_admin_user_payload(user) for user in users])
+
+
+@admin_api.route("/users", methods=["POST"])
+def create_user_account():
+    from services.auth_service import create_user
+
+    ctx = _get_ctx()
+    data = request.get_json(silent=True) or {}
+    username = str(data.get("username") or "").strip()
+    password = str(data.get("password") or "")
+    role = str(data.get("role") or "user")
+    user, error = create_user(ctx.cache, username, password, role=role)
+    if error or not user:
+        return jsonify({"error": error or "Account creation failed"}), 400
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_create",
+        target_type="user",
+        target_id=str(user["id"]),
+        detail=f"username={user['username']};role={user['role']}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(_admin_user_payload(user)), 201
+
+
+def _set_user_status(user_id: int, *, active: bool):
+    from services.auth_service import get_user_by_id, set_user_active
+
+    ctx = _get_ctx()
+    target = get_user_by_id(ctx.cache, user_id)
+    if not target:
+        return jsonify({"error": "User not found"}), 404
+
+    is_current_session = _is_current_session_user(target)
+    if not active and is_current_session:
+        return jsonify({"error": "The current session account cannot be disabled"}), 409
+
+    updated, error = set_user_active(ctx.cache, user_id, active=active)
+    if error == "last_active_admin":
+        return jsonify({"error": "The last active administrator cannot be disabled"}), 409
+    if error or not updated:
+        return jsonify({"error": "User update failed"}), 500
+
+    action = "user_enable" if active else "user_disable"
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action=action,
+        target_type="user",
+        target_id=str(user_id),
+        detail=f"username={updated['username']}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(_admin_user_payload(updated))
+
+
+@admin_api.route("/users/<int:user_id>/enable", methods=["POST"])
+def enable_user(user_id: int):
+    return _set_user_status(user_id, active=True)
+
+
+@admin_api.route("/users/<int:user_id>/disable", methods=["POST"])
+def disable_user(user_id: int):
+    return _set_user_status(user_id, active=False)
+
+
+@admin_api.route("/users/<int:user_id>/role", methods=["PUT"])
+def update_user_role(user_id: int):
+    from services.auth_service import get_user_by_id, set_user_role
+
+    ctx = _get_ctx()
+    target = get_user_by_id(ctx.cache, user_id)
+    if not target:
+        return jsonify({"error": "User not found"}), 404
+    if _is_current_session_user(target):
+        return jsonify({"error": "The current session account role cannot be changed"}), 409
+
+    data = request.get_json(silent=True) or {}
+    role = str(data.get("role") or "")
+    updated, error = set_user_role(ctx.cache, user_id, role=role)
+    if error == "invalid_role":
+        return jsonify({"error": "role must be 'admin' or 'user'"}), 400
+    if error == "last_active_admin":
+        return jsonify({"error": "The last active administrator cannot be demoted"}), 409
+    if error == "user_not_found":
+        return jsonify({"error": "User not found"}), 404
+    if error or not updated:
+        return jsonify({"error": "User role update failed"}), 500
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_role_update",
+        target_type="user",
+        target_id=str(user_id),
+        detail=f"username={updated['username']};old_role={target['role']};new_role={updated['role']}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(_admin_user_payload(updated))
+
+
+@admin_api.route("/users/<int:user_id>/password", methods=["POST"])
+def reset_user_password(user_id: int):
+    from services.auth_service import get_user_by_id, reset_user_password as _reset_password
+
+    ctx = _get_ctx()
+    target = get_user_by_id(ctx.cache, user_id)
+    if not target:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    password = str(data.get("password") or "")
+    updated, error = _reset_password(ctx.cache, user_id, password=password)
+    if error == "user_not_found":
+        return jsonify({"error": "User not found"}), 404
+    if error in {"password_service_unavailable", "password_reset_failed"}:
+        return jsonify({"error": "Password reset failed"}), 500
+    if error or not updated:
+        return jsonify({"error": error or "Password reset failed"}), 400
+
+    current_session_preserved = _is_current_session_user(target)
+    if current_session_preserved:
+        session["auth_version"] = int(updated.get("auth_version") or 0)
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_password_reset",
+        target_type="user",
+        target_id=str(user_id),
+        detail=f"username={updated['username']};sessions_invalidated=true",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    payload = _admin_user_payload(updated)
+    payload["sessions_invalidated"] = True
+    payload["current_session_preserved"] = current_session_preserved
+    return jsonify(payload)
 
 
 # ---------------------------------------------------------------------------
@@ -680,30 +1271,17 @@ def list_api_keys():
     return jsonify(keys)
 
 
-# Allowed scopes for API key creation
-ALLOWED_SCOPES = {
-    "admin:*",
-    "cache:read",
-    "cache:refresh",
-    "jobs:read",
-    "jobs:write",
-    "stats:read",
-    "plugin:read",
-    "plugin:publish",
-    "release:publish",
-    "file:transfer",
-    "ops:relay",
-    "ops:operator",
-    "copilot:config:read",
-}
-
-
 def validate_scopes(scopes_str: str) -> tuple[list[str], list[str]]:
     """Validate scopes against ALLOWED_SCOPES. Returns (valid, invalid)."""
-    requested = {s.strip() for s in scopes_str.split(",") if s.strip()}
-    invalid = sorted(requested - ALLOWED_SCOPES)
-    valid = sorted(requested & ALLOWED_SCOPES)
-    return valid, invalid
+    return validate_api_key_scopes(scopes_str)
+
+
+@admin_api.route("/api-keys/scopes", methods=["GET"])
+def api_key_scopes():
+    return jsonify({
+        "items": list_api_key_scope_definitions(),
+        "default_scopes": list(DEFAULT_API_KEY_SCOPES),
+    })
 
 
 @admin_api.route("/api-keys", methods=["POST"])
@@ -737,26 +1315,17 @@ def create_api_key():
         default_expiry = datetime.now(timezone.utc) + timedelta(days=90)
         expires_at = default_expiry.isoformat()
 
-    result = _create_key(
-        ctx.cache,
-        name=name,
-        scopes=scopes,
-        created_by=_actor_id(),
-        expires_at=expires_at,
-    )
-
-    # Store description if provided
-    if description:
-        db = ctx.cache.get_db()
-        try:
-            db.execute(
-                "UPDATE api_keys SET name = ? WHERE id = ?",
-                (f"{name} ({description})" if description else name, result["id"]),
-            )
-            db.commit()
-        finally:
-            db.close()
-        result["description"] = description
+    try:
+        result = _create_key(
+            ctx.cache,
+            name=name,
+            description=description,
+            scopes=scopes,
+            created_by=_actor_id(),
+            expires_at=expires_at,
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
 
     ctx.cache.write_audit(
         actor_type=_actor_type(),
@@ -797,7 +1366,10 @@ def revoke_api_key(key_id: int):
 def rotate_api_key(key_id: int):
     from services.api_key_service import rotate_api_key as _rotate_key
     ctx = _get_ctx()
-    result = _rotate_key(ctx.cache, key_id, created_by=_actor_id())
+    try:
+        result = _rotate_key(ctx.cache, key_id, created_by=_actor_id())
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
     if not result:
         return jsonify({"error": "Key not found"}), 404
 
@@ -845,21 +1417,13 @@ def _actor_id() -> str:
 def perf_summary():
     ctx = _get_ctx()
     try:
-        # Recent slow requests from in-memory buffer
-        slow_requests = []
-        if ctx.get_slow_requests:
-            slow_requests = ctx.get_slow_requests()[-20:]
-
-        # Recent slow job runs
-        slow_jobs = []
-        for r in ctx.jobs.recent_runs(20):
-            if r.get("duration_ms", 0) >= 1000 or r.get("status") == "error":
-                slow_jobs.append(r)
-
-        return jsonify({
-            "slow_requests": slow_requests,
-            "slow_jobs": slow_jobs,
-            "threshold_ms": 500,
-        })
+        slow_requests = ctx.get_slow_requests() if ctx.get_slow_requests else []
+        return jsonify(build_performance_summary(
+            slow_requests=slow_requests,
+            recent_job_runs=ctx.jobs.recent_runs(20),
+            threshold_ms=ctx.slow_request_threshold_ms,
+            buffer_capacity=ctx.slow_request_buffer_capacity,
+            process_started_at=ctx.process_started_at,
+        ))
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500

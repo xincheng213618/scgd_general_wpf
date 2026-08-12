@@ -107,6 +107,38 @@ class ArtifactIndexTests(unittest.TestCase):
         db.close()
         self.assertEqual(len(rows), 2)
 
+    def test_refresh_release_index_ignores_plugin_history(self):
+        app_release = self._create_release("1.0.0.1", in_history=True)
+        plugin_dir = self.storage / "History" / "Plugins" / "Spectrum"
+        plugin_dir.mkdir(parents=True)
+        (plugin_dir / "Spectrum-2.3.3.6.cvxp").write_bytes(b"plugin")
+        (plugin_dir / "ColorVisionPlugin-9.9.9.9.zip").write_bytes(b"plugin")
+
+        from services.artifact_index import refresh_release_index
+        result = refresh_release_index(self.cache, self.storage)
+
+        self.assertEqual(result["indexed_count"], 1)
+        db = self.cache.get_db()
+        rows = db.execute(
+            "SELECT relative_path FROM release_index WHERE is_deleted = 0"
+        ).fetchall()
+        db.close()
+        self.assertEqual(
+            [row["relative_path"] for row in rows],
+            [app_release.relative_to(self.storage).as_posix()],
+        )
+
+    def test_release_signature_ignores_plugin_history(self):
+        self._create_release("1.0.0.1", in_history=True)
+        from services.artifact_index import _release_signature
+
+        before = _release_signature(self.storage)
+        plugin_dir = self.storage / "History" / "Plugins" / "Spectrum"
+        plugin_dir.mkdir(parents=True)
+        (plugin_dir / "Spectrum-2.3.3.6.cvxp").write_bytes(b"plugin")
+
+        self.assertEqual(_release_signature(self.storage), before)
+
     def test_get_releases_from_index_returns_none_when_empty(self):
         from services.artifact_index import get_releases_from_index
         result = get_releases_from_index(self.cache)
@@ -594,10 +626,18 @@ class ArtifactIndexTests(unittest.TestCase):
 
         from services.artifact_index import refresh_all_indexes, get_all_index_states_summary
         refresh_all_indexes(self.cache, self.storage)
+        self.cache.index_states.update(
+            "releases",
+            status="ready",
+            signature="private-filesystem-signature|" * 2000,
+            item_count=1,
+        )
 
         summary = get_all_index_states_summary(self.cache)
         self.assertIn("states", summary)
         self.assertIn("counts", summary)
+        self.assertNotIn("signature", summary["states"]["releases"])
+        self.assertLess(len(json.dumps(summary)), 2500)
         self.assertEqual(summary["counts"]["releases"], 1)
         self.assertEqual(summary["counts"]["updates"], 1)
         self.assertEqual(summary["counts"]["tools"], 1)
@@ -1025,6 +1065,14 @@ class SecurityTests(unittest.TestCase):
     # -------------------------------------------------------------------
 
     def test_db_backup_creates_file(self):
+        old_backups = []
+        for second in range(11):
+            path = self.root / f"marketplace_backup_20000101_0000{second:02d}.db"
+            self.assertTrue(self.cache.backup_db(path))
+            old_backups.append(path)
+        unclassified = self.root / "marketplace_backup_manual.db"
+        unclassified.write_bytes(b"manual")
+
         response = self.client.post(
             "/api/admin/backup/db",
             headers=self._auth_headers(),
@@ -1034,10 +1082,18 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(payload["status"], "ok")
         self.assertIn("backup_path", payload)
         self.assertGreater(payload["backup_size_bytes"], 0)
+        self.assertEqual(payload["backup_retention"]["status"], "success")
+        self.assertEqual(payload["backup_retention"]["beforeCount"], 12)
+        self.assertEqual(payload["backup_retention"]["afterCount"], 10)
+        self.assertEqual(payload["backup_retention"]["removedCount"], 2)
+        self.assertEqual(payload["backup_retention"]["preservedUnclassified"], 1)
 
         # Verify backup file exists
         backup_path = Path(payload["backup_path"])
         self.assertTrue(backup_path.exists())
+        self.assertFalse(old_backups[0].exists())
+        self.assertFalse(old_backups[1].exists())
+        self.assertTrue(unclassified.exists())
 
     # -------------------------------------------------------------------
     # Basic Auth validation for admin endpoints
@@ -1294,6 +1350,8 @@ class BrowsePaginationTests(unittest.TestCase):
         self.root = Path(self.temp_dir.name)
         self.storage = self.root / "storage"
         self.storage.mkdir(parents=True, exist_ok=True)
+        self.browse_dir = self.storage / "Tool"
+        self.browse_dir.mkdir()
 
         self.original_storage = marketplace_app.STORAGE
         self.original_db_path = marketplace_app.DB_PATH
@@ -1326,9 +1384,9 @@ class BrowsePaginationTests(unittest.TestCase):
     def test_browse_default_limit(self):
         """Default limit should cap results for large directories."""
         for i in range(300):
-            (self.storage / f"file_{i:04d}.txt").write_text(str(i))
+            (self.browse_dir / f"file_{i:04d}.txt").write_text(str(i))
 
-        response = self.client.get("/api/site/browse")
+        response = self.client.get("/api/site/browse/Tool")
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
         self.assertEqual(len(payload["items"]), 200)
@@ -1337,9 +1395,9 @@ class BrowsePaginationTests(unittest.TestCase):
     def test_browse_custom_limit(self):
         """Custom limit parameter should be respected."""
         for i in range(50):
-            (self.storage / f"file_{i:04d}.txt").write_text(str(i))
+            (self.browse_dir / f"file_{i:04d}.txt").write_text(str(i))
 
-        response = self.client.get("/api/site/browse?limit=10")
+        response = self.client.get("/api/site/browse/Tool?limit=10")
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
         names = [item["name"] for item in payload["items"]]
@@ -1350,12 +1408,94 @@ class BrowsePaginationTests(unittest.TestCase):
     def test_browse_offset(self):
         """Offset parameter should skip items."""
         for i in range(20):
-            (self.storage / f"file_{i:04d}.txt").write_text(str(i))
+            (self.browse_dir / f"file_{i:04d}.txt").write_text(str(i))
 
-        response = self.client.get("/api/site/browse?limit=5&offset=10")
+        response = self.client.get("/api/site/browse/Tool?limit=5&offset=10")
         self.assertEqual(response.status_code, 200)
         names = [item["name"] for item in response.get_json()["items"]]
         self.assertEqual(names[0], "file_0010.txt")
+
+    def test_browse_search_matches_items_beyond_the_default_page(self):
+        for i in range(250):
+            (self.browse_dir / f"file_{i:04d}.txt").write_text(str(i))
+        (self.browse_dir / "zz_unique_target.txt").write_text("target")
+
+        response = self.client.get(
+            "/api/site/browse/Tool?q=UNIQUE_TARGET&type=file&limit=20"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual([item["name"] for item in payload["items"]], ["zz_unique_target.txt"])
+        self.assertEqual(payload["total_count"], 1)
+        self.assertEqual(payload["available_count"], 251)
+        self.assertEqual(payload["query"], "UNIQUE_TARGET")
+        self.assertEqual(payload["item_type"], "file")
+
+    def test_browse_filters_before_pagination_and_keeps_query_totals(self):
+        for i in range(25):
+            (self.browse_dir / f"match_{i:04d}.txt").write_text(str(i))
+        for i in range(5):
+            (self.browse_dir / f"other_{i:04d}.txt").write_text(str(i))
+
+        response = self.client.get(
+            "/api/site/browse/Tool?q=match&type=file&limit=5&offset=10"
+        )
+
+        payload = response.get_json()
+        self.assertEqual([item["name"] for item in payload["items"]], [
+            "match_0010.txt",
+            "match_0011.txt",
+            "match_0012.txt",
+            "match_0013.txt",
+            "match_0014.txt",
+        ])
+        self.assertEqual(payload["total_count"], 25)
+        self.assertEqual(payload["available_count"], 30)
+
+    def test_browse_type_filter_and_validation(self):
+        (self.browse_dir / "FolderA").mkdir()
+        (self.browse_dir / "FileA.txt").write_text("file")
+
+        directories = self.client.get("/api/site/browse/Tool?type=directory").get_json()
+        invalid_type = self.client.get("/api/site/browse/Tool?type=archive")
+        long_query = self.client.get(f"/api/site/browse/Tool?q={'x' * 101}")
+
+        self.assertEqual([item["name"] for item in directories["items"]], ["FolderA"])
+        self.assertEqual(directories["total_count"], 1)
+        self.assertEqual(invalid_type.status_code, 400)
+        self.assertEqual(long_query.status_code, 400)
+
+    def test_browse_search_does_not_expand_public_storage_policy(self):
+        (self.storage / "private-secret.txt").write_text("secret")
+
+        response = self.client.get("/api/site/browse?q=private-secret")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["items"], [])
+
+    def test_browse_file_payload_has_a_frontend_file_detail_contract(self):
+        target = self.browse_dir / "manual.pdf"
+        target.write_bytes(b"pdf")
+
+        response = self.client.get("/api/site/browse/Tool/manual.pdf")
+        frontend_page = (
+            Path(__file__).resolve().parents[1]
+            / "Frontend"
+            / "src"
+            / "pages"
+            / "BrowsePage.tsx"
+        ).read_text(encoding="utf-8")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {
+            "is_file": True,
+            "name": "manual.pdf",
+            "subpath": "Tool/manual.pdf",
+            "download_url": "/download/Tool/manual.pdf",
+        })
+        self.assertIn("if (data.is_file)", frontend_page)
+        self.assertIn("下载文件", frontend_page)
 
 
 class SchemaVersionTests(unittest.TestCase):
@@ -1553,7 +1693,7 @@ class AuthIntegrationTests(unittest.TestCase):
             "password": "secret",
         })
         # Logout
-        response = self.client.get("/logout", follow_redirects=False)
+        response = self.client.post("/logout", follow_redirects=False)
         self.assertIn(response.status_code, [302, 303])
 
     def test_admin_publish_requires_login(self):

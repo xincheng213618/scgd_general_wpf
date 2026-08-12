@@ -347,8 +347,9 @@ def build_plugin_search_api_result(
     page_size: int = DEFAULT_API_PAGE_SIZE,
     icon_url_builder: Callable[[str], str | None],
 ) -> dict[str, Any]:
+    catalog = list(all_plugins)
     filtered_sorted, normalized_sort, normalized_order = filter_and_sort_plugins(
-        all_plugins,
+        catalog,
         keyword=keyword,
         category=category,
         author=author,
@@ -363,6 +364,7 @@ def build_plugin_search_api_result(
     )
     payload["sortBy"] = normalized_sort
     payload["sortOrder"] = normalized_order
+    payload["categories"] = collect_catalog_categories(catalog)
     return payload
 
 
@@ -371,12 +373,31 @@ def build_plugin_detail_api_result(
     *,
     icon_url_builder: Callable[[str], str | None],
     render_markdown: Callable[..., Any] | None = None,
+    include_raw_documents: bool = True,
+    archive_page: int | None = None,
+    archive_page_size: int = 20,
 ) -> dict[str, Any]:
     readme = info["readme"]
     changelog = info["changelog"]
     readme_html = _render_plugin_markdown(info["id"], "readme", readme, render_markdown)
     changelog_html = _render_plugin_markdown(info["id"], "changelog", changelog, render_markdown)
-    return {
+    historical_packages = info["historical_packages"]
+    archive_total_count = len(historical_packages)
+    archive_total_pages = (
+        (archive_total_count + archive_page_size - 1) // archive_page_size
+        if archive_page_size else 0
+    )
+    normalized_archive_page = min(
+        max(archive_page or 1, 1),
+        max(archive_total_pages, 1),
+    )
+    if archive_page is not None:
+        archive_start = (normalized_archive_page - 1) * archive_page_size
+        historical_packages = historical_packages[
+            archive_start : archive_start + archive_page_size
+        ]
+
+    payload = {
         "pluginId": info["id"],
         "name": info["name"],
         "description": info["description"],
@@ -386,9 +407,7 @@ def build_plugin_detail_api_result(
         "latestVersion": info["version"],
         "requiresVersion": info["requires"],
         "iconUrl": icon_url_builder(info["id"]) if info["has_icon"] else None,
-        "readme": readme,
         "readmeHtml": readme_html,
-        "changelog": changelog,
         "changelogHtml": changelog_html,
         "relatedDocs": build_plugin_related_docs(info["id"]),
         "totalDownloads": info["total_downloads"],
@@ -426,9 +445,21 @@ def build_plugin_detail_api_result(
                 "createdAt": pkg["modified"],
                 "source": pkg.get("source", "archive"),
             }
-            for pkg in info["historical_packages"]
+            for pkg in historical_packages
         ],
     }
+    if include_raw_documents:
+        payload["readme"] = readme
+        payload["changelog"] = changelog
+    if archive_page is not None:
+        payload.update({
+            "archivedPage": normalized_archive_page,
+            "archivedPageSize": archive_page_size,
+            "archivedTotalPages": archive_total_pages,
+            "archivedHasPrevious": normalized_archive_page > 1,
+            "archivedHasNext": normalized_archive_page < archive_total_pages,
+        })
+    return payload
 
 
 def build_plugin_update_metadata_api_result(info: PluginItem) -> dict[str, Any]:

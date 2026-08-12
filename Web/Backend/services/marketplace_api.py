@@ -26,6 +26,7 @@ from package_publish import (
     validate_api_publish_request,
 )
 from plugin_marketplace import prewarm_plugin_metadata
+from services.artifact_delivery import ArtifactDeliveryService
 from services.request_context import RequestContext
 from storage_paths import (
     is_safe_id,
@@ -109,6 +110,8 @@ class MarketplaceCatalogService:
         request_context: RequestContext,
         *,
         view: str = "full",
+        archive_page: int = 1,
+        archive_page_size: int = 20,
     ) -> dict[str, Any] | None:
         info = self._data.get_plugin_info(
             plugin_id,
@@ -122,6 +125,9 @@ class MarketplaceCatalogService:
             info,
             icon_url_builder=self.icon_url,
             render_markdown=self._render_markdown,
+            include_raw_documents=view != "compact",
+            archive_page=archive_page if view == "compact" else None,
+            archive_page_size=archive_page_size,
         )
 
     def latest_versions(self, plugin_ids: list[str]) -> dict[str, str]:
@@ -198,9 +204,16 @@ class MarketplacePackageService:
         self,
         plugin_id: str,
         version: str,
-        request_context: RequestContext,
+        *,
+        client_ip: str | None,
+        client_version: str,
     ) -> None:
-        self._data.record_download(plugin_id, version, request_context)
+        self._data.record_download(
+            plugin_id,
+            version,
+            client_ip=client_ip,
+            client_version=client_version,
+        )
 
     def publish(
         self,
@@ -338,3 +351,4 @@ class MarketplaceApiServices:
     catalog: MarketplaceCatalogService
     packages: MarketplacePackageService
     storage: MarketplaceStorageService
+    delivery: ArtifactDeliveryService

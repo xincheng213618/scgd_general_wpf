@@ -1,5 +1,6 @@
 import type {
   BrowsePayload,
+  ChangelogPayload,
   CvwsContext,
   HomePayload,
   PluginDetail,
@@ -10,7 +11,15 @@ import type {
   UpdatesPayload,
   UploadContext,
 } from '../types/site'
-import { AuthRequiredError, getJson, parseResponse } from './request'
+import {
+  AuthRequiredError,
+  deleteJson,
+  getCsrfToken,
+  getJson,
+  redirectToLogin,
+  WEB_CLIENT_HEADER_NAME,
+  WEB_CLIENT_HEADER_VALUE,
+} from './request'
 
 function queryString(params: Record<string, string | number | undefined>) {
   const search = new URLSearchParams()
@@ -40,9 +49,9 @@ export function getReleases(params: {
   return getJson<ReleasesPayload>(`/api/site/releases${queryString({ view: 'compact', ...params })}`, signal)
 }
 
-export function getChangelog(signal?: AbortSignal) {
-  return getJson<{ app_info: { latest_version?: string; changelog_html?: string } }>(
-    '/api/site/changelog?view=compact',
+export function getChangelog(params: { page?: number; page_size?: number }, signal?: AbortSignal) {
+  return getJson<ChangelogPayload>(
+    `/api/site/changelog${queryString({ view: 'compact', ...params })}`,
     signal,
   )
 }
@@ -55,9 +64,13 @@ export function getTools() {
   return getJson<ToolsPayload>('/api/site/tools')
 }
 
-export function getBrowse(subpath = '', params: { limit?: number; offset?: number } = {}) {
+export function getBrowse(
+  subpath = '',
+  params: { limit?: number; offset?: number; q?: string; type?: string } = {},
+  signal?: AbortSignal,
+) {
   const path = subpath ? `/${subpath.split('/').map(encodeURIComponent).join('/')}` : ''
-  return getJson<BrowsePayload>(`/api/site/browse${path}${queryString(params)}`)
+  return getJson<BrowsePayload>(`/api/site/browse${path}${queryString(params)}`, signal)
 }
 
 export function getUploadContext() {
@@ -87,12 +100,19 @@ export function getPlugins(params: {
   )
 }
 
-export function getPluginCategories(signal?: AbortSignal) {
-  return getJson<string[]>('/api/plugins/categories', signal)
-}
-
-export function getPluginDetail(pluginId: string, signal?: AbortSignal) {
-  return getJson<PluginDetail>(`/api/plugins/${encodeURIComponent(pluginId)}`, signal)
+export function getPluginDetail(
+  pluginId: string,
+  params: { archivePage?: number; archivePageSize?: number } = {},
+  signal?: AbortSignal,
+) {
+  return getJson<PluginDetail>(
+    `/api/plugins/${encodeURIComponent(pluginId)}${queryString({
+      view: 'compact',
+      archive_page: params.archivePage,
+      archive_page_size: params.archivePageSize,
+    })}`,
+    signal,
+  )
 }
 
 function getXhrErrorMessage(response: unknown, fallback: string) {
@@ -102,13 +122,20 @@ function getXhrErrorMessage(response: unknown, fallback: string) {
   return fallback
 }
 
-function postFormWithProgress<T>(url: string, formData: FormData, onProgress?: (percent: number) => void) {
+function configureWebXhr(xhr: XMLHttpRequest) {
+  xhr.withCredentials = true
+  xhr.responseType = 'json'
+  xhr.setRequestHeader(WEB_CLIENT_HEADER_NAME, WEB_CLIENT_HEADER_VALUE)
+  xhr.setRequestHeader('Accept', 'application/json')
+}
+
+async function postFormWithProgress<T>(url: string, formData: FormData, onProgress?: (percent: number) => void) {
+  const csrfToken = await getCsrfToken()
   return new Promise<T>((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', url)
-    xhr.withCredentials = true
-    xhr.responseType = 'json'
-    xhr.setRequestHeader('Accept', 'application/json')
+    configureWebXhr(xhr)
+    xhr.setRequestHeader('X-CSRF-Token', csrfToken)
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) {
         onProgress((event.loaded / event.total) * 100)
@@ -121,6 +148,7 @@ function postFormWithProgress<T>(url: string, formData: FormData, onProgress?: (
         return
       }
       if (xhr.status === 401) {
+        redirectToLogin()
         reject(new AuthRequiredError())
         return
       }
@@ -140,22 +168,18 @@ export function getTransferFiles() {
 }
 
 export function deleteTransferFile(name: string) {
-  return fetch(`/api/transfer/files/${encodeURIComponent(name)}`, {
-    method: 'DELETE',
-    credentials: 'same-origin',
-    headers: { Accept: 'application/json' },
-  }).then((response) => parseResponse<{ deleted: string }>(response))
+  return deleteJson<{ deleted: string }>(`/api/transfer/files/${encodeURIComponent(name)}`)
 }
 
-export function uploadTransferFile(file: File, onProgress?: (percent: number) => void) {
+export async function uploadTransferFile(file: File, onProgress?: (percent: number) => void) {
+  const csrfToken = await getCsrfToken()
   return new Promise<{ name: string; bytes_written: number; replaced: boolean; download_url: string }>(
     (resolve, reject) => {
       const xhr = new XMLHttpRequest()
       xhr.open('PUT', `/api/transfer/files/${encodeURIComponent(file.name)}`)
-      xhr.withCredentials = true
-      xhr.responseType = 'json'
-      xhr.setRequestHeader('Accept', 'application/json')
+      configureWebXhr(xhr)
       xhr.setRequestHeader('Content-Type', 'application/octet-stream')
+      xhr.setRequestHeader('X-CSRF-Token', csrfToken)
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable && onProgress) {
           onProgress((event.loaded / event.total) * 100)
@@ -167,6 +191,7 @@ export function uploadTransferFile(file: File, onProgress?: (percent: number) =>
           return
         }
         if (xhr.status === 401) {
+          redirectToLogin()
           reject(new AuthRequiredError())
           return
         }

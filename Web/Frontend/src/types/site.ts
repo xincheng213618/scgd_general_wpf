@@ -20,20 +20,30 @@ export interface StorageItem {
   file_count?: number
 }
 
-export interface BrowsePayload {
-  is_file?: boolean
-  name?: string
+export interface BrowseFilePayload {
+  is_file: true
+  name: string
   subpath: string
-  download_url?: string
+  download_url: string
+}
+
+export interface BrowseDirectoryPayload {
+  is_file: false
+  subpath: string
   items: StorageItem[]
   summary: StorageSummary
   total_count: number
+  available_count: number
+  query: string
+  item_type: 'all' | 'directory' | 'file'
   breadcrumbs: [string, string][]
   parent_subpath: string
   exists: boolean
   limit?: number
   offset?: number
 }
+
+export type BrowsePayload = BrowseFilePayload | BrowseDirectoryPayload
 
 export interface ReleaseArtifact {
   display_title?: string
@@ -200,6 +210,17 @@ export interface ToolsPayload {
   exists: boolean
 }
 
+export interface ChangelogPayload {
+  app_info: Pick<AppInfo, 'latest_version' | 'changelog_html'>
+  changelog_page: number
+  changelog_page_size: number
+  changelog_total_entries: number
+  changelog_total_pages: number
+  changelog_page_entry_count: number
+  changelog_has_previous: boolean
+  changelog_has_next: boolean
+}
+
 export interface SpectrumRelease {
   version: string
   publishedAtUtc: string
@@ -232,6 +253,7 @@ export interface PluginSummary {
 
 export interface PluginListResponse {
   items: PluginSummary[]
+  categories: string[]
   totalCount: number
   page: number
   pageSize: number
@@ -269,6 +291,11 @@ export interface PluginDetail extends PluginSummary {
   historicalPackageCount?: number
   versions: PluginVersion[]
   archivedVersions: PluginVersion[]
+  archivedPage: number
+  archivedPageSize: number
+  archivedTotalPages: number
+  archivedHasPrevious: boolean
+  archivedHasNext: boolean
   requiresVersion?: string
   url?: string
 }
@@ -282,7 +309,9 @@ export interface UploadContext {
 
 export interface AuthSession {
   authenticated: boolean
+  csrf_token?: string
   is_admin?: boolean
+  public_registration_enabled?: boolean
   role?: string
   username?: string
 }

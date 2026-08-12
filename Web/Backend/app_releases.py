@@ -18,6 +18,7 @@ _ANDROID_RELEASE_CANONICAL_RE = re.compile(
     r"^ColorVision-Android-(\d+(?:\.\d+)+)\.apk$", re.IGNORECASE
 )
 _APP_RELEASE_VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
+_APP_RELEASE_HISTORY_BUCKET_RE = re.compile(r"^\d+\.\d+$")
 
 GetCacheEntry = Callable[..., dict[str, Any] | None]
 SetCacheEntry = Callable[..., None]
@@ -43,6 +44,10 @@ _PLATFORM_LABELS = {
 }
 
 _logger = logging.getLogger(__name__)
+
+
+def is_app_release_history_bucket(name: str) -> bool:
+    return _APP_RELEASE_HISTORY_BUCKET_RE.fullmatch(str(name or "")) is not None
 
 
 def _format_modified(timestamp: float) -> tuple[str, str, str]:
@@ -317,12 +322,15 @@ def scan_app_release_artifacts(
 
     history_dir = storage / "History"
     if history_dir.is_dir():
-        for entry in history_dir.rglob("*"):
-            if not entry.is_file():
+        for bucket_dir in history_dir.iterdir():
+            if not bucket_dir.is_dir() or not is_app_release_history_bucket(bucket_dir.name):
                 continue
-            artifact = build_release_artifact(storage, entry, "archive")
-            if artifact:
-                artifacts.append(artifact)
+            for entry in bucket_dir.rglob("*"):
+                if not entry.is_file():
+                    continue
+                artifact = build_release_artifact(storage, entry, "archive")
+                if artifact:
+                    artifacts.append(artifact)
 
     artifacts.sort(key=release_sort_key, reverse=True)
     set_cache_entry(

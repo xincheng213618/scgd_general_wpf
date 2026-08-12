@@ -7,6 +7,7 @@ from typing import Any, Callable
 
 from flask import current_app, redirect, request, session, url_for
 
+from routes.browser_auth import apply_basic_auth_challenge
 from services.auth_policy import AuthPolicy
 from routes.request_context import current_request_context, set_authenticated_request_context
 
@@ -38,8 +39,7 @@ def make_require_upload_auth(
             response = json_error("Authentication required", 401)
         else:
             response = current_app.response_class("Authentication required", status=401)
-        response.headers["WWW-Authenticate"] = 'Basic realm="ColorVision Marketplace"'
-        return response
+        return apply_basic_auth_challenge(response, "ColorVision Marketplace")
 
     def require_upload_auth(view_func):
         @wraps(view_func)

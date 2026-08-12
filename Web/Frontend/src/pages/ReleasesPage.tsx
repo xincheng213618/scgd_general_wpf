@@ -184,16 +184,16 @@ export function ReleasesPage() {
           }}
         >
           <Form.Item name="major_minor" label="主线">
-            <Select allowClear style={{ width: 150 }} options={data.archive_major_minor_options.map((i) => ({ label: i.label, value: i.value }))} />
+            <Select aria-label="桌面历史主线" allowClear style={{ width: 150 }} options={data.archive_major_minor_options.map((i) => ({ label: i.label, value: i.value }))} />
           </Form.Item>
           <Form.Item name="branch" label="阶段">
-            <Select allowClear style={{ width: 150 }} options={data.archive_branch_options.map((i) => ({ label: i.label, value: i.value }))} />
+            <Select aria-label="桌面历史阶段" allowClear style={{ width: 150 }} options={data.archive_branch_options.map((i) => ({ label: i.label, value: i.value }))} />
           </Form.Item>
           <Form.Item name="kind" label="类型">
-            <Select allowClear style={{ width: 140 }} options={data.archive_kind_options.map((i) => ({ label: i.label, value: i.value }))} />
+            <Select aria-label="桌面历史文件类型" allowClear style={{ width: 140 }} options={data.archive_kind_options.map((i) => ({ label: i.label, value: i.value }))} />
           </Form.Item>
           <Form.Item name="era" label="时代">
-            <Select allowClear style={{ width: 160 }} options={data.archive_era_options.map((i) => ({ label: i.label, value: i.value }))} />
+            <Select aria-label="桌面历史时代" allowClear style={{ width: 160 }} options={data.archive_era_options.map((i) => ({ label: i.label, value: i.value }))} />
           </Form.Item>
           <Form.Item>
             <Space>

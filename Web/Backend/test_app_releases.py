@@ -65,6 +65,23 @@ class AppReleasesTests(unittest.TestCase):
         self.assertEqual(releases[0]["era_label"], "压缩归档时代")
         self.assertRegex(releases[0]["modified_display"], r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}")
 
+    def test_scan_app_release_artifacts_ignores_plugin_history(self):
+        app_release = self._create_release("1.0.0.1", in_history=True)
+        plugin_dir = self.storage / "History" / "Plugins" / "Spectrum"
+        plugin_dir.mkdir(parents=True)
+        (plugin_dir / "Spectrum-2.3.3.6.cvxp").write_bytes(b"plugin")
+        (plugin_dir / "ColorVisionPlugin-9.9.9.9.zip").write_bytes(b"plugin")
+
+        releases = app_releases.scan_app_release_artifacts(
+            self.storage,
+            get_cache_entry=self._get_cache_entry,
+            set_cache_entry=self._set_cache_entry,
+            cache_key="releases",
+            ttl_seconds=300,
+        )
+
+        self.assertEqual([item["relative_path"] for item in releases], [app_release.relative_to(self.storage).as_posix()])
+
     def test_scan_app_release_artifacts_collects_android_apk(self):
         (self.storage / "ColorVision-Android-1.0.apk").write_bytes(b"apk")
 

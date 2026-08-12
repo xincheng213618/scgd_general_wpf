@@ -10,8 +10,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from flask import Blueprint, jsonify, request, send_from_directory
+from flask import Blueprint, jsonify, request
+from routes.artifact_delivery import deliver_artifact
+from routes.browser_auth import apply_basic_auth_challenge
 from routes.request_context import current_request_context, set_authenticated_request_context
+from services.artifact_delivery import ArtifactDownloadEvent
 
 cvws_api = Blueprint("cvws_api", __name__)
 
@@ -91,8 +94,7 @@ def _get_cvwindowsservice_releases_payload():
 def _json_auth_error():
     response = jsonify({"error": "Authentication required", "status": 401})
     response.status_code = 401
-    response.headers["WWW-Authenticate"] = 'Basic realm="ColorVision Marketplace"'
-    return response
+    return apply_basic_auth_challenge(response, "ColorVision Marketplace")
 
 
 def _has_cvws_publish_auth() -> bool:
@@ -158,7 +160,17 @@ def api_cvwindowsservice_download(version):
     best = max(matches, key=lambda x: x[0])[1] if matches else None
     if best is None:
         return jsonify({"error": f"Package for version {version} not found"}), 404
-    return send_from_directory(str(best.parent), best.name, as_attachment=True)
+    return deliver_artifact(
+        _ctx.artifact_delivery,
+        best,
+        request_method=request.method,
+        event=ArtifactDownloadEvent(
+            artifact_type="tool",
+            artifact_id="CVWindowsService",
+            version=version,
+            relative_path=f"Tool/CVWindowsService/{best.name}",
+        ),
+    )
 
 
 @cvws_api.route("/api/tool/cvwindowsservice/publish", methods=["POST"])

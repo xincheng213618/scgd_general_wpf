@@ -26,6 +26,18 @@ namespace ColorVision.UI.Desktop.Operations
 
         public string CertificateSha256 { get; }
 
+        public string CertificateDer => Convert.ToBase64String(Certificate.RawData);
+
+        public string Sign(string value)
+        {
+            using RSA? key = Certificate.GetRSAPrivateKey();
+            if (key == null)
+                throw new CryptographicException("The Operations certificate private key is unavailable.");
+            byte[] signature = key.SignData(
+                Encoding.UTF8.GetBytes(value), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            return Convert.ToBase64String(signature);
+        }
+
         private string LoadOrCreateHostId()
         {
             Directory.CreateDirectory(_identityDirectory);

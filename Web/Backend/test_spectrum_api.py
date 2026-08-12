@@ -140,6 +140,20 @@ class SpectrumApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.get_json()["error"], "Authentication required")
+        self.assertIn("Basic", response.headers.get("WWW-Authenticate", ""))
+
+    def test_browser_publish_auth_does_not_trigger_basic_dialog(self):
+        response = self.client.post(
+            "/api/tool/spectrum/publish",
+            data=self._multipart(self._release_parts()),
+            headers={
+                "X-ColorVision-Web": "1",
+            },
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertNotIn("WWW-Authenticate", response.headers)
 
     def test_publish_exposes_signed_latest_releases_tools_and_range_download(self):
         parts = self._release_parts()

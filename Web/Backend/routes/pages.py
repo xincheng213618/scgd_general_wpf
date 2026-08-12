@@ -8,9 +8,13 @@ JSON payloads and file-serving endpoints that those pages need.
 from __future__ import annotations
 
 import hashlib
+from urllib.parse import urlencode
 
-from flask import Blueprint, abort, current_app, jsonify, request, send_from_directory
+from flask import Blueprint, abort, current_app, jsonify, redirect, request
+from routes.artifact_delivery import deliver_artifact
+from routes.browser_auth import apply_basic_auth_challenge, is_browser_navigation
 from routes.request_context import current_request_context, set_authenticated_request_context
+from services.artifact_delivery import ArtifactDownloadEvent
 
 pages = Blueprint("pages", __name__)
 
@@ -58,10 +62,20 @@ def _has_transfer_auth() -> bool:
     return decision.allowed
 
 
+def _has_admin_storage_auth() -> bool:
+    request_context = current_request_context()
+    decision = _ctx.auth_policy.authorize(request_context, ["admin:*"])
+    if decision.allowed:
+        set_authenticated_request_context(request_context.with_actor(decision.principal))
+    return decision.allowed
+
+
 def _transfer_auth_challenge():
+    if is_browser_navigation():
+        next_path = request.full_path.rstrip("?")
+        return redirect(f"/login?{urlencode({'next': next_path})}")
     response = current_app.response_class("Authentication required", status=401)
-    response.headers["WWW-Authenticate"] = 'Basic realm="ColorVision Transfer"'
-    return response
+    return apply_basic_auth_challenge(response, "ColorVision Transfer")
 
 
 def _require_transfer_auth_for_storage_path(relative_path: str):
@@ -147,10 +161,67 @@ def api_site_releases():
     return jsonify(build_releases_page_context(app_info, **kwargs))
 
 
+@pages.route("/api/android/update")
+def api_android_update():
+    from services.android_update import build_android_update_manifest
+
+    payload = build_android_update_manifest(
+        _storage(),
+        _services().scan_app_release_artifacts(),
+        get_cache_entry=_ctx.get_cache_entry,
+        set_cache_entry=_ctx.set_cache_entry,
+    )
+    response = jsonify(payload)
+    response.headers["Cache-Control"] = "public, max-age=60"
+    return response
+
+
+@pages.route("/api/android/update/<version>/download")
+def api_android_update_download(version):
+    from services.android_update import resolve_android_release_file
+
+    if not _ctx.is_safe_version(version):
+        return jsonify({"error": "Invalid version format"}), 400
+    candidates = [
+        release
+        for release in _services().scan_app_release_artifacts()
+        if str(release.get("version", "")).strip() == version
+        and str(release.get("kind", "")).upper() == "APK"
+        and str(release.get("source", "")).lower() == "current"
+    ]
+    if not candidates:
+        return jsonify({"error": f"Android release {version} not found"}), 404
+    best = max(candidates, key=lambda release: str(release.get("modified", "")))
+    try:
+        target = resolve_android_release_file(_storage(), best)
+    except FileNotFoundError:
+        return jsonify({"error": f"Android release {version} not found"}), 404
+    relative_path = target.relative_to(_storage().resolve()).as_posix()
+    return deliver_artifact(
+        _ctx.artifact_delivery,
+        target,
+        request_method=request.method,
+        event=ArtifactDownloadEvent(
+            artifact_type="android_application",
+            artifact_id="ColorVision-Android",
+            version=version,
+            relative_path=relative_path,
+        ),
+        download_name=target.name,
+        mimetype="application/vnd.android.package-archive",
+        max_age=300,
+    )
+
+
 @pages.route("/api/site/changelog")
 def api_site_changelog():
     request_context = current_request_context()
     if request.args.get("view", "").strip().lower() == "compact":
+        if "page" in request.args or "page_size" in request.args:
+            return jsonify(_services().get_request_paged_changelog_context(
+                page=_parse_int("page", default=1, minimum=1, maximum=100000),
+                page_size=_parse_int("page_size", default=20, minimum=5, maximum=50),
+            ))
         app_info = _services().get_request_compact_changelog_app_info(request_context)
     else:
         app_info = _services().get_request_changelog_app_info(request_context)
@@ -175,11 +246,17 @@ def api_site_tools():
 @pages.route("/api/site/browse/<path:subpath>")
 def api_site_browse(subpath: str = ""):
     from page_contexts import build_browse_page_context
+    from services.public_storage import is_public_storage_path
 
     normalized = _ctx.normalize_relative_path(subpath)
     auth_result = _require_transfer_auth_for_storage_path(normalized)
     if auth_result is not None:
         return auth_result
+
+    is_transfer_path = _is_transfer_storage_path(normalized)
+    has_admin_access = _has_admin_storage_auth()
+    if normalized and not is_transfer_path and not has_admin_access and not is_public_storage_path(normalized):
+        abort(404)
 
     storage = _storage()
     target = _ctx.storage_target(normalized)
@@ -199,7 +276,21 @@ def api_site_browse(subpath: str = ""):
 
     limit = _parse_int("limit", default=200, minimum=1, maximum=1000)
     offset = _parse_int("offset", default=0, minimum=0, maximum=100000)
-    payload = build_browse_page_context(storage, normalized, limit=limit, offset=offset)
+    query = request.args.get("q", "").strip()
+    if len(query) > 100:
+        abort(400, description="Browse query must be at most 100 characters")
+    item_type = request.args.get("type", "all").strip().lower() or "all"
+    if item_type not in {"all", "directory", "file"}:
+        abort(400, description="Invalid browse item type")
+    payload = build_browse_page_context(
+        storage,
+        normalized,
+        limit=limit,
+        offset=offset,
+        include_entry=None if has_admin_access or is_transfer_path else is_public_storage_path,
+        query=query,
+        item_type=item_type,
+    )
     payload["is_file"] = False
     return jsonify(payload)
 
@@ -219,12 +310,27 @@ def api_site_upload_context():
 
 @pages.route("/download/<path:relative_path>")
 def download_storage_file(relative_path):
+    from services.public_storage import is_public_storage_path
+
     normalized = _ctx.normalize_relative_path(relative_path)
     auth_result = _require_transfer_auth_for_storage_path(normalized)
     if auth_result is not None:
         return auth_result
+    is_transfer_path = _is_transfer_storage_path(normalized)
+    if not is_transfer_path and not is_public_storage_path(normalized) and not _has_admin_storage_auth():
+        abort(404)
     target = _services().resolve_storage_file(normalized)
-    return send_from_directory(str(target.parent), target.name, as_attachment=True)
+    artifact_type = normalized.partition("/")[0].lower() or "storage"
+    return deliver_artifact(
+        _ctx.artifact_delivery,
+        target,
+        request_method=request.method,
+        event=ArtifactDownloadEvent(
+            artifact_type=artifact_type,
+            artifact_id=normalized,
+            relative_path=normalized,
+        ),
+    )
 
 
 @pages.route("/plugins/<plugin_id>/icon")
@@ -301,7 +407,17 @@ def api_app_release_download(version):
         return jsonify({"error": f"Installer for version {version} not found"}), 404
     best = max(candidates, key=lambda i: (i.get("source") == "current", str(i.get("modified", ""))))
     target = svc.resolve_storage_file(str(best.get("relative_path", "")))
-    return send_from_directory(str(target.parent), target.name, as_attachment=True)
+    return deliver_artifact(
+        _ctx.artifact_delivery,
+        target,
+        request_method=request.method,
+        event=ArtifactDownloadEvent(
+            artifact_type="application",
+            artifact_id="ColorVision",
+            version=version,
+            relative_path=str(best.get("relative_path", "")),
+        ),
+    )
 
 
 @pages.route("/api/app/updates/<version>/download")
@@ -315,4 +431,14 @@ def api_app_incremental_download(version):
     target = storage / "Update" / f"ColorVision-Update-[{version}].cvx"
     if not target.is_file():
         return jsonify({"error": f"Incremental package for version {version} not found"}), 404
-    return send_from_directory(str(target.parent), target.name, as_attachment=True)
+    return deliver_artifact(
+        _ctx.artifact_delivery,
+        target,
+        request_method=request.method,
+        event=ArtifactDownloadEvent(
+            artifact_type="update",
+            artifact_id="ColorVision",
+            version=version,
+            relative_path=f"Update/{target.name}",
+        ),
+    )

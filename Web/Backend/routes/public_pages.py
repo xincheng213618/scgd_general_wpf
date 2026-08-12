@@ -22,7 +22,7 @@ from db_cache import CacheManager
 class PublicPageContext:
     cache: CacheManager
     storage: Path
-    config: dict[str, Any]
+    config_getter: Callable[[], dict[str, Any]]
     get_upload_auth: Callable[[], tuple[str, str]]
     check_web_session_auth: Callable[[], bool]
     dist_dir: Path
@@ -63,6 +63,9 @@ def _serve_spa_index():
 
 
 def _session_payload() -> dict[str, Any]:
+    from services.csrf_protection import issue_csrf_token
+    from services.account_settings import is_public_registration_enabled
+
     is_admin = bool(session.get("authenticated"))
     is_user = bool(session.get("user_authenticated") or is_admin)
     return {
@@ -70,6 +73,10 @@ def _session_payload() -> dict[str, Any]:
         "is_admin": is_admin,
         "username": session.get("username", ""),
         "role": session.get("role", "admin" if is_admin else ("user" if is_user else "")),
+        "public_registration_enabled": is_public_registration_enabled(
+            _get_ctx().config_getter()
+        ),
+        "csrf_token": issue_csrf_token(),
     }
 
 
@@ -82,9 +89,84 @@ def _set_login_session(user: dict[str, Any]) -> dict[str, Any]:
     session["role"] = role
     if user.get("id") is not None:
         session["user_id"] = user["id"]
+        session["auth_version"] = int(user.get("auth_version") or 0)
     if is_admin:
         session["authenticated"] = True
     return _session_payload()
+
+
+def _session_account_requires_validation(path: str) -> bool:
+    return (
+        path in {"/admin", "/transfer", "/browse", "/api/auth/session"}
+        or path.startswith((
+            "/admin/",
+            "/transfer/",
+            "/browse/",
+            "/api/admin/",
+            "/api/transfer/",
+            "/api/site/browse",
+            "/download/",
+        ))
+    )
+
+
+def _synchronize_session_account() -> None:
+    """Clear disabled database-backed sessions and refresh their role metadata."""
+    if not session.get("user_authenticated") or not _session_account_requires_validation(request.path):
+        return
+
+    user_id = session.get("user_id")
+    if user_id is None:
+        return
+    try:
+        normalized_user_id = int(user_id)
+    except (TypeError, ValueError):
+        session.clear()
+        return
+
+    from services.auth_service import get_user_by_id
+
+    user = get_user_by_id(_get_ctx().cache, normalized_user_id)
+    if not user or not user.get("is_active"):
+        session.clear()
+        return
+
+    auth_version = int(user.get("auth_version") or 0)
+    session_auth_version = session.get("auth_version")
+    if session_auth_version is None:
+        # Preserve pre-migration sessions only while the account has never had
+        # a security-sensitive change. A reset/change performed immediately
+        # after deployment must still revoke an older cookie.
+        if auth_version > 0:
+            session.clear()
+            return
+        session["auth_version"] = 0
+    else:
+        try:
+            normalized_session_version = int(session_auth_version)
+        except (TypeError, ValueError):
+            session.clear()
+            return
+        if normalized_session_version != auth_version:
+            session.clear()
+            return
+
+    username = str(user.get("username") or "")
+    role = str(user.get("role") or "user")
+    expected = {
+        "user_authenticated": True,
+        "username": username,
+        "role": role,
+        "user_id": normalized_user_id,
+        "auth_version": auth_version,
+    }
+    if role == "admin":
+        expected["authenticated"] = True
+    for key, value in expected.items():
+        if session.get(key) != value:
+            session[key] = value
+    if role != "admin" and "authenticated" in session:
+        session.pop("authenticated", None)
 
 
 def _redirect_for_role(next_url: str, payload: dict[str, Any]) -> str:
@@ -95,12 +177,14 @@ def _redirect_for_role(next_url: str, payload: dict[str, Any]) -> str:
 
 def _login(username: str, password: str) -> dict[str, Any] | None:
     ctx = _get_ctx()
+    database_user_exists = False
 
     try:
-        from services.auth_service import verify_user_credentials
+        from services.auth_service import get_user_by_username, verify_user_credentials
         user = verify_user_credentials(ctx.cache, username, password)
         if user:
             return _set_login_session(user)
+        database_user_exists = get_user_by_username(ctx.cache, username) is not None
     except Exception:
         pass
 
@@ -108,6 +192,7 @@ def _login(username: str, password: str) -> dict[str, Any] | None:
     if (
         expected_username
         and expected_password
+        and not database_user_exists
         and hmac.compare_digest(username, expected_username)
         and hmac.compare_digest(password, expected_password)
     ):
@@ -127,7 +212,7 @@ def _login(username: str, password: str) -> dict[str, Any] | None:
 
 @public_pages.route("/login", methods=["GET", "POST"])
 def login_page():
-    if request.method == "GET":
+    if request.method in {"GET", "HEAD"}:
         return _serve_spa_index()
 
     if request.is_json:
@@ -152,7 +237,7 @@ def login_page():
 
 @public_pages.route("/register", methods=["GET"])
 def register_page():
-    return _serve_spa_index()
+    return redirect("/login?mode=register")
 
 
 @public_pages.route("/api/auth/session", methods=["GET"])
@@ -175,6 +260,14 @@ def api_auth_login():
 
 @public_pages.route("/api/auth/register", methods=["POST"])
 def api_auth_register():
+    from services.account_settings import is_public_registration_enabled
+
+    if not is_public_registration_enabled(_get_ctx().config_getter()):
+        return jsonify({
+            "error": "公开注册已关闭，请联系管理员创建账号",
+            "status": 403,
+        }), 403
+
     data = request.get_json(silent=True) or {}
     username = str(data.get("username", "")).strip()
     password = str(data.get("password", ""))
@@ -206,12 +299,13 @@ def api_auth_register():
 @public_pages.route("/api/auth/logout", methods=["POST"])
 def api_auth_logout():
     session.clear()
-    return jsonify({"authenticated": False})
+    return jsonify(_session_payload())
 
 
-@public_pages.route("/logout", methods=["GET"])
+@public_pages.route("/logout", methods=["GET", "POST"])
 def logout_page():
-    session.clear()
+    if request.method == "POST":
+        session.clear()
     return redirect("/")
 
 
@@ -219,3 +313,7 @@ def register_public_pages(app, ctx: PublicPageContext):
     global _ctx
     _ctx = ctx
     app.register_blueprint(public_pages)
+
+    @app.before_request
+    def _validate_session_account():
+        _synchronize_session_account()

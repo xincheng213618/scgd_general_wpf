@@ -562,6 +562,12 @@ def get_plugin_catalog_from_index(
         for row in rows:
             item = dict(row)
             item["id"] = item["plugin_id"]
+            # Disk-scanned catalog items expose ``version`` and ``requires``.
+            # Keep the indexed read model shape identical so public list views
+            # do not silently lose version metadata when the index is ready.
+            item["version"] = item.get("latest_version", "")
+            item["requires"] = item.get("requires_version", "")
+            item["has_icon"] = bool(item.get("has_icon", 0))
             item["total_downloads"] = download_counts.get(item["plugin_id"], 0)
             items.append(item)
         return items
@@ -610,7 +616,7 @@ def get_plugin_detail_from_index(
 
         # Read packages
         pkg_rows = db.execute(
-            "SELECT * FROM package_index WHERE plugin_id = ? AND is_deleted = 0 ORDER BY version DESC",
+            "SELECT * FROM package_index WHERE plugin_id = ? AND is_deleted = 0",
             (plugin_id,),
         ).fetchall()
 
@@ -633,6 +639,13 @@ def get_plugin_detail_from_index(
                 current_packages.append(pkg)
             else:
                 historical_packages.append(pkg)
+
+        # SQLite text ordering puts 1.1.7.8 between 1.1.7.80 and 1.1.7.79.
+        # Reuse the filesystem scanner's numeric version ordering so indexed
+        # and fallback responses expose the same newest-first contract.
+        from plugin_marketplace import package_sort_key
+        current_packages.sort(key=package_sort_key, reverse=True)
+        historical_packages.sort(key=package_sort_key, reverse=True)
 
         detail["packages"] = current_packages
         detail["current_packages"] = current_packages

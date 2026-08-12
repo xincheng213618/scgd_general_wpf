@@ -34,6 +34,10 @@ from db_cache import (
     CacheManager,
 )
 from context import MarketplaceContext
+from services.performance_observability import (
+    SLOW_REQUEST_BUFFER_CAPACITY,
+    record_slow_request,
+)
 from storage_paths import (
     is_safe_id, is_safe_version,
     normalize_relative_path, sanitize_filename,
@@ -102,6 +106,11 @@ def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
     app = Flask(__name__, static_folder=None)
     app.secret_key = config["secret_key"]
     app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_SIZE_BYTES
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    # JSON is UTF-8 on the wire. Escaping every Chinese character only inflates
+    # public API responses without adding browser compatibility.
+    app.json.ensure_ascii = False
 
     db_path = base_dir / "marketplace.db"
     runtime = RuntimeState(config=config, storage=storage, db_path=db_path)
@@ -121,11 +130,20 @@ def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
     cache = CacheManager(db_path)
     cache.init_db()
 
+    from services.access_analytics import (
+        AccessAnalyticsRecorder,
+        configure_access_analytics_calendar,
+        reporting_utc_offset_minutes,
+    )
+
+    analytics_utc_offset_minutes = reporting_utc_offset_minutes(config)
     conn = cache.get_db()
     ensure_schema_version(conn)
+    configure_access_analytics_calendar(
+        conn,
+        utc_offset_minutes=analytics_utc_offset_minutes,
+    )
     conn.close()
-
-    from services.access_analytics import AccessAnalyticsRecorder
 
     access_recorder = AccessAnalyticsRecorder(
         queue_capacity=int(config.get("access_analytics_queue_size", 4096) or 4096),
@@ -211,6 +229,7 @@ def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
         get_upload_auth=get_upload_auth,
         auth_policy=auth_policy,
         request_context_factory=current_request_context,
+        access_recorder=access_recorder,
         services=services, human_size=human_size, render_markdown=render_markdown,
         render_markdown_cached=render_markdown_cached,
         json_error=json_error,
@@ -256,16 +275,19 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
             duration_ms = int((_time.monotonic() - start) * 1000)
             if duration_ms >= ctx.slow_request_threshold_ms:
                 print(f"[slow] {request.method} {request.path} → {response.status_code} ({duration_ms}ms)")
-                ctx.slow_requests.append({
-                    "method": request.method, "path": request.path,
-                    "status": response.status_code, "duration_ms": duration_ms,
-                })
-                if len(ctx.slow_requests) > 100:
-                    ctx.slow_requests.pop(0)
+                record_slow_request(
+                    ctx.slow_requests,
+                    method=request.method,
+                    path=request.path,
+                    status=response.status_code,
+                    duration_ms=duration_ms,
+                )
             if access_recorder is not None:
                 try:
                     from services.access_analytics import (
                         build_access_event,
+                        declared_response_body_bytes,
+                        reporting_utc_offset_minutes,
                         should_record_access,
                     )
 
@@ -275,13 +297,11 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
                         config.get("access_analytics_enabled", True)
                         and should_record_access(route_rule, request.method)
                     ):
-                        content_length = 0
-                        raw_content_length = response.headers.get("Content-Length")
-                        if raw_content_length:
-                            try:
-                                content_length = max(0, int(raw_content_length))
-                            except (TypeError, ValueError):
-                                content_length = 0
+                        content_length = declared_response_body_bytes(
+                            method=request.method,
+                            status_code=response.status_code,
+                            content_length=response.headers.get("Content-Length"),
+                        )
                         event = build_access_event(
                             route_template=route_rule,
                             method=request.method,
@@ -291,6 +311,9 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
                             secret_key=str(config.get("secret_key", "")),
                             remote_addr=request.remote_addr,
                             user_agent=request.headers.get("User-Agent", ""),
+                            utc_offset_minutes=reporting_utc_offset_minutes(
+                                config
+                            ),
                         )
                         access_recorder.submit(
                             event,
@@ -328,14 +351,17 @@ def register_all_blueprints(app, ctx, services, helpers):
         MarketplacePackageService,
         MarketplaceStorageService,
     )
+    from services.artifact_delivery import ArtifactDeliveryService
 
     cache = helpers["cache"]
     config = helpers["config"]
     storage = ctx.storage
+    artifact_delivery = ArtifactDeliveryService()
+    ctx.artifact_delivery = artifact_delivery
 
     # Public pages (login/logout)
     register_public_pages(app, PublicPageContext(
-        cache=cache, storage=storage, config=config,
+        cache=cache, storage=storage, config_getter=helpers["active_config"],
         get_upload_auth=helpers["get_upload_auth"],
         check_web_session_auth=helpers["check_web_session_auth"],
         dist_dir=Path(__file__).resolve().parents[1] / "Frontend" / "dist",
@@ -372,6 +398,7 @@ def register_all_blueprints(app, ctx, services, helpers):
             max_upload_size_bytes=MAX_UPLOAD_SIZE_BYTES,
         ),
         storage=marketplace_storage,
+        delivery=artifact_delivery,
     )
     register_marketplace_api_routes(app, MarketplaceApiRouteContext(
         services=marketplace_api_services,
@@ -409,15 +436,19 @@ def register_all_blueprints(app, ctx, services, helpers):
         cache=cache, storage_getter=lambda: ctx.storage,
         config_getter=lambda: ctx.active_config,
         check_auth=_check_transfer_auth, human_size=human_size,
+        artifact_delivery=artifact_delivery,
     ))
 
+    from db.repositories.operations_admin import SqliteOperationsAdminQuery
     register_admin_api_routes(app, AdminApiContext(
         cache=cache, jobs=cache.jobs,
         storage_getter=lambda: ctx.storage,
         config_getter=lambda: ctx.active_config,
+        config_path_getter=lambda: ctx.active_db_path.parent / "config.json",
         get_db=helpers["get_db"],
         auth_policy=helpers["auth_policy"],
         request_context_factory=helpers["request_context_factory"],
+        operations_admin=SqliteOperationsAdminQuery(cache.get_db),
         refresh_plugin_index=lambda c, s, pid, **kw: __import__("services.plugin_index", fromlist=["refresh_plugin_index"]).refresh_plugin_index(c, s, pid, **kw),
         refresh_all_plugin_index=lambda c, s, **kw: __import__("services.plugin_index", fromlist=["refresh_all_plugin_index"]).refresh_all_plugin_index(c, s, **kw),
         get_plugin_index_state=lambda c: __import__("services.plugin_index", fromlist=["get_plugin_index_state"]).get_plugin_index_state(c),
@@ -426,14 +457,23 @@ def register_all_blueprints(app, ctx, services, helpers):
         human_size=human_size,
         get_slow_requests=lambda: ctx.slow_requests,
         get_access_recorder_status=helpers["access_recorder"].status,
+        slow_request_threshold_ms=ctx.slow_request_threshold_ms,
+        slow_request_buffer_capacity=SLOW_REQUEST_BUFFER_CAPACITY,
+        process_started_at=ctx.process_started_at,
     ))
     register_copilot_config_api_routes(app, CopilotConfigApiContext(
         cache=cache,
         config_getter=lambda: ctx.active_config,
     ))
 
+    from db.repositories.operations_support import SqliteOperationsSupportStore
     from routes.operations_relay import OperationsRelayContext, register_operations_relay_routes
-    register_operations_relay_routes(app, OperationsRelayContext(cache=cache))
+    from services.operations_device_relay import OperationsDeviceRelayService
+    register_operations_relay_routes(app, OperationsRelayContext(
+        cache=cache,
+        support_store=SqliteOperationsSupportStore(cache.get_db),
+        device_relay=OperationsDeviceRelayService(cache),
+    ))
 
     register_docs_site(app)
 

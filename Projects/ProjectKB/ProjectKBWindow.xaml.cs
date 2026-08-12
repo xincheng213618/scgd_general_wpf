@@ -1143,13 +1143,19 @@ namespace ProjectKB
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
-                string regexPattern = $"[{Regex.Escape(invalidChars)}]";
+                if (ViewResultManager.Config.AutoSaveLvCsv)
+                {
+                    string lvCsvPath = ViewResultManager.BuildCsvPath(KBItemMaster, ViewResultManager.Config.CsvSavePath, KBCsvDataType.Lv);
+                    KBItemMaster.SaveCsv(lvCsvPath, KBCsvDataType.Lv, ViewResultManager.Config.AppendFalloutSummary);
+                    log.Info($"writecsv:{lvCsvPath}");
+                }
 
-                string csvpath = ViewResultManager.Config.CsvSavePath + $"\\{Regex.Replace(KBItemMaster.Model, regexPattern, "")}_{KBItemMaster.CreateTime:yyyyMMdd}.csv";
-
-                KBItemMaster.SaveCsv(csvpath, ViewResultManager.Config.AppendFalloutSummary);
-                log.Info($"writecsv:{csvpath}");
+                if (ViewResultManager.Config.AutoSaveLcCsv)
+                {
+                    string lcCsvPath = ViewResultManager.BuildCsvPath(KBItemMaster, ViewResultManager.Config.LcCsvSavePath, KBCsvDataType.Lc);
+                    KBItemMaster.SaveCsv(lcCsvPath, KBCsvDataType.Lc, ViewResultManager.Config.AppendFalloutSummary);
+                    log.Info($"writecsv:{lcCsvPath}");
+                }
             });
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
@@ -2002,7 +2008,8 @@ namespace ProjectKB
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Delete });
             contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Copy, Header = "复制" });
-            contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveCommand, Header = "重新导出 CSV..." });
+            contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveCommand, Header = "重新导出 LV CSV..." });
+            contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveLcCommand, Header = "重新导出 LC CSV..." });
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem() { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
             contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = "流程执行分析" });

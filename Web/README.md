@@ -50,5 +50,50 @@ python app.py --port 9998
 `-RepoPath`, `-StoragePath`, `-TaskPath`, `-TaskName`, or `-Port` when another
 host uses a different layout. Each deployment preserves the production config,
 SQLite database, and previous frontend build under
-`D:\ColorVision\web-deploy-backups`, then appends the result to
+`D:\ColorVision\web-deploy-backups`, then records the result in
 `D:\ColorVision\web-deploy-history.jsonl`.
+
+`-DryRun` remains read-only when remote Git inspection fails: it returns a
+`DRY_RUN_ERROR` without starting recovery or adding a deployment-history row.
+Origin inspection and fetch have a 45-second hard timeout by default, disable
+interactive credential prompts, and stop the complete native process tree on
+timeout. Override the bound with `-GitNetworkTimeoutSeconds` (5-600 seconds).
+Normal origin deployment fetches once, then fast-forwards from the fetched
+`origin/<branch>` ref instead of opening a second connection during `pull`.
+When origin remains unavailable, create a verified transport bundle and pass
+its NAS path with `-RemoteGitBundle`.
+The SSH transport sends the encoded remote script as one newline-terminated
+payload. Its loader consumes that line immediately instead of waiting for stdin
+EOF, preventing abandoned PowerShell sessions when an SSH client disconnects.
+
+Deployment history keeps the newest 500 valid JSON records by default. Each
+write validates the existing file and replaces it atomically; malformed legacy
+content is preserved for manual repair instead of being silently discarded.
+History-write errors are reported without rolling back an otherwise healthy
+service. Override the limit with `-KeepHistoryRecords` (minimum 20). The
+administrator-only `/admin/deployments` page provides latest-first status,
+commit, verification, and retention summaries without exposing NAS paths,
+server names, runtime log paths, or raw deployment errors.
+
+After a deployment passes tests, process verification, health, and readiness,
+the backup history keeps the newest 10 successful deployments and 3 failed
+deployments by default. The current backup, failed evidence within that window,
+unexpected directory names, and directories without a deployment status marker
+are never removed. Override the bounded history with
+`-KeepSuccessfulBackups` (minimum 2) and `-KeepFailedBackups` (minimum 1).
+
+Successful deployments and healthy already-current checks also bound
+`D:\ColorVision\web-deploy-bundles` to the newest 3 verified transport bundles
+by default. A bundle is eligible only when it is a direct regular file with the
+expected `ColorVision-Web-<commit>...bundle` name, passes `git bundle verify`,
+exposes exactly one `HEAD`, and that HEAD is an ancestor of the deployed commit.
+The bundle used by the current deployment is always protected. Unexpected,
+unverified, HEAD-less, divergent, and reparse-point files are preserved for
+manual inspection. Override the limit with `-KeepGitBundles` (minimum 1);
+cleanup results and errors are recorded under `git_bundle_retention` without
+turning an otherwise healthy deployment into a rollback.
+
+Production stdout, stderr, startup diagnostics, and background-thread errors are
+captured under `D:\ColorVision\Logs\Web\ColorVisionWeb.log`. The runtime keeps
+five rotated 10 MB backups, and NAS deployment verifies that the new process ID
+appears in the active log before reporting success.

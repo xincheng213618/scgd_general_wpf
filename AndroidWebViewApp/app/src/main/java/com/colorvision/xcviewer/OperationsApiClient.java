@@ -61,6 +61,55 @@ final class OperationsApiClient {
         return execute("POST", path, "", body.toString().getBytes(StandardCharsets.UTF_8), true);
     }
 
+    byte[] getBytes(String path, int maximumBytes) throws Exception {
+        return getBytes(path, maximumBytes, "application/zip", "diagnostic_bundle");
+    }
+
+    byte[] getBytes(String path, int maximumBytes, String expectedContentType, String errorPrefix) throws Exception {
+        URL url = new URL(endpoint + path);
+        HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+        try {
+            connection.setSSLSocketFactory(sslContext.getSocketFactory());
+            connection.setHostnameVerifier((hostname, session) -> hostname.equalsIgnoreCase(url.getHost()));
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(7000);
+            connection.setReadTimeout(30000);
+            connection.setUseCaches(false);
+            connection.setRequestProperty("Accept", expectedContentType);
+            connection.setRequestProperty("X-Correlation-Id", java.util.UUID.randomUUID().toString());
+            applySignedHeaders(connection, "GET", path, new byte[0]);
+
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 300) {
+                String text = readAll(connection.getErrorStream());
+                JSONObject response = text.isEmpty() ? new JSONObject() : new JSONObject(text);
+                JSONObject error = response.optJSONObject("error");
+                String code = error == null ? "http_" + status : error.optString("code", "http_" + status);
+                throw new IllegalStateException(code);
+            }
+            String contentType = connection.getContentType();
+            if (contentType == null || !contentType.toLowerCase(Locale.ROOT)
+                    .startsWith(expectedContentType.toLowerCase(Locale.ROOT))) {
+                throw new IllegalStateException(errorPrefix + "_type_rejected");
+            }
+            int contentLength = connection.getContentLength();
+            if (contentLength <= 0 || contentLength > maximumBytes) {
+                throw new IllegalStateException(errorPrefix + "_size_rejected");
+            }
+            byte[] data = readAllBytes(connection.getInputStream(), maximumBytes, errorPrefix);
+            String expectedHash = connection.getHeaderField("X-CV-Content-SHA256");
+            String actualHash = hex(MessageDigest.getInstance("SHA-256").digest(data));
+            if (expectedHash == null || !MessageDigest.isEqual(
+                    expectedHash.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.US_ASCII),
+                    actualHash.getBytes(StandardCharsets.US_ASCII))) {
+                throw new SecurityException(errorPrefix + "_hash_mismatch");
+            }
+            return data;
+        } finally {
+            connection.disconnect();
+        }
+    }
+
     private JSONObject execute(String method, String path, String query, byte[] body, boolean signed) throws Exception {
         URL url = new URL(endpoint + path + query);
         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
@@ -73,14 +122,7 @@ final class OperationsApiClient {
         connection.setRequestProperty("Accept", "application/json");
         connection.setRequestProperty("X-Correlation-Id", java.util.UUID.randomUUID().toString());
         if (signed) {
-            String timestamp = Long.toString(System.currentTimeMillis() / 1000L);
-            String nonce = randomNonce();
-            String bodyHash = hex(MessageDigest.getInstance("SHA-256").digest(body));
-            String canonical = String.join("\n", method.toUpperCase(Locale.ROOT), path, timestamp, nonce, bodyHash);
-            connection.setRequestProperty("X-CV-Device-Id", deviceId);
-            connection.setRequestProperty("X-CV-Timestamp", timestamp);
-            connection.setRequestProperty("X-CV-Nonce", nonce);
-            connection.setRequestProperty("X-CV-Signature", identity.sign(canonical));
+            applySignedHeaders(connection, method, path, body);
         }
         if (body.length > 0) {
             connection.setDoOutput(true);
@@ -104,6 +146,17 @@ final class OperationsApiClient {
         return response;
     }
 
+    private void applySignedHeaders(HttpsURLConnection connection, String method, String path, byte[] body) throws Exception {
+        String timestamp = Long.toString(System.currentTimeMillis() / 1000L);
+        String nonce = randomNonce();
+        String bodyHash = hex(MessageDigest.getInstance("SHA-256").digest(body));
+        String canonical = String.join("\n", method.toUpperCase(Locale.ROOT), path, timestamp, nonce, bodyHash);
+        connection.setRequestProperty("X-CV-Device-Id", deviceId);
+        connection.setRequestProperty("X-CV-Timestamp", timestamp);
+        connection.setRequestProperty("X-CV-Nonce", nonce);
+        connection.setRequestProperty("X-CV-Signature", identity.sign(canonical));
+    }
+
     private static String readAll(InputStream input) throws Exception {
         if (input == null) {
             return "";
@@ -116,6 +169,28 @@ final class OperationsApiClient {
             }
         }
         return text.toString();
+    }
+
+    private static byte[] readAllBytes(InputStream input, int maximumBytes, String errorPrefix) throws Exception {
+        if (input == null) {
+            throw new IllegalStateException("empty_" + errorPrefix);
+        }
+        try (InputStream source = input; ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int read;
+            int total = 0;
+            while ((read = source.read(buffer)) >= 0) {
+                total += read;
+                if (total > maximumBytes) {
+                    throw new IllegalStateException(errorPrefix + "_size_rejected");
+                }
+                output.write(buffer, 0, read);
+            }
+            if (total == 0) {
+                throw new IllegalStateException("empty_" + errorPrefix);
+            }
+            return output.toByteArray();
+        }
     }
 
     private static String randomNonce() {

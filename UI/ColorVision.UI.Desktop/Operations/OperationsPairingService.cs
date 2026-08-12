@@ -41,8 +41,11 @@ namespace ColorVision.UI.Desktop.Operations
         [
             "ops.capabilities.read",
             "ops.status.read",
+            "ops.window.control",
             "ops.alerts.read",
             "ops.diagnostics.read",
+            "ops.diagnostics.bundle.read",
+            "ops.window.snapshot.read",
             "ops.jobs.read",
             "ops.jobs.create",
             "ops.approvals.decide",

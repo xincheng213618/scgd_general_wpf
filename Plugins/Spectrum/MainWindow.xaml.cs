@@ -17,8 +17,10 @@ using Spectrum.Update;
 using SpectrumResources = Spectrum.Properties.Resources;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Ports;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -60,14 +62,15 @@ namespace Spectrum
             log.Info($"cvCamera 资源初始化完成，耗时 {stopwatch.ElapsedMilliseconds} ms");
             return stopwatch.Elapsed;
         }));
-
-        internal static Task<TimeSpan> EnsureCvCameraResourceInitializedAsync() => CvCameraResourceInitialization.Value;
         private readonly Stopwatch startupStopwatch = Stopwatch.StartNew();
         private Task<ViewResultManager>? viewResultInitializationTask;
         private Task<string[]>? serialPortDiscoveryTask;
         private Task<TimeSpan>? cvCameraInitializationTask;
         private Task? closePreparationTask;
         private MeasurementAdmissionPause? measurementPause;
+        private int latestSessionMeasurementResultId;
+        private string latestSessionMagnitudeFile = string.Empty;
+        private string latestSessionMagnitudeFileSha256 = string.Empty;
         private bool absoluteSpectrumPlotInitialized;
         private bool isPreparingClose;
         private bool isClosePrepared;
@@ -82,6 +85,107 @@ namespace Spectrum
         /// Layout manager for AvalonDock persistence, reset, and panel visibility.
         /// </summary>
         internal DockLayoutManager? LayoutManager { get; private set; }
+
+        internal bool TryGetCorrectionResult(out ViewResultSpectrum? result, out string reason)
+        {
+            if (continuousMeasurementTask is { IsCompleted: false } || Manager.IsBusy)
+            {
+                result = null;
+                reason = "光谱仪正在测量或执行其他操作，请完成后再打开光谱修正。";
+                return false;
+            }
+
+            if (latestSessionMeasurementResultId <= 0)
+            {
+                result = null;
+                reason = "当前会话还没有可用于修正的测量结果，请先用当前标定文件完成一次正常测量。";
+                return false;
+            }
+
+            result = ViewResultSpectrums.FirstOrDefault(item => item.Id == latestSessionMeasurementResultId);
+            if (result == null)
+            {
+                reason = "当前会话最近一次测量结果已不在列表中，请重新测量后再修正。";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(Manager.MaguideFile))
+            {
+                result = null;
+                reason = "当前标定组没有幅值 DAT，请先配置后重新测量。";
+                return false;
+            }
+
+            string currentMagnitudeFile;
+            string currentMagnitudeHash;
+            try
+            {
+                currentMagnitudeFile = Path.GetFullPath(Manager.MaguideFile);
+                currentMagnitudeHash = ComputeMagnitudeFileSha256(currentMagnitudeFile);
+            }
+            catch (Exception ex)
+            {
+                result = null;
+                reason = $"无法读取当前幅值 DAT：{ex.GetBaseException().Message}";
+                return false;
+            }
+
+            if (!string.Equals(currentMagnitudeFile, latestSessionMagnitudeFile, StringComparison.OrdinalIgnoreCase))
+            {
+                result = null;
+                reason = "最近一次测量后当前幅值 DAT 已发生切换，请使用当前标定文件重新测量后再修正。";
+                return false;
+            }
+            if (!string.Equals(currentMagnitudeHash, latestSessionMagnitudeFileSha256, StringComparison.OrdinalIgnoreCase))
+            {
+                result = null;
+                reason = "最近一次测量后当前幅值 DAT 内容已发生变化，请重新测量后再修正。";
+                return false;
+            }
+
+            reason = string.Empty;
+            return true;
+        }
+
+        private static (string Path, string Sha256) CaptureMagnitudeFileSnapshot()
+        {
+            if (string.IsNullOrWhiteSpace(Manager.MaguideFile))
+                throw new InvalidOperationException("当前标定组没有幅值 DAT。");
+            string path = Path.GetFullPath(Manager.MaguideFile);
+            return (path, ComputeMagnitudeFileSha256(path));
+        }
+
+        private void TrackCorrectionMeasurementResult(
+            SpectrumMeasurementResult result,
+            (string Path, string Sha256)? magnitudeSnapshot)
+        {
+            if (!result.IsSuccess || result.Result == null || magnitudeSnapshot == null)
+                return;
+
+            (string path, string sha256) = magnitudeSnapshot.Value;
+            try
+            {
+                if (!string.Equals(Path.GetFullPath(Manager.MaguideFile), path, StringComparison.OrdinalIgnoreCase)
+                    || !string.Equals(ComputeMagnitudeFileSha256(path), sha256, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+            catch
+            {
+                return;
+            }
+
+            latestSessionMeasurementResultId = result.Result.Id;
+            latestSessionMagnitudeFile = path;
+            latestSessionMagnitudeFileSha256 = sha256;
+        }
+
+        private static string ComputeMagnitudeFileSha256(string filePath)
+        {
+            using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return Convert.ToHexString(SHA256.HashData(stream));
+        }
 
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
 

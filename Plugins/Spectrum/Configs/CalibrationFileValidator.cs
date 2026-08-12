@@ -1,6 +1,3 @@
-using log4net;
-using System.IO;
-
 namespace Spectrum.Configs
 {
     /// <summary>
@@ -31,72 +28,13 @@ namespace Spectrum.Configs
     /// </summary>
     public static class CalibrationFileValidator
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(CalibrationFileValidator));
-
         /// <summary>
         /// Validates a wavelength calibration file (.dat).
         /// Mirrors SpectraBase::SetWavelengthFile logic.
         /// </summary>
         public static CalibrationFileValidationResult ValidateWavelengthFile(string filePath)
         {
-            var result = new CalibrationFileValidationResult { FileType = "波长标定" };
-
-            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
-            {
-                result.Message = "文件不存在";
-                return result;
-            }
-
-            try
-            {
-                using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                long fileLength = fs.Length;
-
-                if (fileLength < sizeof(ulong))
-                {
-                    result.Message = $"文件太小 ({fileLength} bytes)，格式不正确";
-                    return result;
-                }
-
-                using var br = new BinaryReader(fs);
-                ulong dataLength = br.ReadUInt64();
-
-                if (dataLength < sizeof(ulong) || dataLength != (ulong)fileLength)
-                {
-                    result.Message = $"文件头DataLength={dataLength}，文件大小={fileLength}，格式不匹配";
-                    return result;
-                }
-
-                // nCount = (DataLength - 4) / sizeof(double)
-                // The C++ code reads 8 bytes as uint64_t for DataLength but then subtracts 4 (not 8).
-                // This appears to be the actual binary format specification — the file was originally
-                // designed with a 4-byte header field that was later widened to 8 bytes, but the
-                // count formula was never updated. We match the C++ implementation exactly for
-                // binary compatibility with existing calibration files.
-                ulong nCount = (dataLength - 4) / sizeof(double);
-
-                long remainingBytes = fileLength - sizeof(ulong);
-                long expectedBytes = (long)(nCount * sizeof(double));
-
-                if (remainingBytes < expectedBytes)
-                {
-                    result.Message = $"数据不足: 期望{nCount}个波长值({expectedBytes} bytes)，实际剩余{remainingBytes} bytes";
-                    return result;
-                }
-
-                result.IsValid = true;
-                result.DataCount = (int)nCount;
-                result.Message = $"有效: {nCount} 个波长数据点";
-
-                log.Info($"Wavelength file validated: {filePath}, {nCount} points");
-            }
-            catch (Exception ex)
-            {
-                result.Message = $"读取失败: {ex.Message}";
-                log.Error($"Failed to validate wavelength file: {filePath}", ex);
-            }
-
-            return result;
+            return FromSharedResult(cvColorVision.SpectrumCalibrationFileValidator.ValidateWavelengthFile(filePath, logSuccess: true));
         }
 
         /// <summary>
@@ -105,65 +43,17 @@ namespace Spectrum.Configs
         /// </summary>
         public static CalibrationFileValidationResult ValidateMaguideFile(string filePath)
         {
-            var result = new CalibrationFileValidationResult { FileType = "幅值标定" };
-
-            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
-            {
-                result.Message = "文件不存在";
-                return result;
-            }
-
-            try
-            {
-                using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                long fileLength = fs.Length;
-
-                // Minimum size: uint64 + float + int + uint64 = 8 + 4 + 4 + 8 = 24 bytes
-                if (fileLength < 24)
-                {
-                    result.Message = $"文件太小 ({fileLength} bytes)，格式不正确";
-                    return result;
-                }
-
-                using var br = new BinaryReader(fs);
-                ulong dataLength = br.ReadUInt64();
-
-                if (dataLength < sizeof(ulong) || dataLength != (ulong)fileLength)
-                {
-                    result.Message = $"文件头DataLength={dataLength}，文件大小={fileLength}，格式不匹配";
-                    return result;
-                }
-
-                float dMagExpTm = br.ReadSingle();
-                int nLvCoffe = br.ReadInt32();
-                ulong nCount = br.ReadUInt64();
-
-                // After header (8+4+4+8=24 bytes), we need nCount*double wavelengths + nCount*double coefficients
-                long headerSize = sizeof(ulong) + sizeof(float) + sizeof(int) + sizeof(ulong);
-                long expectedDataBytes = (long)(nCount * 2 * sizeof(double));
-                long remainingBytes = fileLength - headerSize;
-
-                if (remainingBytes < expectedDataBytes)
-                {
-                    result.Message = $"数据不足: 期望{nCount}个标定点(2×{nCount}×8={expectedDataBytes} bytes)，实际剩余{remainingBytes} bytes";
-                    return result;
-                }
-
-                result.IsValid = true;
-                result.DataCount = (int)nCount;
-                result.MagExpTime = dMagExpTm;
-                result.LvCoefficient = nLvCoffe;
-                result.Message = $"有效: {nCount} 个标定数据点, 积分时间={dMagExpTm}ms, Lv系数={nLvCoffe}";
-
-                log.Info($"Maguide file validated: {filePath}, {nCount} points, ExpTime={dMagExpTm}, LvCoffe={nLvCoffe}");
-            }
-            catch (Exception ex)
-            {
-                result.Message = $"读取失败: {ex.Message}";
-                log.Error($"Failed to validate maguide file: {filePath}", ex);
-            }
-
-            return result;
+            return FromSharedResult(cvColorVision.SpectrumCalibrationFileValidator.ValidateMaguideFile(filePath, logSuccess: true));
         }
+
+        private static CalibrationFileValidationResult FromSharedResult(cvColorVision.SpectrumCalibrationFileValidationResult result) => new()
+        {
+            IsValid = result.IsValid,
+            Message = result.Message,
+            DataCount = result.DataCount,
+            FileType = result.FileType,
+            MagExpTime = result.MagExpTime,
+            LvCoefficient = result.LvCoefficient,
+        };
     }
 }

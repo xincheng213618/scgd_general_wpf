@@ -16,8 +16,19 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly OperationsServerIdentity _identity;
         private readonly OperationsPairingService _pairing;
         private readonly OperationsWorkStore _workStore;
+        private readonly OperationsAlertService _alerts;
         private readonly OperationsDiagnosticBundleService _diagnosticBundles;
+        private readonly OperationsWindowSnapshotService _windowSnapshots;
         private readonly OperationsRelayClientService _relay;
+        private IOperationsServiceHealthProvider _serviceHealthProvider = UnavailableOperationsServiceHealthProvider.Instance;
+        private IOperationsDeviceHealthProvider _deviceHealthProvider = UnavailableOperationsDeviceHealthProvider.Instance;
+        private IOperationsMessageChannelHealthProvider _messageChannelHealthProvider = UnavailableOperationsMessageChannelHealthProvider.Instance;
+        private IOperationsMessageChannelRecoveryController _messageChannelRecoveryController = UnavailableOperationsMessageChannelRecoveryController.Instance;
+        private IOperationsFailureEvidenceProvider _failureEvidenceProvider = UnavailableOperationsFailureEvidenceProvider.Instance;
+        private IOperationsFlowRuntimeStatusProvider _flowRuntimeStatusProvider = UnavailableOperationsFlowRuntimeStatusProvider.Instance;
+        private IOperationsFlowRuntimeController _flowRuntimeController = UnavailableOperationsFlowRuntimeController.Instance;
+        private IOperationsMqttRestartController _mqttRestartController = UnavailableOperationsMqttRestartController.Instance;
+        private IOperationsApplicationRestartController _applicationRestartController = UnavailableOperationsApplicationRestartController.Instance;
         private Func<object>? _snapshotProvider;
         private CancellationTokenSource? _cts;
         private TcpListener? _listener;
@@ -32,8 +43,10 @@ namespace ColorVision.UI.Desktop.Operations
             _pairing.ClaimsChanged += (_, _) => StateChanged?.Invoke(this, EventArgs.Empty);
             _workStore = new OperationsWorkStore();
             _workStore.Changed += (_, _) => StateChanged?.Invoke(this, EventArgs.Empty);
+            _alerts = new OperationsAlertService();
             _diagnosticBundles = new OperationsDiagnosticBundleService(_workStore);
-            _relay = new OperationsRelayClientService(_identity.HostId, _workStore);
+            _windowSnapshots = new OperationsWindowSnapshotService();
+            _relay = new OperationsRelayClientService(_identity, _registry, _workStore);
         }
 
         public event EventHandler? StateChanged;
@@ -56,7 +69,99 @@ namespace ColorVision.UI.Desktop.Operations
 
         public OperationsDiagnosticBundleService DiagnosticBundles => _diagnosticBundles;
 
+        public OperationsWindowSnapshotService WindowSnapshots => _windowSnapshots;
+
         public OperationsRelayClientService Relay => _relay;
+
+        public void ConfigureServiceHealthProvider(IOperationsServiceHealthProvider provider)
+        {
+            ArgumentNullException.ThrowIfNull(provider);
+            lock (_syncRoot)
+            {
+                if (IsRunning)
+                    throw new InvalidOperationException("Configure the Operations service-health provider before starting the secure host.");
+                _serviceHealthProvider = provider;
+            }
+        }
+
+        public void ConfigureFlowRuntimeStatusProvider(IOperationsFlowRuntimeStatusProvider provider)
+        {
+            ArgumentNullException.ThrowIfNull(provider);
+            lock (_syncRoot)
+            {
+                if (IsRunning)
+                    throw new InvalidOperationException("Configure the Operations flow-runtime provider before starting the secure host.");
+                _flowRuntimeStatusProvider = provider;
+                _flowRuntimeController = provider as IOperationsFlowRuntimeController
+                    ?? UnavailableOperationsFlowRuntimeController.Instance;
+            }
+        }
+
+        public void ConfigureDeviceHealthProvider(IOperationsDeviceHealthProvider provider)
+        {
+            ArgumentNullException.ThrowIfNull(provider);
+            lock (_syncRoot)
+            {
+                if (IsRunning)
+                    throw new InvalidOperationException("Configure the Operations device-health provider before starting the secure host.");
+                _deviceHealthProvider = provider;
+            }
+        }
+
+        public void ConfigureMessageChannelHealthProvider(IOperationsMessageChannelHealthProvider provider)
+        {
+            ArgumentNullException.ThrowIfNull(provider);
+            lock (_syncRoot)
+            {
+                if (IsRunning)
+                    throw new InvalidOperationException("Configure the Operations message-channel provider before starting the secure host.");
+                _messageChannelHealthProvider = provider;
+            }
+        }
+
+        public void ConfigureMqttRestartController(IOperationsMqttRestartController controller)
+        {
+            ArgumentNullException.ThrowIfNull(controller);
+            lock (_syncRoot)
+            {
+                if (IsRunning)
+                    throw new InvalidOperationException("Configure the Operations MQTT restart controller before starting the secure host.");
+                _mqttRestartController = controller;
+            }
+        }
+
+        public void ConfigureMessageChannelRecoveryController(IOperationsMessageChannelRecoveryController controller)
+        {
+            ArgumentNullException.ThrowIfNull(controller);
+            lock (_syncRoot)
+            {
+                if (IsRunning)
+                    throw new InvalidOperationException("Configure the Operations message-channel recovery controller before starting the secure host.");
+                _messageChannelRecoveryController = controller;
+            }
+        }
+
+        public void ConfigureFailureEvidenceProvider(IOperationsFailureEvidenceProvider provider)
+        {
+            ArgumentNullException.ThrowIfNull(provider);
+            lock (_syncRoot)
+            {
+                if (IsRunning)
+                    throw new InvalidOperationException("Configure the Operations failure-evidence provider before starting the secure host.");
+                _failureEvidenceProvider = provider;
+            }
+        }
+
+        public void ConfigureApplicationRestartController(IOperationsApplicationRestartController controller)
+        {
+            ArgumentNullException.ThrowIfNull(controller);
+            lock (_syncRoot)
+            {
+                if (IsRunning)
+                    throw new InvalidOperationException("Configure the Operations application restart controller before starting the secure host.");
+                _applicationRestartController = controller;
+            }
+        }
 
         public void Start(int port, Func<object> snapshotProvider)
         {
@@ -68,7 +173,18 @@ namespace ColorVision.UI.Desktop.Operations
                 try
                 {
                     _cts = new CancellationTokenSource();
-                    _router = new OperationsSecureApiRouter(_pairing, new OperationsRequestAuthenticator(_registry), _workStore, snapshotProvider);
+                    _router = new OperationsSecureApiRouter(_pairing, new OperationsRequestAuthenticator(_registry),
+                        _workStore, snapshotProvider, actionExecutor: OperationsDesktopActionService.Execute,
+                        serviceHealthProvider: _serviceHealthProvider, alerts: _alerts,
+                        diagnosticBundles: _diagnosticBundles, windowSnapshots: _windowSnapshots,
+                        flowRuntimeStatus: _flowRuntimeStatusProvider,
+                        flowRuntimeController: _flowRuntimeController,
+                        mqttRestartController: _mqttRestartController,
+                        applicationRestartController: _applicationRestartController,
+                         deviceHealthProvider: _deviceHealthProvider,
+                         messageChannelHealthProvider: _messageChannelHealthProvider,
+                         messageChannelRecoveryController: _messageChannelRecoveryController,
+                         failureEvidenceProvider: _failureEvidenceProvider);
                     _snapshotProvider = snapshotProvider;
                     _listener = new TcpListener(IPAddress.Any, port);
                     _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
@@ -136,8 +252,19 @@ namespace ColorVision.UI.Desktop.Operations
         public OperationsDiagnosticBundleResult CreateDiagnosticBundle()
         {
             Func<object> provider = _snapshotProvider ?? throw new InvalidOperationException("The Operations host is not running.");
-            return _diagnosticBundles.Create(provider);
+            OperationsServiceHealthReport serviceHealth;
+            try
+            {
+                serviceHealth = _serviceHealthProvider.Capture();
+            }
+            catch
+            {
+                serviceHealth = OperationsServiceHealthReport.CreateUnavailable();
+            }
+            return _diagnosticBundles.Create(provider, _alerts.GetDigest(), serviceHealth);
         }
+
+        public OperationsWindowSnapshotResult CreateWindowSnapshot() => _windowSnapshots.Create();
 
         private async Task AcceptLoopAsync(CancellationToken cancellationToken)
         {
@@ -274,7 +401,7 @@ namespace ColorVision.UI.Desktop.Operations
 
         private static async Task WriteResponseAsync(Stream stream, OperationsApiResponse response, CancellationToken cancellationToken)
         {
-            byte[] body = Encoding.UTF8.GetBytes(response.Body);
+            byte[] body = response.BodyBytes ?? Encoding.UTF8.GetBytes(response.Body);
             StringBuilder headers = new();
             headers.Append("HTTP/1.1 ").Append(response.StatusCode).Append(' ').Append(GetReasonPhrase(response.StatusCode)).Append("\r\n");
             headers.Append("Content-Type: ").Append(response.ContentType).Append("\r\n");
@@ -327,6 +454,8 @@ namespace ColorVision.UI.Desktop.Operations
             403 => "Forbidden",
             404 => "Not Found",
             405 => "Method Not Allowed",
+            409 => "Conflict",
+            410 => "Gone",
             _ => "Error",
         };
 

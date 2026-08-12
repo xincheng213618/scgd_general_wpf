@@ -8,3 +8,6 @@ if errorlevel 1 exit /b %errorlevel%
 
 python Scripts\build_update.py
 if errorlevel 1 exit /b %errorlevel%
+
+python Scripts\verify_release.py
+if errorlevel 1 exit /b %errorlevel%

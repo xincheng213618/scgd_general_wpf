@@ -3,15 +3,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from flask import abort, jsonify, request, send_from_directory
+from flask import abort, jsonify, request
 
 from package_publish import PackageValidationError
+from routes.artifact_delivery import deliver_artifact
+from services.artifact_delivery import ArtifactDownloadEvent
 from services.marketplace_api import (
     MarketplaceApiServices,
     MarketplaceQueryError,
     PublishPackageCommand,
 )
+from services.public_storage import is_public_storage_path
 from services.request_context import RequestContext
+from storage_paths import normalize_relative_path
 from storage_uploads import UploadTooLargeError, UploadWorkflowError
 
 
@@ -126,10 +130,22 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
         """Get detailed plugin information."""
         if not ctx.services.storage.is_safe_id(plugin_id):
             abort(400, description="Invalid plugin_id")
+        view = request.args.get("view", "full").strip().lower()
+        archive_page = 1
+        archive_page_size = 20
+        if view == "compact":
+            archive_page = _parse_int_arg(
+                "archive_page", "archivePage", default=1, minimum=1, maximum=100000,
+            )
+            archive_page_size = _parse_int_arg(
+                "archive_page_size", "archivePageSize", default=20, minimum=5, maximum=100,
+            )
         info = ctx.services.catalog.detail(
             plugin_id,
             ctx.request_context_factory(),
-            view=request.args.get("view", "full").strip().lower(),
+            view=view,
+            archive_page=archive_page,
+            archive_page_size=archive_page_size,
         )
         if not info:
             return jsonify({"error": "Plugin not found"}), 404
@@ -157,13 +173,25 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
         package_path = ctx.services.packages.resolve_download(plugin_id, version)
         if package_path is None:
             return jsonify({"error": "Package not found"}), 404
-        ctx.services.packages.record_download(
-            plugin_id,
-            version,
-            ctx.request_context_factory(),
-        )
-        return send_from_directory(
-            str(package_path.parent), package_path.name, as_attachment=True
+        request_context = ctx.request_context_factory()
+        client_ip = request_context.remote_addr
+        client_version = request_context.client_version
+        return deliver_artifact(
+            ctx.services.delivery,
+            package_path,
+            request_method=request.method,
+            event=ArtifactDownloadEvent(
+                artifact_type="plugin",
+                artifact_id=plugin_id,
+                version=version,
+                relative_path=f"Plugins/{plugin_id}/{package_path.name}",
+            ),
+            on_completed=lambda event: ctx.services.packages.record_download(
+                event.artifact_id,
+                event.version,
+                client_ip=client_ip,
+                client_version=client_version,
+            ),
         )
 
     @app.route("/api/packages/publish", methods=["POST"])
@@ -206,21 +234,44 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
         if not full_path.exists():
             abort(404)
         if full_path.is_file():
-            return send_from_directory(str(full_path.parent), full_path.name)
+            return deliver_artifact(
+                ctx.services.delivery,
+                full_path,
+                request_method=request.method,
+                event=ArtifactDownloadEvent(
+                    artifact_type="plugin",
+                    artifact_id=filepath,
+                    relative_path=f"Plugins/{filepath}",
+                ),
+                as_attachment=False,
+            )
         abort(404)
 
     @app.route("/D%3A/ColorVision/<path:filepath>")
     @app.route("/D:/ColorVision/<path:filepath>")
     def legacy_files(filepath):
         """Serve other historical encoded-drive file URLs."""
+        normalized = normalize_relative_path(filepath)
+        if not is_public_storage_path(normalized):
+            abort(404)
         storage = ctx.services.storage.root
-        full_path = ctx.services.storage.legacy_path(filepath)
+        full_path = ctx.services.storage.legacy_path(normalized)
         if not ctx.services.storage.is_within(full_path, storage):
             abort(403)
         if not full_path.exists():
             abort(404)
         if full_path.is_file():
-            return send_from_directory(str(full_path.parent), full_path.name)
+            return deliver_artifact(
+                ctx.services.delivery,
+                full_path,
+                request_method=request.method,
+                event=ArtifactDownloadEvent(
+                    artifact_type="storage",
+                    artifact_id=normalized,
+                    relative_path=normalized,
+                ),
+                as_attachment=False,
+            )
         abort(404)
 
     @app.route("/upload/<path:filepath>", methods=["PUT"])

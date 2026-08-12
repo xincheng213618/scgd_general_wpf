@@ -18,21 +18,85 @@ namespace ColorVision.UI.Tests
                 Assert.True(capability.Audit.Required);
             });
             Assert.Equal(capabilities.Count, capabilities.Select(capability => capability.Id).Distinct(StringComparer.Ordinal).Count());
+            OperationsCapabilityDescriptor monitor = Assert.Single(capabilities, capability => capability.Id == "ops.monitor.read");
+            Assert.True(monitor.Available);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, monitor.RiskLevel);
+            Assert.Equal("ops.diagnostics.read", monitor.Permission);
+            OperationsCapabilityDescriptor cancelFlow = Assert.Single(capabilities, capability => capability.Id == "ops.flow.cancel");
+            Assert.True(cancelFlow.Available);
+            Assert.Equal(OperationsRiskLevels.ApprovalRequired, cancelFlow.RiskLevel);
+            Assert.False(cancelFlow.Approval.RequiresLocalCoSign);
+            Assert.Equal("ops.jobs.create", cancelFlow.Permission);
+            OperationsCapabilityDescriptor[] evidenceCapabilities = capabilities.Where(capability =>
+                capability.Id is "ops.diagnostics.bundle.create" or "ops.window.snapshot.capture").ToArray();
+            Assert.Equal(2, evidenceCapabilities.Length);
+            foreach (OperationsCapabilityDescriptor evidence in evidenceCapabilities)
+            {
+                Assert.True(evidence.Available);
+                Assert.Equal("paired-device-confirmation", evidence.Approval.Mode);
+                Assert.False(evidence.Approval.RequiresLocalCoSign);
+                Assert.False(evidence.SupportsCancellation);
+            }
+            OperationsCapabilityDescriptor deviceHealth = Assert.Single(capabilities,
+                capability => capability.Id == "ops.devices.health.read");
+            Assert.True(deviceHealth.Available);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, deviceHealth.RiskLevel);
+            Assert.Equal("ops.diagnostics.read", deviceHealth.Permission);
+            OperationsCapabilityDescriptor messageChannel = Assert.Single(capabilities,
+                capability => capability.Id == "ops.messaging.health.read");
+            Assert.True(messageChannel.Available);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, messageChannel.RiskLevel);
+            Assert.Equal("ops.diagnostics.read", messageChannel.Permission);
+            OperationsCapabilityDescriptor failureEvidence = Assert.Single(capabilities,
+                capability => capability.Id == "ops.diagnostics.failures.read");
+            Assert.True(failureEvidence.Available);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, failureEvidence.RiskLevel);
+            Assert.Equal("ops.diagnostics.read", failureEvidence.Permission);
+            Assert.False(failureEvidence.InputSchema.GetType().GetProperty("additionalProperties")?.GetValue(failureEvidence.InputSchema) as bool? ?? true);
+            OperationsCapabilityDescriptor applicationRestart = Assert.Single(capabilities,
+                capability => capability.Id == "ops.application.restart");
+            Assert.True(applicationRestart.Available);
+            Assert.Equal(OperationsRiskLevels.ApprovalRequired, applicationRestart.RiskLevel);
+            Assert.Equal("paired-device-confirmation", applicationRestart.Approval.Mode);
+            Assert.False(applicationRestart.Approval.RequiresLocalCoSign);
+            Assert.False(applicationRestart.SupportsCancellation);
+            Assert.Equal("desktop-application", applicationRestart.Execution.Target);
+            OperationsCapabilityDescriptor messageChannelRecovery = Assert.Single(capabilities,
+                capability => capability.Id == "ops.messaging.reconnect");
+            Assert.True(messageChannelRecovery.Available);
+            Assert.Equal(OperationsRiskLevels.ApprovalRequired, messageChannelRecovery.RiskLevel);
+            Assert.Equal("ops.jobs.create", messageChannelRecovery.Permission);
+            Assert.Equal("paired-device-confirmation", messageChannelRecovery.Approval.Mode);
+            Assert.False(messageChannelRecovery.Approval.RequiresLocalCoSign);
+            Assert.False(messageChannelRecovery.SupportsCancellation);
+            Assert.Equal("current-message-client", messageChannelRecovery.Execution.Target);
+            Assert.False(messageChannelRecovery.InputSchema.GetType().GetProperty("additionalProperties")
+                ?.GetValue(messageChannelRecovery.InputSchema) as bool? ?? true);
         }
 
         [Fact]
-        public void Catalog_OnlyExposesWorkflowWritesAndKeepsPrivilegedExecutionBlocked()
+        public void Catalog_OnlyExposesBoundedWindowActionsOrWorkflowWrites()
         {
             var capabilities = OperationsCapabilityCatalog.GetAll();
 
-            Assert.All(capabilities.Where(capability => capability.Available
-                    && capability.RiskLevel != OperationsRiskLevels.ReadOnly),
-                capability => Assert.Contains(capability.Category, new[] { "jobs", "approvals", "deployment", "support", "maintenance", "diagnostics" }));
+            var availableWrites = capabilities.Where(capability => capability.Available
+                && capability.RiskLevel != OperationsRiskLevels.ReadOnly).ToList();
+            Assert.All(availableWrites.Where(capability => capability.Category == "desktop-control"), capability =>
+            {
+                Assert.Contains(capability.Id, new[] { "ops.window.show", "ops.window.minimize" });
+                Assert.Equal(OperationsRiskLevels.LowRisk, capability.RiskLevel);
+                Assert.Equal("safe", capability.Idempotency);
+                Assert.Equal("ops.window.control", capability.Permission);
+            });
+            Assert.All(availableWrites.Where(capability => capability.Category != "desktop-control"),
+                capability => Assert.Contains(capability.Category, new[] { "jobs", "approvals", "deployment", "support", "maintenance", "diagnostics", "flow-control" }));
 
             var privileged = Assert.Single(capabilities, capability => capability.RiskLevel == OperationsRiskLevels.Privileged);
             Assert.True(privileged.Available);
             Assert.True(string.IsNullOrEmpty(privileged.BlockedReason));
-            Assert.True(privileged.Approval.RequiresLocalCoSign);
+            Assert.False(privileged.Approval.RequiresLocalCoSign);
+            Assert.Equal("paired-device-confirmation", privileged.Approval.Mode);
+            Assert.False(privileged.SupportsCancellation);
             Assert.Equal("service-host", privileged.Execution.Target);
         }
     }

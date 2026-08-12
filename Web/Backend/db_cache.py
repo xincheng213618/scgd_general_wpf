@@ -193,13 +193,14 @@ class CacheManager:
                 duration_ms     INTEGER DEFAULT 0
             );
 
-            -- Users: admin/operator/viewer accounts
+            -- Users: administrator and transfer-user accounts
             CREATE TABLE IF NOT EXISTS users (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 username        TEXT UNIQUE NOT NULL,
                 password_hash   TEXT NOT NULL,
                 role            TEXT DEFAULT 'admin',
                 is_active       INTEGER DEFAULT 1,
+                auth_version    INTEGER NOT NULL DEFAULT 0,
                 created_at      TEXT NOT NULL,
                 updated_at      TEXT,
                 last_login_at   TEXT
@@ -209,6 +210,7 @@ class CacheManager:
             CREATE TABLE IF NOT EXISTS api_keys (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 name            TEXT NOT NULL,
+                description     TEXT DEFAULT '',
                 key_prefix      TEXT UNIQUE NOT NULL,
                 key_hash        TEXT NOT NULL,
                 scopes          TEXT DEFAULT '',
@@ -256,6 +258,7 @@ class CacheManager:
             );
             CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log(action);
             CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
+            CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_log(actor_type, actor_id, id DESC);
 
             -- Operations relay: outbound-only host control plane. Tasks are catalog-bound,
             -- immutable intents and never contain arbitrary commands.
@@ -266,6 +269,8 @@ class CacheManager:
                 status          TEXT DEFAULT 'unknown',
                 capabilities    TEXT DEFAULT '[]',
                 snapshot        TEXT DEFAULT '{}',
+                relay_snapshot_body TEXT,
+                relay_snapshot_signature TEXT,
                 last_seen_at    TEXT NOT NULL,
                 created_at      TEXT NOT NULL,
                 updated_at      TEXT NOT NULL
@@ -283,6 +288,12 @@ class CacheManager:
                 created_at      TEXT NOT NULL,
                 expires_at      TEXT NOT NULL,
                 delivered_at    TEXT,
+                source_type     TEXT NOT NULL DEFAULT 'operator',
+                device_id       TEXT,
+                request_body    TEXT,
+                request_timestamp TEXT,
+                request_nonce   TEXT,
+                request_signature TEXT,
                 UNIQUE(host_id, idempotency_key)
             );
             CREATE INDEX IF NOT EXISTS idx_ops_tasks_host_status ON operations_tasks(host_id, status, created_at);
@@ -294,6 +305,8 @@ class CacheManager:
                 status          TEXT NOT NULL,
                 evidence        TEXT NOT NULL DEFAULT '{}',
                 created_at      TEXT NOT NULL,
+                relay_receipt_body TEXT,
+                relay_receipt_signature TEXT,
                 FOREIGN KEY(task_id) REFERENCES operations_tasks(task_id)
             );
             CREATE INDEX IF NOT EXISTS idx_ops_receipts_task ON operations_task_receipts(task_id, created_at);
@@ -307,6 +320,38 @@ class CacheManager:
                 created_at      TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_ops_support_session ON operations_support_events(session_id, created_at);
+
+            CREATE TABLE IF NOT EXISTS operations_relay_host_identities (
+                host_id          TEXT PRIMARY KEY,
+                certificate_der  TEXT NOT NULL,
+                certificate_sha256 TEXT NOT NULL,
+                created_at       TEXT NOT NULL,
+                updated_at       TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS operations_relay_devices (
+                host_id          TEXT NOT NULL,
+                device_id        TEXT NOT NULL,
+                display_name     TEXT NOT NULL,
+                public_key_spki  TEXT NOT NULL,
+                scopes           TEXT NOT NULL DEFAULT '[]',
+                approved_at      TEXT NOT NULL,
+                revoked_at       TEXT,
+                updated_at       TEXT NOT NULL,
+                PRIMARY KEY (host_id, device_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_ops_relay_devices_active
+                ON operations_relay_devices(host_id, revoked_at);
+
+            CREATE TABLE IF NOT EXISTS operations_relay_nonces (
+                principal_type   TEXT NOT NULL,
+                principal_id     TEXT NOT NULL,
+                nonce            TEXT NOT NULL,
+                expires_at       TEXT NOT NULL,
+                PRIMARY KEY (principal_type, principal_id, nonce)
+            );
+            CREATE INDEX IF NOT EXISTS idx_ops_relay_nonces_expiry
+                ON operations_relay_nonces(expires_at);
 
             -- Scheduled jobs: persistent job definitions
             CREATE TABLE IF NOT EXISTS scheduled_jobs (
@@ -334,6 +379,7 @@ class CacheManager:
             );
             CREATE INDEX IF NOT EXISTS idx_job_runs_job ON job_runs(job_id);
             CREATE INDEX IF NOT EXISTS idx_job_runs_status ON job_runs(status);
+            CREATE INDEX IF NOT EXISTS idx_job_runs_started_at ON job_runs(started_at);
         """
         )
         from db.schema_version import ensure_schema_version
@@ -471,38 +517,87 @@ class CacheManager:
         limit: int = 100,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
+        db = None
         try:
             db = self.get_db()
-            conditions: list[str] = []
-            params: list[Any] = []
-
-            if action:
-                conditions.append("action = ?")
-                params.append(action)
-            if actor:
-                conditions.append("(actor_id LIKE ? OR actor_type LIKE ?)")
-                params.extend([f"%{actor}%", f"%{actor}%"])
-            if target:
-                conditions.append("(target_id LIKE ? OR target_type LIKE ?)")
-                params.extend([f"%{target}%", f"%{target}%"])
-            if since:
-                conditions.append("created_at >= ?")
-                params.append(since)
-            if until:
-                conditions.append("created_at <= ?")
-                params.append(until)
-
-            where = " AND ".join(conditions) if conditions else "1=1"
-            params.extend([limit, offset])
+            where, params = self._audit_log_filter(
+                action=action, actor=actor, target=target, since=since, until=until,
+            )
 
             rows = db.execute(
                 f"SELECT * FROM audit_log WHERE {where} ORDER BY id DESC LIMIT ? OFFSET ?",
-                params,
+                [*params, limit, offset],
             ).fetchall()
-            db.close()
             return [dict(r) for r in rows]
         except Exception:
             return []
+        finally:
+            if db is not None:
+                db.close()
+
+    @staticmethod
+    def _audit_log_filter(
+        *,
+        action: str | None = None,
+        actor: str | None = None,
+        target: str | None = None,
+        since: str | None = None,
+        until: str | None = None,
+    ) -> tuple[str, list[Any]]:
+        conditions: list[str] = []
+        params: list[Any] = []
+        if action:
+            conditions.append("action = ?")
+            params.append(action)
+        if actor:
+            conditions.append("(actor_id LIKE ? OR actor_type LIKE ?)")
+            params.extend([f"%{actor}%", f"%{actor}%"])
+        if target:
+            conditions.append("(target_id LIKE ? OR target_type LIKE ?)")
+            params.extend([f"%{target}%", f"%{target}%"])
+        if since:
+            conditions.append("created_at >= ?")
+            params.append(since)
+        if until:
+            conditions.append("created_at <= ?")
+            params.append(until)
+        return " AND ".join(conditions) if conditions else "1=1", params
+
+    def get_audit_log_page(
+        self,
+        *,
+        action: str | None = None,
+        actor: str | None = None,
+        target: str | None = None,
+        since: str | None = None,
+        until: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        db = None
+        try:
+            db = self.get_db()
+            where, params = self._audit_log_filter(
+                action=action, actor=actor, target=target, since=since, until=until,
+            )
+            db.execute("BEGIN")
+            total_row = db.execute(
+                f"SELECT COUNT(*) AS total FROM audit_log WHERE {where}",
+                params,
+            ).fetchone()
+            rows = db.execute(
+                f"SELECT * FROM audit_log WHERE {where} ORDER BY id DESC LIMIT ? OFFSET ?",
+                [*params, limit, offset],
+            ).fetchall()
+            return {
+                "entries": [dict(row) for row in rows],
+                "total": int(total_row["total"]) if total_row else 0,
+            }
+        except Exception:
+            return {"entries": [], "total": 0}
+        finally:
+            if db is not None:
+                db.close()
 
     # -------------------------------------------------------------------
     # Index state helpers

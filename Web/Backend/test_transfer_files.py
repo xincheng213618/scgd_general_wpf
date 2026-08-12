@@ -68,6 +68,7 @@ class TransferRouteTests(unittest.TestCase):
         marketplace_app.CONFIG = copy.deepcopy(marketplace_app.CONFIG)
         marketplace_app.CONFIG["storage_path"] = str(self.storage)
         marketplace_app.CONFIG["transfer_upload_dir"] = "Transfer"
+        marketplace_app.CONFIG["public_registration_enabled"] = True
         marketplace_app.CONFIG["upload_auth"] = {"username": "tester", "password": "secret"}
         marketplace_app.CONFIG["secret_key"] = "test-secret-key"
         marketplace_app.app.secret_key = "test-secret-key"
@@ -108,6 +109,28 @@ class TransferRouteTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 401)
+        self.assertIn("Basic", response.headers.get("WWW-Authenticate", ""))
+
+    def test_browser_transfer_auth_avoids_basic_challenge_and_redirects_navigation(self):
+        fetch_headers = {
+            "X-ColorVision-Web": "1",
+        }
+
+        transfer_api = self.client.get("/api/transfer/files", headers=fetch_headers)
+        browse_api = self.client.get("/api/site/browse/Transfer", headers=fetch_headers)
+        download = self.client.get(
+            "/download/Transfer/missing.bin",
+            headers={"Accept": "text/html,application/xhtml+xml"},
+            follow_redirects=False,
+        )
+
+        self.assertEqual(transfer_api.status_code, 401)
+        self.assertNotIn("WWW-Authenticate", transfer_api.headers)
+        self.assertEqual(browse_api.status_code, 401)
+        self.assertNotIn("WWW-Authenticate", browse_api.headers)
+        self.assertIn(download.status_code, (302, 303))
+        self.assertIn("/login?", download.headers["Location"])
+        self.assertIn("next=%2Fdownload%2FTransfer%2Fmissing.bin", download.headers["Location"])
 
     def test_registered_user_can_use_transfer_but_not_admin(self):
         register_response = self.client.post(
@@ -128,6 +151,35 @@ class TransferRouteTests(unittest.TestCase):
         self.assertEqual(upload_response.status_code, 201)
         self.assertEqual((self.storage / "Transfer" / "user.bin").read_bytes(), b"payload")
 
+    def test_browser_session_transfer_write_requires_csrf_token(self):
+        register_response = self.client.post(
+            "/api/auth/register",
+            json={"username": "browser-user", "password": "secret1"},
+        )
+        token = register_response.get_json()["csrf_token"]
+        browser_headers = {
+            "Origin": "http://localhost",
+            "Sec-Fetch-Site": "same-origin",
+            "Content-Type": "application/octet-stream",
+        }
+
+        rejected = self.client.put(
+            "/api/transfer/files/browser.bin",
+            headers=browser_headers,
+            data=b"payload",
+        )
+        target = self.storage / "Transfer" / "browser.bin"
+        self.assertEqual(rejected.status_code, 403)
+        self.assertFalse(target.exists())
+
+        accepted = self.client.put(
+            "/api/transfer/files/browser.bin",
+            headers={**browser_headers, "X-CSRF-Token": token},
+            data=b"payload",
+        )
+        self.assertEqual(accepted.status_code, 201)
+        self.assertEqual(target.read_bytes(), b"payload")
+
     def test_transfer_upload_download_list_and_delete_with_basic_auth(self):
         response = self.client.put(
             "/api/transfer/files/demo.bin",
@@ -147,11 +199,28 @@ class TransferRouteTests(unittest.TestCase):
         download_response = self.client.get("/api/transfer/files/demo.bin", headers=self._auth_headers())
         self.assertEqual(download_response.status_code, 200)
         self.assertEqual(download_response.get_data(), b"payload")
+        self.assertEqual(download_response.headers["Accept-Ranges"], "bytes")
+        self.assertEqual(download_response.headers["X-Content-Type-Options"], "nosniff")
         download_response.close()
 
         delete_response = self.client.delete("/api/transfer/files/demo.bin", headers=self._auth_headers())
         self.assertEqual(delete_response.status_code, 200)
         self.assertFalse(target.exists())
+
+    def test_transfer_file_head_does_not_delete_the_file(self):
+        target = transfer_root(self.storage, marketplace_app.CONFIG) / "head-check.bin"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(b"payload")
+
+        with self.client.head(
+            "/api/transfer/files/head-check.bin",
+            headers=self._auth_headers(),
+        ) as response:
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.get_data(), b"")
+            self.assertEqual(response.headers["Content-Length"], "7")
+
+        self.assertEqual(target.read_bytes(), b"payload")
 
     def test_transfer_upload_ignores_global_content_length_limit(self):
         marketplace_app.app.config["MAX_CONTENT_LENGTH"] = 1

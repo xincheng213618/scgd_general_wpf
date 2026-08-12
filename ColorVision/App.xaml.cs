@@ -1,11 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Core;
+using ColorVision.Engine.Services.Operations;
 using ColorVision.Properties;
 using ColorVision.Recovery;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.LanRemote;
+using ColorVision.UI.Desktop.Operations;
 using ColorVision.UI.Desktop.Wizards;
 using ColorVision.UI.Languages;
 using ColorVision.UI.Plugins;
@@ -80,6 +82,8 @@ namespace ColorVision
 
         void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
+            WindowsApplicationRestartRegistration.MarkFatalFailureObserved();
+            OperationsApplicationFailureWatchdog.MarkFatalFailureObserved();
             if (e.ExceptionObject is Exception exception)
             {
                 log.Fatal("捕获到 AppDomain 未处理异常，已静默记录。", exception);
@@ -269,6 +273,26 @@ namespace ColorVision
             Rbac.ApplicationUsageTracker.StartSession();
 
             CopilotMcpServer.Instance.ApplyConfig();
+            FlowOperationsRuntimeStatusProvider flowOperations = new();
+            OperationsApplicationRestartHandoff applicationRestartHandoff = new();
+            OperationsWorkStore operationsWorkStore = LanRemoteControlService.Instance.OperationsHost.WorkStore;
+            applicationRestartHandoff.CompletePending(
+                operationsWorkStore, OperationsApplicationRestartController.RestartJobId);
+            LanRemoteControlService.Instance.ConfigureOperationsServiceHealthProvider(new WindowsOperationsServiceHealthProvider());
+            LanRemoteControlService.Instance.ConfigureOperationsFlowRuntimeStatusProvider(flowOperations);
+            LanRemoteControlService.Instance.ConfigureOperationsDeviceHealthProvider(new EngineOperationsDeviceHealthProvider());
+            EngineOperationsMessageChannelHealthProvider messageChannelOperations = new();
+            LanRemoteControlService.Instance.ConfigureOperationsMessageChannelHealthProvider(messageChannelOperations);
+            LanRemoteControlService.Instance.ConfigureOperationsMessageChannelRecoveryController(messageChannelOperations);
+            LanRemoteControlService.Instance.ConfigureOperationsFailureEvidenceProvider(new WindowsOperationsFailureEvidenceService());
+            LanRemoteControlService.Instance.ConfigureOperationsMqttRestartController(new ServiceHostOperationsMqttRestartController());
+            LanRemoteControlService.Instance.ConfigureOperationsApplicationRestartController(
+                new OperationsApplicationRestartController(
+                    this,
+                    flowOperations,
+                    operationsWorkStore,
+                    applicationRestartHandoff,
+                    () => _isSingleInstanceReplacement = true));
             LanRemoteControlService.Instance.ApplyConfig();
 
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
@@ -510,6 +534,12 @@ namespace ColorVision
                 (step, exception) => log.Error($"Application exit cleanup step '{step}' failed.", exception);
             ApplicationExitCleanup.Run(
                 [
+                    new("local application failure watchdog", OperationsApplicationFailureWatchdog.SignalCleanExit),
+                    new("Windows application restart registration", () =>
+                    {
+                        if (!WindowsApplicationRestartRegistration.TryUnregisterForCleanExit())
+                            log.Warn("Preserved Windows application restart registration because a fatal failure was observed or unregistering failed.");
+                    }),
                     new("application exit cleanup start log", () => log.Info("Application exit cleanup started.")),
                     new("application usage session", Rbac.ApplicationUsageTracker.StopSession),
                     new("application exit log", () => log.Info(ColorVision.Properties.Resources.ApplicationExit)),

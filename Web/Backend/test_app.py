@@ -126,6 +126,11 @@ class MarketplaceAppTests(unittest.TestCase):
             os.utime(path, (mtime, mtime))
         return path
 
+    def _create_android_release(self, version: str, payload: bytes = b"android-release") -> Path:
+        path = self.storage / f"ColorVision-Android-{version}.apk"
+        path.write_bytes(payload)
+        return path
+
     def test_old_upload_page_is_removed(self):
         response = self.client.get("/upload", follow_redirects=False)
         self.assertEqual(response.status_code, 404)
@@ -147,6 +152,8 @@ class MarketplaceAppTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_data(), b"installer")
+        self.assertEqual(response.headers["Accept-Ranges"], "bytes")
+        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
         response.close()
 
     def test_api_app_incremental_download_repairs_legacy_update_layout(self):
@@ -159,6 +166,8 @@ class MarketplaceAppTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_data(), b"incremental-update")
+        self.assertEqual(response.headers["Accept-Ranges"], "bytes")
+        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
         self.assertTrue((self.storage / "Update" / misplaced.name).exists())
         response.close()
 
@@ -195,6 +204,8 @@ class MarketplaceAppTests(unittest.TestCase):
         (self.storage / "History").mkdir(parents=True, exist_ok=True)
         (self.storage / "Tool").mkdir(parents=True, exist_ok=True)
         (self.storage / "Update").mkdir(parents=True, exist_ok=True)
+        (self.storage / "Feedback").mkdir(parents=True, exist_ok=True)
+        (self.storage / "Logs").mkdir(parents=True, exist_ok=True)
         self._create_app_release("1.2.0.1", suffix=".exe")
         self._create_app_release("1.0.0.1", in_history=True, suffix=".zip")
 
@@ -204,6 +215,10 @@ class MarketplaceAppTests(unittest.TestCase):
         payload = response.get_json()
         spotlight_labels = {item["label"] for item in payload["filesystem_spotlight"]}
         self.assertIn("History 归档", spotlight_labels)
+        self.assertNotIn("Feedback", spotlight_labels)
+        overview_names = {item["name"] for item in payload["overview"]}
+        self.assertNotIn("Feedback", overview_names)
+        self.assertNotIn("Logs", overview_names)
         archive_kinds = {
             item.get("kind")
             for group in payload["app_info"]["archive_timeline_groups"]
@@ -235,6 +250,81 @@ class MarketplaceAppTests(unittest.TestCase):
             for item in group["visible_items"]
         ]
         self.assertTrue(any(re.match(r"2026-0[34]-\d{2} \d{2}:\d{2}", value) for value in modified_values))
+
+    def test_android_update_manifest_selects_latest_release_and_publishes_integrity(self):
+        import hashlib
+
+        self._create_android_release("2.9", b"older")
+        latest = self._create_android_release("2.10", b"signed-apk-payload")
+
+        response = self.client.get("/api/android/update")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Cache-Control"], "public, max-age=60")
+        payload = response.get_json()
+        self.assertEqual(payload["schemaVersion"], 1)
+        self.assertTrue(payload["available"])
+        self.assertEqual(
+            payload["release"],
+            {
+                "version": "2.10",
+                "filename": latest.name,
+                "size": latest.stat().st_size,
+                "sha256": hashlib.sha256(latest.read_bytes()).hexdigest(),
+                "downloadUrl": "/api/android/update/2.10/download",
+            },
+        )
+
+    def test_android_update_manifest_is_empty_without_current_apk(self):
+        response = self.client.get("/api/android/update")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json(),
+            {"schemaVersion": 1, "available": False, "release": None},
+        )
+
+    def test_android_update_manifest_accepts_release_index_shape_without_platform(self):
+        latest = self._create_android_release("2.10", b"signed-apk-payload")
+        indexed_release = {
+            "version": "2.10",
+            "filename": latest.name,
+            "size": latest.stat().st_size,
+            "kind": "APK",
+            "source": "current",
+            "relative_path": latest.name,
+            "modified": "2026-08-13T00:00:00+08:00",
+        }
+
+        with patch.object(
+            marketplace_app.SERVICES,
+            "scan_app_release_artifacts",
+            return_value=[indexed_release],
+        ):
+            manifest = self.client.get("/api/android/update")
+            download = self.client.get("/api/android/update/2.10/download")
+
+        self.assertEqual(manifest.status_code, 200)
+        self.assertTrue(manifest.get_json()["available"])
+        self.assertEqual(manifest.get_json()["release"]["version"], "2.10")
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download.data, b"signed-apk-payload")
+        download.close()
+
+    def test_android_update_download_serves_only_named_current_apk(self):
+        expected = b"signed-apk-payload"
+        self._create_android_release("2.10", expected)
+
+        response = self.client.get("/api/android/update/2.10/download")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, expected)
+        self.assertEqual(response.mimetype, "application/vnd.android.package-archive")
+        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(response.headers["Accept-Ranges"], "bytes")
+        response.close()
+        self.assertEqual(self.client.get("/api/android/update/2.11/download").status_code, 404)
+        self.assertEqual(self.client.get("/api/android/update/not-a-version/download").status_code, 400)
 
     def test_site_releases_api_supports_archive_filters(self):
         self._create_app_release("1.2.0.1", suffix=".exe", mtime=1_775_000_000)
@@ -342,6 +432,46 @@ class MarketplaceAppTests(unittest.TestCase):
         app_info = response.get_json()["app_info"]
         self.assertEqual(set(app_info), {"latest_version", "changelog_html"})
         self.assertIn("新增插件市场", app_info["changelog_html"])
+
+    def test_site_changelog_compact_api_paginates_rendered_release_sections(self):
+        changelog = "# CHANGELOG\n\n" + "\n".join(
+            f"## [1.2.0.{fix}] 2026.03.{fix:02d}\n\n1. 版本 {fix} " + ("优化" * 200) + "\n"
+            for fix in range(1, 26)
+        )
+        self._create_changelog(changelog)
+
+        response = self.client.get("/api/site/changelog?view=compact&page=2&page_size=10")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        html = payload["app_info"]["changelog_html"]
+        self.assertNotIn("# CHANGELOG", html)
+        self.assertIn("1.2.0.11", html)
+        self.assertIn("1.2.0.20", html)
+        self.assertNotIn("1.2.0.10", html)
+        self.assertNotIn("1.2.0.21", html)
+        self.assertEqual(payload["changelog_page"], 2)
+        self.assertEqual(payload["changelog_page_size"], 10)
+        self.assertEqual(payload["changelog_total_entries"], 25)
+        self.assertEqual(payload["changelog_total_pages"], 3)
+        self.assertEqual(payload["changelog_page_entry_count"], 10)
+        self.assertTrue(payload["changelog_has_previous"])
+        self.assertTrue(payload["changelog_has_next"])
+        self.assertLess(len(response.data), 32 * 1024)
+
+    def test_site_changelog_pagination_clamps_values_and_rejects_invalid_page(self):
+        self._create_changelog("# CHANGELOG\n\n## [1.0.0.1] 2026.03.01\n\n1. 初始版本\n")
+
+        clamped = self.client.get(
+            "/api/site/changelog?view=compact&page=999&page_size=1"
+        ).get_json()
+        invalid = self.client.get(
+            "/api/site/changelog?view=compact&page=invalid&page_size=20"
+        )
+
+        self.assertEqual(clamped["changelog_page"], 1)
+        self.assertEqual(clamped["changelog_page_size"], 5)
+        self.assertEqual(invalid.status_code, 400)
 
     def test_public_routes_serve_react_shell_without_template_content(self):
         self._create_changelog(
@@ -649,6 +779,84 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertNotIn("changeLog", payload["versions"][0])
         self.assertNotIn("readme", payload)
 
+    def test_plugin_web_detail_view_paginates_history_and_preserves_order(self):
+        plugin_id = "PagedDetailPlugin"
+        self._create_plugin_archive_with_metadata(
+            plugin_id,
+            "2.0.0",
+            manifest_text=(
+                '{"id":"PagedDetailPlugin","name":"Paged Detail Plugin",'
+                '"description":"compact web detail","requires":"1.4.12.0"}'
+            ),
+            readme_text="# Paged detail readme",
+            changelog_text="## 2.0.0\n- paged detail changelog",
+        )
+        plugin_dir = self.storage / "Plugins" / plugin_id
+        for index in range(25):
+            (plugin_dir / f"{plugin_id}-1.0.{index}.cvxp").write_bytes(
+                f"history-{index}".encode("utf-8")
+            )
+
+        full_response = self.client.get(f"/api/plugins/{plugin_id}")
+        compact_response = self.client.get(
+            f"/api/plugins/{plugin_id}?view=compact&archive_page=2&archive_page_size=10"
+        )
+        clamped_response = self.client.get(
+            f"/api/plugins/{plugin_id}?view=compact&archive_page=999&archive_page_size=10"
+        )
+
+        self.assertEqual(full_response.status_code, 200)
+        self.assertEqual(compact_response.status_code, 200)
+        self.assertEqual(clamped_response.status_code, 200)
+        full = full_response.get_json()
+        compact = compact_response.get_json()
+        clamped = clamped_response.get_json()
+        self.assertEqual(compact["versions"], full["versions"])
+        self.assertEqual(compact["archivedVersions"], full["archivedVersions"][10:20])
+        self.assertEqual(compact["historicalPackageCount"], 25)
+        self.assertEqual(compact["archivedPage"], 2)
+        self.assertEqual(compact["archivedPageSize"], 10)
+        self.assertEqual(compact["archivedTotalPages"], 3)
+        self.assertTrue(compact["archivedHasPrevious"])
+        self.assertTrue(compact["archivedHasNext"])
+        self.assertEqual(compact["readmeHtml"], full["readmeHtml"])
+        self.assertEqual(compact["changelogHtml"], full["changelogHtml"])
+        self.assertNotIn("readme", compact)
+        self.assertNotIn("changelog", compact)
+        self.assertLess(len(compact_response.data), len(full_response.data))
+        self.assertEqual(clamped["archivedPage"], 3)
+        self.assertEqual(clamped["archivedVersions"], full["archivedVersions"][20:])
+        self.assertTrue(clamped["archivedHasPrevious"])
+        self.assertFalse(clamped["archivedHasNext"])
+
+    def test_plugin_detail_compact_paging_validation_does_not_change_full_contract(self):
+        self._create_plugin("PagingCompatibilityPlugin", "1.0.0")
+
+        full_response = self.client.get(
+            "/api/plugins/PagingCompatibilityPlugin?archive_page_size=invalid"
+        )
+        compact_response = self.client.get(
+            "/api/plugins/PagingCompatibilityPlugin?view=compact&archive_page_size=invalid"
+        )
+
+        self.assertEqual(full_response.status_code, 200)
+        self.assertEqual(compact_response.status_code, 400)
+        self.assertIn("readme", full_response.get_json())
+
+    def test_plugin_detail_frontend_uses_compact_history_pagination(self):
+        frontend_root = Path(__file__).resolve().parents[1] / "Frontend" / "src"
+        page_source = (frontend_root / "pages" / "PluginDetailPage.tsx").read_text(
+            encoding="utf-8"
+        )
+        service_source = (frontend_root / "services" / "site.ts").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("archive_page", page_source)
+        self.assertIn("plugin.archivedTotalPages", page_source)
+        self.assertIn("view: 'compact'", service_source)
+        self.assertIn("archive_page_size", service_source)
+
     def test_plugin_detail_reuses_cached_package_hashes_when_detail_cache_is_cleared(self):
         self._create_plugin_archive_with_metadata(
             "CachedHashPlugin",
@@ -700,6 +908,21 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertEqual(api_response.status_code, 200)
         payload = api_response.get_json()
         self.assertEqual([item["pluginId"] for item in payload["items"]], ["AlphaPlugin", "BetaPlugin"])
+        self.assertEqual(payload["categories"], ["Other", "Tools"])
+
+    def test_plugins_frontend_uses_catalog_categories_without_second_request(self):
+        frontend_page = (
+            Path(__file__).resolve().parents[1]
+            / "Frontend"
+            / "src"
+            / "pages"
+            / "PluginsPage.tsx"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("data.categories.map", frontend_page)
+        self.assertNotIn("getPluginCategories", frontend_page)
+        self.assertIn("sortOrder: requestQuery.sort === 'name' ? 'asc' : 'desc'", frontend_page)
+        self.assertIn("pageSizeParam", frontend_page)
 
     def test_plugin_query_author_filter_and_paging_contract(self):
         alpha_dir = self._create_plugin("AuthorAlpha", "1.0.0")
@@ -820,8 +1043,29 @@ class MarketplaceAppTests(unittest.TestCase):
             encoding="utf-8",
         )
 
-        download_response = self.client.get("/api/packages/StatPlugin/1.0.0")
+        head_response = self.client.head("/api/packages/StatPlugin/1.0.0")
+        self.assertEqual(head_response.status_code, 200)
+        head_response.close()
+        self.assertEqual(self.client.get("/api/stats").get_json()["totalDownloads"], 0)
+
+        partial_response = self.client.get(
+            "/api/packages/StatPlugin/1.0.0",
+            headers={"Range": "bytes=1-2"},
+            buffered=True,
+        )
+        self.assertEqual(partial_response.status_code, 206)
+        self.assertEqual(partial_response.get_data(), b"em")
+        partial_response.close()
+        self.assertEqual(self.client.get("/api/stats").get_json()["totalDownloads"], 0)
+
+        download_response = self.client.get(
+            "/api/packages/StatPlugin/1.0.0",
+            buffered=True,
+        )
         self.assertEqual(download_response.status_code, 200)
+        self.assertEqual(download_response.get_data(), b"demo-package")
+        self.assertEqual(download_response.headers["Accept-Ranges"], "bytes")
+        self.assertEqual(download_response.headers["X-Content-Type-Options"], "nosniff")
         download_response.close()
 
         stats_response = self.client.get("/api/stats")
@@ -908,6 +1152,23 @@ class MarketplaceAppTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.get_json()["error"], "Authentication required")
+
+    def test_browser_publish_auth_does_not_trigger_basic_dialog(self):
+        response = self.client.post(
+            "/api/packages/publish",
+            headers={
+                "X-ColorVision-Web": "1",
+            },
+            data={
+                "PluginId": "DemoPlugin",
+                "Version": "1.2.3",
+                "package": (io.BytesIO(b"pkg"), "DemoPlugin-1.2.3.cvxp"),
+            },
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertNotIn("WWW-Authenticate", response.headers)
 
     def test_legacy_upload_requires_auth(self):
         response = self.client.put(

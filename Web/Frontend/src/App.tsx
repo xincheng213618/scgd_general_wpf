@@ -1,13 +1,74 @@
 import { App as AntApp, ConfigProvider, theme } from 'antd'
+import zhCN from 'antd/locale/zh_CN'
 import { Component, lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { PublicLayout } from './layouts/PublicLayout'
 import { getSession } from './services/auth'
-import type { ThemeMode } from './types/admin'
+import { startWebVitals, trackPageView } from './services/webExperience'
+import type { ThemeMode, UiDensity } from './types/admin'
 import type { AuthSession } from './types/site'
 
 const themeStorageKey = 'colorvision-web-theme'
+const densityStorageKey = 'colorvision-web-density'
+
+const documentTitles: Record<string, string> = {
+  '/': 'ColorVision - 下载与插件中心',
+  '/plugins': '插件市场 - ColorVision',
+  '/releases': '版本中心 - ColorVision',
+  '/changelog': '更新说明 - ColorVision',
+  '/updates': '增量更新 - ColorVision',
+  '/tools': '工具下载 - ColorVision',
+  '/transfer': '文件中转 - ColorVision',
+  '/login': '登录 / 注册 - ColorVision',
+  '/admin': '管理控制台 - ColorVision',
+  '/admin/publish': '发布中心 - ColorVision',
+  '/admin/files': '文件管理 - ColorVision',
+  '/admin/cache': '缓存与索引 - ColorVision',
+  '/admin/jobs': '任务调度 - ColorVision',
+  '/admin/deployments': '部署历史 - ColorVision',
+  '/admin/operations/hosts': '终端运维 - ColorVision',
+  '/admin/feedback': '反馈收件箱 - ColorVision',
+  '/admin/users': '账号管理 - ColorVision',
+  '/admin/api-keys': 'API Key - ColorVision',
+  '/admin/copilot': 'Copilot 配置 - ColorVision',
+  '/admin/audit': '审计日志 - ColorVision',
+  '/admin/traffic': '访问统计 - ColorVision',
+  '/admin/settings': '系统设置 - ColorVision',
+}
+
+function documentTitle(pathname: string) {
+  const exactTitle = documentTitles[pathname]
+  if (exactTitle) return exactTitle
+  if (pathname.startsWith('/plugins/')) return '插件详情 - ColorVision'
+  if (pathname.startsWith('/browse')) return '文件浏览 - ColorVision'
+  if (pathname.startsWith('/admin')) return '管理控制台 - ColorVision'
+  return 'ColorVision'
+}
+
+function RouteDocumentTitle() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    document.title = documentTitle(pathname)
+  }, [pathname])
+
+  return null
+}
+
+function WebExperienceTracker() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    trackPageView(pathname)
+  }, [pathname])
+
+  useEffect(() => {
+    startWebVitals()
+  }, [])
+
+  return null
+}
 
 const AdminLayout = lazy(() => import('./layouts/AdminLayout').then((module) => ({ default: module.AdminLayout })))
 const ApiKeysPage = lazy(() => import('./pages/ApiKeysPage').then((module) => ({ default: module.ApiKeysPage })))
@@ -17,9 +78,13 @@ const CachePage = lazy(() => import('./pages/CachePage').then((module) => ({ def
 const ChangelogPage = lazy(() => import('./pages/ChangelogPage').then((module) => ({ default: module.ChangelogPage })))
 const CopilotConfigPage = lazy(() => import('./pages/CopilotConfigPage').then((module) => ({ default: module.CopilotConfigPage })))
 const Dashboard = lazy(() => import('./pages/Dashboard').then((module) => ({ default: module.Dashboard })))
+const DeploymentHistoryPage = lazy(() => import('./pages/DeploymentHistoryPage').then((module) => ({ default: module.DeploymentHistoryPage })))
 const FilesPage = lazy(() => import('./pages/FilesPage').then((module) => ({ default: module.FilesPage })))
+const FeedbackPage = lazy(() => import('./pages/FeedbackPage').then((module) => ({ default: module.FeedbackPage })))
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })))
 const JobsPage = lazy(() => import('./pages/JobsPage').then((module) => ({ default: module.JobsPage })))
+const OperationsPage = lazy(() => import('./pages/OperationsPage').then((module) => ({ default: module.OperationsPage })))
+const UsersPage = lazy(() => import('./pages/UsersPage').then((module) => ({ default: module.UsersPage })))
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const PluginDetailPage = lazy(() => import('./pages/PluginDetailPage').then((module) => ({ default: module.PluginDetailPage })))
 const PluginsPage = lazy(() => import('./pages/PluginsPage').then((module) => ({ default: module.PluginsPage })))
@@ -88,16 +153,32 @@ function useThemeMode() {
   return [mode, setMode] as const
 }
 
+function useUiDensity() {
+  const [density, setDensityState] = useState<UiDensity>(() => {
+    const saved = localStorage.getItem(densityStorageKey)
+    return saved === 'small' || saved === 'middle' ? saved : 'middle'
+  })
+
+  const setDensity = (next: UiDensity) => {
+    localStorage.setItem(densityStorageKey, next)
+    setDensityState(next)
+  }
+
+  return [density, setDensity] as const
+}
+
 function App() {
   const [mode, setMode] = useThemeMode()
+  const [density, setDensity] = useUiDensity()
   const [session, setSession] = useState<AuthSession | null>(null)
   const resolvedTheme = useResolvedTheme(mode)
   const dark = resolvedTheme === 'dark'
 
   useEffect(() => {
     document.documentElement.dataset.theme = resolvedTheme
+    document.documentElement.dataset.density = density
     document.body.classList.toggle('cv-admin-dark', dark)
-  }, [dark, resolvedTheme])
+  }, [dark, density, resolvedTheme])
 
   const configTheme = useMemo(
     () => ({
@@ -146,7 +227,7 @@ function App() {
 
   const adminLayout = (
     <Suspense fallback={<RouteFallback />}>
-      <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme}>
+      <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme} onSessionChanged={refreshSession}>
         <Suspense fallback={<RouteFallback />}>
           <Outlet />
         </Suspense>
@@ -155,9 +236,11 @@ function App() {
   )
 
   return (
-    <ConfigProvider theme={configTheme}>
+    <ConfigProvider componentSize={density} locale={zhCN} theme={configTheme}>
       <AntApp>
         <BrowserRouter>
+          <RouteDocumentTitle />
+          <WebExperienceTracker />
           <RouteErrorBoundary>
             <Routes>
             <Route element={publicLayout}>
@@ -175,7 +258,7 @@ function App() {
               path="/login"
               element={
                 <Suspense fallback={<RouteFallback />}>
-                  <LoginPage onLoggedIn={refreshSession} />
+                  <LoginPage session={session} onLoggedIn={refreshSession} />
                 </Suspense>
               }
             />
@@ -185,11 +268,25 @@ function App() {
               <Route path="files" element={<FilesPage />} />
               <Route path="cache" element={<CachePage />} />
               <Route path="jobs" element={<JobsPage />} />
+              <Route path="deployments" element={<DeploymentHistoryPage />} />
+              <Route path="operations/hosts" element={<OperationsPage />} />
+              <Route path="feedback" element={<FeedbackPage />} />
+              <Route path="users" element={<UsersPage />} />
               <Route path="api-keys" element={<ApiKeysPage />} />
               <Route path="copilot" element={<CopilotConfigPage />} />
               <Route path="audit" element={<AuditPage />} />
               <Route path="traffic" element={<TrafficPage />} />
-              <Route path="settings" element={<SettingsPage mode={mode} setMode={setMode} />} />
+              <Route
+                path="settings"
+                element={(
+                  <SettingsPage
+                    mode={mode}
+                    setMode={setMode}
+                    density={density}
+                    setDensity={setDensity}
+                  />
+                )}
+              />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

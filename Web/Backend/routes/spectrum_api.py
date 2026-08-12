@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, jsonify, request
+from routes.artifact_delivery import deliver_artifact
+from routes.browser_auth import apply_basic_auth_challenge
 from routes.request_context import current_request_context, set_authenticated_request_context
+from services.artifact_delivery import ArtifactDownloadEvent
 
 from services.spectrum_release import (
     MAX_MANIFEST_BYTES,
@@ -45,8 +48,7 @@ def _json_error(message: str, status: int):
 def _json_auth_error():
     response = jsonify({"error": "Authentication required", "status": 401})
     response.status_code = 401
-    response.headers["WWW-Authenticate"] = 'Basic realm="ColorVision Marketplace"'
-    return response
+    return apply_basic_auth_challenge(response, "ColorVision Marketplace")
 
 
 def _has_publish_auth() -> bool:
@@ -128,18 +130,21 @@ def api_spectrum_download(version: str):
     except (OSError, SpectrumReleaseError) as exc:
         return _json_error(str(exc), 500)
 
-    response = send_file(
+    return deliver_artifact(
+        _ctx.artifact_delivery,
         release.package_path,
+        request_method=request.method,
+        event=ArtifactDownloadEvent(
+            artifact_type="tool",
+            artifact_id="Spectrum",
+            version=version,
+            relative_path=f"Spectrum/releases/{version}/{release.package_path.name}",
+        ),
         mimetype="application/zip",
-        as_attachment=True,
         download_name=release.manifest["package"]["fileName"],
-        conditional=True,
         etag=release.manifest["package"]["sha256"],
         max_age=0,
     )
-    response.headers.setdefault("Accept-Ranges", "bytes")
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    return response
 
 
 @spectrum_api.route("/api/tool/spectrum/publish", methods=["POST"])

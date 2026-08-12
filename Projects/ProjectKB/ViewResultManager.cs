@@ -30,13 +30,22 @@ namespace ProjectKB
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 
-        [DisplayName("打开图像延迟"), Category("View")]
-        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
-        private int _ViewImageReadDelay = 1000;
 
-        [DisplayName("Csv保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("KB")]
+        [DisplayName("LV CSV保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("KB")]
         public string CsvSavePath { get => _CsvSavePath; set { _CsvSavePath = value; OnPropertyChanged(); } }
         private string _CsvSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "KB");
+
+        [DisplayName("自动导出LV CSV"), Category("KB")]
+        public bool AutoSaveLvCsv { get => _AutoSaveLvCsv; set { _AutoSaveLvCsv = value; OnPropertyChanged(); } }
+        private bool _AutoSaveLvCsv = true;
+
+        [DisplayName("LC CSV保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("KB")]
+        public string LcCsvSavePath { get => _LcCsvSavePath; set { _LcCsvSavePath = value; OnPropertyChanged(); } }
+        private string _LcCsvSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "KB");
+
+        [DisplayName("自动导出LC CSV"), Category("KB")]
+        public bool AutoSaveLcCsv { get => _AutoSaveLcCsv; set { _AutoSaveLcCsv = value; OnPropertyChanged(); } }
+        private bool _AutoSaveLcCsv = true;
 
         [DisplayName("Text保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("KB")]
         public string TextSavePath { get => _TextSavePath; set { _TextSavePath = value; OnPropertyChanged(); } }
@@ -81,6 +90,7 @@ namespace ProjectKB
         public RelayCommand GenericQueryCommand { get; set; }
 
         public RelayCommand SaveCommand { get; set; }
+        public RelayCommand SaveLcCommand { get; set; }
 
         private readonly SqlSugarClient _db;
 
@@ -90,7 +100,8 @@ namespace ProjectKB
             EditConfigCommand = new RelayCommand(a => EditConfig());
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
-            SaveCommand = new RelayCommand(a => Save());
+            SaveCommand = new RelayCommand(a => Save(KBCsvDataType.Lv));
+            SaveLcCommand = new RelayCommand(a => Save(KBCsvDataType.Lc));
             _db = new SqlSugarClient(new ConnectionConfig
             {
                 ConnectionString = $"Data Source={SqliteDbPath};Default Timeout=5",
@@ -129,7 +140,7 @@ namespace ProjectKB
             ViewResluts.RemoveAt(index);
         }
 
-        public void Save()
+        public void Save(KBCsvDataType dataType)
         {
             if (!RequireAdmin()) return;
 
@@ -149,19 +160,27 @@ namespace ProjectKB
                             "ProjectKB");
                         return;
                     }
-                    string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
-                    string regexPattern = $"[{Regex.Escape(invalidChars)}]";
-                    string csvpath = Config.CsvSavePath + $"\\{Regex.Replace(kbItemMaster.Model, regexPattern, "")}_{kbItemMaster.CreateTime:yyyyMMdd}.csv";
+                    string savePath = dataType == KBCsvDataType.Lv ? Config.CsvSavePath : Config.LcCsvSavePath;
+                    string csvpath = BuildCsvPath(kbItemMaster, savePath, dataType);
                     
                     using var dialog = new System.Windows.Forms.SaveFileDialog();
                     dialog.Filter = "CSV files (*.csv) | *.csv";
                     dialog.FileName = csvpath;
                     dialog.RestoreDirectory = true;
                     if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                    kbItemMaster.SaveCsv(dialog.FileName, Config.AppendFalloutSummary);
+                    kbItemMaster.SaveCsv(dialog.FileName, dataType, Config.AppendFalloutSummary);
                 }
             }
 
+        }
+
+        internal static string BuildCsvPath(KBItemMaster item, string savePath, KBCsvDataType dataType)
+        {
+            string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
+            string regexPattern = $"[{Regex.Escape(invalidChars)}]";
+            string safeModel = Regex.Replace(item.Model ?? string.Empty, regexPattern, "");
+            string suffix = dataType == KBCsvDataType.Lv ? "LV" : "LC";
+            return Path.Combine(savePath, $"{safeModel}_{item.CreateTime:yyyyMMdd}-{suffix}.csv");
         }
 
         /// <summary>

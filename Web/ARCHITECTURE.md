@@ -26,6 +26,11 @@ app_setup / composition
 - Database migrations own schema evolution. Repositories own SQL. Cache,
   audit, analytics, and artifact indexes are separate responsibilities even
   when they share one SQLite file.
+- `db/repositories/operations_admin.py` owns the bounded, sanitized read model
+  used by the Web Operations dashboard, including safe signed-relay identity,
+  device, and task-origin metadata. Cryptographic material and request bodies
+  never cross that read-model boundary. Legacy Relay write-path SQL remains in
+  the transitional route until that complete contract is migrated.
 
 ### Known transitional route SQL
 
@@ -83,8 +88,8 @@ owner. The first implementations may remain local filesystem or SQLite based.
   atomically replace an artifact.
 - `ArtifactCatalogReader` / `ArtifactIndexRepository`: read and refresh the
   SQLite artifact read model without exposing SQL to routes.
-- `ArtifactDeliveryService`: authorize and stream plugin, application, update,
-  tool, and transfer downloads through one completion-aware boundary.
+- `ArtifactDeliveryService`: apply one conditional/range response and completion
+  event contract to plugin, application, update, tool, and transfer downloads.
 - `EventPublisher`: publish statically registered domain events such as
   `artifact.published`, `artifact.downloaded`, and `storage.changed`.
 - `StorageChangeHandler`: update the affected index without a central path
@@ -100,6 +105,19 @@ owner. The first implementations may remain local filesystem or SQLite based.
 
 Plugins and uploaded packages must not dynamically import or execute server
 Python code. Extension handlers are registered by trusted application code.
+
+### Artifact delivery contract
+
+Routes retain endpoint-specific authorization and safe path resolution, then
+pass a resolved file plus an `ArtifactDownloadEvent` to the shared delivery
+boundary. The Flask adapter owns conditional and range responses, attachment
+names, `Accept-Ranges`, and `X-Content-Type-Options` consistently.
+
+An `artifact.downloaded` completion callback is eligible only for a fully
+iterated `200 GET` or a `206 GET` whose content range covers the entire file.
+`HEAD`, `304`, partial ranges, and interrupted response iteration do not emit a
+completed download. The legacy plugin counter uses this contract; HTTP request
+traffic remains a separate metric.
 
 ## API compatibility
 

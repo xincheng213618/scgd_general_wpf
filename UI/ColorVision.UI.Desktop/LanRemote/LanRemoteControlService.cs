@@ -50,6 +50,30 @@ namespace ColorVision.UI.Desktop.LanRemote
 
         public OperationsSecureHostService OperationsHost => _operationsHost;
 
+        public void ConfigureOperationsServiceHealthProvider(IOperationsServiceHealthProvider provider) =>
+            _operationsHost.ConfigureServiceHealthProvider(provider);
+
+        public void ConfigureOperationsFlowRuntimeStatusProvider(IOperationsFlowRuntimeStatusProvider provider) =>
+            _operationsHost.ConfigureFlowRuntimeStatusProvider(provider);
+
+        public void ConfigureOperationsDeviceHealthProvider(IOperationsDeviceHealthProvider provider) =>
+            _operationsHost.ConfigureDeviceHealthProvider(provider);
+
+        public void ConfigureOperationsMessageChannelHealthProvider(IOperationsMessageChannelHealthProvider provider) =>
+            _operationsHost.ConfigureMessageChannelHealthProvider(provider);
+
+        public void ConfigureOperationsMessageChannelRecoveryController(IOperationsMessageChannelRecoveryController controller) =>
+            _operationsHost.ConfigureMessageChannelRecoveryController(controller);
+
+        public void ConfigureOperationsFailureEvidenceProvider(IOperationsFailureEvidenceProvider provider) =>
+            _operationsHost.ConfigureFailureEvidenceProvider(provider);
+
+        public void ConfigureOperationsMqttRestartController(IOperationsMqttRestartController controller) =>
+            _operationsHost.ConfigureMqttRestartController(controller);
+
+        public void ConfigureOperationsApplicationRestartController(IOperationsApplicationRestartController controller) =>
+            _operationsHost.ConfigureApplicationRestartController(controller);
+
         public void ApplyConfig()
         {
             var config = LanRemoteControlConfig.Instance;
@@ -525,8 +549,8 @@ refreshStatus();
             {
                 string message = normalized switch
                 {
-                    "showmainwindow" or "showwindow" or "show" => ExecuteOnUiThread(ShowMainWindow),
-                    "minimizemainwindow" or "minimizewindow" or "minimize" => ExecuteOnUiThread(MinimizeMainWindow),
+                    "showmainwindow" or "showwindow" or "show" => ExecuteDesktopAction(OperationsDesktopActionService.ShowWindowAction),
+                    "minimizemainwindow" or "minimizewindow" or "minimize" => ExecuteDesktopAction(OperationsDesktopActionService.MinimizeWindowAction),
                     "refreshstatus" or "refresh" => "状态已刷新。",
                     _ => string.Empty
                 };
@@ -628,30 +652,12 @@ refreshStatus();
                 : dispatcher.Invoke(action);
         }
 
-        private static string ShowMainWindow()
+        private static string ExecuteDesktopAction(string actionId)
         {
-            Window? window = Application.Current?.MainWindow;
-            if (window == null)
-                return "当前没有主窗口。";
-
-            if (!window.IsVisible)
-                window.Show();
-
-            if (window.WindowState == WindowState.Minimized)
-                window.WindowState = WindowState.Normal;
-
-            window.Activate();
-            return "主窗口已显示。";
-        }
-
-        private static string MinimizeMainWindow()
-        {
-            Window? window = Application.Current?.MainWindow;
-            if (window == null)
-                return "当前没有主窗口。";
-
-            window.WindowState = WindowState.Minimized;
-            return "主窗口已最小化。";
+            OperationsActionResult result = OperationsDesktopActionService.Execute(actionId);
+            if (!result.Success)
+                throw new InvalidOperationException(result.Message);
+            return result.Message;
         }
 
         private static MainWindowSnapshot GetMainWindowSnapshot()

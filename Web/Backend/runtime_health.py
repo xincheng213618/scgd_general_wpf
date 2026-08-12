@@ -32,6 +32,11 @@ def validate_runtime_config(
         issues.append("upload_auth.username/password must be changed from the default values")
     if not username or not password:
         issues.append("upload_auth.username and upload_auth.password must be configured")
+    try:
+        from services.access_analytics import reporting_utc_offset_minutes
+        reporting_utc_offset_minutes(config)
+    except ValueError as exc:
+        issues.append(str(exc))
     return issues
 
 

@@ -6,7 +6,11 @@ export function getSession() {
 }
 
 export function login(payload: { username: string; password: string; next?: string }) {
-  return postJson<AuthSession & { next?: string }>('/api/auth/login', payload)
+  return postJson<AuthSession & { next?: string }>(
+    '/api/auth/login',
+    payload,
+    { redirectOnUnauthorized: false },
+  )
 }
 
 export function register(payload: { username: string; password: string; next?: string }) {

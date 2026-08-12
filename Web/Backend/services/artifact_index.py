@@ -88,7 +88,7 @@ def _refresh_failure_result(
 
 def _scan_release_artifacts(storage: Path) -> list[dict[str, Any]]:
     """Scan storage for release artifacts (current + History/)."""
-    from app_releases import build_release_artifact
+    from app_releases import build_release_artifact, is_app_release_history_bucket
 
     artifacts: list[dict[str, Any]] = []
     if not storage.is_dir():
@@ -104,7 +104,7 @@ def _scan_release_artifacts(storage: Path) -> list[dict[str, Any]]:
     history_dir = storage / "History"
     if history_dir.is_dir():
         for major_dir in history_dir.iterdir():
-            if not major_dir.is_dir():
+            if not major_dir.is_dir() or not is_app_release_history_bucket(major_dir.name):
                 continue
             for branch_dir in major_dir.iterdir():
                 if not branch_dir.is_dir():
@@ -126,8 +126,12 @@ def _release_signature(storage: Path) -> str:
 
     Uses a two-level directory walk instead of rglob to avoid deep recursion.
     History layout: History/{major.minor}/{major.minor.patch}/file
+    Directory mtimes are intentionally excluded because Windows may publish
+    them after the child write, causing an unrelated later scan to look changed.
     """
-    entries: list[tuple[str, int, int]] = []
+    from app_releases import is_app_release_history_bucket
+
+    entries: list[tuple[str, int, int]] = [("release-index-contract-v3", 0, 0)]
     if storage.is_dir():
         for entry in storage.iterdir():
             if entry.is_file():
@@ -139,33 +143,18 @@ def _release_signature(storage: Path) -> str:
     history_dir = storage / "History"
     if history_dir.is_dir():
         try:
-            history_mtime = history_dir.stat().st_mtime_ns
-        except OSError:
-            history_mtime = 0
-        entries.append(("History", 0, history_mtime))
-
-        try:
             with os.scandir(history_dir) as major_entries:
                 for major_entry in major_entries:
-                    if not major_entry.is_dir(follow_symlinks=False):
+                    if (
+                        not major_entry.is_dir(follow_symlinks=False)
+                        or not is_app_release_history_bucket(major_entry.name)
+                    ):
                         continue
                     try:
-                        major_stat = major_entry.stat(follow_symlinks=False)
-                        entries.append((
-                            f"History/{major_entry.name}",
-                            0,
-                            major_stat.st_mtime_ns,
-                        ))
                         with os.scandir(major_entry.path) as branch_entries:
                             for branch_entry in branch_entries:
                                 if not branch_entry.is_dir(follow_symlinks=False):
                                     continue
-                                branch_stat = branch_entry.stat(follow_symlinks=False)
-                                entries.append((
-                                    f"History/{major_entry.name}/{branch_entry.name}",
-                                    0,
-                                    branch_stat.st_mtime_ns,
-                                ))
                                 with os.scandir(branch_entry.path) as children:
                                     for child in children:
                                         child_stat = child.stat(follow_symlinks=False)
@@ -1146,11 +1135,25 @@ def refresh_all_indexes(cache: CacheManager, storage: Path) -> dict[str, Any]:
 
 def get_all_index_states_summary(cache: CacheManager) -> dict[str, Any]:
     """Get a summary of all index states for dashboard display."""
+    from services.docs_site import DOCS_INDEX_CACHE_KEY
+
     db = cache.get_db()
     try:
         states = cache.index_states.get_many(
             ("plugins", "releases", "updates", "tools", "docs")
         )
+        public_states = {
+            scope: {
+                "scope": state.get("scope", scope),
+                "status": state.get("status", "not_initialized"),
+                "last_started_at": state.get("last_started_at"),
+                "last_finished_at": state.get("last_finished_at"),
+                "last_error": state.get("last_error", ""),
+                "item_count": int(state.get("item_count") or 0),
+                "duration_ms": int(state.get("duration_ms") or 0),
+            }
+            for scope, state in states.items()
+        }
 
         # Item counts from actual tables
         counts = {}
@@ -1159,10 +1162,10 @@ def get_all_index_states_summary(cache: CacheManager) -> dict[str, Any]:
         counts["releases"] = db.execute("SELECT COUNT(*) AS cnt FROM release_index WHERE is_deleted = 0").fetchone()["cnt"]
         counts["updates"] = db.execute("SELECT COUNT(*) AS cnt FROM update_index WHERE is_deleted = 0").fetchone()["cnt"]
         counts["tools"] = db.execute("SELECT COUNT(*) AS cnt FROM tool_index WHERE is_deleted = 0").fetchone()["cnt"]
-        docs_index = cache.get_cache_entry("docs_index:v1")
+        docs_index = cache.get_cache_entry(DOCS_INDEX_CACHE_KEY)
         counts["docs"] = int(((docs_index or {}).get("value") or {}).get("summary", {}).get("total") or 0)
 
-        return {"states": states, "counts": counts}
+        return {"states": public_states, "counts": counts}
     except Exception as exc:
         return {"states": {}, "counts": {}, "error": str(exc)}
     finally:

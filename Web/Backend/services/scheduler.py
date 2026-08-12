@@ -4,6 +4,8 @@ Lightweight task scheduler for ColorVision Marketplace.
 Provides periodic background jobs for:
   - plugin_index_check: verify Plugins directory signature
   - cache_cleanup: delete expired cache_entry rows
+  - job_history_retention: bound completed scheduler history
+  - admin_data_retention: bound audit rows and manual database snapshots
   - startup_index_check: ensure plugin_index is populated
 """
 
@@ -11,7 +13,7 @@ from __future__ import annotations
 
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -70,6 +72,20 @@ DEFAULT_JOBS = [
         "config": "{}",
     },
     {
+        "id": "job_history_retention",
+        "name": "Job History Retention",
+        "job_type": "history_retention",
+        "interval_seconds": 86400,
+        "config": "{}",
+    },
+    {
+        "id": "admin_data_retention",
+        "name": "Admin Data Retention",
+        "job_type": "data_retention",
+        "interval_seconds": 86400,
+        "config": "{}",
+    },
+    {
         "id": "startup_index_check",
         "name": "Startup Index Check",
         "job_type": "startup_check",
@@ -101,6 +117,15 @@ def run_job_now(
 
     # Record job run start
     run_id = cache.jobs.start_run(job_id, started_at)
+    if run_id is None:
+        return {
+            "job_id": job_id,
+            "run_id": None,
+            "status": "skipped",
+            "duration_ms": 0,
+            "summary": "Job is already running",
+            "error": "Job is already running",
+        }
 
     status = "success"
     summary = ""
@@ -119,6 +144,10 @@ def run_job_now(
             summary = _run_cache_cleanup(cache)
         elif job_id == "access_analytics_retention":
             summary = _run_access_analytics_retention(cache, get_db, config_getter)
+        elif job_id == "job_history_retention":
+            summary = _run_job_history_retention(cache, config_getter)
+        elif job_id == "admin_data_retention":
+            summary = _run_admin_data_retention(cache, config_getter)
         elif job_id == "startup_index_check":
             summary = _run_startup_check(cache, storage, get_db)
         else:
@@ -243,14 +272,21 @@ def _run_access_analytics_retention(
     from services.access_analytics import (
         prune_access_analytics,
         prune_access_analytics_backups,
+        reporting_utc_offset_minutes,
     )
 
     config = config_getter()
     retention_days = int(config.get("access_analytics_retention_days", 90) or 90)
-    result = prune_access_analytics(get_db, retention_days=retention_days)
+    utc_offset_minutes = reporting_utc_offset_minutes(config)
+    result = prune_access_analytics(
+        get_db,
+        retention_days=retention_days,
+        utc_offset_minutes=utc_offset_minutes,
+    )
     backup_result = prune_access_analytics_backups(
         cache.db_path.parent,
         retention_days=retention_days,
+        utc_offset_minutes=utc_offset_minutes,
     )
     if backup_result["errors"]:
         raise RuntimeError("; ".join(backup_result["errors"][:3]))
@@ -258,6 +294,49 @@ def _run_access_analytics_retention(
         f"Pruned {result['deleted']} live and {backup_result['deleted']} backup "
         f"access analytics rows before {result['cutoffDay']} "
         f"across {backup_result['backups']} backups"
+    )
+
+
+def _run_job_history_retention(
+    cache: CacheManager,
+    config_getter: Callable[[], dict[str, Any]],
+) -> str:
+    from services.access_analytics import parse_bounded_int
+
+    config = config_getter()
+    retention_days = parse_bounded_int(
+        config.get("job_run_retention_days"),
+        name="job_run_retention_days",
+        default=30,
+        minimum=1,
+        maximum=3650,
+    )
+    cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+    deleted = cache.jobs.prune_history_before(cutoff.isoformat())
+    return (
+        f"Pruned {deleted} job runs before {cutoff.date().isoformat()} "
+        f"({retention_days} days retained)"
+    )
+
+
+def _run_admin_data_retention(
+    cache: CacheManager,
+    config_getter: Callable[[], dict[str, Any]],
+) -> str:
+    from services.admin_data_retention import run_admin_data_retention
+
+    result = run_admin_data_retention(
+        cache.get_db,
+        cache.db_path.parent,
+        config_getter(),
+    )
+    if result["errors"]:
+        raise RuntimeError("; ".join(result["errors"][:3]))
+    return (
+        f"Pruned {result['audit']['deleted']} audit rows and "
+        f"{result['backupAudit']['deleted']} snapshot audit rows; "
+        f"removed {result['backupFiles']['removedCount']} old database backups "
+        f"(limit {result['backupFiles']['keepCount']})"
     )
 
 
@@ -317,6 +396,10 @@ class SchedulerThread(threading.Thread):
         self._stop_event.set()
 
     def run(self):
+        recovered = self._cache.jobs.recover_running_runs(_now_iso())
+        if recovered:
+            print(f"[scheduler] recovered {recovered} interrupted job run(s)")
+
         # Run startup check immediately
         try:
             run_job_now(

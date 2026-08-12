@@ -1,4 +1,5 @@
 export type ThemeMode = 'system' | 'light' | 'dark'
+export type UiDensity = 'middle' | 'small'
 
 export interface AdminStats {
   totalDownloads: number
@@ -14,48 +15,85 @@ export interface AdminStats {
   errorResponsesToday: number
 }
 
-export interface TrafficSummary {
+export interface TrafficErrorBreakdown {
+  errorResponses: number
+  errorRate: number
+  clientErrorResponses: number
+  clientErrorRate: number
+  serverErrorResponses: number
+  serverErrorRate: number
+  unclassifiedErrorResponses: number
+  unclassifiedErrorRate: number
+}
+
+export interface TrafficSummary extends TrafficErrorBreakdown {
   periodStart: string
   periodEnd: string
   days: number
+  timeZone: string
+  utcOffsetMinutes: number
+  calendarBoundaryEffectiveAt: string | null
+  legacyCalendarDataThroughDay: string | null
+  hasLegacyCalendarData: boolean
   visits: number
   uniqueVisitorDays: number
   avgResponseMs: number
-  errorResponses: number
-  errorRate: number
   totalResponseBytes: number
 }
 
-export interface TrafficDayStats {
+export interface TrafficDayStats extends TrafficErrorBreakdown {
   day: string
   visits: number
   uniqueVisitors: number
   avgResponseMs: number
   maxResponseMs: number
-  errorResponses: number
-  errorRate: number
   totalDurationMs: number
   totalResponseBytes: number
 }
 
-export interface TrafficRouteStats {
+export interface TrafficRouteStats extends TrafficErrorBreakdown {
   route: string
   method: string
   visits: number
-  errorResponses: number
-  errorRate: number
   avgResponseMs: number
   maxResponseMs: number
   responseBytes: number
 }
 
-export interface TrafficClientStats {
+export interface TrafficClientStats extends TrafficErrorBreakdown {
   client: 'desktop' | 'mobile' | 'tablet' | 'bot' | 'other'
   visits: number
   uniqueVisitorDays: number
   share: number
-  errorResponses: number
   avgResponseMs: number
+}
+
+export interface WebPageStats {
+  route: string
+  pageViews: number
+  uniqueVisitorDays: number
+  hardNavigations: number
+  spaNavigations: number
+}
+
+export interface WebPageDayStats {
+  day: string
+  pageViews: number
+  uniqueVisitors: number
+  hardNavigations: number
+  spaNavigations: number
+}
+
+export interface WebVitalStats {
+  metric: 'LCP' | 'CLS' | 'INP'
+  unit: 'ms' | 'score'
+  samples: number
+  average: number
+  maximum: number
+  goodSamples: number
+  needsImprovementSamples: number
+  poorSamples: number
+  goodRate: number
 }
 
 export interface TrafficRecorderStatus {
@@ -72,6 +110,17 @@ export interface TrafficStatsResponse {
   daily: TrafficDayStats[]
   topRoutes: TrafficRouteStats[]
   clients: TrafficClientStats[]
+  web: {
+    summary: {
+      pageViews: number
+      uniqueVisitorDays: number
+      hardNavigations: number
+      spaNavigations: number
+    }
+    daily: WebPageDayStats[]
+    topPages: WebPageStats[]
+    vitals: WebVitalStats[]
+  }
   recorder: TrafficRecorderStatus
 }
 
@@ -85,6 +134,67 @@ export interface CacheStatus {
   tool_index_count: number
   plugins_dir_exists: boolean
   storage_path: string
+}
+
+export type IndexScope = 'plugins' | 'releases' | 'updates' | 'tools' | 'docs'
+
+export interface IndexState {
+  scope: IndexScope
+  status: string
+  last_started_at?: string | null
+  last_finished_at?: string | null
+  last_error?: string
+  item_count: number
+  duration_ms: number
+}
+
+export interface IndexStatusResponse {
+  states: Partial<Record<IndexScope, IndexState>>
+  counts: Record<string, number>
+  error?: string
+}
+
+export interface IndexStatusRow extends IndexState {
+  name: string
+  indexed_count: number
+}
+
+export interface IndexRefreshResult {
+  status?: string
+  indexed_count?: number
+  deleted_count?: number
+  duration_ms?: number
+  errors?: string[]
+}
+
+export type AllIndexRefreshResult = Record<IndexScope, IndexRefreshResult>
+
+export interface DatabaseBackupItem {
+  name: string
+  created_at: string
+  size_bytes: number
+}
+
+export interface DatabaseBackupInventory {
+  backups: DatabaseBackupItem[]
+  count: number
+  keep_count: number
+}
+
+export interface DatabaseBackupResult {
+  status: string
+  backup_name: string
+  backup_size_bytes: number
+  backup_retention: {
+    status: string
+    keepCount: number
+    beforeCount: number
+    afterCount: number
+    removedCount: number
+    removedBytes: number
+    preservedUnclassified: number
+    errors: string[]
+  }
 }
 
 export interface DocsStatus {
@@ -144,6 +254,145 @@ export interface JobRun {
   error?: string
 }
 
+export interface JobRunCounts {
+  total: number
+  success: number
+  error: number
+  interrupted: number
+  running: number
+}
+
+export interface JobRunPage {
+  items: JobRun[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface JobRunResult {
+  job_id: string
+  run_id: number | null
+  status: string
+  duration_ms: number
+  summary: string
+  error: string
+}
+
+export interface SlowRequestSample {
+  recorded_at: string
+  method: string
+  path: string
+  status: number
+  duration_ms: number
+}
+
+export interface PerformanceSummary {
+  generated_at: string
+  process_started_at: string
+  threshold_ms: number
+  request_buffer_count: number
+  request_buffer_capacity: number
+  slow_requests: SlowRequestSample[]
+  slow_jobs: JobRun[]
+}
+
+export interface OperationsHostSnapshot {
+  application: string
+  version: string
+  isRunning: boolean
+  uptimeSeconds: number
+  capturedAt: string
+  process: { memoryMb: number }
+  mainWindow: {
+    exists: boolean
+    state: string
+    isVisible: boolean
+  }
+  secureOperations: {
+    isRunning: boolean
+    pairedDeviceCount: number
+    relayConfigured: boolean
+    relayRunning: boolean
+  }
+}
+
+export interface OperationsHost {
+  hostId: string
+  displayName: string
+  appVersion: string
+  reportedStatus: string
+  online: boolean
+  signedRelayReady: boolean
+  capabilities: string[]
+  snapshot: OperationsHostSnapshot
+  lastSeenAt: string
+  createdAt: string
+}
+
+export interface OperationsTask {
+  taskId: string
+  hostId: string
+  hostName: string
+  capabilityId: string
+  status: string
+  sourceType: 'operator' | 'device'
+  deviceId: string | null
+  deviceName: string | null
+  createdAt: string
+  expiresAt: string
+  deliveredAt: string | null
+  expired: boolean
+  receiptCount: number
+  lastReceiptStatus: string | null
+  lastReceiptAt: string | null
+}
+
+export interface OperationsRelayDevice {
+  hostId: string
+  hostName: string
+  deviceId: string
+  displayName: string
+  scopes: string[]
+  active: boolean
+  approvedAt: string
+  revokedAt: string | null
+  updatedAt: string
+}
+
+export interface OperationsSupportSession {
+  hostId: string
+  hostName: string
+  sessionId: string
+  state: string
+  createdAt: string
+  lastEventAt: string
+  eventCount: number
+  messageCount: number
+}
+
+export interface OperationsOverview {
+  generatedAt: string
+  onlineThresholdSeconds: number
+  summary: {
+    totalHosts: number
+    onlineHosts: number
+    staleHosts: number
+    totalTasks: number
+    pendingTasks: number
+    failedTasks: number
+    deviceTasks: number
+    activeSupportSessions: number
+    signedRelayHosts: number
+    totalRelayDevices: number
+    activeRelayDevices: number
+    revokedRelayDevices: number
+  }
+  hosts: OperationsHost[]
+  relayDevices: OperationsRelayDevice[]
+  recentTasks: OperationsTask[]
+  supportSessions: OperationsSupportSession[]
+}
+
 export interface ScheduledJob {
   id: string
   name: string
@@ -153,11 +402,15 @@ export interface ScheduledJob {
   next_run_at?: string
   updated_at?: string
   latest_run?: JobRun | null
+  run_counts: JobRunCounts
 }
+
+export type ApiKeyStatus = 'active' | 'expired' | 'revoked' | 'invalid_expiry'
 
 export interface ApiKeyItem {
   id: number
   name: string
+  description?: string
   key_prefix: string
   scopes: string
   created_by?: string
@@ -166,6 +419,7 @@ export interface ApiKeyItem {
   last_used_at?: string | null
   revoked_at?: string | null
   is_active: number | boolean
+  status?: ApiKeyStatus
 }
 
 export interface CreateApiKeyPayload {
@@ -179,11 +433,41 @@ export interface ApiKeyFormValues {
   name: string
   description?: string
   scopes: string[]
-  expires_at?: string
+  expires_at?: string | { toISOString: () => string }
 }
 
 export interface CreateApiKeyResult extends ApiKeyItem {
   key: string
+}
+
+export type ApiKeyScopeAccess = 'read' | 'write' | 'service' | 'admin'
+
+export interface ApiKeyScopeDefinition {
+  value: string
+  label: string
+  description: string
+  category: string
+  access: ApiKeyScopeAccess
+}
+
+export interface ApiKeyScopeCatalog {
+  items: ApiKeyScopeDefinition[]
+  default_scopes: string[]
+}
+
+export interface ApiKeyAuditActivityItem {
+  action: string
+  target_type?: string
+  target_id?: string
+  detail?: string
+  created_at?: string
+}
+
+export interface ApiKeyUsage extends ApiKeyItem {
+  audit_activity: {
+    total: number
+    items: ApiKeyAuditActivityItem[]
+  }
 }
 
 export interface AuditLogEntry {
@@ -201,8 +485,58 @@ export interface AuditLogEntry {
 
 export interface AuditLogResponse {
   entries: AuditLogEntry[]
+  total: number
   limit: number
   offset: number
+}
+
+export interface DeploymentRetentionSummary {
+  status?: string
+  keep_records?: number
+  before_count?: number
+  after_count?: number
+  removed_count?: number
+  removed_successful?: number
+  removed_failed?: number
+  removed_bytes?: number
+  preserved_unclassified?: number
+  preserved_invalid?: number
+}
+
+export interface DeploymentHistoryEntry {
+  sequence: number
+  timestamp?: string | null
+  status: string
+  source?: string | null
+  commit?: string | null
+  previous_commit?: string | null
+  backup_name?: string | null
+  frontend_build?: string | null
+  backend_targeted_tests?: string | null
+  health?: string | null
+  ready?: boolean | null
+  runtime_log_verified?: boolean | null
+  old_pid?: number | null
+  new_pid?: number | null
+  failure_reason?: string | null
+  recovery: string[]
+  history_retention?: DeploymentRetentionSummary | null
+  backup_retention?: DeploymentRetentionSummary | null
+  git_bundle_retention?: DeploymentRetentionSummary | null
+}
+
+export interface DeploymentHistoryResponse {
+  entries: DeploymentHistoryEntry[]
+  total: number
+  limit: number
+  offset: number
+  summary: {
+    records: number
+    malformed_records: number
+    retention_limit: number
+    statuses: Record<string, number>
+    sources: Record<string, number>
+  }
 }
 
 export interface ProTableResponse<T> {
@@ -219,7 +553,113 @@ export interface PublishDraftFormValues {
 
 export interface ThemeSettingsFormValues {
   themeMode: ThemeMode
-  density: 'middle' | 'small'
+  density: UiDensity
+}
+
+export type FeedbackStatus = 'new' | 'in_progress' | 'resolved'
+
+export interface FeedbackAttachment {
+  name: string
+  size_bytes: number
+  modified_at: string
+}
+
+export interface FeedbackItem {
+  feedback_id: string
+  status: FeedbackStatus
+  created_at: string
+  updated_at: string | null
+  user_name: string
+  app_version: string
+  message_preview: string
+  attachment_count: number
+  attachment_bytes: number
+  metadata_valid: boolean
+  state_valid: boolean
+}
+
+export interface FeedbackDetail extends FeedbackItem {
+  message: string
+  machine_info: string
+  client_ip: string
+  attachments: FeedbackAttachment[]
+}
+
+export interface FeedbackInboxResponse {
+  items: FeedbackItem[]
+  total: number
+  limit: number
+  offset: number
+  summary: {
+    records: number
+    status_counts: Record<FeedbackStatus, number>
+    attachment_count: number
+    attachment_bytes: number
+    invalid_metadata: number
+    invalid_state: number
+  }
+}
+
+export interface RetentionSettingsValues {
+  app_release_keep_count: number
+  plugin_package_keep_count: number
+  access_analytics_retention_days: number
+  job_run_retention_days: number
+  audit_log_retention_days: number
+  admin_db_backup_keep_count: number
+}
+
+export interface RetentionSettingLimit {
+  minimum: number
+  maximum: number
+}
+
+export interface RetentionSettingsResponse {
+  values: RetentionSettingsValues
+  limits: Record<keyof RetentionSettingsValues, RetentionSettingLimit>
+  restart_required: boolean
+}
+
+export interface RetentionSettingsUpdateResponse extends RetentionSettingsResponse {
+  status: 'updated' | 'unchanged'
+  changed: Array<keyof RetentionSettingsValues>
+}
+
+export interface AccountSettingsValues {
+  public_registration_enabled: boolean
+}
+
+export interface AccountSettingsResponse extends AccountSettingsValues {
+  restart_required: boolean
+}
+
+export interface AccountSettingsUpdateResponse extends AccountSettingsResponse {
+  status: 'updated' | 'unchanged'
+  changed: Array<keyof AccountSettingsValues>
+}
+
+export type UserRole = 'admin' | 'user'
+
+export interface UserAccount {
+  id: number
+  username: string
+  role: UserRole
+  is_active: number | boolean
+  is_current?: boolean
+  created_at?: string
+  updated_at?: string | null
+  last_login_at?: string | null
+}
+
+export interface CreateUserPayload {
+  username: string
+  password: string
+  role: UserRole
+}
+
+export interface UserPasswordResetResult extends UserAccount {
+  sessions_invalidated: boolean
+  current_session_preserved: boolean
 }
 
 export type CopilotVendorType =

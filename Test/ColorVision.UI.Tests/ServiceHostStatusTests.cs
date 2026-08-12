@@ -16,6 +16,29 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void SameVersionDifferentPackageCanSelfUpdateWithoutElevation()
+        {
+            ServiceHostStatus status = new()
+            {
+                State = ServiceHostInstallState.Running,
+                PackageExecutablePath = Environment.ProcessPath ?? typeof(ServiceHostStatusTests).Assembly.Location,
+                InstalledExecutablePath = InstalledPath,
+                PackageVersion = new Version(1, 4, 12, 37),
+                InstalledVersion = new Version(1, 4, 12, 37),
+                RunningVersion = new Version(1, 4, 12, 37),
+                RunningProcessPath = InstalledPath,
+                PackageSha256 = new string('a', 64),
+                InstalledSha256 = new string('b', 64),
+            };
+
+            Assert.True(status.HasPackageContentMismatch);
+            Assert.True(status.NeedsUpdate);
+            Assert.False(status.HasCurrentOrNewerInstalledVersion);
+            Assert.True(status.CanSelfUpdate);
+            Assert.Equal(ServiceHostStartupAction.SelfUpdate, ServiceHostStartupUpdateChecker.ResolveAction(status));
+        }
+
+        [Fact]
         public void UnknownRunningVersionCannotSelfUpdate()
         {
             ServiceHostStatus status = CreateStatus(null);
@@ -192,6 +215,8 @@ namespace ColorVision.UI.Tests
                 InstalledVersion = source.InstalledVersion,
                 RunningVersion = runningVersion,
                 RunningProcessPath = runningProcessPath,
+                PackageSha256 = source.PackageSha256,
+                InstalledSha256 = source.InstalledSha256,
             };
         }
     }

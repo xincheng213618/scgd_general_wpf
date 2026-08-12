@@ -141,6 +141,9 @@ namespace ColorVision.Engine.FlowProcessing
 
         public bool IsRunActive => _runLifecycle.IsActive;
 
+        public bool IsCurrentBatchActive =>
+            _runLifecycle.IsActiveRun(CurrentBatch?.Code);
+
         public int? RequestedTemplateId =>
             _templateWorkspace.RequestedTemplateId;
 
@@ -272,6 +275,10 @@ namespace ColorVision.Engine.FlowProcessing
                         completedFlowName,
                         _stopwatch.ElapsedMilliseconds),
                     journalScope);
+            FlowRuntimeActivityRegistry.UpdateFinalOutcome(
+                flowControlData.SerialNumber,
+                FlowRunFinalizer.ResolveRecordedStatus(finalizedData.FinalOutcome),
+                _stopwatch.ElapsedMilliseconds);
             PublishRunFinalized(finalizedData);
             return finalizedData;
         }

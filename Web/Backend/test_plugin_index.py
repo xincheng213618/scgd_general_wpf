@@ -8,6 +8,7 @@ import os
 import tempfile
 import unittest
 import zipfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -189,7 +190,8 @@ class PluginIndexTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         items = response.get_json()["items"]
-        self.assertTrue(any(item["pluginId"] == "IndexPlugin" for item in items))
+        indexed = next(item for item in items if item["pluginId"] == "IndexPlugin")
+        self.assertEqual(indexed["latestVersion"], "1.0.0")
 
     def test_api_plugins_falls_back_to_disk_scan_when_index_empty(self):
         self._create_plugin("FallbackPlugin", "1.0.0")
@@ -243,6 +245,27 @@ class PluginIndexTests(unittest.TestCase):
         self.assertIn("currentPackageCount", payload)
         self.assertIn("historicalPackageCount", payload)
         self.assertIn("iconUrl", payload)
+
+    def test_detail_api_sorts_indexed_package_versions_numerically(self):
+        plugin_id = "NumericVersionPlugin"
+        self._create_plugin(plugin_id, "1.1.7.81")
+        history_dir = self.storage / "History" / "Plugins" / plugin_id
+        history_dir.mkdir(parents=True)
+        for version in ("1.1.7.80", "1.1.7.8", "1.1.7.79"):
+            (history_dir / f"{plugin_id}-{version}.cvxp").write_bytes(
+                version.encode("ascii")
+            )
+
+        from services.plugin_index import refresh_all_plugin_index
+        refresh_all_plugin_index(self.cache, self.storage)
+
+        response = self.client.get(f"/api/plugins/{plugin_id}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [item["version"] for item in response.get_json()["archivedVersions"]],
+            ["1.1.7.80", "1.1.7.79", "1.1.7.8"],
+        )
 
     # -------------------------------------------------------------------
     # Issue 2: fileHash present in detail after index refresh
@@ -972,6 +995,68 @@ class PluginIndexTests(unittest.TestCase):
         self.assertGreaterEqual(len(keys), 1)
         for key in keys:
             self.assertNotIn("key_hash", key)
+            self.assertIn(key["status"], {"active", "expired", "revoked", "invalid_expiry"})
+
+    def test_api_key_expiry_is_normalized_and_must_be_future(self):
+        from services.api_key_service import create_api_key
+
+        current = datetime(2030, 1, 1, tzinfo=timezone.utc)
+        with patch("services.api_key_service._utc_now", return_value=current):
+            created = create_api_key(
+                self.cache,
+                name="Normalized Expiry",
+                expires_at="2030-01-02T03:04:05+08:00",
+            )
+            self.assertEqual(created["expires_at"], "2030-01-01T19:04:05+00:00")
+
+            with self.assertRaisesRegex(ValueError, "must be in the future"):
+                create_api_key(
+                    self.cache,
+                    name="Past Expiry",
+                    expires_at="2029-12-31T23:59:59Z",
+                )
+            with self.assertRaisesRegex(ValueError, "valid ISO 8601"):
+                create_api_key(
+                    self.cache,
+                    name="Invalid Expiry",
+                    expires_at="not-a-timestamp",
+                )
+
+    def test_legacy_invalid_and_expired_api_key_values_fail_closed(self):
+        from services.api_key_service import create_api_key, list_api_keys, verify_api_key
+
+        key_data = create_api_key(
+            self.cache,
+            name="Legacy Expiry",
+            scopes="stats:read",
+        )
+        db = self.cache.get_db()
+        try:
+            db.execute(
+                "UPDATE api_keys SET expires_at = ? WHERE id = ?",
+                ("not-a-timestamp", key_data["id"]),
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        self.assertIsNone(verify_api_key(self.cache, key_data["key"]))
+        invalid = next(item for item in list_api_keys(self.cache) if item["id"] == key_data["id"])
+        self.assertEqual(invalid["status"], "invalid_expiry")
+
+        db = self.cache.get_db()
+        try:
+            db.execute(
+                "UPDATE api_keys SET expires_at = ? WHERE id = ?",
+                ("2000-01-01T00:00:00+00:00", key_data["id"]),
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        self.assertIsNone(verify_api_key(self.cache, key_data["key"]))
+        expired = next(item for item in list_api_keys(self.cache) if item["id"] == key_data["id"])
+        self.assertEqual(expired["status"], "expired")
 
     def test_revoke_api_key(self):
         create_resp = self.client.post(
@@ -1185,6 +1270,115 @@ class PluginIndexTests(unittest.TestCase):
         )
         usage = response.get_json()
         self.assertIsNotNone(usage.get("last_used_at"))
+
+    def test_api_key_last_used_writes_are_coalesced_per_minute(self):
+        from services.api_key_service import (
+            create_api_key,
+            get_api_key_usage,
+            verify_api_key,
+        )
+
+        key_data = create_api_key(
+            self.cache,
+            name="Coalesced Usage Key",
+            scopes="stats:read",
+        )
+        statements: list[str] = []
+        original_get_db = self.cache.get_db
+
+        def traced_get_db():
+            db = original_get_db()
+            db.set_trace_callback(statements.append)
+            return db
+
+        started = datetime(2030, 1, 1, tzinfo=timezone.utc)
+        with patch.object(self.cache, "get_db", side_effect=traced_get_db):
+            with patch("services.api_key_service._utc_now", return_value=started):
+                for _ in range(20):
+                    self.assertIsNotNone(verify_api_key(self.cache, key_data["key"]))
+            first_used = get_api_key_usage(self.cache, key_data["id"])["last_used_at"]
+
+            with patch(
+                "services.api_key_service._utc_now",
+                return_value=started + timedelta(seconds=59),
+            ):
+                self.assertIsNotNone(verify_api_key(self.cache, key_data["key"]))
+            self.assertEqual(
+                get_api_key_usage(self.cache, key_data["id"])["last_used_at"],
+                first_used,
+            )
+
+            with patch(
+                "services.api_key_service._utc_now",
+                return_value=started + timedelta(seconds=60),
+            ):
+                self.assertIsNotNone(verify_api_key(self.cache, key_data["key"]))
+            refreshed_used = get_api_key_usage(self.cache, key_data["id"])["last_used_at"]
+
+        updates = [
+            statement for statement in statements
+            if "UPDATE API_KEYS SET LAST_USED_AT" in " ".join(statement.upper().split())
+        ]
+        self.assertEqual(len(updates), 2)
+        self.assertNotEqual(refreshed_used, first_used)
+
+    def test_api_key_usage_write_failure_does_not_reject_verified_key(self):
+        from services.api_key_service import create_api_key, verify_api_key
+
+        key_data = create_api_key(
+            self.cache,
+            name="Usage Telemetry Failure Key",
+            scopes="stats:read",
+        )
+
+        with patch(
+            "services.api_key_service._refresh_last_used_at",
+            side_effect=RuntimeError("database busy"),
+        ), patch("builtins.print"):
+            verified = verify_api_key(self.cache, key_data["key"])
+
+        self.assertIsNotNone(verified)
+        self.assertEqual(verified["id"], key_data["id"])
+
+    def test_api_key_last_used_compare_and_set_rejects_stale_duplicate_refresh(self):
+        from services.api_key_service import (
+            _refresh_last_used_at,
+            create_api_key,
+            get_api_key_usage,
+        )
+
+        key_data = create_api_key(
+            self.cache,
+            name="Concurrent Usage Key",
+            scopes="stats:read",
+        )
+        first_db = self.cache.get_db()
+        second_db = self.cache.get_db()
+        try:
+            first_row = first_db.execute(
+                "SELECT * FROM api_keys WHERE id = ?", (key_data["id"],)
+            ).fetchone()
+            stale_second_row = second_db.execute(
+                "SELECT * FROM api_keys WHERE id = ?", (key_data["id"],)
+            ).fetchone()
+            started = datetime(2030, 1, 1, tzinfo=timezone.utc)
+
+            first_result = _refresh_last_used_at(first_db, first_row, started)
+            stale_result = _refresh_last_used_at(
+                second_db,
+                stale_second_row,
+                started + timedelta(seconds=1),
+            )
+        finally:
+            first_db.close()
+            second_db.close()
+
+        self.assertEqual(first_result, started.isoformat())
+        self.assertIsNone(stale_result)
+        self.assertEqual(
+            get_api_key_usage(self.cache, key_data["id"])["last_used_at"],
+            started.isoformat(),
+        )
 
 
 if __name__ == "__main__":

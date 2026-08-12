@@ -113,9 +113,21 @@ namespace Spectrum
             SetOperationButtonsEnabled(false);
             try
             {
+                (string Path, string Sha256)? magnitudeSnapshot = null;
+                try
+                {
+                    magnitudeSnapshot = CaptureMagnitudeFileSnapshot();
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("无法记录本次测量使用的幅值 DAT，结果不会用于光谱修正。", ex);
+                }
+
                 SpectrumMeasurementResult result = await Manager.MeasureAsync();
                 if (!result.IsSuccess)
                     ShowMeasurementFailure(result);
+                else
+                    TrackCorrectionMeasurementResult(result, magnitudeSnapshot);
             }
             finally
             {
@@ -225,11 +237,25 @@ namespace Spectrum
             while (Manager.MeasurementNum <= 0 || completedCount < Manager.MeasurementNum)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                (string Path, string Sha256)? magnitudeSnapshot = null;
+                try
+                {
+                    magnitudeSnapshot = CaptureMagnitudeFileSnapshot();
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("无法记录本次连续测量使用的幅值 DAT，结果不会用于光谱修正。", ex);
+                }
+
                 SpectrumMeasurementResult result = await Manager.MeasureAsync(cancellationToken);
                 if (!result.IsSuccess)
                 {
                     continuousFailureCount++;
                     log.Warn($"连续测量失败: {result.ErrorMessage}");
+                }
+                else
+                {
+                    TrackCorrectionMeasurementResult(result, magnitudeSnapshot);
                 }
 
                 completedCount++;

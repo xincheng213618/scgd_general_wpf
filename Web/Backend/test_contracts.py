@@ -179,6 +179,66 @@ class PublicPageContracts(ContractTestBase):
         resp = self.client.get("/api/site/browse/nonexistent")
         self.assertEqual(resp.status_code, 404)
 
+    def test_public_browse_hides_operational_storage_but_admin_can_access_it(self):
+        self.create_release("1.0.0.1")
+        (self.storage / "History").mkdir()
+        (self.storage / "Update").mkdir()
+        (self.storage / "Tool").mkdir()
+        for directory in ("Feedback", "Logs", "web-deploy-backups", "web-deploy-bundles"):
+            target = self.storage / directory
+            target.mkdir()
+            (target / "private.txt").write_text("private", encoding="utf-8")
+        (self.storage / "web-9998.log").write_text("runtime", encoding="utf-8")
+
+        public_response = self.client.get("/api/site/browse")
+        self.assertEqual(public_response.status_code, 200)
+        public_names = {item["name"] for item in public_response.get_json()["items"]}
+        self.assertIn("History", public_names)
+        self.assertIn("Plugins", public_names)
+        self.assertIn("Update", public_names)
+        self.assertIn("Tool", public_names)
+        self.assertIn("ColorVision-1.0.0.1.exe", public_names)
+        self.assertNotIn("Feedback", public_names)
+        self.assertNotIn("Logs", public_names)
+        self.assertNotIn("web-deploy-backups", public_names)
+        self.assertNotIn("web-deploy-bundles", public_names)
+        self.assertNotIn("web-9998.log", public_names)
+        self.assertEqual(public_response.get_json()["total_count"], len(public_names))
+
+        self.assertEqual(self.client.get("/api/site/browse/Logs").status_code, 404)
+        self.assertEqual(self.client.get("/download/Logs/private.txt").status_code, 404)
+
+        admin_response = self.client.get("/api/site/browse/Logs", headers=self.basic_auth())
+        self.assertEqual(admin_response.status_code, 200)
+        self.assertEqual(admin_response.get_json()["items"][0]["name"], "private.txt")
+        with self.client.get("/download/Logs/private.txt", headers=self.basic_auth()) as download:
+            self.assertEqual(download.status_code, 200)
+            self.assertEqual(download.get_data(), b"private")
+
+        login_response = self.client.post(
+            "/api/auth/login",
+            json={"username": "admin", "password": "secret"},
+        )
+        self.assertEqual(login_response.status_code, 200)
+        self.assertEqual(self.client.get("/api/site/browse/Logs").status_code, 200)
+
+    def test_legacy_storage_route_only_exposes_public_artifacts(self):
+        release = self.create_release("1.0.0.1")
+        logs = self.storage / "Logs"
+        logs.mkdir()
+        (logs / "private.txt").write_text("private", encoding="utf-8")
+
+        with self.client.get(f"/D%3A/ColorVision/{release.name}") as public_download:
+            self.assertEqual(public_download.status_code, 200)
+            self.assertEqual(public_download.get_data(), b"release")
+        with self.client.get("/D%3A/ColorVision/Logs/private.txt") as private_download:
+            self.assertEqual(private_download.status_code, 404)
+        with self.client.get(
+            "/D%3A/ColorVision/Logs/private.txt",
+            headers=self.basic_auth(),
+        ) as legacy_admin_download:
+            self.assertEqual(legacy_admin_download.status_code, 404)
+
     def test_plugin_detail_page_returns_200(self):
         self.create_plugin("MyPlugin", "2.0.0")
         resp = self.client.get("/plugins/MyPlugin")
@@ -534,11 +594,95 @@ class AuthContracts(ContractTestBase):
         with self.client.get("/login") as resp:
             self.assertEqual(resp.status_code, 200)
 
+    def test_login_head_is_read_only_and_matches_get_status(self):
+        before = len(marketplace_app._cache.get_audit_log(action="login_failed"))
+
+        with self.client.head("/login") as response:
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.get_data(), b"")
+        self.assertEqual(len(marketplace_app._cache.get_audit_log(action="login_failed")), before)
+
+    def test_global_security_headers_cover_spa_api_and_errors(self):
+        for path in ("/", "/api/health", "/api/not-found"):
+            with self.subTest(path=path):
+                with self.client.get(path) as response:
+                    self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+                    self.assertEqual(response.headers["X-Frame-Options"], "SAMEORIGIN")
+                    self.assertEqual(response.headers["Referrer-Policy"], "same-origin")
+                    self.assertIn("frame-ancestors 'self'", response.headers["Content-Security-Policy"])
+
+    def test_session_csrf_token_rotates_across_authentication_boundaries(self):
+        anonymous = self.client.get("/api/auth/session").get_json()
+        self.assertFalse(anonymous["authenticated"])
+        self.assertGreaterEqual(len(anonymous["csrf_token"]), 32)
+
+        login_response = self.client.post(
+            "/api/auth/login",
+            headers={
+                "Origin": "http://localhost",
+                "Sec-Fetch-Site": "same-origin",
+                "X-CSRF-Token": anonymous["csrf_token"],
+            },
+            json={"username": "admin", "password": "secret"},
+        )
+        self.assertEqual(login_response.status_code, 200)
+        authenticated = login_response.get_json()
+        self.assertNotEqual(authenticated["csrf_token"], anonymous["csrf_token"])
+
+        missing_token = self.client.post(
+            "/api/auth/logout",
+            headers={"Origin": "http://localhost", "Sec-Fetch-Site": "same-origin"},
+        )
+        self.assertEqual(missing_token.status_code, 403)
+        self.assertTrue(self.client.get("/api/auth/session").get_json()["authenticated"])
+
+        logout_response = self.client.post(
+            "/api/auth/logout",
+            headers={
+                "Origin": "http://localhost",
+                "Sec-Fetch-Site": "same-origin",
+                "X-CSRF-Token": authenticated["csrf_token"],
+            },
+        )
+        self.assertEqual(logout_response.status_code, 200)
+        logged_out = logout_response.get_json()
+        self.assertFalse(logged_out["authenticated"])
+        self.assertNotEqual(logged_out["csrf_token"], authenticated["csrf_token"])
+
+    def test_cross_origin_auth_write_is_rejected_before_login(self):
+        before = len(marketplace_app._cache.get_audit_log(action="login_failed"))
+        response = self.client.post(
+            "/api/auth/login",
+            headers={"Origin": "https://evil.example", "Sec-Fetch-Site": "cross-site"},
+            json={"username": "admin", "password": "secret"},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(len(marketplace_app._cache.get_audit_log(action="login_failed")), before)
+
+    def test_same_origin_session_admin_write_requires_csrf_token(self):
+        login = self.client.post("/api/auth/login", json={
+            "username": "admin", "password": "secret",
+        }).get_json()
+        browser_headers = {"Origin": "http://localhost", "Sec-Fetch-Site": "same-origin"}
+
+        rejected = self.client.post("/api/admin/cache/cleanup", headers=browser_headers)
+        accepted = self.client.post(
+            "/api/admin/cache/cleanup",
+            headers={**browser_headers, "X-CSRF-Token": login["csrf_token"]},
+        )
+
+        self.assertEqual(rejected.status_code, 403)
+        self.assertEqual(accepted.status_code, 200)
+
     def test_login_success_redirects(self):
         resp = self.client.post("/login", data={
             "username": "admin", "password": "secret",
         }, follow_redirects=False)
         self.assertIn(resp.status_code, [302, 303])
+        session_cookie = resp.headers["Set-Cookie"]
+        self.assertIn("HttpOnly", session_cookie)
+        self.assertIn("SameSite=Lax", session_cookie)
 
     def test_login_failure_returns_401_json_error(self):
         resp = self.client.post("/api/auth/login", json={
@@ -548,6 +692,7 @@ class AuthContracts(ContractTestBase):
         self.assertEqual(resp.get_json()["error"], "用户名或密码错误")
 
     def test_register_user_creates_non_admin_session(self):
+        marketplace_app.CONFIG["public_registration_enabled"] = True
         resp = self.client.post("/api/auth/register", json={
             "username": "worker",
             "password": "secret1",
@@ -557,13 +702,42 @@ class AuthContracts(ContractTestBase):
         self.assertTrue(data["authenticated"])
         self.assertFalse(data["is_admin"])
         self.assertEqual(data["role"], "user")
+        self.assertTrue(data["public_registration_enabled"])
 
         admin_resp = self.client.get("/api/admin/cache/status")
         self.assertEqual(admin_resp.status_code, 401)
 
-    def test_logout_redirects(self):
-        resp = self.client.get("/logout", follow_redirects=False)
-        self.assertIn(resp.status_code, [302, 303])
+    def test_public_registration_is_disabled_by_default_and_exposed_in_session(self):
+        session_response = self.client.get("/api/auth/session")
+        self.assertEqual(session_response.status_code, 200)
+        self.assertFalse(session_response.get_json()["public_registration_enabled"])
+
+        register_page = self.client.get("/register", follow_redirects=False)
+        self.assertEqual(register_page.status_code, 302)
+        self.assertTrue(register_page.headers["Location"].endswith("/login?mode=register"))
+
+        registration = self.client.post("/api/auth/register", json={
+            "username": "blocked-user", "password": "secret1",
+        })
+        self.assertEqual(registration.status_code, 403)
+        self.assertIn("公开注册已关闭", registration.get_json()["error"])
+        self.assertEqual(
+            len(marketplace_app._cache.get_audit_log(action="user_register")),
+            0,
+        )
+
+    def test_logout_get_is_read_only_and_post_clears_session(self):
+        self.client.post("/api/auth/login", json={
+            "username": "admin", "password": "secret",
+        })
+
+        get_response = self.client.get("/logout", follow_redirects=False)
+        self.assertIn(get_response.status_code, [302, 303])
+        self.assertTrue(self.client.get("/api/auth/session").get_json()["authenticated"])
+
+        post_response = self.client.post("/logout", follow_redirects=False)
+        self.assertIn(post_response.status_code, [302, 303])
+        self.assertFalse(self.client.get("/api/auth/session").get_json()["authenticated"])
 
     def test_admin_no_auth_returns_401(self):
         resp = self.client.get("/api/admin/cache/status")
@@ -612,6 +786,26 @@ class AuthContracts(ContractTestBase):
         )
         self.assertEqual(resp.status_code, 403)
 
+    def test_jobs_read_scope_can_read_history_but_cannot_run_jobs(self):
+        from services.scheduler import ensure_default_jobs
+        ensure_default_jobs(marketplace_app._cache)
+        key = self.create_admin_key("jobs:read")
+        headers = {"Authorization": f"Bearer {key['key']}"}
+
+        self.assertEqual(self.client.get("/api/admin/jobs", headers=headers).status_code, 200)
+        self.assertEqual(
+            self.client.get(
+                "/api/admin/jobs/cache_cleanup/runs", headers=headers
+            ).status_code,
+            200,
+        )
+        self.assertEqual(
+            self.client.post(
+                "/api/admin/jobs/cache_cleanup/run", headers=headers
+            ).status_code,
+            403,
+        )
+
 
 # ===================================================================
 # Admin API Contracts
@@ -620,12 +814,483 @@ class AuthContracts(ContractTestBase):
 class AdminApiContracts(ContractTestBase):
     """Contract tests for admin API endpoints."""
 
+    def _create_feedback(self, feedback_id="20260812_120000_contract"):
+        directory = self.storage / "Feedback" / feedback_id
+        directory.mkdir(parents=True)
+        (directory / "feedback.json").write_text(json.dumps({
+            "feedbackId": feedback_id,
+            "message": "contract feedback",
+            "userName": "tester",
+            "appVersion": "1.2.3.4",
+            "machineInfo": "contract host",
+            "clientIp": "hashed-client",
+            "createdAt": "2026-08-12T12:00:00+00:00",
+            "files": ["report.zip"],
+        }), encoding="utf-8")
+        (directory / "report.zip").write_bytes(b"diagnostic")
+        return directory
+
+    def test_feedback_inbox_detail_download_and_status_lifecycle(self):
+        directory = self._create_feedback()
+        headers = self.basic_auth()
+
+        listing = self.client.get("/api/admin/feedback", headers=headers)
+        self.assertEqual(listing.status_code, 200)
+        data = listing.get_json()
+        self.assertEqual(data["total"], 1)
+        self.assertEqual(data["summary"]["status_counts"]["new"], 1)
+        self.assertNotIn("machine_info", data["items"][0])
+
+        detail = self.client.get(
+            f"/api/admin/feedback/{directory.name}", headers=headers,
+        )
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.get_json()["message"], "contract feedback")
+
+        with self.client.get(
+            f"/api/admin/feedback/{directory.name}/attachments/report.zip",
+            headers=headers,
+        ) as download:
+            self.assertEqual(download.status_code, 200)
+            self.assertEqual(download.get_data(), b"diagnostic")
+            self.assertIn("attachment", download.headers["Content-Disposition"])
+
+        updated = self.client.put(
+            f"/api/admin/feedback/{directory.name}/status",
+            headers=headers,
+            json={"status": "resolved"},
+        )
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.get_json()["status"], "resolved")
+        self.assertEqual(
+            self.client.get(
+                "/api/admin/feedback?status=resolved", headers=headers,
+            ).get_json()["total"],
+            1,
+        )
+        audits = marketplace_app._cache.get_audit_log()
+        actions = {item["action"] for item in audits}
+        self.assertIn("feedback_attachment_download", actions)
+        self.assertIn("feedback_status_update", actions)
+
+    def test_feedback_inbox_requires_admin_and_rejects_unsafe_paths(self):
+        directory = self._create_feedback()
+        self.assertEqual(self.client.get("/api/admin/feedback").status_code, 401)
+
+        key = self.create_admin_key("stats:read")
+        limited = {"Authorization": f"Bearer {key['key']}"}
+        self.assertEqual(
+            self.client.get("/api/admin/feedback", headers=limited).status_code,
+            403,
+        )
+        headers = self.basic_auth()
+        self.assertEqual(
+            self.client.get("/api/admin/feedback?status=closed", headers=headers).status_code,
+            400,
+        )
+        self.assertEqual(
+            self.client.get(
+                f"/api/admin/feedback/{directory.name}/attachments/feedback.json",
+                headers=headers,
+            ).status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.put(
+                f"/api/admin/feedback/{directory.name}/status",
+                headers=headers,
+                json={"status": "closed"},
+            ).status_code,
+            400,
+        )
+
     def test_cache_status_returns_db_info(self):
         resp = self.client.get("/api/admin/cache/status", headers=self.basic_auth())
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
         self.assertIn("db_path", data)
         self.assertIn("cache_entry_count", data)
+
+    def test_retention_settings_get_exposes_only_safe_effective_values(self):
+        from services.operational_settings import OPERATIONAL_RETENTION_SETTINGS
+
+        response = self.client.get(
+            "/api/admin/settings/retention",
+            headers=self.basic_auth(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(set(data["values"]), set(OPERATIONAL_RETENTION_SETTINGS))
+        self.assertEqual(set(data["limits"]), set(OPERATIONAL_RETENTION_SETTINGS))
+        self.assertFalse(data["restart_required"])
+        serialized = json.dumps(data)
+        for forbidden in ("secret", "password", "storage_path", "upload_auth", "copilot_sync"):
+            self.assertNotIn(forbidden, serialized)
+
+    def test_retention_settings_put_preserves_secrets_and_updates_live_config(self):
+        from services.operational_settings import OPERATIONAL_RETENTION_SETTINGS
+
+        config_path = self.root / "config.json"
+        config_path.write_text(json.dumps({
+            "secret_key": "preserved-secret",
+            "storage_path": str(self.storage),
+            "upload_auth": {"username": "admin", "password": "preserved-password"},
+            "copilot_sync": {"version_keys": ["stable"]},
+            "unrelated": {"enabled": True},
+        }), encoding="utf-8")
+        values = {
+            name: spec.default for name, spec in OPERATIONAL_RETENTION_SETTINGS.items()
+        }
+        values["job_run_retention_days"] = 45
+
+        response = self.client.put(
+            "/api/admin/settings/retention",
+            headers=self.basic_auth(),
+            json={"values": values},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data["status"], "updated")
+        self.assertEqual(data["changed"], ["job_run_retention_days"])
+        self.assertEqual(marketplace_app.CONFIG["job_run_retention_days"], 45)
+        persisted = json.loads(config_path.read_text(encoding="utf-8"))
+        self.assertEqual(persisted["secret_key"], "preserved-secret")
+        self.assertEqual(persisted["upload_auth"]["password"], "preserved-password")
+        self.assertEqual(persisted["copilot_sync"], {"version_keys": ["stable"]})
+        self.assertEqual(persisted["unrelated"], {"enabled": True})
+        audit = self.client.get(
+            "/api/admin/audit-log?action=retention_settings_update",
+            headers=self.basic_auth(),
+        ).get_json()
+        self.assertEqual(audit["total"], 1)
+        self.assertNotIn("secret", audit["entries"][0]["detail"])
+
+    def test_retention_settings_put_rejects_unknown_or_incomplete_values(self):
+        from services.operational_settings import OPERATIONAL_RETENTION_SETTINGS
+
+        values = {
+            name: spec.default for name, spec in OPERATIONAL_RETENTION_SETTINGS.items()
+        }
+        for payload in (
+            {"values": {**values, "secret_key": 1}},
+            {"values": {k: v for k, v in values.items() if k != "job_run_retention_days"}},
+            {"values": {**values, "audit_log_retention_days": False}},
+        ):
+            with self.subTest(payload=payload):
+                response = self.client.put(
+                    "/api/admin/settings/retention",
+                    headers=self.basic_auth(),
+                    json=payload,
+                )
+                self.assertEqual(response.status_code, 400)
+        self.assertFalse((self.root / "config.json").exists())
+
+    def test_retention_settings_require_full_admin_scope(self):
+        key = self.create_admin_key("stats:read")
+        headers = {"Authorization": f"Bearer {key['key']}"}
+
+        self.assertEqual(
+            self.client.get("/api/admin/settings/retention", headers=headers).status_code,
+            403,
+        )
+        self.assertEqual(
+            self.client.put(
+                "/api/admin/settings/retention",
+                headers=headers,
+                json={"values": {}},
+            ).status_code,
+            403,
+        )
+
+    def test_account_settings_control_public_registration_live(self):
+        config_path = self.root / "config.json"
+        config_path.write_text(json.dumps({
+            "secret_key": "preserved-secret",
+            "storage_path": str(self.storage),
+            "upload_auth": {"username": "admin", "password": "preserved-password"},
+            "unrelated": {"enabled": True},
+        }), encoding="utf-8")
+
+        initial = self.client.get(
+            "/api/admin/settings/accounts",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(initial.status_code, 200)
+        self.assertFalse(initial.get_json()["public_registration_enabled"])
+
+        enabled = self.client.put(
+            "/api/admin/settings/accounts",
+            headers=self.basic_auth(),
+            json={"public_registration_enabled": True},
+        )
+        self.assertEqual(enabled.status_code, 200)
+        self.assertEqual(enabled.get_json()["status"], "updated")
+        self.assertTrue(enabled.get_json()["public_registration_enabled"])
+        self.assertFalse(enabled.get_json()["restart_required"])
+        self.assertTrue(
+            self.client.get("/api/auth/session").get_json()["public_registration_enabled"]
+        )
+
+        registration = self.client.post("/api/auth/register", json={
+            "username": "policy-user", "password": "secret1",
+        })
+        self.assertEqual(registration.status_code, 201)
+
+        disabled = self.client.put(
+            "/api/admin/settings/accounts",
+            headers=self.basic_auth(),
+            json={"public_registration_enabled": False},
+        )
+        self.assertEqual(disabled.status_code, 200)
+        self.assertFalse(disabled.get_json()["public_registration_enabled"])
+        self.assertEqual(self.client.post("/api/auth/register", json={
+            "username": "blocked-again", "password": "secret1",
+        }).status_code, 403)
+
+        persisted = json.loads(config_path.read_text(encoding="utf-8"))
+        self.assertEqual(persisted["secret_key"], "preserved-secret")
+        self.assertEqual(persisted["upload_auth"]["password"], "preserved-password")
+        self.assertEqual(persisted["unrelated"], {"enabled": True})
+        self.assertFalse(persisted["public_registration_enabled"])
+        audits = marketplace_app._cache.get_audit_log(action="account_settings_update")
+        self.assertEqual(len(audits), 2)
+        self.assertNotIn("password", json.dumps(audits))
+
+    def test_account_settings_reject_invalid_payload_and_limited_keys(self):
+        invalid = self.client.put(
+            "/api/admin/settings/accounts",
+            headers=self.basic_auth(),
+            json={"public_registration_enabled": "true"},
+        )
+        self.assertEqual(invalid.status_code, 400)
+
+        key = self.create_admin_key("stats:read")
+        headers = {"Authorization": f"Bearer {key['key']}"}
+        self.assertEqual(
+            self.client.get("/api/admin/settings/accounts", headers=headers).status_code,
+            403,
+        )
+        self.assertEqual(
+            self.client.put(
+                "/api/admin/settings/accounts",
+                headers=headers,
+                json={"public_registration_enabled": True},
+            ).status_code,
+            403,
+        )
+
+    def test_user_accounts_can_be_listed_disabled_and_reenabled(self):
+        from services.auth_service import create_user
+
+        user, error = create_user(marketplace_app._cache, "worker", "secret1")
+        self.assertIsNone(error)
+        self.assertIsNotNone(user)
+        worker_client = marketplace_app.app.test_client()
+
+        users_response = self.client.get("/api/admin/users", headers=self.basic_auth())
+        self.assertEqual(users_response.status_code, 200)
+        listed = next(item for item in users_response.get_json() if item["id"] == user["id"])
+        self.assertNotIn("password_hash", listed)
+        self.assertTrue(listed["is_active"])
+
+        login_response = worker_client.post("/api/auth/login", json={
+            "username": "worker", "password": "secret1",
+        })
+        self.assertEqual(login_response.status_code, 200)
+
+        disabled = self.client.post(
+            f"/api/admin/users/{user['id']}/disable",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(disabled.status_code, 200)
+        self.assertFalse(disabled.get_json()["is_active"])
+
+        # Re-enabling the account before its old cookie is used must not revive
+        # that cookie. Status changes version authentication state.
+        enabled = self.client.post(
+            f"/api/admin/users/{user['id']}/enable",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(enabled.status_code, 200)
+        self.assertTrue(enabled.get_json()["is_active"])
+        self.assertFalse(worker_client.get("/api/auth/session").get_json()["authenticated"])
+        self.assertEqual(
+            worker_client.post("/api/auth/login", json={
+                "username": "worker", "password": "secret1",
+            }).status_code,
+            200,
+        )
+
+        actions = {entry["action"] for entry in marketplace_app._cache.get_audit_log(target=str(user["id"]))}
+        self.assertIn("user_disable", actions)
+        self.assertIn("user_enable", actions)
+
+    def test_admin_can_create_promote_and_reset_an_account(self):
+        created_response = self.client.post(
+            "/api/admin/users",
+            headers=self.basic_auth(),
+            json={"username": "managed", "password": "secret1", "role": "user"},
+        )
+        self.assertEqual(created_response.status_code, 201)
+        created = created_response.get_json()
+        self.assertEqual(created["role"], "user")
+        self.assertNotIn("password_hash", created)
+        self.assertNotIn("auth_version", created)
+
+        managed_client = marketplace_app.app.test_client()
+        login = managed_client.post("/api/auth/login", json={
+            "username": "managed", "password": "secret1",
+        })
+        self.assertEqual(login.status_code, 200)
+        self.assertFalse(login.get_json()["is_admin"])
+
+        promoted_response = self.client.put(
+            f"/api/admin/users/{created['id']}/role",
+            headers=self.basic_auth(),
+            json={"role": "admin"},
+        )
+        self.assertEqual(promoted_response.status_code, 200)
+        self.assertEqual(promoted_response.get_json()["role"], "admin")
+        self.assertFalse(managed_client.get("/api/auth/session").get_json()["authenticated"])
+
+        promoted_login = managed_client.post("/api/auth/login", json={
+            "username": "managed", "password": "secret1",
+        })
+        self.assertEqual(promoted_login.status_code, 200)
+        self.assertTrue(promoted_login.get_json()["is_admin"])
+
+        reset_response = self.client.post(
+            f"/api/admin/users/{created['id']}/password",
+            headers=self.basic_auth(),
+            json={"password": "secret2"},
+        )
+        self.assertEqual(reset_response.status_code, 200)
+        reset = reset_response.get_json()
+        self.assertTrue(reset["sessions_invalidated"])
+        self.assertFalse(reset["current_session_preserved"])
+        self.assertNotIn("auth_version", reset)
+        self.assertFalse(managed_client.get("/api/auth/session").get_json()["authenticated"])
+        self.assertEqual(managed_client.post("/api/auth/login", json={
+            "username": "managed", "password": "secret1",
+        }).status_code, 401)
+        self.assertEqual(managed_client.post("/api/auth/login", json={
+            "username": "managed", "password": "secret2",
+        }).status_code, 200)
+
+        audit = marketplace_app._cache.get_audit_log(target=str(created["id"]))
+        actions = {entry["action"] for entry in audit}
+        self.assertTrue({"user_create", "user_role_update", "user_password_reset"} <= actions)
+        serialized_audit = json.dumps(audit)
+        self.assertNotIn("secret1", serialized_audit)
+        self.assertNotIn("secret2", serialized_audit)
+
+    def test_current_admin_password_reset_preserves_only_current_session(self):
+        from services.auth_service import create_user
+
+        current, error = create_user(
+            marketplace_app._cache, "sessionadmin", "secret1", role="admin"
+        )
+        self.assertIsNone(error)
+        self.assertIsNotNone(current)
+        other, error = create_user(
+            marketplace_app._cache, "backupadmin", "secret2", role="admin"
+        )
+        self.assertIsNone(error)
+        self.assertIsNotNone(other)
+
+        current_client = marketplace_app.app.test_client()
+        login = current_client.post("/api/auth/login", json={
+            "username": "sessionadmin", "password": "secret1",
+        }).get_json()
+        old_session = marketplace_app.app.test_client()
+        self.assertEqual(old_session.post("/api/auth/login", json={
+            "username": "sessionadmin", "password": "secret1",
+        }).status_code, 200)
+
+        response = current_client.post(
+            f"/api/admin/users/{current['id']}/password",
+            headers={
+                "Origin": "http://localhost",
+                "Sec-Fetch-Site": "same-origin",
+                "X-CSRF-Token": login["csrf_token"],
+            },
+            json={"password": "secret3"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["current_session_preserved"])
+        self.assertTrue(current_client.get("/api/auth/session").get_json()["authenticated"])
+        self.assertFalse(old_session.get("/api/auth/session").get_json()["authenticated"])
+        self.assertEqual(old_session.post("/api/auth/login", json={
+            "username": "sessionadmin", "password": "secret1",
+        }).status_code, 401)
+        self.assertEqual(old_session.post("/api/auth/login", json={
+            "username": "sessionadmin", "password": "secret3",
+        }).status_code, 200)
+
+    def test_last_admin_and_current_session_cannot_be_disabled(self):
+        from services.auth_service import create_user
+
+        admin, error = create_user(marketplace_app._cache, "dbadmin", "secret1", role="admin")
+        self.assertIsNone(error)
+        self.assertIsNotNone(admin)
+
+        last_admin = self.client.post(
+            f"/api/admin/users/{admin['id']}/disable",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(last_admin.status_code, 409)
+        self.assertIn("last active administrator", last_admin.get_json()["error"])
+
+        last_admin_role = self.client.put(
+            f"/api/admin/users/{admin['id']}/role",
+            headers=self.basic_auth(),
+            json={"role": "user"},
+        )
+        self.assertEqual(last_admin_role.status_code, 409)
+        self.assertIn("last active administrator", last_admin_role.get_json()["error"])
+
+        second_admin, error = create_user(marketplace_app._cache, "secondadmin", "secret2", role="admin")
+        self.assertIsNone(error)
+        self.assertIsNotNone(second_admin)
+        self.assertEqual(self.client.post("/api/auth/login", json={
+            "username": "secondadmin", "password": "secret2",
+        }).status_code, 200)
+
+        current_account = self.client.post(
+            f"/api/admin/users/{second_admin['id']}/disable",
+        )
+        self.assertEqual(current_account.status_code, 409)
+        self.assertIn("current session account", current_account.get_json()["error"])
+
+        current_role = self.client.put(
+            f"/api/admin/users/{second_admin['id']}/role",
+            json={"role": "user"},
+        )
+        self.assertEqual(current_role.status_code, 409)
+        self.assertIn("current session account", current_role.get_json()["error"])
+
+    def test_disabled_database_admin_cannot_fall_back_to_config_credentials(self):
+        from services.auth_service import create_user
+
+        config_admin, error = create_user(marketplace_app._cache, "admin", "database-secret", role="admin")
+        self.assertIsNone(error)
+        self.assertIsNotNone(config_admin)
+        second_admin, error = create_user(marketplace_app._cache, "secondadmin", "secret2", role="admin")
+        self.assertIsNone(error)
+        self.assertIsNotNone(second_admin)
+
+        disabled = self.client.post(
+            f"/api/admin/users/{config_admin['id']}/disable",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(disabled.status_code, 200)
+
+        fallback_login = self.client.post("/api/auth/login", json={
+            "username": "admin", "password": "secret",
+        })
+        self.assertEqual(fallback_login.status_code, 401)
 
     def test_docs_status_returns_build_info(self):
         with tempfile.TemporaryDirectory() as td:
@@ -720,6 +1385,8 @@ class AdminApiContracts(ContractTestBase):
         data = resp.get_json()
         self.assertIn("states", data)
         self.assertIn("counts", data)
+        for state in data["states"].values():
+            self.assertNotIn("signature", state)
 
     def test_index_refresh_all_returns_results(self):
         self.create_plugin()
@@ -759,6 +1426,43 @@ class AdminApiContracts(ContractTestBase):
         self.assertGreater(len(data), 0)
         self.assertEqual([job["id"] for job in data], sorted(job["id"] for job in data))
         self.assertIn("latest_run", data[0])
+        self.assertEqual(
+            sorted(data[0]["run_counts"]),
+            ["error", "interrupted", "running", "success", "total"],
+        )
+
+    def test_job_runs_history_is_paginated_and_filterable(self):
+        from services.scheduler import ensure_default_jobs, run_job_now
+        ensure_default_jobs(marketplace_app._cache)
+        run_job_now(
+            marketplace_app._cache,
+            self.storage,
+            lambda: marketplace_app.CONFIG,
+            marketplace_app.get_db,
+            "cache_cleanup",
+        )
+
+        response = self.client.get(
+            "/api/admin/jobs/cache_cleanup/runs?status=success&limit=1&offset=0",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(response.status_code, 200)
+        page = response.get_json()
+        self.assertEqual(page["total"], 1)
+        self.assertEqual(page["limit"], 1)
+        self.assertEqual(page["offset"], 0)
+        self.assertEqual(page["items"][0]["status"], "success")
+
+        invalid = self.client.get(
+            "/api/admin/jobs/cache_cleanup/runs?status=unknown",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(invalid.status_code, 400)
+        missing = self.client.get(
+            "/api/admin/jobs/missing/runs",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(missing.status_code, 404)
 
     def test_jobs_missing_job_contracts_remain_404(self):
         for action in ("run", "enable", "disable"):
@@ -778,6 +1482,21 @@ class AdminApiContracts(ContractTestBase):
         data = resp.get_json()
         self.assertIn("job_id", data)
         self.assertIn("status", data)
+
+    def test_job_run_returns_conflict_when_same_job_is_running(self):
+        from services.scheduler import ensure_default_jobs
+        ensure_default_jobs(marketplace_app._cache)
+        marketplace_app._cache.jobs.start_run(
+            "cache_cleanup", "2026-08-12T00:00:00+00:00"
+        )
+
+        response = self.client.post(
+            "/api/admin/jobs/cache_cleanup/run", headers=self.basic_auth()
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.get_json()["status"], "skipped")
+        self.assertEqual(response.get_json()["error"], "Job is already running")
 
     def test_job_enable_disable(self):
         from services.scheduler import ensure_default_jobs
@@ -807,6 +1526,7 @@ class AdminApiContracts(ContractTestBase):
         # Usage
         resp = self.client.get(f"/api/admin/api-keys/{key_id}/usage", headers=self.basic_auth())
         self.assertEqual(resp.status_code, 200)
+        self.assertIn("audit_activity", resp.get_json())
 
         # Rotate
         resp = self.client.post(f"/api/admin/api-keys/{key_id}/rotate", headers=self.basic_auth())
@@ -821,6 +1541,77 @@ class AdminApiContracts(ContractTestBase):
         resp = self.client.post(f"/api/admin/api-keys/{rid}/revoke", headers=self.basic_auth())
         self.assertEqual(resp.status_code, 200)
 
+    def test_api_key_scope_catalog_is_complete_and_admin_only(self):
+        response = self.client.get(
+            "/api/admin/api-keys/scopes",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        values = [item["value"] for item in data["items"]]
+        self.assertEqual(len(values), len(set(values)))
+        self.assertIn("ops:relay", values)
+        self.assertIn("ops:operator", values)
+        self.assertEqual(data["default_scopes"], ["stats:read"])
+        for item in data["items"]:
+            self.assertTrue(item["label"])
+            self.assertTrue(item["description"])
+            self.assertIn(item["access"], {"read", "write", "service", "admin"})
+
+        limited = self.create_admin_key("stats:read")
+        denied = self.client.get(
+            "/api/admin/api-keys/scopes",
+            headers={"Authorization": f"Bearer {limited['key']}"},
+        )
+        self.assertEqual(denied.status_code, 403)
+
+    def test_api_key_description_and_audited_usage_are_independent_and_safe(self):
+        created = self.client.post(
+            "/api/admin/api-keys",
+            headers=self.basic_auth(),
+            json={
+                "name": "Desktop Relay",
+                "description": "Production line heartbeat",
+                "scopes": "ops:relay",
+            },
+        )
+        self.assertEqual(created.status_code, 201)
+        key = created.get_json()
+        self.assertEqual(key["name"], "Desktop Relay")
+        self.assertEqual(key["description"], "Production line heartbeat")
+
+        marketplace_app._cache.write_audit(
+            actor_type="api_key",
+            actor_id=f"key:{key['key_prefix']}",
+            action="operations.heartbeat",
+            target_type="operations_host",
+            target_id="line-1",
+            detail='{"status":"online"}',
+            ip="192.0.2.1",
+            user_agent="secret-client-fingerprint",
+        )
+        usage = self.client.get(
+            f"/api/admin/api-keys/{key['id']}/usage",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(usage.status_code, 200)
+        data = usage.get_json()
+        self.assertEqual(data["name"], "Desktop Relay")
+        self.assertEqual(data["description"], "Production line heartbeat")
+        self.assertEqual(data["audit_activity"]["total"], 1)
+        self.assertEqual(data["audit_activity"]["items"][0]["action"], "operations.heartbeat")
+        serialized_activity = json.dumps(data["audit_activity"])
+        self.assertNotIn("192.0.2.1", serialized_activity)
+        self.assertNotIn("secret-client-fingerprint", serialized_activity)
+
+        listed = self.client.get(
+            "/api/admin/api-keys",
+            headers=self.basic_auth(),
+        ).get_json()
+        listed_key = next(item for item in listed if item["id"] == key["id"])
+        self.assertEqual(listed_key["name"], "Desktop Relay")
+        self.assertEqual(listed_key["description"], "Production line heartbeat")
+
     def test_api_key_invalid_scope_rejected(self):
         resp = self.client.post(
             "/api/admin/api-keys", headers=self.basic_auth(),
@@ -828,12 +1619,109 @@ class AdminApiContracts(ContractTestBase):
         )
         self.assertEqual(resp.status_code, 400)
 
+    def test_api_key_invalid_or_past_expiry_rejected(self):
+        for expires_at in ("not-a-timestamp", "2000-01-01T00:00:00Z"):
+            with self.subTest(expires_at=expires_at):
+                resp = self.client.post(
+                    "/api/admin/api-keys",
+                    headers=self.basic_auth(),
+                    json={"name": "Bad Expiry", "expires_at": expires_at},
+                )
+                self.assertEqual(resp.status_code, 400)
+                self.assertIn("expires_at", resp.get_json()["error"])
+
+    def test_api_key_list_reports_effective_status(self):
+        resp = self.client.post(
+            "/api/admin/api-keys",
+            headers=self.basic_auth(),
+            json={"name": "Status Key", "expires_at": "2099-01-02T03:04:05+08:00"},
+        )
+        self.assertEqual(resp.status_code, 201)
+        created = resp.get_json()
+        self.assertEqual(created["expires_at"], "2099-01-01T19:04:05+00:00")
+        self.assertEqual(created["status"], "active")
+
+        listed = self.client.get(
+            "/api/admin/api-keys",
+            headers=self.basic_auth(),
+        ).get_json()
+        item = next(key for key in listed if key["id"] == created["id"])
+        self.assertEqual(item["status"], "active")
+
     def test_audit_log_returns_entries(self):
         self.client.post("/api/admin/cache/cleanup", headers=self.basic_auth())
         resp = self.client.get("/api/admin/audit-log", headers=self.basic_auth())
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
         self.assertIn("entries", data)
+        self.assertGreaterEqual(data["total"], len(data["entries"]))
+
+    def test_audit_log_returns_exact_total_and_validates_pagination(self):
+        db = marketplace_app._cache.get_db()
+        try:
+            db.executemany(
+                "INSERT INTO audit_log (action, actor_type, actor_id, created_at) VALUES (?, ?, ?, ?)",
+                [
+                    ("pagination_probe", "system", f"worker-{index}", f"2026-08-12T00:00:{index:02d}+00:00")
+                    for index in range(45)
+                ],
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        response = self.client.get(
+            "/api/admin/audit-log?action=pagination_probe&limit=10&offset=20",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["total"], 45)
+        self.assertEqual(len(payload["entries"]), 10)
+        self.assertEqual(payload["limit"], 10)
+        self.assertEqual(payload["offset"], 20)
+
+        for query in ("limit=0", "limit=501", "limit=invalid", "offset=-1", "offset=invalid"):
+            with self.subTest(query=query):
+                invalid = self.client.get(
+                    f"/api/admin/audit-log?{query}",
+                    headers=self.basic_auth(),
+                )
+                self.assertEqual(invalid.status_code, 400)
+
+    def test_deployment_history_is_admin_only_paginated_and_sanitized(self):
+        history = self.storage / "web-deploy-history.jsonl"
+        history.write_text(
+            json.dumps({
+                "timestamp": "2026-08-12T12:00:00+08:00",
+                "status": "success",
+                "source": "origin",
+                "deployed_commit": "c" * 40,
+                "server": "PRIVATE-NAS",
+                "backup_path": r"D:\ColorVision\web-deploy-backups\20260812-120000",
+            }) + "\n",
+            encoding="utf-8",
+        )
+
+        unauthenticated = self.client.get("/api/admin/deployments")
+        self.assertEqual(unauthenticated.status_code, 401)
+        response = self.client.get(
+            "/api/admin/deployments?limit=10&offset=0&status=success",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["total"], 1)
+        self.assertEqual(payload["entries"][0]["backup_name"], "20260812-120000")
+        serialized = json.dumps(payload)
+        self.assertNotIn("PRIVATE-NAS", serialized)
+        self.assertNotIn("D:\\", serialized)
+
+        invalid = self.client.get(
+            "/api/admin/deployments?limit=invalid",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(invalid.status_code, 400)
 
     def test_stats_overview_returns_counts(self):
         resp = self.client.get("/api/admin/stats/overview", headers=self.basic_auth())
@@ -846,11 +1734,32 @@ class AdminApiContracts(ContractTestBase):
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
         self.assertEqual(data["status"], "ok")
+        self.assertRegex(data["backup_name"], r"^marketplace_backup_\d{8}_\d{6}\.db$")
+
+        listing = self.client.get("/api/admin/backup/db", headers=self.basic_auth())
+        self.assertEqual(listing.status_code, 200)
+        inventory = listing.get_json()
+        self.assertEqual(inventory["count"], 1)
+        self.assertEqual(inventory["keep_count"], 10)
+        self.assertEqual(inventory["backups"][0]["name"], data["backup_name"])
+        self.assertNotIn("path", inventory["backups"][0])
+
+        limited_key = self.create_admin_key("cache:read")
+        forbidden = self.client.get(
+            "/api/admin/backup/db",
+            headers={"Authorization": f"Bearer {limited_key['key']}"},
+        )
+        self.assertEqual(forbidden.status_code, 403)
 
     def test_perf_summary_returns_data(self):
         resp = self.client.get("/api/admin/perf/summary", headers=self.basic_auth())
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
+        self.assertRegex(data["generated_at"], r"\+00:00$")
+        self.assertRegex(data["process_started_at"], r"\+00:00$")
+        self.assertEqual(data["threshold_ms"], 500)
+        self.assertGreaterEqual(data["request_buffer_count"], 0)
+        self.assertEqual(data["request_buffer_capacity"], 100)
         self.assertIn("slow_requests", data)
         self.assertIn("slow_jobs", data)
 

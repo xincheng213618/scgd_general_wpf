@@ -30,14 +30,23 @@ final class OperationsPairingPayload {
         this.expiresAt = expiresAt;
     }
 
+    static boolean isPairingInput(String raw) {
+        String text = raw == null ? "" : raw.trim();
+        return text.startsWith("colorvision://pair") || text.matches("[A-Za-z0-9_-]{100,}");
+    }
+
     static OperationsPairingPayload parse(String raw) throws Exception {
-        Uri uri = Uri.parse(raw);
-        if (!"colorvision".equalsIgnoreCase(uri.getScheme()) || !"pair".equalsIgnoreCase(uri.getHost())) {
-            throw new IllegalArgumentException("不是 ColorVision 安全配对码");
-        }
-        String encoded = uri.getQueryParameter("payload");
-        if (encoded == null || encoded.isEmpty()) {
-            throw new IllegalArgumentException("配对码缺少安全载荷");
+        String text = raw == null ? "" : raw.trim();
+        String encoded = text;
+        if (!text.matches("[A-Za-z0-9_-]{100,}")) {
+            Uri uri = Uri.parse(text);
+            if (!"colorvision".equalsIgnoreCase(uri.getScheme()) || !"pair".equalsIgnoreCase(uri.getHost())) {
+                throw new IllegalArgumentException("不是 ColorVision 安全配对码");
+            }
+            encoded = uri.getQueryParameter("payload");
+            if (encoded == null || encoded.isEmpty()) {
+                throw new IllegalArgumentException("配对码缺少安全载荷");
+            }
         }
 
         byte[] bytes = Base64.decode(encoded, Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);

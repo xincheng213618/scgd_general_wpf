@@ -38,6 +38,10 @@ from app_setup import (
     human_size, render_markdown, RuntimeOverrides,
 )
 from db_cache import CacheManager
+from services.csrf_protection import register_csrf_protection
+from services.http_compression import register_response_compression
+from services.http_method_safety import disable_unsafe_automatic_head
+from services.http_security import register_response_security
 
 app, _ctx, SERVICES, _helpers = create_app_and_context(RuntimeOverrides(
     config=lambda: CONFIG,
@@ -127,7 +131,11 @@ require_upload_auth = _helpers["require_upload_auth"]
 
 register_error_handlers(app)
 register_slow_request_logging(app, _ctx, _helpers["access_recorder"])
+register_response_compression(app)
+register_response_security(app)
+register_csrf_protection(app)
 register_all_blueprints(app, _ctx, SERVICES, _helpers)
+disable_unsafe_automatic_head(app)
 
 # ---------------------------------------------------------------------------
 # Entry point
@@ -148,6 +156,15 @@ if __name__ == "__main__":
         CONFIG["port"] = args.port
     if args.debug:
         CONFIG["debug"] = True
+
+    is_debug = CONFIG.get("debug", False)
+    if not is_debug:
+        try:
+            from services.runtime_logging import install_runtime_logging
+            runtime_log_path = install_runtime_logging(STORAGE)
+            print(f"[runtime] Persistent log: {runtime_log_path}")
+        except Exception as exc:
+            print(f"[runtime] Persistent logging unavailable: {exc}")
 
     try:
         from services.app_latest_version_cache import (
@@ -173,7 +190,6 @@ if __name__ == "__main__":
 
     scheduler_enabled = CONFIG.get("scheduler_enabled", True)
     is_reloader = _os.environ.get("WERKZEUG_RUN_MAIN") == "true"
-    is_debug = CONFIG.get("debug", False)
     if scheduler_enabled and (not is_debug or is_reloader):
         _scheduler = SchedulerThread(_cache, lambda: STORAGE, lambda: CONFIG, get_db)
         _scheduler.start()

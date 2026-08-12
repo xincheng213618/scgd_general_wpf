@@ -62,8 +62,12 @@ class ArchitectureBoundaryTests(unittest.TestCase):
     def test_service_policy_and_marketplace_use_cases_are_flask_free(self):
         service_files = [
             "marketplace_services.py",
+            "services/artifact_delivery.py",
             "services/auth_policy.py",
+            "services/deployment_history.py",
             "services/request_context.py",
+            "ports/operations_support.py",
+            "db/repositories/operations_support.py",
             "services/marketplace_api.py",
         ]
         forbidden_names = {"request", "session", "g"}
@@ -81,7 +85,13 @@ class ArchitectureBoundaryTests(unittest.TestCase):
 
     def test_jobs_http_handlers_contain_no_sql_or_connection_execute(self):
         tree = _tree("routes/admin_api.py")
-        handler_names = {"list_jobs", "run_job", "enable_job", "disable_job"}
+        handler_names = {
+            "list_jobs",
+            "list_job_runs",
+            "run_job",
+            "enable_job",
+            "disable_job",
+        }
         handlers = {
             node.name: node
             for node in ast.walk(tree)
@@ -107,11 +117,48 @@ class ArchitectureBoundaryTests(unittest.TestCase):
                 for keyword in ("SELECT ", "INSERT ", "UPDATE ", "DELETE "):
                     self.assertNotIn(keyword, string_literals)
 
+    def test_download_routes_use_artifact_delivery_boundary(self):
+        route_files = (
+            "marketplace_api_routes.py",
+            "routes/cvws_api.py",
+            "routes/pages.py",
+            "routes/public_api.py",
+            "routes/spectrum_api.py",
+            "routes/transfer.py",
+        )
+        for relative_path in route_files:
+            tree = _tree(relative_path)
+            imported_names = {
+                alias.name
+                for node in ast.walk(tree)
+                if isinstance(node, ast.ImportFrom) and node.module == "flask"
+                for alias in node.names
+            }
+            direct_sends = [
+                node
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id in {"send_file", "send_from_directory"}
+            ]
+            delivery_calls = [
+                node
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "deliver_artifact"
+            ]
+            with self.subTest(path=relative_path):
+                self.assertTrue(
+                    {"send_file", "send_from_directory"}.isdisjoint(imported_names)
+                )
+                self.assertEqual([], direct_sends)
+                self.assertGreater(len(delivery_calls), 0)
+
     def test_transitional_route_sql_does_not_expand(self):
         expected_counts = {
             "routes/admin_api.py": {
                 "stats_overview": 4,
-                "create_api_key": 1,
             },
             "routes/operations_relay.py": {
                 "heartbeat": 1,
@@ -121,7 +168,6 @@ class ArchitectureBoundaryTests(unittest.TestCase):
                 "list_hosts": 1,
                 "list_receipts": 2,
                 "list_support_events": 2,
-                "support_event": 1,
             },
         }
 

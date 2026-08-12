@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>ColorVisionOperationsWatchdog</AssemblyName>
+    <RootNamespace>ColorVisionOperationsWatchdog</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+    <AssemblyProduct>ColorVision Operations Watchdog</AssemblyProduct>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\UI\ColorVision.UI.Desktop\Operations\OperationsFailureWatchdogProtocol.cs"
+             Link="OperationsFailureWatchdogProtocol.cs" />
+  </ItemGroup>
+
+</Project>

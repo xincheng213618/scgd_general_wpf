@@ -3,6 +3,7 @@ using ColorVision.UI;
 using ColorVision.ServiceHost;
 using ColorVision.UI.Shell;
 using ColorVision.UI.LogImp;
+using ColorVision.UI.Desktop.Operations;
 using Dm.util;
 using log4net;
 using log4net.Appender;
@@ -418,6 +419,15 @@ namespace ColorVision
                 {
                     Window mainWindow = new MainWindow();
                     mainWindow.Show();
+                }
+                if (OperationsApplicationFailureWatchdog.TryStart())
+                {
+                    _ = WindowsApplicationRestartRegistration.TryUnregisterForWatchdog();
+                    log.Info("Fixed-target local ColorVision failure watchdog is active.");
+                }
+                else
+                {
+                    log.Warn("Local ColorVision failure watchdog is unavailable; Windows application restart registration remains as fallback.");
                 }
                 ScheduleServiceHostStartupUpdate();
                 Close();

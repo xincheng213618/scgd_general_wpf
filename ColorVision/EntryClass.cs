@@ -2,6 +2,7 @@
 // // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ColorVision.UI.Shell;
+using ColorVision.UI.Desktop.Operations;
 using log4net;
 using log4net.Config;
 using System;
@@ -27,9 +28,16 @@ namespace ColorVision
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
+            args = WindowsApplicationRestartRegistration.CaptureAndRemoveRecoveryArguments(args);
+            args = OperationsApplicationRestartController.WaitForEarlierProcessAndRemoveHandoffArguments(args);
+            bool automaticRecoveryRegistered = WindowsApplicationRestartRegistration.TryRegister();
             ProgramTimer.Start();
             ArgumentParser.GetInstance().CommandLineArgs = args;
             log.Debug("args" + string.Join(", ", args));
+            if (!automaticRecoveryRegistered)
+                log.Warn("Windows application failure restart could not be registered.");
+            else if (WindowsApplicationRestartRegistration.RestartedAfterFailure)
+                log.Warn("ColorVision was restarted by Windows after an earlier application failure.");
 
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 

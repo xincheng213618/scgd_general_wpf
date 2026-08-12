@@ -11,6 +11,7 @@ GetCacheEntry = Callable[..., dict[str, Any] | None]
 SetCacheEntry = Callable[..., None]
 
 _HEADER_RE = re.compile(r"^##\s*\[(?P<version>[^]]+)\]\s+(?P<date>\d{4}[.-]\d{2}[.-]\d{2})\s*$")
+_SECTION_HEADER_RE = re.compile(r"^##\s+")
 _BULLET_RE = re.compile(r"^(?:[-*+]\s+|\d+[.)、．]\s*|\d+\.)")
 
 _KEYWORD_TAGS = [
@@ -43,6 +44,42 @@ def changelog_signature(changelog_path: Path) -> str:
     except OSError:
         return "missing"
     return f"{stat.st_mtime_ns}:{stat.st_size}"
+
+
+def paginate_changelog_markdown(text: str, *, page: int, page_size: int) -> dict[str, Any]:
+    """Return one bounded group of Markdown release sections."""
+    lines = text.splitlines()
+    section_starts = [
+        index for index, line in enumerate(lines) if _SECTION_HEADER_RE.match(line.strip())
+    ]
+    total_entries = len(section_starts)
+    total_pages = (total_entries + page_size - 1) // page_size if total_entries else 0
+    effective_page = min(max(page, 1), max(total_pages, 1))
+    start_entry = (effective_page - 1) * page_size
+    end_entry = min(start_entry + page_size, total_entries)
+
+    if total_entries:
+        start_line = section_starts[start_entry]
+        end_line = section_starts[end_entry] if end_entry < total_entries else len(lines)
+        page_lines = lines[start_line:end_line]
+        if effective_page == 1:
+            page_lines = [*lines[:section_starts[0]], *page_lines]
+    else:
+        page_lines = lines if effective_page == 1 else []
+
+    markdown = "\n".join(page_lines).strip()
+    if markdown:
+        markdown += "\n"
+    return {
+        "markdown": markdown,
+        "page": effective_page,
+        "page_size": page_size,
+        "total_entries": total_entries,
+        "total_pages": total_pages,
+        "page_entry_count": max(end_entry - start_entry, 0),
+        "has_previous": effective_page > 1,
+        "has_next": effective_page < total_pages,
+    }
 
 
 def _parse_date(raw: str) -> date | None:

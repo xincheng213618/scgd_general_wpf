@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
+using System.Security.Cryptography;
 using System.ServiceProcess;
 using System.Text;
 using System.Threading;
@@ -40,6 +41,10 @@ namespace ColorVision.ServiceHost
 
         public Version? RunningVersion { get; init; }
 
+        public string PackageSha256 { get; init; } = string.Empty;
+
+        public string InstalledSha256 { get; init; } = string.Empty;
+
         public string RunningProcessPath { get; init; } = string.Empty;
 
         public bool IsPackageAvailable => File.Exists(PackageExecutablePath);
@@ -48,7 +53,15 @@ namespace ColorVision.ServiceHost
 
         public bool NeedsUpdate => IsPackageAvailable
             && PackageVersion != null
-            && (InstalledVersion == null || PackageVersion > InstalledVersion || (RunningVersion != null && PackageVersion > RunningVersion));
+            && (InstalledVersion == null || PackageVersion > InstalledVersion || (RunningVersion != null && PackageVersion > RunningVersion)
+                || HasPackageContentMismatch);
+
+        public bool HasPackageContentMismatch => PackageVersion != null
+            && InstalledVersion != null
+            && PackageVersion == InstalledVersion
+            && !string.IsNullOrWhiteSpace(PackageSha256)
+            && !string.IsNullOrWhiteSpace(InstalledSha256)
+            && !string.Equals(PackageSha256, InstalledSha256, StringComparison.OrdinalIgnoreCase);
 
         public bool NeedsRepair => IsPackageAvailable
             && (State == ServiceHostInstallState.Stopped
@@ -62,7 +75,7 @@ namespace ColorVision.ServiceHost
 
         public bool HasCurrentOrNewerInstalledVersion => PackageVersion != null
             && InstalledVersion != null
-            && InstalledVersion >= PackageVersion;
+            && (InstalledVersion > PackageVersion || (InstalledVersion == PackageVersion && !HasPackageContentMismatch));
 
         public bool WouldInstallDowngrade => PackageVersion != null
             && ((InstalledVersion != null && InstalledVersion > PackageVersion)
@@ -368,6 +381,8 @@ namespace ColorVision.ServiceHost
 
             Version? packageVersion = GetExecutableVersion(ServiceHostProtocol.PackageExecutablePath);
             Version? installedVersion = GetExecutableVersion(ServiceHostProtocol.InstalledExecutablePath);
+            string packageSha256 = ComputeServiceHostContentSha256(ServiceHostProtocol.PackageExecutablePath);
+            string installedSha256 = ComputeServiceHostContentSha256(ServiceHostProtocol.InstalledExecutablePath);
 
             try
             {
@@ -397,6 +412,8 @@ namespace ColorVision.ServiceHost
                     InstalledVersion = installedVersion,
                     RunningVersion = runningVersion,
                     RunningProcessPath = runningProcessPath,
+                    PackageSha256 = packageSha256,
+                    InstalledSha256 = installedSha256,
                 };
             }
             catch (InvalidOperationException ex)
@@ -410,6 +427,8 @@ namespace ColorVision.ServiceHost
                     InstalledExecutablePath = ServiceHostProtocol.InstalledExecutablePath,
                     PackageVersion = packageVersion,
                     InstalledVersion = installedVersion,
+                    PackageSha256 = packageSha256,
+                    InstalledSha256 = installedSha256,
                 };
             }
             catch (Exception ex)
@@ -423,7 +442,26 @@ namespace ColorVision.ServiceHost
                     InstalledExecutablePath = ServiceHostProtocol.InstalledExecutablePath,
                     PackageVersion = packageVersion,
                     InstalledVersion = installedVersion,
+                    PackageSha256 = packageSha256,
+                    InstalledSha256 = installedSha256,
                 };
+            }
+        }
+
+        private static string ComputeServiceHostContentSha256(string executablePath)
+        {
+            try
+            {
+                string assemblyPath = Path.ChangeExtension(executablePath, ".dll");
+                string path = File.Exists(assemblyPath) ? assemblyPath : executablePath;
+                if (!File.Exists(path))
+                    return string.Empty;
+                using FileStream stream = File.OpenRead(path);
+                return Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant();
+            }
+            catch
+            {
+                return string.Empty;
             }
         }
 

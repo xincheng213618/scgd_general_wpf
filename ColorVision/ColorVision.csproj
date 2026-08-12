@@ -156,6 +156,7 @@
     <ProjectReference Include="..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
     <ProjectReference Include="..\Engine\ColorVision.ShellExtension\ColorVision.ShellExtension.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\src\ColorVisionServiceHost\ColorVisionServiceHost.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\src\ColorVisionOperationsWatchdog\ColorVisionOperationsWatchdog.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" />
     <ProjectReference Include="..\UI\ColorVision.ImageTools\ColorVision.ImageTools.csproj" />
     <ProjectReference Include="..\UI\ColorVision.Rbac\ColorVision.Rbac.csproj" />
@@ -233,6 +234,41 @@
       <ServiceHostPublishFiles Include="$(OutputPath)ServiceHost\**\*.*" Condition="Exists('$(OutputPath)ServiceHost\ColorVisionServiceHost.exe')" />
       <ResolvedFileToPublish Include="@(ServiceHostPublishFiles)">
         <RelativePath>ServiceHost\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CopyOperationsWatchdogRuntimeFiles" AfterTargets="Build">
+    <PropertyGroup>
+      <OperationsWatchdogProjectPath>..\src\ColorVisionOperationsWatchdog\ColorVisionOperationsWatchdog.csproj</OperationsWatchdogProjectPath>
+      <OperationsWatchdogOutputPath>..\src\ColorVisionOperationsWatchdog\bin\$(Platform)\$(Configuration)\$(TargetFramework)\</OperationsWatchdogOutputPath>
+    </PropertyGroup>
+
+    <MSBuild Projects="$(OperationsWatchdogProjectPath)"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=$(TargetFramework)"
+             RemoveProperties="OutDir;OutputPath"
+             BuildInParallel="false" />
+
+    <ItemGroup>
+      <OperationsWatchdogRuntimeFiles Include="$(OperationsWatchdogOutputPath)**\*.*"
+                                      Exclude="$(OperationsWatchdogOutputPath)**\*.pdb"
+                                      Condition="Exists('$(OperationsWatchdogOutputPath)ColorVisionOperationsWatchdog.exe')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(OperationsWatchdogRuntimeFiles)"
+          DestinationFiles="@(OperationsWatchdogRuntimeFiles->'$(OutputPath)OperationsWatchdog\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Condition="'@(OperationsWatchdogRuntimeFiles)' != ''" />
+  </Target>
+
+  <Target Name="AddOperationsWatchdogRuntimeFilesToPublish" AfterTargets="ComputeFilesToPublish" DependsOnTargets="CopyOperationsWatchdogRuntimeFiles">
+    <ItemGroup>
+      <OperationsWatchdogPublishFiles Include="$(OutputPath)OperationsWatchdog\**\*.*" Condition="Exists('$(OutputPath)OperationsWatchdog\ColorVisionOperationsWatchdog.exe')" />
+      <ResolvedFileToPublish Include="@(OperationsWatchdogPublishFiles)">
+        <RelativePath>OperationsWatchdog\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
         <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       </ResolvedFileToPublish>

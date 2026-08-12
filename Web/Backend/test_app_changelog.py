@@ -26,6 +26,31 @@ class AppChangelogTests(unittest.TestCase):
     def _set_cache_entry(self, key: str, value, **kwargs):
         self.cache[key] = {"value": value, "signature": kwargs.get("signature", "")}
 
+    def test_paginate_changelog_markdown_keeps_preamble_and_bounds_sections(self):
+        text = "# CHANGELOG\n\n" + "\n".join(
+            f"## [{index}.0.0] 2026.01.{index:02d}\n\n- change {index}\n"
+            for index in range(1, 6)
+        )
+
+        first = app_changelog.paginate_changelog_markdown(text, page=1, page_size=2)
+        middle = app_changelog.paginate_changelog_markdown(text, page=2, page_size=2)
+        last = app_changelog.paginate_changelog_markdown(text, page=99, page_size=2)
+
+        self.assertIn("# CHANGELOG", first["markdown"])
+        self.assertIn("[1.0.0]", first["markdown"])
+        self.assertIn("[2.0.0]", first["markdown"])
+        self.assertNotIn("[3.0.0]", first["markdown"])
+        self.assertNotIn("# CHANGELOG", middle["markdown"])
+        self.assertIn("[3.0.0]", middle["markdown"])
+        self.assertIn("[4.0.0]", middle["markdown"])
+        self.assertEqual(last["page"], 3)
+        self.assertIn("[5.0.0]", last["markdown"])
+        self.assertEqual(last["total_entries"], 5)
+        self.assertEqual(last["total_pages"], 3)
+        self.assertEqual(last["page_entry_count"], 1)
+        self.assertTrue(last["has_previous"])
+        self.assertFalse(last["has_next"])
+
     def test_parse_changelog_entries_extracts_versions_dates_and_items(self):
         text = """# CHANGELOG\n\n## [1.2.0.1] 2026.03.24\n\n1.新增插件市场\n2.优化下载中心\n\n## [1.1.0.1] 2026.03.01\n\n1.修复更新逻辑\n"""
 

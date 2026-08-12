@@ -1,11 +1,20 @@
 import { InboxOutlined } from '@ant-design/icons'
 import { Space, Tag, Typography } from 'antd'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { TransferPanel } from '../components/TransferPanel'
 import type { AuthSession } from '../types/site'
+import { getTransferAccessState, getTransferLoginUrl } from '../utils/transferAccess'
 
 export function TransferPage({ session }: { session: AuthSession | null }) {
-  const navigate = useNavigate()
+  const location = useLocation()
+  const accessState = getTransferAccessState(session)
+
+  if (session === null || accessState === 'loading') {
+    return <div className="route-loading" role="status">正在确认登录状态…</div>
+  }
+  if (accessState === 'login') {
+    return <Navigate to={getTransferLoginUrl(location.pathname, location.search, location.hash)} replace />
+  }
 
   return (
     <Space direction="vertical" size={16} className="page-stack">
@@ -25,10 +34,10 @@ export function TransferPage({ session }: { session: AuthSession | null }) {
             <strong>{session?.username || '-'}</strong>
             当前账号
           </span>
-          <Tag color={session?.is_admin ? 'blue' : 'green'}>{session?.is_admin ? '管理员' : '普通用户'}</Tag>
+          <Tag color={session.is_admin ? 'blue' : 'green'}>{session.is_admin ? '管理员' : '普通用户'}</Tag>
         </div>
       </section>
-      <TransferPanel onAuthRequired={() => navigate('/login?next=/transfer', { replace: true })} />
+      <TransferPanel />
     </Space>
   )
 }

@@ -8,7 +8,7 @@ import type { TransferFile, TransferFilesResponse } from '../types/site'
 import { humanSize, shortDate } from '../utils/format'
 import { UploadProgress } from './UploadProgress'
 
-export function TransferPanel({ onAuthRequired }: { onAuthRequired?: () => void }) {
+export function TransferPanel() {
   const { message } = App.useApp()
   const [data, setData] = useState<TransferFilesResponse | null>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -17,13 +17,10 @@ export function TransferPanel({ onAuthRequired }: { onAuthRequired?: () => void 
 
   const handleError = useCallback(
     (error: unknown, fallback: string) => {
-      if (error instanceof AuthRequiredError && onAuthRequired) {
-        onAuthRequired()
-        return
-      }
+      if (error instanceof AuthRequiredError) return
       message.error(error instanceof Error ? error.message : fallback)
     },
-    [message, onAuthRequired],
+    [message],
   )
 
   const load = useCallback(
