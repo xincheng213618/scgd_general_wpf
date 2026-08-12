@@ -279,7 +279,9 @@ namespace ColorVision
             LanRemoteControlService.Instance.ConfigureOperationsServiceHealthProvider(new WindowsOperationsServiceHealthProvider());
             LanRemoteControlService.Instance.ConfigureOperationsFlowRuntimeStatusProvider(flowOperations);
             LanRemoteControlService.Instance.ConfigureOperationsDeviceHealthProvider(new EngineOperationsDeviceHealthProvider());
-            LanRemoteControlService.Instance.ConfigureOperationsMessageChannelHealthProvider(new EngineOperationsMessageChannelHealthProvider());
+            EngineOperationsMessageChannelHealthProvider messageChannelOperations = new();
+            LanRemoteControlService.Instance.ConfigureOperationsMessageChannelHealthProvider(messageChannelOperations);
+            LanRemoteControlService.Instance.ConfigureOperationsMessageChannelRecoveryController(messageChannelOperations);
             LanRemoteControlService.Instance.ConfigureOperationsFailureEvidenceProvider(new WindowsOperationsFailureEvidenceService());
             LanRemoteControlService.Instance.ConfigureOperationsMqttRestartController(new ServiceHostOperationsMqttRestartController());
             LanRemoteControlService.Instance.ConfigureOperationsApplicationRestartController(

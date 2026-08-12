@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ColorVision.Engine.MQTT
@@ -52,6 +53,7 @@ namespace ColorVision.Engine.MQTT
 
         private static MQTTControl _instance;
         private static readonly object _locker = new();
+        private static readonly SemaphoreSlim ConnectGate = new(1, 1);
         public static MQTTControl GetInstance() { lock (_locker) { return _instance ??= new MQTTControl(); } }
 
         public static MQTTConfig Config => MQTTSetting.Instance.MQTTConfig;
@@ -170,6 +172,36 @@ namespace ColorVision.Engine.MQTT
         public async Task<bool> Connect()=> await Connect(Config);
         public async Task<bool> Connect(MQTTConfig mqttConfig)
         {
+            await ConnectGate.WaitAsync();
+            try
+            {
+                return await ConnectCore(mqttConfig, CancellationToken.None);
+            }
+            finally
+            {
+                ConnectGate.Release();
+            }
+        }
+
+        public async Task<bool> RecoverConnectionAsync(CancellationToken cancellationToken = default)
+        {
+            await ConnectGate.WaitAsync(cancellationToken);
+            try
+            {
+                if (IsConnectionReady())
+                    return true;
+
+                bool connected = await ConnectCore(Config, cancellationToken);
+                return connected && IsConnectionReady();
+            }
+            finally
+            {
+                ConnectGate.Release();
+            }
+        }
+
+        private async Task<bool> ConnectCore(MQTTConfig mqttConfig, CancellationToken cancellationToken)
+        {
             log.Info($"Connecting to MQTT: {mqttConfig}");
 
             IsConnect = false;
@@ -179,7 +211,7 @@ namespace ColorVision.Engine.MQTT
                 MQTTClient.ConnectedAsync -= MQTTClient_ConnectedAsync;
                 MQTTClient.DisconnectedAsync -= MQTTClient_DisconnectedAsync;
                 MQTTClient.ApplicationMessageReceivedAsync -= MQTTClient_ApplicationMessageReceivedAsync;
-                await MQTTClient.DisconnectAsync();
+                await MQTTClient.DisconnectAsync(cancellationToken: cancellationToken);
                 MQTTClient?.Dispose();
                 MQTTClient = new MqttClientFactory().CreateMqttClient();
 
@@ -188,7 +220,7 @@ namespace ColorVision.Engine.MQTT
                 MQTTClient.ConnectedAsync += MQTTClient_ConnectedAsync;
                 MQTTClient.DisconnectedAsync += MQTTClient_DisconnectedAsync;
                 MQTTClient.ApplicationMessageReceivedAsync += MQTTClient_ApplicationMessageReceivedAsync;
-                await MQTTClient.ConnectAsync(options);
+                await MQTTClient.ConnectAsync(options, cancellationToken);
                 IsConnect = true;
                 return true;
             }
@@ -197,6 +229,15 @@ namespace ColorVision.Engine.MQTT
                 log.Error(ex);
                 IsConnect = false;
                 return false;
+            }
+        }
+
+        private bool IsConnectionReady()
+        {
+            lock (_subscribeTopicLocker)
+            {
+                return MQTTClient?.IsConnected == true
+                    && SubscribeTopic.Count >= _subscribeTopicCache.Count;
             }
         }
 

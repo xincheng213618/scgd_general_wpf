@@ -874,6 +874,85 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void MessageChannelRecoveryRejectsRemoteParametersAndExecutesOnceAfterMobileApproval()
+        {
+            string devicePath = CreateStorePath();
+            string workPath = Path.Combine(Path.GetDirectoryName(devicePath)!, "work.json");
+            try
+            {
+                using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+                OperationsDeviceRegistry registry = new(devicePath);
+                registry.Approve("device-message-recovery", "Phone",
+                    Convert.ToBase64String(key.ExportSubjectPublicKeyInfo()),
+                    OperationsPairingService.InitialScopes);
+                OperationsWorkStore workStore = new(workPath);
+                RecordingMessageChannelRecoveryController controller = new();
+                OperationsSecureApiRouter router = new(new OperationsPairingService(registry),
+                    new OperationsRequestAuthenticator(registry), workStore, () => new { healthy = true },
+                    messageChannelRecoveryController: controller);
+                const string jobsPath = "/ops/v1/jobs";
+
+                byte[] rejectedBody = Encoding.UTF8.GetBytes(
+                    "{\"capabilityId\":\"ops.messaging.reconnect\",\"input\":{\"host\":\"remote.example\"}}");
+                OperationsApiResponse rejected = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = jobsPath,
+                    Body = rejectedBody,
+                    Headers = Sign(key, "device-message-recovery", "POST", jobsPath, rejectedBody),
+                });
+                Assert.Equal(400, rejected.StatusCode);
+                Assert.Empty(workStore.GetJobs());
+
+                byte[] createBody = Encoding.UTF8.GetBytes(
+                    "{\"capabilityId\":\"ops.messaging.reconnect\",\"reason\":\"confirmed\",\"input\":{}}");
+                OperationsApiResponse created = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = jobsPath,
+                    Body = createBody,
+                    Headers = Sign(key, "device-message-recovery", "POST", jobsPath, createBody),
+                });
+                Assert.Equal(202, created.StatusCode);
+                using JsonDocument createdDocument = JsonDocument.Parse(created.Body);
+                JsonElement createdJob = createdDocument.RootElement.GetProperty("data").GetProperty("job");
+                string jobId = Assert.IsType<string>(createdJob.GetProperty("jobId").GetString());
+                Assert.False(createdJob.GetProperty("requiresLocalCoSign").GetBoolean());
+
+                string decisionPath = $"/ops/v1/jobs/{jobId}/decision";
+                byte[] decisionBody = Encoding.UTF8.GetBytes("{\"approved\":true,\"reason\":\"confirmed\"}");
+                OperationsApiResponse completed = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = decisionPath,
+                    Body = decisionBody,
+                    Headers = Sign(key, "device-message-recovery", "POST", decisionPath, decisionBody),
+                });
+                Assert.Equal(200, completed.StatusCode);
+                using JsonDocument completedDocument = JsonDocument.Parse(completed.Body);
+                JsonElement completedJob = completedDocument.RootElement.GetProperty("data").GetProperty("job");
+                Assert.Equal("completed", completedJob.GetProperty("status").GetString());
+                Assert.Equal("message-channel-recovery-receipt",
+                    completedJob.GetProperty("evidence").GetProperty("kind").GetString());
+                Assert.Equal(1, controller.RecoveryCount);
+
+                OperationsApiResponse repeated = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = decisionPath,
+                    Body = decisionBody,
+                    Headers = Sign(key, "device-message-recovery", "POST", decisionPath, decisionBody),
+                });
+                Assert.Equal(409, repeated.StatusCode);
+                Assert.Equal(1, controller.RecoveryCount);
+            }
+            finally
+            {
+                DeleteStore(devicePath);
+            }
+        }
+
+        [Fact]
         public void FailureEvidenceIsSignedScopedBoundedAndAudited()
         {
             string devicePath = CreateStorePath();
@@ -1088,6 +1167,17 @@ namespace ColorVision.UI.Tests
             {
                 RestartCount++;
                 return new OperationsMqttRestartResult(true, $"servicehost:request-{RestartCount}");
+            }
+        }
+
+        private sealed class RecordingMessageChannelRecoveryController : IOperationsMessageChannelRecoveryController
+        {
+            public int RecoveryCount { get; private set; }
+
+            public OperationsMessageChannelRecoveryResult Recover()
+            {
+                RecoveryCount++;
+                return new OperationsMessageChannelRecoveryResult(true, "message_channel:already_ready");
             }
         }
 

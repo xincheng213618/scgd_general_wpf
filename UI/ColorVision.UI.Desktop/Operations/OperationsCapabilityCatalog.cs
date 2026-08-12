@@ -2,7 +2,7 @@ namespace ColorVision.UI.Desktop.Operations
 {
     public static class OperationsCapabilityCatalog
     {
-        public const string SchemaVersion = "1.9";
+        public const string SchemaVersion = "1.10";
 
         private static readonly IReadOnlyList<OperationsCapabilityDescriptor> Capabilities =
         [
@@ -448,6 +448,36 @@ namespace ColorVision.UI.Desktop.Operations
                     BrokerCapability = "application.restart.current",
                 },
                 Evidence = ["application.restart.handoff", "application.restart.reconnected"],
+                Available = true,
+            },
+            new()
+            {
+                Id = "ops.messaging.reconnect",
+                Title = "Recover the current ColorVision message channel",
+                Description = "Reconnect only the current configured ColorVision MQTT client and restore its already registered subscriptions after explicit confirmation on the paired phone. A healthy channel is left untouched, and no endpoint, topic, credential, or other remote input is accepted.",
+                Category = "maintenance",
+                Provider = "engine.mqtt",
+                RiskLevel = OperationsRiskLevels.ApprovalRequired,
+                Permission = "ops.jobs.create",
+                DiscoverableOn = ["desktop", "android"],
+                InputSchema = new { type = "object", additionalProperties = false },
+                TimeoutMs = 25000,
+                Idempotency = "state-dependent",
+                SupportsCancellation = false,
+                Approval = new OperationsApprovalPolicy
+                {
+                    Mode = "paired-device-confirmation",
+                    TtlSeconds = 300,
+                    SingleUse = true,
+                    RequiresLocalCoSign = false,
+                },
+                Audit = new OperationsAuditPolicy { Required = true },
+                Execution = new OperationsExecutionPolicy
+                {
+                    Target = "current-message-client",
+                    BrokerCapability = "messaging.recover.current",
+                },
+                Evidence = ["messaging.state.before", "messaging.state.after"],
                 Available = true,
             },
             new()

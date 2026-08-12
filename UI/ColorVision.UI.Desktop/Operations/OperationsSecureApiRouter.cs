@@ -38,6 +38,7 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly IOperationsApplicationRestartController _applicationRestartController;
         private readonly IOperationsDeviceHealthProvider _deviceHealthProvider;
         private readonly IOperationsMessageChannelHealthProvider _messageChannelHealthProvider;
+        private readonly IOperationsMessageChannelRecoveryController _messageChannelRecoveryController;
         private readonly IOperationsFailureEvidenceProvider _failureEvidenceProvider;
 
         public OperationsSecureApiRouter(
@@ -57,6 +58,7 @@ namespace ColorVision.UI.Desktop.Operations
             IOperationsApplicationRestartController? applicationRestartController = null,
             IOperationsDeviceHealthProvider? deviceHealthProvider = null,
             IOperationsMessageChannelHealthProvider? messageChannelHealthProvider = null,
+            IOperationsMessageChannelRecoveryController? messageChannelRecoveryController = null,
             IOperationsFailureEvidenceProvider? failureEvidenceProvider = null)
         {
             _pairing = pairing;
@@ -75,6 +77,7 @@ namespace ColorVision.UI.Desktop.Operations
             _applicationRestartController = applicationRestartController ?? UnavailableOperationsApplicationRestartController.Instance;
             _deviceHealthProvider = deviceHealthProvider ?? UnavailableOperationsDeviceHealthProvider.Instance;
             _messageChannelHealthProvider = messageChannelHealthProvider ?? UnavailableOperationsMessageChannelHealthProvider.Instance;
+            _messageChannelRecoveryController = messageChannelRecoveryController ?? UnavailableOperationsMessageChannelRecoveryController.Instance;
             _failureEvidenceProvider = failureEvidenceProvider ?? UnavailableOperationsFailureEvidenceProvider.Instance;
         }
 
@@ -517,7 +520,7 @@ namespace ColorVision.UI.Desktop.Operations
                 bool approved = approvedElement.GetBoolean();
                 bool executesAfterMobileApproval = currentJob.CapabilityId is
                     "ops.flow.cancel" or "ops.service.restart" or "ops.application.restart"
-                    or "ops.diagnostics.bundle.create" or "ops.window.snapshot.capture";
+                    or "ops.messaging.reconnect" or "ops.diagnostics.bundle.create" or "ops.window.snapshot.capture";
                 OperationsJob? job = approved
                     && executesAfterMobileApproval
                     && currentJob.Status == "approved_mobile"
@@ -525,7 +528,7 @@ namespace ColorVision.UI.Desktop.Operations
                         : _workStore.DecideJob(jobId, device.DeviceId, approved, reason, correlationId);
                 if (job is { Status: "approved_mobile" }
                     && job.CapabilityId is "ops.flow.cancel" or "ops.service.restart" or "ops.application.restart"
-                        or "ops.diagnostics.bundle.create" or "ops.window.snapshot.capture")
+                        or "ops.messaging.reconnect" or "ops.diagnostics.bundle.create" or "ops.window.snapshot.capture")
                 {
                     OperationsJob? executingJob = _workStore.BeginExecution(job.JobId);
                     if (executingJob == null)
@@ -536,6 +539,7 @@ namespace ColorVision.UI.Desktop.Operations
                         "ops.flow.cancel" => ExecuteFlowCancellation(executingJob),
                         "ops.service.restart" => ExecuteMqttRestart(executingJob),
                         "ops.application.restart" => ExecuteApplicationRestart(executingJob),
+                        "ops.messaging.reconnect" => ExecuteMessageChannelRecovery(executingJob),
                         "ops.diagnostics.bundle.create" => ExecuteDiagnosticBundle(executingJob),
                         "ops.window.snapshot.capture" => ExecuteWindowSnapshot(executingJob),
                         _ => executingJob,
@@ -580,6 +584,21 @@ namespace ColorVision.UI.Desktop.Operations
             catch
             {
                 result = new OperationsMqttRestartResult(false, "mqtt_restart_controller_failed");
+            }
+            return _workStore.CompleteJob(job.JobId, result.Success, result.EvidenceId) ?? job;
+        }
+
+        private OperationsJob ExecuteMessageChannelRecovery(OperationsJob job)
+        {
+            OperationsMessageChannelRecoveryResult result;
+            try
+            {
+                result = _messageChannelRecoveryController.Recover();
+            }
+            catch
+            {
+                result = new OperationsMessageChannelRecoveryResult(
+                    false, "message_channel:recovery_controller_failed");
             }
             return _workStore.CompleteJob(job.JobId, result.Success, result.EvidenceId) ?? job;
         }

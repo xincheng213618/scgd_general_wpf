@@ -8,6 +8,7 @@ namespace ColorVision.UI.Desktop.Operations
         public const string RequestMqttRestart = "triage.mqtt.restart.request";
         public const string ViewDeviceHealth = "triage.devices.view";
         public const string ViewMessageChannelHealth = "triage.messaging.view";
+        public const string RequestMessageChannelRecovery = "triage.messaging.reconnect.request";
         public const string ViewFailureEvidence = "triage.failures.view";
     }
 
@@ -64,7 +65,7 @@ namespace ColorVision.UI.Desktop.Operations
         public DateTimeOffset GeneratedAt { get; init; } = DateTimeOffset.UtcNow;
         public IReadOnlyList<OperationsTriageFinding> Findings { get; init; } = [];
         public string SafetyNotice { get; init; } =
-            "建议仅引用有界脱敏摘要。固定 MQTT 恢复、ColorVision 应用重启、脱敏诊断包与单次主窗口快照由已配对手机明确确认后执行；支持会话仍需电脑端本机同意。";
+            "建议仅引用有界脱敏摘要。消息通道恢复、固定 MQTT 服务重启、ColorVision 应用重启、脱敏诊断包与单次主窗口快照由已配对手机明确确认后执行；支持会话仍需电脑端本机同意。";
     }
 
     public static class OperationsTriageService
@@ -280,6 +281,30 @@ namespace ColorVision.UI.Desktop.Operations
                     severity = "warning";
                     break;
             }
+            List<OperationsTriageAction> actions =
+            [
+                new OperationsTriageAction
+                {
+                    ActionId = OperationsTriageActionIds.ViewMessageChannelHealth,
+                    Title = "查看消息通道健康",
+                    Kind = "client-navigation",
+                    RiskLevel = OperationsRiskLevels.ReadOnly,
+                    Description = "只查看脱敏连接状态、订阅计数和聚合活动时间，不执行重连、重启或任意目标操作。",
+                },
+            ];
+            if (messageChannel.State is OperationsMessageChannelStates.Disconnected or OperationsMessageChannelStates.Degraded)
+            {
+                actions.Add(new OperationsTriageAction
+                {
+                    ActionId = OperationsTriageActionIds.RequestMessageChannelRecovery,
+                    Title = "恢复消息通道",
+                    Kind = "approval-workflow",
+                    RiskLevel = OperationsRiskLevels.ApprovalRequired,
+                    Description = "手机确认后只重建当前已配置的 ColorVision 消息连接并恢复已登记订阅；健康通道保持不动。",
+                    RequiresConfirmation = true,
+                    RequiresLocalCoSign = false,
+                });
+            }
             findings.Add(new OperationsTriageFinding
             {
                 FindingId = "message-channel-attention",
@@ -289,17 +314,7 @@ namespace ColorVision.UI.Desktop.Operations
                 Summary = summary,
                 EvidenceCount = 1,
                 LatestAt = messageChannel.ObservedAt,
-                Actions =
-                [
-                    new OperationsTriageAction
-                    {
-                        ActionId = OperationsTriageActionIds.ViewMessageChannelHealth,
-                        Title = "查看消息通道健康",
-                        Kind = "client-navigation",
-                        RiskLevel = OperationsRiskLevels.ReadOnly,
-                        Description = "只查看脱敏连接状态、订阅计数和聚合活动时间，不执行重连、重启或任意目标操作。",
-                    },
-                ],
+                Actions = actions,
             });
         }
 

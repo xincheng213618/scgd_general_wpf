@@ -61,6 +61,17 @@ namespace ColorVision.UI.Tests
             Assert.False(applicationRestart.Approval.RequiresLocalCoSign);
             Assert.False(applicationRestart.SupportsCancellation);
             Assert.Equal("desktop-application", applicationRestart.Execution.Target);
+            OperationsCapabilityDescriptor messageChannelRecovery = Assert.Single(capabilities,
+                capability => capability.Id == "ops.messaging.reconnect");
+            Assert.True(messageChannelRecovery.Available);
+            Assert.Equal(OperationsRiskLevels.ApprovalRequired, messageChannelRecovery.RiskLevel);
+            Assert.Equal("ops.jobs.create", messageChannelRecovery.Permission);
+            Assert.Equal("paired-device-confirmation", messageChannelRecovery.Approval.Mode);
+            Assert.False(messageChannelRecovery.Approval.RequiresLocalCoSign);
+            Assert.False(messageChannelRecovery.SupportsCancellation);
+            Assert.Equal("current-message-client", messageChannelRecovery.Execution.Target);
+            Assert.False(messageChannelRecovery.InputSchema.GetType().GetProperty("additionalProperties")
+                ?.GetValue(messageChannelRecovery.InputSchema) as bool? ?? true);
         }
 
         [Fact]

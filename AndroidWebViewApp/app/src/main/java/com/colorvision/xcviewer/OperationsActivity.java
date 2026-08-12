@@ -240,7 +240,7 @@ public class OperationsActivity extends Activity {
                 pairingClient.submitClaim(payload, deviceName.trim());
                 runOnUiThread(() -> {
                     state.setText("已提交安全证明，请在电脑端批准这台设备");
-                    details.setText("设备：" + deviceName + "\n权限：状态、告警、崩溃与卡死线索、消息通道与设备运行状态汇总、诊断摘要、主窗口控制、受控窗口取证与当前检测取消\n配对码：一次性，短时有效");
+                    details.setText("设备：" + deviceName + "\n权限：状态、告警、崩溃与卡死线索、消息通道与设备运行状态汇总、受控消息恢复、诊断摘要、主窗口控制、受控窗口取证与当前检测取消\n配对码：一次性，短时有效");
                 });
                 pollPairingApproval(payload, pairingClient);
             } catch (Exception ex) {
@@ -330,8 +330,8 @@ public class OperationsActivity extends Activity {
                 dashboardButton("重启 MQTT", v -> confirmRestartMqtt()),
                 dashboardButton("重启 ColorVision", v -> confirmRestartApplication()));
         addDashboardActionRow(
-                dashboardButton("连接自检", v -> runConnectionSelfCheck()),
-                capabilityButton("刷新摘要", "/ops/v1/snapshot"));
+                dashboardButton("恢复消息通道", v -> confirmRecoverMessageChannel()),
+                dashboardButton("连接自检", v -> runConnectionSelfCheck()));
 
         addDashboardSection("状态与排障");
         addDashboardActionRow(
@@ -632,6 +632,10 @@ public class OperationsActivity extends Activity {
             case "triage.messaging.view":
                 button.setText("查看消息通道健康");
                 button.setOnClickListener(v -> loadCapability("/ops/v1/messaging/health"));
+                return button;
+            case "triage.messaging.reconnect.request":
+                button.setText("恢复消息通道（需手机确认）");
+                button.setOnClickListener(v -> confirmRecoverMessageChannel());
                 return button;
             case "triage.failures.view":
                 button.setText("查看崩溃与卡死线索");
@@ -1123,6 +1127,37 @@ public class OperationsActivity extends Activity {
                     Toast.makeText(this, "completed".equals(status)
                             ? "MQTT 消息服务已重启" : "MQTT 重启未完成，请查看作业结果", Toast.LENGTH_LONG).show();
                     showJobs();
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> showTransientError(ex));
+            }
+        });
+    }
+
+    private void confirmRecoverMessageChannel() {
+        new AlertDialog.Builder(this)
+                .setTitle("确认恢复消息通道")
+                .setMessage("只在 ColorVision 消息客户端断开或订阅未就绪时，使用电脑当前已有配置重建连接并恢复已登记订阅。健康通道不会断开；手机不能填写地址、端口、Topic、凭据或其他参数。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("确认恢复", (dialog, which) -> recoverMessageChannel())
+                .show();
+    }
+
+    private void recoverMessageChannel() {
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在检查并恢复 ColorVision 消息通道…");
+        executor.execute(() -> {
+            try {
+                JSONObject job = createAndApproveJob(
+                        "ops.messaging.reconnect", "现场消息通道恢复", new JSONObject(),
+                        "message_channel_recovery_job_missing", "已配对手机明确确认恢复当前消息通道");
+                String status = job.optString("status", "");
+                if (!"completed".equals(status)) {
+                    throw new IllegalStateException("message_channel_recovery_failed");
+                }
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "消息通道已就绪", Toast.LENGTH_LONG).show();
+                    loadCapability("/ops/v1/messaging/health");
                 });
             } catch (Exception ex) {
                 runOnUiThread(() -> showTransientError(ex));
@@ -2613,6 +2648,7 @@ public class OperationsActivity extends Activity {
             case "diagnostic-bundle-receipt": return "安全诊断包回执";
             case "window-snapshot-receipt": return "一次性主窗口快照回执";
             case "flow-cancel-request-receipt": return "检测取消请求回执";
+            case "message-channel-recovery-receipt": return "消息通道恢复回执";
             default: return "有界运维回执";
         }
     }
@@ -2997,6 +3033,17 @@ public class OperationsActivity extends Activity {
         }
         if (message.contains("application_restart_flow_active")) {
             return "当前检测仍在执行，为避免中断检测，电脑端已拒绝重启。";
+        }
+        if (message.contains("message_channel:unconfigured")) {
+            return "电脑端尚未配置有效消息服务地址，请先在电脑端完成配置。";
+        }
+        if (message.contains("message_channel_recovery_job_missing")) {
+            return "未找到本次消息通道恢复作业回执。";
+        }
+        if (message.contains("message_channel_recovery_failed")
+                || message.contains("message_channel:recovery_failed")
+                || message.contains("message_channel:recovery_timeout")) {
+            return "消息通道尚未恢复，请查看消息通道健康和作业时间线。";
         }
         if (message.contains("application_restart_flow_status_unavailable")) {
             return "暂时无法确认检测是否正在执行，已阻止重启。";

@@ -98,6 +98,25 @@ namespace ColorVision.UI.Desktop.Operations
         OperationsMessageChannelHealthSnapshot Capture();
     }
 
+    public sealed record OperationsMessageChannelRecoveryResult(bool Success, string EvidenceId);
+
+    public interface IOperationsMessageChannelRecoveryController
+    {
+        OperationsMessageChannelRecoveryResult Recover();
+    }
+
+    public sealed class UnavailableOperationsMessageChannelRecoveryController : IOperationsMessageChannelRecoveryController
+    {
+        public static UnavailableOperationsMessageChannelRecoveryController Instance { get; } = new();
+
+        private UnavailableOperationsMessageChannelRecoveryController()
+        {
+        }
+
+        public OperationsMessageChannelRecoveryResult Recover() =>
+            new(false, "message_channel:recovery_unavailable");
+    }
+
     public sealed class UnavailableOperationsMessageChannelHealthProvider : IOperationsMessageChannelHealthProvider
     {
         public static UnavailableOperationsMessageChannelHealthProvider Instance { get; } = new();

@@ -155,6 +155,12 @@ namespace ColorVision.UI.Tests
             Assert.Equal("error", channelFinding.Severity);
             Assert.Contains(channelFinding.Actions,
                 action => action.ActionId == OperationsTriageActionIds.ViewMessageChannelHealth);
+            OperationsTriageAction recovery = Assert.Single(channelFinding.Actions,
+                action => action.ActionId == OperationsTriageActionIds.RequestMessageChannelRecovery);
+            Assert.Equal(OperationsRiskLevels.ApprovalRequired, recovery.RiskLevel);
+            Assert.True(recovery.RequiresConfirmation);
+            Assert.False(recovery.RequiresLocalCoSign);
+            Assert.Equal("approval-workflow", recovery.Kind);
             OperationsTriageFinding deviceFinding = Assert.Single(report.Findings,
                 item => item.FindingId == "inspection-devices-attention");
             Assert.Contains("可能由通道问题引起", deviceFinding.Summary, StringComparison.Ordinal);
@@ -178,12 +184,32 @@ namespace ColorVision.UI.Tests
                     new OperationsMessageChannelObservation(true, true, 3, 3)));
 
             Assert.DoesNotContain(report.Findings, item => item.Category == "message-channel");
+            Assert.DoesNotContain(report.Findings.SelectMany(item => item.Actions),
+                action => action.ActionId == OperationsTriageActionIds.RequestMessageChannelRecovery);
             OperationsTriageFinding deviceFinding = Assert.Single(report.Findings,
                 item => item.FindingId == "inspection-devices-attention");
             Assert.Contains("消息通道当前正常", deviceFinding.Summary, StringComparison.Ordinal);
             Assert.Contains("未初始化 1 台", deviceFinding.Summary, StringComparison.Ordinal);
             Assert.Equal(1, report.DeviceUnavailableCount);
             Assert.Equal(1, report.DeviceUninitializedCount);
+        }
+
+        [Fact]
+        public void UnconfiguredMessageChannelDoesNotRecommendRecovery()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                messageChannel: OperationsMessageChannelHealthSnapshotFactory.Create(
+                    new OperationsMessageChannelObservation(false, false, 0, 0)));
+
+            OperationsTriageFinding finding = Assert.Single(report.Findings,
+                item => item.FindingId == "message-channel-attention");
+            Assert.Contains(finding.Actions,
+                action => action.ActionId == OperationsTriageActionIds.ViewMessageChannelHealth);
+            Assert.DoesNotContain(finding.Actions,
+                action => action.ActionId == OperationsTriageActionIds.RequestMessageChannelRecovery);
         }
 
         [Fact]

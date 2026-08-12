@@ -23,6 +23,7 @@ namespace ColorVision.UI.Desktop.Operations
         private IOperationsServiceHealthProvider _serviceHealthProvider = UnavailableOperationsServiceHealthProvider.Instance;
         private IOperationsDeviceHealthProvider _deviceHealthProvider = UnavailableOperationsDeviceHealthProvider.Instance;
         private IOperationsMessageChannelHealthProvider _messageChannelHealthProvider = UnavailableOperationsMessageChannelHealthProvider.Instance;
+        private IOperationsMessageChannelRecoveryController _messageChannelRecoveryController = UnavailableOperationsMessageChannelRecoveryController.Instance;
         private IOperationsFailureEvidenceProvider _failureEvidenceProvider = UnavailableOperationsFailureEvidenceProvider.Instance;
         private IOperationsFlowRuntimeStatusProvider _flowRuntimeStatusProvider = UnavailableOperationsFlowRuntimeStatusProvider.Instance;
         private IOperationsFlowRuntimeController _flowRuntimeController = UnavailableOperationsFlowRuntimeController.Instance;
@@ -129,6 +130,17 @@ namespace ColorVision.UI.Desktop.Operations
             }
         }
 
+        public void ConfigureMessageChannelRecoveryController(IOperationsMessageChannelRecoveryController controller)
+        {
+            ArgumentNullException.ThrowIfNull(controller);
+            lock (_syncRoot)
+            {
+                if (IsRunning)
+                    throw new InvalidOperationException("Configure the Operations message-channel recovery controller before starting the secure host.");
+                _messageChannelRecoveryController = controller;
+            }
+        }
+
         public void ConfigureFailureEvidenceProvider(IOperationsFailureEvidenceProvider provider)
         {
             ArgumentNullException.ThrowIfNull(provider);
@@ -171,6 +183,7 @@ namespace ColorVision.UI.Desktop.Operations
                         applicationRestartController: _applicationRestartController,
                          deviceHealthProvider: _deviceHealthProvider,
                          messageChannelHealthProvider: _messageChannelHealthProvider,
+                         messageChannelRecoveryController: _messageChannelRecoveryController,
                          failureEvidenceProvider: _failureEvidenceProvider);
                     _snapshotProvider = snapshotProvider;
                     _listener = new TcpListener(IPAddress.Any, port);

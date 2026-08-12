@@ -117,6 +117,7 @@ namespace ColorVision.UI.Tests
         [InlineData("ops.diagnostics.bundle.create")]
         [InlineData("ops.window.snapshot.capture")]
         [InlineData("ops.application.restart")]
+        [InlineData("ops.messaging.reconnect")]
         public void PairedPhoneDirectJobsExecuteAfterMobileDecisionWithoutLocalCoSign(string capabilityId)
         {
             string path = NewPath();
@@ -143,6 +144,7 @@ namespace ColorVision.UI.Tests
         [InlineData("ops.window.snapshot.capture")]
         [InlineData("ops.flow.cancel")]
         [InlineData("ops.application.restart")]
+        [InlineData("ops.messaging.reconnect")]
         public void PairedPhoneParameterlessJobsRejectRemoteInput(string capabilityId)
         {
             string path = NewPath();

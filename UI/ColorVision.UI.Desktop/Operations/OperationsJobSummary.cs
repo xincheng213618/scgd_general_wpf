@@ -110,6 +110,8 @@ namespace ColorVision.UI.Desktop.Operations
                     => "flow-cancel-request-receipt",
                 string value when value.StartsWith("application_restart:", StringComparison.Ordinal)
                     => "application-restart-receipt",
+                string value when value.StartsWith("message_channel:", StringComparison.Ordinal)
+                    => "message-channel-recovery-receipt",
                 "service_not_in_operations_allowlist" => "policy-rejection",
                 string value when value.Length == 32 && value.All(char.IsLetterOrDigit) => "diagnostic-bundle-receipt",
                 "" => "none",
@@ -132,6 +134,7 @@ namespace ColorVision.UI.Desktop.Operations
         {
             "ops.service.restart" => "重启白名单服务",
             "ops.application.restart" => "重启 ColorVision 应用",
+            "ops.messaging.reconnect" => "恢复 ColorVision 消息通道",
             "ops.diagnostics.bundle.create" => "生成安全诊断包",
             "ops.window.snapshot.capture" => "采集主窗口安全快照",
             "ops.flow.cancel" => "取消当前检测",
@@ -142,6 +145,7 @@ namespace ColorVision.UI.Desktop.Operations
         {
             "ops.service.restart" => "MQTT 消息服务",
             "ops.application.restart" => "当前 ColorVision 应用",
+            "ops.messaging.reconnect" => "当前 ColorVision 消息客户端",
             "ops.diagnostics.bundle.create" => "ColorVision 诊断摘要",
             "ops.window.snapshot.capture" => "ColorVision 主窗口",
             "ops.flow.cancel" => "当前主检测流程",
