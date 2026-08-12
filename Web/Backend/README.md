@@ -103,10 +103,11 @@ are authenticated by the desktop Operations certificate, while task requests
 from approved devices retain their P-256 signature for a second verification
 on the desktop. Device tasks are limited to empty-payload show/minimize actions
 for the current ColorVision main window, an empty-payload recovery of the current
-configured message connection and subscriptions, and a bounded diagnostic request;
-window handles, titles, process selectors, endpoints, topics, credentials, paths,
-commands, scripts, and arbitrary payload fields are rejected. The API-key relay
-remains available for compatible deployments.
+configured message connection and subscriptions, an empty-payload cancellation
+request for the active primary flow, and a bounded diagnostic request; window
+handles, titles, process selectors, flow or node selectors, endpoints, topics,
+credentials, paths, commands, scripts, and arbitrary payload fields are rejected.
+The API-key relay remains available for compatible deployments.
 
 Successful Bearer authentication still checks the active flag, expiry, secret,
 and scopes on every request. Only advisory `last_used_at` persistence is

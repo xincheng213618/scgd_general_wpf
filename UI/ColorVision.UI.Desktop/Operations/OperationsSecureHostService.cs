@@ -96,6 +96,7 @@ namespace ColorVision.UI.Desktop.Operations
                 _flowRuntimeStatusProvider = provider;
                 _flowRuntimeController = provider as IOperationsFlowRuntimeController
                     ?? UnavailableOperationsFlowRuntimeController.Instance;
+                _relay.ConfigureFlowRuntimeController(_flowRuntimeController);
             }
         }
 

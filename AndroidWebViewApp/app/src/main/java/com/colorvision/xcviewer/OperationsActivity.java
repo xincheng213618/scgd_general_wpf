@@ -100,6 +100,7 @@ public class OperationsActivity extends Activity {
     private boolean dashboardFlowAvailable;
     private boolean dashboardFlowActive;
     private boolean dashboardFlowCancelAvailable;
+    private boolean dashboardFlowCancelCapabilityAvailable;
     private boolean dashboardVisible;
     private volatile boolean remoteDashboard;
     private boolean showingDashboardSummary;
@@ -354,6 +355,7 @@ public class OperationsActivity extends Activity {
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
+        dashboardFlowCancelCapabilityAvailable = true;
 
         addDashboardSection("远程操作");
         addDashboardActionRow(
@@ -440,8 +442,10 @@ public class OperationsActivity extends Activity {
                 capabilities, OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW);
         boolean canRecoverMessageChannel = contains(
                 capabilities, OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL);
+        boolean canCancelFlow = contains(capabilities, OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW);
         boolean canRequestDiagnostics = contains(
                 capabilities, OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS);
+        dashboardFlowCancelCapabilityAvailable = canCancelFlow;
 
         addDashboardSection("远程操作");
         Button showWindow = dashboardButton("显示电脑主窗口", v -> runRemoteTask(
@@ -464,6 +468,10 @@ public class OperationsActivity extends Activity {
                 v -> confirmRemoteMessageChannelRecovery());
         recoverMessageChannel.setEnabled(canRecoverMessageChannel);
         addDashboardActionRow(diagnostics, recoverMessageChannel);
+        dashboardCancelFlowButton = dashboardButton(
+                "取消检测（读取中）", v -> confirmCancelCurrentFlow());
+        dashboardCancelFlowButton.setEnabled(false);
+        addDashboardWideAction(dashboardCancelFlowButton);
 
         if (monitor != null) {
             addDashboardSection("电脑签名状态");
@@ -803,6 +811,10 @@ public class OperationsActivity extends Activity {
                 state.setText("电脑主窗口已最小化");
             } else if (OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL.equals(capabilityId)) {
                 state.setText("电脑消息通道已就绪");
+            } else if (OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW.equals(capabilityId)) {
+                dashboardFlowCancelAvailable = false;
+                updateDashboardCancelFlowAction();
+                state.setText("已向当前检测发送取消请求");
             } else {
                 state.setText("远程诊断请求已完成");
             }
@@ -811,6 +823,10 @@ public class OperationsActivity extends Activity {
             state.setText("诊断请求已到达电脑");
             details.setText("为避免远程静默取证，诊断包仍需电脑端本机同意后生成。请求身份、时间和状态已写入运维审计。");
         } else if ("failed".equals(status) || "rejected".equals(status)) {
+            if (OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW.equals(capabilityId)) {
+                dashboardFlowCancelAvailable = false;
+                updateDashboardCancelFlowAction();
+            }
             state.setText("电脑端未执行远程请求");
             details.setText("请求已安全送达，但电脑端拒绝或执行失败。可刷新远程状态后重试；不会回退为任意命令执行。");
         } else if ("expired".equals(status)) {
@@ -1066,7 +1082,8 @@ public class OperationsActivity extends Activity {
         dashboardFlowActive = flow != null && flow.optBoolean("isActive", false);
         dashboardFlowCancelAvailable = dashboardFlowAvailable
                 && dashboardFlowActive
-                && flow.optBoolean("cancelAvailable", false);
+                && flow.optBoolean("cancelAvailable", false)
+                && dashboardFlowCancelCapabilityAvailable;
 
         dashboardFlowStatus.setText(OperationsDashboardStatusFormatter.flow(
                 dashboardFlowAvailable,
@@ -1127,6 +1144,7 @@ public class OperationsActivity extends Activity {
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
+        dashboardFlowCancelCapabilityAvailable = false;
     }
 
     private void updateDashboardCancelFlowAction() {
@@ -2443,9 +2461,17 @@ public class OperationsActivity extends Activity {
         }
         new AlertDialog.Builder(this)
                 .setTitle("取消当前检测？")
-                .setMessage("只会向当前主工作区正在执行的检测发送取消请求，不会选择、启动或修改其他流程，也不接受远程参数。确认后立即执行并记录审计。")
+                .setMessage(remoteDashboard
+                        ? "只会向已配对电脑当前主工作区正在执行的检测发送取消请求，不会选择、启动或修改其他流程，也不接受远程参数。请求由本机设备密钥签名，电脑核验后执行并返回签名收据。"
+                        : "只会向当前主工作区正在执行的检测发送取消请求，不会选择、启动或修改其他流程，也不接受远程参数。确认后立即执行并记录审计。")
                 .setNegativeButton("继续观察", null)
-                .setPositiveButton("确认取消检测", (dialog, which) -> requestCancelCurrentFlow())
+                .setPositiveButton("确认取消检测", (dialog, which) -> {
+                    if (remoteDashboard) {
+                        runRemoteTask(OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW, new JSONObject());
+                    } else {
+                        requestCancelCurrentFlow();
+                    }
+                })
                 .show();
     }
 

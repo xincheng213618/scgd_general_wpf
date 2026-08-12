@@ -348,6 +348,7 @@ class OperationsRelayTests(unittest.TestCase):
             ("ops.window.show", "show-window"),
             ("ops.window.minimize", "minimize-window"),
             ("ops.messaging.reconnect", "reconnect-message-channel"),
+            ("ops.flow.cancel", "cancel-current-flow"),
         ):
             body = self.json_bytes({
                 "hostId": identity["host_id"],
@@ -396,6 +397,24 @@ class OperationsRelayTests(unittest.TestCase):
             "message_reconnect_payload_not_allowed",
         )
 
+        cancel_payload_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.flow.cancel",
+            "payload": {"flowId": "remote-selection"},
+            "idempotencyKey": "cancel-with-payload",
+        })
+        cancel_rejected = self.client.post(
+            path,
+            data=cancel_payload_body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, cancel_payload_body),
+        )
+        self.assertEqual(cancel_rejected.status_code, 400)
+        self.assertEqual(
+            cancel_rejected.get_json()["error"],
+            "flow_cancel_payload_not_allowed",
+        )
+
     @staticmethod
     def json_bytes(value):
         return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -440,6 +459,7 @@ class OperationsRelayTests(unittest.TestCase):
             "ops.window.show",
             "ops.window.minimize",
             "ops.messaging.reconnect",
+            "ops.flow.cancel",
             "ops.diagnostics.request",
         ]
         snapshot = {"isRunning": True, "mainWindow": {"state": "Normal"}}

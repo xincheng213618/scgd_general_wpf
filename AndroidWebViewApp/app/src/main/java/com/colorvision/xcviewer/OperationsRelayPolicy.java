@@ -6,6 +6,7 @@ final class OperationsRelayPolicy {
     static final String CAPABILITY_SHOW_WINDOW = "ops.window.show";
     static final String CAPABILITY_MINIMIZE_WINDOW = "ops.window.minimize";
     static final String CAPABILITY_RECOVER_MESSAGE_CHANNEL = "ops.messaging.reconnect";
+    static final String CAPABILITY_CANCEL_FLOW = "ops.flow.cancel";
     static final String CAPABILITY_REQUEST_DIAGNOSTICS = "ops.diagnostics.request";
     static final long HOST_FRESH_MILLISECONDS = 180_000L;
     private static final long FUTURE_TOLERANCE_MILLISECONDS = 125_000L;
@@ -50,6 +51,7 @@ final class OperationsRelayPolicy {
         return CAPABILITY_SHOW_WINDOW.equals(capabilityId)
                 || CAPABILITY_MINIMIZE_WINDOW.equals(capabilityId)
                 || CAPABILITY_RECOVER_MESSAGE_CHANNEL.equals(capabilityId)
+                || CAPABILITY_CANCEL_FLOW.equals(capabilityId)
                 || CAPABILITY_REQUEST_DIAGNOSTICS.equals(capabilityId);
     }
 

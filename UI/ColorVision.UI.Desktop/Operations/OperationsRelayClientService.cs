@@ -18,12 +18,15 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly HttpClient _httpClient;
         private readonly bool _signedDeviceRelay;
         private readonly HashSet<string> _processedTasks = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> _processedIntentOutcomes = new(StringComparer.Ordinal);
         private CancellationTokenSource? _cts;
         private Task? _loop;
         private Func<object>? _snapshotProvider;
         private Func<OperationsLiveMonitorSnapshot?>? _monitorProvider;
         private IOperationsMessageChannelRecoveryController _messageChannelRecoveryController =
             UnavailableOperationsMessageChannelRecoveryController.Instance;
+        private IOperationsFlowRuntimeController _flowRuntimeController =
+            UnavailableOperationsFlowRuntimeController.Instance;
 
         public OperationsRelayClientService(
             OperationsServerIdentity identity,
@@ -68,6 +71,15 @@ namespace ColorVision.UI.Desktop.Operations
                 throw new InvalidOperationException(
                     "Configure the Operations message-channel recovery controller before starting the relay.");
             _messageChannelRecoveryController = controller;
+        }
+
+        public void ConfigureFlowRuntimeController(IOperationsFlowRuntimeController controller)
+        {
+            ArgumentNullException.ThrowIfNull(controller);
+            if (IsRunning)
+                throw new InvalidOperationException(
+                    "Configure the Operations flow-runtime controller before starting the relay.");
+            _flowRuntimeController = controller;
         }
 
         public void Start(
@@ -159,7 +171,7 @@ namespace ColorVision.UI.Desktop.Operations
                 _monitorProvider?.Invoke());
             string appVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty;
             string[] capabilities =
-                ["ops.window.show", "ops.window.minimize", "ops.messaging.reconnect", "ops.diagnostics.request"];
+                ["ops.window.show", "ops.window.minimize", "ops.messaging.reconnect", "ops.flow.cancel", "ops.diagnostics.request"];
             long signedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             string snapshotBody = JsonSerializer.Serialize(new
             {
@@ -231,14 +243,17 @@ namespace ColorVision.UI.Desktop.Operations
                 else if (verified!.CapabilityId is "ops.window.show" or "ops.window.minimize")
                 {
                     string intentKey = $"relay-intent:{verified.Device.DeviceId}:{verified.IdempotencyKey}";
+                    string? previousOutcome = _processedIntentOutcomes.GetValueOrDefault(intentKey)
+                        ?? _workStore.GetProcessedRelayIntentOutcome(
+                            verified.Device.DeviceId, verified.IdempotencyKey);
                     string actionId = verified.CapabilityId == "ops.window.show"
                         ? OperationsDesktopActionService.ShowWindowAction
                         : OperationsDesktopActionService.MinimizeWindowAction;
-                    if (_processedTasks.Contains(intentKey)
-                        || _workStore.HasProcessedRelayIntent(verified.Device.DeviceId, verified.IdempotencyKey))
+                    if (previousOutcome != null)
                     {
-                        status = "completed";
+                        status = previousOutcome;
                         evidence = new { actionId, deduplicated = true };
+                        _processedIntentOutcomes[intentKey] = status;
                     }
                     else
                     {
@@ -248,17 +263,20 @@ namespace ColorVision.UI.Desktop.Operations
                         evidence = new { result.ActionId, result.Message };
                         _workStore.RecordAudit(verified.Device.DeviceId, "device", "relay.intent.execute",
                             result.ActionId, status, verified.IdempotencyKey);
-                        _processedTasks.Add(intentKey);
+                        _processedIntentOutcomes[intentKey] = status;
                     }
                 }
                 else if (verified!.CapabilityId == "ops.messaging.reconnect")
                 {
                     string intentKey = $"relay-intent:{verified.Device.DeviceId}:{verified.IdempotencyKey}";
-                    if (_processedTasks.Contains(intentKey)
-                        || _workStore.HasProcessedRelayIntent(verified.Device.DeviceId, verified.IdempotencyKey))
+                    string? previousOutcome = _processedIntentOutcomes.GetValueOrDefault(intentKey)
+                        ?? _workStore.GetProcessedRelayIntentOutcome(
+                            verified.Device.DeviceId, verified.IdempotencyKey);
+                    if (previousOutcome != null)
                     {
-                        status = "completed";
+                        status = previousOutcome;
                         evidence = new { capabilityId = verified.CapabilityId, deduplicated = true };
+                        _processedIntentOutcomes[intentKey] = status;
                     }
                     else
                     {
@@ -276,7 +294,38 @@ namespace ColorVision.UI.Desktop.Operations
                         evidence = new { result.EvidenceId };
                         _workStore.RecordAudit(verified.Device.DeviceId, "device", "relay.intent.execute",
                             verified.CapabilityId, status, verified.IdempotencyKey);
-                        _processedTasks.Add(intentKey);
+                        _processedIntentOutcomes[intentKey] = status;
+                    }
+                }
+                else if (verified!.CapabilityId == "ops.flow.cancel")
+                {
+                    string intentKey = $"relay-intent:{verified.Device.DeviceId}:{verified.IdempotencyKey}";
+                    string? previousOutcome = _processedIntentOutcomes.GetValueOrDefault(intentKey)
+                        ?? _workStore.GetProcessedRelayIntentOutcome(
+                            verified.Device.DeviceId, verified.IdempotencyKey);
+                    if (previousOutcome != null)
+                    {
+                        status = previousOutcome;
+                        evidence = new { capabilityId = verified.CapabilityId, deduplicated = true };
+                        _processedIntentOutcomes[intentKey] = status;
+                    }
+                    else
+                    {
+                        OperationsFlowCancelResult result;
+                        try
+                        {
+                            result = _flowRuntimeController.RequestCancelCurrentFlow();
+                        }
+                        catch
+                        {
+                            result = new OperationsFlowCancelResult(
+                                false, "flow_control_failed", "The primary flow cancellation request failed.");
+                        }
+                        status = result.Accepted ? "completed" : "failed";
+                        evidence = new { result.Code };
+                        _workStore.RecordAudit(verified.Device.DeviceId, "device", "relay.intent.execute",
+                            verified.CapabilityId, status, verified.IdempotencyKey);
+                        _processedIntentOutcomes[intentKey] = status;
                     }
                 }
                 else

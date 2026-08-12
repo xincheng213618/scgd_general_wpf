@@ -525,14 +525,14 @@ namespace ColorVision.UI.Desktop.Operations
             Changed?.Invoke(this, EventArgs.Empty);
         }
 
-        public bool HasProcessedRelayIntent(string deviceId, string idempotencyKey)
+        public string? GetProcessedRelayIntentOutcome(string deviceId, string idempotencyKey)
         {
             lock (_syncRoot)
-                return _state.Audit.Any(item =>
+                return _state.Audit.LastOrDefault(item =>
                     string.Equals(item.ActorId, deviceId, StringComparison.Ordinal)
                     && string.Equals(item.ActorType, "device", StringComparison.Ordinal)
                     && string.Equals(item.Action, "relay.intent.execute", StringComparison.Ordinal)
-                    && string.Equals(item.CorrelationId, idempotencyKey, StringComparison.Ordinal));
+                    && string.Equals(item.CorrelationId, idempotencyKey, StringComparison.Ordinal))?.Outcome;
         }
 
         public bool RecordAuditThrottled(

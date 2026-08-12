@@ -209,6 +209,29 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void RelayIntentIdempotencyPreservesTheOriginalFailureOutcomeAfterRestart()
+        {
+            string path = NewPath();
+            try
+            {
+                OperationsWorkStore firstStore = new(path);
+                firstStore.RecordAudit(
+                    "phone-1", "device", "relay.intent.execute",
+                    "ops.flow.cancel", "failed", "cancel-request-1");
+
+                OperationsWorkStore reloadedStore = new(path);
+                Assert.Equal("failed", reloadedStore.GetProcessedRelayIntentOutcome(
+                    "phone-1", "cancel-request-1"));
+                Assert.Null(reloadedStore.GetProcessedRelayIntentOutcome(
+                    "phone-1", "different-request"));
+            }
+            finally
+            {
+                DeletePath(path);
+            }
+        }
+
+        [Fact]
         public void DeploymentReceiptAndSupportRequestAreBoundedAndAudited()
         {
             string path = NewPath();
