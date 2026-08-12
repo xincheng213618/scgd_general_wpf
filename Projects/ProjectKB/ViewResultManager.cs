@@ -31,19 +31,19 @@ namespace ProjectKB
         private double _Height = 300;
 
 
-        [DisplayName("LV CSV保存路径（LU）"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("KB")]
+        [DisplayName("LV CSV保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("KB")]
         public string CsvSavePath { get => _CsvSavePath; set { _CsvSavePath = value; OnPropertyChanged(); } }
         private string _CsvSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "KB");
 
-        [DisplayName("自动导出LV CSV（LU）"), Category("KB")]
+        [DisplayName("自动导出LV CSV"), Category("KB")]
         public bool AutoSaveLvCsv { get => _AutoSaveLvCsv; set { _AutoSaveLvCsv = value; OnPropertyChanged(); } }
         private bool _AutoSaveLvCsv = true;
 
-        [DisplayName("LC CSV保存路径（LO）"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("KB")]
+        [DisplayName("LC CSV保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("KB")]
         public string LcCsvSavePath { get => _LcCsvSavePath; set { _LcCsvSavePath = value; OnPropertyChanged(); } }
         private string _LcCsvSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "KB");
 
-        [DisplayName("自动导出LC CSV（LO）"), Category("KB")]
+        [DisplayName("自动导出LC CSV"), Category("KB")]
         public bool AutoSaveLcCsv { get => _AutoSaveLcCsv; set { _AutoSaveLcCsv = value; OnPropertyChanged(); } }
         private bool _AutoSaveLcCsv = true;
 
@@ -179,7 +179,7 @@ namespace ProjectKB
             string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
             string regexPattern = $"[{Regex.Escape(invalidChars)}]";
             string safeModel = Regex.Replace(item.Model ?? string.Empty, regexPattern, "");
-            string suffix = dataType == KBCsvDataType.Lv ? "LU" : "LO";
+            string suffix = dataType == KBCsvDataType.Lv ? "LV" : "LC";
             return Path.Combine(savePath, $"{safeModel}_{item.CreateTime:yyyyMMdd}-{suffix}.csv");
         }
 

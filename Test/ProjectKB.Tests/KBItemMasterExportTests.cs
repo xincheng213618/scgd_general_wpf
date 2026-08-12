@@ -129,7 +129,7 @@ public class KBItemMasterExportTests
     }
 
     [Fact]
-    public void CsvPathsUseLuAndLoSuffixes()
+    public void CsvPathsUseLvAndLcSuffixes()
     {
         var result = new KBItemMaster
         {
@@ -140,7 +140,7 @@ public class KBItemMasterExportTests
         string lvPath = ViewResultManager.BuildCsvPath(result, @"C:\Exports\Lv", KBCsvDataType.Lv);
         string lcPath = ViewResultManager.BuildCsvPath(result, @"C:\Exports\Lc", KBCsvDataType.Lc);
 
-        Assert.Equal(@"C:\Exports\Lv\MODELA_20260812-LU.csv", lvPath);
-        Assert.Equal(@"C:\Exports\Lc\MODELA_20260812-LO.csv", lcPath);
+        Assert.Equal(@"C:\Exports\Lv\MODELA_20260812-LV.csv", lvPath);
+        Assert.Equal(@"C:\Exports\Lc\MODELA_20260812-LC.csv", lcPath);
     }
 }

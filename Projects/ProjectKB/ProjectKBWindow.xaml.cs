@@ -2008,8 +2008,8 @@ namespace ProjectKB
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Delete });
             contextMenu.Items.Add(new MenuItem() { Command = ApplicationCommands.Copy, Header = "复制" });
-            contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveCommand, Header = "重新导出 LV CSV（LU）..." });
-            contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveLcCommand, Header = "重新导出 LC CSV（LO）..." });
+            contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveCommand, Header = "重新导出 LV CSV..." });
+            contextMenu.Items.Add(new MenuItem() { Command = ViewResultManager.SaveLcCommand, Header = "重新导出 LC CSV..." });
             contextMenu.Items.Add(new Separator());
             contextMenu.Items.Add(new MenuItem() { Command = openFolderCommand, Header = "OpenFolderAndSelectFile" });
             contextMenu.Items.Add(new MenuItem() { Command = flowExecutionAnalysisCommand, Header = "流程执行分析" });

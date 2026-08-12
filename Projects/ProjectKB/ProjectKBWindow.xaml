@@ -50,10 +50,10 @@
                             </ToolBar>
                         </ToolBarTray>
                         <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
-                            <Button Command="{Binding ViewResultManager.SaveCommand}" ToolTip="重新导出 LV CSV（LU）" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
+                            <Button Command="{Binding ViewResultManager.SaveCommand}" ToolTip="重新导出 LV CSV" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
                                 <Image Width="16" Height="16" Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
                             </Button>
-                            <Button Command="{Binding ViewResultManager.SaveLcCommand}" Content="LC" ToolTip="重新导出 LC CSV（LO）" Padding="2" Height="25" Width="30" Margin="0,1,5,0"/>
+                            <Button Command="{Binding ViewResultManager.SaveLcCommand}" Content="LC" ToolTip="重新导出 LC CSV" Padding="2" Height="25" Width="30" Margin="0,1,5,0"/>
                             <Button Click="Button_Click_Clear" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
                                 <Button.Triggers>
                                     <EventTrigger RoutedEvent="Button.Click">
