@@ -79,6 +79,13 @@ package hash costing about 381.9 ms moved to index refresh work.
 - Included same-name historical package overwrites plus plugin README and
   changelog edits in plugin signatures.
 - Moved package hashes out of GET and exposed an explicit `hashPending` state.
+- Coalesced API-key `last_used_at` persistence to one write per key per minute;
+  an instrumented 20-request same-minute verification performs one usage write
+  instead of 20 while active/expiry/secret/scope checks still run every time.
+  In a 50-verification comparison, the prior forced-write path issued 50
+  updates/commits in 3.38 s versus 1 update/commit in 3.22 s; cryptographic key
+  verification still dominates CPU time, while the removed cost is SQLite
+  write-lock and WAL amplification.
 - Replaced raw SQLite file copies with SQLite online backup, integrity checking,
   and atomic replacement so committed WAL content is included.
 - Added bounded, batched access analytics with normalized route templates,
@@ -102,7 +109,7 @@ package hash costing about 381.9 ms moved to index refresh work.
    completion-aware `ArtifactDeliveryService`, with correct GET/HEAD/range
    semantics and one download event contract.
 4. Add an indexed browse query instead of sorting/scanning an entire directory,
-   and throttle API-key `last_used` writes and heartbeat write amplification.
+   and throttle heartbeat write amplification.
 5. Add separate, versioned SPA page-view and Web Vitals ingestion. Server HTTP
    requests, page views, downloads, sessions, and visitors must remain distinct
    metrics; trusted-proxy client identity also needs explicit configuration.

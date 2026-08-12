@@ -8,6 +8,7 @@ import os
 import tempfile
 import unittest
 import zipfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -1186,6 +1187,115 @@ class PluginIndexTests(unittest.TestCase):
         )
         usage = response.get_json()
         self.assertIsNotNone(usage.get("last_used_at"))
+
+    def test_api_key_last_used_writes_are_coalesced_per_minute(self):
+        from services.api_key_service import (
+            create_api_key,
+            get_api_key_usage,
+            verify_api_key,
+        )
+
+        key_data = create_api_key(
+            self.cache,
+            name="Coalesced Usage Key",
+            scopes="stats:read",
+        )
+        statements: list[str] = []
+        original_get_db = self.cache.get_db
+
+        def traced_get_db():
+            db = original_get_db()
+            db.set_trace_callback(statements.append)
+            return db
+
+        started = datetime(2030, 1, 1, tzinfo=timezone.utc)
+        with patch.object(self.cache, "get_db", side_effect=traced_get_db):
+            with patch("services.api_key_service._utc_now", return_value=started):
+                for _ in range(20):
+                    self.assertIsNotNone(verify_api_key(self.cache, key_data["key"]))
+            first_used = get_api_key_usage(self.cache, key_data["id"])["last_used_at"]
+
+            with patch(
+                "services.api_key_service._utc_now",
+                return_value=started + timedelta(seconds=59),
+            ):
+                self.assertIsNotNone(verify_api_key(self.cache, key_data["key"]))
+            self.assertEqual(
+                get_api_key_usage(self.cache, key_data["id"])["last_used_at"],
+                first_used,
+            )
+
+            with patch(
+                "services.api_key_service._utc_now",
+                return_value=started + timedelta(seconds=60),
+            ):
+                self.assertIsNotNone(verify_api_key(self.cache, key_data["key"]))
+            refreshed_used = get_api_key_usage(self.cache, key_data["id"])["last_used_at"]
+
+        updates = [
+            statement for statement in statements
+            if "UPDATE API_KEYS SET LAST_USED_AT" in " ".join(statement.upper().split())
+        ]
+        self.assertEqual(len(updates), 2)
+        self.assertNotEqual(refreshed_used, first_used)
+
+    def test_api_key_usage_write_failure_does_not_reject_verified_key(self):
+        from services.api_key_service import create_api_key, verify_api_key
+
+        key_data = create_api_key(
+            self.cache,
+            name="Usage Telemetry Failure Key",
+            scopes="stats:read",
+        )
+
+        with patch(
+            "services.api_key_service._refresh_last_used_at",
+            side_effect=RuntimeError("database busy"),
+        ), patch("builtins.print"):
+            verified = verify_api_key(self.cache, key_data["key"])
+
+        self.assertIsNotNone(verified)
+        self.assertEqual(verified["id"], key_data["id"])
+
+    def test_api_key_last_used_compare_and_set_rejects_stale_duplicate_refresh(self):
+        from services.api_key_service import (
+            _refresh_last_used_at,
+            create_api_key,
+            get_api_key_usage,
+        )
+
+        key_data = create_api_key(
+            self.cache,
+            name="Concurrent Usage Key",
+            scopes="stats:read",
+        )
+        first_db = self.cache.get_db()
+        second_db = self.cache.get_db()
+        try:
+            first_row = first_db.execute(
+                "SELECT * FROM api_keys WHERE id = ?", (key_data["id"],)
+            ).fetchone()
+            stale_second_row = second_db.execute(
+                "SELECT * FROM api_keys WHERE id = ?", (key_data["id"],)
+            ).fetchone()
+            started = datetime(2030, 1, 1, tzinfo=timezone.utc)
+
+            first_result = _refresh_last_used_at(first_db, first_row, started)
+            stale_result = _refresh_last_used_at(
+                second_db,
+                stale_second_row,
+                started + timedelta(seconds=1),
+            )
+        finally:
+            first_db.close()
+            second_db.close()
+
+        self.assertEqual(first_result, started.isoformat())
+        self.assertIsNone(stale_result)
+        self.assertEqual(
+            get_api_key_usage(self.cache, key_data["id"])["last_used_at"],
+            started.isoformat(),
+        )
 
 
 if __name__ == "__main__":

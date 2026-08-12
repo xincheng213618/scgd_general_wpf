@@ -460,6 +460,8 @@ try {
             'test_app.MarketplaceAppTests.test_plugins_frontend_uses_catalog_categories_without_second_request',
             'test_app.MarketplaceAppTests.test_plugin_web_detail_view_paginates_history_and_preserves_order',
             'test_app.MarketplaceAppTests.test_plugin_detail_frontend_uses_compact_history_pagination',
+            'test_plugin_index.PluginIndexTests.test_api_key_last_used_writes_are_coalesced_per_minute',
+            'test_plugin_index.PluginIndexTests.test_api_key_usage_write_failure_does_not_reject_verified_key',
             'test_artifact_index.BrowsePaginationTests.test_browse_search_matches_items_beyond_the_default_page',
             'test_artifact_index.BrowsePaginationTests.test_browse_search_does_not_expand_public_storage_policy',
             'test_artifact_index.BrowsePaginationTests.test_browse_file_payload_has_a_frontend_file_detail_contract',

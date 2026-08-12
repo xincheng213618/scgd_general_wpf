@@ -97,6 +97,11 @@ Create a desktop relay key with `python app.py --create-api-key colorvision-rela
 `COLORVISION_OPERATIONS_RELAY_KEY` in the ColorVision process environment. The desktop initiates every Web connection;
 no inbound port or arbitrary command channel is opened.
 
+Successful Bearer authentication still checks the active flag, expiry, secret,
+and scopes on every request. Only advisory `last_used_at` persistence is
+coalesced to at most once per key per minute to avoid turning polling reads into
+continuous SQLite writes.
+
 ### Endpoint Scopes
 
 | Endpoint | Required Scope |

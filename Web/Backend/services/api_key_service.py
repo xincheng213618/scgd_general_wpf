@@ -13,7 +13,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from db_cache import CacheManager
@@ -25,10 +25,45 @@ except ImportError:  # pragma: no cover
     check_password_hash = None
 
 KEY_PREFIX = "cvmp"
+LAST_USED_WRITE_INTERVAL = timedelta(minutes=1)
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return _utc_now().isoformat()
+
+
+def _last_used_write_due(last_used_at: str | None, now: datetime) -> bool:
+    if not last_used_at:
+        return True
+    try:
+        previous = datetime.fromisoformat(last_used_at)
+        if previous.tzinfo is None:
+            previous = previous.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return True
+    elapsed = now - previous
+    return elapsed < timedelta(0) or elapsed >= LAST_USED_WRITE_INTERVAL
+
+
+def _refresh_last_used_at(db, row, now: datetime) -> str | None:
+    previous = row["last_used_at"]
+    if not _last_used_write_due(previous, now):
+        return previous
+
+    updated = now.isoformat()
+    cursor = db.execute(
+        """UPDATE api_keys SET last_used_at = ?
+           WHERE id = ? AND COALESCE(last_used_at, '') = ?""",
+        (updated, row["id"], str(previous or "")),
+    )
+    if cursor.rowcount:
+        db.commit()
+        return updated
+    return previous
 
 
 def _generate_key() -> tuple[str, str, str]:
@@ -124,13 +159,15 @@ def verify_api_key(
         if not _verify_secret(secret, row["key_hash"]):
             return None
 
+        now = _utc_now()
+
         # Check expiration
         if row["expires_at"]:
             try:
                 exp = datetime.fromisoformat(row["expires_at"])
                 if exp.tzinfo is None:
                     exp = exp.replace(tzinfo=timezone.utc)
-                if datetime.now(timezone.utc) > exp:
+                if now > exp:
                     return None
             except (ValueError, TypeError):
                 pass
@@ -143,15 +180,14 @@ def verify_api_key(
                     if scope not in key_scopes:
                         return None
 
-        # Update last_used_at
-        now = _now_iso()
-        db.execute(
-            "UPDATE api_keys SET last_used_at = ? WHERE id = ?",
-            (now, row["id"]),
-        )
-        db.commit()
-
-        return dict(row)
+        key_info = dict(row)
+        try:
+            key_info["last_used_at"] = _refresh_last_used_at(db, row, now)
+        except Exception as exc:
+            # Usage metadata is advisory. A transient write lock must not turn
+            # an already verified credential into an authentication failure.
+            print(f"[api_key] last-used refresh skipped for prefix '{prefix}': {exc}")
+        return key_info
     except Exception as exc:
         print(f"[api_key] verify failed for prefix '{prefix}': {exc}")
         return None
