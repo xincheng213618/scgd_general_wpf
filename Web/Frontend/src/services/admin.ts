@@ -8,6 +8,7 @@ import type {
   CreateApiKeyPayload,
   CreateApiKeyResult,
   DocsStatus,
+  DeploymentHistoryResponse,
   PublishIntegrityReport,
   ScheduledJob,
   TrafficStatsResponse,
@@ -92,6 +93,24 @@ export function getAuditLog(params: {
   if (params.actor) search.set('actor', params.actor)
   if (params.target) search.set('target', params.target)
   return getJson<AuditLogResponse>(`/api/admin/audit-log?${search.toString()}`)
+}
+
+export function getDeploymentHistory(params: {
+  current?: number
+  pageSize?: number
+  status?: string
+  source?: string
+  commit?: string
+}) {
+  const pageSize = params.pageSize ?? 20
+  const current = params.current ?? 1
+  const search = new URLSearchParams()
+  search.set('limit', String(pageSize))
+  search.set('offset', String((current - 1) * pageSize))
+  if (params.status) search.set('status', params.status)
+  if (params.source) search.set('source', params.source)
+  if (params.commit) search.set('commit', params.commit)
+  return getJson<DeploymentHistoryResponse>(`/api/admin/deployments?${search.toString()}`)
 }
 
 export function listUsers() {

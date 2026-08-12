@@ -10,6 +10,7 @@ param(
     [ValidateRange(2, 1000)][int]$KeepSuccessfulBackups = 10,
     [ValidateRange(1, 1000)][int]$KeepFailedBackups = 3,
     [ValidateRange(1, 1000)][int]$KeepGitBundles = 3,
+    [ValidateRange(20, 100000)][int]$KeepHistoryRecords = 500,
     [string]$RemoteGitBundle = "",
     [switch]$Force,
     [switch]$SkipTests,
@@ -85,6 +86,7 @@ $port = __PORT__
 $keepSuccessfulBackups = __KEEP_SUCCESSFUL_BACKUPS__
 $keepFailedBackups = __KEEP_FAILED_BACKUPS__
 $keepGitBundles = __KEEP_GIT_BUNDLES__
+$keepHistoryRecords = __KEEP_HISTORY_RECORDS__
 $remoteGitBundle = __REMOTE_GIT_BUNDLE__
 $forceDeploy = __FORCE__
 $skipTests = __SKIP_TESTS__
@@ -167,10 +169,27 @@ function Get-GitBundleTargetCommit {
 function Write-DeploymentHistory {
     param([Parameter(Mandatory)]$Record)
 
-    if (-not (Test-Path -LiteralPath $storagePath)) {
-        throw "Storage path does not exist: $storagePath"
+    try {
+        if (-not (Test-Path -LiteralPath $storagePath)) {
+            throw "Storage path does not exist: $storagePath"
+        }
+        $modulePath = Join-Path $repoPath 'Web\DeploymentHistory.psm1'
+        if (-not (Test-Path -LiteralPath $modulePath -PathType Leaf)) {
+            throw "Deployment history module does not exist: $modulePath"
+        }
+        Import-Module $modulePath -Force
+        Write-WebDeploymentHistory `
+            -HistoryPath $historyPath `
+            -Record $Record `
+            -KeepRecords $keepHistoryRecords | Out-Null
+    } catch {
+        $Record['history_retention'] = [ordered]@{
+            status = 'error'
+            keep_records = $keepHistoryRecords
+            error = $_.Exception.Message
+        }
+        Write-Warning "Deployment history write failed: $($_.Exception.Message)"
     }
-    Add-Content -LiteralPath $historyPath -Value ($Record | ConvertTo-Json -Compress -Depth 6) -Encoding UTF8
 }
 
 function Invoke-TransportBundleRetention {
@@ -496,6 +515,14 @@ try {
             '-ExecutionPolicy',
             'Bypass',
             '-File',
+            (Join-Path $repoPath 'Web\Test-DeploymentHistory.ps1')
+        )
+        Invoke-NativeCommand -FilePath 'powershell.exe' -ArgumentList @(
+            '-NoProfile',
+            '-NonInteractive',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-File',
             (Join-Path $repoPath 'Web\Test-GitBundleRetention.ps1')
         )
         Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @(
@@ -509,6 +536,7 @@ try {
             'test_runtime_logging',
             'test_jobs_repository',
             'test_admin_data_retention',
+            'test_deployment_history',
             'test_page_contexts',
             'test_copilot_config_api',
             'test_spectrum_api',
@@ -533,6 +561,7 @@ try {
             'test_contracts.AuthContracts.test_session_csrf_token_rotates_across_authentication_boundaries',
             'test_contracts.AuthContracts.test_cross_origin_auth_write_is_rejected_before_login',
             'test_contracts.AuthContracts.test_same_origin_session_admin_write_requires_csrf_token',
+            'test_contracts.AdminApiContracts.test_deployment_history_is_admin_only_paginated_and_sanitized',
             'test_transfer_files.TransferRouteTests.test_browser_session_transfer_write_requires_csrf_token',
             'test_transfer_files.TransferRouteTests.test_browser_transfer_auth_avoids_basic_challenge_and_redirects_navigation',
             'test_transfer_files.TransferRouteTests.test_transfer_upload_download_list_and_delete_with_basic_auth',
@@ -596,6 +625,10 @@ try {
     $copilotAssets = @(Get-ChildItem -LiteralPath (Join-Path $liveDistPath 'assets') -Filter 'CopilotConfigPage-*.js' -File)
     if ($copilotAssets.Count -eq 0) {
         throw 'CopilotConfigPage frontend asset is missing from the live build.'
+    }
+    $deploymentHistoryAssets = @(Get-ChildItem -LiteralPath (Join-Path $liveDistPath 'assets') -Filter 'DeploymentHistoryPage-*.js' -File)
+    if ($deploymentHistoryAssets.Count -eq 0) {
+        throw 'DeploymentHistoryPage frontend asset is missing from the live build.'
     }
 
     $analyticsCode = "import json,sqlite3,sys; db=sqlite3.connect(sys.argv[1]); names=['access_daily','access_route_daily','access_client_daily','access_visitor_daily']; print(json.dumps({name:db.execute('select count(*) from '+name).fetchone()[0] for name in names})); db.close()"
@@ -708,6 +741,7 @@ $replacements = [ordered]@{
     '__KEEP_SUCCESSFUL_BACKUPS__' = $KeepSuccessfulBackups.ToString([Globalization.CultureInfo]::InvariantCulture)
     '__KEEP_FAILED_BACKUPS__' = $KeepFailedBackups.ToString([Globalization.CultureInfo]::InvariantCulture)
     '__KEEP_GIT_BUNDLES__' = $KeepGitBundles.ToString([Globalization.CultureInfo]::InvariantCulture)
+    '__KEEP_HISTORY_RECORDS__' = $KeepHistoryRecords.ToString([Globalization.CultureInfo]::InvariantCulture)
     '__REMOTE_GIT_BUNDLE__' = ConvertTo-PowerShellLiteral $RemoteGitBundle
     '__FORCE__' = if ($Force) { '$true' } else { '$false' }
     '__SKIP_TESTS__' = if ($SkipTests) { '$true' } else { '$false' }

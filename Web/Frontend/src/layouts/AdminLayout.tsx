@@ -4,6 +4,7 @@ import {
   AuditOutlined,
   BarChartOutlined,
   CloudUploadOutlined,
+  CloudServerOutlined,
   DashboardOutlined,
   DatabaseOutlined,
   FolderOpenOutlined,
@@ -30,6 +31,7 @@ const routeTitles: Record<string, string> = {
   '/admin/files': '文件管理',
   '/admin/cache': '缓存与索引',
   '/admin/jobs': '任务调度',
+  '/admin/deployments': '部署历史',
   '/admin/users': '账号管理',
   '/admin/api-keys': 'API Key',
   '/admin/copilot': 'Copilot 配置',
@@ -77,6 +79,11 @@ const route = {
           path: '/admin/jobs',
           name: '任务调度',
           icon: <ReloadOutlined />,
+        },
+        {
+          path: '/admin/deployments',
+          name: '部署历史',
+          icon: <CloudServerOutlined />,
         },
         {
           path: '/admin/api-keys',

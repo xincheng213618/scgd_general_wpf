@@ -123,6 +123,7 @@ continuous SQLite writes.
 | GET `/api/admin/stats/overview` | `stats:read` |
 | GET `/api/admin/stats/traffic` | `stats:read` |
 | GET `/api/admin/audit-log` | `admin:*` |
+| GET `/api/admin/deployments` | `admin:*` |
 | User account management | `admin:*` |
 | API Key management | `admin:*` |
 
@@ -208,6 +209,17 @@ Audit rows are retained for 365 days by default. The daily
 recognized administrator-created database snapshot, so a backup cannot bypass
 the audit retention contract.
 
+### Deployment History
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/deployments?status=&source=&commit=&limit=&offset=` | View sanitized, latest-first NAS deployment history |
+
+The response includes exact filtered totals plus aggregate status/source and
+malformed-record counts. It intentionally omits server names, absolute paths,
+runtime log paths, and raw errors; failed records expose only a coarse failure
+category. The deployment writer keeps 500 valid records by default.
+
 ### Stats
 
 | Method | Endpoint | Description |
@@ -280,6 +292,7 @@ and any rotation errors.
 | `/admin/api-keys` | API Key lifecycle management |
 | `/admin/users` | Registered account status management |
 | `/admin/jobs` | Scheduled job management |
+| `/admin/deployments` | Sanitized NAS deployment history and retention results |
 | `/admin/audit` | Audit log viewer |
 | `/admin/traffic` | Privacy-preserving request traffic and recorder health |
 
@@ -451,7 +464,8 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 | `services/storage_events.py` | Post-upload/publish index refresh dispatcher |
 | `cli.py` | CLI argument parsing and command execution |
 | `db/schema_version.py` | Schema version tracking and migrations |
-| `routes/admin_api.py` | Admin REST API (cache, index, jobs, audit, keys, perf) |
+| `routes/admin_api.py` | Admin REST API (cache, index, jobs, audit, deployments, keys, perf) |
+| `services/deployment_history.py` | Sanitized deployment-history query and pagination |
 | `routes/frontend_spa.py` | React SPA static hosting and `/admin` auth gate |
 | `routes/pages.py` | Public site-data and download APIs |
 | `routes/public_pages.py` | Session login/logout APIs and form redirects |

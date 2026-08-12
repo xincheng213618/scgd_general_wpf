@@ -1085,6 +1085,40 @@ class AdminApiContracts(ContractTestBase):
         data = resp.get_json()
         self.assertIn("entries", data)
 
+    def test_deployment_history_is_admin_only_paginated_and_sanitized(self):
+        history = self.storage / "web-deploy-history.jsonl"
+        history.write_text(
+            json.dumps({
+                "timestamp": "2026-08-12T12:00:00+08:00",
+                "status": "success",
+                "source": "origin",
+                "deployed_commit": "c" * 40,
+                "server": "PRIVATE-NAS",
+                "backup_path": r"D:\ColorVision\web-deploy-backups\20260812-120000",
+            }) + "\n",
+            encoding="utf-8",
+        )
+
+        unauthenticated = self.client.get("/api/admin/deployments")
+        self.assertEqual(unauthenticated.status_code, 401)
+        response = self.client.get(
+            "/api/admin/deployments?limit=10&offset=0&status=success",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["total"], 1)
+        self.assertEqual(payload["entries"][0]["backup_name"], "20260812-120000")
+        serialized = json.dumps(payload)
+        self.assertNotIn("PRIVATE-NAS", serialized)
+        self.assertNotIn("D:\\", serialized)
+
+        invalid = self.client.get(
+            "/api/admin/deployments?limit=invalid",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(invalid.status_code, 400)
+
     def test_stats_overview_returns_counts(self):
         resp = self.client.get("/api/admin/stats/overview", headers=self.basic_auth())
         self.assertEqual(resp.status_code, 200)

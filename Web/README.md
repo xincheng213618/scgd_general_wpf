@@ -50,8 +50,17 @@ python app.py --port 9998
 `-RepoPath`, `-StoragePath`, `-TaskPath`, `-TaskName`, or `-Port` when another
 host uses a different layout. Each deployment preserves the production config,
 SQLite database, and previous frontend build under
-`D:\ColorVision\web-deploy-backups`, then appends the result to
+`D:\ColorVision\web-deploy-backups`, then records the result in
 `D:\ColorVision\web-deploy-history.jsonl`.
+
+Deployment history keeps the newest 500 valid JSON records by default. Each
+write validates the existing file and replaces it atomically; malformed legacy
+content is preserved for manual repair instead of being silently discarded.
+History-write errors are reported without rolling back an otherwise healthy
+service. Override the limit with `-KeepHistoryRecords` (minimum 20). The
+administrator-only `/admin/deployments` page provides latest-first status,
+commit, verification, and retention summaries without exposing NAS paths,
+server names, runtime log paths, or raw deployment errors.
 
 After a deployment passes tests, process verification, health, and readiness,
 the backup history keeps the newest 10 successful deployments and 3 failed

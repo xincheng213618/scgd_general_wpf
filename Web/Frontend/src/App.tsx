@@ -24,6 +24,7 @@ const documentTitles: Record<string, string> = {
   '/admin/files': '文件管理 - ColorVision',
   '/admin/cache': '缓存与索引 - ColorVision',
   '/admin/jobs': '任务调度 - ColorVision',
+  '/admin/deployments': '部署历史 - ColorVision',
   '/admin/users': '账号管理 - ColorVision',
   '/admin/api-keys': 'API Key - ColorVision',
   '/admin/copilot': 'Copilot 配置 - ColorVision',
@@ -59,6 +60,7 @@ const CachePage = lazy(() => import('./pages/CachePage').then((module) => ({ def
 const ChangelogPage = lazy(() => import('./pages/ChangelogPage').then((module) => ({ default: module.ChangelogPage })))
 const CopilotConfigPage = lazy(() => import('./pages/CopilotConfigPage').then((module) => ({ default: module.CopilotConfigPage })))
 const Dashboard = lazy(() => import('./pages/Dashboard').then((module) => ({ default: module.Dashboard })))
+const DeploymentHistoryPage = lazy(() => import('./pages/DeploymentHistoryPage').then((module) => ({ default: module.DeploymentHistoryPage })))
 const FilesPage = lazy(() => import('./pages/FilesPage').then((module) => ({ default: module.FilesPage })))
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })))
 const JobsPage = lazy(() => import('./pages/JobsPage').then((module) => ({ default: module.JobsPage })))
@@ -245,6 +247,7 @@ function App() {
               <Route path="files" element={<FilesPage />} />
               <Route path="cache" element={<CachePage />} />
               <Route path="jobs" element={<JobsPage />} />
+              <Route path="deployments" element={<DeploymentHistoryPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="api-keys" element={<ApiKeysPage />} />
               <Route path="copilot" element={<CopilotConfigPage />} />

@@ -64,6 +64,7 @@ class ArchitectureBoundaryTests(unittest.TestCase):
             "marketplace_services.py",
             "services/artifact_delivery.py",
             "services/auth_policy.py",
+            "services/deployment_history.py",
             "services/request_context.py",
             "services/marketplace_api.py",
         ]

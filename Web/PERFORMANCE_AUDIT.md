@@ -123,6 +123,10 @@ package hash costing about 381.9 ms moved to index refresh work.
   `HEAD` reference and remained protected. The read-only cleanup plan selected
   20 verified transport files totaling 9,690,663 bytes; current,
   unverified, divergent, unexpected, and reparse-point files are never selected.
+- Audited `web-deploy-history.jsonl` at 40,765 bytes and 57 valid records, with
+  no malformed rows and no recovery consumer beyond per-backup status markers.
+  Deployment writes now atomically retain the newest 500 valid records, while
+  `/admin/deployments` provides a sanitized, paginated operational view.
 - Added route-level frontend splitting, request cancellation, stale-state fixes,
   changelog/plugin HTML sanitization, immutable hashed-asset caching, and lazy
   chunk recovery after rolling deployments.
@@ -144,18 +148,14 @@ package hash costing about 381.9 ms moved to index refresh work.
    metrics; trusted-proxy client identity also needs explicit configuration.
 5. Add OpenAPI as the source of truth and generate TypeScript DTOs. The current
    handwritten interfaces are contract-tested but still transitional.
-6. Bound or rotate the append-only `web-deploy-history.jsonl` after its audit
-   contract and recovery consumers are defined. The current production file is
-   only 35,542 bytes across 53 records, so this is preventative rather than an
-   active capacity issue.
-7. Split the remaining 506.16 KiB minified `ProForm` admin chunk if publish-page
+6. Split the remaining 506.16 KiB minified `ProForm` admin chunk if publish-page
    navigation performance becomes material; it is lazy and does not affect the
    public preload today.
 
 ## Verification snapshot
 
-- Backend: 426 tests passed.
-- Frontend: ESLint passed; production build passed (3,776 modules).
+- Backend: 559 tests passed.
+- Frontend: ESLint passed; production build passed (3,780 modules).
 - Dependency audit: zero npm vulnerabilities.
 - Whitespace check: `git diff --check -- Web` passed.
 
