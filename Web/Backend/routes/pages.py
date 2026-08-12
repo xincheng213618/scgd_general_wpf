@@ -222,12 +222,20 @@ def api_site_browse(subpath: str = ""):
 
     limit = _parse_int("limit", default=200, minimum=1, maximum=1000)
     offset = _parse_int("offset", default=0, minimum=0, maximum=100000)
+    query = request.args.get("q", "").strip()
+    if len(query) > 100:
+        abort(400, description="Browse query must be at most 100 characters")
+    item_type = request.args.get("type", "all").strip().lower() or "all"
+    if item_type not in {"all", "directory", "file"}:
+        abort(400, description="Invalid browse item type")
     payload = build_browse_page_context(
         storage,
         normalized,
         limit=limit,
         offset=offset,
         include_entry=None if has_admin_access or is_transfer_path else is_public_storage_path,
+        query=query,
+        item_type=item_type,
     )
     payload["is_file"] = False
     return jsonify(payload)

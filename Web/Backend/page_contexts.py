@@ -653,6 +653,8 @@ def build_browse_page_context(
     limit: int | None = None,
     offset: int = 0,
     include_entry: Callable[[str], bool] | None = None,
+    query: str = "",
+    item_type: str = "all",
 ) -> dict[str, Any]:
     context = storage_browser.build_storage_page_context(
         storage,
@@ -660,11 +662,16 @@ def build_browse_page_context(
         limit=limit,
         offset=offset,
         include_entry=include_entry,
+        query=query,
+        item_type=item_type,
     )
     return {
         "items": context["items"],
         "summary": context["summary"],
         "total_count": context.get("total_count", len(context["items"])),
+        "available_count": context.get("available_count", len(context["items"])),
+        "query": context.get("query", ""),
+        "item_type": context.get("item_type", "all"),
         "subpath": relative_path,
         "breadcrumbs": context["breadcrumbs"],
         "parent_subpath": context["parent_subpath"],

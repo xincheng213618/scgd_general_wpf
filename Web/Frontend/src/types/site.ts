@@ -20,20 +20,30 @@ export interface StorageItem {
   file_count?: number
 }
 
-export interface BrowsePayload {
-  is_file?: boolean
-  name?: string
+export interface BrowseFilePayload {
+  is_file: true
+  name: string
   subpath: string
-  download_url?: string
+  download_url: string
+}
+
+export interface BrowseDirectoryPayload {
+  is_file: false
+  subpath: string
   items: StorageItem[]
   summary: StorageSummary
   total_count: number
+  available_count: number
+  query: string
+  item_type: 'all' | 'directory' | 'file'
   breadcrumbs: [string, string][]
   parent_subpath: string
   exists: boolean
   limit?: number
   offset?: number
 }
+
+export type BrowsePayload = BrowseFilePayload | BrowseDirectoryPayload
 
 export interface ReleaseArtifact {
   display_title?: string

@@ -64,9 +64,13 @@ export function getTools() {
   return getJson<ToolsPayload>('/api/site/tools')
 }
 
-export function getBrowse(subpath = '', params: { limit?: number; offset?: number } = {}) {
+export function getBrowse(
+  subpath = '',
+  params: { limit?: number; offset?: number; q?: string; type?: string } = {},
+  signal?: AbortSignal,
+) {
   const path = subpath ? `/${subpath.split('/').map(encodeURIComponent).join('/')}` : ''
-  return getJson<BrowsePayload>(`/api/site/browse${path}${queryString(params)}`)
+  return getJson<BrowsePayload>(`/api/site/browse${path}${queryString(params)}`, signal)
 }
 
 export function getUploadContext() {

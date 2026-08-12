@@ -390,7 +390,7 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 - `GET /api/tool/cvwindowsservice/releases` — cached with signature-based invalidation
 
 ### Real-time disk access (by design)
-- `GET /api/site/browse/<path>` — reads a live directory listing (small directory, no recursion). Anonymous callers only see published application, History, Plugins, Spectrum, Update, and Tool artifacts; authenticated administrators retain full storage access.
+- `GET /api/site/browse/<path>?q=<name>&type=all|directory|file&limit=200&offset=0` — reads and filters one live directory before pagination (no recursion). Anonymous callers only see published application, History, Plugins, Spectrum, Update, and Tool artifacts; authenticated administrators retain full storage access.
 - `GET /plugins/<id>/icon` — reads icon file for ETag/Last-Modified headers
 - `GET /download/<path>` — serves public artifacts directly from disk. Operational storage requires administrator authentication, while Transfer keeps its separate file-transfer authorization policy.
 - `GET /api/app/changelog` — reads `CHANGELOG.md` (single file read)

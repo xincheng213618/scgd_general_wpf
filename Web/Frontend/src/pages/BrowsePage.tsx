@@ -6,9 +6,9 @@ import {
   HomeOutlined,
   SearchOutlined,
 } from '@ant-design/icons'
-import { Alert, Breadcrumb, Button, Empty, Input, Segmented, Skeleton, Space, Table, Tag, Typography } from 'antd'
+import { Alert, Breadcrumb, Button, Card, Empty, Input, Segmented, Skeleton, Space, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { getBrowse } from '../services/site'
 import type { BrowsePayload, StorageItem } from '../types/site'
@@ -20,21 +20,37 @@ function browsePath(raw?: string) {
   return (raw || '').replace(/^\/+/, '')
 }
 
+function integerParam(value: string | null, fallback: number, minimum: number, maximum: number) {
+  const parsed = Number(value || fallback)
+  return Number.isInteger(parsed) ? Math.max(minimum, Math.min(maximum, parsed)) : fallback
+}
+
+function itemFilterParam(value: string | null): ItemFilter {
+  return value === 'directory' || value === 'file' ? value : 'all'
+}
+
 export function BrowsePage() {
   const params = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const subpath = browsePath(params['*'])
-  const offset = Number(searchParams.get('offset') || 0)
-  const limit = Number(searchParams.get('limit') || 200)
+  const offset = integerParam(searchParams.get('offset'), 0, 0, 100000)
+  const limit = integerParam(searchParams.get('limit'), 200, 1, 1000)
+  const query = searchParams.get('q') || ''
+  const itemFilter = itemFilterParam(searchParams.get('type'))
+  const deferredQuery = useDeferredValue(query)
   const [data, setData] = useState<BrowsePayload | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [query, setQuery] = useState('')
-  const [itemFilter, setItemFilter] = useState<ItemFilter>('all')
 
   useEffect(() => {
     let mounted = true
-    getBrowse(subpath, { limit, offset })
+    const controller = new AbortController()
+    queueMicrotask(() => {
+      if (!mounted) return
+      setLoading(true)
+      setError('')
+    })
+    getBrowse(subpath, { limit, offset, q: deferredQuery, type: itemFilter }, controller.signal)
       .then((payload) => {
         if (mounted) {
           setData(payload)
@@ -49,19 +65,27 @@ export function BrowsePage() {
       })
     return () => {
       mounted = false
+      controller.abort()
     }
-  }, [subpath, limit, offset])
+  }, [subpath, limit, offset, deferredQuery, itemFilter])
 
-  const filteredItems = useMemo(() => {
-    if (!data) return []
-    const keyword = query.trim().toLowerCase()
-    return data.items.filter((item) => {
-      const typeMatched =
-        itemFilter === 'all' || (itemFilter === 'directory' && item.is_dir) || (itemFilter === 'file' && !item.is_dir)
-      const keywordMatched = !keyword || `${item.name} ${item.relative_path}`.toLowerCase().includes(keyword)
-      return typeMatched && keywordMatched
-    })
-  }, [data, itemFilter, query])
+  const updateFilters = (nextQuery: string, nextType: ItemFilter) => {
+    const next = new URLSearchParams(searchParams)
+    if (nextQuery) next.set('q', nextQuery)
+    else next.delete('q')
+    if (nextType !== 'all') next.set('type', nextType)
+    else next.delete('type')
+    next.delete('offset')
+    setSearchParams(next, { replace: true })
+  }
+
+  const updateOffset = (nextOffset: number) => {
+    const next = new URLSearchParams(searchParams)
+    next.set('limit', String(limit))
+    if (nextOffset > 0) next.set('offset', String(nextOffset))
+    else next.delete('offset')
+    setSearchParams(next)
+  }
 
   const columns: ColumnsType<StorageItem> = [
     {
@@ -106,12 +130,35 @@ export function BrowsePage() {
     },
   ]
 
-  if (loading) return <Skeleton active paragraph={{ rows: 8 }} />
-  if (error) return <Alert type="error" message={error} />
+  if (loading && !data) return <Skeleton active paragraph={{ rows: 8 }} />
+  if (error && !data) return <Alert type="error" message={error} />
   if (!data) return null
+
+  if (data.is_file) {
+    const parentSubpath = data.subpath.split('/').slice(0, -1).join('/')
+    return (
+      <Space direction="vertical" size={16} className="page-stack">
+        <Card>
+          <Tag icon={<FileOutlined />} color="blue">File</Tag>
+          <Typography.Title level={2}>{data.name || data.subpath}</Typography.Title>
+          <Typography.Paragraph type="secondary">{data.subpath}</Typography.Paragraph>
+          <Space wrap>
+            <Button type="primary" icon={<DownloadOutlined />} href={data.download_url}>
+              下载文件
+            </Button>
+            <Link to={parentSubpath ? `/browse/${parentSubpath}` : '/browse'}>返回所在目录</Link>
+          </Space>
+        </Card>
+      </Space>
+    )
+  }
+
+  const rangeStart = data.items.length > 0 ? offset + 1 : 0
+  const rangeEnd = Math.min(offset + data.items.length, data.total_count)
 
   return (
     <Space direction="vertical" size={16} className="page-stack">
+      {error && <Alert type="error" message={error} showIcon />}
       <Breadcrumb
         items={(data.breadcrumbs || []).map(([label, href], index) => ({
           title: (
@@ -133,15 +180,15 @@ export function BrowsePage() {
         <div className="compact-stat-strip">
           <span>
             <strong>{data.summary.directory_count || 0}</strong>
-            目录
+            当前页目录
           </span>
           <span>
             <strong>{data.summary.file_count || 0}</strong>
-            文件
+            当前页文件
           </span>
           <span>
             <strong>{humanSize(data.summary.total_size)}</strong>
-            大小
+            当前页大小
           </span>
           {data.parent_subpath !== undefined && data.subpath && (
             <Button icon={<ArrowUpOutlined />} href={data.parent_subpath ? `/browse/${data.parent_subpath}` : '/browse'}>
@@ -155,23 +202,25 @@ export function BrowsePage() {
           <div>
             <span className="section-kicker">
               <FolderOpenOutlined />
-              {data.items.length} 个项目
+              {data.total_count} 个匹配项
             </span>
             <Typography.Paragraph>
-              当前页 {offset + 1}-{Math.min(offset + data.items.length, data.total_count)} / {data.total_count}
+              当前页 {rangeStart}-{rangeEnd} / {data.total_count}
+              {(data.query || data.item_type !== 'all') && ` · 目录共 ${data.available_count} 项`}
             </Typography.Paragraph>
           </div>
           <div className="file-toolbar">
             <Input
               allowClear
               prefix={<SearchOutlined />}
-              placeholder="搜索当前目录"
+              placeholder="搜索整个目录"
+              maxLength={100}
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => updateFilters(event.target.value, itemFilter)}
             />
             <Segmented
               value={itemFilter}
-              onChange={(value) => setItemFilter(value as ItemFilter)}
+              onChange={(value) => updateFilters(query, value as ItemFilter)}
               options={[
                 { label: '全部', value: 'all' },
                 { label: '目录', value: 'directory' },
@@ -183,24 +232,25 @@ export function BrowsePage() {
         <Table
           rowKey="relative_path"
           columns={columns}
-          dataSource={filteredItems}
+          dataSource={data.items}
+          loading={loading}
           className="file-table"
           pagination={false}
           locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="没有匹配的文件" /> }}
           scroll={{ x: 760 }}
         />
-        {data.total_count > limit && (
+        {(data.total_count > limit || offset > 0) && (
           <div className="table-pager">
             <Space>
-              <Button disabled={offset <= 0} onClick={() => setSearchParams({ limit: String(limit), offset: String(Math.max(0, offset - limit)) })}>
+              <Button disabled={offset <= 0} onClick={() => updateOffset(Math.max(0, offset - limit))}>
                 上一页
               </Button>
               <Typography.Text type="secondary">
-                {offset + 1}-{Math.min(offset + data.items.length, data.total_count)} / {data.total_count}
+                {rangeStart}-{rangeEnd} / {data.total_count}
               </Typography.Text>
               <Button
                 disabled={offset + limit >= data.total_count}
-                onClick={() => setSearchParams({ limit: String(limit), offset: String(offset + limit) })}
+                onClick={() => updateOffset(offset + limit)}
               >
                 下一页
               </Button>

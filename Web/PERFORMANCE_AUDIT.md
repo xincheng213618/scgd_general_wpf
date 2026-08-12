@@ -35,6 +35,12 @@ the unparameterized compact response remained available for compatibility. For
 the real 381-release changelog, the first 20-release JSON response fell from
 156,526 to 10,110 bytes (93.5%); gzip size fell from 52,250 to 4,848 bytes.
 
+Directory browsing now applies case-insensitive name and item-type filters
+before sorting and pagination. This fixes searches that previously inspected
+only the first 200 rendered entries; the largest measured public directory had
+264 entries. The filesystem remains authoritative, and an indexed browse query
+is still reserved for directories that grow beyond this bounded scale.
+
 Public initial module-preload JavaScript fell from about 681.8 KiB to 233.5 KiB
 gzip (about 65.8%). Admin pages, Pro Components, traffic analytics, and DOMPurify
 are route chunks instead of public-entry dependencies. The 2.34 MiB decorative

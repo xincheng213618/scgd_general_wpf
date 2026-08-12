@@ -3,20 +3,24 @@ import { App, Button, Card, Input, Space, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useCallback, useEffect, useState } from 'react'
 import { getBrowse } from '../services/site'
-import type { BrowsePayload, StorageItem } from '../types/site'
+import type { BrowseDirectoryPayload, StorageItem } from '../types/site'
 import { downloadPath, humanSize, shortDate } from '../utils/format'
 
 export function FilesPage() {
   const { message } = App.useApp()
   const [subpath, setSubpath] = useState('')
   const [draftPath, setDraftPath] = useState('')
-  const [data, setData] = useState<BrowsePayload | null>(null)
+  const [data, setData] = useState<BrowseDirectoryPayload | null>(null)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async (path: string) => {
     setLoading(true)
     try {
       const payload = await getBrowse(path)
+      if (payload.is_file) {
+        window.location.assign(payload.download_url)
+        return
+      }
       setData(payload)
       setSubpath(path)
       setDraftPath(path)
@@ -32,6 +36,7 @@ export function FilesPage() {
     getBrowse('')
       .then((payload) => {
         if (!mounted) return
+        if (payload.is_file) return
         setData(payload)
         setSubpath('')
         setDraftPath('')

@@ -1391,6 +1391,88 @@ class BrowsePaginationTests(unittest.TestCase):
         names = [item["name"] for item in response.get_json()["items"]]
         self.assertEqual(names[0], "file_0010.txt")
 
+    def test_browse_search_matches_items_beyond_the_default_page(self):
+        for i in range(250):
+            (self.browse_dir / f"file_{i:04d}.txt").write_text(str(i))
+        (self.browse_dir / "zz_unique_target.txt").write_text("target")
+
+        response = self.client.get(
+            "/api/site/browse/Tool?q=UNIQUE_TARGET&type=file&limit=20"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual([item["name"] for item in payload["items"]], ["zz_unique_target.txt"])
+        self.assertEqual(payload["total_count"], 1)
+        self.assertEqual(payload["available_count"], 251)
+        self.assertEqual(payload["query"], "UNIQUE_TARGET")
+        self.assertEqual(payload["item_type"], "file")
+
+    def test_browse_filters_before_pagination_and_keeps_query_totals(self):
+        for i in range(25):
+            (self.browse_dir / f"match_{i:04d}.txt").write_text(str(i))
+        for i in range(5):
+            (self.browse_dir / f"other_{i:04d}.txt").write_text(str(i))
+
+        response = self.client.get(
+            "/api/site/browse/Tool?q=match&type=file&limit=5&offset=10"
+        )
+
+        payload = response.get_json()
+        self.assertEqual([item["name"] for item in payload["items"]], [
+            "match_0010.txt",
+            "match_0011.txt",
+            "match_0012.txt",
+            "match_0013.txt",
+            "match_0014.txt",
+        ])
+        self.assertEqual(payload["total_count"], 25)
+        self.assertEqual(payload["available_count"], 30)
+
+    def test_browse_type_filter_and_validation(self):
+        (self.browse_dir / "FolderA").mkdir()
+        (self.browse_dir / "FileA.txt").write_text("file")
+
+        directories = self.client.get("/api/site/browse/Tool?type=directory").get_json()
+        invalid_type = self.client.get("/api/site/browse/Tool?type=archive")
+        long_query = self.client.get(f"/api/site/browse/Tool?q={'x' * 101}")
+
+        self.assertEqual([item["name"] for item in directories["items"]], ["FolderA"])
+        self.assertEqual(directories["total_count"], 1)
+        self.assertEqual(invalid_type.status_code, 400)
+        self.assertEqual(long_query.status_code, 400)
+
+    def test_browse_search_does_not_expand_public_storage_policy(self):
+        (self.storage / "private-secret.txt").write_text("secret")
+
+        response = self.client.get("/api/site/browse?q=private-secret")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["items"], [])
+
+    def test_browse_file_payload_has_a_frontend_file_detail_contract(self):
+        target = self.browse_dir / "manual.pdf"
+        target.write_bytes(b"pdf")
+
+        response = self.client.get("/api/site/browse/Tool/manual.pdf")
+        frontend_page = (
+            Path(__file__).resolve().parents[1]
+            / "Frontend"
+            / "src"
+            / "pages"
+            / "BrowsePage.tsx"
+        ).read_text(encoding="utf-8")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {
+            "is_file": True,
+            "name": "manual.pdf",
+            "subpath": "Tool/manual.pdf",
+            "download_url": "/download/Tool/manual.pdf",
+        })
+        self.assertIn("if (data.is_file)", frontend_page)
+        self.assertIn("下载文件", frontend_page)
+
 
 class SchemaVersionTests(unittest.TestCase):
     """Tests for schema migration mechanism."""
