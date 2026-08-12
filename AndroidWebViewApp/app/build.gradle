@@ -22,8 +22,8 @@ android {
         applicationId "com.colorvision.xcviewer"
         minSdk 23
         targetSdk 35
-        versionCode 43
-        versionName "2.32"
+        versionCode 44
+        versionName "2.33"
     }
 
     signingConfigs {

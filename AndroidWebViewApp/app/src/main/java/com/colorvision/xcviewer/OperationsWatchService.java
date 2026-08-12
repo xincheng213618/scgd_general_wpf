@@ -8,6 +8,10 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -44,6 +48,9 @@ public final class OperationsWatchService extends Service {
     private boolean lastCheckOnline;
     private boolean hasCompletedCheck;
     private String lastAttentionKey = "";
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
+    private boolean networkCallbackRegistered;
 
     static void start(Context context) {
         AppPreferences preferences = new AppPreferences(context);
@@ -71,6 +78,7 @@ public final class OperationsWatchService extends Service {
         lastCheckOnline = OperationsWatchHistory.isOnlineState(persistedState);
         lastAttentionKey = OperationsWatchHistory.attentionKey(persistedState);
         createNotificationChannels();
+        registerNetworkCallback();
     }
 
     @Override
@@ -97,8 +105,64 @@ public final class OperationsWatchService extends Service {
     public void onDestroy() {
         monitoring = false;
         handler.removeCallbacks(scheduledCheck);
+        unregisterNetworkCallback();
         executor.shutdownNow();
         super.onDestroy();
+    }
+
+    private void registerNetworkCallback() {
+        connectivityManager = getSystemService(ConnectivityManager.class);
+        if (connectivityManager == null) {
+            return;
+        }
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+                requestImmediateCheckAfterNetworkChange();
+            }
+
+            @Override
+            public void onLost(Network network) {
+                requestImmediateCheckAfterNetworkChange();
+            }
+        };
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                connectivityManager.registerDefaultNetworkCallback(networkCallback);
+            } else {
+                NetworkRequest request = new NetworkRequest.Builder()
+                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        .build();
+                connectivityManager.registerNetworkCallback(request, networkCallback);
+            }
+            networkCallbackRegistered = true;
+            Log.i(LOG_TAG, "operations_watch_network_callback_registered");
+        } catch (RuntimeException ignored) {
+            networkCallback = null;
+            Log.w(LOG_TAG, "operations_watch_network_callback_unavailable");
+        }
+    }
+
+    private void unregisterNetworkCallback() {
+        if (!networkCallbackRegistered || connectivityManager == null || networkCallback == null) {
+            return;
+        }
+        try {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+        } catch (RuntimeException ignored) {
+        }
+        networkCallbackRegistered = false;
+        networkCallback = null;
+    }
+
+    private void requestImmediateCheckAfterNetworkChange() {
+        handler.post(() -> {
+            if (!monitoring) {
+                return;
+            }
+            handler.removeCallbacks(scheduledCheck);
+            handler.post(scheduledCheck);
+        });
     }
 
     private void runCheck() {
