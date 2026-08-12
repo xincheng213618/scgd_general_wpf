@@ -8,7 +8,7 @@ namespace ColorVision.UI.Tests
     public sealed class OperationsWorkStoreTests
     {
         [Fact]
-        public void PrivilegedJobCannotSkipMobileDecisionOrLocalCoSign()
+        public void FixedMqttRestartExecutesAfterMobileDecisionWithoutLocalCoSign()
         {
             string path = NewPath();
             try
@@ -22,21 +22,53 @@ namespace ColorVision.UI.Tests
 
                 OperationsJob decided = Assert.IsType<OperationsJob>(store.DecideJob(
                     job.JobId, "phone-1", true, "credential verified", "correlation-2"));
-                Assert.Equal("awaiting_local_cosign", decided.Status);
+                Assert.Equal("approved_mobile", decided.Status);
+                Assert.Null(decided.LocalCoSignedAt);
 
-                OperationsJob local = Assert.IsType<OperationsJob>(store.LocalCoSign(job.JobId, true));
-                Assert.Equal("approved_local", local.Status);
+                OperationsJob executing = Assert.IsType<OperationsJob>(store.BeginExecution(job.JobId));
+                Assert.Equal("executing", executing.Status);
+                Assert.Null(store.BeginExecution(job.JobId));
                 OperationsJob complete = Assert.IsType<OperationsJob>(store.CompleteJob(job.JobId, true, "servicehost:req-1"));
                 Assert.Equal("completed", complete.Status);
                 Assert.NotNull(complete.CompletedAt);
-                Assert.Contains(store.GetAudit(), item => item.Action == "job.local_cosign");
+                Assert.DoesNotContain(store.GetAudit(), item => item.Action == "job.local_cosign");
+                Assert.Contains(store.GetAudit(), item => item.Action == "job.execution.start");
 
                 OperationsJobSummary summary = OperationsJobSummaryFactory.Create(complete);
+                Assert.False(summary.RequiresLocalCoSign);
                 Assert.Equal("service-host-receipt", summary.Evidence.Kind);
                 Assert.Equal("success", summary.Evidence.Outcome);
                 Assert.Contains(summary.Timeline, item => item.Stage == "mobile_approval" && item.State == "approved");
-                Assert.Contains(summary.Timeline, item => item.Stage == "local_cosign" && item.State == "approved");
+                Assert.Contains(summary.Timeline, item => item.Stage == "local_cosign" && item.State == "not_required");
                 Assert.Contains(summary.Timeline, item => item.Stage == "execution" && item.State == "completed");
+            }
+            finally
+            {
+                DeletePath(path);
+            }
+        }
+
+        [Fact]
+        public void FixedMqttRestartRejectsMissingDifferentOrAdditionalInput()
+        {
+            string path = NewPath();
+            try
+            {
+                OperationsWorkStore store = new(path);
+                JsonElement[] invalidInputs =
+                [
+                    JsonSerializer.SerializeToElement(new { }),
+                    JsonSerializer.SerializeToElement(new { serviceId = "other-service" }),
+                    JsonSerializer.SerializeToElement(new { serviceId = "mosquitto", command = "restart" }),
+                ];
+
+                foreach (JsonElement input in invalidInputs)
+                {
+                    InvalidOperationException error = Assert.Throws<InvalidOperationException>(() =>
+                        store.CreateJob("ops.service.restart", "phone-1", "Restart broker", input, "correlation"));
+                    Assert.Equal("mqtt_restart_input_not_allowed", error.Message);
+                }
+                Assert.Empty(store.GetJobs());
             }
             finally
             {
@@ -62,6 +94,10 @@ namespace ColorVision.UI.Tests
                 Assert.Equal("approved_mobile", approved.Status);
                 Assert.Null(approved.LocalCoSignedAt);
 
+                OperationsJob executing = Assert.IsType<OperationsJob>(store.BeginExecution(job.JobId));
+                Assert.Equal("executing", executing.Status);
+                Assert.Contains(OperationsJobSummaryFactory.Create(executing).Timeline,
+                    item => item.Stage == "execution" && item.State == "in_progress");
                 OperationsJob completed = Assert.IsType<OperationsJob>(store.CompleteJob(
                     job.JobId, true, "flow_cancel:flow_cancel_requested"));
                 OperationsJobSummary summary = OperationsJobSummaryFactory.Create(completed);

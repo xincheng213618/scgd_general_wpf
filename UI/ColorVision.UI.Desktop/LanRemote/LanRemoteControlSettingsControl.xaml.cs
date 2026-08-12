@@ -1,7 +1,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Desktop.Operations;
-using ColorVision.UI.ServiceHost;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -125,7 +124,7 @@ namespace ColorVision.UI.Desktop.LanRemote
             }
 
             if (Service.OperationsHost.Pairing.Approve(claim.PairingId))
-                StatusTextBlock.Text = $"已批准 {claim.DeviceName} 的只读运维权限。";
+                StatusTextBlock.Text = $"已批准 {claim.DeviceName} 的受控运维权限。";
             RefreshUi();
         }
 
@@ -155,7 +154,7 @@ namespace ColorVision.UI.Desktop.LanRemote
             RefreshUi();
         }
 
-        private async void LocalCoSignJobButton_Click(object sender, RoutedEventArgs e)
+        private void LocalCoSignJobButton_Click(object sender, RoutedEventArgs e)
         {
             if (LocalCoSignJobsListBox.SelectedItem is not OperationsJob job)
             {
@@ -193,31 +192,7 @@ namespace ColorVision.UI.Desktop.LanRemote
                 return;
             }
             OperationsJob? approvedJob = Service.OperationsHost.WorkStore.LocalCoSign(job.JobId, true, evidenceId);
-            if (approvedJob?.CapabilityId == "ops.service.restart")
-            {
-                string serviceId = approvedJob.Input.TryGetProperty("serviceId", out System.Text.Json.JsonElement serviceElement)
-                    ? serviceElement.GetString() ?? string.Empty : string.Empty;
-                if (serviceId != "mosquitto")
-                {
-                    Service.OperationsHost.WorkStore.CompleteJob(job.JobId, false, "service_not_in_operations_allowlist");
-                }
-                else
-                {
-                    try
-                    {
-                        ServiceHostResponse response = await ColorVisionServiceHostClient.Default
-                            .RestartServiceAsync("mosquitto", timeoutSeconds: 60, timeout: TimeSpan.FromSeconds(90));
-                        Service.OperationsHost.WorkStore.CompleteJob(job.JobId, response.Success,
-                            $"servicehost:{response.RequestId}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Service.OperationsHost.WorkStore.CompleteJob(job.JobId, false,
-                            $"servicehost_error:{ex.GetType().Name}");
-                    }
-                }
-            }
-            else if (approvedJob?.CapabilityId == "ops.diagnostics.bundle.create")
+            if (approvedJob?.CapabilityId == "ops.diagnostics.bundle.create")
             {
                 Service.OperationsHost.WorkStore.CompleteJob(job.JobId, true, evidenceId);
             }
@@ -293,7 +268,8 @@ namespace ColorVision.UI.Desktop.LanRemote
                 PendingDevicesListBox.ItemsSource = Service.OperationsHost.GetPendingClaims();
                 PairedDevicesListBox.ItemsSource = Service.OperationsHost.Registry.GetAll().Where(item => item.IsActive).ToList();
                 LocalCoSignJobsListBox.ItemsSource = Service.OperationsHost.WorkStore.GetJobs()
-                    .Where(item => item.Status == "awaiting_local_cosign").ToList();
+                    .Where(item => item.Status == "awaiting_local_cosign"
+                        && OperationsWorkStore.RequiresLocalCoSign(item.CapabilityId)).ToList();
                 SupportRequestsListBox.ItemsSource = Service.OperationsHost.WorkStore.GetSupportSessions()
                     .Where(item => item.Status == "awaiting_local_consent" && item.ExpiresAt > DateTimeOffset.UtcNow).ToList();
 

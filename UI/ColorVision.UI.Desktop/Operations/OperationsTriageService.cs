@@ -59,7 +59,7 @@ namespace ColorVision.UI.Desktop.Operations
         public DateTimeOffset GeneratedAt { get; init; } = DateTimeOffset.UtcNow;
         public IReadOnlyList<OperationsTriageFinding> Findings { get; init; } = [];
         public string SafetyNotice { get; init; } =
-            "建议仅引用有界脱敏摘要。手机端只能调用固定白名单动作；特权维护仍需电脑端本机共签。";
+            "建议仅引用有界脱敏摘要。固定 MQTT 恢复由已配对手机明确确认后执行；诊断包、主窗口快照与支持会话仍需电脑端本机同意。";
     }
 
     public static class OperationsTriageService
@@ -407,7 +407,7 @@ namespace ColorVision.UI.Desktop.Operations
                 Severity = "info",
                 Category = "approvals",
                 Title = "存在待处理运维作业",
-                Summary = $"当前有 {pendingJobCount} 个作业等待手机决定、电脑端本机共签或执行结果。",
+                Summary = $"当前有 {pendingJobCount} 个作业等待手机决定、必要的电脑端本机共签或执行结果。",
                 EvidenceCount = pendingJobCount,
                 Actions =
                 [
@@ -435,12 +435,12 @@ namespace ColorVision.UI.Desktop.Operations
         private static OperationsTriageAction RestartMqttAction() => new()
         {
             ActionId = OperationsTriageActionIds.RequestMqttRestart,
-            Title = "复核后申请重启 MQTT",
+            Title = "确认并重启 MQTT",
             Kind = "approval-workflow",
             RiskLevel = OperationsRiskLevels.Privileged,
-            Description = "仅创建已知 MQTT 服务的维护作业；手机确认后仍需电脑端本机共签。",
+            Description = "仅通过 ServiceHost 重启固定 Mosquitto 服务；已配对手机确认后立即执行。",
             RequiresConfirmation = true,
-            RequiresLocalCoSign = true,
+            RequiresLocalCoSign = false,
         };
 
         private static string ServiceHealthSummary(OperationsServiceHealthItem service) => service.Status switch

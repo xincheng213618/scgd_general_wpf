@@ -5,7 +5,7 @@ namespace ColorVision.UI.Tests
     public sealed class OperationsTriageServiceTests
     {
         [Fact]
-        public void BuildReturnsOnlyFixedActionsAndPreservesPrivilegedCoSignBoundary()
+        public void BuildReturnsOnlyFixedActionsAndUsesPairedConfirmationForMqttRestart()
         {
             DateTimeOffset now = DateTimeOffset.UtcNow;
             OperationsLogDigest digest = new()
@@ -67,7 +67,7 @@ namespace ColorVision.UI.Tests
                 action => action.ActionId == OperationsTriageActionIds.RequestMqttRestart);
             Assert.Equal(OperationsRiskLevels.Privileged, restart.RiskLevel);
             Assert.True(restart.RequiresConfirmation);
-            Assert.True(restart.RequiresLocalCoSign);
+            Assert.False(restart.RequiresLocalCoSign);
             Assert.Equal("approval-workflow", restart.Kind);
         }
 

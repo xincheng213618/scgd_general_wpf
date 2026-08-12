@@ -543,7 +543,7 @@ namespace ColorVision.UI.Tests
                 JsonElement restart = findings.EnumerateArray()
                     .SelectMany(item => item.GetProperty("actions").EnumerateArray())
                     .Single(item => item.GetProperty("actionId").GetString() == OperationsTriageActionIds.RequestMqttRestart);
-                Assert.True(restart.GetProperty("requiresLocalCoSign").GetBoolean());
+                Assert.False(restart.GetProperty("requiresLocalCoSign").GetBoolean());
                 Assert.Equal(OperationsRiskLevels.Privileged, restart.GetProperty("riskLevel").GetString());
             }
             finally
@@ -605,7 +605,7 @@ namespace ColorVision.UI.Tests
                 registry.Approve("device-job-safe", "Phone", Convert.ToBase64String(key.ExportSubjectPublicKeyInfo()),
                     OperationsPairingService.InitialScopes);
                 OperationsWorkStore workStore = new(workPath);
-                workStore.CreateJob("ops.service.restart", "device-job-safe", "private reason",
+                workStore.CreateJob("ops.diagnostics.bundle.create", "device-job-safe", "private reason",
                     JsonSerializer.SerializeToElement(new { serviceId = "mosquitto", secret = "private-input" }), "private-correlation");
                 workStore.CreateJob("ops.service.restart", "foreign-device-id", "foreign reason",
                     JsonSerializer.SerializeToElement(new { serviceId = "mosquitto" }), "foreign-correlation");
@@ -796,6 +796,83 @@ namespace ColorVision.UI.Tests
             }
         }
 
+        [Fact]
+        public void MqttRestartRejectsRemoteTargetsAndExecutesOnceAfterMobileApproval()
+        {
+            string devicePath = CreateStorePath();
+            string workPath = Path.Combine(Path.GetDirectoryName(devicePath)!, "work.json");
+            try
+            {
+                using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+                OperationsDeviceRegistry registry = new(devicePath);
+                registry.Approve("device-mqtt-restart", "Phone", Convert.ToBase64String(key.ExportSubjectPublicKeyInfo()),
+                    OperationsPairingService.InitialScopes);
+                OperationsWorkStore workStore = new(workPath);
+                RecordingMqttRestartController controller = new();
+                OperationsSecureApiRouter router = new(new OperationsPairingService(registry),
+                    new OperationsRequestAuthenticator(registry), workStore, () => new { healthy = true },
+                    mqttRestartController: controller);
+                const string jobsPath = "/ops/v1/jobs";
+
+                byte[] rejectedBody = Encoding.UTF8.GetBytes(
+                    "{\"capabilityId\":\"ops.service.restart\",\"input\":{\"serviceId\":\"mosquitto\",\"command\":\"restart\"}}");
+                OperationsApiResponse rejected = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = jobsPath,
+                    Body = rejectedBody,
+                    Headers = Sign(key, "device-mqtt-restart", "POST", jobsPath, rejectedBody),
+                });
+                Assert.Equal(400, rejected.StatusCode);
+                Assert.Empty(workStore.GetJobs());
+
+                byte[] createBody = Encoding.UTF8.GetBytes(
+                    "{\"capabilityId\":\"ops.service.restart\",\"reason\":\"confirmed\",\"input\":{\"serviceId\":\"mosquitto\"}}");
+                OperationsApiResponse created = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = jobsPath,
+                    Body = createBody,
+                    Headers = Sign(key, "device-mqtt-restart", "POST", jobsPath, createBody),
+                });
+                Assert.Equal(202, created.StatusCode);
+                using JsonDocument createdDocument = JsonDocument.Parse(created.Body);
+                JsonElement createdJob = createdDocument.RootElement.GetProperty("data").GetProperty("job");
+                string jobId = Assert.IsType<string>(createdJob.GetProperty("jobId").GetString());
+                Assert.False(createdJob.GetProperty("requiresLocalCoSign").GetBoolean());
+
+                string decisionPath = $"/ops/v1/jobs/{jobId}/decision";
+                byte[] decisionBody = Encoding.UTF8.GetBytes("{\"approved\":true,\"reason\":\"confirmed\"}");
+                OperationsApiResponse completed = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = decisionPath,
+                    Body = decisionBody,
+                    Headers = Sign(key, "device-mqtt-restart", "POST", decisionPath, decisionBody),
+                });
+                Assert.Equal(200, completed.StatusCode);
+                using JsonDocument completedDocument = JsonDocument.Parse(completed.Body);
+                JsonElement completedJob = completedDocument.RootElement.GetProperty("data").GetProperty("job");
+                Assert.Equal("completed", completedJob.GetProperty("status").GetString());
+                Assert.Equal("service-host-receipt", completedJob.GetProperty("evidence").GetProperty("kind").GetString());
+                Assert.Equal(1, controller.RestartCount);
+
+                OperationsApiResponse repeated = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = decisionPath,
+                    Body = decisionBody,
+                    Headers = Sign(key, "device-mqtt-restart", "POST", decisionPath, decisionBody),
+                });
+                Assert.Equal(409, repeated.StatusCode);
+                Assert.Equal(1, controller.RestartCount);
+            }
+            finally
+            {
+                DeleteStore(devicePath);
+            }
+        }
+
         private static Dictionary<string, string> Sign(ECDsa key, string deviceId, string method, string path, byte[] body)
         {
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -874,6 +951,17 @@ namespace ColorVision.UI.Tests
             {
                 RequestCount++;
                 return new OperationsFlowCancelResult(true, "flow_cancel_requested", "accepted");
+            }
+        }
+
+        private sealed class RecordingMqttRestartController : IOperationsMqttRestartController
+        {
+            public int RestartCount { get; private set; }
+
+            public OperationsMqttRestartResult Restart()
+            {
+                RestartCount++;
+                return new OperationsMqttRestartResult(true, $"servicehost:request-{RestartCount}");
             }
         }
 

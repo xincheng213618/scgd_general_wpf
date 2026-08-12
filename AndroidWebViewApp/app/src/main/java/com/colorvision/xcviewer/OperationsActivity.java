@@ -239,7 +239,7 @@ public class OperationsActivity extends Activity {
         progress.setVisibility(View.GONE);
         title.setText("现场运维概览");
         state.setText("已通过设备密钥与 TLS 证书指纹验证");
-        details.setText("状态、性能、告警、消息通道和设备运行状态汇总可直接查看；显示/最小化窗口属于低风险审计操作。取消当前主检测需要手机明确确认；服务维护仍需手机确认和电脑端本机共签。");
+        details.setText("状态、性能、告警、消息通道和设备运行状态汇总可直接查看；显示/最小化窗口属于低风险审计操作。取消当前主检测和固定 MQTT 恢复需要手机明确确认；诊断包、主窗口快照与支持会话仍需电脑端本机同意。");
         actions.removeAllViews();
 
         Button connectionCheck = new Button(this);
@@ -259,6 +259,10 @@ public class OperationsActivity extends Activity {
 
         addAction("查看白名单服务健康", "/ops/v1/services/health");
         addAction("查看消息通道健康", "/ops/v1/messaging/health");
+        Button restartMqtt = new Button(this);
+        restartMqtt.setText("重启 MQTT 消息服务");
+        restartMqtt.setOnClickListener(v -> confirmRestartMqtt());
+        actions.addView(restartMqtt, actionParams());
         addAction("查看检测设备状态概览", "/ops/v1/devices/health");
         addAction("刷新运行状态", "/ops/v1/snapshot");
         addAction("查看当前检测状态", "/ops/v1/flow/runtime");
@@ -499,7 +503,7 @@ public class OperationsActivity extends Activity {
                 button.setOnClickListener(v -> showJobs());
                 return button;
             case "triage.mqtt.restart.request":
-                button.setText("申请重启 MQTT（需电脑共签）");
+                button.setText("重启 MQTT（需手机确认）");
                 button.setOnClickListener(v -> confirmRestartMqtt());
                 return button;
             case "triage.devices.view":
@@ -557,7 +561,7 @@ public class OperationsActivity extends Activity {
             }
         }
         text.append("\n\n").append(report.optString("safetyNotice",
-                "手机端只调用固定白名单动作；特权维护仍需电脑端本机共签。"));
+                "固定 MQTT 恢复需手机确认；诊断包、主窗口快照与支持会话仍需电脑端本机同意。"));
         return text.toString();
     }
 
@@ -945,26 +949,41 @@ public class OperationsActivity extends Activity {
 
     private void confirmRestartMqtt() {
         new AlertDialog.Builder(this)
-                .setTitle("申请重启 MQTT 服务")
-                .setMessage("此操作不会直接执行。需要先在手机内明确批准，再由电脑端本机人员共签，且只允许重启白名单中的 Mosquitto 服务。")
+                .setTitle("确认重启 MQTT 服务")
+                .setMessage("确认后将立即通过 ColorVisionServiceHost 重启固定白名单中的 Mosquitto 服务，消息与设备通信可能短暂中断后自动恢复。手机不能选择其他服务、命令、路径或参数。")
                 .setNegativeButton("取消", null)
-                .setPositiveButton("创建作业", (dialog, which) -> createRestartMqttJob())
+                .setPositiveButton("确认重启", (dialog, which) -> restartMqtt())
                 .show();
     }
 
-    private void createRestartMqttJob() {
+    private void restartMqtt() {
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在通过固定白名单重启 MQTT…");
         executor.execute(() -> {
             try {
                 JSONObject input = new JSONObject();
                 input.put("serviceId", "mosquitto");
-                input.put("reason", "现场 MQTT 通信恢复");
                 JSONObject body = new JSONObject();
                 body.put("capabilityId", "ops.service.restart");
                 body.put("reason", "现场 MQTT 通信恢复");
                 body.put("input", input);
-                client.post("/ops/v1/jobs", body);
+                JSONObject created = client.post("/ops/v1/jobs", body);
+                JSONObject createdData = created.optJSONObject("data");
+                JSONObject createdJob = createdData == null ? null : createdData.optJSONObject("job");
+                String jobId = createdJob == null ? "" : createdJob.optString("jobId", "");
+                if (jobId.isEmpty()) {
+                    throw new IllegalStateException("mqtt_restart_job_missing");
+                }
+                JSONObject decision = new JSONObject();
+                decision.put("approved", true);
+                decision.put("reason", "已配对手机明确确认固定 MQTT 恢复");
+                JSONObject response = client.post("/ops/v1/jobs/" + jobId + "/decision", decision);
+                JSONObject responseData = response.optJSONObject("data");
+                JSONObject completedJob = responseData == null ? null : responseData.optJSONObject("job");
+                String status = completedJob == null ? "" : completedJob.optString("status", "");
                 runOnUiThread(() -> {
-                    state.setText("MQTT 重启作业已创建，请完成移动审批");
+                    Toast.makeText(this, "completed".equals(status)
+                            ? "MQTT 消息服务已重启" : "MQTT 重启未完成，请查看作业结果", Toast.LENGTH_LONG).show();
                     showJobs();
                 });
             } catch (Exception ex) {
@@ -1861,6 +1880,7 @@ public class OperationsActivity extends Activity {
             case "job.reject": return "手机拒绝作业";
             case "job.local_cosign": return "电脑端共签作业";
             case "job.local_reject": return "电脑端拒绝作业";
+            case "job.execution.start": return "开始执行受控作业";
             case "job.complete": return "作业执行完成";
             case "job.evidence.consume": return "读取一次性作业证据";
             case "desktop.action.execute": return "执行主窗口控制";
@@ -1892,6 +1912,7 @@ public class OperationsActivity extends Activity {
             case "rejected_local": return "已拒绝";
             case "failed": return "失败";
             case "awaiting_mobile_approval": return "等待手机批准";
+            case "executing": return "执行中";
             case "awaiting_local_cosign":
             case "awaiting_local_consent": return "等待电脑确认";
             default: return "已记录";
@@ -2044,7 +2065,7 @@ public class OperationsActivity extends Activity {
                     text.append("\n观测时间：").append(observedAt);
                 }
                 if (service.optBoolean("maintenanceSupported", false)) {
-                    text.append("\n维护边界：仅可申请白名单维护，仍需电脑端共签");
+                    text.append("\n维护边界：仅固定 Mosquitto 可由已配对手机确认后重启");
                 }
             }
         }
@@ -2259,6 +2280,7 @@ public class OperationsActivity extends Activity {
             case "awaiting_local_cosign": return "等待电脑端共签";
             case "approved_local": return "等待执行";
             case "approved_mobile": return "手机已批准，等待执行";
+            case "executing": return "正在执行";
             case "completed": return "已完成";
             case "failed": return "执行失败";
             case "rejected": return "手机已拒绝";
@@ -2282,6 +2304,7 @@ public class OperationsActivity extends Activity {
             case "completed": return "完成";
             case "approved": return "已批准";
             case "pending": return "等待中";
+            case "in_progress": return "执行中";
             case "rejected": return "已拒绝";
             case "failed": return "失败";
             case "not_started": return "未开始";

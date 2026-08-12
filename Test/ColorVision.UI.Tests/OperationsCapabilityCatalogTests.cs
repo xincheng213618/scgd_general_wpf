@@ -59,7 +59,9 @@ namespace ColorVision.UI.Tests
             var privileged = Assert.Single(capabilities, capability => capability.RiskLevel == OperationsRiskLevels.Privileged);
             Assert.True(privileged.Available);
             Assert.True(string.IsNullOrEmpty(privileged.BlockedReason));
-            Assert.True(privileged.Approval.RequiresLocalCoSign);
+            Assert.False(privileged.Approval.RequiresLocalCoSign);
+            Assert.Equal("paired-device-confirmation", privileged.Approval.Mode);
+            Assert.False(privileged.SupportsCancellation);
             Assert.Equal("service-host", privileged.Execution.Target);
         }
     }

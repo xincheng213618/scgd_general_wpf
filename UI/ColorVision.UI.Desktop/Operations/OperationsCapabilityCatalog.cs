@@ -2,7 +2,7 @@ namespace ColorVision.UI.Desktop.Operations
 {
     public static class OperationsCapabilityCatalog
     {
-        public const string SchemaVersion = "1.5";
+        public const string SchemaVersion = "1.6";
 
         private static readonly IReadOnlyList<OperationsCapabilityDescriptor> Capabilities =
         [
@@ -251,7 +251,7 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 Id = "ops.approvals.decide",
                 Title = "Record an operations approval decision",
-                Description = "Record a mobile approval or rejection. Privileged jobs remain blocked until a separate local co-sign and broker ticket exist.",
+                Description = "Record a mobile approval or rejection. Capabilities marked for local co-sign remain blocked until that separate desktop decision exists.",
                 Category = "approvals",
                 Provider = "desktop.operations",
                 RiskLevel = OperationsRiskLevels.ApprovalRequired,
@@ -423,8 +423,8 @@ namespace ColorVision.UI.Desktop.Operations
             new()
             {
                 Id = "ops.service.restart",
-                Title = "Restart a known Windows service",
-                Description = "Restart a catalog-approved Windows service through the privileged broker.",
+                Title = "Restart the fixed MQTT Windows service",
+                Description = "Restart only the fixed Mosquitto service through ColorVisionServiceHost after explicit confirmation on the paired phone.",
                 Category = "maintenance",
                 Provider = "desktop.privileged-broker",
                 RiskLevel = OperationsRiskLevels.Privileged,
@@ -436,20 +436,19 @@ namespace ColorVision.UI.Desktop.Operations
                     properties = new
                     {
                         serviceId = new { type = "string", @enum = new[] { "mosquitto" } },
-                        reason = new { type = "string", maxLength = 200 },
                     },
                     required = new[] { "serviceId" },
                     additionalProperties = false,
                 },
                 TimeoutMs = 60000,
                 Idempotency = "keyed",
-                SupportsCancellation = true,
+                SupportsCancellation = false,
                 Approval = new OperationsApprovalPolicy
                 {
-                    Mode = "local-co-sign",
+                    Mode = "paired-device-confirmation",
                     TtlSeconds = 300,
                     SingleUse = true,
-                    RequiresLocalCoSign = true,
+                    RequiresLocalCoSign = false,
                 },
                 Execution = new OperationsExecutionPolicy
                 {

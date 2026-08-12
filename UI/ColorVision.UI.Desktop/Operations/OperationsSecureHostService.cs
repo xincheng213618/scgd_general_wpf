@@ -25,6 +25,7 @@ namespace ColorVision.UI.Desktop.Operations
         private IOperationsMessageChannelHealthProvider _messageChannelHealthProvider = UnavailableOperationsMessageChannelHealthProvider.Instance;
         private IOperationsFlowRuntimeStatusProvider _flowRuntimeStatusProvider = UnavailableOperationsFlowRuntimeStatusProvider.Instance;
         private IOperationsFlowRuntimeController _flowRuntimeController = UnavailableOperationsFlowRuntimeController.Instance;
+        private IOperationsMqttRestartController _mqttRestartController = UnavailableOperationsMqttRestartController.Instance;
         private Func<object>? _snapshotProvider;
         private CancellationTokenSource? _cts;
         private TcpListener? _listener;
@@ -115,6 +116,17 @@ namespace ColorVision.UI.Desktop.Operations
             }
         }
 
+        public void ConfigureMqttRestartController(IOperationsMqttRestartController controller)
+        {
+            ArgumentNullException.ThrowIfNull(controller);
+            lock (_syncRoot)
+            {
+                if (IsRunning)
+                    throw new InvalidOperationException("Configure the Operations MQTT restart controller before starting the secure host.");
+                _mqttRestartController = controller;
+            }
+        }
+
         public void Start(int port, Func<object> snapshotProvider)
         {
             lock (_syncRoot)
@@ -131,6 +143,7 @@ namespace ColorVision.UI.Desktop.Operations
                         diagnosticBundles: _diagnosticBundles, windowSnapshots: _windowSnapshots,
                         flowRuntimeStatus: _flowRuntimeStatusProvider,
                         flowRuntimeController: _flowRuntimeController,
+                        mqttRestartController: _mqttRestartController,
                         deviceHealthProvider: _deviceHealthProvider,
                         messageChannelHealthProvider: _messageChannelHealthProvider);
                     _snapshotProvider = snapshotProvider;

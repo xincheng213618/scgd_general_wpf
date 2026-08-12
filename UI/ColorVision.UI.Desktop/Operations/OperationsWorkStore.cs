@@ -38,7 +38,7 @@ namespace ColorVision.UI.Desktop.Operations
         {
             "ops.window.snapshot.capture" => "只捕获 ColorVision 主窗口；可能包含当前可见的检测数据。JPEG 仅保留 5 分钟，由申请设备读取一次后删除。",
             "ops.diagnostics.bundle.create" => "生成不含图像、凭据、用户名、机器名、网络地址或原始日志的脱敏 ZIP。",
-            "ops.service.restart" => "仅允许通过 ServiceHost 重启白名单中的 Mosquitto 服务。",
+            "ops.service.restart" => "仅允许通过 ServiceHost 重启固定的 Mosquitto 服务；手机明确确认后立即执行，无需电脑端再次共签。",
             "ops.flow.cancel" => "只向当前主工作区正在执行的检测发送取消请求，不接受流程、节点或参数。无需电脑端再次共签。",
             _ => "请确认作业来源和固定能力范围。",
         };
@@ -146,6 +146,8 @@ namespace ColorVision.UI.Desktop.Operations
         {
             if (capabilityId is not ("ops.diagnostics.bundle.create" or "ops.window.snapshot.capture" or "ops.service.restart" or "ops.flow.cancel"))
                 throw new InvalidOperationException("capability_not_allowed_for_remote_job");
+            if (capabilityId == "ops.service.restart" && !IsAllowedMqttRestartInput(input))
+                throw new InvalidOperationException("mqtt_restart_input_not_allowed");
             OperationsJob job = new()
             {
                 JobId = Guid.NewGuid().ToString("N"),
@@ -225,8 +227,7 @@ namespace ColorVision.UI.Desktop.Operations
             lock (_syncRoot)
             {
                 OperationsJob? job = _state.Jobs.FirstOrDefault(item => item.JobId == jobId);
-                if (job == null || (job.Status != "approved_local"
-                    && (job.Status != "approved_mobile" || RequiresLocalCoSign(job.CapabilityId))))
+                if (job == null || job.Status is not ("executing" or "approved_local"))
                     return null;
                 job.Status = success ? "completed" : "failed";
                 job.ResultEvidenceId = evidenceId;
@@ -240,7 +241,39 @@ namespace ColorVision.UI.Desktop.Operations
             return result;
         }
 
-        internal static bool RequiresLocalCoSign(string capabilityId) => capabilityId != "ops.flow.cancel";
+        public OperationsJob? BeginExecution(string jobId)
+        {
+            OperationsJob result;
+            lock (_syncRoot)
+            {
+                OperationsJob? job = _state.Jobs.FirstOrDefault(item => item.JobId == jobId);
+                if (job == null || (job.Status != "approved_local"
+                    && (job.Status != "approved_mobile" || RequiresLocalCoSign(job.CapabilityId))))
+                    return null;
+                job.Status = "executing";
+                job.UpdatedAt = DateTimeOffset.UtcNow;
+                AuditNoLock("operations-api", "system", "job.execution.start", jobId,
+                    "executing", Guid.NewGuid().ToString("N"));
+                SaveNoLock();
+                result = Clone(job);
+            }
+            Changed?.Invoke(this, EventArgs.Empty);
+            return result;
+        }
+
+        internal static bool RequiresLocalCoSign(string capabilityId) =>
+            capabilityId is not ("ops.flow.cancel" or "ops.service.restart");
+
+        internal static bool IsAllowedMqttRestartInput(JsonElement input)
+        {
+            if (input.ValueKind != JsonValueKind.Object)
+                return false;
+            JsonProperty[] properties = input.EnumerateObject().ToArray();
+            return properties.Length == 1
+                && properties[0].NameEquals("serviceId")
+                && properties[0].Value.ValueKind == JsonValueKind.String
+                && string.Equals(properties[0].Value.GetString(), "mosquitto", StringComparison.Ordinal);
+        }
 
         public bool ClearJobEvidence(string jobId, string expectedEvidenceId)
         {

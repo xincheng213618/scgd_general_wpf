@@ -34,6 +34,7 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly IOperationsRuntimePerformanceProvider _runtimePerformance;
         private readonly IOperationsFlowRuntimeStatusProvider _flowRuntimeStatus;
         private readonly IOperationsFlowRuntimeController _flowRuntimeController;
+        private readonly IOperationsMqttRestartController _mqttRestartController;
         private readonly IOperationsDeviceHealthProvider _deviceHealthProvider;
         private readonly IOperationsMessageChannelHealthProvider _messageChannelHealthProvider;
 
@@ -50,6 +51,7 @@ namespace ColorVision.UI.Desktop.Operations
             IOperationsRuntimePerformanceProvider? runtimePerformance = null,
             IOperationsFlowRuntimeStatusProvider? flowRuntimeStatus = null,
             IOperationsFlowRuntimeController? flowRuntimeController = null,
+            IOperationsMqttRestartController? mqttRestartController = null,
             IOperationsDeviceHealthProvider? deviceHealthProvider = null,
             IOperationsMessageChannelHealthProvider? messageChannelHealthProvider = null)
         {
@@ -65,6 +67,7 @@ namespace ColorVision.UI.Desktop.Operations
             _runtimePerformance = runtimePerformance ?? new OperationsRuntimePerformanceService();
             _flowRuntimeStatus = flowRuntimeStatus ?? UnavailableOperationsFlowRuntimeStatusProvider.Instance;
             _flowRuntimeController = flowRuntimeController ?? UnavailableOperationsFlowRuntimeController.Instance;
+            _mqttRestartController = mqttRestartController ?? UnavailableOperationsMqttRestartController.Instance;
             _deviceHealthProvider = deviceHealthProvider ?? UnavailableOperationsDeviceHealthProvider.Instance;
             _messageChannelHealthProvider = messageChannelHealthProvider ?? UnavailableOperationsMessageChannelHealthProvider.Instance;
         }
@@ -119,7 +122,7 @@ namespace ColorVision.UI.Desktop.Operations
                 OperationsDeviceHealthSnapshot deviceHealth = CaptureDeviceHealth();
                 OperationsMessageChannelHealthSnapshot messageChannel = CaptureMessageChannelHealth();
                 int pendingJobCount = _workStore.GetJobsForDevice(authentication.Device.DeviceId).Count(item => item.Status is
-                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local" or "approved_mobile");
+                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local" or "approved_mobile" or "executing");
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", new
                 {
                     channel = "ready",
@@ -163,7 +166,7 @@ namespace ColorVision.UI.Desktop.Operations
             if (request.Path.Equals($"{ApiPrefix}/triage", StringComparison.OrdinalIgnoreCase))
             {
                 int pendingJobCount = _workStore.GetJobsForDevice(authentication.Device.DeviceId).Count(item => item.Status is
-                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local" or "approved_mobile");
+                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local" or "approved_mobile" or "executing");
                 OperationsTriageReport report = OperationsTriageService.Build(
                     _alerts.GetDigest(), OperationsDesktopActionService.CaptureState(), pendingJobCount,
                     CaptureServiceHealth(), CaptureDeviceHealth(), CaptureMessageChannelHealth());
@@ -503,25 +506,22 @@ namespace ColorVision.UI.Desktop.Operations
                     return Error(400, correlationId, "approval_decision_required", "approved must be a boolean.");
                 string reason = OptionalString(root, "reason", 200);
                 bool approved = approvedElement.GetBoolean();
+                bool executesAfterMobileApproval = currentJob.CapabilityId is "ops.flow.cancel" or "ops.service.restart";
                 OperationsJob? job = approved
-                    && currentJob.CapabilityId == "ops.flow.cancel"
+                    && executesAfterMobileApproval
                     && currentJob.Status == "approved_mobile"
                         ? currentJob
                         : _workStore.DecideJob(jobId, device.DeviceId, approved, reason, correlationId);
-                if (job?.CapabilityId == "ops.flow.cancel"
-                    && job.Status == "approved_mobile")
+                if (job is { Status: "approved_mobile" }
+                    && job.CapabilityId is "ops.flow.cancel" or "ops.service.restart")
                 {
-                    OperationsFlowCancelResult result;
-                    try
-                    {
-                        result = _flowRuntimeController.RequestCancelCurrentFlow();
-                    }
-                    catch
-                    {
-                        result = new OperationsFlowCancelResult(false, "flow_control_failed",
-                            "The primary flow cancellation request failed.");
-                    }
-                    job = _workStore.CompleteJob(job.JobId, result.Accepted, $"flow_cancel:{result.Code}") ?? job;
+                    OperationsJob? executingJob = _workStore.BeginExecution(job.JobId);
+                    if (executingJob == null)
+                        return Error(409, correlationId, "job_execution_already_started",
+                            "The job execution has already started or completed.");
+                    job = executingJob.CapabilityId == "ops.flow.cancel"
+                        ? ExecuteFlowCancellation(executingJob)
+                        : ExecuteMqttRestart(executingJob);
                 }
                 return job == null
                     ? Error(409, correlationId, "job_not_awaiting_decision", "The job is not awaiting a mobile decision.")
@@ -535,6 +535,35 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 return Error(400, correlationId, ex.Message, "The approval decision is invalid.");
             }
+        }
+
+        private OperationsJob ExecuteFlowCancellation(OperationsJob job)
+        {
+            OperationsFlowCancelResult result;
+            try
+            {
+                result = _flowRuntimeController.RequestCancelCurrentFlow();
+            }
+            catch
+            {
+                result = new OperationsFlowCancelResult(false, "flow_control_failed",
+                    "The primary flow cancellation request failed.");
+            }
+            return _workStore.CompleteJob(job.JobId, result.Accepted, $"flow_cancel:{result.Code}") ?? job;
+        }
+
+        private OperationsJob ExecuteMqttRestart(OperationsJob job)
+        {
+            OperationsMqttRestartResult result;
+            try
+            {
+                result = _mqttRestartController.Restart();
+            }
+            catch
+            {
+                result = new OperationsMqttRestartResult(false, "mqtt_restart_controller_failed");
+            }
+            return _workStore.CompleteJob(job.JobId, result.Success, result.EvidenceId) ?? job;
         }
 
         private OperationsApiResponse HandleDiagnosticBundleDownload(

@@ -1,5 +1,4 @@
 using Microsoft.Win32.SafeHandles;
-using System.Diagnostics;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -19,34 +18,13 @@ internal static class ServiceHostCallerIdentity
             return false;
         }
 
-        string sid = string.Empty;
-        string userName = string.Empty;
-        try
-        {
-            pipe.RunAsClient(() =>
-            {
-                using WindowsIdentity identity = WindowsIdentity.GetCurrent(TokenAccessLevels.Query);
-                sid = identity.User?.Value ?? string.Empty;
-                userName = identity.Name ?? string.Empty;
-            });
-        }
-        catch (Exception ex)
-        {
-            error = $"Unable to identify the pipe client user: {ex.Message}";
+        if (!TryResolveProcessIdentity(
+                checked((int)processId),
+                out string sid,
+                out string userName,
+                out string processPath,
+                out error))
             return false;
-        }
-
-        string processPath;
-        try
-        {
-            using Process process = Process.GetProcessById(checked((int)processId));
-            processPath = process.MainModule?.FileName ?? string.Empty;
-        }
-        catch (Exception ex)
-        {
-            error = $"Unable to inspect the pipe client process: {ex.Message}";
-            return false;
-        }
 
         if (!IsAllowedClientPath(processPath))
         {
@@ -63,6 +41,59 @@ internal static class ServiceHostCallerIdentity
             ProcessSha256 = ComputeSha256(processPath),
         };
         return true;
+    }
+
+    internal static bool TryResolveProcessIdentity(
+        int processId,
+        out string sid,
+        out string userName,
+        out string processPath,
+        out string error)
+    {
+        sid = string.Empty;
+        userName = string.Empty;
+        processPath = string.Empty;
+        error = string.Empty;
+        try
+        {
+            using SafeProcessHandle processHandle = OpenProcess(ProcessQueryLimitedInformation, false, checked((uint)processId));
+            if (processHandle.IsInvalid)
+            {
+                error = $"Unable to open the pipe client process token: {Marshal.GetLastWin32Error()}.";
+                return false;
+            }
+            char[] pathBuffer = new char[32768];
+            int pathLength = pathBuffer.Length;
+            if (!QueryFullProcessImageName(processHandle, 0, pathBuffer, ref pathLength))
+            {
+                error = $"Unable to inspect the pipe client process: {Marshal.GetLastWin32Error()}.";
+                return false;
+            }
+            processPath = new string(pathBuffer, 0, pathLength);
+            if (!OpenProcessToken(processHandle, TokenQuery, out SafeAccessTokenHandle tokenHandle))
+            {
+                error = $"Unable to open the pipe client token: {Marshal.GetLastWin32Error()}.";
+                return false;
+            }
+
+            using (tokenHandle)
+            using (WindowsIdentity identity = new(tokenHandle.DangerousGetHandle()))
+            {
+                sid = identity.User?.Value ?? string.Empty;
+                userName = identity.Name ?? string.Empty;
+            }
+            if (string.IsNullOrWhiteSpace(sid))
+            {
+                error = "The pipe client token did not contain a user SID.";
+                return false;
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = $"Unable to identify the pipe client user: {ex.Message}";
+            return false;
+        }
     }
 
     private static bool IsAllowedClientPath(string processPath)
@@ -87,4 +118,22 @@ internal static class ServiceHostCallerIdentity
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetNamedPipeClientProcessId(SafePipeHandle pipe, out uint clientProcessId);
+
+    private const uint ProcessQueryLimitedInformation = 0x1000;
+    private const uint TokenQuery = 0x0008;
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern SafeProcessHandle OpenProcess(uint processAccess, bool inheritHandle, uint processId);
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool QueryFullProcessImageName(
+        SafeProcessHandle processHandle,
+        int flags,
+        [Out] char[] executablePath,
+        ref int size);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool OpenProcessToken(SafeProcessHandle processHandle, uint desiredAccess, out SafeAccessTokenHandle tokenHandle);
 }

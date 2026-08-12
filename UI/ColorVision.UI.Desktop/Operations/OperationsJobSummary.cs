@@ -86,7 +86,8 @@ namespace ColorVision.UI.Desktop.Operations
                 Stage = "execution",
                 State = job.Status switch
                 {
-                    "approved_local" => "pending",
+                    "approved_local" or "approved_mobile" => "pending",
+                    "executing" => "in_progress",
                     "completed" => "completed",
                     "failed" => "failed",
                     _ => "not_started",

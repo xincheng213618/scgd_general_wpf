@@ -2,6 +2,8 @@ namespace ColorVisionServiceHost;
 
 internal static class ServiceHostLog
 {
+    private static readonly object SyncRoot = new();
+
     public static string LogFilePath { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
         "ColorVision",
@@ -12,8 +14,11 @@ internal static class ServiceHostLog
     {
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(LogFilePath)!);
-            File.AppendAllText(LogFilePath, $"[{DateTimeOffset.Now:O}] {message}{Environment.NewLine}");
+            lock (SyncRoot)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(LogFilePath)!);
+                File.AppendAllText(LogFilePath, $"[{DateTimeOffset.Now:O}] {message}{Environment.NewLine}");
+            }
         }
         catch
         {

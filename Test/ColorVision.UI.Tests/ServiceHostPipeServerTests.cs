@@ -7,6 +7,24 @@ namespace ColorVision.UI.Tests;
 public class ServiceHostPipeServerTests
 {
     [Fact]
+    public void ProcessIdentityResolutionReadsTokenWithoutPipeImpersonation()
+    {
+        using System.Security.Principal.WindowsIdentity current = System.Security.Principal.WindowsIdentity.GetCurrent();
+
+        bool resolved = ServiceHostCallerIdentity.TryResolveProcessIdentity(
+            Environment.ProcessId,
+            out string sid,
+            out string userName,
+            out string processPath,
+            out string error);
+
+        Assert.True(resolved, error);
+        Assert.Equal(current.User?.Value, sid);
+        Assert.Equal(current.Name, userName);
+        Assert.Equal(Environment.ProcessPath, processPath, ignoreCase: true);
+    }
+
+    [Fact]
     public async Task AdmissionCheckAndCommandRegistrationAreAtomicWithStop()
     {
         TaskCompletionSource acceptCheckPassed = new(
