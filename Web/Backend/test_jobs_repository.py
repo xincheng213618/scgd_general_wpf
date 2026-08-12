@@ -103,6 +103,69 @@ class JobRepositoryTests(unittest.TestCase):
             datetime.fromtimestamp(60, tz=timezone.utc).isoformat(),
         )
 
+    def test_prune_history_keeps_latest_and_running_runs(self):
+        db = self.cache.get_db()
+        try:
+            rows = [
+                ("a-first", "success", "2026-01-01T00:00:00+00:00"),
+                ("a-first", "running", "2026-01-02T00:00:00+00:00"),
+                ("a-first", "error", "2026-01-03T00:00:00+00:00"),
+                ("z-last", "success", "2026-01-01T00:00:00+00:00"),
+                ("z-last", "success", "2026-08-01T00:00:00+00:00"),
+            ]
+            db.executemany(
+                "INSERT INTO job_runs (job_id, status, started_at) VALUES (?, ?, ?)",
+                rows,
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        deleted = self.jobs.prune_history_before("2026-07-01T00:00:00+00:00")
+
+        runs = sorted(self.jobs.recent_runs(10), key=lambda run: run["id"])
+        self.assertEqual(deleted, 2)
+        self.assertEqual(
+            [(run["job_id"], run["status"]) for run in runs],
+            [
+                ("a-first", "running"),
+                ("a-first", "error"),
+                ("z-last", "success"),
+            ],
+        )
+
+    def test_scheduler_registers_and_runs_configured_retention(self):
+        from services.scheduler import ensure_default_jobs, run_job_now
+
+        ensure_default_jobs(self.cache)
+
+        db = self.cache.get_db()
+        try:
+            db.execute(
+                "INSERT INTO job_runs (job_id, status, started_at) VALUES (?, ?, ?)",
+                ("a-first", "success", "2000-01-01T00:00:00+00:00"),
+            )
+            db.execute(
+                "INSERT INTO job_runs (job_id, status, started_at) VALUES (?, ?, ?)",
+                ("a-first", "success", "2999-01-01T00:00:00+00:00"),
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        result = run_job_now(
+            self.cache,
+            Path(self._temp.name),
+            lambda: {"job_run_retention_days": 45},
+            self.cache.get_db,
+            "job_history_retention",
+        )
+
+        self.assertIsNotNone(self.jobs.get("job_history_retention"))
+        self.assertEqual(result["status"], "success")
+        self.assertIn("Pruned 1 job runs", result["summary"])
+        self.assertIn("45 days retained", result["summary"])
+
 
 if __name__ == "__main__":
     unittest.main()

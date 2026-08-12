@@ -165,3 +165,24 @@ class SqliteJobRepository:
             return [dict(row) for row in rows]
         finally:
             db.close()
+
+    def prune_history_before(self, cutoff: str) -> int:
+        """Delete old completed runs while keeping every job's latest state."""
+        db = self._connection_factory()
+        try:
+            cursor = db.execute(
+                """DELETE FROM job_runs
+                   WHERE started_at < ?
+                     AND status <> 'running'
+                     AND id NOT IN (
+                         SELECT MAX(id) FROM job_runs GROUP BY job_id
+                     )""",
+                (cutoff,),
+            )
+            db.commit()
+            return cursor.rowcount
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()

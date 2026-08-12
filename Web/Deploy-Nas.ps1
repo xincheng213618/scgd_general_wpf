@@ -449,6 +449,7 @@ try {
             'test_frontend_spa',
             'test_http_compression',
             'test_runtime_logging',
+            'test_jobs_repository',
             'test_page_contexts',
             'test_copilot_config_api',
             'test_spectrum_api',

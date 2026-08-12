@@ -334,6 +334,7 @@ class CacheManager:
             );
             CREATE INDEX IF NOT EXISTS idx_job_runs_job ON job_runs(job_id);
             CREATE INDEX IF NOT EXISTS idx_job_runs_status ON job_runs(status);
+            CREATE INDEX IF NOT EXISTS idx_job_runs_started_at ON job_runs(started_at);
         """
         )
         from db.schema_version import ensure_schema_version

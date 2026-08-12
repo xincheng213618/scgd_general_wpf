@@ -249,6 +249,7 @@ Configuration defaults:
 | `access_analytics_batch_size` | `128` | Maximum events grouped per writer pass |
 | `access_analytics_flush_interval_seconds` | `0.5` | Writer wait/flush interval |
 | `access_analytics_retention_days` | `90` | UTC daily aggregates retained by the scheduled cleanup |
+| `job_run_retention_days` | `30` | Completed scheduler runs retained; each job's latest run and running rows are always kept |
 
 The same scheduled retention pass also removes expired access rows from
 recognized `marketplace_backup_YYYYMMDD_HHMMSS.db` snapshots. A newly created
@@ -322,6 +323,7 @@ curl -X POST http://localhost:9998/api/packages/publish \
 | `tool_index_check` | 10 min | Compare Tool directory signature; refresh only if changed |
 | `cache_cleanup` | 1 hour | Delete expired cache entries |
 | `access_analytics_retention` | 1 day | Delete access aggregates older than the configured retention window |
+| `job_history_retention` | 1 day | Delete completed job runs older than the configured retention window while preserving current state |
 | `startup_index_check` | Once | Ensure all indexes are populated on startup |
 
 The scheduler starts automatically when `scheduler_enabled` is true (default). In debug mode, it only starts in the Flask reloader child process to avoid duplicate threads. Set `scheduler_enabled: false` in config.json to disable.

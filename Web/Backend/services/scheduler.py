@@ -4,6 +4,7 @@ Lightweight task scheduler for ColorVision Marketplace.
 Provides periodic background jobs for:
   - plugin_index_check: verify Plugins directory signature
   - cache_cleanup: delete expired cache_entry rows
+  - job_history_retention: bound completed scheduler history
   - startup_index_check: ensure plugin_index is populated
 """
 
@@ -11,7 +12,7 @@ from __future__ import annotations
 
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -70,6 +71,13 @@ DEFAULT_JOBS = [
         "config": "{}",
     },
     {
+        "id": "job_history_retention",
+        "name": "Job History Retention",
+        "job_type": "history_retention",
+        "interval_seconds": 86400,
+        "config": "{}",
+    },
+    {
         "id": "startup_index_check",
         "name": "Startup Index Check",
         "job_type": "startup_check",
@@ -119,6 +127,8 @@ def run_job_now(
             summary = _run_cache_cleanup(cache)
         elif job_id == "access_analytics_retention":
             summary = _run_access_analytics_retention(cache, get_db, config_getter)
+        elif job_id == "job_history_retention":
+            summary = _run_job_history_retention(cache, config_getter)
         elif job_id == "startup_index_check":
             summary = _run_startup_check(cache, storage, get_db)
         else:
@@ -258,6 +268,28 @@ def _run_access_analytics_retention(
         f"Pruned {result['deleted']} live and {backup_result['deleted']} backup "
         f"access analytics rows before {result['cutoffDay']} "
         f"across {backup_result['backups']} backups"
+    )
+
+
+def _run_job_history_retention(
+    cache: CacheManager,
+    config_getter: Callable[[], dict[str, Any]],
+) -> str:
+    from services.access_analytics import parse_bounded_int
+
+    config = config_getter()
+    retention_days = parse_bounded_int(
+        config.get("job_run_retention_days"),
+        name="job_run_retention_days",
+        default=30,
+        minimum=1,
+        maximum=3650,
+    )
+    cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+    deleted = cache.jobs.prune_history_before(cutoff.isoformat())
+    return (
+        f"Pruned {deleted} job runs before {cutoff.date().isoformat()} "
+        f"({retention_days} days retained)"
     )
 
 

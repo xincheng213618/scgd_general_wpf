@@ -86,6 +86,10 @@ package hash costing about 381.9 ms moved to index refresh work.
   updates/commits in 3.38 s versus 1 update/commit in 3.22 s; cryptographic key
   verification still dominates CPU time, while the removed cost is SQLite
   write-lock and WAL amplification.
+- Bounded scheduler history to 30 days by default while preserving every job's
+  latest run and all running rows. A production preflight over 56,612 runs
+  identified 34,229 removable rows; a same-scale synthetic indexed delete took
+  62.26 ms and left 22,383 rows.
 - Replaced raw SQLite file copies with SQLite online backup, integrity checking,
   and atomic replacement so committed WAL content is included.
 - Added bounded, batched access analytics with normalized route templates,
@@ -115,8 +119,8 @@ package hash costing about 381.9 ms moved to index refresh work.
    metrics; trusted-proxy client identity also needs explicit configuration.
 6. Add OpenAPI as the source of truth and generate TypeScript DTOs. The current
    handwritten interfaces are contract-tested but still transitional.
-7. Add retention/rotation for audit rows, job-run history, and the number of DB
-   backup files. Access rows inside backups already obey analytics retention.
+7. Add retention/rotation for audit rows and the number of DB backup files.
+   Access rows inside backups already obey analytics retention.
 8. Split the remaining 506.16 KiB minified `ProForm` admin chunk if publish-page
    navigation performance becomes material; it is lazy and does not affect the
    public preload today.
