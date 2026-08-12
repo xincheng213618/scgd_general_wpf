@@ -814,6 +814,96 @@ class AuthContracts(ContractTestBase):
 class AdminApiContracts(ContractTestBase):
     """Contract tests for admin API endpoints."""
 
+    def _create_feedback(self, feedback_id="20260812_120000_contract"):
+        directory = self.storage / "Feedback" / feedback_id
+        directory.mkdir(parents=True)
+        (directory / "feedback.json").write_text(json.dumps({
+            "feedbackId": feedback_id,
+            "message": "contract feedback",
+            "userName": "tester",
+            "appVersion": "1.2.3.4",
+            "machineInfo": "contract host",
+            "clientIp": "hashed-client",
+            "createdAt": "2026-08-12T12:00:00+00:00",
+            "files": ["report.zip"],
+        }), encoding="utf-8")
+        (directory / "report.zip").write_bytes(b"diagnostic")
+        return directory
+
+    def test_feedback_inbox_detail_download_and_status_lifecycle(self):
+        directory = self._create_feedback()
+        headers = self.basic_auth()
+
+        listing = self.client.get("/api/admin/feedback", headers=headers)
+        self.assertEqual(listing.status_code, 200)
+        data = listing.get_json()
+        self.assertEqual(data["total"], 1)
+        self.assertEqual(data["summary"]["status_counts"]["new"], 1)
+        self.assertNotIn("machine_info", data["items"][0])
+
+        detail = self.client.get(
+            f"/api/admin/feedback/{directory.name}", headers=headers,
+        )
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.get_json()["message"], "contract feedback")
+
+        with self.client.get(
+            f"/api/admin/feedback/{directory.name}/attachments/report.zip",
+            headers=headers,
+        ) as download:
+            self.assertEqual(download.status_code, 200)
+            self.assertEqual(download.get_data(), b"diagnostic")
+            self.assertIn("attachment", download.headers["Content-Disposition"])
+
+        updated = self.client.put(
+            f"/api/admin/feedback/{directory.name}/status",
+            headers=headers,
+            json={"status": "resolved"},
+        )
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.get_json()["status"], "resolved")
+        self.assertEqual(
+            self.client.get(
+                "/api/admin/feedback?status=resolved", headers=headers,
+            ).get_json()["total"],
+            1,
+        )
+        audits = marketplace_app._cache.get_audit_log()
+        actions = {item["action"] for item in audits}
+        self.assertIn("feedback_attachment_download", actions)
+        self.assertIn("feedback_status_update", actions)
+
+    def test_feedback_inbox_requires_admin_and_rejects_unsafe_paths(self):
+        directory = self._create_feedback()
+        self.assertEqual(self.client.get("/api/admin/feedback").status_code, 401)
+
+        key = self.create_admin_key("stats:read")
+        limited = {"Authorization": f"Bearer {key['key']}"}
+        self.assertEqual(
+            self.client.get("/api/admin/feedback", headers=limited).status_code,
+            403,
+        )
+        headers = self.basic_auth()
+        self.assertEqual(
+            self.client.get("/api/admin/feedback?status=closed", headers=headers).status_code,
+            400,
+        )
+        self.assertEqual(
+            self.client.get(
+                f"/api/admin/feedback/{directory.name}/attachments/feedback.json",
+                headers=headers,
+            ).status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.put(
+                f"/api/admin/feedback/{directory.name}/status",
+                headers=headers,
+                json={"status": "closed"},
+            ).status_code,
+            400,
+        )
+
     def test_cache_status_returns_db_info(self):
         resp = self.client.get("/api/admin/cache/status", headers=self.basic_auth())
         self.assertEqual(resp.status_code, 200)

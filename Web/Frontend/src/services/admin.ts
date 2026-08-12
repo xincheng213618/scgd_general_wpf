@@ -18,6 +18,9 @@ import type {
   CreateApiKeyResult,
   DocsStatus,
   DeploymentHistoryResponse,
+  FeedbackDetail,
+  FeedbackInboxResponse,
+  FeedbackStatus,
   PublishIntegrityReport,
   PerformanceSummary,
   IndexRefreshResult,
@@ -208,6 +211,41 @@ export function getDeploymentHistory(params: {
 
 export function listUsers() {
   return getJson<UserAccount[]>('/api/admin/users')
+}
+
+export function getFeedbackInbox(params: {
+  current?: number
+  pageSize?: number
+  status?: FeedbackStatus
+  query?: string
+}) {
+  const pageSize = params.pageSize ?? 20
+  const current = params.current ?? 1
+  const search = new URLSearchParams({
+    limit: String(pageSize),
+    offset: String((current - 1) * pageSize),
+  })
+  if (params.status) search.set('status', params.status)
+  if (params.query) search.set('query', params.query)
+  return getJson<FeedbackInboxResponse>(`/api/admin/feedback?${search.toString()}`)
+}
+
+export function getFeedbackDetail(feedbackId: string, signal?: AbortSignal) {
+  return getJson<FeedbackDetail>(
+    `/api/admin/feedback/${encodeURIComponent(feedbackId)}`,
+    signal,
+  )
+}
+
+export function updateFeedbackStatus(feedbackId: string, status: FeedbackStatus) {
+  return putJson<FeedbackDetail>(
+    `/api/admin/feedback/${encodeURIComponent(feedbackId)}/status`,
+    { status },
+  )
+}
+
+export function feedbackAttachmentUrl(feedbackId: string, filename: string) {
+  return `/api/admin/feedback/${encodeURIComponent(feedbackId)}/attachments/${encodeURIComponent(filename)}`
 }
 
 export function createUserAccount(payload: CreateUserPayload) {

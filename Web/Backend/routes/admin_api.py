@@ -16,6 +16,9 @@ Per-endpoint scope requirements:
   - POST /jobs/*/disable      → jobs:write
   - GET  /audit-log           → admin:*
   - GET  /deployments         → admin:*
+  - GET  /feedback            → admin:*
+  - GET  /feedback/*          → admin:*
+  - PUT  /feedback/*/status   → admin:*
   - GET  /stats/overview      → stats:read
   - GET  /docs/status         → cache:read
   - GET  /publish/integrity   → stats:read
@@ -49,7 +52,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, jsonify, request, send_file, session
 
 from db_cache import CacheManager, now_iso
 from ports.jobs import JobRepository
@@ -91,6 +94,10 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "disable_job": ["jobs:write"],
     "audit_log": ["admin:*"],
     "deployment_history": ["admin:*"],
+    "feedback_inbox": ["admin:*"],
+    "feedback_detail": ["admin:*"],
+    "feedback_attachment": ["admin:*"],
+    "update_feedback_status": ["admin:*"],
     "stats_overview": ["stats:read"],
     "traffic_stats": ["stats:read"],
     "list_users": ["admin:*"],
@@ -847,6 +854,96 @@ def deployment_history():
         )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
+    return jsonify(result)
+
+
+# ---------------------------------------------------------------------------
+# Feedback inbox
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/feedback", methods=["GET"])
+def feedback_inbox():
+    from services.feedback_admin import query_feedback
+
+    ctx = _get_ctx()
+    try:
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0)
+        result = query_feedback(
+            ctx.storage_getter(),
+            status=request.args.get("status", "").strip() or None,
+            query=request.args.get("query", "").strip() or None,
+            limit=limit,
+            offset=offset,
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify(result)
+
+
+@admin_api.route("/feedback/<feedback_id>", methods=["GET"])
+def feedback_detail(feedback_id: str):
+    from services.feedback_admin import get_feedback_detail
+
+    try:
+        return jsonify(get_feedback_detail(_get_ctx().storage_getter(), feedback_id))
+    except FileNotFoundError:
+        return jsonify({"error": "Feedback not found"}), 404
+
+
+@admin_api.route("/feedback/<feedback_id>/attachments/<path:filename>", methods=["GET"])
+def feedback_attachment(feedback_id: str, filename: str):
+    from services.feedback_admin import resolve_feedback_attachment
+
+    ctx = _get_ctx()
+    try:
+        target = resolve_feedback_attachment(ctx.storage_getter(), feedback_id, filename)
+    except FileNotFoundError:
+        return jsonify({"error": "Attachment not found"}), 404
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="feedback_attachment_download",
+        target_type="feedback",
+        target_id=feedback_id,
+        detail="diagnostic attachment downloaded",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return send_file(target, as_attachment=True, download_name=target.name)
+
+
+@admin_api.route("/feedback/<feedback_id>/status", methods=["PUT"])
+def update_feedback_status(feedback_id: str):
+    from services.feedback_admin import (
+        update_feedback_status as _update_feedback_status,
+        validate_feedback_status_payload,
+    )
+
+    ctx = _get_ctx()
+    try:
+        status = validate_feedback_status_payload(request.get_json(silent=True))
+        result = _update_feedback_status(ctx.storage_getter(), feedback_id, status)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except FileNotFoundError:
+        return jsonify({"error": "Feedback not found"}), 404
+    except OSError:
+        return jsonify({"error": "Unable to persist feedback status"}), 500
+
+    changed = result.pop("changed")
+    before = result.pop("before")
+    if changed:
+        ctx.cache.write_audit(
+            actor_type=_actor_type(),
+            actor_id=_actor_id(),
+            action="feedback_status_update",
+            target_type="feedback",
+            target_id=feedback_id,
+            detail=f"status: {before} -> {status}",
+            ip=request.remote_addr or "",
+            user_agent=request.headers.get("User-Agent", "")[:200],
+        )
     return jsonify(result)
 
 

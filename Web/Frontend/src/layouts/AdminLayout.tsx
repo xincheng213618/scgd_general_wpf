@@ -8,6 +8,7 @@ import {
   DashboardOutlined,
   DatabaseOutlined,
   FolderOpenOutlined,
+  InboxOutlined,
   LogoutOutlined,
   MoonOutlined,
   ReloadOutlined,
@@ -32,6 +33,7 @@ const routeTitles: Record<string, string> = {
   '/admin/cache': '缓存与索引',
   '/admin/jobs': '任务调度',
   '/admin/deployments': '部署历史',
+  '/admin/feedback': '反馈收件箱',
   '/admin/users': '账号管理',
   '/admin/api-keys': 'API Key',
   '/admin/copilot': 'Copilot 配置',
@@ -84,6 +86,11 @@ const route = {
           path: '/admin/deployments',
           name: '部署历史',
           icon: <CloudServerOutlined />,
+        },
+        {
+          path: '/admin/feedback',
+          name: '反馈收件箱',
+          icon: <InboxOutlined />,
         },
         {
           path: '/admin/api-keys',

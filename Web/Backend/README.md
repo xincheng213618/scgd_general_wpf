@@ -290,6 +290,23 @@ malformed-record counts. It intentionally omits server names, absolute paths,
 runtime log paths, and raw errors; failed records expose only a coarse failure
 category. The deployment writer keeps 500 valid records by default.
 
+### Feedback Inbox
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/feedback?status=&query=&limit=&offset=` | List feedback with aggregate status and attachment totals |
+| GET | `/api/admin/feedback/<id>` | Read one feedback submission and its attachment inventory |
+| GET | `/api/admin/feedback/<id>/attachments/<name>` | Download a direct diagnostic attachment |
+| PUT | `/api/admin/feedback/<id>/status` | Move feedback between `new`, `in_progress`, and `resolved` |
+
+Feedback remains filesystem-authoritative under the existing `Feedback`
+storage directory. The inbox preserves legacy directories with missing or
+malformed metadata, displays their attachment inventory, and never rewrites
+the submitted `feedback.json`. Administrator workflow state is persisted in a
+separate atomic `.admin.json` sidecar. Attachment delivery rejects traversal,
+metadata/state files, symbolic links, and non-direct files. Downloads and
+status changes are recorded in the administrator audit log.
+
 ### Stats
 
 | Method | Endpoint | Description |
@@ -387,6 +404,7 @@ and any rotation errors.
 | `/admin/users` | Registered account status management |
 | `/admin/jobs` | Scheduled jobs, single-flight actions, status totals, and filterable run history |
 | `/admin/deployments` | Sanitized NAS deployment history and retention results |
+| `/admin/feedback` | Feedback inbox, diagnostic attachments, and processing lifecycle |
 | `/admin/audit` | Audit log viewer |
 | `/admin/traffic` | Privacy-preserving request traffic and recorder health |
 | `/admin/settings` | Browser appearance plus server-side operational retention policies |
@@ -599,6 +617,6 @@ All existing API endpoints remain unchanged:
 - `GET /api/health` — Health check
 - `GET /api/ready` — Readiness check
 - `GET /api/stats` — Download statistics
-- `GET /api/feedback` — Submit feedback
+- `POST /api/feedback` — Submit feedback
 
 The `/api/plugins/<id>` response structure is fully compatible with the old API: `latestVersion`, `requiresVersion`, `versions` (with `fileHash`), `archivedVersions`, `readme`, `changelog`, `iconUrl`, `totalDownloads`, etc.

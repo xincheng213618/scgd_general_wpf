@@ -420,6 +420,50 @@ export interface ThemeSettingsFormValues {
   density: UiDensity
 }
 
+export type FeedbackStatus = 'new' | 'in_progress' | 'resolved'
+
+export interface FeedbackAttachment {
+  name: string
+  size_bytes: number
+  modified_at: string
+}
+
+export interface FeedbackItem {
+  feedback_id: string
+  status: FeedbackStatus
+  created_at: string
+  updated_at: string | null
+  user_name: string
+  app_version: string
+  message_preview: string
+  attachment_count: number
+  attachment_bytes: number
+  metadata_valid: boolean
+  state_valid: boolean
+}
+
+export interface FeedbackDetail extends FeedbackItem {
+  message: string
+  machine_info: string
+  client_ip: string
+  attachments: FeedbackAttachment[]
+}
+
+export interface FeedbackInboxResponse {
+  items: FeedbackItem[]
+  total: number
+  limit: number
+  offset: number
+  summary: {
+    records: number
+    status_counts: Record<FeedbackStatus, number>
+    attachment_count: number
+    attachment_bytes: number
+    invalid_metadata: number
+    invalid_state: number
+  }
+}
+
 export interface RetentionSettingsValues {
   app_release_keep_count: number
   plugin_package_keep_count: number
