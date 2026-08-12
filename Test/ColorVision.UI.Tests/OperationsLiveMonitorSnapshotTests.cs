@@ -51,7 +51,10 @@ namespace ColorVision.UI.Tests
                 OperationsDeviceHealthSnapshotFactory.Create(
                 [
                     new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Ready),
-                    new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Unavailable),
+                    new OperationsDeviceHealthObservation(
+                        OperationsDeviceCategories.Camera,
+                        OperationsDeviceStates.Unavailable,
+                        OperationsDeviceUnavailableReasons.Offline),
                 ], capturedAt),
                 capturedAt,
                 OperationsMessageChannelHealthSnapshotFactory.Create(
@@ -64,6 +67,7 @@ namespace ColorVision.UI.Tests
             Assert.Equal(10, snapshot.SuggestedRefreshSeconds);
             Assert.Equal(2, snapshot.Devices.TotalCount);
             Assert.Equal(1, snapshot.Devices.AttentionCount);
+            Assert.Equal(1, snapshot.Devices.OfflineCount);
             Assert.Equal(OperationsMessageChannelStates.Connected, snapshot.MessageChannel.State);
             Assert.True(snapshot.MessageChannel.SubscriptionReady);
 

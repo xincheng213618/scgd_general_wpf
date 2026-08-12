@@ -40,8 +40,9 @@ namespace ColorVision.Engine.Services.Operations
         {
             try
             {
+                DeviceStatusType? status = device.GetMQTTService()?.DeviceStatus;
                 return new OperationsDeviceHealthObservation(
-                    Category(device.ServiceTypes), State(device.GetMQTTService()?.DeviceStatus));
+                    Category(device.ServiceTypes), State(status), UnavailableReason(status));
             }
             catch
             {
@@ -60,6 +61,14 @@ namespace ColorVision.Engine.Services.Operations
             DeviceStatusType.Unauthorized or DeviceStatusType.UnInit or DeviceStatusType.OffLine
                 => OperationsDeviceStates.Unavailable,
             _ => OperationsDeviceStates.Unknown,
+        };
+
+        internal static string UnavailableReason(DeviceStatusType? status) => status switch
+        {
+            DeviceStatusType.OffLine => OperationsDeviceUnavailableReasons.Offline,
+            DeviceStatusType.UnInit => OperationsDeviceUnavailableReasons.Uninitialized,
+            DeviceStatusType.Unauthorized => OperationsDeviceUnavailableReasons.Unauthorized,
+            _ => OperationsDeviceUnavailableReasons.None,
         };
 
         private static string Category(ServiceTypes serviceType) => serviceType switch

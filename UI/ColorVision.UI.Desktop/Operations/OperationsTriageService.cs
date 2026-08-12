@@ -45,7 +45,12 @@ namespace ColorVision.UI.Desktop.Operations
         public int DeviceReadyCount { get; init; }
         public int DeviceBusyCount { get; init; }
         public int DeviceClosedCount { get; init; }
+        public int DeviceUnavailableCount { get; init; }
         public int DeviceAttentionCount { get; init; }
+        public int DeviceOfflineCount { get; init; }
+        public int DeviceUninitializedCount { get; init; }
+        public int DeviceUnauthorizedCount { get; init; }
+        public int DeviceUnclassifiedUnavailableCount { get; init; }
         public string MessageChannelState { get; init; } = OperationsMessageChannelStates.Unavailable;
         public bool MessageChannelConnected { get; init; }
         public bool MessageChannelSubscriptionReady { get; init; }
@@ -98,7 +103,12 @@ namespace ColorVision.UI.Desktop.Operations
                 DeviceReadyCount = Math.Max(0, deviceHealth?.ReadyCount ?? 0),
                 DeviceBusyCount = Math.Max(0, deviceHealth?.BusyCount ?? 0),
                 DeviceClosedCount = Math.Max(0, deviceHealth?.ClosedCount ?? 0),
+                DeviceUnavailableCount = Math.Max(0, deviceHealth?.UnavailableCount ?? 0),
                 DeviceAttentionCount = Math.Max(0, deviceHealth?.AttentionCount ?? 0),
+                DeviceOfflineCount = Math.Max(0, deviceHealth?.OfflineCount ?? 0),
+                DeviceUninitializedCount = Math.Max(0, deviceHealth?.UninitializedCount ?? 0),
+                DeviceUnauthorizedCount = Math.Max(0, deviceHealth?.UnauthorizedCount ?? 0),
+                DeviceUnclassifiedUnavailableCount = Math.Max(0, deviceHealth?.UnclassifiedUnavailableCount ?? 0),
                 MessageChannelState = messageChannel?.State ?? OperationsMessageChannelStates.Unavailable,
                 MessageChannelConnected = messageChannel?.Connected == true,
                 MessageChannelSubscriptionReady = messageChannel?.SubscriptionReady == true,
@@ -133,13 +143,14 @@ namespace ColorVision.UI.Desktop.Operations
                 : messageChannel is { Available: true, Connected: true, SubscriptionReady: true }
                     ? "消息通道当前正常，优先在电脑端核对具体设备进程、授权和运行状态。"
                     : "请先查看类别级汇总，再到电脑端核对具体设备。";
+            string unavailableReasonSummary = DeviceUnavailableReasonSummary(deviceHealth);
             findings.Add(new OperationsTriageFinding
             {
                 FindingId = "inspection-devices-attention",
                 Severity = "warning",
                 Category = "devices",
                 Title = "检测设备存在不可用或未知状态",
-                Summary = $"已加载设备 {deviceHealth.TotalCount} 台，其中不可用 {deviceHealth.UnavailableCount} 台、状态未知 {deviceHealth.UnknownCount} 台。{correlationSummary}",
+                Summary = $"已加载设备 {deviceHealth.TotalCount} 台，其中不可用 {deviceHealth.UnavailableCount} 台、状态未知 {deviceHealth.UnknownCount} 台。{unavailableReasonSummary}{correlationSummary}",
                 EvidenceCount = deviceHealth.AttentionCount,
                 LatestAt = deviceHealth.ObservedAt,
                 Actions =
@@ -154,6 +165,25 @@ namespace ColorVision.UI.Desktop.Operations
                     },
                 ],
             });
+        }
+
+        private static string DeviceUnavailableReasonSummary(OperationsDeviceHealthSnapshot deviceHealth)
+        {
+            if (deviceHealth.UnavailableCount == 0)
+                return string.Empty;
+
+            List<string> reasons = [];
+            AddReason(reasons, "离线", deviceHealth.OfflineCount);
+            AddReason(reasons, "未初始化", deviceHealth.UninitializedCount);
+            AddReason(reasons, "未授权", deviceHealth.UnauthorizedCount);
+            AddReason(reasons, "未归类", deviceHealth.UnclassifiedUnavailableCount);
+            return reasons.Count == 0 ? string.Empty : $"不可用原因：{string.Join("、", reasons)}。";
+        }
+
+        private static void AddReason(List<string> reasons, string title, int count)
+        {
+            if (count > 0)
+                reasons.Add($"{title} {count} 台");
         }
 
         private static void AddMessageChannelFinding(

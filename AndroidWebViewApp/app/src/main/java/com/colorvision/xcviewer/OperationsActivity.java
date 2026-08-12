@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
@@ -34,8 +35,10 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
@@ -55,6 +58,7 @@ public class OperationsActivity extends Activity {
     private boolean liveMonitorRefreshInFlight;
     private boolean liveMonitorCancelAvailable;
     private boolean liveMonitorCancelInFlight;
+    private JSONObject liveMonitorLatestSnapshot;
     private boolean activityResumed;
     private int liveMonitorGeneration;
     private final OperationsLiveMonitorTrend liveMonitorTrend = new OperationsLiveMonitorTrend();
@@ -528,6 +532,11 @@ public class OperationsActivity extends Activity {
                 .append(" · 已关闭 ").append(report.optInt("deviceClosedCount", 0))
                 .append(" · 需关注 ").append(report.optInt("deviceAttentionCount", 0))
                 .append(" / 共 ").append(report.optInt("deviceTotalCount", 0));
+        appendDeviceUnavailableReasonValues(text,
+                report.optInt("deviceOfflineCount", 0),
+                report.optInt("deviceUninitializedCount", 0),
+                report.optInt("deviceUnauthorizedCount", 0),
+                report.optInt("deviceUnclassifiedUnavailableCount", 0));
         if (findings == null || findings.length() == 0) {
             text.append("\n\n当前有界证据未发现需要处理的项目。");
         } else {
@@ -1199,6 +1208,7 @@ public class OperationsActivity extends Activity {
         liveMonitorAutoRefresh = true;
         liveMonitorCancelAvailable = false;
         liveMonitorCancelInFlight = false;
+        liveMonitorLatestSnapshot = null;
         liveMonitorTrend.reset();
         title.setText("远程持续观察");
         state.setText("正在采集第一份有界运行快照…");
@@ -1237,6 +1247,7 @@ public class OperationsActivity extends Activity {
                         return;
                     }
                     progress.setVisibility(View.GONE);
+                    liveMonitorLatestSnapshot = snapshot;
                     liveMonitorTrend.add(createLiveMonitorSample(snapshot));
                     JSONObject flow = snapshot.optJSONObject("flow");
                     liveMonitorCancelAvailable = flow != null
@@ -1334,6 +1345,7 @@ public class OperationsActivity extends Activity {
         liveMonitorRefreshInFlight = false;
         liveMonitorCancelAvailable = false;
         liveMonitorCancelInFlight = false;
+        liveMonitorLatestSnapshot = null;
         liveMonitorTrend.reset();
         liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
     }
@@ -1502,6 +1514,7 @@ public class OperationsActivity extends Activity {
         } else {
             text.append("\n\n检测设备：共 ").append(devices.optInt("totalCount", 0)).append(" 台 · ");
             appendDeviceStateCounts(text, devices);
+            appendDeviceUnavailableReasons(text, devices);
         }
 
         if (performance == null) {
@@ -1584,8 +1597,35 @@ public class OperationsActivity extends Activity {
         }
         String report = "ColorVision 远程观察趋势"
                 + formatLiveMonitorTrend(summary)
-                + "\n\n该文本只包含本次手机内存中的聚合趋势，不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、日志正文或检测数据。";
+                + formatLiveMonitorShareContext(liveMonitorLatestSnapshot)
+                + "\n\n该文本只包含本次手机内存中的聚合趋势和当前脱敏运行汇总，不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、设备身份、Topic、消息载荷、配置、凭据、原始设备状态、日志正文或检测数据。";
         shareSafeText("ColorVision 远程观察趋势", report);
+    }
+
+    private String formatLiveMonitorShareContext(JSONObject snapshot) {
+        if (snapshot == null) {
+            return "";
+        }
+
+        StringBuilder text = new StringBuilder();
+        JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
+        if (messageChannel != null && messageChannel.optBoolean("available", false)) {
+            text.append("\n\n消息通道：")
+                    .append(messageChannelStateLabel(messageChannel.optString("state", "unavailable")))
+                    .append(" · 订阅 ")
+                    .append(messageChannel.optInt("activeSubscriptionCount", 0))
+                    .append('/')
+                    .append(messageChannel.optInt("registeredSubscriptionCount", 0));
+        }
+
+        JSONObject devices = snapshot.optJSONObject("devices");
+        if (devices != null && devices.optBoolean("available", false)
+                && devices.optBoolean("hasConfiguredDevices", false)) {
+            text.append("\n检测设备：共 ").append(devices.optInt("totalCount", 0)).append(" 台 · ");
+            appendDeviceStateCounts(text, devices);
+            appendDeviceUnavailableReasons(text, devices);
+        }
+        return text.toString();
     }
 
     private void confirmSupportRequest() {
@@ -2032,6 +2072,7 @@ public class OperationsActivity extends Activity {
                     : "已加载检测设备状态正常";
             text.append(headline).append("\n总数：").append(total).append(" · ");
             appendDeviceStateCounts(text, payload);
+            appendDeviceUnavailableReasons(text, payload);
         }
 
         JSONArray categories = payload.optJSONArray("categories");
@@ -2110,6 +2151,36 @@ public class OperationsActivity extends Activity {
         if (closed > 0) text.append(" · 已关闭 ").append(closed);
         if (unavailable > 0) text.append(" · 不可用 ").append(unavailable);
         if (unknown > 0) text.append(" · 未知 ").append(unknown);
+    }
+
+    private void appendDeviceUnavailableReasons(StringBuilder text, JSONObject source) {
+        appendDeviceUnavailableReasonValues(text,
+                source.optInt("offlineCount", 0),
+                source.optInt("uninitializedCount", 0),
+                source.optInt("unauthorizedCount", 0),
+                source.optInt("unclassifiedUnavailableCount", 0));
+    }
+
+    private void appendDeviceUnavailableReasonValues(
+            StringBuilder text,
+            int offline,
+            int uninitialized,
+            int unauthorized,
+            int unclassified) {
+        List<String> reasons = new ArrayList<>();
+        addDeviceUnavailableReason(reasons, "离线", offline);
+        addDeviceUnavailableReason(reasons, "未初始化", uninitialized);
+        addDeviceUnavailableReason(reasons, "未授权", unauthorized);
+        addDeviceUnavailableReason(reasons, "未归类", unclassified);
+        if (!reasons.isEmpty()) {
+            text.append("\n不可用原因：").append(TextUtils.join(" · ", reasons));
+        }
+    }
+
+    private void addDeviceUnavailableReason(List<String> reasons, String label, int count) {
+        if (count > 0) {
+            reasons.add(label + " " + count);
+        }
     }
 
     private String deviceCategoryLabel(String value) {

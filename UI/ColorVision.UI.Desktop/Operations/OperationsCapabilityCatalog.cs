@@ -2,7 +2,7 @@ namespace ColorVision.UI.Desktop.Operations
 {
     public static class OperationsCapabilityCatalog
     {
-        public const string SchemaVersion = "1.4";
+        public const string SchemaVersion = "1.5";
 
         private static readonly IReadOnlyList<OperationsCapabilityDescriptor> Capabilities =
         [
@@ -192,7 +192,7 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 Id = "ops.devices.health.read",
                 Title = "Read aggregate inspection-device runtime health",
-                Description = "Read normalized ready, busy, transitioning, closed, unavailable, and unknown counts grouped into fixed coarse categories without returning device names, codes, identifiers, addresses, topics, configuration, raw status, or measurement data.",
+                Description = "Read normalized ready, busy, transitioning, closed, unavailable, and unknown counts grouped into fixed coarse categories, plus aggregate offline, uninitialized, unauthorized, and unclassified reasons without returning device names, codes, identifiers, addresses, topics, configuration, raw status, or measurement data.",
                 Category = "diagnostics",
                 Provider = "engine.device-registry",
                 Permission = "ops.diagnostics.read",
@@ -201,7 +201,7 @@ namespace ColorVision.UI.Desktop.Operations
                 OutputSchema = new { type = "object", additionalProperties = true },
                 TimeoutMs = 1500,
                 Audit = new OperationsAuditPolicy { Required = true },
-                Evidence = ["device.category.counts", "device.runtime-state.aggregate"],
+                Evidence = ["device.category.counts", "device.runtime-state.aggregate", "device.unavailability-reason.aggregate"],
                 Available = true,
             },
             new()

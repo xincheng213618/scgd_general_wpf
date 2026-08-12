@@ -113,7 +113,9 @@ namespace ColorVision.UI.Tests
                 deviceHealth: OperationsDeviceHealthSnapshotFactory.Create(
                 [
                     new OperationsDeviceHealthObservation(
-                        OperationsDeviceCategories.Camera, OperationsDeviceStates.Unavailable),
+                        OperationsDeviceCategories.Camera,
+                        OperationsDeviceStates.Unavailable,
+                        OperationsDeviceUnavailableReasons.Uninitialized),
                 ]),
                 messageChannel: OperationsMessageChannelHealthSnapshotFactory.Create(
                     new OperationsMessageChannelObservation(true, false, 3, 0)));
@@ -138,7 +140,9 @@ namespace ColorVision.UI.Tests
                 deviceHealth: OperationsDeviceHealthSnapshotFactory.Create(
                 [
                     new OperationsDeviceHealthObservation(
-                        OperationsDeviceCategories.Camera, OperationsDeviceStates.Unavailable),
+                        OperationsDeviceCategories.Camera,
+                        OperationsDeviceStates.Unavailable,
+                        OperationsDeviceUnavailableReasons.Uninitialized),
                 ]),
                 messageChannel: OperationsMessageChannelHealthSnapshotFactory.Create(
                     new OperationsMessageChannelObservation(true, true, 3, 3)));
@@ -147,6 +151,9 @@ namespace ColorVision.UI.Tests
             OperationsTriageFinding deviceFinding = Assert.Single(report.Findings,
                 item => item.FindingId == "inspection-devices-attention");
             Assert.Contains("消息通道当前正常", deviceFinding.Summary, StringComparison.Ordinal);
+            Assert.Contains("未初始化 1 台", deviceFinding.Summary, StringComparison.Ordinal);
+            Assert.Equal(1, report.DeviceUnavailableCount);
+            Assert.Equal(1, report.DeviceUninitializedCount);
         }
 
         [Fact]

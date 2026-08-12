@@ -258,6 +258,10 @@ namespace ColorVision.UI.Tests
                 Assert.Equal(1, data.GetProperty("readyDeviceCount").GetInt32());
                 Assert.Equal(1, data.GetProperty("busyDeviceCount").GetInt32());
                 Assert.Equal(1, data.GetProperty("deviceAttentionCount").GetInt32());
+                Assert.Equal(1, data.GetProperty("offlineDeviceCount").GetInt32());
+                Assert.Equal(0, data.GetProperty("uninitializedDeviceCount").GetInt32());
+                Assert.Equal(0, data.GetProperty("unauthorizedDeviceCount").GetInt32());
+                Assert.Equal(0, data.GetProperty("unclassifiedUnavailableDeviceCount").GetInt32());
                 Assert.True(data.GetProperty("messageChannelAvailable").GetBoolean());
                 Assert.Equal("connected", data.GetProperty("messageChannelState").GetString());
                 Assert.True(data.GetProperty("messageChannelConnected").GetBoolean());
@@ -325,12 +329,18 @@ namespace ColorVision.UI.Tests
                 Assert.Equal(1, deviceHealthData.GetProperty("busyCount").GetInt32());
                 Assert.Equal(1, deviceHealthData.GetProperty("unavailableCount").GetInt32());
                 Assert.Equal(1, deviceHealthData.GetProperty("attentionCount").GetInt32());
+                Assert.Equal(1, deviceHealthData.GetProperty("offlineCount").GetInt32());
+                Assert.Equal(0, deviceHealthData.GetProperty("uninitializedCount").GetInt32());
+                Assert.Equal(0, deviceHealthData.GetProperty("unauthorizedCount").GetInt32());
+                Assert.Equal(0, deviceHealthData.GetProperty("unclassifiedUnavailableCount").GetInt32());
                 JsonElement deviceCategory = Assert.Single(deviceHealthData.GetProperty("categories").EnumerateArray());
                 Assert.Equal("camera", deviceCategory.GetProperty("category").GetString());
                 Assert.False(deviceCategory.TryGetProperty("deviceName", out _));
                 Assert.False(deviceCategory.TryGetProperty("code", out _));
                 Assert.False(deviceCategory.TryGetProperty("topic", out _));
                 Assert.False(deviceCategory.TryGetProperty("address", out _));
+                Assert.False(deviceCategory.TryGetProperty("offlineCount", out _));
+                Assert.False(deviceCategory.TryGetProperty("unauthorizedCount", out _));
 
                 const string messageChannelPath = "/ops/v1/messaging/health";
                 OperationsApiResponse messageChannel = router.Handle(new OperationsSecureRequest
@@ -365,6 +375,7 @@ namespace ColorVision.UI.Tests
                 Assert.Equal("running", monitorData.GetProperty("flow").GetProperty("phase").GetString());
                 Assert.Equal(9.5, monitorData.GetProperty("performance").GetProperty("cpuPercent").GetDouble());
                 Assert.Equal(1, monitorData.GetProperty("devices").GetProperty("attentionCount").GetInt32());
+                Assert.Equal(1, monitorData.GetProperty("devices").GetProperty("offlineCount").GetInt32());
                 Assert.Equal("connected", monitorData.GetProperty("messageChannel").GetProperty("state").GetString());
                 Assert.Equal(10, monitorData.GetProperty("suggestedRefreshSeconds").GetInt32());
                 Assert.False(monitorData.GetProperty("alerts").TryGetProperty("items", out _));
@@ -872,7 +883,10 @@ namespace ColorVision.UI.Tests
             [
                 new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Ready),
                 new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Busy),
-                new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Unavailable),
+                new OperationsDeviceHealthObservation(
+                    OperationsDeviceCategories.Camera,
+                    OperationsDeviceStates.Unavailable,
+                    OperationsDeviceUnavailableReasons.Offline),
             ]);
         }
 

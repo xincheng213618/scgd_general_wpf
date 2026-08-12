@@ -14,7 +14,10 @@ namespace ColorVision.UI.Tests
             OperationsDeviceHealthSnapshot snapshot = OperationsDeviceHealthSnapshotFactory.Create(
             [
                 new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Ready),
-                new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Unavailable),
+                new OperationsDeviceHealthObservation(
+                    OperationsDeviceCategories.Camera,
+                    OperationsDeviceStates.Unavailable,
+                    "private-raw-reason"),
                 new OperationsDeviceHealthObservation(OperationsDeviceCategories.Algorithm, OperationsDeviceStates.Busy),
                 new OperationsDeviceHealthObservation("private-device-name", "private-raw-state"),
             ], observedAt);
@@ -28,6 +31,7 @@ namespace ColorVision.UI.Tests
             Assert.Equal(1, snapshot.UnavailableCount);
             Assert.Equal(1, snapshot.UnknownCount);
             Assert.Equal(2, snapshot.AttentionCount);
+            Assert.Equal(1, snapshot.UnclassifiedUnavailableCount);
             Assert.Equal(observedAt, snapshot.ObservedAt);
             Assert.Contains(snapshot.Categories, item =>
                 item.Category == OperationsDeviceCategories.Camera
@@ -39,8 +43,50 @@ namespace ColorVision.UI.Tests
             string json = JsonSerializer.Serialize(snapshot);
             Assert.DoesNotContain("private-device-name", json, StringComparison.Ordinal);
             Assert.DoesNotContain("private-raw-state", json, StringComparison.Ordinal);
+            Assert.DoesNotContain("private-raw-reason", json, StringComparison.Ordinal);
             Assert.DoesNotContain("deviceId", json, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("lastAliveTime", json, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void FactoryReturnsOnlyFixedAggregateUnavailableReasons()
+        {
+            OperationsDeviceHealthSnapshot snapshot = OperationsDeviceHealthSnapshotFactory.Create(
+            [
+                new OperationsDeviceHealthObservation(
+                    OperationsDeviceCategories.Camera,
+                    OperationsDeviceStates.Unavailable,
+                    OperationsDeviceUnavailableReasons.Offline),
+                new OperationsDeviceHealthObservation(
+                    OperationsDeviceCategories.Camera,
+                    OperationsDeviceStates.Unavailable,
+                    OperationsDeviceUnavailableReasons.Uninitialized),
+                new OperationsDeviceHealthObservation(
+                    OperationsDeviceCategories.Camera,
+                    OperationsDeviceStates.Unavailable,
+                    OperationsDeviceUnavailableReasons.Unauthorized),
+                new OperationsDeviceHealthObservation(
+                    OperationsDeviceCategories.Camera,
+                    OperationsDeviceStates.Unavailable,
+                    "private-raw-reason"),
+                new OperationsDeviceHealthObservation(
+                    OperationsDeviceCategories.Camera,
+                    OperationsDeviceStates.Ready,
+                    OperationsDeviceUnavailableReasons.Offline),
+            ]);
+
+            Assert.Equal(4, snapshot.UnavailableCount);
+            Assert.Equal(1, snapshot.OfflineCount);
+            Assert.Equal(1, snapshot.UninitializedCount);
+            Assert.Equal(1, snapshot.UnauthorizedCount);
+            Assert.Equal(1, snapshot.UnclassifiedUnavailableCount);
+
+            string json = JsonSerializer.Serialize(snapshot);
+            Assert.DoesNotContain("private-raw-reason", json, StringComparison.Ordinal);
+            JsonElement category = Assert.Single(JsonDocument.Parse(json).RootElement
+                .GetProperty("Categories").EnumerateArray());
+            Assert.False(category.TryGetProperty("OfflineCount", out _));
+            Assert.False(category.TryGetProperty("UnauthorizedCount", out _));
         }
 
         [Fact]
@@ -76,6 +122,18 @@ namespace ColorVision.UI.Tests
         public void EngineProviderTreatsMissingMqttStatusAsUnknown()
         {
             Assert.Equal(OperationsDeviceStates.Unknown, EngineOperationsDeviceHealthProvider.State(null));
+            Assert.Equal(OperationsDeviceUnavailableReasons.None,
+                EngineOperationsDeviceHealthProvider.UnavailableReason(null));
+        }
+
+        [Theory]
+        [InlineData(DeviceStatusType.OffLine, OperationsDeviceUnavailableReasons.Offline)]
+        [InlineData(DeviceStatusType.UnInit, OperationsDeviceUnavailableReasons.Uninitialized)]
+        [InlineData(DeviceStatusType.Unauthorized, OperationsDeviceUnavailableReasons.Unauthorized)]
+        [InlineData(DeviceStatusType.Opened, OperationsDeviceUnavailableReasons.None)]
+        public void EngineProviderMapsOnlyFixedUnavailableReasons(DeviceStatusType status, string expected)
+        {
+            Assert.Equal(expected, EngineOperationsDeviceHealthProvider.UnavailableReason(status));
         }
     }
 }

@@ -33,7 +33,27 @@ namespace ColorVision.UI.Desktop.Operations
         };
     }
 
-    public sealed record OperationsDeviceHealthObservation(string Category, string State);
+    public static class OperationsDeviceUnavailableReasons
+    {
+        public const string None = "none";
+        public const string Offline = "offline";
+        public const string Uninitialized = "uninitialized";
+        public const string Unauthorized = "unauthorized";
+        public const string Unclassified = "unclassified";
+
+        internal static string Normalize(string reason, string state) => state != OperationsDeviceStates.Unavailable
+            ? None
+            : reason switch
+            {
+                Offline or Uninitialized or Unauthorized => reason,
+                _ => Unclassified,
+            };
+    }
+
+    public sealed record OperationsDeviceHealthObservation(
+        string Category,
+        string State,
+        string UnavailableReason = OperationsDeviceUnavailableReasons.None);
 
     public sealed class OperationsDeviceHealthGroup
     {
@@ -80,12 +100,20 @@ namespace ColorVision.UI.Desktop.Operations
 
         public int AttentionCount { get; init; }
 
+        public int OfflineCount { get; init; }
+
+        public int UninitializedCount { get; init; }
+
+        public int UnauthorizedCount { get; init; }
+
+        public int UnclassifiedUnavailableCount { get; init; }
+
         public IReadOnlyList<OperationsDeviceHealthGroup> Categories { get; init; } = [];
 
         public DateTimeOffset ObservedAt { get; init; } = DateTimeOffset.UtcNow;
 
         public string PrivacyNotice { get; init; } =
-            "This snapshot contains configured device counts grouped into fixed coarse categories and normalized runtime states only. It excludes device names, codes, identifiers, addresses, topics, configuration, raw status payloads, timestamps, and measurement data.";
+            "This snapshot contains configured device counts grouped into fixed coarse categories, normalized runtime states, and aggregate fixed unavailability reasons only. It excludes device names, codes, identifiers, addresses, topics, configuration, raw status payloads, device activity timestamps, and measurement data.";
 
         public static OperationsDeviceHealthSnapshot CreateUnavailable(DateTimeOffset? observedAt = null) => new()
         {
@@ -100,11 +128,14 @@ namespace ColorVision.UI.Desktop.Operations
             DateTimeOffset? observedAt = null)
         {
             ArgumentNullException.ThrowIfNull(observations);
-            OperationsDeviceHealthObservation[] current = observations
-                .Select(item => new OperationsDeviceHealthObservation(
+            OperationsDeviceHealthObservation[] current = observations.Select(item =>
+            {
+                string state = OperationsDeviceStates.Normalize(item.State);
+                return new OperationsDeviceHealthObservation(
                     OperationsDeviceCategories.Normalize(item.Category),
-                    OperationsDeviceStates.Normalize(item.State)))
-                .ToArray();
+                    state,
+                    OperationsDeviceUnavailableReasons.Normalize(item.UnavailableReason, state));
+            }).ToArray();
             OperationsDeviceHealthGroup[] categories = current
                 .GroupBy(item => item.Category, StringComparer.Ordinal)
                 .OrderBy(group => group.Key, StringComparer.Ordinal)
@@ -142,6 +173,10 @@ namespace ColorVision.UI.Desktop.Operations
                 UnavailableCount = unavailableCount,
                 UnknownCount = unknownCount,
                 AttentionCount = attentionCount,
+                OfflineCount = CountReason(current, OperationsDeviceUnavailableReasons.Offline),
+                UninitializedCount = CountReason(current, OperationsDeviceUnavailableReasons.Uninitialized),
+                UnauthorizedCount = CountReason(current, OperationsDeviceUnavailableReasons.Unauthorized),
+                UnclassifiedUnavailableCount = CountReason(current, OperationsDeviceUnavailableReasons.Unclassified),
                 Categories = categories,
                 ObservedAt = observedAt ?? DateTimeOffset.UtcNow,
             };
@@ -150,6 +185,10 @@ namespace ColorVision.UI.Desktop.Operations
         private static int Count(
             IEnumerable<OperationsDeviceHealthObservation> observations,
             string state) => observations.Count(item => item.State == state);
+
+        private static int CountReason(
+            IEnumerable<OperationsDeviceHealthObservation> observations,
+            string reason) => observations.Count(item => item.UnavailableReason == reason);
     }
 
     public interface IOperationsDeviceHealthProvider
