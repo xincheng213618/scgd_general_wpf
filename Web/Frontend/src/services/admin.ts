@@ -11,6 +11,7 @@ import type {
   PublishIntegrityReport,
   ScheduledJob,
   TrafficStatsResponse,
+  UserAccount,
 } from '../types/admin'
 import { deleteJson, getJson, postJson, putJson } from './request'
 
@@ -91,6 +92,14 @@ export function getAuditLog(params: {
   if (params.actor) search.set('actor', params.actor)
   if (params.target) search.set('target', params.target)
   return getJson<AuditLogResponse>(`/api/admin/audit-log?${search.toString()}`)
+}
+
+export function listUsers() {
+  return getJson<UserAccount[]>('/api/admin/users')
+}
+
+export function setUserEnabled(id: number, enabled: boolean) {
+  return postJson<UserAccount>(`/api/admin/users/${id}/${enabled ? 'enable' : 'disable'}`)
 }
 
 export function listCopilotProfiles() {

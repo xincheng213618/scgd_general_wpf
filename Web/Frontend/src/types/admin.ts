@@ -222,6 +222,17 @@ export interface ThemeSettingsFormValues {
   density: 'middle' | 'small'
 }
 
+export interface UserAccount {
+  id: number
+  username: string
+  role: 'admin' | 'user' | string
+  is_active: number | boolean
+  is_current?: boolean
+  created_at?: string
+  updated_at?: string | null
+  last_login_at?: string | null
+}
+
 export type CopilotVendorType =
   | 'Custom'
   | 'DeepSeek'

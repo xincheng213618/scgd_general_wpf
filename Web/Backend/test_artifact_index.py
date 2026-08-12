@@ -1587,7 +1587,7 @@ class AuthIntegrationTests(unittest.TestCase):
             "password": "secret",
         })
         # Logout
-        response = self.client.get("/logout", follow_redirects=False)
+        response = self.client.post("/logout", follow_redirects=False)
         self.assertIn(response.status_code, [302, 303])
 
     def test_admin_publish_requires_login(self):

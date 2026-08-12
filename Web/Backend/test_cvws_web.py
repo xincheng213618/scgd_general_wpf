@@ -65,7 +65,7 @@ class WebLoginTests(unittest.TestCase):
 
     def test_logout_clears_session(self):
         self.client.post("/login", data={"username": "tester", "password": "secret123"})
-        self.client.get("/logout")
+        self.client.post("/logout")
         resp = self.client.get("/api/auth/session")
         self.assertFalse(resp.get_json()["authenticated"])
 

@@ -14,12 +14,14 @@ import {
   SafetyCertificateOutlined,
   SettingOutlined,
   SunOutlined,
+  TeamOutlined,
 } from '@ant-design/icons'
 import type { ProSettings } from '@ant-design/pro-components'
 import { PageContainer, ProLayout } from '@ant-design/pro-components'
-import { Button, Dropdown, Segmented, Space } from 'antd'
-import type { ReactNode } from 'react'
+import { App, Button, Dropdown, Segmented, Space } from 'antd'
+import { useState, type ReactNode } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { logout } from '../services/auth'
 import type { ThemeMode } from '../types/admin'
 
 const routeTitles: Record<string, string> = {
@@ -28,6 +30,7 @@ const routeTitles: Record<string, string> = {
   '/admin/files': '文件管理',
   '/admin/cache': '缓存与索引',
   '/admin/jobs': '任务调度',
+  '/admin/users': '账号管理',
   '/admin/api-keys': 'API Key',
   '/admin/copilot': 'Copilot 配置',
   '/admin/audit': '审计日志',
@@ -81,6 +84,11 @@ const route = {
           icon: <ApiOutlined />,
         },
         {
+          path: '/admin/users',
+          name: '账号管理',
+          icon: <TeamOutlined />,
+        },
+        {
           path: '/admin/copilot',
           name: 'Copilot 配置',
           icon: <RobotOutlined />,
@@ -119,14 +127,18 @@ export function AdminLayout({
   mode,
   setMode,
   resolvedTheme,
+  onSessionChanged,
 }: {
   children: ReactNode
   mode: ThemeMode
   setMode: (mode: ThemeMode) => void
   resolvedTheme: 'light' | 'dark'
+  onSessionChanged: () => Promise<void>
 }) {
+  const { message } = App.useApp()
   const location = useLocation()
   const navigate = useNavigate()
+  const [loggingOut, setLoggingOut] = useState(false)
   const title = routeTitles[location.pathname] ?? '管理控制台'
 
   return (
@@ -166,11 +178,24 @@ export function AdminLayout({
             items: [
               { key: 'front', label: <a href="/">前台发布站</a>, icon: <AppstoreOutlined /> },
               { type: 'divider' },
-              { key: 'logout', label: <a href="/logout">退出登录</a>, icon: <LogoutOutlined /> },
+              { key: 'logout', label: '退出登录', icon: <LogoutOutlined />, disabled: loggingOut },
             ],
+            onClick: async ({ key }) => {
+              if (key !== 'logout') return
+              setLoggingOut(true)
+              try {
+                await logout()
+                await onSessionChanged()
+                navigate('/', { replace: true })
+              } catch (error) {
+                message.error(error instanceof Error ? error.message : '退出失败')
+              } finally {
+                setLoggingOut(false)
+              }
+            },
           }}
         >
-          <Button type="text" icon={<SafetyCertificateOutlined />}>
+          <Button type="text" icon={<SafetyCertificateOutlined />} loading={loggingOut}>
             管理员
           </Button>
         </Dropdown>,

@@ -108,6 +108,7 @@ no inbound port or arbitrary command channel is opened.
 | GET `/api/admin/stats/overview` | `stats:read` |
 | GET `/api/admin/stats/traffic` | `stats:read` |
 | GET `/api/admin/audit-log` | `admin:*` |
+| User account management | `admin:*` |
 | API Key management | `admin:*` |
 
 `admin:*` grants access to all endpoints. Session and Basic Auth (validated against `upload_auth` config) always have full access.
@@ -144,6 +145,16 @@ no inbound port or arbitrary command channel is opened.
 | POST | `/api/admin/api-keys/<id>/revoke` | Revoke key |
 | POST | `/api/admin/api-keys/<id>/rotate` | Rotate key (revoke old, create new) |
 | GET | `/api/admin/api-keys/<id>/usage` | Get key usage info |
+
+### User Accounts
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/users` | List registered accounts without password hashes |
+| POST | `/api/admin/users/<id>/enable` | Re-enable an account |
+| POST | `/api/admin/users/<id>/disable` | Disable an account and invalidate its next authenticated request |
+
+The current session account and the last active administrator cannot be disabled.
 
 ### Copilot Desktop Sync
 
@@ -233,6 +244,7 @@ successful, so database snapshots cannot bypass visitor retention.
 | `/admin/` | Overview dashboard |
 | `/admin/cache` | Cache and index management |
 | `/admin/api-keys` | API Key lifecycle management |
+| `/admin/users` | Registered account status management |
 | `/admin/jobs` | Scheduled job management |
 | `/admin/audit` | Audit log viewer |
 | `/admin/traffic` | Privacy-preserving request traffic and recorder health |
@@ -343,6 +355,10 @@ HttpOnly with `SameSite=Lax`.
 file, create or deliver an operations task, or increment plugin download
 statistics. File routes still return the same status and representation headers
 as `GET`, without a response body.
+
+Logout state changes use POST. The legacy `GET /logout` URL only redirects to
+the public site and does not clear the session. Disabled database-backed users
+are rejected on their next authenticated page or API request.
 
 ## Disk Scan Points
 

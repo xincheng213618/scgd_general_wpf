@@ -66,6 +66,9 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "audit_log": ["admin:*"],
     "stats_overview": ["stats:read"],
     "traffic_stats": ["stats:read"],
+    "list_users": ["admin:*"],
+    "enable_user": ["admin:*"],
+    "disable_user": ["admin:*"],
     "list_api_keys": ["admin:*"],
     "create_api_key": ["admin:*"],
     "revoke_api_key": ["admin:*"],
@@ -666,6 +669,68 @@ def traffic_stats():
         recorder_status=ctx.get_access_recorder_status,
     )
     return jsonify(query.get_traffic(days=days, limit=limit))
+
+
+# ---------------------------------------------------------------------------
+# User management
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/users", methods=["GET"])
+def list_users():
+    from services.auth_service import list_users as _list_users
+
+    users = _list_users(_get_ctx().cache)
+    principal = current_request_context().actor
+    current_username = principal.actor_id.casefold() if principal.auth_method == "session" else ""
+    for user in users:
+        user["is_current"] = bool(current_username) and str(user.get("username") or "").casefold() == current_username
+    return jsonify(users)
+
+
+def _set_user_status(user_id: int, *, active: bool):
+    from services.auth_service import get_user_by_id, set_user_active
+
+    ctx = _get_ctx()
+    target = get_user_by_id(ctx.cache, user_id)
+    if not target:
+        return jsonify({"error": "User not found"}), 404
+
+    principal = current_request_context().actor
+    is_current_session = (
+        principal.auth_method == "session"
+        and principal.actor_id.casefold() == str(target.get("username") or "").casefold()
+    )
+    if not active and is_current_session:
+        return jsonify({"error": "The current session account cannot be disabled"}), 409
+
+    updated, error = set_user_active(ctx.cache, user_id, active=active)
+    if error == "last_active_admin":
+        return jsonify({"error": "The last active administrator cannot be disabled"}), 409
+    if error or not updated:
+        return jsonify({"error": "User update failed"}), 500
+
+    action = "user_enable" if active else "user_disable"
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action=action,
+        target_type="user",
+        target_id=str(user_id),
+        detail=f"username={updated['username']}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(updated)
+
+
+@admin_api.route("/users/<int:user_id>/enable", methods=["POST"])
+def enable_user(user_id: int):
+    return _set_user_status(user_id, active=True)
+
+
+@admin_api.route("/users/<int:user_id>/disable", methods=["POST"])
+def disable_user(user_id: int):
+    return _set_user_status(user_id, active=False)
 
 
 # ---------------------------------------------------------------------------

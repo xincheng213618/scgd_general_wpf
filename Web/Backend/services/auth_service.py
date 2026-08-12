@@ -28,6 +28,13 @@ USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{3,32}$")
 MIN_PASSWORD_LENGTH = 6
 
 
+def _user_payload(row) -> dict[str, Any]:
+    user = dict(row)
+    user.pop("password_hash", None)
+    user["is_active"] = bool(user.get("is_active"))
+    return user
+
+
 def normalize_username(username: str) -> str:
     return username.strip()
 
@@ -166,13 +173,60 @@ def list_users(cache: CacheManager) -> list[dict[str, Any]]:
     db = cache.get_db()
     try:
         rows = db.execute("SELECT * FROM users ORDER BY id").fetchall()
-        users = []
-        for row in rows:
-            user = dict(row)
-            user.pop("password_hash", None)
-            users.append(user)
-        return users
+        return [_user_payload(row) for row in rows]
     except Exception:
         return []
+    finally:
+        db.close()
+
+
+def get_user_by_id(cache: CacheManager, user_id: int) -> dict[str, Any] | None:
+    """Return one safe user record for session validation and administration."""
+    db = cache.get_db()
+    try:
+        row = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        return _user_payload(row) if row else None
+    except Exception:
+        return None
+    finally:
+        db.close()
+
+
+def set_user_active(
+    cache: CacheManager,
+    user_id: int,
+    *,
+    active: bool,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Enable or disable an account while preserving one active administrator."""
+    db = cache.get_db()
+    try:
+        # Serialize the last-admin check with the status update so two requests
+        # cannot concurrently disable the final two administrators.
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        if not row:
+            return None, "user_not_found"
+
+        if bool(row["is_active"]) == active:
+            return _user_payload(row), None
+
+        if not active and row["role"] == "admin":
+            active_admins = db.execute(
+                "SELECT COUNT(*) AS count FROM users WHERE role = 'admin' AND is_active = 1"
+            ).fetchone()
+            if not active_admins or int(active_admins["count"]) <= 1:
+                return None, "last_active_admin"
+
+        now = _now_iso()
+        db.execute(
+            "UPDATE users SET is_active = ?, updated_at = ? WHERE id = ?",
+            (1 if active else 0, now, user_id),
+        )
+        db.commit()
+        updated = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        return _user_payload(updated), None
+    except Exception:
+        return None, "user_update_failed"
     finally:
         db.close()

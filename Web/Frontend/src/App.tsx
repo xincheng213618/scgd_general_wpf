@@ -23,6 +23,7 @@ const documentTitles: Record<string, string> = {
   '/admin/files': '文件管理 - ColorVision',
   '/admin/cache': '缓存与索引 - ColorVision',
   '/admin/jobs': '任务调度 - ColorVision',
+  '/admin/users': '账号管理 - ColorVision',
   '/admin/api-keys': 'API Key - ColorVision',
   '/admin/copilot': 'Copilot 配置 - ColorVision',
   '/admin/audit': '审计日志 - ColorVision',
@@ -60,6 +61,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard').then((module) => ({ def
 const FilesPage = lazy(() => import('./pages/FilesPage').then((module) => ({ default: module.FilesPage })))
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })))
 const JobsPage = lazy(() => import('./pages/JobsPage').then((module) => ({ default: module.JobsPage })))
+const UsersPage = lazy(() => import('./pages/UsersPage').then((module) => ({ default: module.UsersPage })))
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const PluginDetailPage = lazy(() => import('./pages/PluginDetailPage').then((module) => ({ default: module.PluginDetailPage })))
 const PluginsPage = lazy(() => import('./pages/PluginsPage').then((module) => ({ default: module.PluginsPage })))
@@ -186,7 +188,7 @@ function App() {
 
   const adminLayout = (
     <Suspense fallback={<RouteFallback />}>
-      <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme}>
+      <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme} onSessionChanged={refreshSession}>
         <Suspense fallback={<RouteFallback />}>
           <Outlet />
         </Suspense>
@@ -226,6 +228,7 @@ function App() {
               <Route path="files" element={<FilesPage />} />
               <Route path="cache" element={<CachePage />} />
               <Route path="jobs" element={<JobsPage />} />
+              <Route path="users" element={<UsersPage />} />
               <Route path="api-keys" element={<ApiKeysPage />} />
               <Route path="copilot" element={<CopilotConfigPage />} />
               <Route path="audit" element={<AuditPage />} />

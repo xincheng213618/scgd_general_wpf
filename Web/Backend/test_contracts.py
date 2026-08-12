@@ -641,9 +641,18 @@ class AuthContracts(ContractTestBase):
         admin_resp = self.client.get("/api/admin/cache/status")
         self.assertEqual(admin_resp.status_code, 401)
 
-    def test_logout_redirects(self):
-        resp = self.client.get("/logout", follow_redirects=False)
-        self.assertIn(resp.status_code, [302, 303])
+    def test_logout_get_is_read_only_and_post_clears_session(self):
+        self.client.post("/api/auth/login", json={
+            "username": "admin", "password": "secret",
+        })
+
+        get_response = self.client.get("/logout", follow_redirects=False)
+        self.assertIn(get_response.status_code, [302, 303])
+        self.assertTrue(self.client.get("/api/auth/session").get_json()["authenticated"])
+
+        post_response = self.client.post("/logout", follow_redirects=False)
+        self.assertIn(post_response.status_code, [302, 303])
+        self.assertFalse(self.client.get("/api/auth/session").get_json()["authenticated"])
 
     def test_admin_no_auth_returns_401(self):
         resp = self.client.get("/api/admin/cache/status")
@@ -706,6 +715,82 @@ class AdminApiContracts(ContractTestBase):
         data = resp.get_json()
         self.assertIn("db_path", data)
         self.assertIn("cache_entry_count", data)
+
+    def test_user_accounts_can_be_listed_disabled_and_reenabled(self):
+        from services.auth_service import create_user
+
+        user, error = create_user(marketplace_app._cache, "worker", "secret1")
+        self.assertIsNone(error)
+        self.assertIsNotNone(user)
+
+        users_response = self.client.get("/api/admin/users", headers=self.basic_auth())
+        self.assertEqual(users_response.status_code, 200)
+        listed = next(item for item in users_response.get_json() if item["id"] == user["id"])
+        self.assertNotIn("password_hash", listed)
+        self.assertTrue(listed["is_active"])
+
+        login_response = self.client.post("/api/auth/login", json={
+            "username": "worker", "password": "secret1",
+        })
+        self.assertEqual(login_response.status_code, 200)
+
+        disabled = self.client.post(
+            f"/api/admin/users/{user['id']}/disable",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(disabled.status_code, 200)
+        self.assertFalse(disabled.get_json()["is_active"])
+        self.assertFalse(self.client.get("/api/auth/session").get_json()["authenticated"])
+        self.assertEqual(
+            self.client.post("/api/auth/login", json={
+                "username": "worker", "password": "secret1",
+            }).status_code,
+            401,
+        )
+
+        enabled = self.client.post(
+            f"/api/admin/users/{user['id']}/enable",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(enabled.status_code, 200)
+        self.assertTrue(enabled.get_json()["is_active"])
+        self.assertEqual(
+            self.client.post("/api/auth/login", json={
+                "username": "worker", "password": "secret1",
+            }).status_code,
+            200,
+        )
+
+        actions = {entry["action"] for entry in marketplace_app._cache.get_audit_log(target=str(user["id"]))}
+        self.assertIn("user_disable", actions)
+        self.assertIn("user_enable", actions)
+
+    def test_last_admin_and_current_session_cannot_be_disabled(self):
+        from services.auth_service import create_user
+
+        admin, error = create_user(marketplace_app._cache, "dbadmin", "secret1", role="admin")
+        self.assertIsNone(error)
+        self.assertIsNotNone(admin)
+
+        last_admin = self.client.post(
+            f"/api/admin/users/{admin['id']}/disable",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(last_admin.status_code, 409)
+        self.assertIn("last active administrator", last_admin.get_json()["error"])
+
+        second_admin, error = create_user(marketplace_app._cache, "secondadmin", "secret2", role="admin")
+        self.assertIsNone(error)
+        self.assertIsNotNone(second_admin)
+        self.assertEqual(self.client.post("/api/auth/login", json={
+            "username": "secondadmin", "password": "secret2",
+        }).status_code, 200)
+
+        current_account = self.client.post(
+            f"/api/admin/users/{second_admin['id']}/disable",
+        )
+        self.assertEqual(current_account.status_code, 409)
+        self.assertIn("current session account", current_account.get_json()["error"])
 
     def test_docs_status_returns_build_info(self):
         with tempfile.TemporaryDirectory() as td:
