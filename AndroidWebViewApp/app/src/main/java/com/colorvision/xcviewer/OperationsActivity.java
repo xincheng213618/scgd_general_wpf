@@ -87,6 +87,12 @@ public class OperationsActivity extends Activity {
     private TextView details;
     private ProgressBar progress;
     private LinearLayout actions;
+    private Button dashboardFlowStatus;
+    private Button dashboardDeviceStatus;
+    private Button dashboardMessageStatus;
+    private Button dashboardAlertStatus;
+    private Button dashboardPerformanceStatus;
+    private Button dashboardRecoveryStatus;
     private boolean dashboardVisible;
     private boolean showingDashboardSummary;
     private boolean connectionHeartbeatInFlight;
@@ -324,16 +330,27 @@ public class OperationsActivity extends Activity {
                 dashboardButton("重启 MQTT", v -> confirmRestartMqtt()),
                 dashboardButton("连接自检", v -> runConnectionSelfCheck()));
 
-        addDashboardSection("运行状态");
+        addDashboardSection("实时状态");
         addDashboardActionRow(
-                capabilityButton("当前检测", "/ops/v1/flow/runtime"),
-                capabilityButton("设备概览", "/ops/v1/devices/health"));
+                dashboardFlowStatus = dashboardStatusButton("检测\n读取中…",
+                        v -> loadCapability("/ops/v1/flow/runtime")),
+                dashboardDeviceStatus = dashboardStatusButton("设备\n读取中…",
+                        v -> loadCapability("/ops/v1/devices/health")));
+        addDashboardActionRow(
+                dashboardMessageStatus = dashboardStatusButton("消息\n读取中…",
+                        v -> loadCapability("/ops/v1/messaging/health")),
+                dashboardAlertStatus = dashboardStatusButton("告警\n读取中…",
+                        v -> loadCapability("/ops/v1/alerts")));
+        addDashboardActionRow(
+                dashboardPerformanceStatus = dashboardStatusButton("性能\n读取中…",
+                        v -> loadCapability("/ops/v1/diagnostics/performance")),
+                dashboardRecoveryStatus = dashboardStatusButton("恢复\n读取中…",
+                        v -> showLiveMonitor()));
+
+        addDashboardSection("进一步排查");
         addDashboardActionRow(
                 capabilityButton("服务健康", "/ops/v1/services/health"),
-                capabilityButton("消息通道", "/ops/v1/messaging/health"));
-        addDashboardActionRow(
-                capabilityButton("进程性能", "/ops/v1/diagnostics/performance"),
-                capabilityButton("当前告警", "/ops/v1/alerts"));
+                capabilityButton("消息详情", "/ops/v1/messaging/health"));
         addDashboardActionRow(
                 capabilityButton("近期事件", "/ops/v1/diagnostics/recent-events"),
                 capabilityButton("崩溃与卡死", "/ops/v1/diagnostics/failures"));
@@ -352,6 +369,7 @@ public class OperationsActivity extends Activity {
                 dashboardButton("提交部署确认", v -> confirmDeploymentReceipt()),
                 capabilityButton("能力目录", "/ops/v1/capabilities"));
         loadCapability("/ops/v1/snapshot");
+        loadDashboardLiveStatus();
         scheduleConnectionHeartbeat();
         ensureOperationsWatchRunning();
     }
@@ -374,11 +392,15 @@ public class OperationsActivity extends Activity {
         connectionHeartbeatInFlight = true;
         executor.execute(() -> {
             try {
-                client.get("/ops/v1/snapshot");
+                JSONObject response = client.get("/ops/v1/monitor");
+                JSONObject snapshot = response.optJSONObject("data");
                 runOnUiThread(() -> {
                     connectionHeartbeatInFlight = false;
                     if (showingDashboardSummary) {
                         state.setText("● 已连接 · 后台持续守护");
+                    }
+                    if (snapshot != null) {
+                        updateDashboardLiveStatus(snapshot);
                     }
                     scheduleConnectionHeartbeat();
                 });
@@ -412,6 +434,83 @@ public class OperationsActivity extends Activity {
         button.setAllCaps(false);
         button.setOnClickListener(listener);
         return button;
+    }
+
+    private Button dashboardStatusButton(String label, View.OnClickListener listener) {
+        Button button = dashboardButton(label, listener);
+        button.setTextSize(12);
+        button.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        button.setPadding(dp(12), 0, dp(8), 0);
+        return button;
+    }
+
+    private void loadDashboardLiveStatus() {
+        executor.execute(() -> {
+            try {
+                JSONObject response = client.get("/ops/v1/monitor");
+                JSONObject snapshot = response.optJSONObject("data");
+                if (snapshot != null) {
+                    runOnUiThread(() -> updateDashboardLiveStatus(snapshot));
+                }
+            } catch (Exception ignored) {
+                runOnUiThread(this::markDashboardLiveStatusUnavailable);
+            }
+        });
+    }
+
+    private void updateDashboardLiveStatus(JSONObject snapshot) {
+        if (dashboardFlowStatus == null) {
+            return;
+        }
+        JSONObject flow = snapshot.optJSONObject("flow");
+        JSONObject devices = snapshot.optJSONObject("devices");
+        JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
+        JSONObject alerts = snapshot.optJSONObject("alerts");
+        JSONObject performance = snapshot.optJSONObject("performance");
+        JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
+        JSONObject recovery = snapshot.optJSONObject("applicationRecovery");
+
+        dashboardFlowStatus.setText(OperationsDashboardStatusFormatter.flow(
+                flow != null && flow.optBoolean("available", false),
+                flow != null && flow.optBoolean("isActive", false),
+                flow == null ? "idle" : flow.optString("phase", "idle")));
+        dashboardDeviceStatus.setText(OperationsDashboardStatusFormatter.devices(
+                devices != null && devices.optBoolean("available", false),
+                devices != null && devices.optBoolean("hasConfiguredDevices", false),
+                devices == null ? 0 : devices.optInt("readyCount", 0),
+                devices == null ? 0 : devices.optInt("busyCount", 0),
+                devices == null ? 0 : devices.optInt("attentionCount", 0),
+                devices == null ? 0 : devices.optInt("totalCount", 0)));
+        dashboardMessageStatus.setText(OperationsDashboardStatusFormatter.messageChannel(
+                messageChannel != null && messageChannel.optBoolean("available", false),
+                messageChannel != null && messageChannel.optBoolean("connected", false),
+                messageChannel != null && messageChannel.optBoolean("subscriptionReady", false),
+                messageChannel == null ? 0 : messageChannel.optInt("activeSubscriptionCount", 0),
+                messageChannel == null ? 0 : messageChannel.optInt("registeredSubscriptionCount", 0)));
+        dashboardAlertStatus.setText(OperationsDashboardStatusFormatter.alerts(
+                alerts == null ? 0 : alerts.optInt("warningCount", 0),
+                alerts == null ? 0 : alerts.optInt("errorCount", 0),
+                alerts == null ? 0 : alerts.optInt("criticalCount", 0)));
+        dashboardPerformanceStatus.setText(OperationsDashboardStatusFormatter.performance(
+                performance != null,
+                performance == null ? 0 : performance.optDouble("cpuPercent", 0),
+                mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable")));
+        dashboardRecoveryStatus.setText(OperationsDashboardStatusFormatter.recovery(
+                recovery != null && recovery.optBoolean("supported", false),
+                recovery != null && recovery.optBoolean("registered", false),
+                recovery != null && recovery.optBoolean("automaticWatchdogActive", false)));
+    }
+
+    private void markDashboardLiveStatusUnavailable() {
+        if (dashboardFlowStatus == null) {
+            return;
+        }
+        dashboardFlowStatus.setText("检测\n暂不可用");
+        dashboardDeviceStatus.setText("设备\n暂不可用");
+        dashboardMessageStatus.setText("消息\n暂不可用");
+        dashboardAlertStatus.setText("告警\n暂不可用");
+        dashboardPerformanceStatus.setText("性能\n暂不可用");
+        dashboardRecoveryStatus.setText("恢复\n暂不可用");
     }
 
     private Button capabilityButton(String label, String path) {
