@@ -160,7 +160,7 @@ public class OperationsActivity extends Activity {
                 pairingClient.submitClaim(payload, deviceName.trim());
                 runOnUiThread(() -> {
                     state.setText("已提交安全证明，请在电脑端批准这台设备");
-                    details.setText("设备：" + deviceName + "\n权限：状态、告警、诊断摘要、主窗口控制、受控窗口取证与当前检测取消\n配对码：一次性，短时有效");
+                    details.setText("设备：" + deviceName + "\n权限：状态、告警、设备在线汇总、诊断摘要、主窗口控制、受控窗口取证与当前检测取消\n配对码：一次性，短时有效");
                 });
                 pollPairingApproval(payload, pairingClient);
             } catch (Exception ex) {
@@ -235,7 +235,7 @@ public class OperationsActivity extends Activity {
         progress.setVisibility(View.GONE);
         title.setText("现场运维概览");
         state.setText("已通过设备密钥与 TLS 证书指纹验证");
-        details.setText("状态、性能和告警可直接查看；显示/最小化窗口属于低风险审计操作。取消当前主检测需要手机明确确认；服务维护仍需手机确认和电脑端本机共签。");
+        details.setText("状态、性能、告警和设备在线汇总可直接查看；显示/最小化窗口属于低风险审计操作。取消当前主检测需要手机明确确认；服务维护仍需手机确认和电脑端本机共签。");
         actions.removeAllViews();
 
         Button connectionCheck = new Button(this);
@@ -254,6 +254,7 @@ public class OperationsActivity extends Activity {
         actions.addView(liveMonitor, actionParams());
 
         addAction("查看白名单服务健康", "/ops/v1/services/health");
+        addAction("查看检测设备在线概览", "/ops/v1/devices/health");
         addAction("刷新运行状态", "/ops/v1/snapshot");
         addAction("查看当前检测状态", "/ops/v1/flow/runtime");
         addAction("查看进程性能快照", "/ops/v1/diagnostics/performance");
@@ -496,6 +497,10 @@ public class OperationsActivity extends Activity {
                 button.setText("申请重启 MQTT（需电脑共签）");
                 button.setOnClickListener(v -> confirmRestartMqtt());
                 return button;
+            case "triage.devices.view":
+                button.setText("查看检测设备在线概览");
+                button.setOnClickListener(v -> loadCapability("/ops/v1/devices/health"));
+                return button;
             default:
                 return null;
         }
@@ -508,7 +513,10 @@ public class OperationsActivity extends Activity {
                 .append("\n事件：严重 ").append(report.optInt("criticalCount", 0))
                 .append(" · 错误 ").append(report.optInt("errorCount", 0))
                 .append(" · 警告 ").append(report.optInt("warningCount", 0))
-                .append("\n待处理作业：").append(report.optInt("pendingJobCount", 0));
+                .append("\n待处理作业：").append(report.optInt("pendingJobCount", 0))
+                .append("\n检测设备：在线 ").append(report.optInt("deviceOnlineCount", 0))
+                .append(" / ").append(report.optInt("deviceTotalCount", 0))
+                .append(" · 离线 ").append(report.optInt("deviceOfflineCount", 0));
         if (findings == null || findings.length() == 0) {
             text.append("\n\n当前有界证据未发现需要处理的项目。");
         } else {
@@ -1410,16 +1418,21 @@ public class OperationsActivity extends Activity {
         JSONObject performance = snapshot.optJSONObject("performance");
         JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
         JSONObject alerts = snapshot.optJSONObject("alerts");
+        JSONObject devices = snapshot.optJSONObject("devices");
         String uiState = mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable");
         int criticalCount = alerts == null ? 0 : alerts.optInt("criticalCount", 0);
         int errorCount = alerts == null ? 0 : alerts.optInt("errorCount", 0);
         boolean flowActive = flow != null && flow.optBoolean("isActive", false);
 
         String prefix;
+        int offlineDeviceCount = devices == null || !devices.optBoolean("available", false)
+                ? 0 : devices.optInt("offlineCount", 0);
         if ("unresponsive".equals(uiState)) {
             prefix = "主界面响应超时";
         } else if (criticalCount > 0) {
             prefix = "发现严重告警";
+        } else if (offlineDeviceCount > 0) {
+            prefix = "发现离线检测设备";
         } else if (errorCount > 0) {
             prefix = "发现错误事件";
         } else if ("slow".equals(uiState)) {
@@ -1436,6 +1449,7 @@ public class OperationsActivity extends Activity {
     private String formatLiveMonitorSnapshot(JSONObject snapshot) {
         JSONObject flow = snapshot.optJSONObject("flow");
         JSONObject performance = snapshot.optJSONObject("performance");
+        JSONObject devices = snapshot.optJSONObject("devices");
         JSONObject alerts = snapshot.optJSONObject("alerts");
         StringBuilder text = new StringBuilder();
         if (flow == null || !flow.optBoolean("available", false)) {
@@ -1454,6 +1468,17 @@ public class OperationsActivity extends Activity {
             if (!"none".equals(lastStatus)) {
                 text.append("\n最近结果：").append(flowOutcomeLabel(lastStatus));
             }
+        }
+
+        if (devices == null || !devices.optBoolean("available", false)) {
+            text.append("\n\n检测设备：在线汇总暂不可用");
+        } else if (!devices.optBoolean("hasConfiguredDevices", false)) {
+            text.append("\n\n检测设备：当前未发现已加载设备");
+        } else {
+            text.append("\n\n检测设备：在线 ")
+                    .append(devices.optInt("onlineCount", 0))
+                    .append(" / ").append(devices.optInt("totalCount", 0))
+                    .append(" · 离线 ").append(devices.optInt("offlineCount", 0));
         }
 
         if (performance == null) {
@@ -1489,7 +1514,7 @@ public class OperationsActivity extends Activity {
                 .append("\n刷新策略：仅当前台可见时每 ")
                 .append(snapshot.optInt("suggestedRefreshSeconds", 10)).append(" 秒")
                 .append(formatLiveMonitorTrend(liveMonitorTrend.summarize()))
-                .append("\n\n服务器不保存采样历史；手机仅在内存保留最近 30 个样本，离开本页即清空。快照不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、日志正文或检测数据。 ");
+                .append("\n\n服务器不保存采样历史；手机仅在内存保留最近 30 个样本，离开本页即清空。快照不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、设备身份、Topic、配置、日志正文或检测数据。 ");
         return text.toString();
     }
 
@@ -1650,6 +1675,9 @@ public class OperationsActivity extends Activity {
         if ("/ops/v1/services/health".equals(path)) {
             return formatServiceHealth(payload);
         }
+        if ("/ops/v1/devices/health".equals(path)) {
+            return formatDeviceHealth(payload);
+        }
         if ("/ops/v1/audit".equals(path)) {
             return formatAuditTimeline(payload);
         }
@@ -1710,6 +1738,9 @@ public class OperationsActivity extends Activity {
         }
         if ("/ops/v1/services/health".equals(path)) {
             return "白名单服务状态已刷新";
+        }
+        if ("/ops/v1/devices/health".equals(path)) {
+            return "检测设备在线概览已刷新";
         }
         if ("/ops/v1/audit".equals(path)) {
             return "近期远程操作记录已刷新";
@@ -1950,6 +1981,57 @@ public class OperationsActivity extends Activity {
         text.append("\n\n").append(payload.optString("privacyNotice",
                 "仅报告固定白名单服务的规范化状态；不返回服务账户、程序路径或启动参数。"));
         return text.toString();
+    }
+
+    private String formatDeviceHealth(JSONObject payload) {
+        if (!payload.optBoolean("available", false)) {
+            return "当前无法读取检测设备在线汇总。\n\n不会据此执行设备重连或重启；请在电脑端检查设备注册表。";
+        }
+
+        int total = payload.optInt("totalCount", 0);
+        int online = payload.optInt("onlineCount", 0);
+        int offline = payload.optInt("offlineCount", 0);
+        StringBuilder text = new StringBuilder();
+        if (!payload.optBoolean("hasConfiguredDevices", false)) {
+            text.append("当前未发现已加载的检测设备。");
+        } else {
+            text.append(offline == 0 ? "已加载检测设备当前全部在线" : "有检测设备需要关注")
+                    .append("\n总数：").append(total)
+                    .append(" · 在线 ").append(online)
+                    .append(" · 离线 ").append(offline);
+        }
+
+        JSONArray categories = payload.optJSONArray("categories");
+        if (categories != null) {
+            for (int index = 0; index < categories.length(); index++) {
+                JSONObject category = categories.optJSONObject(index);
+                if (category == null) {
+                    continue;
+                }
+                text.append("\n\n").append(deviceCategoryLabel(category.optString("category", "other")))
+                        .append("：在线 ").append(category.optInt("onlineCount", 0))
+                        .append(" / ").append(category.optInt("totalCount", 0))
+                        .append(" · 离线 ").append(category.optInt("offlineCount", 0));
+            }
+        }
+        String observedAt = shortTime(payload.optString("observedAt", ""));
+        if (!observedAt.isEmpty()) {
+            text.append("\n\n观测时间：").append(observedAt);
+        }
+        text.append("\n\n只显示固定类别的在线/离线计数；不返回设备名称、编号、标识、地址、Topic、配置、原始心跳时间或测量数据，也不会执行设备操作。");
+        return text.toString();
+    }
+
+    private String deviceCategoryLabel(String value) {
+        switch (value) {
+            case "camera": return "相机类";
+            case "algorithm": return "算法类";
+            case "spectrum": return "光谱类";
+            case "instrument": return "仪表与供电类";
+            case "motion": return "运动控制类";
+            case "calibration": return "校准类";
+            default: return "其他设备";
+        }
     }
 
     private String formatJobs(JSONObject payload) {

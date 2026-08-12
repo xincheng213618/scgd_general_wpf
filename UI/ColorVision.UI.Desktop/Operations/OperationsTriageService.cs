@@ -6,6 +6,7 @@ namespace ColorVision.UI.Desktop.Operations
         public const string ShowMainWindow = "triage.window.show";
         public const string ReviewJobs = "triage.jobs.review";
         public const string RequestMqttRestart = "triage.mqtt.restart.request";
+        public const string ViewDeviceHealth = "triage.devices.view";
     }
 
     public sealed class OperationsTriageAction
@@ -39,6 +40,9 @@ namespace ColorVision.UI.Desktop.Operations
         public int ErrorCount { get; init; }
         public int WarningCount { get; init; }
         public int PendingJobCount { get; init; }
+        public int DeviceTotalCount { get; init; }
+        public int DeviceOnlineCount { get; init; }
+        public int DeviceOfflineCount { get; init; }
         public DateTimeOffset GeneratedAt { get; init; } = DateTimeOffset.UtcNow;
         public IReadOnlyList<OperationsTriageFinding> Findings { get; init; } = [];
         public string SafetyNotice { get; init; } =
@@ -51,13 +55,16 @@ namespace ColorVision.UI.Desktop.Operations
             OperationsLogDigest digest,
             OperationsDesktopState desktop,
             int pendingJobCount,
-            OperationsServiceHealthReport? serviceHealth = null)
+            OperationsServiceHealthReport? serviceHealth = null,
+            OperationsDeviceHealthSnapshot? deviceHealth = null)
         {
             int boundedPendingJobCount = Math.Max(0, pendingJobCount);
             List<OperationsTriageFinding> findings = [];
 
             if (serviceHealth != null)
                 AddServiceHealthFindings(serviceHealth, findings);
+            if (deviceHealth != null)
+                AddDeviceHealthFindings(deviceHealth, findings);
             AddLogFindings(digest, findings);
             AddMessageServiceFinding(digest, serviceHealth, findings);
             AddDesktopFinding(desktop, findings);
@@ -76,8 +83,53 @@ namespace ColorVision.UI.Desktop.Operations
                 ErrorCount = digest.ErrorCount,
                 WarningCount = digest.WarningCount,
                 PendingJobCount = boundedPendingJobCount,
+                DeviceTotalCount = Math.Max(0, deviceHealth?.TotalCount ?? 0),
+                DeviceOnlineCount = Math.Max(0, deviceHealth?.OnlineCount ?? 0),
+                DeviceOfflineCount = Math.Max(0, deviceHealth?.OfflineCount ?? 0),
                 Findings = findings,
             };
+        }
+
+        private static void AddDeviceHealthFindings(
+            OperationsDeviceHealthSnapshot deviceHealth,
+            List<OperationsTriageFinding> findings)
+        {
+            if (!deviceHealth.Available)
+            {
+                findings.Add(new OperationsTriageFinding
+                {
+                    FindingId = "device-health-unavailable",
+                    Severity = "info",
+                    Category = "devices",
+                    Title = "检测设备状态暂不可用",
+                    Summary = "当前无法取得设备注册表的类别级在线汇总；不会据此执行任何设备操作。",
+                });
+                return;
+            }
+            if (deviceHealth.OfflineCount == 0)
+                return;
+
+            findings.Add(new OperationsTriageFinding
+            {
+                FindingId = "inspection-devices-offline",
+                Severity = "warning",
+                Category = "devices",
+                Title = "存在离线检测设备",
+                Summary = $"已加载设备 {deviceHealth.TotalCount} 台，在线 {deviceHealth.OnlineCount} 台，离线 {deviceHealth.OfflineCount} 台。请先查看类别级汇总，再到电脑端核对具体设备。",
+                EvidenceCount = deviceHealth.OfflineCount,
+                LatestAt = deviceHealth.ObservedAt,
+                Actions =
+                [
+                    new OperationsTriageAction
+                    {
+                        ActionId = OperationsTriageActionIds.ViewDeviceHealth,
+                        Title = "查看设备在线概览",
+                        Kind = "client-navigation",
+                        RiskLevel = OperationsRiskLevels.ReadOnly,
+                        Description = "只查看固定类别的在线/离线计数，不返回设备身份，也不执行重连或重启。",
+                    },
+                ],
+            });
         }
 
         private static void AddServiceHealthFindings(

@@ -231,7 +231,8 @@ namespace ColorVision.UI.Tests
                 OperationsSecureApiRouter router = new(new OperationsPairingService(registry),
                     new OperationsRequestAuthenticator(registry), new OperationsWorkStore(workPath), () => new { healthy = true },
                     runtimePerformance: new FixedRuntimePerformanceProvider(),
-                    flowRuntimeStatus: new FixedFlowRuntimeStatusProvider());
+                    flowRuntimeStatus: new FixedFlowRuntimeStatusProvider(),
+                    deviceHealthProvider: new FixedDeviceHealthProvider());
                 const string path = "/ops/v1/diagnostics/connection";
 
                 OperationsApiResponse response = router.Handle(new OperationsSecureRequest
@@ -251,6 +252,9 @@ namespace ColorVision.UI.Tests
                 Assert.False(data.TryGetProperty("user", out _));
                 Assert.False(data.TryGetProperty("deviceId", out _));
                 Assert.False(data.TryGetProperty("certificate", out _));
+                Assert.True(data.GetProperty("deviceHealthAvailable").GetBoolean());
+                Assert.Equal(3, data.GetProperty("configuredDeviceCount").GetInt32());
+                Assert.Equal(1, data.GetProperty("offlineDeviceCount").GetInt32());
 
                 const string summaryPath = "/ops/v1/diagnostics/summary";
                 OperationsApiResponse summary = router.Handle(new OperationsSecureRequest
@@ -299,6 +303,26 @@ namespace ColorVision.UI.Tests
                 Assert.False(flowData.TryGetProperty("nodeName", out _));
                 Assert.False(flowData.TryGetProperty("resultText", out _));
 
+                const string deviceHealthPath = "/ops/v1/devices/health";
+                OperationsApiResponse deviceHealth = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "GET",
+                    Path = deviceHealthPath,
+                    Headers = Sign(key, "device-diagnostics", "GET", deviceHealthPath, []),
+                });
+                Assert.Equal(200, deviceHealth.StatusCode);
+                using JsonDocument deviceHealthDocument = JsonDocument.Parse(deviceHealth.Body);
+                JsonElement deviceHealthData = deviceHealthDocument.RootElement.GetProperty("data");
+                Assert.Equal(3, deviceHealthData.GetProperty("totalCount").GetInt32());
+                Assert.Equal(2, deviceHealthData.GetProperty("onlineCount").GetInt32());
+                Assert.Equal(1, deviceHealthData.GetProperty("offlineCount").GetInt32());
+                JsonElement deviceCategory = Assert.Single(deviceHealthData.GetProperty("categories").EnumerateArray());
+                Assert.Equal("camera", deviceCategory.GetProperty("category").GetString());
+                Assert.False(deviceCategory.TryGetProperty("deviceName", out _));
+                Assert.False(deviceCategory.TryGetProperty("code", out _));
+                Assert.False(deviceCategory.TryGetProperty("topic", out _));
+                Assert.False(deviceCategory.TryGetProperty("address", out _));
+
                 const string monitorPath = "/ops/v1/monitor";
                 OperationsApiResponse monitor = router.Handle(new OperationsSecureRequest
                 {
@@ -311,6 +335,7 @@ namespace ColorVision.UI.Tests
                 JsonElement monitorData = monitorDocument.RootElement.GetProperty("data");
                 Assert.Equal("running", monitorData.GetProperty("flow").GetProperty("phase").GetString());
                 Assert.Equal(9.5, monitorData.GetProperty("performance").GetProperty("cpuPercent").GetDouble());
+                Assert.Equal(1, monitorData.GetProperty("devices").GetProperty("offlineCount").GetInt32());
                 Assert.Equal(10, monitorData.GetProperty("suggestedRefreshSeconds").GetInt32());
                 Assert.False(monitorData.GetProperty("alerts").TryGetProperty("items", out _));
                 Assert.DoesNotContain(Environment.MachineName, monitor.Body, StringComparison.OrdinalIgnoreCase);
@@ -809,6 +834,16 @@ namespace ColorVision.UI.Tests
                 RequestCount++;
                 return new OperationsFlowCancelResult(true, "flow_cancel_requested", "accepted");
             }
+        }
+
+        private sealed class FixedDeviceHealthProvider : IOperationsDeviceHealthProvider
+        {
+            public OperationsDeviceHealthSnapshot Capture() => OperationsDeviceHealthSnapshotFactory.Create(
+            [
+                new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, true),
+                new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, true),
+                new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, false),
+            ]);
         }
 
         private sealed class FixedRuntimePerformanceProvider : IOperationsRuntimePerformanceProvider

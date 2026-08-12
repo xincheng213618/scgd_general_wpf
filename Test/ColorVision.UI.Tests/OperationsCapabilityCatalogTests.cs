@@ -27,6 +27,11 @@ namespace ColorVision.UI.Tests
             Assert.Equal(OperationsRiskLevels.ApprovalRequired, cancelFlow.RiskLevel);
             Assert.False(cancelFlow.Approval.RequiresLocalCoSign);
             Assert.Equal("ops.jobs.create", cancelFlow.Permission);
+            OperationsCapabilityDescriptor deviceHealth = Assert.Single(capabilities,
+                capability => capability.Id == "ops.devices.health.read");
+            Assert.True(deviceHealth.Available);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, deviceHealth.RiskLevel);
+            Assert.Equal("ops.diagnostics.read", deviceHealth.Permission);
         }
 
         [Fact]

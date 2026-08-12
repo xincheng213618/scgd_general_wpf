@@ -37,13 +37,21 @@ namespace ColorVision.UI.Tests
 
             OperationsTriageReport report = OperationsTriageService.Build(
                 digest, new OperationsDesktopState(true, true, false, "Minimized"), 2,
-                ServiceHealth("stopped", healthy: false, maintenanceSupported: true));
+                ServiceHealth("stopped", healthy: false, maintenanceSupported: true),
+                OperationsDeviceHealthSnapshotFactory.Create(
+                [
+                    new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, true),
+                    new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, false),
+                ]));
 
             Assert.Equal("critical", report.State);
             Assert.Contains(report.Findings, item => item.FindingId == "recent-abnormal-events");
             Assert.Contains(report.Findings, item => item.FindingId == "message-service-events");
             Assert.Contains(report.Findings, item => item.FindingId == "desktop-window-hidden");
             Assert.Contains(report.Findings, item => item.FindingId == "pending-operations-jobs");
+            Assert.Contains(report.Findings, item => item.FindingId == "inspection-devices-offline");
+            Assert.Equal(2, report.DeviceTotalCount);
+            Assert.Equal(1, report.DeviceOfflineCount);
 
             OperationsTriageAction[] actions = report.Findings.SelectMany(item => item.Actions).ToArray();
             string[] allowedActionIds =
@@ -52,6 +60,7 @@ namespace ColorVision.UI.Tests
                 OperationsTriageActionIds.ShowMainWindow,
                 OperationsTriageActionIds.ReviewJobs,
                 OperationsTriageActionIds.RequestMqttRestart,
+                OperationsTriageActionIds.ViewDeviceHealth,
             ];
             Assert.All(actions, action => Assert.Contains(action.ActionId, allowedActionIds));
             OperationsTriageAction restart = Assert.Single(actions,

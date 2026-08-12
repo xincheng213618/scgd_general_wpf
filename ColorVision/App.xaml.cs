@@ -272,6 +272,7 @@ namespace ColorVision
             CopilotMcpServer.Instance.ApplyConfig();
             LanRemoteControlService.Instance.ConfigureOperationsServiceHealthProvider(new WindowsOperationsServiceHealthProvider());
             LanRemoteControlService.Instance.ConfigureOperationsFlowRuntimeStatusProvider(new FlowOperationsRuntimeStatusProvider());
+            LanRemoteControlService.Instance.ConfigureOperationsDeviceHealthProvider(new EngineOperationsDeviceHealthProvider());
             LanRemoteControlService.Instance.ApplyConfig();
 
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");

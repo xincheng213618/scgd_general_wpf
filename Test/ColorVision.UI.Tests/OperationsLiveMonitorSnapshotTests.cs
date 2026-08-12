@@ -48,6 +48,11 @@ namespace ColorVision.UI.Tests
                         OccurredAt = capturedAt.AddMinutes(-1),
                     },
                 ],
+                OperationsDeviceHealthSnapshotFactory.Create(
+                [
+                    new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, true),
+                    new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, false),
+                ], capturedAt),
                 capturedAt);
 
             Assert.Equal(2, snapshot.Alerts.Count);
@@ -55,12 +60,15 @@ namespace ColorVision.UI.Tests
             Assert.Equal(1, snapshot.Alerts.ErrorCount);
             Assert.Equal(capturedAt.AddMinutes(-1), snapshot.Alerts.LatestOccurredAt);
             Assert.Equal(10, snapshot.SuggestedRefreshSeconds);
+            Assert.Equal(2, snapshot.Devices.TotalCount);
+            Assert.Equal(1, snapshot.Devices.OfflineCount);
 
             string json = JsonSerializer.Serialize(snapshot);
             Assert.DoesNotContain("private-alert-id", json, StringComparison.Ordinal);
             Assert.DoesNotContain("private log body", json, StringComparison.Ordinal);
             Assert.DoesNotContain("flowName", json, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("processId", json, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("deviceId", json, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

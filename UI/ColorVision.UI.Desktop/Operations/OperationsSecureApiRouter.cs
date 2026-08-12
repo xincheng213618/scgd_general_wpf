@@ -34,6 +34,7 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly IOperationsRuntimePerformanceProvider _runtimePerformance;
         private readonly IOperationsFlowRuntimeStatusProvider _flowRuntimeStatus;
         private readonly IOperationsFlowRuntimeController _flowRuntimeController;
+        private readonly IOperationsDeviceHealthProvider _deviceHealthProvider;
 
         public OperationsSecureApiRouter(
             OperationsPairingService pairing,
@@ -47,7 +48,8 @@ namespace ColorVision.UI.Desktop.Operations
             OperationsWindowSnapshotService? windowSnapshots = null,
             IOperationsRuntimePerformanceProvider? runtimePerformance = null,
             IOperationsFlowRuntimeStatusProvider? flowRuntimeStatus = null,
-            IOperationsFlowRuntimeController? flowRuntimeController = null)
+            IOperationsFlowRuntimeController? flowRuntimeController = null,
+            IOperationsDeviceHealthProvider? deviceHealthProvider = null)
         {
             _pairing = pairing;
             _authenticator = authenticator;
@@ -61,6 +63,7 @@ namespace ColorVision.UI.Desktop.Operations
             _runtimePerformance = runtimePerformance ?? new OperationsRuntimePerformanceService();
             _flowRuntimeStatus = flowRuntimeStatus ?? UnavailableOperationsFlowRuntimeStatusProvider.Instance;
             _flowRuntimeController = flowRuntimeController ?? UnavailableOperationsFlowRuntimeController.Instance;
+            _deviceHealthProvider = deviceHealthProvider ?? UnavailableOperationsDeviceHealthProvider.Instance;
         }
 
         public OperationsApiResponse Handle(OperationsSecureRequest request)
@@ -110,8 +113,9 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 IReadOnlyList<OperationsAlert> alerts = _alerts.GetRecent();
                 OperationsServiceHealthReport serviceHealth = CaptureServiceHealth();
+                OperationsDeviceHealthSnapshot deviceHealth = CaptureDeviceHealth();
                 int pendingJobCount = _workStore.GetJobsForDevice(authentication.Device.DeviceId).Count(item => item.Status is
-                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local");
+                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local" or "approved_mobile");
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", new
                 {
                     channel = "ready",
@@ -124,6 +128,9 @@ namespace ColorVision.UI.Desktop.Operations
                     pendingJobCount,
                     serviceHealthAvailable = serviceHealth.Available,
                     unhealthyServiceCount = serviceHealth.Services.Count(item => !item.Healthy),
+                    deviceHealthAvailable = deviceHealth.Available,
+                    configuredDeviceCount = deviceHealth.TotalCount,
+                    offlineDeviceCount = deviceHealth.OfflineCount,
                 });
             }
 
@@ -133,13 +140,16 @@ namespace ColorVision.UI.Desktop.Operations
             if (request.Path.Equals($"{ApiPrefix}/services/health", StringComparison.OrdinalIgnoreCase))
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", CaptureServiceHealth());
 
+            if (request.Path.Equals($"{ApiPrefix}/devices/health", StringComparison.OrdinalIgnoreCase))
+                return HandleDeviceHealth(request, correlationId, authentication.Device);
+
             if (request.Path.Equals($"{ApiPrefix}/triage", StringComparison.OrdinalIgnoreCase))
             {
                 int pendingJobCount = _workStore.GetJobsForDevice(authentication.Device.DeviceId).Count(item => item.Status is
-                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local");
+                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local" or "approved_mobile");
                 OperationsTriageReport report = OperationsTriageService.Build(
                     _alerts.GetDigest(), OperationsDesktopActionService.CaptureState(), pendingJobCount,
-                    CaptureServiceHealth());
+                    CaptureServiceHealth(), CaptureDeviceHealth());
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", report);
             }
 
@@ -227,6 +237,37 @@ namespace ColorVision.UI.Desktop.Operations
             }
         }
 
+        private OperationsDeviceHealthSnapshot CaptureDeviceHealth()
+        {
+            try
+            {
+                return _deviceHealthProvider.Capture();
+            }
+            catch
+            {
+                return OperationsDeviceHealthSnapshot.CreateUnavailable();
+            }
+        }
+
+        private OperationsApiResponse HandleDeviceHealth(
+            OperationsSecureRequest request,
+            string correlationId,
+            OperationsPairedDevice device)
+        {
+            if (!string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return Error(405, correlationId, "method_not_allowed", "Use GET for this endpoint.", "GET");
+            if (!HasScope(device, "ops.diagnostics.read"))
+                return ScopeRequired(correlationId, "ops.diagnostics.read");
+
+            OperationsDeviceHealthSnapshot snapshot = CaptureDeviceHealth();
+            _workStore.RecordAudit(device.DeviceId, "device", "devices.health.read",
+                "device-health", snapshot.Available ? "completed" : "failed", correlationId);
+            return snapshot.Available
+                ? Json(200, correlationId, snapshot)
+                : Error(503, correlationId, "device_health_unavailable",
+                    "The aggregate inspection-device health snapshot is temporarily unavailable.");
+        }
+
         private OperationsApiResponse HandleRuntimePerformance(
             OperationsSecureRequest request,
             string correlationId,
@@ -291,7 +332,8 @@ namespace ColorVision.UI.Desktop.Operations
                 OperationsLiveMonitorSnapshot snapshot = OperationsLiveMonitorSnapshotFactory.Create(
                     _flowRuntimeStatus.Capture(),
                     _runtimePerformance.Capture(),
-                    _alerts.GetRecent());
+                    _alerts.GetRecent(),
+                    CaptureDeviceHealth());
                 _workStore.RecordAuditThrottled(
                     device.DeviceId,
                     "device",

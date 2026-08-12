@@ -2,7 +2,7 @@ namespace ColorVision.UI.Desktop.Operations
 {
     public static class OperationsCapabilityCatalog
     {
-        public const string SchemaVersion = "1.1";
+        public const string SchemaVersion = "1.2";
 
         private static readonly IReadOnlyList<OperationsCapabilityDescriptor> Capabilities =
         [
@@ -186,6 +186,22 @@ namespace ColorVision.UI.Desktop.Operations
                 OutputSchema = new { type = "object", additionalProperties = true },
                 Audit = new OperationsAuditPolicy { Required = true },
                 Evidence = ["windows.scm.allowlist", "mqtt.endpoint.mode"],
+                Available = true,
+            },
+            new()
+            {
+                Id = "ops.devices.health.read",
+                Title = "Read aggregate inspection-device health",
+                Description = "Read online and offline counts grouped into fixed coarse device categories without returning device names, codes, identifiers, addresses, topics, configuration, or measurement data.",
+                Category = "diagnostics",
+                Provider = "engine.device-registry",
+                Permission = "ops.diagnostics.read",
+                DiscoverableOn = ["desktop", "android", "copilot"],
+                InputSchema = new { type = "object", additionalProperties = false },
+                OutputSchema = new { type = "object", additionalProperties = true },
+                TimeoutMs = 1500,
+                Audit = new OperationsAuditPolicy { Required = true },
+                Evidence = ["device.category.counts", "device.online.aggregate"],
                 Available = true,
             },
             new()

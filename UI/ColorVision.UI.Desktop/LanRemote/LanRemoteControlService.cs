@@ -56,6 +56,9 @@ namespace ColorVision.UI.Desktop.LanRemote
         public void ConfigureOperationsFlowRuntimeStatusProvider(IOperationsFlowRuntimeStatusProvider provider) =>
             _operationsHost.ConfigureFlowRuntimeStatusProvider(provider);
 
+        public void ConfigureOperationsDeviceHealthProvider(IOperationsDeviceHealthProvider provider) =>
+            _operationsHost.ConfigureDeviceHealthProvider(provider);
+
         public void ApplyConfig()
         {
             var config = LanRemoteControlConfig.Instance;

@@ -21,6 +21,7 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly OperationsWindowSnapshotService _windowSnapshots;
         private readonly OperationsRelayClientService _relay;
         private IOperationsServiceHealthProvider _serviceHealthProvider = UnavailableOperationsServiceHealthProvider.Instance;
+        private IOperationsDeviceHealthProvider _deviceHealthProvider = UnavailableOperationsDeviceHealthProvider.Instance;
         private IOperationsFlowRuntimeStatusProvider _flowRuntimeStatusProvider = UnavailableOperationsFlowRuntimeStatusProvider.Instance;
         private IOperationsFlowRuntimeController _flowRuntimeController = UnavailableOperationsFlowRuntimeController.Instance;
         private Func<object>? _snapshotProvider;
@@ -91,6 +92,17 @@ namespace ColorVision.UI.Desktop.Operations
             }
         }
 
+        public void ConfigureDeviceHealthProvider(IOperationsDeviceHealthProvider provider)
+        {
+            ArgumentNullException.ThrowIfNull(provider);
+            lock (_syncRoot)
+            {
+                if (IsRunning)
+                    throw new InvalidOperationException("Configure the Operations device-health provider before starting the secure host.");
+                _deviceHealthProvider = provider;
+            }
+        }
+
         public void Start(int port, Func<object> snapshotProvider)
         {
             lock (_syncRoot)
@@ -106,7 +118,8 @@ namespace ColorVision.UI.Desktop.Operations
                         serviceHealthProvider: _serviceHealthProvider, alerts: _alerts,
                         diagnosticBundles: _diagnosticBundles, windowSnapshots: _windowSnapshots,
                         flowRuntimeStatus: _flowRuntimeStatusProvider,
-                        flowRuntimeController: _flowRuntimeController);
+                        flowRuntimeController: _flowRuntimeController,
+                        deviceHealthProvider: _deviceHealthProvider);
                     _snapshotProvider = snapshotProvider;
                     _listener = new TcpListener(IPAddress.Any, port);
                     _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
