@@ -202,12 +202,14 @@ minutes are rejected before model provider credentials are returned.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/admin/audit-log?action=&limit=&offset=` | View audit log |
+| GET | `/api/admin/audit-log?action=&actor=&target=&since=&until=&limit=&offset=` | View audit log with an exact filtered `total` |
 
 Audit rows are retained for 365 days by default. The daily
 `admin_data_retention` job applies the cutoff to the live database and every
 recognized administrator-created database snapshot, so a backup cannot bypass
 the audit retention contract.
+Pagination accepts `limit` from 1 through 500 and a non-negative `offset`;
+invalid values return HTTP 400 instead of becoming an unbounded SQLite query.
 
 ### Deployment History
 

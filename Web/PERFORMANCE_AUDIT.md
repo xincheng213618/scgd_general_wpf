@@ -132,6 +132,11 @@ package hash costing about 381.9 ms moved to index refresh work.
   loader processes with no children and about 53 MB working set each; they were
   removed after exact command-line classification. The new Bundle DryRun
   returned in 7.7 seconds without adding a loader process or history record.
+- Replaced the audit page's inferred row count with an exact filtered total from
+  the existing `audit_log` query boundary. The production baseline had 378 rows
+  while the first page claimed 40; the most common action had 347 rows and was
+  likewise capped by the heuristic. Invalid or unbounded pagination is now
+  rejected before reaching SQLite.
 - Added route-level frontend splitting, request cancellation, stale-state fixes,
   changelog/plugin HTML sanitization, immutable hashed-asset caching, and lazy
   chunk recovery after rolling deployments.

@@ -569,6 +569,8 @@ try {
             'test_contracts.AuthContracts.test_cross_origin_auth_write_is_rejected_before_login',
             'test_contracts.AuthContracts.test_same_origin_session_admin_write_requires_csrf_token',
             'test_contracts.AdminApiContracts.test_deployment_history_is_admin_only_paginated_and_sanitized',
+            'test_contracts.AdminApiContracts.test_audit_log_returns_exact_total_and_validates_pagination',
+            'test_db_cache.CacheManagerTests.test_audit_log_page_uses_exact_filtered_total',
             'test_transfer_files.TransferRouteTests.test_browser_session_transfer_write_requires_csrf_token',
             'test_transfer_files.TransferRouteTests.test_browser_transfer_auth_avoids_basic_challenge_and_redirects_navigation',
             'test_transfer_files.TransferRouteTests.test_transfer_upload_download_list_and_delete_with_basic_auth',
