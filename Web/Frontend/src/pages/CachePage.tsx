@@ -217,11 +217,12 @@ export function CachePage() {
           <Card><Statistic title="插件包索引" value={cache?.package_index_count ?? 0} /></Card>
         </Col>
         <Col xs={12} lg={6}>
-          <Card><Statistic title="手工数据库备份" value={backups.count} suffix={`/ ${backups.keep_count}`} prefix={<DatabaseOutlined />} /></Card>
+          <Card><Statistic title="数据库备份" value={backups.count} suffix={`/ ${backups.keep_count}`} prefix={<DatabaseOutlined />} /></Card>
         </Col>
       </Row>
 
       <ProTable<IndexStatusRow>
+        className="cache-index-table"
         actionRef={actionRef}
         rowKey="scope"
         columns={columns}
@@ -262,10 +263,10 @@ export function CachePage() {
           <Popconfirm
             key="backup"
             title="确认创建数据库备份？"
-            description={`系统会隐私清理并自动保留最新 ${backups.keep_count} 个手工备份。`}
+            description={`系统会立即创建一致性快照、执行隐私保留清理，并自动保留最新 ${backups.keep_count} 个备份。`}
             onConfirm={createBackup}
           >
-            <Button icon={<DatabaseOutlined />} loading={backingUp}>备份数据库</Button>
+            <Button icon={<DatabaseOutlined />} loading={backingUp}>立即备份数据库</Button>
           </Popconfirm>,
         ]}
         options={{ density: true, fullScreen: true, reload: true, setting: true }}
@@ -275,8 +276,8 @@ export function CachePage() {
       />
 
       <Card
-        title="手工数据库备份"
-        extra={<Typography.Text type="secondary">UTC 创建时间 · 自动隐私清理与轮换</Typography.Text>}
+        title="数据库备份"
+        extra={<Typography.Text type="secondary">每日自动创建 · UTC 时间 · 隐私清理与轮换</Typography.Text>}
       >
         {backups.backups.length ? (
           <List
@@ -291,7 +292,7 @@ export function CachePage() {
             )}
           />
         ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="尚未创建手工数据库备份" />
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="尚无数据库备份；每日任务会自动创建，也可立即备份" />
         )}
       </Card>
     </Space>

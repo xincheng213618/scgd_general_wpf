@@ -51,7 +51,7 @@ export const retentionSettingDefinitions: readonly RetentionSettingDefinition[] 
     label: '数据库备份',
     unit: '个',
     description: '管理数据库自动备份保留的最新副本数量。',
-    applies: '下次管理数据清理',
+    applies: '下次备份或管理数据清理',
   },
 ]
 

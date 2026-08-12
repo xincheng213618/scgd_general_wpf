@@ -2512,6 +2512,13 @@ body.cv-home-light .workflow-icon {
 }
 
 @media (max-width: 768px) {
+  .cache-index-table .ant-pro-table-list-toolbar-right,
+  .cache-index-table .ant-pro-table-list-toolbar-right > div:first-child {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
   .site-header.home-header {
     position: sticky;
     background: rgba(255, 255, 255, 0.92);

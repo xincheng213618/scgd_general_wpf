@@ -1,4 +1,4 @@
-"""Retention for administrator audit rows and manual database snapshots."""
+"""Retention for administrator audit rows and recognized database snapshots."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ DEFAULT_ADMIN_DB_BACKUP_KEEP_COUNT = 10
 
 
 def list_manual_db_backups(directory: Path) -> list[dict[str, Any]]:
-    """List recognized manual snapshots without exposing filesystem paths."""
+    """List recognized snapshots without exposing filesystem paths."""
     root = Path(directory).resolve()
     if not root.is_dir():
         return []
@@ -105,7 +105,7 @@ def prune_audit_log_backups(
     retention_days: int,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Scrub expired audit rows from recognized manual database snapshots."""
+    """Scrub expired audit rows from recognized database snapshots."""
     root = Path(directory).resolve()
     results: list[dict[str, Any]] = []
     errors: list[str] = []
