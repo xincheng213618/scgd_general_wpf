@@ -30,7 +30,7 @@ namespace ColorVision.UI.Desktop.Operations
         public OperationsLiveMonitorAlertSummary Alerts { get; init; } = new();
 
         public string PrivacyNotice { get; init; } =
-            "This live snapshot contains aggregate flow state, process counters, UI latency, device-category online counts, and alert counts only. It excludes flow, template, batch, node, parameter, result, process identity, host, user, endpoint, device identity, topic, configuration, log text, and inspection data.";
+            "This live snapshot contains aggregate flow state, process counters, UI latency, normalized device-category state counts, and alert counts only. It excludes flow, template, batch, node, parameter, result, process identity, host, user, endpoint, device identity, topic, configuration, raw device status, log text, and inspection data.";
     }
 
     public static class OperationsLiveMonitorSnapshotFactory

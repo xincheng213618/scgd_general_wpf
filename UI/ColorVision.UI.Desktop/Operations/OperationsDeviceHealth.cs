@@ -17,7 +17,23 @@ namespace ColorVision.UI.Desktop.Operations
         };
     }
 
-    public sealed record OperationsDeviceHealthObservation(string Category, bool IsOnline);
+    public static class OperationsDeviceStates
+    {
+        public const string Ready = "ready";
+        public const string Busy = "busy";
+        public const string Transitioning = "transitioning";
+        public const string Closed = "closed";
+        public const string Unavailable = "unavailable";
+        public const string Unknown = "unknown";
+
+        internal static string Normalize(string state) => state switch
+        {
+            Ready or Busy or Transitioning or Closed or Unavailable => state,
+            _ => Unknown,
+        };
+    }
+
+    public sealed record OperationsDeviceHealthObservation(string Category, string State);
 
     public sealed class OperationsDeviceHealthGroup
     {
@@ -25,9 +41,19 @@ namespace ColorVision.UI.Desktop.Operations
 
         public int TotalCount { get; init; }
 
-        public int OnlineCount { get; init; }
+        public int ReadyCount { get; init; }
 
-        public int OfflineCount { get; init; }
+        public int BusyCount { get; init; }
+
+        public int TransitioningCount { get; init; }
+
+        public int ClosedCount { get; init; }
+
+        public int UnavailableCount { get; init; }
+
+        public int UnknownCount { get; init; }
+
+        public int AttentionCount { get; init; }
     }
 
     public sealed class OperationsDeviceHealthSnapshot
@@ -36,20 +62,30 @@ namespace ColorVision.UI.Desktop.Operations
 
         public bool HasConfiguredDevices { get; init; }
 
-        public bool AllOnline { get; init; }
+        public bool AllHealthy { get; init; }
 
         public int TotalCount { get; init; }
 
-        public int OnlineCount { get; init; }
+        public int ReadyCount { get; init; }
 
-        public int OfflineCount { get; init; }
+        public int BusyCount { get; init; }
+
+        public int TransitioningCount { get; init; }
+
+        public int ClosedCount { get; init; }
+
+        public int UnavailableCount { get; init; }
+
+        public int UnknownCount { get; init; }
+
+        public int AttentionCount { get; init; }
 
         public IReadOnlyList<OperationsDeviceHealthGroup> Categories { get; init; } = [];
 
         public DateTimeOffset ObservedAt { get; init; } = DateTimeOffset.UtcNow;
 
         public string PrivacyNotice { get; init; } =
-            "This snapshot contains configured device counts grouped into fixed coarse categories and current online/offline flags only. It excludes device names, codes, identifiers, addresses, topics, configuration, heartbeat timestamps, and measurement data.";
+            "This snapshot contains configured device counts grouped into fixed coarse categories and normalized runtime states only. It excludes device names, codes, identifiers, addresses, topics, configuration, raw status payloads, timestamps, and measurement data.";
 
         public static OperationsDeviceHealthSnapshot CreateUnavailable(DateTimeOffset? observedAt = null) => new()
         {
@@ -66,7 +102,8 @@ namespace ColorVision.UI.Desktop.Operations
             ArgumentNullException.ThrowIfNull(observations);
             OperationsDeviceHealthObservation[] current = observations
                 .Select(item => new OperationsDeviceHealthObservation(
-                    OperationsDeviceCategories.Normalize(item.Category), item.IsOnline))
+                    OperationsDeviceCategories.Normalize(item.Category),
+                    OperationsDeviceStates.Normalize(item.State)))
                 .ToArray();
             OperationsDeviceHealthGroup[] categories = current
                 .GroupBy(item => item.Category, StringComparer.Ordinal)
@@ -75,24 +112,44 @@ namespace ColorVision.UI.Desktop.Operations
                 {
                     Category = group.Key,
                     TotalCount = group.Count(),
-                    OnlineCount = group.Count(item => item.IsOnline),
-                    OfflineCount = group.Count(item => !item.IsOnline),
+                    ReadyCount = Count(group, OperationsDeviceStates.Ready),
+                    BusyCount = Count(group, OperationsDeviceStates.Busy),
+                    TransitioningCount = Count(group, OperationsDeviceStates.Transitioning),
+                    ClosedCount = Count(group, OperationsDeviceStates.Closed),
+                    UnavailableCount = Count(group, OperationsDeviceStates.Unavailable),
+                    UnknownCount = Count(group, OperationsDeviceStates.Unknown),
+                    AttentionCount = group.Count(item => item.State is
+                        OperationsDeviceStates.Unavailable or OperationsDeviceStates.Unknown),
                 })
                 .ToArray();
-            int onlineCount = current.Count(item => item.IsOnline);
-            int offlineCount = current.Length - onlineCount;
+            int readyCount = Count(current, OperationsDeviceStates.Ready);
+            int busyCount = Count(current, OperationsDeviceStates.Busy);
+            int transitioningCount = Count(current, OperationsDeviceStates.Transitioning);
+            int closedCount = Count(current, OperationsDeviceStates.Closed);
+            int unavailableCount = Count(current, OperationsDeviceStates.Unavailable);
+            int unknownCount = Count(current, OperationsDeviceStates.Unknown);
+            int attentionCount = unavailableCount + unknownCount;
             return new OperationsDeviceHealthSnapshot
             {
                 Available = true,
                 HasConfiguredDevices = current.Length > 0,
-                AllOnline = current.Length > 0 && offlineCount == 0,
+                AllHealthy = current.Length > 0 && attentionCount == 0,
                 TotalCount = current.Length,
-                OnlineCount = onlineCount,
-                OfflineCount = offlineCount,
+                ReadyCount = readyCount,
+                BusyCount = busyCount,
+                TransitioningCount = transitioningCount,
+                ClosedCount = closedCount,
+                UnavailableCount = unavailableCount,
+                UnknownCount = unknownCount,
+                AttentionCount = attentionCount,
                 Categories = categories,
                 ObservedAt = observedAt ?? DateTimeOffset.UtcNow,
             };
         }
+
+        private static int Count(
+            IEnumerable<OperationsDeviceHealthObservation> observations,
+            string state) => observations.Count(item => item.State == state);
     }
 
     public interface IOperationsDeviceHealthProvider

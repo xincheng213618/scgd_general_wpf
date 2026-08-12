@@ -34,8 +34,33 @@ namespace ColorVision.Engine.Services.Operations
         }
 
         private static OperationsDeviceHealthSnapshot CaptureOnDispatcher(ServiceManager manager) =>
-            OperationsDeviceHealthSnapshotFactory.Create(manager.DeviceServices.Select(device =>
-                new OperationsDeviceHealthObservation(Category(device.ServiceTypes), device.IsAlive)));
+            OperationsDeviceHealthSnapshotFactory.Create(manager.DeviceServices.Select(Observe));
+
+        private static OperationsDeviceHealthObservation Observe(DeviceService device)
+        {
+            try
+            {
+                return new OperationsDeviceHealthObservation(
+                    Category(device.ServiceTypes), State(device.GetMQTTService()?.DeviceStatus));
+            }
+            catch
+            {
+                return new OperationsDeviceHealthObservation(
+                    Category(device.ServiceTypes), OperationsDeviceStates.Unknown);
+            }
+        }
+
+        internal static string State(DeviceStatusType? status) => status switch
+        {
+            DeviceStatusType.Opened or DeviceStatusType.Free or DeviceStatusType.LiveOpened
+                or DeviceStatusType.SP_Continuous_Mode => OperationsDeviceStates.Ready,
+            DeviceStatusType.Busy => OperationsDeviceStates.Busy,
+            DeviceStatusType.Opening or DeviceStatusType.Closing => OperationsDeviceStates.Transitioning,
+            DeviceStatusType.Closed => OperationsDeviceStates.Closed,
+            DeviceStatusType.Unauthorized or DeviceStatusType.UnInit or DeviceStatusType.OffLine
+                => OperationsDeviceStates.Unavailable,
+            _ => OperationsDeviceStates.Unknown,
+        };
 
         private static string Category(ServiceTypes serviceType) => serviceType switch
         {

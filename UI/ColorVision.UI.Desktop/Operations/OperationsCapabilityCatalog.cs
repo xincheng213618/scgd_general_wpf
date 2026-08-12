@@ -2,7 +2,7 @@ namespace ColorVision.UI.Desktop.Operations
 {
     public static class OperationsCapabilityCatalog
     {
-        public const string SchemaVersion = "1.2";
+        public const string SchemaVersion = "1.3";
 
         private static readonly IReadOnlyList<OperationsCapabilityDescriptor> Capabilities =
         [
@@ -131,7 +131,7 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 Id = "ops.monitor.read",
                 Title = "Read a bounded live operations snapshot",
-                Description = "Read aggregate flow state, process counters, UI responsiveness, and alert counts in one foreground monitoring request without returning identities, log text, or inspection data.",
+                Description = "Read aggregate flow state, process counters, UI responsiveness, normalized device-state counts, and alert counts in one foreground monitoring request without returning identities, raw status, log text, or inspection data.",
                 Category = "diagnostics",
                 Provider = "desktop.operations",
                 Permission = "ops.diagnostics.read",
@@ -140,7 +140,7 @@ namespace ColorVision.UI.Desktop.Operations
                 OutputSchema = new { type = "object", additionalProperties = true },
                 TimeoutMs = 2500,
                 Audit = new OperationsAuditPolicy { Required = true },
-                Evidence = ["flow.lifecycle.aggregate", "process.aggregate-counters", "desktop.ui-latency", "application.alert.counts"],
+                Evidence = ["flow.lifecycle.aggregate", "process.aggregate-counters", "desktop.ui-latency", "device.runtime-state.aggregate", "application.alert.counts"],
                 Available = true,
             },
             new()
@@ -162,7 +162,7 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 Id = "ops.triage.read",
                 Title = "Read guided remediation recommendations",
-                Description = "Turn bounded desktop, job, and redacted event evidence into fixed safe-navigation, audited low-risk, or approval-gated remediation recommendations.",
+                Description = "Turn bounded desktop, job, service, normalized device-state, and redacted event evidence into fixed safe-navigation, audited low-risk, or approval-gated remediation recommendations.",
                 Category = "diagnostics",
                 Provider = "desktop.operations",
                 Permission = "ops.diagnostics.read",
@@ -170,7 +170,7 @@ namespace ColorVision.UI.Desktop.Operations
                 InputSchema = new { type = "object", additionalProperties = false },
                 OutputSchema = new { type = "object", additionalProperties = true },
                 Audit = new OperationsAuditPolicy { Required = true },
-                Evidence = ["application.log.digest", "desktop.window.state", "operations.job.state"],
+                Evidence = ["application.log.digest", "desktop.window.state", "operations.job.state", "service.health.allowlist", "device.runtime-state.aggregate"],
                 Available = true,
             },
             new()
@@ -191,8 +191,8 @@ namespace ColorVision.UI.Desktop.Operations
             new()
             {
                 Id = "ops.devices.health.read",
-                Title = "Read aggregate inspection-device health",
-                Description = "Read online and offline counts grouped into fixed coarse device categories without returning device names, codes, identifiers, addresses, topics, configuration, or measurement data.",
+                Title = "Read aggregate inspection-device runtime health",
+                Description = "Read normalized ready, busy, transitioning, closed, unavailable, and unknown counts grouped into fixed coarse categories without returning device names, codes, identifiers, addresses, topics, configuration, raw status, or measurement data.",
                 Category = "diagnostics",
                 Provider = "engine.device-registry",
                 Permission = "ops.diagnostics.read",
@@ -201,7 +201,7 @@ namespace ColorVision.UI.Desktop.Operations
                 OutputSchema = new { type = "object", additionalProperties = true },
                 TimeoutMs = 1500,
                 Audit = new OperationsAuditPolicy { Required = true },
-                Evidence = ["device.category.counts", "device.online.aggregate"],
+                Evidence = ["device.category.counts", "device.runtime-state.aggregate"],
                 Available = true,
             },
             new()

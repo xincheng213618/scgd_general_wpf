@@ -254,7 +254,9 @@ namespace ColorVision.UI.Tests
                 Assert.False(data.TryGetProperty("certificate", out _));
                 Assert.True(data.GetProperty("deviceHealthAvailable").GetBoolean());
                 Assert.Equal(3, data.GetProperty("configuredDeviceCount").GetInt32());
-                Assert.Equal(1, data.GetProperty("offlineDeviceCount").GetInt32());
+                Assert.Equal(1, data.GetProperty("readyDeviceCount").GetInt32());
+                Assert.Equal(1, data.GetProperty("busyDeviceCount").GetInt32());
+                Assert.Equal(1, data.GetProperty("deviceAttentionCount").GetInt32());
 
                 const string summaryPath = "/ops/v1/diagnostics/summary";
                 OperationsApiResponse summary = router.Handle(new OperationsSecureRequest
@@ -314,8 +316,10 @@ namespace ColorVision.UI.Tests
                 using JsonDocument deviceHealthDocument = JsonDocument.Parse(deviceHealth.Body);
                 JsonElement deviceHealthData = deviceHealthDocument.RootElement.GetProperty("data");
                 Assert.Equal(3, deviceHealthData.GetProperty("totalCount").GetInt32());
-                Assert.Equal(2, deviceHealthData.GetProperty("onlineCount").GetInt32());
-                Assert.Equal(1, deviceHealthData.GetProperty("offlineCount").GetInt32());
+                Assert.Equal(1, deviceHealthData.GetProperty("readyCount").GetInt32());
+                Assert.Equal(1, deviceHealthData.GetProperty("busyCount").GetInt32());
+                Assert.Equal(1, deviceHealthData.GetProperty("unavailableCount").GetInt32());
+                Assert.Equal(1, deviceHealthData.GetProperty("attentionCount").GetInt32());
                 JsonElement deviceCategory = Assert.Single(deviceHealthData.GetProperty("categories").EnumerateArray());
                 Assert.Equal("camera", deviceCategory.GetProperty("category").GetString());
                 Assert.False(deviceCategory.TryGetProperty("deviceName", out _));
@@ -335,7 +339,7 @@ namespace ColorVision.UI.Tests
                 JsonElement monitorData = monitorDocument.RootElement.GetProperty("data");
                 Assert.Equal("running", monitorData.GetProperty("flow").GetProperty("phase").GetString());
                 Assert.Equal(9.5, monitorData.GetProperty("performance").GetProperty("cpuPercent").GetDouble());
-                Assert.Equal(1, monitorData.GetProperty("devices").GetProperty("offlineCount").GetInt32());
+                Assert.Equal(1, monitorData.GetProperty("devices").GetProperty("attentionCount").GetInt32());
                 Assert.Equal(10, monitorData.GetProperty("suggestedRefreshSeconds").GetInt32());
                 Assert.False(monitorData.GetProperty("alerts").TryGetProperty("items", out _));
                 Assert.DoesNotContain(Environment.MachineName, monitor.Body, StringComparison.OrdinalIgnoreCase);
@@ -840,9 +844,9 @@ namespace ColorVision.UI.Tests
         {
             public OperationsDeviceHealthSnapshot Capture() => OperationsDeviceHealthSnapshotFactory.Create(
             [
-                new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, true),
-                new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, true),
-                new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, false),
+                new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Ready),
+                new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Busy),
+                new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Unavailable),
             ]);
         }
 

@@ -41,8 +41,10 @@ namespace ColorVision.UI.Desktop.Operations
         public int WarningCount { get; init; }
         public int PendingJobCount { get; init; }
         public int DeviceTotalCount { get; init; }
-        public int DeviceOnlineCount { get; init; }
-        public int DeviceOfflineCount { get; init; }
+        public int DeviceReadyCount { get; init; }
+        public int DeviceBusyCount { get; init; }
+        public int DeviceClosedCount { get; init; }
+        public int DeviceAttentionCount { get; init; }
         public DateTimeOffset GeneratedAt { get; init; } = DateTimeOffset.UtcNow;
         public IReadOnlyList<OperationsTriageFinding> Findings { get; init; } = [];
         public string SafetyNotice { get; init; } =
@@ -84,8 +86,10 @@ namespace ColorVision.UI.Desktop.Operations
                 WarningCount = digest.WarningCount,
                 PendingJobCount = boundedPendingJobCount,
                 DeviceTotalCount = Math.Max(0, deviceHealth?.TotalCount ?? 0),
-                DeviceOnlineCount = Math.Max(0, deviceHealth?.OnlineCount ?? 0),
-                DeviceOfflineCount = Math.Max(0, deviceHealth?.OfflineCount ?? 0),
+                DeviceReadyCount = Math.Max(0, deviceHealth?.ReadyCount ?? 0),
+                DeviceBusyCount = Math.Max(0, deviceHealth?.BusyCount ?? 0),
+                DeviceClosedCount = Math.Max(0, deviceHealth?.ClosedCount ?? 0),
+                DeviceAttentionCount = Math.Max(0, deviceHealth?.AttentionCount ?? 0),
                 Findings = findings,
             };
         }
@@ -102,31 +106,31 @@ namespace ColorVision.UI.Desktop.Operations
                     Severity = "info",
                     Category = "devices",
                     Title = "检测设备状态暂不可用",
-                    Summary = "当前无法取得设备注册表的类别级在线汇总；不会据此执行任何设备操作。",
+                    Summary = "当前无法取得设备注册表的类别级运行状态汇总；不会据此执行任何设备操作。",
                 });
                 return;
             }
-            if (deviceHealth.OfflineCount == 0)
+            if (deviceHealth.AttentionCount == 0)
                 return;
 
             findings.Add(new OperationsTriageFinding
             {
-                FindingId = "inspection-devices-offline",
+                FindingId = "inspection-devices-attention",
                 Severity = "warning",
                 Category = "devices",
-                Title = "存在离线检测设备",
-                Summary = $"已加载设备 {deviceHealth.TotalCount} 台，在线 {deviceHealth.OnlineCount} 台，离线 {deviceHealth.OfflineCount} 台。请先查看类别级汇总，再到电脑端核对具体设备。",
-                EvidenceCount = deviceHealth.OfflineCount,
+                Title = "检测设备存在不可用或未知状态",
+                Summary = $"已加载设备 {deviceHealth.TotalCount} 台，其中不可用 {deviceHealth.UnavailableCount} 台、状态未知 {deviceHealth.UnknownCount} 台。请先查看类别级汇总，再到电脑端核对具体设备。",
+                EvidenceCount = deviceHealth.AttentionCount,
                 LatestAt = deviceHealth.ObservedAt,
                 Actions =
                 [
                     new OperationsTriageAction
                     {
                         ActionId = OperationsTriageActionIds.ViewDeviceHealth,
-                        Title = "查看设备在线概览",
+                        Title = "查看设备状态概览",
                         Kind = "client-navigation",
                         RiskLevel = OperationsRiskLevels.ReadOnly,
-                        Description = "只查看固定类别的在线/离线计数，不返回设备身份，也不执行重连或重启。",
+                        Description = "只查看固定类别的规范化运行状态计数，不返回设备身份，也不执行重连或重启。",
                     },
                 ],
             });

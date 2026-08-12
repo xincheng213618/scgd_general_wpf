@@ -130,7 +130,9 @@ namespace ColorVision.UI.Desktop.Operations
                     unhealthyServiceCount = serviceHealth.Services.Count(item => !item.Healthy),
                     deviceHealthAvailable = deviceHealth.Available,
                     configuredDeviceCount = deviceHealth.TotalCount,
-                    offlineDeviceCount = deviceHealth.OfflineCount,
+                    readyDeviceCount = deviceHealth.ReadyCount,
+                    busyDeviceCount = deviceHealth.BusyCount,
+                    deviceAttentionCount = deviceHealth.AttentionCount,
                 });
             }
 

@@ -40,8 +40,8 @@ namespace ColorVision.UI.Tests
                 ServiceHealth("stopped", healthy: false, maintenanceSupported: true),
                 OperationsDeviceHealthSnapshotFactory.Create(
                 [
-                    new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, true),
-                    new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, false),
+                    new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Ready),
+                    new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Unavailable),
                 ]));
 
             Assert.Equal("critical", report.State);
@@ -49,9 +49,9 @@ namespace ColorVision.UI.Tests
             Assert.Contains(report.Findings, item => item.FindingId == "message-service-events");
             Assert.Contains(report.Findings, item => item.FindingId == "desktop-window-hidden");
             Assert.Contains(report.Findings, item => item.FindingId == "pending-operations-jobs");
-            Assert.Contains(report.Findings, item => item.FindingId == "inspection-devices-offline");
+            Assert.Contains(report.Findings, item => item.FindingId == "inspection-devices-attention");
             Assert.Equal(2, report.DeviceTotalCount);
-            Assert.Equal(1, report.DeviceOfflineCount);
+            Assert.Equal(1, report.DeviceAttentionCount);
 
             OperationsTriageAction[] actions = report.Findings.SelectMany(item => item.Actions).ToArray();
             string[] allowedActionIds =
@@ -82,6 +82,25 @@ namespace ColorVision.UI.Tests
             Assert.Equal("healthy", report.State);
             Assert.Empty(report.Findings);
             Assert.Equal(0, report.PendingJobCount);
+        }
+
+        [Fact]
+        public void ClosedDeviceIsReportedWithoutBeingMisclassifiedAsAttention()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                deviceHealth: OperationsDeviceHealthSnapshotFactory.Create(
+                [
+                    new OperationsDeviceHealthObservation(
+                        OperationsDeviceCategories.Camera, OperationsDeviceStates.Closed),
+                ]));
+
+            Assert.Equal("healthy", report.State);
+            Assert.Equal(1, report.DeviceClosedCount);
+            Assert.Equal(0, report.DeviceAttentionCount);
+            Assert.DoesNotContain(report.Findings, item => item.Category == "devices");
         }
 
         [Fact]
