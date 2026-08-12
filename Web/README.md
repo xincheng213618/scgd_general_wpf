@@ -55,6 +55,9 @@ SQLite database, and previous frontend build under
 
 `-DryRun` remains read-only when remote Git inspection fails: it returns a
 `DRY_RUN_ERROR` without starting recovery or adding a deployment-history row.
+The SSH transport sends the encoded remote script as one newline-terminated
+payload. Its loader consumes that line immediately instead of waiting for stdin
+EOF, preventing abandoned PowerShell sessions when an SSH client disconnects.
 
 Deployment history keeps the newest 500 valid JSON records by default. Each
 write validates the existing file and replaces it atomically; malformed legacy

@@ -19,6 +19,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+Import-Module (Join-Path $PSScriptRoot 'RemotePowerShellTransport.psm1') -Force
 
 function ConvertTo-PowerShellLiteral {
     param([Parameter(Mandatory)][AllowEmptyString()][string]$Value)
@@ -32,9 +33,7 @@ function Invoke-RemotePowerShell {
         [Parameter(Mandatory)][string]$ScriptText
     )
 
-    $payload = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($ScriptText))
-    $loader = '$global:ProgressPreference = ''SilentlyContinue''; $payload = [regex]::Replace([Console]::In.ReadToEnd(), ''[^A-Za-z0-9+/=]'', ''''); $scriptText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($payload)); $scriptBlock = [ScriptBlock]::Create($scriptText); & $scriptBlock'
-    $encodedLoader = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($loader))
+    $transport = New-WebRemotePowerShellTransport -ScriptText $ScriptText
     $sshArguments = @(
         $Target,
         'powershell',
@@ -43,15 +42,15 @@ function Invoke-RemotePowerShell {
         '-ExecutionPolicy',
         'Bypass',
         '-EncodedCommand',
-        $encodedLoader
+        $transport.encoded_loader
     )
     $previousErrorActionPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = 'Continue'
-        # Windows PowerShell 5.1 may emit a native-pipeline encoding preamble
-        # that consumes the first ASCII character. Prefix a disposable marker;
-        # the remote loader removes it together with any transport whitespace.
-        $remoteOutput = @(("!" + $payload) | & ssh @sshArguments 2>&1)
+        # Windows PowerShell 5.1 may consume the first ASCII character in a
+        # native pipeline. The transport prefixes a disposable marker and the
+        # remote loader consumes one complete line without waiting for stdin EOF.
+        $remoteOutput = @($transport.stdin_payload | & ssh @sshArguments 2>&1)
         $exitCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $previousErrorActionPreference
@@ -516,6 +515,14 @@ try {
             'Bypass',
             '-File',
             (Join-Path $repoPath 'Web\Test-DeploymentHistory.ps1')
+        )
+        Invoke-NativeCommand -FilePath 'powershell.exe' -ArgumentList @(
+            '-NoProfile',
+            '-NonInteractive',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-File',
+            (Join-Path $repoPath 'Web\Test-RemotePowerShellTransport.ps1')
         )
         Invoke-NativeCommand -FilePath 'powershell.exe' -ArgumentList @(
             '-NoProfile',

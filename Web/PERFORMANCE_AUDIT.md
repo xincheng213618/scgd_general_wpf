@@ -127,6 +127,11 @@ package hash costing about 381.9 ms moved to index refresh work.
   no malformed rows and no recovery consumer beyond per-backup status markers.
   Deployment writes now atomically retain the newest 500 valid records, while
   `/admin/deployments` provides a sanitized, paginated operational view.
+- Replaced the deployment SSH loader's EOF-dependent `ReadToEnd()` transport
+  with a single-line payload contract. A production audit found five orphaned
+  loader processes with no children and about 53 MB working set each; they were
+  removed after exact command-line classification. The new Bundle DryRun
+  returned in 7.7 seconds without adding a loader process or history record.
 - Added route-level frontend splitting, request cancellation, stale-state fixes,
   changelog/plugin HTML sanitization, immutable hashed-asset caching, and lazy
   chunk recovery after rolling deployments.
