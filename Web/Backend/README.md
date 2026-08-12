@@ -227,7 +227,8 @@ category. The deployment writer keeps 500 valid records by default.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/admin/stats/overview` | Download, index, and today's traffic summary |
-| GET | `/api/admin/stats/traffic?days=30&limit=10` | Daily traffic, top routes, client classes, response volume, and recorder health |
+| GET | `/api/admin/stats/traffic?days=30&limit=10` | Daily traffic, top routes, client classes, 4xx/5xx breakdown, response volume, and recorder health |
+| GET | `/api/admin/perf/summary` | Process-local slow requests plus recent slow or failed scheduler runs |
 
 `days` accepts `1..365`; `limit` accepts `1..100`. Rates and client shares are
 percentages in the range `0..100`. Response volume is based only on the existing
@@ -235,12 +236,26 @@ HTTP `Content-Length` header. A missing or invalid header is counted as zero, so
 analytics never buffers or consumes streamed/file responses. `HEAD`, 1xx, 204,
 205, and 304 responses are also counted as zero because they do not transfer a
 response body. Schema migration v6 removes the previously declared `HEAD` bytes
-from both route and daily historical aggregates; other historical status codes
-cannot be separated from the existing aggregate and are left unchanged.
+from both route and daily historical aggregates. Schema migration v7 adds exact
+4xx and 5xx counters for new requests. The compatible `errorResponses` total is
+retained; older errors that cannot be separated reliably are returned through
+`unclassifiedErrorResponses` instead of being guessed into either category.
+Schema migration v8 records when the reporting calendar changes from the old
+UTC boundary. New traffic and `downloadsToday` use the configured reporting
+offset; existing daily aggregates remain unchanged and are exposed through the
+summary's legacy-calendar metadata instead of being guessed into adjacent days.
+
+The performance summary is intentionally a lightweight diagnostic companion to
+the aggregate traffic report, not a second analytics store. Slow requests are
+sanitized to method, route path, status, duration, and UTC occurrence time, then
+kept in a bounded 100-entry process-local buffer. The response exposes the
+active threshold, process start time, and buffer usage; the buffer resets
+whenever the Web process restarts. Slow scheduler runs remain sourced from the
+existing job history.
 
 `summary.uniqueVisitorDays` is the sum of each day's unique visitors (visitor-days),
 not a cross-day unique-person count, because the privacy identifier rotates every
-UTC day. `today.uniqueVisitors` and each `daily[].uniqueVisitors` remain true
+configured reporting day. `today.uniqueVisitors` and each `daily[].uniqueVisitors` remain true
 within-day unique counts. Client aggregates therefore expose
 `clients[].uniqueVisitorDays`; the API deliberately does not publish a misleading
 multi-day `uniqueVisitors` field.
@@ -271,7 +286,8 @@ Configuration defaults:
 | `access_analytics_queue_size` | `4096` | Maximum queued events before non-blocking drops |
 | `access_analytics_batch_size` | `128` | Maximum events grouped per writer pass |
 | `access_analytics_flush_interval_seconds` | `0.5` | Writer wait/flush interval |
-| `access_analytics_retention_days` | `90` | UTC daily aggregates retained by the scheduled cleanup |
+| `access_analytics_retention_days` | `90` | Reporting-calendar days retained by the scheduled cleanup |
+| `reporting_utc_offset_minutes` | `480` | Fixed UTC offset used by daily dashboard metrics (`UTC+08:00`) |
 | `job_run_retention_days` | `30` | Completed scheduler runs retained; each job's latest run and running rows are always kept |
 | `audit_log_retention_days` | `365` | Administrator audit rows retained in the live database and recognized snapshots |
 | `admin_db_backup_keep_count` | `10` | Newest recognized administrator-created database snapshots retained; minimum 2 |
@@ -472,6 +488,7 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 | `db/schema_version.py` | Schema version tracking and migrations |
 | `routes/admin_api.py` | Admin REST API (cache, index, jobs, audit, deployments, keys, perf) |
 | `services/deployment_history.py` | Sanitized deployment-history query and pagination |
+| `services/performance_observability.py` | Bounded slow-request samples and performance-summary shaping |
 | `ports/operations_support.py` / `db/repositories/operations_support.py` | Atomic Operations support-session persistence boundary |
 | `routes/frontend_spa.py` | React SPA static hosting and `/admin` auth gate |
 | `routes/pages.py` | Public site-data and download APIs |

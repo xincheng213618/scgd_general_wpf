@@ -34,6 +34,10 @@ from db_cache import (
     CacheManager,
 )
 from context import MarketplaceContext
+from services.performance_observability import (
+    SLOW_REQUEST_BUFFER_CAPACITY,
+    record_slow_request,
+)
 from storage_paths import (
     is_safe_id, is_safe_version,
     normalize_relative_path, sanitize_filename,
@@ -126,11 +130,20 @@ def create_app_and_context(runtime_overrides: RuntimeOverrides | None = None):
     cache = CacheManager(db_path)
     cache.init_db()
 
+    from services.access_analytics import (
+        AccessAnalyticsRecorder,
+        configure_access_analytics_calendar,
+        reporting_utc_offset_minutes,
+    )
+
+    analytics_utc_offset_minutes = reporting_utc_offset_minutes(config)
     conn = cache.get_db()
     ensure_schema_version(conn)
+    configure_access_analytics_calendar(
+        conn,
+        utc_offset_minutes=analytics_utc_offset_minutes,
+    )
     conn.close()
-
-    from services.access_analytics import AccessAnalyticsRecorder
 
     access_recorder = AccessAnalyticsRecorder(
         queue_capacity=int(config.get("access_analytics_queue_size", 4096) or 4096),
@@ -261,17 +274,19 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
             duration_ms = int((_time.monotonic() - start) * 1000)
             if duration_ms >= ctx.slow_request_threshold_ms:
                 print(f"[slow] {request.method} {request.path} → {response.status_code} ({duration_ms}ms)")
-                ctx.slow_requests.append({
-                    "method": request.method, "path": request.path,
-                    "status": response.status_code, "duration_ms": duration_ms,
-                })
-                if len(ctx.slow_requests) > 100:
-                    ctx.slow_requests.pop(0)
+                record_slow_request(
+                    ctx.slow_requests,
+                    method=request.method,
+                    path=request.path,
+                    status=response.status_code,
+                    duration_ms=duration_ms,
+                )
             if access_recorder is not None:
                 try:
                     from services.access_analytics import (
                         build_access_event,
                         declared_response_body_bytes,
+                        reporting_utc_offset_minutes,
                         should_record_access,
                     )
 
@@ -295,6 +310,9 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
                             secret_key=str(config.get("secret_key", "")),
                             remote_addr=request.remote_addr,
                             user_agent=request.headers.get("User-Agent", ""),
+                            utc_offset_minutes=reporting_utc_offset_minutes(
+                                config
+                            ),
                         )
                         access_recorder.submit(
                             event,
@@ -435,6 +453,9 @@ def register_all_blueprints(app, ctx, services, helpers):
         human_size=human_size,
         get_slow_requests=lambda: ctx.slow_requests,
         get_access_recorder_status=helpers["access_recorder"].status,
+        slow_request_threshold_ms=ctx.slow_request_threshold_ms,
+        slow_request_buffer_capacity=SLOW_REQUEST_BUFFER_CAPACITY,
+        process_started_at=ctx.process_started_at,
     ))
     register_copilot_config_api_routes(app, CopilotConfigApiContext(
         cache=cache,

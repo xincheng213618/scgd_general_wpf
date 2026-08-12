@@ -45,6 +45,11 @@ from ports.jobs import JobRepository
 from routes.request_context import current_request_context, set_authenticated_request_context
 from services.auth_policy import AuthPolicy
 from services.deployment_history import query_deployment_history
+from services.performance_observability import (
+    DEFAULT_SLOW_REQUEST_THRESHOLD_MS,
+    SLOW_REQUEST_BUFFER_CAPACITY,
+    build_performance_summary,
+)
 from services.request_context import RequestContext
 
 
@@ -104,6 +109,9 @@ class AdminApiContext:
     human_size: Callable[[int], str]
     get_slow_requests: Callable[[], list[dict[str, Any]]] | None = None
     get_access_recorder_status: Callable[[], dict[str, Any]] | None = None
+    slow_request_threshold_ms: int = DEFAULT_SLOW_REQUEST_THRESHOLD_MS
+    slow_request_buffer_capacity: int = SLOW_REQUEST_BUFFER_CAPACITY
+    process_started_at: datetime | None = None
 
 
 admin_api = Blueprint("admin_api", __name__, url_prefix="/api/admin")
@@ -483,13 +491,18 @@ def backup_db():
     # database; otherwise an old snapshot could retain visitor identifiers
     # after the scheduled live cleanup has removed them.
     try:
-        from services.access_analytics import prune_access_analytics_database
+        from services.access_analytics import (
+            prune_access_analytics_database,
+            reporting_utc_offset_minutes,
+        )
         from services.admin_data_retention import run_admin_data_retention
 
         config = ctx.config_getter()
+        utc_offset_minutes = reporting_utc_offset_minutes(config)
         prune_access_analytics_database(
             backup_path,
             retention_days=int(config.get("access_analytics_retention_days", 90) or 90),
+            utc_offset_minutes=utc_offset_minutes,
         )
         admin_retention = run_admin_data_retention(
             ctx.cache.get_db,
@@ -660,13 +673,35 @@ def stats_overview():
     ctx = _get_ctx()
     db = ctx.get_db()
     try:
+        from services.access_analytics import (
+            analytics_calendar_day,
+            analytics_calendar_day_utc_bounds,
+            get_today_access_summary,
+            reporting_utc_offset_minutes,
+        )
+
+        utc_offset_minutes = reporting_utc_offset_minutes(ctx.config_getter())
+        reporting_day = analytics_calendar_day(
+            utc_offset_minutes=utc_offset_minutes,
+        )
+        day_start_utc, day_end_utc = analytics_calendar_day_utc_bounds(
+            reporting_day,
+            utc_offset_minutes=utc_offset_minutes,
+        )
         stats: dict[str, Any] = {}
 
         row = db.execute("SELECT COUNT(*) AS cnt FROM download_log").fetchone()
         stats["totalDownloads"] = row["cnt"] if row else 0
 
         row = db.execute(
-            "SELECT COUNT(*) AS cnt FROM download_log WHERE downloaded_at >= date('now')"
+            """
+            SELECT COUNT(*) AS cnt FROM download_log
+            WHERE downloaded_at >= ? AND downloaded_at < ?
+            """,
+            (
+                day_start_utc.strftime("%Y-%m-%d %H:%M:%S"),
+                day_end_utc.strftime("%Y-%m-%d %H:%M:%S"),
+            ),
         ).fetchone()
         stats["downloadsToday"] = row["cnt"] if row else 0
 
@@ -691,8 +726,10 @@ def stats_overview():
         except OSError:
             stats["dbSizeBytes"] = 0
 
-        from services.access_analytics import get_today_access_summary
-        stats.update(get_today_access_summary(db))
+        stats.update(get_today_access_summary(
+            db,
+            utc_offset_minutes=utc_offset_minutes,
+        ))
 
         return jsonify(stats)
     except Exception as exc:
@@ -707,6 +744,7 @@ def traffic_stats():
     from services.access_analytics import (
         SqliteAccessTrafficQuery,
         parse_bounded_int,
+        reporting_utc_offset_minutes,
     )
 
     try:
@@ -728,9 +766,11 @@ def traffic_stats():
         return jsonify({"error": str(exc), "status": 400}), 400
 
     ctx = _get_ctx()
+    utc_offset_minutes = reporting_utc_offset_minutes(ctx.config_getter())
     query = SqliteAccessTrafficQuery(
         ctx.get_db,
         recorder_status=ctx.get_access_recorder_status,
+        utc_offset_minutes=utc_offset_minutes,
     )
     return jsonify(query.get_traffic(days=days, limit=limit))
 
@@ -974,21 +1014,13 @@ def _actor_id() -> str:
 def perf_summary():
     ctx = _get_ctx()
     try:
-        # Recent slow requests from in-memory buffer
-        slow_requests = []
-        if ctx.get_slow_requests:
-            slow_requests = ctx.get_slow_requests()[-20:]
-
-        # Recent slow job runs
-        slow_jobs = []
-        for r in ctx.jobs.recent_runs(20):
-            if r.get("duration_ms", 0) >= 1000 or r.get("status") == "error":
-                slow_jobs.append(r)
-
-        return jsonify({
-            "slow_requests": slow_requests,
-            "slow_jobs": slow_jobs,
-            "threshold_ms": 500,
-        })
+        slow_requests = ctx.get_slow_requests() if ctx.get_slow_requests else []
+        return jsonify(build_performance_summary(
+            slow_requests=slow_requests,
+            recent_job_runs=ctx.jobs.recent_runs(20),
+            threshold_ms=ctx.slow_request_threshold_ms,
+            buffer_capacity=ctx.slow_request_buffer_capacity,
+            process_started_at=ctx.process_started_at,
+        ))
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500

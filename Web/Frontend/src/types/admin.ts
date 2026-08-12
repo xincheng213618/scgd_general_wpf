@@ -15,47 +15,56 @@ export interface AdminStats {
   errorResponsesToday: number
 }
 
-export interface TrafficSummary {
+export interface TrafficErrorBreakdown {
+  errorResponses: number
+  errorRate: number
+  clientErrorResponses: number
+  clientErrorRate: number
+  serverErrorResponses: number
+  serverErrorRate: number
+  unclassifiedErrorResponses: number
+  unclassifiedErrorRate: number
+}
+
+export interface TrafficSummary extends TrafficErrorBreakdown {
   periodStart: string
   periodEnd: string
   days: number
+  timeZone: string
+  utcOffsetMinutes: number
+  calendarBoundaryEffectiveAt: string | null
+  legacyCalendarDataThroughDay: string | null
+  hasLegacyCalendarData: boolean
   visits: number
   uniqueVisitorDays: number
   avgResponseMs: number
-  errorResponses: number
-  errorRate: number
   totalResponseBytes: number
 }
 
-export interface TrafficDayStats {
+export interface TrafficDayStats extends TrafficErrorBreakdown {
   day: string
   visits: number
   uniqueVisitors: number
   avgResponseMs: number
   maxResponseMs: number
-  errorResponses: number
-  errorRate: number
   totalDurationMs: number
   totalResponseBytes: number
 }
 
-export interface TrafficRouteStats {
+export interface TrafficRouteStats extends TrafficErrorBreakdown {
   route: string
   method: string
   visits: number
-  errorResponses: number
-  errorRate: number
   avgResponseMs: number
   maxResponseMs: number
   responseBytes: number
 }
 
-export interface TrafficClientStats {
+export interface TrafficClientStats extends TrafficErrorBreakdown {
   client: 'desktop' | 'mobile' | 'tablet' | 'bot' | 'other'
   visits: number
   uniqueVisitorDays: number
   share: number
-  errorResponses: number
   avgResponseMs: number
 }
 
@@ -143,6 +152,24 @@ export interface JobRun {
   duration_ms?: number
   summary?: string
   error?: string
+}
+
+export interface SlowRequestSample {
+  recorded_at: string
+  method: string
+  path: string
+  status: number
+  duration_ms: number
+}
+
+export interface PerformanceSummary {
+  generated_at: string
+  process_started_at: string
+  threshold_ms: number
+  request_buffer_count: number
+  request_buffer_capacity: number
+  slow_requests: SlowRequestSample[]
+  slow_jobs: JobRun[]
 }
 
 export interface ScheduledJob {

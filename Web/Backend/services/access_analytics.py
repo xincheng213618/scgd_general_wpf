@@ -44,6 +44,12 @@ EXCLUDED_ROUTE_PREFIXES = (
     "/favicon",
 )
 NO_RESPONSE_BODY_STATUS_CODES = frozenset({204, 205, 304})
+DEFAULT_REPORTING_UTC_OFFSET_MINUTES = 8 * 60
+MIN_REPORTING_UTC_OFFSET_MINUTES = -12 * 60
+MAX_REPORTING_UTC_OFFSET_MINUTES = 14 * 60
+CALENDAR_OFFSET_KEY = "calendar_utc_offset_minutes"
+CALENDAR_EFFECTIVE_AT_KEY = "calendar_boundary_effective_at"
+LEGACY_CALENDAR_THROUGH_DAY_KEY = "legacy_calendar_data_through_day"
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,6 +164,137 @@ def daily_visitor_key(*, secret_key: str, day: str, remote_addr: str | None) -> 
     return hmac.new(secret, message, hashlib.sha256).hexdigest()[:24]
 
 
+def reporting_utc_offset_minutes(config: dict[str, Any]) -> int:
+    """Read and validate the configured calendar offset used for daily aggregates."""
+    raw_value = config.get(
+        "reporting_utc_offset_minutes",
+        DEFAULT_REPORTING_UTC_OFFSET_MINUTES,
+    )
+    try:
+        value = int(str(raw_value).strip())
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            "reporting_utc_offset_minutes must be an integer"
+        ) from exc
+    if not (
+        MIN_REPORTING_UTC_OFFSET_MINUTES
+        <= value
+        <= MAX_REPORTING_UTC_OFFSET_MINUTES
+    ):
+        raise ValueError(
+            "reporting_utc_offset_minutes must be between -720 and 840"
+        )
+    return value
+
+
+def analytics_calendar_day(
+    value: datetime | None = None,
+    *,
+    utc_offset_minutes: int = DEFAULT_REPORTING_UTC_OFFSET_MINUTES,
+) -> date:
+    """Return the configured local calendar day while keeping timestamps in UTC."""
+    offset_minutes = _validated_utc_offset_minutes(utc_offset_minutes)
+    current = value or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    calendar_timezone = timezone(timedelta(minutes=offset_minutes))
+    return current.astimezone(calendar_timezone).date()
+
+
+def analytics_calendar_day_utc_bounds(
+    day: date,
+    *,
+    utc_offset_minutes: int = DEFAULT_REPORTING_UTC_OFFSET_MINUTES,
+) -> tuple[datetime, datetime]:
+    """Return the UTC half-open interval for one configured reporting day."""
+    offset_minutes = _validated_utc_offset_minutes(utc_offset_minutes)
+    calendar_timezone = timezone(timedelta(minutes=offset_minutes))
+    start = datetime(day.year, day.month, day.day, tzinfo=calendar_timezone)
+    start_utc = start.astimezone(timezone.utc)
+    return start_utc, start_utc + timedelta(days=1)
+
+
+def format_utc_offset(utc_offset_minutes: int) -> str:
+    offset_minutes = _validated_utc_offset_minutes(utc_offset_minutes)
+    sign = "+" if offset_minutes >= 0 else "-"
+    hours, minutes = divmod(abs(offset_minutes), 60)
+    return f"UTC{sign}{hours:02d}:{minutes:02d}"
+
+
+def configure_access_analytics_calendar(
+    db: sqlite3.Connection,
+    *,
+    utc_offset_minutes: int,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Persist a calendar-boundary change and mark aggregates that predate it."""
+    offset_minutes = _validated_utc_offset_minutes(utc_offset_minutes)
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    current_utc = current.astimezone(timezone.utc)
+    rows = {
+        str(row[0]): str(row[1])
+        for row in db.execute(
+            "SELECT key, value FROM access_analytics_metadata"
+        ).fetchall()
+    }
+    configured_offset = rows.get(CALENDAR_OFFSET_KEY)
+    effective_at = rows.get(CALENDAR_EFFECTIVE_AT_KEY)
+    if configured_offset == str(offset_minutes) and effective_at:
+        return _calendar_metadata_payload(rows, offset_minutes)
+
+    has_existing_rows = bool(db.execute(
+        "SELECT EXISTS(SELECT 1 FROM access_daily LIMIT 1)"
+    ).fetchone()[0])
+    legacy_through_day = (
+        analytics_calendar_day(
+            current_utc,
+            utc_offset_minutes=offset_minutes,
+        ).isoformat()
+        if has_existing_rows
+        else ""
+    )
+    values = {
+        CALENDAR_OFFSET_KEY: str(offset_minutes),
+        CALENDAR_EFFECTIVE_AT_KEY: current_utc.isoformat(),
+        LEGACY_CALENDAR_THROUGH_DAY_KEY: legacy_through_day,
+    }
+    with db:
+        db.executemany(
+            """
+            INSERT INTO access_analytics_metadata (key, value)
+            VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            """,
+            values.items(),
+        )
+    return _calendar_metadata_payload(values, offset_minutes)
+
+
+def read_access_analytics_calendar_metadata(
+    db: sqlite3.Connection,
+    *,
+    utc_offset_minutes: int,
+) -> dict[str, Any]:
+    """Read calendar metadata without mutating the reporting request."""
+    offset_minutes = _validated_utc_offset_minutes(utc_offset_minutes)
+    try:
+        rows = {
+            str(row[0]): str(row[1])
+            for row in db.execute(
+                "SELECT key, value FROM access_analytics_metadata"
+            ).fetchall()
+        }
+    except sqlite3.OperationalError as exc:
+        if "no such table" not in str(exc).lower():
+            raise
+        rows = {}
+    if rows.get(CALENDAR_OFFSET_KEY) != str(offset_minutes):
+        rows = {}
+    return _calendar_metadata_payload(rows, offset_minutes)
+
+
 def build_access_event(
     *,
     route_template: str | None,
@@ -169,12 +306,16 @@ def build_access_event(
     remote_addr: str | None,
     user_agent: str | None,
     occurred_at: datetime | None = None,
+    utc_offset_minutes: int = DEFAULT_REPORTING_UTC_OFFSET_MINUTES,
 ) -> AccessEvent:
     now = occurred_at or datetime.now(timezone.utc)
     if now.tzinfo is None:
         now = now.replace(tzinfo=timezone.utc)
     now = now.astimezone(timezone.utc)
-    day = now.date().isoformat()
+    day = analytics_calendar_day(
+        now,
+        utc_offset_minutes=utc_offset_minutes,
+    ).isoformat()
     client_type = classify_user_agent(user_agent)
     return AccessEvent(
         occurred_at=now.isoformat(),
@@ -349,6 +490,8 @@ def _write_access_batch(db_path: Path, events: Sequence[AccessEvent]):
 def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
     date.fromisoformat(event.day)
     error_count = 1 if event.status_code >= 400 else 0
+    client_error_count = 1 if 400 <= event.status_code < 500 else 0
+    server_error_count = 1 if event.status_code >= 500 else 0
     new_visitor = 0
     if event.visitor_key:
         cursor = db.execute(
@@ -378,13 +521,16 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
     db.execute(
         """
         INSERT INTO access_daily
-            (day, visits, unique_visitors, error_responses, total_duration_ms,
+            (day, visits, unique_visitors, error_responses,
+             client_error_responses, server_error_responses, total_duration_ms,
              max_duration_ms, total_response_bytes, updated_at)
-        VALUES (?, 1, ?, ?, ?, ?, ?, ?)
+        VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(day) DO UPDATE SET
             visits = visits + 1,
             unique_visitors = unique_visitors + excluded.unique_visitors,
             error_responses = error_responses + excluded.error_responses,
+            client_error_responses = client_error_responses + excluded.client_error_responses,
+            server_error_responses = server_error_responses + excluded.server_error_responses,
             total_duration_ms = total_duration_ms + excluded.total_duration_ms,
             max_duration_ms = max(max_duration_ms, excluded.max_duration_ms),
             total_response_bytes = total_response_bytes + excluded.total_response_bytes,
@@ -394,6 +540,8 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
             event.day,
             new_visitor,
             error_count,
+            client_error_count,
+            server_error_count,
             event.duration_ms,
             event.duration_ms,
             event.response_bytes,
@@ -403,12 +551,15 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
     db.execute(
         """
         INSERT INTO access_route_daily
-            (day, route, method, visits, error_responses, total_duration_ms,
+            (day, route, method, visits, error_responses,
+             client_error_responses, server_error_responses, total_duration_ms,
              max_duration_ms, total_response_bytes, updated_at)
-        VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(day, route, method) DO UPDATE SET
             visits = visits + 1,
             error_responses = error_responses + excluded.error_responses,
+            client_error_responses = client_error_responses + excluded.client_error_responses,
+            server_error_responses = server_error_responses + excluded.server_error_responses,
             total_duration_ms = total_duration_ms + excluded.total_duration_ms,
             max_duration_ms = max(max_duration_ms, excluded.max_duration_ms),
             total_response_bytes = total_response_bytes + excluded.total_response_bytes,
@@ -419,6 +570,8 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
             event.route,
             event.method,
             error_count,
+            client_error_count,
+            server_error_count,
             event.duration_ms,
             event.duration_ms,
             event.response_bytes,
@@ -429,12 +582,15 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
         """
         INSERT INTO access_client_daily
             (day, client_type, visits, unique_visitors, error_responses,
-             total_duration_ms, updated_at)
-        VALUES (?, ?, 1, ?, ?, ?, ?)
+             client_error_responses, server_error_responses, total_duration_ms,
+             updated_at)
+        VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(day, client_type) DO UPDATE SET
             visits = visits + 1,
             unique_visitors = unique_visitors + excluded.unique_visitors,
             error_responses = error_responses + excluded.error_responses,
+            client_error_responses = client_error_responses + excluded.client_error_responses,
+            server_error_responses = server_error_responses + excluded.server_error_responses,
             total_duration_ms = total_duration_ms + excluded.total_duration_ms,
             updated_at = excluded.updated_at
         """,
@@ -443,6 +599,8 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
             event.client_type,
             new_visitor,
             error_count,
+            client_error_count,
+            server_error_count,
             event.duration_ms,
             event.occurred_at,
         ),
@@ -456,20 +614,29 @@ class SqliteAccessTrafficQuery:
         *,
         recorder_status: Callable[[], dict[str, Any]] | None = None,
         today_getter: Callable[[], date] | None = None,
+        utc_offset_minutes: int = DEFAULT_REPORTING_UTC_OFFSET_MINUTES,
     ):
         self._db_factory = db_factory
         self._recorder_status = recorder_status or _empty_recorder_status
-        self._today_getter = today_getter or (lambda: datetime.now(timezone.utc).date())
+        self._today_getter = today_getter
+        self._utc_offset_minutes = _validated_utc_offset_minutes(utc_offset_minutes)
 
     def get_traffic(self, *, days: int, limit: int) -> dict[str, Any]:
         validate_query_range(days=days, limit=limit)
-        today = self._today_getter()
+        today = (
+            self._today_getter()
+            if self._today_getter is not None
+            else analytics_calendar_day(
+                utc_offset_minutes=self._utc_offset_minutes,
+            )
+        )
         start = today - timedelta(days=days - 1)
         db = self._db_factory()
         try:
             daily_rows = db.execute(
                 """
                 SELECT day, visits, unique_visitors, error_responses,
+                       client_error_responses, server_error_responses,
                        total_duration_ms, max_duration_ms, total_response_bytes
                 FROM access_daily
                 WHERE day BETWEEN ? AND ?
@@ -481,6 +648,8 @@ class SqliteAccessTrafficQuery:
                 """
                 SELECT route, method, SUM(visits) AS visits,
                        SUM(error_responses) AS error_responses,
+                       SUM(client_error_responses) AS client_error_responses,
+                       SUM(server_error_responses) AS server_error_responses,
                        SUM(total_duration_ms) AS total_duration_ms,
                        MAX(max_duration_ms) AS max_duration_ms,
                        SUM(total_response_bytes) AS total_response_bytes
@@ -497,6 +666,8 @@ class SqliteAccessTrafficQuery:
                 SELECT client_type, SUM(visits) AS visits,
                        SUM(unique_visitors) AS unique_visitors,
                        SUM(error_responses) AS error_responses,
+                       SUM(client_error_responses) AS client_error_responses,
+                       SUM(server_error_responses) AS server_error_responses,
                        SUM(total_duration_ms) AS total_duration_ms
                 FROM access_client_daily
                 WHERE day BETWEEN ? AND ?
@@ -505,6 +676,10 @@ class SqliteAccessTrafficQuery:
                 """,
                 (start.isoformat(), today.isoformat()),
             ).fetchall()
+            calendar_metadata = read_access_analytics_calendar_metadata(
+                db,
+                utc_offset_minutes=self._utc_offset_minutes,
+            )
         finally:
             db.close()
 
@@ -517,13 +692,25 @@ class SqliteAccessTrafficQuery:
         visits = sum(item["visits"] for item in daily)
         unique_visitor_days = sum(item["uniqueVisitors"] for item in daily)
         errors = sum(item["errorResponses"] for item in daily)
+        summary_client_errors = sum(item["clientErrorResponses"] for item in daily)
+        summary_server_errors = sum(item["serverErrorResponses"] for item in daily)
         duration = sum(item["totalDurationMs"] for item in daily)
         response_bytes = sum(item["totalResponseBytes"] for item in daily)
+        legacy_through_day = calendar_metadata["legacyCalendarDataThroughDay"]
+        has_legacy_calendar_data = bool(
+            legacy_through_day
+            and any(
+                int(row["visits"] or 0) > 0 and str(row["day"]) <= legacy_through_day
+                for row in daily_rows
+            )
+        )
 
         top_routes = []
         for row in route_rows:
             route_visits = int(row["visits"] or 0)
             route_errors = int(row["error_responses"] or 0)
+            route_client_errors = int(row["client_error_responses"] or 0)
+            route_server_errors = int(row["server_error_responses"] or 0)
             route_duration = int(row["total_duration_ms"] or 0)
             top_routes.append({
                 "route": row["route"],
@@ -531,6 +718,12 @@ class SqliteAccessTrafficQuery:
                 "visits": route_visits,
                 "errorResponses": route_errors,
                 "errorRate": _percentage(route_errors, route_visits),
+                **_classified_error_payload(
+                    route_errors,
+                    route_client_errors,
+                    route_server_errors,
+                    route_visits,
+                ),
                 "avgResponseMs": _average(route_duration, route_visits),
                 "maxResponseMs": int(row["max_duration_ms"] or 0),
                 "responseBytes": int(row["total_response_bytes"] or 0),
@@ -539,14 +732,23 @@ class SqliteAccessTrafficQuery:
         clients = []
         for row in client_rows:
             client_visits = int(row["visits"] or 0)
-            client_errors = int(row["error_responses"] or 0)
+            client_total_errors = int(row["error_responses"] or 0)
+            client_4xx_errors = int(row["client_error_responses"] or 0)
+            client_5xx_errors = int(row["server_error_responses"] or 0)
             client_visitor_days = int(row["unique_visitors"] or 0)
             clients.append({
                 "client": row["client_type"],
                 "visits": client_visits,
                 "uniqueVisitorDays": client_visitor_days,
                 "share": _percentage(client_visits, visits),
-                "errorResponses": client_errors,
+                "errorResponses": client_total_errors,
+                "errorRate": _percentage(client_total_errors, client_visits),
+                **_classified_error_payload(
+                    client_total_errors,
+                    client_4xx_errors,
+                    client_5xx_errors,
+                    client_visits,
+                ),
                 "avgResponseMs": _average(int(row["total_duration_ms"] or 0), client_visits),
             })
 
@@ -555,6 +757,8 @@ class SqliteAccessTrafficQuery:
                 "periodStart": start.isoformat(),
                 "periodEnd": today.isoformat(),
                 "days": days,
+                **calendar_metadata,
+                "hasLegacyCalendarData": has_legacy_calendar_data,
                 "visits": visits,
                 # Daily HMAC identifiers intentionally rotate, so a multi-day
                 # total is visitor-days rather than a cross-day unique count.
@@ -562,6 +766,12 @@ class SqliteAccessTrafficQuery:
                 "avgResponseMs": _average(duration, visits),
                 "errorResponses": errors,
                 "errorRate": _percentage(errors, visits),
+                **_classified_error_payload(
+                    errors,
+                    summary_client_errors,
+                    summary_server_errors,
+                    visits,
+                ),
                 "totalResponseBytes": response_bytes,
             },
             "today": daily[-1],
@@ -572,8 +782,15 @@ class SqliteAccessTrafficQuery:
         }
 
 
-def get_today_access_summary(db: Any, *, today: date | None = None) -> dict[str, Any]:
-    day = today or datetime.now(timezone.utc).date()
+def get_today_access_summary(
+    db: Any,
+    *,
+    today: date | None = None,
+    utc_offset_minutes: int = DEFAULT_REPORTING_UTC_OFFSET_MINUTES,
+) -> dict[str, Any]:
+    day = today or analytics_calendar_day(
+        utc_offset_minutes=utc_offset_minutes,
+    )
     try:
         row = db.execute(
             """
@@ -633,10 +850,13 @@ def prune_access_analytics(
     *,
     retention_days: int,
     today: date | None = None,
+    utc_offset_minutes: int = DEFAULT_REPORTING_UTC_OFFSET_MINUTES,
 ) -> dict[str, Any]:
     if not 1 <= int(retention_days) <= 3650:
         raise ValueError("retention_days must be between 1 and 3650")
-    current_day = today or datetime.now(timezone.utc).date()
+    current_day = today or analytics_calendar_day(
+        utc_offset_minutes=utc_offset_minutes,
+    )
     cutoff = current_day - timedelta(days=retention_days - 1)
     db = db_factory()
     try:
@@ -655,11 +875,14 @@ def prune_access_analytics_database(
     *,
     retention_days: int,
     today: date | None = None,
+    utc_offset_minutes: int = DEFAULT_REPORTING_UTC_OFFSET_MINUTES,
 ) -> dict[str, Any]:
     """Apply visitor retention to a SQLite snapshot and verify its integrity."""
     if not 1 <= int(retention_days) <= 3650:
         raise ValueError("retention_days must be between 1 and 3650")
-    current_day = today or datetime.now(timezone.utc).date()
+    current_day = today or analytics_calendar_day(
+        utc_offset_minutes=utc_offset_minutes,
+    )
     cutoff = current_day - timedelta(days=retention_days - 1)
     db = sqlite3.connect(str(db_path), timeout=15)
     try:
@@ -684,6 +907,7 @@ def prune_access_analytics_backups(
     *,
     retention_days: int,
     today: date | None = None,
+    utc_offset_minutes: int = DEFAULT_REPORTING_UTC_OFFSET_MINUTES,
 ) -> dict[str, Any]:
     """Scrub expired access rows from recognized marketplace DB backups."""
     root = Path(directory).resolve()
@@ -700,6 +924,7 @@ def prune_access_analytics_backups(
                 path,
                 retention_days=retention_days,
                 today=today,
+                utc_offset_minutes=utc_offset_minutes,
             ))
         except Exception as exc:
             errors.append(f"{path.name}: {exc}")
@@ -733,6 +958,8 @@ def _daily_payload(row: Any) -> dict[str, Any]:
     visits = int(row["visits"] or 0)
     duration = int(row["total_duration_ms"] or 0)
     errors = int(row["error_responses"] or 0)
+    client_errors = int(row["client_error_responses"] or 0)
+    server_errors = int(row["server_error_responses"] or 0)
     return {
         "day": row["day"],
         "visits": visits,
@@ -741,6 +968,7 @@ def _daily_payload(row: Any) -> dict[str, Any]:
         "maxResponseMs": int(row["max_duration_ms"] or 0),
         "errorResponses": errors,
         "errorRate": _percentage(errors, visits),
+        **_classified_error_payload(errors, client_errors, server_errors, visits),
         "totalDurationMs": duration,
         "totalResponseBytes": int(row["total_response_bytes"] or 0),
     }
@@ -755,6 +983,7 @@ def _zero_daily(day: str) -> dict[str, Any]:
         "maxResponseMs": 0,
         "errorResponses": 0,
         "errorRate": 0.0,
+        **_classified_error_payload(0, 0, 0, 0),
         "totalDurationMs": 0,
         "totalResponseBytes": 0,
     }
@@ -766,6 +995,51 @@ def _average(total: int, count: int) -> float:
 
 def _percentage(part: int, total: int) -> float:
     return round(part * 100 / total, 2) if total else 0.0
+
+
+def _classified_error_payload(
+    errors: int,
+    client_errors: int,
+    server_errors: int,
+    visits: int,
+) -> dict[str, int | float]:
+    unclassified_errors = max(0, errors - client_errors - server_errors)
+    return {
+        "clientErrorResponses": client_errors,
+        "clientErrorRate": _percentage(client_errors, visits),
+        "serverErrorResponses": server_errors,
+        "serverErrorRate": _percentage(server_errors, visits),
+        "unclassifiedErrorResponses": unclassified_errors,
+        "unclassifiedErrorRate": _percentage(unclassified_errors, visits),
+    }
+
+
+def _validated_utc_offset_minutes(value: int) -> int:
+    try:
+        offset_minutes = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("utc_offset_minutes must be an integer") from exc
+    if not (
+        MIN_REPORTING_UTC_OFFSET_MINUTES
+        <= offset_minutes
+        <= MAX_REPORTING_UTC_OFFSET_MINUTES
+    ):
+        raise ValueError("utc_offset_minutes must be between -720 and 840")
+    return offset_minutes
+
+
+def _calendar_metadata_payload(
+    values: dict[str, str],
+    utc_offset_minutes: int,
+) -> dict[str, Any]:
+    return {
+        "timeZone": format_utc_offset(utc_offset_minutes),
+        "utcOffsetMinutes": utc_offset_minutes,
+        "calendarBoundaryEffectiveAt": values.get(CALENDAR_EFFECTIVE_AT_KEY) or None,
+        "legacyCalendarDataThroughDay": (
+            values.get(LEGACY_CALENDAR_THROUGH_DAY_KEY) or None
+        ),
+    }
 
 
 def _empty_recorder_status() -> dict[str, Any]:
