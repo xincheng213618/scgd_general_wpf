@@ -73,8 +73,8 @@ export function getDocsStatus() {
   return getJson<DocsStatus>('/api/admin/docs/status')
 }
 
-export function getPublishIntegrity() {
-  return getJson<PublishIntegrityReport>('/api/admin/publish/integrity')
+export function getPublishIntegrity(signal?: AbortSignal) {
+  return getJson<PublishIntegrityReport>('/api/admin/publish/integrity', signal)
 }
 
 export function refreshAllIndexes() {
