@@ -4,11 +4,17 @@ using System.Text;
 
 namespace ProjectKB
 {
+    public enum KBCsvDataType
+    {
+        Lv,
+        Lc,
+    }
+
     public static class KBItemMasterExtensions
     {
         private const string FalloutLabel = "Fallout=";
 
-        public static void SaveCsv(this KBItemMaster KBItems, string FileName, bool appendFalloutSummary = false)
+        public static void SaveCsv(this KBItemMaster KBItems, string FileName, KBCsvDataType dataType, bool appendFalloutSummary = false)
         {
             // LvFailures 是单键亮度上下限失败的按键数量
             // LocalContrastFailures 是局部对比度上下限失败的按键数量
@@ -96,7 +102,10 @@ namespace ProjectKB
 
             for (int i = 0; i < item.Items.Count; i++)
             {
-                values.Add(item.Items[i].Lv.ToString("F2"));
+                double value = dataType == KBCsvDataType.Lv
+                    ? item.Items[i].Lv
+                    : item.Items[i].Lc * 100;
+                values.Add(value.ToString("F2", CultureInfo.InvariantCulture));
             }
             values.Add(EscapeCsv(GetLimitProfile(recipeSnapshot)));
             values.Add(FormatRecipeValue(recipe, value => value.MinKeyLv));
