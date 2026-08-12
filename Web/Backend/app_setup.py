@@ -439,6 +439,7 @@ def register_all_blueprints(app, ctx, services, helpers):
         artifact_delivery=artifact_delivery,
     ))
 
+    from db.repositories.operations_admin import SqliteOperationsAdminQuery
     register_admin_api_routes(app, AdminApiContext(
         cache=cache, jobs=cache.jobs,
         storage_getter=lambda: ctx.storage,
@@ -447,6 +448,7 @@ def register_all_blueprints(app, ctx, services, helpers):
         get_db=helpers["get_db"],
         auth_policy=helpers["auth_policy"],
         request_context_factory=helpers["request_context_factory"],
+        operations_admin=SqliteOperationsAdminQuery(cache.get_db),
         refresh_plugin_index=lambda c, s, pid, **kw: __import__("services.plugin_index", fromlist=["refresh_plugin_index"]).refresh_plugin_index(c, s, pid, **kw),
         refresh_all_plugin_index=lambda c, s, **kw: __import__("services.plugin_index", fromlist=["refresh_all_plugin_index"]).refresh_all_plugin_index(c, s, **kw),
         get_plugin_index_state=lambda c: __import__("services.plugin_index", fromlist=["get_plugin_index_state"]).get_plugin_index_state(c),

@@ -296,6 +296,81 @@ export interface PerformanceSummary {
   slow_jobs: JobRun[]
 }
 
+export interface OperationsHostSnapshot {
+  application: string
+  version: string
+  isRunning: boolean
+  uptimeSeconds: number
+  capturedAt: string
+  process: { memoryMb: number }
+  mainWindow: {
+    exists: boolean
+    state: string
+    isVisible: boolean
+  }
+  secureOperations: {
+    isRunning: boolean
+    pairedDeviceCount: number
+    relayConfigured: boolean
+    relayRunning: boolean
+  }
+}
+
+export interface OperationsHost {
+  hostId: string
+  displayName: string
+  appVersion: string
+  reportedStatus: string
+  online: boolean
+  capabilities: string[]
+  snapshot: OperationsHostSnapshot
+  lastSeenAt: string
+  createdAt: string
+}
+
+export interface OperationsTask {
+  taskId: string
+  hostId: string
+  hostName: string
+  capabilityId: string
+  status: string
+  createdAt: string
+  expiresAt: string
+  deliveredAt: string | null
+  expired: boolean
+  receiptCount: number
+  lastReceiptStatus: string | null
+  lastReceiptAt: string | null
+}
+
+export interface OperationsSupportSession {
+  hostId: string
+  hostName: string
+  sessionId: string
+  state: string
+  createdAt: string
+  lastEventAt: string
+  eventCount: number
+  messageCount: number
+}
+
+export interface OperationsOverview {
+  generatedAt: string
+  onlineThresholdSeconds: number
+  summary: {
+    totalHosts: number
+    onlineHosts: number
+    staleHosts: number
+    totalTasks: number
+    pendingTasks: number
+    failedTasks: number
+    activeSupportSessions: number
+  }
+  hosts: OperationsHost[]
+  recentTasks: OperationsTask[]
+  supportSessions: OperationsSupportSession[]
+}
+
 export interface ScheduledJob {
   id: string
   name: string

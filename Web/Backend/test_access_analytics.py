@@ -177,6 +177,10 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
         self.assertEqual(normalize_web_route("/plugins/ProjectARVRPro"), "/plugins/:pluginId")
         self.assertEqual(normalize_web_route("/browse/Plugins/Camera"), "/browse/*")
         self.assertEqual(normalize_web_route("/admin/traffic/"), "/admin/traffic")
+        self.assertEqual(
+            normalize_web_route("/admin/operations/hosts"),
+            "/admin/operations/hosts",
+        )
         for invalid in (
             "/unknown",
             "/plugins/private/value/extra",

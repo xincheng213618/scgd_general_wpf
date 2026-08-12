@@ -610,6 +610,7 @@ try {
             'test_http_compression',
             'test_runtime_logging',
             'test_operations_relay',
+            'test_operations_admin',
             'test_operations_support_store',
             'test_jobs_repository',
             'test_admin_data_retention',
@@ -709,6 +710,10 @@ try {
     $deploymentHistoryAssets = @(Get-ChildItem -LiteralPath (Join-Path $liveDistPath 'assets') -Filter 'DeploymentHistoryPage-*.js' -File)
     if ($deploymentHistoryAssets.Count -eq 0) {
         throw 'DeploymentHistoryPage frontend asset is missing from the live build.'
+    }
+    $operationsAssets = @(Get-ChildItem -LiteralPath (Join-Path $liveDistPath 'assets') -Filter 'OperationsPage-*.js' -File)
+    if ($operationsAssets.Count -eq 0) {
+        throw 'OperationsPage frontend asset is missing from the live build.'
     }
 
     $analyticsCode = "import json,sqlite3,sys; db=sqlite3.connect(sys.argv[1]); names=['access_daily','access_route_daily','access_client_daily','access_visitor_daily']; print(json.dumps({name:db.execute('select count(*) from '+name).fetchone()[0] for name in names})); db.close()"
