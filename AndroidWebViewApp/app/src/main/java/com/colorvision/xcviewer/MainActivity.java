@@ -680,7 +680,7 @@ public class MainActivity extends Activity {
         content.addView(title, matchWidthWrapParams());
 
         TextView subtitle = new TextView(this);
-        subtitle.setText("扫描电脑端二维码后，手机会保存这台电脑的局域网控制地址。");
+        subtitle.setText("扫描电脑端二维码，或粘贴短时安全配对码。电脑端批准后，手机会保存设备密钥和证书指纹。");
         subtitle.setTextColor(secondaryTextColor());
         subtitle.setTextSize(15);
         subtitle.setGravity(Gravity.LEFT);
@@ -719,9 +719,12 @@ public class MainActivity extends Activity {
         }
 
         EditText manualInput = new EditText(this);
-        manualInput.setHint("请优先扫描电脑端短时安全配对码");
+        manualInput.setHint("粘贴安全配对码、安全载荷或局域网地址");
         manualInput.setSingleLine(false);
         manualInput.setMinLines(2);
+        manualInput.setMaxLines(3);
+        manualInput.setVerticalScrollBarEnabled(true);
+        manualInput.setHorizontallyScrolling(false);
         manualInput.setTextColor(primaryTextColor());
         manualInput.setHintTextColor(mutedTextColor());
         manualInput.setTextSize(14);
@@ -729,11 +732,11 @@ public class MainActivity extends Activity {
         manualInput.setPadding(dp(12), dp(10), dp(12), dp(10));
         LinearLayout.LayoutParams inputParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
+                dp(72));
         inputParams.setMargins(0, dp(14), 0, 0);
         card.addView(manualInput, inputParams);
 
-        Button manualButton = makeSecondaryButton("连接手动地址");
+        Button manualButton = makeSecondaryButton("识别并连接");
         manualButton.setOnClickListener(v -> saveAndOpen(manualInput.getText().toString()));
         card.addView(manualButton, fullWidthButtonParams());
 
@@ -1266,13 +1269,7 @@ public class MainActivity extends Activity {
         if (requestCode == REQUEST_QR_SCAN) {
             if (resultCode == RESULT_OK && data != null) {
                 String result = data.getStringExtra(QrScanActivity.EXTRA_QR_RESULT);
-                if (result != null && result.startsWith("colorvision://pair")) {
-                    Intent operations = new Intent(this, OperationsActivity.class);
-                    operations.putExtra(OperationsActivity.EXTRA_PAIRING_PAYLOAD, result);
-                    startActivity(operations);
-                } else {
-                    saveAndOpen(result);
-                }
+                saveAndOpen(result);
                 return;
             }
             Toast.makeText(this, "已取消扫码，可手动输入连接地址", Toast.LENGTH_SHORT).show();
@@ -1323,6 +1320,14 @@ public class MainActivity extends Activity {
     }
 
     private void saveAndOpen(String rawContent) {
+        String text = rawContent == null ? "" : rawContent.trim();
+        if (OperationsPairingPayload.isPairingInput(text)) {
+            Intent operations = new Intent(this, OperationsActivity.class);
+            operations.putExtra(OperationsActivity.EXTRA_PAIRING_PAYLOAD, text);
+            startActivity(operations);
+            return;
+        }
+
         String url = parseConnectionUrl(rawContent);
         if (url.isEmpty()) {
             Toast.makeText(this, "没有识别到有效的连接地址", Toast.LENGTH_SHORT).show();

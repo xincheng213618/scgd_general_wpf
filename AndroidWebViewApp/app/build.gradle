@@ -22,8 +22,8 @@ android {
         applicationId "com.colorvision.xcviewer"
         minSdk 23
         targetSdk 35
-        versionCode 7
-        versionName "1.6"
+        versionCode 19
+        versionName "2.8"
     }
 
     signingConfigs {
@@ -52,6 +52,7 @@ android {
 
 dependencies {
     implementation "com.google.zxing:core:3.5.3"
+    implementation "androidx.core:core:1.15.0"
     implementation "androidx.media3:media3-exoplayer:1.7.1"
 }
 
