@@ -99,6 +99,11 @@ a:hover {
   width: 100%;
 }
 
+.page-stack,
+.page-stack > .ant-space-item {
+  min-width: 0;
+}
+
 .route-loading {
   display: grid;
   min-height: 240px;

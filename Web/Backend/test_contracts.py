@@ -1078,6 +1078,35 @@ class AdminApiContracts(ContractTestBase):
         )
         self.assertEqual(resp.status_code, 400)
 
+    def test_api_key_invalid_or_past_expiry_rejected(self):
+        for expires_at in ("not-a-timestamp", "2000-01-01T00:00:00Z"):
+            with self.subTest(expires_at=expires_at):
+                resp = self.client.post(
+                    "/api/admin/api-keys",
+                    headers=self.basic_auth(),
+                    json={"name": "Bad Expiry", "expires_at": expires_at},
+                )
+                self.assertEqual(resp.status_code, 400)
+                self.assertIn("expires_at", resp.get_json()["error"])
+
+    def test_api_key_list_reports_effective_status(self):
+        resp = self.client.post(
+            "/api/admin/api-keys",
+            headers=self.basic_auth(),
+            json={"name": "Status Key", "expires_at": "2099-01-02T03:04:05+08:00"},
+        )
+        self.assertEqual(resp.status_code, 201)
+        created = resp.get_json()
+        self.assertEqual(created["expires_at"], "2099-01-01T19:04:05+00:00")
+        self.assertEqual(created["status"], "active")
+
+        listed = self.client.get(
+            "/api/admin/api-keys",
+            headers=self.basic_auth(),
+        ).get_json()
+        item = next(key for key in listed if key["id"] == created["id"])
+        self.assertEqual(item["status"], "active")
+
     def test_audit_log_returns_entries(self):
         self.client.post("/api/admin/cache/cleanup", headers=self.basic_auth())
         resp = self.client.get("/api/admin/audit-log", headers=self.basic_auth())

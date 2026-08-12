@@ -162,6 +162,12 @@ continuous SQLite writes.
 | POST | `/api/admin/api-keys/<id>/rotate` | Rotate key (revoke old, create new) |
 | GET | `/api/admin/api-keys/<id>/usage` | Get key usage info |
 
+`expires_at` must be a future ISO 8601 timestamp. The service normalizes it to
+UTC; omitting it from the HTTP create request applies the default 90-day
+expiry. List and usage responses include the effective `status` (`active`,
+`expired`, `revoked`, or `invalid_expiry`) plus `last_used_at`. Legacy records
+with an invalid expiry fail closed and cannot authenticate.
+
 ### User Accounts
 
 | Method | Endpoint | Description |
@@ -388,7 +394,7 @@ Signature-based check: each index check computes a directory signature and compa
    - Wait for the periodic scheduler check, or
    - Call `POST /api/admin/index/refresh-all`
 3. **Database backup**: `POST /api/admin/backup/db` creates, privacy-scrubs, integrity-checks, and rotates a timestamped backup of `marketplace.db`.
-4. **API Key security**: Keys are shown only once at creation. Revoke and rotate if compromised. Scopes are validated against a whitelist at creation time.
+4. **API Key security**: Keys are shown only once at creation. Revoke and rotate if compromised. Scopes are validated against a whitelist at creation time; expiry timestamps are normalized to UTC, and expired or malformed legacy records fail closed.
 5. **Config**: Edit `config.json` to set `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
 
 ### Large File Transfer

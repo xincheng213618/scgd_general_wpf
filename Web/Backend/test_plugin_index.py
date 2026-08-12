@@ -995,6 +995,68 @@ class PluginIndexTests(unittest.TestCase):
         self.assertGreaterEqual(len(keys), 1)
         for key in keys:
             self.assertNotIn("key_hash", key)
+            self.assertIn(key["status"], {"active", "expired", "revoked", "invalid_expiry"})
+
+    def test_api_key_expiry_is_normalized_and_must_be_future(self):
+        from services.api_key_service import create_api_key
+
+        current = datetime(2030, 1, 1, tzinfo=timezone.utc)
+        with patch("services.api_key_service._utc_now", return_value=current):
+            created = create_api_key(
+                self.cache,
+                name="Normalized Expiry",
+                expires_at="2030-01-02T03:04:05+08:00",
+            )
+            self.assertEqual(created["expires_at"], "2030-01-01T19:04:05+00:00")
+
+            with self.assertRaisesRegex(ValueError, "must be in the future"):
+                create_api_key(
+                    self.cache,
+                    name="Past Expiry",
+                    expires_at="2029-12-31T23:59:59Z",
+                )
+            with self.assertRaisesRegex(ValueError, "valid ISO 8601"):
+                create_api_key(
+                    self.cache,
+                    name="Invalid Expiry",
+                    expires_at="not-a-timestamp",
+                )
+
+    def test_legacy_invalid_and_expired_api_key_values_fail_closed(self):
+        from services.api_key_service import create_api_key, list_api_keys, verify_api_key
+
+        key_data = create_api_key(
+            self.cache,
+            name="Legacy Expiry",
+            scopes="stats:read",
+        )
+        db = self.cache.get_db()
+        try:
+            db.execute(
+                "UPDATE api_keys SET expires_at = ? WHERE id = ?",
+                ("not-a-timestamp", key_data["id"]),
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        self.assertIsNone(verify_api_key(self.cache, key_data["key"]))
+        invalid = next(item for item in list_api_keys(self.cache) if item["id"] == key_data["id"])
+        self.assertEqual(invalid["status"], "invalid_expiry")
+
+        db = self.cache.get_db()
+        try:
+            db.execute(
+                "UPDATE api_keys SET expires_at = ? WHERE id = ?",
+                ("2000-01-01T00:00:00+00:00", key_data["id"]),
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        self.assertIsNone(verify_api_key(self.cache, key_data["key"]))
+        expired = next(item for item in list_api_keys(self.cache) if item["id"] == key_data["id"])
+        self.assertEqual(expired["status"], "expired")
 
     def test_revoke_api_key(self):
         create_resp = self.client.post(

@@ -183,6 +183,8 @@ export interface ScheduledJob {
   latest_run?: JobRun | null
 }
 
+export type ApiKeyStatus = 'active' | 'expired' | 'revoked' | 'invalid_expiry'
+
 export interface ApiKeyItem {
   id: number
   name: string
@@ -194,6 +196,7 @@ export interface ApiKeyItem {
   last_used_at?: string | null
   revoked_at?: string | null
   is_active: number | boolean
+  status?: ApiKeyStatus
 }
 
 export interface CreateApiKeyPayload {
@@ -207,7 +210,7 @@ export interface ApiKeyFormValues {
   name: string
   description?: string
   scopes: string[]
-  expires_at?: string
+  expires_at?: string | { toISOString: () => string }
 }
 
 export interface CreateApiKeyResult extends ApiKeyItem {

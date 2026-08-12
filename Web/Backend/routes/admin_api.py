@@ -906,13 +906,16 @@ def create_api_key():
         default_expiry = datetime.now(timezone.utc) + timedelta(days=90)
         expires_at = default_expiry.isoformat()
 
-    result = _create_key(
-        ctx.cache,
-        name=name,
-        scopes=scopes,
-        created_by=_actor_id(),
-        expires_at=expires_at,
-    )
+    try:
+        result = _create_key(
+            ctx.cache,
+            name=name,
+            scopes=scopes,
+            created_by=_actor_id(),
+            expires_at=expires_at,
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
 
     # Store description if provided
     if description:
@@ -966,7 +969,10 @@ def revoke_api_key(key_id: int):
 def rotate_api_key(key_id: int):
     from services.api_key_service import rotate_api_key as _rotate_key
     ctx = _get_ctx()
-    result = _rotate_key(ctx.cache, key_id, created_by=_actor_id())
+    try:
+        result = _rotate_key(ctx.cache, key_id, created_by=_actor_id())
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
     if not result:
         return jsonify({"error": "Key not found"}), 404
 

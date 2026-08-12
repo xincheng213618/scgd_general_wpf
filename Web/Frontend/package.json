@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test": "node --experimental-strip-types --test tests/transferAccess.test.ts",
+    "test": "node --experimental-strip-types --test tests/transferAccess.test.ts tests/apiKeyStatus.test.ts",
     "build": "tsc -b && vite build --manifest && node scripts/precompress-static.mjs && node scripts/check-dashboard-bundle.mjs",
     "lint": "eslint .",
     "preview": "vite preview"

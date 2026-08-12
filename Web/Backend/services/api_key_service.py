@@ -36,6 +36,48 @@ def _now_iso() -> str:
     return _utc_now().isoformat()
 
 
+def normalize_api_key_expiry(expires_at: str | None) -> str | None:
+    """Validate an optional ISO-8601 expiry and normalize it to UTC."""
+    if expires_at is None:
+        return None
+    value = str(expires_at).strip()
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("expires_at must be a valid ISO 8601 timestamp") from exc
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).isoformat()
+
+
+def api_key_status(row: Any, *, now: datetime | None = None) -> str:
+    """Return the credential's effective status, including expiry validity."""
+    if not bool(row["is_active"]) or row["revoked_at"]:
+        return "revoked"
+    expires_at = row["expires_at"]
+    if not expires_at:
+        return "active"
+    try:
+        expiry = datetime.fromisoformat(
+            normalize_api_key_expiry(str(expires_at)) or ""
+        )
+    except (TypeError, ValueError):
+        return "invalid_expiry"
+    current = now or _utc_now()
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    return "expired" if current.astimezone(timezone.utc) >= expiry else "active"
+
+
+def _public_key_payload(row: Any, *, now: datetime | None = None) -> dict[str, Any]:
+    key = dict(row)
+    key.pop("key_hash", None)
+    key["status"] = api_key_status(row, now=now)
+    return key
+
+
 def _last_used_write_due(last_used_at: str | None, now: datetime) -> bool:
     if not last_used_at:
         return True
@@ -102,9 +144,16 @@ def create_api_key(
     expires_at: str | None = None,
 ) -> dict[str, Any]:
     """Create a new API key. Returns dict with full_key (shown only once)."""
+    normalized_expiry = normalize_api_key_expiry(expires_at)
+    current = _utc_now()
+    if (
+        normalized_expiry is not None
+        and datetime.fromisoformat(normalized_expiry) <= current
+    ):
+        raise ValueError("expires_at must be in the future")
     full_key, prefix, secret = _generate_key()
     key_hash = _hash_secret(secret)
-    now = _now_iso()
+    now = current.isoformat()
 
     db = cache.get_db()
     try:
@@ -112,7 +161,7 @@ def create_api_key(
             """INSERT INTO api_keys (name, key_prefix, key_hash, scopes, created_by,
                                      created_at, expires_at, is_active)
                VALUES (?, ?, ?, ?, ?, ?, ?, 1)""",
-            (name, prefix, key_hash, scopes, created_by, now, expires_at),
+            (name, prefix, key_hash, scopes, created_by, now, normalized_expiry),
         )
         key_id = cursor.lastrowid
         db.commit()
@@ -127,7 +176,8 @@ def create_api_key(
         "scopes": scopes,
         "created_by": created_by,
         "created_at": now,
-        "expires_at": expires_at,
+        "expires_at": normalized_expiry,
+        "status": "active",
     }
 
 
@@ -155,22 +205,13 @@ def verify_api_key(
         if not row:
             return None
 
-        # Verify secret
-        if not _verify_secret(secret, row["key_hash"]):
+        now = _utc_now()
+        if api_key_status(row, now=now) != "active":
             return None
 
-        now = _utc_now()
-
-        # Check expiration
-        if row["expires_at"]:
-            try:
-                exp = datetime.fromisoformat(row["expires_at"])
-                if exp.tzinfo is None:
-                    exp = exp.replace(tzinfo=timezone.utc)
-                if now > exp:
-                    return None
-            except (ValueError, TypeError):
-                pass
+        # Verify secret only after cheap revocation and expiry checks.
+        if not _verify_secret(secret, row["key_hash"]):
+            return None
 
         # Check scopes
         if required_scopes:
@@ -180,7 +221,7 @@ def verify_api_key(
                     if scope not in key_scopes:
                         return None
 
-        key_info = dict(row)
+        key_info = _public_key_payload(row, now=now)
         try:
             key_info["last_used_at"] = _refresh_last_used_at(db, row, now)
         except Exception as exc:
@@ -246,12 +287,8 @@ def list_api_keys(cache: CacheManager) -> list[dict[str, Any]]:
     db = cache.get_db()
     try:
         rows = db.execute("SELECT * FROM api_keys ORDER BY id DESC").fetchall()
-        keys = []
-        for row in rows:
-            key = dict(row)
-            key.pop("key_hash", None)
-            keys.append(key)
-        return keys
+        now = _utc_now()
+        return [_public_key_payload(row, now=now) for row in rows]
     except Exception:
         return []
     finally:
@@ -265,9 +302,7 @@ def get_api_key_usage(cache: CacheManager, key_id: int) -> dict[str, Any] | None
         row = db.execute("SELECT * FROM api_keys WHERE id = ?", (key_id,)).fetchone()
         if not row:
             return None
-        key = dict(row)
-        key.pop("key_hash", None)
-        return key
+        return _public_key_payload(row)
     except Exception:
         return None
     finally:
