@@ -2355,6 +2355,10 @@ body.cv-home-light .workflow-icon {
   align-items: center;
 }
 
+.dashboard-shortcuts {
+  max-width: 100%;
+}
+
 .status-value {
   margin-top: 6px;
   font-size: 18px;
@@ -2877,6 +2881,23 @@ body.cv-home-light .workflow-icon {
 }
 
 @media (max-width: 520px) {
+  .hero-card h2.ant-typography {
+    font-size: 26px;
+    line-height: 1.2;
+  }
+
+  .dashboard-shortcuts {
+    width: 100%;
+  }
+
+  .dashboard-shortcuts .ant-space-item {
+    flex: 1 1 132px;
+  }
+
+  .dashboard-shortcuts .ant-btn {
+    width: 100%;
+  }
+
   .site-header {
     padding: 8px 0;
   }

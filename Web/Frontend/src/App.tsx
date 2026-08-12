@@ -227,7 +227,7 @@ function App() {
 
   const adminLayout = (
     <Suspense fallback={<RouteFallback />}>
-      <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme} onSessionChanged={refreshSession}>
+      <AdminLayout mode={mode} setMode={setMode} resolvedTheme={resolvedTheme} session={session} onSessionChanged={refreshSession}>
         <Suspense fallback={<RouteFallback />}>
           <Outlet />
         </Suspense>
