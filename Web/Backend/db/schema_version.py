@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 11
+CURRENT_SCHEMA_VERSION = 12
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -67,6 +67,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v10(db)
     if from_version < 11:
         _migration_v11(db)
+    if from_version < 12:
+        _migration_v12(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -314,6 +316,54 @@ def _migration_v10(db: sqlite3.Connection):
 def _migration_v11(db: sqlite3.Connection):
     """v11: Version account authentication state for session revocation."""
     _add_column_if_missing(db, "users", "auth_version INTEGER NOT NULL DEFAULT 0")
+
+
+def _migration_v12(db: sqlite3.Connection):
+    """v12: Add aggregate-only SPA page views and Core Web Vitals."""
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS web_page_daily (
+            day                 TEXT NOT NULL,
+            route               TEXT NOT NULL,
+            page_views          INTEGER NOT NULL DEFAULT 0,
+            unique_visitors     INTEGER NOT NULL DEFAULT 0,
+            hard_navigations    INTEGER NOT NULL DEFAULT 0,
+            spa_navigations     INTEGER NOT NULL DEFAULT 0,
+            updated_at          TEXT NOT NULL,
+            PRIMARY KEY (day, route)
+        );
+        CREATE INDEX IF NOT EXISTS idx_web_page_daily_day
+            ON web_page_daily(day);
+
+        CREATE TABLE IF NOT EXISTS web_page_visitor_daily (
+            day                 TEXT NOT NULL,
+            route               TEXT NOT NULL,
+            visitor_key         TEXT NOT NULL,
+            page_views          INTEGER NOT NULL DEFAULT 0,
+            first_seen_at       TEXT NOT NULL,
+            last_seen_at        TEXT NOT NULL,
+            PRIMARY KEY (day, route, visitor_key)
+        );
+        CREATE INDEX IF NOT EXISTS idx_web_page_visitor_day
+            ON web_page_visitor_daily(day);
+
+        CREATE TABLE IF NOT EXISTS web_vital_daily (
+            day                 TEXT NOT NULL,
+            route               TEXT NOT NULL,
+            metric              TEXT NOT NULL,
+            samples             INTEGER NOT NULL DEFAULT 0,
+            total_value         REAL NOT NULL DEFAULT 0,
+            max_value           REAL NOT NULL DEFAULT 0,
+            good_samples        INTEGER NOT NULL DEFAULT 0,
+            needs_improvement_samples INTEGER NOT NULL DEFAULT 0,
+            poor_samples        INTEGER NOT NULL DEFAULT 0,
+            updated_at          TEXT NOT NULL,
+            PRIMARY KEY (day, route, metric)
+        );
+        CREATE INDEX IF NOT EXISTS idx_web_vital_daily_day
+            ON web_vital_daily(day);
+        """
+    )
 
 
 def _add_column_if_missing(db: sqlite3.Connection, table: str, column_def: str):

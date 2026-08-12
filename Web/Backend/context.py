@@ -57,6 +57,7 @@ class MarketplaceContext:
     get_upload_auth: Callable[[], tuple[str, str]]
     auth_policy: AuthPolicy
     request_context_factory: Callable[[], RequestContext]
+    access_recorder: Any
 
     # Service layer (populated after construction)
     services: Any = None  # MarketplaceDataService

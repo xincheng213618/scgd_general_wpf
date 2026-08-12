@@ -12,6 +12,8 @@ import type {
   TrafficDayStats,
   TrafficRouteStats,
   TrafficStatsResponse,
+  WebPageStats,
+  WebVitalStats,
 } from '../types/admin'
 import { humanSize, shortDate } from '../utils/format'
 
@@ -131,6 +133,32 @@ const clientColumns: ColumnsType<TrafficClientStats> = [
     render: (value) => <Tag>{value}</Tag>,
   },
 ]
+
+const webPageColumns: ColumnsType<WebPageStats> = [
+  { title: '页面路由', dataIndex: 'route', render: (value) => <Typography.Text code>{value}</Typography.Text> },
+  { title: '浏览量', dataIndex: 'pageViews', width: 100, align: 'right' },
+  { title: '访客日', dataIndex: 'uniqueVisitorDays', width: 100, align: 'right' },
+  { title: '首次加载', dataIndex: 'hardNavigations', width: 100, align: 'right' },
+  { title: '站内切换', dataIndex: 'spaNavigations', width: 100, align: 'right' },
+]
+
+const vitalDescriptions: Record<WebVitalStats['metric'], string> = {
+  LCP: '主要内容呈现',
+  CLS: '视觉稳定性',
+  INP: '交互响应',
+}
+
+function vitalValue(vital: WebVitalStats) {
+  if (vital.unit === 'score') return vital.average.toFixed(3)
+  return Math.round(vital.average)
+}
+
+function vitalColor(vital: WebVitalStats) {
+  if (vital.samples === 0) return undefined
+  if (vital.poorSamples > 0) return '#cf1322'
+  if (vital.needsImprovementSamples > 0) return '#d48806'
+  return '#389e0d'
+}
 
 function httpStatus(value: number) {
   return <Tag color={value >= 500 ? 'red' : value >= 400 ? 'gold' : 'green'}>{value}</Tag>
@@ -298,6 +326,73 @@ export function TrafficPage() {
           <Card loading={loading}><Statistic title="服务端故障（5xx）" value={data.summary.serverErrorResponses} suffix={`次 · ${percent(data.summary.serverErrorRate)}`} valueStyle={{ color: data.summary.serverErrorResponses > 0 ? '#cf1322' : undefined }} /></Card>
         </Col>
       </Row>
+
+      <Card
+        title="页面体验"
+        loading={loading}
+        extra={(
+          <Space wrap>
+            <Tag>真实浏览器采样</Tag>
+            <Tag color="blue">与 HTTP 请求分开统计</Tag>
+          </Space>
+        )}
+      >
+        <Space direction="vertical" size={16} className="page-stack">
+          <Typography.Paragraph type="secondary">
+            页面浏览量覆盖首次加载和 React 站内切换；LCP、CLS、INP 由浏览器上报并按固定路由聚合，不保存查询参数、来源页、原始 IP 或完整 User-Agent。
+          </Typography.Paragraph>
+          {data.web.summary.pageViews === 0 && (
+            <Alert
+              type="info"
+              showIcon
+              message="尚无页面体验样本"
+              description="新版本上线并产生真实页面访问后，这里会开始展示页面浏览量和 Core Web Vitals。"
+            />
+          )}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={8}>
+              <Statistic title="页面浏览量" value={data.web.summary.pageViews} />
+            </Col>
+            <Col xs={24} md={8}>
+              <Statistic title="页面访客日" value={data.web.summary.uniqueVisitorDays} />
+            </Col>
+            <Col xs={24} md={8}>
+              <Statistic title="站内页面切换" value={data.web.summary.spaNavigations} />
+            </Col>
+          </Row>
+          <Row gutter={[16, 16]}>
+            {data.web.vitals.map((vital) => (
+              <Col xs={24} md={8} key={vital.metric}>
+                <Card size="small">
+                  <Statistic
+                    title={`${vital.metric} · ${vitalDescriptions[vital.metric]}`}
+                    value={vitalValue(vital)}
+                    suffix={vital.unit === 'ms' ? 'ms' : undefined}
+                    valueStyle={{ color: vitalColor(vital) }}
+                  />
+                  <Space wrap size={4}>
+                    <Tag>样本 {vital.samples}</Tag>
+                    <Tag color={vital.samples > 0 && vital.goodRate >= 75 ? 'green' : 'default'}>
+                      良好 {percent(vital.goodRate)}
+                    </Tag>
+                    {vital.needsImprovementSamples > 0 && <Tag color="gold">待优化 {vital.needsImprovementSamples}</Tag>}
+                    {vital.poorSamples > 0 && <Tag color="red">较差 {vital.poorSamples}</Tag>}
+                  </Space>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+          <Table
+            rowKey="route"
+            size="small"
+            columns={webPageColumns}
+            dataSource={data.web.topPages}
+            pagination={false}
+            locale={{ emptyText: '尚无页面浏览记录' }}
+            scroll={{ x: 720 }}
+          />
+        </Space>
+      </Card>
 
       <Card title="今日" loading={loading} extra={<Tag>{data.today.day}</Tag>}>
         <Space wrap size={24}>

@@ -23,6 +23,9 @@ from typing import Any, Callable, Protocol, Sequence
 
 CLIENT_TYPES = frozenset({"desktop", "mobile", "tablet", "bot", "other"})
 ACCESS_ANALYTICS_TABLES = (
+    "web_page_visitor_daily",
+    "web_vital_daily",
+    "web_page_daily",
     "access_visitor_daily",
     "access_client_daily",
     "access_route_daily",
@@ -38,6 +41,7 @@ EXCLUDED_ROUTE_PREFIXES = (
     "/api/admin/stats/",
     "/api/admin/perf/",
     "/api/v1/admin/analytics/",
+    "/api/v1/analytics/",
     "/assets/",
     "/media/",
     "/brand/",
@@ -50,6 +54,33 @@ MAX_REPORTING_UTC_OFFSET_MINUTES = 14 * 60
 CALENDAR_OFFSET_KEY = "calendar_utc_offset_minutes"
 CALENDAR_EFFECTIVE_AT_KEY = "calendar_boundary_effective_at"
 LEGACY_CALENDAR_THROUGH_DAY_KEY = "legacy_calendar_data_through_day"
+WEB_NAVIGATION_TYPES = frozenset({"hard", "spa"})
+WEB_VITAL_METRICS = ("lcp", "cls", "inp")
+WEB_ROUTE_EXACT = frozenset({
+    "/",
+    "/plugins",
+    "/releases",
+    "/changelog",
+    "/updates",
+    "/tools",
+    "/browse",
+    "/transfer",
+    "/login",
+    "/admin",
+    "/admin/publish",
+    "/admin/files",
+    "/admin/cache",
+    "/admin/jobs",
+    "/admin/deployments",
+    "/admin/feedback",
+    "/admin/users",
+    "/admin/api-keys",
+    "/admin/copilot",
+    "/admin/audit",
+    "/admin/traffic",
+    "/admin/settings",
+})
+WEB_PLUGIN_ROUTE = re.compile(r"^/plugins/[A-Za-z0-9._-]{1,128}$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,12 +98,39 @@ class AccessEvent:
     visitor_key: str | None
 
 
+@dataclass(frozen=True, slots=True)
+class WebPageViewEvent:
+    """Sanitized SPA navigation event; no URL query or referrer is retained."""
+
+    occurred_at: str
+    day: str
+    route: str
+    navigation_type: str
+    client_type: str
+    visitor_key: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class WebVitalEvent:
+    """One bounded Core Web Vital sample for a normalized SPA route."""
+
+    occurred_at: str
+    day: str
+    route: str
+    metric: str
+    value: float
+    rating: str
+
+
+AnalyticsEvent = AccessEvent | WebPageViewEvent | WebVitalEvent
+
+
 class AccessEventSink(Protocol):
     """Stable write boundary used by request instrumentation."""
 
     def submit(
         self,
-        event: AccessEvent,
+        event: AnalyticsEvent,
         *,
         db_path: Path,
         synchronous: bool = False,
@@ -108,6 +166,109 @@ def should_record_access(route_template: str | None, method: str) -> bool:
     if route in EXCLUDED_ROUTES:
         return False
     return not any(route.startswith(prefix) for prefix in EXCLUDED_ROUTE_PREFIXES)
+
+
+def normalize_web_route(raw_route: Any) -> str:
+    """Map a browser pathname to a fixed route template without query data."""
+    route = str(raw_route or "").strip()
+    if not route or len(route) > 256 or "?" in route or "#" in route:
+        raise ValueError("invalid web route")
+    if not route.startswith("/") or "\\" in route or "//" in route:
+        raise ValueError("invalid web route")
+    if route != "/":
+        route = route.rstrip("/")
+    if route in WEB_ROUTE_EXACT:
+        return route
+    if WEB_PLUGIN_ROUTE.fullmatch(route):
+        return "/plugins/:pluginId"
+    if route.startswith("/browse/"):
+        return "/browse/*"
+    raise ValueError("unsupported web route")
+
+
+def _web_vital_rating(metric: str, value: float) -> str:
+    thresholds = {
+        "lcp": (2500.0, 4000.0),
+        "cls": (0.1, 0.25),
+        "inp": (200.0, 500.0),
+    }
+    good, poor = thresholds[metric]
+    if value <= good:
+        return "good"
+    if value <= poor:
+        return "needs_improvement"
+    return "poor"
+
+
+def build_web_experience_event(
+    payload: Any,
+    *,
+    secret_key: str,
+    remote_addr: str | None,
+    user_agent: str | None,
+    occurred_at: datetime | None = None,
+    utc_offset_minutes: int = DEFAULT_REPORTING_UTC_OFFSET_MINUTES,
+) -> WebPageViewEvent | WebVitalEvent | None:
+    """Validate the exact public ingestion contract and return a safe event."""
+    if not isinstance(payload, dict):
+        raise ValueError("analytics payload must be an object")
+    kind = str(payload.get("kind") or "").strip()
+    route = normalize_web_route(payload.get("route"))
+    now = occurred_at or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    now = now.astimezone(timezone.utc)
+    day = analytics_calendar_day(
+        now,
+        utc_offset_minutes=utc_offset_minutes,
+    ).isoformat()
+    client_type = classify_user_agent(user_agent)
+    if client_type == "bot":
+        return None
+
+    if kind == "page_view":
+        if set(payload) != {"kind", "route", "navigationType"}:
+            raise ValueError("invalid page view payload")
+        navigation_type = str(payload.get("navigationType") or "").strip()
+        if navigation_type not in WEB_NAVIGATION_TYPES:
+            raise ValueError("invalid navigation type")
+        return WebPageViewEvent(
+            occurred_at=now.isoformat(),
+            day=day,
+            route=route,
+            navigation_type=navigation_type,
+            client_type=client_type if client_type in CLIENT_TYPES else "other",
+            visitor_key=daily_visitor_key(
+                secret_key=secret_key,
+                day=day,
+                remote_addr=remote_addr,
+            ),
+        )
+
+    if kind == "web_vital":
+        if set(payload) != {"kind", "route", "metric", "value"}:
+            raise ValueError("invalid web vital payload")
+        metric = str(payload.get("metric") or "").strip().lower()
+        if metric not in WEB_VITAL_METRICS:
+            raise ValueError("invalid web vital metric")
+        try:
+            value = float(payload.get("value"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("invalid web vital value") from exc
+        upper_bound = 10.0 if metric == "cls" else 120_000.0
+        if value < 0 or value > upper_bound or value != value:
+            raise ValueError("invalid web vital value")
+        value = round(value, 4 if metric == "cls" else 2)
+        return WebVitalEvent(
+            occurred_at=now.isoformat(),
+            day=day,
+            route=route,
+            metric=metric,
+            value=value,
+            rating=_web_vital_rating(metric, value),
+        )
+
+    raise ValueError("invalid analytics event kind")
 
 
 def declared_response_body_bytes(
@@ -337,7 +498,7 @@ def build_access_event(
 @dataclass(frozen=True, slots=True)
 class _QueuedAccessEvent:
     db_path: str
-    event: AccessEvent
+    event: AnalyticsEvent
 
 
 class AccessAnalyticsRecorder:
@@ -367,7 +528,7 @@ class AccessAnalyticsRecorder:
 
     def submit(
         self,
-        event: AccessEvent,
+        event: AnalyticsEvent,
         *,
         db_path: Path,
         synchronous: bool = False,
@@ -439,7 +600,7 @@ class AccessAnalyticsRecorder:
                 except queue.Empty:
                     break
 
-            grouped: dict[str, list[AccessEvent]] = defaultdict(list)
+            grouped: dict[str, list[AnalyticsEvent]] = defaultdict(list)
             for item in items:
                 grouped[item.db_path].append(item.event)
 
@@ -452,7 +613,7 @@ class AccessAnalyticsRecorder:
                 for _ in items:
                     self._queue.task_done()
 
-    def _write_group(self, db_path: str, events: Sequence[AccessEvent]) -> bool:
+    def _write_group(self, db_path: str, events: Sequence[AnalyticsEvent]) -> bool:
         try:
             _write_access_batch(Path(db_path), events)
         except Exception as exc:
@@ -469,7 +630,7 @@ class AccessAnalyticsRecorder:
             self._last_error = str(error)[:500]
 
 
-def _write_access_batch(db_path: Path, events: Sequence[AccessEvent]):
+def _write_access_batch(db_path: Path, events: Sequence[AnalyticsEvent]):
     if not events:
         return
     db = sqlite3.connect(str(db_path), timeout=15)
@@ -482,7 +643,14 @@ def _write_access_batch(db_path: Path, events: Sequence[AccessEvent]):
         ensure_schema_version(db)
         with db:
             for event in events:
-                _write_access_event(db, event)
+                if isinstance(event, AccessEvent):
+                    _write_access_event(db, event)
+                elif isinstance(event, WebPageViewEvent):
+                    _write_web_page_view(db, event)
+                elif isinstance(event, WebVitalEvent):
+                    _write_web_vital(db, event)
+                else:  # pragma: no cover - guarded by the typed sink boundary
+                    raise TypeError("unsupported analytics event")
     finally:
         db.close()
 
@@ -607,6 +775,100 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
     )
 
 
+def _write_web_page_view(db: sqlite3.Connection, event: WebPageViewEvent):
+    date.fromisoformat(event.day)
+    new_visitor = 0
+    if event.visitor_key:
+        cursor = db.execute(
+            """
+            INSERT OR IGNORE INTO web_page_visitor_daily
+                (day, route, visitor_key, page_views, first_seen_at, last_seen_at)
+            VALUES (?, ?, ?, 0, ?, ?)
+            """,
+            (
+                event.day,
+                event.route,
+                event.visitor_key,
+                event.occurred_at,
+                event.occurred_at,
+            ),
+        )
+        new_visitor = 1 if cursor.rowcount == 1 else 0
+        db.execute(
+            """
+            UPDATE web_page_visitor_daily
+            SET page_views = page_views + 1, last_seen_at = ?
+            WHERE day = ? AND route = ? AND visitor_key = ?
+            """,
+            (
+                event.occurred_at,
+                event.day,
+                event.route,
+                event.visitor_key,
+            ),
+        )
+
+    hard_navigation = 1 if event.navigation_type == "hard" else 0
+    spa_navigation = 1 if event.navigation_type == "spa" else 0
+    db.execute(
+        """
+        INSERT INTO web_page_daily
+            (day, route, page_views, unique_visitors, hard_navigations,
+             spa_navigations, updated_at)
+        VALUES (?, ?, 1, ?, ?, ?, ?)
+        ON CONFLICT(day, route) DO UPDATE SET
+            page_views = page_views + 1,
+            unique_visitors = unique_visitors + excluded.unique_visitors,
+            hard_navigations = hard_navigations + excluded.hard_navigations,
+            spa_navigations = spa_navigations + excluded.spa_navigations,
+            updated_at = excluded.updated_at
+        """,
+        (
+            event.day,
+            event.route,
+            new_visitor,
+            hard_navigation,
+            spa_navigation,
+            event.occurred_at,
+        ),
+    )
+
+
+def _write_web_vital(db: sqlite3.Connection, event: WebVitalEvent):
+    date.fromisoformat(event.day)
+    good = 1 if event.rating == "good" else 0
+    needs_improvement = 1 if event.rating == "needs_improvement" else 0
+    poor = 1 if event.rating == "poor" else 0
+    db.execute(
+        """
+        INSERT INTO web_vital_daily
+            (day, route, metric, samples, total_value, max_value, good_samples,
+             needs_improvement_samples, poor_samples, updated_at)
+        VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(day, route, metric) DO UPDATE SET
+            samples = samples + 1,
+            total_value = total_value + excluded.total_value,
+            max_value = max(max_value, excluded.max_value),
+            good_samples = good_samples + excluded.good_samples,
+            needs_improvement_samples = needs_improvement_samples
+                + excluded.needs_improvement_samples,
+            poor_samples = poor_samples + excluded.poor_samples,
+            updated_at = excluded.updated_at
+        """,
+        (
+            event.day,
+            event.route,
+            event.metric,
+            event.value,
+            event.value,
+            good,
+            needs_improvement,
+            poor,
+            event.occurred_at,
+        ),
+    )
+
+
 class SqliteAccessTrafficQuery:
     def __init__(
         self,
@@ -673,6 +935,56 @@ class SqliteAccessTrafficQuery:
                 WHERE day BETWEEN ? AND ?
                 GROUP BY client_type
                 ORDER BY visits DESC, client_type
+                """,
+                (start.isoformat(), today.isoformat()),
+            ).fetchall()
+            web_daily_rows = db.execute(
+                """
+                SELECT day, SUM(page_views) AS page_views,
+                       SUM(hard_navigations) AS hard_navigations,
+                       SUM(spa_navigations) AS spa_navigations
+                FROM web_page_daily
+                WHERE day BETWEEN ? AND ?
+                GROUP BY day
+                ORDER BY day
+                """,
+                (start.isoformat(), today.isoformat()),
+            ).fetchall()
+            web_daily_visitor_rows = db.execute(
+                """
+                SELECT day, COUNT(DISTINCT visitor_key) AS unique_visitors
+                FROM web_page_visitor_daily
+                WHERE day BETWEEN ? AND ?
+                GROUP BY day
+                ORDER BY day
+                """,
+                (start.isoformat(), today.isoformat()),
+            ).fetchall()
+            web_page_rows = db.execute(
+                """
+                SELECT route, SUM(page_views) AS page_views,
+                       SUM(unique_visitors) AS unique_visitors,
+                       SUM(hard_navigations) AS hard_navigations,
+                       SUM(spa_navigations) AS spa_navigations
+                FROM web_page_daily
+                WHERE day BETWEEN ? AND ?
+                GROUP BY route
+                ORDER BY page_views DESC, route
+                LIMIT ?
+                """,
+                (start.isoformat(), today.isoformat(), limit),
+            ).fetchall()
+            web_vital_rows = db.execute(
+                """
+                SELECT metric, SUM(samples) AS samples,
+                       SUM(total_value) AS total_value,
+                       MAX(max_value) AS max_value,
+                       SUM(good_samples) AS good_samples,
+                       SUM(needs_improvement_samples) AS needs_improvement_samples,
+                       SUM(poor_samples) AS poor_samples
+                FROM web_vital_daily
+                WHERE day BETWEEN ? AND ?
+                GROUP BY metric
                 """,
                 (start.isoformat(), today.isoformat()),
             ).fetchall()
@@ -752,6 +1064,68 @@ class SqliteAccessTrafficQuery:
                 "avgResponseMs": _average(int(row["total_duration_ms"] or 0), client_visits),
             })
 
+        web_daily_base = {
+            str(row["day"]): {
+                "pageViews": int(row["page_views"] or 0),
+                "hardNavigations": int(row["hard_navigations"] or 0),
+                "spaNavigations": int(row["spa_navigations"] or 0),
+            }
+            for row in web_daily_rows
+        }
+        web_daily_visitors = {
+            str(row["day"]): int(row["unique_visitors"] or 0)
+            for row in web_daily_visitor_rows
+        }
+        web_daily = []
+        for offset in range(days):
+            day_text = (start + timedelta(days=offset)).isoformat()
+            item = web_daily_base.get(day_text, {
+                "pageViews": 0,
+                "hardNavigations": 0,
+                "spaNavigations": 0,
+            })
+            web_daily.append({
+                "day": day_text,
+                **item,
+                "uniqueVisitors": web_daily_visitors.get(day_text, 0),
+            })
+
+        page_views = sum(item["pageViews"] for item in web_daily)
+        page_visitor_days = sum(item["uniqueVisitors"] for item in web_daily)
+        hard_navigations = sum(item["hardNavigations"] for item in web_daily)
+        spa_navigations = sum(item["spaNavigations"] for item in web_daily)
+        top_pages = [{
+            "route": str(row["route"]),
+            "pageViews": int(row["page_views"] or 0),
+            "uniqueVisitorDays": int(row["unique_visitors"] or 0),
+            "hardNavigations": int(row["hard_navigations"] or 0),
+            "spaNavigations": int(row["spa_navigations"] or 0),
+        } for row in web_page_rows]
+
+        vital_by_metric = {str(row["metric"]): row for row in web_vital_rows}
+        vital_units = {"lcp": "ms", "cls": "score", "inp": "ms"}
+        vitals = []
+        for metric in WEB_VITAL_METRICS:
+            row = vital_by_metric.get(metric)
+            samples = int(row["samples"] or 0) if row else 0
+            good_samples = int(row["good_samples"] or 0) if row else 0
+            needs_improvement_samples = (
+                int(row["needs_improvement_samples"] or 0) if row else 0
+            )
+            poor_samples = int(row["poor_samples"] or 0) if row else 0
+            total_value = float(row["total_value"] or 0) if row else 0.0
+            vitals.append({
+                "metric": metric.upper(),
+                "unit": vital_units[metric],
+                "samples": samples,
+                "average": round(total_value / samples, 2) if samples else 0.0,
+                "maximum": round(float(row["max_value"] or 0), 2) if row else 0.0,
+                "goodSamples": good_samples,
+                "needsImprovementSamples": needs_improvement_samples,
+                "poorSamples": poor_samples,
+                "goodRate": _percentage(good_samples, samples),
+            })
+
         return {
             "summary": {
                 "periodStart": start.isoformat(),
@@ -778,6 +1152,17 @@ class SqliteAccessTrafficQuery:
             "daily": daily,
             "topRoutes": top_routes,
             "clients": clients,
+            "web": {
+                "summary": {
+                    "pageViews": page_views,
+                    "uniqueVisitorDays": page_visitor_days,
+                    "hardNavigations": hard_navigations,
+                    "spaNavigations": spa_navigations,
+                },
+                "daily": web_daily,
+                "topPages": top_pages,
+                "vitals": vitals,
+            },
             "recorder": self._recorder_status(),
         }
 
