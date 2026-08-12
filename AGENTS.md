@@ -40,8 +40,12 @@ dotnet test .\Test\ColorVision.UI.Tests\ColorVision.UI.Tests.csproj -p:Platform=
 ## Release and packaging
 
 - `Scripts\release.bat` is the only normal main-release entry point. Bump `Directory.Build.props` `VersionPrefix` first, then run the wrapper.
+- Use quick release by default when the user says “发布”, “打包发布”, “直接打包”, or “快速发布”: update `VersionPrefix` and `CHANGELOG.md`, run `Scripts\release.bat` once from the canonical worktree, then report its result. The wrapper owns build, installer validation, upload, and one compact parallel acceptance check for the installer signature, remote version/changelog, installer/update download sizes, and Git status.
+- Do not add standalone tests, pre-builds, deep history review, a second remote/download verification pass, an isolated release worktree, or another packaging entry point to a quick release. The external Advanced Installer project synchronizes its version and files from the canonical worktree.
+- If the wrapper fails, inspect only the reported failing stage. Make one evidence-backed correction and rerun the wrapper once; do not expand into an open-ended repository or release audit unless the user asks for one.
+- Treat a zero exit code from `Scripts\release.bat` as the normal release completion signal. Git commit or push is separate work unless the user explicitly requests it or selects “完整发布”.
+- Only when the user explicitly says “完整发布” should the workflow add standalone tests, deeper changed-scope review, full artifact hashing/download, release commit/push, and remote branch synchronization beyond the wrapper's quick acceptance check. This mode is intentionally slower than quick release.
 - `Scripts\build.py` and `Scripts\build_update.py` are internal release steps; do not turn them into local-only release shortcuts.
-- A local installer, zip, or update package is not proof of a completed main release. Verify the upload, remote release metadata, and a downloadable artifact before reporting success.
 
 ## Code conventions
 
