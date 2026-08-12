@@ -238,7 +238,7 @@ function App() {
               path="/login"
               element={
                 <Suspense fallback={<RouteFallback />}>
-                  <LoginPage onLoggedIn={refreshSession} />
+                  <LoginPage session={session} onLoggedIn={refreshSession} />
                 </Suspense>
               }
             />

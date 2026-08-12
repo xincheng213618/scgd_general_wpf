@@ -22,7 +22,7 @@ from db_cache import CacheManager
 class PublicPageContext:
     cache: CacheManager
     storage: Path
-    config: dict[str, Any]
+    config_getter: Callable[[], dict[str, Any]]
     get_upload_auth: Callable[[], tuple[str, str]]
     check_web_session_auth: Callable[[], bool]
     dist_dir: Path
@@ -64,6 +64,7 @@ def _serve_spa_index():
 
 def _session_payload() -> dict[str, Any]:
     from services.csrf_protection import issue_csrf_token
+    from services.account_settings import is_public_registration_enabled
 
     is_admin = bool(session.get("authenticated"))
     is_user = bool(session.get("user_authenticated") or is_admin)
@@ -72,6 +73,9 @@ def _session_payload() -> dict[str, Any]:
         "is_admin": is_admin,
         "username": session.get("username", ""),
         "role": session.get("role", "admin" if is_admin else ("user" if is_user else "")),
+        "public_registration_enabled": is_public_registration_enabled(
+            _get_ctx().config_getter()
+        ),
         "csrf_token": issue_csrf_token(),
     }
 
@@ -233,7 +237,7 @@ def login_page():
 
 @public_pages.route("/register", methods=["GET"])
 def register_page():
-    return _serve_spa_index()
+    return redirect("/login?mode=register")
 
 
 @public_pages.route("/api/auth/session", methods=["GET"])
@@ -256,6 +260,14 @@ def api_auth_login():
 
 @public_pages.route("/api/auth/register", methods=["POST"])
 def api_auth_register():
+    from services.account_settings import is_public_registration_enabled
+
+    if not is_public_registration_enabled(_get_ctx().config_getter()):
+        return jsonify({
+            "error": "公开注册已关闭，请联系管理员创建账号",
+            "status": 403,
+        }), 403
+
     data = request.get_json(silent=True) or {}
     username = str(data.get("username", "")).strip()
     password = str(data.get("password", ""))

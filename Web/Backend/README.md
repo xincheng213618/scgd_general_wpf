@@ -128,6 +128,8 @@ continuous SQLite writes.
 | GET `/api/admin/deployments` | `admin:*` |
 | GET `/api/admin/settings/retention` | `admin:*` |
 | PUT `/api/admin/settings/retention` | `admin:*` |
+| GET `/api/admin/settings/accounts` | `admin:*` |
+| PUT `/api/admin/settings/accounts` | `admin:*` |
 | User account management | `admin:*` |
 | API Key management | `admin:*` |
 
@@ -179,6 +181,19 @@ configuration only after the file is durable. Reducing a value may delete old
 artifacts or records when the corresponding publish or scheduled cleanup next
 runs; the administrator UI confirms the exact changes before saving.
 
+### Account Access Settings
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/settings/accounts` | Read whether public self-registration is enabled |
+| PUT | `/api/admin/settings/accounts` | Atomically update the registration policy and apply it immediately |
+
+Public registration fails closed and is disabled by default. When disabled,
+the login UI hides the registration entry and `POST /api/auth/register`
+returns `403`; existing accounts and administrator-created accounts are not
+affected. Enabling the policy permits any visitor who can reach the site to
+create a regular `user` account, never an administrator account.
+
 ### API Keys
 
 | Method | Endpoint | Description |
@@ -222,6 +237,11 @@ to the new authentication version while all other sessions are revoked.
 When a database account has the same username as the legacy `upload_auth`
 administrator, its database status is authoritative and cannot be bypassed by
 the configuration credential fallback.
+
+`GET /api/auth/session` includes `public_registration_enabled` so the public
+navigation and login page reflect the server-enforced policy. The value is a
+capability hint only; the registration endpoint rechecks the live setting for
+every request.
 
 ### Copilot Desktop Sync
 
@@ -442,7 +462,7 @@ Signature-based check: each index check computes a directory signature and compa
    - Call `POST /api/admin/index/refresh-all`
 3. **Database backup**: `POST /api/admin/backup/db` creates, privacy-scrubs, integrity-checks, and rotates a timestamped backup of `marketplace.db`.
 4. **API Key security**: Keys are shown only once at creation. Revoke and rotate if compromised. Scopes are validated against a whitelist at creation time; expiry timestamps are normalized to UTC, and expired or malformed legacy records fail closed.
-5. **Config**: Use `/admin/settings` for the six safe live retention policies. Edit `config.json` directly for protected or restart-bound values such as `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
+5. **Config**: Use `/admin/settings` for the account-access policy and six safe live retention policies. Edit `config.json` directly for protected or restart-bound values such as `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
 
 ### Large File Transfer
 

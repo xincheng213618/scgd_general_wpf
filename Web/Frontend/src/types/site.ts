@@ -311,6 +311,7 @@ export interface AuthSession {
   authenticated: boolean
   csrf_token?: string
   is_admin?: boolean
+  public_registration_enabled?: boolean
   role?: string
   username?: string
 }

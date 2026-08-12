@@ -27,6 +27,8 @@ Per-endpoint scope requirements:
   - GET  /api-keys/*/usage    → admin:*
   - GET  /settings/retention  → admin:*
   - PUT  /settings/retention  → admin:*
+  - GET  /settings/accounts   → admin:*
+  - PUT  /settings/accounts   → admin:*
   - GET  /users              → admin:*
   - POST /users              → admin:*
   - PUT  /users/*/role       → admin:*
@@ -112,6 +114,8 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "delete_profile": ["admin:*"],
     "get_retention_settings": ["admin:*"],
     "update_retention_settings": ["admin:*"],
+    "get_account_settings": ["admin:*"],
+    "update_account_settings": ["admin:*"],
 }
 
 
@@ -279,6 +283,58 @@ def publish_integrity():
 # ---------------------------------------------------------------------------
 # Operational settings
 # ---------------------------------------------------------------------------
+
+@admin_api.route("/settings/accounts", methods=["GET"])
+def get_account_settings():
+    from services.account_settings import get_account_settings as _get_account_settings
+
+    return jsonify({
+        **_get_account_settings(_get_ctx().config_getter()),
+        "restart_required": False,
+    })
+
+
+@admin_api.route("/settings/accounts", methods=["PUT"])
+def update_account_settings():
+    from services.account_settings import (
+        persist_account_settings,
+        validate_account_settings_payload,
+    )
+
+    ctx = _get_ctx()
+    try:
+        values = validate_account_settings_payload(request.get_json(silent=True))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    try:
+        result = persist_account_settings(
+            ctx.config_path_getter(),
+            ctx.config_getter(),
+            values,
+        )
+    except (OSError, ValueError):
+        return jsonify({"error": "Unable to persist account settings"}), 500
+
+    if result["changed"]:
+        name = result["changed"][0]
+        ctx.cache.write_audit(
+            actor_type=_actor_type(),
+            actor_id=_actor_id(),
+            action="account_settings_update",
+            target_type="configuration",
+            target_id=name,
+            detail=f"{name}: {str(result['before'][name]).lower()} -> {str(values[name]).lower()}",
+            ip=request.remote_addr or "",
+            user_agent=request.headers.get("User-Agent", "")[:200],
+        )
+
+    return jsonify({
+        "status": "updated" if result["changed"] else "unchanged",
+        **result["values"],
+        "changed": result["changed"],
+        "restart_required": False,
+    })
 
 @admin_api.route("/settings/retention", methods=["GET"])
 def get_retention_settings():

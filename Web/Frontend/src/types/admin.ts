@@ -445,6 +445,19 @@ export interface RetentionSettingsUpdateResponse extends RetentionSettingsRespon
   changed: Array<keyof RetentionSettingsValues>
 }
 
+export interface AccountSettingsValues {
+  public_registration_enabled: boolean
+}
+
+export interface AccountSettingsResponse extends AccountSettingsValues {
+  restart_required: boolean
+}
+
+export interface AccountSettingsUpdateResponse extends AccountSettingsResponse {
+  status: 'updated' | 'unchanged'
+  changed: Array<keyof AccountSettingsValues>
+}
+
 export type UserRole = 'admin' | 'user'
 
 export interface UserAccount {

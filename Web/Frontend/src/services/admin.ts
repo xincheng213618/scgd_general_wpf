@@ -1,4 +1,7 @@
 import type {
+  AccountSettingsResponse,
+  AccountSettingsUpdateResponse,
+  AccountSettingsValues,
   AdminStats,
   AllIndexRefreshResult,
   ApiKeyItem,
@@ -100,6 +103,14 @@ export function getRetentionSettings(signal?: AbortSignal) {
 
 export function updateRetentionSettings(values: RetentionSettingsValues) {
   return putJson<RetentionSettingsUpdateResponse>('/api/admin/settings/retention', { values })
+}
+
+export function getAccountSettings(signal?: AbortSignal) {
+  return getJson<AccountSettingsResponse>('/api/admin/settings/accounts', signal)
+}
+
+export function updateAccountSettings(values: AccountSettingsValues) {
+  return putJson<AccountSettingsUpdateResponse>('/api/admin/settings/accounts', values)
 }
 
 export function listJobs() {
