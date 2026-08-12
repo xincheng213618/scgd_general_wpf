@@ -101,7 +101,7 @@ class PackageCvxManifestValidationTests(unittest.TestCase):
         package_path = Path(self._temp_directory.name) / "company.plugin-1.0.cvxp"
         package_plugin(output_dir, plugin_root, set(), package_path, summary.plugin_id)
 
-        self.assertEqual(output_dir / "DifferentAssembly.dll", primary_dll)
+        self.assertEqual((output_dir / "DifferentAssembly.dll").resolve(), primary_dll)
         with zipfile.ZipFile(package_path) as archive:
             self.assertIn("company.plugin/manifest.json", archive.namelist())
             self.assertIn("company.plugin/DifferentAssembly.dll", archive.namelist())
