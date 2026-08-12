@@ -132,6 +132,11 @@ package hash costing about 381.9 ms moved to index refresh work.
   loader processes with no children and about 53 MB working set each; they were
   removed after exact command-line classification. The new Bundle DryRun
   returned in 7.7 seconds without adding a loader process or history record.
+- Bounded origin Git inspection and fetch with a native-process hard timeout
+  that kills descendants as well as the direct Git process. Origin deployment
+  now fetches once and fast-forwards from `origin/<branch>` locally rather than
+  reconnecting during `pull`; timeout guidance points directly to the verified
+  Git-bundle path while DryRun remains read-only.
 - Replaced the audit page's inferred row count with an exact filtered total from
   the existing `audit_log` query boundary. The production baseline had 378 rows
   while the first page claimed 40; the most common action had 347 rows and was
