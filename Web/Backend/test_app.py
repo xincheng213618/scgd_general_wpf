@@ -920,6 +920,25 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.get_json()["error"], "Authentication required")
 
+    def test_browser_publish_auth_does_not_trigger_basic_dialog(self):
+        response = self.client.post(
+            "/api/packages/publish",
+            headers={
+                "Origin": "http://localhost",
+                "Sec-Fetch-Site": "same-origin",
+                "Sec-Fetch-Mode": "cors",
+            },
+            data={
+                "PluginId": "DemoPlugin",
+                "Version": "1.2.3",
+                "package": (io.BytesIO(b"pkg"), "DemoPlugin-1.2.3.cvxp"),
+            },
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertNotIn("WWW-Authenticate", response.headers)
+
     def test_legacy_upload_requires_auth(self):
         response = self.client.put(
             "/upload/ColorVision/Plugins/DemoPlugin/DemoPlugin-1.0.0.cvxp",

@@ -453,10 +453,14 @@ try {
             'test_copilot_config_api',
             'test_spectrum_api',
             'test_csrf_protection',
+            'test_browser_auth',
             'test_contracts.AuthContracts.test_session_csrf_token_rotates_across_authentication_boundaries',
             'test_contracts.AuthContracts.test_cross_origin_auth_write_is_rejected_before_login',
             'test_contracts.AuthContracts.test_same_origin_session_admin_write_requires_csrf_token',
-            'test_transfer_files.TransferRouteTests.test_browser_session_transfer_write_requires_csrf_token'
+            'test_transfer_files.TransferRouteTests.test_browser_session_transfer_write_requires_csrf_token',
+            'test_transfer_files.TransferRouteTests.test_browser_transfer_auth_avoids_basic_challenge_and_redirects_navigation',
+            'test_app.MarketplaceAppTests.test_browser_publish_auth_does_not_trigger_basic_dialog',
+            'test_cvws_web.CVWSUploadPageTests.test_browser_publish_auth_does_not_trigger_basic_dialog'
         ) -WorkingDirectory $backendPath
     }
 

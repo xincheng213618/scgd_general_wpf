@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from flask import Blueprint, jsonify, request, send_file
+from routes.browser_auth import apply_basic_auth_challenge
 from routes.request_context import current_request_context, set_authenticated_request_context
 
 from services.spectrum_release import (
@@ -45,8 +46,7 @@ def _json_error(message: str, status: int):
 def _json_auth_error():
     response = jsonify({"error": "Authentication required", "status": 401})
     response.status_code = 401
-    response.headers["WWW-Authenticate"] = 'Basic realm="ColorVision Marketplace"'
-    return response
+    return apply_basic_auth_challenge(response, "ColorVision Marketplace")
 
 
 def _has_publish_auth() -> bool:

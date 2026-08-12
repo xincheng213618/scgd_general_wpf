@@ -17,6 +17,7 @@ from flask import Blueprint, jsonify, redirect, request, send_from_directory
 from werkzeug.wsgi import get_input_stream
 
 from db_cache import CacheManager
+from routes.browser_auth import apply_basic_auth_challenge
 from routes.request_context import current_request_context
 from transfer_files import (
     TRANSFER_FILE_SCOPE,
@@ -61,7 +62,7 @@ def _json_error(message: str, status_code: int):
     response = jsonify({"error": message, "status": status_code})
     response.status_code = status_code
     if status_code == 401:
-        response.headers["WWW-Authenticate"] = 'Basic realm="ColorVision Transfer"'
+        apply_basic_auth_challenge(response, "ColorVision Transfer")
     return response
 
 

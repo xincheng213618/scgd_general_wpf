@@ -108,6 +108,30 @@ class TransferRouteTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 401)
+        self.assertIn("Basic", response.headers.get("WWW-Authenticate", ""))
+
+    def test_browser_transfer_auth_avoids_basic_challenge_and_redirects_navigation(self):
+        fetch_headers = {
+            "Origin": "http://localhost",
+            "Sec-Fetch-Site": "same-origin",
+            "Sec-Fetch-Mode": "cors",
+        }
+
+        transfer_api = self.client.get("/api/transfer/files", headers=fetch_headers)
+        browse_api = self.client.get("/api/site/browse/Transfer", headers=fetch_headers)
+        download = self.client.get(
+            "/download/Transfer/missing.bin",
+            headers={"Sec-Fetch-Site": "same-origin", "Sec-Fetch-Mode": "navigate"},
+            follow_redirects=False,
+        )
+
+        self.assertEqual(transfer_api.status_code, 401)
+        self.assertNotIn("WWW-Authenticate", transfer_api.headers)
+        self.assertEqual(browse_api.status_code, 401)
+        self.assertNotIn("WWW-Authenticate", browse_api.headers)
+        self.assertIn(download.status_code, (302, 303))
+        self.assertIn("/login?", download.headers["Location"])
+        self.assertIn("next=%2Fdownload%2FTransfer%2Fmissing.bin", download.headers["Location"])
 
     def test_registered_user_can_use_transfer_but_not_admin(self):
         register_response = self.client.post(

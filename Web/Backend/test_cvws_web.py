@@ -201,6 +201,21 @@ class CVWSUploadPageTests(unittest.TestCase):
         resp = client.post("/api/tool/cvwindowsservice/publish")
         self.assertEqual(resp.status_code, 401)
         self.assertEqual(resp.get_json()["error"], "Authentication required")
+        self.assertIn("Basic", resp.headers.get("WWW-Authenticate", ""))
+
+    def test_browser_publish_auth_does_not_trigger_basic_dialog(self):
+        client = marketplace_app.app.test_client()
+        resp = client.post(
+            "/api/tool/cvwindowsservice/publish",
+            headers={
+                "Origin": "http://localhost",
+                "Sec-Fetch-Site": "same-origin",
+                "Sec-Fetch-Mode": "cors",
+            },
+        )
+
+        self.assertEqual(resp.status_code, 401)
+        self.assertNotIn("WWW-Authenticate", resp.headers)
 
     def test_publish_context_api_returns_cvwindowsservice_state(self):
         resp = self.client.get("/api/tool/cvwindowsservice/context")

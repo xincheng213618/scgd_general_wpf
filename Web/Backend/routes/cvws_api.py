@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from flask import Blueprint, jsonify, request, send_from_directory
+from routes.browser_auth import apply_basic_auth_challenge
 from routes.request_context import current_request_context, set_authenticated_request_context
 
 cvws_api = Blueprint("cvws_api", __name__)
@@ -91,8 +92,7 @@ def _get_cvwindowsservice_releases_payload():
 def _json_auth_error():
     response = jsonify({"error": "Authentication required", "status": 401})
     response.status_code = 401
-    response.headers["WWW-Authenticate"] = 'Basic realm="ColorVision Marketplace"'
-    return response
+    return apply_basic_auth_challenge(response, "ColorVision Marketplace")
 
 
 def _has_cvws_publish_auth() -> bool:

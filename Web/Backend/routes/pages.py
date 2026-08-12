@@ -8,8 +8,10 @@ JSON payloads and file-serving endpoints that those pages need.
 from __future__ import annotations
 
 import hashlib
+from urllib.parse import urlencode
 
-from flask import Blueprint, abort, current_app, jsonify, request, send_from_directory
+from flask import Blueprint, abort, current_app, jsonify, redirect, request, send_from_directory
+from routes.browser_auth import apply_basic_auth_challenge, is_browser_navigation
 from routes.request_context import current_request_context, set_authenticated_request_context
 
 pages = Blueprint("pages", __name__)
@@ -67,9 +69,11 @@ def _has_admin_storage_auth() -> bool:
 
 
 def _transfer_auth_challenge():
+    if is_browser_navigation():
+        next_path = request.full_path.rstrip("?")
+        return redirect(f"/login?{urlencode({'next': next_path})}")
     response = current_app.response_class("Authentication required", status=401)
-    response.headers["WWW-Authenticate"] = 'Basic realm="ColorVision Transfer"'
-    return response
+    return apply_basic_auth_challenge(response, "ColorVision Transfer")
 
 
 def _require_transfer_auth_for_storage_path(relative_path: str):
