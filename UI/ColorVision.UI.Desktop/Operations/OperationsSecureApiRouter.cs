@@ -26,19 +26,37 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly OperationsWorkStore _workStore;
         private readonly OperationsAlertService _alerts;
         private readonly Func<object> _snapshotProvider;
+        private readonly Func<string, OperationsActionResult>? _actionExecutor;
+        private readonly IOperationsServiceHealthProvider _serviceHealthProvider;
+        private readonly OperationsDiagnosticBundleService? _diagnosticBundles;
+        private readonly OperationsWindowSnapshotService? _windowSnapshots;
+        private readonly IOperationsRuntimePerformanceProvider _runtimePerformance;
+        private readonly IOperationsFlowRuntimeStatusProvider _flowRuntimeStatus;
 
         public OperationsSecureApiRouter(
             OperationsPairingService pairing,
             OperationsRequestAuthenticator authenticator,
             OperationsWorkStore workStore,
             Func<object> snapshotProvider,
-            OperationsAlertService? alerts = null)
+            OperationsAlertService? alerts = null,
+            Func<string, OperationsActionResult>? actionExecutor = null,
+            IOperationsServiceHealthProvider? serviceHealthProvider = null,
+            OperationsDiagnosticBundleService? diagnosticBundles = null,
+            OperationsWindowSnapshotService? windowSnapshots = null,
+            IOperationsRuntimePerformanceProvider? runtimePerformance = null,
+            IOperationsFlowRuntimeStatusProvider? flowRuntimeStatus = null)
         {
             _pairing = pairing;
             _authenticator = authenticator;
             _workStore = workStore;
             _snapshotProvider = snapshotProvider;
             _alerts = alerts ?? new OperationsAlertService();
+            _actionExecutor = actionExecutor;
+            _serviceHealthProvider = serviceHealthProvider ?? UnavailableOperationsServiceHealthProvider.Instance;
+            _diagnosticBundles = diagnosticBundles;
+            _windowSnapshots = windowSnapshots;
+            _runtimePerformance = runtimePerformance ?? new OperationsRuntimePerformanceService();
+            _flowRuntimeStatus = flowRuntimeStatus ?? UnavailableOperationsFlowRuntimeStatusProvider.Instance;
         }
 
         public OperationsApiResponse Handle(OperationsSecureRequest request)
@@ -67,7 +85,11 @@ namespace ColorVision.UI.Desktop.Operations
                 });
 
             if (request.Path.Equals($"{ApiPrefix}/snapshot", StringComparison.OrdinalIgnoreCase))
-                return GetOnly(request, correlationId, authentication.Device, "ops.status.read", _snapshotProvider());
+                return GetOnly(request, correlationId, authentication.Device, "ops.status.read",
+                    OperationsSafeSnapshotFactory.Create(_snapshotProvider()));
+
+            if (request.Path.StartsWith($"{ApiPrefix}/actions/window/", StringComparison.OrdinalIgnoreCase))
+                return HandleWindowAction(request, correlationId, authentication.Device);
 
             if (request.Path.Equals($"{ApiPrefix}/alerts", StringComparison.OrdinalIgnoreCase))
             {
@@ -80,11 +102,49 @@ namespace ColorVision.UI.Desktop.Operations
                 });
             }
 
+            if (request.Path.Equals($"{ApiPrefix}/diagnostics/connection", StringComparison.OrdinalIgnoreCase))
+            {
+                IReadOnlyList<OperationsAlert> alerts = _alerts.GetRecent();
+                OperationsServiceHealthReport serviceHealth = CaptureServiceHealth();
+                int pendingJobCount = _workStore.GetJobsForDevice(authentication.Device.DeviceId).Count(item => item.Status is
+                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local");
+                return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", new
+                {
+                    channel = "ready",
+                    serverUnixTimeMilliseconds = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    applicationVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "unknown",
+                    runtime = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
+                    desktop = OperationsDesktopActionService.CaptureState(),
+                    availableCapabilityCount = OperationsCapabilityCatalog.GetAll().Count(item => item.Available),
+                    alertCount = alerts.Count,
+                    pendingJobCount,
+                    serviceHealthAvailable = serviceHealth.Available,
+                    unhealthyServiceCount = serviceHealth.Services.Count(item => !item.Healthy),
+                });
+            }
+
+            if (request.Path.Equals($"{ApiPrefix}/diagnostics/recent-events", StringComparison.OrdinalIgnoreCase))
+                return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", _alerts.GetDigest());
+
+            if (request.Path.Equals($"{ApiPrefix}/services/health", StringComparison.OrdinalIgnoreCase))
+                return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", CaptureServiceHealth());
+
+            if (request.Path.Equals($"{ApiPrefix}/triage", StringComparison.OrdinalIgnoreCase))
+            {
+                int pendingJobCount = _workStore.GetJobsForDevice(authentication.Device.DeviceId).Count(item => item.Status is
+                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local");
+                OperationsTriageReport report = OperationsTriageService.Build(
+                    _alerts.GetDigest(), OperationsDesktopActionService.CaptureState(), pendingJobCount,
+                    CaptureServiceHealth());
+                return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", report);
+            }
+
             if (request.Path.Equals($"{ApiPrefix}/diagnostics/summary", StringComparison.OrdinalIgnoreCase))
             {
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", new
                 {
-                    host = Environment.MachineName,
+                    application = "ColorVision",
+                    applicationVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "unknown",
                     os = Environment.OSVersion.VersionString,
                     processArchitecture = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString(),
                     processWorkingSetBytes = Environment.WorkingSet,
@@ -93,8 +153,22 @@ namespace ColorVision.UI.Desktop.Operations
                 });
             }
 
+            if (request.Path.Equals($"{ApiPrefix}/diagnostics/performance", StringComparison.OrdinalIgnoreCase))
+                return HandleRuntimePerformance(request, correlationId, authentication.Device);
+
+            if (request.Path.Equals($"{ApiPrefix}/flow/runtime", StringComparison.OrdinalIgnoreCase))
+                return HandleFlowRuntimeStatus(request, correlationId, authentication.Device);
+
             if (request.Path.Equals($"{ApiPrefix}/jobs", StringComparison.OrdinalIgnoreCase))
                 return HandleJobs(request, correlationId, authentication.Device);
+
+            if (TryGetDiagnosticBundleJobId(request.Path, out string diagnosticBundleJobId))
+                return HandleDiagnosticBundleDownload(
+                    request, correlationId, authentication.Device, diagnosticBundleJobId);
+
+            if (TryGetWindowSnapshotJobId(request.Path, out string windowSnapshotJobId))
+                return HandleWindowSnapshotDownload(
+                    request, correlationId, authentication.Device, windowSnapshotJobId);
 
             if (request.Path.StartsWith($"{ApiPrefix}/jobs/", StringComparison.OrdinalIgnoreCase)
                 && request.Path.EndsWith("/decision", StringComparison.OrdinalIgnoreCase))
@@ -106,14 +180,128 @@ namespace ColorVision.UI.Desktop.Operations
             if (request.Path.Equals($"{ApiPrefix}/support-sessions", StringComparison.OrdinalIgnoreCase))
                 return HandleSupportSessions(request, correlationId, authentication.Device);
 
+            if (TryGetSupportMessageSessionId(request.Path, out string supportSessionId))
+                return HandleSupportMessages(request, correlationId, authentication.Device, supportSessionId);
+
             if (request.Path.Equals($"{ApiPrefix}/support-messages", StringComparison.OrdinalIgnoreCase))
                 return GetOnly(request, correlationId, authentication.Device, "ops.support.read",
-                    new { messages = _workStore.GetSupportMessages() });
+                    new
+                    {
+                        messages = _workStore.GetSupportMessagesForDevice(authentication.Device.DeviceId)
+                            .Select(OperationsSupportSummaryFactory.Create).ToArray(),
+                        privacyNotice = OperationsSupportSummaryFactory.PrivacyNotice,
+                    });
 
             if (request.Path.Equals($"{ApiPrefix}/audit", StringComparison.OrdinalIgnoreCase))
-                return GetOnly(request, correlationId, authentication.Device, "ops.audit.read", new { entries = _workStore.GetAudit() });
+            {
+                OperationsAuditSummary[] entries = _workStore.GetAudit(30)
+                    .Select(OperationsAuditSummaryFactory.Create).ToArray();
+                return GetOnly(request, correlationId, authentication.Device, "ops.audit.read", new
+                {
+                    entries,
+                    count = entries.Length,
+                    generatedAt = DateTimeOffset.UtcNow,
+                    privacyNotice = "The latest 30 audit summaries exclude actor, device, target, and correlation identifiers.",
+                });
+            }
 
             return Error(404, correlationId, "endpoint_not_found", "The requested Operations API endpoint was not found.");
+        }
+
+        private OperationsServiceHealthReport CaptureServiceHealth()
+        {
+            try
+            {
+                return _serviceHealthProvider.Capture();
+            }
+            catch
+            {
+                return OperationsServiceHealthReport.CreateUnavailable();
+            }
+        }
+
+        private OperationsApiResponse HandleRuntimePerformance(
+            OperationsSecureRequest request,
+            string correlationId,
+            OperationsPairedDevice device)
+        {
+            if (!string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return Error(405, correlationId, "method_not_allowed", "Use GET for this endpoint.", "GET");
+            if (!HasScope(device, "ops.diagnostics.read"))
+                return ScopeRequired(correlationId, "ops.diagnostics.read");
+            try
+            {
+                OperationsRuntimePerformanceSnapshot snapshot = _runtimePerformance.Capture();
+                _workStore.RecordAudit(device.DeviceId, "device", "diagnostics.performance.read",
+                    "runtime-performance", "completed", correlationId);
+                return Json(200, correlationId, snapshot);
+            }
+            catch
+            {
+                _workStore.RecordAudit(device.DeviceId, "device", "diagnostics.performance.read",
+                    "runtime-performance", "failed", correlationId);
+                return Error(503, correlationId, "performance_snapshot_unavailable",
+                    "The bounded runtime performance snapshot is currently unavailable.");
+            }
+        }
+
+        private OperationsApiResponse HandleFlowRuntimeStatus(
+            OperationsSecureRequest request,
+            string correlationId,
+            OperationsPairedDevice device)
+        {
+            if (!string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return Error(405, correlationId, "method_not_allowed", "Use GET for this endpoint.", "GET");
+            if (!HasScope(device, "ops.diagnostics.read"))
+                return ScopeRequired(correlationId, "ops.diagnostics.read");
+            try
+            {
+                OperationsFlowRuntimeStatus status = _flowRuntimeStatus.Capture();
+                _workStore.RecordAudit(device.DeviceId, "device", "flow.runtime.read",
+                    "flow-runtime", "success", correlationId);
+                return Json(200, correlationId, status);
+            }
+            catch
+            {
+                _workStore.RecordAudit(device.DeviceId, "device", "flow.runtime.read",
+                    "flow-runtime", "failed", correlationId);
+                return Error(503, correlationId, "flow_runtime_unavailable",
+                    "The aggregate flow runtime status is temporarily unavailable.");
+            }
+        }
+
+        private OperationsApiResponse HandleWindowAction(OperationsSecureRequest request, string correlationId, OperationsPairedDevice device)
+        {
+            if (!string.Equals(request.Method, "POST", StringComparison.OrdinalIgnoreCase))
+                return Error(405, correlationId, "method_not_allowed", "Use POST for desktop window actions.", "POST");
+            if (!HasScope(device, "ops.window.control"))
+                return ScopeRequired(correlationId, "ops.window.control");
+
+            string actionId = request.Path.EndsWith("/show", StringComparison.OrdinalIgnoreCase)
+                ? OperationsDesktopActionService.ShowWindowAction
+                : request.Path.EndsWith("/minimize", StringComparison.OrdinalIgnoreCase)
+                    ? OperationsDesktopActionService.MinimizeWindowAction
+                    : string.Empty;
+            if (string.IsNullOrEmpty(actionId))
+                return Error(404, correlationId, "unsupported_action", "The requested desktop window action is not supported.");
+            if (_actionExecutor == null)
+                return Error(503, correlationId, "action_provider_unavailable", "The desktop action provider is unavailable.");
+
+            try
+            {
+                OperationsActionResult result = _actionExecutor(actionId);
+                _workStore.RecordAudit(device.DeviceId, "device", "desktop.action.execute", actionId,
+                    result.Success ? "completed" : "failed", correlationId);
+                return result.Success
+                    ? Json(200, correlationId, new { result.ActionId, result.Message, completedAt = DateTimeOffset.UtcNow })
+                    : Error(409, correlationId, "action_not_completed", result.Message);
+            }
+            catch (Exception ex)
+            {
+                _workStore.RecordAudit(device.DeviceId, "device", "desktop.action.execute", actionId,
+                    "failed", correlationId);
+                return Error(500, correlationId, "action_failed", ex.Message);
+            }
         }
 
         private OperationsApiResponse HandleJobs(OperationsSecureRequest request, string correlationId, OperationsPairedDevice device)
@@ -122,8 +310,9 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 if (!HasScope(device, "ops.jobs.read"))
                     return ScopeRequired(correlationId, "ops.jobs.read");
-                IReadOnlyList<OperationsJob> jobs = _workStore.GetJobs();
-                return Json(200, correlationId, new { jobs, count = jobs.Count });
+                OperationsJobSummary[] jobs = _workStore.GetJobsForDevice(device.DeviceId)
+                    .Select(OperationsJobSummaryFactory.Create).ToArray();
+                return Json(200, correlationId, new { jobs, count = jobs.Length });
             }
             if (!string.Equals(request.Method, "POST", StringComparison.OrdinalIgnoreCase))
                 return Error(405, correlationId, "method_not_allowed", "Use GET or POST for jobs.", "GET, POST");
@@ -138,7 +327,7 @@ namespace ColorVision.UI.Desktop.Operations
                 JsonElement input = root.TryGetProperty("input", out JsonElement inputElement)
                     ? inputElement : JsonDocument.Parse("{}").RootElement;
                 OperationsJob job = _workStore.CreateJob(capabilityId, device.DeviceId, reason, input, correlationId);
-                return Json(202, correlationId, new { job });
+                return Json(202, correlationId, new { job = OperationsJobSummaryFactory.Create(job) });
             }
             catch (JsonException)
             {
@@ -160,6 +349,8 @@ namespace ColorVision.UI.Desktop.Operations
             string jobId = relative[..^"/decision".Length];
             if (jobId.Length != 32 || !jobId.All(char.IsLetterOrDigit))
                 return Error(400, correlationId, "invalid_job_id", "The job id is invalid.");
+            if (_workStore.GetJobForDevice(jobId, device.DeviceId) == null)
+                return Error(404, correlationId, "job_not_found", "The job was not found for this device.");
             try
             {
                 using JsonDocument document = JsonDocument.Parse(request.Body);
@@ -171,7 +362,7 @@ namespace ColorVision.UI.Desktop.Operations
                 OperationsJob? job = _workStore.DecideJob(jobId, device.DeviceId, approvedElement.GetBoolean(), reason, correlationId);
                 return job == null
                     ? Error(409, correlationId, "job_not_awaiting_decision", "The job is not awaiting a mobile decision.")
-                    : Json(200, correlationId, new { job });
+                    : Json(200, correlationId, new { job = OperationsJobSummaryFactory.Create(job) });
             }
             catch (JsonException)
             {
@@ -181,6 +372,102 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 return Error(400, correlationId, ex.Message, "The approval decision is invalid.");
             }
+        }
+
+        private OperationsApiResponse HandleDiagnosticBundleDownload(
+            OperationsSecureRequest request,
+            string correlationId,
+            OperationsPairedDevice device,
+            string jobId)
+        {
+            if (!string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return Error(405, correlationId, "method_not_allowed", "Use GET for diagnostic bundle downloads.", "GET");
+            if (!HasScope(device, "ops.diagnostics.bundle.read") && !HasScope(device, "ops.jobs.read"))
+                return ScopeRequired(correlationId, "ops.diagnostics.bundle.read");
+
+            OperationsJob? job = _workStore.GetJobForDevice(jobId, device.DeviceId, allowWebRelay: false);
+            if (job == null || job.CapabilityId != "ops.diagnostics.bundle.create")
+                return Error(404, correlationId, "diagnostic_bundle_not_found", "The diagnostic bundle was not found for this device.");
+            if (job.Status != "completed" || string.IsNullOrWhiteSpace(job.ResultEvidenceId))
+                return Error(409, correlationId, "diagnostic_bundle_not_ready", "The diagnostic bundle is not ready for download.");
+            if (_diagnosticBundles == null)
+                return Error(503, correlationId, "diagnostic_bundle_provider_unavailable", "Diagnostic bundle downloads are unavailable.");
+
+            OperationsDiagnosticBundleLookupStatus lookup = _diagnosticBundles.TryRead(job.ResultEvidenceId, out OperationsDiagnosticBundleResult? bundle);
+            if (lookup == OperationsDiagnosticBundleLookupStatus.Expired)
+                return Error(410, correlationId, "diagnostic_bundle_expired", "The diagnostic bundle download has expired.");
+            if (lookup == OperationsDiagnosticBundleLookupStatus.TooLarge)
+                return Error(409, correlationId, "diagnostic_bundle_too_large", "The diagnostic bundle exceeds the mobile download limit.");
+            if (lookup == OperationsDiagnosticBundleLookupStatus.UnsupportedFormat)
+                return Error(409, correlationId, "diagnostic_bundle_regeneration_required", "The diagnostic bundle uses an older format and must be regenerated.");
+            if (lookup == OperationsDiagnosticBundleLookupStatus.ReadFailed)
+                return Error(503, correlationId, "diagnostic_bundle_read_failed", "The diagnostic bundle could not be read.");
+            if (lookup != OperationsDiagnosticBundleLookupStatus.Available || bundle == null)
+                return Error(404, correlationId, "diagnostic_bundle_not_found", "The diagnostic bundle file is unavailable.");
+
+            _workStore.RecordAudit(device.DeviceId, "device", "diagnostic.bundle.download", jobId,
+                "completed", correlationId);
+            Dictionary<string, string> headers = SecurityHeaders();
+            headers["Content-Disposition"] = "attachment; filename=\"ColorVision-diagnostics.zip\"";
+            headers["X-CV-Content-SHA256"] = bundle.Sha256;
+            headers["X-CV-Bundle-Expires-At"] = bundle.ExpiresAt.ToString("O");
+            return new OperationsApiResponse
+            {
+                StatusCode = 200,
+                ContentType = "application/zip",
+                BodyBytes = bundle.Data,
+                Headers = headers,
+            };
+        }
+
+        private OperationsApiResponse HandleWindowSnapshotDownload(
+            OperationsSecureRequest request,
+            string correlationId,
+            OperationsPairedDevice device,
+            string jobId)
+        {
+            if (!string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return Error(405, correlationId, "method_not_allowed", "Use GET for window snapshot downloads.", "GET");
+            if (!HasScope(device, "ops.window.snapshot.read") && !HasScope(device, "ops.jobs.read"))
+                return ScopeRequired(correlationId, "ops.window.snapshot.read");
+
+            OperationsJob? job = _workStore.GetJobForDevice(jobId, device.DeviceId, allowWebRelay: false);
+            if (job == null || job.CapabilityId != "ops.window.snapshot.capture")
+                return Error(404, correlationId, "window_snapshot_not_found", "The window snapshot was not found for this device.");
+            if (job.Status != "completed")
+                return Error(409, correlationId, "window_snapshot_not_ready", "The window snapshot is not ready for download.");
+            if (!OperationsWindowSnapshotService.TryGetSnapshotId(job.ResultEvidenceId, out string snapshotId))
+                return Error(404, correlationId, "window_snapshot_not_found", "The one-time window snapshot is unavailable.");
+            if (_windowSnapshots == null)
+                return Error(503, correlationId, "window_snapshot_provider_unavailable", "Window snapshot downloads are unavailable.");
+
+            OperationsWindowSnapshotLookupStatus lookup = _windowSnapshots.TryTake(
+                snapshotId, out OperationsWindowSnapshotResult? snapshot);
+            if (lookup == OperationsWindowSnapshotLookupStatus.Expired)
+                return Error(410, correlationId, "window_snapshot_expired", "The window snapshot download has expired.");
+            if (lookup == OperationsWindowSnapshotLookupStatus.TooLarge)
+                return Error(409, correlationId, "window_snapshot_too_large", "The window snapshot exceeds the mobile download limit.");
+            if (lookup == OperationsWindowSnapshotLookupStatus.UnsupportedFormat)
+                return Error(409, correlationId, "window_snapshot_format_rejected", "The window snapshot format is invalid.");
+            if (lookup == OperationsWindowSnapshotLookupStatus.ReadFailed)
+                return Error(503, correlationId, "window_snapshot_read_failed", "The window snapshot could not be read.");
+            if (lookup != OperationsWindowSnapshotLookupStatus.Available || snapshot == null)
+                return Error(404, correlationId, "window_snapshot_not_found", "The one-time window snapshot is unavailable.");
+
+            _workStore.ClearJobEvidence(jobId, job.ResultEvidenceId!);
+            _workStore.RecordAudit(device.DeviceId, "device", "window.snapshot.download", jobId,
+                "completed", correlationId);
+            Dictionary<string, string> headers = SecurityHeaders();
+            headers["Content-Disposition"] = "inline; filename=\"ColorVision-window-snapshot.jpg\"";
+            headers["X-CV-Content-SHA256"] = snapshot.Sha256;
+            headers["X-CV-Snapshot-Expires-At"] = snapshot.ExpiresAt.ToString("O");
+            return new OperationsApiResponse
+            {
+                StatusCode = 200,
+                ContentType = "image/jpeg",
+                BodyBytes = snapshot.Data,
+                Headers = headers,
+            };
         }
 
         private OperationsApiResponse HandleDeploymentReceipts(OperationsSecureRequest request, string correlationId, OperationsPairedDevice device)
@@ -217,8 +504,16 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 if (!HasScope(device, "ops.support.read"))
                     return ScopeRequired(correlationId, "ops.support.read");
-                var sessions = _workStore.GetSupportSessions();
-                return Json(200, correlationId, new { sessions, count = sessions.Count });
+                OperationsSupportSessionSummary[] sessions = _workStore.GetSupportSessionsForDevice(device.DeviceId)
+                    .Select(session => OperationsSupportSummaryFactory.Create(
+                        session, _workStore.GetSupportMessagesForSession(session.SessionId).Count))
+                    .ToArray();
+                return Json(200, correlationId, new
+                {
+                    sessions,
+                    count = sessions.Length,
+                    privacyNotice = OperationsSupportSummaryFactory.PrivacyNotice,
+                });
             }
             if (!string.Equals(request.Method, "POST", StringComparison.OrdinalIgnoreCase))
                 return Error(405, correlationId, "method_not_allowed", "Use GET or POST for support sessions.", "GET, POST");
@@ -231,12 +526,116 @@ namespace ColorVision.UI.Desktop.Operations
                 int duration = root.TryGetProperty("durationMinutes", out JsonElement durationElement) && durationElement.TryGetInt32(out int value) ? value : 15;
                 OperationsSupportSession session = _workStore.RequestSupport(device.DeviceId,
                     RequiredString(root, "mode"), OptionalString(root, "reason", 200), duration, correlationId);
-                return Json(202, correlationId, new { session });
+                return Json(202, correlationId, new
+                {
+                    session = OperationsSupportSummaryFactory.Create(
+                        session, _workStore.GetSupportMessagesForSession(session.SessionId).Count),
+                    privacyNotice = OperationsSupportSummaryFactory.PrivacyNotice,
+                });
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException)
             {
                 return Error(400, correlationId, ex is InvalidOperationException ? ex.Message : "invalid_json", "The support request is invalid.");
             }
+        }
+
+        private OperationsApiResponse HandleSupportMessages(
+            OperationsSecureRequest request,
+            string correlationId,
+            OperationsPairedDevice device,
+            string sessionId)
+        {
+            OperationsSupportSession? session = _workStore.GetSupportSessionForDevice(sessionId, device.DeviceId);
+            if (session == null)
+                return Error(404, correlationId, "support_session_not_found", "The support session was not found.");
+
+            if (string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!HasScope(device, "ops.support.read"))
+                    return ScopeRequired(correlationId, "ops.support.read");
+                OperationsSupportMessageSummary[] messages = _workStore.GetSupportMessagesForSession(sessionId)
+                    .Select(OperationsSupportSummaryFactory.Create).ToArray();
+                return Json(200, correlationId, new
+                {
+                    session = OperationsSupportSummaryFactory.Create(session, messages.Length),
+                    messages,
+                    count = messages.Length,
+                    privacyNotice = OperationsSupportSummaryFactory.PrivacyNotice,
+                });
+            }
+            if (!string.Equals(request.Method, "POST", StringComparison.OrdinalIgnoreCase))
+                return Error(405, correlationId, "method_not_allowed", "Use GET or POST for support messages.", "GET, POST");
+            if (!HasScope(device, "ops.support.request"))
+                return ScopeRequired(correlationId, "ops.support.request");
+            try
+            {
+                using JsonDocument document = JsonDocument.Parse(request.Body);
+                string text = RequiredString(document.RootElement, "text").Trim();
+                if (text.Length > 500)
+                    throw new InvalidOperationException("support_message_too_long");
+                OperationsSupportMessage message = _workStore.AddDeviceSupportMessage(
+                    sessionId, device.DeviceId, text, correlationId);
+                return Json(201, correlationId, new
+                {
+                    message = OperationsSupportSummaryFactory.Create(message),
+                    session = OperationsSupportSummaryFactory.Create(
+                        session, _workStore.GetSupportMessagesForSession(sessionId).Count),
+                });
+            }
+            catch (JsonException)
+            {
+                return Error(400, correlationId, "invalid_json", "The support message body is not valid JSON.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                int statusCode = ex.Message == "support_session_not_active" ? 409 : 400;
+                return Error(statusCode, correlationId, ex.Message, "The support message was not accepted.");
+            }
+        }
+
+        private static bool TryGetSupportMessageSessionId(string path, out string sessionId)
+        {
+            string prefix = $"{ApiPrefix}/support-sessions/";
+            const string suffix = "/messages";
+            sessionId = string.Empty;
+            if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                || !path.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                return false;
+            string value = path[prefix.Length..^suffix.Length];
+            if (value.Length is < 1 or > 64 || value.Any(ch => !char.IsLetterOrDigit(ch) && ch is not ('-' or '_')))
+                return false;
+            sessionId = value;
+            return true;
+        }
+
+        private static bool TryGetDiagnosticBundleJobId(string path, out string jobId)
+        {
+            string prefix = $"{ApiPrefix}/jobs/";
+            const string suffix = "/diagnostic-bundle";
+            jobId = string.Empty;
+            if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                || !path.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                return false;
+            string value = path[prefix.Length..^suffix.Length];
+            if (value.Length != 32 || value.Any(ch => !char.IsAsciiHexDigit(ch)))
+                return false;
+            jobId = value;
+            return true;
+        }
+
+        private static bool TryGetWindowSnapshotJobId(string path, out string jobId)
+        {
+            string prefix = $"{ApiPrefix}/jobs/";
+            const string suffix = "/window-snapshot";
+            jobId = string.Empty;
+            if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                || !path.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                return false;
+            string value = path[prefix.Length..^suffix.Length];
+            if (value.Length != 32 || value.Any(ch => !char.IsAsciiHexDigit(ch)))
+                return false;
+            jobId = value;
+            return true;
         }
 
         private OperationsApiResponse HandlePairingClaim(OperationsSecureRequest request, string correlationId)

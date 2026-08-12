@@ -8,6 +8,8 @@ namespace ColorVision.UI.Desktop.Operations
 
         public string Body { get; init; } = string.Empty;
 
+        public byte[]? BodyBytes { get; init; }
+
         public IReadOnlyDictionary<string, string> Headers { get; init; } = new Dictionary<string, string>();
     }
 }

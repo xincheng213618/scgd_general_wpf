@@ -93,7 +93,8 @@ namespace ColorVision.UI.Desktop.Operations
 
         private async Task SendHeartbeatAsync(CancellationToken cancellationToken)
         {
-            object snapshot = _snapshotProvider?.Invoke() ?? new { };
+            OperationsSafeSnapshot snapshot = OperationsSafeSnapshotFactory.Create(
+                _snapshotProvider?.Invoke() ?? new { });
             object body = new
             {
                 displayName = Environment.MachineName,
@@ -156,9 +157,18 @@ namespace ColorVision.UI.Desktop.Operations
                     }
                     else
                     {
-                        OperationsSupportMessage message = _workStore.AddSupportMessage(sessionId, "web-relay", text, taskId);
-                        status = "completed";
-                        evidence = new { messageId = message.MessageId };
+                        try
+                        {
+                            OperationsSupportMessage message = _workStore.AddSupportMessage(sessionId, "web-relay", text, taskId);
+                            status = "completed";
+                            evidence = new { messageId = message.MessageId };
+                        }
+                        catch (InvalidOperationException ex) when (ex.Message is
+                            "support_session_not_found" or "support_session_not_active" or "invalid_support_message")
+                        {
+                            status = "rejected";
+                            evidence = new { error = ex.Message };
+                        }
                     }
                 }
 
@@ -176,20 +186,24 @@ namespace ColorVision.UI.Desktop.Operations
 
         private async Task RelaySupportEventsAsync(CancellationToken cancellationToken)
         {
-            foreach (OperationsSupportSession session in _workStore.GetSupportSessions()
-                .Where(item => item.ExpiresAt > DateTimeOffset.UtcNow))
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            foreach (OperationsSupportSession session in _workStore.GetSupportSessions().Take(100))
             {
-                string? eventType = session.Status switch
+                string effectiveStatus = session.ExpiresAt <= now
+                    && session.Status is "awaiting_local_consent" or "active"
+                    ? "expired"
+                    : session.Status;
+                string? eventType = effectiveStatus switch
                 {
                     "awaiting_local_consent" => "session.requested",
                     "active" => "session.active",
-                    "rejected_local" => "session.closed",
+                    "rejected_local" or "expired" => "session.closed",
                     _ => null,
                 };
                 if (eventType == null)
                     continue;
                 string eventKey = $"support:{session.SessionId}:{eventType}";
-                if (!_processedTasks.Add(eventKey))
+                if (_processedTasks.Contains(eventKey))
                     continue;
                 using HttpResponseMessage response = await PostJsonAsync(
                     $"/api/ops/v1/hosts/{Uri.EscapeDataString(_hostId)}/support-events",
@@ -197,9 +211,30 @@ namespace ColorVision.UI.Desktop.Operations
                     {
                         sessionId = session.SessionId,
                         eventType,
-                        payload = new { session.Mode, session.Reason, session.Status, session.ExpiresAt },
+                        payload = new { session.Mode, session.Reason, status = effectiveStatus, session.ExpiresAt },
                     }, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
+                _processedTasks.Add(eventKey);
+
+                if (effectiveStatus != "active")
+                    continue;
+                foreach (OperationsSupportMessage message in _workStore.GetSupportMessagesForSession(session.SessionId)
+                    .Where(item => item.Source == "device"))
+                {
+                    string messageKey = $"support-message:{message.MessageId}";
+                    if (_processedTasks.Contains(messageKey))
+                        continue;
+                    using HttpResponseMessage messageResponse = await PostJsonAsync(
+                        $"/api/ops/v1/hosts/{Uri.EscapeDataString(_hostId)}/support-events",
+                        new
+                        {
+                            sessionId = session.SessionId,
+                            eventType = "message",
+                            payload = new { direction = "from-device", message.Text, message.CreatedAt },
+                        }, cancellationToken).ConfigureAwait(false);
+                    messageResponse.EnsureSuccessStatusCode();
+                    _processedTasks.Add(messageKey);
+                }
             }
         }
 

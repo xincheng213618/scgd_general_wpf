@@ -65,8 +65,10 @@ namespace ColorVision.Engine.FlowProcessing
         public FlowControl FlowControl => _isStandalone ? _standaloneFlowControl! : FlowEngineManager.FlowControl;
         public CVCommonNode? LastNode => _executionSession.LastNode;
         public bool IsStandalone => _isStandalone;
-        private bool IsFlowExecutionActive =>
+        public bool IsExecutionActive =>
             FlowControl.IsFlowRun || _executionSession.IsRunActive;
+        public bool IsCurrentBatchActive =>
+            _executionSession.IsCurrentBatchActive;
 
         /// <summary>
         /// The graph engine has stopped. Post-processing may still be running.
@@ -180,7 +182,7 @@ namespace ColorVision.Engine.FlowProcessing
             VersionHistoryCommand = new RelayCommand(
                 _ => ShowVersionHistory(),
                 _ => GetActiveFlowParam()?.FlowKey != null
-                    && !IsFlowExecutionActive);
+                    && !IsExecutionActive);
             IncidentManagementCommand =
                 new RelayCommand(_ => ShowIncidentManagement());
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
@@ -467,7 +469,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         private void ShowVersionHistory()
         {
-            if (IsFlowExecutionActive)
+            if (IsExecutionActive)
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
@@ -491,7 +493,7 @@ namespace ColorVision.Engine.FlowProcessing
                 flowParam,
                 Refresh,
                 _documentLoadedContentHash,
-                () => IsFlowExecutionActive)
+                () => IsExecutionActive)
             {
                 Owner = Application.Current.GetActiveWindow()
             }.Show();

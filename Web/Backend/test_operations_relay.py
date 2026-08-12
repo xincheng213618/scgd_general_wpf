@@ -111,6 +111,19 @@ class OperationsRelayTests(unittest.TestCase):
         self.assertEqual(command.get_json()["error"], "task_payload_not_allowed")
 
     def test_support_events_are_bounded_and_do_not_accept_commands(self):
+        self.assertEqual(self.heartbeat().status_code, 200)
+        requested = self.client.post(
+            "/api/ops/v1/hosts/host-1/support-events",
+            headers=self.auth(self.relay_key),
+            json={"sessionId": "session-1", "eventType": "session.requested", "payload": {}},
+        )
+        self.assertEqual(requested.status_code, 201)
+        active = self.client.post(
+            "/api/ops/v1/hosts/host-1/support-events",
+            headers=self.auth(self.relay_key),
+            json={"sessionId": "session-1", "eventType": "session.active", "payload": {}},
+        )
+        self.assertEqual(active.status_code, 201)
         allowed = self.client.post(
             "/api/ops/v1/hosts/host-1/support-events",
             headers=self.auth(self.relay_key),
@@ -124,6 +137,51 @@ class OperationsRelayTests(unittest.TestCase):
             json={"sessionId": "session-1", "eventType": "message", "payload": {"shell": "cmd.exe"}},
         )
         self.assertEqual(denied.status_code, 400)
+
+    def test_support_message_tasks_require_an_active_session_and_exact_payload(self):
+        self.assertEqual(self.heartbeat().status_code, 200)
+        inactive = self.client.post(
+            "/api/ops/v1/tasks",
+            headers=self.auth(self.operator_key),
+            json={
+                "hostId": "host-1",
+                "capabilityId": "ops.support.message",
+                "payload": {"sessionId": "session-2", "text": "Check cable"},
+            },
+        )
+        self.assertEqual(inactive.status_code, 409)
+        self.assertEqual(inactive.get_json()["error"], "support_session_not_active")
+
+        for event_type in ("session.requested", "session.active"):
+            response = self.client.post(
+                "/api/ops/v1/hosts/host-1/support-events",
+                headers=self.auth(self.relay_key),
+                json={"sessionId": "session-2", "eventType": event_type, "payload": {}},
+            )
+            self.assertEqual(response.status_code, 201)
+
+        accepted = self.client.post(
+            "/api/ops/v1/tasks",
+            headers=self.auth(self.operator_key),
+            json={
+                "hostId": "host-1",
+                "capabilityId": "ops.support.message",
+                "payload": {"sessionId": "session-2", "text": "Check cable"},
+            },
+        )
+        self.assertEqual(accepted.status_code, 202)
+
+        extra_field = self.client.post(
+            "/api/ops/v1/tasks",
+            headers=self.auth(self.operator_key),
+            json={
+                "hostId": "host-1",
+                "capabilityId": "ops.support.message",
+                "payload": {"sessionId": "session-2", "text": "Check cable", "path": "C:/private"},
+            },
+        )
+        self.assertEqual(extra_field.status_code, 400)
+        self.assertEqual(extra_field.get_json()["error"], "invalid_support_message_payload")
 
 
 if __name__ == "__main__":

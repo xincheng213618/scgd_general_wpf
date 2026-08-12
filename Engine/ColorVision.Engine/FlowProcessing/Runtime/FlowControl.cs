@@ -141,6 +141,7 @@ namespace ColorVision.Engine.FlowProcessing
             }
             if (!string.IsNullOrWhiteSpace(serialNumber))
             {
+                FlowRuntimeActivityRegistry.MarkCompleted(this, FlowStatus.Canceled, 0);
                 if (string.IsNullOrWhiteSpace(startNodeName))
                     flowEngine.StopNode(serialNumber);
                 else
@@ -203,10 +204,12 @@ namespace ColorVision.Engine.FlowProcessing
                 List<MQTTServiceInfo> tol = serviceTokensProvider();
                 flowEngine.Finished -= FinishedAsync;
                 flowEngine.Finished += FinishedAsync;
+                FlowRuntimeActivityRegistry.MarkStarted(this, sn);
                 try
                 {
                     if (!flowEngine.TryStartNode(startNodeName, sn, tol))
                     {
+                        FlowRuntimeActivityRegistry.MarkCompleted(this, FlowStatus.Failed, 0);
                         flowEngine.Finished -= FinishedAsync;
                         SerialNumber = null;
                         activeStartNodeName = null;
@@ -217,6 +220,7 @@ namespace ColorVision.Engine.FlowProcessing
                 }
                 catch
                 {
+                    FlowRuntimeActivityRegistry.MarkCompleted(this, FlowStatus.Failed, 0);
                     flowEngine.Finished -= FinishedAsync;
                     SerialNumber = null;
                     activeStartNodeName = null;
@@ -254,6 +258,7 @@ namespace ColorVision.Engine.FlowProcessing
                     Params = e.Message
                 };
                 completedHandlers = FlowCompleted;
+                FlowRuntimeActivityRegistry.MarkCompleted(this, data.FlowStatus, data.TotalTime);
             }
             try
             {

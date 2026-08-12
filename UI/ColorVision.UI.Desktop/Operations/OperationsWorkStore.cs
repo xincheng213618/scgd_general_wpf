@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ColorVision.UI.Desktop.Operations
 {
@@ -18,8 +19,27 @@ namespace ColorVision.UI.Desktop.Operations
         public string? DecisionReason { get; set; }
         public DateTimeOffset? DecisionAt { get; set; }
         public DateTimeOffset? LocalCoSignedAt { get; set; }
+        public DateTimeOffset? CompletedAt { get; set; }
         public string? ResultEvidenceId { get; set; }
         public string? SourceTaskId { get; set; }
+
+        [JsonIgnore]
+        public string DisplayTitle => CapabilityId switch
+        {
+            "ops.window.snapshot.capture" => "采集 ColorVision 主窗口安全快照",
+            "ops.diagnostics.bundle.create" => "生成脱敏安全诊断包",
+            "ops.service.restart" => "重启白名单 MQTT 服务",
+            _ => "现场运维作业",
+        };
+
+        [JsonIgnore]
+        public string LocalCoSignNotice => CapabilityId switch
+        {
+            "ops.window.snapshot.capture" => "只捕获 ColorVision 主窗口；可能包含当前可见的检测数据。JPEG 仅保留 5 分钟，由申请设备读取一次后删除。",
+            "ops.diagnostics.bundle.create" => "生成不含图像、凭据、用户名、机器名、网络地址或原始日志的脱敏 ZIP。",
+            "ops.service.restart" => "仅允许通过 ServiceHost 重启白名单中的 Mosquitto 服务。",
+            _ => "请确认作业来源和固定能力范围。",
+        };
     }
 
     public sealed class OperationsDeploymentReceipt
@@ -103,9 +123,26 @@ namespace ColorVision.UI.Desktop.Operations
                 return _state.Jobs.OrderByDescending(item => item.CreatedAt).Select(Clone).ToList();
         }
 
+        public IReadOnlyList<OperationsJob> GetJobsForDevice(string deviceId)
+        {
+            lock (_syncRoot)
+                return _state.Jobs.Where(item => CanAccessJob(item, deviceId, allowWebRelay: true))
+                    .OrderByDescending(item => item.CreatedAt).Select(Clone).ToList();
+        }
+
+        public OperationsJob? GetJobForDevice(string jobId, string deviceId, bool allowWebRelay = true)
+        {
+            lock (_syncRoot)
+            {
+                OperationsJob? job = _state.Jobs.FirstOrDefault(item =>
+                    item.JobId == jobId && CanAccessJob(item, deviceId, allowWebRelay));
+                return job == null ? null : Clone(job);
+            }
+        }
+
         public OperationsJob CreateJob(string capabilityId, string deviceId, string reason, JsonElement input, string correlationId)
         {
-            if (capabilityId is not ("ops.diagnostics.bundle.create" or "ops.service.restart"))
+            if (capabilityId is not ("ops.diagnostics.bundle.create" or "ops.window.snapshot.capture" or "ops.service.restart"))
                 throw new InvalidOperationException("capability_not_allowed_for_remote_job");
             OperationsJob job = new()
             {
@@ -141,7 +178,8 @@ namespace ColorVision.UI.Desktop.Operations
             lock (_syncRoot)
             {
                 OperationsJob? job = _state.Jobs.FirstOrDefault(item => item.JobId == jobId);
-                if (job == null || job.Status != "awaiting_mobile_approval")
+                if (job == null || !CanAccessJob(job, deviceId, allowWebRelay: true)
+                    || job.Status != "awaiting_mobile_approval")
                     return null;
                 job.DecisionByDeviceId = deviceId;
                 job.DecisionReason = reason;
@@ -188,12 +226,31 @@ namespace ColorVision.UI.Desktop.Operations
                 job.Status = success ? "completed" : "failed";
                 job.ResultEvidenceId = evidenceId;
                 job.UpdatedAt = DateTimeOffset.UtcNow;
+                job.CompletedAt = job.UpdatedAt;
                 AuditNoLock("operations-broker", "system", "job.complete", jobId, job.Status, Guid.NewGuid().ToString("N"));
                 SaveNoLock();
                 result = Clone(job);
             }
             Changed?.Invoke(this, EventArgs.Empty);
             return result;
+        }
+
+        public bool ClearJobEvidence(string jobId, string expectedEvidenceId)
+        {
+            lock (_syncRoot)
+            {
+                OperationsJob? job = _state.Jobs.FirstOrDefault(item => item.JobId == jobId);
+                if (job == null || job.Status != "completed"
+                    || !string.Equals(job.ResultEvidenceId, expectedEvidenceId, StringComparison.Ordinal))
+                    return false;
+                job.ResultEvidenceId = null;
+                job.UpdatedAt = DateTimeOffset.UtcNow;
+                AuditNoLock("operations-api", "system", "job.evidence.consume", jobId,
+                    "completed", Guid.NewGuid().ToString("N"));
+                SaveNoLock();
+            }
+            Changed?.Invoke(this, EventArgs.Empty);
+            return true;
         }
 
         public IReadOnlyList<OperationsDeploymentReceipt> GetDeploymentReceipts()
@@ -232,16 +289,73 @@ namespace ColorVision.UI.Desktop.Operations
         public IReadOnlyList<OperationsSupportSession> GetSupportSessions()
         {
             lock (_syncRoot)
-                return _state.SupportSessions.OrderByDescending(item => item.CreatedAt).ToList();
+                return _state.SupportSessions.OrderByDescending(item => item.CreatedAt).Select(Clone).ToList();
         }
 
         public IReadOnlyList<OperationsSupportMessage> GetSupportMessages(int count = 100)
         {
             lock (_syncRoot)
-                return _state.SupportMessages.OrderByDescending(item => item.CreatedAt).Take(Math.Clamp(count, 1, 200)).ToList();
+                return _state.SupportMessages.OrderByDescending(item => item.CreatedAt).Take(Math.Clamp(count, 1, 200))
+                    .Select(Clone).ToList();
+        }
+
+        public IReadOnlyList<OperationsSupportSession> GetSupportSessionsForDevice(string deviceId)
+        {
+            lock (_syncRoot)
+                return _state.SupportSessions.Where(item => item.RequestedByDeviceId == deviceId)
+                    .OrderByDescending(item => item.CreatedAt).Select(Clone).ToList();
+        }
+
+        public OperationsSupportSession? GetSupportSessionForDevice(string sessionId, string deviceId)
+        {
+            lock (_syncRoot)
+            {
+                OperationsSupportSession? session = _state.SupportSessions.FirstOrDefault(item =>
+                    item.SessionId == sessionId && item.RequestedByDeviceId == deviceId);
+                return session == null ? null : Clone(session);
+            }
+        }
+
+        public IReadOnlyList<OperationsSupportMessage> GetSupportMessagesForSession(string sessionId, int count = 100)
+        {
+            lock (_syncRoot)
+                return _state.SupportMessages.Where(item => item.SessionId == sessionId)
+                    .OrderByDescending(item => item.CreatedAt).Take(Math.Clamp(count, 1, 200))
+                    .OrderBy(item => item.CreatedAt).Select(Clone).ToList();
+        }
+
+        public IReadOnlyList<OperationsSupportMessage> GetSupportMessagesForDevice(string deviceId, int count = 100)
+        {
+            lock (_syncRoot)
+            {
+                HashSet<string> ownedSessions = _state.SupportSessions
+                    .Where(item => item.RequestedByDeviceId == deviceId)
+                    .Select(item => item.SessionId).ToHashSet(StringComparer.Ordinal);
+                return _state.SupportMessages.Where(item => ownedSessions.Contains(item.SessionId))
+                    .OrderByDescending(item => item.CreatedAt).Take(Math.Clamp(count, 1, 200))
+                    .OrderBy(item => item.CreatedAt).Select(Clone).ToList();
+            }
         }
 
         public OperationsSupportMessage AddSupportMessage(string sessionId, string source, string text, string correlationId)
+        {
+            if (source != "web-relay")
+                throw new InvalidOperationException("invalid_support_message_source");
+            return AddSupportMessageCore(sessionId, source, text, correlationId, deviceId: null);
+        }
+
+        public OperationsSupportMessage AddDeviceSupportMessage(
+            string sessionId,
+            string deviceId,
+            string text,
+            string correlationId) => AddSupportMessageCore(sessionId, "device", text, correlationId, deviceId);
+
+        private OperationsSupportMessage AddSupportMessageCore(
+            string sessionId,
+            string source,
+            string text,
+            string correlationId,
+            string? deviceId)
         {
             string boundedText = (text ?? string.Empty).Trim();
             if (boundedText.Length is < 1 or > 2000)
@@ -261,16 +375,23 @@ namespace ColorVision.UI.Desktop.Operations
                 {
                     OperationsSupportMessage? existing = _state.SupportMessages.FirstOrDefault(item => item.SourceTaskId == correlationId);
                     if (existing != null)
-                        return existing;
+                        return Clone(existing);
                 }
+                OperationsSupportSession? session = _state.SupportSessions.FirstOrDefault(item => item.SessionId == sessionId);
+                if (session == null || deviceId != null && session.RequestedByDeviceId != deviceId)
+                    throw new InvalidOperationException("support_session_not_found");
+                if (session.Status != "active" || session.ExpiresAt <= DateTimeOffset.UtcNow)
+                    throw new InvalidOperationException("support_session_not_active");
                 _state.SupportMessages.Add(message);
                 if (_state.SupportMessages.Count > 1000)
                     _state.SupportMessages.RemoveRange(0, _state.SupportMessages.Count - 1000);
-                AuditNoLock(source, "support-relay", "support.message.receive", message.MessageId, "received", correlationId);
+                AuditNoLock(deviceId ?? source, deviceId == null ? "support-relay" : "device",
+                    deviceId == null ? "support.message.receive" : "support.message.send",
+                    sessionId, "accepted", correlationId);
                 SaveNoLock();
             }
             Changed?.Invoke(this, EventArgs.Empty);
-            return message;
+            return Clone(message);
         }
 
         public OperationsSupportSession RequestSupport(string deviceId, string mode, string reason, int durationMinutes, string correlationId)
@@ -278,23 +399,32 @@ namespace ColorVision.UI.Desktop.Operations
             if (mode is not ("diagnostics" or "guided"))
                 throw new InvalidOperationException("unsupported_support_mode");
             int boundedDuration = Math.Clamp(durationMinutes, 5, 30);
-            OperationsSupportSession session = new()
-            {
-                SessionId = Guid.NewGuid().ToString("N"),
-                RequestedByDeviceId = deviceId,
-                Mode = mode,
-                Reason = reason,
-                CreatedAt = DateTimeOffset.UtcNow,
-                ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(boundedDuration),
-            };
+            OperationsSupportSession session;
             lock (_syncRoot)
             {
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                OperationsSupportSession? existing = _state.SupportSessions.FirstOrDefault(item =>
+                    item.RequestedByDeviceId == deviceId
+                    && item.ExpiresAt > now
+                    && item.Status is "awaiting_local_consent" or "active");
+                if (existing != null)
+                    return Clone(existing);
+
+                session = new OperationsSupportSession
+                {
+                    SessionId = Guid.NewGuid().ToString("N"),
+                    RequestedByDeviceId = deviceId,
+                    Mode = mode,
+                    Reason = reason,
+                    CreatedAt = now,
+                    ExpiresAt = now.AddMinutes(boundedDuration),
+                };
                 _state.SupportSessions.Add(session);
                 AuditNoLock(deviceId, "device", "support.request", session.SessionId, "awaiting_local_consent", correlationId);
                 SaveNoLock();
             }
             Changed?.Invoke(this, EventArgs.Empty);
-            return session;
+            return Clone(session);
         }
 
         public OperationsSupportSession? LocalConsentSupport(string sessionId, bool approved)
@@ -310,7 +440,7 @@ namespace ColorVision.UI.Desktop.Operations
                 AuditNoLock(Environment.UserName, "local-user", approved ? "support.local_consent" : "support.local_reject",
                     sessionId, session.Status, Guid.NewGuid().ToString("N"));
                 SaveNoLock();
-                result = session;
+                result = Clone(session);
             }
             Changed?.Invoke(this, EventArgs.Empty);
             return result;
@@ -320,6 +450,16 @@ namespace ColorVision.UI.Desktop.Operations
         {
             lock (_syncRoot)
                 return _state.Audit.OrderByDescending(item => item.Timestamp).Take(Math.Clamp(count, 1, 500)).ToList();
+        }
+
+        public void RecordAudit(string actorId, string actorType, string action, string targetId, string outcome, string correlationId)
+        {
+            lock (_syncRoot)
+            {
+                AuditNoLock(actorId, actorType, action, targetId, outcome, correlationId);
+                SaveNoLock();
+            }
+            Changed?.Invoke(this, EventArgs.Empty);
         }
 
         private void AuditNoLock(string actorId, string actorType, string action, string targetId, string outcome, string correlationId)
@@ -368,8 +508,35 @@ namespace ColorVision.UI.Desktop.Operations
             Reason = value.Reason, Input = value.Input.Clone(), RiskLevel = value.RiskLevel, Status = value.Status,
             CreatedAt = value.CreatedAt, UpdatedAt = value.UpdatedAt, DecisionByDeviceId = value.DecisionByDeviceId,
             DecisionReason = value.DecisionReason, DecisionAt = value.DecisionAt, LocalCoSignedAt = value.LocalCoSignedAt,
+            CompletedAt = value.CompletedAt,
             ResultEvidenceId = value.ResultEvidenceId,
             SourceTaskId = value.SourceTaskId,
+        };
+
+        private static bool CanAccessJob(OperationsJob job, string deviceId, bool allowWebRelay) =>
+            job.RequestedByDeviceId == deviceId
+            || (allowWebRelay && job.RequestedByDeviceId == "web-relay");
+
+        private static OperationsSupportSession Clone(OperationsSupportSession value) => new()
+        {
+            SessionId = value.SessionId,
+            RequestedByDeviceId = value.RequestedByDeviceId,
+            Mode = value.Mode,
+            Reason = value.Reason,
+            Status = value.Status,
+            CreatedAt = value.CreatedAt,
+            ExpiresAt = value.ExpiresAt,
+            LocalConsentAt = value.LocalConsentAt,
+        };
+
+        private static OperationsSupportMessage Clone(OperationsSupportMessage value) => new()
+        {
+            MessageId = value.MessageId,
+            SessionId = value.SessionId,
+            Source = value.Source,
+            Text = value.Text,
+            SourceTaskId = value.SourceTaskId,
+            CreatedAt = value.CreatedAt,
         };
     }
 }

@@ -1,4 +1,5 @@
 using ColorVision.UI.Desktop.Operations;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Text.Json;
 
@@ -27,7 +28,15 @@ namespace ColorVision.UI.Tests
                 Assert.Equal("approved_local", local.Status);
                 OperationsJob complete = Assert.IsType<OperationsJob>(store.CompleteJob(job.JobId, true, "servicehost:req-1"));
                 Assert.Equal("completed", complete.Status);
+                Assert.NotNull(complete.CompletedAt);
                 Assert.Contains(store.GetAudit(), item => item.Action == "job.local_cosign");
+
+                OperationsJobSummary summary = OperationsJobSummaryFactory.Create(complete);
+                Assert.Equal("service-host-receipt", summary.Evidence.Kind);
+                Assert.Equal("success", summary.Evidence.Outcome);
+                Assert.Contains(summary.Timeline, item => item.Stage == "mobile_approval" && item.State == "approved");
+                Assert.Contains(summary.Timeline, item => item.Stage == "local_cosign" && item.State == "approved");
+                Assert.Contains(summary.Timeline, item => item.Stage == "execution" && item.State == "completed");
             }
             finally
             {
@@ -85,15 +94,76 @@ namespace ColorVision.UI.Tests
             try
             {
                 OperationsWorkStore firstStore = new(path);
+                OperationsSupportSession session = firstStore.RequestSupport(
+                    "phone", "guided", "help", 15, "request-1");
+                Assert.NotNull(firstStore.LocalConsentSupport(session.SessionId, true));
                 OperationsSupportMessage first = firstStore.AddSupportMessage(
-                    "session-1", "web-relay", "Check the cable", "web-task-message-1");
+                    session.SessionId, "web-relay", "Check the cable", "web-task-message-1");
 
                 OperationsWorkStore restartedStore = new(path);
                 OperationsSupportMessage repeated = restartedStore.AddSupportMessage(
-                    "session-1", "web-relay", "Check the cable", "web-task-message-1");
+                    session.SessionId, "web-relay", "Check the cable", "web-task-message-1");
 
                 Assert.Equal(first.MessageId, repeated.MessageId);
                 Assert.Single(restartedStore.GetSupportMessages());
+            }
+            finally
+            {
+                DeletePath(path);
+            }
+        }
+
+        [Fact]
+        public void SupportMessagesRequireActiveOwnedSessionAndRemainDeviceIsolated()
+        {
+            string path = NewPath();
+            try
+            {
+                OperationsWorkStore store = new(path);
+                OperationsSupportSession session = store.RequestSupport(
+                    "phone-a", "guided", "private reason", 15, "request-1");
+
+                InvalidOperationException inactive = Assert.Throws<InvalidOperationException>(() =>
+                    store.AddDeviceSupportMessage(session.SessionId, "phone-a", "hello", "message-1"));
+                Assert.Equal("support_session_not_active", inactive.Message);
+                Assert.NotNull(store.LocalConsentSupport(session.SessionId, true));
+
+                OperationsSupportMessage sent = store.AddDeviceSupportMessage(
+                    session.SessionId, "phone-a", "hello", "message-2");
+                Assert.Equal("device", sent.Source);
+                Assert.Single(store.GetSupportMessagesForDevice("phone-a"));
+                Assert.Empty(store.GetSupportMessagesForDevice("phone-b"));
+                Assert.Null(store.GetSupportSessionForDevice(session.SessionId, "phone-b"));
+
+                InvalidOperationException foreign = Assert.Throws<InvalidOperationException>(() =>
+                    store.AddDeviceSupportMessage(session.SessionId, "phone-b", "hello", "message-3"));
+                Assert.Equal("support_session_not_found", foreign.Message);
+            }
+            finally
+            {
+                DeletePath(path);
+            }
+        }
+
+        [Fact]
+        public void ConcurrentSupportRequestsReuseOneLiveSession()
+        {
+            string path = NewPath();
+            try
+            {
+                OperationsWorkStore store = new(path);
+                ConcurrentBag<string> sessionIds = [];
+
+                Parallel.For(0, 32, index =>
+                {
+                    OperationsSupportSession session = store.RequestSupport(
+                        "phone", "guided", "help", 15, $"request-{index}");
+                    sessionIds.Add(session.SessionId);
+                });
+
+                Assert.Single(sessionIds.Distinct());
+                Assert.Single(store.GetSupportSessionsForDevice("phone"));
+                Assert.Single(store.GetAudit().Where(item => item.Action == "support.request"));
             }
             finally
             {

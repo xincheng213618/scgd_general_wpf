@@ -21,12 +21,20 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public void Catalog_OnlyExposesWorkflowWritesAndKeepsPrivilegedExecutionBlocked()
+        public void Catalog_OnlyExposesBoundedWindowActionsOrWorkflowWrites()
         {
             var capabilities = OperationsCapabilityCatalog.GetAll();
 
-            Assert.All(capabilities.Where(capability => capability.Available
-                    && capability.RiskLevel != OperationsRiskLevels.ReadOnly),
+            var availableWrites = capabilities.Where(capability => capability.Available
+                && capability.RiskLevel != OperationsRiskLevels.ReadOnly).ToList();
+            Assert.All(availableWrites.Where(capability => capability.Category == "desktop-control"), capability =>
+            {
+                Assert.Contains(capability.Id, new[] { "ops.window.show", "ops.window.minimize" });
+                Assert.Equal(OperationsRiskLevels.LowRisk, capability.RiskLevel);
+                Assert.Equal("safe", capability.Idempotency);
+                Assert.Equal("ops.window.control", capability.Permission);
+            });
+            Assert.All(availableWrites.Where(capability => capability.Category != "desktop-control"),
                 capability => Assert.Contains(capability.Category, new[] { "jobs", "approvals", "deployment", "support", "maintenance", "diagnostics" }));
 
             var privileged = Assert.Single(capabilities, capability => capability.RiskLevel == OperationsRiskLevels.Privileged);

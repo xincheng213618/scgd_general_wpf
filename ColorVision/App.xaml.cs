@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Copilot.Mcp;
 using ColorVision.Core;
+using ColorVision.Engine.Services.Operations;
 using ColorVision.Properties;
 using ColorVision.Recovery;
 using ColorVision.Themes;
@@ -269,6 +270,8 @@ namespace ColorVision
             Rbac.ApplicationUsageTracker.StartSession();
 
             CopilotMcpServer.Instance.ApplyConfig();
+            LanRemoteControlService.Instance.ConfigureOperationsServiceHealthProvider(new WindowsOperationsServiceHealthProvider());
+            LanRemoteControlService.Instance.ConfigureOperationsFlowRuntimeStatusProvider(new FlowOperationsRuntimeStatusProvider());
             LanRemoteControlService.Instance.ApplyConfig();
 
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");

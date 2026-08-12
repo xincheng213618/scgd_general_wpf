@@ -163,11 +163,34 @@ namespace ColorVision.UI.Desktop.LanRemote
                 return;
             }
 
+            if (job.CapabilityId == "ops.window.snapshot.capture"
+                && MessageBox.Show(Window.GetWindow(this),
+                    "将立即采集一张 ColorVision 主窗口 JPEG。\n\n"
+                    + "不会捕获整个桌面，但画面可能包含当前可见的检测或客户数据。快照只保留 5 分钟，"
+                    + "仅申请设备可读取一次，读取后电脑端立即删除。\n\n确认继续吗？",
+                    "确认主窗口安全快照", MessageBoxButton.OKCancel, MessageBoxImage.Warning)
+                    != MessageBoxResult.OK)
+                return;
+
             string evidenceId = string.Empty;
-            if (job.CapabilityId == "ops.diagnostics.bundle.create")
+            try
             {
-                OperationsDiagnosticBundleResult bundle = Service.OperationsHost.CreateDiagnosticBundle();
-                evidenceId = bundle.BundleId;
+                if (job.CapabilityId == "ops.diagnostics.bundle.create")
+                {
+                    OperationsDiagnosticBundleResult bundle = Service.OperationsHost.CreateDiagnosticBundle();
+                    evidenceId = bundle.BundleId;
+                }
+                else if (job.CapabilityId == "ops.window.snapshot.capture")
+                {
+                    OperationsWindowSnapshotResult snapshot = Service.OperationsHost.CreateWindowSnapshot();
+                    evidenceId = OperationsWindowSnapshotService.EvidencePrefix + snapshot.SnapshotId;
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusTextBlock.Text = $"证据采集失败：{ex.Message}";
+                RefreshUi();
+                return;
             }
             OperationsJob? approvedJob = Service.OperationsHost.WorkStore.LocalCoSign(job.JobId, true, evidenceId);
             if (approvedJob?.CapabilityId == "ops.service.restart")
@@ -195,6 +218,10 @@ namespace ColorVision.UI.Desktop.LanRemote
                 }
             }
             else if (approvedJob?.CapabilityId == "ops.diagnostics.bundle.create")
+            {
+                Service.OperationsHost.WorkStore.CompleteJob(job.JobId, true, evidenceId);
+            }
+            else if (approvedJob?.CapabilityId == "ops.window.snapshot.capture")
             {
                 Service.OperationsHost.WorkStore.CompleteJob(job.JobId, true, evidenceId);
             }

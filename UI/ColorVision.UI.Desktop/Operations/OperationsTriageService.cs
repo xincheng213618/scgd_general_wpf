@@ -1,0 +1,290 @@
+namespace ColorVision.UI.Desktop.Operations
+{
+    public static class OperationsTriageActionIds
+    {
+        public const string ViewRecentEvents = "triage.events.view";
+        public const string ShowMainWindow = "triage.window.show";
+        public const string ReviewJobs = "triage.jobs.review";
+        public const string RequestMqttRestart = "triage.mqtt.restart.request";
+    }
+
+    public sealed class OperationsTriageAction
+    {
+        public string ActionId { get; init; } = string.Empty;
+        public string Title { get; init; } = string.Empty;
+        public string Kind { get; init; } = string.Empty;
+        public string RiskLevel { get; init; } = OperationsRiskLevels.ReadOnly;
+        public string Description { get; init; } = string.Empty;
+        public bool RequiresConfirmation { get; init; }
+        public bool RequiresLocalCoSign { get; init; }
+    }
+
+    public sealed class OperationsTriageFinding
+    {
+        public string FindingId { get; init; } = string.Empty;
+        public string Severity { get; init; } = string.Empty;
+        public string Category { get; init; } = string.Empty;
+        public string Title { get; init; } = string.Empty;
+        public string Summary { get; init; } = string.Empty;
+        public int EvidenceCount { get; init; }
+        public DateTimeOffset? LatestAt { get; init; }
+        public IReadOnlyList<OperationsTriageAction> Actions { get; init; } = [];
+    }
+
+    public sealed class OperationsTriageReport
+    {
+        public string State { get; init; } = "healthy";
+        public string Summary { get; init; } = string.Empty;
+        public int CriticalCount { get; init; }
+        public int ErrorCount { get; init; }
+        public int WarningCount { get; init; }
+        public int PendingJobCount { get; init; }
+        public DateTimeOffset GeneratedAt { get; init; } = DateTimeOffset.UtcNow;
+        public IReadOnlyList<OperationsTriageFinding> Findings { get; init; } = [];
+        public string SafetyNotice { get; init; } =
+            "建议仅引用有界脱敏摘要。手机端只能调用固定白名单动作；特权维护仍需电脑端本机共签。";
+    }
+
+    public static class OperationsTriageService
+    {
+        public static OperationsTriageReport Build(
+            OperationsLogDigest digest,
+            OperationsDesktopState desktop,
+            int pendingJobCount,
+            OperationsServiceHealthReport? serviceHealth = null)
+        {
+            int boundedPendingJobCount = Math.Max(0, pendingJobCount);
+            List<OperationsTriageFinding> findings = [];
+
+            if (serviceHealth != null)
+                AddServiceHealthFindings(serviceHealth, findings);
+            AddLogFindings(digest, findings);
+            AddMessageServiceFinding(digest, serviceHealth, findings);
+            AddDesktopFinding(desktop, findings);
+            AddPendingJobFinding(boundedPendingJobCount, findings);
+
+            string state = digest.CriticalCount > 0
+                ? "critical"
+                : findings.Count > 0 ? "attention" : "healthy";
+            return new OperationsTriageReport
+            {
+                State = state,
+                Summary = findings.Count == 0
+                    ? "当前有界证据中没有需要处理的项目。"
+                    : $"发现 {findings.Count} 项需要关注的状态；请先查看证据，再选择建议动作。",
+                CriticalCount = digest.CriticalCount,
+                ErrorCount = digest.ErrorCount,
+                WarningCount = digest.WarningCount,
+                PendingJobCount = boundedPendingJobCount,
+                Findings = findings,
+            };
+        }
+
+        private static void AddServiceHealthFindings(
+            OperationsServiceHealthReport serviceHealth,
+            List<OperationsTriageFinding> findings)
+        {
+            if (!serviceHealth.Available)
+            {
+                findings.Add(new OperationsTriageFinding
+                {
+                    FindingId = "service-health-unavailable",
+                    Severity = "info",
+                    Category = "services",
+                    Title = "白名单服务状态暂不可用",
+                    Summary = "当前无法取得 Windows 服务控制管理器状态；不会仅凭日志自动建议维护动作。",
+                });
+                return;
+            }
+
+            foreach (OperationsServiceHealthItem service in serviceHealth.Services.Where(item => !item.Healthy))
+            {
+                List<OperationsTriageAction> actions = [];
+                if (service.ServiceId == OperationsServiceIds.MqttBroker
+                    && service.MaintenanceSupported
+                    && service.Status is "stopped" or "paused")
+                {
+                    actions.Add(RestartMqttAction());
+                }
+                findings.Add(new OperationsTriageFinding
+                {
+                    FindingId = $"service-health-{service.ServiceId}",
+                    Severity = service.Status is "stopped" or "paused" ? "error" : "warning",
+                    Category = "services",
+                    Title = $"{service.Title}状态异常",
+                    Summary = ServiceHealthSummary(service),
+                    EvidenceCount = 1,
+                    LatestAt = service.ObservedAt,
+                    Actions = actions,
+                });
+            }
+        }
+
+        private static void AddLogFindings(OperationsLogDigest digest, List<OperationsTriageFinding> findings)
+        {
+            if (!digest.Available)
+            {
+                findings.Add(new OperationsTriageFinding
+                {
+                    FindingId = "application-log-unavailable",
+                    Severity = "info",
+                    Category = "diagnostics",
+                    Title = "近期日志摘要暂不可用",
+                    Summary = "电脑端当前没有可读取的应用日志摘要。其他运行状态仍可继续检查。",
+                });
+                return;
+            }
+
+            int abnormalCount = digest.CriticalCount + digest.ErrorCount + digest.WarningCount;
+            if (abnormalCount == 0)
+                return;
+
+            string severity = digest.CriticalCount > 0 ? "critical" : digest.ErrorCount > 0 ? "error" : "warning";
+            findings.Add(new OperationsTriageFinding
+            {
+                FindingId = "recent-abnormal-events",
+                Severity = severity,
+                Category = "diagnostics",
+                Title = digest.CriticalCount > 0 ? "近期存在严重事件" : digest.ErrorCount > 0 ? "近期存在错误事件" : "近期存在警告事件",
+                Summary = $"有界日志摘要包含严重 {digest.CriticalCount} 条、错误 {digest.ErrorCount} 条、警告 {digest.WarningCount} 条。",
+                EvidenceCount = abnormalCount,
+                LatestAt = Latest(digest.RecentEvents),
+                Actions = [ViewEventsAction()],
+            });
+        }
+
+        private static void AddMessageServiceFinding(
+            OperationsLogDigest digest,
+            OperationsServiceHealthReport? serviceHealth,
+            List<OperationsTriageFinding> findings)
+        {
+            OperationsAlert[] events = digest.RecentEvents
+                .Where(item => item.Source == "消息服务" && item.Severity is ("warning" or "error" or "critical"))
+                .ToArray();
+            if (events.Length == 0)
+                return;
+
+            OperationsServiceHealthItem? mqtt = serviceHealth?.Services.FirstOrDefault(
+                item => item.ServiceId == OperationsServiceIds.MqttBroker);
+            List<OperationsTriageAction> actions = [ViewEventsAction()];
+            string currentState = mqtt == null || !serviceHealth!.Available
+                ? "当前服务状态未知，不建议仅凭日志重启。"
+                : mqtt.Status == "running"
+                    ? "Windows 服务控制管理器显示 MQTT 当前正在运行，请先查看事件确认是否仍在发生。"
+                    : mqtt.Status == "not_applicable"
+                        ? "当前使用的不是本机 MQTT 服务，请查看事件并在电脑端复核连接配置。"
+                        : "Windows 服务控制管理器已确认服务异常，可在复核证据后申请维护。";
+            findings.Add(new OperationsTriageFinding
+            {
+                FindingId = "message-service-events",
+                Severity = events.Any(item => item.Severity is "error" or "critical") ? "error" : "warning",
+                Category = "message-service",
+                Title = "消息服务需要复核",
+                Summary = $"近期脱敏摘要中有 {events.Length} 条消息服务异常事件。{currentState}",
+                EvidenceCount = events.Length,
+                LatestAt = Latest(events),
+                Actions = actions,
+            });
+        }
+
+        private static void AddDesktopFinding(OperationsDesktopState desktop, List<OperationsTriageFinding> findings)
+        {
+            if (!desktop.DispatcherAvailable || !desktop.Exists)
+            {
+                findings.Add(new OperationsTriageFinding
+                {
+                    FindingId = "desktop-window-unavailable",
+                    Severity = "warning",
+                    Category = "desktop",
+                    Title = "电脑主窗口不可用",
+                    Summary = "当前无法取得 ColorVision 主窗口；请在电脑端确认应用启动状态。",
+                });
+                return;
+            }
+
+            if (desktop.IsVisible && !string.Equals(desktop.WindowState, "Minimized", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            findings.Add(new OperationsTriageFinding
+            {
+                FindingId = "desktop-window-hidden",
+                Severity = "info",
+                Category = "desktop",
+                Title = "电脑主窗口当前未显示",
+                Summary = "可执行已审计的低风险动作，将现有主窗口恢复并置于前台。",
+                EvidenceCount = 1,
+                Actions =
+                [
+                    new OperationsTriageAction
+                    {
+                        ActionId = OperationsTriageActionIds.ShowMainWindow,
+                        Title = "显示电脑主窗口",
+                        Kind = "immediate-audited",
+                        RiskLevel = OperationsRiskLevels.LowRisk,
+                        Description = "只显示现有 ColorVision 主窗口，不启动程序或执行任意命令。",
+                    },
+                ],
+            });
+        }
+
+        private static void AddPendingJobFinding(int pendingJobCount, List<OperationsTriageFinding> findings)
+        {
+            if (pendingJobCount == 0)
+                return;
+
+            findings.Add(new OperationsTriageFinding
+            {
+                FindingId = "pending-operations-jobs",
+                Severity = "info",
+                Category = "approvals",
+                Title = "存在待处理运维作业",
+                Summary = $"当前有 {pendingJobCount} 个作业等待手机决定、电脑端本机共签或执行结果。",
+                EvidenceCount = pendingJobCount,
+                Actions =
+                [
+                    new OperationsTriageAction
+                    {
+                        ActionId = OperationsTriageActionIds.ReviewJobs,
+                        Title = "查看作业与审批",
+                        Kind = "client-navigation",
+                        RiskLevel = OperationsRiskLevels.ReadOnly,
+                        Description = "只打开手机端作业列表；批准操作仍需单独确认。",
+                    },
+                ],
+            });
+        }
+
+        private static OperationsTriageAction ViewEventsAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.ViewRecentEvents,
+            Title = "查看近期脱敏事件",
+            Kind = "client-navigation",
+            RiskLevel = OperationsRiskLevels.ReadOnly,
+            Description = "打开有界脱敏日志摘要，不读取原始日志。",
+        };
+
+        private static OperationsTriageAction RestartMqttAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.RequestMqttRestart,
+            Title = "复核后申请重启 MQTT",
+            Kind = "approval-workflow",
+            RiskLevel = OperationsRiskLevels.Privileged,
+            Description = "仅创建已知 MQTT 服务的维护作业；手机确认后仍需电脑端本机共签。",
+            RequiresConfirmation = true,
+            RequiresLocalCoSign = true,
+        };
+
+        private static string ServiceHealthSummary(OperationsServiceHealthItem service) => service.Status switch
+        {
+            "stopped" => "Windows 服务控制管理器确认该服务已停止。",
+            "paused" => "Windows 服务控制管理器确认该服务已暂停。",
+            "not_installed" => "Windows 服务控制管理器未找到该固定白名单服务。",
+            "start_pending" or "stop_pending" or "continue_pending" or "pause_pending" =>
+                "该服务正在切换状态，请稍后刷新后再决定是否处理。",
+            _ => "当前无法确认该固定白名单服务的运行状态，请在电脑端复核。",
+        };
+
+        private static DateTimeOffset? Latest(IEnumerable<OperationsAlert> events) =>
+            events.Select(item => (DateTimeOffset?)item.OccurredAt).Max();
+    }
+}
