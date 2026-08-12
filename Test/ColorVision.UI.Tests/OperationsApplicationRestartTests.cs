@@ -124,7 +124,7 @@ namespace ColorVision.UI.Tests
 
                 Assert.True(result >= 0, $"GetApplicationRestartSettings failed with HRESULT 0x{result:X8}.");
                 Assert.Equal(WindowsApplicationRestartRegistration.RecoveryRestartArgument, commandLine.ToString());
-                Assert.Equal(0x3u, flags);
+                Assert.Equal(0xCu, flags);
                 OperationsApplicationRecoveryStatus status =
                     WindowsApplicationRestartRegistration.CaptureStatus();
                 Assert.True(status.Supported);

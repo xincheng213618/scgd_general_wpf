@@ -533,10 +533,10 @@ namespace ColorVision
                 (step, exception) => log.Error($"Application exit cleanup step '{step}' failed.", exception);
             ApplicationExitCleanup.Run(
                 [
-                    new("Windows automatic application restart", () =>
+                    new("Windows application restart registration", () =>
                     {
                         if (!WindowsApplicationRestartRegistration.TryUnregisterForCleanExit())
-                            log.Warn("Preserved Windows automatic restart registration because a fatal failure was observed or unregistering failed.");
+                            log.Warn("Preserved Windows application restart registration because a fatal failure was observed or unregistering failed.");
                     }),
                     new("application exit cleanup start log", () => log.Info("Application exit cleanup started.")),
                     new("application usage session", Rbac.ApplicationUsageTracker.StopSession),

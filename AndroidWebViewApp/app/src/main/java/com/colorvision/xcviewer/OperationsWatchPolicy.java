@@ -44,4 +44,8 @@ final class OperationsWatchPolicy {
         }
         return "在线 · 当前状态稳定";
     }
+
+    static String successfulCheckNotification(String status, boolean reconnected) {
+        return (reconnected ? "连接已恢复 · " : "") + status + " · 刚刚检查";
+    }
 }

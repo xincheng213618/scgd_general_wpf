@@ -1890,15 +1890,15 @@ public class OperationsActivity extends Activity {
             }
         }
 
-        text.append("\n\n应用自动恢复：");
+        text.append("\n\n应用异常恢复：");
         if (applicationRecovery == null || !applicationRecovery.optBoolean("supported", false)) {
             text.append("当前系统不支持");
         } else if (!applicationRecovery.optBoolean("registered", false)) {
             text.append("未就绪");
         } else if (applicationRecovery.optBoolean("restartedAfterFailure", false)) {
-            text.append("已就绪 · 本次启动由 Windows 在异常退出后恢复");
+            text.append("已登记 · 本次启动由 Windows 在异常退出后恢复");
         } else {
-            text.append("已就绪 · 仅恢复当前 ColorVision 的异常退出或卡死");
+            text.append("已登记 · Windows 可在当前 ColorVision 异常退出或卡死后提供恢复");
         }
 
         int alertCount = alerts == null ? 0 : alerts.optInt("count", 0);

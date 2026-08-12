@@ -162,7 +162,7 @@ public final class OperationsWatchService extends Service {
             Log.i(LOG_TAG, "operations_watch_online");
         }
         lastCheckOnline = true;
-        updateNotification((reconnected ? "连接已恢复 · " : "") + status + " · 刚刚检查", true);
+        updateNotification(OperationsWatchPolicy.successfulCheckNotification(status, reconnected), true);
         scheduleNext(OperationsWatchPolicy.HEALTHY_CHECK_MILLISECONDS);
     }
 

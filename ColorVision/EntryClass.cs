@@ -35,7 +35,7 @@ namespace ColorVision
             ArgumentParser.GetInstance().CommandLineArgs = args;
             log.Debug("args" + string.Join(", ", args));
             if (!automaticRecoveryRegistered)
-                log.Warn("Windows automatic application failure recovery could not be registered.");
+                log.Warn("Windows application failure restart could not be registered.");
             else if (WindowsApplicationRestartRegistration.RestartedAfterFailure)
                 log.Warn("ColorVision was restarted by Windows after an earlier application failure.");
 

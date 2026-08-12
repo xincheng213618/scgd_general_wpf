@@ -35,4 +35,14 @@ public class OperationsWatchPolicyTest {
         assertEquals("在线 · 当前状态稳定",
                 OperationsWatchPolicy.healthyStatus("ready", false, 0, 0, 0, false));
     }
+
+    @Test
+    public void successfulCheckDistinguishesInitialConnectionFromRecovery() {
+        assertEquals("在线 · 当前状态稳定 · 刚刚检查",
+                OperationsWatchPolicy.successfulCheckNotification(
+                        "在线 · 当前状态稳定", false));
+        assertEquals("连接已恢复 · 在线 · 当前状态稳定 · 刚刚检查",
+                OperationsWatchPolicy.successfulCheckNotification(
+                        "在线 · 当前状态稳定", true));
+    }
 }

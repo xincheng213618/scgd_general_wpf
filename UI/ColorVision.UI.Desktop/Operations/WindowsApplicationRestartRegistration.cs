@@ -22,8 +22,8 @@ namespace ColorVision.UI.Desktop.Operations
     {
         public const string RecoveryRestartArgument = "--operations-failure-recovery";
 
-        private const uint RestartNoPatch = 0x1;
-        private const uint RestartNoReboot = 0x2;
+        private const uint RestartNoPatch = 0x4;
+        private const uint RestartNoReboot = 0x8;
         private const uint RecoveryRestartFlags = RestartNoPatch | RestartNoReboot;
         private static int _registered;
         private static int _restartedAfterFailure;
@@ -82,12 +82,15 @@ namespace ColorVision.UI.Desktop.Operations
         {
             if (Volatile.Read(ref _fatalFailureObserved) != 0)
                 return false;
-            if (Interlocked.Exchange(ref _registered, 0) == 0)
+            if (Volatile.Read(ref _registered) == 0)
                 return true;
 
             try
             {
-                return UnregisterApplicationRestart() >= 0;
+                bool unregistered = UnregisterApplicationRestart() >= 0;
+                if (unregistered)
+                    Volatile.Write(ref _registered, 0);
+                return unregistered;
             }
             catch (DllNotFoundException)
             {
