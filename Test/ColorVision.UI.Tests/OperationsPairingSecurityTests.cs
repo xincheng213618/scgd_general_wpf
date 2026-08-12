@@ -874,6 +874,54 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void FailureEvidenceIsSignedScopedBoundedAndAudited()
+        {
+            string devicePath = CreateStorePath();
+            string workPath = Path.Combine(Path.GetDirectoryName(devicePath)!, "work.json");
+            try
+            {
+                using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+                OperationsDeviceRegistry registry = new(devicePath);
+                registry.Approve("device-failures", "Phone", Convert.ToBase64String(key.ExportSubjectPublicKeyInfo()),
+                    OperationsPairingService.InitialScopes);
+                OperationsWorkStore workStore = new(workPath);
+                OperationsSecureApiRouter router = new(new OperationsPairingService(registry),
+                    new OperationsRequestAuthenticator(registry), workStore, () => new { healthy = true },
+                    failureEvidenceProvider: new FixedFailureEvidenceProvider());
+                const string path = "/ops/v1/diagnostics/failures";
+
+                OperationsApiResponse response = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "GET",
+                    Path = path,
+                    Headers = Sign(key, "device-failures", "GET", path, []),
+                });
+
+                Assert.Equal(200, response.StatusCode);
+                using JsonDocument document = JsonDocument.Parse(response.Body);
+                JsonElement data = document.RootElement.GetProperty("data");
+                string[] expectedProperties =
+                [
+                    "available", "crashCount", "dumpCount", "dumpFolderAvailable", "dumpScanLimited",
+                    "eventLogAvailable", "eventScanLimited", "failureEventCount", "hangCount", "hasEvidence",
+                    "latestDumpAt", "latestEventAt", "latestEvidenceAt", "managedRuntimeFailureCount", "observedAt",
+                    "privacyNotice", "windowDays", "windowStartedAt", "windowsErrorReportCount",
+                ];
+                Assert.Equal(expectedProperties.OrderBy(item => item, StringComparer.Ordinal),
+                    data.EnumerateObject().Select(item => item.Name).OrderBy(item => item, StringComparer.Ordinal));
+                Assert.Equal(1, data.GetProperty("crashCount").GetInt32());
+                Assert.Equal(1, data.GetProperty("dumpCount").GetInt32());
+                OperationsAuditEntry audit = Assert.Single(workStore.GetAudit());
+                Assert.Equal("diagnostics.failure-evidence.read", audit.Action);
+                Assert.Equal("completed", audit.Outcome);
+            }
+            finally
+            {
+                DeleteStore(devicePath);
+            }
+        }
+
+        [Fact]
         public void ApplicationRestartRejectsRemoteParametersAndSchedulesOnceAfterMobileApproval()
         {
             string devicePath = CreateStorePath();
@@ -1075,6 +1123,20 @@ namespace ColorVision.UI.Tests
             public OperationsMessageChannelHealthSnapshot Capture() =>
                 OperationsMessageChannelHealthSnapshotFactory.Create(
                     new OperationsMessageChannelObservation(true, true, 6, 6, DateTimeOffset.UtcNow));
+        }
+
+        private sealed class FixedFailureEvidenceProvider : IOperationsFailureEvidenceProvider
+        {
+            public OperationsFailureEvidenceSnapshot Capture()
+            {
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                return OperationsFailureEvidenceSnapshotFactory.Create(
+                    [new(now.AddMinutes(-2), OperationsFailureKinds.ApplicationCrash)],
+                    [new(now.AddMinutes(-1))],
+                    eventLogAvailable: true,
+                    dumpFolderAvailable: true,
+                    observedAt: now);
+            }
         }
 
         private sealed class FixedRuntimePerformanceProvider : IOperationsRuntimePerformanceProvider

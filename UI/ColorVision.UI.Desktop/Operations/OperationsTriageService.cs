@@ -8,6 +8,7 @@ namespace ColorVision.UI.Desktop.Operations
         public const string RequestMqttRestart = "triage.mqtt.restart.request";
         public const string ViewDeviceHealth = "triage.devices.view";
         public const string ViewMessageChannelHealth = "triage.messaging.view";
+        public const string ViewFailureEvidence = "triage.failures.view";
     }
 
     public sealed class OperationsTriageAction
@@ -56,6 +57,10 @@ namespace ColorVision.UI.Desktop.Operations
         public bool MessageChannelSubscriptionReady { get; init; }
         public int MessageChannelRegisteredSubscriptionCount { get; init; }
         public int MessageChannelActiveSubscriptionCount { get; init; }
+        public int FailureEventCount { get; init; }
+        public int CrashCount { get; init; }
+        public int HangCount { get; init; }
+        public int FailureDumpCount { get; init; }
         public DateTimeOffset GeneratedAt { get; init; } = DateTimeOffset.UtcNow;
         public IReadOnlyList<OperationsTriageFinding> Findings { get; init; } = [];
         public string SafetyNotice { get; init; } =
@@ -70,7 +75,8 @@ namespace ColorVision.UI.Desktop.Operations
             int pendingJobCount,
             OperationsServiceHealthReport? serviceHealth = null,
             OperationsDeviceHealthSnapshot? deviceHealth = null,
-            OperationsMessageChannelHealthSnapshot? messageChannel = null)
+            OperationsMessageChannelHealthSnapshot? messageChannel = null,
+            OperationsFailureEvidenceSnapshot? failureEvidence = null)
         {
             int boundedPendingJobCount = Math.Max(0, pendingJobCount);
             List<OperationsTriageFinding> findings = [];
@@ -81,6 +87,8 @@ namespace ColorVision.UI.Desktop.Operations
                 AddMessageChannelFinding(messageChannel, findings);
             if (deviceHealth != null)
                 AddDeviceHealthFindings(deviceHealth, messageChannel, findings);
+            if (failureEvidence != null)
+                AddFailureEvidenceFinding(failureEvidence, findings);
             AddLogFindings(digest, findings);
             AddMessageServiceFinding(digest, serviceHealth, findings);
             AddDesktopFinding(desktop, findings);
@@ -114,8 +122,54 @@ namespace ColorVision.UI.Desktop.Operations
                 MessageChannelSubscriptionReady = messageChannel?.SubscriptionReady == true,
                 MessageChannelRegisteredSubscriptionCount = Math.Max(0, messageChannel?.RegisteredSubscriptionCount ?? 0),
                 MessageChannelActiveSubscriptionCount = Math.Max(0, messageChannel?.ActiveSubscriptionCount ?? 0),
+                FailureEventCount = Math.Max(0, failureEvidence?.FailureEventCount ?? 0),
+                CrashCount = Math.Max(0, failureEvidence?.CrashCount ?? 0),
+                HangCount = Math.Max(0, failureEvidence?.HangCount ?? 0),
+                FailureDumpCount = Math.Max(0, failureEvidence?.DumpCount ?? 0),
                 Findings = findings,
             };
+        }
+
+        private static void AddFailureEvidenceFinding(
+            OperationsFailureEvidenceSnapshot failureEvidence,
+            List<OperationsTriageFinding> findings)
+        {
+            if (!failureEvidence.Available || !failureEvidence.HasEvidence)
+                return;
+
+            List<string> evidence = [];
+            AddEvidence(evidence, "应用崩溃", failureEvidence.CrashCount);
+            AddEvidence(evidence, "应用卡死", failureEvidence.HangCount);
+            AddEvidence(evidence, ".NET 运行时失败", failureEvidence.ManagedRuntimeFailureCount);
+            AddEvidence(evidence, "Windows 错误报告", failureEvidence.WindowsErrorReportCount);
+            AddEvidence(evidence, "本机转储", failureEvidence.DumpCount, "个");
+            findings.Add(new OperationsTriageFinding
+            {
+                FindingId = "recent-failure-evidence",
+                Severity = failureEvidence.CrashCount > 0 || failureEvidence.HangCount > 0 ? "error" : "warning",
+                Category = "failure-evidence",
+                Title = "最近存在崩溃或卡死线索",
+                Summary = $"最近 {failureEvidence.WindowDays} 天发现{string.Join("、", evidence)}。这些是聚合线索，可能包含同一次故障的重复记录；请结合发生时间在电脑端继续定位。",
+                EvidenceCount = Math.Min(999, failureEvidence.FailureEventCount + failureEvidence.DumpCount),
+                LatestAt = failureEvidence.LatestEvidenceAt,
+                Actions =
+                [
+                    new OperationsTriageAction
+                    {
+                        ActionId = OperationsTriageActionIds.ViewFailureEvidence,
+                        Title = "查看崩溃与卡死线索",
+                        Kind = "client-navigation",
+                        RiskLevel = OperationsRiskLevels.ReadOnly,
+                        Description = "只查看最近七天固定类别的计数与聚合时间，不返回事件正文、文件名、路径或转储内容。",
+                    },
+                ],
+            });
+        }
+
+        private static void AddEvidence(List<string> evidence, string title, int count, string unit = "条")
+        {
+            if (count > 0)
+                evidence.Add($"{title} {count} {unit}");
         }
 
         private static void AddDeviceHealthFindings(

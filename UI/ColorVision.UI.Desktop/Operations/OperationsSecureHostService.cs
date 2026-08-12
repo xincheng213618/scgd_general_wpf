@@ -23,6 +23,7 @@ namespace ColorVision.UI.Desktop.Operations
         private IOperationsServiceHealthProvider _serviceHealthProvider = UnavailableOperationsServiceHealthProvider.Instance;
         private IOperationsDeviceHealthProvider _deviceHealthProvider = UnavailableOperationsDeviceHealthProvider.Instance;
         private IOperationsMessageChannelHealthProvider _messageChannelHealthProvider = UnavailableOperationsMessageChannelHealthProvider.Instance;
+        private IOperationsFailureEvidenceProvider _failureEvidenceProvider = UnavailableOperationsFailureEvidenceProvider.Instance;
         private IOperationsFlowRuntimeStatusProvider _flowRuntimeStatusProvider = UnavailableOperationsFlowRuntimeStatusProvider.Instance;
         private IOperationsFlowRuntimeController _flowRuntimeController = UnavailableOperationsFlowRuntimeController.Instance;
         private IOperationsMqttRestartController _mqttRestartController = UnavailableOperationsMqttRestartController.Instance;
@@ -128,6 +129,17 @@ namespace ColorVision.UI.Desktop.Operations
             }
         }
 
+        public void ConfigureFailureEvidenceProvider(IOperationsFailureEvidenceProvider provider)
+        {
+            ArgumentNullException.ThrowIfNull(provider);
+            lock (_syncRoot)
+            {
+                if (IsRunning)
+                    throw new InvalidOperationException("Configure the Operations failure-evidence provider before starting the secure host.");
+                _failureEvidenceProvider = provider;
+            }
+        }
+
         public void ConfigureApplicationRestartController(IOperationsApplicationRestartController controller)
         {
             ArgumentNullException.ThrowIfNull(controller);
@@ -157,8 +169,9 @@ namespace ColorVision.UI.Desktop.Operations
                         flowRuntimeController: _flowRuntimeController,
                         mqttRestartController: _mqttRestartController,
                         applicationRestartController: _applicationRestartController,
-                        deviceHealthProvider: _deviceHealthProvider,
-                        messageChannelHealthProvider: _messageChannelHealthProvider);
+                         deviceHealthProvider: _deviceHealthProvider,
+                         messageChannelHealthProvider: _messageChannelHealthProvider,
+                         failureEvidenceProvider: _failureEvidenceProvider);
                     _snapshotProvider = snapshotProvider;
                     _listener = new TcpListener(IPAddress.Any, port);
                     _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);

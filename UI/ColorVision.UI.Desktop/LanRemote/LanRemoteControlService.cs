@@ -62,6 +62,9 @@ namespace ColorVision.UI.Desktop.LanRemote
         public void ConfigureOperationsMessageChannelHealthProvider(IOperationsMessageChannelHealthProvider provider) =>
             _operationsHost.ConfigureMessageChannelHealthProvider(provider);
 
+        public void ConfigureOperationsFailureEvidenceProvider(IOperationsFailureEvidenceProvider provider) =>
+            _operationsHost.ConfigureFailureEvidenceProvider(provider);
+
         public void ConfigureOperationsMqttRestartController(IOperationsMqttRestartController controller) =>
             _operationsHost.ConfigureMqttRestartController(controller);
 

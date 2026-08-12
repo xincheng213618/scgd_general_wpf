@@ -240,7 +240,7 @@ public class OperationsActivity extends Activity {
                 pairingClient.submitClaim(payload, deviceName.trim());
                 runOnUiThread(() -> {
                     state.setText("已提交安全证明，请在电脑端批准这台设备");
-                    details.setText("设备：" + deviceName + "\n权限：状态、告警、消息通道与设备运行状态汇总、诊断摘要、主窗口控制、受控窗口取证与当前检测取消\n配对码：一次性，短时有效");
+                    details.setText("设备：" + deviceName + "\n权限：状态、告警、崩溃与卡死线索、消息通道与设备运行状态汇总、诊断摘要、主窗口控制、受控窗口取证与当前检测取消\n配对码：一次性，短时有效");
                 });
                 pollPairingApproval(payload, pairingClient);
             } catch (Exception ex) {
@@ -345,7 +345,7 @@ public class OperationsActivity extends Activity {
                 capabilityButton("当前告警", "/ops/v1/alerts"));
         addDashboardActionRow(
                 capabilityButton("近期事件", "/ops/v1/diagnostics/recent-events"),
-                capabilityButton("诊断摘要", "/ops/v1/diagnostics/summary"));
+                capabilityButton("崩溃与卡死", "/ops/v1/diagnostics/failures"));
 
         addDashboardSection("取证与支持");
         addDashboardActionRow(
@@ -632,6 +632,10 @@ public class OperationsActivity extends Activity {
             case "triage.messaging.view":
                 button.setText("查看消息通道健康");
                 button.setOnClickListener(v -> loadCapability("/ops/v1/messaging/health"));
+                return button;
+            case "triage.failures.view":
+                button.setText("查看崩溃与卡死线索");
+                button.setOnClickListener(v -> loadCapability("/ops/v1/diagnostics/failures"));
                 return button;
             default:
                 return null;
@@ -2018,6 +2022,9 @@ public class OperationsActivity extends Activity {
         if ("/ops/v1/diagnostics/summary".equals(path)) {
             return formatDiagnosticSummary(payload);
         }
+        if ("/ops/v1/diagnostics/failures".equals(path)) {
+            return formatFailureEvidence(payload);
+        }
         if ("/ops/v1/diagnostics/performance".equals(path)) {
             return formatPerformanceSnapshot(payload);
         }
@@ -2082,6 +2089,9 @@ public class OperationsActivity extends Activity {
         }
         if ("/ops/v1/diagnostics/summary".equals(path)) {
             return "安全诊断摘要已刷新";
+        }
+        if ("/ops/v1/diagnostics/failures".equals(path)) {
+            return "崩溃与卡死线索已刷新";
         }
         if ("/ops/v1/diagnostics/performance".equals(path)) {
             return "进程性能快照已刷新";
@@ -2153,6 +2163,7 @@ public class OperationsActivity extends Activity {
             case "job.evidence.consume": return "读取一次性作业证据";
             case "desktop.action.execute": return "执行主窗口控制";
             case "diagnostics.performance.read": return "读取进程性能快照";
+            case "diagnostics.failure-evidence.read": return "读取崩溃与卡死线索";
             case "flow.runtime.read": return "读取当前检测状态";
             case "monitor.read": return "持续观察运行状态";
             case "messaging.health.read": return "读取消息通道健康";
@@ -2780,6 +2791,44 @@ public class OperationsActivity extends Activity {
         }
         text.append("\n生成时间：").append(shortTime(payload.optString("generatedAt", "")))
                 .append("\n\n摘要不包含机器名、用户名、设备 ID、证书指纹或网络地址。");
+        return text.toString();
+    }
+
+    private String formatFailureEvidence(JSONObject payload) {
+        int windowDays = payload.optInt("windowDays", 7);
+        int failureEventCount = payload.optInt("failureEventCount", 0);
+        int crashCount = payload.optInt("crashCount", 0);
+        int hangCount = payload.optInt("hangCount", 0);
+        int runtimeCount = payload.optInt("managedRuntimeFailureCount", 0);
+        int werCount = payload.optInt("windowsErrorReportCount", 0);
+        int dumpCount = payload.optInt("dumpCount", 0);
+        StringBuilder text = new StringBuilder();
+        if (!payload.optBoolean("hasEvidence", false)) {
+            text.append("最近 ").append(windowDays).append(" 天未发现 ColorVision 崩溃、卡死或本机转储线索。");
+        } else {
+            text.append("最近 ").append(windowDays).append(" 天聚合线索")
+                    .append("\n失败事件：").append(failureEventCount).append(" 条")
+                    .append("\n应用崩溃：").append(crashCount).append(" 条")
+                    .append(" · 应用卡死：").append(hangCount).append(" 条")
+                    .append("\n.NET 运行时失败：").append(runtimeCount).append(" 条")
+                    .append(" · Windows 错误报告：").append(werCount).append(" 条")
+                    .append("\n本机转储：").append(dumpCount).append(" 个");
+            String latest = shortTime(payload.optString("latestEvidenceAt", ""));
+            if (!latest.isEmpty()) {
+                text.append("\n最近线索：").append(latest);
+            }
+            text.append("\n\n同一次故障可能留下多条事件和转储，因此计数不能直接当作故障次数。");
+        }
+        if (!payload.optBoolean("eventLogAvailable", false)) {
+            text.append("\n\nWindows 应用事件当前不可读取。");
+        }
+        if (!payload.optBoolean("dumpFolderAvailable", false)) {
+            text.append("\n本机转储目录当前不可读取。");
+        }
+        if (payload.optBoolean("eventScanLimited", false) || payload.optBoolean("dumpScanLimited", false)) {
+            text.append("\n扫描已达到安全上限，显示的是有界结果。");
+        }
+        text.append("\n\n只显示固定类别计数和聚合时间；不返回事件正文、文件名、路径、转储内容、进程标识、用户/机器信息或堆栈。");
         return text.toString();
     }
 

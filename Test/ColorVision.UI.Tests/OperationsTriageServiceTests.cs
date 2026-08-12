@@ -85,6 +85,36 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void FailureEvidenceAddsOnlyReadOnlyNavigationRecommendation()
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            OperationsFailureEvidenceSnapshot evidence = OperationsFailureEvidenceSnapshotFactory.Create(
+                [new(now.AddMinutes(-5), OperationsFailureKinds.ApplicationHang)],
+                [new(now.AddMinutes(-4))],
+                eventLogAvailable: true,
+                dumpFolderAvailable: true,
+                observedAt: now);
+
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                failureEvidence: evidence);
+
+            OperationsTriageFinding finding = Assert.Single(report.Findings,
+                item => item.FindingId == "recent-failure-evidence");
+            Assert.Equal("error", finding.Severity);
+            Assert.Equal(2, finding.EvidenceCount);
+            OperationsTriageAction action = Assert.Single(finding.Actions);
+            Assert.Equal(OperationsTriageActionIds.ViewFailureEvidence, action.ActionId);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, action.RiskLevel);
+            Assert.False(action.RequiresConfirmation);
+            Assert.False(action.RequiresLocalCoSign);
+            Assert.Equal(1, report.HangCount);
+            Assert.Equal(1, report.FailureDumpCount);
+        }
+
+        [Fact]
         public void ClosedDeviceIsReportedWithoutBeingMisclassifiedAsAttention()
         {
             OperationsTriageReport report = OperationsTriageService.Build(

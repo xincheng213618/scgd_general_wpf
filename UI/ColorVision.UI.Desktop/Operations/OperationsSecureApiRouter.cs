@@ -38,6 +38,7 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly IOperationsApplicationRestartController _applicationRestartController;
         private readonly IOperationsDeviceHealthProvider _deviceHealthProvider;
         private readonly IOperationsMessageChannelHealthProvider _messageChannelHealthProvider;
+        private readonly IOperationsFailureEvidenceProvider _failureEvidenceProvider;
 
         public OperationsSecureApiRouter(
             OperationsPairingService pairing,
@@ -55,7 +56,8 @@ namespace ColorVision.UI.Desktop.Operations
             IOperationsMqttRestartController? mqttRestartController = null,
             IOperationsApplicationRestartController? applicationRestartController = null,
             IOperationsDeviceHealthProvider? deviceHealthProvider = null,
-            IOperationsMessageChannelHealthProvider? messageChannelHealthProvider = null)
+            IOperationsMessageChannelHealthProvider? messageChannelHealthProvider = null,
+            IOperationsFailureEvidenceProvider? failureEvidenceProvider = null)
         {
             _pairing = pairing;
             _authenticator = authenticator;
@@ -73,6 +75,7 @@ namespace ColorVision.UI.Desktop.Operations
             _applicationRestartController = applicationRestartController ?? UnavailableOperationsApplicationRestartController.Instance;
             _deviceHealthProvider = deviceHealthProvider ?? UnavailableOperationsDeviceHealthProvider.Instance;
             _messageChannelHealthProvider = messageChannelHealthProvider ?? UnavailableOperationsMessageChannelHealthProvider.Instance;
+            _failureEvidenceProvider = failureEvidenceProvider ?? UnavailableOperationsFailureEvidenceProvider.Instance;
         }
 
         public OperationsApiResponse Handle(OperationsSecureRequest request)
@@ -157,6 +160,9 @@ namespace ColorVision.UI.Desktop.Operations
             if (request.Path.Equals($"{ApiPrefix}/diagnostics/recent-events", StringComparison.OrdinalIgnoreCase))
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", _alerts.GetDigest());
 
+            if (request.Path.Equals($"{ApiPrefix}/diagnostics/failures", StringComparison.OrdinalIgnoreCase))
+                return HandleFailureEvidence(request, correlationId, authentication.Device);
+
             if (request.Path.Equals($"{ApiPrefix}/services/health", StringComparison.OrdinalIgnoreCase))
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", CaptureServiceHealth());
 
@@ -172,7 +178,7 @@ namespace ColorVision.UI.Desktop.Operations
                     "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local" or "approved_mobile" or "executing");
                 OperationsTriageReport report = OperationsTriageService.Build(
                     _alerts.GetDigest(), OperationsDesktopActionService.CaptureState(), pendingJobCount,
-                    CaptureServiceHealth(), CaptureDeviceHealth(), CaptureMessageChannelHealth());
+                    CaptureServiceHealth(), CaptureDeviceHealth(), CaptureMessageChannelHealth(), CaptureFailureEvidence());
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", report);
             }
 
@@ -576,6 +582,37 @@ namespace ColorVision.UI.Desktop.Operations
                 result = new OperationsMqttRestartResult(false, "mqtt_restart_controller_failed");
             }
             return _workStore.CompleteJob(job.JobId, result.Success, result.EvidenceId) ?? job;
+        }
+
+        private OperationsFailureEvidenceSnapshot CaptureFailureEvidence()
+        {
+            try
+            {
+                return _failureEvidenceProvider.Capture();
+            }
+            catch
+            {
+                return OperationsFailureEvidenceSnapshot.CreateUnavailable();
+            }
+        }
+
+        private OperationsApiResponse HandleFailureEvidence(
+            OperationsSecureRequest request,
+            string correlationId,
+            OperationsPairedDevice device)
+        {
+            if (!string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return Error(405, correlationId, "method_not_allowed", "Use GET for this endpoint.", "GET");
+            if (!HasScope(device, "ops.diagnostics.read"))
+                return ScopeRequired(correlationId, "ops.diagnostics.read");
+
+            OperationsFailureEvidenceSnapshot snapshot = CaptureFailureEvidence();
+            _workStore.RecordAudit(device.DeviceId, "device", "diagnostics.failure-evidence.read",
+                "failure-evidence", snapshot.Available ? "completed" : "failed", correlationId);
+            return snapshot.Available
+                ? Json(200, correlationId, snapshot)
+                : Error(503, correlationId, "failure_evidence_unavailable",
+                    "The bounded ColorVision failure-evidence snapshot is temporarily unavailable.");
         }
 
         private OperationsJob ExecuteApplicationRestart(OperationsJob job)

@@ -47,6 +47,12 @@ namespace ColorVision.UI.Tests
             Assert.True(messageChannel.Available);
             Assert.Equal(OperationsRiskLevels.ReadOnly, messageChannel.RiskLevel);
             Assert.Equal("ops.diagnostics.read", messageChannel.Permission);
+            OperationsCapabilityDescriptor failureEvidence = Assert.Single(capabilities,
+                capability => capability.Id == "ops.diagnostics.failures.read");
+            Assert.True(failureEvidence.Available);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, failureEvidence.RiskLevel);
+            Assert.Equal("ops.diagnostics.read", failureEvidence.Permission);
+            Assert.False(failureEvidence.InputSchema.GetType().GetProperty("additionalProperties")?.GetValue(failureEvidence.InputSchema) as bool? ?? true);
             OperationsCapabilityDescriptor applicationRestart = Assert.Single(capabilities,
                 capability => capability.Id == "ops.application.restart");
             Assert.True(applicationRestart.Available);

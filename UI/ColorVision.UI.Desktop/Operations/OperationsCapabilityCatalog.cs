@@ -2,7 +2,7 @@ namespace ColorVision.UI.Desktop.Operations
 {
     public static class OperationsCapabilityCatalog
     {
-        public const string SchemaVersion = "1.8";
+        public const string SchemaVersion = "1.9";
 
         private static readonly IReadOnlyList<OperationsCapabilityDescriptor> Capabilities =
         [
@@ -448,6 +448,22 @@ namespace ColorVision.UI.Desktop.Operations
                     BrokerCapability = "application.restart.current",
                 },
                 Evidence = ["application.restart.handoff", "application.restart.reconnected"],
+                Available = true,
+            },
+            new()
+            {
+                Id = "ops.diagnostics.failures.read",
+                Title = "Read bounded ColorVision crash and hang evidence",
+                Description = "Read fixed seven-day category counts and aggregate timestamps from matching Windows failure events and local dump availability without returning event text, file metadata, dump contents, identities, paths, or arbitrary queries.",
+                Category = "diagnostics",
+                Provider = "desktop.operations",
+                Permission = "ops.diagnostics.read",
+                DiscoverableOn = ["desktop", "android", "copilot"],
+                InputSchema = new { type = "object", additionalProperties = false },
+                OutputSchema = new { type = "object", additionalProperties = true },
+                TimeoutMs = 3000,
+                Audit = new OperationsAuditPolicy { Required = true },
+                Evidence = ["windows.application.failure-counts", "wer.dump-availability"],
                 Available = true,
             },
             new()
