@@ -557,6 +557,7 @@ export interface ThemeSettingsFormValues {
 }
 
 export type FeedbackStatus = 'new' | 'in_progress' | 'resolved'
+export type FeedbackInboxFilter = 'all' | 'open' | FeedbackStatus
 
 export interface FeedbackAttachment {
   name: string
@@ -597,6 +598,7 @@ export interface FeedbackInboxResponse {
     attachment_bytes: number
     invalid_metadata: number
     invalid_state: number
+    oldest_open_at: string | null
   }
 }
 

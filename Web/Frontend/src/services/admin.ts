@@ -19,6 +19,7 @@ import type {
   DocsStatus,
   DeploymentHistoryResponse,
   FeedbackDetail,
+  FeedbackInboxFilter,
   FeedbackInboxResponse,
   FeedbackStatus,
   PublishIntegrityReport,
@@ -143,7 +144,7 @@ export function getJobRuns(jobId: string, params: {
     limit: String(pageSize),
     offset: String((current - 1) * pageSize),
   })
-  if (params.status) search.set('status', params.status)
+  if (params.status && params.status !== 'all') search.set('status', params.status)
   return getJson<JobRunPage>(
     `/api/admin/jobs/${encodeURIComponent(jobId)}/runs?${search.toString()}`,
   )
@@ -224,7 +225,7 @@ export function listUsers() {
 export function getFeedbackInbox(params: {
   current?: number
   pageSize?: number
-  status?: FeedbackStatus
+  status?: FeedbackInboxFilter
   query?: string
 }) {
   const pageSize = params.pageSize ?? 20
