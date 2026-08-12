@@ -9,6 +9,28 @@ namespace ColorVision.UI.Tests;
 public sealed class OperationsRelayProtocolTests
 {
     [Fact]
+    public void RelayUsesAPrivacyPreservingHostLabel()
+    {
+        Assert.Equal("ColorVision 工作站", OperationsRelayClientService.SafeHostDisplayName);
+        Assert.DoesNotContain(Environment.MachineName,
+            OperationsRelayClientService.SafeHostDisplayName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void HostEnvelopeCanonicalSeparatesKindFromExactJsonBody()
+    {
+        Assert.Equal("colorvision-relay-snapshot-v1\n{\"status\":\"online\"}",
+            OperationsRelayProtocol.BuildHostEnvelopeCanonical(
+                OperationsRelayProtocol.HostSnapshotEnvelopePrefix,
+                "{\"status\":\"online\"}"));
+        Assert.NotEqual(
+            OperationsRelayProtocol.BuildHostEnvelopeCanonical(
+                OperationsRelayProtocol.HostSnapshotEnvelopePrefix, "{}"),
+            OperationsRelayProtocol.BuildHostEnvelopeCanonical(
+                OperationsRelayProtocol.HostReceiptEnvelopePrefix, "{}"));
+    }
+
+    [Fact]
     public void VerifiesPairedDeviceTaskAndRejectsTampering()
     {
         string root = Path.Combine(Path.GetTempPath(), $"cv-relay-{Guid.NewGuid():N}");
@@ -110,6 +132,7 @@ public sealed class OperationsRelayProtocolTests
         {
             TaskId = "task-1",
             CapabilityId = capabilityId,
+            IdempotencyKey = "show-1",
             RequestBody = body,
             DeviceId = "device-1",
             Timestamp = timestamp,
@@ -124,6 +147,7 @@ public sealed class OperationsRelayProtocolTests
     {
         TaskId = source.TaskId,
         CapabilityId = source.CapabilityId,
+        IdempotencyKey = source.IdempotencyKey,
         RequestBody = requestBody,
         DeviceId = source.DeviceId,
         Timestamp = source.Timestamp,

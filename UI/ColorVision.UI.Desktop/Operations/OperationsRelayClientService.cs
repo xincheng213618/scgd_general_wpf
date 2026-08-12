@@ -9,6 +9,7 @@ namespace ColorVision.UI.Desktop.Operations
     public sealed class OperationsRelayClientService : IDisposable
     {
         public const string DefaultEndpoint = "http://xc213618.ddns.me:9998";
+        public const string SafeHostDisplayName = "ColorVision 工作站";
         private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         private readonly string _hostId;
         private readonly OperationsServerIdentity _identity;
@@ -120,7 +121,7 @@ namespace ColorVision.UI.Desktop.Operations
                 _snapshotProvider?.Invoke() ?? new { });
             object body = new
             {
-                displayName = "ColorVision 工作站",
+                displayName = SafeHostDisplayName,
                 appVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty,
                 status = "online",
                 capabilities = OperationsCapabilityCatalog.GetAll().Where(item => item.Available).Select(item => item.Id).ToArray(),
@@ -136,14 +137,32 @@ namespace ColorVision.UI.Desktop.Operations
         {
             OperationsSafeSnapshot snapshot = OperationsSafeSnapshotFactory.Create(
                 _snapshotProvider?.Invoke() ?? new { });
+            string appVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty;
+            string[] capabilities = ["ops.window.show", "ops.diagnostics.request"];
+            long signedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            string snapshotBody = JsonSerializer.Serialize(new
+            {
+                hostId = _hostId,
+                appVersion,
+                status = "online",
+                capabilities,
+                snapshot,
+                signedAt,
+            }, JsonOptions);
             object body = new
             {
                 hostId = _hostId,
-                displayName = Environment.MachineName,
-                appVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty,
+                displayName = SafeHostDisplayName,
+                appVersion,
                 status = "online",
-                capabilities = new[] { "ops.window.show", "ops.diagnostics.request" },
+                capabilities,
                 snapshot,
+                snapshotEnvelope = new
+                {
+                    body = snapshotBody,
+                    signature = _identity.Sign(OperationsRelayProtocol.BuildHostEnvelopeCanonical(
+                        OperationsRelayProtocol.HostSnapshotEnvelopePrefix, snapshotBody)),
+                },
                 devices = _registry.GetAll().Select(item => new
                 {
                     item.DeviceId,
@@ -219,7 +238,9 @@ namespace ColorVision.UI.Desktop.Operations
                     evidence = new { jobId = job.JobId };
                 }
 
-                await SendSignedTaskReceiptAsync(task.TaskId, status, evidence, cancellationToken)
+                await SendSignedTaskReceiptAsync(
+                    task.TaskId, status, evidence, verified?.IdempotencyKey ?? task.IdempotencyKey,
+                    cancellationToken)
                     .ConfigureAwait(false);
             }
         }
@@ -228,12 +249,34 @@ namespace ColorVision.UI.Desktop.Operations
             string taskId,
             string status,
             object evidence,
+            string idempotencyKey,
             CancellationToken cancellationToken)
         {
             string path = $"/api/ops/v1/device-relay/hosts/{Uri.EscapeDataString(_hostId)}"
                 + $"/tasks/{Uri.EscapeDataString(taskId)}/receipts";
+            long signedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            string receiptBody = JsonSerializer.Serialize(new
+            {
+                hostId = _hostId,
+                taskId,
+                idempotencyKey,
+                status,
+                evidence,
+                signedAt,
+            }, JsonOptions);
+            object body = new
+            {
+                status,
+                evidence,
+                receiptEnvelope = new
+                {
+                    body = receiptBody,
+                    signature = _identity.Sign(OperationsRelayProtocol.BuildHostEnvelopeCanonical(
+                        OperationsRelayProtocol.HostReceiptEnvelopePrefix, receiptBody)),
+                },
+            };
             using HttpResponseMessage response = await SendSignedHostRequestAsync(
-                path, new { status, evidence }, includeCertificate: false, cancellationToken).ConfigureAwait(false);
+                path, body, includeCertificate: false, cancellationToken).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
         }
 

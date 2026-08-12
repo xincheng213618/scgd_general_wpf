@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 13
+CURRENT_SCHEMA_VERSION = 14
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -71,6 +71,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v12(db)
     if from_version < 13:
         _migration_v13(db)
+    if from_version < 14:
+        _migration_v14(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -411,6 +413,14 @@ def _migration_v13(db: sqlite3.Connection):
             ON operations_relay_nonces(expires_at);
         """
     )
+
+
+def _migration_v14(db: sqlite3.Connection):
+    """v14: Persist host-signed relay snapshots and task receipts."""
+    _add_column_if_missing(db, "operations_hosts", "relay_snapshot_body TEXT")
+    _add_column_if_missing(db, "operations_hosts", "relay_snapshot_signature TEXT")
+    _add_column_if_missing(db, "operations_task_receipts", "relay_receipt_body TEXT")
+    _add_column_if_missing(db, "operations_task_receipts", "relay_receipt_signature TEXT")
 
 
 def _add_column_if_missing(db: sqlite3.Connection, table: str, column_def: str):

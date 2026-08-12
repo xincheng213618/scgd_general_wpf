@@ -35,6 +35,8 @@ ALLOWED_DEVICE_TASK_CAPABILITIES = {
 ALLOWED_RECEIPT_STATUSES = {
     "received", "accepted", "awaiting_local_consent", "completed", "failed", "rejected"
 }
+HOST_SNAPSHOT_ENVELOPE_PREFIX = "colorvision-relay-snapshot-v1"
+HOST_RECEIPT_ENVELOPE_PREFIX = "colorvision-relay-receipt-v1"
 
 
 class DeviceRelayError(ValueError):
@@ -99,6 +101,28 @@ def _request_parts(headers):
 def _canonical(method: str, path: str, timestamp: str, nonce: str, body: bytes) -> bytes:
     digest = hashlib.sha256(body).hexdigest()
     return "\n".join((method.upper(), path, timestamp, nonce, digest)).encode("utf-8")
+
+
+def _verify_host_envelope(public_key, prefix: str, envelope, maximum: int) -> tuple[str, str, dict]:
+    if not isinstance(envelope, dict) or set(envelope) != {"body", "signature"}:
+        raise DeviceRelayError("invalid_host_envelope")
+    body_text = str(envelope.get("body") or "")
+    if not body_text or len(body_text.encode("utf-8")) > maximum:
+        raise DeviceRelayError("invalid_host_envelope")
+    signature_text = str(envelope.get("signature") or "")
+    signature = _decode_base64(signature_text, "invalid_host_envelope_signature")
+    canonical = f"{prefix}\n{body_text}".encode("utf-8")
+    try:
+        public_key.verify(signature, canonical, padding.PKCS1v15(), hashes.SHA256())
+    except InvalidSignature as exc:
+        raise DeviceRelayError("invalid_host_envelope_signature", 401) from exc
+    try:
+        value = json.loads(body_text)
+    except json.JSONDecodeError as exc:
+        raise DeviceRelayError("invalid_host_envelope") from exc
+    if not isinstance(value, dict):
+        raise DeviceRelayError("invalid_host_envelope")
+    return body_text, signature_text, value
 
 
 def _json_body(body: bytes, maximum: int = 65536) -> dict:
@@ -188,6 +212,20 @@ class OperationsDeviceRelayService:
         normalized_devices = [self._normalize_device(item) for item in devices]
         if len({item["deviceId"] for item in normalized_devices}) != len(normalized_devices):
             raise DeviceRelayError("duplicate_device_id")
+        snapshot_body, snapshot_signature, signed_snapshot = _verify_host_envelope(
+            public_key, HOST_SNAPSHOT_ENVELOPE_PREFIX, request.get("snapshotEnvelope"), 65536)
+        try:
+            snapshot_signed_at = int(signed_snapshot.get("signedAt"))
+        except (TypeError, ValueError) as exc:
+            raise DeviceRelayError("invalid_snapshot_envelope") from exc
+        if (set(signed_snapshot) != {"hostId", "appVersion", "status", "capabilities", "snapshot", "signedAt"}
+                or signed_snapshot.get("hostId") != host_id
+                or signed_snapshot.get("appVersion") != app_version
+                or signed_snapshot.get("status") != status
+                or signed_snapshot.get("capabilities") != capabilities
+                or signed_snapshot.get("snapshot") != snapshot
+                or abs(snapshot_signed_at - int(timestamp)) > 5):
+            raise DeviceRelayError("snapshot_envelope_mismatch")
 
         certificate_sha256 = certificate.fingerprint(hashes.SHA256()).hex()
         now = _iso()
@@ -210,13 +248,18 @@ class OperationsDeviceRelayService:
                 )
                 db.execute(
                     """INSERT INTO operations_hosts
-                       (host_id, display_name, app_version, status, capabilities, snapshot, last_seen_at, created_at, updated_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                       (host_id, display_name, app_version, status, capabilities, snapshot,
+                        relay_snapshot_body, relay_snapshot_signature,
+                        last_seen_at, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                        ON CONFLICT(host_id) DO UPDATE SET display_name=excluded.display_name,
                          app_version=excluded.app_version, status=excluded.status,
                          capabilities=excluded.capabilities, snapshot=excluded.snapshot,
+                         relay_snapshot_body=excluded.relay_snapshot_body,
+                         relay_snapshot_signature=excluded.relay_snapshot_signature,
                          last_seen_at=excluded.last_seen_at, updated_at=excluded.updated_at""",
-                    (host_id, display_name, app_version, status, capabilities_json, snapshot_json, now, now, now),
+                    (host_id, display_name, app_version, status, capabilities_json, snapshot_json,
+                     snapshot_body, snapshot_signature, now, now, now),
                 )
                 db.execute(
                     "UPDATE operations_relay_devices SET revoked_at=?, updated_at=? WHERE host_id=?",
@@ -366,17 +409,38 @@ class OperationsDeviceRelayService:
         db = self._cache.get_db()
         try:
             with db:
-                self._authenticate_host(db, host_id, "POST", path, headers, body)
+                timestamp, _nonce, _request_signature, public_key = self._authenticate_host(
+                    db, host_id, "POST", path, headers, body)
                 task = db.execute(
-                    "SELECT task_id FROM operations_tasks WHERE task_id=? AND host_id=? AND source_type='device'",
+                    """SELECT task_id, idempotency_key FROM operations_tasks
+                       WHERE task_id=? AND host_id=? AND source_type='device'""",
                     (task_id, host_id),
                 ).fetchone()
                 if not task:
                     raise DeviceRelayError("task_not_found", 404)
+                receipt_body, receipt_signature, signed_receipt = _verify_host_envelope(
+                    public_key, HOST_RECEIPT_ENVELOPE_PREFIX,
+                    request.get("receiptEnvelope"), 16384)
+                try:
+                    receipt_signed_at = int(signed_receipt.get("signedAt"))
+                except (TypeError, ValueError) as exc:
+                    raise DeviceRelayError("invalid_receipt_envelope") from exc
+                if (set(signed_receipt) != {"hostId", "taskId", "idempotencyKey", "status", "evidence", "signedAt"}
+                        or signed_receipt.get("hostId") != host_id
+                        or signed_receipt.get("taskId") != task_id
+                        or signed_receipt.get("idempotencyKey") != task["idempotency_key"]
+                        or signed_receipt.get("status") != status
+                        or signed_receipt.get("evidence") != evidence
+                        or abs(receipt_signed_at - int(timestamp)) > 5):
+                    raise DeviceRelayError("receipt_envelope_mismatch")
                 now = _iso()
                 db.execute(
-                    "INSERT INTO operations_task_receipts VALUES (?, ?, ?, ?, ?, ?)",
-                    (receipt_id, task_id, host_id, status, evidence_json, now),
+                    """INSERT INTO operations_task_receipts
+                       (receipt_id, task_id, host_id, status, evidence, created_at,
+                        relay_receipt_body, relay_receipt_signature)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (receipt_id, task_id, host_id, status, evidence_json, now,
+                     receipt_body, receipt_signature),
                 )
                 terminal = status if status in {"completed", "failed", "rejected"} else "accepted"
                 db.execute("UPDATE operations_tasks SET status=? WHERE task_id=?", (terminal, task_id))
@@ -390,7 +454,11 @@ class OperationsDeviceRelayService:
         try:
             with db:
                 device_id = self._authenticate_device(db, host_id, "POST", path, headers, body)
-                host = db.execute("SELECT * FROM operations_hosts WHERE host_id=?", (host_id,)).fetchone()
+                host = db.execute(
+                    """SELECT hosts.*, identities.certificate_der
+                       FROM operations_hosts AS hosts
+                       JOIN operations_relay_host_identities AS identities USING(host_id)
+                       WHERE hosts.host_id=?""", (host_id,)).fetchone()
                 if not host:
                     raise DeviceRelayError("host_not_found", 404)
             return {
@@ -406,6 +474,11 @@ class OperationsDeviceRelayService:
                 },
                 "deviceId": device_id,
                 "serverTime": _iso(),
+                "hostCertificateDer": host["certificate_der"],
+                "hostEnvelope": {
+                    "body": host["relay_snapshot_body"],
+                    "signature": host["relay_snapshot_signature"],
+                },
             }
         finally:
             db.close()
@@ -425,8 +498,13 @@ class OperationsDeviceRelayService:
                 ).fetchone()
                 if not task:
                     raise DeviceRelayError("task_not_found", 404)
+                certificate = db.execute(
+                    "SELECT certificate_der FROM operations_relay_host_identities WHERE host_id=?",
+                    (host_id,),
+                ).fetchone()
                 receipts = db.execute(
-                    "SELECT status, evidence, created_at FROM operations_task_receipts WHERE task_id=? ORDER BY created_at",
+                    """SELECT status, evidence, created_at, relay_receipt_body, relay_receipt_signature
+                       FROM operations_task_receipts WHERE task_id=? ORDER BY created_at""",
                     (task_id,),
                 ).fetchall()
             return {
@@ -438,11 +516,20 @@ class OperationsDeviceRelayService:
                     "createdAt": task["created_at"],
                     "expiresAt": task["expires_at"],
                     "receipts": [
-                        {"status": row["status"], "evidence": json.loads(row["evidence"]), "createdAt": row["created_at"]}
+                        {
+                            "status": row["status"],
+                            "evidence": json.loads(row["evidence"]),
+                            "createdAt": row["created_at"],
+                            "hostEnvelope": {
+                                "body": row["relay_receipt_body"],
+                                "signature": row["relay_receipt_signature"],
+                            } if row["relay_receipt_body"] and row["relay_receipt_signature"] else None,
+                        }
                         for row in receipts
                     ],
                 },
                 "serverTime": _iso(),
+                "hostCertificateDer": certificate["certificate_der"] if certificate else "",
             }
         finally:
             db.close()
@@ -462,6 +549,7 @@ class OperationsDeviceRelayService:
         except InvalidSignature as exc:
             raise DeviceRelayError("invalid_host_signature", 401) from exc
         self._claim_nonce(db, "host", host_id, nonce)
+        return timestamp, nonce, signature, public_key
 
     def _authenticate_device(self, db, host_id: str, method: str, path: str, headers, body: bytes) -> str:
         device_id = _safe_id(_header(headers, "X-CV-Device-Id"), "device_id")
@@ -523,6 +611,7 @@ class OperationsDeviceRelayService:
         return {
             "taskId": row["task_id"],
             "capabilityId": row["capability_id"],
+            "idempotencyKey": row["idempotency_key"],
             "requestBody": row["request_body"],
             "deviceId": row["device_id"],
             "timestamp": row["request_timestamp"],

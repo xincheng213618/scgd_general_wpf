@@ -99,7 +99,9 @@ class OperationsAdminTests(unittest.TestCase):
                 ],
             )
             db.execute(
-                "INSERT INTO operations_task_receipts VALUES (?, ?, ?, ?, ?, ?)",
+                """INSERT INTO operations_task_receipts
+                   (receipt_id, task_id, host_id, status, evidence, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
                 ("receipt-1", "task-failed", "host-online", "failed",
                  json.dumps({"error": "private machine path"}), recent),
             )

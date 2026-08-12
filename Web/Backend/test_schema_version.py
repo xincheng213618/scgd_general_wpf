@@ -353,6 +353,45 @@ class SchemaVersionTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_v14_adds_signed_relay_response_envelopes_idempotently(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 13);
+                CREATE TABLE operations_hosts (host_id TEXT PRIMARY KEY);
+                CREATE TABLE operations_task_receipts (receipt_id TEXT PRIMARY KEY);
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            host_columns = {
+                row["name"] for row in db.execute("PRAGMA table_info(operations_hosts)")
+            }
+            receipt_columns = {
+                row["name"]
+                for row in db.execute("PRAGMA table_info(operations_task_receipts)")
+            }
+            self.assertTrue({
+                "relay_snapshot_body", "relay_snapshot_signature"
+            }.issubset(host_columns))
+            self.assertTrue({
+                "relay_receipt_body", "relay_receipt_signature"
+            }.issubset(receipt_columns))
+
+            ensure_schema_version(db)
+            self.assertEqual(
+                len([
+                    row for row in db.execute("PRAGMA table_info(operations_hosts)")
+                    if row["name"].startswith("relay_snapshot_")
+                ]),
+                2,
+            )
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()

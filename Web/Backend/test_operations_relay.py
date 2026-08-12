@@ -220,6 +220,10 @@ class OperationsRelayTests(unittest.TestCase):
         )
         self.assertEqual(snapshot.status_code, 200)
         self.assertTrue(snapshot.get_json()["host"]["snapshot"]["isRunning"])
+        self.assertEqual(
+            json.loads(snapshot.get_json()["hostEnvelope"]["body"])["hostId"],
+            identity["host_id"],
+        )
 
         create_path = "/api/ops/v1/device-relay/tasks"
         task_body = self.json_bytes({
@@ -254,7 +258,24 @@ class OperationsRelayTests(unittest.TestCase):
             f"/api/ops/v1/device-relay/hosts/{identity['host_id']}"
             f"/tasks/{task_id}/receipts"
         )
-        receipt_body = self.json_bytes({"status": "completed", "evidence": {"actionId": "ops.window.show"}})
+        receipt_status = "completed"
+        receipt_evidence = {"actionId": "ops.window.show"}
+        receipt_signed_at = int(datetime.now(timezone.utc).timestamp())
+        receipt_envelope_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "taskId": task_id,
+            "idempotencyKey": "show-main-window-1",
+            "status": receipt_status,
+            "evidence": receipt_evidence,
+            "signedAt": receipt_signed_at,
+        }).decode("utf-8")
+        receipt_body = self.json_bytes({
+            "status": receipt_status,
+            "evidence": receipt_evidence,
+            "receiptEnvelope": self.host_envelope(
+                identity, "colorvision-relay-receipt-v1", receipt_envelope_body
+            ),
+        })
         receipt = self.client.post(
             receipt_path,
             data=receipt_body,
@@ -274,6 +295,10 @@ class OperationsRelayTests(unittest.TestCase):
         self.assertEqual(status.status_code, 200)
         self.assertEqual(status.get_json()["task"]["status"], "completed")
         self.assertEqual(status.get_json()["task"]["receipts"][0]["status"], "completed")
+        self.assertEqual(
+            status.get_json()["task"]["receipts"][0]["hostEnvelope"]["body"],
+            receipt_envelope_body,
+        )
 
     def test_device_relay_rejects_tampering_replay_and_revocation(self):
         identity = self.device_relay_identity()
@@ -352,13 +377,29 @@ class OperationsRelayTests(unittest.TestCase):
 
     def sync_device_relay(self, identity, revoked_at=None):
         path = f"/api/ops/v1/device-relay/hosts/{identity['host_id']}/sync"
+        app_version = "1.4.10.4"
+        status = "online"
+        capabilities = ["ops.window.show", "ops.diagnostics.request"]
+        snapshot = {"isRunning": True, "mainWindow": {"state": "Normal"}}
+        signed_at = int(datetime.now(timezone.utc).timestamp())
+        snapshot_envelope_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "appVersion": app_version,
+            "status": status,
+            "capabilities": capabilities,
+            "snapshot": snapshot,
+            "signedAt": signed_at,
+        }).decode("utf-8")
         body = self.json_bytes({
             "hostId": identity["host_id"],
             "displayName": "Line 1",
-            "appVersion": "1.4.10.4",
-            "status": "online",
-            "capabilities": ["ops.window.show", "ops.diagnostics.request"],
-            "snapshot": {"isRunning": True, "mainWindow": {"state": "Normal"}},
+            "appVersion": app_version,
+            "status": status,
+            "capabilities": capabilities,
+            "snapshot": snapshot,
+            "snapshotEnvelope": self.host_envelope(
+                identity, "colorvision-relay-snapshot-v1", snapshot_envelope_body
+            ),
             "devices": [{
                 "deviceId": identity["device_id"],
                 "displayName": "Test phone",
@@ -371,6 +412,18 @@ class OperationsRelayTests(unittest.TestCase):
         headers = self.host_headers(identity, "POST", path, body)
         headers["X-CV-Host-Certificate"] = identity["certificate"]
         return self.client.post(path, data=body, content_type="application/json", headers=headers)
+
+    @staticmethod
+    def host_envelope(identity, prefix, body_text):
+        signature = identity["host_key"].sign(
+            f"{prefix}\n{body_text}".encode("utf-8"),
+            padding.PKCS1v15(),
+            hashes.SHA256(),
+        )
+        return {
+            "body": body_text,
+            "signature": base64.b64encode(signature).decode("ascii"),
+        }
 
     @staticmethod
     def signed_canonical(method, path, timestamp, nonce, body):

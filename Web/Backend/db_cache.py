@@ -269,6 +269,8 @@ class CacheManager:
                 status          TEXT DEFAULT 'unknown',
                 capabilities    TEXT DEFAULT '[]',
                 snapshot        TEXT DEFAULT '{}',
+                relay_snapshot_body TEXT,
+                relay_snapshot_signature TEXT,
                 last_seen_at    TEXT NOT NULL,
                 created_at      TEXT NOT NULL,
                 updated_at      TEXT NOT NULL
@@ -303,6 +305,8 @@ class CacheManager:
                 status          TEXT NOT NULL,
                 evidence        TEXT NOT NULL DEFAULT '{}',
                 created_at      TEXT NOT NULL,
+                relay_receipt_body TEXT,
+                relay_receipt_signature TEXT,
                 FOREIGN KEY(task_id) REFERENCES operations_tasks(task_id)
             );
             CREATE INDEX IF NOT EXISTS idx_ops_receipts_task ON operations_task_receipts(task_id, created_at);

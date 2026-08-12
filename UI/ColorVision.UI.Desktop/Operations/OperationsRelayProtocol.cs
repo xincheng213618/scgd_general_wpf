@@ -11,6 +11,8 @@ namespace ColorVision.UI.Desktop.Operations
 
         public string CapabilityId { get; init; } = string.Empty;
 
+        public string IdempotencyKey { get; init; } = string.Empty;
+
         public string RequestBody { get; init; } = string.Empty;
 
         public string DeviceId { get; init; } = string.Empty;
@@ -42,6 +44,8 @@ namespace ColorVision.UI.Desktop.Operations
     public static class OperationsRelayProtocol
     {
         public const string DeviceTaskPath = "/api/ops/v1/device-relay/tasks";
+        public const string HostSnapshotEnvelopePrefix = "colorvision-relay-snapshot-v1";
+        public const string HostReceiptEnvelopePrefix = "colorvision-relay-receipt-v1";
         private static readonly TimeSpan AllowedCreatedAtSkew = TimeSpan.FromMinutes(2);
 
         public static string BuildCanonical(
@@ -54,6 +58,9 @@ namespace ColorVision.UI.Desktop.Operations
             string digest = Convert.ToHexString(SHA256.HashData(body)).ToLowerInvariant();
             return string.Join('\n', method.ToUpperInvariant(), path, timestamp, nonce, digest);
         }
+
+        public static string BuildHostEnvelopeCanonical(string prefix, string body) =>
+            string.Join('\n', prefix, body);
 
         public static bool TryVerifyDeviceTask(
             OperationsRelayDeviceTask task,

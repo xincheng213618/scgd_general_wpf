@@ -349,8 +349,12 @@ def task_receipt(host_id, task_id):
         task = db.execute("SELECT * FROM operations_tasks WHERE task_id=? AND host_id=?", (task_id, host_id)).fetchone()
         if not task:
             return jsonify({"ok": False, "error": "task_not_found"}), 404
-        db.execute("INSERT INTO operations_task_receipts VALUES (?, ?, ?, ?, ?, ?)",
-                   (receipt_id, task_id, host_id, status, evidence_json, _iso()))
+        db.execute(
+            """INSERT INTO operations_task_receipts
+               (receipt_id, task_id, host_id, status, evidence, created_at)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (receipt_id, task_id, host_id, status, evidence_json, _iso()),
+        )
         db.execute("UPDATE operations_tasks SET status=? WHERE task_id=?",
                    (status if status in {"completed", "failed", "rejected"} else "accepted", task_id))
         db.commit()
