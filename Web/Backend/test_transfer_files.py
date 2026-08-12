@@ -112,16 +112,14 @@ class TransferRouteTests(unittest.TestCase):
 
     def test_browser_transfer_auth_avoids_basic_challenge_and_redirects_navigation(self):
         fetch_headers = {
-            "Origin": "http://localhost",
-            "Sec-Fetch-Site": "same-origin",
-            "Sec-Fetch-Mode": "cors",
+            "X-ColorVision-Web": "1",
         }
 
         transfer_api = self.client.get("/api/transfer/files", headers=fetch_headers)
         browse_api = self.client.get("/api/site/browse/Transfer", headers=fetch_headers)
         download = self.client.get(
             "/download/Transfer/missing.bin",
-            headers={"Sec-Fetch-Site": "same-origin", "Sec-Fetch-Mode": "navigate"},
+            headers={"Accept": "text/html,application/xhtml+xml"},
             follow_redirects=False,
         )
 

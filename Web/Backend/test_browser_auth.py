@@ -22,6 +22,7 @@ class BrowserAuthTests(unittest.TestCase):
 
     def test_browser_metadata_suppresses_basic_challenge(self):
         cases = (
+            {"X-ColorVision-Web": "1"},
             {"Origin": "http://localhost"},
             {"Sec-Fetch-Site": "same-origin"},
             {"Sec-Fetch-Mode": "cors"},
@@ -40,6 +41,13 @@ class BrowserAuthTests(unittest.TestCase):
             "/download/example", headers={"Sec-Fetch-Mode": "navigate"},
         ):
             self.assertTrue(is_browser_request())
+            self.assertTrue(is_browser_navigation())
+
+    def test_browser_navigation_accepts_html_fallback(self):
+        with self.app.test_request_context(
+            "/download/example", headers={"Accept": "text/html,application/xhtml+xml"},
+        ):
+            self.assertFalse(is_browser_request())
             self.assertTrue(is_browser_navigation())
 
 

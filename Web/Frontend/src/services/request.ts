@@ -9,6 +9,11 @@ let csrfToken = ''
 let csrfTokenRequest: Promise<string> | null = null
 let authRedirectStarted = false
 
+export const WEB_CLIENT_HEADER_NAME = 'X-ColorVision-Web'
+export const WEB_CLIENT_HEADER_VALUE = '1'
+
+const webClientHeader = { [WEB_CLIENT_HEADER_NAME]: WEB_CLIENT_HEADER_VALUE }
+
 interface ResponseOptions {
   redirectOnUnauthorized?: boolean
 }
@@ -67,7 +72,7 @@ export async function parseResponse<T>(response: Response, options: ResponseOpti
 export async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(url, {
     credentials: 'same-origin',
-    headers: { Accept: 'application/json' },
+    headers: { ...webClientHeader, Accept: 'application/json' },
     signal,
   })
   return parseResponse<T>(response)
@@ -83,6 +88,7 @@ export async function postJson<T = unknown>(
     method: 'POST',
     credentials: 'same-origin',
     headers: {
+      ...webClientHeader,
       Accept: 'application/json',
       'Content-Type': 'application/json',
       'X-CSRF-Token': token,
@@ -98,6 +104,7 @@ export async function putJson<T = unknown>(url: string, body?: unknown): Promise
     method: 'PUT',
     credentials: 'same-origin',
     headers: {
+      ...webClientHeader,
       Accept: 'application/json',
       'Content-Type': 'application/json',
       'X-CSRF-Token': token,
@@ -112,7 +119,7 @@ export async function deleteJson<T = unknown>(url: string): Promise<T> {
   const response = await fetch(url, {
     method: 'DELETE',
     credentials: 'same-origin',
-    headers: { Accept: 'application/json', 'X-CSRF-Token': token },
+    headers: { ...webClientHeader, Accept: 'application/json', 'X-CSRF-Token': token },
   })
   return parseResponse<T>(response)
 }
@@ -122,7 +129,7 @@ export async function postForm<T = unknown>(url: string, formData: FormData): Pr
   const response = await fetch(url, {
     method: 'POST',
     credentials: 'same-origin',
-    headers: { Accept: 'application/json', 'X-CSRF-Token': token },
+    headers: { ...webClientHeader, Accept: 'application/json', 'X-CSRF-Token': token },
     body: formData,
   })
   return parseResponse<T>(response)

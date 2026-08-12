@@ -75,11 +75,11 @@ python app.py --refresh-plugin-index MyPlugin
 
 All admin endpoints require authentication (session login or Basic Auth or Bearer API Key).
 
-Browser-originated API requests intentionally receive a plain `401` without a
-`WWW-Authenticate` challenge so the React client can recover expired sessions
-without opening the browser's Basic Auth dialog. Headerless native clients keep
-the Basic challenge, while protected browser navigations redirect to `/login`
-with an internal `next` path.
+Browser-originated API requests carry `X-ColorVision-Web: 1` and intentionally
+receive a plain `401` without a `WWW-Authenticate` challenge so the React client
+can recover expired sessions without opening the browser's Basic Auth dialog.
+Headerless native clients keep the Basic challenge, while protected browser
+navigations redirect to `/login` with an internal `next` path.
 
 Session and Basic Auth always have full access. Bearer API Key access is controlled by per-endpoint scopes:
 

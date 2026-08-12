@@ -10,7 +10,15 @@ import type {
   UpdatesPayload,
   UploadContext,
 } from '../types/site'
-import { AuthRequiredError, deleteJson, getCsrfToken, getJson, redirectToLogin } from './request'
+import {
+  AuthRequiredError,
+  deleteJson,
+  getCsrfToken,
+  getJson,
+  redirectToLogin,
+  WEB_CLIENT_HEADER_NAME,
+  WEB_CLIENT_HEADER_VALUE,
+} from './request'
 
 function queryString(params: Record<string, string | number | undefined>) {
   const search = new URLSearchParams()
@@ -152,6 +160,7 @@ export async function uploadTransferFile(file: File, onProgress?: (percent: numb
     (resolve, reject) => {
       const xhr = new XMLHttpRequest()
       xhr.open('PUT', `/api/transfer/files/${encodeURIComponent(file.name)}`)
+      xhr.setRequestHeader(WEB_CLIENT_HEADER_NAME, WEB_CLIENT_HEADER_VALUE)
       xhr.withCredentials = true
       xhr.responseType = 'json'
       xhr.setRequestHeader('Accept', 'application/json')
