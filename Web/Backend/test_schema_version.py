@@ -308,6 +308,51 @@ class SchemaVersionTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_v12_adds_aggregate_only_web_experience_tables(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 11);
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            tables = {
+                row["name"]
+                for row in db.execute(
+                    "SELECT name FROM sqlite_master WHERE type = 'table'"
+                ).fetchall()
+            }
+            self.assertTrue({
+                "web_page_daily",
+                "web_page_visitor_daily",
+                "web_vital_daily",
+            }.issubset(tables))
+            page_columns = {
+                row["name"]
+                for row in db.execute("PRAGMA table_info(web_page_daily)").fetchall()
+            }
+            vital_columns = {
+                row["name"]
+                for row in db.execute("PRAGMA table_info(web_vital_daily)").fetchall()
+            }
+            self.assertIn("spa_navigations", page_columns)
+            self.assertIn("poor_samples", vital_columns)
+
+            ensure_schema_version(db)
+            self.assertEqual(
+                db.execute(
+                    "SELECT COUNT(*) FROM sqlite_master "
+                    "WHERE type = 'table' AND name LIKE 'web_%'"
+                ).fetchone()[0],
+                3,
+            )
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()

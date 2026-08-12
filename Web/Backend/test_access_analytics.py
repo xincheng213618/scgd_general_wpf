@@ -22,11 +22,13 @@ from services.access_analytics import (
     analytics_calendar_day,
     analytics_calendar_day_utc_bounds,
     build_access_event,
+    build_web_experience_event,
     classify_user_agent,
     configure_access_analytics_calendar,
     daily_visitor_key,
     declared_response_body_bytes,
     format_utc_offset,
+    normalize_web_route,
     parse_bounded_int,
     prune_access_analytics,
     prune_access_analytics_backups,
@@ -165,10 +167,53 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
             "/api/admin/stats/traffic",
             "/api/admin/stats/overview",
             "/api/admin/perf/summary",
+            "/api/v1/analytics/events",
         ):
             self.assertFalse(should_record_access(route, "GET"), route)
         self.assertFalse(should_record_access("/api/plugins", "OPTIONS"))
         self.assertTrue(should_record_access("/api/plugins/<plugin_id>", "GET"))
+
+    def test_web_experience_boundary_accepts_only_normalized_routes_and_exact_fields(self):
+        self.assertEqual(normalize_web_route("/plugins/ProjectARVRPro"), "/plugins/:pluginId")
+        self.assertEqual(normalize_web_route("/browse/Plugins/Camera"), "/browse/*")
+        self.assertEqual(normalize_web_route("/admin/traffic/"), "/admin/traffic")
+        for invalid in (
+            "/unknown",
+            "/plugins/private/value/extra",
+            "/browse/item?token=secret",
+            "//admin/traffic",
+        ):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(ValueError):
+                    normalize_web_route(invalid)
+
+        raw_address = "203.0.113.88"
+        raw_agent = "PrivateBrowser/1.0 DeviceSerial=ABC"
+        page_view = build_web_experience_event(
+            {"kind": "page_view", "route": "/plugins/Demo", "navigationType": "spa"},
+            secret_key="analytics-test-secret",
+            remote_addr=raw_address,
+            user_agent=raw_agent,
+            occurred_at=FIXED_NOW,
+        )
+        self.assertEqual(page_view.route, "/plugins/:pluginId")
+        self.assertEqual(page_view.navigation_type, "spa")
+        serialized = json.dumps(asdict(page_view), ensure_ascii=False)
+        self.assertNotIn(raw_address, serialized)
+        self.assertNotIn(raw_agent, serialized)
+
+        with self.assertRaisesRegex(ValueError, "invalid page view payload"):
+            build_web_experience_event(
+                {
+                    "kind": "page_view",
+                    "route": "/",
+                    "navigationType": "hard",
+                    "referrer": "https://private.example/",
+                },
+                secret_key="secret",
+                remote_addr=raw_address,
+                user_agent=raw_agent,
+            )
 
     def test_declared_response_body_bytes_obeys_http_no_body_semantics(self):
         self.assertEqual(
@@ -320,6 +365,58 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
             "access_visitor_daily",
         ):
             self.assertIn(table, tables)
+        self.assertNotIn("203.0.113.10", dump)
+        self.assertNotIn("Windows NT 10.0", dump)
+
+    def test_web_page_views_and_vitals_are_aggregated_separately(self):
+        recorder = AccessAnalyticsRecorder(background_worker=False)
+        payloads = [
+            {"kind": "page_view", "route": "/", "navigationType": "hard"},
+            {"kind": "page_view", "route": "/plugins", "navigationType": "spa"},
+            {"kind": "page_view", "route": "/plugins/Demo", "navigationType": "spa"},
+            {"kind": "web_vital", "route": "/", "metric": "LCP", "value": 2200},
+            {"kind": "web_vital", "route": "/", "metric": "CLS", "value": 0.2},
+            {"kind": "web_vital", "route": "/", "metric": "INP", "value": 700},
+        ]
+        for payload in payloads:
+            event = build_web_experience_event(
+                payload,
+                secret_key="analytics-test-secret",
+                remote_addr="203.0.113.10",
+                user_agent="Mozilla/5.0 (Windows NT 10.0)",
+                occurred_at=FIXED_NOW,
+            )
+            self.assertIsNotNone(event)
+            self.assertTrue(recorder.submit(event, db_path=self.db_path, synchronous=True))
+
+        result = SqliteAccessTrafficQuery(
+            self.cache.get_db,
+            today_getter=lambda: date(2026, 7, 18),
+        ).get_traffic(days=1, limit=10)
+
+        self.assertEqual(result["summary"]["visits"], 0)
+        self.assertEqual(result["web"]["summary"], {
+            "pageViews": 3,
+            "uniqueVisitorDays": 1,
+            "hardNavigations": 1,
+            "spaNavigations": 2,
+        })
+        self.assertEqual(result["web"]["daily"][0]["pageViews"], 3)
+        pages = {item["route"]: item for item in result["web"]["topPages"]}
+        self.assertEqual(pages["/"]["hardNavigations"], 1)
+        self.assertEqual(pages["/plugins"]["spaNavigations"], 1)
+        self.assertEqual(pages["/plugins/:pluginId"]["spaNavigations"], 1)
+        vitals = {item["metric"]: item for item in result["web"]["vitals"]}
+        self.assertEqual(vitals["LCP"]["goodSamples"], 1)
+        self.assertEqual(vitals["CLS"]["needsImprovementSamples"], 1)
+        self.assertEqual(vitals["INP"]["poorSamples"], 1)
+        self.assertEqual(vitals["INP"]["average"], 700.0)
+
+        db = self.cache.get_db()
+        try:
+            dump = "\n".join(db.iterdump())
+        finally:
+            db.close()
         self.assertNotIn("203.0.113.10", dump)
         self.assertNotIn("Windows NT 10.0", dump)
 
@@ -496,6 +593,25 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
         current_event = self._event()
         recorder.submit(old_event, db_path=self.db_path, synchronous=True)
         recorder.submit(current_event, db_path=self.db_path, synchronous=True)
+        for occurred_at in (
+            datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc),
+            FIXED_NOW,
+        ):
+            for payload in (
+                {"kind": "page_view", "route": "/", "navigationType": "hard"},
+                {"kind": "web_vital", "route": "/", "metric": "LCP", "value": 1800},
+            ):
+                recorder.submit(
+                    build_web_experience_event(
+                        payload,
+                        secret_key="analytics-test-secret",
+                        remote_addr="203.0.113.10",
+                        user_agent="Mozilla/5.0 (Windows NT 10.0)",
+                        occurred_at=occurred_at,
+                    ),
+                    db_path=self.db_path,
+                    synchronous=True,
+                )
 
         result = prune_access_analytics(
             self.cache.get_db,
@@ -505,10 +621,20 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
         self.assertGreaterEqual(result["deleted"], 4)
         db = self.cache.get_db()
         try:
-            days = [row[0] for row in db.execute("SELECT day FROM access_daily").fetchall()]
+            days_by_table = {
+                table: [row[0] for row in db.execute(
+                    f"SELECT DISTINCT day FROM {table} ORDER BY day"
+                ).fetchall()]
+                for table in (
+                    "access_daily",
+                    "web_page_daily",
+                    "web_page_visitor_daily",
+                    "web_vital_daily",
+                )
+            }
         finally:
             db.close()
-        self.assertEqual(days, ["2026-07-18"])
+        self.assertTrue(all(days == ["2026-07-18"] for days in days_by_table.values()))
 
     def test_backup_snapshots_follow_visitor_retention(self):
         recorder = AccessAnalyticsRecorder(background_worker=False)
@@ -633,6 +759,78 @@ class AccessAnalyticsApiTests(unittest.TestCase):
             "do-not-store",
             "/private/path",
             "DeviceSerial",
+        ):
+            self.assertNotIn(sensitive, dump)
+
+    def test_browser_experience_ingestion_is_same_origin_bounded_and_queryable(self):
+        same_origin_headers = {
+            "Origin": "http://localhost",
+            "Sec-Fetch-Site": "same-origin",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0)",
+        }
+        page_view = self.client.post(
+            "/api/v1/analytics/events",
+            json={
+                "kind": "page_view",
+                "route": "/plugins/ProjectARVRPro",
+                "navigationType": "hard",
+            },
+            headers=same_origin_headers,
+            environ_base={"REMOTE_ADDR": "203.0.113.90"},
+        )
+        vital = self.client.post(
+            "/api/v1/analytics/events",
+            json={
+                "kind": "web_vital",
+                "route": "/plugins/ProjectARVRPro",
+                "metric": "LCP",
+                "value": 2450.5,
+            },
+            headers=same_origin_headers,
+            environ_base={"REMOTE_ADDR": "203.0.113.90"},
+        )
+        self.assertEqual(page_view.status_code, 202)
+        self.assertTrue(page_view.get_json()["recorded"])
+        self.assertEqual(vital.status_code, 202)
+
+        invalid = self.client.post(
+            "/api/v1/analytics/events",
+            json={
+                "kind": "page_view",
+                "route": "/",
+                "navigationType": "hard",
+                "referrer": "https://private.example/path",
+            },
+            headers=same_origin_headers,
+        )
+        foreign = self.client.post(
+            "/api/v1/analytics/events",
+            json={"kind": "page_view", "route": "/", "navigationType": "hard"},
+            headers={"Origin": "https://foreign.example", "Sec-Fetch-Site": "cross-site"},
+        )
+        self.assertEqual(invalid.status_code, 400)
+        self.assertEqual(foreign.status_code, 403)
+
+        traffic = self.client.get(
+            "/api/admin/stats/traffic?days=1&limit=10",
+            headers=self._basic_auth(),
+        )
+        self.assertEqual(traffic.status_code, 200)
+        web = traffic.get_json()["web"]
+        self.assertEqual(web["summary"]["pageViews"], 1)
+        self.assertEqual(web["topPages"][0]["route"], "/plugins/:pluginId")
+        self.assertEqual(web["vitals"][0]["metric"], "LCP")
+        self.assertEqual(web["vitals"][0]["samples"], 1)
+
+        db = sqlite3.connect(str(marketplace_app.DB_PATH))
+        try:
+            dump = "\n".join(db.iterdump())
+        finally:
+            db.close()
+        for sensitive in (
+            "203.0.113.90",
+            "ProjectARVRPro",
+            "private.example",
         ):
             self.assertNotIn(sensitive, dump)
 

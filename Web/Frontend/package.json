@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test": "node --experimental-strip-types --test tests/transferAccess.test.ts tests/apiKeyStatus.test.ts tests/apiKeyScopes.test.ts tests/feedback.test.ts tests/indexMaintenance.test.ts tests/jobOperations.test.ts tests/operationalSettings.test.ts tests/registrationPolicy.test.ts tests/userAccounts.test.ts",
+    "test": "node --experimental-strip-types --test tests/transferAccess.test.ts tests/apiKeyStatus.test.ts tests/apiKeyScopes.test.ts tests/feedback.test.ts tests/indexMaintenance.test.ts tests/jobOperations.test.ts tests/operationalSettings.test.ts tests/registrationPolicy.test.ts tests/userAccounts.test.ts tests/webExperience.test.ts",
     "build": "tsc -b && vite build --manifest && node scripts/precompress-static.mjs && node scripts/check-dashboard-bundle.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -18,7 +18,8 @@
     "dompurify": "^3.4.13",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-router-dom": "^7.18.2"
+    "react-router-dom": "^7.18.2",
+    "web-vitals": "^6.1.0"
   },
   "overrides": {
     "path-to-regexp": "^8.4.2"

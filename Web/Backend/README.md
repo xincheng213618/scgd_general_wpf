@@ -18,6 +18,7 @@ The backend uses a **SQLite index** to serve plugin catalog requests without sca
 - `api_keys` — API Key lifecycle management (only hash stored)
 - `audit_log` — All admin operations
 - `scheduled_jobs` / `job_runs` — Job scheduling and execution history
+- `web_page_daily` / `web_vital_daily` — Aggregate-only SPA page views and Core Web Vitals
 
 ### Three Sync Triggers
 
@@ -312,8 +313,16 @@ status changes are recorded in the administrator audit log.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/admin/stats/overview` | Download, index, and today's traffic summary |
-| GET | `/api/admin/stats/traffic?days=30&limit=10` | Daily traffic, top routes, client classes, 4xx/5xx breakdown, response volume, and recorder health |
+| GET | `/api/admin/stats/traffic?days=30&limit=10` | HTTP traffic plus separately labeled SPA page views, Core Web Vitals, top pages, and recorder health |
 | GET | `/api/admin/perf/summary` | Process-local slow requests plus recent slow or failed scheduler runs |
+
+React sends `POST /api/v1/analytics/events` with either an exact `page_view`
+or `web_vital` payload. Cross-origin browser writes are rejected; the endpoint
+caps the body at 4 KiB, maps known paths to fixed templates such as
+`/plugins/:pluginId` and `/browse/*`, and rejects extra fields. Browser bots are
+ignored. Accepted events enter the same bounded asynchronous writer used by
+HTTP access analytics, so telemetry never performs a SQLite transaction on the
+request thread.
 
 `days` accepts `1..365`; `limit` accepts `1..100`. Rates and client shares are
 percentages in the range `0..100`. Response volume is based only on the existing
@@ -354,6 +363,12 @@ boundary. User-agent strings are reduced in memory to `desktop`, `mobile`,
 `tablet`, `bot`, or `other`, and are not stored verbatim. A visitor is represented
 by a daily HMAC derived from the configured application secret and remote address;
 the raw address is never persisted, and identifiers cannot be linked across days.
+SPA page views reuse that daily unlinkable identifier but store it only in a
+route/day uniqueness table. Web Vitals store the metric name, bounded numeric
+value, quality bucket, fixed route template, and day; metric IDs, DOM targets,
+full URLs, queries, referrers, raw addresses, and full user agents are not
+accepted or persisted. The same retention job scrubs HTTP, page-view, and Web
+Vital tables in both the live database and recognized snapshots.
 
 Health/readiness probes, static assets, media, favicon/brand assets, and the stats
 or performance-observability endpoints themselves are excluded. Production

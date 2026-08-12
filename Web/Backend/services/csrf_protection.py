@@ -61,6 +61,13 @@ def register_csrf_protection(app) -> None:
         elif fetch_site and fetch_site not in _SAFE_FETCH_SITES:
             return _csrf_error("Cross-site state-changing request rejected")
 
+        # Aggregate-only browser telemetry is intentionally accepted from the
+        # same origin during pagehide, where Beacon cannot attach a CSRF token.
+        # The endpoint has an exact, bounded payload contract and stores no raw
+        # URL, referrer, address, or user-agent value.
+        if request.path == "/api/v1/analytics/events":
+            return None
+
         if not is_browser_request:
             return None
 
