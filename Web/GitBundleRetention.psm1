@@ -177,7 +177,11 @@ function Invoke-WebGitBundleRetention {
             )
         })
     })
-    $plannedBytes = [long](($candidateItems | Measure-Object -Property length -Sum).Sum)
+    $plannedBytes = if ($candidateItems.Count -eq 0) {
+        0L
+    } else {
+        [long](($candidateItems | Measure-Object -Property length -Sum).Sum)
+    }
     $candidateNames = @($candidateItems | ForEach-Object { $_.file.Name })
 
     if ($PlanOnly) {

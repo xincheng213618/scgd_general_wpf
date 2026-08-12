@@ -142,6 +142,18 @@ try {
     Assert-Equal $true (Test-Path -LiteralPath $corruptBundle) 'Unverified bundle was removed.'
     Assert-Equal $true (Test-Path -LiteralPath $unclassifiedBundle) 'Unclassified bundle was removed.'
 
+    $idempotentPlan = Invoke-WebGitBundleRetention `
+        -RepositoryPath $repository `
+        -BundleRoot $bundleRoot `
+        -DeployedCommit $deployedCommit `
+        -KeepCount 2 `
+        -CurrentBundlePath $bundlePaths[0] `
+        -GitExe $script:GitExe `
+        -PlanOnly
+    Assert-Equal 'plan' $idempotentPlan.status 'Unexpected idempotent plan status.'
+    Assert-Equal 0 $idempotentPlan.planned_remove_count 'Idempotent plan selected a bundle.'
+    Assert-Equal 0 $idempotentPlan.planned_remove_bytes 'Idempotent plan reported removed bytes.'
+
     $invalidCommitThrew = $false
     try {
         Invoke-WebGitBundleRetention `
