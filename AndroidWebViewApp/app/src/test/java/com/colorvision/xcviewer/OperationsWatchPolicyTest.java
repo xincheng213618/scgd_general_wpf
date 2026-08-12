@@ -77,4 +77,28 @@ public class OperationsWatchPolicyTest {
         assertFalse(OperationsWatchPolicy.shouldPostOffline(
                 true, true, OperationsWatchPolicy.ATTENTION_OFFLINE));
     }
+
+    @Test
+    public void attentionDestinationsStayInsideFixedOperationsScreens() {
+        assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
+                OperationsWatchPolicy.attentionDestination(OperationsWatchPolicy.ATTENTION_UI_UNRESPONSIVE));
+        assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
+                OperationsWatchPolicy.attentionDestination(OperationsWatchPolicy.ATTENTION_CRITICAL));
+        assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
+                OperationsWatchPolicy.attentionDestination(OperationsWatchPolicy.ATTENTION_MESSAGE_CHANNEL));
+        assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
+                OperationsWatchPolicy.attentionDestination(OperationsWatchPolicy.ATTENTION_DEVICES));
+        assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
+                OperationsWatchPolicy.attentionDestination(OperationsWatchPolicy.ATTENTION_ERRORS));
+        assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK,
+                OperationsWatchPolicy.attentionDestination(OperationsWatchPolicy.ATTENTION_OFFLINE));
+        assertEquals("", OperationsWatchPolicy.attentionDestination("unknown"));
+
+        assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
+                OperationsWatchPolicy.normalizeDestination(OperationsWatchPolicy.DESTINATION_TRIAGE));
+        assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK,
+                OperationsWatchPolicy.normalizeDestination(OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK));
+        assertEquals("", OperationsWatchPolicy.normalizeDestination("/ops/v1/audit"));
+        assertEquals("", OperationsWatchPolicy.normalizeDestination(null));
+    }
 }

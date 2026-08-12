@@ -262,7 +262,7 @@ public final class OperationsWatchService extends Service {
                 .setSmallIcon(R.drawable.ic_devices_24)
                 .setContentTitle("ColorVision 运维守护")
                 .setContentText(status)
-                .setContentIntent(createOperationsPendingIntent(0))
+                .setContentIntent(createOperationsPendingIntent(0, ""))
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 .setOnlyAlertOnce(true)
@@ -284,7 +284,8 @@ public final class OperationsWatchService extends Service {
                 .setContentTitle("ColorVision 需要关注")
                 .setContentText(message)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
-                .setContentIntent(createOperationsPendingIntent(1))
+                .setContentIntent(createOperationsPendingIntent(
+                        1, OperationsWatchPolicy.attentionDestination(attentionKey)))
                 .setCategory(NotificationCompat.CATEGORY_ERROR)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 .setAutoCancel(true)
@@ -305,9 +306,13 @@ public final class OperationsWatchService extends Service {
         }
     }
 
-    private PendingIntent createOperationsPendingIntent(int requestCode) {
+    private PendingIntent createOperationsPendingIntent(int requestCode, String destination) {
         Intent openIntent = new Intent(this, OperationsActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        String safeDestination = OperationsWatchPolicy.normalizeDestination(destination);
+        if (!safeDestination.isEmpty()) {
+            openIntent.putExtra(OperationsActivity.EXTRA_OPEN_DESTINATION, safeDestination);
+        }
         return PendingIntent.getActivity(
                 this,
                 requestCode,

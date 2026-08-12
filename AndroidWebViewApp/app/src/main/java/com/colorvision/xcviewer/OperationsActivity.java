@@ -51,6 +51,7 @@ import javax.net.ssl.SSLHandshakeException;
 
 public class OperationsActivity extends Activity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
+    static final String EXTRA_OPEN_DESTINATION = "operations_open_destination";
     private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
     private static final long CONNECTION_HEARTBEAT_MILLISECONDS = 30_000L;
 
@@ -100,11 +101,13 @@ public class OperationsActivity extends Activity {
     private boolean dashboardVisible;
     private boolean showingDashboardSummary;
     private boolean connectionHeartbeatInFlight;
+    private String pendingOperationsDestination = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         preferences = new AppPreferences(this);
+        acceptOperationsDestination(getIntent());
         createView();
 
         String rawPairing = getIntent().getStringExtra(EXTRA_PAIRING_PAYLOAD);
@@ -377,10 +380,30 @@ public class OperationsActivity extends Activity {
         addDashboardActionRow(
                 dashboardButton("提交部署确认", v -> confirmDeploymentReceipt()),
                 capabilityButton("能力目录", "/ops/v1/capabilities"));
-        loadCapability("/ops/v1/snapshot");
-        loadDashboardLiveStatus();
         scheduleConnectionHeartbeat();
         ensureOperationsWatchRunning();
+        if (openPendingOperationsDestination()) {
+            return;
+        }
+        loadCapability("/ops/v1/snapshot");
+        loadDashboardLiveStatus();
+    }
+
+    private boolean openPendingOperationsDestination() {
+        String destination = pendingOperationsDestination;
+        if (destination.isEmpty() || client == null) {
+            return false;
+        }
+        pendingOperationsDestination = "";
+        if (OperationsWatchPolicy.DESTINATION_TRIAGE.equals(destination)) {
+            showTriageCenter();
+            return true;
+        }
+        if (OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK.equals(destination)) {
+            runConnectionSelfCheck();
+            return true;
+        }
+        return false;
     }
 
     private void ensureOperationsWatchRunning() {
@@ -391,6 +414,28 @@ public class OperationsActivity extends Activity {
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         if (activityResumed && dashboardVisible && client != null) {
             connectionHeartbeatHandler.postDelayed(connectionHeartbeat, CONNECTION_HEARTBEAT_MILLISECONDS);
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        acceptOperationsDestination(intent);
+        if (client != null && preferences.hasOperationsProfile()) {
+            openPendingOperationsDestination();
+        }
+    }
+
+    private void acceptOperationsDestination(Intent intent) {
+        if (intent == null) {
+            return;
+        }
+        String destination = OperationsWatchPolicy.normalizeDestination(
+                intent.getStringExtra(EXTRA_OPEN_DESTINATION));
+        intent.removeExtra(EXTRA_OPEN_DESTINATION);
+        if (!destination.isEmpty()) {
+            pendingOperationsDestination = destination;
         }
     }
 

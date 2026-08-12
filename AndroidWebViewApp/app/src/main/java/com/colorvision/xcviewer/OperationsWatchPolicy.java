@@ -7,6 +7,8 @@ final class OperationsWatchPolicy {
     static final String ATTENTION_DEVICES = "devices";
     static final String ATTENTION_ERRORS = "errors";
     static final String ATTENTION_OFFLINE = "offline";
+    static final String DESTINATION_TRIAGE = "triage";
+    static final String DESTINATION_CONNECTION_CHECK = "connection_check";
     static final long HEALTHY_CHECK_MILLISECONDS = 60_000L;
     static final long FIRST_RETRY_MILLISECONDS = 30_000L;
     static final long MAXIMUM_RETRY_MILLISECONDS = 5 * 60_000L;
@@ -96,6 +98,29 @@ final class OperationsWatchPolicy {
             default:
                 return "";
         }
+    }
+
+    static String attentionDestination(String attentionKey) {
+        switch (attentionKey) {
+            case ATTENTION_UI_UNRESPONSIVE:
+            case ATTENTION_CRITICAL:
+            case ATTENTION_MESSAGE_CHANNEL:
+            case ATTENTION_DEVICES:
+            case ATTENTION_ERRORS:
+                return DESTINATION_TRIAGE;
+            case ATTENTION_OFFLINE:
+                return DESTINATION_CONNECTION_CHECK;
+            default:
+                return "";
+        }
+    }
+
+    static String normalizeDestination(String destination) {
+        if (DESTINATION_TRIAGE.equals(destination)
+                || DESTINATION_CONNECTION_CHECK.equals(destination)) {
+            return destination;
+        }
+        return "";
     }
 
     static boolean shouldPostAttention(String currentAttentionKey, String lastAttentionKey) {
