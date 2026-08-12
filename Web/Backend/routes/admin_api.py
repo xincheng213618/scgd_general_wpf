@@ -16,6 +16,7 @@ Per-endpoint scope requirements:
   - POST /jobs/*/disable      → jobs:write
   - GET  /audit-log           → admin:*
   - GET  /deployments         → admin:*
+  - GET  /operations/overview → admin:*
   - GET  /feedback            → admin:*
   - GET  /feedback/*          → admin:*
   - PUT  /feedback/*/status   → admin:*
@@ -56,6 +57,7 @@ from flask import Blueprint, jsonify, request, send_file, session
 
 from db_cache import CacheManager, now_iso
 from ports.jobs import JobRepository
+from ports.operations_admin import OperationsAdminQuery
 from routes.request_context import current_request_context, set_authenticated_request_context
 from services.auth_policy import AuthPolicy
 from services.api_key_service import (
@@ -94,6 +96,7 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "disable_job": ["jobs:write"],
     "audit_log": ["admin:*"],
     "deployment_history": ["admin:*"],
+    "operations_overview": ["admin:*"],
     "feedback_inbox": ["admin:*"],
     "feedback_detail": ["admin:*"],
     "feedback_attachment": ["admin:*"],
@@ -136,6 +139,7 @@ class AdminApiContext:
     get_db: Callable[[], Any]
     auth_policy: AuthPolicy
     request_context_factory: Callable[[], RequestContext]
+    operations_admin: OperationsAdminQuery
     refresh_plugin_index: Callable[..., Any]
     refresh_all_plugin_index: Callable[..., Any]
     get_plugin_index_state: Callable[..., Any]
@@ -851,6 +855,26 @@ def deployment_history():
             commit=request.args.get("commit"),
             limit=limit,
             offset=offset,
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify(result)
+
+
+# ---------------------------------------------------------------------------
+# Operations overview
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/operations/overview", methods=["GET"])
+def operations_overview():
+    ctx = _get_ctx()
+    try:
+        host_limit = _query_int_arg("hostLimit", 100, minimum=1, maximum=200)
+        activity_limit = _query_int_arg("activityLimit", 100, minimum=1, maximum=200)
+        result = ctx.operations_admin.get_overview(
+            now=datetime.now(timezone.utc),
+            host_limit=host_limit,
+            activity_limit=activity_limit,
         )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400

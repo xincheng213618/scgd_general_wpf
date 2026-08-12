@@ -28,6 +28,7 @@ import type {
   IndexStatusResponse,
   JobRunPage,
   JobRunResult,
+  OperationsOverview,
   ScheduledJob,
   RetentionSettingsResponse,
   RetentionSettingsUpdateResponse,
@@ -50,6 +51,13 @@ export function getTrafficStats(days: number, limit = 10, signal?: AbortSignal) 
 
 export function getPerformanceSummary(signal?: AbortSignal) {
   return getJson<PerformanceSummary>('/api/admin/perf/summary', signal)
+}
+
+export function getOperationsOverview(signal?: AbortSignal) {
+  return getJson<OperationsOverview>(
+    '/api/admin/operations/overview?hostLimit=100&activityLimit=100',
+    signal,
+  )
 }
 
 export function getCacheStatus() {

@@ -122,6 +122,7 @@ continuous SQLite writes.
 | GET `/api/admin/jobs` | `jobs:read` |
 | GET `/api/admin/jobs/<id>/runs` | `jobs:read` |
 | POST `/api/admin/jobs/<id>/run` | `jobs:write` |
+| GET `/api/admin/operations/overview` | `admin:*` |
 | POST `/api/admin/jobs/<id>/enable` | `jobs:write` |
 | POST `/api/admin/jobs/<id>/disable` | `jobs:write` |
 | GET `/api/admin/stats/overview` | `stats:read` |
@@ -308,6 +309,21 @@ the submitted `feedback.json`. Administrator workflow state is persisted in a
 separate atomic `.admin.json` sidecar. Attachment delivery rejects traversal,
 metadata/state files, symbolic links, and non-direct files. Downloads and
 status changes are recorded in the administrator audit log.
+
+### Operations Overview
+
+`GET /api/admin/operations/overview?hostLimit=100&activityLimit=100` powers the
+read-only `/admin/operations/hosts` page. It reports exact host/task/session
+summary counts, a bounded host list, recent task lifecycle state, receipt
+counts, and support-session state. A heartbeat is treated as online for 90
+seconds, matching the desktop Relay's 20-second polling cadence without hiding
+short network interruptions.
+
+The endpoint deliberately returns neither task payloads, receipt evidence,
+support message bodies, nor arbitrary snapshot keys. Desktop heartbeats are
+projected back onto the fixed `OperationsSafeSnapshot` fields before the React
+client receives them. Creating catalog-bound tasks remains on the separate
+`ops:operator` API-key contract; the administrator page cannot dispatch work.
 
 ### Stats
 

@@ -27,6 +27,7 @@ const documentTitles: Record<string, string> = {
   '/admin/cache': '缓存与索引 - ColorVision',
   '/admin/jobs': '任务调度 - ColorVision',
   '/admin/deployments': '部署历史 - ColorVision',
+  '/admin/operations/hosts': '终端运维 - ColorVision',
   '/admin/feedback': '反馈收件箱 - ColorVision',
   '/admin/users': '账号管理 - ColorVision',
   '/admin/api-keys': 'API Key - ColorVision',
@@ -82,6 +83,7 @@ const FilesPage = lazy(() => import('./pages/FilesPage').then((module) => ({ def
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage').then((module) => ({ default: module.FeedbackPage })))
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })))
 const JobsPage = lazy(() => import('./pages/JobsPage').then((module) => ({ default: module.JobsPage })))
+const OperationsPage = lazy(() => import('./pages/OperationsPage').then((module) => ({ default: module.OperationsPage })))
 const UsersPage = lazy(() => import('./pages/UsersPage').then((module) => ({ default: module.UsersPage })))
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const PluginDetailPage = lazy(() => import('./pages/PluginDetailPage').then((module) => ({ default: module.PluginDetailPage })))
@@ -267,6 +269,7 @@ function App() {
               <Route path="cache" element={<CachePage />} />
               <Route path="jobs" element={<JobsPage />} />
               <Route path="deployments" element={<DeploymentHistoryPage />} />
+              <Route path="operations/hosts" element={<OperationsPage />} />
               <Route path="feedback" element={<FeedbackPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="api-keys" element={<ApiKeysPage />} />
