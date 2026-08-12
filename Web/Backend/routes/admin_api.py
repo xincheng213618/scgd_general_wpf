@@ -27,6 +27,11 @@ Per-endpoint scope requirements:
   - GET  /api-keys/*/usage    → admin:*
   - GET  /settings/retention  → admin:*
   - PUT  /settings/retention  → admin:*
+  - GET  /users              → admin:*
+  - POST /users              → admin:*
+  - PUT  /users/*/role       → admin:*
+  - POST /users/*/password   → admin:*
+  - POST /users/*/(enable|disable) → admin:*
   - *    /copilot/profiles    → admin:*
 
 admin:* grants access to all endpoints.
@@ -42,7 +47,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, session
 
 from db_cache import CacheManager, now_iso
 from ports.jobs import JobRepository
@@ -87,6 +92,9 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "stats_overview": ["stats:read"],
     "traffic_stats": ["stats:read"],
     "list_users": ["admin:*"],
+    "create_user_account": ["admin:*"],
+    "update_user_role": ["admin:*"],
+    "reset_user_password": ["admin:*"],
     "enable_user": ["admin:*"],
     "disable_user": ["admin:*"],
     "list_api_keys": ["admin:*"],
@@ -901,16 +909,60 @@ def traffic_stats():
 # User management
 # ---------------------------------------------------------------------------
 
+def _admin_user_payload(user: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(user)
+    payload.pop("auth_version", None)
+    return payload
+
+
+def _is_current_session_user(user: dict[str, Any]) -> bool:
+    principal = current_request_context().actor
+    session_user_id = session.get("user_id")
+    try:
+        same_user_id = int(session_user_id) == int(user.get("id"))
+    except (TypeError, ValueError):
+        same_user_id = False
+    return (
+        principal.auth_method == "session"
+        and same_user_id
+        and principal.actor_id.casefold() == str(user.get("username") or "").casefold()
+    )
+
+
 @admin_api.route("/users", methods=["GET"])
 def list_users():
     from services.auth_service import list_users as _list_users
 
     users = _list_users(_get_ctx().cache)
-    principal = current_request_context().actor
-    current_username = principal.actor_id.casefold() if principal.auth_method == "session" else ""
     for user in users:
-        user["is_current"] = bool(current_username) and str(user.get("username") or "").casefold() == current_username
-    return jsonify(users)
+        user["is_current"] = _is_current_session_user(user)
+    return jsonify([_admin_user_payload(user) for user in users])
+
+
+@admin_api.route("/users", methods=["POST"])
+def create_user_account():
+    from services.auth_service import create_user
+
+    ctx = _get_ctx()
+    data = request.get_json(silent=True) or {}
+    username = str(data.get("username") or "").strip()
+    password = str(data.get("password") or "")
+    role = str(data.get("role") or "user")
+    user, error = create_user(ctx.cache, username, password, role=role)
+    if error or not user:
+        return jsonify({"error": error or "Account creation failed"}), 400
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_create",
+        target_type="user",
+        target_id=str(user["id"]),
+        detail=f"username={user['username']};role={user['role']}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(_admin_user_payload(user)), 201
 
 
 def _set_user_status(user_id: int, *, active: bool):
@@ -921,11 +973,7 @@ def _set_user_status(user_id: int, *, active: bool):
     if not target:
         return jsonify({"error": "User not found"}), 404
 
-    principal = current_request_context().actor
-    is_current_session = (
-        principal.auth_method == "session"
-        and principal.actor_id.casefold() == str(target.get("username") or "").casefold()
-    )
+    is_current_session = _is_current_session_user(target)
     if not active and is_current_session:
         return jsonify({"error": "The current session account cannot be disabled"}), 409
 
@@ -946,7 +994,7 @@ def _set_user_status(user_id: int, *, active: bool):
         ip=request.remote_addr or "",
         user_agent=request.headers.get("User-Agent", "")[:200],
     )
-    return jsonify(updated)
+    return jsonify(_admin_user_payload(updated))
 
 
 @admin_api.route("/users/<int:user_id>/enable", methods=["POST"])
@@ -957,6 +1005,81 @@ def enable_user(user_id: int):
 @admin_api.route("/users/<int:user_id>/disable", methods=["POST"])
 def disable_user(user_id: int):
     return _set_user_status(user_id, active=False)
+
+
+@admin_api.route("/users/<int:user_id>/role", methods=["PUT"])
+def update_user_role(user_id: int):
+    from services.auth_service import get_user_by_id, set_user_role
+
+    ctx = _get_ctx()
+    target = get_user_by_id(ctx.cache, user_id)
+    if not target:
+        return jsonify({"error": "User not found"}), 404
+    if _is_current_session_user(target):
+        return jsonify({"error": "The current session account role cannot be changed"}), 409
+
+    data = request.get_json(silent=True) or {}
+    role = str(data.get("role") or "")
+    updated, error = set_user_role(ctx.cache, user_id, role=role)
+    if error == "invalid_role":
+        return jsonify({"error": "role must be 'admin' or 'user'"}), 400
+    if error == "last_active_admin":
+        return jsonify({"error": "The last active administrator cannot be demoted"}), 409
+    if error == "user_not_found":
+        return jsonify({"error": "User not found"}), 404
+    if error or not updated:
+        return jsonify({"error": "User role update failed"}), 500
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_role_update",
+        target_type="user",
+        target_id=str(user_id),
+        detail=f"username={updated['username']};old_role={target['role']};new_role={updated['role']}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(_admin_user_payload(updated))
+
+
+@admin_api.route("/users/<int:user_id>/password", methods=["POST"])
+def reset_user_password(user_id: int):
+    from services.auth_service import get_user_by_id, reset_user_password as _reset_password
+
+    ctx = _get_ctx()
+    target = get_user_by_id(ctx.cache, user_id)
+    if not target:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    password = str(data.get("password") or "")
+    updated, error = _reset_password(ctx.cache, user_id, password=password)
+    if error == "user_not_found":
+        return jsonify({"error": "User not found"}), 404
+    if error in {"password_service_unavailable", "password_reset_failed"}:
+        return jsonify({"error": "Password reset failed"}), 500
+    if error or not updated:
+        return jsonify({"error": error or "Password reset failed"}), 400
+
+    current_session_preserved = _is_current_session_user(target)
+    if current_session_preserved:
+        session["auth_version"] = int(updated.get("auth_version") or 0)
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_password_reset",
+        target_type="user",
+        target_id=str(user_id),
+        detail=f"username={updated['username']};sessions_invalidated=true",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    payload = _admin_user_payload(updated)
+    payload["sessions_invalidated"] = True
+    payload["current_session_preserved"] = current_session_preserved
+    return jsonify(payload)
 
 
 # ---------------------------------------------------------------------------

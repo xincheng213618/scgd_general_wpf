@@ -209,10 +209,16 @@ cannot authenticate.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/admin/users` | List registered accounts without password hashes |
-| POST | `/api/admin/users/<id>/enable` | Re-enable an account |
-| POST | `/api/admin/users/<id>/disable` | Disable an account and invalidate its next authenticated request |
+| POST | `/api/admin/users` | Create a `user` or `admin` account |
+| PUT | `/api/admin/users/<id>/role` | Change an account role and revoke its existing sessions |
+| POST | `/api/admin/users/<id>/password` | Reset a password and revoke the account's other sessions |
+| POST | `/api/admin/users/<id>/enable` | Re-enable an account and revoke its previous sessions |
+| POST | `/api/admin/users/<id>/disable` | Disable an account and revoke its existing sessions |
 
-The current session account and the last active administrator cannot be disabled.
+The current session account cannot be disabled or assigned a different role,
+and the last active administrator cannot be disabled or demoted. When an
+administrator resets their own password, the current browser session is updated
+to the new authentication version while all other sessions are revoked.
 When a database account has the same username as the legacy `upload_auth`
 administrator, its database status is authoritative and cannot be bypassed by
 the configuration credential fallback.

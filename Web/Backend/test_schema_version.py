@@ -263,6 +263,51 @@ class SchemaVersionTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_v11_versions_account_authentication_state(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 10);
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    role TEXT DEFAULT 'user',
+                    is_active INTEGER DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT,
+                    last_login_at TEXT
+                );
+                INSERT INTO users (username, password_hash, created_at)
+                VALUES ('legacy-user', 'hash', '2026-08-12T00:00:00+00:00');
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            columns = {
+                row["name"] for row in db.execute("PRAGMA table_info(users)").fetchall()
+            }
+            self.assertIn("auth_version", columns)
+            self.assertEqual(
+                db.execute(
+                    "SELECT auth_version FROM users WHERE username = 'legacy-user'"
+                ).fetchone()[0],
+                0,
+            )
+            ensure_schema_version(db)
+            self.assertEqual(
+                sum(
+                    row["name"] == "auth_version"
+                    for row in db.execute("PRAGMA table_info(users)").fetchall()
+                ),
+                1,
+            )
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()

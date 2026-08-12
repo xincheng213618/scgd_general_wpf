@@ -445,15 +445,28 @@ export interface RetentionSettingsUpdateResponse extends RetentionSettingsRespon
   changed: Array<keyof RetentionSettingsValues>
 }
 
+export type UserRole = 'admin' | 'user'
+
 export interface UserAccount {
   id: number
   username: string
-  role: 'admin' | 'user' | string
+  role: UserRole
   is_active: number | boolean
   is_current?: boolean
   created_at?: string
   updated_at?: string | null
   last_login_at?: string | null
+}
+
+export interface CreateUserPayload {
+  username: string
+  password: string
+  role: UserRole
+}
+
+export interface UserPasswordResetResult extends UserAccount {
+  sessions_invalidated: boolean
+  current_session_preserved: boolean
 }
 
 export type CopilotVendorType =

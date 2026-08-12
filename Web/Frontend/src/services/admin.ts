@@ -10,6 +10,7 @@ import type {
   DatabaseBackupResult,
   CopilotProfile,
   CopilotProfilePayload,
+  CreateUserPayload,
   CreateApiKeyPayload,
   CreateApiKeyResult,
   DocsStatus,
@@ -27,6 +28,8 @@ import type {
   RetentionSettingsValues,
   TrafficStatsResponse,
   UserAccount,
+  UserPasswordResetResult,
+  UserRole,
 } from '../types/admin'
 import { deleteJson, getJson, postJson, putJson } from './request'
 
@@ -196,8 +199,20 @@ export function listUsers() {
   return getJson<UserAccount[]>('/api/admin/users')
 }
 
+export function createUserAccount(payload: CreateUserPayload) {
+  return postJson<UserAccount>('/api/admin/users', payload)
+}
+
 export function setUserEnabled(id: number, enabled: boolean) {
   return postJson<UserAccount>(`/api/admin/users/${id}/${enabled ? 'enable' : 'disable'}`)
+}
+
+export function updateUserRole(id: number, role: UserRole) {
+  return putJson<UserAccount>(`/api/admin/users/${id}/role`, { role })
+}
+
+export function resetUserPassword(id: number, password: string) {
+  return postJson<UserPasswordResetResult>(`/api/admin/users/${id}/password`, { password })
 }
 
 export function listCopilotProfiles() {

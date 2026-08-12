@@ -85,6 +85,7 @@ def _set_login_session(user: dict[str, Any]) -> dict[str, Any]:
     session["role"] = role
     if user.get("id") is not None:
         session["user_id"] = user["id"]
+        session["auth_version"] = int(user.get("auth_version") or 0)
     if is_admin:
         session["authenticated"] = True
     return _session_payload()
@@ -126,6 +127,26 @@ def _synchronize_session_account() -> None:
         session.clear()
         return
 
+    auth_version = int(user.get("auth_version") or 0)
+    session_auth_version = session.get("auth_version")
+    if session_auth_version is None:
+        # Preserve pre-migration sessions only while the account has never had
+        # a security-sensitive change. A reset/change performed immediately
+        # after deployment must still revoke an older cookie.
+        if auth_version > 0:
+            session.clear()
+            return
+        session["auth_version"] = 0
+    else:
+        try:
+            normalized_session_version = int(session_auth_version)
+        except (TypeError, ValueError):
+            session.clear()
+            return
+        if normalized_session_version != auth_version:
+            session.clear()
+            return
+
     username = str(user.get("username") or "")
     role = str(user.get("role") or "user")
     expected = {
@@ -133,6 +154,7 @@ def _synchronize_session_account() -> None:
         "username": username,
         "role": role,
         "user_id": normalized_user_id,
+        "auth_version": auth_version,
     }
     if role == "admin":
         expected["authenticated"] = True
