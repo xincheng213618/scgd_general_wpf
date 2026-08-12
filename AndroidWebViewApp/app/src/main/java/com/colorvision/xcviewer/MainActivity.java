@@ -50,9 +50,9 @@ public class MainActivity extends Activity {
     private static final int REQUEST_QR_SCAN = 1001;
     private static final int REQUEST_WEB_CAMERA_PERMISSION = 1002;
     private static final int REQUEST_AUDIO_PICK = 1003;
-    private static final int TAB_DEVICES = 0;
-    private static final int TAB_HOME = 1;
-    private static final int TAB_PROFILE = 2;
+    private static final int TAB_OPERATIONS = 0;
+    private static final int TAB_DOWNLOADS = 1;
+    private static final int TAB_SETTINGS = 2;
 
     private FrameLayout root;
     private LinearLayout appShell;
@@ -77,7 +77,7 @@ public class MainActivity extends Activity {
     private TextView deviceTabLabel;
     private TextView homeTabLabel;
     private TextView profileTabLabel;
-    private int currentTab = TAB_DEVICES;
+    private int currentTab = TAB_OPERATIONS;
     private String currentHomeUrl = "";
 
     private TextView dashboardStatusText;
@@ -316,7 +316,7 @@ public class MainActivity extends Activity {
     }
 
     private void showThemeDialog() {
-        themeManager.showThemeDialog(this, TAB_PROFILE, this::recreate);
+        themeManager.showThemeDialog(this, TAB_SETTINGS, this::recreate);
     }
 
     private String getThemeModeLabel() {
@@ -425,8 +425,9 @@ public class MainActivity extends Activity {
         bar.addView(scanButton, topIconParams());
 
         ImageButton addButton = makeTopIconButton(R.drawable.ic_add_circle_outline_24);
-        addButton.setContentDescription("添加连接");
-        addButton.setOnClickListener(v -> showSetupView());
+        addButton.setContentDescription("打开固定下载站");
+        addButton.setImageResource(R.drawable.ic_home_24);
+        addButton.setOnClickListener(v -> showHomePage());
         bar.addView(addButton, topIconParams());
         return bar;
     }
@@ -439,9 +440,9 @@ public class MainActivity extends Activity {
         nav.setBackgroundColor(bottomNavBackgroundColor());
         nav.setElevation(dp(10));
 
-        nav.addView(createBottomNavItem(R.drawable.ic_devices_24, "设备", TAB_DEVICES), new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
-        nav.addView(createBottomNavItem(R.drawable.ic_home_24, "主页", TAB_HOME), new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
-        nav.addView(createBottomNavItem(R.drawable.ic_person_24, "我的", TAB_PROFILE), new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        nav.addView(createBottomNavItem(R.drawable.ic_devices_24, "运维", TAB_OPERATIONS), new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        nav.addView(createBottomNavItem(R.drawable.ic_home_24, "下载站", TAB_DOWNLOADS), new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        nav.addView(createBottomNavItem(R.drawable.ic_person_24, "设置", TAB_SETTINGS), new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
         return nav;
     }
 
@@ -450,14 +451,9 @@ public class MainActivity extends Activity {
         item.setOrientation(LinearLayout.VERTICAL);
         item.setGravity(Gravity.CENTER);
         item.setOnClickListener(v -> {
-            if (tab == TAB_DEVICES) {
-                String savedUrl = getSavedLanUrl();
-                if (savedUrl.isEmpty()) {
-                    showSetupView();
-                } else {
-                    showDashboard(savedUrl);
-                }
-            } else if (tab == TAB_HOME) {
+            if (tab == TAB_OPERATIONS) {
+                showOperationsLanding(false);
+            } else if (tab == TAB_DOWNLOADS) {
                 showHomePage();
             } else {
                 showProfileView();
@@ -475,10 +471,10 @@ public class MainActivity extends Activity {
         text.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         item.addView(text, wrapParams());
 
-        if (tab == TAB_DEVICES) {
+        if (tab == TAB_OPERATIONS) {
             deviceTabIcon = icon;
             deviceTabLabel = text;
-        } else if (tab == TAB_HOME) {
+        } else if (tab == TAB_DOWNLOADS) {
             homeTabIcon = icon;
             homeTabLabel = text;
         } else {
@@ -490,9 +486,9 @@ public class MainActivity extends Activity {
 
     private void selectTab(int tab) {
         currentTab = tab;
-        setTabSelected(deviceTabIcon, deviceTabLabel, tab == TAB_DEVICES);
-        setTabSelected(homeTabIcon, homeTabLabel, tab == TAB_HOME);
-        setTabSelected(profileTabIcon, profileTabLabel, tab == TAB_PROFILE);
+        setTabSelected(deviceTabIcon, deviceTabLabel, tab == TAB_OPERATIONS);
+        setTabSelected(homeTabIcon, homeTabLabel, tab == TAB_DOWNLOADS);
+        setTabSelected(profileTabIcon, profileTabLabel, tab == TAB_SETTINGS);
     }
 
     private void setTabSelected(ImageView icon, TextView label, boolean selected) {
@@ -540,14 +536,7 @@ public class MainActivity extends Activity {
         layout.addView(subtitle, wrapParams());
 
         Button retryButton = makePrimaryButton("重试连接");
-        retryButton.setOnClickListener(v -> {
-            String url = getSavedLanUrl();
-            if (url.isEmpty()) {
-                showSetupView();
-            } else {
-                showDashboard(url);
-            }
-        });
+        retryButton.setOnClickListener(v -> openOperations());
         layout.addView(retryButton, fullWidthButtonParams());
 
         Button manageButton = makeSecondaryButton("管理连接");
@@ -558,39 +547,48 @@ public class MainActivity extends Activity {
     }
 
     private void showInitialTab() {
-        int startTab = appPreferences.consumeStartTab(TAB_DEVICES);
-        if (startTab == TAB_PROFILE) {
+        int startTab = appPreferences.consumeStartTab(TAB_OPERATIONS);
+        if (startTab == TAB_SETTINGS) {
             showProfileView();
             return;
         }
-
-        String savedUrl = getSavedLanUrl();
-        if (savedUrl.isEmpty()) {
-            showSetupView();
-        } else {
-            showDashboard(savedUrl);
+        if (startTab == TAB_DOWNLOADS) {
+            showHomePage();
+            return;
         }
+
+        showOperationsLanding(appPreferences.hasOperationsProfile());
     }
 
     private void showSetupView() {
+        showOperationsLanding(false);
+    }
+
+    private void showOperationsLanding(boolean openAutomatically) {
         currentLanUrl = "";
-        selectTab(TAB_DEVICES);
-        headerTitle.setText("ColorVision");
-        headerSubtitle.setText("扫码或手动添加电脑端");
+        selectTab(TAB_OPERATIONS);
+        headerTitle.setText("现场运维");
+        headerSubtitle.setText(appPreferences.hasOperationsProfile()
+                ? "已配对 · 打开即自动连接"
+                : "扫描电脑端安全配对码");
         setupContainer.removeAllViews();
-        setupContainer.addView(createSetupContent(), matchParentParams());
+        setupContainer.addView(createOperationsLandingContent(), matchParentParams());
         setupContainer.setVisibility(View.VISIBLE);
         appShell.setVisibility(View.VISIBLE);
         errorView.setVisibility(View.GONE);
         webView.setVisibility(View.GONE);
         manageFloatingButton.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
+
+        if (openAutomatically) {
+            setupContainer.post(this::openOperations);
+        }
     }
 
     private void showHomePage() {
-        selectTab(TAB_HOME);
-        headerTitle.setText("主页");
-        headerSubtitle.setText("ColorVision 网页");
+        selectTab(TAB_DOWNLOADS);
+        headerTitle.setText("固定下载站");
+        headerSubtitle.setText("xc213618.ddns.me · 无需选择网址");
         setupContainer.removeAllViews();
         setupContainer.setVisibility(View.VISIBLE);
         appShell.setVisibility(View.VISIBLE);
@@ -607,7 +605,7 @@ public class MainActivity extends Activity {
     }
 
     private void showHomeErrorView() {
-        if (currentTab != TAB_HOME) {
+        if (currentTab != TAB_DOWNLOADS) {
             return;
         }
 
@@ -636,25 +634,58 @@ public class MainActivity extends Activity {
 
         LinearLayout card = makeCard();
         content.addView(card, matchWidthWrapParams());
-        card.addView(makeTitle("主页加载失败", 22), matchWidthWrapParams());
+        card.addView(makeTitle("下载站加载失败", 22), matchWidthWrapParams());
         TextView body = makeBodyText("请确认手机网络正常，或稍后再试。");
         body.setPadding(0, dp(10), 0, dp(6));
         card.addView(body, matchWidthWrapParams());
 
-        Button retryButton = makePrimaryButton("重新加载主页");
+        Button retryButton = makePrimaryButton("重新加载固定下载站");
         retryButton.setOnClickListener(v -> showHomePage());
         card.addView(retryButton, fullWidthButtonParams());
 
-        Button deviceButton = makeSecondaryButton("查看设备状态");
-        deviceButton.setOnClickListener(v -> {
-            String savedUrl = getSavedLanUrl();
-            if (savedUrl.isEmpty()) {
-                showSetupView();
-            } else {
-                showDashboard(savedUrl);
-            }
-        });
+        Button deviceButton = makeSecondaryButton("返回现场运维");
+        deviceButton.setOnClickListener(v -> showOperationsLanding(false));
         card.addView(deviceButton, fullWidthButtonParams());
+        return scrollView;
+    }
+
+    private ScrollView createOperationsLandingContent() {
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.setFillViewport(true);
+        scrollView.setBackgroundColor(pageBackgroundColor());
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(22), dp(28), dp(22), dp(30));
+        scrollView.addView(content, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT,
+                ScrollView.LayoutParams.WRAP_CONTENT));
+
+        LinearLayout operationsCard = makeCard();
+        content.addView(operationsCard, fullWidthCardParams());
+        operationsCard.addView(makeTitle("ColorVision 现场运维", 25), matchWidthWrapParams());
+
+        boolean paired = appPreferences.hasOperationsProfile();
+        TextView status = makeBodyText(paired
+                ? "这台手机已安全配对。设备密钥和证书指纹会一直保留，打开应用时自动重新连接，无需重复扫码。"
+                : "扫描电脑端“选项 > 局域网控制”中的短时安全配对码。完成一次配对后，应用会保存设备密钥和证书指纹。 ");
+        status.setPadding(0, dp(10), 0, dp(8));
+        operationsCard.addView(status, matchWidthWrapParams());
+
+        Button operationsButton = makePrimaryButton(paired ? "进入现场运维" : "扫描并连接电脑");
+        operationsButton.setOnClickListener(v -> openOperations());
+        operationsCard.addView(operationsButton, fullWidthButtonParams());
+
+        LinearLayout downloadCard = makeCard();
+        content.addView(downloadCard, fullWidthCardParams());
+        downloadCard.addView(makeTitle("固定下载站", 19), matchWidthWrapParams());
+        TextView downloadText = makeBodyText("下载地址由应用固定管理，不需要填写或选择网址。");
+        downloadText.setPadding(0, dp(8), 0, dp(2));
+        downloadCard.addView(downloadText, matchWidthWrapParams());
+        Button downloadButton = makeSecondaryButton("打开下载站");
+        downloadButton.setOnClickListener(v -> showHomePage());
+        downloadCard.addView(downloadButton, fullWidthButtonParams());
+
         return scrollView;
     }
 
@@ -749,7 +780,7 @@ public class MainActivity extends Activity {
 
     private void showDashboard(String url) {
         currentLanUrl = url;
-        selectTab(TAB_DEVICES);
+        selectTab(TAB_OPERATIONS);
         headerTitle.setText("ColorVision");
         headerSubtitle.setText("设备在线状态与快捷控制");
         setupContainer.removeAllViews();
@@ -764,9 +795,9 @@ public class MainActivity extends Activity {
     }
 
     private void showProfileView() {
-        selectTab(TAB_PROFILE);
-        headerTitle.setText("我的");
-        headerSubtitle.setText("连接设置与应用信息");
+        selectTab(TAB_SETTINGS);
+        headerTitle.setText("设置");
+        headerSubtitle.setText("安全配对与应用信息");
         setupContainer.removeAllViews();
         setupContainer.addView(createProfileContent(), matchParentParams());
         setupContainer.setVisibility(View.VISIBLE);
@@ -910,57 +941,41 @@ public class MainActivity extends Activity {
                 ScrollView.LayoutParams.MATCH_PARENT,
                 ScrollView.LayoutParams.WRAP_CONTENT));
 
-        String savedUrl = getSavedLanUrl();
-        content.addView(createProfileHeader(savedUrl), matchWidthWrapParams());
+        content.addView(createProfileHeader(), matchWidthWrapParams());
 
         LinearLayout connectionSection = makeSettingsSection();
         content.addView(connectionSection, settingsSectionParams());
-        addSettingsRow(connectionSection, "当前电脑", savedUrl.isEmpty() ? "未连接" : getBaseFromUrl(savedUrl), v -> openCurrentDeviceOrSetup());
-        addSettingsRow(connectionSection, "服务地址", savedUrl.isEmpty() ? "未配置" : getBaseFromUrl(savedUrl), v -> openCurrentDeviceOrSetup());
-        addSettingsRow(connectionSection, "控制端口", getPortFromUrl(savedUrl), null);
-        addSettingsRow(connectionSection, "配对状态", savedUrl.isEmpty() ? "未配对" : "已配对", null);
-        addSettingsRow(connectionSection, "安全现场运维",
-                appPreferences.hasOperationsProfile() ? "设备密钥已配对" : "尚未配对",
+        boolean paired = appPreferences.hasOperationsProfile();
+        addSettingsRow(connectionSection, "现场运维",
+                paired ? "已配对 · 自动连接" : "尚未配对",
                 v -> openOperations());
+        addSettingsRow(connectionSection, "安全通道",
+                paired ? "设备密钥 + TLS 证书固定" : "等待安全配对",
+                null);
+        addSettingsRow(connectionSection, paired ? "重新配对" : "连接电脑", "扫描二维码", v -> startQrScan());
 
         LinearLayout permissionSection = makeSettingsSection();
         content.addView(permissionSection, settingsSectionParams());
         addSettingsRow(permissionSection, "相机权限", hasCameraPermission() ? "已授权" : "需要时申请", v -> startQrScan());
         addSettingsRow(permissionSection, "网络权限", "已配置", null);
-        addSettingsRow(permissionSection, "网页访问", "允许局域网 HTTP", null);
         addSettingsRow(permissionSection, "音乐权限", "选择单曲授权", v -> chooseAudioFile());
 
         LinearLayout appSection = makeSettingsSection();
         content.addView(appSection, settingsSectionParams());
-        addSettingsRow(appSection, "网页列表", savedUrl.isEmpty() ? "未连接" : "打开", v -> {
-            if (getSavedLanUrl().isEmpty()) {
-                showSetupView();
-            } else {
-                openUrl(getSavedLanUrl());
-            }
-        });
-        addSettingsRow(appSection, "下载站", "xc213618.ddns.me", v -> openUrl(HOME_URL));
+        addSettingsRow(appSection, "固定下载站", "xc213618.ddns.me", v -> showHomePage());
         addSettingsRow(appSection, "音乐播放", musicController.getSavedAudioTitle(), v -> chooseAudioFile());
         addSettingsRow(appSection, "主题模式", getThemeModeLabel(), v -> showThemeDialog());
         addSettingsRow(appSection, "应用版本", getAppVersionName(), null);
 
         LinearLayout actionSection = makeSettingsSection();
         content.addView(actionSection, settingsSectionParams());
-        addSettingsRow(actionSection, savedUrl.isEmpty() ? "添加电脑" : "重新扫描二维码", "", v -> startQrScan());
-        addSettingsRow(actionSection, "打开现场运维伴侣", "", v -> openOperations());
-        addSettingsRow(actionSection, "回到设备页", "", v -> openCurrentDeviceOrSetup());
-        if (!savedUrl.isEmpty()) {
-            addSettingsRow(actionSection, "断开当前电脑", "", v -> {
-                clearSavedLanUrl();
-                Toast.makeText(this, "已断开当前电脑", Toast.LENGTH_SHORT).show();
-                showSetupView();
-            });
-        }
+        addSettingsRow(actionSection, "打开现场运维", "", v -> openOperations());
+        addSettingsRow(actionSection, "返回运维入口", "", v -> showOperationsLanding(false));
 
         return scrollView;
     }
 
-    private LinearLayout createProfileHeader(String savedUrl) {
+    private LinearLayout createProfileHeader() {
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
@@ -981,10 +996,12 @@ public class MainActivity extends Activity {
         textBlock.setPadding(dp(14), 0, dp(8), 0);
         header.addView(textBlock, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
-        TextView title = makeTitle("配置参数", 22);
+        TextView title = makeTitle("ColorVision 移动端", 22);
         textBlock.addView(title, matchWidthWrapParams());
 
-        TextView subtitle = makeBodyText(savedUrl.isEmpty() ? "未连接电脑端" : getBaseFromUrl(savedUrl));
+        TextView subtitle = makeBodyText(appPreferences.hasOperationsProfile()
+                ? "现场运维已配对，启动时自动连接"
+                : "尚未连接现场运维电脑");
         subtitle.setPadding(0, dp(4), 0, 0);
         textBlock.addView(subtitle, matchWidthWrapParams());
 
@@ -996,15 +1013,7 @@ public class MainActivity extends Activity {
     }
 
     private void openCurrentDeviceOrSetup() {
-        String savedUrl = getSavedLanUrl();
-        int startTab = appPreferences.consumeStartTab(TAB_DEVICES);
-        if (startTab == TAB_PROFILE) {
-            showProfileView();
-        } else if (savedUrl.isEmpty()) {
-            showSetupView();
-        } else {
-            showDashboard(savedUrl);
-        }
+        showOperationsLanding(false);
     }
 
     private String getPortFromUrl(String url) {
@@ -1272,7 +1281,7 @@ public class MainActivity extends Activity {
                 saveAndOpen(result);
                 return;
             }
-            Toast.makeText(this, "已取消扫码，可手动输入连接地址", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "已取消扫码；下载站地址无需填写", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -1328,18 +1337,7 @@ public class MainActivity extends Activity {
             return;
         }
 
-        String url = parseConnectionUrl(rawContent);
-        if (url.isEmpty()) {
-            Toast.makeText(this, "没有识别到有效的连接地址", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (AppPreferences.containsUrlCredential(url)) {
-            Toast.makeText(this, "旧版 URL token 配对码已停用，请在电脑端刷新安全运维配对码", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        appPreferences.saveLanUrl(url);
-        showDashboard(url);
+        Toast.makeText(this, "请扫描电脑端的安全运维配对码；下载站地址由应用固定管理", Toast.LENGTH_LONG).show();
     }
 
     private String parseConnectionUrl(String rawContent) {
@@ -1642,14 +1640,7 @@ public class MainActivity extends Activity {
         button.setMinHeight(dp(38));
         button.setBackground(rounded(Color.rgb(31, 111, 235), dp(21), Color.TRANSPARENT, 0));
         button.setVisibility(View.GONE);
-        button.setOnClickListener(v -> {
-            String savedUrl = getSavedLanUrl();
-            if (savedUrl.isEmpty()) {
-                showSetupView();
-            } else {
-                showDashboard(savedUrl);
-            }
-        });
+        button.setOnClickListener(v -> showOperationsLanding(false));
         return button;
     }
 
@@ -1731,7 +1722,7 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (currentTab == TAB_HOME && homeWebView.canGoBack()) {
+        if (currentTab == TAB_DOWNLOADS && homeWebView.canGoBack()) {
             homeWebView.goBack();
             return;
         }
@@ -1742,12 +1733,7 @@ public class MainActivity extends Activity {
         }
 
         if (webView.getVisibility() == View.VISIBLE) {
-            String savedUrl = getSavedLanUrl();
-            if (savedUrl.isEmpty()) {
-                showSetupView();
-            } else {
-                showDashboard(savedUrl);
-            }
+            showOperationsLanding(false);
             return;
         }
 

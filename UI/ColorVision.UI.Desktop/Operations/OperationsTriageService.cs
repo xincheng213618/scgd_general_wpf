@@ -59,7 +59,7 @@ namespace ColorVision.UI.Desktop.Operations
         public DateTimeOffset GeneratedAt { get; init; } = DateTimeOffset.UtcNow;
         public IReadOnlyList<OperationsTriageFinding> Findings { get; init; } = [];
         public string SafetyNotice { get; init; } =
-            "建议仅引用有界脱敏摘要。固定 MQTT 恢复由已配对手机明确确认后执行；诊断包、主窗口快照与支持会话仍需电脑端本机同意。";
+            "建议仅引用有界脱敏摘要。固定 MQTT 恢复、脱敏诊断包与单次主窗口快照由已配对手机明确确认后执行；支持会话仍需电脑端本机同意。";
     }
 
     public static class OperationsTriageService

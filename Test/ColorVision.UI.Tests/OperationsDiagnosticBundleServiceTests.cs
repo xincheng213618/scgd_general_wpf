@@ -130,6 +130,7 @@ namespace ColorVision.UI.Tests
                 File.SetLastWriteTimeUtc(created.FilePath, now.AddHours(-25).UtcDateTime);
                 Assert.Equal(OperationsDiagnosticBundleLookupStatus.Expired,
                     service.TryRead(created.BundleId, out _));
+                Assert.False(File.Exists(created.FilePath));
             }
             finally
             {
@@ -207,12 +208,31 @@ namespace ColorVision.UI.Tests
                 });
                 Assert.Equal(404, foreign.StatusCode);
 
-                Assert.NotNull(store.DecideJob(job.JobId, "device-a", true, "approved", "decision"));
-                OperationsDiagnosticBundleResult bundle = bundles.Create(
-                    () => new { app = "ColorVision", version = "1.2.3" },
-                    new OperationsLogDigest(), HealthyServices(DateTimeOffset.UtcNow));
-                Assert.NotNull(store.LocalCoSign(job.JobId, true, bundle.BundleId));
-                Assert.NotNull(store.CompleteJob(job.JobId, true, bundle.BundleId));
+                string decisionPath = $"/ops/v1/jobs/{job.JobId}/decision";
+                byte[] decisionBody = Encoding.UTF8.GetBytes("{\"approved\":true,\"reason\":\"confirmed\"}");
+                OperationsApiResponse decision = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = decisionPath,
+                    Body = decisionBody,
+                    Headers = Sign(keyA, "device-a", "POST", decisionPath, decisionBody),
+                });
+                Assert.Equal(200, decision.StatusCode);
+                using (JsonDocument decisionDocument = JsonDocument.Parse(decision.Body))
+                {
+                    JsonElement completed = decisionDocument.RootElement.GetProperty("data").GetProperty("job");
+                    Assert.Equal("completed", completed.GetProperty("status").GetString());
+                    Assert.False(completed.GetProperty("requiresLocalCoSign").GetBoolean());
+                    Assert.Equal("diagnostic-bundle-receipt",
+                        completed.GetProperty("evidence").GetProperty("kind").GetString());
+                }
+
+                OperationsJob completedJob = Assert.IsType<OperationsJob>(
+                    store.GetJobForDevice(job.JobId, "device-a"));
+                string bundleId = Assert.IsType<string>(completedJob.ResultEvidenceId);
+                Assert.Equal(OperationsDiagnosticBundleLookupStatus.Available,
+                    bundles.TryRead(bundleId, out OperationsDiagnosticBundleResult? bundle));
+                Assert.NotNull(bundle);
 
                 OperationsApiResponse accepted = router.Handle(new OperationsSecureRequest
                 {
@@ -226,6 +246,8 @@ namespace ColorVision.UI.Tests
                 Assert.Equal(bundle.Sha256, accepted.Headers["X-CV-Content-SHA256"]);
                 Assert.Equal(bundle.Sha256,
                     Convert.ToHexString(SHA256.HashData(accepted.BodyBytes)).ToLowerInvariant());
+                Assert.DoesNotContain(store.GetAudit(), item => item.Action == "job.local_cosign");
+                Assert.Contains(store.GetAudit(), item => item.Action == "job.execution.start");
                 Assert.Contains(store.GetAudit(), item => item.Action == "diagnostic.bundle.download");
 
                 const string jobsPath = "/ops/v1/jobs";

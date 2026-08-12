@@ -139,7 +139,10 @@ namespace ColorVision.UI.Desktop.Operations
                 DateTimeOffset createdAt = new(info.LastWriteTimeUtc);
                 DateTimeOffset expiresAt = createdAt.Add(DownloadLifetime);
                 if (_clock() > expiresAt)
+                {
+                    File.Delete(path);
                     return OperationsDiagnosticBundleLookupStatus.Expired;
+                }
                 if (info.Length is <= 0 or > MaximumDownloadBytes)
                     return OperationsDiagnosticBundleLookupStatus.TooLarge;
 

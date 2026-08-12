@@ -605,7 +605,7 @@ namespace ColorVision.UI.Tests
                 registry.Approve("device-job-safe", "Phone", Convert.ToBase64String(key.ExportSubjectPublicKeyInfo()),
                     OperationsPairingService.InitialScopes);
                 OperationsWorkStore workStore = new(workPath);
-                workStore.CreateJob("ops.diagnostics.bundle.create", "device-job-safe", "private reason",
+                workStore.CreateJob("ops.diagnostics.bundle.create", "web-relay", "private reason",
                     JsonSerializer.SerializeToElement(new { serviceId = "mosquitto", secret = "private-input" }), "private-correlation");
                 workStore.CreateJob("ops.service.restart", "foreign-device-id", "foreign reason",
                     JsonSerializer.SerializeToElement(new { serviceId = "mosquitto" }), "foreign-correlation");

@@ -93,23 +93,46 @@ namespace ColorVision.UI.Tests
                 Assert.Equal(409, Send(router, keyA, "device-a", path).StatusCode);
                 Assert.Equal(404, Send(router, keyB, "device-b", path).StatusCode);
 
-                Assert.NotNull(store.DecideJob(job.JobId, "device-a", true, "approved", "decision"));
-                OperationsWindowSnapshotResult created = snapshots.Create();
-                string evidenceId = OperationsWindowSnapshotService.EvidencePrefix + created.SnapshotId;
-                Assert.NotNull(store.LocalCoSign(job.JobId, true, evidenceId));
-                Assert.NotNull(store.CompleteJob(job.JobId, true, evidenceId));
+                string decisionPath = $"/ops/v1/jobs/{job.JobId}/decision";
+                byte[] decisionBody = Encoding.UTF8.GetBytes("{\"approved\":true,\"reason\":\"confirmed\"}");
+                OperationsApiResponse decision = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = decisionPath,
+                    Body = decisionBody,
+                    Headers = Sign(keyA, "device-a", "POST", decisionPath, decisionBody),
+                });
+                Assert.Equal(200, decision.StatusCode);
+                using (JsonDocument decisionDocument = JsonDocument.Parse(decision.Body))
+                {
+                    JsonElement completed = decisionDocument.RootElement.GetProperty("data").GetProperty("job");
+                    Assert.Equal("completed", completed.GetProperty("status").GetString());
+                    Assert.False(completed.GetProperty("requiresLocalCoSign").GetBoolean());
+                    Assert.Equal("window-snapshot-receipt",
+                        completed.GetProperty("evidence").GetProperty("kind").GetString());
+                }
+
+                OperationsJob completedJob = Assert.IsType<OperationsJob>(
+                    store.GetJobForDevice(job.JobId, "device-a"));
+                Assert.True(OperationsWindowSnapshotService.TryGetSnapshotId(
+                    completedJob.ResultEvidenceId, out string snapshotId));
+                string snapshotPath = Path.Combine(root, "snapshots", $"colorvision-window-{snapshotId}.jpg");
+                Assert.True(File.Exists(snapshotPath));
 
                 OperationsApiResponse accepted = Send(router, keyA, "device-a", path);
                 Assert.Equal(200, accepted.StatusCode);
                 Assert.Equal("image/jpeg", accepted.ContentType);
                 Assert.Equal(TestJpeg, accepted.BodyBytes);
-                Assert.Equal(created.Sha256, accepted.Headers["X-CV-Content-SHA256"]);
+                Assert.Equal(Convert.ToHexString(SHA256.HashData(TestJpeg)).ToLowerInvariant(),
+                    accepted.Headers["X-CV-Content-SHA256"]);
                 Assert.Null(store.GetJobForDevice(job.JobId, "device-a")?.ResultEvidenceId);
+                Assert.DoesNotContain(store.GetAudit(), item => item.Action == "job.local_cosign");
+                Assert.Contains(store.GetAudit(), item => item.Action == "job.execution.start");
                 Assert.Contains(store.GetAudit(), item => item.Action == "window.snapshot.download");
                 Assert.Contains(store.GetAudit(), item => item.Action == "job.evidence.consume");
 
                 Assert.Equal(404, Send(router, keyA, "device-a", path).StatusCode);
-                Assert.False(File.Exists(created.FilePath));
+                Assert.False(File.Exists(snapshotPath));
             }
             finally
             {

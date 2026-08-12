@@ -506,22 +506,30 @@ namespace ColorVision.UI.Desktop.Operations
                     return Error(400, correlationId, "approval_decision_required", "approved must be a boolean.");
                 string reason = OptionalString(root, "reason", 200);
                 bool approved = approvedElement.GetBoolean();
-                bool executesAfterMobileApproval = currentJob.CapabilityId is "ops.flow.cancel" or "ops.service.restart";
+                bool executesAfterMobileApproval = currentJob.CapabilityId is
+                    "ops.flow.cancel" or "ops.service.restart"
+                    or "ops.diagnostics.bundle.create" or "ops.window.snapshot.capture";
                 OperationsJob? job = approved
                     && executesAfterMobileApproval
                     && currentJob.Status == "approved_mobile"
                         ? currentJob
                         : _workStore.DecideJob(jobId, device.DeviceId, approved, reason, correlationId);
                 if (job is { Status: "approved_mobile" }
-                    && job.CapabilityId is "ops.flow.cancel" or "ops.service.restart")
+                    && job.CapabilityId is "ops.flow.cancel" or "ops.service.restart"
+                        or "ops.diagnostics.bundle.create" or "ops.window.snapshot.capture")
                 {
                     OperationsJob? executingJob = _workStore.BeginExecution(job.JobId);
                     if (executingJob == null)
                         return Error(409, correlationId, "job_execution_already_started",
                             "The job execution has already started or completed.");
-                    job = executingJob.CapabilityId == "ops.flow.cancel"
-                        ? ExecuteFlowCancellation(executingJob)
-                        : ExecuteMqttRestart(executingJob);
+                    job = executingJob.CapabilityId switch
+                    {
+                        "ops.flow.cancel" => ExecuteFlowCancellation(executingJob),
+                        "ops.service.restart" => ExecuteMqttRestart(executingJob),
+                        "ops.diagnostics.bundle.create" => ExecuteDiagnosticBundle(executingJob),
+                        "ops.window.snapshot.capture" => ExecuteWindowSnapshot(executingJob),
+                        _ => executingJob,
+                    };
                 }
                 return job == null
                     ? Error(409, correlationId, "job_not_awaiting_decision", "The job is not awaiting a mobile decision.")
@@ -564,6 +572,42 @@ namespace ColorVision.UI.Desktop.Operations
                 result = new OperationsMqttRestartResult(false, "mqtt_restart_controller_failed");
             }
             return _workStore.CompleteJob(job.JobId, result.Success, result.EvidenceId) ?? job;
+        }
+
+        private OperationsJob ExecuteDiagnosticBundle(OperationsJob job)
+        {
+            if (_diagnosticBundles == null)
+                return _workStore.CompleteJob(job.JobId, false,
+                    "diagnostic_bundle_provider_unavailable") ?? job;
+            try
+            {
+                OperationsDiagnosticBundleResult bundle = _diagnosticBundles.Create(
+                    _snapshotProvider, _alerts.GetDigest(), CaptureServiceHealth());
+                return _workStore.CompleteJob(job.JobId, true, bundle.BundleId) ?? job;
+            }
+            catch (Exception ex)
+            {
+                return _workStore.CompleteJob(job.JobId, false,
+                    $"diagnostic_bundle_error:{ex.GetType().Name}") ?? job;
+            }
+        }
+
+        private OperationsJob ExecuteWindowSnapshot(OperationsJob job)
+        {
+            if (_windowSnapshots == null)
+                return _workStore.CompleteJob(job.JobId, false,
+                    "window_snapshot_provider_unavailable") ?? job;
+            try
+            {
+                OperationsWindowSnapshotResult snapshot = _windowSnapshots.Create();
+                string evidenceId = OperationsWindowSnapshotService.EvidencePrefix + snapshot.SnapshotId;
+                return _workStore.CompleteJob(job.JobId, true, evidenceId) ?? job;
+            }
+            catch (Exception ex)
+            {
+                return _workStore.CompleteJob(job.JobId, false,
+                    $"window_snapshot_error:{ex.GetType().Name}") ?? job;
+            }
         }
 
         private OperationsApiResponse HandleDiagnosticBundleDownload(

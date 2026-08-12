@@ -239,7 +239,7 @@ public class OperationsActivity extends Activity {
         progress.setVisibility(View.GONE);
         title.setText("现场运维概览");
         state.setText("已通过设备密钥与 TLS 证书指纹验证");
-        details.setText("状态、性能、告警、消息通道和设备运行状态汇总可直接查看；显示/最小化窗口属于低风险审计操作。取消当前主检测和固定 MQTT 恢复需要手机明确确认；诊断包、主窗口快照与支持会话仍需电脑端本机同意。");
+        details.setText("状态、性能、告警、消息通道和设备运行状态汇总可直接查看；显示/最小化窗口属于低风险审计操作。取消当前检测、固定 MQTT 恢复、脱敏诊断包和单次主窗口快照只需手机明确确认；支持会话仍需电脑端同意。");
         actions.removeAllViews();
 
         Button connectionCheck = new Button(this);
@@ -295,12 +295,12 @@ public class OperationsActivity extends Activity {
         actions.addView(jobs, actionParams());
 
         Button diagnostic = new Button(this);
-        diagnostic.setText("申请诊断包");
+        diagnostic.setText("生成并分享诊断包");
         diagnostic.setOnClickListener(v -> confirmCreateDiagnosticJob());
         actions.addView(diagnostic, actionParams());
 
         Button windowSnapshot = new Button(this);
-        windowSnapshot.setText("申请主窗口安全快照");
+        windowSnapshot.setText("采集并预览主窗口快照");
         windowSnapshot.setOnClickListener(v -> confirmCreateWindowSnapshotJob());
         actions.addView(windowSnapshot, actionParams());
 
@@ -561,7 +561,7 @@ public class OperationsActivity extends Activity {
             }
         }
         text.append("\n\n").append(report.optString("safetyNotice",
-                "固定 MQTT 恢复需手机确认；诊断包、主窗口快照与支持会话仍需电脑端本机同意。"));
+                "固定 MQTT 恢复、脱敏诊断包和单次主窗口快照需手机确认；支持会话仍需电脑端本机同意。"));
         return text.toString();
     }
 
@@ -751,10 +751,10 @@ public class OperationsActivity extends Activity {
 
     private void confirmCreateDiagnosticJob() {
         new AlertDialog.Builder(this)
-                .setTitle("申请诊断包")
-                .setMessage("诊断包只包含有界运行状态、脱敏事件、白名单服务健康和去标识审计，不含凭据、用户名、机器名、设备 ID、用户文档、数据库或图像。提交后仍需电脑端本机确认；完成后仅本申请设备可在 24 小时内下载。")
+                .setTitle("生成并分享诊断包")
+                .setMessage("确认后电脑端立即生成脱敏 ZIP，手机会校验 SHA-256 并打开系统分享面板，不再等待电脑端共签。包内只含有界运行状态、脱敏事件、白名单服务健康和去标识审计，不含凭据、用户名、机器名、设备 ID、用户文档、数据库或图像；仅本申请设备可在 24 小时内下载。")
                 .setNegativeButton("取消", null)
-                .setPositiveButton("提交申请", (dialog, which) -> createDiagnosticJob())
+                .setPositiveButton("确认生成", (dialog, which) -> createDiagnosticJob())
                 .show();
     }
 
@@ -765,7 +765,7 @@ public class OperationsActivity extends Activity {
         }
         new AlertDialog.Builder(this)
                 .setTitle("下载安全诊断包")
-                .setMessage("仅下载当前设备申请且已由电脑端本机共签的脱敏 ZIP。下载内容会先校验 SHA-256，再交给你选择的应用；不要转发到不受信任的位置。")
+                .setMessage("仅下载当前设备已明确确认生成的脱敏 ZIP。下载内容会先校验 SHA-256，再交给你选择的应用；不要转发到不受信任的位置。")
                 .setNegativeButton("取消", null)
                 .setPositiveButton("下载并分享", (dialog, which) -> downloadAndShareDiagnosticBundle(jobId))
                 .show();
@@ -811,17 +811,18 @@ public class OperationsActivity extends Activity {
     }
 
     private void createDiagnosticJob() {
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在生成并校验脱敏诊断包…");
         executor.execute(() -> {
             try {
-                JSONObject body = new JSONObject();
-                body.put("capabilityId", "ops.diagnostics.bundle.create");
-                body.put("reason", "现场支持诊断");
-                body.put("input", new JSONObject());
-                client.post("/ops/v1/jobs", body);
-                runOnUiThread(() -> {
-                    state.setText("诊断作业已创建，请进入“作业与审批”完成移动审批");
-                    showJobs();
-                });
+                JSONObject job = createAndApproveJob(
+                        "ops.diagnostics.bundle.create", "现场支持诊断", new JSONObject(),
+                        "diagnostic_bundle_job_missing", "已配对手机明确确认生成脱敏诊断包");
+                String jobId = job.optString("jobId", "");
+                if (!"completed".equals(job.optString("status", "")) || jobId.isEmpty()) {
+                    throw new IllegalStateException("diagnostic_bundle_not_completed");
+                }
+                runOnUiThread(() -> downloadAndShareDiagnosticBundle(jobId));
             } catch (Exception ex) {
                 runOnUiThread(() -> showTransientError(ex));
             }
@@ -830,25 +831,27 @@ public class OperationsActivity extends Activity {
 
     private void confirmCreateWindowSnapshotJob() {
         new AlertDialog.Builder(this)
-                .setTitle("申请主窗口安全快照")
-                .setMessage("快照只捕获 ColorVision 主窗口，不捕获整个桌面，也不连续录屏。图像可能包含当前可见的检测数据，因此需要在手机内明确批准，再由电脑端本机共签。完成后仅本申请设备可在 5 分钟内读取一次。")
+                .setTitle("采集并预览主窗口快照")
+                .setMessage("确认后会先显示或还原 ColorVision 主窗口，再立即采集一张 JPEG；手机会校验后预览，不再等待电脑端共签。不会捕获整个桌面，也不会连续录屏；画面可能包含当前可见的检测数据。仅本申请设备可在 5 分钟内读取一次，读取后电脑端立即销毁。")
                 .setNegativeButton("取消", null)
-                .setPositiveButton("提交申请", (dialog, which) -> createWindowSnapshotJob())
+                .setPositiveButton("确认采集", (dialog, which) -> createWindowSnapshotJob())
                 .show();
     }
 
     private void createWindowSnapshotJob() {
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在采集主窗口安全快照…");
         executor.execute(() -> {
             try {
-                JSONObject body = new JSONObject();
-                body.put("capabilityId", "ops.window.snapshot.capture");
-                body.put("reason", "现场远程调试主窗口取证");
-                body.put("input", new JSONObject());
-                client.post("/ops/v1/jobs", body);
-                runOnUiThread(() -> {
-                    state.setText("主窗口快照作业已创建，请完成移动审批");
-                    showJobs();
-                });
+                client.post("/ops/v1/actions/window/show", new JSONObject());
+                JSONObject job = createAndApproveJob(
+                        "ops.window.snapshot.capture", "现场远程调试主窗口取证", new JSONObject(),
+                        "window_snapshot_job_missing", "已配对手机明确确认采集单次主窗口快照");
+                String jobId = job.optString("jobId", "");
+                if (!"completed".equals(job.optString("status", "")) || jobId.isEmpty()) {
+                    throw new IllegalStateException("window_snapshot_not_completed");
+                }
+                runOnUiThread(() -> downloadWindowSnapshot(jobId));
             } catch (Exception ex) {
                 runOnUiThread(() -> showTransientError(ex));
             }
@@ -862,7 +865,7 @@ public class OperationsActivity extends Activity {
         }
         new AlertDialog.Builder(this)
                 .setTitle("读取一次主窗口快照")
-                .setMessage("将下载当前设备申请且已由电脑端本机共签的 ColorVision 主窗口 JPEG。SHA-256 校验通过后，电脑端证据立即销毁；应用先在本机预览，只有你再次点击分享才会交给其他应用。")
+                .setMessage("将下载当前设备已明确确认采集的 ColorVision 主窗口 JPEG。SHA-256 校验通过后，电脑端证据立即销毁；应用先在本机预览，只有你再次点击分享才会交给其他应用。")
                 .setNegativeButton("取消", null)
                 .setPositiveButton("下载并预览", (dialog, which) -> downloadWindowSnapshot(jobId))
                 .show();
@@ -947,6 +950,31 @@ public class OperationsActivity extends Activity {
         startActivity(Intent.createChooser(share, "分享主窗口安全快照"));
     }
 
+    private JSONObject createAndApproveJob(String capabilityId, String reason, JSONObject input,
+                                           String missingJobCode, String approvalReason) throws Exception {
+        JSONObject body = new JSONObject();
+        body.put("capabilityId", capabilityId);
+        body.put("reason", reason);
+        body.put("input", input);
+        JSONObject created = client.post("/ops/v1/jobs", body);
+        JSONObject createdData = created.optJSONObject("data");
+        JSONObject createdJob = createdData == null ? null : createdData.optJSONObject("job");
+        String jobId = createdJob == null ? "" : createdJob.optString("jobId", "");
+        if (jobId.isEmpty()) {
+            throw new IllegalStateException(missingJobCode);
+        }
+        JSONObject decision = new JSONObject();
+        decision.put("approved", true);
+        decision.put("reason", approvalReason);
+        JSONObject response = client.post("/ops/v1/jobs/" + jobId + "/decision", decision);
+        JSONObject responseData = response.optJSONObject("data");
+        JSONObject completedJob = responseData == null ? null : responseData.optJSONObject("job");
+        if (completedJob == null) {
+            throw new IllegalStateException(missingJobCode);
+        }
+        return completedJob;
+    }
+
     private void confirmRestartMqtt() {
         new AlertDialog.Builder(this)
                 .setTitle("确认重启 MQTT 服务")
@@ -963,24 +991,10 @@ public class OperationsActivity extends Activity {
             try {
                 JSONObject input = new JSONObject();
                 input.put("serviceId", "mosquitto");
-                JSONObject body = new JSONObject();
-                body.put("capabilityId", "ops.service.restart");
-                body.put("reason", "现场 MQTT 通信恢复");
-                body.put("input", input);
-                JSONObject created = client.post("/ops/v1/jobs", body);
-                JSONObject createdData = created.optJSONObject("data");
-                JSONObject createdJob = createdData == null ? null : createdData.optJSONObject("job");
-                String jobId = createdJob == null ? "" : createdJob.optString("jobId", "");
-                if (jobId.isEmpty()) {
-                    throw new IllegalStateException("mqtt_restart_job_missing");
-                }
-                JSONObject decision = new JSONObject();
-                decision.put("approved", true);
-                decision.put("reason", "已配对手机明确确认固定 MQTT 恢复");
-                JSONObject response = client.post("/ops/v1/jobs/" + jobId + "/decision", decision);
-                JSONObject responseData = response.optJSONObject("data");
-                JSONObject completedJob = responseData == null ? null : responseData.optJSONObject("job");
-                String status = completedJob == null ? "" : completedJob.optString("status", "");
+                JSONObject job = createAndApproveJob(
+                        "ops.service.restart", "现场 MQTT 通信恢复", input,
+                        "mqtt_restart_job_missing", "已配对手机明确确认固定 MQTT 恢复");
+                String status = job.optString("status", "");
                 runOnUiThread(() -> {
                     Toast.makeText(this, "completed".equals(status)
                             ? "MQTT 消息服务已重启" : "MQTT 重启未完成，请查看作业结果", Toast.LENGTH_LONG).show();
@@ -2679,10 +2693,13 @@ public class OperationsActivity extends Activity {
             return "设备已被电脑端撤销，请重新配对。";
         }
         if (message.contains("window_snapshot_expired")) {
-            return "主窗口快照的 5 分钟读取窗口已结束，请重新申请。";
+            return "主窗口快照的 5 分钟读取窗口已结束，请重新采集。";
+        }
+        if (message.contains("window_snapshot_not_completed")) {
+            return "主窗口快照采集未完成。请确保电脑主窗口已显示且未最小化，然后重试。";
         }
         if (message.contains("window_snapshot_not_ready")) {
-            return "主窗口快照尚未完成电脑端本机共签。";
+            return "主窗口快照尚未完成采集。";
         }
         if (message.contains("window_snapshot_not_found")) {
             return "一次性主窗口快照已读取销毁、已失效，或不属于当前设备。";
@@ -2703,16 +2720,19 @@ public class OperationsActivity extends Activity {
             return "主窗口快照格式或尺寸不符合安全约束，已阻止预览。";
         }
         if (message.contains("diagnostic_bundle_expired")) {
-            return "诊断包的 24 小时下载窗口已结束，请重新申请。";
+            return "诊断包的 24 小时下载窗口已结束，请重新生成。";
+        }
+        if (message.contains("diagnostic_bundle_not_completed")) {
+            return "脱敏诊断包生成未完成，请稍后重试并查看作业结果。";
         }
         if (message.contains("diagnostic_bundle_not_ready")) {
-            return "诊断包尚未完成电脑端本机共签。";
+            return "诊断包尚未完成生成。";
         }
         if (message.contains("diagnostic_bundle_not_found")) {
             return "当前设备无权读取该诊断包，或文件已经不可用。";
         }
         if (message.contains("diagnostic_bundle_regeneration_required")) {
-            return "旧版诊断包不符合当前脱敏规则，请重新申请生成。";
+            return "旧版诊断包不符合当前脱敏规则，请重新生成。";
         }
         if (message.contains("diagnostic_bundle_read_failed")) {
             return "电脑端暂时无法读取诊断包，请稍后重试。";

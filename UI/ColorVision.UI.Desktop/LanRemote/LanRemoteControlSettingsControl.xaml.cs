@@ -269,7 +269,7 @@ namespace ColorVision.UI.Desktop.LanRemote
                 PairedDevicesListBox.ItemsSource = Service.OperationsHost.Registry.GetAll().Where(item => item.IsActive).ToList();
                 LocalCoSignJobsListBox.ItemsSource = Service.OperationsHost.WorkStore.GetJobs()
                     .Where(item => item.Status == "awaiting_local_cosign"
-                        && OperationsWorkStore.RequiresLocalCoSign(item.CapabilityId)).ToList();
+                        && OperationsWorkStore.RequiresLocalCoSign(item)).ToList();
                 SupportRequestsListBox.ItemsSource = Service.OperationsHost.WorkStore.GetSupportSessions()
                     .Where(item => item.Status == "awaiting_local_consent" && item.ExpiresAt > DateTimeOffset.UtcNow).ToList();
 

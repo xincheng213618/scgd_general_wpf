@@ -2,7 +2,7 @@ namespace ColorVision.UI.Desktop.Operations
 {
     public static class OperationsCapabilityCatalog
     {
-        public const string SchemaVersion = "1.6";
+        public const string SchemaVersion = "1.7";
 
         private static readonly IReadOnlyList<OperationsCapabilityDescriptor> Capabilities =
         [
@@ -330,7 +330,7 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 Id = "ops.window.snapshot.capture",
                 Title = "Capture the ColorVision main window",
-                Description = "Capture one bounded JPEG of the ColorVision main window only. The requesting device has five minutes to read it once after mobile approval and local co-sign.",
+                Description = "Capture one bounded JPEG of the ColorVision main window only after explicit confirmation on the paired phone. The requesting device has five minutes to read it once.",
                 Category = "diagnostics",
                 Provider = "desktop.window",
                 RiskLevel = OperationsRiskLevels.ApprovalRequired,
@@ -338,13 +338,13 @@ namespace ColorVision.UI.Desktop.Operations
                 DiscoverableOn = ["desktop", "android"],
                 TimeoutMs = 30000,
                 Idempotency = "keyed",
-                SupportsCancellation = true,
+                SupportsCancellation = false,
                 Approval = new OperationsApprovalPolicy
                 {
-                    Mode = "paired-device-confirmation-and-local-co-sign",
+                    Mode = "paired-device-confirmation",
                     TtlSeconds = 300,
                     SingleUse = true,
-                    RequiresLocalCoSign = true,
+                    RequiresLocalCoSign = false,
                 },
                 Audit = new OperationsAuditPolicy { Required = true, Redact = ["$.window.content"] },
                 Evidence = ["window.snapshot.jpeg"],
@@ -367,7 +367,7 @@ namespace ColorVision.UI.Desktop.Operations
                     Mode = "completed-device-owned-job",
                     TtlSeconds = 300,
                     SingleUse = true,
-                    RequiresLocalCoSign = true,
+                    RequiresLocalCoSign = false,
                 },
                 Audit = new OperationsAuditPolicy { Required = true },
                 Evidence = ["window.snapshot.sha256"],
@@ -377,7 +377,7 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 Id = "ops.diagnostics.bundle.create",
                 Title = "Create a diagnostic bundle",
-                Description = "Create a bounded, redacted diagnostic evidence bundle for field support. A completed bundle remains downloadable only by its requesting device for 24 hours.",
+                Description = "Create a bounded, redacted diagnostic evidence bundle after explicit confirmation on the paired phone. A completed bundle remains downloadable only by its requesting device for 24 hours.",
                 Category = "diagnostics",
                 Provider = "desktop.diagnostics",
                 RiskLevel = OperationsRiskLevels.ApprovalRequired,
@@ -385,13 +385,13 @@ namespace ColorVision.UI.Desktop.Operations
                 DiscoverableOn = ["desktop", "android", "copilot"],
                 TimeoutMs = 60000,
                 Idempotency = "keyed",
-                SupportsCancellation = true,
+                SupportsCancellation = false,
                 Approval = new OperationsApprovalPolicy
                 {
-                    Mode = "paired-device-confirmation-and-local-co-sign",
+                    Mode = "paired-device-confirmation",
                     TtlSeconds = 300,
                     SingleUse = true,
-                    RequiresLocalCoSign = true,
+                    RequiresLocalCoSign = false,
                 },
                 Audit = new OperationsAuditPolicy { Required = true, Redact = ["$.bundle.contents"] },
                 Evidence = ["diagnostic.bundle"],
@@ -414,7 +414,7 @@ namespace ColorVision.UI.Desktop.Operations
                     Mode = "completed-device-owned-job",
                     TtlSeconds = 86400,
                     SingleUse = false,
-                    RequiresLocalCoSign = true,
+                    RequiresLocalCoSign = false,
                 },
                 Audit = new OperationsAuditPolicy { Required = true },
                 Evidence = ["diagnostic.bundle.sha256"],

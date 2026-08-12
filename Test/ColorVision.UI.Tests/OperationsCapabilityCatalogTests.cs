@@ -27,6 +27,16 @@ namespace ColorVision.UI.Tests
             Assert.Equal(OperationsRiskLevels.ApprovalRequired, cancelFlow.RiskLevel);
             Assert.False(cancelFlow.Approval.RequiresLocalCoSign);
             Assert.Equal("ops.jobs.create", cancelFlow.Permission);
+            OperationsCapabilityDescriptor[] evidenceCapabilities = capabilities.Where(capability =>
+                capability.Id is "ops.diagnostics.bundle.create" or "ops.window.snapshot.capture").ToArray();
+            Assert.Equal(2, evidenceCapabilities.Length);
+            foreach (OperationsCapabilityDescriptor evidence in evidenceCapabilities)
+            {
+                Assert.True(evidence.Available);
+                Assert.Equal("paired-device-confirmation", evidence.Approval.Mode);
+                Assert.False(evidence.Approval.RequiresLocalCoSign);
+                Assert.False(evidence.SupportsCancellation);
+            }
             OperationsCapabilityDescriptor deviceHealth = Assert.Single(capabilities,
                 capability => capability.Id == "ops.devices.health.read");
             Assert.True(deviceHealth.Available);

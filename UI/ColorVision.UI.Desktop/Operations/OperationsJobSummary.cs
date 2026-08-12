@@ -42,7 +42,7 @@ namespace ColorVision.UI.Desktop.Operations
                 Target = Target(job.CapabilityId),
                 RiskLevel = job.RiskLevel,
                 Status = job.Status,
-                RequiresLocalCoSign = OperationsWorkStore.RequiresLocalCoSign(job.CapabilityId),
+                RequiresLocalCoSign = OperationsWorkStore.RequiresLocalCoSign(job),
                 CreatedAt = job.CreatedAt,
                 UpdatedAt = job.UpdatedAt,
                 Evidence = Evidence(job),
@@ -70,7 +70,7 @@ namespace ColorVision.UI.Desktop.Operations
             items.Add(new OperationsJobTimelineItem
             {
                 Stage = "local_cosign",
-                State = !OperationsWorkStore.RequiresLocalCoSign(job.CapabilityId)
+                State = !OperationsWorkStore.RequiresLocalCoSign(job)
                     ? "not_required"
                     : job.Status switch
                 {

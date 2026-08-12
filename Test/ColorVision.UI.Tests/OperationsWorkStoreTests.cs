@@ -113,6 +113,53 @@ namespace ColorVision.UI.Tests
             }
         }
 
+        [Theory]
+        [InlineData("ops.diagnostics.bundle.create")]
+        [InlineData("ops.window.snapshot.capture")]
+        public void PairedPhoneEvidenceJobsExecuteAfterMobileDecisionWithoutLocalCoSign(string capabilityId)
+        {
+            string path = NewPath();
+            try
+            {
+                OperationsWorkStore store = new(path);
+                OperationsJob job = store.CreateJob(capabilityId, "phone-1", "Remote evidence",
+                    JsonSerializer.SerializeToElement(new { }), "correlation-1");
+
+                OperationsJob approved = Assert.IsType<OperationsJob>(store.DecideJob(
+                    job.JobId, "phone-1", true, "confirmed", "correlation-2"));
+                Assert.Equal("approved_mobile", approved.Status);
+                Assert.False(OperationsJobSummaryFactory.Create(approved).RequiresLocalCoSign);
+                Assert.NotNull(store.BeginExecution(job.JobId));
+            }
+            finally
+            {
+                DeletePath(path);
+            }
+        }
+
+        [Theory]
+        [InlineData("ops.diagnostics.bundle.create")]
+        [InlineData("ops.window.snapshot.capture")]
+        [InlineData("ops.flow.cancel")]
+        public void PairedPhoneParameterlessJobsRejectRemoteInput(string capabilityId)
+        {
+            string path = NewPath();
+            try
+            {
+                OperationsWorkStore store = new(path);
+                InvalidOperationException error = Assert.Throws<InvalidOperationException>(() =>
+                    store.CreateJob(capabilityId, "phone-1", "Remote evidence",
+                        JsonSerializer.SerializeToElement(new { command = "remote" }), "correlation"));
+
+                Assert.Equal("job_input_not_allowed", error.Message);
+                Assert.Empty(store.GetJobs());
+            }
+            finally
+            {
+                DeletePath(path);
+            }
+        }
+
         [Fact]
         public void WebRelayTaskIsIdempotentAndStillNeedsHumanApproval()
         {
@@ -126,6 +173,10 @@ namespace ColorVision.UI.Tests
 
                 Assert.Equal(first.JobId, second.JobId);
                 Assert.Equal("awaiting_mobile_approval", second.Status);
+                OperationsJob approved = Assert.IsType<OperationsJob>(store.DecideJob(
+                    first.JobId, "phone-1", true, "confirmed", "decision"));
+                Assert.Equal("awaiting_local_cosign", approved.Status);
+                Assert.True(OperationsJobSummaryFactory.Create(approved).RequiresLocalCoSign);
             }
             finally
             {
