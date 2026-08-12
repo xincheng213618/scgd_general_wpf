@@ -1,61 +1,45 @@
 #pragma warning disable CA1707
-using cvColorVision;
+using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.Spectrum.Correction;
 using Spectrum.Calibration.Correction;
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Reflection;
 
 namespace Spectrum.Tests;
 
 public class SpectrumCorrectionFeatureExtensionTests
 {
     [Fact]
-    public void Provider_IsPublicParameterlessAndImplementsCorrectionContract()
+    public void EngineDevice_ExposesBuiltInCorrectionCommand()
     {
-        Type providerType = typeof(SpectrumCorrectionFeatureProvider);
+        PropertyInfo property = Assert.IsAssignableFrom<PropertyInfo>(
+            typeof(DeviceSpectrum).GetProperty(nameof(DeviceSpectrum.OpenSpectrumCorrectionCommand)));
+        CommandDisplayAttribute attribute = Assert.IsType<CommandDisplayAttribute>(
+            property.GetCustomAttribute<CommandDisplayAttribute>());
 
-        Assert.True(providerType.IsPublic);
-        Assert.False(providerType.IsAbstract);
-        Assert.NotNull(providerType.GetConstructor(Type.EmptyTypes));
-        Assert.True(typeof(ISpectrometerCorrectionFeatureProvider).IsAssignableFrom(providerType));
-
-        object? instance = Activator.CreateInstance(providerType);
-        Assert.IsAssignableFrom<ISpectrometerCorrectionFeatureProvider>(instance);
+        Assert.Equal("光谱修正", attribute.DisplayName);
+        Assert.Equal(-3, attribute.Order);
     }
 
     [Fact]
-    public void Provider_MetadataIsValidForReflectionButton()
+    public void SpectrumPlugin_ExposesIndependentCorrectionMenu()
     {
-        var provider = new SpectrumCorrectionFeatureProvider();
+        var menu = new MenuSpectrumCorrection();
 
-        Assert.False(string.IsNullOrWhiteSpace(provider.Metadata.Id));
-        Assert.False(string.IsNullOrWhiteSpace(provider.Metadata.DisplayName));
-        Assert.False(string.IsNullOrWhiteSpace(provider.Metadata.Description));
-        Assert.Equal(
-            "spectrum.service-result-correction",
-            provider.Metadata.Id,
-            ignoreCase: true);
+        Assert.Equal("光谱修正", menu.Header);
+        Assert.Equal("Spectrum", menu.TargetName);
+        Assert.Equal(ColorVision.UI.Menus.MenuItemConstants.Tool, menu.OwnerGuid);
     }
 
     [Fact]
-    public void SpectrumAssembly_ContainsDiscoverableCorrectionProvider()
+    public void ReflectionProviderChain_IsNoLongerPresent()
     {
-        Type contractType = typeof(ISpectrometerCorrectionFeatureProvider);
-        Type[] discoverableTypes = typeof(SpectrumCorrectionFeatureProvider).Assembly
-            .GetTypes()
-            .Where(type =>
-                contractType.IsAssignableFrom(type) &&
-                type is { IsClass: true, IsAbstract: false, IsPublic: true } &&
-                type.GetConstructor(Type.EmptyTypes) != null)
-            .ToArray();
-
-        Assert.Contains(typeof(SpectrumCorrectionFeatureProvider), discoverableTypes);
-        Assert.All(discoverableTypes, type =>
-        {
-            var provider = Assert.IsAssignableFrom<ISpectrometerCorrectionFeatureProvider>(
-                Activator.CreateInstance(type));
-            Assert.False(string.IsNullOrWhiteSpace(provider.Metadata.Id));
-            Assert.False(string.IsNullOrWhiteSpace(provider.Metadata.DisplayName));
-        });
+        Assert.Null(typeof(DeviceSpectrum).Assembly.GetType(
+            "ColorVision.Engine.Services.Devices.Spectrum.SpectrumCorrectionFeatureProviderRegistry"));
+        Assert.Null(typeof(MenuSpectrumCorrection).Assembly.GetType(
+            "Spectrum.Calibration.Correction.SpectrumCorrectionFeatureProvider"));
     }
 
     [Fact]

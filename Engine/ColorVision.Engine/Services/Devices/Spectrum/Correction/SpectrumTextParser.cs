@@ -1,7 +1,9 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace Spectrum.Calibration.Correction;
+namespace ColorVision.Engine.Services.Devices.Spectrum.Correction;
 
 /// <summary>
 /// Parses wavelength/value text exported by common spreadsheet and spectrum tools.

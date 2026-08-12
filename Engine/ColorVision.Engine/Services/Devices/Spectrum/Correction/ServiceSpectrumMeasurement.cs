@@ -1,4 +1,8 @@
-namespace Spectrum.Calibration.Correction;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace ColorVision.Engine.Services.Devices.Spectrum.Correction;
 
 /// <summary>
 /// Complete service spectrum metadata. Absolute values are reconstructed as fPL * fPlambda.

@@ -1,6 +1,9 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
-namespace Spectrum.Calibration.Correction;
+namespace ColorVision.Engine.Services.Devices.Spectrum.Correction;
 
 public enum SpectrumCorrectionMode
 {

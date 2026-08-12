@@ -1,4 +1,4 @@
-using Spectrum.Calibration.Correction;
+using ColorVision.Engine.Services.Devices.Spectrum.Correction;
 using System.Globalization;
 
 namespace Spectrum.Tests;

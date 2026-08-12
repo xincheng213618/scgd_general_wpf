@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Logging;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.Spectrum.Calibration;
+using ColorVision.Engine.Services.Devices.Spectrum.Correction;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
@@ -159,6 +160,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         [CommandDisplay("ApplyCalibrationGroup", Order = -5)]
         public RelayCommand ApplyCalibrationGroupCommand { get; set; }
 
+        [CommandDisplay("光谱修正", Order = -3)]
+        [Description("使用服务测量结果进行完整光谱或单独亮度修正")]
+        public RelayCommand OpenSpectrumCorrectionCommand { get; set; }
+
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
@@ -207,18 +212,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             EditDisplayConfigCommand = new RelayCommand(a => EditDisplayConfig());
             OpenCalibrationGroupWindowCommand = new RelayCommand(a => OpenCalibrationGroupWindow());
             ApplyCalibrationGroupCommand = new RelayCommand(a => ApplyActiveCalibrationGroup(true));
+            OpenSpectrumCorrectionCommand = new RelayCommand(async _ => await OpenSpectrumCorrectionAsync());
 
             OpenSpectrumLogCommand = new RelayCommand(a => OpenSpectrumLog());
             ContextMenu.Items.Add(new MenuItem() { Header = "SpectrumLog", Command = OpenSpectrumLogCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "CalibrationGroup", Command = OpenCalibrationGroupWindowCommand });
         }
 
-        public async Task ExecuteCorrectionFeatureAsync(
-            ISpectrometerCorrectionFeatureProvider provider,
-            CancellationToken cancellationToken = default)
+        public async Task OpenSpectrumCorrectionAsync(CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(provider);
-
             bool entered;
             try
             {
@@ -238,14 +240,22 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             try
             {
                 var host = new SpectrumCorrectionHost(CaptureCorrectionMeasurementAsync, ApplyCorrectionMagnitudeFileAsync);
-                await provider.ExecuteAsync(host, cancellationToken);
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    var window = new SpectrumCorrectionWindow(host, cancellationToken)
+                    {
+                        Owner = Application.Current.GetActiveWindow(),
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    };
+                    window.ShowDialog();
+                });
             }
             catch (OperationCanceledException)
             {
             }
             catch (Exception ex)
             {
-                log.Error($"Spectrum correction feature '{provider.GetType().FullName}' failed.", ex);
+                log.Error("Spectrum correction window failed.", ex);
                 ShowCorrectionMessage($"打开光谱修正功能失败：{ex.Message}", MessageBoxImage.Error);
             }
             finally
@@ -515,6 +525,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
                     activeGroup.MaguideFile = generatedPath;
                     Config.MaguideFile = generatedPath;
+                    MarkCorrectionRestartRequested();
                     return SpectrumCorrectionApplyResult.PendingRestart(
                         generatedPath,
                         "RC 服务不可用且幅值标定配置回滚失败；配置状态未确认，校正采集保持锁定，请恢复 RC 后手动重启服务。");

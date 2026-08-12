@@ -2,16 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace cvColorVision;
-
-public sealed record SpectrumCorrectionFeatureMetadata(
-    string Id,
-    string DisplayName,
-    string Description,
-    int Order = 0);
+namespace ColorVision.Engine.Services.Devices.Spectrum.Correction;
 
 public sealed class SpectrumMeasurementSnapshot
 {
@@ -99,25 +90,4 @@ public sealed record SpectrumCorrectionApplyResult(
 
     public static SpectrumCorrectionApplyResult Failure(string message) =>
         new(SpectrumCorrectionApplyStatus.Failed, message, string.Empty);
-}
-
-public sealed class SpectrumCorrectionHost
-{
-    public Func<CancellationToken, Task<SpectrumMeasurementSnapshot>> CaptureAsync { get; }
-    public Func<SpectrumCorrectionApplyRequest, CancellationToken, Task<SpectrumCorrectionApplyResult>> ApplyMagnitudeFileAsync { get; }
-
-    public SpectrumCorrectionHost(
-        Func<CancellationToken, Task<SpectrumMeasurementSnapshot>> captureAsync,
-        Func<SpectrumCorrectionApplyRequest, CancellationToken, Task<SpectrumCorrectionApplyResult>> applyMagnitudeFileAsync)
-    {
-        CaptureAsync = captureAsync ?? throw new ArgumentNullException(nameof(captureAsync));
-        ApplyMagnitudeFileAsync = applyMagnitudeFileAsync ?? throw new ArgumentNullException(nameof(applyMagnitudeFileAsync));
-    }
-}
-
-public interface ISpectrometerCorrectionFeatureProvider
-{
-    SpectrumCorrectionFeatureMetadata Metadata { get; }
-
-    Task ExecuteAsync(SpectrumCorrectionHost host, CancellationToken cancellationToken);
 }

@@ -1,5 +1,5 @@
 #pragma warning disable CA1707, CA1861
-using Spectrum.Calibration.Correction;
+using ColorVision.Engine.Services.Devices.Spectrum.Correction;
 using System.IO;
 
 namespace Spectrum.Tests;
