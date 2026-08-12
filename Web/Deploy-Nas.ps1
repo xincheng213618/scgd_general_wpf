@@ -9,6 +9,7 @@ param(
     [int]$Port = 9998,
     [ValidateRange(2, 1000)][int]$KeepSuccessfulBackups = 10,
     [ValidateRange(1, 1000)][int]$KeepFailedBackups = 3,
+    [ValidateRange(1, 1000)][int]$KeepGitBundles = 3,
     [string]$RemoteGitBundle = "",
     [switch]$Force,
     [switch]$SkipTests,
@@ -83,6 +84,7 @@ $taskName = __TASK_NAME__
 $port = __PORT__
 $keepSuccessfulBackups = __KEEP_SUCCESSFUL_BACKUPS__
 $keepFailedBackups = __KEEP_FAILED_BACKUPS__
+$keepGitBundles = __KEEP_GIT_BUNDLES__
 $remoteGitBundle = __REMOTE_GIT_BUNDLE__
 $forceDeploy = __FORCE__
 $skipTests = __SKIP_TESTS__
@@ -95,6 +97,7 @@ $databasePath = Join-Path $backendPath 'marketplace.db'
 $liveDistPath = Join-Path $frontendPath 'dist'
 $historyPath = Join-Path $storagePath 'web-deploy-history.jsonl'
 $backupRoot = Join-Path $storagePath 'web-deploy-backups'
+$gitBundleRoot = Join-Path $storagePath 'web-deploy-bundles'
 $pythonExe = 'C:\Users\Administrator\AppData\Local\Programs\Python\Python310\python.exe'
 $nodeExe = 'C:\Program Files\nodejs\node.exe'
 $npmExe = 'C:\Program Files\nodejs\npm.cmd'
@@ -168,6 +171,39 @@ function Write-DeploymentHistory {
         throw "Storage path does not exist: $storagePath"
     }
     Add-Content -LiteralPath $historyPath -Value ($Record | ConvertTo-Json -Compress -Depth 6) -Encoding UTF8
+}
+
+function Invoke-TransportBundleRetention {
+    param([Parameter(Mandatory)][string]$Commit)
+
+    try {
+        $modulePath = Join-Path $repoPath 'Web\GitBundleRetention.psm1'
+        if (-not (Test-Path -LiteralPath $modulePath -PathType Leaf)) {
+            throw "Git bundle retention module does not exist: $modulePath"
+        }
+        Import-Module $modulePath -Force
+        $parameters = @{
+            RepositoryPath = $repoPath
+            BundleRoot = $gitBundleRoot
+            DeployedCommit = $Commit
+            KeepCount = $keepGitBundles
+            GitExe = $gitExe
+        }
+        if ($remoteGitBundle) {
+            $parameters['CurrentBundlePath'] = $remoteGitBundle
+        }
+        $result = Invoke-WebGitBundleRetention @parameters
+        if ($result.status -eq 'error') {
+            Write-Warning "Git bundle retention completed with errors: $($result.errors -join '; ')"
+        }
+        return $result
+    } catch {
+        Write-Warning "Git bundle retention failed: $($_.Exception.Message)"
+        return [pscustomobject]@{
+            status = 'error'
+            error = $_.Exception.Message
+        }
+    }
 }
 
 function Get-WebListener {
@@ -361,6 +397,7 @@ try {
                 commit = $previousCommit
                 health = $readiness.health.status
                 ready = [bool]$readiness.ready.ready
+                git_bundle_retention = Invoke-TransportBundleRetention -Commit $previousCommit
             }
             Write-DeploymentHistory -Record $record
             Write-Output "NAS Web is already current and healthy: $previousCommit"
@@ -452,6 +489,14 @@ try {
             'Bypass',
             '-File',
             (Join-Path $repoPath 'Web\Test-DeploymentRetention.ps1')
+        )
+        Invoke-NativeCommand -FilePath 'powershell.exe' -ArgumentList @(
+            '-NoProfile',
+            '-NonInteractive',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-File',
+            (Join-Path $repoPath 'Web\Test-GitBundleRetention.ps1')
         )
         Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @(
             '-m',
@@ -602,6 +647,7 @@ try {
         }
         Write-Warning "Deployment backup retention failed: $($_.Exception.Message)"
     }
+    $successRecord['git_bundle_retention'] = Invoke-TransportBundleRetention -Commit $deployedCommit
     Write-DeploymentHistory -Record $successRecord
     $successRecord | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $successMarkerPath -Encoding UTF8
     Write-Output ($successRecord | ConvertTo-Json -Depth 6)
@@ -661,6 +707,7 @@ $replacements = [ordered]@{
     '__PORT__' = $Port.ToString([Globalization.CultureInfo]::InvariantCulture)
     '__KEEP_SUCCESSFUL_BACKUPS__' = $KeepSuccessfulBackups.ToString([Globalization.CultureInfo]::InvariantCulture)
     '__KEEP_FAILED_BACKUPS__' = $KeepFailedBackups.ToString([Globalization.CultureInfo]::InvariantCulture)
+    '__KEEP_GIT_BUNDLES__' = $KeepGitBundles.ToString([Globalization.CultureInfo]::InvariantCulture)
     '__REMOTE_GIT_BUNDLE__' = ConvertTo-PowerShellLiteral $RemoteGitBundle
     '__FORCE__' = if ($Force) { '$true' } else { '$false' }
     '__SKIP_TESTS__' = if ($SkipTests) { '$true' } else { '$false' }

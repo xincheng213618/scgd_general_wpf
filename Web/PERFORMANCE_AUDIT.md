@@ -117,6 +117,12 @@ package hash costing about 381.9 ms moved to index refresh work.
   retention before success. A production preflight found 377 audit rows (oldest
   2026-06-20), so the default cutoff removes none, and no manual DB snapshots
   currently exist.
+- Bounded NAS Git-bundle transport files to the newest 3 verified deployed
+  ancestors. The production preflight found 25 bundles using 9,711,112 bytes:
+  23 were valid deployed ancestors, while 2 legacy bundles lacked the required
+  `HEAD` reference and remained protected. The read-only cleanup plan selected
+  20 verified transport files totaling 9,690,663 bytes; current,
+  unverified, divergent, unexpected, and reparse-point files are never selected.
 - Added route-level frontend splitting, request cancellation, stale-state fixes,
   changelog/plugin HTML sanitization, immutable hashed-asset caching, and lazy
   chunk recovery after rolling deployments.
@@ -138,9 +144,10 @@ package hash costing about 381.9 ms moved to index refresh work.
    metrics; trusted-proxy client identity also needs explicit configuration.
 5. Add OpenAPI as the source of truth and generate TypeScript DTOs. The current
    handwritten interfaces are contract-tested but still transitional.
-6. Bound or remove verified Git-bundle transport files after successful offline
-   NAS deployment. The 2026-08-12 audit found 25 bundles using 9,711,112 bytes;
-   they are transport artifacts, separate from recovery backups.
+6. Bound or rotate the append-only `web-deploy-history.jsonl` after its audit
+   contract and recovery consumers are defined. The current production file is
+   only 35,542 bytes across 53 records, so this is preventative rather than an
+   active capacity issue.
 7. Split the remaining 506.16 KiB minified `ProForm` admin chunk if publish-page
    navigation performance becomes material; it is lazy and does not affect the
    public preload today.

@@ -60,6 +60,17 @@ unexpected directory names, and directories without a deployment status marker
 are never removed. Override the bounded history with
 `-KeepSuccessfulBackups` (minimum 2) and `-KeepFailedBackups` (minimum 1).
 
+Successful deployments and healthy already-current checks also bound
+`D:\ColorVision\web-deploy-bundles` to the newest 3 verified transport bundles
+by default. A bundle is eligible only when it is a direct regular file with the
+expected `ColorVision-Web-<commit>...bundle` name, passes `git bundle verify`,
+exposes exactly one `HEAD`, and that HEAD is an ancestor of the deployed commit.
+The bundle used by the current deployment is always protected. Unexpected,
+unverified, HEAD-less, divergent, and reparse-point files are preserved for
+manual inspection. Override the limit with `-KeepGitBundles` (minimum 1);
+cleanup results and errors are recorded under `git_bundle_retention` without
+turning an otherwise healthy deployment into a rollback.
+
 Production stdout, stderr, startup diagnostics, and background-thread errors are
 captured under `D:\ColorVision\Logs\Web\ColorVisionWeb.log`. The runtime keeps
 five rotated 10 MB backups, and NAS deployment verifies that the new process ID
