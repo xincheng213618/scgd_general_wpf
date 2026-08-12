@@ -118,6 +118,7 @@ continuous SQLite writes.
 | GET `/api/admin/backup/db` | `admin:*` |
 | POST `/api/admin/backup/db` | `admin:*` |
 | GET `/api/admin/jobs` | `jobs:read` |
+| GET `/api/admin/jobs/<id>/runs` | `jobs:read` |
 | POST `/api/admin/jobs/<id>/run` | `jobs:write` |
 | POST `/api/admin/jobs/<id>/enable` | `jobs:write` |
 | POST `/api/admin/jobs/<id>/disable` | `jobs:write` |
@@ -151,10 +152,16 @@ continuous SQLite writes.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/admin/jobs` | List scheduled jobs |
-| POST | `/api/admin/jobs/<id>/run` | Run job immediately |
+| GET | `/api/admin/jobs` | List scheduled jobs with latest run and status totals |
+| GET | `/api/admin/jobs/<id>/runs` | Paginated run history, optionally filtered by status |
+| POST | `/api/admin/jobs/<id>/run` | Run job immediately; concurrent duplicate runs return `409` |
 | POST | `/api/admin/jobs/<id>/enable` | Enable job |
 | POST | `/api/admin/jobs/<id>/disable` | Disable job |
+
+Only one `running` row is allowed per job. When the service starts, unfinished
+rows left by a previous process are marked `interrupted` before the startup
+check runs, so history remains truthful and a crashed run cannot block the job
+forever.
 
 ### API Keys
 
@@ -325,7 +332,7 @@ and any rotation errors.
 | `/admin/cache` | Cache and index management |
 | `/admin/api-keys` | API Key lifecycle management |
 | `/admin/users` | Registered account status management |
-| `/admin/jobs` | Scheduled job management |
+| `/admin/jobs` | Scheduled jobs, single-flight actions, status totals, and filterable run history |
 | `/admin/deployments` | Sanitized NAS deployment history and retention results |
 | `/admin/audit` | Audit log viewer |
 | `/admin/traffic` | Privacy-preserving request traffic and recorder health |

@@ -215,6 +215,30 @@ export interface JobRun {
   error?: string
 }
 
+export interface JobRunCounts {
+  total: number
+  success: number
+  error: number
+  interrupted: number
+  running: number
+}
+
+export interface JobRunPage {
+  items: JobRun[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface JobRunResult {
+  job_id: string
+  run_id: number | null
+  status: string
+  duration_ms: number
+  summary: string
+  error: string
+}
+
 export interface SlowRequestSample {
   recorded_at: string
   method: string
@@ -242,6 +266,7 @@ export interface ScheduledJob {
   next_run_at?: string
   updated_at?: string
   latest_run?: JobRun | null
+  run_counts: JobRunCounts
 }
 
 export type ApiKeyStatus = 'active' | 'expired' | 'revoked' | 'invalid_expiry'

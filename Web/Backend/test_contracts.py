@@ -765,6 +765,26 @@ class AuthContracts(ContractTestBase):
         )
         self.assertEqual(resp.status_code, 403)
 
+    def test_jobs_read_scope_can_read_history_but_cannot_run_jobs(self):
+        from services.scheduler import ensure_default_jobs
+        ensure_default_jobs(marketplace_app._cache)
+        key = self.create_admin_key("jobs:read")
+        headers = {"Authorization": f"Bearer {key['key']}"}
+
+        self.assertEqual(self.client.get("/api/admin/jobs", headers=headers).status_code, 200)
+        self.assertEqual(
+            self.client.get(
+                "/api/admin/jobs/cache_cleanup/runs", headers=headers
+            ).status_code,
+            200,
+        )
+        self.assertEqual(
+            self.client.post(
+                "/api/admin/jobs/cache_cleanup/run", headers=headers
+            ).status_code,
+            403,
+        )
+
 
 # ===================================================================
 # Admin API Contracts
@@ -1011,6 +1031,43 @@ class AdminApiContracts(ContractTestBase):
         self.assertGreater(len(data), 0)
         self.assertEqual([job["id"] for job in data], sorted(job["id"] for job in data))
         self.assertIn("latest_run", data[0])
+        self.assertEqual(
+            sorted(data[0]["run_counts"]),
+            ["error", "interrupted", "running", "success", "total"],
+        )
+
+    def test_job_runs_history_is_paginated_and_filterable(self):
+        from services.scheduler import ensure_default_jobs, run_job_now
+        ensure_default_jobs(marketplace_app._cache)
+        run_job_now(
+            marketplace_app._cache,
+            self.storage,
+            lambda: marketplace_app.CONFIG,
+            marketplace_app.get_db,
+            "cache_cleanup",
+        )
+
+        response = self.client.get(
+            "/api/admin/jobs/cache_cleanup/runs?status=success&limit=1&offset=0",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(response.status_code, 200)
+        page = response.get_json()
+        self.assertEqual(page["total"], 1)
+        self.assertEqual(page["limit"], 1)
+        self.assertEqual(page["offset"], 0)
+        self.assertEqual(page["items"][0]["status"], "success")
+
+        invalid = self.client.get(
+            "/api/admin/jobs/cache_cleanup/runs?status=unknown",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(invalid.status_code, 400)
+        missing = self.client.get(
+            "/api/admin/jobs/missing/runs",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(missing.status_code, 404)
 
     def test_jobs_missing_job_contracts_remain_404(self):
         for action in ("run", "enable", "disable"):
@@ -1030,6 +1087,21 @@ class AdminApiContracts(ContractTestBase):
         data = resp.get_json()
         self.assertIn("job_id", data)
         self.assertIn("status", data)
+
+    def test_job_run_returns_conflict_when_same_job_is_running(self):
+        from services.scheduler import ensure_default_jobs
+        ensure_default_jobs(marketplace_app._cache)
+        marketplace_app._cache.jobs.start_run(
+            "cache_cleanup", "2026-08-12T00:00:00+00:00"
+        )
+
+        response = self.client.post(
+            "/api/admin/jobs/cache_cleanup/run", headers=self.basic_auth()
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.get_json()["status"], "skipped")
+        self.assertEqual(response.get_json()["error"], "Job is already running")
 
     def test_job_enable_disable(self):
         from services.scheduler import ensure_default_jobs

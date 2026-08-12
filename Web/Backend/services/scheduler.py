@@ -117,6 +117,15 @@ def run_job_now(
 
     # Record job run start
     run_id = cache.jobs.start_run(job_id, started_at)
+    if run_id is None:
+        return {
+            "job_id": job_id,
+            "run_id": None,
+            "status": "skipped",
+            "duration_ms": 0,
+            "summary": "Job is already running",
+            "error": "Job is already running",
+        }
 
     status = "success"
     summary = ""
@@ -387,6 +396,10 @@ class SchedulerThread(threading.Thread):
         self._stop_event.set()
 
     def run(self):
+        recovered = self._cache.jobs.recover_running_runs(_now_iso())
+        if recovered:
+            print(f"[scheduler] recovered {recovered} interrupted job run(s)")
+
         # Run startup check immediately
         try:
             run_job_now(

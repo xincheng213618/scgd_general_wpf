@@ -10,6 +10,7 @@ Per-endpoint scope requirements:
   - POST /index/plugins/*     → cache:refresh
   - POST /index/docs/refresh  → cache:refresh
   - GET  /jobs                → jobs:read
+  - GET  /jobs/*/runs         → jobs:read
   - POST /jobs/*/run          → jobs:write
   - POST /jobs/*/enable       → jobs:write
   - POST /jobs/*/disable      → jobs:write
@@ -68,6 +69,7 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "list_db_backups": ["admin:*"],
     "backup_db": ["admin:*"],
     "list_jobs": ["jobs:read"],
+    "list_job_runs": ["jobs:read"],
     "run_job": ["jobs:write"],
     "enable_job": ["jobs:write"],
     "disable_job": ["jobs:write"],
@@ -573,6 +575,29 @@ def list_jobs():
         return jsonify({"error": str(exc)}), 500
 
 
+@admin_api.route("/jobs/<job_id>/runs", methods=["GET"])
+def list_job_runs(job_id: str):
+    ctx = _get_ctx()
+    if ctx.jobs.get(job_id) is None:
+        return jsonify({"error": "Job not found"}), 404
+
+    status = request.args.get("status", "").strip() or None
+    if status not in {None, "success", "error", "running", "interrupted"}:
+        return jsonify({"error": "status must be success, error, running, or interrupted"}), 400
+    try:
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    return jsonify(ctx.jobs.list_runs_page(
+        job_id,
+        status=status,
+        limit=limit,
+        offset=offset,
+    ))
+
+
 @admin_api.route("/jobs/<job_id>/run", methods=["POST"])
 def run_job(job_id: str):
     ctx = _get_ctx()
@@ -593,7 +618,7 @@ def run_job(job_id: str):
         user_agent=request.headers.get("User-Agent", "")[:200],
     )
 
-    return jsonify(result)
+    return jsonify(result), (409 if result.get("status") == "skipped" else 200)
 
 
 @admin_api.route("/jobs/<job_id>/enable", methods=["POST"])

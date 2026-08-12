@@ -17,6 +17,8 @@ import type {
   IndexRefreshResult,
   IndexScope,
   IndexStatusResponse,
+  JobRunPage,
+  JobRunResult,
   ScheduledJob,
   TrafficStatsResponse,
   UserAccount,
@@ -89,7 +91,24 @@ export function listJobs() {
 }
 
 export function runJob(jobId: string) {
-  return postJson(`/api/admin/jobs/${encodeURIComponent(jobId)}/run`)
+  return postJson<JobRunResult>(`/api/admin/jobs/${encodeURIComponent(jobId)}/run`)
+}
+
+export function getJobRuns(jobId: string, params: {
+  current?: number
+  pageSize?: number
+  status?: string
+}) {
+  const pageSize = params.pageSize ?? 20
+  const current = params.current ?? 1
+  const search = new URLSearchParams({
+    limit: String(pageSize),
+    offset: String((current - 1) * pageSize),
+  })
+  if (params.status) search.set('status', params.status)
+  return getJson<JobRunPage>(
+    `/api/admin/jobs/${encodeURIComponent(jobId)}/runs?${search.toString()}`,
+  )
 }
 
 export function setJobEnabled(jobId: string, enabled: boolean) {
