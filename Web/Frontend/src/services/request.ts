@@ -1,5 +1,3 @@
-export const authRequiredEventName = 'colorvision:auth-required'
-
 export class AuthRequiredError extends Error {
   constructor() {
     super('登录状态已失效，正在返回登录页')
@@ -7,15 +5,19 @@ export class AuthRequiredError extends Error {
   }
 }
 
-export function notifyAuthRequired() {
-  window.dispatchEvent(new Event(authRequiredEventName))
-}
-
 let csrfToken = ''
 let csrfTokenRequest: Promise<string> | null = null
+let authRedirectStarted = false
 
 interface ResponseOptions {
   redirectOnUnauthorized?: boolean
+}
+
+export function redirectToLogin() {
+  if (window.location.pathname === '/login' || authRedirectStarted) return
+  authRedirectStarted = true
+  const next = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  window.location.replace(`/login?${new URLSearchParams({ next }).toString()}`)
 }
 
 function captureCsrfToken(payload: unknown) {
@@ -49,7 +51,7 @@ export async function parseResponse<T>(response: Response, options: ResponseOpti
 
   if (!response.ok) {
     if (response.status === 401 && options.redirectOnUnauthorized !== false) {
-      notifyAuthRequired()
+      redirectToLogin()
       throw new AuthRequiredError()
     }
     const message =

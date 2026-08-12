@@ -1,10 +1,9 @@
 import { App as AntApp, ConfigProvider, theme } from 'antd'
-import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Component, lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { PublicLayout } from './layouts/PublicLayout'
 import { getSession } from './services/auth'
-import { authRequiredEventName } from './services/request'
 import type { ThemeMode, UiDensity } from './types/admin'
 import type { AuthSession } from './types/site'
 
@@ -48,29 +47,6 @@ function RouteDocumentTitle() {
   useEffect(() => {
     document.title = documentTitle(pathname)
   }, [pathname])
-
-  return null
-}
-
-function AuthRequiredRedirect() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const redirecting = useRef(false)
-
-  useEffect(() => {
-    if (location.pathname === '/login') redirecting.current = false
-  }, [location.pathname])
-
-  useEffect(() => {
-    const handleAuthRequired = () => {
-      if (location.pathname === '/login' || redirecting.current) return
-      redirecting.current = true
-      const next = `${location.pathname}${location.search}${location.hash}`
-      navigate(`/login?${new URLSearchParams({ next }).toString()}`, { replace: true })
-    }
-    window.addEventListener(authRequiredEventName, handleAuthRequired)
-    return () => window.removeEventListener(authRequiredEventName, handleAuthRequired)
-  }, [location.hash, location.pathname, location.search, navigate])
 
   return null
 }
@@ -242,7 +218,6 @@ function App() {
       <AntApp>
         <BrowserRouter>
           <RouteDocumentTitle />
-          <AuthRequiredRedirect />
           <RouteErrorBoundary>
             <Routes>
             <Route element={publicLayout}>
