@@ -11,8 +11,6 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
 import android.webkit.PermissionRequest;
@@ -23,7 +21,6 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -32,18 +29,6 @@ import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
     static final String EXTRA_START_TAB = "start_tab";
@@ -58,17 +43,11 @@ public class MainActivity extends Activity {
     private FrameLayout root;
     private LinearLayout appShell;
     private FrameLayout setupContainer;
-    private LinearLayout errorView;
-    private WebView webView;
     private WebView homeWebView;
     private ProgressBar progressBar;
-    private Button manageFloatingButton;
     private AppPreferences appPreferences;
     private ThemeManager themeManager;
     private MusicPlayerController musicController;
-    private Handler mainHandler;
-    private int pageLoadGeneration;
-    private String currentLanUrl = "";
     private PermissionRequest pendingWebCameraRequest;
     private TextView headerTitle;
     private TextView headerSubtitle;
@@ -81,16 +60,6 @@ public class MainActivity extends Activity {
     private int currentTab = TAB_OPERATIONS;
     private String currentHomeUrl = "";
 
-    private TextView dashboardStatusText;
-    private TextView dashboardMachineText;
-    private TextView dashboardEndpointText;
-    private TextView dashboardVersionText;
-    private TextView dashboardRuntimeText;
-    private TextView dashboardMemoryText;
-    private TextView dashboardWindowText;
-    private TextView dashboardAddressText;
-    private TextView dashboardLogText;
-
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,107 +68,23 @@ public class MainActivity extends Activity {
         appPreferences = new AppPreferences(this);
         themeManager = new ThemeManager(this, appPreferences);
         musicController = new MusicPlayerController(this, appPreferences, this::chooseAudioFile);
-        mainHandler = new Handler(Looper.getMainLooper());
         themeManager.applySystemBars(this);
 
         root = new FrameLayout(this);
-        webView = new WebView(this);
         homeWebView = new WebView(this);
         setupContainer = new FrameLayout(this);
         appShell = createAppShell();
-        errorView = createErrorView();
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        manageFloatingButton = createManageFloatingButton();
 
         root.addView(appShell, matchParentParams());
-        root.addView(webView, matchParentParams());
-        root.addView(errorView, matchParentParams());
         root.addView(progressBar, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT));
-        FrameLayout.LayoutParams manageParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                dp(42),
-                Gravity.TOP | Gravity.RIGHT);
-        manageParams.setMargins(0, dp(18), dp(14), 0);
-        root.addView(manageFloatingButton, manageParams);
 
         setContentView(root);
-        configureWebView();
         configureHomeWebView();
-        webView.setVisibility(View.GONE);
 
         showInitialTab();
-    }
-
-    private void configureWebView() {
-        configureWebSettings(webView);
-
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public void onProgressChanged(WebView view, int newProgress) {
-                progressBar.setProgress(newProgress);
-                progressBar.setVisibility(newProgress >= 100 ? View.GONE : View.VISIBLE);
-            }
-
-            @Override
-            public void onPermissionRequest(PermissionRequest request) {
-                runOnUiThread(() -> handleWebPermissionRequest(request));
-            }
-
-            @Override
-            public void onPermissionRequestCanceled(PermissionRequest request) {
-                runOnUiThread(() -> {
-                    if (pendingWebCameraRequest == request) {
-                        pendingWebCameraRequest = null;
-                    }
-                });
-            }
-        });
-
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                if (!handleSpecialUrl(url)) {
-                    errorView.setVisibility(View.GONE);
-                    appShell.setVisibility(View.GONE);
-                    webView.setVisibility(View.VISIBLE);
-                    startPageLoadTimeout(url);
-                }
-            }
-
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                pageLoadGeneration++;
-            }
-
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
-                if (handleSpecialUrl(url)) {
-                    return true;
-                }
-                view.loadUrl(url);
-                return true;
-            }
-
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if (handleSpecialUrl(url)) {
-                    return true;
-                }
-                view.loadUrl(url);
-                return true;
-            }
-
-            @Override
-            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) {
-                    pageLoadGeneration++;
-                    showErrorView();
-                }
-            }
-        });
     }
 
     private void configureHomeWebView() {
@@ -231,7 +116,6 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 if (!handleSpecialUrl(url)) {
-                    errorView.setVisibility(View.GONE);
                     progressBar.setVisibility(View.VISIBLE);
                 }
             }
@@ -368,10 +252,6 @@ public class MainActivity extends Activity {
         return themeManager.borderColor();
     }
 
-    private int inputBackgroundColor() {
-        return themeManager.inputBackgroundColor();
-    }
-
     private int secondaryButtonBackgroundColor() {
         return themeManager.secondaryButtonBackgroundColor();
     }
@@ -448,7 +328,7 @@ public class MainActivity extends Activity {
         item.setGravity(Gravity.CENTER);
         item.setOnClickListener(v -> {
             if (tab == TAB_OPERATIONS) {
-                showOperationsLanding(appPreferences.hasOperationsProfile());
+                showOperationsLanding();
             } else if (tab == TAB_DOWNLOADS) {
                 showHomePage();
             } else {
@@ -507,41 +387,6 @@ public class MainActivity extends Activity {
         return button;
     }
 
-    private LinearLayout createErrorView() {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setGravity(Gravity.CENTER);
-        layout.setPadding(dp(24), dp(24), dp(24), dp(24));
-        layout.setBackgroundColor(pageBackgroundColor());
-        layout.setVisibility(View.GONE);
-
-        TextView title = new TextView(this);
-        title.setText("连接失败");
-        title.setTextColor(primaryTextColor());
-        title.setTextSize(24);
-        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        title.setGravity(Gravity.CENTER);
-        layout.addView(title, wrapParams());
-
-        TextView subtitle = new TextView(this);
-        subtitle.setText("请确认手机和电脑在同一个局域网，并且电脑端已启用局域网控制。");
-        subtitle.setTextColor(secondaryTextColor());
-        subtitle.setTextSize(15);
-        subtitle.setGravity(Gravity.CENTER);
-        subtitle.setPadding(0, dp(10), 0, dp(18));
-        layout.addView(subtitle, wrapParams());
-
-        Button retryButton = makePrimaryButton("重试连接");
-        retryButton.setOnClickListener(v -> openOperations());
-        layout.addView(retryButton, fullWidthButtonParams());
-
-        Button manageButton = makeSecondaryButton("管理连接");
-        manageButton.setOnClickListener(v -> showSetupView());
-        layout.addView(manageButton, fullWidthButtonParams());
-
-        return layout;
-    }
-
     private void showInitialTab() {
         int requestedTab = getIntent().getIntExtra(EXTRA_START_TAB, -1);
         getIntent().removeExtra(EXTRA_START_TAB);
@@ -556,7 +401,7 @@ public class MainActivity extends Activity {
             return;
         }
 
-        showOperationsLanding(appPreferences.hasOperationsProfile());
+        showOperationsLanding();
     }
 
     @Override
@@ -566,29 +411,19 @@ public class MainActivity extends Activity {
         showInitialTab();
     }
 
-    private void showSetupView() {
-        showOperationsLanding(false);
-    }
-
-    private void showOperationsLanding(boolean openAutomatically) {
-        currentLanUrl = "";
+    private void showOperationsLanding() {
+        if (appPreferences.hasOperationsProfile()) {
+            openOperations();
+            return;
+        }
         selectTab(TAB_OPERATIONS);
         headerTitle.setText("现场运维");
-        headerSubtitle.setText(appPreferences.hasOperationsProfile()
-                ? "已配对 · 打开即自动连接"
-                : "扫描电脑端安全配对码");
+        headerSubtitle.setText("扫描电脑端安全配对码");
         setupContainer.removeAllViews();
         setupContainer.addView(createOperationsLandingContent(), matchParentParams());
         setupContainer.setVisibility(View.VISIBLE);
         appShell.setVisibility(View.VISIBLE);
-        errorView.setVisibility(View.GONE);
-        webView.setVisibility(View.GONE);
-        manageFloatingButton.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
-
-        if (openAutomatically) {
-            setupContainer.post(this::openOperations);
-        }
     }
 
     private void showHomePage() {
@@ -598,9 +433,6 @@ public class MainActivity extends Activity {
         setupContainer.removeAllViews();
         setupContainer.setVisibility(View.VISIBLE);
         appShell.setVisibility(View.VISIBLE);
-        errorView.setVisibility(View.GONE);
-        webView.setVisibility(View.GONE);
-        manageFloatingButton.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
 
         setupContainer.addView(homeWebView, matchParentParams());
@@ -619,9 +451,6 @@ public class MainActivity extends Activity {
         setupContainer.addView(createHomeErrorContent(), matchParentParams());
         setupContainer.setVisibility(View.VISIBLE);
         appShell.setVisibility(View.VISIBLE);
-        errorView.setVisibility(View.GONE);
-        webView.setVisibility(View.GONE);
-        manageFloatingButton.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
     }
 
@@ -650,7 +479,7 @@ public class MainActivity extends Activity {
         card.addView(retryButton, fullWidthButtonParams());
 
         Button deviceButton = makeSecondaryButton("返回现场运维");
-        deviceButton.setOnClickListener(v -> showOperationsLanding(false));
+        deviceButton.setOnClickListener(v -> showOperationsLanding());
         card.addView(deviceButton, fullWidthButtonParams());
         return scrollView;
     }
@@ -667,127 +496,19 @@ public class MainActivity extends Activity {
                 ScrollView.LayoutParams.MATCH_PARENT,
                 ScrollView.LayoutParams.WRAP_CONTENT));
 
-        boolean paired = appPreferences.hasOperationsProfile();
         LinearLayout operationsCard = makeCard();
         content.addView(operationsCard, fullWidthCardParams());
-        operationsCard.addView(makeTitle(paired ? "运维伴侣已就绪" : "连接运维电脑", 22), matchWidthWrapParams());
+        operationsCard.addView(makeTitle("连接运维电脑", 22), matchWidthWrapParams());
 
-        TextView status = makeBodyText(paired
-                ? "安全配对资料会持续保留，打开应用或临时断线后自动重连，无需重复扫码。"
-                : "扫描电脑端“选项 > 局域网控制”中的短时安全配对码。完成一次配对后，应用会保存设备密钥和证书指纹。 ");
+        TextView status = makeBodyText("扫描电脑端“选项 > 局域网控制”中的短时安全配对码。完成一次配对后，运维伴侣会成为首屏并持续守护安全连接。 ");
         status.setPadding(0, dp(8), 0, dp(4));
         operationsCard.addView(status, matchWidthWrapParams());
 
-        Button operationsButton = makePrimaryButton(paired ? "打开运维伴侣" : "扫描并连接电脑");
+        Button operationsButton = makePrimaryButton("扫描并连接电脑");
         operationsButton.setOnClickListener(v -> openOperations());
         operationsCard.addView(operationsButton, fullWidthButtonParams());
 
         return scrollView;
-    }
-
-    private ScrollView createSetupContent() {
-        ScrollView scrollView = new ScrollView(this);
-        scrollView.setFillViewport(true);
-        scrollView.setBackgroundColor(pageBackgroundColor());
-
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setGravity(Gravity.CENTER_HORIZONTAL);
-        content.setPadding(dp(22), dp(36), dp(22), dp(30));
-        scrollView.addView(content, new ScrollView.LayoutParams(
-                ScrollView.LayoutParams.MATCH_PARENT,
-                ScrollView.LayoutParams.WRAP_CONTENT));
-
-        TextView title = new TextView(this);
-        title.setText("添加设备");
-        title.setTextColor(primaryTextColor());
-        title.setTextSize(25);
-        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        title.setGravity(Gravity.LEFT);
-        content.addView(title, matchWidthWrapParams());
-
-        TextView subtitle = new TextView(this);
-        subtitle.setText("扫描电脑端二维码，或粘贴短时安全配对码。电脑端批准后，手机会保存设备密钥和证书指纹。");
-        subtitle.setTextColor(secondaryTextColor());
-        subtitle.setTextSize(15);
-        subtitle.setGravity(Gravity.LEFT);
-        subtitle.setPadding(0, dp(10), 0, dp(24));
-        content.addView(subtitle, matchWidthWrapParams());
-
-        LinearLayout card = makeCard();
-        content.addView(card, fullWidthCardParams());
-
-        String savedUrl = getSavedLanUrl();
-        TextView cardTitle = makeTitle(savedUrl.isEmpty() ? "连接电脑端" : "当前连接", 19);
-        card.addView(cardTitle, wrapParams());
-
-        TextView cardText = makeBodyText(savedUrl.isEmpty()
-                ? "在电脑端打开“选项 > 局域网控制”，启用后扫描二维码。"
-                : savedUrl);
-        cardText.setPadding(0, dp(8), 0, dp(14));
-        card.addView(cardText, matchWidthWrapParams());
-
-        Button scanButton = makePrimaryButton(savedUrl.isEmpty() ? "扫描二维码" : "重新扫描二维码");
-        scanButton.setOnClickListener(v -> startQrScan());
-        card.addView(scanButton, fullWidthButtonParams());
-
-        if (!savedUrl.isEmpty()) {
-            Button openButton = makeSecondaryButton("打开控制台");
-            openButton.setOnClickListener(v -> showDashboard(savedUrl));
-            card.addView(openButton, fullWidthButtonParams());
-
-            Button disconnectButton = makeSecondaryButton("断开此电脑");
-            disconnectButton.setOnClickListener(v -> {
-                clearSavedLanUrl();
-                Toast.makeText(this, "已断开当前电脑", Toast.LENGTH_SHORT).show();
-                showSetupView();
-            });
-            card.addView(disconnectButton, fullWidthButtonParams());
-        }
-
-        EditText manualInput = new EditText(this);
-        manualInput.setHint("粘贴安全配对码、安全载荷或局域网地址");
-        manualInput.setSingleLine(false);
-        manualInput.setMinLines(2);
-        manualInput.setMaxLines(3);
-        manualInput.setVerticalScrollBarEnabled(true);
-        manualInput.setHorizontallyScrolling(false);
-        manualInput.setTextColor(primaryTextColor());
-        manualInput.setHintTextColor(mutedTextColor());
-        manualInput.setTextSize(14);
-        manualInput.setBackground(rounded(inputBackgroundColor(), dp(10), borderColor(), 1));
-        manualInput.setPadding(dp(12), dp(10), dp(12), dp(10));
-        LinearLayout.LayoutParams inputParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(72));
-        inputParams.setMargins(0, dp(14), 0, 0);
-        card.addView(manualInput, inputParams);
-
-        Button manualButton = makeSecondaryButton("识别并连接");
-        manualButton.setOnClickListener(v -> saveAndOpen(manualInput.getText().toString()));
-        card.addView(manualButton, fullWidthButtonParams());
-
-        Button webButton = makeSecondaryButton("打开下载站");
-        webButton.setOnClickListener(v -> openUrl(HOME_URL));
-        content.addView(webButton, fullWidthCardParams());
-
-        return scrollView;
-    }
-
-    private void showDashboard(String url) {
-        currentLanUrl = url;
-        selectTab(TAB_OPERATIONS);
-        headerTitle.setText("ColorVision");
-        headerSubtitle.setText("设备在线状态与快捷控制");
-        setupContainer.removeAllViews();
-        setupContainer.addView(createDashboardContent(url), matchParentParams());
-        setupContainer.setVisibility(View.VISIBLE);
-        appShell.setVisibility(View.VISIBLE);
-        errorView.setVisibility(View.GONE);
-        webView.setVisibility(View.GONE);
-        manageFloatingButton.setVisibility(View.GONE);
-        progressBar.setVisibility(View.GONE);
-        refreshDashboard();
     }
 
     private void showProfileView() {
@@ -798,131 +519,7 @@ public class MainActivity extends Activity {
         setupContainer.addView(createProfileContent(), matchParentParams());
         setupContainer.setVisibility(View.VISIBLE);
         appShell.setVisibility(View.VISIBLE);
-        errorView.setVisibility(View.GONE);
-        webView.setVisibility(View.GONE);
-        manageFloatingButton.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
-    }
-
-    private ScrollView createDashboardContent(String url) {
-        ScrollView scrollView = new ScrollView(this);
-        scrollView.setFillViewport(false);
-        scrollView.setBackgroundColor(pageBackgroundColor());
-
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(18), dp(26), dp(18), dp(28));
-        scrollView.addView(content, new ScrollView.LayoutParams(
-                ScrollView.LayoutParams.MATCH_PARENT,
-                ScrollView.LayoutParams.WRAP_CONTENT));
-
-        TextView title = makeTitle("ColorVision 控制台", 26);
-        content.addView(title, matchWidthWrapParams());
-
-        TextView subtitle = makeBodyText(getBaseFromUrl(url));
-        subtitle.setPadding(0, dp(6), 0, dp(14));
-        content.addView(subtitle, matchWidthWrapParams());
-
-        LinearLayout statusCard = makeCard();
-        content.addView(statusCard, fullWidthCardParams());
-        TextView statusTitle = makeTitle("当前连接", 19);
-        statusCard.addView(statusTitle, matchWidthWrapParams());
-        dashboardStatusText = makeBodyText("正在连接电脑端...");
-        dashboardStatusText.setPadding(0, dp(8), 0, dp(10));
-        statusCard.addView(dashboardStatusText, matchWidthWrapParams());
-        dashboardMachineText = addMetricRow(statusCard, "电脑", "--");
-        dashboardEndpointText = addMetricRow(statusCard, "地址", "--");
-        dashboardVersionText = addMetricRow(statusCard, "版本", "--");
-
-        LinearLayout metricsCard = makeCard();
-        content.addView(metricsCard, fullWidthCardParams());
-        metricsCard.addView(makeTitle("运行状态", 19), matchWidthWrapParams());
-        dashboardRuntimeText = addMetricRow(metricsCard, "在线时间", "--");
-        dashboardMemoryText = addMetricRow(metricsCard, "进程内存", "--");
-        dashboardWindowText = addMetricRow(metricsCard, "主窗口", "--");
-        dashboardAddressText = addMetricRow(metricsCard, "可用地址", "--");
-
-        LinearLayout actionsCard = makeCard();
-        content.addView(actionsCard, fullWidthCardParams());
-        actionsCard.addView(makeTitle("快捷操作", 19), matchWidthWrapParams());
-        Button refreshButton = makePrimaryButton("刷新状态");
-        refreshButton.setOnClickListener(v -> refreshDashboard());
-        actionsCard.addView(refreshButton, fullWidthButtonParams());
-        Button showButton = makeSecondaryButton("显示电脑端主窗口");
-        showButton.setOnClickListener(v -> sendCommand("showMainWindow"));
-        actionsCard.addView(showButton, fullWidthButtonParams());
-        Button minimizeButton = makeSecondaryButton("最小化电脑端主窗口");
-        minimizeButton.setOnClickListener(v -> sendCommand("minimizeMainWindow"));
-        actionsCard.addView(minimizeButton, fullWidthButtonParams());
-        Button pageButton = makeSecondaryButton("打开电脑端页面");
-        pageButton.setOnClickListener(v -> openUrl(currentLanUrl));
-        actionsCard.addView(pageButton, fullWidthButtonParams());
-
-        content.addView(createMusicCard(), fullWidthCardParams());
-
-        LinearLayout logCard = makeCard();
-        content.addView(logCard, fullWidthCardParams());
-        logCard.addView(makeTitle("最近日志", 19), matchWidthWrapParams());
-        dashboardLogText = makeBodyText("正在读取日志...");
-        dashboardLogText.setTypeface(Typeface.MONOSPACE);
-        dashboardLogText.setTextSize(12);
-        dashboardLogText.setPadding(0, dp(10), 0, 0);
-        logCard.addView(dashboardLogText, matchWidthWrapParams());
-
-        LinearLayout settingsCard = makeCard();
-        content.addView(settingsCard, fullWidthCardParams());
-        settingsCard.addView(makeTitle("连接设置", 19), matchWidthWrapParams());
-        Button scanButton = makeSecondaryButton("重新扫描二维码");
-        scanButton.setOnClickListener(v -> startQrScan());
-        settingsCard.addView(scanButton, fullWidthButtonParams());
-        Button disconnectButton = makeSecondaryButton("断开此电脑");
-        disconnectButton.setOnClickListener(v -> {
-            clearSavedLanUrl();
-            Toast.makeText(this, "已断开当前电脑", Toast.LENGTH_SHORT).show();
-            showSetupView();
-        });
-        settingsCard.addView(disconnectButton, fullWidthButtonParams());
-        Button downloadButton = makeSecondaryButton("打开下载站");
-        downloadButton.setOnClickListener(v -> openUrl(HOME_URL));
-        settingsCard.addView(downloadButton, fullWidthButtonParams());
-
-        return scrollView;
-    }
-
-    private LinearLayout createMusicCard() {
-        LinearLayout card = makeCard();
-        card.addView(makeTitle("音乐播放", 19), matchWidthWrapParams());
-
-        TextView musicTitleText = makeTitle(musicController.getSavedAudioTitle(), 17);
-        musicTitleText.setPadding(0, dp(12), 0, 0);
-        card.addView(musicTitleText, matchWidthWrapParams());
-
-        TextView musicStatusText = makeBodyText(musicController.hasSavedAudio() ? "已选择，点击播放。" : "从手机选择一首音乐后播放。");
-        musicStatusText.setPadding(0, dp(6), 0, dp(4));
-        card.addView(musicStatusText, matchWidthWrapParams());
-
-        Button chooseButton = makeSecondaryButton("选择音乐");
-        chooseButton.setOnClickListener(v -> chooseAudioFile());
-        card.addView(chooseButton, fullWidthButtonParams());
-
-        LinearLayout controls = new LinearLayout(this);
-        controls.setOrientation(LinearLayout.HORIZONTAL);
-        controls.setPadding(0, dp(10), 0, 0);
-        card.addView(controls, matchWidthWrapParams());
-
-        Button musicPlayPauseButton = makePrimaryButton("播放");
-        musicPlayPauseButton.setOnClickListener(v -> musicController.togglePlayback());
-        LinearLayout.LayoutParams playParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        controls.addView(musicPlayPauseButton, playParams);
-
-        Button musicStopButton = makeSecondaryButton("停止");
-        musicStopButton.setOnClickListener(v -> musicController.stop());
-        LinearLayout.LayoutParams stopParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        stopParams.setMargins(dp(10), 0, 0, 0);
-        controls.addView(musicStopButton, stopParams);
-
-        musicController.bindViews(musicTitleText, musicStatusText, musicPlayPauseButton, musicStopButton);
-        return card;
     }
 
     private ScrollView createProfileContent() {
@@ -966,7 +563,6 @@ public class MainActivity extends Activity {
         LinearLayout actionSection = makeSettingsSection();
         content.addView(actionSection, settingsSectionParams());
         addSettingsRow(actionSection, "打开现场运维", "", v -> openOperations());
-        addSettingsRow(actionSection, "返回运维入口", "", v -> showOperationsLanding(false));
 
         return scrollView;
     }
@@ -1006,23 +602,6 @@ public class MainActivity extends Activity {
         scanButton.setOnClickListener(v -> startQrScan());
         header.addView(scanButton, new LinearLayout.LayoutParams(dp(44), dp(44)));
         return header;
-    }
-
-    private void openCurrentDeviceOrSetup() {
-        showOperationsLanding(false);
-    }
-
-    private String getPortFromUrl(String url) {
-        if (url == null || url.trim().isEmpty()) {
-            return "未配置";
-        }
-
-        try {
-            int port = Uri.parse(url).getPort();
-            return port > 0 ? String.valueOf(port) : "默认";
-        } catch (Exception ex) {
-            return "未知";
-        }
     }
 
     private String getAppVersionName() {
@@ -1092,148 +671,6 @@ public class MainActivity extends Activity {
         return params;
     }
 
-    private void refreshDashboard() {
-        String statusUrl = buildApiUrl("/api/status", "");
-        String logsUrl = buildApiUrl("/api/logs", "count=28");
-        if (statusUrl.isEmpty() || logsUrl.isEmpty()) {
-            dashboardStatusText.setText("连接地址无效，请重新扫码。");
-            return;
-        }
-
-        dashboardStatusText.setText("正在刷新状态...");
-        new Thread(() -> {
-            try {
-                JSONObject status = getJson(statusUrl);
-                JSONObject logs = getJson(logsUrl);
-                runOnUiThread(() -> {
-                    renderDashboardStatus(status);
-                    renderDashboardLogs(logs);
-                });
-            } catch (Exception ex) {
-                runOnUiThread(() -> {
-                    dashboardStatusText.setText("连接失败：" + ex.getMessage());
-                    dashboardLogText.setText("无法读取日志。");
-                });
-            }
-        }, "ColorVisionDashboardRefresh").start();
-    }
-
-    private void renderDashboardStatus(JSONObject status) {
-        dashboardStatusText.setText(status.optBoolean("ok")
-                ? "电脑端在线 · " + status.optString("serverTime", "")
-                : "电脑端未授权或离线");
-        dashboardMachineText.setText(status.optString("machine", "--"));
-        dashboardEndpointText.setText(status.optString("endpoint", "--"));
-        dashboardVersionText.setText(status.optString("version", "--"));
-        dashboardRuntimeText.setText(formatDuration(status.optInt("uptimeSeconds", 0)));
-
-        JSONObject process = status.optJSONObject("process");
-        if (process != null) {
-            dashboardMemoryText.setText(process.optString("memoryMb", "--") + " MB");
-        }
-
-        JSONObject window = status.optJSONObject("mainWindow");
-        if (window != null) {
-            String state = window.optString("state", "--");
-            boolean visible = window.optBoolean("isVisible", false);
-            dashboardWindowText.setText(state + (visible ? " · 可见" : " · 不可见"));
-        }
-
-        JSONArray addresses = status.optJSONArray("addresses");
-        dashboardAddressText.setText(joinJsonArray(addresses, ", "));
-    }
-
-    private void renderDashboardLogs(JSONObject logs) {
-        JSONArray lines = logs.optJSONArray("lines");
-        String text = joinJsonArray(lines, "\n");
-        dashboardLogText.setText(text.isEmpty() ? "暂无日志。" : text);
-    }
-
-    private void sendCommand(String action) {
-        String commandUrl = buildApiUrl("/api/command", "");
-        if (commandUrl.isEmpty()) {
-            Toast.makeText(this, "连接地址无效，请重新扫码", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        Toast.makeText(this, "正在发送命令...", Toast.LENGTH_SHORT).show();
-        new Thread(() -> {
-            try {
-                JSONObject body = new JSONObject();
-                body.put("action", action);
-                JSONObject result = postJson(commandUrl, body);
-                JSONObject status = result.optJSONObject("status");
-                runOnUiThread(() -> {
-                    Toast.makeText(this, result.optString("message", "命令已发送"), Toast.LENGTH_SHORT).show();
-                    if (status != null) {
-                        renderDashboardStatus(status);
-                    } else {
-                        refreshDashboard();
-                    }
-                });
-            } catch (Exception ex) {
-                runOnUiThread(() -> Toast.makeText(this, "命令失败：" + ex.getMessage(), Toast.LENGTH_LONG).show());
-            }
-        }, "ColorVisionDashboardCommand").start();
-    }
-
-    private JSONObject getJson(String url) throws Exception {
-        HttpURLConnection connection = openJsonConnection(url, "GET");
-        try {
-            return new JSONObject(readResponse(connection));
-        } finally {
-            connection.disconnect();
-        }
-    }
-
-    private JSONObject postJson(String url, JSONObject body) throws Exception {
-        HttpURLConnection connection = openJsonConnection(url, "POST");
-        connection.setDoOutput(true);
-        byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);
-        connection.setFixedLengthStreamingMode(payload.length);
-        try (OutputStream output = connection.getOutputStream()) {
-            output.write(payload);
-        }
-
-        try {
-            return new JSONObject(readResponse(connection));
-        } finally {
-            connection.disconnect();
-        }
-    }
-
-    private HttpURLConnection openJsonConnection(String url, String method) throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-        connection.setRequestMethod(method);
-        connection.setConnectTimeout(3500);
-        connection.setReadTimeout(5000);
-        connection.setRequestProperty("Accept", "application/json");
-        connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-        return connection;
-    }
-
-    private String readResponse(HttpURLConnection connection) throws Exception {
-        int code = connection.getResponseCode();
-        InputStream stream = code >= 400 ? connection.getErrorStream() : connection.getInputStream();
-        if (stream == null) {
-            throw new IllegalStateException("HTTP " + code);
-        }
-
-        StringBuilder builder = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                builder.append(line);
-            }
-        }
-
-        if (code >= 400) {
-            throw new IllegalStateException("HTTP " + code + " " + builder);
-        }
-
-        return builder.toString();
-    }
-
     private void chooseAudioFile() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -1277,7 +714,7 @@ public class MainActivity extends Activity {
                 saveAndOpen(result);
                 return;
             }
-            Toast.makeText(this, "已取消扫码；下载站地址无需填写", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "已取消运维配对扫码", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -1296,6 +733,7 @@ public class MainActivity extends Activity {
     private void openOperations() {
         if (appPreferences.hasOperationsProfile()) {
             startActivity(new Intent(this, OperationsActivity.class));
+            finish();
         } else {
             Toast.makeText(this, "请扫描电脑端现场运维配对码", Toast.LENGTH_SHORT).show();
             startQrScan();
@@ -1330,106 +768,11 @@ public class MainActivity extends Activity {
             Intent operations = new Intent(this, OperationsActivity.class);
             operations.putExtra(OperationsActivity.EXTRA_PAIRING_PAYLOAD, text);
             startActivity(operations);
+            finish();
             return;
         }
 
         Toast.makeText(this, "请扫描电脑端的安全运维配对码；下载站地址由应用固定管理", Toast.LENGTH_LONG).show();
-    }
-
-    private String parseConnectionUrl(String rawContent) {
-        if (rawContent == null) {
-            return "";
-        }
-
-        String text = rawContent.trim();
-        if (text.isEmpty()) {
-            return "";
-        }
-
-        if (text.startsWith("{")) {
-            try {
-                JSONObject object = new JSONObject(text);
-                String url = object.optString("url", object.optString("connectionUrl", ""));
-                return normalizeUrl(url);
-            } catch (Exception ignored) {
-            }
-        }
-
-        try {
-            Uri uri = Uri.parse(text);
-            if ("colorvision".equalsIgnoreCase(uri.getScheme())) {
-                return normalizeUrl(uri.getQueryParameter("url"));
-            }
-        } catch (Exception ignored) {
-        }
-
-        return normalizeUrl(text);
-    }
-
-    private String normalizeUrl(String url) {
-        if (url == null) {
-            return "";
-        }
-
-        String text = url.trim();
-        if (text.isEmpty()) {
-            return "";
-        }
-
-        if (!text.startsWith("http://") && !text.startsWith("https://")) {
-            text = "http://" + text;
-        }
-
-        try {
-            Uri uri = Uri.parse(text);
-            if (uri.getScheme() == null || uri.getHost() == null) {
-                return "";
-            }
-            return text;
-        } catch (Exception ex) {
-            return "";
-        }
-    }
-
-    private String buildApiUrl(String path, String extraQuery) {
-        Uri uri;
-        try {
-            uri = Uri.parse(currentLanUrl.isEmpty() ? getSavedLanUrl() : currentLanUrl);
-        } catch (Exception ex) {
-            return "";
-        }
-
-        String scheme = uri.getScheme();
-        String authority = uri.getEncodedAuthority();
-        String token = uri.getQueryParameter("token");
-        if (scheme == null || authority == null || token == null || token.isEmpty()) {
-            return "";
-        }
-
-        StringBuilder builder = new StringBuilder();
-        builder.append(scheme).append("://").append(authority).append(path)
-                .append("?token=").append(urlEncode(token));
-        if (extraQuery != null && !extraQuery.isEmpty()) {
-            builder.append("&").append(extraQuery);
-        }
-        return builder.toString();
-    }
-
-    private String getBaseFromUrl(String url) {
-        try {
-            Uri uri = Uri.parse(url);
-            return uri.getScheme() + "://" + uri.getEncodedAuthority();
-        } catch (Exception ex) {
-            return url;
-        }
-    }
-
-    private String urlEncode(String value) {
-        try {
-            return URLEncoder.encode(value, StandardCharsets.UTF_8.name());
-        } catch (Exception ex) {
-            return "";
-        }
     }
 
     private boolean handleSpecialUrl(String url) {
@@ -1450,129 +793,17 @@ public class MainActivity extends Activity {
 
         String host = uri.getHost();
         if ("connections".equalsIgnoreCase(host)) {
-            showSetupView();
+            openOperations();
             return true;
         }
 
         if ("disconnect".equalsIgnoreCase(host)) {
-            clearSavedLanUrl();
-            Toast.makeText(this, "已断开当前电脑", Toast.LENGTH_SHORT).show();
-            showSetupView();
+            Toast.makeText(this, "请在运维伴侣中管理安全配对", Toast.LENGTH_SHORT).show();
+            openOperations();
             return true;
         }
 
         return true;
-    }
-
-    private void openUrl(String url) {
-        appShell.setVisibility(View.GONE);
-        errorView.setVisibility(View.GONE);
-        webView.setVisibility(View.VISIBLE);
-        manageFloatingButton.setVisibility(View.VISIBLE);
-        webView.loadUrl(url);
-    }
-
-    private void startPageLoadTimeout(String url) {
-        int generation = ++pageLoadGeneration;
-        mainHandler.postDelayed(() -> {
-            String currentUrl = webView.getUrl();
-            if (generation == pageLoadGeneration
-                    && webView.getVisibility() == View.VISIBLE
-                    && currentUrl != null
-                    && currentUrl.equals(url)) {
-                webView.stopLoading();
-                showErrorView();
-            }
-        }, 7000);
-    }
-
-    private void showErrorView() {
-        webView.setVisibility(View.GONE);
-        appShell.setVisibility(View.GONE);
-        errorView.setVisibility(View.VISIBLE);
-        manageFloatingButton.setVisibility(View.GONE);
-        progressBar.setVisibility(View.GONE);
-    }
-
-    private String getSavedLanUrl() {
-        return appPreferences.getLanUrl();
-    }
-
-    private void clearSavedLanUrl() {
-        appPreferences.clearLanUrl();
-    }
-
-    private String formatDuration(int seconds) {
-        int hours = seconds / 3600;
-        int minutes = (seconds % 3600) / 60;
-        int rest = seconds % 60;
-        if (hours > 0) {
-            return hours + "小时 " + minutes + "分钟";
-        }
-        if (minutes > 0) {
-            return minutes + "分钟 " + rest + "秒";
-        }
-        return rest + "秒";
-    }
-
-    private String joinJsonArray(JSONArray array, String separator) {
-        if (array == null || array.length() == 0) {
-            return "";
-        }
-
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < array.length(); i++) {
-            if (i > 0) {
-                builder.append(separator);
-            }
-            builder.append(array.optString(i, ""));
-        }
-        return builder.toString();
-    }
-
-    private TextView addMetricRow(LinearLayout parent, String label, String value) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(10), 0, 0);
-        parent.addView(row, matchWidthWrapParams());
-
-        TextView labelView = new TextView(this);
-        labelView.setText(label);
-        labelView.setTextColor(secondaryTextColor());
-        labelView.setTextSize(14);
-        row.addView(labelView, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-
-        TextView valueView = new TextView(this);
-        valueView.setText(value);
-        valueView.setTextColor(primaryTextColor());
-        valueView.setTextSize(14);
-        valueView.setGravity(Gravity.RIGHT);
-        valueView.setSingleLine(false);
-        row.addView(valueView, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.35f));
-        return valueView;
-    }
-
-    private LinearLayout addProfileRow(String label, String value) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(10), 0, 0);
-
-        TextView labelView = new TextView(this);
-        labelView.setText(label);
-        labelView.setTextColor(secondaryTextColor());
-        labelView.setTextSize(14);
-        row.addView(labelView, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-
-        TextView valueView = new TextView(this);
-        valueView.setText(value);
-        valueView.setTextColor(primaryTextColor());
-        valueView.setTextSize(14);
-        valueView.setGravity(Gravity.RIGHT);
-        valueView.setSingleLine(false);
-        row.addView(valueView, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.55f));
-        return row;
     }
 
     private LinearLayout makeCard() {
@@ -1623,20 +854,6 @@ public class MainActivity extends Activity {
         button.setAllCaps(false);
         button.setGravity(Gravity.CENTER);
         button.setMinHeight(dp(46));
-        return button;
-    }
-
-    private Button createManageFloatingButton() {
-        Button button = new Button(this);
-        button.setText("控制");
-        button.setTextSize(14);
-        button.setAllCaps(false);
-        button.setTextColor(Color.WHITE);
-        button.setPadding(dp(14), 0, dp(14), 0);
-        button.setMinHeight(dp(38));
-        button.setBackground(rounded(Color.rgb(31, 111, 235), dp(21), Color.TRANSPARENT, 0));
-        button.setVisibility(View.GONE);
-        button.setOnClickListener(v -> showOperationsLanding(false));
         return button;
     }
 
@@ -1712,7 +929,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        webView.saveState(outState);
         homeWebView.saveState(outState);
     }
 
@@ -1723,25 +939,12 @@ public class MainActivity extends Activity {
             return;
         }
 
-        if (webView.getVisibility() == View.VISIBLE && webView.canGoBack()) {
-            webView.goBack();
-            return;
-        }
-
-        if (webView.getVisibility() == View.VISIBLE) {
-            showOperationsLanding(false);
-            return;
-        }
-
         super.onBackPressed();
     }
 
     @Override
     protected void onDestroy() {
         musicController.release();
-        if (webView != null) {
-            webView.destroy();
-        }
         if (homeWebView != null) {
             homeWebView.destroy();
         }

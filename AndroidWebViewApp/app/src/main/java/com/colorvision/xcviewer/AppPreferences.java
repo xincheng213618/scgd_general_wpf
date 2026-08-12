@@ -10,7 +10,7 @@ final class AppPreferences {
     static final String THEME_DARK = "dark";
 
     private static final String PREFS_NAME = "colorvision_mobile";
-    private static final String KEY_LAN_URL = "lan_url";
+    private static final String KEY_LEGACY_LAN_URL = "lan_url";
     private static final String KEY_THEME_MODE = "theme_mode";
     private static final String KEY_START_TAB = "start_tab";
     private static final String KEY_AUDIO_URI = "audio_uri";
@@ -20,34 +20,14 @@ final class AppPreferences {
     private static final String KEY_OPERATIONS_PIN = "operations_certificate_pin";
     private static final String KEY_OPERATIONS_HOST_ID = "operations_host_id";
     private static final String KEY_OPERATIONS_WATCH_ENABLED = "operations_watch_enabled";
-    private static final String KEY_OPERATIONS_NOTIFICATION_PERMISSION_REQUESTED =
-            "operations_notification_permission_requested";
 
     private final SharedPreferences preferences;
 
     AppPreferences(Context context) {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-    }
-
-    String getLanUrl() {
-        String value = preferences.getString(KEY_LAN_URL, "");
-        if (containsUrlCredential(value)) {
-            preferences.edit().remove(KEY_LAN_URL).apply();
-            return "";
+        if (preferences.contains(KEY_LEGACY_LAN_URL)) {
+            preferences.edit().remove(KEY_LEGACY_LAN_URL).apply();
         }
-        return value;
-    }
-
-    void saveLanUrl(String url) {
-        if (containsUrlCredential(url)) {
-            clearLanUrl();
-            return;
-        }
-        preferences.edit().putString(KEY_LAN_URL, url).apply();
-    }
-
-    void clearLanUrl() {
-        preferences.edit().remove(KEY_LAN_URL).apply();
     }
 
     String getThemeMode() {
@@ -150,40 +130,13 @@ final class AppPreferences {
         preferences.edit().putBoolean(KEY_OPERATIONS_WATCH_ENABLED, enabled).apply();
     }
 
-    boolean hasRequestedOperationsNotificationPermission() {
-        return preferences.getBoolean(KEY_OPERATIONS_NOTIFICATION_PERMISSION_REQUESTED, false);
-    }
-
-    void markOperationsNotificationPermissionRequested() {
-        preferences.edit()
-                .putBoolean(KEY_OPERATIONS_NOTIFICATION_PERMISSION_REQUESTED, true)
-                .apply();
-    }
-
     void clearOperationsProfile() {
         preferences.edit()
                 .remove(KEY_OPERATIONS_ENDPOINT)
                 .remove(KEY_OPERATIONS_PIN)
                 .remove(KEY_OPERATIONS_HOST_ID)
                 .remove(KEY_OPERATIONS_WATCH_ENABLED)
-                .remove(KEY_OPERATIONS_NOTIFICATION_PERMISSION_REQUESTED)
                 .apply();
     }
 
-    static boolean containsUrlCredential(String value) {
-        if (value == null || value.isEmpty()) {
-            return false;
-        }
-        try {
-            Uri uri = Uri.parse(value);
-            for (String name : uri.getQueryParameterNames()) {
-                if ("token".equalsIgnoreCase(name) || "access_token".equalsIgnoreCase(name)) {
-                    return true;
-                }
-            }
-            return false;
-        } catch (Exception ignored) {
-            return true;
-        }
-    }
 }

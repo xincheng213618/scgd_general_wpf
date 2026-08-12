@@ -1,11 +1,9 @@
 package com.colorvision.xcviewer;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -54,7 +52,6 @@ public class OperationsActivity extends Activity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
     private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
     private static final long CONNECTION_HEARTBEAT_MILLISECONDS = 30_000L;
-    private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 22023;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -374,15 +371,6 @@ public class OperationsActivity extends Activity {
             return;
         }
         OperationsWatchService.start(this);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED
-                && !preferences.hasRequestedOperationsNotificationPermission()) {
-            preferences.markOperationsNotificationPermissionRequested();
-            requestPermissions(
-                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                    NOTIFICATION_PERMISSION_REQUEST_CODE);
-        }
     }
 
     private void scheduleConnectionHeartbeat() {

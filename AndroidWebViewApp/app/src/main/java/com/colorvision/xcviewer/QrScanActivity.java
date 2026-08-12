@@ -120,7 +120,7 @@ public class QrScanActivity extends Activity implements SurfaceHolder.Callback, 
             return;
         }
 
-        Toast.makeText(this, "没有相机权限，可返回手动输入连接地址", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "没有相机权限，请授权后重新扫描运维配对码", Toast.LENGTH_LONG).show();
         setResult(RESULT_CANCELED);
         finish();
     }
@@ -154,7 +154,7 @@ public class QrScanActivity extends Activity implements SurfaceHolder.Callback, 
             camera.startPreview();
         } catch (Exception ex) {
             releaseCamera();
-            Toast.makeText(this, "相机启动失败，可手动输入连接地址", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "相机启动失败，请返回后重新扫描运维配对码", Toast.LENGTH_LONG).show();
             setResult(RESULT_CANCELED);
             finish();
         }

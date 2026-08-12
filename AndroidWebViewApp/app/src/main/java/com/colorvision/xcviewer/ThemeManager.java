@@ -112,10 +112,6 @@ final class ThemeManager {
         return isDarkTheme() ? Color.rgb(55, 68, 92) : Color.rgb(221, 228, 239);
     }
 
-    int inputBackgroundColor() {
-        return isDarkTheme() ? Color.rgb(17, 24, 39) : Color.rgb(248, 250, 253);
-    }
-
     int secondaryButtonBackgroundColor() {
         return isDarkTheme() ? Color.rgb(38, 49, 68) : Color.rgb(238, 242, 247);
     }
