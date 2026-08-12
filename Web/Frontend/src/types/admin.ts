@@ -322,6 +322,7 @@ export interface OperationsHost {
   appVersion: string
   reportedStatus: string
   online: boolean
+  signedRelayReady: boolean
   capabilities: string[]
   snapshot: OperationsHostSnapshot
   lastSeenAt: string
@@ -334,6 +335,9 @@ export interface OperationsTask {
   hostName: string
   capabilityId: string
   status: string
+  sourceType: 'operator' | 'device'
+  deviceId: string | null
+  deviceName: string | null
   createdAt: string
   expiresAt: string
   deliveredAt: string | null
@@ -341,6 +345,18 @@ export interface OperationsTask {
   receiptCount: number
   lastReceiptStatus: string | null
   lastReceiptAt: string | null
+}
+
+export interface OperationsRelayDevice {
+  hostId: string
+  hostName: string
+  deviceId: string
+  displayName: string
+  scopes: string[]
+  active: boolean
+  approvedAt: string
+  revokedAt: string | null
+  updatedAt: string
 }
 
 export interface OperationsSupportSession {
@@ -364,9 +380,15 @@ export interface OperationsOverview {
     totalTasks: number
     pendingTasks: number
     failedTasks: number
+    deviceTasks: number
     activeSupportSessions: number
+    signedRelayHosts: number
+    totalRelayDevices: number
+    activeRelayDevices: number
+    revokedRelayDevices: number
   }
   hosts: OperationsHost[]
+  relayDevices: OperationsRelayDevice[]
   recentTasks: OperationsTask[]
   supportSessions: OperationsSupportSession[]
 }

@@ -148,9 +148,18 @@ class SqliteOperationsAdminQuery:
             task_summary = db.execute(
                 """SELECT COUNT(*) AS total,
                           SUM(CASE WHEN status IN ('queued','delivered','accepted') THEN 1 ELSE 0 END) AS pending,
-                          SUM(CASE WHEN status IN ('failed','rejected') THEN 1 ELSE 0 END) AS failed
+                          SUM(CASE WHEN status IN ('failed','rejected') THEN 1 ELSE 0 END) AS failed,
+                          SUM(CASE WHEN source_type='device' THEN 1 ELSE 0 END) AS device
                    FROM operations_tasks"""
             ).fetchone()
+            device_summary = db.execute(
+                """SELECT COUNT(*) AS total,
+                          SUM(CASE WHEN revoked_at IS NULL THEN 1 ELSE 0 END) AS active
+                   FROM operations_relay_devices"""
+            ).fetchone()
+            signed_relay_hosts = db.execute(
+                "SELECT COUNT(*) FROM operations_relay_host_identities"
+            ).fetchone()[0]
             active_support = db.execute(
                 """SELECT COUNT(*) FROM (
                        SELECT e.host_id, e.session_id,
@@ -165,16 +174,19 @@ class SqliteOperationsAdminQuery:
             ).fetchone()[0]
 
             host_rows = db.execute(
-                """SELECT host_id, display_name, app_version, status, capabilities,
-                          snapshot, last_seen_at, created_at
-                   FROM operations_hosts
-                   ORDER BY last_seen_at DESC, host_id
+                """SELECT h.host_id, h.display_name, h.app_version, h.status, h.capabilities,
+                          h.snapshot, h.last_seen_at, h.created_at,
+                          EXISTS(SELECT 1 FROM operations_relay_host_identities i
+                                 WHERE i.host_id=h.host_id) AS signed_relay_ready
+                   FROM operations_hosts h
+                   ORDER BY h.last_seen_at DESC, h.host_id
                    LIMIT ?""",
                 (host_limit,),
             ).fetchall()
             task_rows = db.execute(
                 """SELECT t.task_id, t.host_id, h.display_name, t.capability_id,
                           t.status, t.created_at, t.expires_at, t.delivered_at,
+                          t.source_type, t.device_id, d.display_name AS device_display_name,
                           (SELECT COUNT(*) FROM operations_task_receipts r
                            WHERE r.task_id=t.task_id) AS receipt_count,
                           (SELECT r.status FROM operations_task_receipts r
@@ -185,6 +197,8 @@ class SqliteOperationsAdminQuery:
                            ORDER BY r.created_at DESC, r.rowid DESC LIMIT 1) AS last_receipt_at
                    FROM operations_tasks t
                    LEFT JOIN operations_hosts h ON h.host_id=t.host_id
+                   LEFT JOIN operations_relay_devices d
+                     ON d.host_id=t.host_id AND d.device_id=t.device_id
                    ORDER BY t.created_at DESC, t.rowid DESC
                    LIMIT ?""",
                 (activity_limit,),
@@ -207,6 +221,17 @@ class SqliteOperationsAdminQuery:
                    LIMIT ?""",
                 (activity_limit,),
             ).fetchall()
+            device_rows = db.execute(
+                """SELECT d.host_id, h.display_name AS host_name, d.device_id,
+                          d.display_name, d.scopes, d.approved_at, d.revoked_at,
+                          d.updated_at
+                   FROM operations_relay_devices d
+                   LEFT JOIN operations_hosts h ON h.host_id=d.host_id
+                   ORDER BY d.revoked_at IS NOT NULL, d.updated_at DESC,
+                            d.host_id, d.device_id
+                   LIMIT ?""",
+                (activity_limit,),
+            ).fetchall()
         finally:
             db.close()
 
@@ -219,6 +244,7 @@ class SqliteOperationsAdminQuery:
                 "appVersion": _text(row["app_version"], 40),
                 "reportedStatus": _text(row["status"], 32, "unknown"),
                 "online": bool(last_seen and last_seen >= online_cutoff),
+                "signedRelayReady": bool(row["signed_relay_ready"]),
                 "capabilities": _json_string_list(row["capabilities"]),
                 "snapshot": _safe_snapshot(row["snapshot"]),
                 "lastSeenAt": str(row["last_seen_at"]),
@@ -234,6 +260,9 @@ class SqliteOperationsAdminQuery:
                 "hostName": _text(row["display_name"], 120) or str(row["host_id"]),
                 "capabilityId": _text(row["capability_id"], 128),
                 "status": _text(row["status"], 40, "unknown"),
+                "sourceType": "device" if row["source_type"] == "device" else "operator",
+                "deviceId": _text(row["device_id"], 64) or None,
+                "deviceName": _text(row["device_display_name"], 80) or None,
                 "createdAt": str(row["created_at"]),
                 "expiresAt": str(row["expires_at"]),
                 "deliveredAt": str(row["delivered_at"] or "") or None,
@@ -254,8 +283,22 @@ class SqliteOperationsAdminQuery:
             "messageCount": int(row["message_count"] or 0),
         } for row in support_rows]
 
+        relay_devices = [{
+            "hostId": str(row["host_id"]),
+            "hostName": _text(row["host_name"], 120) or str(row["host_id"]),
+            "deviceId": str(row["device_id"]),
+            "displayName": _text(row["display_name"], 80) or str(row["device_id"]),
+            "scopes": _json_string_list(row["scopes"]),
+            "active": row["revoked_at"] is None,
+            "approvedAt": str(row["approved_at"]),
+            "revokedAt": str(row["revoked_at"] or "") or None,
+            "updatedAt": str(row["updated_at"]),
+        } for row in device_rows]
+
         total_hosts = int(host_summary["total"] or 0)
         online_hosts = int(host_summary["online"] or 0)
+        total_devices = int(device_summary["total"] or 0)
+        active_devices = int(device_summary["active"] or 0)
         return {
             "generatedAt": generated_at.isoformat(),
             "onlineThresholdSeconds": ONLINE_THRESHOLD_SECONDS,
@@ -266,9 +309,15 @@ class SqliteOperationsAdminQuery:
                 "totalTasks": int(task_summary["total"] or 0),
                 "pendingTasks": int(task_summary["pending"] or 0),
                 "failedTasks": int(task_summary["failed"] or 0),
+                "deviceTasks": int(task_summary["device"] or 0),
                 "activeSupportSessions": int(active_support or 0),
+                "signedRelayHosts": int(signed_relay_hosts or 0),
+                "totalRelayDevices": total_devices,
+                "activeRelayDevices": active_devices,
+                "revokedRelayDevices": max(0, total_devices - active_devices),
             },
             "hosts": hosts,
+            "relayDevices": relay_devices,
             "recentTasks": recent_tasks,
             "supportSessions": support_sessions,
         }

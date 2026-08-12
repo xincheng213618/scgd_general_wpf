@@ -1,5 +1,6 @@
 import {
   DesktopOutlined,
+  KeyOutlined,
   MessageOutlined,
   ReloadOutlined,
   SafetyCertificateOutlined,
@@ -25,6 +26,7 @@ import { getOperationsOverview } from '../services/admin'
 import type {
   OperationsHost,
   OperationsOverview,
+  OperationsRelayDevice,
   OperationsSupportSession,
   OperationsTask,
 } from '../types/admin'
@@ -33,7 +35,9 @@ import {
   formatOperationsUptime,
   operationsCapabilityLabel,
   operationsHostStatus,
+  operationsScopeLabel,
   operationsSupportStatus,
+  operationsTaskSource,
   operationsTaskStatus,
 } from '../utils/operations'
 
@@ -61,6 +65,11 @@ function hostDetails(host: OperationsHost) {
         <Descriptions.Item label="安全运维通道">
           <Tag color={snapshot.secureOperations.isRunning ? 'green' : 'default'}>
             {snapshot.secureOperations.isRunning ? '运行中' : '未运行'}
+          </Tag>
+        </Descriptions.Item>
+        <Descriptions.Item label="签名 Relay 身份">
+          <Tag color={host.signedRelayReady ? 'blue' : 'default'}>
+            {host.signedRelayReady ? '已建立' : '未建立'}
           </Tag>
         </Descriptions.Item>
         <Descriptions.Item label="已配对设备">
@@ -125,6 +134,19 @@ const taskColumns: ColumnsType<OperationsTask> = [
   { title: '创建时间', dataIndex: 'createdAt', width: 170, render: (value) => shortDate(value) },
   { title: '终端', dataIndex: 'hostName', width: 160 },
   {
+    title: '来源',
+    key: 'source',
+    width: 150,
+    render: (_, task) => (
+      <Space direction="vertical" size={0}>
+        <Tag color={task.sourceType === 'device' ? 'purple' : 'default'}>
+          {operationsTaskSource(task.sourceType)}
+        </Tag>
+        {task.deviceName && <Typography.Text type="secondary">{task.deviceName}</Typography.Text>}
+      </Space>
+    ),
+  },
+  {
     title: '能力',
     dataIndex: 'capabilityId',
     render: (value) => (
@@ -154,6 +176,43 @@ const taskColumns: ColumnsType<OperationsTask> = [
     width: 150,
     render: (value) => <Typography.Text code copyable={{ text: value }}>{value.slice(0, 10)}</Typography.Text>,
   },
+]
+
+const relayDeviceColumns: ColumnsType<OperationsRelayDevice> = [
+  {
+    title: '配对设备',
+    key: 'device',
+    width: 160,
+    render: (_, device) => (
+      <Space direction="vertical" size={0}>
+        <Typography.Text strong>{device.displayName}</Typography.Text>
+        <Typography.Text type="secondary" copyable={{ text: device.deviceId }}>
+          {device.deviceId}
+        </Typography.Text>
+      </Space>
+    ),
+  },
+  { title: '所属终端', dataIndex: 'hostName', width: 140 },
+  {
+    title: '状态',
+    key: 'status',
+    width: 85,
+    render: (_, device) => <Tag color={device.active ? 'green' : 'default'}>{device.active ? '有效' : '已撤销'}</Tag>,
+  },
+  {
+    title: '权限范围',
+    key: 'scopes',
+    width: 235,
+    render: (_, device) => (
+      <Space wrap size={[4, 4]}>
+        {device.scopes.slice(0, 4).map((scope) => <Tag key={scope} title={scope}>{operationsScopeLabel(scope)}</Tag>)}
+        {device.scopes.length > 4 && <Tag>+{device.scopes.length - 4}</Tag>}
+        {device.scopes.length === 0 && <Tag>无</Tag>}
+      </Space>
+    ),
+  },
+  { title: '批准时间', dataIndex: 'approvedAt', width: 140, render: (value) => shortDate(value) },
+  { title: '最后同步', dataIndex: 'updatedAt', width: 140, render: (value) => shortDate(value) },
 ]
 
 const supportColumns: ColumnsType<OperationsSupportSession> = [
@@ -222,7 +281,7 @@ export function OperationsPage() {
         showIcon
         icon={<SafetyCertificateOutlined />}
         message="只读终端运维总览"
-        description="本页只展示经过固定字段裁剪的安全快照、任务状态和会话计数，不返回任务 payload、回执 evidence 或支持消息正文，也不会创建任务或发送消息。"
+        description="本页只展示经过固定字段裁剪的安全快照、签名 Relay 状态、配对设备元数据、任务状态和会话计数；不返回证书、公钥、签名、nonce、任务正文、回执 evidence 或支持消息正文，也不会创建任务或发送消息。"
       />
 
       {data && data.summary.totalHosts === 0 && (
@@ -230,8 +289,7 @@ export function OperationsPage() {
           type="warning"
           showIcon
           message="尚无终端连接 Web Relay"
-          description="桌面端配置 COLORVISION_OPERATIONS_RELAY_URL 与 ops:relay API Key 并发出首次心跳后，终端会自动出现在这里。"
-          action={<Button size="small" href="/admin/api-keys">管理 API Key</Button>}
+          description="支持签名 Relay 的桌面端启动并完成首次同步后，终端和本机已批准的配对设备会自动出现在这里；旧版 API Key Relay 仍兼容。"
         />
       )}
 
@@ -249,6 +307,28 @@ export function OperationsPage() {
           <Card loading={loading}><Statistic title="活动支持会话" value={summary?.activeSupportSessions ?? 0} prefix={<MessageOutlined />} /></Card>
         </Col>
       </Row>
+
+      <Card
+        title="签名设备 Relay"
+        loading={loading}
+        extra={(
+          <Space wrap>
+            <Tag icon={<SafetyCertificateOutlined />} color="blue">{summary?.signedRelayHosts ?? 0} 台终端已建立身份</Tag>
+            <Tag icon={<KeyOutlined />} color="green">{summary?.activeRelayDevices ?? 0} 台有效设备</Tag>
+            {(summary?.revokedRelayDevices ?? 0) > 0 && <Tag>{summary?.revokedRelayDevices} 台已撤销</Tag>}
+          </Space>
+        )}
+      >
+        <Table
+          rowKey={(device) => `${device.hostId}:${device.deviceId}`}
+          size="small"
+          columns={relayDeviceColumns}
+          dataSource={data?.relayDevices ?? []}
+          pagination={{ pageSize: 10, hideOnSinglePage: true }}
+          locale={{ emptyText: '尚无签名 Relay 配对设备' }}
+          scroll={{ x: 900 }}
+        />
+      </Card>
 
       {summary && (summary.staleHosts > 0 || summary.failedTasks > 0) && (
         <Alert
@@ -283,7 +363,16 @@ export function OperationsPage() {
         />
       </Card>
 
-      <Card title="最近任务" loading={loading} extra={<Tag>不显示任务输入与回执详情</Tag>}>
+      <Card
+        title="最近任务"
+        loading={loading}
+        extra={(
+          <Space wrap>
+            <Tag color="purple">{summary?.deviceTasks ?? 0} 个来自配对设备</Tag>
+            <Tag>不显示任务输入与回执详情</Tag>
+          </Space>
+        )}
+      >
         <Table
           rowKey="taskId"
           size="small"
@@ -291,7 +380,7 @@ export function OperationsPage() {
           dataSource={data?.recentTasks ?? []}
           pagination={{ pageSize: 10, hideOnSinglePage: true }}
           locale={{ emptyText: '尚无 Relay 任务' }}
-          scroll={{ x: 980 }}
+          scroll={{ x: 1130 }}
         />
       </Card>
 

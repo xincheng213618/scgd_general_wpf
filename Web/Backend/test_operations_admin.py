@@ -84,6 +84,26 @@ class OperationsAdminTests(unittest.TestCase):
                      "not-json", "not-json", stale, stale, stale),
                 ],
             )
+            db.execute(
+                "INSERT INTO operations_relay_host_identities VALUES (?, ?, ?, ?, ?)",
+                ("host-online", "private-certificate-der", "private-certificate-fingerprint", stale, recent),
+            )
+            db.executemany(
+                """INSERT INTO operations_relay_devices
+                   (host_id, device_id, display_name, public_key_spki, scopes,
+                    approved_at, revoked_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                [
+                    ("host-online", "device-active", "Support Tablet",
+                     "private-active-public-key",
+                     json.dumps(["ops.status.read", "ops.jobs.create"]),
+                     stale, None, recent),
+                    ("host-stale", "device-revoked", "Retired Phone",
+                     "private-revoked-public-key",
+                     json.dumps(["ops.status.read"]),
+                     stale, recent, recent),
+                ],
+            )
             db.executemany(
                 """INSERT INTO operations_tasks
                    (task_id, host_id, capability_id, payload, status,
@@ -97,6 +117,18 @@ class OperationsAdminTests(unittest.TestCase):
                      json.dumps({"releasePath": "D:/private/release"}), "failed",
                      "failed-1", "1", stale, recent, stale),
                 ],
+            )
+            db.execute(
+                """INSERT INTO operations_tasks
+                   (task_id, host_id, capability_id, payload, status,
+                    idempotency_key, created_by, created_at, expires_at, delivered_at,
+                    source_type, device_id, request_body, request_timestamp,
+                    request_nonce, request_signature)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                ("task-device", "host-online", "ops.diagnostics.request", "{}", "completed",
+                 "device-1", "device-active", stale, recent, stale,
+                 "device", "device-active", "private-signed-request-body", recent,
+                 "private-request-nonce", "private-request-signature"),
             )
             db.execute(
                 "INSERT INTO operations_task_receipts VALUES (?, ?, ?, ?, ?, ?)",
@@ -131,20 +163,35 @@ class OperationsAdminTests(unittest.TestCase):
         result = response.get_json()
         self.assertEqual(result["summary"], {
             "activeSupportSessions": 1,
+            "activeRelayDevices": 1,
+            "deviceTasks": 1,
             "failedTasks": 1,
             "onlineHosts": 1,
             "pendingTasks": 1,
+            "revokedRelayDevices": 1,
+            "signedRelayHosts": 1,
             "staleHosts": 1,
             "totalHosts": 2,
-            "totalTasks": 2,
+            "totalRelayDevices": 2,
+            "totalTasks": 3,
         })
         self.assertTrue(result["hosts"][0]["online"])
+        self.assertTrue(result["hosts"][0]["signedRelayReady"])
         self.assertFalse(result["hosts"][1]["online"])
+        self.assertFalse(result["hosts"][1]["signedRelayReady"])
         self.assertEqual(result["hosts"][0]["snapshot"]["process"], {"memoryMb": 512.5})
+        self.assertEqual(len(result["relayDevices"]), 2)
+        self.assertTrue(result["relayDevices"][0]["active"])
+        self.assertEqual(result["relayDevices"][0]["scopes"], ["ops.status.read", "ops.jobs.create"])
         failed_task = next(
             item for item in result["recentTasks"] if item["taskId"] == "task-failed"
         )
         self.assertEqual(failed_task["receiptCount"], 1)
+        device_task = next(
+            item for item in result["recentTasks"] if item["taskId"] == "task-device"
+        )
+        self.assertEqual(device_task["sourceType"], "device")
+        self.assertEqual(device_task["deviceName"], "Support Tablet")
         self.assertEqual(result["supportSessions"][0]["messageCount"], 1)
 
         serialized = json.dumps(result, ensure_ascii=False)
@@ -156,6 +203,13 @@ class OperationsAdminTests(unittest.TestCase):
             "private support message",
             "processId",
             "releasePath",
+            "private-certificate-der",
+            "private-certificate-fingerprint",
+            "private-active-public-key",
+            "private-revoked-public-key",
+            "private-signed-request-body",
+            "private-request-nonce",
+            "private-request-signature",
         ):
             self.assertNotIn(sensitive, serialized)
 
