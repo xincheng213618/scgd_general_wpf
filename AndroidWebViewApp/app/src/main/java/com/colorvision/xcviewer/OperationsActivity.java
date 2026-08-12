@@ -379,7 +379,7 @@ public class OperationsActivity extends Activity {
                 dashboardButton("支持会话", v -> showSupportCenter()));
         addDashboardActionRow(
                 dashboardButton("提交部署确认", v -> confirmDeploymentReceipt()),
-                capabilityButton("能力目录", "/ops/v1/capabilities"));
+                dashboardButton("运维时间线", v -> showOperationsWatchHistory()));
         scheduleConnectionHeartbeat();
         ensureOperationsWatchRunning();
         if (openPendingOperationsDestination()) {
@@ -404,6 +404,59 @@ public class OperationsActivity extends Activity {
             return true;
         }
         return false;
+    }
+
+    private void showOperationsWatchHistory() {
+        showingDashboardSummary = false;
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        dashboardVisible = true;
+        progress.setVisibility(View.GONE);
+        title.setText("运维时间线");
+        List<OperationsWatchHistory.Entry> entries = preferences.getOperationsWatchHistory(
+                System.currentTimeMillis());
+        state.setText(entries.isEmpty()
+                ? "还没有状态变更"
+                : OperationsWatchHistory.label(entries.get(entries.size() - 1).state));
+        String timeline = formatOperationsWatchHistory(entries);
+        details.setText(timeline);
+        actions.removeAllViews();
+
+        Button refresh = new Button(this);
+        refresh.setText("刷新本机时间线");
+        refresh.setOnClickListener(v -> showOperationsWatchHistory());
+        actions.addView(refresh, actionParams());
+
+        Button share = new Button(this);
+        share.setText("分享脱敏时间线");
+        share.setEnabled(!entries.isEmpty());
+        share.setOnClickListener(v -> shareSafeText(
+                "ColorVision 运维时间线",
+                "ColorVision 运维时间线\n\n" + timeline));
+        actions.addView(share, actionParams());
+
+        Button back = new Button(this);
+        back.setText("返回现场运维概览");
+        back.setOnClickListener(v -> showDashboard());
+        actions.addView(back, actionParams());
+    }
+
+    private String formatOperationsWatchHistory(List<OperationsWatchHistory.Entry> entries) {
+        if (entries.isEmpty()) {
+            return "后台守护只会在连接、恢复或需要关注的聚合状态确实变化时记录一条。";
+        }
+        SimpleDateFormat formatter = new SimpleDateFormat("MM-dd HH:mm:ss", Locale.getDefault());
+        StringBuilder text = new StringBuilder();
+        text.append("近 7 天状态变更 · 本机最多 40 条");
+        for (int index = entries.size() - 1; index >= 0; index--) {
+            OperationsWatchHistory.Entry entry = entries.get(index);
+            text.append("\n")
+                    .append(formatter.format(new Date(entry.timestampMilliseconds)))
+                    .append(" · ")
+                    .append(OperationsWatchHistory.label(entry.state));
+        }
+        text.append("\n\n仅保存时间与固定状态类别；不保存主机、端点、设备身份、告警正文、日志或检测数据。移除配对资料时一并清除。");
+        return text.toString();
     }
 
     private void ensureOperationsWatchRunning() {

@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 
+import java.util.List;
+
 final class AppPreferences {
     static final String THEME_SYSTEM = "system";
     static final String THEME_LIGHT = "light";
@@ -21,16 +23,20 @@ final class AppPreferences {
     private static final String KEY_OPERATIONS_HOST_ID = "operations_host_id";
     private static final String KEY_OPERATIONS_PROFILE_REVOKED = "operations_profile_revoked";
     private static final String KEY_LEGACY_OPERATIONS_WATCH_ENABLED = "operations_watch_enabled";
+    private static final String KEY_LEGACY_OPERATIONS_WATCH_STATE = "operations_watch_state";
+    private static final String KEY_OPERATIONS_WATCH_HISTORY = "operations_watch_history";
 
     private final SharedPreferences preferences;
 
     AppPreferences(Context context) {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         if (preferences.contains(KEY_LEGACY_LAN_URL)
-                || preferences.contains(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)) {
+                || preferences.contains(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)
+                || preferences.contains(KEY_LEGACY_OPERATIONS_WATCH_STATE)) {
             preferences.edit()
                     .remove(KEY_LEGACY_LAN_URL)
                     .remove(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)
+                    .remove(KEY_LEGACY_OPERATIONS_WATCH_STATE)
                     .apply();
         }
     }
@@ -103,6 +109,7 @@ final class AppPreferences {
                 .putString(KEY_OPERATIONS_PIN, certificatePin)
                 .putString(KEY_OPERATIONS_HOST_ID, hostId)
                 .putBoolean(KEY_OPERATIONS_PROFILE_REVOKED, false)
+                .remove(KEY_OPERATIONS_WATCH_HISTORY)
                 .apply();
     }
 
@@ -129,6 +136,29 @@ final class AppPreferences {
         preferences.edit().putBoolean(KEY_OPERATIONS_PROFILE_REVOKED, true).apply();
     }
 
+    String getOperationsWatchState() {
+        List<OperationsWatchHistory.Entry> entries = getOperationsWatchHistory(
+                System.currentTimeMillis());
+        return entries.isEmpty() ? "" : entries.get(entries.size() - 1).state;
+    }
+
+    List<OperationsWatchHistory.Entry> getOperationsWatchHistory(long nowMilliseconds) {
+        return OperationsWatchHistory.parse(
+                preferences.getString(KEY_OPERATIONS_WATCH_HISTORY, ""), nowMilliseconds);
+    }
+
+    boolean recordOperationsWatchState(String state, long nowMilliseconds) {
+        String previousHistory = preferences.getString(KEY_OPERATIONS_WATCH_HISTORY, "");
+        OperationsWatchHistory.Transition transition = OperationsWatchHistory.transition(
+                previousHistory, state, nowMilliseconds);
+        if (transition.changed || !transition.serializedHistory.equals(previousHistory)) {
+            preferences.edit()
+                    .putString(KEY_OPERATIONS_WATCH_HISTORY, transition.serializedHistory)
+                    .apply();
+        }
+        return transition.changed;
+    }
+
     void clearOperationsProfile() {
         preferences.edit()
                 .remove(KEY_OPERATIONS_ENDPOINT)
@@ -136,6 +166,8 @@ final class AppPreferences {
                 .remove(KEY_OPERATIONS_HOST_ID)
                 .remove(KEY_OPERATIONS_PROFILE_REVOKED)
                 .remove(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)
+                .remove(KEY_LEGACY_OPERATIONS_WATCH_STATE)
+                .remove(KEY_OPERATIONS_WATCH_HISTORY)
                 .apply();
     }
 

@@ -66,6 +66,10 @@ public final class OperationsWatchService extends Service {
     public void onCreate() {
         super.onCreate();
         preferences = new AppPreferences(this);
+        String persistedState = preferences.getOperationsWatchState();
+        hasCompletedCheck = !persistedState.isEmpty();
+        lastCheckOnline = OperationsWatchHistory.isOnlineState(persistedState);
+        lastAttentionKey = OperationsWatchHistory.attentionKey(persistedState);
         createNotificationChannels();
     }
 
@@ -153,6 +157,11 @@ public final class OperationsWatchService extends Service {
             Log.i(LOG_TAG, "operations_watch_online");
         }
         lastCheckOnline = true;
+        preferences.recordOperationsWatchState(
+                attentionKey.isEmpty()
+                        ? OperationsWatchHistory.STATE_ONLINE
+                        : OperationsWatchHistory.attentionState(attentionKey),
+                System.currentTimeMillis());
         updateNotification(OperationsWatchPolicy.successfulCheckNotification(status, reconnected), true);
         if (OperationsWatchPolicy.shouldPostAttention(attentionKey, lastAttentionKey)) {
             postAttentionNotification(attentionKey);
@@ -170,6 +179,8 @@ public final class OperationsWatchService extends Service {
         checkInFlight = false;
         hasCompletedCheck = true;
         if (code.contains("unknown_or_revoked_device")) {
+            preferences.recordOperationsWatchState(
+                    OperationsWatchHistory.STATE_REVOKED, System.currentTimeMillis());
             preferences.markOperationsProfileRevoked();
             Log.w(LOG_TAG, "operations_watch_pairing_revoked");
             clearAttentionNotification();
@@ -186,6 +197,8 @@ public final class OperationsWatchService extends Service {
             Log.w(LOG_TAG, "operations_watch_offline retry_seconds=" + (retryDelay / 1000L));
         }
         lastCheckOnline = false;
+        preferences.recordOperationsWatchState(
+                OperationsWatchHistory.STATE_OFFLINE, System.currentTimeMillis());
         updateNotification("连接暂断 · " + (retryDelay / 1000L) + " 秒后重试", true);
         if (notifyOffline) {
             postAttentionNotification(OperationsWatchPolicy.ATTENTION_OFFLINE);
