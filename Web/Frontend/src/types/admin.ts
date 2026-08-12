@@ -68,6 +68,22 @@ export interface TrafficClientStats extends TrafficErrorBreakdown {
   avgResponseMs: number
 }
 
+export interface TrafficErrorRouteStats {
+  route: string
+  method: string
+  statusCode: number
+  responses: number
+  share: number
+}
+
+export interface TrafficErrorDiagnostics {
+  totalErrorResponses: number
+  recordedResponses: number
+  coverageRate: number
+  partial: boolean
+  items: TrafficErrorRouteStats[]
+}
+
 export interface WebPageStats {
   route: string
   pageViews: number
@@ -109,6 +125,7 @@ export interface TrafficStatsResponse {
   today: TrafficDayStats
   daily: TrafficDayStats[]
   topRoutes: TrafficRouteStats[]
+  errorDiagnostics: TrafficErrorDiagnostics
   clients: TrafficClientStats[]
   web: {
     summary: {

@@ -10,12 +10,14 @@ import type {
   SlowRequestSample,
   TrafficClientStats,
   TrafficDayStats,
+  TrafficErrorRouteStats,
   TrafficRouteStats,
   TrafficStatsResponse,
   WebPageStats,
   WebVitalStats,
 } from '../types/admin'
 import { humanSize, shortDate } from '../utils/format'
+import { describeHttpError } from '../utils/trafficErrors'
 
 const dayOptions = [
   { label: '最近 7 天', value: 7 },
@@ -132,6 +134,25 @@ const clientColumns: ColumnsType<TrafficClientStats> = [
     align: 'right',
     render: (value) => <Tag>{value}</Tag>,
   },
+]
+
+const errorRouteColumns: ColumnsType<TrafficErrorRouteStats> = [
+  {
+    title: '状态',
+    dataIndex: 'statusCode',
+    width: 90,
+    render: (value: number) => <Tag color={value >= 500 ? 'red' : 'gold'}>{value}</Tag>,
+  },
+  {
+    title: '含义',
+    dataIndex: 'statusCode',
+    width: 180,
+    render: (value: number) => describeHttpError(value),
+  },
+  { title: '方法', dataIndex: 'method', width: 90, render: (value) => <Tag>{value}</Tag> },
+  { title: '规范化路由', dataIndex: 'route', render: (value) => <Typography.Text code>{value}</Typography.Text> },
+  { title: '响应', dataIndex: 'responses', width: 100, align: 'right' },
+  { title: '精确明细占比', dataIndex: 'share', width: 130, align: 'right', render: percent },
 ]
 
 const webPageColumns: ColumnsType<WebPageStats> = [
@@ -410,6 +431,44 @@ export function TrafficPage() {
             {data.recorder.capacity !== undefined && <Tag>缓冲容量 {data.recorder.capacity}</Tag>}
             {data.recorder.lastFlushAt && <Tag>最近落盘 {shortDate(data.recorder.lastFlushAt)}</Tag>}
           </Space>
+        </Space>
+      </Card>
+
+      <Card
+        title="错误路由诊断"
+        loading={loading}
+        extra={(
+          <Space wrap>
+            <Tag color={data.errorDiagnostics.partial ? 'gold' : 'green'}>
+              精确覆盖 {percent(data.errorDiagnostics.coverageRate)}
+            </Tag>
+            <Tag>
+              已记录 {data.errorDiagnostics.recordedResponses}/{data.errorDiagnostics.totalErrorResponses}
+            </Tag>
+          </Space>
+        )}
+      >
+        <Space direction="vertical" size={12} className="page-stack">
+          <Typography.Paragraph type="secondary">
+            按精确 HTTP 状态码、请求方法和规范化路由聚合，不保存原始 URL、查询参数、IP 或请求头。
+          </Typography.Paragraph>
+          {data.errorDiagnostics.partial && (
+            <Alert
+              type="info"
+              showIcon
+              message={`选定区间有 ${data.errorDiagnostics.totalErrorResponses - data.errorDiagnostics.recordedResponses} 条旧错误没有精确状态码`}
+              description="精确状态码从本次升级后开始记录，旧版汇总无法可靠回填；下表仅展示已有精确明细。"
+            />
+          )}
+          <Table
+            rowKey={(record) => `${record.statusCode}:${record.method}:${record.route}`}
+            size="small"
+            columns={errorRouteColumns}
+            dataSource={data.errorDiagnostics.items}
+            pagination={false}
+            locale={{ emptyText: data.errorDiagnostics.totalErrorResponses > 0 ? '现有错误均来自升级前，尚无精确状态码明细' : '选定区间没有错误响应' }}
+            scroll={{ x: 820 }}
+          />
         </Space>
       </Card>
 

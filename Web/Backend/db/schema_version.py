@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 14
+CURRENT_SCHEMA_VERSION = 15
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -73,6 +73,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v13(db)
     if from_version < 14:
         _migration_v14(db)
+    if from_version < 15:
+        _migration_v15(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -421,6 +423,25 @@ def _migration_v14(db: sqlite3.Connection):
     _add_column_if_missing(db, "operations_hosts", "relay_snapshot_signature TEXT")
     _add_column_if_missing(db, "operations_task_receipts", "relay_receipt_body TEXT")
     _add_column_if_missing(db, "operations_task_receipts", "relay_receipt_signature TEXT")
+
+
+def _migration_v15(db: sqlite3.Connection):
+    """v15: Add exact HTTP error status aggregates by normalized route."""
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS access_error_daily (
+            day         TEXT NOT NULL,
+            route       TEXT NOT NULL,
+            method      TEXT NOT NULL,
+            status_code INTEGER NOT NULL CHECK (status_code BETWEEN 400 AND 599),
+            responses   INTEGER NOT NULL DEFAULT 0,
+            updated_at  TEXT NOT NULL,
+            PRIMARY KEY (day, route, method, status_code)
+        );
+        CREATE INDEX IF NOT EXISTS idx_access_error_daily_day
+            ON access_error_daily(day);
+        """
+    )
 
 
 def _add_column_if_missing(db: sqlite3.Connection, table: str, column_def: str):

@@ -392,6 +392,41 @@ class SchemaVersionTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_v15_adds_exact_error_status_aggregates_idempotently(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 14);
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            columns = {
+                row["name"] for row in db.execute(
+                    "PRAGMA table_info(access_error_daily)"
+                )
+            }
+            self.assertEqual(
+                columns,
+                {"day", "route", "method", "status_code", "responses", "updated_at"},
+            )
+            db.execute(
+                """INSERT INTO access_error_daily
+                   (day, route, method, status_code, responses, updated_at)
+                   VALUES ('2026-08-13', '__unmatched__', 'GET', 404, 1, 'now')"""
+            )
+
+            ensure_schema_version(db)
+            self.assertEqual(
+                db.execute("SELECT responses FROM access_error_daily").fetchone()[0],
+                1,
+            )
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()
