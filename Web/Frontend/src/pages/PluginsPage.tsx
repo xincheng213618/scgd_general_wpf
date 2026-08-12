@@ -1,7 +1,7 @@
 import { AppstoreOutlined, SearchOutlined } from '@ant-design/icons'
 import { Alert, Avatar, Button, Card, Col, Empty, Form, Input, Pagination, Row, Select, Skeleton, Space, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getPlugins } from '../services/site'
 import type { PluginListResponse } from '../types/site'
 import { shortDate } from '../utils/format'
@@ -24,6 +24,7 @@ function sortParam(value: string | null) {
 
 export function PluginsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [data, setData] = useState<PluginListResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -96,8 +97,14 @@ export function PluginsPage() {
         <Typography.Title level={2}>插件市场</Typography.Title>
         <Typography.Paragraph type="secondary">浏览、搜索、下载插件扩展。</Typography.Paragraph>
       </Card>
-      <Card>
-        <Form key={searchKey} layout="inline" initialValues={query} onFinish={applyQuery}>
+      <Card className="plugin-filter-card">
+        <Form
+          key={searchKey}
+          className="plugin-filter-form"
+          layout="inline"
+          initialValues={{ ...query, category: query.category || undefined }}
+          onFinish={applyQuery}
+        >
           <Form.Item name="keyword">
             <Input aria-label="搜索插件" prefix={<SearchOutlined />} placeholder="名称、ID、描述" allowClear />
           </Form.Item>
@@ -132,6 +139,12 @@ export function PluginsPage() {
           </Form.Item>
         </Form>
       </Card>
+      <div className="plugin-results-bar" role="status" aria-live="polite">
+        <Typography.Text>
+          共 <strong>{data.totalCount}</strong> 个插件
+        </Typography.Text>
+        {loading && <Typography.Text type="secondary">正在更新…</Typography.Text>}
+      </div>
       {data.items.length === 0 ? (
         <Empty description="暂无匹配插件" />
       ) : (
@@ -157,7 +170,12 @@ export function PluginsPage() {
                     </Space>
                     <div className="card-footer-link">
                       <Typography.Text type="secondary">{shortDate(plugin.updatedAt)}</Typography.Text>
-                      <Button href={`/plugins/${plugin.pluginId}`}>详情</Button>
+                      <Button
+                        aria-label={`查看 ${plugin.name} 详情`}
+                        onClick={() => navigate(`/plugins/${plugin.pluginId}`)}
+                      >
+                        详情
+                      </Button>
                     </div>
                   </div>
                 </Space>
@@ -174,6 +192,7 @@ export function PluginsPage() {
           total={data.totalCount}
           showSizeChanger
           pageSizeOptions={[12, 24, 48]}
+          showTotal={(total, range) => `${range[0]}-${range[1]} / 共 ${total} 个插件`}
           onChange={(page, pageSize) => {
             const next = new URLSearchParams(searchParams)
             next.set('page', String(page))

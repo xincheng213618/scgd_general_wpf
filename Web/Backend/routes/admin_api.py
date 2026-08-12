@@ -1,7 +1,7 @@
 """
 Admin API routes for ColorVision Marketplace.
 
-Provides management endpoints for cache, index, jobs, audit log, and stats.
+Provides management endpoints for cache, index, jobs, audit log, deployments, and stats.
 All endpoints require authentication (session, Basic Auth, or Bearer API Key).
 
 Per-endpoint scope requirements:
@@ -14,6 +14,7 @@ Per-endpoint scope requirements:
   - POST /jobs/*/enable       → jobs:write
   - POST /jobs/*/disable      → jobs:write
   - GET  /audit-log           → admin:*
+  - GET  /deployments         → admin:*
   - GET  /stats/overview      → stats:read
   - GET  /docs/status         → cache:read
   - GET  /publish/integrity   → stats:read
@@ -43,6 +44,7 @@ from db_cache import CacheManager, now_iso
 from ports.jobs import JobRepository
 from routes.request_context import current_request_context, set_authenticated_request_context
 from services.auth_policy import AuthPolicy
+from services.deployment_history import query_deployment_history
 from services.request_context import RequestContext
 
 
@@ -64,6 +66,7 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "enable_job": ["jobs:write"],
     "disable_job": ["jobs:write"],
     "audit_log": ["admin:*"],
+    "deployment_history": ["admin:*"],
     "stats_overview": ["stats:read"],
     "traffic_stats": ["stats:read"],
     "list_users": ["admin:*"],
@@ -112,6 +115,24 @@ def _get_ctx() -> AdminApiContext:
     if _ctx is None:
         raise RuntimeError("Admin API not initialized")
     return _ctx
+
+
+def _query_int_arg(
+    name: str,
+    default: int,
+    *,
+    minimum: int,
+    maximum: int | None = None,
+) -> int:
+    try:
+        value = int(request.args.get(name, default))
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be an integer") from exc
+    if value < minimum:
+        raise ValueError(f"{name} must be at least {minimum}")
+    if maximum is not None and value > maximum:
+        raise ValueError(f"{name} must be at most {maximum}")
+    return value
 
 
 def _require_admin_auth(required_scopes: list[str] | None = None):
@@ -593,15 +614,41 @@ def audit_log():
     target = request.args.get("target", "").strip() or None
     since = request.args.get("since", "").strip() or None
     until = request.args.get("until", "").strip() or None
-    limit = min(int(request.args.get("limit", 100)), 500)
-    offset = int(request.args.get("offset", 0))
+    try:
+        limit = _query_int_arg("limit", 100, minimum=1, maximum=500)
+        offset = _query_int_arg("offset", 0, minimum=0)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
 
-    entries = ctx.cache.get_audit_log(
+    page = ctx.cache.get_audit_log_page(
         action=action, actor=actor, target=target,
         since=since, until=until,
         limit=limit, offset=offset,
     )
-    return jsonify({"entries": entries, "limit": limit, "offset": offset})
+    return jsonify({**page, "limit": limit, "offset": offset})
+
+
+# ---------------------------------------------------------------------------
+# Deployment history
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/deployments", methods=["GET"])
+def deployment_history():
+    ctx = _get_ctx()
+    try:
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0)
+        result = query_deployment_history(
+            ctx.storage_getter(),
+            status=request.args.get("status"),
+            source=request.args.get("source"),
+            commit=request.args.get("commit"),
+            limit=limit,
+            offset=offset,
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify(result)
 
 
 # ---------------------------------------------------------------------------

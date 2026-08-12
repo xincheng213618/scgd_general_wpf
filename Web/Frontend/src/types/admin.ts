@@ -202,8 +202,58 @@ export interface AuditLogEntry {
 
 export interface AuditLogResponse {
   entries: AuditLogEntry[]
+  total: number
   limit: number
   offset: number
+}
+
+export interface DeploymentRetentionSummary {
+  status?: string
+  keep_records?: number
+  before_count?: number
+  after_count?: number
+  removed_count?: number
+  removed_successful?: number
+  removed_failed?: number
+  removed_bytes?: number
+  preserved_unclassified?: number
+  preserved_invalid?: number
+}
+
+export interface DeploymentHistoryEntry {
+  sequence: number
+  timestamp?: string | null
+  status: string
+  source?: string | null
+  commit?: string | null
+  previous_commit?: string | null
+  backup_name?: string | null
+  frontend_build?: string | null
+  backend_targeted_tests?: string | null
+  health?: string | null
+  ready?: boolean | null
+  runtime_log_verified?: boolean | null
+  old_pid?: number | null
+  new_pid?: number | null
+  failure_reason?: string | null
+  recovery: string[]
+  history_retention?: DeploymentRetentionSummary | null
+  backup_retention?: DeploymentRetentionSummary | null
+  git_bundle_retention?: DeploymentRetentionSummary | null
+}
+
+export interface DeploymentHistoryResponse {
+  entries: DeploymentHistoryEntry[]
+  total: number
+  limit: number
+  offset: number
+  summary: {
+    records: number
+    malformed_records: number
+    retention_limit: number
+    statuses: Record<string, number>
+    sources: Record<string, number>
+  }
 }
 
 export interface ProTableResponse<T> {

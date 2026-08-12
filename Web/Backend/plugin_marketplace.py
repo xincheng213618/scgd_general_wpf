@@ -124,7 +124,7 @@ def plugin_package_from_file(
     return package
 
 
-def _package_sort_key(package: dict[str, Any]) -> tuple[tuple[int, ...], str, str]:
+def package_sort_key(package: dict[str, Any]) -> tuple[tuple[int, ...], str, str]:
     return (
         version_tuple(str(package.get("version") or "")),
         str(package.get("modified") or ""),
@@ -178,8 +178,8 @@ def scan_plugin_package_sets(
             if package:
                 historical_packages.append(package)
 
-    current_packages.sort(key=_package_sort_key, reverse=True)
-    historical_packages.sort(key=_package_sort_key, reverse=True)
+    current_packages.sort(key=package_sort_key, reverse=True)
+    historical_packages.sort(key=package_sort_key, reverse=True)
     return current_packages, historical_packages
 
 
@@ -466,7 +466,7 @@ def _select_preferred_package_path(storage: Path, plugin_id: str, latest_version
         package = plugin_package_from_file(storage, file_path, plugin_id, "current", include_hash=False)
         if not package:
             continue
-        candidate_key = _package_sort_key(package)
+        candidate_key = package_sort_key(package)
         if current_key is None or candidate_key > current_key:
             current_key = candidate_key
             current_latest = file_path
@@ -479,7 +479,7 @@ def _select_preferred_package_path(storage: Path, plugin_id: str, latest_version
         package = plugin_package_from_file(storage, file_path, plugin_id, "archive", include_hash=False)
         if not package:
             continue
-        candidate_key = _package_sort_key(package)
+        candidate_key = package_sort_key(package)
         if history_key is None or candidate_key > history_key:
             history_key = candidate_key
             history_latest = file_path

@@ -123,6 +123,7 @@ continuous SQLite writes.
 | GET `/api/admin/stats/overview` | `stats:read` |
 | GET `/api/admin/stats/traffic` | `stats:read` |
 | GET `/api/admin/audit-log` | `admin:*` |
+| GET `/api/admin/deployments` | `admin:*` |
 | User account management | `admin:*` |
 | API Key management | `admin:*` |
 
@@ -201,12 +202,25 @@ minutes are rejected before model provider credentials are returned.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/admin/audit-log?action=&limit=&offset=` | View audit log |
+| GET | `/api/admin/audit-log?action=&actor=&target=&since=&until=&limit=&offset=` | View audit log with an exact filtered `total` |
 
 Audit rows are retained for 365 days by default. The daily
 `admin_data_retention` job applies the cutoff to the live database and every
 recognized administrator-created database snapshot, so a backup cannot bypass
 the audit retention contract.
+Pagination accepts `limit` from 1 through 500 and a non-negative `offset`;
+invalid values return HTTP 400 instead of becoming an unbounded SQLite query.
+
+### Deployment History
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/deployments?status=&source=&commit=&limit=&offset=` | View sanitized, latest-first NAS deployment history |
+
+The response includes exact filtered totals plus aggregate status/source and
+malformed-record counts. It intentionally omits server names, absolute paths,
+runtime log paths, and raw errors; failed records expose only a coarse failure
+category. The deployment writer keeps 500 valid records by default.
 
 ### Stats
 
@@ -218,7 +232,11 @@ the audit retention contract.
 `days` accepts `1..365`; `limit` accepts `1..100`. Rates and client shares are
 percentages in the range `0..100`. Response volume is based only on the existing
 HTTP `Content-Length` header. A missing or invalid header is counted as zero, so
-analytics never buffers or consumes streamed/file responses.
+analytics never buffers or consumes streamed/file responses. `HEAD`, 1xx, 204,
+205, and 304 responses are also counted as zero because they do not transfer a
+response body. Schema migration v6 removes the previously declared `HEAD` bytes
+from both route and daily historical aggregates; other historical status codes
+cannot be separated from the existing aggregate and are left unchanged.
 
 `summary.uniqueVisitorDays` is the sum of each day's unique visitors (visitor-days),
 not a cross-day unique-person count, because the privacy identifier rotates every
@@ -280,6 +298,7 @@ and any rotation errors.
 | `/admin/api-keys` | API Key lifecycle management |
 | `/admin/users` | Registered account status management |
 | `/admin/jobs` | Scheduled job management |
+| `/admin/deployments` | Sanitized NAS deployment history and retention results |
 | `/admin/audit` | Audit log viewer |
 | `/admin/traffic` | Privacy-preserving request traffic and recorder health |
 
@@ -451,7 +470,9 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 | `services/storage_events.py` | Post-upload/publish index refresh dispatcher |
 | `cli.py` | CLI argument parsing and command execution |
 | `db/schema_version.py` | Schema version tracking and migrations |
-| `routes/admin_api.py` | Admin REST API (cache, index, jobs, audit, keys, perf) |
+| `routes/admin_api.py` | Admin REST API (cache, index, jobs, audit, deployments, keys, perf) |
+| `services/deployment_history.py` | Sanitized deployment-history query and pagination |
+| `ports/operations_support.py` / `db/repositories/operations_support.py` | Atomic Operations support-session persistence boundary |
 | `routes/frontend_spa.py` | React SPA static hosting and `/admin` auth gate |
 | `routes/pages.py` | Public site-data and download APIs |
 | `routes/public_pages.py` | Session login/logout APIs and form redirects |

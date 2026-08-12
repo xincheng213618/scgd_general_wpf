@@ -64,7 +64,10 @@ class ArchitectureBoundaryTests(unittest.TestCase):
             "marketplace_services.py",
             "services/artifact_delivery.py",
             "services/auth_policy.py",
+            "services/deployment_history.py",
             "services/request_context.py",
+            "ports/operations_support.py",
+            "db/repositories/operations_support.py",
             "services/marketplace_api.py",
         ]
         forbidden_names = {"request", "session", "g"}
@@ -160,7 +163,6 @@ class ArchitectureBoundaryTests(unittest.TestCase):
                 "list_hosts": 1,
                 "list_receipts": 2,
                 "list_support_events": 2,
-                "support_event": 1,
             },
         }
 

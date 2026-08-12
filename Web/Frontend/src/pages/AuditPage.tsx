@@ -35,6 +35,18 @@ const columns: ProColumns<AuditLogEntry>[] = [
     width: 180,
     search: false,
   },
+  {
+    title: '时间范围',
+    dataIndex: 'created_at_range',
+    valueType: 'dateTimeRange',
+    hideInTable: true,
+    search: {
+      transform: (value: string[]) => ({
+        since: new Date(value[0]).toISOString(),
+        until: new Date(value[1]).toISOString(),
+      }),
+    },
+  },
 ]
 
 export function AuditPage() {
@@ -49,14 +61,20 @@ export function AuditPage() {
           action: params.action as string | undefined,
           actor: params.actor_id as string | undefined,
           target: params.target_id as string | undefined,
+          since: params.since as string | undefined,
+          until: params.until as string | undefined,
         })
         return {
           data: result.entries,
           success: true,
-          total: result.offset + result.entries.length + (result.entries.length >= result.limit ? result.limit : 0),
+          total: result.total,
         }
       }}
-      pagination={{ pageSize: 20 }}
+      pagination={{
+        pageSize: 20,
+        showSizeChanger: true,
+        showTotal: (total) => `共 ${total} 条`,
+      }}
       options={{ density: true, fullScreen: true, reload: true, setting: true }}
       cardBordered
       headerTitle="审计日志"

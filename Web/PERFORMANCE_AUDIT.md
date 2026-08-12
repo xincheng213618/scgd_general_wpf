@@ -123,6 +123,42 @@ package hash costing about 381.9 ms moved to index refresh work.
   `HEAD` reference and remained protected. The read-only cleanup plan selected
   20 verified transport files totaling 9,690,663 bytes; current,
   unverified, divergent, unexpected, and reparse-point files are never selected.
+- Audited `web-deploy-history.jsonl` at 40,765 bytes and 57 valid records, with
+  no malformed rows and no recovery consumer beyond per-backup status markers.
+  Deployment writes now atomically retain the newest 500 valid records, while
+  `/admin/deployments` provides a sanitized, paginated operational view.
+- Replaced the deployment SSH loader's EOF-dependent `ReadToEnd()` transport
+  with a single-line payload contract. A production audit found five orphaned
+  loader processes with no children and about 53 MB working set each; they were
+  removed after exact command-line classification. The new Bundle DryRun
+  returned in 7.7 seconds without adding a loader process or history record.
+- Bounded origin Git inspection and fetch with a native-process hard timeout
+  that kills descendants as well as the direct Git process. Origin deployment
+  now fetches once and fast-forwards from `origin/<branch>` locally rather than
+  reconnecting during `pull`; timeout guidance points directly to the verified
+  Git-bundle path while DryRun remains read-only.
+- Gate the public transfer route on the already loaded Web session before the
+  protected file panel mounts. The 2026-08-12 production baseline showed 14
+  `GET /api/transfer/files` requests and all 14 returned 401; anonymous users
+  now move directly to `/login?next=/transfer` without a protected API request
+  or a transient upload panel. A Node test runs in both local checks and NAS
+  deployment before the frontend build.
+- Correct response-volume analytics for HTTP responses that cannot carry a
+  body. The 2026-08-12 production audit found 45 `HEAD` requests contributing
+  2,275,254,516 impossible bytes (5.96% of the recorded response volume), led
+  by 1.76 GB from desktop-installer probes. New `HEAD`, 1xx, 204, 205, and 304
+  events record zero bytes, while schema v6 idempotently subtracts historical
+  `HEAD` bytes from route and daily aggregates without guessing about statuses
+  that the legacy aggregate cannot distinguish.
+- Replaced the audit page's inferred row count with an exact filtered total from
+  the existing `audit_log` query boundary. The production baseline had 378 rows
+  while the first page claimed 40; the most common action had 347 rows and was
+  likewise capped by the heuristic. Invalid or unbounded pagination is now
+  rejected before reaching SQLite.
+- Moved newly added Operations support-session state SQL out of the Flask route
+  into an injected SQLite Store. Event transitions now use `BEGIN IMMEDIATE`,
+  and a concurrent-request test proves duplicate session requests produce one
+  stored event instead of expanding transitional route SQL debt.
 - Added route-level frontend splitting, request cancellation, stale-state fixes,
   changelog/plugin HTML sanitization, immutable hashed-asset caching, and lazy
   chunk recovery after rolling deployments.
@@ -144,18 +180,14 @@ package hash costing about 381.9 ms moved to index refresh work.
    metrics; trusted-proxy client identity also needs explicit configuration.
 5. Add OpenAPI as the source of truth and generate TypeScript DTOs. The current
    handwritten interfaces are contract-tested but still transitional.
-6. Bound or rotate the append-only `web-deploy-history.jsonl` after its audit
-   contract and recovery consumers are defined. The current production file is
-   only 35,542 bytes across 53 records, so this is preventative rather than an
-   active capacity issue.
-7. Split the remaining 506.16 KiB minified `ProForm` admin chunk if publish-page
+6. Split the remaining 506.16 KiB minified `ProForm` admin chunk if publish-page
    navigation performance becomes material; it is lazy and does not affect the
    public preload today.
 
 ## Verification snapshot
 
-- Backend: 426 tests passed.
-- Frontend: ESLint passed; production build passed (3,776 modules).
+- Backend: 569 tests passed.
+- Frontend: 4 behavior tests and ESLint passed; production build passed (3,789 modules).
 - Dependency audit: zero npm vulnerabilities.
 - Whitespace check: `git diff --check -- Web` passed.
 

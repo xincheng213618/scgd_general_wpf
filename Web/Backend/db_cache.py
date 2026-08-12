@@ -472,38 +472,87 @@ class CacheManager:
         limit: int = 100,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
+        db = None
         try:
             db = self.get_db()
-            conditions: list[str] = []
-            params: list[Any] = []
-
-            if action:
-                conditions.append("action = ?")
-                params.append(action)
-            if actor:
-                conditions.append("(actor_id LIKE ? OR actor_type LIKE ?)")
-                params.extend([f"%{actor}%", f"%{actor}%"])
-            if target:
-                conditions.append("(target_id LIKE ? OR target_type LIKE ?)")
-                params.extend([f"%{target}%", f"%{target}%"])
-            if since:
-                conditions.append("created_at >= ?")
-                params.append(since)
-            if until:
-                conditions.append("created_at <= ?")
-                params.append(until)
-
-            where = " AND ".join(conditions) if conditions else "1=1"
-            params.extend([limit, offset])
+            where, params = self._audit_log_filter(
+                action=action, actor=actor, target=target, since=since, until=until,
+            )
 
             rows = db.execute(
                 f"SELECT * FROM audit_log WHERE {where} ORDER BY id DESC LIMIT ? OFFSET ?",
-                params,
+                [*params, limit, offset],
             ).fetchall()
-            db.close()
             return [dict(r) for r in rows]
         except Exception:
             return []
+        finally:
+            if db is not None:
+                db.close()
+
+    @staticmethod
+    def _audit_log_filter(
+        *,
+        action: str | None = None,
+        actor: str | None = None,
+        target: str | None = None,
+        since: str | None = None,
+        until: str | None = None,
+    ) -> tuple[str, list[Any]]:
+        conditions: list[str] = []
+        params: list[Any] = []
+        if action:
+            conditions.append("action = ?")
+            params.append(action)
+        if actor:
+            conditions.append("(actor_id LIKE ? OR actor_type LIKE ?)")
+            params.extend([f"%{actor}%", f"%{actor}%"])
+        if target:
+            conditions.append("(target_id LIKE ? OR target_type LIKE ?)")
+            params.extend([f"%{target}%", f"%{target}%"])
+        if since:
+            conditions.append("created_at >= ?")
+            params.append(since)
+        if until:
+            conditions.append("created_at <= ?")
+            params.append(until)
+        return " AND ".join(conditions) if conditions else "1=1", params
+
+    def get_audit_log_page(
+        self,
+        *,
+        action: str | None = None,
+        actor: str | None = None,
+        target: str | None = None,
+        since: str | None = None,
+        until: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        db = None
+        try:
+            db = self.get_db()
+            where, params = self._audit_log_filter(
+                action=action, actor=actor, target=target, since=since, until=until,
+            )
+            db.execute("BEGIN")
+            total_row = db.execute(
+                f"SELECT COUNT(*) AS total FROM audit_log WHERE {where}",
+                params,
+            ).fetchone()
+            rows = db.execute(
+                f"SELECT * FROM audit_log WHERE {where} ORDER BY id DESC LIMIT ? OFFSET ?",
+                [*params, limit, offset],
+            ).fetchall()
+            return {
+                "entries": [dict(row) for row in rows],
+                "total": int(total_row["total"]) if total_row else 0,
+            }
+        except Exception:
+            return {"entries": [], "total": 0}
+        finally:
+            if db is not None:
+                db.close()
 
     # -------------------------------------------------------------------
     # Index state helpers

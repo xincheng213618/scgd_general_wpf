@@ -43,6 +43,7 @@ EXCLUDED_ROUTE_PREFIXES = (
     "/brand/",
     "/favicon",
 )
+NO_RESPONSE_BODY_STATUS_CODES = frozenset({204, 205, 304})
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,6 +102,32 @@ def should_record_access(route_template: str | None, method: str) -> bool:
     if route in EXCLUDED_ROUTES:
         return False
     return not any(route.startswith(prefix) for prefix in EXCLUDED_ROUTE_PREFIXES)
+
+
+def declared_response_body_bytes(
+    *,
+    method: str,
+    status_code: int,
+    content_length: Any,
+) -> int:
+    """Return declared response-body bytes without materializing the body.
+
+    Content-Length on a HEAD response describes the equivalent GET payload, not
+    bytes transferred. Informational, 204, 205, and 304 responses likewise do
+    not carry a response body and must contribute zero traffic bytes.
+    """
+    normalized_method = str(method or "GET").upper()
+    normalized_status = int(status_code)
+    if (
+        normalized_method == "HEAD"
+        or normalized_status < 200
+        or normalized_status in NO_RESPONSE_BODY_STATUS_CODES
+    ):
+        return 0
+    try:
+        return max(0, int(str(content_length or "").strip()))
+    except (TypeError, ValueError):
+        return 0
 
 
 def classify_user_agent(user_agent: str | None) -> str:

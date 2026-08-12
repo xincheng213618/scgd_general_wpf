@@ -10,6 +10,8 @@ param(
     [ValidateRange(2, 1000)][int]$KeepSuccessfulBackups = 10,
     [ValidateRange(1, 1000)][int]$KeepFailedBackups = 3,
     [ValidateRange(1, 1000)][int]$KeepGitBundles = 3,
+    [ValidateRange(20, 100000)][int]$KeepHistoryRecords = 500,
+    [ValidateRange(5, 600)][int]$GitNetworkTimeoutSeconds = 45,
     [string]$RemoteGitBundle = "",
     [switch]$Force,
     [switch]$SkipTests,
@@ -18,6 +20,12 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+Import-Module (Join-Path $PSScriptRoot 'RemotePowerShellTransport.psm1') -Force
+$nativeProcessModulePath = Join-Path $PSScriptRoot 'NativeProcess.psm1'
+if (-not (Test-Path -LiteralPath $nativeProcessModulePath -PathType Leaf)) {
+    throw "Native process module was not found: $nativeProcessModulePath"
+}
+$nativeProcessModuleSource = Get-Content -LiteralPath $nativeProcessModulePath -Raw
 
 function ConvertTo-PowerShellLiteral {
     param([Parameter(Mandatory)][AllowEmptyString()][string]$Value)
@@ -31,9 +39,7 @@ function Invoke-RemotePowerShell {
         [Parameter(Mandatory)][string]$ScriptText
     )
 
-    $payload = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($ScriptText))
-    $loader = '$global:ProgressPreference = ''SilentlyContinue''; $payload = [regex]::Replace([Console]::In.ReadToEnd(), ''[^A-Za-z0-9+/=]'', ''''); $scriptText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($payload)); $scriptBlock = [ScriptBlock]::Create($scriptText); & $scriptBlock'
-    $encodedLoader = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($loader))
+    $transport = New-WebRemotePowerShellTransport -ScriptText $ScriptText
     $sshArguments = @(
         $Target,
         'powershell',
@@ -42,15 +48,15 @@ function Invoke-RemotePowerShell {
         '-ExecutionPolicy',
         'Bypass',
         '-EncodedCommand',
-        $encodedLoader
+        $transport.encoded_loader
     )
     $previousErrorActionPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = 'Continue'
-        # Windows PowerShell 5.1 may emit a native-pipeline encoding preamble
-        # that consumes the first ASCII character. Prefix a disposable marker;
-        # the remote loader removes it together with any transport whitespace.
-        $remoteOutput = @(("!" + $payload) | & ssh @sshArguments 2>&1)
+        # Windows PowerShell 5.1 may consume the first ASCII character in a
+        # native pipeline. The transport prefixes a disposable marker and the
+        # remote loader consumes one complete line without waiting for stdin EOF.
+        $remoteOutput = @($transport.stdin_payload | & ssh @sshArguments 2>&1)
         $exitCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $previousErrorActionPreference
@@ -85,6 +91,8 @@ $port = __PORT__
 $keepSuccessfulBackups = __KEEP_SUCCESSFUL_BACKUPS__
 $keepFailedBackups = __KEEP_FAILED_BACKUPS__
 $keepGitBundles = __KEEP_GIT_BUNDLES__
+$keepHistoryRecords = __KEEP_HISTORY_RECORDS__
+$gitNetworkTimeoutSeconds = __GIT_NETWORK_TIMEOUT_SECONDS__
 $remoteGitBundle = __REMOTE_GIT_BUNDLE__
 $forceDeploy = __FORCE__
 $skipTests = __SKIP_TESTS__
@@ -112,6 +120,11 @@ $deployedCommit = $null
 $oldPid = $null
 $newPid = $null
 $distSwapped = $false
+
+$nativeProcessModule = New-Module -ScriptBlock {
+__NATIVE_PROCESS_MODULE_SOURCE__
+}
+Import-Module $nativeProcessModule -Force
 
 function Invoke-NativeCommand {
     param(
@@ -149,6 +162,51 @@ function Get-NativeText {
     return (($output -join "`n").Trim())
 }
 
+function Invoke-GitNetworkProcess {
+    param([Parameter(Mandatory)][string[]]$ArgumentList)
+
+    return Invoke-WebNativeProcess `
+        -FilePath $gitExe `
+        -ArgumentList $ArgumentList `
+        -TimeoutSeconds $gitNetworkTimeoutSeconds `
+        -Environment @{
+            GIT_TERMINAL_PROMPT = '0'
+            GCM_INTERACTIVE = 'Never'
+        }
+}
+
+function Get-GitNetworkText {
+    param([Parameter(Mandatory)][string[]]$ArgumentList)
+
+    $result = Invoke-GitNetworkProcess -ArgumentList $ArgumentList
+    if ($result.TimedOut) {
+        throw "Git network command timed out after $gitNetworkTimeoutSeconds seconds. Use -RemoteGitBundle when NAS cannot reach origin."
+    }
+    if ($result.ExitCode -ne 0) {
+        $detail = $result.StdErr.Trim()
+        throw "Git network command failed with exit code $($result.ExitCode). $detail"
+    }
+    return $result.StdOut.Trim()
+}
+
+function Invoke-GitNetworkCommand {
+    param([Parameter(Mandatory)][string[]]$ArgumentList)
+
+    $result = Invoke-GitNetworkProcess -ArgumentList $ArgumentList
+    if ($result.StdOut) {
+        Write-Output $result.StdOut.TrimEnd()
+    }
+    if ($result.StdErr) {
+        Write-Output $result.StdErr.TrimEnd()
+    }
+    if ($result.TimedOut) {
+        throw "Git network command timed out after $gitNetworkTimeoutSeconds seconds. Use -RemoteGitBundle when NAS cannot reach origin."
+    }
+    if ($result.ExitCode -ne 0) {
+        throw "Git network command failed with exit code $($result.ExitCode)."
+    }
+}
+
 function Get-GitBundleTargetCommit {
     param([Parameter(Mandatory)][string]$BundlePath)
 
@@ -167,10 +225,27 @@ function Get-GitBundleTargetCommit {
 function Write-DeploymentHistory {
     param([Parameter(Mandatory)]$Record)
 
-    if (-not (Test-Path -LiteralPath $storagePath)) {
-        throw "Storage path does not exist: $storagePath"
+    try {
+        if (-not (Test-Path -LiteralPath $storagePath)) {
+            throw "Storage path does not exist: $storagePath"
+        }
+        $modulePath = Join-Path $repoPath 'Web\DeploymentHistory.psm1'
+        if (-not (Test-Path -LiteralPath $modulePath -PathType Leaf)) {
+            throw "Deployment history module does not exist: $modulePath"
+        }
+        Import-Module $modulePath -Force
+        Write-WebDeploymentHistory `
+            -HistoryPath $historyPath `
+            -Record $Record `
+            -KeepRecords $keepHistoryRecords | Out-Null
+    } catch {
+        $Record['history_retention'] = [ordered]@{
+            status = 'error'
+            keep_records = $keepHistoryRecords
+            error = $_.Exception.Message
+        }
+        Write-Warning "Deployment history write failed: $($_.Exception.Message)"
     }
-    Add-Content -LiteralPath $historyPath -Value ($Record | ConvertTo-Json -Compress -Depth 6) -Encoding UTF8
 }
 
 function Invoke-TransportBundleRetention {
@@ -359,7 +434,7 @@ try {
         if ($remoteGitBundle) {
             $targetCommit = Get-GitBundleTargetCommit -BundlePath $remoteGitBundle
         } else {
-            $remoteLine = Get-NativeText -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'ls-remote', 'origin', "refs/heads/$branch")
+            $remoteLine = Get-GitNetworkText -ArgumentList @('-C', $repoPath, 'ls-remote', 'origin', "refs/heads/$branch")
             $targetCommit = ($remoteLine -split '\s+')[0]
         }
         $listener = Get-WebListener
@@ -382,7 +457,7 @@ try {
         $targetCommit = Get-GitBundleTargetCommit -BundlePath $remoteGitBundle
         Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'fetch', $remoteGitBundle, 'HEAD')
     } else {
-        Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'fetch', 'origin')
+        Invoke-GitNetworkCommand -ArgumentList @('-C', $repoPath, 'fetch', 'origin')
         $targetCommit = Get-NativeText -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'rev-parse', "origin/$branch")
     }
 
@@ -437,19 +512,19 @@ try {
     $beforeRecord | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $backupPath 'deployment-before.json') -Encoding UTF8
 
     if ($previousCommit -ne $targetCommit) {
-        $pullSucceeded = $false
+        $syncSucceeded = $false
         try {
             Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'restore', '--', 'Web/Backend/config.json')
             if ($remoteGitBundle) {
                 Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'merge', '--ff-only', 'FETCH_HEAD')
             } else {
-                Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'pull', '--ff-only', 'origin', $branch)
+                Invoke-NativeCommand -FilePath $gitExe -ArgumentList @('-C', $repoPath, 'merge', '--ff-only', "origin/$branch")
             }
-            $pullSucceeded = $true
+            $syncSucceeded = $true
         } finally {
             Copy-Item -LiteralPath (Join-Path $backupPath 'config.json') -Destination $configPath -Force
         }
-        if (-not $pullSucceeded) {
+        if (-not $syncSucceeded) {
             throw 'Git synchronization did not complete.'
         }
     }
@@ -466,6 +541,7 @@ try {
     }
 
     Invoke-NativeCommand -FilePath $npmExe -ArgumentList @('ci', '--no-audit', '--no-fund') -WorkingDirectory $frontendPath
+    Invoke-NativeCommand -FilePath $npmExe -ArgumentList @('run', 'test') -WorkingDirectory $frontendPath
     $tscExe = Join-Path $frontendPath 'node_modules\.bin\tsc.cmd'
     $viteExe = Join-Path $frontendPath 'node_modules\.bin\vite.cmd'
     foreach ($buildTool in @($tscExe, $viteExe)) {
@@ -488,7 +564,31 @@ try {
             '-ExecutionPolicy',
             'Bypass',
             '-File',
+            (Join-Path $repoPath 'Web\Test-NativeProcess.ps1')
+        )
+        Invoke-NativeCommand -FilePath 'powershell.exe' -ArgumentList @(
+            '-NoProfile',
+            '-NonInteractive',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-File',
             (Join-Path $repoPath 'Web\Test-DeploymentRetention.ps1')
+        )
+        Invoke-NativeCommand -FilePath 'powershell.exe' -ArgumentList @(
+            '-NoProfile',
+            '-NonInteractive',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-File',
+            (Join-Path $repoPath 'Web\Test-DeploymentHistory.ps1')
+        )
+        Invoke-NativeCommand -FilePath 'powershell.exe' -ArgumentList @(
+            '-NoProfile',
+            '-NonInteractive',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-File',
+            (Join-Path $repoPath 'Web\Test-RemotePowerShellTransport.ps1')
         )
         Invoke-NativeCommand -FilePath 'powershell.exe' -ArgumentList @(
             '-NoProfile',
@@ -502,13 +602,17 @@ try {
             '-m',
             'unittest',
             'test_access_analytics',
+            'test_schema_version',
             'test_artifact_delivery',
             'test_docs_site',
             'test_frontend_spa',
             'test_http_compression',
             'test_runtime_logging',
+            'test_operations_relay',
+            'test_operations_support_store',
             'test_jobs_repository',
             'test_admin_data_retention',
+            'test_deployment_history',
             'test_page_contexts',
             'test_copilot_config_api',
             'test_spectrum_api',
@@ -524,6 +628,7 @@ try {
             'test_app.MarketplaceAppTests.test_api_app_release_download_returns_matching_installer',
             'test_app.MarketplaceAppTests.test_api_app_incremental_download_repairs_legacy_update_layout',
             'test_app.MarketplaceAppTests.test_download_route_repairs_misplaced_update_file',
+            'test_plugin_index.PluginIndexTests.test_detail_api_sorts_indexed_package_versions_numerically',
             'test_plugin_index.PluginIndexTests.test_api_key_last_used_writes_are_coalesced_per_minute',
             'test_plugin_index.PluginIndexTests.test_api_key_usage_write_failure_does_not_reject_verified_key',
             'test_artifact_index.SecurityTests.test_db_backup_creates_file',
@@ -533,6 +638,9 @@ try {
             'test_contracts.AuthContracts.test_session_csrf_token_rotates_across_authentication_boundaries',
             'test_contracts.AuthContracts.test_cross_origin_auth_write_is_rejected_before_login',
             'test_contracts.AuthContracts.test_same_origin_session_admin_write_requires_csrf_token',
+            'test_contracts.AdminApiContracts.test_deployment_history_is_admin_only_paginated_and_sanitized',
+            'test_contracts.AdminApiContracts.test_audit_log_returns_exact_total_and_validates_pagination',
+            'test_db_cache.CacheManagerTests.test_audit_log_page_uses_exact_filtered_total',
             'test_transfer_files.TransferRouteTests.test_browser_session_transfer_write_requires_csrf_token',
             'test_transfer_files.TransferRouteTests.test_browser_transfer_auth_avoids_basic_challenge_and_redirects_navigation',
             'test_transfer_files.TransferRouteTests.test_transfer_upload_download_list_and_delete_with_basic_auth',
@@ -597,6 +705,10 @@ try {
     if ($copilotAssets.Count -eq 0) {
         throw 'CopilotConfigPage frontend asset is missing from the live build.'
     }
+    $deploymentHistoryAssets = @(Get-ChildItem -LiteralPath (Join-Path $liveDistPath 'assets') -Filter 'DeploymentHistoryPage-*.js' -File)
+    if ($deploymentHistoryAssets.Count -eq 0) {
+        throw 'DeploymentHistoryPage frontend asset is missing from the live build.'
+    }
 
     $analyticsCode = "import json,sqlite3,sys; db=sqlite3.connect(sys.argv[1]); names=['access_daily','access_route_daily','access_client_daily','access_visitor_daily']; print(json.dumps({name:db.execute('select count(*) from '+name).fetchone()[0] for name in names})); db.close()"
     $analyticsJson = @(& $pythonExe -c $analyticsCode $databasePath)
@@ -653,6 +765,10 @@ try {
     Write-Output ($successRecord | ConvertTo-Json -Depth 6)
 } catch {
     $failureMessage = $_.Exception.Message
+    if ($dryRun) {
+        Write-Output "DRY_RUN_ERROR=$failureMessage"
+        exit 1
+    }
     $recovery = @()
 
     try {
@@ -708,6 +824,9 @@ $replacements = [ordered]@{
     '__KEEP_SUCCESSFUL_BACKUPS__' = $KeepSuccessfulBackups.ToString([Globalization.CultureInfo]::InvariantCulture)
     '__KEEP_FAILED_BACKUPS__' = $KeepFailedBackups.ToString([Globalization.CultureInfo]::InvariantCulture)
     '__KEEP_GIT_BUNDLES__' = $KeepGitBundles.ToString([Globalization.CultureInfo]::InvariantCulture)
+    '__KEEP_HISTORY_RECORDS__' = $KeepHistoryRecords.ToString([Globalization.CultureInfo]::InvariantCulture)
+    '__GIT_NETWORK_TIMEOUT_SECONDS__' = $GitNetworkTimeoutSeconds.ToString([Globalization.CultureInfo]::InvariantCulture)
+    '__NATIVE_PROCESS_MODULE_SOURCE__' = $nativeProcessModuleSource
     '__REMOTE_GIT_BUNDLE__' = ConvertTo-PowerShellLiteral $RemoteGitBundle
     '__FORCE__' = if ($Force) { '$true' } else { '$false' }
     '__SKIP_TESTS__' = if ($SkipTests) { '$true' } else { '$false' }

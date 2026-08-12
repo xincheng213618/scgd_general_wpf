@@ -22,6 +22,7 @@ from services.access_analytics import (
     build_access_event,
     classify_user_agent,
     daily_visitor_key,
+    declared_response_body_bytes,
     parse_bounded_int,
     prune_access_analytics,
     prune_access_analytics_backups,
@@ -120,6 +121,38 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
         self.assertFalse(should_record_access("/api/plugins", "OPTIONS"))
         self.assertTrue(should_record_access("/api/plugins/<plugin_id>", "GET"))
 
+    def test_declared_response_body_bytes_obeys_http_no_body_semantics(self):
+        self.assertEqual(
+            declared_response_body_bytes(
+                method="GET", status_code=200, content_length="1048576"
+            ),
+            1048576,
+        )
+        for method, status in (
+            ("HEAD", 200),
+            ("GET", 101),
+            ("GET", 204),
+            ("GET", 205),
+            ("GET", 304),
+        ):
+            with self.subTest(method=method, status=status):
+                self.assertEqual(
+                    declared_response_body_bytes(
+                        method=method,
+                        status_code=status,
+                        content_length="1048576",
+                    ),
+                    0,
+                )
+        for invalid in (None, "", "invalid", "-10"):
+            with self.subTest(content_length=invalid):
+                self.assertEqual(
+                    declared_response_body_bytes(
+                        method="GET", status_code=200, content_length=invalid
+                    ),
+                    0,
+                )
+
     def test_request_hook_reads_content_length_without_reading_response_body(self):
         events = []
 
@@ -149,6 +182,32 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
 
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].response_bytes, 1048576)
+
+    def test_request_hook_does_not_count_head_representation_length_as_traffic(self):
+        events = []
+
+        class Recorder:
+            def submit(self, event, **_kwargs):
+                events.append(event)
+                return True
+
+        test_app = Flask("access-analytics-head-hook-test")
+        test_app.config["TESTING"] = True
+        context = SimpleNamespace(
+            slow_request_threshold_ms=86_400_000,
+            slow_requests=[],
+        )
+        register_slow_request_logging(test_app, context, Recorder())
+        after_request = test_app.after_request_funcs[None][0]
+
+        with test_app.test_request_context("/download", method="HEAD"):
+            request._start_time = time.monotonic()
+            request.url_rule = Rule("/download")
+            response = Response(headers={"Content-Length": "1048576"})
+            self.assertIs(after_request(response), response)
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].response_bytes, 0)
 
     def test_synchronous_writer_aggregates_daily_route_client_and_visitors(self):
         recorder = AccessAnalyticsRecorder(background_worker=False)
