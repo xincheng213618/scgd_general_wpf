@@ -7,6 +7,8 @@ param(
     [string]$TaskPath = "\ColorVision\",
     [string]$TaskName = "ColorVisionWeb",
     [int]$Port = 9998,
+    [ValidateRange(2, 1000)][int]$KeepSuccessfulBackups = 10,
+    [ValidateRange(1, 1000)][int]$KeepFailedBackups = 3,
     [string]$RemoteGitBundle = "",
     [switch]$Force,
     [switch]$SkipTests,
@@ -79,6 +81,8 @@ $branch = __BRANCH__
 $taskPath = __TASK_PATH__
 $taskName = __TASK_NAME__
 $port = __PORT__
+$keepSuccessfulBackups = __KEEP_SUCCESSFUL_BACKUPS__
+$keepFailedBackups = __KEEP_FAILED_BACKUPS__
 $remoteGitBundle = __REMOTE_GIT_BUNDLE__
 $forceDeploy = __FORCE__
 $skipTests = __SKIP_TESTS__
@@ -441,6 +445,14 @@ try {
     Invoke-NativeCommand -FilePath $nodeExe -ArgumentList @('scripts/check-dashboard-bundle.mjs', $stagedDistPath) -WorkingDirectory $frontendPath
 
     if (-not $skipTests) {
+        Invoke-NativeCommand -FilePath 'powershell.exe' -ArgumentList @(
+            '-NoProfile',
+            '-NonInteractive',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-File',
+            (Join-Path $repoPath 'Web\Test-DeploymentRetention.ps1')
+        )
         Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @(
             '-m',
             'unittest',
@@ -572,8 +584,24 @@ try {
         compact_changelog_gzip_bytes = $compactChangelogGzipBytes
         analytics = $analytics
     }
+    $successMarkerPath = Join-Path $backupPath 'deployment-after.json'
+    $successRecord | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $successMarkerPath -Encoding UTF8
+    try {
+        Import-Module (Join-Path $repoPath 'Web\DeploymentRetention.psm1') -Force
+        $successRecord['backup_retention'] = Invoke-WebDeployBackupRetention `
+            -BackupRoot $backupRoot `
+            -CurrentBackupPath $backupPath `
+            -KeepSuccessful $keepSuccessfulBackups `
+            -KeepFailed $keepFailedBackups
+    } catch {
+        $successRecord['backup_retention'] = [ordered]@{
+            status = 'error'
+            error = $_.Exception.Message
+        }
+        Write-Warning "Deployment backup retention failed: $($_.Exception.Message)"
+    }
     Write-DeploymentHistory -Record $successRecord
-    $successRecord | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $backupPath 'deployment-after.json') -Encoding UTF8
+    $successRecord | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $successMarkerPath -Encoding UTF8
     Write-Output ($successRecord | ConvertTo-Json -Depth 6)
 } catch {
     $failureMessage = $_.Exception.Message
@@ -629,6 +657,8 @@ $replacements = [ordered]@{
     '__TASK_PATH__' = ConvertTo-PowerShellLiteral $TaskPath
     '__TASK_NAME__' = ConvertTo-PowerShellLiteral $TaskName
     '__PORT__' = $Port.ToString([Globalization.CultureInfo]::InvariantCulture)
+    '__KEEP_SUCCESSFUL_BACKUPS__' = $KeepSuccessfulBackups.ToString([Globalization.CultureInfo]::InvariantCulture)
+    '__KEEP_FAILED_BACKUPS__' = $KeepFailedBackups.ToString([Globalization.CultureInfo]::InvariantCulture)
     '__REMOTE_GIT_BUNDLE__' = ConvertTo-PowerShellLiteral $RemoteGitBundle
     '__FORCE__' = if ($Force) { '$true' } else { '$false' }
     '__SKIP_TESTS__' = if ($SkipTests) { '$true' } else { '$false' }

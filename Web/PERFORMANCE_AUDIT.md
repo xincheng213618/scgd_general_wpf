@@ -106,6 +106,11 @@ package hash costing about 381.9 ms moved to index refresh work.
   retention, recorder health, and `/admin/traffic`.
 - Applied access retention to recognized database snapshots as well as the live
   database. A manual backup is scrubbed and checked before success is returned.
+- Bounded NAS deployment backups to the newest 10 successful and 3 failed
+  deployments after a new deployment is healthy. The production preflight found
+  40 backups using 763,471,066 bytes; 28 old successful backups totaling
+  525,584,018 bytes were eligible, while both failed backups and all
+  unclassified directories remained protected.
 - Added route-level frontend splitting, request cancellation, stale-state fixes,
   changelog/plugin HTML sanitization, immutable hashed-asset caching, and lazy
   chunk recovery after rolling deployments.
@@ -114,7 +119,9 @@ package hash costing about 381.9 ms moved to index refresh work.
 ## Next iterations
 
 1. Replace process-local refresh locks with a SQLite lease before running more
-   than one WSGI worker against the same storage and index.
+   than one WSGI worker against the same storage and index. The 2026-08-12 NAS
+   audit found one listener process, so this remains conditional rather than a
+   current production defect.
 2. Finish the application-factory migration: remove route dependencies on
    mutable `app.py` globals, centralize the connection factory, and move SQL into
    feature repositories.
@@ -125,8 +132,9 @@ package hash costing about 381.9 ms moved to index refresh work.
    metrics; trusted-proxy client identity also needs explicit configuration.
 5. Add OpenAPI as the source of truth and generate TypeScript DTOs. The current
    handwritten interfaces are contract-tested but still transitional.
-6. Add retention/rotation for audit rows and the number of DB backup files.
-   Access rows inside backups already obey analytics retention.
+6. Add retention/rotation for audit rows and manual administrator-created DB
+   backups. Access rows inside backups already obey analytics retention, and
+   deployment backup history is now bounded separately.
 7. Split the remaining 506.16 KiB minified `ProForm` admin chunk if publish-page
    navigation performance becomes material; it is lazy and does not affect the
    public preload today.

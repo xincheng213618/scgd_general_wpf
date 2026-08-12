@@ -53,6 +53,13 @@ SQLite database, and previous frontend build under
 `D:\ColorVision\web-deploy-backups`, then appends the result to
 `D:\ColorVision\web-deploy-history.jsonl`.
 
+After a deployment passes tests, process verification, health, and readiness,
+the backup history keeps the newest 10 successful deployments and 3 failed
+deployments by default. The current backup, failed evidence within that window,
+unexpected directory names, and directories without a deployment status marker
+are never removed. Override the bounded history with
+`-KeepSuccessfulBackups` (minimum 2) and `-KeepFailedBackups` (minimum 1).
+
 Production stdout, stderr, startup diagnostics, and background-thread errors are
 captured under `D:\ColorVision\Logs\Web\ColorVisionWeb.log`. The runtime keeps
 five rotated 10 MB backups, and NAS deployment verifies that the new process ID
