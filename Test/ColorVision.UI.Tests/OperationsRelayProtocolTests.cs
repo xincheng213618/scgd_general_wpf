@@ -221,6 +221,58 @@ public sealed class OperationsRelayProtocolTests
         }
     }
 
+    [Fact]
+    public void MessageReconnectRequiresTheJobScopeAndAnEmptySignedPayload()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"cv-relay-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+            OperationsDeviceRegistry registry = new(Path.Combine(root, "devices.json"));
+            registry.Approve(
+                "device-1", "Test phone",
+                Convert.ToBase64String(key.ExportSubjectPublicKeyInfo()),
+                ["ops.jobs.create"]);
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            string body = JsonSerializer.Serialize(new
+            {
+                hostId = "host-1",
+                capabilityId = "ops.messaging.reconnect",
+                payload = new { },
+                idempotencyKey = "reconnect-1",
+                ttlSeconds = 300,
+            });
+            OperationsRelayDeviceTask task = CreateTask(
+                key, body, "ops.messaging.reconnect", now, now.AddMinutes(5));
+
+            Assert.True(OperationsRelayProtocol.TryVerifyDeviceTask(
+                task, "host-1", registry, now,
+                out OperationsRelayVerifiedTask? verified, out string error), error);
+            Assert.NotNull(verified);
+            Assert.Equal("ops.messaging.reconnect", verified.CapabilityId);
+            Assert.Equal("reconnect-1", verified.IdempotencyKey);
+
+            string payloadBody = JsonSerializer.Serialize(new
+            {
+                hostId = "host-1",
+                capabilityId = "ops.messaging.reconnect",
+                payload = new { endpoint = "other-broker" },
+                idempotencyKey = "reconnect-2",
+                ttlSeconds = 300,
+            });
+            OperationsRelayDeviceTask payloadTask = CreateTask(
+                key, payloadBody, "ops.messaging.reconnect", now, now.AddMinutes(5));
+            Assert.False(OperationsRelayProtocol.TryVerifyDeviceTask(
+                payloadTask, "host-1", registry, now, out _, out error));
+            Assert.Equal("message_reconnect_payload_not_allowed", error);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static OperationsRelayDeviceTask CreateTask(
         ECDsa key,
         string body,

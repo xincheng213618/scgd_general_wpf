@@ -22,6 +22,8 @@ namespace ColorVision.UI.Desktop.Operations
         private Task? _loop;
         private Func<object>? _snapshotProvider;
         private Func<OperationsLiveMonitorSnapshot?>? _monitorProvider;
+        private IOperationsMessageChannelRecoveryController _messageChannelRecoveryController =
+            UnavailableOperationsMessageChannelRecoveryController.Instance;
 
         public OperationsRelayClientService(
             OperationsServerIdentity identity,
@@ -57,6 +59,16 @@ namespace ColorVision.UI.Desktop.Operations
         public DateTimeOffset? LastHeartbeatAt { get; private set; }
 
         public string LastStatusMessage { get; private set; } = "Web 运维中继未配置。";
+
+        public void ConfigureMessageChannelRecoveryController(
+            IOperationsMessageChannelRecoveryController controller)
+        {
+            ArgumentNullException.ThrowIfNull(controller);
+            if (IsRunning)
+                throw new InvalidOperationException(
+                    "Configure the Operations message-channel recovery controller before starting the relay.");
+            _messageChannelRecoveryController = controller;
+        }
 
         public void Start(
             Func<object> snapshotProvider,
@@ -146,7 +158,8 @@ namespace ColorVision.UI.Desktop.Operations
                 _snapshotProvider?.Invoke() ?? new { },
                 _monitorProvider?.Invoke());
             string appVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty;
-            string[] capabilities = ["ops.window.show", "ops.window.minimize", "ops.diagnostics.request"];
+            string[] capabilities =
+                ["ops.window.show", "ops.window.minimize", "ops.messaging.reconnect", "ops.diagnostics.request"];
             long signedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             string snapshotBody = JsonSerializer.Serialize(new
             {
@@ -235,6 +248,34 @@ namespace ColorVision.UI.Desktop.Operations
                         evidence = new { result.ActionId, result.Message };
                         _workStore.RecordAudit(verified.Device.DeviceId, "device", "relay.intent.execute",
                             result.ActionId, status, verified.IdempotencyKey);
+                        _processedTasks.Add(intentKey);
+                    }
+                }
+                else if (verified!.CapabilityId == "ops.messaging.reconnect")
+                {
+                    string intentKey = $"relay-intent:{verified.Device.DeviceId}:{verified.IdempotencyKey}";
+                    if (_processedTasks.Contains(intentKey)
+                        || _workStore.HasProcessedRelayIntent(verified.Device.DeviceId, verified.IdempotencyKey))
+                    {
+                        status = "completed";
+                        evidence = new { capabilityId = verified.CapabilityId, deduplicated = true };
+                    }
+                    else
+                    {
+                        OperationsMessageChannelRecoveryResult result;
+                        try
+                        {
+                            result = _messageChannelRecoveryController.Recover();
+                        }
+                        catch
+                        {
+                            result = new OperationsMessageChannelRecoveryResult(
+                                false, "message_channel:recovery_controller_failed");
+                        }
+                        status = result.Success ? "completed" : "failed";
+                        evidence = new { result.EvidenceId };
+                        _workStore.RecordAudit(verified.Device.DeviceId, "device", "relay.intent.execute",
+                            verified.CapabilityId, status, verified.IdempotencyKey);
                         _processedTasks.Add(intentKey);
                     }
                 }

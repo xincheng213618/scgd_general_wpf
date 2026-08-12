@@ -37,13 +37,15 @@ public class OperationsRelayPolicyTest {
     }
 
     @Test
-    public void remoteTaskCatalogAllowsOnlyTheThreeBoundedIntents() {
+    public void remoteTaskCatalogAllowsOnlyTheFourBoundedIntents() {
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
                 OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW));
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
                 OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW));
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
                 OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS));
+        assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
+                OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL));
         assertFalse(OperationsRelayPolicy.isAllowedTaskCapability("ops.application.restart"));
         assertFalse(OperationsRelayPolicy.isAllowedTaskCapability("cmd.exe"));
     }

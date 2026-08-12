@@ -93,6 +93,7 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 "ops.window.show" => "ops.window.control",
                 "ops.window.minimize" => "ops.window.control",
+                "ops.messaging.reconnect" => "ops.jobs.create",
                 "ops.diagnostics.request" => "ops.jobs.create",
                 _ => string.Empty,
             };
@@ -152,6 +153,8 @@ namespace ColorVision.UI.Desktop.Operations
                     return Fail("window_show_payload_not_allowed", out error);
                 if (task.CapabilityId == "ops.window.minimize" && payload.EnumerateObject().Any())
                     return Fail("window_minimize_payload_not_allowed", out error);
+                if (task.CapabilityId == "ops.messaging.reconnect" && payload.EnumerateObject().Any())
+                    return Fail("message_reconnect_payload_not_allowed", out error);
                 if (task.CapabilityId == "ops.diagnostics.request"
                     && payload.EnumerateObject().Any(item => item.Name != "reason"
                         || item.Value.ValueKind != JsonValueKind.String

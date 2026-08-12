@@ -438,6 +438,8 @@ public class OperationsActivity extends Activity {
         boolean canShowWindow = contains(capabilities, OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW);
         boolean canMinimizeWindow = contains(
                 capabilities, OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW);
+        boolean canRecoverMessageChannel = contains(
+                capabilities, OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL);
         boolean canRequestDiagnostics = contains(
                 capabilities, OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS);
 
@@ -458,7 +460,10 @@ public class OperationsActivity extends Activity {
             runRemoteTask(OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS, payload);
         });
         diagnostics.setEnabled(canRequestDiagnostics);
-        addDashboardWideAction(diagnostics);
+        Button recoverMessageChannel = dashboardButton("恢复消息通道",
+                v -> confirmRemoteMessageChannelRecovery());
+        recoverMessageChannel.setEnabled(canRecoverMessageChannel);
+        addDashboardActionRow(diagnostics, recoverMessageChannel);
 
         if (monitor != null) {
             addDashboardSection("电脑签名状态");
@@ -690,6 +695,17 @@ public class OperationsActivity extends Activity {
                 .show();
     }
 
+    private void confirmRemoteMessageChannelRecovery() {
+        new AlertDialog.Builder(this)
+                .setTitle("远程恢复电脑消息通道")
+                .setMessage("只会检查并恢复已配对电脑当前 ColorVision 的既有消息连接和订阅。不会修改地址、Topic、凭据或重启 Windows 服务；通道已健康时不会主动断开。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("确认恢复", (dialog, which) -> runRemoteTask(
+                        OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL,
+                        new JSONObject()))
+                .show();
+    }
+
     private void runRemoteTask(String capabilityId, JSONObject payload) {
         showingDashboardSummary = false;
         progress.setVisibility(View.VISIBLE);
@@ -785,6 +801,8 @@ public class OperationsActivity extends Activity {
                 state.setText("电脑主窗口已显示");
             } else if (OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW.equals(capabilityId)) {
                 state.setText("电脑主窗口已最小化");
+            } else if (OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL.equals(capabilityId)) {
+                state.setText("电脑消息通道已就绪");
             } else {
                 state.setText("远程诊断请求已完成");
             }

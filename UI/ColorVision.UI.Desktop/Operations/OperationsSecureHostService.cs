@@ -140,6 +140,7 @@ namespace ColorVision.UI.Desktop.Operations
                 if (IsRunning)
                     throw new InvalidOperationException("Configure the Operations message-channel recovery controller before starting the secure host.");
                 _messageChannelRecoveryController = controller;
+                _relay.ConfigureMessageChannelRecoveryController(controller);
             }
         }
 
