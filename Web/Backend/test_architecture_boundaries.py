@@ -85,7 +85,13 @@ class ArchitectureBoundaryTests(unittest.TestCase):
 
     def test_jobs_http_handlers_contain_no_sql_or_connection_execute(self):
         tree = _tree("routes/admin_api.py")
-        handler_names = {"list_jobs", "run_job", "enable_job", "disable_job"}
+        handler_names = {
+            "list_jobs",
+            "list_job_runs",
+            "run_job",
+            "enable_job",
+            "disable_job",
+        }
         handlers = {
             node.name: node
             for node in ast.walk(tree)
@@ -153,7 +159,6 @@ class ArchitectureBoundaryTests(unittest.TestCase):
         expected_counts = {
             "routes/admin_api.py": {
                 "stats_overview": 4,
-                "create_api_key": 1,
             },
             "routes/operations_relay.py": {
                 "heartbeat": 1,

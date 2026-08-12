@@ -156,6 +156,113 @@ class SchemaVersionTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_v9_recovers_running_jobs_and_enforces_single_flight(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 8);
+                CREATE TABLE job_runs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    job_id TEXT NOT NULL,
+                    status TEXT DEFAULT 'running',
+                    started_at TEXT NOT NULL,
+                    finished_at TEXT,
+                    duration_ms INTEGER DEFAULT 0,
+                    summary TEXT,
+                    error TEXT
+                );
+                INSERT INTO job_runs (job_id, status, started_at)
+                VALUES ('cache_cleanup', 'running', '2026-08-10T01:00:00+00:00');
+                INSERT INTO job_runs (job_id, status, started_at)
+                VALUES ('cache_cleanup', 'running', '2026-08-10T01:00:01+00:00');
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            recovered = db.execute(
+                "SELECT status, finished_at, duration_ms, summary, error "
+                "FROM job_runs ORDER BY id"
+            ).fetchall()
+            self.assertEqual([row["status"] for row in recovered], ["interrupted", "running"])
+            self.assertTrue(recovered[0]["finished_at"])
+            self.assertGreaterEqual(recovered[0]["duration_ms"], 0)
+            self.assertIn("service restart", recovered[0]["summary"])
+            self.assertIn("service process stopped", recovered[0]["error"])
+            self.assertIsNone(recovered[1]["finished_at"])
+            indexes = {
+                row["name"]
+                for row in db.execute("PRAGMA index_list(job_runs)").fetchall()
+            }
+            self.assertIn("idx_job_runs_single_running", indexes)
+            self.assertIn("idx_job_runs_job_status_id", indexes)
+            with self.assertRaises(sqlite3.IntegrityError):
+                db.execute(
+                    "INSERT INTO job_runs (job_id, status, started_at) "
+                    "VALUES ('cache_cleanup', 'running', '2026-08-12T00:00:01+00:00')"
+                )
+        finally:
+            db.close()
+
+    def test_v10_persists_api_key_descriptions_and_indexes_audit_actor(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 9);
+                CREATE TABLE api_keys (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    key_prefix TEXT UNIQUE NOT NULL,
+                    key_hash TEXT NOT NULL,
+                    scopes TEXT DEFAULT '',
+                    created_by TEXT,
+                    created_at TEXT NOT NULL,
+                    expires_at TEXT,
+                    last_used_at TEXT,
+                    revoked_at TEXT,
+                    is_active INTEGER DEFAULT 1
+                );
+                CREATE TABLE audit_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    actor_type TEXT,
+                    actor_id TEXT,
+                    action TEXT NOT NULL,
+                    target_type TEXT,
+                    target_id TEXT,
+                    ip TEXT,
+                    user_agent TEXT,
+                    detail TEXT,
+                    created_at TEXT NOT NULL
+                );
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+
+            columns = {
+                row["name"] for row in db.execute("PRAGMA table_info(api_keys)").fetchall()
+            }
+            indexes = {
+                row["name"] for row in db.execute("PRAGMA index_list(audit_log)").fetchall()
+            }
+            self.assertIn("description", columns)
+            self.assertIn("idx_audit_actor", indexes)
+            ensure_schema_version(db)
+            self.assertEqual(
+                db.execute(
+                    "SELECT COUNT(*) FROM sqlite_master "
+                    "WHERE type = 'index' AND name = 'idx_audit_actor'"
+                ).fetchone()[0],
+                1,
+            )
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()

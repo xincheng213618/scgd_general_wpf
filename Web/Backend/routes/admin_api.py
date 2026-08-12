@@ -10,6 +10,7 @@ Per-endpoint scope requirements:
   - POST /index/plugins/*     → cache:refresh
   - POST /index/docs/refresh  → cache:refresh
   - GET  /jobs                → jobs:read
+  - GET  /jobs/*/runs         → jobs:read
   - POST /jobs/*/run          → jobs:write
   - POST /jobs/*/enable       → jobs:write
   - POST /jobs/*/disable      → jobs:write
@@ -19,10 +20,13 @@ Per-endpoint scope requirements:
   - GET  /docs/status         → cache:read
   - GET  /publish/integrity   → stats:read
   - GET  /api-keys            → admin:*
+  - GET  /api-keys/scopes     → admin:*
   - POST /api-keys            → admin:*
   - POST /api-keys/*/revoke   → admin:*
   - POST /api-keys/*/rotate   → admin:*
   - GET  /api-keys/*/usage    → admin:*
+  - GET  /settings/retention  → admin:*
+  - PUT  /settings/retention  → admin:*
   - *    /copilot/profiles    → admin:*
 
 admin:* grants access to all endpoints.
@@ -44,6 +48,12 @@ from db_cache import CacheManager, now_iso
 from ports.jobs import JobRepository
 from routes.request_context import current_request_context, set_authenticated_request_context
 from services.auth_policy import AuthPolicy
+from services.api_key_service import (
+    ALLOWED_SCOPES,
+    DEFAULT_API_KEY_SCOPES,
+    list_api_key_scope_definitions,
+    validate_api_key_scopes,
+)
 from services.deployment_history import query_deployment_history
 from services.performance_observability import (
     DEFAULT_SLOW_REQUEST_THRESHOLD_MS,
@@ -65,8 +75,10 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "refresh_docs_index": ["cache:refresh"],
     "refresh_all_indexes": ["cache:refresh"],
     "index_status": ["cache:read"],
+    "list_db_backups": ["admin:*"],
     "backup_db": ["admin:*"],
     "list_jobs": ["jobs:read"],
+    "list_job_runs": ["jobs:read"],
     "run_job": ["jobs:write"],
     "enable_job": ["jobs:write"],
     "disable_job": ["jobs:write"],
@@ -78,6 +90,7 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "enable_user": ["admin:*"],
     "disable_user": ["admin:*"],
     "list_api_keys": ["admin:*"],
+    "api_key_scopes": ["admin:*"],
     "create_api_key": ["admin:*"],
     "revoke_api_key": ["admin:*"],
     "rotate_api_key": ["admin:*"],
@@ -89,6 +102,8 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "create_profile": ["admin:*"],
     "update_profile": ["admin:*"],
     "delete_profile": ["admin:*"],
+    "get_retention_settings": ["admin:*"],
+    "update_retention_settings": ["admin:*"],
 }
 
 
@@ -98,6 +113,7 @@ class AdminApiContext:
     jobs: JobRepository
     storage_getter: Callable[[], Path]
     config_getter: Callable[[], dict[str, Any]]
+    config_path_getter: Callable[[], Path]
     get_db: Callable[[], Any]
     auth_policy: AuthPolicy
     request_context_factory: Callable[[], RequestContext]
@@ -250,6 +266,71 @@ def publish_integrity():
     from services.publish_integrity import build_publish_integrity_report
 
     return jsonify(build_publish_integrity_report(ctx.storage_getter(), ctx.cache))
+
+
+# ---------------------------------------------------------------------------
+# Operational settings
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/settings/retention", methods=["GET"])
+def get_retention_settings():
+    from services.operational_settings import (
+        get_operational_retention_settings,
+        operational_retention_limits,
+    )
+
+    return jsonify({
+        "values": get_operational_retention_settings(_get_ctx().config_getter()),
+        "limits": operational_retention_limits(),
+        "restart_required": False,
+    })
+
+
+@admin_api.route("/settings/retention", methods=["PUT"])
+def update_retention_settings():
+    from services.operational_settings import (
+        operational_retention_limits,
+        persist_operational_retention_settings,
+        validate_operational_retention_payload,
+    )
+
+    ctx = _get_ctx()
+    try:
+        values = validate_operational_retention_payload(request.get_json(silent=True))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    try:
+        result = persist_operational_retention_settings(
+            ctx.config_path_getter(),
+            ctx.config_getter(),
+            values,
+        )
+    except (OSError, ValueError):
+        return jsonify({"error": "Unable to persist operational settings"}), 500
+
+    if result["changed"]:
+        detail = ", ".join(
+            f"{name}: {result['before'][name]} -> {values[name]}"
+            for name in result["changed"]
+        )
+        ctx.cache.write_audit(
+            actor_type=_actor_type(),
+            actor_id=_actor_id(),
+            action="retention_settings_update",
+            target_type="operational_settings",
+            detail=detail,
+            ip=request.remote_addr or "",
+            user_agent=request.headers.get("User-Agent", "")[:200],
+        )
+
+    return jsonify({
+        "status": "updated" if result["changed"] else "unchanged",
+        "values": result["values"],
+        "limits": operational_retention_limits(),
+        "changed": result["changed"],
+        "restart_required": False,
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -476,6 +557,23 @@ def index_status():
 # DB backup
 # ---------------------------------------------------------------------------
 
+@admin_api.route("/backup/db", methods=["GET"])
+def list_db_backups():
+    ctx = _get_ctx()
+    from services.admin_data_retention import (
+        list_manual_db_backups,
+        parse_admin_retention_config,
+    )
+
+    _, keep_count = parse_admin_retention_config(ctx.config_getter())
+    backups = list_manual_db_backups(ctx.cache.db_path.parent)
+    return jsonify({
+        "backups": backups,
+        "count": len(backups),
+        "keep_count": keep_count,
+    })
+
+
 @admin_api.route("/backup/db", methods=["POST"])
 def backup_db():
     ctx = _get_ctx()
@@ -535,6 +633,7 @@ def backup_db():
 
     return jsonify({
         "status": "ok",
+        "backup_name": backup_path.name,
         "backup_path": str(backup_path),
         "backup_size_bytes": backup_path.stat().st_size if backup_path.exists() else 0,
         "backup_retention": backup_retention,
@@ -552,6 +651,29 @@ def list_jobs():
         return jsonify(ctx.jobs.list_with_latest_runs())
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
+
+
+@admin_api.route("/jobs/<job_id>/runs", methods=["GET"])
+def list_job_runs(job_id: str):
+    ctx = _get_ctx()
+    if ctx.jobs.get(job_id) is None:
+        return jsonify({"error": "Job not found"}), 404
+
+    status = request.args.get("status", "").strip() or None
+    if status not in {None, "success", "error", "running", "interrupted"}:
+        return jsonify({"error": "status must be success, error, running, or interrupted"}), 400
+    try:
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    return jsonify(ctx.jobs.list_runs_page(
+        job_id,
+        status=status,
+        limit=limit,
+        offset=offset,
+    ))
 
 
 @admin_api.route("/jobs/<job_id>/run", methods=["POST"])
@@ -574,7 +696,7 @@ def run_job(job_id: str):
         user_agent=request.headers.get("User-Agent", "")[:200],
     )
 
-    return jsonify(result)
+    return jsonify(result), (409 if result.get("status") == "skipped" else 200)
 
 
 @admin_api.route("/jobs/<job_id>/enable", methods=["POST"])
@@ -849,30 +971,17 @@ def list_api_keys():
     return jsonify(keys)
 
 
-# Allowed scopes for API key creation
-ALLOWED_SCOPES = {
-    "admin:*",
-    "cache:read",
-    "cache:refresh",
-    "jobs:read",
-    "jobs:write",
-    "stats:read",
-    "plugin:read",
-    "plugin:publish",
-    "release:publish",
-    "file:transfer",
-    "ops:relay",
-    "ops:operator",
-    "copilot:config:read",
-}
-
-
 def validate_scopes(scopes_str: str) -> tuple[list[str], list[str]]:
     """Validate scopes against ALLOWED_SCOPES. Returns (valid, invalid)."""
-    requested = {s.strip() for s in scopes_str.split(",") if s.strip()}
-    invalid = sorted(requested - ALLOWED_SCOPES)
-    valid = sorted(requested & ALLOWED_SCOPES)
-    return valid, invalid
+    return validate_api_key_scopes(scopes_str)
+
+
+@admin_api.route("/api-keys/scopes", methods=["GET"])
+def api_key_scopes():
+    return jsonify({
+        "items": list_api_key_scope_definitions(),
+        "default_scopes": list(DEFAULT_API_KEY_SCOPES),
+    })
 
 
 @admin_api.route("/api-keys", methods=["POST"])
@@ -910,25 +1019,13 @@ def create_api_key():
         result = _create_key(
             ctx.cache,
             name=name,
+            description=description,
             scopes=scopes,
             created_by=_actor_id(),
             expires_at=expires_at,
         )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
-
-    # Store description if provided
-    if description:
-        db = ctx.cache.get_db()
-        try:
-            db.execute(
-                "UPDATE api_keys SET name = ? WHERE id = ?",
-                (f"{name} ({description})" if description else name, result["id"]),
-            )
-            db.commit()
-        finally:
-            db.close()
-        result["description"] = description
 
     ctx.cache.write_audit(
         actor_type=_actor_type(),

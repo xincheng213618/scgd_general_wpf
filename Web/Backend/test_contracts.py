@@ -765,6 +765,26 @@ class AuthContracts(ContractTestBase):
         )
         self.assertEqual(resp.status_code, 403)
 
+    def test_jobs_read_scope_can_read_history_but_cannot_run_jobs(self):
+        from services.scheduler import ensure_default_jobs
+        ensure_default_jobs(marketplace_app._cache)
+        key = self.create_admin_key("jobs:read")
+        headers = {"Authorization": f"Bearer {key['key']}"}
+
+        self.assertEqual(self.client.get("/api/admin/jobs", headers=headers).status_code, 200)
+        self.assertEqual(
+            self.client.get(
+                "/api/admin/jobs/cache_cleanup/runs", headers=headers
+            ).status_code,
+            200,
+        )
+        self.assertEqual(
+            self.client.post(
+                "/api/admin/jobs/cache_cleanup/run", headers=headers
+            ).status_code,
+            403,
+        )
+
 
 # ===================================================================
 # Admin API Contracts
@@ -779,6 +799,99 @@ class AdminApiContracts(ContractTestBase):
         data = resp.get_json()
         self.assertIn("db_path", data)
         self.assertIn("cache_entry_count", data)
+
+    def test_retention_settings_get_exposes_only_safe_effective_values(self):
+        from services.operational_settings import OPERATIONAL_RETENTION_SETTINGS
+
+        response = self.client.get(
+            "/api/admin/settings/retention",
+            headers=self.basic_auth(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(set(data["values"]), set(OPERATIONAL_RETENTION_SETTINGS))
+        self.assertEqual(set(data["limits"]), set(OPERATIONAL_RETENTION_SETTINGS))
+        self.assertFalse(data["restart_required"])
+        serialized = json.dumps(data)
+        for forbidden in ("secret", "password", "storage_path", "upload_auth", "copilot_sync"):
+            self.assertNotIn(forbidden, serialized)
+
+    def test_retention_settings_put_preserves_secrets_and_updates_live_config(self):
+        from services.operational_settings import OPERATIONAL_RETENTION_SETTINGS
+
+        config_path = self.root / "config.json"
+        config_path.write_text(json.dumps({
+            "secret_key": "preserved-secret",
+            "storage_path": str(self.storage),
+            "upload_auth": {"username": "admin", "password": "preserved-password"},
+            "copilot_sync": {"version_keys": ["stable"]},
+            "unrelated": {"enabled": True},
+        }), encoding="utf-8")
+        values = {
+            name: spec.default for name, spec in OPERATIONAL_RETENTION_SETTINGS.items()
+        }
+        values["job_run_retention_days"] = 45
+
+        response = self.client.put(
+            "/api/admin/settings/retention",
+            headers=self.basic_auth(),
+            json={"values": values},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data["status"], "updated")
+        self.assertEqual(data["changed"], ["job_run_retention_days"])
+        self.assertEqual(marketplace_app.CONFIG["job_run_retention_days"], 45)
+        persisted = json.loads(config_path.read_text(encoding="utf-8"))
+        self.assertEqual(persisted["secret_key"], "preserved-secret")
+        self.assertEqual(persisted["upload_auth"]["password"], "preserved-password")
+        self.assertEqual(persisted["copilot_sync"], {"version_keys": ["stable"]})
+        self.assertEqual(persisted["unrelated"], {"enabled": True})
+        audit = self.client.get(
+            "/api/admin/audit-log?action=retention_settings_update",
+            headers=self.basic_auth(),
+        ).get_json()
+        self.assertEqual(audit["total"], 1)
+        self.assertNotIn("secret", audit["entries"][0]["detail"])
+
+    def test_retention_settings_put_rejects_unknown_or_incomplete_values(self):
+        from services.operational_settings import OPERATIONAL_RETENTION_SETTINGS
+
+        values = {
+            name: spec.default for name, spec in OPERATIONAL_RETENTION_SETTINGS.items()
+        }
+        for payload in (
+            {"values": {**values, "secret_key": 1}},
+            {"values": {k: v for k, v in values.items() if k != "job_run_retention_days"}},
+            {"values": {**values, "audit_log_retention_days": False}},
+        ):
+            with self.subTest(payload=payload):
+                response = self.client.put(
+                    "/api/admin/settings/retention",
+                    headers=self.basic_auth(),
+                    json=payload,
+                )
+                self.assertEqual(response.status_code, 400)
+        self.assertFalse((self.root / "config.json").exists())
+
+    def test_retention_settings_require_full_admin_scope(self):
+        key = self.create_admin_key("stats:read")
+        headers = {"Authorization": f"Bearer {key['key']}"}
+
+        self.assertEqual(
+            self.client.get("/api/admin/settings/retention", headers=headers).status_code,
+            403,
+        )
+        self.assertEqual(
+            self.client.put(
+                "/api/admin/settings/retention",
+                headers=headers,
+                json={"values": {}},
+            ).status_code,
+            403,
+        )
 
     def test_user_accounts_can_be_listed_disabled_and_reenabled(self):
         from services.auth_service import create_user
@@ -970,6 +1083,8 @@ class AdminApiContracts(ContractTestBase):
         data = resp.get_json()
         self.assertIn("states", data)
         self.assertIn("counts", data)
+        for state in data["states"].values():
+            self.assertNotIn("signature", state)
 
     def test_index_refresh_all_returns_results(self):
         self.create_plugin()
@@ -1009,6 +1124,43 @@ class AdminApiContracts(ContractTestBase):
         self.assertGreater(len(data), 0)
         self.assertEqual([job["id"] for job in data], sorted(job["id"] for job in data))
         self.assertIn("latest_run", data[0])
+        self.assertEqual(
+            sorted(data[0]["run_counts"]),
+            ["error", "interrupted", "running", "success", "total"],
+        )
+
+    def test_job_runs_history_is_paginated_and_filterable(self):
+        from services.scheduler import ensure_default_jobs, run_job_now
+        ensure_default_jobs(marketplace_app._cache)
+        run_job_now(
+            marketplace_app._cache,
+            self.storage,
+            lambda: marketplace_app.CONFIG,
+            marketplace_app.get_db,
+            "cache_cleanup",
+        )
+
+        response = self.client.get(
+            "/api/admin/jobs/cache_cleanup/runs?status=success&limit=1&offset=0",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(response.status_code, 200)
+        page = response.get_json()
+        self.assertEqual(page["total"], 1)
+        self.assertEqual(page["limit"], 1)
+        self.assertEqual(page["offset"], 0)
+        self.assertEqual(page["items"][0]["status"], "success")
+
+        invalid = self.client.get(
+            "/api/admin/jobs/cache_cleanup/runs?status=unknown",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(invalid.status_code, 400)
+        missing = self.client.get(
+            "/api/admin/jobs/missing/runs",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(missing.status_code, 404)
 
     def test_jobs_missing_job_contracts_remain_404(self):
         for action in ("run", "enable", "disable"):
@@ -1028,6 +1180,21 @@ class AdminApiContracts(ContractTestBase):
         data = resp.get_json()
         self.assertIn("job_id", data)
         self.assertIn("status", data)
+
+    def test_job_run_returns_conflict_when_same_job_is_running(self):
+        from services.scheduler import ensure_default_jobs
+        ensure_default_jobs(marketplace_app._cache)
+        marketplace_app._cache.jobs.start_run(
+            "cache_cleanup", "2026-08-12T00:00:00+00:00"
+        )
+
+        response = self.client.post(
+            "/api/admin/jobs/cache_cleanup/run", headers=self.basic_auth()
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.get_json()["status"], "skipped")
+        self.assertEqual(response.get_json()["error"], "Job is already running")
 
     def test_job_enable_disable(self):
         from services.scheduler import ensure_default_jobs
@@ -1057,6 +1224,7 @@ class AdminApiContracts(ContractTestBase):
         # Usage
         resp = self.client.get(f"/api/admin/api-keys/{key_id}/usage", headers=self.basic_auth())
         self.assertEqual(resp.status_code, 200)
+        self.assertIn("audit_activity", resp.get_json())
 
         # Rotate
         resp = self.client.post(f"/api/admin/api-keys/{key_id}/rotate", headers=self.basic_auth())
@@ -1070,6 +1238,77 @@ class AdminApiContracts(ContractTestBase):
         rid = resp.get_json()["id"]
         resp = self.client.post(f"/api/admin/api-keys/{rid}/revoke", headers=self.basic_auth())
         self.assertEqual(resp.status_code, 200)
+
+    def test_api_key_scope_catalog_is_complete_and_admin_only(self):
+        response = self.client.get(
+            "/api/admin/api-keys/scopes",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        values = [item["value"] for item in data["items"]]
+        self.assertEqual(len(values), len(set(values)))
+        self.assertIn("ops:relay", values)
+        self.assertIn("ops:operator", values)
+        self.assertEqual(data["default_scopes"], ["stats:read"])
+        for item in data["items"]:
+            self.assertTrue(item["label"])
+            self.assertTrue(item["description"])
+            self.assertIn(item["access"], {"read", "write", "service", "admin"})
+
+        limited = self.create_admin_key("stats:read")
+        denied = self.client.get(
+            "/api/admin/api-keys/scopes",
+            headers={"Authorization": f"Bearer {limited['key']}"},
+        )
+        self.assertEqual(denied.status_code, 403)
+
+    def test_api_key_description_and_audited_usage_are_independent_and_safe(self):
+        created = self.client.post(
+            "/api/admin/api-keys",
+            headers=self.basic_auth(),
+            json={
+                "name": "Desktop Relay",
+                "description": "Production line heartbeat",
+                "scopes": "ops:relay",
+            },
+        )
+        self.assertEqual(created.status_code, 201)
+        key = created.get_json()
+        self.assertEqual(key["name"], "Desktop Relay")
+        self.assertEqual(key["description"], "Production line heartbeat")
+
+        marketplace_app._cache.write_audit(
+            actor_type="api_key",
+            actor_id=f"key:{key['key_prefix']}",
+            action="operations.heartbeat",
+            target_type="operations_host",
+            target_id="line-1",
+            detail='{"status":"online"}',
+            ip="192.0.2.1",
+            user_agent="secret-client-fingerprint",
+        )
+        usage = self.client.get(
+            f"/api/admin/api-keys/{key['id']}/usage",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(usage.status_code, 200)
+        data = usage.get_json()
+        self.assertEqual(data["name"], "Desktop Relay")
+        self.assertEqual(data["description"], "Production line heartbeat")
+        self.assertEqual(data["audit_activity"]["total"], 1)
+        self.assertEqual(data["audit_activity"]["items"][0]["action"], "operations.heartbeat")
+        serialized_activity = json.dumps(data["audit_activity"])
+        self.assertNotIn("192.0.2.1", serialized_activity)
+        self.assertNotIn("secret-client-fingerprint", serialized_activity)
+
+        listed = self.client.get(
+            "/api/admin/api-keys",
+            headers=self.basic_auth(),
+        ).get_json()
+        listed_key = next(item for item in listed if item["id"] == key["id"])
+        self.assertEqual(listed_key["name"], "Desktop Relay")
+        self.assertEqual(listed_key["description"], "Production line heartbeat")
 
     def test_api_key_invalid_scope_rejected(self):
         resp = self.client.post(
@@ -1193,6 +1432,22 @@ class AdminApiContracts(ContractTestBase):
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
         self.assertEqual(data["status"], "ok")
+        self.assertRegex(data["backup_name"], r"^marketplace_backup_\d{8}_\d{6}\.db$")
+
+        listing = self.client.get("/api/admin/backup/db", headers=self.basic_auth())
+        self.assertEqual(listing.status_code, 200)
+        inventory = listing.get_json()
+        self.assertEqual(inventory["count"], 1)
+        self.assertEqual(inventory["keep_count"], 10)
+        self.assertEqual(inventory["backups"][0]["name"], data["backup_name"])
+        self.assertNotIn("path", inventory["backups"][0])
+
+        limited_key = self.create_admin_key("cache:read")
+        forbidden = self.client.get(
+            "/api/admin/backup/db",
+            headers={"Authorization": f"Bearer {limited_key['key']}"},
+        )
+        self.assertEqual(forbidden.status_code, 403)
 
     def test_perf_summary_returns_data(self):
         resp = self.client.get("/api/admin/perf/summary", headers=self.basic_auth())

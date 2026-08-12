@@ -50,16 +50,17 @@ function Invoke-RemotePowerShell {
         '-EncodedCommand',
         $transport.encoded_loader
     )
-    $previousErrorActionPreference = $ErrorActionPreference
-    try {
-        $ErrorActionPreference = 'Continue'
-        # Windows PowerShell 5.1 may consume the first ASCII character in a
-        # native pipeline. The transport prefixes a disposable marker and the
-        # remote loader consumes one complete line without waiting for stdin EOF.
-        $remoteOutput = @($transport.stdin_payload | & ssh @sshArguments 2>&1)
-        $exitCode = $LASTEXITCODE
-    } finally {
-        $ErrorActionPreference = $previousErrorActionPreference
+    # Use an explicit stdin pipe because PowerShell native pipelines can leave
+    # the remote loader waiting when the deployment payload is very large.
+    $result = Invoke-WebRemotePowerShellProcess `
+        -FilePath 'ssh' `
+        -ArgumentList $sshArguments `
+        -StandardInput $transport.stdin_payload
+    $remoteOutput = @()
+    foreach ($stream in @($result.stdout, $result.stderr)) {
+        if (-not [string]::IsNullOrEmpty($stream)) {
+            $remoteOutput += @($stream -split "\r?\n")
+        }
     }
     foreach ($outputItem in $remoteOutput) {
         $outputText = [string]$outputItem
@@ -68,8 +69,8 @@ function Invoke-RemotePowerShell {
         }
         Write-Output $outputText
     }
-    if ($exitCode -ne 0) {
-        throw "NAS deployment failed with SSH exit code $exitCode."
+    if ($result.exit_code -ne 0) {
+        throw "NAS deployment failed with SSH exit code $($result.exit_code)."
     }
 }
 

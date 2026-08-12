@@ -1,8 +1,13 @@
 import type {
   AdminStats,
+  AllIndexRefreshResult,
   ApiKeyItem,
+  ApiKeyScopeCatalog,
+  ApiKeyUsage,
   AuditLogResponse,
   CacheStatus,
+  DatabaseBackupInventory,
+  DatabaseBackupResult,
   CopilotProfile,
   CopilotProfilePayload,
   CreateApiKeyPayload,
@@ -11,7 +16,15 @@ import type {
   DeploymentHistoryResponse,
   PublishIntegrityReport,
   PerformanceSummary,
+  IndexRefreshResult,
+  IndexScope,
+  IndexStatusResponse,
+  JobRunPage,
+  JobRunResult,
   ScheduledJob,
+  RetentionSettingsResponse,
+  RetentionSettingsUpdateResponse,
+  RetentionSettingsValues,
   TrafficStatsResponse,
   UserAccount,
 } from '../types/admin'
@@ -34,6 +47,10 @@ export function getCacheStatus() {
   return getJson<CacheStatus>('/api/admin/cache/status')
 }
 
+export function getIndexStatus() {
+  return getJson<IndexStatusResponse>('/api/admin/index/status')
+}
+
 export function getDocsStatus() {
   return getJson<DocsStatus>('/api/admin/docs/status')
 }
@@ -43,7 +60,19 @@ export function getPublishIntegrity() {
 }
 
 export function refreshAllIndexes() {
-  return postJson('/api/admin/index/refresh-all')
+  return postJson<AllIndexRefreshResult>('/api/admin/index/refresh-all')
+}
+
+const indexRefreshPaths: Record<IndexScope, string> = {
+  plugins: '/api/admin/index/plugins/refresh',
+  releases: '/api/admin/index/releases/refresh',
+  updates: '/api/admin/index/updates/refresh',
+  tools: '/api/admin/index/tools/refresh',
+  docs: '/api/admin/index/docs/refresh',
+}
+
+export function refreshIndex(scope: IndexScope) {
+  return postJson<IndexRefreshResult>(indexRefreshPaths[scope])
 }
 
 export function refreshDocsIndex() {
@@ -54,12 +83,45 @@ export function cleanupCache() {
   return postJson<{ deleted_count: number }>('/api/admin/cache/cleanup')
 }
 
+export function listDatabaseBackups() {
+  return getJson<DatabaseBackupInventory>('/api/admin/backup/db')
+}
+
+export function backupDatabase() {
+  return postJson<DatabaseBackupResult>('/api/admin/backup/db')
+}
+
+export function getRetentionSettings(signal?: AbortSignal) {
+  return getJson<RetentionSettingsResponse>('/api/admin/settings/retention', signal)
+}
+
+export function updateRetentionSettings(values: RetentionSettingsValues) {
+  return putJson<RetentionSettingsUpdateResponse>('/api/admin/settings/retention', { values })
+}
+
 export function listJobs() {
   return getJson<ScheduledJob[]>('/api/admin/jobs')
 }
 
 export function runJob(jobId: string) {
-  return postJson(`/api/admin/jobs/${encodeURIComponent(jobId)}/run`)
+  return postJson<JobRunResult>(`/api/admin/jobs/${encodeURIComponent(jobId)}/run`)
+}
+
+export function getJobRuns(jobId: string, params: {
+  current?: number
+  pageSize?: number
+  status?: string
+}) {
+  const pageSize = params.pageSize ?? 20
+  const current = params.current ?? 1
+  const search = new URLSearchParams({
+    limit: String(pageSize),
+    offset: String((current - 1) * pageSize),
+  })
+  if (params.status) search.set('status', params.status)
+  return getJson<JobRunPage>(
+    `/api/admin/jobs/${encodeURIComponent(jobId)}/runs?${search.toString()}`,
+  )
 }
 
 export function setJobEnabled(jobId: string, enabled: boolean) {
@@ -68,6 +130,14 @@ export function setJobEnabled(jobId: string, enabled: boolean) {
 
 export function listApiKeys() {
   return getJson<ApiKeyItem[]>('/api/admin/api-keys')
+}
+
+export function getApiKeyScopeCatalog(signal?: AbortSignal) {
+  return getJson<ApiKeyScopeCatalog>('/api/admin/api-keys/scopes', signal)
+}
+
+export function getApiKeyUsage(id: number, signal?: AbortSignal) {
+  return getJson<ApiKeyUsage>(`/api/admin/api-keys/${id}/usage`, signal)
 }
 
 export function createApiKey(payload: CreateApiKeyPayload) {

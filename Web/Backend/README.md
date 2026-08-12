@@ -115,8 +115,10 @@ continuous SQLite writes.
 | POST `/api/admin/index/tools/refresh` | `cache:refresh` |
 | POST `/api/admin/index/refresh-all` | `cache:refresh` |
 | GET `/api/admin/index/status` | `cache:read` |
+| GET `/api/admin/backup/db` | `admin:*` |
 | POST `/api/admin/backup/db` | `admin:*` |
 | GET `/api/admin/jobs` | `jobs:read` |
+| GET `/api/admin/jobs/<id>/runs` | `jobs:read` |
 | POST `/api/admin/jobs/<id>/run` | `jobs:write` |
 | POST `/api/admin/jobs/<id>/enable` | `jobs:write` |
 | POST `/api/admin/jobs/<id>/disable` | `jobs:write` |
@@ -124,6 +126,8 @@ continuous SQLite writes.
 | GET `/api/admin/stats/traffic` | `stats:read` |
 | GET `/api/admin/audit-log` | `admin:*` |
 | GET `/api/admin/deployments` | `admin:*` |
+| GET `/api/admin/settings/retention` | `admin:*` |
+| PUT `/api/admin/settings/retention` | `admin:*` |
 | User account management | `admin:*` |
 | API Key management | `admin:*` |
 
@@ -135,6 +139,9 @@ continuous SQLite writes.
 |--------|----------|-------------|
 | GET | `/api/admin/cache/status` | Database and cache status |
 | POST | `/api/admin/cache/cleanup` | Delete expired cache entries |
+| GET | `/api/admin/index/status` | Compact per-index status, counts, timing, and errors |
+| GET | `/api/admin/backup/db` | List recognized manual snapshots without server paths |
+| POST | `/api/admin/backup/db` | Create and privacy-scrub a retained database snapshot |
 
 ### Plugin Index
 
@@ -147,26 +154,55 @@ continuous SQLite writes.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/admin/jobs` | List scheduled jobs |
-| POST | `/api/admin/jobs/<id>/run` | Run job immediately |
+| GET | `/api/admin/jobs` | List scheduled jobs with latest run and status totals |
+| GET | `/api/admin/jobs/<id>/runs` | Paginated run history, optionally filtered by status |
+| POST | `/api/admin/jobs/<id>/run` | Run job immediately; concurrent duplicate runs return `409` |
 | POST | `/api/admin/jobs/<id>/enable` | Enable job |
 | POST | `/api/admin/jobs/<id>/disable` | Disable job |
+
+Only one `running` row is allowed per job. When the service starts, unfinished
+rows left by a previous process are marked `interrupted` before the startup
+check runs, so history remains truthful and a crashed run cannot block the job
+forever.
+
+### Operational Retention Settings
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/settings/retention` | Read the six allowlisted effective retention values and their limits |
+| PUT | `/api/admin/settings/retention` | Atomically replace all six values and apply them to the running service |
+
+The contract intentionally excludes credentials, secrets, storage paths,
+listener settings, and Copilot configuration. A write preserves every existing
+unexposed JSON key, replaces `config.json` atomically, then updates the live
+configuration only after the file is durable. Reducing a value may delete old
+artifacts or records when the corresponding publish or scheduled cleanup next
+runs; the administrator UI confirms the exact changes before saving.
 
 ### API Keys
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/admin/api-keys` | List API keys |
+| GET | `/api/admin/api-keys/scopes` | List the authoritative scope catalog and default scopes |
 | POST | `/api/admin/api-keys` | Create new key (returns plaintext once) |
 | POST | `/api/admin/api-keys/<id>/revoke` | Revoke key |
 | POST | `/api/admin/api-keys/<id>/rotate` | Rotate key (revoke old, create new) |
-| GET | `/api/admin/api-keys/<id>/usage` | Get key usage info |
+| GET | `/api/admin/api-keys/<id>/usage` | Get public key metadata and recent audited writes |
 
 `expires_at` must be a future ISO 8601 timestamp. The service normalizes it to
 UTC; omitting it from the HTTP create request applies the default 90-day
 expiry. List and usage responses include the effective `status` (`active`,
-`expired`, `revoked`, or `invalid_expiry`) plus `last_used_at`. Legacy records
-with an invalid expiry fail closed and cannot authenticate.
+`expired`, `revoked`, or `invalid_expiry`) plus `last_used_at`. Descriptions are
+stored independently from names and survive key rotation. The scope catalog is
+the single source of truth for the admin UI and includes human-readable labels,
+categories, and least-privilege guidance.
+
+The usage response includes recent audited management writes attributed to the
+key prefix, but deliberately excludes request IP addresses and user agents. It
+is not a request counter: authenticated reads only update `last_used_at`, at
+most once per minute. Legacy records with an invalid expiry fail closed and
+cannot authenticate.
 
 ### User Accounts
 
@@ -288,6 +324,8 @@ Configuration defaults:
 
 | Key | Default | Meaning |
 |-----|---------|---------|
+| `app_release_keep_count` | `5` | Newest main application release packages retained after publishing |
+| `plugin_package_keep_count` | `3` | Newest package versions retained per plugin after publishing |
 | `access_analytics_enabled` | `true` | Enable request aggregation |
 | `access_analytics_queue_size` | `4096` | Maximum queued events before non-blocking drops |
 | `access_analytics_batch_size` | `128` | Maximum events grouped per writer pass |
@@ -303,7 +341,9 @@ recognized `marketplace_backup_YYYYMMDD_HHMMSS.db` snapshots. A newly created
 admin backup is scrubbed to the current cutoff before it is reported as
 successful, so database snapshots cannot bypass visitor retention.
 
-`POST /api/admin/backup/db` also applies the audit cutoff and immediately
+`GET /api/admin/backup/db` lists only recognized snapshot names, UTC creation
+times, and sizes; filesystem paths are not returned. `POST /api/admin/backup/db`
+also applies the audit cutoff and immediately
 rotates exact `marketplace_backup_YYYYMMDD_HHMMSS.db` files. The backup created
 by the current request is explicitly protected. Non-matching names, symbolic
 links, paths outside the database directory, and snapshots that fail audit
@@ -319,10 +359,11 @@ and any rotation errors.
 | `/admin/cache` | Cache and index management |
 | `/admin/api-keys` | API Key lifecycle management |
 | `/admin/users` | Registered account status management |
-| `/admin/jobs` | Scheduled job management |
+| `/admin/jobs` | Scheduled jobs, single-flight actions, status totals, and filterable run history |
 | `/admin/deployments` | Sanitized NAS deployment history and retention results |
 | `/admin/audit` | Audit log viewer |
 | `/admin/traffic` | Privacy-preserving request traffic and recorder health |
+| `/admin/settings` | Browser appearance plus server-side operational retention policies |
 
 ## API Key Authentication
 
@@ -395,7 +436,7 @@ Signature-based check: each index check computes a directory signature and compa
    - Call `POST /api/admin/index/refresh-all`
 3. **Database backup**: `POST /api/admin/backup/db` creates, privacy-scrubs, integrity-checks, and rotates a timestamped backup of `marketplace.db`.
 4. **API Key security**: Keys are shown only once at creation. Revoke and rotate if compromised. Scopes are validated against a whitelist at creation time; expiry timestamps are normalized to UTC, and expired or malformed legacy records fail closed.
-5. **Config**: Edit `config.json` to set `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
+5. **Config**: Use `/admin/settings` for the six safe live retention policies. Edit `config.json` directly for protected or restart-bound values such as `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
 
 ### Large File Transfer
 

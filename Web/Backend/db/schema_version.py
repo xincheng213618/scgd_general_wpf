@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 8
+CURRENT_SCHEMA_VERSION = 10
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -61,6 +61,10 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v7(db)
     if from_version < 8:
         _migration_v8(db)
+    if from_version < 9:
+        _migration_v9(db)
+    if from_version < 10:
+        _migration_v10(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -227,6 +231,82 @@ def _migration_v8(db: sqlite3.Connection):
         )
         """
     )
+
+
+def _migration_v9(db: sqlite3.Connection):
+    """v9: Repair duplicate running rows and enforce per-job single flight."""
+    table = db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'job_runs'"
+    ).fetchone()
+    if table is None:
+        return
+    columns = {
+        row[1]
+        for row in db.execute("PRAGMA table_info(job_runs)").fetchall()
+    }
+    required_columns = {
+        "job_id",
+        "status",
+        "started_at",
+        "finished_at",
+        "duration_ms",
+        "summary",
+        "error",
+    }
+    if not required_columns.issubset(columns):
+        return
+
+    finished_at = "strftime('%Y-%m-%dT%H:%M:%f+00:00', 'now')"
+    db.execute(
+        f"""
+        UPDATE job_runs
+        SET status = 'interrupted',
+            finished_at = COALESCE(finished_at, {finished_at}),
+            duration_ms = MAX(
+                0,
+                COALESCE(
+                    CAST((julianday({finished_at}) - julianday(started_at)) * 86400000 AS INTEGER),
+                    duration_ms,
+                    0
+                )
+            ),
+            summary = CASE
+                WHEN COALESCE(summary, '') = '' THEN 'Interrupted by service restart'
+                ELSE summary
+            END,
+            error = CASE
+                WHEN COALESCE(error, '') = '' THEN 'The previous service process stopped before this run completed.'
+                ELSE error
+            END
+        WHERE status = 'running'
+          AND id NOT IN (
+              SELECT MAX(id) FROM job_runs
+              WHERE status = 'running'
+              GROUP BY job_id
+          )
+        """
+    )
+    db.execute(
+        """CREATE UNIQUE INDEX IF NOT EXISTS idx_job_runs_single_running
+           ON job_runs(job_id) WHERE status = 'running'"""
+    )
+    db.execute(
+        """CREATE INDEX IF NOT EXISTS idx_job_runs_job_status_id
+           ON job_runs(job_id, status, id DESC)"""
+    )
+
+
+def _migration_v10(db: sqlite3.Connection):
+    """v10: Persist API key descriptions and index their audit identity."""
+    _add_column_if_missing(db, "api_keys", "description TEXT DEFAULT ''")
+    audit_table = db.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'audit_log'"
+    ).fetchone()
+    if audit_table is not None:
+        db.execute(
+            """CREATE INDEX IF NOT EXISTS idx_audit_actor
+               ON audit_log(actor_type, actor_id, id DESC)"""
+        )
 
 
 def _add_column_if_missing(db: sqlite3.Connection, table: str, column_def: str):

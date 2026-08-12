@@ -97,6 +97,67 @@ export interface CacheStatus {
   storage_path: string
 }
 
+export type IndexScope = 'plugins' | 'releases' | 'updates' | 'tools' | 'docs'
+
+export interface IndexState {
+  scope: IndexScope
+  status: string
+  last_started_at?: string | null
+  last_finished_at?: string | null
+  last_error?: string
+  item_count: number
+  duration_ms: number
+}
+
+export interface IndexStatusResponse {
+  states: Partial<Record<IndexScope, IndexState>>
+  counts: Record<string, number>
+  error?: string
+}
+
+export interface IndexStatusRow extends IndexState {
+  name: string
+  indexed_count: number
+}
+
+export interface IndexRefreshResult {
+  status?: string
+  indexed_count?: number
+  deleted_count?: number
+  duration_ms?: number
+  errors?: string[]
+}
+
+export type AllIndexRefreshResult = Record<IndexScope, IndexRefreshResult>
+
+export interface DatabaseBackupItem {
+  name: string
+  created_at: string
+  size_bytes: number
+}
+
+export interface DatabaseBackupInventory {
+  backups: DatabaseBackupItem[]
+  count: number
+  keep_count: number
+}
+
+export interface DatabaseBackupResult {
+  status: string
+  backup_name: string
+  backup_size_bytes: number
+  backup_retention: {
+    status: string
+    keepCount: number
+    beforeCount: number
+    afterCount: number
+    removedCount: number
+    removedBytes: number
+    preservedUnclassified: number
+    errors: string[]
+  }
+}
+
 export interface DocsStatus {
   basePath: string
   entryUrl: string
@@ -154,6 +215,30 @@ export interface JobRun {
   error?: string
 }
 
+export interface JobRunCounts {
+  total: number
+  success: number
+  error: number
+  interrupted: number
+  running: number
+}
+
+export interface JobRunPage {
+  items: JobRun[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface JobRunResult {
+  job_id: string
+  run_id: number | null
+  status: string
+  duration_ms: number
+  summary: string
+  error: string
+}
+
 export interface SlowRequestSample {
   recorded_at: string
   method: string
@@ -181,6 +266,7 @@ export interface ScheduledJob {
   next_run_at?: string
   updated_at?: string
   latest_run?: JobRun | null
+  run_counts: JobRunCounts
 }
 
 export type ApiKeyStatus = 'active' | 'expired' | 'revoked' | 'invalid_expiry'
@@ -188,6 +274,7 @@ export type ApiKeyStatus = 'active' | 'expired' | 'revoked' | 'invalid_expiry'
 export interface ApiKeyItem {
   id: number
   name: string
+  description?: string
   key_prefix: string
   scopes: string
   created_by?: string
@@ -215,6 +302,36 @@ export interface ApiKeyFormValues {
 
 export interface CreateApiKeyResult extends ApiKeyItem {
   key: string
+}
+
+export type ApiKeyScopeAccess = 'read' | 'write' | 'service' | 'admin'
+
+export interface ApiKeyScopeDefinition {
+  value: string
+  label: string
+  description: string
+  category: string
+  access: ApiKeyScopeAccess
+}
+
+export interface ApiKeyScopeCatalog {
+  items: ApiKeyScopeDefinition[]
+  default_scopes: string[]
+}
+
+export interface ApiKeyAuditActivityItem {
+  action: string
+  target_type?: string
+  target_id?: string
+  detail?: string
+  created_at?: string
+}
+
+export interface ApiKeyUsage extends ApiKeyItem {
+  audit_activity: {
+    total: number
+    items: ApiKeyAuditActivityItem[]
+  }
 }
 
 export interface AuditLogEntry {
@@ -301,6 +418,31 @@ export interface PublishDraftFormValues {
 export interface ThemeSettingsFormValues {
   themeMode: ThemeMode
   density: UiDensity
+}
+
+export interface RetentionSettingsValues {
+  app_release_keep_count: number
+  plugin_package_keep_count: number
+  access_analytics_retention_days: number
+  job_run_retention_days: number
+  audit_log_retention_days: number
+  admin_db_backup_keep_count: number
+}
+
+export interface RetentionSettingLimit {
+  minimum: number
+  maximum: number
+}
+
+export interface RetentionSettingsResponse {
+  values: RetentionSettingsValues
+  limits: Record<keyof RetentionSettingsValues, RetentionSettingLimit>
+  restart_required: boolean
+}
+
+export interface RetentionSettingsUpdateResponse extends RetentionSettingsResponse {
+  status: 'updated' | 'unchanged'
+  changed: Array<keyof RetentionSettingsValues>
 }
 
 export interface UserAccount {

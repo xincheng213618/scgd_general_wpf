@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request
 
 from ports.operations_support import OperationsSupportStore
-from services.api_key_service import verify_api_key
+from services.api_key_service import api_key_actor_id, verify_api_key
 
 operations_relay = Blueprint("operations_relay", __name__)
 
@@ -133,7 +133,7 @@ def heartbeat(host_id):
         db.commit()
     finally:
         db.close()
-    _ctx.cache.write_audit(actor_type="api_key", actor_id=str(key["id"]), action="operations.heartbeat",
+    _ctx.cache.write_audit(actor_type="api_key", actor_id=api_key_actor_id(key), action="operations.heartbeat",
                            target_type="operations_host", target_id=host_id,
                            detail=json.dumps({"status": status}, separators=(",", ":")))
     return jsonify({"ok": True, "hostId": host_id, "serverTime": now})
@@ -251,7 +251,7 @@ def create_task():
             raise
     finally:
         db.close()
-    _ctx.cache.write_audit(actor_type="api_key", actor_id=str(key["id"]), action="operations.task.create",
+    _ctx.cache.write_audit(actor_type="api_key", actor_id=api_key_actor_id(key), action="operations.task.create",
                            target_type="operations_task", target_id=task_id,
                            detail=json.dumps({"hostId": host_id, "capabilityId": capability_id}, separators=(",", ":")))
     return jsonify({"ok": True, "taskId": task_id, "status": "queued", "expiresAt": _iso(expires_at)}), 202

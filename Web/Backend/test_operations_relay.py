@@ -88,6 +88,18 @@ class OperationsRelayTests(unittest.TestCase):
         )
         self.assertEqual(receipt.status_code, 201)
 
+        audit = marketplace_app._cache.get_audit_log_page(
+            actor="key:",
+            limit=20,
+            offset=0,
+        )
+        operations_entries = [
+            item for item in audit["entries"]
+            if item["action"] in {"operations.heartbeat", "operations.task.create"}
+        ]
+        self.assertEqual(len(operations_entries), 2)
+        self.assertTrue(all(item["actor_id"].startswith("key:") for item in operations_entries))
+
     def test_task_catalog_rejects_privileged_or_command_payloads(self):
         self.heartbeat()
         privileged = self.client.post(

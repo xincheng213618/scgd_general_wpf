@@ -97,7 +97,7 @@ class AuthPolicy:
 
     def _authenticate_api_key(self, token: str) -> Actor | None:
         try:
-            from services.api_key_service import verify_api_key
+            from services.api_key_service import api_key_actor_id, verify_api_key
 
             key_info = verify_api_key(self._cache, token, required_scopes=None)
         except Exception:
@@ -109,10 +109,9 @@ class AuthPolicy:
             for scope in str(key_info.get("scopes") or "").split(",")
             if scope.strip()
         )
-        prefix = str(key_info.get("key_prefix") or "unknown")
         return Actor(
             actor_type="api_key",
-            actor_id=f"key:{prefix}",
+            actor_id=api_key_actor_id(key_info),
             auth_method="bearer",
             role="api_key",
             scopes=scopes,

@@ -27,6 +27,43 @@ except ImportError:  # pragma: no cover
 KEY_PREFIX = "cvmp"
 LAST_USED_WRITE_INTERVAL = timedelta(minutes=1)
 
+API_KEY_SCOPE_DEFINITIONS: tuple[dict[str, str], ...] = (
+    {"value": "admin:*", "label": "完整管理权限", "description": "访问全部管理接口；只应用于受控管理员自动化。", "category": "管理", "access": "admin"},
+    {"value": "cache:read", "label": "缓存与索引读取", "description": "读取缓存、索引和文档构建状态。", "category": "系统运维", "access": "read"},
+    {"value": "cache:refresh", "label": "缓存与索引维护", "description": "刷新索引并清理过期缓存。", "category": "系统运维", "access": "write"},
+    {"value": "jobs:read", "label": "任务查看", "description": "读取任务状态和运行历史。", "category": "系统运维", "access": "read"},
+    {"value": "jobs:write", "label": "任务执行", "description": "运行、启用或禁用后台任务。", "category": "系统运维", "access": "write"},
+    {"value": "stats:read", "label": "统计查看", "description": "读取概览、访问统计和性能摘要。", "category": "系统运维", "access": "read"},
+    {"value": "plugin:read", "label": "插件目录读取", "description": "读取插件目录与公开元数据。", "category": "发布", "access": "read"},
+    {"value": "plugin:publish", "label": "插件发布", "description": "上传并发布插件安装包。", "category": "发布", "access": "write"},
+    {"value": "release:publish", "label": "主程序发布", "description": "上传并发布主程序版本。", "category": "发布", "access": "write"},
+    {"value": "file:transfer", "label": "文件中转", "description": "上传、下载、列出和删除中转文件。", "category": "文件", "access": "write"},
+    {"value": "ops:relay", "label": "桌面 Relay", "description": "桌面端心跳、任务拉取、回执和受限支持事件。", "category": "桌面运维", "access": "service"},
+    {"value": "ops:operator", "label": "运维调度", "description": "查看主机并创建目录约束的桌面运维任务。", "category": "桌面运维", "access": "write"},
+    {"value": "copilot:config:read", "label": "Copilot 配置同步", "description": "读取启用的 Copilot 配置。", "category": "Copilot", "access": "read"},
+)
+ALLOWED_SCOPES = frozenset(item["value"] for item in API_KEY_SCOPE_DEFINITIONS)
+DEFAULT_API_KEY_SCOPES = ("stats:read",)
+
+
+def list_api_key_scope_definitions() -> list[dict[str, str]]:
+    return [dict(item) for item in API_KEY_SCOPE_DEFINITIONS]
+
+
+def validate_api_key_scopes(scopes_str: str) -> tuple[list[str], list[str]]:
+    requested = {scope.strip() for scope in scopes_str.split(",") if scope.strip()}
+    invalid = sorted(requested - ALLOWED_SCOPES)
+    valid = sorted(requested & ALLOWED_SCOPES)
+    return valid, invalid
+
+
+def api_key_actor_id(key_info: Any) -> str:
+    try:
+        prefix = str(key_info["key_prefix"] or "").strip()
+    except (KeyError, TypeError, IndexError):
+        prefix = ""
+    return f"key:{prefix or 'unknown'}"
+
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -139,6 +176,7 @@ def create_api_key(
     cache: CacheManager,
     *,
     name: str,
+    description: str = "",
     scopes: str = "",
     created_by: str = "",
     expires_at: str | None = None,
@@ -158,10 +196,10 @@ def create_api_key(
     db = cache.get_db()
     try:
         cursor = db.execute(
-            """INSERT INTO api_keys (name, key_prefix, key_hash, scopes, created_by,
-                                     created_at, expires_at, is_active)
-               VALUES (?, ?, ?, ?, ?, ?, ?, 1)""",
-            (name, prefix, key_hash, scopes, created_by, now, normalized_expiry),
+            """INSERT INTO api_keys (name, description, key_prefix, key_hash, scopes,
+                                     created_by, created_at, expires_at, is_active)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+            (name, description, prefix, key_hash, scopes, created_by, now, normalized_expiry),
         )
         key_id = cursor.lastrowid
         db.commit()
@@ -171,6 +209,7 @@ def create_api_key(
     return {
         "id": key_id,
         "name": name,
+        "description": description,
         "key": full_key,  # Only returned once!
         "key_prefix": prefix,
         "scopes": scopes,
@@ -276,6 +315,7 @@ def rotate_api_key(
     return create_api_key(
         cache,
         name=row["name"],
+        description=row["description"] or "",
         scopes=row["scopes"] or "",
         created_by=created_by or row["created_by"] or "",
         expires_at=row["expires_at"],
@@ -295,14 +335,37 @@ def list_api_keys(cache: CacheManager) -> list[dict[str, Any]]:
         db.close()
 
 
-def get_api_key_usage(cache: CacheManager, key_id: int) -> dict[str, Any] | None:
-    """Get usage info for a specific API key."""
+def get_api_key_usage(
+    cache: CacheManager,
+    key_id: int,
+    *,
+    recent_limit: int = 20,
+) -> dict[str, Any] | None:
+    """Get public key metadata plus its recent audited operations."""
     db = cache.get_db()
     try:
         row = db.execute("SELECT * FROM api_keys WHERE id = ?", (key_id,)).fetchone()
         if not row:
             return None
-        return _public_key_payload(row)
+        public = _public_key_payload(row)
+        actor_ids = (api_key_actor_id(row), str(key_id))
+        total_row = db.execute(
+            """SELECT COUNT(*) AS total FROM audit_log
+               WHERE actor_type = 'api_key' AND actor_id IN (?, ?)""",
+            actor_ids,
+        ).fetchone()
+        rows = db.execute(
+            """SELECT action, target_type, target_id, detail, created_at
+               FROM audit_log
+               WHERE actor_type = 'api_key' AND actor_id IN (?, ?)
+               ORDER BY id DESC LIMIT ?""",
+            (*actor_ids, max(1, min(int(recent_limit), 50))),
+        ).fetchall()
+        public["audit_activity"] = {
+            "total": int(total_row["total"]) if total_row else 0,
+            "items": [dict(item) for item in rows],
+        }
+        return public
     except Exception:
         return None
     finally:

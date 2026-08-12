@@ -10,6 +10,7 @@ from pathlib import Path
 
 from db_cache import CacheManager
 from services.admin_data_retention import (
+    list_manual_db_backups,
     parse_admin_retention_config,
     prune_audit_log,
     prune_audit_log_backups,
@@ -121,6 +122,20 @@ class AdminDataRetentionTests(unittest.TestCase):
         self.assertTrue(recognized[2].exists())
         self.assertTrue(recognized[3].exists())
         self.assertTrue(unclassified.exists())
+
+    def test_manual_backup_inventory_is_sorted_and_path_free(self):
+        older = self.root / "marketplace_backup_20260811_120000.db"
+        newer = self.root / "marketplace_backup_20260812_130000.db"
+        older.write_bytes(b"old")
+        newer.write_bytes(b"newer")
+        (self.root / "marketplace_backup_manual.db").write_bytes(b"ignored")
+
+        result = list_manual_db_backups(self.root)
+
+        self.assertEqual([item["name"] for item in result], [newer.name, older.name])
+        self.assertEqual(result[0]["created_at"], "2026-08-12T13:00:00+00:00")
+        self.assertEqual(result[0]["size_bytes"], 5)
+        self.assertNotIn("path", result[0])
 
     def test_retention_config_is_bounded(self):
         self.assertEqual(parse_admin_retention_config({}), (365, 10))
