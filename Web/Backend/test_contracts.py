@@ -792,6 +792,27 @@ class AdminApiContracts(ContractTestBase):
         self.assertEqual(current_account.status_code, 409)
         self.assertIn("current session account", current_account.get_json()["error"])
 
+    def test_disabled_database_admin_cannot_fall_back_to_config_credentials(self):
+        from services.auth_service import create_user
+
+        config_admin, error = create_user(marketplace_app._cache, "admin", "database-secret", role="admin")
+        self.assertIsNone(error)
+        self.assertIsNotNone(config_admin)
+        second_admin, error = create_user(marketplace_app._cache, "secondadmin", "secret2", role="admin")
+        self.assertIsNone(error)
+        self.assertIsNotNone(second_admin)
+
+        disabled = self.client.post(
+            f"/api/admin/users/{config_admin['id']}/disable",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(disabled.status_code, 200)
+
+        fallback_login = self.client.post("/api/auth/login", json={
+            "username": "admin", "password": "secret",
+        })
+        self.assertEqual(fallback_login.status_code, 401)
+
     def test_docs_status_returns_build_info(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)

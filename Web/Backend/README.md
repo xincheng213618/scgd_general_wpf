@@ -155,6 +155,9 @@ no inbound port or arbitrary command channel is opened.
 | POST | `/api/admin/users/<id>/disable` | Disable an account and invalidate its next authenticated request |
 
 The current session account and the last active administrator cannot be disabled.
+When a database account has the same username as the legacy `upload_auth`
+administrator, its database status is authoritative and cannot be bypassed by
+the configuration credential fallback.
 
 ### Copilot Desktop Sync
 

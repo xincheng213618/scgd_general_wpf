@@ -192,6 +192,21 @@ def get_user_by_id(cache: CacheManager, user_id: int) -> dict[str, Any] | None:
         db.close()
 
 
+def get_user_by_username(cache: CacheManager, username: str) -> dict[str, Any] | None:
+    """Return a database account regardless of active state, without its hash."""
+    db = cache.get_db()
+    try:
+        row = db.execute(
+            "SELECT * FROM users WHERE lower(username) = lower(?)",
+            (normalize_username(username),),
+        ).fetchone()
+        return _user_payload(row) if row else None
+    except Exception:
+        return None
+    finally:
+        db.close()
+
+
 def set_user_active(
     cache: CacheManager,
     user_id: int,

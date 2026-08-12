@@ -148,12 +148,14 @@ def _redirect_for_role(next_url: str, payload: dict[str, Any]) -> str:
 
 def _login(username: str, password: str) -> dict[str, Any] | None:
     ctx = _get_ctx()
+    database_user_exists = False
 
     try:
-        from services.auth_service import verify_user_credentials
+        from services.auth_service import get_user_by_username, verify_user_credentials
         user = verify_user_credentials(ctx.cache, username, password)
         if user:
             return _set_login_session(user)
+        database_user_exists = get_user_by_username(ctx.cache, username) is not None
     except Exception:
         pass
 
@@ -161,6 +163,7 @@ def _login(username: str, password: str) -> dict[str, Any] | None:
     if (
         expected_username
         and expected_password
+        and not database_user_exists
         and hmac.compare_digest(username, expected_username)
         and hmac.compare_digest(password, expected_password)
     ):
