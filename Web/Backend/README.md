@@ -228,6 +228,7 @@ category. The deployment writer keeps 500 valid records by default.
 |--------|----------|-------------|
 | GET | `/api/admin/stats/overview` | Download, index, and today's traffic summary |
 | GET | `/api/admin/stats/traffic?days=30&limit=10` | Daily traffic, top routes, client classes, 4xx/5xx breakdown, response volume, and recorder health |
+| GET | `/api/admin/perf/summary` | Process-local slow requests plus recent slow or failed scheduler runs |
 
 `days` accepts `1..365`; `limit` accepts `1..100`. Rates and client shares are
 percentages in the range `0..100`. Response volume is based only on the existing
@@ -243,6 +244,14 @@ Schema migration v8 records when the reporting calendar changes from the old
 UTC boundary. New traffic and `downloadsToday` use the configured reporting
 offset; existing daily aggregates remain unchanged and are exposed through the
 summary's legacy-calendar metadata instead of being guessed into adjacent days.
+
+The performance summary is intentionally a lightweight diagnostic companion to
+the aggregate traffic report, not a second analytics store. Slow requests are
+sanitized to method, route path, status, duration, and UTC occurrence time, then
+kept in a bounded 100-entry process-local buffer. The response exposes the
+active threshold, process start time, and buffer usage; the buffer resets
+whenever the Web process restarts. Slow scheduler runs remain sourced from the
+existing job history.
 
 `summary.uniqueVisitorDays` is the sum of each day's unique visitors (visitor-days),
 not a cross-day unique-person count, because the privacy identifier rotates every
@@ -479,6 +488,7 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 | `db/schema_version.py` | Schema version tracking and migrations |
 | `routes/admin_api.py` | Admin REST API (cache, index, jobs, audit, deployments, keys, perf) |
 | `services/deployment_history.py` | Sanitized deployment-history query and pagination |
+| `services/performance_observability.py` | Bounded slow-request samples and performance-summary shaping |
 | `ports/operations_support.py` / `db/repositories/operations_support.py` | Atomic Operations support-session persistence boundary |
 | `routes/frontend_spa.py` | React SPA static hosting and `/admin` auth gate |
 | `routes/pages.py` | Public site-data and download APIs |

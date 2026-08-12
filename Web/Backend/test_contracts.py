@@ -1169,6 +1169,11 @@ class AdminApiContracts(ContractTestBase):
         resp = self.client.get("/api/admin/perf/summary", headers=self.basic_auth())
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
+        self.assertRegex(data["generated_at"], r"\+00:00$")
+        self.assertRegex(data["process_started_at"], r"\+00:00$")
+        self.assertEqual(data["threshold_ms"], 500)
+        self.assertGreaterEqual(data["request_buffer_count"], 0)
+        self.assertEqual(data["request_buffer_capacity"], 100)
         self.assertIn("slow_requests", data)
         self.assertIn("slow_jobs", data)
 

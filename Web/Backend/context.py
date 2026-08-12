@@ -9,11 +9,13 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
 from db_cache import CacheManager
 from services.auth_policy import AuthPolicy
+from services.performance_observability import DEFAULT_SLOW_REQUEST_THRESHOLD_MS
 from services.request_context import RequestContext
 
 
@@ -69,7 +71,8 @@ class MarketplaceContext:
 
     # Slow request tracking
     slow_requests: list = field(default_factory=list)
-    slow_request_threshold_ms: int = 500
+    slow_request_threshold_ms: int = DEFAULT_SLOW_REQUEST_THRESHOLD_MS
+    process_started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     @property
     def storage(self) -> Path:

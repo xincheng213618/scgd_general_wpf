@@ -154,6 +154,24 @@ export interface JobRun {
   error?: string
 }
 
+export interface SlowRequestSample {
+  recorded_at: string
+  method: string
+  path: string
+  status: number
+  duration_ms: number
+}
+
+export interface PerformanceSummary {
+  generated_at: string
+  process_started_at: string
+  threshold_ms: number
+  request_buffer_count: number
+  request_buffer_capacity: number
+  slow_requests: SlowRequestSample[]
+  slow_jobs: JobRun[]
+}
+
 export interface ScheduledJob {
   id: string
   name: string

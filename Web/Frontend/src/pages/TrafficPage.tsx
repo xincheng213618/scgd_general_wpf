@@ -3,8 +3,16 @@ import { Alert, Button, Card, Col, Row, Select, Skeleton, Space, Statistic, Tabl
 import type { ColumnsType } from 'antd/es/table'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { getTrafficStats } from '../services/admin'
-import type { TrafficClientStats, TrafficDayStats, TrafficRouteStats, TrafficStatsResponse } from '../types/admin'
+import { getPerformanceSummary, getTrafficStats } from '../services/admin'
+import type {
+  JobRun,
+  PerformanceSummary,
+  SlowRequestSample,
+  TrafficClientStats,
+  TrafficDayStats,
+  TrafficRouteStats,
+  TrafficStatsResponse,
+} from '../types/admin'
 import { humanSize, shortDate } from '../utils/format'
 
 const dayOptions = [
@@ -124,11 +132,47 @@ const clientColumns: ColumnsType<TrafficClientStats> = [
   },
 ]
 
+function httpStatus(value: number) {
+  return <Tag color={value >= 500 ? 'red' : value >= 400 ? 'gold' : 'green'}>{value}</Tag>
+}
+
+function jobStatus(value: string) {
+  const color = value === 'error' ? 'red' : value === 'success' ? 'green' : value === 'running' ? 'blue' : 'default'
+  return <Tag color={color}>{value || 'unknown'}</Tag>
+}
+
+const slowRequestColumns: ColumnsType<SlowRequestSample> = [
+  { title: '发生时间', dataIndex: 'recorded_at', width: 150, render: shortDate },
+  { title: '方法', dataIndex: 'method', width: 84, render: (value) => <Tag>{value}</Tag> },
+  { title: '路径', dataIndex: 'path', render: (value) => <Typography.Text code>{value}</Typography.Text> },
+  { title: '状态', dataIndex: 'status', width: 80, align: 'right', render: httpStatus },
+  { title: '耗时', dataIndex: 'duration_ms', width: 100, align: 'right', render: milliseconds },
+]
+
+const slowJobColumns: ColumnsType<JobRun> = [
+  { title: '开始时间', dataIndex: 'started_at', width: 150, render: shortDate },
+  { title: '任务', dataIndex: 'job_id', render: (value) => <Typography.Text code>{value}</Typography.Text> },
+  { title: '状态', dataIndex: 'status', width: 90, render: jobStatus },
+  { title: '耗时', dataIndex: 'duration_ms', width: 100, align: 'right', render: milliseconds },
+  {
+    title: '结果',
+    key: 'result',
+    render: (_, record) => (
+      <Typography.Text type={record.error ? 'danger' : 'secondary'} ellipsis={{ tooltip: record.error || record.summary }}>
+        {record.error || record.summary || '-'}
+      </Typography.Text>
+    ),
+  },
+]
+
 export function TrafficPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [data, setData] = useState<TrafficStatsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [performance, setPerformance] = useState<PerformanceSummary | null>(null)
+  const [performanceLoading, setPerformanceLoading] = useState(true)
+  const [performanceError, setPerformanceError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
   const days = validDays(searchParams.get('days'))
 
@@ -139,6 +183,8 @@ export function TrafficPage() {
       if (!mounted) return
       setLoading(true)
       setError('')
+      setPerformanceLoading(true)
+      setPerformanceError('')
     })
     getTrafficStats(days, 10, controller.signal)
       .then((payload) => {
@@ -149,6 +195,16 @@ export function TrafficPage() {
       })
       .finally(() => {
         if (mounted) setLoading(false)
+      })
+    getPerformanceSummary(controller.signal)
+      .then((payload) => {
+        if (mounted) setPerformance(payload)
+      })
+      .catch((requestError) => {
+        if (mounted) setPerformanceError(requestError instanceof Error ? requestError.message : '性能诊断加载失败')
+      })
+      .finally(() => {
+        if (mounted) setPerformanceLoading(false)
       })
     return () => {
       mounted = false
@@ -195,7 +251,7 @@ export function TrafficPage() {
                 setSearchParams(next)
               }}
             />
-            <Button icon={<ReloadOutlined />} loading={loading} onClick={() => setReloadKey((key) => key + 1)}>
+            <Button icon={<ReloadOutlined />} loading={loading || performanceLoading} onClick={() => setReloadKey((key) => key + 1)}>
               刷新
             </Button>
           </Space>
@@ -259,6 +315,63 @@ export function TrafficPage() {
             {data.recorder.capacity !== undefined && <Tag>缓冲容量 {data.recorder.capacity}</Tag>}
             {data.recorder.lastFlushAt && <Tag>最近落盘 {shortDate(data.recorder.lastFlushAt)}</Tag>}
           </Space>
+        </Space>
+      </Card>
+
+      <Card
+        title="实时慢事件"
+        loading={performanceLoading && !performance}
+        extra={performance && (
+          <Space wrap>
+            <Tag>慢请求阈值 {milliseconds(performance.threshold_ms)}</Tag>
+            <Tag color={performance.request_buffer_count > 0 ? 'gold' : 'green'}>
+              进程缓冲 {performance.request_buffer_count}/{performance.request_buffer_capacity}
+            </Tag>
+            <Tag>采样于 {shortDate(performance.generated_at)}</Tag>
+            <Tag>进程启动 {shortDate(performance.process_started_at)}</Tag>
+          </Space>
+        )}
+      >
+        <Space direction="vertical" size={12} className="page-stack">
+          <Typography.Paragraph type="secondary">
+            这里复用当前 Web 进程的有界慢请求缓冲和既有任务历史；请求样本会在服务重启后清空，不会持久化原始 IP、查询参数或请求头。
+          </Typography.Paragraph>
+          {performanceError && (
+            <Alert
+              type="warning"
+              showIcon
+              message={performance ? '性能诊断刷新失败，当前展示上一次成功结果' : '性能诊断暂不可用'}
+              description={performanceError}
+            />
+          )}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} xxl={14}>
+              <Typography.Title level={4}>慢请求</Typography.Title>
+              <Table
+                rowKey={(record) => `${record.recorded_at}:${record.method}:${record.path}`}
+                size="small"
+                loading={performanceLoading}
+                columns={slowRequestColumns}
+                dataSource={performance ? [...performance.slow_requests].reverse() : []}
+                pagination={false}
+                locale={{ emptyText: '当前服务进程尚未记录慢请求' }}
+                scroll={{ x: 760 }}
+              />
+            </Col>
+            <Col xs={24} xxl={10}>
+              <Typography.Title level={4}>慢任务或失败任务</Typography.Title>
+              <Table
+                rowKey="id"
+                size="small"
+                loading={performanceLoading}
+                columns={slowJobColumns}
+                dataSource={performance?.slow_jobs || []}
+                pagination={false}
+                locale={{ emptyText: '最近任务运行正常' }}
+                scroll={{ x: 720 }}
+              />
+            </Col>
+          </Row>
         </Space>
       </Card>
 

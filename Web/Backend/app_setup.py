@@ -34,6 +34,10 @@ from db_cache import (
     CacheManager,
 )
 from context import MarketplaceContext
+from services.performance_observability import (
+    SLOW_REQUEST_BUFFER_CAPACITY,
+    record_slow_request,
+)
 from storage_paths import (
     is_safe_id, is_safe_version,
     normalize_relative_path, sanitize_filename,
@@ -270,12 +274,13 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
             duration_ms = int((_time.monotonic() - start) * 1000)
             if duration_ms >= ctx.slow_request_threshold_ms:
                 print(f"[slow] {request.method} {request.path} → {response.status_code} ({duration_ms}ms)")
-                ctx.slow_requests.append({
-                    "method": request.method, "path": request.path,
-                    "status": response.status_code, "duration_ms": duration_ms,
-                })
-                if len(ctx.slow_requests) > 100:
-                    ctx.slow_requests.pop(0)
+                record_slow_request(
+                    ctx.slow_requests,
+                    method=request.method,
+                    path=request.path,
+                    status=response.status_code,
+                    duration_ms=duration_ms,
+                )
             if access_recorder is not None:
                 try:
                     from services.access_analytics import (
@@ -448,6 +453,9 @@ def register_all_blueprints(app, ctx, services, helpers):
         human_size=human_size,
         get_slow_requests=lambda: ctx.slow_requests,
         get_access_recorder_status=helpers["access_recorder"].status,
+        slow_request_threshold_ms=ctx.slow_request_threshold_ms,
+        slow_request_buffer_capacity=SLOW_REQUEST_BUFFER_CAPACITY,
+        process_started_at=ctx.process_started_at,
     ))
     register_copilot_config_api_routes(app, CopilotConfigApiContext(
         cache=cache,

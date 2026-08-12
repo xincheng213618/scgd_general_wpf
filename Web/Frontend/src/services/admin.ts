@@ -10,6 +10,7 @@ import type {
   DocsStatus,
   DeploymentHistoryResponse,
   PublishIntegrityReport,
+  PerformanceSummary,
   ScheduledJob,
   TrafficStatsResponse,
   UserAccount,
@@ -23,6 +24,10 @@ export function getAdminStats() {
 export function getTrafficStats(days: number, limit = 10, signal?: AbortSignal) {
   const search = new URLSearchParams({ days: String(days), limit: String(limit) })
   return getJson<TrafficStatsResponse>(`/api/admin/stats/traffic?${search.toString()}`, signal)
+}
+
+export function getPerformanceSummary(signal?: AbortSignal) {
+  return getJson<PerformanceSummary>('/api/admin/perf/summary', signal)
 }
 
 export function getCacheStatus() {

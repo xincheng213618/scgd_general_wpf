@@ -45,6 +45,11 @@ from ports.jobs import JobRepository
 from routes.request_context import current_request_context, set_authenticated_request_context
 from services.auth_policy import AuthPolicy
 from services.deployment_history import query_deployment_history
+from services.performance_observability import (
+    DEFAULT_SLOW_REQUEST_THRESHOLD_MS,
+    SLOW_REQUEST_BUFFER_CAPACITY,
+    build_performance_summary,
+)
 from services.request_context import RequestContext
 
 
@@ -104,6 +109,9 @@ class AdminApiContext:
     human_size: Callable[[int], str]
     get_slow_requests: Callable[[], list[dict[str, Any]]] | None = None
     get_access_recorder_status: Callable[[], dict[str, Any]] | None = None
+    slow_request_threshold_ms: int = DEFAULT_SLOW_REQUEST_THRESHOLD_MS
+    slow_request_buffer_capacity: int = SLOW_REQUEST_BUFFER_CAPACITY
+    process_started_at: datetime | None = None
 
 
 admin_api = Blueprint("admin_api", __name__, url_prefix="/api/admin")
@@ -1006,21 +1014,13 @@ def _actor_id() -> str:
 def perf_summary():
     ctx = _get_ctx()
     try:
-        # Recent slow requests from in-memory buffer
-        slow_requests = []
-        if ctx.get_slow_requests:
-            slow_requests = ctx.get_slow_requests()[-20:]
-
-        # Recent slow job runs
-        slow_jobs = []
-        for r in ctx.jobs.recent_runs(20):
-            if r.get("duration_ms", 0) >= 1000 or r.get("status") == "error":
-                slow_jobs.append(r)
-
-        return jsonify({
-            "slow_requests": slow_requests,
-            "slow_jobs": slow_jobs,
-            "threshold_ms": 500,
-        })
+        slow_requests = ctx.get_slow_requests() if ctx.get_slow_requests else []
+        return jsonify(build_performance_summary(
+            slow_requests=slow_requests,
+            recent_job_runs=ctx.jobs.recent_runs(20),
+            threshold_ms=ctx.slow_request_threshold_ms,
+            buffer_capacity=ctx.slow_request_buffer_capacity,
+            process_started_at=ctx.process_started_at,
+        ))
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
