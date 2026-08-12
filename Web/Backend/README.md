@@ -45,12 +45,15 @@ unchanged for legacy consumers:
 | `GET /api/site/changelog?view=compact&page=1&page_size=20` | Latest version plus one bounded rendered changelog page; 5–50 releases per page |
 | `GET /api/site/releases?view=compact&page=1&page_size=100&android_page=1&android_page_size=100` | Independently paged Windows and Android archives |
 | `GET /api/plugins?Page=1&PageSize=20` | Paged plugin summaries plus the complete category filter list, so the web page needs one catalog request |
+| `GET /api/plugins/<id>?view=compact&archive_page=1&archive_page_size=20` | Web detail metadata and rendered docs plus one bounded, order-preserving History page; raw Markdown is omitted |
 | `GET /api/plugins/<id>?view=update` | Desktop update metadata without README or per-version changelog duplication |
 
 Windows filters (`major_minor`, `branch`, `kind`, and `era`) apply before exact
 counts and pagination. `page_size` and `android_page_size` accept `20..200`.
 Each returned group reports its full filtered `visible_count` and the current
 slice's `page_item_count`; no group repeats an owning `items` collection.
+Plugin detail archive pages accept 5–100 items. The default full detail and
+desktop `view=update` contracts remain unchanged for existing clients.
 
 ## Quick Start
 

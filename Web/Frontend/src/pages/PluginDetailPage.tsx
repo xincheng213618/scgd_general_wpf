@@ -8,10 +8,10 @@ import {
   HistoryOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons'
-import { Alert, Avatar, Button, Descriptions, Skeleton, Space, Table, Tabs, Tag, Typography } from 'antd'
+import { Alert, Avatar, Button, Descriptions, Pagination, Skeleton, Space, Table, Tabs, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { getPluginDetail } from '../services/site'
 import type { PluginDetail, PluginVersion } from '../types/site'
 import { humanSize, shortDate } from '../utils/format'
@@ -66,7 +66,14 @@ function versionColumns(pluginId: string): ColumnsType<PluginVersion> {
   ]
 }
 
-function VersionTable({ pluginId, versions }: { pluginId: string; versions: PluginVersion[] }) {
+const archivePageSize = 20
+
+function positivePage(value: string | null) {
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1
+}
+
+function VersionTable({ pluginId, versions, loading = false }: { pluginId: string; versions: PluginVersion[]; loading?: boolean }) {
   if (!versions.length) {
     return (
       <div className="plugin-empty-state compact">
@@ -91,14 +98,19 @@ function VersionTable({ pluginId, versions }: { pluginId: string; versions: Plug
       rowKey={(row) => `${row.source}-${row.version}`}
       columns={versionColumns(pluginId)}
       dataSource={versions}
-      pagination={versions.length > 8 ? { pageSize: 8 } : false}
+      loading={loading}
+      pagination={false}
       className="plugin-version-table"
+      scroll={{ x: 680 }}
     />
   )
 }
 
 export function PluginDetailPage() {
   const { pluginId = '' } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedArchivePage = positivePage(searchParams.get('archive_page'))
+  const searchKey = searchParams.toString()
   const [plugin, setPlugin] = useState<PluginDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -110,8 +122,13 @@ export function PluginDetailPage() {
       if (!mounted) return
       setLoading(true)
       setError('')
+      setPlugin((current) => current?.pluginId === pluginId ? current : null)
     })
-    getPluginDetail(pluginId, controller.signal)
+    const nextParams = new URLSearchParams(searchKey)
+    getPluginDetail(pluginId, {
+      archivePage: positivePage(nextParams.get('archive_page')),
+      archivePageSize,
+    }, controller.signal)
       .then((payload) => {
         if (mounted) setPlugin(payload)
       })
@@ -125,18 +142,27 @@ export function PluginDetailPage() {
       mounted = false
       controller.abort()
     }
-  }, [pluginId])
+  }, [pluginId, searchKey])
 
-  if (loading) return <Skeleton active paragraph={{ rows: 8 }} />
-  if (error) return <Alert type="error" message={error} />
+  if (loading && !plugin) return <Skeleton active paragraph={{ rows: 8 }} />
+  if (error && !plugin) return <Alert type="error" message={error} />
   if (!plugin) return null
 
-  const versions = [...(plugin.versions || []), ...(plugin.archivedVersions || [])]
+  const currentVersions = plugin.versions || []
+  const archivedVersions = plugin.archivedVersions || []
   const docs = plugin.relatedDocs || []
   const latestHref = plugin.latestVersion ? `/api/packages/${plugin.pluginId}/${plugin.latestVersion}` : undefined
 
+  const updateArchivePage = (page: number) => {
+    const next = new URLSearchParams(searchParams)
+    if (page > 1) next.set('archive_page', String(page))
+    else next.delete('archive_page')
+    setSearchParams(next)
+  }
+
   return (
     <Space direction="vertical" size={16} className="page-stack">
+      {error && <Alert type="error" message={error} showIcon />}
       <section className="plugin-detail-hero">
         <div className="plugin-detail-main">
           <Avatar className="plugin-detail-avatar" shape="square" size={72} src={plugin.iconUrl || undefined} icon={<AppstoreOutlined />} />
@@ -240,7 +266,37 @@ export function PluginDetailPage() {
             {
               key: 'versions',
               label: <Space><CloudDownloadOutlined />版本下载</Space>,
-              children: <VersionTable pluginId={plugin.pluginId} versions={versions} />,
+              children: (
+                <Space direction="vertical" size={20} className="wide-space">
+                  <div>
+                    <Typography.Title level={4}>当前发布</Typography.Title>
+                    <Typography.Paragraph type="secondary">插件目录中的当前可下载版本。</Typography.Paragraph>
+                    <VersionTable pluginId={plugin.pluginId} versions={currentVersions} loading={loading} />
+                  </div>
+                  {(plugin.historicalPackageCount || 0) > 0 && (
+                    <div>
+                      <Typography.Title level={4}>History 历史版本</Typography.Title>
+                      <Typography.Paragraph type="secondary">
+                        当前页 {archivedVersions.length} 个，历史共 {plugin.historicalPackageCount} 个。
+                      </Typography.Paragraph>
+                      <VersionTable pluginId={plugin.pluginId} versions={archivedVersions} loading={loading} />
+                      {plugin.archivedTotalPages > 1 && (
+                        <div className="table-pager">
+                          <Pagination
+                            current={plugin.archivedPage || requestedArchivePage}
+                            pageSize={plugin.archivedPageSize || archivePageSize}
+                            total={plugin.historicalPackageCount || 0}
+                            showSizeChanger={false}
+                            disabled={loading}
+                            showTotal={(total, range) => `${range[0]}-${range[1]} / ${total}`}
+                            onChange={updateArchivePage}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Space>
+              ),
             },
             {
               key: 'readme',

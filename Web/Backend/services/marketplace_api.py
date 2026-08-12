@@ -109,6 +109,8 @@ class MarketplaceCatalogService:
         request_context: RequestContext,
         *,
         view: str = "full",
+        archive_page: int = 1,
+        archive_page_size: int = 20,
     ) -> dict[str, Any] | None:
         info = self._data.get_plugin_info(
             plugin_id,
@@ -122,6 +124,9 @@ class MarketplaceCatalogService:
             info,
             icon_url_builder=self.icon_url,
             render_markdown=self._render_markdown,
+            include_raw_documents=view != "compact",
+            archive_page=archive_page if view == "compact" else None,
+            archive_page_size=archive_page_size,
         )
 
     def latest_versions(self, plugin_ids: list[str]) -> dict[str, str]:

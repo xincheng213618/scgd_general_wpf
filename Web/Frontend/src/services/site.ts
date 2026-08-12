@@ -100,8 +100,19 @@ export function getPlugins(params: {
   )
 }
 
-export function getPluginDetail(pluginId: string, signal?: AbortSignal) {
-  return getJson<PluginDetail>(`/api/plugins/${encodeURIComponent(pluginId)}`, signal)
+export function getPluginDetail(
+  pluginId: string,
+  params: { archivePage?: number; archivePageSize?: number } = {},
+  signal?: AbortSignal,
+) {
+  return getJson<PluginDetail>(
+    `/api/plugins/${encodeURIComponent(pluginId)}${queryString({
+      view: 'compact',
+      archive_page: params.archivePage,
+      archive_page_size: params.archivePageSize,
+    })}`,
+    signal,
+  )
 }
 
 function getXhrErrorMessage(response: unknown, fallback: string) {

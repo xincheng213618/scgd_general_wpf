@@ -291,6 +291,11 @@ export interface PluginDetail extends PluginSummary {
   historicalPackageCount?: number
   versions: PluginVersion[]
   archivedVersions: PluginVersion[]
+  archivedPage: number
+  archivedPageSize: number
+  archivedTotalPages: number
+  archivedHasPrevious: boolean
+  archivedHasNext: boolean
   requiresVersion?: string
   url?: string
 }

@@ -695,6 +695,84 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertNotIn("changeLog", payload["versions"][0])
         self.assertNotIn("readme", payload)
 
+    def test_plugin_web_detail_view_paginates_history_and_preserves_order(self):
+        plugin_id = "PagedDetailPlugin"
+        self._create_plugin_archive_with_metadata(
+            plugin_id,
+            "2.0.0",
+            manifest_text=(
+                '{"id":"PagedDetailPlugin","name":"Paged Detail Plugin",'
+                '"description":"compact web detail","requires":"1.4.12.0"}'
+            ),
+            readme_text="# Paged detail readme",
+            changelog_text="## 2.0.0\n- paged detail changelog",
+        )
+        plugin_dir = self.storage / "Plugins" / plugin_id
+        for index in range(25):
+            (plugin_dir / f"{plugin_id}-1.0.{index}.cvxp").write_bytes(
+                f"history-{index}".encode("utf-8")
+            )
+
+        full_response = self.client.get(f"/api/plugins/{plugin_id}")
+        compact_response = self.client.get(
+            f"/api/plugins/{plugin_id}?view=compact&archive_page=2&archive_page_size=10"
+        )
+        clamped_response = self.client.get(
+            f"/api/plugins/{plugin_id}?view=compact&archive_page=999&archive_page_size=10"
+        )
+
+        self.assertEqual(full_response.status_code, 200)
+        self.assertEqual(compact_response.status_code, 200)
+        self.assertEqual(clamped_response.status_code, 200)
+        full = full_response.get_json()
+        compact = compact_response.get_json()
+        clamped = clamped_response.get_json()
+        self.assertEqual(compact["versions"], full["versions"])
+        self.assertEqual(compact["archivedVersions"], full["archivedVersions"][10:20])
+        self.assertEqual(compact["historicalPackageCount"], 25)
+        self.assertEqual(compact["archivedPage"], 2)
+        self.assertEqual(compact["archivedPageSize"], 10)
+        self.assertEqual(compact["archivedTotalPages"], 3)
+        self.assertTrue(compact["archivedHasPrevious"])
+        self.assertTrue(compact["archivedHasNext"])
+        self.assertEqual(compact["readmeHtml"], full["readmeHtml"])
+        self.assertEqual(compact["changelogHtml"], full["changelogHtml"])
+        self.assertNotIn("readme", compact)
+        self.assertNotIn("changelog", compact)
+        self.assertLess(len(compact_response.data), len(full_response.data))
+        self.assertEqual(clamped["archivedPage"], 3)
+        self.assertEqual(clamped["archivedVersions"], full["archivedVersions"][20:])
+        self.assertTrue(clamped["archivedHasPrevious"])
+        self.assertFalse(clamped["archivedHasNext"])
+
+    def test_plugin_detail_compact_paging_validation_does_not_change_full_contract(self):
+        self._create_plugin("PagingCompatibilityPlugin", "1.0.0")
+
+        full_response = self.client.get(
+            "/api/plugins/PagingCompatibilityPlugin?archive_page_size=invalid"
+        )
+        compact_response = self.client.get(
+            "/api/plugins/PagingCompatibilityPlugin?view=compact&archive_page_size=invalid"
+        )
+
+        self.assertEqual(full_response.status_code, 200)
+        self.assertEqual(compact_response.status_code, 400)
+        self.assertIn("readme", full_response.get_json())
+
+    def test_plugin_detail_frontend_uses_compact_history_pagination(self):
+        frontend_root = Path(__file__).resolve().parents[1] / "Frontend" / "src"
+        page_source = (frontend_root / "pages" / "PluginDetailPage.tsx").read_text(
+            encoding="utf-8"
+        )
+        service_source = (frontend_root / "services" / "site.ts").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("archive_page", page_source)
+        self.assertIn("plugin.archivedTotalPages", page_source)
+        self.assertIn("view: 'compact'", service_source)
+        self.assertIn("archive_page_size", service_source)
+
     def test_plugin_detail_reuses_cached_package_hashes_when_detail_cache_is_cleared(self):
         self._create_plugin_archive_with_metadata(
             "CachedHashPlugin",

@@ -47,6 +47,16 @@ loads with one request instead of immediately repeating the catalog read via
 `/api/plugins/categories`; that legacy endpoint remains available to existing
 clients.
 
+Plugin detail history now uses the compact Web projection and server paging.
+Against the real 182-entry ProjectARVRPro history, the first 20-entry response
+fell from 130,868 to 47,763 bytes (63.5%); gzip fell from 31,145 to 16,878
+bytes (45.8%). Common metadata, current versions, rendered documents, and the
+first archive slice were byte-for-byte value equivalent, including archive
+ordering; only unused raw Markdown and later archive pages were omitted. In an
+isolated process with an empty temporary index, application import cost 252 ms
+and the first fallback scan cost 5.85 s; after that readiness work, the compact
+request median was 184 ms with 191 ms p95 over 15 reads.
+
 Public initial module-preload JavaScript fell from about 681.8 KiB to 233.5 KiB
 gzip (about 65.8%). Admin pages, Pro Components, traffic analytics, and DOMPurify
 are route chunks instead of public-entry dependencies. The 2.34 MiB decorative

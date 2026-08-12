@@ -128,10 +128,22 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
         """Get detailed plugin information."""
         if not ctx.services.storage.is_safe_id(plugin_id):
             abort(400, description="Invalid plugin_id")
+        view = request.args.get("view", "full").strip().lower()
+        archive_page = 1
+        archive_page_size = 20
+        if view == "compact":
+            archive_page = _parse_int_arg(
+                "archive_page", "archivePage", default=1, minimum=1, maximum=100000,
+            )
+            archive_page_size = _parse_int_arg(
+                "archive_page_size", "archivePageSize", default=20, minimum=5, maximum=100,
+            )
         info = ctx.services.catalog.detail(
             plugin_id,
             ctx.request_context_factory(),
-            view=request.args.get("view", "full").strip().lower(),
+            view=view,
+            archive_page=archive_page,
+            archive_page_size=archive_page_size,
         )
         if not info:
             return jsonify({"error": "Plugin not found"}), 404
