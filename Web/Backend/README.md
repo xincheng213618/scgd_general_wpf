@@ -44,6 +44,7 @@ unchanged for legacy consumers:
 | `GET /api/site/home?view=compact` | Home-only release counters, previews, update/tool summaries, recent changes, and docs |
 | `GET /api/site/changelog?view=compact&page=1&page_size=20` | Latest version plus one bounded rendered changelog page; 5–50 releases per page |
 | `GET /api/site/releases?view=compact&page=1&page_size=100&android_page=1&android_page_size=100` | Independently paged Windows and Android archives |
+| `GET /api/android/update` | Latest fixed-source Android APK metadata with size, SHA-256, and a bounded download URL |
 | `GET /api/plugins?Page=1&PageSize=20` | Paged plugin summaries plus the complete category filter list, so the web page needs one catalog request |
 | `GET /api/plugins/<id>?view=compact&archive_page=1&archive_page_size=20` | Web detail metadata and rendered docs plus one bounded, order-preserving History page; raw Markdown is omitted |
 | `GET /api/plugins/<id>?view=update` | Desktop update metadata without README or per-version changelog duplication |
@@ -556,6 +557,7 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 - `GET /download/<path>` — serves public artifacts directly from disk. Operational storage requires administrator authentication, while Transfer keeps its separate file-transfer authorization policy.
 - `GET /api/app/changelog` — reads `CHANGELOG.md` (single file read)
 - `GET /api/app/latest-version` — reads in-memory `LATEST_RELEASE` cache (warmed at startup, refreshed on upload)
+- `GET /api/android/update` — reads the latest indexed root APK and caches its SHA-256 by path, size, and modification time
 - `GET /api/health`, `GET /api/ready` — filesystem probes for liveness
 
 ### Scheduler signature checks (lightweight)

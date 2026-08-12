@@ -161,6 +161,59 @@ def api_site_releases():
     return jsonify(build_releases_page_context(app_info, **kwargs))
 
 
+@pages.route("/api/android/update")
+def api_android_update():
+    from services.android_update import build_android_update_manifest
+
+    payload = build_android_update_manifest(
+        _storage(),
+        _services().scan_app_release_artifacts(),
+        get_cache_entry=_ctx.get_cache_entry,
+        set_cache_entry=_ctx.set_cache_entry,
+    )
+    response = jsonify(payload)
+    response.headers["Cache-Control"] = "public, max-age=60"
+    return response
+
+
+@pages.route("/api/android/update/<version>/download")
+def api_android_update_download(version):
+    from services.android_update import resolve_android_release_file
+
+    if not _ctx.is_safe_version(version):
+        return jsonify({"error": "Invalid version format"}), 400
+    candidates = [
+        release
+        for release in _services().scan_app_release_artifacts()
+        if str(release.get("version", "")).strip() == version
+        and str(release.get("kind", "")).upper() == "APK"
+        and str(release.get("platform", "")).lower() == "android"
+        and str(release.get("source", "")).lower() == "current"
+    ]
+    if not candidates:
+        return jsonify({"error": f"Android release {version} not found"}), 404
+    best = max(candidates, key=lambda release: str(release.get("modified", "")))
+    try:
+        target = resolve_android_release_file(_storage(), best)
+    except FileNotFoundError:
+        return jsonify({"error": f"Android release {version} not found"}), 404
+    relative_path = target.relative_to(_storage().resolve()).as_posix()
+    return deliver_artifact(
+        _ctx.artifact_delivery,
+        target,
+        request_method=request.method,
+        event=ArtifactDownloadEvent(
+            artifact_type="android_application",
+            artifact_id="ColorVision-Android",
+            version=version,
+            relative_path=relative_path,
+        ),
+        download_name=target.name,
+        mimetype="application/vnd.android.package-archive",
+        max_age=300,
+    )
+
+
 @pages.route("/api/site/changelog")
 def api_site_changelog():
     request_context = current_request_context()
