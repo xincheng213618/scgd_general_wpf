@@ -46,13 +46,14 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
+    static final String EXTRA_START_TAB = "start_tab";
     private static final String HOME_URL = "http://xc213618.ddns.me:9998/";
     private static final int REQUEST_QR_SCAN = 1001;
     private static final int REQUEST_WEB_CAMERA_PERMISSION = 1002;
     private static final int REQUEST_AUDIO_PICK = 1003;
-    private static final int TAB_OPERATIONS = 0;
-    private static final int TAB_DOWNLOADS = 1;
-    private static final int TAB_SETTINGS = 2;
+    static final int TAB_OPERATIONS = 0;
+    static final int TAB_DOWNLOADS = 1;
+    static final int TAB_SETTINGS = 2;
 
     private FrameLayout root;
     private LinearLayout appShell;
@@ -381,7 +382,7 @@ public class MainActivity extends Activity {
         shell.setBackgroundColor(shellBackgroundColor());
         shell.addView(createTopBar(), new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                getStatusBarHeight() + dp(98)));
+                getStatusBarHeight() + dp(64)));
 
         shell.addView(setupContainer, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -390,7 +391,7 @@ public class MainActivity extends Activity {
 
         shell.addView(createBottomNav(), new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(78)));
+                dp(64)));
         return shell;
     }
 
@@ -398,7 +399,7 @@ public class MainActivity extends Activity {
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(dp(22), getStatusBarHeight() + dp(8), dp(18), dp(8));
+        bar.setPadding(dp(18), getStatusBarHeight() + dp(4), dp(14), dp(4));
         bar.setBackgroundColor(shellBackgroundColor());
 
         LinearLayout titleBlock = new LinearLayout(this);
@@ -409,14 +410,14 @@ public class MainActivity extends Activity {
         headerTitle = new TextView(this);
         headerTitle.setText("ColorVision");
         headerTitle.setTextColor(Color.rgb(21, 152, 204));
-        headerTitle.setTextSize(28);
+        headerTitle.setTextSize(23);
         headerTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         titleBlock.addView(headerTitle, matchWidthWrapParams());
 
         headerSubtitle = new TextView(this);
         headerSubtitle.setText("移动检测控制台");
         headerSubtitle.setTextColor(secondaryTextColor());
-        headerSubtitle.setTextSize(13);
+        headerSubtitle.setTextSize(12);
         titleBlock.addView(headerSubtitle, matchWidthWrapParams());
 
         ImageButton scanButton = makeTopIconButton(R.drawable.ic_qr_code_scanner_24);
@@ -424,11 +425,6 @@ public class MainActivity extends Activity {
         scanButton.setOnClickListener(v -> startQrScan());
         bar.addView(scanButton, topIconParams());
 
-        ImageButton addButton = makeTopIconButton(R.drawable.ic_add_circle_outline_24);
-        addButton.setContentDescription("打开固定下载站");
-        addButton.setImageResource(R.drawable.ic_home_24);
-        addButton.setOnClickListener(v -> showHomePage());
-        bar.addView(addButton, topIconParams());
         return bar;
     }
 
@@ -436,7 +432,7 @@ public class MainActivity extends Activity {
         LinearLayout nav = new LinearLayout(this);
         nav.setOrientation(LinearLayout.HORIZONTAL);
         nav.setGravity(Gravity.CENTER);
-        nav.setPadding(dp(16), dp(6), dp(16), dp(8));
+        nav.setPadding(dp(16), dp(3), dp(16), dp(4));
         nav.setBackgroundColor(bottomNavBackgroundColor());
         nav.setElevation(dp(10));
 
@@ -452,7 +448,7 @@ public class MainActivity extends Activity {
         item.setGravity(Gravity.CENTER);
         item.setOnClickListener(v -> {
             if (tab == TAB_OPERATIONS) {
-                showOperationsLanding(false);
+                showOperationsLanding(appPreferences.hasOperationsProfile());
             } else if (tab == TAB_DOWNLOADS) {
                 showHomePage();
             } else {
@@ -547,7 +543,10 @@ public class MainActivity extends Activity {
     }
 
     private void showInitialTab() {
-        int startTab = appPreferences.consumeStartTab(TAB_OPERATIONS);
+        int requestedTab = getIntent().getIntExtra(EXTRA_START_TAB, -1);
+        getIntent().removeExtra(EXTRA_START_TAB);
+        int startTab = requestedTab >= TAB_OPERATIONS && requestedTab <= TAB_SETTINGS
+                ? requestedTab : appPreferences.consumeStartTab(TAB_OPERATIONS);
         if (startTab == TAB_SETTINGS) {
             showProfileView();
             return;
@@ -558,6 +557,13 @@ public class MainActivity extends Activity {
         }
 
         showOperationsLanding(appPreferences.hasOperationsProfile());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        showInitialTab();
     }
 
     private void showSetupView() {
@@ -656,35 +662,25 @@ public class MainActivity extends Activity {
 
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(22), dp(28), dp(22), dp(30));
+        content.setPadding(dp(18), dp(18), dp(18), dp(24));
         scrollView.addView(content, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT,
                 ScrollView.LayoutParams.WRAP_CONTENT));
 
+        boolean paired = appPreferences.hasOperationsProfile();
         LinearLayout operationsCard = makeCard();
         content.addView(operationsCard, fullWidthCardParams());
-        operationsCard.addView(makeTitle("ColorVision 现场运维", 25), matchWidthWrapParams());
+        operationsCard.addView(makeTitle(paired ? "运维伴侣已就绪" : "连接运维电脑", 22), matchWidthWrapParams());
 
-        boolean paired = appPreferences.hasOperationsProfile();
         TextView status = makeBodyText(paired
-                ? "这台手机已安全配对。设备密钥和证书指纹会一直保留，打开应用时自动重新连接，无需重复扫码。"
+                ? "安全配对资料会持续保留，打开应用或临时断线后自动重连，无需重复扫码。"
                 : "扫描电脑端“选项 > 局域网控制”中的短时安全配对码。完成一次配对后，应用会保存设备密钥和证书指纹。 ");
-        status.setPadding(0, dp(10), 0, dp(8));
+        status.setPadding(0, dp(8), 0, dp(4));
         operationsCard.addView(status, matchWidthWrapParams());
 
-        Button operationsButton = makePrimaryButton(paired ? "进入现场运维" : "扫描并连接电脑");
+        Button operationsButton = makePrimaryButton(paired ? "打开运维伴侣" : "扫描并连接电脑");
         operationsButton.setOnClickListener(v -> openOperations());
         operationsCard.addView(operationsButton, fullWidthButtonParams());
-
-        LinearLayout downloadCard = makeCard();
-        content.addView(downloadCard, fullWidthCardParams());
-        downloadCard.addView(makeTitle("固定下载站", 19), matchWidthWrapParams());
-        TextView downloadText = makeBodyText("下载地址由应用固定管理，不需要填写或选择网址。");
-        downloadText.setPadding(0, dp(8), 0, dp(2));
-        downloadCard.addView(downloadText, matchWidthWrapParams());
-        Button downloadButton = makeSecondaryButton("打开下载站");
-        downloadButton.setOnClickListener(v -> showHomePage());
-        downloadCard.addView(downloadButton, fullWidthButtonParams());
 
         return scrollView;
     }

@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -50,6 +51,7 @@ import javax.net.ssl.SSLHandshakeException;
 public class OperationsActivity extends Activity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
     private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
+    private static final long CONNECTION_HEARTBEAT_MILLISECONDS = 30_000L;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -75,6 +77,8 @@ public class OperationsActivity extends Activity {
             loadLiveMonitor(false);
         }
     };
+    private final Handler connectionHeartbeatHandler = new Handler(Looper.getMainLooper());
+    private final Runnable connectionHeartbeat = this::runConnectionHeartbeat;
     private AppPreferences preferences;
     private OperationsApiClient client;
     private TextView title;
@@ -83,6 +87,8 @@ public class OperationsActivity extends Activity {
     private ProgressBar progress;
     private LinearLayout actions;
     private boolean dashboardVisible;
+    private boolean showingDashboardSummary;
+    private boolean connectionHeartbeatInFlight;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,54 +107,124 @@ public class OperationsActivity extends Activity {
     }
 
     private void createView() {
+        LinearLayout shell = new LinearLayout(this);
+        shell.setOrientation(LinearLayout.VERTICAL);
+        shell.setBackgroundColor(Color.rgb(245, 247, 250));
+
         ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(22), dp(20), dp(22), dp(28));
+        root.setPadding(dp(16), getStatusBarHeight() + dp(6), dp(16), dp(24));
         root.setBackgroundColor(Color.rgb(245, 247, 250));
         scroll.addView(root, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
 
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        root.addView(header, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(46)));
+
         Button back = new Button(this);
         back.setText("返回");
+        back.setTextSize(13);
+        back.setAllCaps(false);
+        back.setMinHeight(0);
+        back.setMinimumHeight(0);
+        back.setPadding(dp(8), 0, dp(8), 0);
         back.setOnClickListener(v -> finish());
-        root.addView(back, new LinearLayout.LayoutParams(dp(88), dp(44)));
+        header.addView(back, new LinearLayout.LayoutParams(dp(72), dp(40)));
 
         title = new TextView(this);
-        title.setText("ColorVision 现场运维");
-        title.setTextSize(25);
+        title.setText("ColorVision 运维伴侣");
+        title.setTextSize(22);
         title.setTextColor(Color.rgb(24, 35, 49));
-        title.setPadding(0, dp(20), 0, dp(6));
-        root.addView(title);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        title.setSingleLine(true);
+        title.setPadding(dp(12), 0, 0, 0);
+        header.addView(title, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
         state = new TextView(this);
-        state.setTextSize(15);
+        state.setTextSize(14);
         state.setTextColor(Color.rgb(58, 75, 92));
-        root.addView(state);
+        state.setPadding(dp(12), dp(8), dp(12), dp(8));
+        state.setBackgroundColor(Color.WHITE);
+        LinearLayout.LayoutParams stateParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        stateParams.setMargins(0, dp(8), 0, 0);
+        root.addView(state, stateParams);
 
         progress = new ProgressBar(this);
-        LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(dp(44), dp(44));
+        LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(dp(32), dp(32));
         progressParams.gravity = Gravity.CENTER_HORIZONTAL;
-        progressParams.setMargins(0, dp(24), 0, dp(16));
+        progressParams.setMargins(0, dp(8), 0, dp(4));
         root.addView(progress, progressParams);
 
         details = new TextView(this);
-        details.setTextSize(14);
+        details.setTextSize(13);
         details.setTextColor(Color.rgb(41, 53, 66));
-        details.setPadding(dp(16), dp(16), dp(16), dp(16));
+        details.setLineSpacing(0, 1.08f);
+        details.setPadding(dp(12), dp(10), dp(12), dp(10));
         details.setBackgroundColor(Color.WHITE);
         details.setTextIsSelectable(true);
-        root.addView(details, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        detailsParams.setMargins(0, dp(8), 0, 0);
+        root.addView(details, detailsParams);
 
         actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.VERTICAL);
         LinearLayout.LayoutParams actionsParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        actionsParams.setMargins(0, dp(18), 0, 0);
+        actionsParams.setMargins(0, dp(10), 0, 0);
         root.addView(actions, actionsParams);
 
-        setContentView(scroll);
+        shell.addView(scroll, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+        shell.addView(createBottomNavigation(), new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(60)));
+        setContentView(shell);
+    }
+
+    private LinearLayout createBottomNavigation() {
+        LinearLayout navigation = new LinearLayout(this);
+        navigation.setOrientation(LinearLayout.HORIZONTAL);
+        navigation.setGravity(Gravity.CENTER);
+        navigation.setPadding(dp(12), dp(3), dp(12), dp(3));
+        navigation.setBackgroundColor(Color.WHITE);
+        navigation.setElevation(dp(8));
+        navigation.addView(createBottomNavigationItem("运维", true, null),
+                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        navigation.addView(createBottomNavigationItem("下载站", false,
+                        v -> openMainTab(MainActivity.TAB_DOWNLOADS)),
+                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        navigation.addView(createBottomNavigationItem("设置", false,
+                        v -> openMainTab(MainActivity.TAB_SETTINGS)),
+                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        return navigation;
+    }
+
+    private TextView createBottomNavigationItem(String label, boolean selected, View.OnClickListener listener) {
+        TextView item = new TextView(this);
+        item.setText(label);
+        item.setTextSize(13);
+        item.setGravity(Gravity.CENTER);
+        item.setTextColor(selected ? Color.rgb(31, 111, 235) : Color.rgb(91, 105, 119));
+        item.setTypeface(Typeface.DEFAULT, selected ? Typeface.BOLD : Typeface.NORMAL);
+        item.setClickable(listener != null);
+        item.setFocusable(listener != null);
+        item.setOnClickListener(listener);
+        return item;
+    }
+
+    private void openMainTab(int tab) {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra(MainActivity.EXTRA_START_TAB, tab);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+        finish();
     }
 
     private void beginPairing(String rawPairing) {
@@ -236,93 +312,129 @@ public class OperationsActivity extends Activity {
         leaveSupportCenter();
         leaveLiveMonitor();
         dashboardVisible = true;
+        showingDashboardSummary = true;
         progress.setVisibility(View.GONE);
-        title.setText("现场运维概览");
-        state.setText("已通过设备密钥与 TLS 证书指纹验证");
-        details.setText("状态、性能、告警、消息通道和设备运行状态汇总可直接查看；显示/最小化窗口属于低风险审计操作。取消当前检测、固定 MQTT 恢复、ColorVision 干净重启、脱敏诊断包和单次主窗口快照只需手机明确确认；支持会话仍需电脑端同意。");
+        title.setText("ColorVision 运维伴侣");
+        state.setText("● 在线 · 安全通道已验证");
+        details.setText("正在读取 ColorVision 运行摘要…");
         actions.removeAllViews();
 
-        Button connectionCheck = new Button(this);
-        connectionCheck.setText("运行连接自检");
-        connectionCheck.setOnClickListener(v -> runConnectionSelfCheck());
-        actions.addView(connectionCheck, actionParams());
+        addDashboardSection("常用操作");
+        addDashboardActionRow(
+                dashboardButton("远程排障", v -> showTriageCenter()),
+                dashboardButton("持续观察", v -> showLiveMonitor()));
+        addDashboardActionRow(
+                dashboardButton("显示主窗口", v -> runWindowAction("show", "主窗口已显示")),
+                dashboardButton("最小化窗口", v -> confirmMinimizeWindow()));
+        addDashboardActionRow(
+                dashboardButton("重启 MQTT", v -> confirmRestartMqtt()),
+                dashboardButton("重启 ColorVision", v -> confirmRestartApplication()));
+        addDashboardActionRow(
+                dashboardButton("连接自检", v -> runConnectionSelfCheck()),
+                capabilityButton("刷新摘要", "/ops/v1/snapshot"));
 
-        Button triage = new Button(this);
-        triage.setText("打开远程排障中心");
-        triage.setOnClickListener(v -> showTriageCenter());
-        actions.addView(triage, actionParams());
+        addDashboardSection("状态与排障");
+        addDashboardActionRow(
+                capabilityButton("当前检测", "/ops/v1/flow/runtime"),
+                capabilityButton("设备概览", "/ops/v1/devices/health"));
+        addDashboardActionRow(
+                capabilityButton("服务健康", "/ops/v1/services/health"),
+                capabilityButton("消息通道", "/ops/v1/messaging/health"));
+        addDashboardActionRow(
+                capabilityButton("进程性能", "/ops/v1/diagnostics/performance"),
+                capabilityButton("当前告警", "/ops/v1/alerts"));
+        addDashboardActionRow(
+                capabilityButton("近期事件", "/ops/v1/diagnostics/recent-events"),
+                capabilityButton("诊断摘要", "/ops/v1/diagnostics/summary"));
 
-        Button liveMonitor = new Button(this);
-        liveMonitor.setText("持续观察（每 10 秒）");
-        liveMonitor.setOnClickListener(v -> showLiveMonitor());
-        actions.addView(liveMonitor, actionParams());
-
-        addAction("查看白名单服务健康", "/ops/v1/services/health");
-        addAction("查看消息通道健康", "/ops/v1/messaging/health");
-        Button restartMqtt = new Button(this);
-        restartMqtt.setText("重启 MQTT 消息服务");
-        restartMqtt.setOnClickListener(v -> confirmRestartMqtt());
-        actions.addView(restartMqtt, actionParams());
-        Button restartApplication = new Button(this);
-        restartApplication.setText("重启 ColorVision 应用");
-        restartApplication.setOnClickListener(v -> confirmRestartApplication());
-        actions.addView(restartApplication, actionParams());
-        addAction("查看检测设备状态概览", "/ops/v1/devices/health");
-        addAction("刷新运行状态", "/ops/v1/snapshot");
-        addAction("查看当前检测状态", "/ops/v1/flow/runtime");
-        addAction("查看进程性能快照", "/ops/v1/diagnostics/performance");
-        addAction("查看当前告警", "/ops/v1/alerts");
-        addAction("查看近期日志摘要", "/ops/v1/diagnostics/recent-events");
-        addAction("查看诊断摘要", "/ops/v1/diagnostics/summary");
-        addAction("查看近期远程操作记录", "/ops/v1/audit");
-
-        Button shareDiagnostics = new Button(this);
-        shareDiagnostics.setText("分享安全诊断摘要");
-        shareDiagnostics.setOnClickListener(v -> loadAndShareSafeDiagnostics());
-        actions.addView(shareDiagnostics, actionParams());
-
-        Button showWindow = new Button(this);
-        showWindow.setText("显示电脑主窗口");
-        showWindow.setOnClickListener(v -> runWindowAction("show", "主窗口已显示"));
-        actions.addView(showWindow, actionParams());
-
-        Button minimizeWindow = new Button(this);
-        minimizeWindow.setText("最小化电脑主窗口");
-        minimizeWindow.setOnClickListener(v -> confirmMinimizeWindow());
-        actions.addView(minimizeWindow, actionParams());
-
-        addAction("查看能力目录", "/ops/v1/capabilities");
-
-        Button jobs = new Button(this);
-        jobs.setText("作业与审批");
-        jobs.setOnClickListener(v -> showJobs());
-        actions.addView(jobs, actionParams());
-
-        Button diagnostic = new Button(this);
-        diagnostic.setText("生成并分享诊断包");
-        diagnostic.setOnClickListener(v -> confirmCreateDiagnosticJob());
-        actions.addView(diagnostic, actionParams());
-
-        Button windowSnapshot = new Button(this);
-        windowSnapshot.setText("采集并预览主窗口快照");
-        windowSnapshot.setOnClickListener(v -> confirmCreateWindowSnapshotJob());
-        actions.addView(windowSnapshot, actionParams());
-
-        Button receipt = new Button(this);
-        receipt.setText("提交部署确认");
-        receipt.setOnClickListener(v -> confirmDeploymentReceipt());
-        actions.addView(receipt, actionParams());
-
-        Button support = new Button(this);
-        support.setText("引导支持会话");
-        support.setOnClickListener(v -> showSupportCenter());
-        actions.addView(support, actionParams());
-
-        Button disconnect = new Button(this);
-        disconnect.setText("撤下本机配对资料");
-        disconnect.setOnClickListener(v -> clearProfile());
-        actions.addView(disconnect, actionParams());
+        addDashboardSection("取证与支持");
+        addDashboardActionRow(
+                dashboardButton("作业与审批", v -> showJobs()),
+                capabilityButton("操作记录", "/ops/v1/audit"));
+        addDashboardActionRow(
+                dashboardButton("生成诊断包", v -> confirmCreateDiagnosticJob()),
+                dashboardButton("主窗口快照", v -> confirmCreateWindowSnapshotJob()));
+        addDashboardActionRow(
+                dashboardButton("分享诊断摘要", v -> loadAndShareSafeDiagnostics()),
+                dashboardButton("支持会话", v -> showSupportCenter()));
+        addDashboardActionRow(
+                dashboardButton("提交部署确认", v -> confirmDeploymentReceipt()),
+                capabilityButton("能力目录", "/ops/v1/capabilities"));
         loadCapability("/ops/v1/snapshot");
+        scheduleConnectionHeartbeat();
+    }
+
+    private void scheduleConnectionHeartbeat() {
+        connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
+        if (activityResumed && dashboardVisible && client != null) {
+            connectionHeartbeatHandler.postDelayed(connectionHeartbeat, CONNECTION_HEARTBEAT_MILLISECONDS);
+        }
+    }
+
+    private void runConnectionHeartbeat() {
+        if (!activityResumed || !dashboardVisible || client == null || connectionHeartbeatInFlight) {
+            return;
+        }
+        connectionHeartbeatInFlight = true;
+        executor.execute(() -> {
+            try {
+                client.get("/ops/v1/snapshot");
+                runOnUiThread(() -> {
+                    connectionHeartbeatInFlight = false;
+                    if (showingDashboardSummary) {
+                        state.setText("● 在线 · 安全通道已验证");
+                    }
+                    scheduleConnectionHeartbeat();
+                });
+            } catch (Exception ignored) {
+                runOnUiThread(() -> {
+                    connectionHeartbeatInFlight = false;
+                    if (showingDashboardSummary) {
+                        state.setText("● 连接暂断 · 正在自动重试");
+                    }
+                    scheduleConnectionHeartbeat();
+                });
+            }
+        });
+    }
+
+    private void addDashboardSection(String label) {
+        TextView heading = new TextView(this);
+        heading.setText(label);
+        heading.setTextSize(15);
+        heading.setTextColor(Color.rgb(24, 35, 49));
+        heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        heading.setPadding(dp(2), dp(8), 0, dp(5));
+        actions.addView(heading, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private Button dashboardButton(String label, View.OnClickListener listener) {
+        Button button = new Button(this);
+        button.setText(label);
+        button.setTextSize(13);
+        button.setAllCaps(false);
+        button.setOnClickListener(listener);
+        return button;
+    }
+
+    private Button capabilityButton(String label, String path) {
+        return dashboardButton(label, v -> loadCapability(path));
+    }
+
+    private void addDashboardActionRow(Button left, Button right) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+
+        LinearLayout.LayoutParams leftParams = new LinearLayout.LayoutParams(0, dp(48), 1);
+        leftParams.setMargins(0, 0, dp(4), dp(4));
+        row.addView(left, leftParams);
+
+        LinearLayout.LayoutParams rightParams = new LinearLayout.LayoutParams(0, dp(48), 1);
+        rightParams.setMargins(dp(4), 0, 0, dp(4));
+        row.addView(right, rightParams);
+        actions.addView(row, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
     private void showExistingProfileFailure(Exception ex) {
@@ -336,6 +448,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void runConnectionSelfCheck() {
+        showingDashboardSummary = false;
         progress.setVisibility(View.VISIBLE);
         state.setText("正在检查网络、端口、证书和设备签名…");
         executor.execute(() -> {
@@ -408,6 +521,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void runWindowAction(String action, String successText) {
+        showingDashboardSummary = false;
         progress.setVisibility(View.VISIBLE);
         state.setText("正在执行安全桌面操作…");
         executor.execute(() -> {
@@ -427,6 +541,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void showTriageCenter() {
+        showingDashboardSummary = false;
         leaveSupportCenter();
         leaveLiveMonitor();
         dashboardVisible = true;
@@ -603,6 +718,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void showJobs() {
+        showingDashboardSummary = false;
         leaveSupportCenter();
         leaveLiveMonitor();
         progress.setVisibility(View.VISIBLE);
@@ -1173,6 +1289,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void showSupportCenter() {
+        showingDashboardSummary = false;
         leaveLiveMonitor();
         supportCenterVisible = true;
         supportAutoRefresh = false;
@@ -1371,6 +1488,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void showLiveMonitor() {
+        showingDashboardSummary = false;
         leaveSupportCenter();
         leaveLiveMonitor();
         dashboardVisible = true;
@@ -1865,6 +1983,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void loadCapability(String path) {
+        showingDashboardSummary = "/ops/v1/snapshot".equals(path);
         leaveSupportCenter();
         leaveLiveMonitor();
         progress.setVisibility(View.VISIBLE);
@@ -1937,19 +2056,17 @@ public class OperationsActivity extends Activity {
         boolean relayConfigured = secureOperations != null && secureOperations.optBoolean("relayConfigured");
 
         StringBuilder summary = new StringBuilder();
-        summary.append("应用：ColorVision ").append(version)
-                .append("\n主窗口：").append(windowVisible ? "可见" : windowExists ? "未显示" : "不可用")
-                .append(" · ").append(windowState)
-                .append("\n运行时长：").append(formatDuration(uptimeSeconds));
+        summary.append("ColorVision ").append(version)
+                .append(" · 已运行 ").append(formatDuration(uptimeSeconds))
+                .append("\n主窗口 ").append(windowVisible ? "可见" : windowExists ? "未显示" : "不可用")
+                .append(" · ").append(windowState);
         if (memoryMb > 0) {
-            summary.append("\n进程内存：").append(Math.round(memoryMb * 10) / 10.0).append(" MB");
+            summary.append(" · 内存 ").append(Math.round(memoryMb * 10) / 10.0).append(" MB");
         }
-        summary.append("\n安全运维：").append(secureRunning ? "已启用" : "未运行")
-                .append(" · 已配对设备 ").append(pairedDevices).append(" 台")
-                .append("\nWeb 运维中继：")
-                .append(relayRunning ? "运行中" : relayConfigured ? "已配置但未运行" : "未配置")
-                .append("\n手机连接：设备密钥 + TLS 证书指纹验证通过")
-                .append("\n\n概览已隐藏主机名、用户名、端点和网卡地址；需要定位连接问题时请运行连接自检。");
+        summary.append("\n运维通道 ").append(secureRunning ? "已连接" : "未运行")
+                .append(" · 已配对 ").append(pairedDevices).append(" 台")
+                .append(" · 中继 ")
+                .append(relayRunning ? "运行中" : relayConfigured ? "未启动" : "未配置");
         return summary.toString();
     }
 
@@ -2915,9 +3032,15 @@ public class OperationsActivity extends Activity {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
+    private int getStatusBarHeight() {
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        return resourceId > 0 ? getResources().getDimensionPixelSize(resourceId) : dp(24);
+    }
+
     @Override
     protected void onPause() {
         activityResumed = false;
+        connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         supportRefreshHandler.removeCallbacks(supportRefresh);
         liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
         super.onPause();
@@ -2933,10 +3056,12 @@ public class OperationsActivity extends Activity {
         if (liveMonitorVisible && liveMonitorAutoRefresh) {
             liveMonitorRefreshHandler.post(liveMonitorRefresh);
         }
+        scheduleConnectionHeartbeat();
     }
 
     @Override
     protected void onDestroy() {
+        connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         leaveSupportCenter();
         leaveLiveMonitor();
         executor.shutdownNow();
