@@ -54,8 +54,8 @@ public class OperationsActivity extends Activity {
     private boolean liveMonitorAutoRefresh;
     private boolean liveMonitorRefreshInFlight;
     private boolean activityResumed;
-    private int liveMonitorSampleCount;
     private int liveMonitorGeneration;
+    private final OperationsLiveMonitorTrend liveMonitorTrend = new OperationsLiveMonitorTrend();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler supportRefreshHandler = new Handler(Looper.getMainLooper());
     private final Runnable supportRefresh = () -> {
@@ -1162,7 +1162,7 @@ public class OperationsActivity extends Activity {
         dashboardVisible = true;
         liveMonitorVisible = true;
         liveMonitorAutoRefresh = true;
-        liveMonitorSampleCount = 0;
+        liveMonitorTrend.reset();
         title.setText("远程持续观察");
         state.setText("正在采集第一份有界运行快照…");
         details.setText("仅在此页面位于前台时每 10 秒刷新；切到后台会自动停止网络请求。服务器不保存采样历史。 ");
@@ -1180,7 +1180,7 @@ public class OperationsActivity extends Activity {
         renderLiveMonitorActions();
         if (showBusy) {
             progress.setVisibility(View.VISIBLE);
-            state.setText(liveMonitorSampleCount == 0
+            state.setText(liveMonitorTrend.size() == 0
                     ? "正在采集第一份有界运行快照…"
                     : "正在立即刷新持续观察…");
         }
@@ -1200,7 +1200,7 @@ public class OperationsActivity extends Activity {
                         return;
                     }
                     progress.setVisibility(View.GONE);
-                    liveMonitorSampleCount++;
+                    liveMonitorTrend.add(createLiveMonitorSample(snapshot));
                     state.setText(liveMonitorState(snapshot));
                     details.setText(formatLiveMonitorSnapshot(snapshot));
                     renderLiveMonitorActions();
@@ -1253,6 +1253,14 @@ public class OperationsActivity extends Activity {
         });
         actions.addView(toggle, actionParams());
 
+        Button share = new Button(this);
+        share.setText(liveMonitorTrend.size() < 2
+                ? "分享本次趋势（至少需要 2 个样本）"
+                : "分享本次脱敏趋势");
+        share.setEnabled(liveMonitorTrend.size() >= 2);
+        share.setOnClickListener(v -> shareLiveMonitorTrend());
+        actions.addView(share, actionParams());
+
         Button back = new Button(this);
         back.setText("返回现场运维概览");
         back.setOnClickListener(v -> showDashboard());
@@ -1272,7 +1280,28 @@ public class OperationsActivity extends Activity {
         liveMonitorVisible = false;
         liveMonitorAutoRefresh = false;
         liveMonitorRefreshInFlight = false;
+        liveMonitorTrend.reset();
         liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
+    }
+
+    private OperationsLiveMonitorTrend.Sample createLiveMonitorSample(JSONObject snapshot) {
+        JSONObject flow = snapshot.optJSONObject("flow");
+        JSONObject performance = snapshot.optJSONObject("performance");
+        JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
+        JSONObject alerts = snapshot.optJSONObject("alerts");
+        Long uiLatency = mainUi != null
+                && mainUi.has("latencyMilliseconds")
+                && !mainUi.isNull("latencyMilliseconds")
+                ? mainUi.optLong("latencyMilliseconds", 0)
+                : null;
+        return new OperationsLiveMonitorTrend.Sample(
+                System.currentTimeMillis(),
+                performance == null ? 0 : performance.optDouble("cpuPercent", 0),
+                performance == null ? 0 : performance.optDouble("workingSetMb", 0),
+                mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable"),
+                uiLatency,
+                flow == null ? "unavailable" : flow.optString("phase", "unavailable"),
+                alerts == null ? 0 : alerts.optInt("count", 0));
     }
 
     private String liveMonitorState(JSONObject snapshot) {
@@ -1299,7 +1328,8 @@ public class OperationsActivity extends Activity {
         } else {
             prefix = "当前聚合状态稳定";
         }
-        return prefix + " · 持续观察第 " + liveMonitorSampleCount + " 次";
+        return prefix + " · 本次内存样本 " + liveMonitorTrend.size()
+                + "/" + OperationsLiveMonitorTrend.MAX_SAMPLES;
     }
 
     private String formatLiveMonitorSnapshot(JSONObject snapshot) {
@@ -1357,8 +1387,56 @@ public class OperationsActivity extends Activity {
         text.append("\n\n采集时间：").append(shortTime(snapshot.optString("capturedAt", "")))
                 .append("\n刷新策略：仅当前台可见时每 ")
                 .append(snapshot.optInt("suggestedRefreshSeconds", 10)).append(" 秒")
-                .append("\n\n服务器不保存采样历史；快照不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、日志正文或检测数据。 ");
+                .append(formatLiveMonitorTrend(liveMonitorTrend.summarize()))
+                .append("\n\n服务器不保存采样历史；手机仅在内存保留最近 30 个样本，离开本页即清空。快照不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、日志正文或检测数据。 ");
         return text.toString();
+    }
+
+    private String formatLiveMonitorTrend(OperationsLiveMonitorTrend.Summary summary) {
+        if (summary.sampleCount < 2) {
+            return "\n\n本次趋势：再采集 1 个样本后显示。";
+        }
+
+        StringBuilder text = new StringBuilder();
+        text.append("\n\n本次内存趋势：").append(summary.sampleCount)
+                .append(" / ").append(OperationsLiveMonitorTrend.MAX_SAMPLES).append(" 个样本")
+                .append(" · ").append(formatClock(summary.startedAtMilliseconds))
+                .append(" 至 ").append(formatClock(summary.endedAtMilliseconds))
+                .append(" · ").append(formatElapsedMilliseconds(
+                        summary.endedAtMilliseconds - summary.startedAtMilliseconds))
+                .append("\nCPU：均值 ").append(roundOne(summary.averageCpuPercent))
+                .append("% · 峰值 ").append(roundOne(summary.maximumCpuPercent)).append('%')
+                .append("\n工作集：").append(roundOne(summary.minimumWorkingSetMb))
+                .append(" 至 ").append(roundOne(summary.maximumWorkingSetMb)).append(" MB")
+                .append("\n主界面：最大延迟 ")
+                .append(summary.maximumUiLatencyMilliseconds == null
+                        ? "不可用" : summary.maximumUiLatencyMilliseconds + " ms")
+                .append(" · 慢 ").append(summary.slowUiSampleCount)
+                .append(" 次 · 超时 ").append(summary.unresponsiveUiSampleCount).append(" 次")
+                .append("\n检测阶段：").append(flowPhaseLabel(summary.latestFlowPhase))
+                .append(" · 切换 ").append(summary.flowPhaseTransitionCount).append(" 次")
+                .append("\n告警计数：当前 ").append(summary.latestAlertCount)
+                .append(" · 本次最高 ").append(summary.maximumAlertCount);
+        return text.toString();
+    }
+
+    private String formatClock(long milliseconds) {
+        if (milliseconds <= 0) {
+            return "未知";
+        }
+        return new SimpleDateFormat("HH:mm:ss", Locale.CHINA).format(new Date(milliseconds));
+    }
+
+    private void shareLiveMonitorTrend() {
+        OperationsLiveMonitorTrend.Summary summary = liveMonitorTrend.summarize();
+        if (summary.sampleCount < 2) {
+            Toast.makeText(this, "至少需要两个观察样本", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String report = "ColorVision 远程观察趋势"
+                + formatLiveMonitorTrend(summary)
+                + "\n\n该文本只包含本次手机内存中的聚合趋势，不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、日志正文或检测数据。";
+        shareSafeText("ColorVision 远程观察趋势", report);
     }
 
     private void confirmSupportRequest() {
@@ -2081,7 +2159,7 @@ public class OperationsActivity extends Activity {
                     progress.setVisibility(View.GONE);
                     state.setText("安全诊断摘要已生成");
                     details.setText(report);
-                    shareSafeText(report);
+                    shareSafeText("ColorVision 安全诊断摘要", report);
                 });
             } catch (Exception ex) {
                 runOnUiThread(() -> showTransientError(ex));
@@ -2113,12 +2191,12 @@ public class OperationsActivity extends Activity {
                 + "\n\n该文本不包含设备密钥、证书指纹、设备 ID、用户名、机器名、端点或完整日志。";
     }
 
-    private void shareSafeText(String report) {
+    private void shareSafeText(String subject, String report) {
         Intent share = new Intent(Intent.ACTION_SEND);
         share.setType("text/plain");
-        share.putExtra(Intent.EXTRA_SUBJECT, "ColorVision 安全诊断摘要");
+        share.putExtra(Intent.EXTRA_SUBJECT, subject);
         share.putExtra(Intent.EXTRA_TEXT, report);
-        startActivity(Intent.createChooser(share, "分享安全诊断摘要"));
+        startActivity(Intent.createChooser(share, "分享" + subject));
     }
 
     private String formatDuration(long seconds) {
