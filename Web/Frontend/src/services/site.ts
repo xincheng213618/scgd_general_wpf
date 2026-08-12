@@ -10,7 +10,7 @@ import type {
   UpdatesPayload,
   UploadContext,
 } from '../types/site'
-import { AuthRequiredError, getJson, parseResponse } from './request'
+import { AuthRequiredError, deleteJson, getCsrfToken, getJson } from './request'
 
 function queryString(params: Record<string, string | number | undefined>) {
   const search = new URLSearchParams()
@@ -102,13 +102,15 @@ function getXhrErrorMessage(response: unknown, fallback: string) {
   return fallback
 }
 
-function postFormWithProgress<T>(url: string, formData: FormData, onProgress?: (percent: number) => void) {
+async function postFormWithProgress<T>(url: string, formData: FormData, onProgress?: (percent: number) => void) {
+  const csrfToken = await getCsrfToken()
   return new Promise<T>((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', url)
     xhr.withCredentials = true
     xhr.responseType = 'json'
     xhr.setRequestHeader('Accept', 'application/json')
+    xhr.setRequestHeader('X-CSRF-Token', csrfToken)
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) {
         onProgress((event.loaded / event.total) * 100)
@@ -140,14 +142,11 @@ export function getTransferFiles() {
 }
 
 export function deleteTransferFile(name: string) {
-  return fetch(`/api/transfer/files/${encodeURIComponent(name)}`, {
-    method: 'DELETE',
-    credentials: 'same-origin',
-    headers: { Accept: 'application/json' },
-  }).then((response) => parseResponse<{ deleted: string }>(response))
+  return deleteJson<{ deleted: string }>(`/api/transfer/files/${encodeURIComponent(name)}`)
 }
 
-export function uploadTransferFile(file: File, onProgress?: (percent: number) => void) {
+export async function uploadTransferFile(file: File, onProgress?: (percent: number) => void) {
+  const csrfToken = await getCsrfToken()
   return new Promise<{ name: string; bytes_written: number; replaced: boolean; download_url: string }>(
     (resolve, reject) => {
       const xhr = new XMLHttpRequest()
@@ -156,6 +155,7 @@ export function uploadTransferFile(file: File, onProgress?: (percent: number) =>
       xhr.responseType = 'json'
       xhr.setRequestHeader('Accept', 'application/json')
       xhr.setRequestHeader('Content-Type', 'application/octet-stream')
+      xhr.setRequestHeader('X-CSRF-Token', csrfToken)
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable && onProgress) {
           onProgress((event.loaded / event.total) * 100)

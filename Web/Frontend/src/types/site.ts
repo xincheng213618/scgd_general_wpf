@@ -282,6 +282,7 @@ export interface UploadContext {
 
 export interface AuthSession {
   authenticated: boolean
+  csrf_token?: string
   is_admin?: boolean
   role?: string
   username?: string

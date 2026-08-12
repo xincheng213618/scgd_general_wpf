@@ -441,7 +441,23 @@ try {
     Invoke-NativeCommand -FilePath $nodeExe -ArgumentList @('scripts/check-dashboard-bundle.mjs', $stagedDistPath) -WorkingDirectory $frontendPath
 
     if (-not $skipTests) {
-        Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @('-m', 'unittest', 'test_access_analytics', 'test_docs_site', 'test_frontend_spa', 'test_http_compression', 'test_runtime_logging', 'test_page_contexts', 'test_copilot_config_api', 'test_spectrum_api') -WorkingDirectory $backendPath
+        Invoke-NativeCommand -FilePath $pythonExe -ArgumentList @(
+            '-m',
+            'unittest',
+            'test_access_analytics',
+            'test_docs_site',
+            'test_frontend_spa',
+            'test_http_compression',
+            'test_runtime_logging',
+            'test_page_contexts',
+            'test_copilot_config_api',
+            'test_spectrum_api',
+            'test_csrf_protection',
+            'test_contracts.AuthContracts.test_session_csrf_token_rotates_across_authentication_boundaries',
+            'test_contracts.AuthContracts.test_cross_origin_auth_write_is_rejected_before_login',
+            'test_contracts.AuthContracts.test_same_origin_session_admin_write_requires_csrf_token',
+            'test_transfer_files.TransferRouteTests.test_browser_session_transfer_write_requires_csrf_token'
+        ) -WorkingDirectory $backendPath
     }
 
     $listenerBeforeRestart = Get-WebListener

@@ -38,6 +38,7 @@ from app_setup import (
     human_size, render_markdown, RuntimeOverrides,
 )
 from db_cache import CacheManager
+from services.csrf_protection import register_csrf_protection
 from services.http_compression import register_response_compression
 from services.http_method_safety import disable_unsafe_automatic_head
 from services.http_security import register_response_security
@@ -132,6 +133,7 @@ register_error_handlers(app)
 register_slow_request_logging(app, _ctx, _helpers["access_recorder"])
 register_response_compression(app)
 register_response_security(app)
+register_csrf_protection(app)
 register_all_blueprints(app, _ctx, SERVICES, _helpers)
 disable_unsafe_automatic_head(app)
 

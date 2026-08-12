@@ -63,6 +63,8 @@ def _serve_spa_index():
 
 
 def _session_payload() -> dict[str, Any]:
+    from services.csrf_protection import issue_csrf_token
+
     is_admin = bool(session.get("authenticated"))
     is_user = bool(session.get("user_authenticated") or is_admin)
     return {
@@ -70,6 +72,7 @@ def _session_payload() -> dict[str, Any]:
         "is_admin": is_admin,
         "username": session.get("username", ""),
         "role": session.get("role", "admin" if is_admin else ("user" if is_user else "")),
+        "csrf_token": issue_csrf_token(),
     }
 
 
@@ -262,7 +265,7 @@ def api_auth_register():
 @public_pages.route("/api/auth/logout", methods=["POST"])
 def api_auth_logout():
     session.clear()
-    return jsonify({"authenticated": False})
+    return jsonify(_session_payload())
 
 
 @public_pages.route("/logout", methods=["GET", "POST"])

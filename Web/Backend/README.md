@@ -363,6 +363,13 @@ Logout state changes use POST. The legacy `GET /logout` URL only redirects to
 the public site and does not clear the session. Disabled database-backed users
 are rejected on their next authenticated page or API request.
 
+Browser-originated state-changing requests enforce a same-origin CSRF boundary.
+Session-authenticated writes additionally require the per-session
+`X-CSRF-Token` returned by `GET /api/auth/session`; the token rotates on login
+and logout. Headerless native clients and explicit Basic/Bearer API clients keep
+their existing contracts, while browser requests with a foreign `Origin` or
+cross-site Fetch Metadata are rejected before route execution.
+
 ## Disk Scan Points
 
 When indexes are populated, most API requests read from SQLite instead of scanning disk. The following are the remaining real-time disk access points:

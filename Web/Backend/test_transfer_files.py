@@ -128,6 +128,35 @@ class TransferRouteTests(unittest.TestCase):
         self.assertEqual(upload_response.status_code, 201)
         self.assertEqual((self.storage / "Transfer" / "user.bin").read_bytes(), b"payload")
 
+    def test_browser_session_transfer_write_requires_csrf_token(self):
+        register_response = self.client.post(
+            "/api/auth/register",
+            json={"username": "browser-user", "password": "secret1"},
+        )
+        token = register_response.get_json()["csrf_token"]
+        browser_headers = {
+            "Origin": "http://localhost",
+            "Sec-Fetch-Site": "same-origin",
+            "Content-Type": "application/octet-stream",
+        }
+
+        rejected = self.client.put(
+            "/api/transfer/files/browser.bin",
+            headers=browser_headers,
+            data=b"payload",
+        )
+        target = self.storage / "Transfer" / "browser.bin"
+        self.assertEqual(rejected.status_code, 403)
+        self.assertFalse(target.exists())
+
+        accepted = self.client.put(
+            "/api/transfer/files/browser.bin",
+            headers={**browser_headers, "X-CSRF-Token": token},
+            data=b"payload",
+        )
+        self.assertEqual(accepted.status_code, 201)
+        self.assertEqual(target.read_bytes(), b"payload")
+
     def test_transfer_upload_download_list_and_delete_with_basic_auth(self):
         response = self.client.put(
             "/api/transfer/files/demo.bin",

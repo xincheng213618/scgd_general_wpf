@@ -611,6 +611,70 @@ class AuthContracts(ContractTestBase):
                     self.assertEqual(response.headers["Referrer-Policy"], "same-origin")
                     self.assertIn("frame-ancestors 'self'", response.headers["Content-Security-Policy"])
 
+    def test_session_csrf_token_rotates_across_authentication_boundaries(self):
+        anonymous = self.client.get("/api/auth/session").get_json()
+        self.assertFalse(anonymous["authenticated"])
+        self.assertGreaterEqual(len(anonymous["csrf_token"]), 32)
+
+        login_response = self.client.post(
+            "/api/auth/login",
+            headers={
+                "Origin": "http://localhost",
+                "Sec-Fetch-Site": "same-origin",
+                "X-CSRF-Token": anonymous["csrf_token"],
+            },
+            json={"username": "admin", "password": "secret"},
+        )
+        self.assertEqual(login_response.status_code, 200)
+        authenticated = login_response.get_json()
+        self.assertNotEqual(authenticated["csrf_token"], anonymous["csrf_token"])
+
+        missing_token = self.client.post(
+            "/api/auth/logout",
+            headers={"Origin": "http://localhost", "Sec-Fetch-Site": "same-origin"},
+        )
+        self.assertEqual(missing_token.status_code, 403)
+        self.assertTrue(self.client.get("/api/auth/session").get_json()["authenticated"])
+
+        logout_response = self.client.post(
+            "/api/auth/logout",
+            headers={
+                "Origin": "http://localhost",
+                "Sec-Fetch-Site": "same-origin",
+                "X-CSRF-Token": authenticated["csrf_token"],
+            },
+        )
+        self.assertEqual(logout_response.status_code, 200)
+        logged_out = logout_response.get_json()
+        self.assertFalse(logged_out["authenticated"])
+        self.assertNotEqual(logged_out["csrf_token"], authenticated["csrf_token"])
+
+    def test_cross_origin_auth_write_is_rejected_before_login(self):
+        before = len(marketplace_app._cache.get_audit_log(action="login_failed"))
+        response = self.client.post(
+            "/api/auth/login",
+            headers={"Origin": "https://evil.example", "Sec-Fetch-Site": "cross-site"},
+            json={"username": "admin", "password": "secret"},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(len(marketplace_app._cache.get_audit_log(action="login_failed")), before)
+
+    def test_same_origin_session_admin_write_requires_csrf_token(self):
+        login = self.client.post("/api/auth/login", json={
+            "username": "admin", "password": "secret",
+        }).get_json()
+        browser_headers = {"Origin": "http://localhost", "Sec-Fetch-Site": "same-origin"}
+
+        rejected = self.client.post("/api/admin/cache/cleanup", headers=browser_headers)
+        accepted = self.client.post(
+            "/api/admin/cache/cleanup",
+            headers={**browser_headers, "X-CSRF-Token": login["csrf_token"]},
+        )
+
+        self.assertEqual(rejected.status_code, 403)
+        self.assertEqual(accepted.status_code, 200)
+
     def test_login_success_redirects(self):
         resp = self.client.post("/login", data={
             "username": "admin", "password": "secret",
