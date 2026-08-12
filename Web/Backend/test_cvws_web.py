@@ -208,9 +208,7 @@ class CVWSUploadPageTests(unittest.TestCase):
         resp = client.post(
             "/api/tool/cvwindowsservice/publish",
             headers={
-                "Origin": "http://localhost",
-                "Sec-Fetch-Site": "same-origin",
-                "Sec-Fetch-Mode": "cors",
+                "X-ColorVision-Web": "1",
             },
         )
 

@@ -924,9 +924,7 @@ class MarketplaceAppTests(unittest.TestCase):
         response = self.client.post(
             "/api/packages/publish",
             headers={
-                "Origin": "http://localhost",
-                "Sec-Fetch-Site": "same-origin",
-                "Sec-Fetch-Mode": "cors",
+                "X-ColorVision-Web": "1",
             },
             data={
                 "PluginId": "DemoPlugin",

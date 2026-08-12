@@ -110,14 +110,19 @@ function getXhrErrorMessage(response: unknown, fallback: string) {
   return fallback
 }
 
+function configureWebXhr(xhr: XMLHttpRequest) {
+  xhr.withCredentials = true
+  xhr.responseType = 'json'
+  xhr.setRequestHeader(WEB_CLIENT_HEADER_NAME, WEB_CLIENT_HEADER_VALUE)
+  xhr.setRequestHeader('Accept', 'application/json')
+}
+
 async function postFormWithProgress<T>(url: string, formData: FormData, onProgress?: (percent: number) => void) {
   const csrfToken = await getCsrfToken()
   return new Promise<T>((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', url)
-    xhr.withCredentials = true
-    xhr.responseType = 'json'
-    xhr.setRequestHeader('Accept', 'application/json')
+    configureWebXhr(xhr)
     xhr.setRequestHeader('X-CSRF-Token', csrfToken)
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) {
@@ -160,10 +165,7 @@ export async function uploadTransferFile(file: File, onProgress?: (percent: numb
     (resolve, reject) => {
       const xhr = new XMLHttpRequest()
       xhr.open('PUT', `/api/transfer/files/${encodeURIComponent(file.name)}`)
-      xhr.setRequestHeader(WEB_CLIENT_HEADER_NAME, WEB_CLIENT_HEADER_VALUE)
-      xhr.withCredentials = true
-      xhr.responseType = 'json'
-      xhr.setRequestHeader('Accept', 'application/json')
+      configureWebXhr(xhr)
       xhr.setRequestHeader('Content-Type', 'application/octet-stream')
       xhr.setRequestHeader('X-CSRF-Token', csrfToken)
       xhr.upload.onprogress = (event) => {

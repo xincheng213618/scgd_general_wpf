@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 from flask import Flask, Response
 
@@ -49,6 +50,24 @@ class BrowserAuthTests(unittest.TestCase):
         ):
             self.assertFalse(is_browser_request())
             self.assertTrue(is_browser_navigation())
+
+    def test_every_progress_xhr_uses_the_shared_web_configuration(self):
+        site_service = (
+            Path(__file__).resolve().parents[1]
+            / "Frontend"
+            / "src"
+            / "services"
+            / "site.ts"
+        ).read_text(encoding="utf-8")
+
+        self.assertEqual(
+            site_service.count("new XMLHttpRequest()"),
+            site_service.count("configureWebXhr(xhr)"),
+        )
+        self.assertIn(
+            "xhr.setRequestHeader(WEB_CLIENT_HEADER_NAME, WEB_CLIENT_HEADER_VALUE)",
+            site_service,
+        )
 
 
 if __name__ == "__main__":

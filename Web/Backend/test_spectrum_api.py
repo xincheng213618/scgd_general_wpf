@@ -147,9 +147,7 @@ class SpectrumApiTests(unittest.TestCase):
             "/api/tool/spectrum/publish",
             data=self._multipart(self._release_parts()),
             headers={
-                "Origin": "http://localhost",
-                "Sec-Fetch-Site": "same-origin",
-                "Sec-Fetch-Mode": "cors",
+                "X-ColorVision-Web": "1",
             },
             content_type="multipart/form-data",
         )
