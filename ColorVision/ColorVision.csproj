@@ -242,8 +242,15 @@
 
   <Target Name="CopyOperationsWatchdogRuntimeFiles" AfterTargets="Build">
     <PropertyGroup>
+      <OperationsWatchdogProjectPath>..\src\ColorVisionOperationsWatchdog\ColorVisionOperationsWatchdog.csproj</OperationsWatchdogProjectPath>
       <OperationsWatchdogOutputPath>..\src\ColorVisionOperationsWatchdog\bin\$(Platform)\$(Configuration)\$(TargetFramework)\</OperationsWatchdogOutputPath>
     </PropertyGroup>
+
+    <MSBuild Projects="$(OperationsWatchdogProjectPath)"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);Platform=$(Platform);TargetFramework=$(TargetFramework)"
+             RemoveProperties="OutDir;OutputPath"
+             BuildInParallel="false" />
 
     <ItemGroup>
       <OperationsWatchdogRuntimeFiles Include="$(OperationsWatchdogOutputPath)**\*.*"
