@@ -227,7 +227,7 @@ category. The deployment writer keeps 500 valid records by default.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/admin/stats/overview` | Download, index, and today's traffic summary |
-| GET | `/api/admin/stats/traffic?days=30&limit=10` | Daily traffic, top routes, client classes, response volume, and recorder health |
+| GET | `/api/admin/stats/traffic?days=30&limit=10` | Daily traffic, top routes, client classes, 4xx/5xx breakdown, response volume, and recorder health |
 
 `days` accepts `1..365`; `limit` accepts `1..100`. Rates and client shares are
 percentages in the range `0..100`. Response volume is based only on the existing
@@ -235,8 +235,10 @@ HTTP `Content-Length` header. A missing or invalid header is counted as zero, so
 analytics never buffers or consumes streamed/file responses. `HEAD`, 1xx, 204,
 205, and 304 responses are also counted as zero because they do not transfer a
 response body. Schema migration v6 removes the previously declared `HEAD` bytes
-from both route and daily historical aggregates; other historical status codes
-cannot be separated from the existing aggregate and are left unchanged.
+from both route and daily historical aggregates. Schema migration v7 adds exact
+4xx and 5xx counters for new requests. The compatible `errorResponses` total is
+retained; older errors that cannot be separated reliably are returned through
+`unclassifiedErrorResponses` instead of being guessed into either category.
 
 `summary.uniqueVisitorDays` is the sum of each day's unique visitors (visitor-days),
 not a cross-day unique-person count, because the privacy identifier rotates every

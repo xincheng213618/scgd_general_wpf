@@ -15,47 +15,51 @@ export interface AdminStats {
   errorResponsesToday: number
 }
 
-export interface TrafficSummary {
+export interface TrafficErrorBreakdown {
+  errorResponses: number
+  errorRate: number
+  clientErrorResponses: number
+  clientErrorRate: number
+  serverErrorResponses: number
+  serverErrorRate: number
+  unclassifiedErrorResponses: number
+  unclassifiedErrorRate: number
+}
+
+export interface TrafficSummary extends TrafficErrorBreakdown {
   periodStart: string
   periodEnd: string
   days: number
   visits: number
   uniqueVisitorDays: number
   avgResponseMs: number
-  errorResponses: number
-  errorRate: number
   totalResponseBytes: number
 }
 
-export interface TrafficDayStats {
+export interface TrafficDayStats extends TrafficErrorBreakdown {
   day: string
   visits: number
   uniqueVisitors: number
   avgResponseMs: number
   maxResponseMs: number
-  errorResponses: number
-  errorRate: number
   totalDurationMs: number
   totalResponseBytes: number
 }
 
-export interface TrafficRouteStats {
+export interface TrafficRouteStats extends TrafficErrorBreakdown {
   route: string
   method: string
   visits: number
-  errorResponses: number
-  errorRate: number
   avgResponseMs: number
   maxResponseMs: number
   responseBytes: number
 }
 
-export interface TrafficClientStats {
+export interface TrafficClientStats extends TrafficErrorBreakdown {
   client: 'desktop' | 'mobile' | 'tablet' | 'bot' | 'other'
   visits: number
   uniqueVisitorDays: number
   share: number
-  errorResponses: number
   avgResponseMs: number
 }
 

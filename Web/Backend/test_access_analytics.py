@@ -235,15 +235,21 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["uniqueVisitorDays"], 2)
         self.assertNotIn("uniqueVisitors", payload["summary"])
         self.assertEqual(payload["summary"]["errorResponses"], 1)
+        self.assertEqual(payload["summary"]["clientErrorResponses"], 0)
+        self.assertEqual(payload["summary"]["serverErrorResponses"], 1)
+        self.assertEqual(payload["summary"]["serverErrorRate"], 33.33)
+        self.assertEqual(payload["summary"]["unclassifiedErrorResponses"], 0)
         self.assertEqual(payload["summary"]["avgResponseMs"], 20.0)
         self.assertEqual(payload["summary"]["totalResponseBytes"], 300)
         self.assertEqual(payload["today"]["visits"], 3)
         self.assertEqual(payload["topRoutes"][0]["route"], "/plugins/<plugin_id>")
         self.assertEqual(payload["topRoutes"][0]["visits"], 2)
         self.assertEqual(payload["topRoutes"][0]["responseBytes"], 200)
+        self.assertEqual(payload["topRoutes"][0]["serverErrorResponses"], 1)
         clients = {item["client"]: item for item in payload["clients"]}
         self.assertEqual(clients["desktop"]["visits"], 2)
         self.assertEqual(clients["desktop"]["uniqueVisitorDays"], 1)
+        self.assertEqual(clients["desktop"]["serverErrorResponses"], 1)
         self.assertNotIn("uniqueVisitors", clients["desktop"])
         self.assertEqual(clients["mobile"]["visits"], 1)
 
@@ -267,6 +273,47 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
             self.assertIn(table, tables)
         self.assertNotIn("203.0.113.10", dump)
         self.assertNotIn("Windows NT 10.0", dump)
+
+    def test_query_reports_legacy_combined_errors_as_unclassified(self):
+        recorder = AccessAnalyticsRecorder(background_worker=False)
+        self.assertTrue(
+            recorder.submit(
+                self._event(status=404),
+                db_path=self.db_path,
+                synchronous=True,
+            )
+        )
+        db = self.cache.get_db()
+        try:
+            with db:
+                for table in (
+                    "access_daily",
+                    "access_route_daily",
+                    "access_client_daily",
+                ):
+                    db.execute(
+                        f"UPDATE {table} SET client_error_responses = 0, "
+                        "server_error_responses = 0"
+                    )
+        finally:
+            db.close()
+
+        payload = SqliteAccessTrafficQuery(
+            self.cache.get_db,
+            today_getter=lambda: date(2026, 7, 18),
+        ).get_traffic(days=1, limit=10)
+
+        for item in (
+            payload["summary"],
+            payload["today"],
+            payload["topRoutes"][0],
+            payload["clients"][0],
+        ):
+            self.assertEqual(item["errorResponses"], 1)
+            self.assertEqual(item["clientErrorResponses"], 0)
+            self.assertEqual(item["serverErrorResponses"], 0)
+            self.assertEqual(item["unclassifiedErrorResponses"], 1)
+            self.assertEqual(item["unclassifiedErrorRate"], 100.0)
 
     def test_async_writer_groups_events_by_submission_database(self):
         second_db_path = self.root / "second.db"
@@ -433,8 +480,13 @@ class AccessAnalyticsApiTests(unittest.TestCase):
         payload = traffic.get_json()
         self.assertEqual(payload["summary"]["visits"], 1)
         self.assertEqual(payload["summary"]["totalResponseBytes"], expected_response_bytes)
+        self.assertEqual(payload["summary"]["errorResponses"], 1)
+        self.assertEqual(payload["summary"]["clientErrorResponses"], 1)
+        self.assertEqual(payload["summary"]["serverErrorResponses"], 0)
+        self.assertEqual(payload["summary"]["unclassifiedErrorResponses"], 0)
         self.assertEqual(payload["topRoutes"][0]["route"], "/api/plugins/<plugin_id>")
         self.assertEqual(payload["topRoutes"][0]["responseBytes"], expected_response_bytes)
+        self.assertEqual(payload["topRoutes"][0]["clientErrorResponses"], 1)
         self.assertEqual(payload["clients"][0]["client"], "mobile")
 
         db = sqlite3.connect(str(marketplace_app.DB_PATH))

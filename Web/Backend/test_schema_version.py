@@ -70,6 +70,63 @@ class SchemaVersionTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_v7_preserves_legacy_error_totals_without_guessing_classification(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 6);
+                CREATE TABLE access_daily (
+                    day TEXT PRIMARY KEY,
+                    error_responses INTEGER NOT NULL DEFAULT 0
+                );
+                CREATE TABLE access_route_daily (
+                    day TEXT NOT NULL,
+                    route TEXT NOT NULL,
+                    method TEXT NOT NULL,
+                    error_responses INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (day, route, method)
+                );
+                CREATE TABLE access_client_daily (
+                    day TEXT NOT NULL,
+                    client_type TEXT NOT NULL,
+                    error_responses INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (day, client_type)
+                );
+                INSERT INTO access_daily VALUES ('2026-08-12', 7);
+                INSERT INTO access_route_daily VALUES ('2026-08-12', '/legacy', 'GET', 5);
+                INSERT INTO access_client_daily VALUES ('2026-08-12', 'desktop', 3);
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            for table, expected_errors in (
+                ("access_daily", 7),
+                ("access_route_daily", 5),
+                ("access_client_daily", 3),
+            ):
+                with self.subTest(table=table):
+                    row = db.execute(
+                        f"SELECT error_responses, client_error_responses, "
+                        f"server_error_responses FROM {table}"
+                    ).fetchone()
+                    self.assertEqual(row["error_responses"], expected_errors)
+                    self.assertEqual(row["client_error_responses"], 0)
+                    self.assertEqual(row["server_error_responses"], 0)
+
+            ensure_schema_version(db)
+            self.assertEqual(
+                tuple(db.execute(
+                    "SELECT error_responses, client_error_responses, "
+                    "server_error_responses FROM access_daily"
+                ).fetchone()),
+                (7, 0, 0),
+            )
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()

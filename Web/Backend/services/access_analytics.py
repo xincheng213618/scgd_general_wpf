@@ -349,6 +349,8 @@ def _write_access_batch(db_path: Path, events: Sequence[AccessEvent]):
 def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
     date.fromisoformat(event.day)
     error_count = 1 if event.status_code >= 400 else 0
+    client_error_count = 1 if 400 <= event.status_code < 500 else 0
+    server_error_count = 1 if event.status_code >= 500 else 0
     new_visitor = 0
     if event.visitor_key:
         cursor = db.execute(
@@ -378,13 +380,16 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
     db.execute(
         """
         INSERT INTO access_daily
-            (day, visits, unique_visitors, error_responses, total_duration_ms,
+            (day, visits, unique_visitors, error_responses,
+             client_error_responses, server_error_responses, total_duration_ms,
              max_duration_ms, total_response_bytes, updated_at)
-        VALUES (?, 1, ?, ?, ?, ?, ?, ?)
+        VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(day) DO UPDATE SET
             visits = visits + 1,
             unique_visitors = unique_visitors + excluded.unique_visitors,
             error_responses = error_responses + excluded.error_responses,
+            client_error_responses = client_error_responses + excluded.client_error_responses,
+            server_error_responses = server_error_responses + excluded.server_error_responses,
             total_duration_ms = total_duration_ms + excluded.total_duration_ms,
             max_duration_ms = max(max_duration_ms, excluded.max_duration_ms),
             total_response_bytes = total_response_bytes + excluded.total_response_bytes,
@@ -394,6 +399,8 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
             event.day,
             new_visitor,
             error_count,
+            client_error_count,
+            server_error_count,
             event.duration_ms,
             event.duration_ms,
             event.response_bytes,
@@ -403,12 +410,15 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
     db.execute(
         """
         INSERT INTO access_route_daily
-            (day, route, method, visits, error_responses, total_duration_ms,
+            (day, route, method, visits, error_responses,
+             client_error_responses, server_error_responses, total_duration_ms,
              max_duration_ms, total_response_bytes, updated_at)
-        VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(day, route, method) DO UPDATE SET
             visits = visits + 1,
             error_responses = error_responses + excluded.error_responses,
+            client_error_responses = client_error_responses + excluded.client_error_responses,
+            server_error_responses = server_error_responses + excluded.server_error_responses,
             total_duration_ms = total_duration_ms + excluded.total_duration_ms,
             max_duration_ms = max(max_duration_ms, excluded.max_duration_ms),
             total_response_bytes = total_response_bytes + excluded.total_response_bytes,
@@ -419,6 +429,8 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
             event.route,
             event.method,
             error_count,
+            client_error_count,
+            server_error_count,
             event.duration_ms,
             event.duration_ms,
             event.response_bytes,
@@ -429,12 +441,15 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
         """
         INSERT INTO access_client_daily
             (day, client_type, visits, unique_visitors, error_responses,
-             total_duration_ms, updated_at)
-        VALUES (?, ?, 1, ?, ?, ?, ?)
+             client_error_responses, server_error_responses, total_duration_ms,
+             updated_at)
+        VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(day, client_type) DO UPDATE SET
             visits = visits + 1,
             unique_visitors = unique_visitors + excluded.unique_visitors,
             error_responses = error_responses + excluded.error_responses,
+            client_error_responses = client_error_responses + excluded.client_error_responses,
+            server_error_responses = server_error_responses + excluded.server_error_responses,
             total_duration_ms = total_duration_ms + excluded.total_duration_ms,
             updated_at = excluded.updated_at
         """,
@@ -443,6 +458,8 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
             event.client_type,
             new_visitor,
             error_count,
+            client_error_count,
+            server_error_count,
             event.duration_ms,
             event.occurred_at,
         ),
@@ -470,6 +487,7 @@ class SqliteAccessTrafficQuery:
             daily_rows = db.execute(
                 """
                 SELECT day, visits, unique_visitors, error_responses,
+                       client_error_responses, server_error_responses,
                        total_duration_ms, max_duration_ms, total_response_bytes
                 FROM access_daily
                 WHERE day BETWEEN ? AND ?
@@ -481,6 +499,8 @@ class SqliteAccessTrafficQuery:
                 """
                 SELECT route, method, SUM(visits) AS visits,
                        SUM(error_responses) AS error_responses,
+                       SUM(client_error_responses) AS client_error_responses,
+                       SUM(server_error_responses) AS server_error_responses,
                        SUM(total_duration_ms) AS total_duration_ms,
                        MAX(max_duration_ms) AS max_duration_ms,
                        SUM(total_response_bytes) AS total_response_bytes
@@ -497,6 +517,8 @@ class SqliteAccessTrafficQuery:
                 SELECT client_type, SUM(visits) AS visits,
                        SUM(unique_visitors) AS unique_visitors,
                        SUM(error_responses) AS error_responses,
+                       SUM(client_error_responses) AS client_error_responses,
+                       SUM(server_error_responses) AS server_error_responses,
                        SUM(total_duration_ms) AS total_duration_ms
                 FROM access_client_daily
                 WHERE day BETWEEN ? AND ?
@@ -517,6 +539,8 @@ class SqliteAccessTrafficQuery:
         visits = sum(item["visits"] for item in daily)
         unique_visitor_days = sum(item["uniqueVisitors"] for item in daily)
         errors = sum(item["errorResponses"] for item in daily)
+        summary_client_errors = sum(item["clientErrorResponses"] for item in daily)
+        summary_server_errors = sum(item["serverErrorResponses"] for item in daily)
         duration = sum(item["totalDurationMs"] for item in daily)
         response_bytes = sum(item["totalResponseBytes"] for item in daily)
 
@@ -524,6 +548,8 @@ class SqliteAccessTrafficQuery:
         for row in route_rows:
             route_visits = int(row["visits"] or 0)
             route_errors = int(row["error_responses"] or 0)
+            route_client_errors = int(row["client_error_responses"] or 0)
+            route_server_errors = int(row["server_error_responses"] or 0)
             route_duration = int(row["total_duration_ms"] or 0)
             top_routes.append({
                 "route": row["route"],
@@ -531,6 +557,12 @@ class SqliteAccessTrafficQuery:
                 "visits": route_visits,
                 "errorResponses": route_errors,
                 "errorRate": _percentage(route_errors, route_visits),
+                **_classified_error_payload(
+                    route_errors,
+                    route_client_errors,
+                    route_server_errors,
+                    route_visits,
+                ),
                 "avgResponseMs": _average(route_duration, route_visits),
                 "maxResponseMs": int(row["max_duration_ms"] or 0),
                 "responseBytes": int(row["total_response_bytes"] or 0),
@@ -539,14 +571,23 @@ class SqliteAccessTrafficQuery:
         clients = []
         for row in client_rows:
             client_visits = int(row["visits"] or 0)
-            client_errors = int(row["error_responses"] or 0)
+            client_total_errors = int(row["error_responses"] or 0)
+            client_4xx_errors = int(row["client_error_responses"] or 0)
+            client_5xx_errors = int(row["server_error_responses"] or 0)
             client_visitor_days = int(row["unique_visitors"] or 0)
             clients.append({
                 "client": row["client_type"],
                 "visits": client_visits,
                 "uniqueVisitorDays": client_visitor_days,
                 "share": _percentage(client_visits, visits),
-                "errorResponses": client_errors,
+                "errorResponses": client_total_errors,
+                "errorRate": _percentage(client_total_errors, client_visits),
+                **_classified_error_payload(
+                    client_total_errors,
+                    client_4xx_errors,
+                    client_5xx_errors,
+                    client_visits,
+                ),
                 "avgResponseMs": _average(int(row["total_duration_ms"] or 0), client_visits),
             })
 
@@ -562,6 +603,12 @@ class SqliteAccessTrafficQuery:
                 "avgResponseMs": _average(duration, visits),
                 "errorResponses": errors,
                 "errorRate": _percentage(errors, visits),
+                **_classified_error_payload(
+                    errors,
+                    summary_client_errors,
+                    summary_server_errors,
+                    visits,
+                ),
                 "totalResponseBytes": response_bytes,
             },
             "today": daily[-1],
@@ -733,6 +780,8 @@ def _daily_payload(row: Any) -> dict[str, Any]:
     visits = int(row["visits"] or 0)
     duration = int(row["total_duration_ms"] or 0)
     errors = int(row["error_responses"] or 0)
+    client_errors = int(row["client_error_responses"] or 0)
+    server_errors = int(row["server_error_responses"] or 0)
     return {
         "day": row["day"],
         "visits": visits,
@@ -741,6 +790,7 @@ def _daily_payload(row: Any) -> dict[str, Any]:
         "maxResponseMs": int(row["max_duration_ms"] or 0),
         "errorResponses": errors,
         "errorRate": _percentage(errors, visits),
+        **_classified_error_payload(errors, client_errors, server_errors, visits),
         "totalDurationMs": duration,
         "totalResponseBytes": int(row["total_response_bytes"] or 0),
     }
@@ -755,6 +805,7 @@ def _zero_daily(day: str) -> dict[str, Any]:
         "maxResponseMs": 0,
         "errorResponses": 0,
         "errorRate": 0.0,
+        **_classified_error_payload(0, 0, 0, 0),
         "totalDurationMs": 0,
         "totalResponseBytes": 0,
     }
@@ -766,6 +817,23 @@ def _average(total: int, count: int) -> float:
 
 def _percentage(part: int, total: int) -> float:
     return round(part * 100 / total, 2) if total else 0.0
+
+
+def _classified_error_payload(
+    errors: int,
+    client_errors: int,
+    server_errors: int,
+    visits: int,
+) -> dict[str, int | float]:
+    unclassified_errors = max(0, errors - client_errors - server_errors)
+    return {
+        "clientErrorResponses": client_errors,
+        "clientErrorRate": _percentage(client_errors, visits),
+        "serverErrorResponses": server_errors,
+        "serverErrorRate": _percentage(server_errors, visits),
+        "unclassifiedErrorResponses": unclassified_errors,
+        "unclassifiedErrorRate": _percentage(unclassified_errors, visits),
+    }
 
 
 def _empty_recorder_status() -> dict[str, Any]:

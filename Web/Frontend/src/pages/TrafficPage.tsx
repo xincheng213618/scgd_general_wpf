@@ -43,11 +43,25 @@ const dailyColumns: ColumnsType<TrafficDayStats> = [
   { title: '最慢响应', dataIndex: 'maxResponseMs', width: 120, align: 'right', render: milliseconds },
   { title: '响应流量', dataIndex: 'totalResponseBytes', width: 120, align: 'right', render: humanSize },
   {
-    title: '错误',
-    dataIndex: 'errorResponses',
+    title: '请求侧 4xx',
+    dataIndex: 'clientErrorResponses',
     width: 120,
     align: 'right',
-    render: (value, record) => <Tag color={value > 0 ? 'red' : 'green'}>{value} · {percent(record.errorRate)}</Tag>,
+    render: (value, record) => <Tag color={value > 0 ? 'gold' : 'default'}>{value} · {percent(record.clientErrorRate)}</Tag>,
+  },
+  {
+    title: '服务端 5xx',
+    dataIndex: 'serverErrorResponses',
+    width: 120,
+    align: 'right',
+    render: (value, record) => <Tag color={value > 0 ? 'red' : 'green'}>{value} · {percent(record.serverErrorRate)}</Tag>,
+  },
+  {
+    title: '历史未分类',
+    dataIndex: 'unclassifiedErrorResponses',
+    width: 120,
+    align: 'right',
+    render: (value, record) => <Tag>{value} · {percent(record.unclassifiedErrorRate)}</Tag>,
   },
 ]
 
@@ -59,11 +73,25 @@ const routeColumns: ColumnsType<TrafficRouteStats> = [
   { title: '最慢响应', dataIndex: 'maxResponseMs', width: 120, align: 'right', render: milliseconds },
   { title: '响应流量', dataIndex: 'responseBytes', width: 120, align: 'right', render: humanSize },
   {
-    title: '错误率',
-    dataIndex: 'errorRate',
-    width: 100,
+    title: '4xx',
+    dataIndex: 'clientErrorResponses',
+    width: 110,
     align: 'right',
-    render: (value) => <Tag color={value > 0 ? 'red' : 'green'}>{percent(value)}</Tag>,
+    render: (value, record) => <Tag color={value > 0 ? 'gold' : 'default'}>{value} · {percent(record.clientErrorRate)}</Tag>,
+  },
+  {
+    title: '5xx',
+    dataIndex: 'serverErrorResponses',
+    width: 110,
+    align: 'right',
+    render: (value, record) => <Tag color={value > 0 ? 'red' : 'green'}>{value} · {percent(record.serverErrorRate)}</Tag>,
+  },
+  {
+    title: '未分类',
+    dataIndex: 'unclassifiedErrorResponses',
+    width: 110,
+    align: 'right',
+    render: (value) => <Tag>{value}</Tag>,
   },
 ]
 
@@ -74,11 +102,25 @@ const clientColumns: ColumnsType<TrafficClientStats> = [
   { title: '占比', dataIndex: 'share', width: 100, align: 'right', render: percent },
   { title: '平均响应', dataIndex: 'avgResponseMs', width: 120, align: 'right', render: milliseconds },
   {
-    title: '错误',
-    dataIndex: 'errorResponses',
-    width: 100,
+    title: '4xx',
+    dataIndex: 'clientErrorResponses',
+    width: 110,
+    align: 'right',
+    render: (value) => <Tag color={value > 0 ? 'gold' : 'default'}>{value}</Tag>,
+  },
+  {
+    title: '5xx',
+    dataIndex: 'serverErrorResponses',
+    width: 110,
     align: 'right',
     render: (value) => <Tag color={value > 0 ? 'red' : 'green'}>{value}</Tag>,
+  },
+  {
+    title: '未分类',
+    dataIndex: 'unclassifiedErrorResponses',
+    width: 110,
+    align: 'right',
+    render: (value) => <Tag>{value}</Tag>,
   },
 ]
 
@@ -133,6 +175,12 @@ export function TrafficPage() {
           </div>
           <Space wrap>
             <Tag>响应流量 {humanSize(data.summary.totalResponseBytes)}</Tag>
+            <Tag color={data.summary.clientErrorResponses > 0 ? 'gold' : 'default'}>
+              4xx {data.summary.clientErrorResponses} · {percent(data.summary.clientErrorRate)}
+            </Tag>
+            <Tag color={data.summary.serverErrorResponses > 0 ? 'red' : 'green'}>
+              5xx {data.summary.serverErrorResponses} · {percent(data.summary.serverErrorRate)}
+            </Tag>
             <Select
               aria-label="统计周期"
               value={days}
@@ -152,6 +200,14 @@ export function TrafficPage() {
       </Card>
 
       {error && <Alert type="warning" showIcon message="刷新失败，当前展示上一次成功结果" description={error} />}
+      {data.summary.unclassifiedErrorResponses > 0 && (
+        <Alert
+          type="info"
+          showIcon
+          message={`有 ${data.summary.unclassifiedErrorResponses} 条历史错误响应尚未分类`}
+          description="旧版统计只保留了 HTTP 4xx/5xx 合计，无法可靠回填具体类别；新请求已开始精确区分，请勿把这部分直接视为服务端故障。"
+        />
+      )}
       {recorderProblem && (
         <Alert
           type="warning"
@@ -172,7 +228,7 @@ export function TrafficPage() {
           <Card loading={loading}><Statistic title="平均响应" value={Math.round(data.summary.avgResponseMs)} suffix="ms" prefix={<ClockCircleOutlined />} /></Card>
         </Col>
         <Col xs={24} md={12} xl={6}>
-          <Card loading={loading}><Statistic title="错误响应" value={data.summary.errorResponses} suffix={percent(data.summary.errorRate)} valueStyle={{ color: data.summary.errorResponses > 0 ? '#cf1322' : undefined }} /></Card>
+          <Card loading={loading}><Statistic title="服务端故障（5xx）" value={data.summary.serverErrorResponses} suffix={`次 · ${percent(data.summary.serverErrorRate)}`} valueStyle={{ color: data.summary.serverErrorResponses > 0 ? '#cf1322' : undefined }} /></Card>
         </Col>
       </Row>
 
@@ -183,7 +239,9 @@ export function TrafficPage() {
           <Statistic title="平均响应" value={Math.round(data.today.avgResponseMs)} suffix="ms" />
           <Statistic title="最慢响应" value={Math.round(data.today.maxResponseMs)} suffix="ms" />
           <Statistic title="响应流量" value={humanSize(data.today.totalResponseBytes)} />
-          <Statistic title="错误率" value={data.today.errorRate} precision={2} suffix="%" />
+          <Statistic title="请求侧 4xx" value={data.today.clientErrorResponses} suffix={`次 · ${percent(data.today.clientErrorRate)}`} />
+          <Statistic title="服务端 5xx" value={data.today.serverErrorResponses} suffix={`次 · ${percent(data.today.serverErrorRate)}`} valueStyle={{ color: data.today.serverErrorResponses > 0 ? '#cf1322' : undefined }} />
+          {data.today.unclassifiedErrorResponses > 0 && <Statistic title="历史未分类" value={data.today.unclassifiedErrorResponses} />}
           <Space wrap>
             <Tag color={data.recorder.pending > 0 ? 'gold' : 'green'}>待写入 {data.recorder.pending}</Tag>
             <Tag color={data.recorder.dropped > 0 ? 'red' : 'default'}>丢弃 {data.recorder.dropped}</Tag>
@@ -194,7 +252,7 @@ export function TrafficPage() {
       </Card>
 
       <Card title="每日趋势">
-        <Table rowKey="day" loading={loading} columns={dailyColumns} dataSource={data.daily} pagination={false} scroll={{ x: 880 }} />
+        <Table rowKey="day" loading={loading} columns={dailyColumns} dataSource={data.daily} pagination={false} scroll={{ x: 1240 }} />
       </Card>
 
       <Row gutter={[16, 16]}>
@@ -206,13 +264,13 @@ export function TrafficPage() {
               columns={routeColumns}
               dataSource={data.topRoutes}
               pagination={false}
-              scroll={{ x: 940 }}
+              scroll={{ x: 1240 }}
             />
           </Card>
         </Col>
         <Col xs={24} xl={9}>
           <Card title="客户端分布">
-            <Table rowKey="client" loading={loading} columns={clientColumns} dataSource={data.clients} pagination={false} scroll={{ x: 620 }} />
+            <Table rowKey="client" loading={loading} columns={clientColumns} dataSource={data.clients} pagination={false} scroll={{ x: 900 }} />
           </Card>
         </Col>
       </Row>

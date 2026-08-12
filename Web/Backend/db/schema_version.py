@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 6
+CURRENT_SCHEMA_VERSION = 7
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -57,6 +57,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v5(db)
     if from_version < 6:
         _migration_v6(db)
+    if from_version < 7:
+        _migration_v7(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -87,6 +89,8 @@ def _migration_v4(db: sqlite3.Connection):
             visits              INTEGER NOT NULL DEFAULT 0,
             unique_visitors     INTEGER NOT NULL DEFAULT 0,
             error_responses     INTEGER NOT NULL DEFAULT 0,
+            client_error_responses INTEGER NOT NULL DEFAULT 0,
+            server_error_responses INTEGER NOT NULL DEFAULT 0,
             total_duration_ms   INTEGER NOT NULL DEFAULT 0,
             max_duration_ms     INTEGER NOT NULL DEFAULT 0,
             total_response_bytes INTEGER NOT NULL DEFAULT 0,
@@ -99,6 +103,8 @@ def _migration_v4(db: sqlite3.Connection):
             method              TEXT NOT NULL,
             visits              INTEGER NOT NULL DEFAULT 0,
             error_responses     INTEGER NOT NULL DEFAULT 0,
+            client_error_responses INTEGER NOT NULL DEFAULT 0,
+            server_error_responses INTEGER NOT NULL DEFAULT 0,
             total_duration_ms   INTEGER NOT NULL DEFAULT 0,
             max_duration_ms     INTEGER NOT NULL DEFAULT 0,
             total_response_bytes INTEGER NOT NULL DEFAULT 0,
@@ -114,6 +120,8 @@ def _migration_v4(db: sqlite3.Connection):
             visits              INTEGER NOT NULL DEFAULT 0,
             unique_visitors     INTEGER NOT NULL DEFAULT 0,
             error_responses     INTEGER NOT NULL DEFAULT 0,
+            client_error_responses INTEGER NOT NULL DEFAULT 0,
+            server_error_responses INTEGER NOT NULL DEFAULT 0,
             total_duration_ms   INTEGER NOT NULL DEFAULT 0,
             updated_at          TEXT NOT NULL,
             PRIMARY KEY (day, client_type)
@@ -190,6 +198,21 @@ def _migration_v6(db: sqlite3.Connection):
            SET total_response_bytes = 0
            WHERE UPPER(method) = 'HEAD' AND total_response_bytes != 0"""
     )
+
+
+def _migration_v7(db: sqlite3.Connection):
+    """v7: Classify future 4xx and 5xx responses without guessing history."""
+    for table in ("access_daily", "access_route_daily", "access_client_daily"):
+        _add_column_if_missing(
+            db,
+            table,
+            "client_error_responses INTEGER NOT NULL DEFAULT 0",
+        )
+        _add_column_if_missing(
+            db,
+            table,
+            "server_error_responses INTEGER NOT NULL DEFAULT 0",
+        )
 
 
 def _add_column_if_missing(db: sqlite3.Connection, table: str, column_def: str):
