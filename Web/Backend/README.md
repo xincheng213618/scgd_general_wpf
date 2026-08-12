@@ -285,6 +285,9 @@ recognized administrator-created database snapshot, so a backup cannot bypass
 the audit retention contract.
 Pagination accepts `limit` from 1 through 500 and a non-negative `offset`;
 invalid values return HTTP 400 instead of becoming an unbounded SQLite query.
+The administrator viewer localizes known event, actor, target, and detail
+contracts while preserving raw action codes. Source IP and user-agent data are
+available only in the authenticated event drawer for incident investigation.
 
 ### Deployment History
 
