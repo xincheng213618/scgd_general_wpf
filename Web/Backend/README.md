@@ -468,6 +468,7 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 | `db/schema_version.py` | Schema version tracking and migrations |
 | `routes/admin_api.py` | Admin REST API (cache, index, jobs, audit, deployments, keys, perf) |
 | `services/deployment_history.py` | Sanitized deployment-history query and pagination |
+| `ports/operations_support.py` / `db/repositories/operations_support.py` | Atomic Operations support-session persistence boundary |
 | `routes/frontend_spa.py` | React SPA static hosting and `/admin` auth gate |
 | `routes/pages.py` | Public site-data and download APIs |
 | `routes/public_pages.py` | Session login/logout APIs and form redirects |

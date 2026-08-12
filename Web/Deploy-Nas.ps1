@@ -541,6 +541,8 @@ try {
             'test_frontend_spa',
             'test_http_compression',
             'test_runtime_logging',
+            'test_operations_relay',
+            'test_operations_support_store',
             'test_jobs_repository',
             'test_admin_data_retention',
             'test_deployment_history',

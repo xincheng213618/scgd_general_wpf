@@ -137,6 +137,10 @@ package hash costing about 381.9 ms moved to index refresh work.
   while the first page claimed 40; the most common action had 347 rows and was
   likewise capped by the heuristic. Invalid or unbounded pagination is now
   rejected before reaching SQLite.
+- Moved newly added Operations support-session state SQL out of the Flask route
+  into an injected SQLite Store. Event transitions now use `BEGIN IMMEDIATE`,
+  and a concurrent-request test proves duplicate session requests produce one
+  stored event instead of expanding transitional route SQL debt.
 - Added route-level frontend splitting, request cancellation, stale-state fixes,
   changelog/plugin HTML sanitization, immutable hashed-asset caching, and lazy
   chunk recovery after rolling deployments.
@@ -164,7 +168,7 @@ package hash costing about 381.9 ms moved to index refresh work.
 
 ## Verification snapshot
 
-- Backend: 559 tests passed.
+- Backend: 565 tests passed.
 - Frontend: ESLint passed; production build passed (3,780 modules).
 - Dependency audit: zero npm vulnerabilities.
 - Whitespace check: `git diff --check -- Web` passed.

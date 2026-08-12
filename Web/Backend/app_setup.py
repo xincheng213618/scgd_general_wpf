@@ -442,8 +442,12 @@ def register_all_blueprints(app, ctx, services, helpers):
         config_getter=lambda: ctx.active_config,
     ))
 
+    from db.repositories.operations_support import SqliteOperationsSupportStore
     from routes.operations_relay import OperationsRelayContext, register_operations_relay_routes
-    register_operations_relay_routes(app, OperationsRelayContext(cache=cache))
+    register_operations_relay_routes(app, OperationsRelayContext(
+        cache=cache,
+        support_store=SqliteOperationsSupportStore(cache.get_db),
+    ))
 
     register_docs_site(app)
 
