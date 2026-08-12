@@ -1,13 +1,17 @@
 import { ProForm, ProFormRadio } from '@ant-design/pro-components'
 import { App, Card, Space, Typography } from 'antd'
-import type { ThemeMode, ThemeSettingsFormValues } from '../types/admin'
+import type { ThemeMode, ThemeSettingsFormValues, UiDensity } from '../types/admin'
 
 export function SettingsPage({
   mode,
   setMode,
+  density,
+  setDensity,
 }: {
   mode: ThemeMode
   setMode: (mode: ThemeMode) => void
+  density: UiDensity
+  setDensity: (density: UiDensity) => void
 }) {
   const { message } = App.useApp()
 
@@ -15,14 +19,16 @@ export function SettingsPage({
     <Space direction="vertical" size={16} className="page-stack">
       <Card title="外观设置">
         <ProForm<ThemeSettingsFormValues>
+          key={`${mode}-${density}`}
           layout="horizontal"
           submitter={{
             searchConfig: { submitText: '保存偏好' },
             resetButtonProps: false,
           }}
-          initialValues={{ themeMode: mode, density: 'middle' }}
+          initialValues={{ themeMode: mode, density }}
           onFinish={async (values) => {
             setMode(values.themeMode)
+            setDensity(values.density)
             message.success('外观偏好已保存')
             return true
           }}
@@ -46,9 +52,9 @@ export function SettingsPage({
           />
         </ProForm>
       </Card>
-      <Card title="迁移说明">
+      <Card title="生效范围">
         <Typography.Paragraph type="secondary">
-          当前设置页已经使用 ProForm。下一阶段可把站点信息、权限角色、发布策略、审计保留和存储配置逐步迁到这里。
+          主题和信息密度保存在当前浏览器中，并统一应用到前台发布站和管理端的表单、按钮、表格等组件。
         </Typography.Paragraph>
       </Card>
     </Space>

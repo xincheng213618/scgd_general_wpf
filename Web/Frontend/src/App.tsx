@@ -4,10 +4,11 @@ import type { ErrorInfo, ReactNode } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { PublicLayout } from './layouts/PublicLayout'
 import { getSession } from './services/auth'
-import type { ThemeMode } from './types/admin'
+import type { ThemeMode, UiDensity } from './types/admin'
 import type { AuthSession } from './types/site'
 
 const themeStorageKey = 'colorvision-web-theme'
+const densityStorageKey = 'colorvision-web-density'
 
 const documentTitles: Record<string, string> = {
   '/': 'ColorVision - 下载与插件中心',
@@ -130,16 +131,32 @@ function useThemeMode() {
   return [mode, setMode] as const
 }
 
+function useUiDensity() {
+  const [density, setDensityState] = useState<UiDensity>(() => {
+    const saved = localStorage.getItem(densityStorageKey)
+    return saved === 'small' || saved === 'middle' ? saved : 'middle'
+  })
+
+  const setDensity = (next: UiDensity) => {
+    localStorage.setItem(densityStorageKey, next)
+    setDensityState(next)
+  }
+
+  return [density, setDensity] as const
+}
+
 function App() {
   const [mode, setMode] = useThemeMode()
+  const [density, setDensity] = useUiDensity()
   const [session, setSession] = useState<AuthSession | null>(null)
   const resolvedTheme = useResolvedTheme(mode)
   const dark = resolvedTheme === 'dark'
 
   useEffect(() => {
     document.documentElement.dataset.theme = resolvedTheme
+    document.documentElement.dataset.density = density
     document.body.classList.toggle('cv-admin-dark', dark)
-  }, [dark, resolvedTheme])
+  }, [dark, density, resolvedTheme])
 
   const configTheme = useMemo(
     () => ({
@@ -197,7 +214,7 @@ function App() {
   )
 
   return (
-    <ConfigProvider theme={configTheme}>
+    <ConfigProvider componentSize={density} theme={configTheme}>
       <AntApp>
         <BrowserRouter>
           <RouteDocumentTitle />
@@ -233,7 +250,17 @@ function App() {
               <Route path="copilot" element={<CopilotConfigPage />} />
               <Route path="audit" element={<AuditPage />} />
               <Route path="traffic" element={<TrafficPage />} />
-              <Route path="settings" element={<SettingsPage mode={mode} setMode={setMode} />} />
+              <Route
+                path="settings"
+                element={(
+                  <SettingsPage
+                    mode={mode}
+                    setMode={setMode}
+                    density={density}
+                    setDensity={setDensity}
+                  />
+                )}
+              />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

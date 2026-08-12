@@ -1,4 +1,5 @@
 export type ThemeMode = 'system' | 'light' | 'dark'
+export type UiDensity = 'middle' | 'small'
 
 export interface AdminStats {
   totalDownloads: number
@@ -219,7 +220,7 @@ export interface PublishDraftFormValues {
 
 export interface ThemeSettingsFormValues {
   themeMode: ThemeMode
-  density: 'middle' | 'small'
+  density: UiDensity
 }
 
 export interface UserAccount {

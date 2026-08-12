@@ -47,7 +47,7 @@ const route = {
       icon: <DashboardOutlined />,
     },
     {
-      path: '/admin/publish',
+      path: '/admin/release-management',
       name: '发布管理',
       icon: <CloudUploadOutlined />,
       routes: [
