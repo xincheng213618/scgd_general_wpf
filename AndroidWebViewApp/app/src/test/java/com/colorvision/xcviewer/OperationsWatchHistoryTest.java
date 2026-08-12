@@ -73,4 +73,16 @@ public class OperationsWatchHistoryTest {
         assertEquals("", OperationsWatchHistory.attentionState("custom"));
         assertFalse(OperationsWatchHistory.isOnlineState("custom"));
     }
+
+    @Test
+    public void remoteRelayStatesRemainTruthfulAndOnline() {
+        assertEquals("远程中继在线 · 电脑已连接",
+                OperationsWatchHistory.label(OperationsWatchHistory.STATE_REMOTE_ONLINE));
+        assertEquals("远程中继在线 · 等待电脑上线",
+                OperationsWatchHistory.label(OperationsWatchHistory.STATE_REMOTE_WAITING));
+        assertTrue(OperationsWatchHistory.isOnlineState(
+                OperationsWatchHistory.STATE_REMOTE_ONLINE));
+        assertTrue(OperationsWatchHistory.isOnlineState(
+                OperationsWatchHistory.STATE_REMOTE_WAITING));
+    }
 }

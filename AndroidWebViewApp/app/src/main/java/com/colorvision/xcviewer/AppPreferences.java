@@ -25,6 +25,9 @@ final class AppPreferences {
     private static final String KEY_LEGACY_OPERATIONS_WATCH_ENABLED = "operations_watch_enabled";
     private static final String KEY_LEGACY_OPERATIONS_WATCH_STATE = "operations_watch_state";
     private static final String KEY_OPERATIONS_WATCH_HISTORY = "operations_watch_history";
+    private static final String KEY_OPERATIONS_RELAY_TASK_ID = "operations_relay_task_id";
+    private static final String KEY_OPERATIONS_RELAY_TASK_CAPABILITY = "operations_relay_task_capability";
+    private static final String KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY = "operations_relay_task_idempotency";
 
     private final SharedPreferences preferences;
 
@@ -110,6 +113,9 @@ final class AppPreferences {
                 .putString(KEY_OPERATIONS_HOST_ID, hostId)
                 .putBoolean(KEY_OPERATIONS_PROFILE_REVOKED, false)
                 .remove(KEY_OPERATIONS_WATCH_HISTORY)
+                .remove(KEY_OPERATIONS_RELAY_TASK_ID)
+                .remove(KEY_OPERATIONS_RELAY_TASK_CAPABILITY)
+                .remove(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY)
                 .apply();
     }
 
@@ -159,6 +165,26 @@ final class AppPreferences {
         return transition.changed;
     }
 
+    void saveOperationsRelayTask(String taskId, String capabilityId, String idempotencyKey) {
+        preferences.edit()
+                .putString(KEY_OPERATIONS_RELAY_TASK_ID, taskId)
+                .putString(KEY_OPERATIONS_RELAY_TASK_CAPABILITY, capabilityId)
+                .putString(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY, idempotencyKey)
+                .apply();
+    }
+
+    String getOperationsRelayTaskId() {
+        return preferences.getString(KEY_OPERATIONS_RELAY_TASK_ID, "");
+    }
+
+    String getOperationsRelayTaskCapability() {
+        return preferences.getString(KEY_OPERATIONS_RELAY_TASK_CAPABILITY, "");
+    }
+
+    String getOperationsRelayTaskIdempotencyKey() {
+        return preferences.getString(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY, "");
+    }
+
     void clearOperationsProfile() {
         preferences.edit()
                 .remove(KEY_OPERATIONS_ENDPOINT)
@@ -168,6 +194,9 @@ final class AppPreferences {
                 .remove(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)
                 .remove(KEY_LEGACY_OPERATIONS_WATCH_STATE)
                 .remove(KEY_OPERATIONS_WATCH_HISTORY)
+                .remove(KEY_OPERATIONS_RELAY_TASK_ID)
+                .remove(KEY_OPERATIONS_RELAY_TASK_CAPABILITY)
+                .remove(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY)
                 .apply();
     }
 

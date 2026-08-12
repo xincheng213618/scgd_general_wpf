@@ -83,6 +83,8 @@ public class OperationsActivity extends Activity {
     private final Runnable connectionHeartbeat = this::runConnectionHeartbeat;
     private AppPreferences preferences;
     private OperationsApiClient client;
+    private OperationsRelayApiClient relayClient;
+    private JSONObject lastRelaySnapshotResponse;
     private TextView title;
     private TextView state;
     private TextView details;
@@ -99,6 +101,7 @@ public class OperationsActivity extends Activity {
     private boolean dashboardFlowActive;
     private boolean dashboardFlowCancelAvailable;
     private boolean dashboardVisible;
+    private volatile boolean remoteDashboard;
     private boolean showingDashboardSummary;
     private boolean connectionHeartbeatInFlight;
     private String pendingOperationsDestination = "";
@@ -297,8 +300,15 @@ public class OperationsActivity extends Activity {
     private void openExistingProfile() {
         setBusy("正在连接已配对的 ColorVision 主机…");
         executor.execute(() -> {
+            Exception localFailure = null;
             try {
-                OperationsDeviceIdentity identity = new OperationsDeviceIdentity(preferences.getOperationsHostId());
+                String hostId = preferences.getOperationsHostId();
+                OperationsDeviceIdentity identity = new OperationsDeviceIdentity(hostId);
+                relayClient = new OperationsRelayApiClient(
+                        hostId,
+                        preferences.getOrCreateDeviceId(),
+                        preferences.getOperationsCertificatePin(),
+                        identity);
                 client = new OperationsApiClient(
                         preferences.getOperationsEndpoint(),
                         preferences.getOperationsCertificatePin(),
@@ -307,7 +317,24 @@ public class OperationsActivity extends Activity {
                 client.get("/ops/v1/snapshot");
                 runOnUiThread(this::showDashboard);
             } catch (Exception ex) {
-                runOnUiThread(() -> showExistingProfileFailure(ex));
+                localFailure = ex;
+                try {
+                    if (relayClient == null) {
+                        String hostId = preferences.getOperationsHostId();
+                        OperationsDeviceIdentity identity = new OperationsDeviceIdentity(hostId);
+                        relayClient = new OperationsRelayApiClient(
+                                hostId,
+                                preferences.getOrCreateDeviceId(),
+                                preferences.getOperationsCertificatePin(),
+                                identity);
+                    }
+                    JSONObject response = relayClient.getSnapshot();
+                    runOnUiThread(() -> showRemoteDashboard(response));
+                } catch (Exception relayException) {
+                    Exception finalLocalFailure = localFailure;
+                    runOnUiThread(() -> showExistingProfileFailure(
+                            finalLocalFailure, relayException));
+                }
             }
         });
     }
@@ -315,6 +342,8 @@ public class OperationsActivity extends Activity {
     private void showDashboard() {
         leaveSupportCenter();
         leaveLiveMonitor();
+        remoteDashboard = false;
+        lastRelaySnapshotResponse = null;
         dashboardVisible = true;
         showingDashboardSummary = true;
         progress.setVisibility(View.GONE);
@@ -389,6 +418,245 @@ public class OperationsActivity extends Activity {
         loadDashboardLiveStatus();
     }
 
+    private void showRemoteDashboard(JSONObject response) {
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        remoteDashboard = true;
+        lastRelaySnapshotResponse = response;
+        dashboardVisible = true;
+        showingDashboardSummary = true;
+        progress.setVisibility(View.GONE);
+        title.setText("运维伴侣");
+        actions.removeAllViews();
+        updateRemoteDashboardStatus(response);
+
+        JSONObject host = response.optJSONObject("host");
+        JSONArray capabilities = host == null ? null : host.optJSONArray("capabilities");
+        boolean canShowWindow = contains(capabilities, OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW);
+        boolean canRequestDiagnostics = contains(
+                capabilities, OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS);
+
+        addDashboardSection("远程操作");
+        Button showWindow = dashboardButton("显示电脑主窗口", v -> runRemoteTask(
+                OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW, new JSONObject()));
+        showWindow.setEnabled(canShowWindow);
+        Button diagnostics = dashboardButton("请求远程诊断", v -> {
+            JSONObject payload = new JSONObject();
+            try {
+                payload.put("reason", "Android 运维伴侣远程调试请求");
+            } catch (Exception ignored) {
+            }
+            runRemoteTask(OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS, payload);
+        });
+        diagnostics.setEnabled(canRequestDiagnostics);
+        addDashboardActionRow(showWindow, diagnostics);
+
+        addDashboardSection("连接与记录");
+        addDashboardActionRow(
+                dashboardButton("刷新远程状态", v -> refreshRemoteDashboard()),
+                dashboardButton("尝试现场直连", v -> openExistingProfile()));
+        Button recentTask = dashboardButton("最近远程请求", v -> refreshRecentRemoteTask());
+        recentTask.setEnabled(OperationsRelayPolicy.isSafeIdentifier(
+                preferences.getOperationsRelayTaskId()));
+        addDashboardActionRow(
+                recentTask,
+                dashboardButton("运维时间线", v -> showOperationsWatchHistory()));
+        addDashboardActionRow(
+                dashboardButton("现场连接自检", v -> runConnectionSelfCheck()),
+                dashboardButton("移除配对资料", v -> confirmClearProfile()));
+
+        scheduleConnectionHeartbeat();
+        ensureOperationsWatchRunning();
+    }
+
+    private void updateRemoteDashboardStatus(JSONObject response) {
+        JSONObject host = response.optJSONObject("host");
+        if (host == null) {
+            state.setText("远程中继响应不完整");
+            details.setText("配对资料已保留，后台会继续重试。");
+            return;
+        }
+        boolean fresh = OperationsRelayPolicy.isHostFresh(
+                host.optLong("signedAt", 0L), System.currentTimeMillis());
+        JSONObject snapshot = host.optJSONObject("snapshot");
+        JSONObject window = snapshot == null ? null : snapshot.optJSONObject("mainWindow");
+        JSONObject secure = snapshot == null ? null : snapshot.optJSONObject("secureOperations");
+        boolean running = snapshot != null && snapshot.optBoolean("isRunning", false);
+        boolean windowExists = window != null && window.optBoolean("exists", false);
+        boolean windowVisible = window != null && window.optBoolean("isVisible", false);
+
+        state.setText(fresh
+                ? "● 远程中继已连接 · 自动保持"
+                : "○ 远程中继在线 · 等待电脑上线");
+        StringBuilder text = new StringBuilder();
+        text.append("连接方式：固定站点设备签名中继")
+                .append("\n电脑状态：").append(fresh ? "在线" : "暂未上线")
+                .append("\nColorVision：").append(running ? "运行中" : "暂未确认")
+                .append("\n主窗口：");
+        if (!windowExists) {
+            text.append("暂未确认");
+        } else if (windowVisible) {
+            text.append("当前可见");
+        } else {
+            text.append("当前隐藏或最小化");
+        }
+        if (secure != null) {
+            text.append("\n电脑中继：")
+                    .append(secure.optBoolean("relayRunning", false) ? "运行中" : "等待恢复");
+        }
+        long signedAt = host.optLong("signedAt", 0L);
+        if (signedAt > 0L) {
+            text.append("\n最近更新：").append(new SimpleDateFormat(
+                    "MM-dd HH:mm:ss", Locale.getDefault()).format(new Date(signedAt * 1_000L)));
+        }
+        text.append("\n\n控制请求由本机密钥签名，并由电脑再次核验；固定站点不持有设备私钥，也不接收命令文本。");
+        details.setText(text.toString());
+    }
+
+    private void refreshRemoteDashboard() {
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在刷新远程中继状态…");
+        executor.execute(() -> {
+            try {
+                JSONObject response = relayClient.getSnapshot();
+                runOnUiThread(() -> showRemoteDashboard(response));
+            } catch (Exception ex) {
+                runOnUiThread(() -> showTransientError(ex));
+            }
+        });
+    }
+
+    private void runRemoteTask(String capabilityId, JSONObject payload) {
+        showingDashboardSummary = false;
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在签名并提交远程请求…");
+        executor.execute(() -> {
+            try {
+                JSONObject created = relayClient.createTask(capabilityId, payload);
+                String taskId = created.optString("taskId", "");
+                String idempotencyKey = created.optString("requestIdempotencyKey", "");
+                if (!OperationsRelayPolicy.isSafeIdentifier(taskId)
+                        || !OperationsRelayPolicy.isSafeIdentifier(idempotencyKey)) {
+                    throw new IllegalStateException("invalid_relay_task_response");
+                }
+                preferences.saveOperationsRelayTask(taskId, capabilityId, idempotencyKey);
+                pollRemoteTask(taskId, capabilityId, idempotencyKey);
+            } catch (Exception ex) {
+                runOnUiThread(() -> showTransientError(ex));
+            }
+        });
+    }
+
+    private void refreshRecentRemoteTask() {
+        String taskId = preferences.getOperationsRelayTaskId();
+        String capabilityId = preferences.getOperationsRelayTaskCapability();
+        String idempotencyKey = preferences.getOperationsRelayTaskIdempotencyKey();
+        if (!OperationsRelayPolicy.isSafeIdentifier(taskId)
+                || !OperationsRelayPolicy.isSafeIdentifier(idempotencyKey)) {
+            Toast.makeText(this, "还没有远程请求记录", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        showingDashboardSummary = false;
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在读取最近远程请求…");
+        executor.execute(() -> {
+            try {
+                pollRemoteTask(taskId, capabilityId, idempotencyKey);
+            } catch (Exception ex) {
+                runOnUiThread(() -> showTransientError(ex));
+            }
+        });
+    }
+
+    private void pollRemoteTask(
+            String taskId,
+            String capabilityId,
+            String idempotencyKey) throws Exception {
+        JSONObject latest = null;
+        String status = "queued";
+        for (int attempt = 0; attempt < 13 && !isFinishing(); attempt++) {
+            latest = relayClient.getTask(taskId, idempotencyKey);
+            JSONObject task = latest.optJSONObject("task");
+            if (task == null) {
+                throw new IllegalStateException("invalid_relay_task_response");
+            }
+            status = effectiveRemoteTaskStatus(task);
+            if (isRemoteTaskResultReady(status)) {
+                break;
+            }
+            if (attempt < 12) {
+                Thread.sleep(2_000L);
+            }
+        }
+        String finalStatus = status;
+        runOnUiThread(() -> renderRemoteTaskStatus(capabilityId, finalStatus));
+    }
+
+    private String effectiveRemoteTaskStatus(JSONObject task) {
+        JSONArray receipts = task.optJSONArray("receipts");
+        if (receipts != null && receipts.length() > 0) {
+            JSONObject latest = receipts.optJSONObject(receipts.length() - 1);
+            if (latest != null) {
+                String receiptStatus = latest.optString("status", "");
+                if (!receiptStatus.isEmpty()) {
+                    return receiptStatus;
+                }
+            }
+        }
+        return "queued";
+    }
+
+    private boolean isRemoteTaskResultReady(String status) {
+        return "completed".equals(status)
+                || "failed".equals(status)
+                || "rejected".equals(status)
+                || "expired".equals(status)
+                || "awaiting_local_consent".equals(status);
+    }
+
+    private void renderRemoteTaskStatus(String capabilityId, String status) {
+        progress.setVisibility(View.GONE);
+        if ("completed".equals(status)) {
+            state.setText(OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW.equals(capabilityId)
+                    ? "电脑主窗口已显示"
+                    : "远程诊断请求已完成");
+            details.setText("电脑已验证设备签名并完成请求，结果已写入运维审计。\n\n点击“刷新远程状态”可读取最新脱敏摘要。");
+        } else if ("awaiting_local_consent".equals(status)) {
+            state.setText("诊断请求已到达电脑");
+            details.setText("为避免远程静默取证，诊断包仍需电脑端本机同意后生成。请求身份、时间和状态已写入运维审计。");
+        } else if ("failed".equals(status) || "rejected".equals(status)) {
+            state.setText("电脑端未执行远程请求");
+            details.setText("请求已安全送达，但电脑端拒绝或执行失败。可刷新远程状态后重试；不会回退为任意命令执行。");
+        } else if ("expired".equals(status)) {
+            state.setText("远程请求已过期");
+            details.setText("电脑未在 15 分钟有效期内领取该请求。配对资料仍然保留，可在电脑上线后重新提交。");
+        } else {
+            state.setText("远程请求已安全排队");
+            details.setText("电脑暂未返回最终结果。后台中继会在有效期内继续等待；稍后点击“最近远程请求”即可继续查看。");
+        }
+        scheduleConnectionHeartbeat();
+    }
+
+    private void showCurrentDashboard() {
+        if (remoteDashboard && lastRelaySnapshotResponse != null) {
+            showRemoteDashboard(lastRelaySnapshotResponse);
+        } else {
+            showDashboard();
+        }
+    }
+
+    private boolean contains(JSONArray values, String expected) {
+        if (values == null) {
+            return false;
+        }
+        for (int index = 0; index < values.length(); index++) {
+            if (expected.equals(values.optString(index))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private boolean openPendingOperationsDestination() {
         String destination = pendingOperationsDestination;
         if (destination.isEmpty() || client == null) {
@@ -437,7 +705,7 @@ public class OperationsActivity extends Activity {
 
         Button back = new Button(this);
         back.setText("返回现场运维概览");
-        back.setOnClickListener(v -> showDashboard());
+        back.setOnClickListener(v -> showCurrentDashboard());
         actions.addView(back, actionParams());
     }
 
@@ -465,7 +733,7 @@ public class OperationsActivity extends Activity {
 
     private void scheduleConnectionHeartbeat() {
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
-        if (activityResumed && dashboardVisible && client != null) {
+        if (activityResumed && dashboardVisible && (client != null || relayClient != null)) {
             connectionHeartbeatHandler.postDelayed(connectionHeartbeat, CONNECTION_HEARTBEAT_MILLISECONDS);
         }
     }
@@ -475,7 +743,7 @@ public class OperationsActivity extends Activity {
         super.onNewIntent(intent);
         setIntent(intent);
         acceptOperationsDestination(intent);
-        if (client != null && preferences.hasOperationsProfile()) {
+        if (!remoteDashboard && client != null && preferences.hasOperationsProfile()) {
             openPendingOperationsDestination();
         }
     }
@@ -493,17 +761,25 @@ public class OperationsActivity extends Activity {
     }
 
     private void runConnectionHeartbeat() {
-        if (!activityResumed || !dashboardVisible || client == null || connectionHeartbeatInFlight) {
+        if (!activityResumed || !dashboardVisible
+                || (client == null && relayClient == null)
+                || connectionHeartbeatInFlight) {
             return;
         }
         connectionHeartbeatInFlight = true;
         executor.execute(() -> {
             try {
+                if (client == null) {
+                    throw new IllegalStateException("local_operations_client_unavailable");
+                }
                 JSONObject response = client.get("/ops/v1/monitor");
                 JSONObject snapshot = response.optJSONObject("data");
                 runOnUiThread(() -> {
                     connectionHeartbeatInFlight = false;
-                    if (showingDashboardSummary) {
+                    if (remoteDashboard) {
+                        showDashboard();
+                        return;
+                    } else if (showingDashboardSummary) {
                         state.setText("● 已连接 · 后台持续守护");
                     }
                     if (snapshot != null) {
@@ -511,14 +787,37 @@ public class OperationsActivity extends Activity {
                     }
                     scheduleConnectionHeartbeat();
                 });
-            } catch (Exception ignored) {
-                runOnUiThread(() -> {
-                    connectionHeartbeatInFlight = false;
-                    if (showingDashboardSummary) {
-                        state.setText("● 连接暂断 · 正在自动重试");
+            } catch (Exception localException) {
+                try {
+                    if (relayClient == null) {
+                        throw new IllegalStateException("relay_client_unavailable");
                     }
-                    scheduleConnectionHeartbeat();
-                });
+                    JSONObject response = relayClient.getSnapshot();
+                    runOnUiThread(() -> {
+                        connectionHeartbeatInFlight = false;
+                        if (remoteDashboard) {
+                            lastRelaySnapshotResponse = response;
+                            if (showingDashboardSummary) {
+                                updateRemoteDashboardStatus(response);
+                                progress.setVisibility(View.GONE);
+                            }
+                        } else {
+                            showRemoteDashboard(response);
+                            return;
+                        }
+                        scheduleConnectionHeartbeat();
+                    });
+                } catch (Exception relayException) {
+                    runOnUiThread(() -> {
+                        connectionHeartbeatInFlight = false;
+                        if (remoteDashboard) {
+                            state.setText("○ 远程中继暂断 · 正在自动重试");
+                        } else if (showingDashboardSummary) {
+                            state.setText("● 连接暂断 · 正在自动重试");
+                        }
+                        scheduleConnectionHeartbeat();
+                    });
+                }
             }
         });
     }
@@ -666,13 +965,15 @@ public class OperationsActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
-    private void showExistingProfileFailure(Exception ex) {
+    private void showExistingProfileFailure(Exception localException, Exception relayException) {
         leaveSupportCenter();
+        remoteDashboard = false;
         dashboardVisible = false;
         progress.setVisibility(View.GONE);
-        title.setText("安全通道暂不可用");
-        state.setText(readableError(ex));
-        details.setText("已保留本机设备密钥和配对资料。临时断线、电脑未启动或防火墙阻断都不需要重新配对；请先运行分层连接自检。");
+        title.setText("连接正在自动恢复");
+        state.setText(readableError(localException));
+        details.setText("现场安全通道和固定远程中继当前都未能确认电脑在线。已保留本机设备密钥和配对资料，后台会继续重试；无需重新配对。\n\n远程中继："
+                + readableError(relayException));
         showConnectionRecoveryActions(false);
     }
 
@@ -3224,6 +3525,9 @@ public class OperationsActivity extends Activity {
     private void clearProfile() {
         leaveSupportCenter();
         leaveLiveMonitor();
+        remoteDashboard = false;
+        relayClient = null;
+        lastRelaySnapshotResponse = null;
         dashboardVisible = false;
         OperationsWatchService.stopForProfileRemoval(this);
         try {
@@ -3294,6 +3598,23 @@ public class OperationsActivity extends Activity {
         }
         if (message.contains("unknown_or_revoked_device")) {
             return "设备已被电脑端撤销，请重新配对。";
+        }
+        if (message.contains("host_not_found") || message.contains("unknown_host_identity")) {
+            return "电脑端尚未接入固定远程中继；配对资料已保留，电脑更新并启动后会自动接入。";
+        }
+        if (message.contains("device_scope_required")) {
+            return "当前配对未获准执行这项远程操作。";
+        }
+        if (message.contains("request_time_out_of_range")) {
+            return "手机时间与中继时间偏差过大，请开启系统自动校时后重试。";
+        }
+        if (message.contains("task_capability_not_allowed")
+                || message.contains("relay_request_origin_rejected")) {
+            return "该远程操作不在应用的固定安全能力清单中，已阻止提交。";
+        }
+        if (message.contains("relay_response_too_large")
+                || message.contains("invalid_relay_task_response")) {
+            return "远程中继响应不符合应用的安全边界，已停止处理。";
         }
         if (message.contains("application_restart_flow_active")) {
             return "当前检测仍在执行，为避免中断检测，电脑端已拒绝重启。";
