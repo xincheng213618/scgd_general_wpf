@@ -93,6 +93,10 @@ public class OperationsActivity extends Activity {
     private Button dashboardAlertStatus;
     private Button dashboardPerformanceStatus;
     private Button dashboardRecoveryStatus;
+    private Button dashboardCancelFlowButton;
+    private boolean dashboardFlowAvailable;
+    private boolean dashboardFlowActive;
+    private boolean dashboardFlowCancelAvailable;
     private boolean dashboardVisible;
     private boolean showingDashboardSummary;
     private boolean connectionHeartbeatInFlight;
@@ -315,6 +319,9 @@ public class OperationsActivity extends Activity {
         state.setText("● 已连接 · 后台持续守护");
         details.setText("正在读取 ColorVision 运行摘要…");
         actions.removeAllViews();
+        dashboardFlowAvailable = false;
+        dashboardFlowActive = false;
+        dashboardFlowCancelAvailable = false;
 
         addDashboardSection("远程操作");
         addDashboardActionRow(
@@ -326,8 +333,10 @@ public class OperationsActivity extends Activity {
         addDashboardActionRow(
                 dashboardButton("恢复消息通道", v -> confirmRecoverMessageChannel()),
                 dashboardButton("重启 ColorVision", v -> confirmRestartApplication()));
+        dashboardCancelFlowButton = dashboardButton("取消检测（读取中）", v -> confirmCancelCurrentFlow());
+        dashboardCancelFlowButton.setEnabled(false);
         addDashboardActionRow(
-                dashboardButton("重启 MQTT", v -> confirmRestartMqtt()),
+                dashboardCancelFlowButton,
                 dashboardButton("连接自检", v -> runConnectionSelfCheck()));
 
         addDashboardSection("实时状态");
@@ -350,7 +359,7 @@ public class OperationsActivity extends Activity {
         addDashboardSection("进一步排查");
         addDashboardActionRow(
                 capabilityButton("服务健康", "/ops/v1/services/health"),
-                capabilityButton("消息详情", "/ops/v1/messaging/health"));
+                dashboardButton("重启 MQTT", v -> confirmRestartMqtt()));
         addDashboardActionRow(
                 capabilityButton("近期事件", "/ops/v1/diagnostics/recent-events"),
                 capabilityButton("崩溃与卡死", "/ops/v1/diagnostics/failures"));
@@ -470,9 +479,15 @@ public class OperationsActivity extends Activity {
         JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
         JSONObject recovery = snapshot.optJSONObject("applicationRecovery");
 
+        dashboardFlowAvailable = flow != null && flow.optBoolean("available", false);
+        dashboardFlowActive = flow != null && flow.optBoolean("isActive", false);
+        dashboardFlowCancelAvailable = dashboardFlowAvailable
+                && dashboardFlowActive
+                && flow.optBoolean("cancelAvailable", false);
+
         dashboardFlowStatus.setText(OperationsDashboardStatusFormatter.flow(
-                flow != null && flow.optBoolean("available", false),
-                flow != null && flow.optBoolean("isActive", false),
+                dashboardFlowAvailable,
+                dashboardFlowActive,
                 flow == null ? "idle" : flow.optString("phase", "idle")));
         dashboardDeviceStatus.setText(OperationsDashboardStatusFormatter.devices(
                 devices != null && devices.optBoolean("available", false),
@@ -499,6 +514,7 @@ public class OperationsActivity extends Activity {
                 recovery != null && recovery.optBoolean("supported", false),
                 recovery != null && recovery.optBoolean("registered", false),
                 recovery != null && recovery.optBoolean("automaticWatchdogActive", false)));
+        updateDashboardCancelFlowAction();
     }
 
     private void markDashboardLiveStatusUnavailable() {
@@ -511,6 +527,26 @@ public class OperationsActivity extends Activity {
         dashboardAlertStatus.setText("告警\n暂不可用");
         dashboardPerformanceStatus.setText("性能\n暂不可用");
         dashboardRecoveryStatus.setText("恢复\n暂不可用");
+        dashboardFlowAvailable = false;
+        dashboardFlowActive = false;
+        dashboardFlowCancelAvailable = false;
+        updateDashboardCancelFlowAction();
+    }
+
+    private void updateDashboardCancelFlowAction() {
+        if (dashboardCancelFlowButton == null) {
+            return;
+        }
+        dashboardCancelFlowButton.setText(OperationsDashboardStatusFormatter.flowCancellation(
+                dashboardFlowAvailable,
+                dashboardFlowActive,
+                dashboardFlowCancelAvailable,
+                liveMonitorCancelInFlight));
+        dashboardCancelFlowButton.setEnabled(OperationsDashboardStatusFormatter.flowCancellationEnabled(
+                dashboardFlowAvailable,
+                dashboardFlowActive,
+                dashboardFlowCancelAvailable,
+                liveMonitorCancelInFlight));
     }
 
     private Button capabilityButton(String label, String path) {
@@ -1793,7 +1829,10 @@ public class OperationsActivity extends Activity {
     }
 
     private void confirmCancelCurrentFlow() {
-        if (!liveMonitorCancelAvailable) {
+        boolean cancelAvailable = liveMonitorVisible
+                ? liveMonitorCancelAvailable
+                : showingDashboardSummary && dashboardFlowCancelAvailable;
+        if (!cancelAvailable) {
             Toast.makeText(this, "当前没有可取消的主检测", Toast.LENGTH_LONG).show();
             return;
         }
@@ -1806,11 +1845,17 @@ public class OperationsActivity extends Activity {
     }
 
     private void requestCancelCurrentFlow() {
+        boolean requestedFromLiveMonitor = liveMonitorVisible;
+        boolean requestedFromDashboard = !requestedFromLiveMonitor && showingDashboardSummary;
         liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
         liveMonitorCancelInFlight = true;
         progress.setVisibility(View.VISIBLE);
         state.setText("正在提交并确认取消请求…");
-        renderLiveMonitorActions();
+        if (requestedFromLiveMonitor) {
+            renderLiveMonitorActions();
+        } else {
+            updateDashboardCancelFlowAction();
+        }
         executor.execute(() -> {
             try {
                 JSONObject createBody = new JSONObject();
@@ -1835,23 +1880,32 @@ public class OperationsActivity extends Activity {
                 runOnUiThread(() -> {
                     progress.setVisibility(View.GONE);
                     liveMonitorCancelAvailable = false;
+                    dashboardFlowCancelAvailable = false;
                     liveMonitorCancelInFlight = false;
                     Toast.makeText(this,
                             "completed".equals(status)
                                     ? "已向当前检测发送取消请求"
                                     : "当前检测未取消，已保留审计结果",
                             Toast.LENGTH_LONG).show();
-                    if (liveMonitorVisible) {
+                    if (requestedFromLiveMonitor && liveMonitorVisible) {
                         loadLiveMonitor(true);
+                    } else if (requestedFromDashboard && showingDashboardSummary) {
+                        showDashboard();
                     }
                 });
             } catch (Exception ex) {
                 runOnUiThread(() -> {
                     liveMonitorCancelAvailable = false;
+                    dashboardFlowCancelAvailable = false;
                     liveMonitorCancelInFlight = false;
-                    showTransientError(ex);
-                    if (liveMonitorVisible) {
+                    if (requestedFromLiveMonitor && liveMonitorVisible) {
+                        showTransientError(ex);
                         scheduleLiveMonitorRefresh();
+                    } else if (requestedFromDashboard && showingDashboardSummary) {
+                        showTransientError(ex);
+                        updateDashboardCancelFlowAction();
+                    } else {
+                        Toast.makeText(this, "取消请求未完成", Toast.LENGTH_LONG).show();
                     }
                 });
             }

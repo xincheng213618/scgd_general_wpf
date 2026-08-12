@@ -3,6 +3,8 @@ package com.colorvision.xcviewer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class OperationsDashboardStatusFormatterTest {
     @Test
@@ -27,5 +29,25 @@ public class OperationsDashboardStatusFormatterTest {
         assertEquals("告警\n暂无异常", OperationsDashboardStatusFormatter.alerts(0, 0, 0));
         assertEquals("恢复\nWindows 后备",
                 OperationsDashboardStatusFormatter.recovery(true, true, false));
+    }
+
+    @Test
+    public void flowCancellationOnlyEnablesForExplicitlyCancellableActiveFlow() {
+        assertEquals("取消检测（暂不可用）",
+                OperationsDashboardStatusFormatter.flowCancellation(false, false, false, false));
+        assertEquals("当前无检测",
+                OperationsDashboardStatusFormatter.flowCancellation(true, false, false, false));
+        assertEquals("检测运行中（不可取消）",
+                OperationsDashboardStatusFormatter.flowCancellation(true, true, false, false));
+        assertEquals("取消当前检测",
+                OperationsDashboardStatusFormatter.flowCancellation(true, true, true, false));
+        assertEquals("正在取消检测…",
+                OperationsDashboardStatusFormatter.flowCancellation(true, true, true, true));
+
+        assertFalse(OperationsDashboardStatusFormatter.flowCancellationEnabled(false, true, true, false));
+        assertFalse(OperationsDashboardStatusFormatter.flowCancellationEnabled(true, false, true, false));
+        assertFalse(OperationsDashboardStatusFormatter.flowCancellationEnabled(true, true, false, false));
+        assertFalse(OperationsDashboardStatusFormatter.flowCancellationEnabled(true, true, true, true));
+        assertTrue(OperationsDashboardStatusFormatter.flowCancellationEnabled(true, true, true, false));
     }
 }

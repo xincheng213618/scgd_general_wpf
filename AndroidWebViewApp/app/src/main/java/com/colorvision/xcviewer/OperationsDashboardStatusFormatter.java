@@ -20,6 +20,25 @@ final class OperationsDashboardStatusFormatter {
         return "检测\n运行中";
     }
 
+    static String flowCancellation(boolean available, boolean active, boolean cancelAvailable,
+            boolean inFlight) {
+        if (inFlight) {
+            return "正在取消检测…";
+        }
+        if (!available) {
+            return "取消检测（暂不可用）";
+        }
+        if (!active) {
+            return "当前无检测";
+        }
+        return cancelAvailable ? "取消当前检测" : "检测运行中（不可取消）";
+    }
+
+    static boolean flowCancellationEnabled(boolean available, boolean active, boolean cancelAvailable,
+            boolean inFlight) {
+        return available && active && cancelAvailable && !inFlight;
+    }
+
     static String devices(boolean available, boolean configured, int ready, int busy, int attention, int total) {
         if (!available) {
             return "设备\n暂不可用";
