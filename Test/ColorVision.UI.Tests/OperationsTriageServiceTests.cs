@@ -37,13 +37,21 @@ namespace ColorVision.UI.Tests
 
             OperationsTriageReport report = OperationsTriageService.Build(
                 digest, new OperationsDesktopState(true, true, false, "Minimized"), 2,
-                ServiceHealth("stopped", healthy: false, maintenanceSupported: true));
+                ServiceHealth("stopped", healthy: false, maintenanceSupported: true),
+                OperationsDeviceHealthSnapshotFactory.Create(
+                [
+                    new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Ready),
+                    new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Unavailable),
+                ]));
 
             Assert.Equal("critical", report.State);
             Assert.Contains(report.Findings, item => item.FindingId == "recent-abnormal-events");
             Assert.Contains(report.Findings, item => item.FindingId == "message-service-events");
             Assert.Contains(report.Findings, item => item.FindingId == "desktop-window-hidden");
             Assert.Contains(report.Findings, item => item.FindingId == "pending-operations-jobs");
+            Assert.Contains(report.Findings, item => item.FindingId == "inspection-devices-attention");
+            Assert.Equal(2, report.DeviceTotalCount);
+            Assert.Equal(1, report.DeviceAttentionCount);
 
             OperationsTriageAction[] actions = report.Findings.SelectMany(item => item.Actions).ToArray();
             string[] allowedActionIds =
@@ -52,6 +60,7 @@ namespace ColorVision.UI.Tests
                 OperationsTriageActionIds.ShowMainWindow,
                 OperationsTriageActionIds.ReviewJobs,
                 OperationsTriageActionIds.RequestMqttRestart,
+                OperationsTriageActionIds.ViewDeviceHealth,
             ];
             Assert.All(actions, action => Assert.Contains(action.ActionId, allowedActionIds));
             OperationsTriageAction restart = Assert.Single(actions,
@@ -73,6 +82,78 @@ namespace ColorVision.UI.Tests
             Assert.Equal("healthy", report.State);
             Assert.Empty(report.Findings);
             Assert.Equal(0, report.PendingJobCount);
+        }
+
+        [Fact]
+        public void ClosedDeviceIsReportedWithoutBeingMisclassifiedAsAttention()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                deviceHealth: OperationsDeviceHealthSnapshotFactory.Create(
+                [
+                    new OperationsDeviceHealthObservation(
+                        OperationsDeviceCategories.Camera, OperationsDeviceStates.Closed),
+                ]));
+
+            Assert.Equal("healthy", report.State);
+            Assert.Equal(1, report.DeviceClosedCount);
+            Assert.Equal(0, report.DeviceAttentionCount);
+            Assert.DoesNotContain(report.Findings, item => item.Category == "devices");
+        }
+
+        [Fact]
+        public void DisconnectedMessageChannelExplainsUnavailableDeviceStates()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                deviceHealth: OperationsDeviceHealthSnapshotFactory.Create(
+                [
+                    new OperationsDeviceHealthObservation(
+                        OperationsDeviceCategories.Camera,
+                        OperationsDeviceStates.Unavailable,
+                        OperationsDeviceUnavailableReasons.Uninitialized),
+                ]),
+                messageChannel: OperationsMessageChannelHealthSnapshotFactory.Create(
+                    new OperationsMessageChannelObservation(true, false, 3, 0)));
+
+            OperationsTriageFinding channelFinding = Assert.Single(report.Findings,
+                item => item.FindingId == "message-channel-attention");
+            Assert.Equal("error", channelFinding.Severity);
+            Assert.Contains(channelFinding.Actions,
+                action => action.ActionId == OperationsTriageActionIds.ViewMessageChannelHealth);
+            OperationsTriageFinding deviceFinding = Assert.Single(report.Findings,
+                item => item.FindingId == "inspection-devices-attention");
+            Assert.Contains("可能由通道问题引起", deviceFinding.Summary, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void ReadyMessageChannelPushesUnavailableDevicesToDeviceLayer()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                deviceHealth: OperationsDeviceHealthSnapshotFactory.Create(
+                [
+                    new OperationsDeviceHealthObservation(
+                        OperationsDeviceCategories.Camera,
+                        OperationsDeviceStates.Unavailable,
+                        OperationsDeviceUnavailableReasons.Uninitialized),
+                ]),
+                messageChannel: OperationsMessageChannelHealthSnapshotFactory.Create(
+                    new OperationsMessageChannelObservation(true, true, 3, 3)));
+
+            Assert.DoesNotContain(report.Findings, item => item.Category == "message-channel");
+            OperationsTriageFinding deviceFinding = Assert.Single(report.Findings,
+                item => item.FindingId == "inspection-devices-attention");
+            Assert.Contains("消息通道当前正常", deviceFinding.Summary, StringComparison.Ordinal);
+            Assert.Contains("未初始化 1 台", deviceFinding.Summary, StringComparison.Ordinal);
+            Assert.Equal(1, report.DeviceUnavailableCount);
+            Assert.Equal(1, report.DeviceUninitializedCount);
         }
 
         [Fact]

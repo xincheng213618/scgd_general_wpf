@@ -246,6 +246,27 @@ class PluginIndexTests(unittest.TestCase):
         self.assertIn("historicalPackageCount", payload)
         self.assertIn("iconUrl", payload)
 
+    def test_detail_api_sorts_indexed_package_versions_numerically(self):
+        plugin_id = "NumericVersionPlugin"
+        self._create_plugin(plugin_id, "1.1.7.81")
+        history_dir = self.storage / "History" / "Plugins" / plugin_id
+        history_dir.mkdir(parents=True)
+        for version in ("1.1.7.80", "1.1.7.8", "1.1.7.79"):
+            (history_dir / f"{plugin_id}-{version}.cvxp").write_bytes(
+                version.encode("ascii")
+            )
+
+        from services.plugin_index import refresh_all_plugin_index
+        refresh_all_plugin_index(self.cache, self.storage)
+
+        response = self.client.get(f"/api/plugins/{plugin_id}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [item["version"] for item in response.get_json()["archivedVersions"]],
+            ["1.1.7.80", "1.1.7.79", "1.1.7.8"],
+        )
+
     # -------------------------------------------------------------------
     # Issue 2: fileHash present in detail after index refresh
     # -------------------------------------------------------------------

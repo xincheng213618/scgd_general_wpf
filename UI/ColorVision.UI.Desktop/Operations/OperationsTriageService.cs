@@ -6,6 +6,8 @@ namespace ColorVision.UI.Desktop.Operations
         public const string ShowMainWindow = "triage.window.show";
         public const string ReviewJobs = "triage.jobs.review";
         public const string RequestMqttRestart = "triage.mqtt.restart.request";
+        public const string ViewDeviceHealth = "triage.devices.view";
+        public const string ViewMessageChannelHealth = "triage.messaging.view";
     }
 
     public sealed class OperationsTriageAction
@@ -39,6 +41,21 @@ namespace ColorVision.UI.Desktop.Operations
         public int ErrorCount { get; init; }
         public int WarningCount { get; init; }
         public int PendingJobCount { get; init; }
+        public int DeviceTotalCount { get; init; }
+        public int DeviceReadyCount { get; init; }
+        public int DeviceBusyCount { get; init; }
+        public int DeviceClosedCount { get; init; }
+        public int DeviceUnavailableCount { get; init; }
+        public int DeviceAttentionCount { get; init; }
+        public int DeviceOfflineCount { get; init; }
+        public int DeviceUninitializedCount { get; init; }
+        public int DeviceUnauthorizedCount { get; init; }
+        public int DeviceUnclassifiedUnavailableCount { get; init; }
+        public string MessageChannelState { get; init; } = OperationsMessageChannelStates.Unavailable;
+        public bool MessageChannelConnected { get; init; }
+        public bool MessageChannelSubscriptionReady { get; init; }
+        public int MessageChannelRegisteredSubscriptionCount { get; init; }
+        public int MessageChannelActiveSubscriptionCount { get; init; }
         public DateTimeOffset GeneratedAt { get; init; } = DateTimeOffset.UtcNow;
         public IReadOnlyList<OperationsTriageFinding> Findings { get; init; } = [];
         public string SafetyNotice { get; init; } =
@@ -51,13 +68,19 @@ namespace ColorVision.UI.Desktop.Operations
             OperationsLogDigest digest,
             OperationsDesktopState desktop,
             int pendingJobCount,
-            OperationsServiceHealthReport? serviceHealth = null)
+            OperationsServiceHealthReport? serviceHealth = null,
+            OperationsDeviceHealthSnapshot? deviceHealth = null,
+            OperationsMessageChannelHealthSnapshot? messageChannel = null)
         {
             int boundedPendingJobCount = Math.Max(0, pendingJobCount);
             List<OperationsTriageFinding> findings = [];
 
             if (serviceHealth != null)
                 AddServiceHealthFindings(serviceHealth, findings);
+            if (messageChannel != null)
+                AddMessageChannelFinding(messageChannel, findings);
+            if (deviceHealth != null)
+                AddDeviceHealthFindings(deviceHealth, messageChannel, findings);
             AddLogFindings(digest, findings);
             AddMessageServiceFinding(digest, serviceHealth, findings);
             AddDesktopFinding(desktop, findings);
@@ -76,8 +99,154 @@ namespace ColorVision.UI.Desktop.Operations
                 ErrorCount = digest.ErrorCount,
                 WarningCount = digest.WarningCount,
                 PendingJobCount = boundedPendingJobCount,
+                DeviceTotalCount = Math.Max(0, deviceHealth?.TotalCount ?? 0),
+                DeviceReadyCount = Math.Max(0, deviceHealth?.ReadyCount ?? 0),
+                DeviceBusyCount = Math.Max(0, deviceHealth?.BusyCount ?? 0),
+                DeviceClosedCount = Math.Max(0, deviceHealth?.ClosedCount ?? 0),
+                DeviceUnavailableCount = Math.Max(0, deviceHealth?.UnavailableCount ?? 0),
+                DeviceAttentionCount = Math.Max(0, deviceHealth?.AttentionCount ?? 0),
+                DeviceOfflineCount = Math.Max(0, deviceHealth?.OfflineCount ?? 0),
+                DeviceUninitializedCount = Math.Max(0, deviceHealth?.UninitializedCount ?? 0),
+                DeviceUnauthorizedCount = Math.Max(0, deviceHealth?.UnauthorizedCount ?? 0),
+                DeviceUnclassifiedUnavailableCount = Math.Max(0, deviceHealth?.UnclassifiedUnavailableCount ?? 0),
+                MessageChannelState = messageChannel?.State ?? OperationsMessageChannelStates.Unavailable,
+                MessageChannelConnected = messageChannel?.Connected == true,
+                MessageChannelSubscriptionReady = messageChannel?.SubscriptionReady == true,
+                MessageChannelRegisteredSubscriptionCount = Math.Max(0, messageChannel?.RegisteredSubscriptionCount ?? 0),
+                MessageChannelActiveSubscriptionCount = Math.Max(0, messageChannel?.ActiveSubscriptionCount ?? 0),
                 Findings = findings,
             };
+        }
+
+        private static void AddDeviceHealthFindings(
+            OperationsDeviceHealthSnapshot deviceHealth,
+            OperationsMessageChannelHealthSnapshot? messageChannel,
+            List<OperationsTriageFinding> findings)
+        {
+            if (!deviceHealth.Available)
+            {
+                findings.Add(new OperationsTriageFinding
+                {
+                    FindingId = "device-health-unavailable",
+                    Severity = "info",
+                    Category = "devices",
+                    Title = "检测设备状态暂不可用",
+                    Summary = "当前无法取得设备注册表的类别级运行状态汇总；不会据此执行任何设备操作。",
+                });
+                return;
+            }
+            if (deviceHealth.AttentionCount == 0)
+                return;
+
+            string correlationSummary = messageChannel is { Available: true, AttentionRequired: true }
+                ? "消息通道当前未就绪，这些设备状态可能由通道问题引起；请先处理消息通道。"
+                : messageChannel is { Available: true, Connected: true, SubscriptionReady: true }
+                    ? "消息通道当前正常，优先在电脑端核对具体设备进程、授权和运行状态。"
+                    : "请先查看类别级汇总，再到电脑端核对具体设备。";
+            string unavailableReasonSummary = DeviceUnavailableReasonSummary(deviceHealth);
+            findings.Add(new OperationsTriageFinding
+            {
+                FindingId = "inspection-devices-attention",
+                Severity = "warning",
+                Category = "devices",
+                Title = "检测设备存在不可用或未知状态",
+                Summary = $"已加载设备 {deviceHealth.TotalCount} 台，其中不可用 {deviceHealth.UnavailableCount} 台、状态未知 {deviceHealth.UnknownCount} 台。{unavailableReasonSummary}{correlationSummary}",
+                EvidenceCount = deviceHealth.AttentionCount,
+                LatestAt = deviceHealth.ObservedAt,
+                Actions =
+                [
+                    new OperationsTriageAction
+                    {
+                        ActionId = OperationsTriageActionIds.ViewDeviceHealth,
+                        Title = "查看设备状态概览",
+                        Kind = "client-navigation",
+                        RiskLevel = OperationsRiskLevels.ReadOnly,
+                        Description = "只查看固定类别的规范化运行状态计数，不返回设备身份，也不执行重连或重启。",
+                    },
+                ],
+            });
+        }
+
+        private static string DeviceUnavailableReasonSummary(OperationsDeviceHealthSnapshot deviceHealth)
+        {
+            if (deviceHealth.UnavailableCount == 0)
+                return string.Empty;
+
+            List<string> reasons = [];
+            AddReason(reasons, "离线", deviceHealth.OfflineCount);
+            AddReason(reasons, "未初始化", deviceHealth.UninitializedCount);
+            AddReason(reasons, "未授权", deviceHealth.UnauthorizedCount);
+            AddReason(reasons, "未归类", deviceHealth.UnclassifiedUnavailableCount);
+            return reasons.Count == 0 ? string.Empty : $"不可用原因：{string.Join("、", reasons)}。";
+        }
+
+        private static void AddReason(List<string> reasons, string title, int count)
+        {
+            if (count > 0)
+                reasons.Add($"{title} {count} 台");
+        }
+
+        private static void AddMessageChannelFinding(
+            OperationsMessageChannelHealthSnapshot messageChannel,
+            List<OperationsTriageFinding> findings)
+        {
+            if (!messageChannel.Available)
+            {
+                findings.Add(new OperationsTriageFinding
+                {
+                    FindingId = "message-channel-health-unavailable",
+                    Severity = "info",
+                    Category = "message-channel",
+                    Title = "消息通道状态暂不可用",
+                    Summary = "当前无法取得 ColorVision 消息客户端的脱敏连接状态；不会据此自动重连或重启。",
+                });
+                return;
+            }
+            if (!messageChannel.AttentionRequired)
+                return;
+
+            string title;
+            string summary;
+            string severity;
+            switch (messageChannel.State)
+            {
+                case OperationsMessageChannelStates.Unconfigured:
+                    title = "消息通道尚未配置";
+                    summary = "ColorVision 当前没有有效的消息服务连接配置；请在电脑端复核配置。";
+                    severity = "warning";
+                    break;
+                case OperationsMessageChannelStates.Disconnected:
+                    title = "ColorVision 未连接消息服务";
+                    summary = "消息服务进程可能仍在运行，但 ColorVision 客户端当前没有建立连接；设备状态可能因此不可用。";
+                    severity = "error";
+                    break;
+                default:
+                    title = "消息订阅尚未完全恢复";
+                    summary = $"ColorVision 已连接消息服务，但只恢复了 {messageChannel.ActiveSubscriptionCount}/{messageChannel.RegisteredSubscriptionCount} 个已登记订阅；请稍后刷新或在电脑端复核。";
+                    severity = "warning";
+                    break;
+            }
+            findings.Add(new OperationsTriageFinding
+            {
+                FindingId = "message-channel-attention",
+                Severity = severity,
+                Category = "message-channel",
+                Title = title,
+                Summary = summary,
+                EvidenceCount = 1,
+                LatestAt = messageChannel.ObservedAt,
+                Actions =
+                [
+                    new OperationsTriageAction
+                    {
+                        ActionId = OperationsTriageActionIds.ViewMessageChannelHealth,
+                        Title = "查看消息通道健康",
+                        Kind = "client-navigation",
+                        RiskLevel = OperationsRiskLevels.ReadOnly,
+                        Description = "只查看脱敏连接状态、订阅计数和聚合活动时间，不执行重连、重启或任意目标操作。",
+                    },
+                ],
+            });
         }
 
         private static void AddServiceHealthFindings(

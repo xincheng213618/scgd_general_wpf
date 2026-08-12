@@ -20,6 +20,7 @@ namespace ColorVision.UI.Desktop.Operations
     public sealed class OperationsSecureApiRouter
     {
         private const string ApiPrefix = "/ops/v1";
+        private static readonly TimeSpan LiveMonitorAuditInterval = TimeSpan.FromMinutes(5);
         private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         private readonly OperationsPairingService _pairing;
         private readonly OperationsRequestAuthenticator _authenticator;
@@ -32,6 +33,9 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly OperationsWindowSnapshotService? _windowSnapshots;
         private readonly IOperationsRuntimePerformanceProvider _runtimePerformance;
         private readonly IOperationsFlowRuntimeStatusProvider _flowRuntimeStatus;
+        private readonly IOperationsFlowRuntimeController _flowRuntimeController;
+        private readonly IOperationsDeviceHealthProvider _deviceHealthProvider;
+        private readonly IOperationsMessageChannelHealthProvider _messageChannelHealthProvider;
 
         public OperationsSecureApiRouter(
             OperationsPairingService pairing,
@@ -44,7 +48,10 @@ namespace ColorVision.UI.Desktop.Operations
             OperationsDiagnosticBundleService? diagnosticBundles = null,
             OperationsWindowSnapshotService? windowSnapshots = null,
             IOperationsRuntimePerformanceProvider? runtimePerformance = null,
-            IOperationsFlowRuntimeStatusProvider? flowRuntimeStatus = null)
+            IOperationsFlowRuntimeStatusProvider? flowRuntimeStatus = null,
+            IOperationsFlowRuntimeController? flowRuntimeController = null,
+            IOperationsDeviceHealthProvider? deviceHealthProvider = null,
+            IOperationsMessageChannelHealthProvider? messageChannelHealthProvider = null)
         {
             _pairing = pairing;
             _authenticator = authenticator;
@@ -57,6 +64,9 @@ namespace ColorVision.UI.Desktop.Operations
             _windowSnapshots = windowSnapshots;
             _runtimePerformance = runtimePerformance ?? new OperationsRuntimePerformanceService();
             _flowRuntimeStatus = flowRuntimeStatus ?? UnavailableOperationsFlowRuntimeStatusProvider.Instance;
+            _flowRuntimeController = flowRuntimeController ?? UnavailableOperationsFlowRuntimeController.Instance;
+            _deviceHealthProvider = deviceHealthProvider ?? UnavailableOperationsDeviceHealthProvider.Instance;
+            _messageChannelHealthProvider = messageChannelHealthProvider ?? UnavailableOperationsMessageChannelHealthProvider.Instance;
         }
 
         public OperationsApiResponse Handle(OperationsSecureRequest request)
@@ -106,8 +116,10 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 IReadOnlyList<OperationsAlert> alerts = _alerts.GetRecent();
                 OperationsServiceHealthReport serviceHealth = CaptureServiceHealth();
+                OperationsDeviceHealthSnapshot deviceHealth = CaptureDeviceHealth();
+                OperationsMessageChannelHealthSnapshot messageChannel = CaptureMessageChannelHealth();
                 int pendingJobCount = _workStore.GetJobsForDevice(authentication.Device.DeviceId).Count(item => item.Status is
-                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local");
+                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local" or "approved_mobile");
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", new
                 {
                     channel = "ready",
@@ -120,6 +132,19 @@ namespace ColorVision.UI.Desktop.Operations
                     pendingJobCount,
                     serviceHealthAvailable = serviceHealth.Available,
                     unhealthyServiceCount = serviceHealth.Services.Count(item => !item.Healthy),
+                    deviceHealthAvailable = deviceHealth.Available,
+                    configuredDeviceCount = deviceHealth.TotalCount,
+                    readyDeviceCount = deviceHealth.ReadyCount,
+                    busyDeviceCount = deviceHealth.BusyCount,
+                    deviceAttentionCount = deviceHealth.AttentionCount,
+                    offlineDeviceCount = deviceHealth.OfflineCount,
+                    uninitializedDeviceCount = deviceHealth.UninitializedCount,
+                    unauthorizedDeviceCount = deviceHealth.UnauthorizedCount,
+                    unclassifiedUnavailableDeviceCount = deviceHealth.UnclassifiedUnavailableCount,
+                    messageChannelAvailable = messageChannel.Available,
+                    messageChannelState = messageChannel.State,
+                    messageChannelConnected = messageChannel.Connected,
+                    messageChannelSubscriptionReady = messageChannel.SubscriptionReady,
                 });
             }
 
@@ -129,13 +154,19 @@ namespace ColorVision.UI.Desktop.Operations
             if (request.Path.Equals($"{ApiPrefix}/services/health", StringComparison.OrdinalIgnoreCase))
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", CaptureServiceHealth());
 
+            if (request.Path.Equals($"{ApiPrefix}/devices/health", StringComparison.OrdinalIgnoreCase))
+                return HandleDeviceHealth(request, correlationId, authentication.Device);
+
+            if (request.Path.Equals($"{ApiPrefix}/messaging/health", StringComparison.OrdinalIgnoreCase))
+                return HandleMessageChannelHealth(request, correlationId, authentication.Device);
+
             if (request.Path.Equals($"{ApiPrefix}/triage", StringComparison.OrdinalIgnoreCase))
             {
                 int pendingJobCount = _workStore.GetJobsForDevice(authentication.Device.DeviceId).Count(item => item.Status is
-                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local");
+                    "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local" or "approved_mobile");
                 OperationsTriageReport report = OperationsTriageService.Build(
                     _alerts.GetDigest(), OperationsDesktopActionService.CaptureState(), pendingJobCount,
-                    CaptureServiceHealth());
+                    CaptureServiceHealth(), CaptureDeviceHealth(), CaptureMessageChannelHealth());
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", report);
             }
 
@@ -158,6 +189,9 @@ namespace ColorVision.UI.Desktop.Operations
 
             if (request.Path.Equals($"{ApiPrefix}/flow/runtime", StringComparison.OrdinalIgnoreCase))
                 return HandleFlowRuntimeStatus(request, correlationId, authentication.Device);
+
+            if (request.Path.Equals($"{ApiPrefix}/monitor", StringComparison.OrdinalIgnoreCase))
+                return HandleLiveMonitor(request, correlationId, authentication.Device);
 
             if (request.Path.Equals($"{ApiPrefix}/jobs", StringComparison.OrdinalIgnoreCase))
                 return HandleJobs(request, correlationId, authentication.Device);
@@ -220,6 +254,68 @@ namespace ColorVision.UI.Desktop.Operations
             }
         }
 
+        private OperationsDeviceHealthSnapshot CaptureDeviceHealth()
+        {
+            try
+            {
+                return _deviceHealthProvider.Capture();
+            }
+            catch
+            {
+                return OperationsDeviceHealthSnapshot.CreateUnavailable();
+            }
+        }
+
+        private OperationsMessageChannelHealthSnapshot CaptureMessageChannelHealth()
+        {
+            try
+            {
+                return _messageChannelHealthProvider.Capture();
+            }
+            catch
+            {
+                return OperationsMessageChannelHealthSnapshot.CreateUnavailable();
+            }
+        }
+
+        private OperationsApiResponse HandleMessageChannelHealth(
+            OperationsSecureRequest request,
+            string correlationId,
+            OperationsPairedDevice device)
+        {
+            if (!string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return Error(405, correlationId, "method_not_allowed", "Use GET for this endpoint.", "GET");
+            if (!HasScope(device, "ops.diagnostics.read"))
+                return ScopeRequired(correlationId, "ops.diagnostics.read");
+
+            OperationsMessageChannelHealthSnapshot snapshot = CaptureMessageChannelHealth();
+            _workStore.RecordAudit(device.DeviceId, "device", "messaging.health.read",
+                "message-channel", snapshot.Available ? "completed" : "failed", correlationId);
+            return snapshot.Available
+                ? Json(200, correlationId, snapshot)
+                : Error(503, correlationId, "message_channel_health_unavailable",
+                    "The redacted ColorVision message-channel health snapshot is temporarily unavailable.");
+        }
+
+        private OperationsApiResponse HandleDeviceHealth(
+            OperationsSecureRequest request,
+            string correlationId,
+            OperationsPairedDevice device)
+        {
+            if (!string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return Error(405, correlationId, "method_not_allowed", "Use GET for this endpoint.", "GET");
+            if (!HasScope(device, "ops.diagnostics.read"))
+                return ScopeRequired(correlationId, "ops.diagnostics.read");
+
+            OperationsDeviceHealthSnapshot snapshot = CaptureDeviceHealth();
+            _workStore.RecordAudit(device.DeviceId, "device", "devices.health.read",
+                "device-health", snapshot.Available ? "completed" : "failed", correlationId);
+            return snapshot.Available
+                ? Json(200, correlationId, snapshot)
+                : Error(503, correlationId, "device_health_unavailable",
+                    "The aggregate inspection-device health snapshot is temporarily unavailable.");
+        }
+
         private OperationsApiResponse HandleRuntimePerformance(
             OperationsSecureRequest request,
             string correlationId,
@@ -267,6 +363,48 @@ namespace ColorVision.UI.Desktop.Operations
                     "flow-runtime", "failed", correlationId);
                 return Error(503, correlationId, "flow_runtime_unavailable",
                     "The aggregate flow runtime status is temporarily unavailable.");
+            }
+        }
+
+        private OperationsApiResponse HandleLiveMonitor(
+            OperationsSecureRequest request,
+            string correlationId,
+            OperationsPairedDevice device)
+        {
+            if (!string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return Error(405, correlationId, "method_not_allowed", "Use GET for this endpoint.", "GET");
+            if (!HasScope(device, "ops.diagnostics.read"))
+                return ScopeRequired(correlationId, "ops.diagnostics.read");
+            try
+            {
+                OperationsLiveMonitorSnapshot snapshot = OperationsLiveMonitorSnapshotFactory.Create(
+                    _flowRuntimeStatus.Capture(),
+                    _runtimePerformance.Capture(),
+                    _alerts.GetRecent(),
+                    CaptureDeviceHealth(),
+                    messageChannel: CaptureMessageChannelHealth());
+                _workStore.RecordAuditThrottled(
+                    device.DeviceId,
+                    "device",
+                    "monitor.read",
+                    "live-monitor",
+                    "completed",
+                    correlationId,
+                    LiveMonitorAuditInterval);
+                return Json(200, correlationId, snapshot);
+            }
+            catch
+            {
+                _workStore.RecordAuditThrottled(
+                    device.DeviceId,
+                    "device",
+                    "monitor.read",
+                    "live-monitor",
+                    "failed",
+                    correlationId,
+                    LiveMonitorAuditInterval);
+                return Error(503, correlationId, "live_monitor_unavailable",
+                    "The bounded live monitor snapshot is temporarily unavailable.");
             }
         }
 
@@ -326,6 +464,10 @@ namespace ColorVision.UI.Desktop.Operations
                 string reason = OptionalString(root, "reason", 200);
                 JsonElement input = root.TryGetProperty("input", out JsonElement inputElement)
                     ? inputElement : JsonDocument.Parse("{}").RootElement;
+                if (capabilityId == "ops.flow.cancel"
+                    && (input.ValueKind != JsonValueKind.Object || input.EnumerateObject().Any()))
+                    return Error(400, correlationId, "flow_cancel_input_not_allowed",
+                        "Flow cancellation accepts no remote input fields.");
                 OperationsJob job = _workStore.CreateJob(capabilityId, device.DeviceId, reason, input, correlationId);
                 return Json(202, correlationId, new { job = OperationsJobSummaryFactory.Create(job) });
             }
@@ -349,7 +491,8 @@ namespace ColorVision.UI.Desktop.Operations
             string jobId = relative[..^"/decision".Length];
             if (jobId.Length != 32 || !jobId.All(char.IsLetterOrDigit))
                 return Error(400, correlationId, "invalid_job_id", "The job id is invalid.");
-            if (_workStore.GetJobForDevice(jobId, device.DeviceId) == null)
+            OperationsJob? currentJob = _workStore.GetJobForDevice(jobId, device.DeviceId);
+            if (currentJob == null)
                 return Error(404, correlationId, "job_not_found", "The job was not found for this device.");
             try
             {
@@ -359,7 +502,27 @@ namespace ColorVision.UI.Desktop.Operations
                     || approvedElement.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                     return Error(400, correlationId, "approval_decision_required", "approved must be a boolean.");
                 string reason = OptionalString(root, "reason", 200);
-                OperationsJob? job = _workStore.DecideJob(jobId, device.DeviceId, approvedElement.GetBoolean(), reason, correlationId);
+                bool approved = approvedElement.GetBoolean();
+                OperationsJob? job = approved
+                    && currentJob.CapabilityId == "ops.flow.cancel"
+                    && currentJob.Status == "approved_mobile"
+                        ? currentJob
+                        : _workStore.DecideJob(jobId, device.DeviceId, approved, reason, correlationId);
+                if (job?.CapabilityId == "ops.flow.cancel"
+                    && job.Status == "approved_mobile")
+                {
+                    OperationsFlowCancelResult result;
+                    try
+                    {
+                        result = _flowRuntimeController.RequestCancelCurrentFlow();
+                    }
+                    catch
+                    {
+                        result = new OperationsFlowCancelResult(false, "flow_control_failed",
+                            "The primary flow cancellation request failed.");
+                    }
+                    job = _workStore.CompleteJob(job.JobId, result.Accepted, $"flow_cancel:{result.Code}") ?? job;
+                }
                 return job == null
                     ? Error(409, correlationId, "job_not_awaiting_decision", "The job is not awaiting a mobile decision.")
                     : Json(200, correlationId, new { job = OperationsJobSummaryFactory.Create(job) });

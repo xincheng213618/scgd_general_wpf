@@ -90,6 +90,50 @@ class CacheManagerTests(unittest.TestCase):
         self.assertIsInstance(ts, int)
         self.assertGreater(ts, 1_700_000_000)
 
+    def test_audit_log_page_uses_exact_filtered_total(self):
+        db = self.cache.get_db()
+        try:
+            rows = [
+                ("session", "alice", "pagination_probe", "plugin", "p1", "2026-08-12T00:00:01+00:00"),
+                ("api_key", "robot", "pagination_probe", "plugin", "p2", "2026-08-12T00:00:02+00:00"),
+                ("session", "alice", "pagination_probe", "release", "r1", "2026-08-12T00:00:03+00:00"),
+                ("session", "alicia", "pagination_probe", "plugin", "p4", "2026-08-12T00:00:04+00:00"),
+                ("session", "bob", "pagination_probe", "plugin", "p5", "2026-08-12T00:00:05+00:00"),
+                ("system", "worker", "other_action", "plugin", "p6", "2026-08-12T00:00:06+00:00"),
+            ]
+            db.executemany(
+                """INSERT INTO audit_log
+                   (actor_type, actor_id, action, target_type, target_id, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                rows,
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        page = self.cache.get_audit_log_page(
+            action="pagination_probe",
+            actor="ali",
+            target="plugin",
+            since="2026-08-12T00:00:00+00:00",
+            until="2026-08-12T00:00:04+00:00",
+            limit=1,
+            offset=1,
+        )
+        self.assertEqual(page["total"], 2)
+        self.assertEqual(len(page["entries"]), 1)
+        self.assertEqual(page["entries"][0]["actor_id"], "alice")
+
+        beyond_last_page = self.cache.get_audit_log_page(
+            action="pagination_probe",
+            actor="ali",
+            target="plugin",
+            limit=20,
+            offset=100,
+        )
+        self.assertEqual(beyond_last_page["total"], 2)
+        self.assertEqual(beyond_last_page["entries"], [])
+
     def test_backup_db_captures_committed_wal_content(self):
         writer = self.cache.get_db()
         try:

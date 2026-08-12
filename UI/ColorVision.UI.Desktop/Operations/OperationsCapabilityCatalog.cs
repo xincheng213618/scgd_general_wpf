@@ -2,7 +2,7 @@ namespace ColorVision.UI.Desktop.Operations
 {
     public static class OperationsCapabilityCatalog
     {
-        public const string SchemaVersion = "1.0";
+        public const string SchemaVersion = "1.5";
 
         private static readonly IReadOnlyList<OperationsCapabilityDescriptor> Capabilities =
         [
@@ -104,6 +104,47 @@ namespace ColorVision.UI.Desktop.Operations
             },
             new()
             {
+                Id = "ops.flow.cancel",
+                Title = "Cancel the active primary flow",
+                Description = "Request cancellation of the currently active primary ColorVision flow through its canonical execution session. The request accepts no flow, template, batch, node, or parameter identity.",
+                Category = "flow-control",
+                Provider = "engine.flow-runtime",
+                RiskLevel = OperationsRiskLevels.ApprovalRequired,
+                Permission = "ops.jobs.create",
+                DiscoverableOn = ["desktop", "android"],
+                InputSchema = new { type = "object", additionalProperties = false },
+                TimeoutMs = 2000,
+                Idempotency = "state-dependent",
+                SupportsCancellation = false,
+                Approval = new OperationsApprovalPolicy
+                {
+                    Mode = "paired-device-confirmation",
+                    TtlSeconds = 300,
+                    SingleUse = true,
+                    RequiresLocalCoSign = false,
+                },
+                Audit = new OperationsAuditPolicy { Required = true },
+                Evidence = ["flow.cancel.request", "job.audit"],
+                Available = true,
+            },
+            new()
+            {
+                Id = "ops.monitor.read",
+                Title = "Read a bounded live operations snapshot",
+                Description = "Read aggregate flow state, process counters, UI responsiveness, normalized message-channel and device-state summaries, and alert counts in one foreground monitoring request without returning identities, raw status, log text, or inspection data.",
+                Category = "diagnostics",
+                Provider = "desktop.operations",
+                Permission = "ops.diagnostics.read",
+                DiscoverableOn = ["desktop", "android", "copilot"],
+                InputSchema = new { type = "object", additionalProperties = false },
+                OutputSchema = new { type = "object", additionalProperties = true },
+                TimeoutMs = 2500,
+                Audit = new OperationsAuditPolicy { Required = true },
+                Evidence = ["flow.lifecycle.aggregate", "process.aggregate-counters", "desktop.ui-latency", "mqtt.connection.normalized", "mqtt.subscription.counts", "device.runtime-state.aggregate", "application.alert.counts"],
+                Available = true,
+            },
+            new()
+            {
                 Id = "ops.audit.read",
                 Title = "Read a bounded operations activity timeline",
                 Description = "Read the latest 30 de-identified operations audit summaries without returning actor, device, target, or correlation identifiers.",
@@ -121,7 +162,7 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 Id = "ops.triage.read",
                 Title = "Read guided remediation recommendations",
-                Description = "Turn bounded desktop, job, and redacted event evidence into fixed safe-navigation, audited low-risk, or approval-gated remediation recommendations.",
+                Description = "Turn bounded desktop, job, service, normalized message-channel and device-state, and redacted event evidence into fixed safe-navigation, audited low-risk, or approval-gated remediation recommendations.",
                 Category = "diagnostics",
                 Provider = "desktop.operations",
                 Permission = "ops.diagnostics.read",
@@ -129,7 +170,7 @@ namespace ColorVision.UI.Desktop.Operations
                 InputSchema = new { type = "object", additionalProperties = false },
                 OutputSchema = new { type = "object", additionalProperties = true },
                 Audit = new OperationsAuditPolicy { Required = true },
-                Evidence = ["application.log.digest", "desktop.window.state", "operations.job.state"],
+                Evidence = ["application.log.digest", "desktop.window.state", "operations.job.state", "service.health.allowlist", "mqtt.connection.normalized", "mqtt.subscription.counts", "device.runtime-state.aggregate"],
                 Available = true,
             },
             new()
@@ -145,6 +186,38 @@ namespace ColorVision.UI.Desktop.Operations
                 OutputSchema = new { type = "object", additionalProperties = true },
                 Audit = new OperationsAuditPolicy { Required = true },
                 Evidence = ["windows.scm.allowlist", "mqtt.endpoint.mode"],
+                Available = true,
+            },
+            new()
+            {
+                Id = "ops.devices.health.read",
+                Title = "Read aggregate inspection-device runtime health",
+                Description = "Read normalized ready, busy, transitioning, closed, unavailable, and unknown counts grouped into fixed coarse categories, plus aggregate offline, uninitialized, unauthorized, and unclassified reasons without returning device names, codes, identifiers, addresses, topics, configuration, raw status, or measurement data.",
+                Category = "diagnostics",
+                Provider = "engine.device-registry",
+                Permission = "ops.diagnostics.read",
+                DiscoverableOn = ["desktop", "android", "copilot"],
+                InputSchema = new { type = "object", additionalProperties = false },
+                OutputSchema = new { type = "object", additionalProperties = true },
+                TimeoutMs = 1500,
+                Audit = new OperationsAuditPolicy { Required = true },
+                Evidence = ["device.category.counts", "device.runtime-state.aggregate", "device.unavailability-reason.aggregate"],
+                Available = true,
+            },
+            new()
+            {
+                Id = "ops.messaging.health.read",
+                Title = "Read redacted ColorVision message-channel health",
+                Description = "Read normalized client connection state, subscription readiness, counts, and aggregate activity times without returning hosts, ports, endpoints, topics, payloads, identifiers, configuration, credentials, certificates, or raw logs.",
+                Category = "diagnostics",
+                Provider = "engine.mqtt-runtime",
+                Permission = "ops.diagnostics.read",
+                DiscoverableOn = ["desktop", "android", "copilot"],
+                InputSchema = new { type = "object", additionalProperties = false },
+                OutputSchema = new { type = "object", additionalProperties = true },
+                TimeoutMs = 1000,
+                Audit = new OperationsAuditPolicy { Required = true },
+                Evidence = ["mqtt.connection.normalized", "mqtt.subscription.counts", "mqtt.activity.aggregate"],
                 Available = true,
             },
             new()

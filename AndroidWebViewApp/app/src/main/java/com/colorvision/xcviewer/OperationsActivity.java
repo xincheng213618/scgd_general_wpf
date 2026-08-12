@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
@@ -34,8 +35,10 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
@@ -46,14 +49,30 @@ import javax.net.ssl.SSLHandshakeException;
 
 public class OperationsActivity extends Activity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
+    private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
+    private boolean liveMonitorVisible;
+    private boolean liveMonitorAutoRefresh;
+    private boolean liveMonitorRefreshInFlight;
+    private boolean liveMonitorCancelAvailable;
+    private boolean liveMonitorCancelInFlight;
+    private JSONObject liveMonitorLatestSnapshot;
+    private boolean activityResumed;
+    private int liveMonitorGeneration;
+    private final OperationsLiveMonitorTrend liveMonitorTrend = new OperationsLiveMonitorTrend();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler supportRefreshHandler = new Handler(Looper.getMainLooper());
     private final Runnable supportRefresh = () -> {
-        if (supportCenterVisible && supportAutoRefresh) {
+        if (activityResumed && supportCenterVisible && supportAutoRefresh) {
             loadSupportCenter(false);
+        }
+    };
+    private final Handler liveMonitorRefreshHandler = new Handler(Looper.getMainLooper());
+    private final Runnable liveMonitorRefresh = () -> {
+        if (activityResumed && liveMonitorVisible && liveMonitorAutoRefresh) {
+            loadLiveMonitor(false);
         }
     };
     private AppPreferences preferences;
@@ -145,7 +164,7 @@ public class OperationsActivity extends Activity {
                 pairingClient.submitClaim(payload, deviceName.trim());
                 runOnUiThread(() -> {
                     state.setText("已提交安全证明，请在电脑端批准这台设备");
-                    details.setText("设备：" + deviceName + "\n权限：状态、告警、诊断摘要、主窗口控制与受控窗口取证\n配对码：一次性，短时有效");
+                    details.setText("设备：" + deviceName + "\n权限：状态、告警、消息通道与设备运行状态汇总、诊断摘要、主窗口控制、受控窗口取证与当前检测取消\n配对码：一次性，短时有效");
                 });
                 pollPairingApproval(payload, pairingClient);
             } catch (Exception ex) {
@@ -215,11 +234,12 @@ public class OperationsActivity extends Activity {
 
     private void showDashboard() {
         leaveSupportCenter();
+        leaveLiveMonitor();
         dashboardVisible = true;
         progress.setVisibility(View.GONE);
         title.setText("现场运维概览");
         state.setText("已通过设备密钥与 TLS 证书指纹验证");
-        details.setText("状态、性能和告警可直接查看；显示/最小化窗口属于低风险审计操作。服务维护仍需手机明确确认和电脑端本机共签。");
+        details.setText("状态、性能、告警、消息通道和设备运行状态汇总可直接查看；显示/最小化窗口属于低风险审计操作。取消当前主检测需要手机明确确认；服务维护仍需手机确认和电脑端本机共签。");
         actions.removeAllViews();
 
         Button connectionCheck = new Button(this);
@@ -232,7 +252,14 @@ public class OperationsActivity extends Activity {
         triage.setOnClickListener(v -> showTriageCenter());
         actions.addView(triage, actionParams());
 
+        Button liveMonitor = new Button(this);
+        liveMonitor.setText("持续观察（每 10 秒）");
+        liveMonitor.setOnClickListener(v -> showLiveMonitor());
+        actions.addView(liveMonitor, actionParams());
+
         addAction("查看白名单服务健康", "/ops/v1/services/health");
+        addAction("查看消息通道健康", "/ops/v1/messaging/health");
+        addAction("查看检测设备状态概览", "/ops/v1/devices/health");
         addAction("刷新运行状态", "/ops/v1/snapshot");
         addAction("查看当前检测状态", "/ops/v1/flow/runtime");
         addAction("查看进程性能快照", "/ops/v1/diagnostics/performance");
@@ -393,6 +420,7 @@ public class OperationsActivity extends Activity {
 
     private void showTriageCenter() {
         leaveSupportCenter();
+        leaveLiveMonitor();
         dashboardVisible = true;
         progress.setVisibility(View.VISIBLE);
         state.setText("正在汇总有界证据与可用处置动作…");
@@ -474,6 +502,14 @@ public class OperationsActivity extends Activity {
                 button.setText("申请重启 MQTT（需电脑共签）");
                 button.setOnClickListener(v -> confirmRestartMqtt());
                 return button;
+            case "triage.devices.view":
+                button.setText("查看检测设备状态概览");
+                button.setOnClickListener(v -> loadCapability("/ops/v1/devices/health"));
+                return button;
+            case "triage.messaging.view":
+                button.setText("查看消息通道健康");
+                button.setOnClickListener(v -> loadCapability("/ops/v1/messaging/health"));
+                return button;
             default:
                 return null;
         }
@@ -486,7 +522,21 @@ public class OperationsActivity extends Activity {
                 .append("\n事件：严重 ").append(report.optInt("criticalCount", 0))
                 .append(" · 错误 ").append(report.optInt("errorCount", 0))
                 .append(" · 警告 ").append(report.optInt("warningCount", 0))
-                .append("\n待处理作业：").append(report.optInt("pendingJobCount", 0));
+                .append("\n待处理作业：").append(report.optInt("pendingJobCount", 0))
+                .append("\n消息通道：").append(messageChannelStateLabel(
+                        report.optString("messageChannelState", "unavailable")))
+                .append(" · 订阅 ").append(report.optInt("messageChannelActiveSubscriptionCount", 0))
+                .append('/').append(report.optInt("messageChannelRegisteredSubscriptionCount", 0))
+                .append("\n检测设备：就绪 ").append(report.optInt("deviceReadyCount", 0))
+                .append(" · 忙碌 ").append(report.optInt("deviceBusyCount", 0))
+                .append(" · 已关闭 ").append(report.optInt("deviceClosedCount", 0))
+                .append(" · 需关注 ").append(report.optInt("deviceAttentionCount", 0))
+                .append(" / 共 ").append(report.optInt("deviceTotalCount", 0));
+        appendDeviceUnavailableReasonValues(text,
+                report.optInt("deviceOfflineCount", 0),
+                report.optInt("deviceUninitializedCount", 0),
+                report.optInt("deviceUnauthorizedCount", 0),
+                report.optInt("deviceUnclassifiedUnavailableCount", 0));
         if (findings == null || findings.length() == 0) {
             text.append("\n\n当前有界证据未发现需要处理的项目。");
         } else {
@@ -546,6 +596,7 @@ public class OperationsActivity extends Activity {
 
     private void showJobs() {
         leaveSupportCenter();
+        leaveLiveMonitor();
         progress.setVisibility(View.VISIBLE);
         state.setText("正在读取安全作业摘要…");
         executor.execute(() -> {
@@ -559,7 +610,8 @@ public class OperationsActivity extends Activity {
                 if (jobs != null) {
                     for (int index = 0; index < jobs.length(); index++) {
                         JSONObject job = jobs.optJSONObject(index);
-                        if (job != null && "awaiting_mobile_approval".equals(job.optString("status"))) {
+                        if (job != null && ("awaiting_mobile_approval".equals(job.optString("status"))
+                                || "approved_mobile".equals(job.optString("status")))) {
                             if (waiting == null) {
                                 waiting = job;
                             }
@@ -634,13 +686,16 @@ public class OperationsActivity extends Activity {
 
     private void addApprovalActions(JSONObject job) {
         Button approve = new Button(this);
-        approve.setText("确认并批准此作业");
+        approve.setText("approved_mobile".equals(job.optString("status"))
+                ? "继续执行已批准作业" : "确认并批准此作业");
         approve.setOnClickListener(v -> confirmJobApproval(job));
         actions.addView(approve, actionParams());
-        Button reject = new Button(this);
-        reject.setText("拒绝此作业");
-        reject.setOnClickListener(v -> decideJob(job.optString("jobId", ""), false));
-        actions.addView(reject, actionParams());
+        if (!"approved_mobile".equals(job.optString("status"))) {
+            Button reject = new Button(this);
+            reject.setText("拒绝此作业");
+            reject.setOnClickListener(v -> decideJob(job.optString("jobId", ""), false));
+            actions.addView(reject, actionParams());
+        }
     }
 
     private void confirmJobApproval(JSONObject job) {
@@ -651,10 +706,13 @@ public class OperationsActivity extends Activity {
         }
         String title = job.optString("title", "现场运维作业");
         String target = job.optString("target", "固定运维能力");
+        boolean requiresLocalCoSign = job.optBoolean("requiresLocalCoSign", true);
         new AlertDialog.Builder(this)
                 .setTitle("确认批准：" + title)
                 .setMessage("目标：" + target
-                        + "\n\n批准只记录这台已配对手机的明确意图，不会立即执行。电脑端仍需本机人员再次确认；未共签前作业保持阻塞。")
+                        + (requiresLocalCoSign
+                        ? "\n\n批准只记录这台已配对手机的明确意图，不会立即执行。电脑端仍需本机人员再次确认；未共签前作业保持阻塞。"
+                        : "\n\n这是固定、无参数的远程动作。确认后会立即执行并写入审计，不需要电脑端再次共签。"))
                 .setNegativeButton("取消", null)
                 .setPositiveButton("确认批准", (dialog, which) -> decideJob(jobId, true))
                 .show();
@@ -667,10 +725,17 @@ public class OperationsActivity extends Activity {
                 JSONObject body = new JSONObject();
                 body.put("approved", approved);
                 body.put("reason", approved ? "已配对手机明确确认" : "现场运维人员拒绝");
-                client.post("/ops/v1/jobs/" + jobId + "/decision", body);
+                JSONObject response = client.post("/ops/v1/jobs/" + jobId + "/decision", body);
+                JSONObject data = response.optJSONObject("data");
+                JSONObject job = data == null ? null : data.optJSONObject("job");
+                boolean requiresLocalCoSign = job == null || job.optBoolean("requiresLocalCoSign", true);
+                String status = job == null ? "" : job.optString("status", "");
                 runOnUiThread(() -> {
                     Toast.makeText(this,
-                            approved ? "移动审批已记录，仍需电脑端本机共签" : "作业已拒绝",
+                            !approved ? "作业已拒绝"
+                                    : requiresLocalCoSign ? "移动审批已记录，仍需电脑端本机共签"
+                                    : "completed".equals(status) ? "远程动作已执行"
+                                    : "远程动作未执行，请查看作业结果",
                             Toast.LENGTH_LONG).show();
                     showJobs();
                 });
@@ -938,6 +1003,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void showSupportCenter() {
+        leaveLiveMonitor();
         supportCenterVisible = true;
         supportAutoRefresh = false;
         loadSupportCenter(true);
@@ -1123,7 +1189,7 @@ public class OperationsActivity extends Activity {
 
     private void scheduleSupportRefresh() {
         supportRefreshHandler.removeCallbacks(supportRefresh);
-        if (supportCenterVisible && supportAutoRefresh) {
+        if (activityResumed && supportCenterVisible && supportAutoRefresh) {
             supportRefreshHandler.postDelayed(supportRefresh, 5000);
         }
     }
@@ -1132,6 +1198,434 @@ public class OperationsActivity extends Activity {
         supportCenterVisible = false;
         supportAutoRefresh = false;
         supportRefreshHandler.removeCallbacks(supportRefresh);
+    }
+
+    private void showLiveMonitor() {
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        dashboardVisible = true;
+        liveMonitorVisible = true;
+        liveMonitorAutoRefresh = true;
+        liveMonitorCancelAvailable = false;
+        liveMonitorCancelInFlight = false;
+        liveMonitorLatestSnapshot = null;
+        liveMonitorTrend.reset();
+        title.setText("远程持续观察");
+        state.setText("正在采集第一份有界运行快照…");
+        details.setText("仅在此页面位于前台时每 10 秒刷新；切到后台会自动停止网络请求。服务器不保存采样历史。只有主检测活动时才会提供有界取消动作。 ");
+        renderLiveMonitorActions();
+        loadLiveMonitor(true);
+    }
+
+    private void loadLiveMonitor(boolean showBusy) {
+        if (!liveMonitorVisible || liveMonitorRefreshInFlight) {
+            return;
+        }
+        liveMonitorRefreshInFlight = true;
+        int requestGeneration = liveMonitorGeneration;
+        liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
+        renderLiveMonitorActions();
+        if (showBusy) {
+            progress.setVisibility(View.VISIBLE);
+            state.setText(liveMonitorTrend.size() == 0
+                    ? "正在采集第一份有界运行快照…"
+                    : "正在立即刷新持续观察…");
+        }
+        executor.execute(() -> {
+            try {
+                JSONObject response = client.get("/ops/v1/monitor");
+                JSONObject snapshot = response.optJSONObject("data");
+                if (snapshot == null) {
+                    throw new IllegalStateException("incomplete_live_monitor_response");
+                }
+                runOnUiThread(() -> {
+                    if (requestGeneration != liveMonitorGeneration) {
+                        return;
+                    }
+                    liveMonitorRefreshInFlight = false;
+                    if (!liveMonitorVisible) {
+                        return;
+                    }
+                    progress.setVisibility(View.GONE);
+                    liveMonitorLatestSnapshot = snapshot;
+                    liveMonitorTrend.add(createLiveMonitorSample(snapshot));
+                    JSONObject flow = snapshot.optJSONObject("flow");
+                    liveMonitorCancelAvailable = flow != null
+                            && flow.optBoolean("isActive", false)
+                            && flow.optBoolean("cancelAvailable", false);
+                    state.setText(liveMonitorState(snapshot));
+                    details.setText(formatLiveMonitorSnapshot(snapshot));
+                    renderLiveMonitorActions();
+                    scheduleLiveMonitorRefresh();
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> {
+                    if (requestGeneration != liveMonitorGeneration) {
+                        return;
+                    }
+                    liveMonitorRefreshInFlight = false;
+                    if (!liveMonitorVisible) {
+                        return;
+                    }
+                    progress.setVisibility(View.GONE);
+                    state.setText(liveMonitorAutoRefresh
+                            ? "本轮观察失败 · 10 秒后自动重试"
+                            : "本轮观察失败");
+                    details.setText(readableError(ex)
+                            + "\n\n持续观察本身不会删除配对资料或修改检测流程；只有你明确确认取消动作后才会介入当前检测。 ");
+                    renderLiveMonitorActions();
+                    scheduleLiveMonitorRefresh();
+                });
+            }
+        });
+    }
+
+    private void renderLiveMonitorActions() {
+        actions.removeAllViews();
+
+        Button refresh = new Button(this);
+        refresh.setText("立即刷新");
+        refresh.setEnabled(!liveMonitorRefreshInFlight && !liveMonitorCancelInFlight);
+        refresh.setOnClickListener(v -> loadLiveMonitor(true));
+        actions.addView(refresh, actionParams());
+
+        Button toggle = new Button(this);
+        toggle.setText(liveMonitorAutoRefresh ? "暂停自动观察" : "恢复每 10 秒观察");
+        toggle.setEnabled(!liveMonitorCancelInFlight);
+        toggle.setOnClickListener(v -> {
+            liveMonitorAutoRefresh = !liveMonitorAutoRefresh;
+            liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
+            if (liveMonitorAutoRefresh) {
+                state.setText("自动观察已恢复 · 正在刷新");
+                renderLiveMonitorActions();
+                loadLiveMonitor(true);
+            } else {
+                state.setText("自动观察已暂停 · 当前快照保留");
+                renderLiveMonitorActions();
+            }
+        });
+        actions.addView(toggle, actionParams());
+
+        Button cancelFlow = new Button(this);
+        cancelFlow.setText(liveMonitorCancelAvailable
+                ? "取消当前检测"
+                : "当前没有可取消的主检测");
+        cancelFlow.setEnabled(liveMonitorCancelAvailable
+                && !liveMonitorRefreshInFlight
+                && !liveMonitorCancelInFlight);
+        cancelFlow.setOnClickListener(v -> confirmCancelCurrentFlow());
+        actions.addView(cancelFlow, actionParams());
+
+        Button share = new Button(this);
+        share.setText(liveMonitorTrend.size() < 2
+                ? "分享本次趋势（至少需要 2 个样本）"
+                : "分享本次脱敏趋势");
+        share.setEnabled(liveMonitorTrend.size() >= 2);
+        share.setOnClickListener(v -> shareLiveMonitorTrend());
+        actions.addView(share, actionParams());
+
+        Button back = new Button(this);
+        back.setText("返回现场运维概览");
+        back.setOnClickListener(v -> showDashboard());
+        actions.addView(back, actionParams());
+    }
+
+    private void scheduleLiveMonitorRefresh() {
+        liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
+        if (activityResumed && liveMonitorVisible && liveMonitorAutoRefresh && !isFinishing()) {
+            liveMonitorRefreshHandler.postDelayed(
+                    liveMonitorRefresh, LIVE_MONITOR_REFRESH_MILLISECONDS);
+        }
+    }
+
+    private void leaveLiveMonitor() {
+        liveMonitorGeneration++;
+        liveMonitorVisible = false;
+        liveMonitorAutoRefresh = false;
+        liveMonitorRefreshInFlight = false;
+        liveMonitorCancelAvailable = false;
+        liveMonitorCancelInFlight = false;
+        liveMonitorLatestSnapshot = null;
+        liveMonitorTrend.reset();
+        liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
+    }
+
+    private OperationsLiveMonitorTrend.Sample createLiveMonitorSample(JSONObject snapshot) {
+        JSONObject flow = snapshot.optJSONObject("flow");
+        JSONObject performance = snapshot.optJSONObject("performance");
+        JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
+        JSONObject alerts = snapshot.optJSONObject("alerts");
+        Long uiLatency = mainUi != null
+                && mainUi.has("latencyMilliseconds")
+                && !mainUi.isNull("latencyMilliseconds")
+                ? mainUi.optLong("latencyMilliseconds", 0)
+                : null;
+        return new OperationsLiveMonitorTrend.Sample(
+                System.currentTimeMillis(),
+                performance == null ? 0 : performance.optDouble("cpuPercent", 0),
+                performance == null ? 0 : performance.optDouble("workingSetMb", 0),
+                mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable"),
+                uiLatency,
+                flow == null ? "unavailable" : flow.optString("phase", "unavailable"),
+                alerts == null ? 0 : alerts.optInt("count", 0));
+    }
+
+    private void confirmCancelCurrentFlow() {
+        if (!liveMonitorCancelAvailable) {
+            Toast.makeText(this, "当前没有可取消的主检测", Toast.LENGTH_LONG).show();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("取消当前检测？")
+                .setMessage("只会向当前主工作区正在执行的检测发送取消请求，不会选择、启动或修改其他流程，也不接受远程参数。确认后立即执行并记录审计。")
+                .setNegativeButton("继续观察", null)
+                .setPositiveButton("确认取消检测", (dialog, which) -> requestCancelCurrentFlow())
+                .show();
+    }
+
+    private void requestCancelCurrentFlow() {
+        liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
+        liveMonitorCancelInFlight = true;
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在提交并确认取消请求…");
+        renderLiveMonitorActions();
+        executor.execute(() -> {
+            try {
+                JSONObject createBody = new JSONObject();
+                createBody.put("capabilityId", "ops.flow.cancel");
+                createBody.put("reason", "已配对手机明确取消当前主检测");
+                createBody.put("input", new JSONObject());
+                JSONObject createResponse = client.post("/ops/v1/jobs", createBody);
+                JSONObject createData = createResponse.optJSONObject("data");
+                JSONObject createdJob = createData == null ? null : createData.optJSONObject("job");
+                String jobId = createdJob == null ? "" : createdJob.optString("jobId", "");
+                if (jobId.isEmpty()) {
+                    throw new IllegalStateException("invalid_flow_cancel_job");
+                }
+
+                JSONObject decisionBody = new JSONObject();
+                decisionBody.put("approved", true);
+                decisionBody.put("reason", "已配对手机明确确认取消当前主检测");
+                JSONObject decisionResponse = client.post("/ops/v1/jobs/" + jobId + "/decision", decisionBody);
+                JSONObject decisionData = decisionResponse.optJSONObject("data");
+                JSONObject decidedJob = decisionData == null ? null : decisionData.optJSONObject("job");
+                String status = decidedJob == null ? "" : decidedJob.optString("status", "");
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    liveMonitorCancelAvailable = false;
+                    liveMonitorCancelInFlight = false;
+                    Toast.makeText(this,
+                            "completed".equals(status)
+                                    ? "已向当前检测发送取消请求"
+                                    : "当前检测未取消，已保留审计结果",
+                            Toast.LENGTH_LONG).show();
+                    if (liveMonitorVisible) {
+                        loadLiveMonitor(true);
+                    }
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> {
+                    liveMonitorCancelAvailable = false;
+                    liveMonitorCancelInFlight = false;
+                    showTransientError(ex);
+                    if (liveMonitorVisible) {
+                        scheduleLiveMonitorRefresh();
+                    }
+                });
+            }
+        });
+    }
+
+    private String liveMonitorState(JSONObject snapshot) {
+        JSONObject flow = snapshot.optJSONObject("flow");
+        JSONObject performance = snapshot.optJSONObject("performance");
+        JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
+        JSONObject alerts = snapshot.optJSONObject("alerts");
+        JSONObject devices = snapshot.optJSONObject("devices");
+        JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
+        String uiState = mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable");
+        int criticalCount = alerts == null ? 0 : alerts.optInt("criticalCount", 0);
+        int errorCount = alerts == null ? 0 : alerts.optInt("errorCount", 0);
+        boolean flowActive = flow != null && flow.optBoolean("isActive", false);
+
+        String prefix;
+        int deviceAttentionCount = devices == null || !devices.optBoolean("available", false)
+                ? 0 : devices.optInt("attentionCount", 0);
+        boolean messageChannelAttention = messageChannel != null
+                && messageChannel.optBoolean("available", false)
+                && messageChannel.optBoolean("attentionRequired", false);
+        if ("unresponsive".equals(uiState)) {
+            prefix = "主界面响应超时";
+        } else if (criticalCount > 0) {
+            prefix = "发现严重告警";
+        } else if (messageChannelAttention) {
+            prefix = "消息通道状态需要关注";
+        } else if (deviceAttentionCount > 0) {
+            prefix = "检测设备状态需要关注";
+        } else if (errorCount > 0) {
+            prefix = "发现错误事件";
+        } else if ("slow".equals(uiState)) {
+            prefix = "主界面响应偏慢";
+        } else if (flowActive) {
+            prefix = "检测活动正在进行";
+        } else {
+            prefix = "当前聚合状态稳定";
+        }
+        return prefix + " · 本次内存样本 " + liveMonitorTrend.size()
+                + "/" + OperationsLiveMonitorTrend.MAX_SAMPLES;
+    }
+
+    private String formatLiveMonitorSnapshot(JSONObject snapshot) {
+        JSONObject flow = snapshot.optJSONObject("flow");
+        JSONObject performance = snapshot.optJSONObject("performance");
+        JSONObject devices = snapshot.optJSONObject("devices");
+        JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
+        JSONObject alerts = snapshot.optJSONObject("alerts");
+        StringBuilder text = new StringBuilder();
+        if (flow == null || !flow.optBoolean("available", false)) {
+            text.append("检测：流程运行时暂不可用");
+        } else {
+            text.append("检测：").append(flowPhaseLabel(flow.optString("phase", "idle")));
+            if (flow.optBoolean("progressAvailable", false)
+                    && flow.has("progressPercent") && !flow.isNull("progressPercent")) {
+                text.append(" · ").append(roundOne(flow.optDouble("progressPercent", 0))).append('%');
+            }
+            if (flow.has("elapsedMilliseconds") && !flow.isNull("elapsedMilliseconds")) {
+                text.append(" · 已用时 ")
+                        .append(formatElapsedMilliseconds(flow.optLong("elapsedMilliseconds", 0)));
+            }
+            String lastStatus = flow.optString("lastRunStatus", "none");
+            if (!"none".equals(lastStatus)) {
+                text.append("\n最近结果：").append(flowOutcomeLabel(lastStatus));
+            }
+        }
+
+        text.append("\n\n消息通道：");
+        if (messageChannel == null) {
+            text.append("状态暂不可用");
+        } else {
+            text.append(formatMessageChannelHealth(messageChannel, false));
+        }
+
+        if (devices == null || !devices.optBoolean("available", false)) {
+            text.append("\n\n检测设备：运行状态汇总暂不可用");
+        } else if (!devices.optBoolean("hasConfiguredDevices", false)) {
+            text.append("\n\n检测设备：当前未发现已加载设备");
+        } else {
+            text.append("\n\n检测设备：共 ").append(devices.optInt("totalCount", 0)).append(" 台 · ");
+            appendDeviceStateCounts(text, devices);
+            appendDeviceUnavailableReasons(text, devices);
+        }
+
+        if (performance == null) {
+            text.append("\n\n性能：暂不可用");
+        } else {
+            text.append("\n\n性能：CPU ")
+                    .append(roundOne(performance.optDouble("cpuPercent", 0))).append('%')
+                    .append(" · 工作集 ")
+                    .append(roundOne(performance.optDouble("workingSetMb", 0))).append(" MB");
+            JSONObject mainUi = performance.optJSONObject("mainUi");
+            text.append("\n主界面：")
+                    .append(mainUi == null ? "不可用"
+                            : uiResponsivenessLabel(mainUi.optString("state", "unavailable")));
+            if (mainUi != null && mainUi.has("latencyMilliseconds")
+                    && !mainUi.isNull("latencyMilliseconds")) {
+                text.append(" · ").append(mainUi.optLong("latencyMilliseconds", 0)).append(" ms");
+            }
+        }
+
+        int alertCount = alerts == null ? 0 : alerts.optInt("count", 0);
+        text.append("\n\n近期告警：").append(alertCount).append(" 条");
+        if (alerts != null && alertCount > 0) {
+            text.append(" · 警告 ").append(alerts.optInt("warningCount", 0))
+                    .append(" · 错误 ").append(alerts.optInt("errorCount", 0))
+                    .append(" · 严重 ").append(alerts.optInt("criticalCount", 0));
+            String latestAt = shortTime(alerts.optString("latestOccurredAt", ""));
+            if (!latestAt.isEmpty()) {
+                text.append("\n最近告警：").append(latestAt);
+            }
+        }
+
+        text.append("\n\n采集时间：").append(shortTime(snapshot.optString("capturedAt", "")))
+                .append("\n刷新策略：仅当前台可见时每 ")
+                .append(snapshot.optInt("suggestedRefreshSeconds", 10)).append(" 秒")
+                .append(formatLiveMonitorTrend(liveMonitorTrend.summarize()))
+                .append("\n\n服务器不保存采样历史；手机仅在内存保留最近 30 个样本，离开本页即清空。快照不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、设备身份、Topic、消息载荷、配置、凭据、原始设备状态、日志正文或检测数据。 ");
+        return text.toString();
+    }
+
+    private String formatLiveMonitorTrend(OperationsLiveMonitorTrend.Summary summary) {
+        if (summary.sampleCount < 2) {
+            return "\n\n本次趋势：再采集 1 个样本后显示。";
+        }
+
+        StringBuilder text = new StringBuilder();
+        text.append("\n\n本次内存趋势：").append(summary.sampleCount)
+                .append(" / ").append(OperationsLiveMonitorTrend.MAX_SAMPLES).append(" 个样本")
+                .append(" · ").append(formatClock(summary.startedAtMilliseconds))
+                .append(" 至 ").append(formatClock(summary.endedAtMilliseconds))
+                .append(" · ").append(formatElapsedMilliseconds(
+                        summary.endedAtMilliseconds - summary.startedAtMilliseconds))
+                .append("\nCPU：均值 ").append(roundOne(summary.averageCpuPercent))
+                .append("% · 峰值 ").append(roundOne(summary.maximumCpuPercent)).append('%')
+                .append("\n工作集：").append(roundOne(summary.minimumWorkingSetMb))
+                .append(" 至 ").append(roundOne(summary.maximumWorkingSetMb)).append(" MB")
+                .append("\n主界面：最大延迟 ")
+                .append(summary.maximumUiLatencyMilliseconds == null
+                        ? "不可用" : summary.maximumUiLatencyMilliseconds + " ms")
+                .append(" · 慢 ").append(summary.slowUiSampleCount)
+                .append(" 次 · 超时 ").append(summary.unresponsiveUiSampleCount).append(" 次")
+                .append("\n检测阶段：").append(flowPhaseLabel(summary.latestFlowPhase))
+                .append(" · 切换 ").append(summary.flowPhaseTransitionCount).append(" 次")
+                .append("\n告警计数：当前 ").append(summary.latestAlertCount)
+                .append(" · 本次最高 ").append(summary.maximumAlertCount);
+        return text.toString();
+    }
+
+    private String formatClock(long milliseconds) {
+        if (milliseconds <= 0) {
+            return "未知";
+        }
+        return new SimpleDateFormat("HH:mm:ss", Locale.CHINA).format(new Date(milliseconds));
+    }
+
+    private void shareLiveMonitorTrend() {
+        OperationsLiveMonitorTrend.Summary summary = liveMonitorTrend.summarize();
+        if (summary.sampleCount < 2) {
+            Toast.makeText(this, "至少需要两个观察样本", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String report = "ColorVision 远程观察趋势"
+                + formatLiveMonitorTrend(summary)
+                + formatLiveMonitorShareContext(liveMonitorLatestSnapshot)
+                + "\n\n该文本只包含本次手机内存中的聚合趋势和当前脱敏运行汇总，不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、设备身份、Topic、消息载荷、配置、凭据、原始设备状态、日志正文或检测数据。";
+        shareSafeText("ColorVision 远程观察趋势", report);
+    }
+
+    private String formatLiveMonitorShareContext(JSONObject snapshot) {
+        if (snapshot == null) {
+            return "";
+        }
+
+        StringBuilder text = new StringBuilder();
+        JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
+        if (messageChannel != null && messageChannel.optBoolean("available", false)) {
+            text.append("\n\n消息通道：")
+                    .append(messageChannelStateLabel(messageChannel.optString("state", "unavailable")))
+                    .append(" · 订阅 ")
+                    .append(messageChannel.optInt("activeSubscriptionCount", 0))
+                    .append('/')
+                    .append(messageChannel.optInt("registeredSubscriptionCount", 0));
+        }
+
+        JSONObject devices = snapshot.optJSONObject("devices");
+        if (devices != null && devices.optBoolean("available", false)
+                && devices.optBoolean("hasConfiguredDevices", false)) {
+            text.append("\n检测设备：共 ").append(devices.optInt("totalCount", 0)).append(" 台 · ");
+            appendDeviceStateCounts(text, devices);
+            appendDeviceUnavailableReasons(text, devices);
+        }
+        return text.toString();
     }
 
     private void confirmSupportRequest() {
@@ -1202,6 +1696,7 @@ public class OperationsActivity extends Activity {
 
     private void loadCapability(String path) {
         leaveSupportCenter();
+        leaveLiveMonitor();
         progress.setVisibility(View.VISIBLE);
         state.setText("正在读取…");
         executor.execute(() -> {
@@ -1242,6 +1737,12 @@ public class OperationsActivity extends Activity {
         }
         if ("/ops/v1/services/health".equals(path)) {
             return formatServiceHealth(payload);
+        }
+        if ("/ops/v1/devices/health".equals(path)) {
+            return formatDeviceHealth(payload);
+        }
+        if ("/ops/v1/messaging/health".equals(path)) {
+            return formatMessageChannelHealth(payload, true);
         }
         if ("/ops/v1/audit".equals(path)) {
             return formatAuditTimeline(payload);
@@ -1304,6 +1805,12 @@ public class OperationsActivity extends Activity {
         if ("/ops/v1/services/health".equals(path)) {
             return "白名单服务状态已刷新";
         }
+        if ("/ops/v1/devices/health".equals(path)) {
+            return "检测设备状态概览已刷新";
+        }
+        if ("/ops/v1/messaging/health".equals(path)) {
+            return "消息通道健康已刷新";
+        }
         if ("/ops/v1/audit".equals(path)) {
             return "近期远程操作记录已刷新";
         }
@@ -1359,6 +1866,8 @@ public class OperationsActivity extends Activity {
             case "desktop.action.execute": return "执行主窗口控制";
             case "diagnostics.performance.read": return "读取进程性能快照";
             case "flow.runtime.read": return "读取当前检测状态";
+            case "monitor.read": return "持续观察运行状态";
+            case "messaging.health.read": return "读取消息通道健康";
             case "diagnostic.bundle.download": return "下载安全诊断包";
             case "window.snapshot.download": return "读取主窗口安全快照";
             case "deployment.receipt.create": return "提交部署确认";
@@ -1429,7 +1938,11 @@ public class OperationsActivity extends Activity {
         StringBuilder text = new StringBuilder();
         text.append("当前阶段：").append(flowPhaseLabel(phase))
                 .append("\n流程配置：")
-                .append(payload.optBoolean("hasConfiguredFlow", false) ? "电脑端已有可用流程" : "电脑端尚未加载可用流程");
+                .append(payload.optBoolean("hasConfiguredFlow", false) ? "电脑端已有可用流程" : "电脑端尚未加载可用流程")
+                .append("\n远程取消：")
+                .append(payload.optBoolean("cancelAvailable", false)
+                        ? "当前主检测可在持续观察页确认取消"
+                        : "当前不可用");
         if (payload.optBoolean("progressAvailable", false)
                 && payload.has("progressPercent")
                 && !payload.isNull("progressPercent")) {
@@ -1453,7 +1966,7 @@ public class OperationsActivity extends Activity {
             }
         }
         text.append("\n观测时间：").append(shortTime(payload.optString("observedAt", "")))
-                .append("\n\n此页面只读。进度来自历史耗时估算，长时间不变化不能单独证明流程卡住；可结合进程性能、主界面响应和近期日志判断。")
+                .append("\n\n状态内容只读。进度来自历史耗时估算，长时间不变化不能单独证明流程卡住；可结合进程性能、主界面响应和近期日志判断。取消动作只在持续观察页经明确确认后执行。")
                 .append("\n\n摘要不含流程名、模板 ID、批次号、节点名、参数、结果文本或检测数据。");
         return text.toString();
     }
@@ -1540,6 +2053,148 @@ public class OperationsActivity extends Activity {
         return text.toString();
     }
 
+    private String formatDeviceHealth(JSONObject payload) {
+        if (!payload.optBoolean("available", false)) {
+            return "当前无法读取检测设备运行状态汇总。\n\n不会据此执行设备重连或重启；请在电脑端检查设备注册表。";
+        }
+
+        int total = payload.optInt("totalCount", 0);
+        int attention = payload.optInt("attentionCount", 0);
+        int busy = payload.optInt("busyCount", 0);
+        int closed = payload.optInt("closedCount", 0);
+        StringBuilder text = new StringBuilder();
+        if (!payload.optBoolean("hasConfiguredDevices", false)) {
+            text.append("当前未发现已加载的检测设备。");
+        } else {
+            String headline = attention > 0 ? "有检测设备状态需要关注"
+                    : busy > 0 ? "有检测设备正在工作"
+                    : closed > 0 ? "部分检测设备当前关闭"
+                    : "已加载检测设备状态正常";
+            text.append(headline).append("\n总数：").append(total).append(" · ");
+            appendDeviceStateCounts(text, payload);
+            appendDeviceUnavailableReasons(text, payload);
+        }
+
+        JSONArray categories = payload.optJSONArray("categories");
+        if (categories != null) {
+            for (int index = 0; index < categories.length(); index++) {
+                JSONObject category = categories.optJSONObject(index);
+                if (category == null) {
+                    continue;
+                }
+                text.append("\n\n").append(deviceCategoryLabel(category.optString("category", "other")))
+                        .append("（").append(category.optInt("totalCount", 0)).append(" 台）：");
+                appendDeviceStateCounts(text, category);
+            }
+        }
+        String observedAt = shortTime(payload.optString("observedAt", ""));
+        if (!observedAt.isEmpty()) {
+            text.append("\n\n观测时间：").append(observedAt);
+        }
+        text.append("\n\n状态来自设备实际 MQTT 运行状态的固定归类；不返回设备名称、编号、标识、地址、Topic、配置、原始状态载荷、时间戳或测量数据，也不会执行设备操作。");
+        return text.toString();
+    }
+
+    private String formatMessageChannelHealth(JSONObject payload, boolean includePrivacyNotice) {
+        if (!payload.optBoolean("available", false)) {
+            return "当前无法读取 ColorVision 消息通道状态。\n\n不会据此自动重连或重启；请在电脑端复核。";
+        }
+
+        String channelState = payload.optString("state", "unavailable");
+        int registered = payload.optInt("registeredSubscriptionCount", 0);
+        int active = payload.optInt("activeSubscriptionCount", 0);
+        StringBuilder text = new StringBuilder();
+        text.append(messageChannelStateLabel(channelState))
+                .append("\n连接：").append(payload.optBoolean("connected", false) ? "已建立" : "未建立")
+                .append("\n订阅：").append(active).append('/').append(registered)
+                .append(payload.optBoolean("subscriptionReady", false) ? " · 已就绪" : " · 未就绪");
+        appendOptionalActivityTime(text, "最近连接", payload.optString("lastConnectedAt", ""));
+        appendOptionalActivityTime(text, "最近断开", payload.optString("lastDisconnectedAt", ""));
+        appendOptionalActivityTime(text, "最近接收活动", payload.optString("lastInboundActivityAt", ""));
+        appendOptionalActivityTime(text, "最近发送活动", payload.optString("lastOutboundActivityAt", ""));
+        String observedAt = shortTime(payload.optString("observedAt", ""));
+        if (!observedAt.isEmpty()) {
+            text.append("\n观测时间：").append(observedAt);
+        }
+        if (includePrivacyNotice) {
+            text.append("\n\n只显示 ColorVision 客户端的规范化连接状态、订阅计数和聚合活动时间；不返回地址、端口、端点、Topic、消息载荷、客户端或设备标识、配置、凭据、证书或原始日志，也不会执行重连或重启。");
+        }
+        return text.toString();
+    }
+
+    private void appendOptionalActivityTime(StringBuilder text, String label, String value) {
+        String timestamp = shortTime(value);
+        if (!timestamp.isEmpty()) {
+            text.append("\n").append(label).append("：").append(timestamp);
+        }
+    }
+
+    private String messageChannelStateLabel(String value) {
+        switch (value) {
+            case "connected": return "已连接 · 订阅就绪";
+            case "degraded": return "已连接 · 订阅未完全恢复";
+            case "disconnected": return "ColorVision 未连接消息服务";
+            case "unconfigured": return "消息通道未配置";
+            default: return "状态暂不可用";
+        }
+    }
+
+    private void appendDeviceStateCounts(StringBuilder text, JSONObject source) {
+        text.append("就绪 ").append(source.optInt("readyCount", 0));
+        int busy = source.optInt("busyCount", 0);
+        int transitioning = source.optInt("transitioningCount", 0);
+        int closed = source.optInt("closedCount", 0);
+        int unavailable = source.optInt("unavailableCount", 0);
+        int unknown = source.optInt("unknownCount", 0);
+        if (busy > 0) text.append(" · 忙碌 ").append(busy);
+        if (transitioning > 0) text.append(" · 切换中 ").append(transitioning);
+        if (closed > 0) text.append(" · 已关闭 ").append(closed);
+        if (unavailable > 0) text.append(" · 不可用 ").append(unavailable);
+        if (unknown > 0) text.append(" · 未知 ").append(unknown);
+    }
+
+    private void appendDeviceUnavailableReasons(StringBuilder text, JSONObject source) {
+        appendDeviceUnavailableReasonValues(text,
+                source.optInt("offlineCount", 0),
+                source.optInt("uninitializedCount", 0),
+                source.optInt("unauthorizedCount", 0),
+                source.optInt("unclassifiedUnavailableCount", 0));
+    }
+
+    private void appendDeviceUnavailableReasonValues(
+            StringBuilder text,
+            int offline,
+            int uninitialized,
+            int unauthorized,
+            int unclassified) {
+        List<String> reasons = new ArrayList<>();
+        addDeviceUnavailableReason(reasons, "离线", offline);
+        addDeviceUnavailableReason(reasons, "未初始化", uninitialized);
+        addDeviceUnavailableReason(reasons, "未授权", unauthorized);
+        addDeviceUnavailableReason(reasons, "未归类", unclassified);
+        if (!reasons.isEmpty()) {
+            text.append("\n不可用原因：").append(TextUtils.join(" · ", reasons));
+        }
+    }
+
+    private void addDeviceUnavailableReason(List<String> reasons, String label, int count) {
+        if (count > 0) {
+            reasons.add(label + " " + count);
+        }
+    }
+
+    private String deviceCategoryLabel(String value) {
+        switch (value) {
+            case "camera": return "相机类";
+            case "algorithm": return "算法类";
+            case "spectrum": return "光谱类";
+            case "instrument": return "仪表与供电类";
+            case "motion": return "运动控制类";
+            case "calibration": return "校准类";
+            default: return "其他设备";
+        }
+    }
+
     private String formatJobs(JSONObject payload) {
         JSONArray jobs = payload.optJSONArray("jobs");
         if (jobs == null || jobs.length() == 0) {
@@ -1603,6 +2258,7 @@ public class OperationsActivity extends Activity {
             case "awaiting_mobile_approval": return "等待手机审批";
             case "awaiting_local_cosign": return "等待电脑端共签";
             case "approved_local": return "等待执行";
+            case "approved_mobile": return "手机已批准，等待执行";
             case "completed": return "已完成";
             case "failed": return "执行失败";
             case "rejected": return "手机已拒绝";
@@ -1629,6 +2285,7 @@ public class OperationsActivity extends Activity {
             case "rejected": return "已拒绝";
             case "failed": return "失败";
             case "not_started": return "未开始";
+            case "not_required": return "无需此步骤";
             default: return "未知";
         }
     }
@@ -1653,6 +2310,7 @@ public class OperationsActivity extends Activity {
             case "policy-rejection": return "白名单策略拒绝";
             case "diagnostic-bundle-receipt": return "安全诊断包回执";
             case "window-snapshot-receipt": return "一次性主窗口快照回执";
+            case "flow-cancel-request-receipt": return "检测取消请求回执";
             default: return "有界运维回执";
         }
     }
@@ -1844,15 +2502,19 @@ public class OperationsActivity extends Activity {
                 JSONObject services = client.get("/ops/v1/services/health").optJSONObject("data");
                 JSONObject performance = client.get("/ops/v1/diagnostics/performance").optJSONObject("data");
                 JSONObject flowRuntime = client.get("/ops/v1/flow/runtime").optJSONObject("data");
-                if (connection == null || events == null || services == null || performance == null || flowRuntime == null) {
+                JSONObject devices = client.get("/ops/v1/devices/health").optJSONObject("data");
+                JSONObject messageChannel = client.get("/ops/v1/messaging/health").optJSONObject("data");
+                if (connection == null || events == null || services == null || performance == null
+                        || flowRuntime == null || devices == null || messageChannel == null) {
                     throw new IllegalStateException("incomplete_diagnostic_response");
                 }
-                String report = buildShareableDiagnostic(connection, events, services, performance, flowRuntime);
+                String report = buildShareableDiagnostic(
+                        connection, events, services, performance, flowRuntime, devices, messageChannel);
                 runOnUiThread(() -> {
                     progress.setVisibility(View.GONE);
                     state.setText("安全诊断摘要已生成");
                     details.setText(report);
-                    shareSafeText(report);
+                    shareSafeText("ColorVision 安全诊断摘要", report);
                 });
             } catch (Exception ex) {
                 runOnUiThread(() -> showTransientError(ex));
@@ -1865,7 +2527,9 @@ public class OperationsActivity extends Activity {
             JSONObject events,
             JSONObject services,
             JSONObject performance,
-            JSONObject flowRuntime) {
+            JSONObject flowRuntime,
+            JSONObject devices,
+            JSONObject messageChannel) {
         JSONObject desktop = connection.optJSONObject("desktop");
         String window = desktop == null ? "未知" : desktop.optString("windowState", "未知")
                 + (desktop.optBoolean("isVisible", false) ? "（可见）" : "（不可见）");
@@ -1879,17 +2543,21 @@ public class OperationsActivity extends Activity {
                 + "\n" + formatFlowRuntimeStatus(flowRuntime)
                 + "\n\n进程性能快照"
                 + "\n" + formatPerformanceSnapshot(performance)
+                + "\n\n消息通道健康"
+                + "\n" + formatMessageChannelHealth(messageChannel, true)
+                + "\n\n检测设备状态"
+                + "\n" + formatDeviceHealth(devices)
                 + "\n\n" + formatServiceHealth(services)
                 + "\n\n" + formatRecentEvents(events)
-                + "\n\n该文本不包含设备密钥、证书指纹、设备 ID、用户名、机器名、端点或完整日志。";
+                + "\n\n该文本不包含设备密钥、证书指纹、设备 ID、检测设备身份、用户名、机器名、地址、端口、端点、Topic、消息载荷、配置、凭据、原始设备状态或完整日志。";
     }
 
-    private void shareSafeText(String report) {
+    private void shareSafeText(String subject, String report) {
         Intent share = new Intent(Intent.ACTION_SEND);
         share.setType("text/plain");
-        share.putExtra(Intent.EXTRA_SUBJECT, "ColorVision 安全诊断摘要");
+        share.putExtra(Intent.EXTRA_SUBJECT, subject);
         share.putExtra(Intent.EXTRA_TEXT, report);
-        startActivity(Intent.createChooser(share, "分享安全诊断摘要"));
+        startActivity(Intent.createChooser(share, "分享" + subject));
     }
 
     private String formatDuration(long seconds) {
@@ -1916,6 +2584,7 @@ public class OperationsActivity extends Activity {
 
     private void clearProfile() {
         leaveSupportCenter();
+        leaveLiveMonitor();
         dashboardVisible = false;
         try {
             String hostId = preferences.getOperationsHostId();
@@ -1931,6 +2600,7 @@ public class OperationsActivity extends Activity {
 
     private void setBusy(String message) {
         leaveSupportCenter();
+        leaveLiveMonitor();
         dashboardVisible = false;
         state.setText(message);
         details.setText("设备私钥只保存在 Android Keystore，不会写入二维码、网址或应用配置。 ");
@@ -1940,6 +2610,7 @@ public class OperationsActivity extends Activity {
 
     private void showError(String heading, String message, Runnable recovery) {
         leaveSupportCenter();
+        leaveLiveMonitor();
         dashboardVisible = false;
         progress.setVisibility(View.GONE);
         title.setText(heading);
@@ -2050,21 +2721,28 @@ public class OperationsActivity extends Activity {
 
     @Override
     protected void onPause() {
+        activityResumed = false;
         supportRefreshHandler.removeCallbacks(supportRefresh);
+        liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
         super.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        activityResumed = true;
         if (supportCenterVisible) {
             scheduleSupportRefresh();
+        }
+        if (liveMonitorVisible && liveMonitorAutoRefresh) {
+            liveMonitorRefreshHandler.post(liveMonitorRefresh);
         }
     }
 
     @Override
     protected void onDestroy() {
         leaveSupportCenter();
+        leaveLiveMonitor();
         executor.shutdownNow();
         super.onDestroy();
     }

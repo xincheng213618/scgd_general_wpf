@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 5
+CURRENT_SCHEMA_VERSION = 6
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -55,6 +55,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v4(db)
     if from_version < 5:
         _migration_v5(db)
+    if from_version < 6:
+        _migration_v6(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -157,6 +159,36 @@ def _migration_v5(db: sqlite3.Connection):
         CREATE INDEX IF NOT EXISTS idx_copilot_profiles_order
             ON copilot_profiles(is_enabled, sort_order, name);
         """
+    )
+
+
+def _migration_v6(db: sqlite3.Connection):
+    """v6: Remove impossible response-body bytes from historical HEAD traffic."""
+    db.execute(
+        """
+        UPDATE access_daily
+        SET total_response_bytes = MAX(
+            0,
+            total_response_bytes - COALESCE((
+                SELECT SUM(route.total_response_bytes)
+                FROM access_route_daily AS route
+                WHERE route.day = access_daily.day
+                  AND UPPER(route.method) = 'HEAD'
+            ), 0)
+        )
+        WHERE EXISTS (
+            SELECT 1
+            FROM access_route_daily AS route
+            WHERE route.day = access_daily.day
+              AND UPPER(route.method) = 'HEAD'
+              AND route.total_response_bytes != 0
+        )
+        """
+    )
+    db.execute(
+        """UPDATE access_route_daily
+           SET total_response_bytes = 0
+           WHERE UPPER(method) = 'HEAD' AND total_response_bytes != 0"""
     )
 
 

@@ -117,6 +117,24 @@ def _get_ctx() -> AdminApiContext:
     return _ctx
 
 
+def _query_int_arg(
+    name: str,
+    default: int,
+    *,
+    minimum: int,
+    maximum: int | None = None,
+) -> int:
+    try:
+        value = int(request.args.get(name, default))
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be an integer") from exc
+    if value < minimum:
+        raise ValueError(f"{name} must be at least {minimum}")
+    if maximum is not None and value > maximum:
+        raise ValueError(f"{name} must be at most {maximum}")
+    return value
+
+
 def _require_admin_auth(required_scopes: list[str] | None = None):
     """Check authentication for admin endpoints with optional scope check."""
     ctx = _get_ctx()
@@ -596,15 +614,18 @@ def audit_log():
     target = request.args.get("target", "").strip() or None
     since = request.args.get("since", "").strip() or None
     until = request.args.get("until", "").strip() or None
-    limit = min(int(request.args.get("limit", 100)), 500)
-    offset = int(request.args.get("offset", 0))
+    try:
+        limit = _query_int_arg("limit", 100, minimum=1, maximum=500)
+        offset = _query_int_arg("offset", 0, minimum=0)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
 
-    entries = ctx.cache.get_audit_log(
+    page = ctx.cache.get_audit_log_page(
         action=action, actor=actor, target=target,
         since=since, until=until,
         limit=limit, offset=offset,
     )
-    return jsonify({"entries": entries, "limit": limit, "offset": offset})
+    return jsonify({**page, "limit": limit, "offset": offset})
 
 
 # ---------------------------------------------------------------------------
@@ -615,8 +636,8 @@ def audit_log():
 def deployment_history():
     ctx = _get_ctx()
     try:
-        limit = int(request.args.get("limit", 20))
-        offset = int(request.args.get("offset", 0))
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0)
         result = query_deployment_history(
             ctx.storage_getter(),
             status=request.args.get("status"),

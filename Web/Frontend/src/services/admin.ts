@@ -83,6 +83,8 @@ export function getAuditLog(params: {
   action?: string
   actor?: string
   target?: string
+  since?: string
+  until?: string
 }) {
   const pageSize = params.pageSize ?? 20
   const current = params.current ?? 1
@@ -92,6 +94,8 @@ export function getAuditLog(params: {
   if (params.action) search.set('action', params.action)
   if (params.actor) search.set('actor', params.actor)
   if (params.target) search.set('target', params.target)
+  if (params.since) search.set('since', params.since)
+  if (params.until) search.set('until', params.until)
   return getJson<AuditLogResponse>(`/api/admin/audit-log?${search.toString()}`)
 }
 

@@ -14,6 +14,8 @@ namespace ColorVision.UI.Desktop.Operations
 
         public bool ProgressAvailable { get; init; }
 
+        public bool CancelAvailable { get; init; }
+
         public string BatchStatus { get; init; } = string.Empty;
 
         public double ProgressPercent { get; init; }
@@ -41,6 +43,8 @@ namespace ColorVision.UI.Desktop.Operations
 
         public bool ProgressAvailable { get; init; }
 
+        public bool CancelAvailable { get; init; }
+
         public double? ProgressPercent { get; init; }
 
         public bool ProgressIsHistoricalEstimate { get; init; }
@@ -54,7 +58,7 @@ namespace ColorVision.UI.Desktop.Operations
         public DateTimeOffset ObservedAt { get; init; } = DateTimeOffset.UtcNow;
 
         public string PrivacyNotice { get; init; } =
-            "This status contains aggregate lifecycle, progress, and outcome fields only. It excludes flow and template names, identifiers, batch serial numbers, node names, parameters, result text, and inspection data.";
+            "This status contains aggregate lifecycle, progress, outcome, and primary-flow cancellation availability fields only. It excludes flow and template names, identifiers, batch serial numbers, node names, parameters, result text, and inspection data.";
 
         public static OperationsFlowRuntimeStatus CreateUnavailable(DateTimeOffset? observedAt = null) => new()
         {
@@ -65,6 +69,25 @@ namespace ColorVision.UI.Desktop.Operations
     public interface IOperationsFlowRuntimeStatusProvider
     {
         OperationsFlowRuntimeStatus Capture();
+    }
+
+    public sealed record OperationsFlowCancelResult(bool Accepted, string Code, string Message);
+
+    public interface IOperationsFlowRuntimeController
+    {
+        OperationsFlowCancelResult RequestCancelCurrentFlow();
+    }
+
+    public sealed class UnavailableOperationsFlowRuntimeController : IOperationsFlowRuntimeController
+    {
+        public static UnavailableOperationsFlowRuntimeController Instance { get; } = new();
+
+        private UnavailableOperationsFlowRuntimeController()
+        {
+        }
+
+        public OperationsFlowCancelResult RequestCancelCurrentFlow() =>
+            new(false, "flow_control_unavailable", "The primary flow control provider is unavailable.");
     }
 
     public sealed class UnavailableOperationsFlowRuntimeStatusProvider : IOperationsFlowRuntimeStatusProvider
@@ -128,6 +151,7 @@ namespace ColorVision.UI.Desktop.Operations
                 IsActive = source.LifecycleActive,
                 EngineRunning = source.EngineRunning,
                 ProgressAvailable = progressAvailable,
+                CancelAvailable = source.CancelAvailable && source.LifecycleActive,
                 ProgressPercent = progress,
                 ProgressIsHistoricalEstimate = phase == "running" && progress > 0,
                 ElapsedMilliseconds = elapsedMilliseconds,

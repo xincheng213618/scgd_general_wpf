@@ -55,6 +55,13 @@ SQLite database, and previous frontend build under
 
 `-DryRun` remains read-only when remote Git inspection fails: it returns a
 `DRY_RUN_ERROR` without starting recovery or adding a deployment-history row.
+Origin inspection and fetch have a 45-second hard timeout by default, disable
+interactive credential prompts, and stop the complete native process tree on
+timeout. Override the bound with `-GitNetworkTimeoutSeconds` (5-600 seconds).
+Normal origin deployment fetches once, then fast-forwards from the fetched
+`origin/<branch>` ref instead of opening a second connection during `pull`.
+When origin remains unavailable, create a verified transport bundle and pass
+its NAS path with `-RemoteGitBundle`.
 The SSH transport sends the encoded remote script as one newline-terminated
 payload. Its loader consumes that line immediately instead of waiting for stdin
 EOF, preventing abandoned PowerShell sessions when an SSH client disconnects.

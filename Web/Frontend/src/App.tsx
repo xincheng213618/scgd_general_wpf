@@ -1,4 +1,5 @@
 import { App as AntApp, ConfigProvider, theme } from 'antd'
+import zhCN from 'antd/locale/zh_CN'
 import { Component, lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
@@ -216,7 +217,7 @@ function App() {
   )
 
   return (
-    <ConfigProvider componentSize={density} theme={configTheme}>
+    <ConfigProvider componentSize={density} locale={zhCN} theme={configTheme}>
       <AntApp>
         <BrowserRouter>
           <RouteDocumentTitle />

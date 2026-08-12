@@ -1084,6 +1084,40 @@ class AdminApiContracts(ContractTestBase):
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
         self.assertIn("entries", data)
+        self.assertGreaterEqual(data["total"], len(data["entries"]))
+
+    def test_audit_log_returns_exact_total_and_validates_pagination(self):
+        db = marketplace_app._cache.get_db()
+        try:
+            db.executemany(
+                "INSERT INTO audit_log (action, actor_type, actor_id, created_at) VALUES (?, ?, ?, ?)",
+                [
+                    ("pagination_probe", "system", f"worker-{index}", f"2026-08-12T00:00:{index:02d}+00:00")
+                    for index in range(45)
+                ],
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        response = self.client.get(
+            "/api/admin/audit-log?action=pagination_probe&limit=10&offset=20",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["total"], 45)
+        self.assertEqual(len(payload["entries"]), 10)
+        self.assertEqual(payload["limit"], 10)
+        self.assertEqual(payload["offset"], 20)
+
+        for query in ("limit=0", "limit=501", "limit=invalid", "offset=-1", "offset=invalid"):
+            with self.subTest(query=query):
+                invalid = self.client.get(
+                    f"/api/admin/audit-log?{query}",
+                    headers=self.basic_auth(),
+                )
+                self.assertEqual(invalid.status_code, 400)
 
     def test_deployment_history_is_admin_only_paginated_and_sanitized(self):
         history = self.storage / "web-deploy-history.jsonl"

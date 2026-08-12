@@ -1580,6 +1580,15 @@ body.cv-home-light .workflow-icon {
   width: 100%;
 }
 
+.plugin-results-bar {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-inline: 4px;
+}
+
 .card-footer-link {
   display: flex;
   justify-content: space-between;
@@ -1700,7 +1709,7 @@ body.cv-home-light .workflow-icon {
   line-height: 0.98;
 }
 
-.plugin-detail-copy .ant-typography {
+.plugin-detail-copy > .ant-typography:not(h1) {
   max-width: 740px;
   color: var(--cv-muted-text);
   font-size: 15px;
@@ -1736,6 +1745,22 @@ body.cv-home-light .workflow-icon {
   color: var(--cv-text);
   font-size: 26px;
   line-height: 1;
+}
+
+.cv-admin-dark .plugin-detail-hero {
+  background:
+    radial-gradient(circle at 14% 18%, rgba(96, 165, 250, 0.18), transparent 34%),
+    linear-gradient(135deg, var(--cv-surface-strong), rgba(30, 41, 59, 0.9));
+}
+
+.cv-admin-dark .plugin-detail-hero::after {
+  background:
+    linear-gradient(120deg, transparent 0%, rgba(37, 99, 235, 0.12) 45%, rgba(14, 165, 233, 0.16) 100%);
+}
+
+.cv-admin-dark .plugin-detail-metrics span {
+  background: rgba(15, 23, 42, 0.64);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .plugin-detail-grid {
@@ -2771,7 +2796,51 @@ body.cv-home-light .workflow-icon {
   }
 
   .plugin-detail-metrics {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .plugin-detail-metrics span {
+    min-height: 82px;
+    padding: 14px;
+  }
+
+  .plugin-detail-metrics strong {
+    font-size: 22px;
+  }
+
+  .plugin-filter-card .ant-card-body {
+    padding: 16px;
+  }
+
+  .plugin-filter-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .plugin-filter-form .ant-form-item {
+    width: 100%;
+    margin: 0;
+  }
+
+  .plugin-filter-form .ant-input,
+  .plugin-filter-form .ant-input-affix-wrapper,
+  .plugin-filter-form .ant-select {
+    width: 100% !important;
+  }
+
+  .plugin-filter-form .ant-space,
+  .plugin-filter-form .ant-space-item {
+    width: 100%;
+  }
+
+  .plugin-filter-form .ant-space {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .plugin-filter-form .ant-btn {
+    width: 100%;
   }
 
   .plugin-empty-state {

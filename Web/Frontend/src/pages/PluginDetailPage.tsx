@@ -11,7 +11,7 @@ import {
 import { Alert, Avatar, Button, Descriptions, Pagination, Skeleton, Space, Table, Tabs, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useEffect, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { getPluginDetail } from '../services/site'
 import type { PluginDetail, PluginVersion } from '../types/site'
 import { humanSize, shortDate } from '../utils/format'
@@ -108,6 +108,7 @@ function VersionTable({ pluginId, versions, loading = false }: { pluginId: strin
 
 export function PluginDetailPage() {
   const { pluginId = '' } = useParams()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedArchivePage = positivePage(searchParams.get('archive_page'))
   const searchKey = searchParams.toString()
@@ -178,7 +179,7 @@ export function PluginDetailPage() {
               <Button type="primary" shape="round" icon={<CloudDownloadOutlined />} href={latestHref} disabled={!latestHref}>
                 下载最新版
               </Button>
-              <Button shape="round" href="/plugins">
+              <Button shape="round" onClick={() => navigate('/plugins')}>
                 返回插件市场
               </Button>
             </Space>

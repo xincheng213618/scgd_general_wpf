@@ -230,7 +230,10 @@ namespace ColorVision.UI.Tests
                     OperationsPairingService.InitialScopes);
                 OperationsSecureApiRouter router = new(new OperationsPairingService(registry),
                     new OperationsRequestAuthenticator(registry), new OperationsWorkStore(workPath), () => new { healthy = true },
-                    flowRuntimeStatus: new FixedFlowRuntimeStatusProvider());
+                    runtimePerformance: new FixedRuntimePerformanceProvider(),
+                    flowRuntimeStatus: new FixedFlowRuntimeStatusProvider(),
+                    deviceHealthProvider: new FixedDeviceHealthProvider(),
+                    messageChannelHealthProvider: new FixedMessageChannelHealthProvider());
                 const string path = "/ops/v1/diagnostics/connection";
 
                 OperationsApiResponse response = router.Handle(new OperationsSecureRequest
@@ -250,6 +253,19 @@ namespace ColorVision.UI.Tests
                 Assert.False(data.TryGetProperty("user", out _));
                 Assert.False(data.TryGetProperty("deviceId", out _));
                 Assert.False(data.TryGetProperty("certificate", out _));
+                Assert.True(data.GetProperty("deviceHealthAvailable").GetBoolean());
+                Assert.Equal(3, data.GetProperty("configuredDeviceCount").GetInt32());
+                Assert.Equal(1, data.GetProperty("readyDeviceCount").GetInt32());
+                Assert.Equal(1, data.GetProperty("busyDeviceCount").GetInt32());
+                Assert.Equal(1, data.GetProperty("deviceAttentionCount").GetInt32());
+                Assert.Equal(1, data.GetProperty("offlineDeviceCount").GetInt32());
+                Assert.Equal(0, data.GetProperty("uninitializedDeviceCount").GetInt32());
+                Assert.Equal(0, data.GetProperty("unauthorizedDeviceCount").GetInt32());
+                Assert.Equal(0, data.GetProperty("unclassifiedUnavailableDeviceCount").GetInt32());
+                Assert.True(data.GetProperty("messageChannelAvailable").GetBoolean());
+                Assert.Equal("connected", data.GetProperty("messageChannelState").GetString());
+                Assert.True(data.GetProperty("messageChannelConnected").GetBoolean());
+                Assert.True(data.GetProperty("messageChannelSubscriptionReady").GetBoolean());
 
                 const string summaryPath = "/ops/v1/diagnostics/summary";
                 OperationsApiResponse summary = router.Handle(new OperationsSecureRequest
@@ -290,12 +306,81 @@ namespace ColorVision.UI.Tests
                 JsonElement flowData = flowDocument.RootElement.GetProperty("data");
                 Assert.Equal("running", flowData.GetProperty("phase").GetString());
                 Assert.True(flowData.GetProperty("isActive").GetBoolean());
+                Assert.True(flowData.GetProperty("cancelAvailable").GetBoolean());
                 Assert.Equal(37.5, flowData.GetProperty("progressPercent").GetDouble());
                 Assert.False(flowData.TryGetProperty("flowName", out _));
                 Assert.False(flowData.TryGetProperty("templateId", out _));
                 Assert.False(flowData.TryGetProperty("batchSerialNumber", out _));
                 Assert.False(flowData.TryGetProperty("nodeName", out _));
                 Assert.False(flowData.TryGetProperty("resultText", out _));
+
+                const string deviceHealthPath = "/ops/v1/devices/health";
+                OperationsApiResponse deviceHealth = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "GET",
+                    Path = deviceHealthPath,
+                    Headers = Sign(key, "device-diagnostics", "GET", deviceHealthPath, []),
+                });
+                Assert.Equal(200, deviceHealth.StatusCode);
+                using JsonDocument deviceHealthDocument = JsonDocument.Parse(deviceHealth.Body);
+                JsonElement deviceHealthData = deviceHealthDocument.RootElement.GetProperty("data");
+                Assert.Equal(3, deviceHealthData.GetProperty("totalCount").GetInt32());
+                Assert.Equal(1, deviceHealthData.GetProperty("readyCount").GetInt32());
+                Assert.Equal(1, deviceHealthData.GetProperty("busyCount").GetInt32());
+                Assert.Equal(1, deviceHealthData.GetProperty("unavailableCount").GetInt32());
+                Assert.Equal(1, deviceHealthData.GetProperty("attentionCount").GetInt32());
+                Assert.Equal(1, deviceHealthData.GetProperty("offlineCount").GetInt32());
+                Assert.Equal(0, deviceHealthData.GetProperty("uninitializedCount").GetInt32());
+                Assert.Equal(0, deviceHealthData.GetProperty("unauthorizedCount").GetInt32());
+                Assert.Equal(0, deviceHealthData.GetProperty("unclassifiedUnavailableCount").GetInt32());
+                JsonElement deviceCategory = Assert.Single(deviceHealthData.GetProperty("categories").EnumerateArray());
+                Assert.Equal("camera", deviceCategory.GetProperty("category").GetString());
+                Assert.False(deviceCategory.TryGetProperty("deviceName", out _));
+                Assert.False(deviceCategory.TryGetProperty("code", out _));
+                Assert.False(deviceCategory.TryGetProperty("topic", out _));
+                Assert.False(deviceCategory.TryGetProperty("address", out _));
+                Assert.False(deviceCategory.TryGetProperty("offlineCount", out _));
+                Assert.False(deviceCategory.TryGetProperty("unauthorizedCount", out _));
+
+                const string messageChannelPath = "/ops/v1/messaging/health";
+                OperationsApiResponse messageChannel = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "GET",
+                    Path = messageChannelPath,
+                    Headers = Sign(key, "device-diagnostics", "GET", messageChannelPath, []),
+                });
+                Assert.Equal(200, messageChannel.StatusCode);
+                using JsonDocument messageChannelDocument = JsonDocument.Parse(messageChannel.Body);
+                JsonElement messageChannelData = messageChannelDocument.RootElement.GetProperty("data");
+                Assert.Equal("connected", messageChannelData.GetProperty("state").GetString());
+                Assert.Equal(6, messageChannelData.GetProperty("registeredSubscriptionCount").GetInt32());
+                Assert.Equal(6, messageChannelData.GetProperty("activeSubscriptionCount").GetInt32());
+                Assert.False(messageChannelData.TryGetProperty("host", out _));
+                Assert.False(messageChannelData.TryGetProperty("port", out _));
+                Assert.False(messageChannelData.TryGetProperty("topic", out _));
+                Assert.False(messageChannelData.TryGetProperty("payload", out _));
+                Assert.False(messageChannelData.TryGetProperty("username", out _));
+                Assert.False(messageChannelData.TryGetProperty("password", out _));
+
+                const string monitorPath = "/ops/v1/monitor";
+                OperationsApiResponse monitor = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "GET",
+                    Path = monitorPath,
+                    Headers = Sign(key, "device-diagnostics", "GET", monitorPath, []),
+                });
+                Assert.Equal(200, monitor.StatusCode);
+                using JsonDocument monitorDocument = JsonDocument.Parse(monitor.Body);
+                JsonElement monitorData = monitorDocument.RootElement.GetProperty("data");
+                Assert.Equal("running", monitorData.GetProperty("flow").GetProperty("phase").GetString());
+                Assert.Equal(9.5, monitorData.GetProperty("performance").GetProperty("cpuPercent").GetDouble());
+                Assert.Equal(1, monitorData.GetProperty("devices").GetProperty("attentionCount").GetInt32());
+                Assert.Equal(1, monitorData.GetProperty("devices").GetProperty("offlineCount").GetInt32());
+                Assert.Equal("connected", monitorData.GetProperty("messageChannel").GetProperty("state").GetString());
+                Assert.Equal(10, monitorData.GetProperty("suggestedRefreshSeconds").GetInt32());
+                Assert.False(monitorData.GetProperty("alerts").TryGetProperty("items", out _));
+                Assert.DoesNotContain(Environment.MachineName, monitor.Body, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain(Environment.UserName, monitor.Body, StringComparison.OrdinalIgnoreCase);
             }
             finally
             {
@@ -635,6 +720,82 @@ namespace ColorVision.UI.Tests
             }
         }
 
+        [Fact]
+        public void FlowCancellationRejectsRemoteParametersAndExecutesOnceAfterMobileApproval()
+        {
+            string devicePath = CreateStorePath();
+            string workPath = Path.Combine(Path.GetDirectoryName(devicePath)!, "work.json");
+            try
+            {
+                using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+                OperationsDeviceRegistry registry = new(devicePath);
+                registry.Approve("device-flow-cancel", "Phone", Convert.ToBase64String(key.ExportSubjectPublicKeyInfo()),
+                    OperationsPairingService.InitialScopes);
+                OperationsWorkStore workStore = new(workPath);
+                RecordingFlowRuntimeController controller = new();
+                OperationsSecureApiRouter router = new(new OperationsPairingService(registry),
+                    new OperationsRequestAuthenticator(registry), workStore, () => new { healthy = true },
+                    flowRuntimeController: controller);
+                const string jobsPath = "/ops/v1/jobs";
+
+                byte[] rejectedBody = Encoding.UTF8.GetBytes(
+                    "{\"capabilityId\":\"ops.flow.cancel\",\"input\":{\"flowId\":\"remote-value\"}}");
+                OperationsApiResponse rejected = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = jobsPath,
+                    Body = rejectedBody,
+                    Headers = Sign(key, "device-flow-cancel", "POST", jobsPath, rejectedBody),
+                });
+                Assert.Equal(400, rejected.StatusCode);
+                Assert.Empty(workStore.GetJobs());
+
+                byte[] createBody = Encoding.UTF8.GetBytes(
+                    "{\"capabilityId\":\"ops.flow.cancel\",\"reason\":\"confirmed\",\"input\":{}}");
+                OperationsApiResponse created = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = jobsPath,
+                    Body = createBody,
+                    Headers = Sign(key, "device-flow-cancel", "POST", jobsPath, createBody),
+                });
+                Assert.Equal(202, created.StatusCode);
+                using JsonDocument createdDocument = JsonDocument.Parse(created.Body);
+                JsonElement createdJob = createdDocument.RootElement.GetProperty("data").GetProperty("job");
+                string jobId = Assert.IsType<string>(createdJob.GetProperty("jobId").GetString());
+                Assert.False(createdJob.GetProperty("requiresLocalCoSign").GetBoolean());
+
+                string decisionPath = $"/ops/v1/jobs/{jobId}/decision";
+                byte[] decisionBody = Encoding.UTF8.GetBytes("{\"approved\":true,\"reason\":\"confirmed\"}");
+                OperationsApiResponse completed = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = decisionPath,
+                    Body = decisionBody,
+                    Headers = Sign(key, "device-flow-cancel", "POST", decisionPath, decisionBody),
+                });
+                Assert.Equal(200, completed.StatusCode);
+                using JsonDocument completedDocument = JsonDocument.Parse(completed.Body);
+                Assert.Equal("completed", completedDocument.RootElement.GetProperty("data")
+                    .GetProperty("job").GetProperty("status").GetString());
+                Assert.Equal(1, controller.RequestCount);
+
+                OperationsApiResponse repeated = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = decisionPath,
+                    Body = decisionBody,
+                    Headers = Sign(key, "device-flow-cancel", "POST", decisionPath, decisionBody),
+                });
+                Assert.Equal(409, repeated.StatusCode);
+                Assert.Equal(1, controller.RequestCount);
+            }
+            finally
+            {
+                DeleteStore(devicePath);
+            }
+        }
+
         private static Dictionary<string, string> Sign(ECDsa key, string deviceId, string method, string path, byte[] body)
         {
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -696,11 +857,64 @@ namespace ColorVision.UI.Tests
                 IsActive = true,
                 EngineRunning = true,
                 ProgressAvailable = true,
+                CancelAvailable = true,
                 ProgressPercent = 37.5,
                 ProgressIsHistoricalEstimate = true,
                 ElapsedMilliseconds = 12000,
                 LastRunStatus = "none",
                 ObservedAt = DateTimeOffset.UtcNow,
+            };
+        }
+
+        private sealed class RecordingFlowRuntimeController : IOperationsFlowRuntimeController
+        {
+            public int RequestCount { get; private set; }
+
+            public OperationsFlowCancelResult RequestCancelCurrentFlow()
+            {
+                RequestCount++;
+                return new OperationsFlowCancelResult(true, "flow_cancel_requested", "accepted");
+            }
+        }
+
+        private sealed class FixedDeviceHealthProvider : IOperationsDeviceHealthProvider
+        {
+            public OperationsDeviceHealthSnapshot Capture() => OperationsDeviceHealthSnapshotFactory.Create(
+            [
+                new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Ready),
+                new OperationsDeviceHealthObservation(OperationsDeviceCategories.Camera, OperationsDeviceStates.Busy),
+                new OperationsDeviceHealthObservation(
+                    OperationsDeviceCategories.Camera,
+                    OperationsDeviceStates.Unavailable,
+                    OperationsDeviceUnavailableReasons.Offline),
+            ]);
+        }
+
+        private sealed class FixedMessageChannelHealthProvider : IOperationsMessageChannelHealthProvider
+        {
+            public OperationsMessageChannelHealthSnapshot Capture() =>
+                OperationsMessageChannelHealthSnapshotFactory.Create(
+                    new OperationsMessageChannelObservation(true, true, 6, 6, DateTimeOffset.UtcNow));
+        }
+
+        private sealed class FixedRuntimePerformanceProvider : IOperationsRuntimePerformanceProvider
+        {
+            public OperationsRuntimePerformanceSnapshot Capture() => new()
+            {
+                CapturedAt = DateTimeOffset.UtcNow,
+                SampleMilliseconds = 300,
+                CpuPercent = 9.5,
+                WorkingSetMb = 256,
+                PrivateMemoryMb = 300,
+                ManagedHeapMb = 24,
+                ThreadCount = 18,
+                HandleCount = 400,
+                MainUi = new OperationsUiResponsivenessSnapshot
+                {
+                    Available = true,
+                    State = "responsive",
+                    LatencyMilliseconds = 12,
+                },
             };
         }
     }

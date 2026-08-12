@@ -18,6 +18,25 @@ namespace ColorVision.UI.Tests
                 Assert.True(capability.Audit.Required);
             });
             Assert.Equal(capabilities.Count, capabilities.Select(capability => capability.Id).Distinct(StringComparer.Ordinal).Count());
+            OperationsCapabilityDescriptor monitor = Assert.Single(capabilities, capability => capability.Id == "ops.monitor.read");
+            Assert.True(monitor.Available);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, monitor.RiskLevel);
+            Assert.Equal("ops.diagnostics.read", monitor.Permission);
+            OperationsCapabilityDescriptor cancelFlow = Assert.Single(capabilities, capability => capability.Id == "ops.flow.cancel");
+            Assert.True(cancelFlow.Available);
+            Assert.Equal(OperationsRiskLevels.ApprovalRequired, cancelFlow.RiskLevel);
+            Assert.False(cancelFlow.Approval.RequiresLocalCoSign);
+            Assert.Equal("ops.jobs.create", cancelFlow.Permission);
+            OperationsCapabilityDescriptor deviceHealth = Assert.Single(capabilities,
+                capability => capability.Id == "ops.devices.health.read");
+            Assert.True(deviceHealth.Available);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, deviceHealth.RiskLevel);
+            Assert.Equal("ops.diagnostics.read", deviceHealth.Permission);
+            OperationsCapabilityDescriptor messageChannel = Assert.Single(capabilities,
+                capability => capability.Id == "ops.messaging.health.read");
+            Assert.True(messageChannel.Available);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, messageChannel.RiskLevel);
+            Assert.Equal("ops.diagnostics.read", messageChannel.Permission);
         }
 
         [Fact]
@@ -35,7 +54,7 @@ namespace ColorVision.UI.Tests
                 Assert.Equal("ops.window.control", capability.Permission);
             });
             Assert.All(availableWrites.Where(capability => capability.Category != "desktop-control"),
-                capability => Assert.Contains(capability.Category, new[] { "jobs", "approvals", "deployment", "support", "maintenance", "diagnostics" }));
+                capability => Assert.Contains(capability.Category, new[] { "jobs", "approvals", "deployment", "support", "maintenance", "diagnostics", "flow-control" }));
 
             var privileged = Assert.Single(capabilities, capability => capability.RiskLevel == OperationsRiskLevels.Privileged);
             Assert.True(privileged.Available);

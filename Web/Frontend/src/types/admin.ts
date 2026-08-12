@@ -202,6 +202,7 @@ export interface AuditLogEntry {
 
 export interface AuditLogResponse {
   entries: AuditLogEntry[]
+  total: number
   limit: number
   offset: number
 }

@@ -132,6 +132,33 @@ package hash costing about 381.9 ms moved to index refresh work.
   loader processes with no children and about 53 MB working set each; they were
   removed after exact command-line classification. The new Bundle DryRun
   returned in 7.7 seconds without adding a loader process or history record.
+- Bounded origin Git inspection and fetch with a native-process hard timeout
+  that kills descendants as well as the direct Git process. Origin deployment
+  now fetches once and fast-forwards from `origin/<branch>` locally rather than
+  reconnecting during `pull`; timeout guidance points directly to the verified
+  Git-bundle path while DryRun remains read-only.
+- Gate the public transfer route on the already loaded Web session before the
+  protected file panel mounts. The 2026-08-12 production baseline showed 14
+  `GET /api/transfer/files` requests and all 14 returned 401; anonymous users
+  now move directly to `/login?next=/transfer` without a protected API request
+  or a transient upload panel. A Node test runs in both local checks and NAS
+  deployment before the frontend build.
+- Correct response-volume analytics for HTTP responses that cannot carry a
+  body. The 2026-08-12 production audit found 45 `HEAD` requests contributing
+  2,275,254,516 impossible bytes (5.96% of the recorded response volume), led
+  by 1.76 GB from desktop-installer probes. New `HEAD`, 1xx, 204, 205, and 304
+  events record zero bytes, while schema v6 idempotently subtracts historical
+  `HEAD` bytes from route and daily aggregates without guessing about statuses
+  that the legacy aggregate cannot distinguish.
+- Replaced the audit page's inferred row count with an exact filtered total from
+  the existing `audit_log` query boundary. The production baseline had 378 rows
+  while the first page claimed 40; the most common action had 347 rows and was
+  likewise capped by the heuristic. Invalid or unbounded pagination is now
+  rejected before reaching SQLite.
+- Moved newly added Operations support-session state SQL out of the Flask route
+  into an injected SQLite Store. Event transitions now use `BEGIN IMMEDIATE`,
+  and a concurrent-request test proves duplicate session requests produce one
+  stored event instead of expanding transitional route SQL debt.
 - Added route-level frontend splitting, request cancellation, stale-state fixes,
   changelog/plugin HTML sanitization, immutable hashed-asset caching, and lazy
   chunk recovery after rolling deployments.
@@ -159,8 +186,8 @@ package hash costing about 381.9 ms moved to index refresh work.
 
 ## Verification snapshot
 
-- Backend: 559 tests passed.
-- Frontend: ESLint passed; production build passed (3,780 modules).
+- Backend: 569 tests passed.
+- Frontend: 4 behavior tests and ESLint passed; production build passed (3,789 modules).
 - Dependency audit: zero npm vulnerabilities.
 - Whitespace check: `git diff --check -- Web` passed.
 

@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request
 
+from ports.operations_support import OperationsSupportStore
 from services.api_key_service import verify_api_key
 
 operations_relay = Blueprint("operations_relay", __name__)
@@ -32,6 +33,7 @@ ALLOWED_SUPPORT_EVENTS = {"session.requested", "session.active", "message", "ses
 @dataclass
 class OperationsRelayContext:
     cache: object
+    support_store: OperationsSupportStore
 
 
 _ctx: OperationsRelayContext | None = None
@@ -91,15 +93,6 @@ def _bounded_text(value, field: str, maximum: int) -> str:
 
 def _error(exc: ValueError):
     return jsonify({"ok": False, "error": str(exc)}), 400
-
-
-def _latest_support_state(db, host_id: str, session_id: str):
-    return db.execute(
-        """SELECT event_type FROM operations_support_events
-           WHERE host_id=? AND session_id=? AND event_type!='message'
-           ORDER BY created_at DESC LIMIT 1""",
-        (host_id, session_id),
-    ).fetchone()
 
 
 @operations_relay.route("/api/ops/v1/hosts/<host_id>/heartbeat", methods=["POST"])
@@ -239,8 +232,8 @@ def create_task():
         if not host:
             return jsonify({"ok": False, "error": "host_not_found"}), 404
         if support_session_id:
-            support_state = _latest_support_state(db, host_id, support_session_id)
-            if not support_state or support_state["event_type"] != "session.active":
+            support_state = _ctx.support_store.latest_state(host_id, support_session_id)
+            if support_state != "session.active":
                 return jsonify({"ok": False, "error": "support_session_not_active"}), 409
         try:
             db.execute(
@@ -386,32 +379,18 @@ def support_event(host_id):
     except ValueError as exc:
         return _error(exc)
     event_id = uuid.uuid4().hex
-    db = _ctx.cache.get_db()
-    try:
-        host = db.execute("SELECT host_id FROM operations_hosts WHERE host_id=?", (host_id,)).fetchone()
-        if not host:
-            return jsonify({"ok": False, "error": "host_not_found"}), 404
-        current = _latest_support_state(db, host_id, session_id)
-        current_type = current["event_type"] if current else None
-        if event_type == "session.requested":
-            if current_type:
-                return jsonify({"ok": True, "sessionId": session_id, "deduplicated": True}), 200
-        elif event_type == "session.active":
-            if current_type == "session.active":
-                return jsonify({"ok": True, "sessionId": session_id, "deduplicated": True}), 200
-            if current_type != "session.requested":
-                return jsonify({"ok": False, "error": "support_session_not_requested"}), 409
-        elif event_type == "message":
-            if current_type != "session.active":
-                return jsonify({"ok": False, "error": "support_session_not_active"}), 409
-        elif event_type in {"session.closed", "session.failed"}:
-            if current_type in {"session.closed", "session.failed"}:
-                return jsonify({"ok": True, "sessionId": session_id, "deduplicated": True}), 200
-            if current_type not in {"session.requested", "session.active"}:
-                return jsonify({"ok": False, "error": "support_session_not_found"}), 409
-        db.execute("INSERT INTO operations_support_events VALUES (?, ?, ?, ?, ?, ?)",
-                   (event_id, host_id, session_id, event_type, payload_json, _iso()))
-        db.commit()
-    finally:
-        db.close()
+    result = _ctx.support_store.record_event(
+        event_id=event_id,
+        host_id=host_id,
+        session_id=session_id,
+        event_type=event_type,
+        payload_json=payload_json,
+        created_at=_iso(),
+    )
+    if result == "host_not_found":
+        return jsonify({"ok": False, "error": result}), 404
+    if result == "deduplicated":
+        return jsonify({"ok": True, "sessionId": session_id, "deduplicated": True}), 200
+    if result != "created":
+        return jsonify({"ok": False, "error": result}), 409
     return jsonify({"ok": True, "eventId": event_id}), 201

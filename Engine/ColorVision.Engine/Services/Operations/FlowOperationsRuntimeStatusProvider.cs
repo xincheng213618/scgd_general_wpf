@@ -6,7 +6,7 @@ using System.Windows.Threading;
 
 namespace ColorVision.Engine.Services.Operations
 {
-    public sealed class FlowOperationsRuntimeStatusProvider : IOperationsFlowRuntimeStatusProvider
+    public sealed class FlowOperationsRuntimeStatusProvider : IOperationsFlowRuntimeStatusProvider, IOperationsFlowRuntimeController
     {
         private const int DispatcherTimeoutMilliseconds = 1000;
 
@@ -33,6 +33,28 @@ namespace ColorVision.Engine.Services.Operations
             return operation.Task.GetAwaiter().GetResult();
         }
 
+        public OperationsFlowCancelResult RequestCancelCurrentFlow()
+        {
+            FlowEngineManager? manager = FlowEngineManager.Current;
+            if (manager == null)
+                return new(false, "flow_not_configured", "The primary flow workspace is not available.");
+
+            Dispatcher? dispatcher = manager.View?.Dispatcher ?? Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+                return new(false, "flow_control_unavailable", "The primary flow dispatcher is unavailable.");
+            if (dispatcher.CheckAccess())
+                return RequestCancelOnDispatcher(manager);
+
+            DispatcherOperation<OperationsFlowCancelResult> operation =
+                dispatcher.InvokeAsync(() => RequestCancelOnDispatcher(manager), DispatcherPriority.Send);
+            if (!operation.Task.Wait(DispatcherTimeoutMilliseconds))
+            {
+                operation.Abort();
+                return new(false, "flow_control_timeout", "The primary flow workspace did not respond in time.");
+            }
+            return operation.Task.GetAwaiter().GetResult();
+        }
+
         private static OperationsFlowRuntimeStatus CaptureOnDispatcher(
             FlowEngineManager manager,
             FlowRuntimeActivitySnapshot aggregate)
@@ -54,6 +76,7 @@ namespace ColorVision.Engine.Services.Operations
                 EngineRunning = aggregate.EngineRunning || manager.FlowControl.IsFlowRun,
                 BatchIsCurrentLifecycle = mainBatchActive,
                 ProgressAvailable = mainLifecycleActive,
+                CancelAvailable = mainLifecycleActive,
                 BatchStatus = batch?.FlowStatus.ToString() ?? string.Empty,
                 ProgressPercent = manager.BatchProgress,
                 BatchCreatedAt = mainBatchActive ? mainBatchCreatedAt : aggregate.EngineStartedAt,
@@ -76,5 +99,17 @@ namespace ColorVision.Engine.Services.Operations
                 LastRunStatus = aggregate.LastRunStatus,
                 LastRunDurationMilliseconds = aggregate.LastRunDurationMilliseconds,
             });
+
+        private static OperationsFlowCancelResult RequestCancelOnDispatcher(FlowEngineManager manager)
+        {
+            if (!manager.View.IsExecutionActive)
+                return new(false, "flow_not_active", "There is no active primary flow to cancel.");
+
+            if (!manager.View.StopFlowCommand.CanExecute(null))
+                return new(false, "flow_cancel_unavailable", "The primary flow cannot be canceled in its current state.");
+
+            manager.View.StopFlowCommand.Execute(null);
+            return new(true, "flow_cancel_requested", "Cancellation was requested through the primary flow execution session.");
+        }
     }
 }

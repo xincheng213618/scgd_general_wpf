@@ -70,6 +70,7 @@ try {
     $dryRunScript = $templateMatch.Groups[1].Value
     $literalRepository = "'" + $dryRunRepository.Replace("'", "''") + "'"
     $literalStorage = "'" + $dryRunStorage.Replace("'", "''") + "'"
+    $nativeProcessModuleSource = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'NativeProcess.psm1') -Raw
     $dryRunReplacements = [ordered]@{
         '__REPO_PATH__' = $literalRepository
         '__STORAGE_PATH__' = $literalStorage
@@ -81,6 +82,8 @@ try {
         '__KEEP_FAILED_BACKUPS__' = '3'
         '__KEEP_GIT_BUNDLES__' = '3'
         '__KEEP_HISTORY_RECORDS__' = '500'
+        '__GIT_NETWORK_TIMEOUT_SECONDS__' = '5'
+        '__NATIVE_PROCESS_MODULE_SOURCE__' = $nativeProcessModuleSource
         '__REMOTE_GIT_BUNDLE__' = "''"
         '__FORCE__' = '$false'
         '__SKIP_TESTS__' = '$false'

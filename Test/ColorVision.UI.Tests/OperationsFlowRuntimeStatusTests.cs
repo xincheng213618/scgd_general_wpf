@@ -16,6 +16,7 @@ namespace ColorVision.UI.Tests
                 LifecycleActive = true,
                 BatchIsCurrentLifecycle = true,
                 ProgressAvailable = true,
+                CancelAvailable = true,
                 BatchCreatedAt = now.AddSeconds(-12),
                 ProgressPercent = 42.34,
             };
@@ -24,6 +25,7 @@ namespace ColorVision.UI.Tests
             Assert.Equal("preparing", preparing.Phase);
             Assert.Equal(0d, preparing.ProgressPercent);
             Assert.Equal(12000, preparing.ElapsedMilliseconds);
+            Assert.True(preparing.CancelAvailable);
 
             OperationsFlowRuntimeStatus preparingWithPreviousBatch = OperationsFlowRuntimeStatusFactory.Create(new OperationsFlowRuntimeSourceSnapshot
             {
@@ -73,6 +75,7 @@ namespace ColorVision.UI.Tests
             Assert.Equal("failed", idle.LastRunStatus);
             Assert.Equal(1450, idle.LastRunDurationMilliseconds);
             Assert.Null(idle.ProgressPercent);
+            Assert.False(idle.CancelAvailable);
         }
 
         [Fact]
