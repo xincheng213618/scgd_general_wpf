@@ -74,11 +74,15 @@ def legacy_plugin_files(filepath):
 @public_api.route("/D%3A/ColorVision/<path:filepath>", methods=["GET"])
 def legacy_files(filepath):
     ctx = _get_ctx()
+    from services.public_storage import is_public_storage_path
     from update_retention import repair_update_storage_layout
-    full_path = ctx.storage / filepath
-    if filepath.replace("\\", "/").startswith("Update/") and not full_path.exists():
+    normalized = ctx.normalize_relative_path(filepath)
+    if not is_public_storage_path(normalized):
+        abort(404)
+    full_path = ctx.storage_target(normalized)
+    if normalized.startswith("Update/") and not full_path.exists():
         repair_update_storage_layout(ctx.storage)
-        full_path = ctx.storage / filepath
+        full_path = ctx.storage_target(normalized)
     try:
         full_path.resolve().relative_to(ctx.storage.resolve())
     except ValueError:

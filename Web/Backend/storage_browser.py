@@ -72,8 +72,15 @@ def list_directory_contents(
     *,
     limit: int | None = None,
     offset: int = 0,
+    include_entry: Callable[[str], bool] | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
     entries = _sorted_visible_entries(target)
+    if include_entry is not None:
+        entries = [
+            entry
+            for entry in entries
+            if include_entry(f"{subpath}/{entry.name}" if subpath else entry.name)
+        ]
     total_count = len(entries)
     if limit is not None:
         entries = entries[offset:offset + limit]
@@ -227,6 +234,7 @@ def build_storage_page_context(
     *,
     limit: int | None = None,
     offset: int = 0,
+    include_entry: Callable[[str], bool] | None = None,
 ) -> dict[str, Any]:
     target = storage / Path(*[part for part in relative_path.split("/") if part])
     if target.exists() and target.is_dir():
@@ -235,6 +243,7 @@ def build_storage_page_context(
             relative_path,
             limit=limit,
             offset=offset,
+            include_entry=include_entry,
         )
     else:
         items = []

@@ -1326,6 +1326,8 @@ class BrowsePaginationTests(unittest.TestCase):
         self.root = Path(self.temp_dir.name)
         self.storage = self.root / "storage"
         self.storage.mkdir(parents=True, exist_ok=True)
+        self.browse_dir = self.storage / "Tool"
+        self.browse_dir.mkdir()
 
         self.original_storage = marketplace_app.STORAGE
         self.original_db_path = marketplace_app.DB_PATH
@@ -1358,9 +1360,9 @@ class BrowsePaginationTests(unittest.TestCase):
     def test_browse_default_limit(self):
         """Default limit should cap results for large directories."""
         for i in range(300):
-            (self.storage / f"file_{i:04d}.txt").write_text(str(i))
+            (self.browse_dir / f"file_{i:04d}.txt").write_text(str(i))
 
-        response = self.client.get("/api/site/browse")
+        response = self.client.get("/api/site/browse/Tool")
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
         self.assertEqual(len(payload["items"]), 200)
@@ -1369,9 +1371,9 @@ class BrowsePaginationTests(unittest.TestCase):
     def test_browse_custom_limit(self):
         """Custom limit parameter should be respected."""
         for i in range(50):
-            (self.storage / f"file_{i:04d}.txt").write_text(str(i))
+            (self.browse_dir / f"file_{i:04d}.txt").write_text(str(i))
 
-        response = self.client.get("/api/site/browse?limit=10")
+        response = self.client.get("/api/site/browse/Tool?limit=10")
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
         names = [item["name"] for item in payload["items"]]
@@ -1382,9 +1384,9 @@ class BrowsePaginationTests(unittest.TestCase):
     def test_browse_offset(self):
         """Offset parameter should skip items."""
         for i in range(20):
-            (self.storage / f"file_{i:04d}.txt").write_text(str(i))
+            (self.browse_dir / f"file_{i:04d}.txt").write_text(str(i))
 
-        response = self.client.get("/api/site/browse?limit=5&offset=10")
+        response = self.client.get("/api/site/browse/Tool?limit=5&offset=10")
         self.assertEqual(response.status_code, 200)
         names = [item["name"] for item in response.get_json()["items"]]
         self.assertEqual(names[0], "file_0010.txt")

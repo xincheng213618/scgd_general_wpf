@@ -195,6 +195,8 @@ class MarketplaceAppTests(unittest.TestCase):
         (self.storage / "History").mkdir(parents=True, exist_ok=True)
         (self.storage / "Tool").mkdir(parents=True, exist_ok=True)
         (self.storage / "Update").mkdir(parents=True, exist_ok=True)
+        (self.storage / "Feedback").mkdir(parents=True, exist_ok=True)
+        (self.storage / "Logs").mkdir(parents=True, exist_ok=True)
         self._create_app_release("1.2.0.1", suffix=".exe")
         self._create_app_release("1.0.0.1", in_history=True, suffix=".zip")
 
@@ -204,6 +206,10 @@ class MarketplaceAppTests(unittest.TestCase):
         payload = response.get_json()
         spotlight_labels = {item["label"] for item in payload["filesystem_spotlight"]}
         self.assertIn("History 归档", spotlight_labels)
+        self.assertNotIn("Feedback", spotlight_labels)
+        overview_names = {item["name"] for item in payload["overview"]}
+        self.assertNotIn("Feedback", overview_names)
+        self.assertNotIn("Logs", overview_names)
         archive_kinds = {
             item.get("kind")
             for group in payload["app_info"]["archive_timeline_groups"]

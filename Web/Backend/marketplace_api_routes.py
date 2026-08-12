@@ -11,7 +11,9 @@ from services.marketplace_api import (
     MarketplaceQueryError,
     PublishPackageCommand,
 )
+from services.public_storage import is_public_storage_path
 from services.request_context import RequestContext
+from storage_paths import normalize_relative_path
 from storage_uploads import UploadTooLargeError, UploadWorkflowError
 
 
@@ -213,8 +215,11 @@ def register_marketplace_api_routes(app, ctx: MarketplaceApiRouteContext) -> Non
     @app.route("/D:/ColorVision/<path:filepath>")
     def legacy_files(filepath):
         """Serve other historical encoded-drive file URLs."""
+        normalized = normalize_relative_path(filepath)
+        if not is_public_storage_path(normalized):
+            abort(404)
         storage = ctx.services.storage.root
-        full_path = ctx.services.storage.legacy_path(filepath)
+        full_path = ctx.services.storage.legacy_path(normalized)
         if not ctx.services.storage.is_within(full_path, storage):
             abort(403)
         if not full_path.exists():

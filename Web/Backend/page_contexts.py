@@ -34,19 +34,13 @@ FILESYSTEM_SPOTLIGHT = {
         "href": "/browse/Tool",
         "icon": "bi-tools",
     },
-    "Feedback": {
-        "label": "Feedback",
-        "description": "用户反馈、日志附件和排障材料归档目录。",
-        "href": "/browse/Feedback",
-        "icon": "bi-inboxes",
-    },
 }
 
 
 def _build_filesystem_spotlight(overview: list[dict[str, Any]]) -> list[dict[str, Any]]:
     by_name = {str(item.get("name", "")): item for item in overview if item.get("type") == "dir"}
     items: list[dict[str, Any]] = []
-    for name in ("History", "Plugins", "Update", "Tool", "Feedback"):
+    for name in ("History", "Plugins", "Update", "Tool"):
         info = by_name.get(name)
         meta = FILESYSTEM_SPOTLIGHT[name]
         items.append(
@@ -386,8 +380,16 @@ def build_index_page_context(
     get_tool_preview: Callable[[], dict[str, Any]] | None = None,
     cache_manager=None,
 ) -> dict[str, Any]:
+    from services.public_storage import is_public_storage_path
+
     app_info = get_app_info()
     overview, overview_summary, overview_meta = get_storage_overview_context()
+    overview = [
+        item
+        for item in overview
+        if is_public_storage_path(str(item.get("name", "")))
+    ]
+    overview_summary = storage_browser.build_storage_summary(overview)
 
     # Try update_index first (fast, no disk scan)
     update_packages = None
@@ -650,8 +652,15 @@ def build_browse_page_context(
     *,
     limit: int | None = None,
     offset: int = 0,
+    include_entry: Callable[[str], bool] | None = None,
 ) -> dict[str, Any]:
-    context = storage_browser.build_storage_page_context(storage, relative_path, limit=limit, offset=offset)
+    context = storage_browser.build_storage_page_context(
+        storage,
+        relative_path,
+        limit=limit,
+        offset=offset,
+        include_entry=include_entry,
+    )
     return {
         "items": context["items"],
         "summary": context["summary"],

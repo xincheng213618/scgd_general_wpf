@@ -179,6 +179,66 @@ class PublicPageContracts(ContractTestBase):
         resp = self.client.get("/api/site/browse/nonexistent")
         self.assertEqual(resp.status_code, 404)
 
+    def test_public_browse_hides_operational_storage_but_admin_can_access_it(self):
+        self.create_release("1.0.0.1")
+        (self.storage / "History").mkdir()
+        (self.storage / "Update").mkdir()
+        (self.storage / "Tool").mkdir()
+        for directory in ("Feedback", "Logs", "web-deploy-backups", "web-deploy-bundles"):
+            target = self.storage / directory
+            target.mkdir()
+            (target / "private.txt").write_text("private", encoding="utf-8")
+        (self.storage / "web-9998.log").write_text("runtime", encoding="utf-8")
+
+        public_response = self.client.get("/api/site/browse")
+        self.assertEqual(public_response.status_code, 200)
+        public_names = {item["name"] for item in public_response.get_json()["items"]}
+        self.assertIn("History", public_names)
+        self.assertIn("Plugins", public_names)
+        self.assertIn("Update", public_names)
+        self.assertIn("Tool", public_names)
+        self.assertIn("ColorVision-1.0.0.1.exe", public_names)
+        self.assertNotIn("Feedback", public_names)
+        self.assertNotIn("Logs", public_names)
+        self.assertNotIn("web-deploy-backups", public_names)
+        self.assertNotIn("web-deploy-bundles", public_names)
+        self.assertNotIn("web-9998.log", public_names)
+        self.assertEqual(public_response.get_json()["total_count"], len(public_names))
+
+        self.assertEqual(self.client.get("/api/site/browse/Logs").status_code, 404)
+        self.assertEqual(self.client.get("/download/Logs/private.txt").status_code, 404)
+
+        admin_response = self.client.get("/api/site/browse/Logs", headers=self.basic_auth())
+        self.assertEqual(admin_response.status_code, 200)
+        self.assertEqual(admin_response.get_json()["items"][0]["name"], "private.txt")
+        with self.client.get("/download/Logs/private.txt", headers=self.basic_auth()) as download:
+            self.assertEqual(download.status_code, 200)
+            self.assertEqual(download.get_data(), b"private")
+
+        login_response = self.client.post(
+            "/api/auth/login",
+            json={"username": "admin", "password": "secret"},
+        )
+        self.assertEqual(login_response.status_code, 200)
+        self.assertEqual(self.client.get("/api/site/browse/Logs").status_code, 200)
+
+    def test_legacy_storage_route_only_exposes_public_artifacts(self):
+        release = self.create_release("1.0.0.1")
+        logs = self.storage / "Logs"
+        logs.mkdir()
+        (logs / "private.txt").write_text("private", encoding="utf-8")
+
+        with self.client.get(f"/D%3A/ColorVision/{release.name}") as public_download:
+            self.assertEqual(public_download.status_code, 200)
+            self.assertEqual(public_download.get_data(), b"release")
+        with self.client.get("/D%3A/ColorVision/Logs/private.txt") as private_download:
+            self.assertEqual(private_download.status_code, 404)
+        with self.client.get(
+            "/D%3A/ColorVision/Logs/private.txt",
+            headers=self.basic_auth(),
+        ) as legacy_admin_download:
+            self.assertEqual(legacy_admin_download.status_code, 404)
+
     def test_plugin_detail_page_returns_200(self):
         self.create_plugin("MyPlugin", "2.0.0")
         resp = self.client.get("/plugins/MyPlugin")

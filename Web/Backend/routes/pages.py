@@ -58,6 +58,14 @@ def _has_transfer_auth() -> bool:
     return decision.allowed
 
 
+def _has_admin_storage_auth() -> bool:
+    request_context = current_request_context()
+    decision = _ctx.auth_policy.authorize(request_context, ["admin:*"])
+    if decision.allowed:
+        set_authenticated_request_context(request_context.with_actor(decision.principal))
+    return decision.allowed
+
+
 def _transfer_auth_challenge():
     response = current_app.response_class("Authentication required", status=401)
     response.headers["WWW-Authenticate"] = 'Basic realm="ColorVision Transfer"'
@@ -175,11 +183,17 @@ def api_site_tools():
 @pages.route("/api/site/browse/<path:subpath>")
 def api_site_browse(subpath: str = ""):
     from page_contexts import build_browse_page_context
+    from services.public_storage import is_public_storage_path
 
     normalized = _ctx.normalize_relative_path(subpath)
     auth_result = _require_transfer_auth_for_storage_path(normalized)
     if auth_result is not None:
         return auth_result
+
+    is_transfer_path = _is_transfer_storage_path(normalized)
+    has_admin_access = _has_admin_storage_auth()
+    if normalized and not is_transfer_path and not has_admin_access and not is_public_storage_path(normalized):
+        abort(404)
 
     storage = _storage()
     target = _ctx.storage_target(normalized)
@@ -199,7 +213,13 @@ def api_site_browse(subpath: str = ""):
 
     limit = _parse_int("limit", default=200, minimum=1, maximum=1000)
     offset = _parse_int("offset", default=0, minimum=0, maximum=100000)
-    payload = build_browse_page_context(storage, normalized, limit=limit, offset=offset)
+    payload = build_browse_page_context(
+        storage,
+        normalized,
+        limit=limit,
+        offset=offset,
+        include_entry=None if has_admin_access or is_transfer_path else is_public_storage_path,
+    )
     payload["is_file"] = False
     return jsonify(payload)
 
@@ -219,10 +239,15 @@ def api_site_upload_context():
 
 @pages.route("/download/<path:relative_path>")
 def download_storage_file(relative_path):
+    from services.public_storage import is_public_storage_path
+
     normalized = _ctx.normalize_relative_path(relative_path)
     auth_result = _require_transfer_auth_for_storage_path(normalized)
     if auth_result is not None:
         return auth_result
+    is_transfer_path = _is_transfer_storage_path(normalized)
+    if not is_transfer_path and not is_public_storage_path(normalized) and not _has_admin_storage_auth():
+        abort(404)
     target = _services().resolve_storage_file(normalized)
     return send_from_directory(str(target.parent), target.name, as_attachment=True)
 
