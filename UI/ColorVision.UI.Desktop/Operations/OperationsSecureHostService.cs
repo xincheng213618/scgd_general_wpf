@@ -46,7 +46,7 @@ namespace ColorVision.UI.Desktop.Operations
             _alerts = new OperationsAlertService();
             _diagnosticBundles = new OperationsDiagnosticBundleService(_workStore);
             _windowSnapshots = new OperationsWindowSnapshotService();
-            _relay = new OperationsRelayClientService(_identity.HostId, _workStore);
+            _relay = new OperationsRelayClientService(_identity, _registry, _workStore);
         }
 
         public event EventHandler? StateChanged;

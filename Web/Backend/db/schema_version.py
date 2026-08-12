@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 12
+CURRENT_SCHEMA_VERSION = 13
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -69,6 +69,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v11(db)
     if from_version < 12:
         _migration_v12(db)
+    if from_version < 13:
+        _migration_v13(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -362,6 +364,51 @@ def _migration_v12(db: sqlite3.Connection):
         );
         CREATE INDEX IF NOT EXISTS idx_web_vital_daily_day
             ON web_vital_daily(day);
+        """
+    )
+
+
+def _migration_v13(db: sqlite3.Connection):
+    """v13: Add device-signed Operations relay identities and task envelopes."""
+    _add_column_if_missing(db, "operations_tasks", "source_type TEXT NOT NULL DEFAULT 'operator'")
+    _add_column_if_missing(db, "operations_tasks", "device_id TEXT")
+    _add_column_if_missing(db, "operations_tasks", "request_body TEXT")
+    _add_column_if_missing(db, "operations_tasks", "request_timestamp TEXT")
+    _add_column_if_missing(db, "operations_tasks", "request_nonce TEXT")
+    _add_column_if_missing(db, "operations_tasks", "request_signature TEXT")
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS operations_relay_host_identities (
+            host_id            TEXT PRIMARY KEY,
+            certificate_der    TEXT NOT NULL,
+            certificate_sha256 TEXT NOT NULL,
+            created_at         TEXT NOT NULL,
+            updated_at         TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS operations_relay_devices (
+            host_id         TEXT NOT NULL,
+            device_id       TEXT NOT NULL,
+            display_name    TEXT NOT NULL,
+            public_key_spki TEXT NOT NULL,
+            scopes          TEXT NOT NULL DEFAULT '[]',
+            approved_at     TEXT NOT NULL,
+            revoked_at      TEXT,
+            updated_at      TEXT NOT NULL,
+            PRIMARY KEY (host_id, device_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_ops_relay_devices_active
+            ON operations_relay_devices(host_id, revoked_at);
+
+        CREATE TABLE IF NOT EXISTS operations_relay_nonces (
+            principal_type TEXT NOT NULL,
+            principal_id   TEXT NOT NULL,
+            nonce          TEXT NOT NULL,
+            expires_at     TEXT NOT NULL,
+            PRIMARY KEY (principal_type, principal_id, nonce)
+        );
+        CREATE INDEX IF NOT EXISTS idx_ops_relay_nonces_expiry
+            ON operations_relay_nonces(expires_at);
         """
     )
 

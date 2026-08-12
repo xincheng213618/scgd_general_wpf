@@ -1,5 +1,6 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -7,31 +8,44 @@ namespace ColorVision.UI.Desktop.Operations
 {
     public sealed class OperationsRelayClientService : IDisposable
     {
+        public const string DefaultEndpoint = "http://xc213618.ddns.me:9998";
         private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         private readonly string _hostId;
+        private readonly OperationsServerIdentity _identity;
+        private readonly OperationsDeviceRegistry _registry;
         private readonly OperationsWorkStore _workStore;
         private readonly HttpClient _httpClient;
+        private readonly bool _signedDeviceRelay;
         private readonly HashSet<string> _processedTasks = new(StringComparer.Ordinal);
         private CancellationTokenSource? _cts;
         private Task? _loop;
         private Func<object>? _snapshotProvider;
 
-        public OperationsRelayClientService(string hostId, OperationsWorkStore workStore)
+        public OperationsRelayClientService(
+            OperationsServerIdentity identity,
+            OperationsDeviceRegistry registry,
+            OperationsWorkStore workStore)
         {
-            _hostId = hostId;
+            _identity = identity;
+            _hostId = identity.HostId;
+            _registry = registry;
             _workStore = workStore;
             string endpoint = (Environment.GetEnvironmentVariable("COLORVISION_OPERATIONS_RELAY_URL") ?? string.Empty).Trim().TrimEnd('/');
             string apiKey = (Environment.GetEnvironmentVariable("COLORVISION_OPERATIONS_RELAY_KEY") ?? string.Empty).Trim();
-            IsConfigured = Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri)
+            bool legacyConfigured = Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri)
                 && (uri.Scheme == Uri.UriSchemeHttps || uri.IsLoopback && uri.Scheme == Uri.UriSchemeHttp)
                 && apiKey.StartsWith("cvmp_", StringComparison.Ordinal);
+            _signedDeviceRelay = !legacyConfigured;
+            if (_signedDeviceRelay)
+                uri = new Uri(DefaultEndpoint, UriKind.Absolute);
+            IsConfigured = true;
             _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
-            if (IsConfigured)
+            _httpClient.BaseAddress = uri;
+            if (legacyConfigured)
             {
-                _httpClient.BaseAddress = uri;
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-                _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("ColorVision-OperationsRelay/1.0");
             }
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("ColorVision-OperationsRelay/2.0");
         }
 
         public bool IsConfigured { get; }
@@ -66,10 +80,19 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 try
                 {
-                    await SendHeartbeatAsync(cancellationToken).ConfigureAwait(false);
-                    await PollTasksAsync(cancellationToken).ConfigureAwait(false);
-                    await RelaySupportEventsAsync(cancellationToken).ConfigureAwait(false);
-                    LastStatusMessage = "Web 运维中继已连接。";
+                    if (_signedDeviceRelay)
+                    {
+                        await SyncSignedHostAsync(cancellationToken).ConfigureAwait(false);
+                        await PollSignedTasksAsync(cancellationToken).ConfigureAwait(false);
+                        LastStatusMessage = "设备签名远程中继已连接。";
+                    }
+                    else
+                    {
+                        await SendHeartbeatAsync(cancellationToken).ConfigureAwait(false);
+                        await PollTasksAsync(cancellationToken).ConfigureAwait(false);
+                        await RelaySupportEventsAsync(cancellationToken).ConfigureAwait(false);
+                        LastStatusMessage = "Web 运维中继已连接。";
+                    }
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -97,7 +120,7 @@ namespace ColorVision.UI.Desktop.Operations
                 _snapshotProvider?.Invoke() ?? new { });
             object body = new
             {
-                displayName = Environment.MachineName,
+                displayName = "ColorVision 工作站",
                 appVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty,
                 status = "online",
                 capabilities = OperationsCapabilityCatalog.GetAll().Where(item => item.Available).Select(item => item.Id).ToArray(),
@@ -107,6 +130,140 @@ namespace ColorVision.UI.Desktop.Operations
                 $"/api/ops/v1/hosts/{Uri.EscapeDataString(_hostId)}/heartbeat", body, cancellationToken).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
             LastHeartbeatAt = DateTimeOffset.UtcNow;
+        }
+
+        private async Task SyncSignedHostAsync(CancellationToken cancellationToken)
+        {
+            OperationsSafeSnapshot snapshot = OperationsSafeSnapshotFactory.Create(
+                _snapshotProvider?.Invoke() ?? new { });
+            object body = new
+            {
+                hostId = _hostId,
+                displayName = Environment.MachineName,
+                appVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty,
+                status = "online",
+                capabilities = new[] { "ops.window.show", "ops.diagnostics.request" },
+                snapshot,
+                devices = _registry.GetAll().Select(item => new
+                {
+                    item.DeviceId,
+                    DisplayName = "已配对设备",
+                    item.PublicKeySpki,
+                    item.Scopes,
+                    item.ApprovedAt,
+                    item.RevokedAt,
+                }).ToArray(),
+            };
+            string path = $"/api/ops/v1/device-relay/hosts/{Uri.EscapeDataString(_hostId)}/sync";
+            using HttpResponseMessage response = await SendSignedHostRequestAsync(
+                path, body, includeCertificate: true, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            LastHeartbeatAt = DateTimeOffset.UtcNow;
+        }
+
+        private async Task PollSignedTasksAsync(CancellationToken cancellationToken)
+        {
+            string path = $"/api/ops/v1/device-relay/hosts/{Uri.EscapeDataString(_hostId)}/tasks";
+            using HttpResponseMessage response = await SendSignedHostRequestAsync(
+                path, new { }, includeCertificate: false, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            using JsonDocument document = JsonDocument.Parse(
+                await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false));
+            if (!document.RootElement.TryGetProperty("tasks", out JsonElement tasks)
+                || tasks.ValueKind != JsonValueKind.Array)
+                return;
+
+            foreach (JsonElement taskElement in tasks.EnumerateArray())
+            {
+                OperationsRelayDeviceTask? task = taskElement.Deserialize<OperationsRelayDeviceTask>(JsonOptions);
+                if (task == null || string.IsNullOrWhiteSpace(task.TaskId))
+                    continue;
+
+                string status;
+                object evidence;
+                if (!OperationsRelayProtocol.TryVerifyDeviceTask(
+                    task, _hostId, _registry, DateTimeOffset.UtcNow,
+                    out OperationsRelayVerifiedTask? verified, out string error))
+                {
+                    status = "rejected";
+                    evidence = new { error };
+                }
+                else if (verified!.CapabilityId == "ops.window.show")
+                {
+                    string intentKey = $"relay-intent:{verified.Device.DeviceId}:{verified.IdempotencyKey}";
+                    if (_processedTasks.Contains(intentKey)
+                        || _workStore.HasProcessedRelayIntent(verified.Device.DeviceId, verified.IdempotencyKey))
+                    {
+                        status = "completed";
+                        evidence = new { actionId = OperationsDesktopActionService.ShowWindowAction, deduplicated = true };
+                    }
+                    else
+                    {
+                        OperationsActionResult result = OperationsDesktopActionService.Execute(
+                            OperationsDesktopActionService.ShowWindowAction);
+                        status = result.Success ? "completed" : "failed";
+                        evidence = new { result.ActionId, result.Message };
+                        _workStore.RecordAudit(verified.Device.DeviceId, "device", "relay.intent.execute",
+                            result.ActionId, status, verified.IdempotencyKey);
+                        _processedTasks.Add(intentKey);
+                    }
+                }
+                else
+                {
+                    string reason = verified.Payload.TryGetProperty("reason", out JsonElement reasonElement)
+                        ? reasonElement.GetString() ?? "远程诊断请求" : "远程诊断请求";
+                    OperationsJob job = _workStore.CreateJob(
+                        "ops.diagnostics.bundle.create", verified.Device.DeviceId, reason,
+                        JsonSerializer.SerializeToElement(new { }), verified.TaskId, verified.IdempotencyKey);
+                    status = "awaiting_local_consent";
+                    evidence = new { jobId = job.JobId };
+                }
+
+                await SendSignedTaskReceiptAsync(task.TaskId, status, evidence, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        private async Task SendSignedTaskReceiptAsync(
+            string taskId,
+            string status,
+            object evidence,
+            CancellationToken cancellationToken)
+        {
+            string path = $"/api/ops/v1/device-relay/hosts/{Uri.EscapeDataString(_hostId)}"
+                + $"/tasks/{Uri.EscapeDataString(taskId)}/receipts";
+            using HttpResponseMessage response = await SendSignedHostRequestAsync(
+                path, new { status, evidence }, includeCertificate: false, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+        }
+
+        private async Task<HttpResponseMessage> SendSignedHostRequestAsync(
+            string path,
+            object body,
+            bool includeCertificate,
+            CancellationToken cancellationToken)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(body, JsonOptions));
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(
+                System.Globalization.CultureInfo.InvariantCulture);
+            string nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(24))
+                .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+            string canonical = OperationsRelayProtocol.BuildCanonical("POST", path, timestamp, nonce, bytes);
+            using HttpRequestMessage request = new(HttpMethod.Post, path)
+            {
+                Content = new ByteArrayContent(bytes),
+            };
+            request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json")
+            {
+                CharSet = "utf-8",
+            };
+            request.Headers.Add("X-CV-Host-Id", _hostId);
+            request.Headers.Add("X-CV-Timestamp", timestamp);
+            request.Headers.Add("X-CV-Nonce", nonce);
+            request.Headers.Add("X-CV-Signature", _identity.Sign(canonical));
+            if (includeCertificate)
+                request.Headers.Add("X-CV-Host-Certificate", _identity.CertificateDer);
+            return await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task PollTasksAsync(CancellationToken cancellationToken)

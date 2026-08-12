@@ -146,7 +146,13 @@ namespace ColorVision.UI.Desktop.Operations
             }
         }
 
-        public OperationsJob CreateJob(string capabilityId, string deviceId, string reason, JsonElement input, string correlationId)
+        public OperationsJob CreateJob(
+            string capabilityId,
+            string deviceId,
+            string reason,
+            JsonElement input,
+            string correlationId,
+            string? sourceTaskId = null)
         {
             if (capabilityId is not ("ops.diagnostics.bundle.create" or "ops.window.snapshot.capture" or "ops.service.restart" or "ops.application.restart" or "ops.messaging.reconnect" or "ops.flow.cancel"))
                 throw new InvalidOperationException("capability_not_allowed_for_remote_job");
@@ -168,13 +174,13 @@ namespace ColorVision.UI.Desktop.Operations
                 RiskLevel = capabilityId == "ops.service.restart" ? OperationsRiskLevels.Privileged : OperationsRiskLevels.ApprovalRequired,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow,
-                SourceTaskId = deviceId == "web-relay" ? correlationId : null,
+                SourceTaskId = sourceTaskId ?? (deviceId == "web-relay" ? correlationId : null),
             };
             lock (_syncRoot)
             {
-                if (deviceId == "web-relay")
+                if (!string.IsNullOrWhiteSpace(job.SourceTaskId))
                 {
-                    OperationsJob? existing = _state.Jobs.FirstOrDefault(item => item.SourceTaskId == correlationId);
+                    OperationsJob? existing = _state.Jobs.FirstOrDefault(item => item.SourceTaskId == job.SourceTaskId);
                     if (existing != null)
                         return Clone(existing);
                 }
@@ -517,6 +523,16 @@ namespace ColorVision.UI.Desktop.Operations
                 SaveNoLock();
             }
             Changed?.Invoke(this, EventArgs.Empty);
+        }
+
+        public bool HasProcessedRelayIntent(string deviceId, string idempotencyKey)
+        {
+            lock (_syncRoot)
+                return _state.Audit.Any(item =>
+                    string.Equals(item.ActorId, deviceId, StringComparison.Ordinal)
+                    && string.Equals(item.ActorType, "device", StringComparison.Ordinal)
+                    && string.Equals(item.Action, "relay.intent.execute", StringComparison.Ordinal)
+                    && string.Equals(item.CorrelationId, idempotencyKey, StringComparison.Ordinal));
         }
 
         public bool RecordAuditThrottled(

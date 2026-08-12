@@ -466,9 +466,11 @@ def register_all_blueprints(app, ctx, services, helpers):
 
     from db.repositories.operations_support import SqliteOperationsSupportStore
     from routes.operations_relay import OperationsRelayContext, register_operations_relay_routes
+    from services.operations_device_relay import OperationsDeviceRelayService
     register_operations_relay_routes(app, OperationsRelayContext(
         cache=cache,
         support_store=SqliteOperationsSupportStore(cache.get_db),
+        device_relay=OperationsDeviceRelayService(cache),
     ))
 
     register_docs_site(app)

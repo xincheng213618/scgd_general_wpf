@@ -1,9 +1,18 @@
 import copy
+import base64
+import hashlib
+import json
 import tempfile
 import unittest
+import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import app as marketplace_app
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+from cryptography.x509.oid import NameOID
 from services.api_key_service import create_api_key
 
 
@@ -194,6 +203,209 @@ class OperationsRelayTests(unittest.TestCase):
         )
         self.assertEqual(extra_field.status_code, 400)
         self.assertEqual(extra_field.get_json()["error"], "invalid_support_message_payload")
+
+    def test_device_signed_relay_round_trip_without_bearer_secret(self):
+        identity = self.device_relay_identity()
+        synced = self.sync_device_relay(identity)
+        self.assertEqual(synced.status_code, 200)
+        self.assertEqual(synced.get_json()["deviceCount"], 1)
+
+        snapshot_path = f"/api/ops/v1/device-relay/hosts/{identity['host_id']}/snapshot"
+        snapshot_body = self.json_bytes({})
+        snapshot = self.client.post(
+            snapshot_path,
+            data=snapshot_body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", snapshot_path, snapshot_body),
+        )
+        self.assertEqual(snapshot.status_code, 200)
+        self.assertTrue(snapshot.get_json()["host"]["snapshot"]["isRunning"])
+
+        create_path = "/api/ops/v1/device-relay/tasks"
+        task_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.window.show",
+            "payload": {},
+            "idempotencyKey": "show-main-window-1",
+            "ttlSeconds": 300,
+        })
+        task_headers = self.device_headers(identity, "POST", create_path, task_body)
+        created = self.client.post(
+            create_path, data=task_body, content_type="application/json", headers=task_headers
+        )
+        self.assertEqual(created.status_code, 202)
+        task_id = created.get_json()["taskId"]
+
+        poll_path = f"/api/ops/v1/device-relay/hosts/{identity['host_id']}/tasks"
+        poll_body = self.json_bytes({})
+        polled = self.client.post(
+            poll_path,
+            data=poll_body,
+            content_type="application/json",
+            headers=self.host_headers(identity, "POST", poll_path, poll_body),
+        )
+        self.assertEqual(polled.status_code, 200)
+        relay_task = polled.get_json()["tasks"][0]
+        self.assertEqual(relay_task["taskId"], task_id)
+        self.assertEqual(relay_task["requestBody"].encode("utf-8"), task_body)
+        self.assertEqual(relay_task["signature"], task_headers["X-CV-Signature"])
+
+        receipt_path = (
+            f"/api/ops/v1/device-relay/hosts/{identity['host_id']}"
+            f"/tasks/{task_id}/receipts"
+        )
+        receipt_body = self.json_bytes({"status": "completed", "evidence": {"actionId": "ops.window.show"}})
+        receipt = self.client.post(
+            receipt_path,
+            data=receipt_body,
+            content_type="application/json",
+            headers=self.host_headers(identity, "POST", receipt_path, receipt_body),
+        )
+        self.assertEqual(receipt.status_code, 201)
+
+        status_path = f"/api/ops/v1/device-relay/tasks/{task_id}"
+        status_body = self.json_bytes({"hostId": identity["host_id"]})
+        status = self.client.post(
+            status_path,
+            data=status_body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", status_path, status_body),
+        )
+        self.assertEqual(status.status_code, 200)
+        self.assertEqual(status.get_json()["task"]["status"], "completed")
+        self.assertEqual(status.get_json()["task"]["receipts"][0]["status"], "completed")
+
+    def test_device_relay_rejects_tampering_replay_and_revocation(self):
+        identity = self.device_relay_identity()
+        self.assertEqual(self.sync_device_relay(identity).status_code, 200)
+        path = "/api/ops/v1/device-relay/tasks"
+        body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.diagnostics.request",
+            "payload": {"reason": "field support"},
+            "idempotencyKey": "diagnostic-1",
+        })
+        headers = self.device_headers(identity, "POST", path, body)
+        tampered = body.replace(b"field support", b"silent exploit")
+        rejected = self.client.post(path, data=tampered, content_type="application/json", headers=headers)
+        self.assertEqual(rejected.status_code, 401)
+        self.assertEqual(rejected.get_json()["error"], "invalid_request_signature")
+
+        created = self.client.post(path, data=body, content_type="application/json", headers=headers)
+        self.assertEqual(created.status_code, 202)
+        replayed = self.client.post(path, data=body, content_type="application/json", headers=headers)
+        self.assertEqual(replayed.status_code, 409)
+        self.assertEqual(replayed.get_json()["error"], "replayed_request")
+
+        revoked_at = datetime.now(timezone.utc).isoformat()
+        self.assertEqual(self.sync_device_relay(identity, revoked_at=revoked_at).status_code, 200)
+        fresh_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.window.show",
+            "payload": {},
+            "idempotencyKey": "show-after-revoke",
+        })
+        revoked = self.client.post(
+            path,
+            data=fresh_body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, fresh_body),
+        )
+        self.assertEqual(revoked.status_code, 401)
+        self.assertEqual(revoked.get_json()["error"], "unknown_or_revoked_device")
+
+    @staticmethod
+    def json_bytes(value):
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+
+    def device_relay_identity(self):
+        host_id = uuid.uuid4().hex
+        host_key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
+        subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, f"ColorVision Operations {host_id}")])
+        now = datetime.now(timezone.utc)
+        certificate = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(subject)
+            .public_key(host_key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(now - timedelta(minutes=1))
+            .not_valid_after(now + timedelta(days=30))
+            .sign(host_key, hashes.SHA256())
+        )
+        device_key = ec.generate_private_key(ec.SECP256R1())
+        return {
+            "host_id": host_id,
+            "host_key": host_key,
+            "certificate": base64.b64encode(
+                certificate.public_bytes(serialization.Encoding.DER)
+            ).decode("ascii"),
+            "device_id": uuid.uuid4().hex,
+            "device_key": device_key,
+            "public_key": base64.b64encode(
+                device_key.public_key().public_bytes(
+                    serialization.Encoding.DER,
+                    serialization.PublicFormat.SubjectPublicKeyInfo,
+                )
+            ).decode("ascii"),
+        }
+
+    def sync_device_relay(self, identity, revoked_at=None):
+        path = f"/api/ops/v1/device-relay/hosts/{identity['host_id']}/sync"
+        body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "displayName": "Line 1",
+            "appVersion": "1.4.10.4",
+            "status": "online",
+            "capabilities": ["ops.window.show", "ops.diagnostics.request"],
+            "snapshot": {"isRunning": True, "mainWindow": {"state": "Normal"}},
+            "devices": [{
+                "deviceId": identity["device_id"],
+                "displayName": "Test phone",
+                "publicKeySpki": identity["public_key"],
+                "scopes": ["ops.window.control", "ops.jobs.create"],
+                "approvedAt": datetime.now(timezone.utc).isoformat(),
+                "revokedAt": revoked_at,
+            }],
+        })
+        headers = self.host_headers(identity, "POST", path, body)
+        headers["X-CV-Host-Certificate"] = identity["certificate"]
+        return self.client.post(path, data=body, content_type="application/json", headers=headers)
+
+    @staticmethod
+    def signed_canonical(method, path, timestamp, nonce, body):
+        return "\n".join((
+            method.upper(), path, timestamp, nonce, hashlib.sha256(body).hexdigest()
+        )).encode("utf-8")
+
+    def host_headers(self, identity, method, path, body):
+        timestamp = str(int(datetime.now(timezone.utc).timestamp()))
+        nonce = uuid.uuid4().hex
+        signature = identity["host_key"].sign(
+            self.signed_canonical(method, path, timestamp, nonce, body),
+            padding.PKCS1v15(),
+            hashes.SHA256(),
+        )
+        return {
+            "X-CV-Host-Id": identity["host_id"],
+            "X-CV-Timestamp": timestamp,
+            "X-CV-Nonce": nonce,
+            "X-CV-Signature": base64.b64encode(signature).decode("ascii"),
+        }
+
+    def device_headers(self, identity, method, path, body):
+        timestamp = str(int(datetime.now(timezone.utc).timestamp()))
+        nonce = uuid.uuid4().hex
+        signature = identity["device_key"].sign(
+            self.signed_canonical(method, path, timestamp, nonce, body),
+            ec.ECDSA(hashes.SHA256()),
+        )
+        return {
+            "X-CV-Device-Id": identity["device_id"],
+            "X-CV-Timestamp": timestamp,
+            "X-CV-Nonce": nonce,
+            "X-CV-Signature": base64.b64encode(signature).decode("ascii"),
+        }
 
 
 if __name__ == "__main__":

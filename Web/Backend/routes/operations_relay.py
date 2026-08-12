@@ -17,6 +17,7 @@ from flask import Blueprint, jsonify, request
 
 from ports.operations_support import OperationsSupportStore
 from services.api_key_service import api_key_actor_id, verify_api_key
+from services.operations_device_relay import DeviceRelayError, OperationsDeviceRelayService
 
 operations_relay = Blueprint("operations_relay", __name__)
 
@@ -34,6 +35,7 @@ ALLOWED_SUPPORT_EVENTS = {"session.requested", "session.active", "message", "ses
 class OperationsRelayContext:
     cache: object
     support_store: OperationsSupportStore
+    device_relay: OperationsDeviceRelayService
 
 
 _ctx: OperationsRelayContext | None = None
@@ -93,6 +95,69 @@ def _bounded_text(value, field: str, maximum: int) -> str:
 
 def _error(exc: ValueError):
     return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+def _device_relay_error(exc: DeviceRelayError):
+    return jsonify({"ok": False, "error": exc.code}), exc.status
+
+
+@operations_relay.route("/api/ops/v1/device-relay/hosts/<host_id>/sync", methods=["POST"])
+def device_relay_sync_host(host_id):
+    try:
+        result = _ctx.device_relay.sync_host(host_id, request.path, request.headers, request.get_data(cache=True))
+        return jsonify(result)
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
+
+
+@operations_relay.route("/api/ops/v1/device-relay/hosts/<host_id>/tasks", methods=["POST"])
+def device_relay_poll_tasks(host_id):
+    try:
+        result = _ctx.device_relay.poll_tasks(host_id, request.path, request.headers, request.get_data(cache=True))
+        return jsonify(result)
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
+
+
+@operations_relay.route("/api/ops/v1/device-relay/tasks", methods=["POST"])
+def device_relay_create_task():
+    try:
+        result, status = _ctx.device_relay.create_task(request.path, request.headers, request.get_data(cache=True))
+        return jsonify(result), status
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
+
+
+@operations_relay.route(
+    "/api/ops/v1/device-relay/hosts/<host_id>/tasks/<task_id>/receipts",
+    methods=["POST"],
+)
+def device_relay_task_receipt(host_id, task_id):
+    try:
+        result, status = _ctx.device_relay.record_receipt(
+            host_id, task_id, request.path, request.headers, request.get_data(cache=True)
+        )
+        return jsonify(result), status
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
+
+
+@operations_relay.route("/api/ops/v1/device-relay/hosts/<host_id>/snapshot", methods=["POST"])
+def device_relay_snapshot(host_id):
+    try:
+        result = _ctx.device_relay.get_snapshot(host_id, request.path, request.headers, request.get_data(cache=True))
+        return jsonify(result)
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
+
+
+@operations_relay.route("/api/ops/v1/device-relay/tasks/<task_id>", methods=["POST"])
+def device_relay_task_status(task_id):
+    try:
+        result = _ctx.device_relay.get_task(task_id, request.path, request.headers, request.get_data(cache=True))
+        return jsonify(result)
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
 
 
 @operations_relay.route("/api/ops/v1/hosts/<host_id>/heartbeat", methods=["POST"])
