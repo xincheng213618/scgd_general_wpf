@@ -270,7 +270,7 @@ namespace ColorVision.Database
 
         public static string GetConnectionString(MySqlConfig MySqlConfig, int timeout, string? databaseName)
         {
-            string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={databaseName ?? string.Empty};charset=utf8;Connect Timeout={timeout};SSL Mode =None;Pooling=true;AllowLoadLocalInfile=True";
+            string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={databaseName ?? string.Empty};charset={MySqlProtocolDefaults.CharacterSet};Connect Timeout={timeout};SSL Mode =None;Pooling=true;AllowLoadLocalInfile=True";
             return connStr;
         }
 

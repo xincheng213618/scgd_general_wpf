@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Archive.Dao
             var MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
             if (MySqlConfig != null)
             {
-                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
+                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset={MySqlProtocolDefaults.CharacterSet};Connect Timeout={3};SSL Mode =None;Pooling=true";
                 SqlSugarClient DB = new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = connStr,
@@ -82,7 +82,7 @@ namespace ColorVision.Engine.Archive.Dao
             var MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
             if (MySqlConfig != null)
             {
-                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
+                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset={MySqlProtocolDefaults.CharacterSet};Connect Timeout={3};SSL Mode =None;Pooling=true";
                 SqlSugarClient DB = new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = connStr,
@@ -102,7 +102,7 @@ namespace ColorVision.Engine.Archive.Dao
             var MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
             if (MySqlConfig != null)
             {
-                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
+                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset={MySqlProtocolDefaults.CharacterSet};Connect Timeout={3};SSL Mode =None;Pooling=true";
                 SqlSugarClient DB = new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = connStr,
@@ -262,7 +262,7 @@ namespace ColorVision.Engine.Archive.Dao
             var MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
             if (MySqlConfig != null)
             {
-                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
+                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset={MySqlProtocolDefaults.CharacterSet};Connect Timeout={3};SSL Mode =None;Pooling=true";
                 SqlSugarClient DB = new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = connStr,

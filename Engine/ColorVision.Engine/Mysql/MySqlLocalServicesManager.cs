@@ -1175,13 +1175,16 @@ namespace ColorVision.Database
                     return;
                 }
 
-                string dependencySql = BuildMigrationDictionaryDependencySql(MySqlControl.GetConnectionString());
-                if (string.IsNullOrWhiteSpace(dependencySql))
+                string dependencyStatements = BuildMigrationDictionaryDependencyStatements(MySqlControl.GetConnectionString());
+                if (string.IsNullOrWhiteSpace(dependencyStatements))
                 {
                     return;
                 }
 
-                File.AppendAllText(backupFile, Environment.NewLine + dependencySql, new UTF8Encoding(false));
+                string dependencyScript = MySqlProtocolDefaults.CreateScript(
+                    "-- Referenced template dictionary dependencies",
+                    dependencyStatements);
+                File.AppendAllText(backupFile, Environment.NewLine + dependencyScript, MySqlProtocolDefaults.ScriptEncoding);
             }
             catch (Exception ex)
             {
@@ -1189,7 +1192,7 @@ namespace ColorVision.Database
             }
         }
 
-        public static string BuildMigrationDictionaryDependencySql(string connectionString, Action<string>? logCallback = null)
+        public static string BuildMigrationDictionaryDependencyStatements(string connectionString, Action<string>? logCallback = null)
         {
             try
             {
@@ -1225,7 +1228,7 @@ namespace ColorVision.Database
                 }
 
                 logCallback?.Invoke(ColorVision.Engine.Properties.Resources.Mysql_DictionaryDependenciesAdded);
-                return $"-- Referenced template dictionary dependencies{Environment.NewLine}{sql}";
+                return sql.ToString();
             }
             catch (Exception ex)
             {
@@ -1474,7 +1477,7 @@ namespace ColorVision.Database
                 startInfo.ArgumentList.Add("--port");
                 startInfo.ArgumentList.Add(config.Port.ToString(CultureInfo.InvariantCulture));
             }
-
+            MySqlProtocolDefaults.AddCharacterSetArgument(startInfo);
             startInfo.Environment["MYSQL_PWD"] = config.UserPwd ?? string.Empty;
             return startInfo;
         }

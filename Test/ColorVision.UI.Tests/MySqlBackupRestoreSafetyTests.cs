@@ -10,7 +10,7 @@ namespace ColorVision.UI.Tests;
 public sealed class MySqlBackupRestoreSafetyTests
 {
     [Fact]
-    public void ProcessArgumentsKeepPasswordOutOfCommandLine()
+    public void MainBackupAndRestoreArgumentsUseUtf8Mb4AndKeepPasswordOutOfCommandLine()
     {
         string executablePath = Path.Combine(Path.GetTempPath(), $"mysql-test-{Guid.NewGuid():N}.exe");
         File.WriteAllBytes(executablePath, [0]);
@@ -35,12 +35,26 @@ public sealed class MySqlBackupRestoreSafetyTests
             Assert.All(arguments, argument => Assert.DoesNotContain(config.UserPwd, argument, StringComparison.Ordinal));
             Assert.DoesNotContain(arguments, argument => argument.StartsWith("--password", StringComparison.OrdinalIgnoreCase));
             Assert.Equal(config.UserPwd, startInfo.Environment["MYSQL_PWD"]);
-            Assert.Equal(["--user", config.UserName, "--host", config.Host, "--port", "3307"], arguments);
+            Assert.Equal(["--user", config.UserName, "--host", config.Host, "--port", "3307", MySqlProtocolDefaults.DefaultCharacterSetArgument], arguments);
         }
         finally
         {
             File.Delete(executablePath);
         }
+    }
+
+    [Fact]
+    public void SharedScriptRendererUsesUtf8Mb4BeforeBusinessSql()
+    {
+        const string dependencySql = "UPDATE sample SET `name` = '通用传感器';";
+
+        string sql = MySqlProtocolDefaults.CreateScript("-- dependencies", dependencySql);
+
+        int setNamesIndex = sql.IndexOf(MySqlProtocolDefaults.SetNamesStatement, StringComparison.Ordinal);
+        int dependencyIndex = sql.IndexOf(dependencySql, StringComparison.Ordinal);
+        Assert.Equal(0, setNamesIndex);
+        Assert.True(dependencyIndex > setNamesIndex);
+        Assert.Equal("utf8mb4", MySqlProtocolDefaults.CharacterSet);
     }
 
     [Fact]
@@ -94,6 +108,7 @@ public sealed class MySqlBackupRestoreSafetyTests
         Assert.Contains("RedirectStandardInput = redirectStandardInput", source, StringComparison.Ordinal);
         Assert.Contains("FileMode.CreateNew", source, StringComparison.Ordinal);
         Assert.Contains("File.Move(partFile, backupFile)", source, StringComparison.Ordinal);
+        Assert.Contains("MySqlProtocolDefaults.AddCharacterSetArgument", source, StringComparison.Ordinal);
         Assert.Contains("MYSQL_PWD", source, StringComparison.Ordinal);
         Assert.Contains("return RunDatabaseMaintenance(() => CreateMySqlBackup", source, StringComparison.Ordinal);
         Assert.Contains("return RunDatabaseMaintenance(() => RestoreMysqlCore(backupFile))", source, StringComparison.Ordinal);
@@ -108,12 +123,43 @@ public sealed class MySqlBackupRestoreSafetyTests
         Assert.DoesNotContain("restoreCommand", source, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void WindowsServiceBackupAndRestoreUseTheSharedProtocolDefaults()
+    {
+        string source = File.ReadAllText(FindRepositoryFile(
+            "Plugins",
+            "WindowsServicePlugin",
+            "ServiceManager",
+            "MySqlServiceHelper.cs"));
+
+        Assert.Contains("MySqlProtocolDefaults.AddCharacterSetArgument", source, StringComparison.Ordinal);
+        Assert.Contains("psi.ArgumentList.Add($\"-p{password}\")", source, StringComparison.Ordinal);
+        Assert.Contains("MySqlProtocolDefaults.CreateScript", source, StringComparison.Ordinal);
+        Assert.Contains("MySqlProtocolDefaults.CharacterSet", source, StringComparison.Ordinal);
+        Assert.Contains("bool restored = ExecuteSqlFile", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("Tool.ExecuteCommandUI", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("--default-character-set=utf8mb4", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("SET NAMES utf8mb4", source, StringComparison.Ordinal);
+    }
+
     private static string FindManagerSourcePath([CallerFilePath] string testSourcePath = "")
+    {
+        return FindRepositoryFile(
+            ["Engine", "ColorVision.Engine", "Mysql", "MySqlLocalServicesManager.cs"],
+            testSourcePath);
+    }
+
+    private static string FindRepositoryFile(params string[] relativeParts)
+    {
+        return FindRepositoryFile(relativeParts, string.Empty);
+    }
+
+    private static string FindRepositoryFile(string[] relativeParts, [CallerFilePath] string testSourcePath = "")
     {
         string? testDirectory = Path.GetDirectoryName(testSourcePath);
         if (!string.IsNullOrWhiteSpace(testDirectory))
         {
-            string sourceRelativeCandidate = Path.GetFullPath(Path.Combine(testDirectory, "..", "..", "Engine", "ColorVision.Engine", "Mysql", "MySqlLocalServicesManager.cs"));
+            string sourceRelativeCandidate = Path.GetFullPath(Path.Combine(testDirectory, "..", "..", Path.Combine(relativeParts)));
             if (File.Exists(sourceRelativeCandidate))
                 return sourceRelativeCandidate;
         }
@@ -123,7 +169,7 @@ public sealed class MySqlBackupRestoreSafetyTests
             DirectoryInfo? directory = new(seed);
             while (directory != null)
             {
-                string candidate = Path.Combine(directory.FullName, "Engine", "ColorVision.Engine", "Mysql", "MySqlLocalServicesManager.cs");
+                string candidate = Path.Combine(directory.FullName, Path.Combine(relativeParts));
                 if (File.Exists(candidate))
                     return candidate;
 
@@ -131,6 +177,6 @@ public sealed class MySqlBackupRestoreSafetyTests
             }
         }
 
-        throw new FileNotFoundException("Unable to locate MySqlLocalServicesManager.cs from the test working directory.");
+        throw new FileNotFoundException($"Unable to locate {Path.Combine(relativeParts)} from the test working directory.");
     }
 }
