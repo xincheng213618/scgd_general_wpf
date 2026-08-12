@@ -10,6 +10,8 @@ namespace ColorVision.UI.Desktop.Operations
 
         public bool RestartedAfterFailure { get; init; }
 
+        public bool AutomaticWatchdogActive { get; init; }
+
         public string Mode { get; init; } = "current-application-after-failure";
     }
 
@@ -20,7 +22,7 @@ namespace ColorVision.UI.Desktop.Operations
     /// </summary>
     public static class WindowsApplicationRestartRegistration
     {
-        public const string RecoveryRestartArgument = "--operations-failure-recovery";
+        public const string RecoveryRestartArgument = OperationsFailureWatchdogProtocol.RecoveryRestartArgument;
 
         private const uint RestartNoPatch = 0x4;
         private const uint RestartNoReboot = 0x8;
@@ -80,11 +82,18 @@ namespace ColorVision.UI.Desktop.Operations
 
         public static bool TryUnregisterForCleanExit()
         {
-            if (Volatile.Read(ref _fatalFailureObserved) != 0)
-                return false;
             if (Volatile.Read(ref _registered) == 0)
                 return true;
+            if (Volatile.Read(ref _fatalFailureObserved) != 0)
+                return false;
 
+            return TryUnregister();
+        }
+
+        public static bool TryUnregisterForWatchdog() => TryUnregister();
+
+        private static bool TryUnregister()
+        {
             try
             {
                 bool unregistered = UnregisterApplicationRestart() >= 0;
@@ -105,8 +114,13 @@ namespace ColorVision.UI.Desktop.Operations
         public static OperationsApplicationRecoveryStatus CaptureStatus() => new()
         {
             Supported = OperatingSystem.IsWindowsVersionAtLeast(6),
-            Registered = Volatile.Read(ref _registered) != 0,
+            Registered = OperationsApplicationFailureWatchdog.Active
+                || Volatile.Read(ref _registered) != 0,
             RestartedAfterFailure = RestartedAfterFailure,
+            AutomaticWatchdogActive = OperationsApplicationFailureWatchdog.Active,
+            Mode = OperationsApplicationFailureWatchdog.Active
+                ? "fixed-target-local-watchdog"
+                : "windows-application-restart",
         };
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]

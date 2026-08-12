@@ -83,6 +83,7 @@ namespace ColorVision
         void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             WindowsApplicationRestartRegistration.MarkFatalFailureObserved();
+            OperationsApplicationFailureWatchdog.MarkFatalFailureObserved();
             if (e.ExceptionObject is Exception exception)
             {
                 log.Fatal("捕获到 AppDomain 未处理异常，已静默记录。", exception);
@@ -533,6 +534,7 @@ namespace ColorVision
                 (step, exception) => log.Error($"Application exit cleanup step '{step}' failed.", exception);
             ApplicationExitCleanup.Run(
                 [
+                    new("local application failure watchdog", OperationsApplicationFailureWatchdog.SignalCleanExit),
                     new("Windows application restart registration", () =>
                     {
                         if (!WindowsApplicationRestartRegistration.TryUnregisterForCleanExit())

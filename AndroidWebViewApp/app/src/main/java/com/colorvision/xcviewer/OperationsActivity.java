@@ -1896,7 +1896,9 @@ public class OperationsActivity extends Activity {
         } else if (!applicationRecovery.optBoolean("registered", false)) {
             text.append("未就绪");
         } else if (applicationRecovery.optBoolean("restartedAfterFailure", false)) {
-            text.append("已登记 · 本次启动由 Windows 在异常退出后恢复");
+            text.append("已恢复 · 本次启动由固定目标看门狗或 Windows 异常恢复接管");
+        } else if (applicationRecovery.optBoolean("automaticWatchdogActive", false)) {
+            text.append("已就绪 · 本机看门狗只会自动恢复同目录 ColorVision");
         } else {
             text.append("已登记 · Windows 可在当前 ColorVision 异常退出或卡死后提供恢复");
         }
