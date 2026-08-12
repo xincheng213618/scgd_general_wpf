@@ -349,6 +349,46 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertEqual(set(app_info), {"latest_version", "changelog_html"})
         self.assertIn("新增插件市场", app_info["changelog_html"])
 
+    def test_site_changelog_compact_api_paginates_rendered_release_sections(self):
+        changelog = "# CHANGELOG\n\n" + "\n".join(
+            f"## [1.2.0.{fix}] 2026.03.{fix:02d}\n\n1. 版本 {fix} " + ("优化" * 200) + "\n"
+            for fix in range(1, 26)
+        )
+        self._create_changelog(changelog)
+
+        response = self.client.get("/api/site/changelog?view=compact&page=2&page_size=10")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        html = payload["app_info"]["changelog_html"]
+        self.assertNotIn("# CHANGELOG", html)
+        self.assertIn("1.2.0.11", html)
+        self.assertIn("1.2.0.20", html)
+        self.assertNotIn("1.2.0.10", html)
+        self.assertNotIn("1.2.0.21", html)
+        self.assertEqual(payload["changelog_page"], 2)
+        self.assertEqual(payload["changelog_page_size"], 10)
+        self.assertEqual(payload["changelog_total_entries"], 25)
+        self.assertEqual(payload["changelog_total_pages"], 3)
+        self.assertEqual(payload["changelog_page_entry_count"], 10)
+        self.assertTrue(payload["changelog_has_previous"])
+        self.assertTrue(payload["changelog_has_next"])
+        self.assertLess(len(response.data), 32 * 1024)
+
+    def test_site_changelog_pagination_clamps_values_and_rejects_invalid_page(self):
+        self._create_changelog("# CHANGELOG\n\n## [1.0.0.1] 2026.03.01\n\n1. 初始版本\n")
+
+        clamped = self.client.get(
+            "/api/site/changelog?view=compact&page=999&page_size=1"
+        ).get_json()
+        invalid = self.client.get(
+            "/api/site/changelog?view=compact&page=invalid&page_size=20"
+        )
+
+        self.assertEqual(clamped["changelog_page"], 1)
+        self.assertEqual(clamped["changelog_page_size"], 5)
+        self.assertEqual(invalid.status_code, 400)
+
     def test_public_routes_serve_react_shell_without_template_content(self):
         self._create_changelog(
             """# CHANGELOG\n\n## [1.2.0.1] 2026.03.24\n\n1.新增插件市场\n2.优化下载中心\n3.重构更新逻辑\n\n## [1.1.0.1] 2026.03.01\n\n1.修复更新逻辑\n"""

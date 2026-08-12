@@ -200,6 +200,17 @@ export interface ToolsPayload {
   exists: boolean
 }
 
+export interface ChangelogPayload {
+  app_info: Pick<AppInfo, 'latest_version' | 'changelog_html'>
+  changelog_page: number
+  changelog_page_size: number
+  changelog_total_entries: number
+  changelog_total_pages: number
+  changelog_page_entry_count: number
+  changelog_has_previous: boolean
+  changelog_has_next: boolean
+}
+
 export interface SpectrumRelease {
   version: string
   publishedAtUtc: string

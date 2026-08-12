@@ -454,6 +454,8 @@ try {
             'test_spectrum_api',
             'test_csrf_protection',
             'test_browser_auth',
+            'test_app_changelog',
+            'test_app.MarketplaceAppTests.test_site_changelog_compact_api_paginates_rendered_release_sections',
             'test_contracts.AuthContracts.test_session_csrf_token_rotates_across_authentication_boundaries',
             'test_contracts.AuthContracts.test_cross_origin_auth_write_is_rejected_before_login',
             'test_contracts.AuthContracts.test_same_origin_session_admin_write_requires_csrf_token',

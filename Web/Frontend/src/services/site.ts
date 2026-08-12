@@ -1,5 +1,6 @@
 import type {
   BrowsePayload,
+  ChangelogPayload,
   CvwsContext,
   HomePayload,
   PluginDetail,
@@ -48,9 +49,9 @@ export function getReleases(params: {
   return getJson<ReleasesPayload>(`/api/site/releases${queryString({ view: 'compact', ...params })}`, signal)
 }
 
-export function getChangelog(signal?: AbortSignal) {
-  return getJson<{ app_info: { latest_version?: string; changelog_html?: string } }>(
-    '/api/site/changelog?view=compact',
+export function getChangelog(params: { page?: number; page_size?: number }, signal?: AbortSignal) {
+  return getJson<ChangelogPayload>(
+    `/api/site/changelog${queryString({ view: 'compact', ...params })}`,
     signal,
   )
 }

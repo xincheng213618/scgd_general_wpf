@@ -163,6 +163,11 @@ def api_site_releases():
 def api_site_changelog():
     request_context = current_request_context()
     if request.args.get("view", "").strip().lower() == "compact":
+        if "page" in request.args or "page_size" in request.args:
+            return jsonify(_services().get_request_paged_changelog_context(
+                page=_parse_int("page", default=1, minimum=1, maximum=100000),
+                page_size=_parse_int("page_size", default=20, minimum=5, maximum=50),
+            ))
         app_info = _services().get_request_compact_changelog_app_info(request_context)
     else:
         app_info = _services().get_request_changelog_app_info(request_context)

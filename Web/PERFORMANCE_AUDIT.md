@@ -30,6 +30,11 @@ DTO before discarding most of it. Windows and Android history use independent
 server pagination; a synthetic 5,000-APK catalog remains below 64 KiB per
 compact response.
 
+On 2026-08-12, the React changelog page also moved to server pagination while
+the unparameterized compact response remained available for compatibility. For
+the real 381-release changelog, the first 20-release JSON response fell from
+156,526 to 10,110 bytes (93.5%); gzip size fell from 52,250 to 4,848 bytes.
+
 Public initial module-preload JavaScript fell from about 681.8 KiB to 233.5 KiB
 gzip (about 65.8%). Admin pages, Pro Components, traffic analytics, and DOMPurify
 are route chunks instead of public-entry dependencies. The 2.34 MiB decorative

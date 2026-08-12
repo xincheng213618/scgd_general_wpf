@@ -4,7 +4,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from app_changelog import build_changelog_lookup, changelog_signature, get_cached_changelog_analysis
+from app_changelog import (
+    build_changelog_lookup,
+    changelog_signature,
+    get_cached_changelog_analysis,
+    paginate_changelog_markdown,
+)
 from app_releases import (
     build_app_release_context,
     build_release_artifact,
@@ -455,6 +460,35 @@ class MarketplaceDataService:
             ),
         }
 
+    def build_paged_changelog_context(self, *, page: int, page_size: int) -> dict[str, Any]:
+        """Build a bounded changelog page without changing the legacy compact response."""
+        changelog_path = self._storage() / "CHANGELOG.md"
+        changelog = self._read_text_file(changelog_path) or ""
+        signature = changelog_signature(changelog_path)
+        pagination = paginate_changelog_markdown(
+            changelog,
+            page=page,
+            page_size=page_size,
+        )
+        page_markdown = pagination.pop("markdown")
+        return {
+            "app_info": {
+                "latest_version": self._latest_version(),
+                "changelog_html": self._render_markdown_cached(
+                    cache_key=f"markdown:changelog_page:v1:{pagination['page']}:{page_size}",
+                    signature=f"page:{signature}:{pagination['page']}:{page_size}",
+                    text=page_markdown,
+                ),
+            },
+            "changelog_page": pagination["page"],
+            "changelog_page_size": pagination["page_size"],
+            "changelog_total_entries": pagination["total_entries"],
+            "changelog_total_pages": pagination["total_pages"],
+            "changelog_page_entry_count": pagination["page_entry_count"],
+            "changelog_has_previous": pagination["has_previous"],
+            "changelog_has_next": pagination["has_next"],
+        }
+
     def get_request_home_app_info(
         self,
         request_context: RequestContext | None = None,
@@ -501,6 +535,14 @@ class MarketplaceDataService:
             self.build_compact_changelog_app_info,
             request_context,
         )
+
+    def get_request_paged_changelog_context(
+        self,
+        *,
+        page: int,
+        page_size: int,
+    ) -> dict[str, Any]:
+        return self.build_paged_changelog_context(page=page, page_size=page_size)
 
     def build_home_tool_preview(self) -> dict[str, Any]:
         cached = self._get_cache_entry(self._cache.home_tool_preview_cache_key)
