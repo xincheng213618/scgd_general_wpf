@@ -203,6 +203,11 @@ minutes are rejected before model provider credentials are returned.
 |--------|----------|-------------|
 | GET | `/api/admin/audit-log?action=&limit=&offset=` | View audit log |
 
+Audit rows are retained for 365 days by default. The daily
+`admin_data_retention` job applies the cutoff to the live database and every
+recognized administrator-created database snapshot, so a backup cannot bypass
+the audit retention contract.
+
 ### Stats
 
 | Method | Endpoint | Description |
@@ -250,11 +255,21 @@ Configuration defaults:
 | `access_analytics_flush_interval_seconds` | `0.5` | Writer wait/flush interval |
 | `access_analytics_retention_days` | `90` | UTC daily aggregates retained by the scheduled cleanup |
 | `job_run_retention_days` | `30` | Completed scheduler runs retained; each job's latest run and running rows are always kept |
+| `audit_log_retention_days` | `365` | Administrator audit rows retained in the live database and recognized snapshots |
+| `admin_db_backup_keep_count` | `10` | Newest recognized administrator-created database snapshots retained; minimum 2 |
 
 The same scheduled retention pass also removes expired access rows from
 recognized `marketplace_backup_YYYYMMDD_HHMMSS.db` snapshots. A newly created
 admin backup is scrubbed to the current cutoff before it is reported as
 successful, so database snapshots cannot bypass visitor retention.
+
+`POST /api/admin/backup/db` also applies the audit cutoff and immediately
+rotates exact `marketplace_backup_YYYYMMDD_HHMMSS.db` files. The backup created
+by the current request is explicitly protected. Non-matching names, symbolic
+links, paths outside the database directory, and snapshots that fail audit
+cleanup are never removed automatically. The response includes a
+`backup_retention` result with the retained limit, removal count and byte count,
+and any rotation errors.
 
 ## Admin Pages
 
@@ -324,6 +339,7 @@ curl -X POST http://localhost:9998/api/packages/publish \
 | `cache_cleanup` | 1 hour | Delete expired cache entries |
 | `access_analytics_retention` | 1 day | Delete access aggregates older than the configured retention window |
 | `job_history_retention` | 1 day | Delete completed job runs older than the configured retention window while preserving current state |
+| `admin_data_retention` | 1 day | Delete expired audit rows from the live DB and snapshots, then bound recognized manual DB backups |
 | `startup_index_check` | Once | Ensure all indexes are populated on startup |
 
 The scheduler starts automatically when `scheduler_enabled` is true (default). In debug mode, it only starts in the Flask reloader child process to avoid duplicate threads. Set `scheduler_enabled: false` in config.json to disable.
@@ -336,7 +352,7 @@ Signature-based check: each index check computes a directory signature and compa
 2. **Manual file changes**: If you manually modify storage directories, either:
    - Wait for the periodic scheduler check, or
    - Call `POST /api/admin/index/refresh-all`
-3. **Database backup**: `POST /api/admin/backup/db` creates a timestamped backup of `marketplace.db`.
+3. **Database backup**: `POST /api/admin/backup/db` creates, privacy-scrubs, integrity-checks, and rotates a timestamped backup of `marketplace.db`.
 4. **API Key security**: Keys are shown only once at creation. Revoke and rotate if compromised. Scopes are validated against a whitelist at creation time.
 5. **Config**: Edit `config.json` to set `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
 

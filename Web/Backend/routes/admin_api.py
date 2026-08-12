@@ -463,22 +463,38 @@ def backup_db():
     # after the scheduled live cleanup has removed them.
     try:
         from services.access_analytics import prune_access_analytics_database
+        from services.admin_data_retention import run_admin_data_retention
 
         config = ctx.config_getter()
         prune_access_analytics_database(
             backup_path,
             retention_days=int(config.get("access_analytics_retention_days", 90) or 90),
         )
+        admin_retention = run_admin_data_retention(
+            ctx.cache.get_db,
+            backup_path.parent,
+            config,
+            protected_paths=(backup_path,),
+        )
     except Exception as exc:
         backup_path.unlink(missing_ok=True)
-        return jsonify({"error": f"Backup privacy cleanup failed: {exc}"}), 500
+        return jsonify({"error": f"Backup retention cleanup failed: {exc}"}), 500
+
+    backup_retention = dict(admin_retention["backupFiles"])
+    backup_retention["status"] = admin_retention["status"]
+    backup_retention["errors"] = admin_retention["errors"]
+    backup_retention["auditDeleted"] = admin_retention["audit"]["deleted"]
+    backup_retention["snapshotAuditDeleted"] = admin_retention["backupAudit"]["deleted"]
 
     ctx.cache.write_audit(
         actor_type=_actor_type(),
         actor_id=_actor_id(),
         action="db_backup",
         target_type="database",
-        detail=f"Backup to {backup_path.name}",
+        detail=(
+            f"Backup to {backup_path.name}; "
+            f"removed {backup_retention['removedCount']} old backup(s)"
+        ),
         ip=request.remote_addr or "",
         user_agent=request.headers.get("User-Agent", "")[:200],
     )
@@ -487,6 +503,7 @@ def backup_db():
         "status": "ok",
         "backup_path": str(backup_path),
         "backup_size_bytes": backup_path.stat().st_size if backup_path.exists() else 0,
+        "backup_retention": backup_retention,
     })
 
 

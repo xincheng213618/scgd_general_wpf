@@ -1057,6 +1057,14 @@ class SecurityTests(unittest.TestCase):
     # -------------------------------------------------------------------
 
     def test_db_backup_creates_file(self):
+        old_backups = []
+        for second in range(11):
+            path = self.root / f"marketplace_backup_20000101_0000{second:02d}.db"
+            self.assertTrue(self.cache.backup_db(path))
+            old_backups.append(path)
+        unclassified = self.root / "marketplace_backup_manual.db"
+        unclassified.write_bytes(b"manual")
+
         response = self.client.post(
             "/api/admin/backup/db",
             headers=self._auth_headers(),
@@ -1066,10 +1074,18 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(payload["status"], "ok")
         self.assertIn("backup_path", payload)
         self.assertGreater(payload["backup_size_bytes"], 0)
+        self.assertEqual(payload["backup_retention"]["status"], "success")
+        self.assertEqual(payload["backup_retention"]["beforeCount"], 12)
+        self.assertEqual(payload["backup_retention"]["afterCount"], 10)
+        self.assertEqual(payload["backup_retention"]["removedCount"], 2)
+        self.assertEqual(payload["backup_retention"]["preservedUnclassified"], 1)
 
         # Verify backup file exists
         backup_path = Path(payload["backup_path"])
         self.assertTrue(backup_path.exists())
+        self.assertFalse(old_backups[0].exists())
+        self.assertFalse(old_backups[1].exists())
+        self.assertTrue(unclassified.exists())
 
     # -------------------------------------------------------------------
     # Basic Auth validation for admin endpoints

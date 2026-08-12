@@ -5,6 +5,7 @@ Provides periodic background jobs for:
   - plugin_index_check: verify Plugins directory signature
   - cache_cleanup: delete expired cache_entry rows
   - job_history_retention: bound completed scheduler history
+  - admin_data_retention: bound audit rows and manual database snapshots
   - startup_index_check: ensure plugin_index is populated
 """
 
@@ -78,6 +79,13 @@ DEFAULT_JOBS = [
         "config": "{}",
     },
     {
+        "id": "admin_data_retention",
+        "name": "Admin Data Retention",
+        "job_type": "data_retention",
+        "interval_seconds": 86400,
+        "config": "{}",
+    },
+    {
         "id": "startup_index_check",
         "name": "Startup Index Check",
         "job_type": "startup_check",
@@ -129,6 +137,8 @@ def run_job_now(
             summary = _run_access_analytics_retention(cache, get_db, config_getter)
         elif job_id == "job_history_retention":
             summary = _run_job_history_retention(cache, config_getter)
+        elif job_id == "admin_data_retention":
+            summary = _run_admin_data_retention(cache, config_getter)
         elif job_id == "startup_index_check":
             summary = _run_startup_check(cache, storage, get_db)
         else:
@@ -290,6 +300,27 @@ def _run_job_history_retention(
     return (
         f"Pruned {deleted} job runs before {cutoff.date().isoformat()} "
         f"({retention_days} days retained)"
+    )
+
+
+def _run_admin_data_retention(
+    cache: CacheManager,
+    config_getter: Callable[[], dict[str, Any]],
+) -> str:
+    from services.admin_data_retention import run_admin_data_retention
+
+    result = run_admin_data_retention(
+        cache.get_db,
+        cache.db_path.parent,
+        config_getter(),
+    )
+    if result["errors"]:
+        raise RuntimeError("; ".join(result["errors"][:3]))
+    return (
+        f"Pruned {result['audit']['deleted']} audit rows and "
+        f"{result['backupAudit']['deleted']} snapshot audit rows; "
+        f"removed {result['backupFiles']['removedCount']} old database backups "
+        f"(limit {result['backupFiles']['keepCount']})"
     )
 
 

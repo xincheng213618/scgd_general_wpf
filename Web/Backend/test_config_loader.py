@@ -25,6 +25,8 @@ class ConfigLoaderTests(unittest.TestCase):
         self.assertIn("secret_key", DEFAULT_CONFIG)
         self.assertIn("upload_auth", DEFAULT_CONFIG)
         self.assertIn("copilot_sync", DEFAULT_CONFIG)
+        self.assertEqual(DEFAULT_CONFIG["audit_log_retention_days"], 365)
+        self.assertEqual(DEFAULT_CONFIG["admin_db_backup_keep_count"], 10)
 
     def test_max_upload_size_is_500mb(self):
         self.assertEqual(MAX_UPLOAD_SIZE_BYTES, 500 * 1024 * 1024)

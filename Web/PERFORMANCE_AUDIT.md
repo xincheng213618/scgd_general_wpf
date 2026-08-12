@@ -111,6 +111,12 @@ package hash costing about 381.9 ms moved to index refresh work.
   40 backups using 763,471,066 bytes; 28 old successful backups totaling
   525,584,018 bytes were eligible, while both failed backups and all
   unclassified directories remained protected.
+- Bounded administrator audit rows to 365 days and manual database snapshots to
+  the newest 10 by default. The same daily job scrubs expired audit rows from
+  recognized snapshots before rotation; new backups apply both access and audit
+  retention before success. A production preflight found 377 audit rows (oldest
+  2026-06-20), so the default cutoff removes none, and no manual DB snapshots
+  currently exist.
 - Added route-level frontend splitting, request cancellation, stale-state fixes,
   changelog/plugin HTML sanitization, immutable hashed-asset caching, and lazy
   chunk recovery after rolling deployments.
@@ -132,9 +138,9 @@ package hash costing about 381.9 ms moved to index refresh work.
    metrics; trusted-proxy client identity also needs explicit configuration.
 5. Add OpenAPI as the source of truth and generate TypeScript DTOs. The current
    handwritten interfaces are contract-tested but still transitional.
-6. Add retention/rotation for audit rows and manual administrator-created DB
-   backups. Access rows inside backups already obey analytics retention, and
-   deployment backup history is now bounded separately.
+6. Bound or remove verified Git-bundle transport files after successful offline
+   NAS deployment. The 2026-08-12 audit found 25 bundles using 9,711,112 bytes;
+   they are transport artifacts, separate from recovery backups.
 7. Split the remaining 506.16 KiB minified `ProForm` admin chunk if publish-page
    navigation performance becomes material; it is lazy and does not affect the
    public preload today.

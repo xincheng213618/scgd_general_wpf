@@ -27,6 +27,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "access_analytics_flush_interval_seconds": 0.5,
     "access_analytics_retention_days": 90,
     "job_run_retention_days": 30,
+    "audit_log_retention_days": 365,
+    "admin_db_backup_keep_count": 10,
     "upload_auth": {"username": "admin", "password": "admin"},
     "copilot_sync": {"version_keys": []},
 }
