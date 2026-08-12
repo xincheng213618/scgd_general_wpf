@@ -68,6 +68,7 @@ class TransferRouteTests(unittest.TestCase):
         marketplace_app.CONFIG = copy.deepcopy(marketplace_app.CONFIG)
         marketplace_app.CONFIG["storage_path"] = str(self.storage)
         marketplace_app.CONFIG["transfer_upload_dir"] = "Transfer"
+        marketplace_app.CONFIG["public_registration_enabled"] = True
         marketplace_app.CONFIG["upload_auth"] = {"username": "tester", "password": "secret"}
         marketplace_app.CONFIG["secret_key"] = "test-secret-key"
         marketplace_app.app.secret_key = "test-secret-key"

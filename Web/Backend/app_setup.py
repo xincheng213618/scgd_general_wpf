@@ -360,7 +360,7 @@ def register_all_blueprints(app, ctx, services, helpers):
 
     # Public pages (login/logout)
     register_public_pages(app, PublicPageContext(
-        cache=cache, storage=storage, config=config,
+        cache=cache, storage=storage, config_getter=helpers["active_config"],
         get_upload_auth=helpers["get_upload_auth"],
         check_web_session_auth=helpers["check_web_session_auth"],
         dist_dir=Path(__file__).resolve().parents[1] / "Frontend" / "dist",

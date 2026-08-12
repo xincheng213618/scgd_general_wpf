@@ -20,6 +20,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { logout } from '../services/auth'
 import type { ThemeMode } from '../types/admin'
 import type { AuthSession } from '../types/site'
+import { publicAuthEntryLabel } from '../utils/registrationPolicy'
 
 const { Header, Content } = Layout
 
@@ -146,7 +147,7 @@ export function PublicLayout({
               </>
             ) : (
               <Button icon={<LoginOutlined />} onClick={() => navigate('/login?next=/transfer')}>
-                登录 / 注册
+                {publicAuthEntryLabel(session?.public_registration_enabled === true)}
               </Button>
             )}
           </Space>

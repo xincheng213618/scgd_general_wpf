@@ -7,13 +7,11 @@ paths, and future configuration keys remain untouched.
 
 from __future__ import annotations
 
-import json
-import os
-import threading
-import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
+
+from services.config_persistence import persist_config_values
 
 
 @dataclass(frozen=True)
@@ -31,9 +29,6 @@ OPERATIONAL_RETENTION_SETTINGS: dict[str, OperationalSettingSpec] = {
     "audit_log_retention_days": OperationalSettingSpec(365, 1, 3650),
     "admin_db_backup_keep_count": OperationalSettingSpec(10, 2, 1000),
 }
-
-_write_lock = threading.Lock()
-
 
 def operational_retention_limits() -> dict[str, dict[str, int]]:
     return {
@@ -94,37 +89,11 @@ def persist_operational_retention_settings(
     values: Mapping[str, int],
 ) -> dict[str, Any]:
     """Atomically persist allowed values, then update the live config mapping."""
-    path = Path(config_path)
-    temporary_path: Path | None = None
-    with _write_lock:
-        if path.exists():
-            with path.open(encoding="utf-8") as stream:
-                persisted = json.load(stream)
-            if not isinstance(persisted, dict):
-                raise ValueError("configuration file must contain a JSON object")
-        else:
-            persisted = {}
-
-        before = get_operational_retention_settings(active_config)
-        updated = dict(persisted)
-        updated.update(values)
-        encoded = (json.dumps(updated, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
-
-        temporary_path = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
-        try:
-            with temporary_path.open("xb") as stream:
-                stream.write(encoded)
-                stream.flush()
-                os.fsync(stream.fileno())
-            os.replace(temporary_path, path)
-        finally:
-            if temporary_path.exists():
-                temporary_path.unlink()
-
-        active_config.update(values)
-        changed = [name for name in OPERATIONAL_RETENTION_SETTINGS if before[name] != values[name]]
-        return {
-            "values": dict(values),
-            "changed": changed,
-            "before": before,
-        }
+    before = get_operational_retention_settings(active_config)
+    persist_config_values(config_path, active_config, values)
+    changed = [name for name in OPERATIONAL_RETENTION_SETTINGS if before[name] != values[name]]
+    return {
+        "values": dict(values),
+        "changed": changed,
+        "before": before,
+    }

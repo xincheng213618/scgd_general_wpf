@@ -26,6 +26,7 @@ def _now_iso() -> str:
 
 USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{3,32}$")
 MIN_PASSWORD_LENGTH = 6
+VALID_USER_ROLES = frozenset({"admin", "user"})
 
 
 def _user_payload(row) -> dict[str, Any]:
@@ -45,6 +46,10 @@ def validate_registration(username: str, password: str) -> str | None:
         return "请输入用户名"
     if not USERNAME_PATTERN.match(username):
         return "用户名只能使用 3-32 位字母、数字、下划线、点或连字符"
+    return validate_password(password)
+
+
+def validate_password(password: str) -> str | None:
     if len(password) < MIN_PASSWORD_LENGTH:
         return f"密码至少需要 {MIN_PASSWORD_LENGTH} 位"
     return None
@@ -103,7 +108,9 @@ def create_user(
     if validation_error:
         return None, validation_error
 
-    normalized_role = role if role in {"admin", "user"} else "user"
+    if role not in VALID_USER_ROLES:
+        return None, "无效账号角色"
+    normalized_role = role
     pw_hash = generate_password_hash(password)
     now = _now_iso()
     db = cache.get_db()
@@ -161,7 +168,7 @@ def verify_user_credentials(
         )
         db.commit()
 
-        return dict(row)
+        return _user_payload(row)
     except Exception:
         return None
     finally:
@@ -235,7 +242,10 @@ def set_user_active(
 
         now = _now_iso()
         db.execute(
-            "UPDATE users SET is_active = ?, updated_at = ? WHERE id = ?",
+            """UPDATE users
+               SET is_active = ?, auth_version = COALESCE(auth_version, 0) + 1,
+                   updated_at = ?
+               WHERE id = ?""",
             (1 if active else 0, now, user_id),
         )
         db.commit()
@@ -243,5 +253,86 @@ def set_user_active(
         return _user_payload(updated), None
     except Exception:
         return None, "user_update_failed"
+    finally:
+        db.close()
+
+
+def set_user_role(
+    cache: CacheManager,
+    user_id: int,
+    *,
+    role: str,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Change an account role and invalidate every existing session."""
+    if role not in VALID_USER_ROLES:
+        return None, "invalid_role"
+
+    db = cache.get_db()
+    try:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        if not row:
+            return None, "user_not_found"
+        if row["role"] == role:
+            return _user_payload(row), None
+
+        if row["role"] == "admin" and role != "admin" and bool(row["is_active"]):
+            active_admins = db.execute(
+                "SELECT COUNT(*) AS count FROM users WHERE role = 'admin' AND is_active = 1"
+            ).fetchone()
+            if not active_admins or int(active_admins["count"]) <= 1:
+                return None, "last_active_admin"
+
+        now = _now_iso()
+        db.execute(
+            """UPDATE users
+               SET role = ?, auth_version = COALESCE(auth_version, 0) + 1,
+                   updated_at = ?
+               WHERE id = ?""",
+            (role, now, user_id),
+        )
+        db.commit()
+        updated = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        return _user_payload(updated), None
+    except Exception:
+        return None, "user_update_failed"
+    finally:
+        db.close()
+
+
+def reset_user_password(
+    cache: CacheManager,
+    user_id: int,
+    *,
+    password: str,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Replace a password hash and invalidate every existing session."""
+    if generate_password_hash is None:
+        return None, "password_service_unavailable"
+    validation_error = validate_password(password)
+    if validation_error:
+        return None, validation_error
+
+    password_hash = generate_password_hash(password)
+    db = cache.get_db()
+    try:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        if not row:
+            return None, "user_not_found"
+
+        now = _now_iso()
+        db.execute(
+            """UPDATE users
+               SET password_hash = ?, auth_version = COALESCE(auth_version, 0) + 1,
+                   updated_at = ?
+               WHERE id = ?""",
+            (password_hash, now, user_id),
+        )
+        db.commit()
+        updated = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        return _user_payload(updated), None
+    except Exception:
+        return None, "password_reset_failed"
     finally:
         db.close()

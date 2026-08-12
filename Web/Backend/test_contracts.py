@@ -692,6 +692,7 @@ class AuthContracts(ContractTestBase):
         self.assertEqual(resp.get_json()["error"], "用户名或密码错误")
 
     def test_register_user_creates_non_admin_session(self):
+        marketplace_app.CONFIG["public_registration_enabled"] = True
         resp = self.client.post("/api/auth/register", json={
             "username": "worker",
             "password": "secret1",
@@ -701,9 +702,29 @@ class AuthContracts(ContractTestBase):
         self.assertTrue(data["authenticated"])
         self.assertFalse(data["is_admin"])
         self.assertEqual(data["role"], "user")
+        self.assertTrue(data["public_registration_enabled"])
 
         admin_resp = self.client.get("/api/admin/cache/status")
         self.assertEqual(admin_resp.status_code, 401)
+
+    def test_public_registration_is_disabled_by_default_and_exposed_in_session(self):
+        session_response = self.client.get("/api/auth/session")
+        self.assertEqual(session_response.status_code, 200)
+        self.assertFalse(session_response.get_json()["public_registration_enabled"])
+
+        register_page = self.client.get("/register", follow_redirects=False)
+        self.assertEqual(register_page.status_code, 302)
+        self.assertTrue(register_page.headers["Location"].endswith("/login?mode=register"))
+
+        registration = self.client.post("/api/auth/register", json={
+            "username": "blocked-user", "password": "secret1",
+        })
+        self.assertEqual(registration.status_code, 403)
+        self.assertIn("公开注册已关闭", registration.get_json()["error"])
+        self.assertEqual(
+            len(marketplace_app._cache.get_audit_log(action="user_register")),
+            0,
+        )
 
     def test_logout_get_is_read_only_and_post_clears_session(self):
         self.client.post("/api/auth/login", json={
@@ -792,6 +813,96 @@ class AuthContracts(ContractTestBase):
 
 class AdminApiContracts(ContractTestBase):
     """Contract tests for admin API endpoints."""
+
+    def _create_feedback(self, feedback_id="20260812_120000_contract"):
+        directory = self.storage / "Feedback" / feedback_id
+        directory.mkdir(parents=True)
+        (directory / "feedback.json").write_text(json.dumps({
+            "feedbackId": feedback_id,
+            "message": "contract feedback",
+            "userName": "tester",
+            "appVersion": "1.2.3.4",
+            "machineInfo": "contract host",
+            "clientIp": "hashed-client",
+            "createdAt": "2026-08-12T12:00:00+00:00",
+            "files": ["report.zip"],
+        }), encoding="utf-8")
+        (directory / "report.zip").write_bytes(b"diagnostic")
+        return directory
+
+    def test_feedback_inbox_detail_download_and_status_lifecycle(self):
+        directory = self._create_feedback()
+        headers = self.basic_auth()
+
+        listing = self.client.get("/api/admin/feedback", headers=headers)
+        self.assertEqual(listing.status_code, 200)
+        data = listing.get_json()
+        self.assertEqual(data["total"], 1)
+        self.assertEqual(data["summary"]["status_counts"]["new"], 1)
+        self.assertNotIn("machine_info", data["items"][0])
+
+        detail = self.client.get(
+            f"/api/admin/feedback/{directory.name}", headers=headers,
+        )
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.get_json()["message"], "contract feedback")
+
+        with self.client.get(
+            f"/api/admin/feedback/{directory.name}/attachments/report.zip",
+            headers=headers,
+        ) as download:
+            self.assertEqual(download.status_code, 200)
+            self.assertEqual(download.get_data(), b"diagnostic")
+            self.assertIn("attachment", download.headers["Content-Disposition"])
+
+        updated = self.client.put(
+            f"/api/admin/feedback/{directory.name}/status",
+            headers=headers,
+            json={"status": "resolved"},
+        )
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.get_json()["status"], "resolved")
+        self.assertEqual(
+            self.client.get(
+                "/api/admin/feedback?status=resolved", headers=headers,
+            ).get_json()["total"],
+            1,
+        )
+        audits = marketplace_app._cache.get_audit_log()
+        actions = {item["action"] for item in audits}
+        self.assertIn("feedback_attachment_download", actions)
+        self.assertIn("feedback_status_update", actions)
+
+    def test_feedback_inbox_requires_admin_and_rejects_unsafe_paths(self):
+        directory = self._create_feedback()
+        self.assertEqual(self.client.get("/api/admin/feedback").status_code, 401)
+
+        key = self.create_admin_key("stats:read")
+        limited = {"Authorization": f"Bearer {key['key']}"}
+        self.assertEqual(
+            self.client.get("/api/admin/feedback", headers=limited).status_code,
+            403,
+        )
+        headers = self.basic_auth()
+        self.assertEqual(
+            self.client.get("/api/admin/feedback?status=closed", headers=headers).status_code,
+            400,
+        )
+        self.assertEqual(
+            self.client.get(
+                f"/api/admin/feedback/{directory.name}/attachments/feedback.json",
+                headers=headers,
+            ).status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.put(
+                f"/api/admin/feedback/{directory.name}/status",
+                headers=headers,
+                json={"status": "closed"},
+            ).status_code,
+            400,
+        )
 
     def test_cache_status_returns_db_info(self):
         resp = self.client.get("/api/admin/cache/status", headers=self.basic_auth())
@@ -893,12 +1004,90 @@ class AdminApiContracts(ContractTestBase):
             403,
         )
 
+    def test_account_settings_control_public_registration_live(self):
+        config_path = self.root / "config.json"
+        config_path.write_text(json.dumps({
+            "secret_key": "preserved-secret",
+            "storage_path": str(self.storage),
+            "upload_auth": {"username": "admin", "password": "preserved-password"},
+            "unrelated": {"enabled": True},
+        }), encoding="utf-8")
+
+        initial = self.client.get(
+            "/api/admin/settings/accounts",
+            headers=self.basic_auth(),
+        )
+        self.assertEqual(initial.status_code, 200)
+        self.assertFalse(initial.get_json()["public_registration_enabled"])
+
+        enabled = self.client.put(
+            "/api/admin/settings/accounts",
+            headers=self.basic_auth(),
+            json={"public_registration_enabled": True},
+        )
+        self.assertEqual(enabled.status_code, 200)
+        self.assertEqual(enabled.get_json()["status"], "updated")
+        self.assertTrue(enabled.get_json()["public_registration_enabled"])
+        self.assertFalse(enabled.get_json()["restart_required"])
+        self.assertTrue(
+            self.client.get("/api/auth/session").get_json()["public_registration_enabled"]
+        )
+
+        registration = self.client.post("/api/auth/register", json={
+            "username": "policy-user", "password": "secret1",
+        })
+        self.assertEqual(registration.status_code, 201)
+
+        disabled = self.client.put(
+            "/api/admin/settings/accounts",
+            headers=self.basic_auth(),
+            json={"public_registration_enabled": False},
+        )
+        self.assertEqual(disabled.status_code, 200)
+        self.assertFalse(disabled.get_json()["public_registration_enabled"])
+        self.assertEqual(self.client.post("/api/auth/register", json={
+            "username": "blocked-again", "password": "secret1",
+        }).status_code, 403)
+
+        persisted = json.loads(config_path.read_text(encoding="utf-8"))
+        self.assertEqual(persisted["secret_key"], "preserved-secret")
+        self.assertEqual(persisted["upload_auth"]["password"], "preserved-password")
+        self.assertEqual(persisted["unrelated"], {"enabled": True})
+        self.assertFalse(persisted["public_registration_enabled"])
+        audits = marketplace_app._cache.get_audit_log(action="account_settings_update")
+        self.assertEqual(len(audits), 2)
+        self.assertNotIn("password", json.dumps(audits))
+
+    def test_account_settings_reject_invalid_payload_and_limited_keys(self):
+        invalid = self.client.put(
+            "/api/admin/settings/accounts",
+            headers=self.basic_auth(),
+            json={"public_registration_enabled": "true"},
+        )
+        self.assertEqual(invalid.status_code, 400)
+
+        key = self.create_admin_key("stats:read")
+        headers = {"Authorization": f"Bearer {key['key']}"}
+        self.assertEqual(
+            self.client.get("/api/admin/settings/accounts", headers=headers).status_code,
+            403,
+        )
+        self.assertEqual(
+            self.client.put(
+                "/api/admin/settings/accounts",
+                headers=headers,
+                json={"public_registration_enabled": True},
+            ).status_code,
+            403,
+        )
+
     def test_user_accounts_can_be_listed_disabled_and_reenabled(self):
         from services.auth_service import create_user
 
         user, error = create_user(marketplace_app._cache, "worker", "secret1")
         self.assertIsNone(error)
         self.assertIsNotNone(user)
+        worker_client = marketplace_app.app.test_client()
 
         users_response = self.client.get("/api/admin/users", headers=self.basic_auth())
         self.assertEqual(users_response.status_code, 200)
@@ -906,7 +1095,7 @@ class AdminApiContracts(ContractTestBase):
         self.assertNotIn("password_hash", listed)
         self.assertTrue(listed["is_active"])
 
-        login_response = self.client.post("/api/auth/login", json={
+        login_response = worker_client.post("/api/auth/login", json={
             "username": "worker", "password": "secret1",
         })
         self.assertEqual(login_response.status_code, 200)
@@ -917,22 +1106,18 @@ class AdminApiContracts(ContractTestBase):
         )
         self.assertEqual(disabled.status_code, 200)
         self.assertFalse(disabled.get_json()["is_active"])
-        self.assertFalse(self.client.get("/api/auth/session").get_json()["authenticated"])
-        self.assertEqual(
-            self.client.post("/api/auth/login", json={
-                "username": "worker", "password": "secret1",
-            }).status_code,
-            401,
-        )
 
+        # Re-enabling the account before its old cookie is used must not revive
+        # that cookie. Status changes version authentication state.
         enabled = self.client.post(
             f"/api/admin/users/{user['id']}/enable",
             headers=self.basic_auth(),
         )
         self.assertEqual(enabled.status_code, 200)
         self.assertTrue(enabled.get_json()["is_active"])
+        self.assertFalse(worker_client.get("/api/auth/session").get_json()["authenticated"])
         self.assertEqual(
-            self.client.post("/api/auth/login", json={
+            worker_client.post("/api/auth/login", json={
                 "username": "worker", "password": "secret1",
             }).status_code,
             200,
@@ -941,6 +1126,108 @@ class AdminApiContracts(ContractTestBase):
         actions = {entry["action"] for entry in marketplace_app._cache.get_audit_log(target=str(user["id"]))}
         self.assertIn("user_disable", actions)
         self.assertIn("user_enable", actions)
+
+    def test_admin_can_create_promote_and_reset_an_account(self):
+        created_response = self.client.post(
+            "/api/admin/users",
+            headers=self.basic_auth(),
+            json={"username": "managed", "password": "secret1", "role": "user"},
+        )
+        self.assertEqual(created_response.status_code, 201)
+        created = created_response.get_json()
+        self.assertEqual(created["role"], "user")
+        self.assertNotIn("password_hash", created)
+        self.assertNotIn("auth_version", created)
+
+        managed_client = marketplace_app.app.test_client()
+        login = managed_client.post("/api/auth/login", json={
+            "username": "managed", "password": "secret1",
+        })
+        self.assertEqual(login.status_code, 200)
+        self.assertFalse(login.get_json()["is_admin"])
+
+        promoted_response = self.client.put(
+            f"/api/admin/users/{created['id']}/role",
+            headers=self.basic_auth(),
+            json={"role": "admin"},
+        )
+        self.assertEqual(promoted_response.status_code, 200)
+        self.assertEqual(promoted_response.get_json()["role"], "admin")
+        self.assertFalse(managed_client.get("/api/auth/session").get_json()["authenticated"])
+
+        promoted_login = managed_client.post("/api/auth/login", json={
+            "username": "managed", "password": "secret1",
+        })
+        self.assertEqual(promoted_login.status_code, 200)
+        self.assertTrue(promoted_login.get_json()["is_admin"])
+
+        reset_response = self.client.post(
+            f"/api/admin/users/{created['id']}/password",
+            headers=self.basic_auth(),
+            json={"password": "secret2"},
+        )
+        self.assertEqual(reset_response.status_code, 200)
+        reset = reset_response.get_json()
+        self.assertTrue(reset["sessions_invalidated"])
+        self.assertFalse(reset["current_session_preserved"])
+        self.assertNotIn("auth_version", reset)
+        self.assertFalse(managed_client.get("/api/auth/session").get_json()["authenticated"])
+        self.assertEqual(managed_client.post("/api/auth/login", json={
+            "username": "managed", "password": "secret1",
+        }).status_code, 401)
+        self.assertEqual(managed_client.post("/api/auth/login", json={
+            "username": "managed", "password": "secret2",
+        }).status_code, 200)
+
+        audit = marketplace_app._cache.get_audit_log(target=str(created["id"]))
+        actions = {entry["action"] for entry in audit}
+        self.assertTrue({"user_create", "user_role_update", "user_password_reset"} <= actions)
+        serialized_audit = json.dumps(audit)
+        self.assertNotIn("secret1", serialized_audit)
+        self.assertNotIn("secret2", serialized_audit)
+
+    def test_current_admin_password_reset_preserves_only_current_session(self):
+        from services.auth_service import create_user
+
+        current, error = create_user(
+            marketplace_app._cache, "sessionadmin", "secret1", role="admin"
+        )
+        self.assertIsNone(error)
+        self.assertIsNotNone(current)
+        other, error = create_user(
+            marketplace_app._cache, "backupadmin", "secret2", role="admin"
+        )
+        self.assertIsNone(error)
+        self.assertIsNotNone(other)
+
+        current_client = marketplace_app.app.test_client()
+        login = current_client.post("/api/auth/login", json={
+            "username": "sessionadmin", "password": "secret1",
+        }).get_json()
+        old_session = marketplace_app.app.test_client()
+        self.assertEqual(old_session.post("/api/auth/login", json={
+            "username": "sessionadmin", "password": "secret1",
+        }).status_code, 200)
+
+        response = current_client.post(
+            f"/api/admin/users/{current['id']}/password",
+            headers={
+                "Origin": "http://localhost",
+                "Sec-Fetch-Site": "same-origin",
+                "X-CSRF-Token": login["csrf_token"],
+            },
+            json={"password": "secret3"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["current_session_preserved"])
+        self.assertTrue(current_client.get("/api/auth/session").get_json()["authenticated"])
+        self.assertFalse(old_session.get("/api/auth/session").get_json()["authenticated"])
+        self.assertEqual(old_session.post("/api/auth/login", json={
+            "username": "sessionadmin", "password": "secret1",
+        }).status_code, 401)
+        self.assertEqual(old_session.post("/api/auth/login", json={
+            "username": "sessionadmin", "password": "secret3",
+        }).status_code, 200)
 
     def test_last_admin_and_current_session_cannot_be_disabled(self):
         from services.auth_service import create_user
@@ -956,6 +1243,14 @@ class AdminApiContracts(ContractTestBase):
         self.assertEqual(last_admin.status_code, 409)
         self.assertIn("last active administrator", last_admin.get_json()["error"])
 
+        last_admin_role = self.client.put(
+            f"/api/admin/users/{admin['id']}/role",
+            headers=self.basic_auth(),
+            json={"role": "user"},
+        )
+        self.assertEqual(last_admin_role.status_code, 409)
+        self.assertIn("last active administrator", last_admin_role.get_json()["error"])
+
         second_admin, error = create_user(marketplace_app._cache, "secondadmin", "secret2", role="admin")
         self.assertIsNone(error)
         self.assertIsNotNone(second_admin)
@@ -968,6 +1263,13 @@ class AdminApiContracts(ContractTestBase):
         )
         self.assertEqual(current_account.status_code, 409)
         self.assertIn("current session account", current_account.get_json()["error"])
+
+        current_role = self.client.put(
+            f"/api/admin/users/{second_admin['id']}/role",
+            json={"role": "user"},
+        )
+        self.assertEqual(current_role.status_code, 409)
+        self.assertIn("current session account", current_role.get_json()["error"])
 
     def test_disabled_database_admin_cannot_fall_back_to_config_credentials(self):
         from services.auth_service import create_user

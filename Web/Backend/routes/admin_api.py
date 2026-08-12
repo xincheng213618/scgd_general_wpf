@@ -16,6 +16,9 @@ Per-endpoint scope requirements:
   - POST /jobs/*/disable      → jobs:write
   - GET  /audit-log           → admin:*
   - GET  /deployments         → admin:*
+  - GET  /feedback            → admin:*
+  - GET  /feedback/*          → admin:*
+  - PUT  /feedback/*/status   → admin:*
   - GET  /stats/overview      → stats:read
   - GET  /docs/status         → cache:read
   - GET  /publish/integrity   → stats:read
@@ -27,6 +30,13 @@ Per-endpoint scope requirements:
   - GET  /api-keys/*/usage    → admin:*
   - GET  /settings/retention  → admin:*
   - PUT  /settings/retention  → admin:*
+  - GET  /settings/accounts   → admin:*
+  - PUT  /settings/accounts   → admin:*
+  - GET  /users              → admin:*
+  - POST /users              → admin:*
+  - PUT  /users/*/role       → admin:*
+  - POST /users/*/password   → admin:*
+  - POST /users/*/(enable|disable) → admin:*
   - *    /copilot/profiles    → admin:*
 
 admin:* grants access to all endpoints.
@@ -42,7 +52,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file, session
 
 from db_cache import CacheManager, now_iso
 from ports.jobs import JobRepository
@@ -84,9 +94,16 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "disable_job": ["jobs:write"],
     "audit_log": ["admin:*"],
     "deployment_history": ["admin:*"],
+    "feedback_inbox": ["admin:*"],
+    "feedback_detail": ["admin:*"],
+    "feedback_attachment": ["admin:*"],
+    "update_feedback_status": ["admin:*"],
     "stats_overview": ["stats:read"],
     "traffic_stats": ["stats:read"],
     "list_users": ["admin:*"],
+    "create_user_account": ["admin:*"],
+    "update_user_role": ["admin:*"],
+    "reset_user_password": ["admin:*"],
     "enable_user": ["admin:*"],
     "disable_user": ["admin:*"],
     "list_api_keys": ["admin:*"],
@@ -104,6 +121,8 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "delete_profile": ["admin:*"],
     "get_retention_settings": ["admin:*"],
     "update_retention_settings": ["admin:*"],
+    "get_account_settings": ["admin:*"],
+    "update_account_settings": ["admin:*"],
 }
 
 
@@ -271,6 +290,58 @@ def publish_integrity():
 # ---------------------------------------------------------------------------
 # Operational settings
 # ---------------------------------------------------------------------------
+
+@admin_api.route("/settings/accounts", methods=["GET"])
+def get_account_settings():
+    from services.account_settings import get_account_settings as _get_account_settings
+
+    return jsonify({
+        **_get_account_settings(_get_ctx().config_getter()),
+        "restart_required": False,
+    })
+
+
+@admin_api.route("/settings/accounts", methods=["PUT"])
+def update_account_settings():
+    from services.account_settings import (
+        persist_account_settings,
+        validate_account_settings_payload,
+    )
+
+    ctx = _get_ctx()
+    try:
+        values = validate_account_settings_payload(request.get_json(silent=True))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    try:
+        result = persist_account_settings(
+            ctx.config_path_getter(),
+            ctx.config_getter(),
+            values,
+        )
+    except (OSError, ValueError):
+        return jsonify({"error": "Unable to persist account settings"}), 500
+
+    if result["changed"]:
+        name = result["changed"][0]
+        ctx.cache.write_audit(
+            actor_type=_actor_type(),
+            actor_id=_actor_id(),
+            action="account_settings_update",
+            target_type="configuration",
+            target_id=name,
+            detail=f"{name}: {str(result['before'][name]).lower()} -> {str(values[name]).lower()}",
+            ip=request.remote_addr or "",
+            user_agent=request.headers.get("User-Agent", "")[:200],
+        )
+
+    return jsonify({
+        "status": "updated" if result["changed"] else "unchanged",
+        **result["values"],
+        "changed": result["changed"],
+        "restart_required": False,
+    })
 
 @admin_api.route("/settings/retention", methods=["GET"])
 def get_retention_settings():
@@ -787,6 +858,96 @@ def deployment_history():
 
 
 # ---------------------------------------------------------------------------
+# Feedback inbox
+# ---------------------------------------------------------------------------
+
+@admin_api.route("/feedback", methods=["GET"])
+def feedback_inbox():
+    from services.feedback_admin import query_feedback
+
+    ctx = _get_ctx()
+    try:
+        limit = _query_int_arg("limit", 20, minimum=1, maximum=100)
+        offset = _query_int_arg("offset", 0, minimum=0)
+        result = query_feedback(
+            ctx.storage_getter(),
+            status=request.args.get("status", "").strip() or None,
+            query=request.args.get("query", "").strip() or None,
+            limit=limit,
+            offset=offset,
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify(result)
+
+
+@admin_api.route("/feedback/<feedback_id>", methods=["GET"])
+def feedback_detail(feedback_id: str):
+    from services.feedback_admin import get_feedback_detail
+
+    try:
+        return jsonify(get_feedback_detail(_get_ctx().storage_getter(), feedback_id))
+    except FileNotFoundError:
+        return jsonify({"error": "Feedback not found"}), 404
+
+
+@admin_api.route("/feedback/<feedback_id>/attachments/<path:filename>", methods=["GET"])
+def feedback_attachment(feedback_id: str, filename: str):
+    from services.feedback_admin import resolve_feedback_attachment
+
+    ctx = _get_ctx()
+    try:
+        target = resolve_feedback_attachment(ctx.storage_getter(), feedback_id, filename)
+    except FileNotFoundError:
+        return jsonify({"error": "Attachment not found"}), 404
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="feedback_attachment_download",
+        target_type="feedback",
+        target_id=feedback_id,
+        detail="diagnostic attachment downloaded",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return send_file(target, as_attachment=True, download_name=target.name)
+
+
+@admin_api.route("/feedback/<feedback_id>/status", methods=["PUT"])
+def update_feedback_status(feedback_id: str):
+    from services.feedback_admin import (
+        update_feedback_status as _update_feedback_status,
+        validate_feedback_status_payload,
+    )
+
+    ctx = _get_ctx()
+    try:
+        status = validate_feedback_status_payload(request.get_json(silent=True))
+        result = _update_feedback_status(ctx.storage_getter(), feedback_id, status)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except FileNotFoundError:
+        return jsonify({"error": "Feedback not found"}), 404
+    except OSError:
+        return jsonify({"error": "Unable to persist feedback status"}), 500
+
+    changed = result.pop("changed")
+    before = result.pop("before")
+    if changed:
+        ctx.cache.write_audit(
+            actor_type=_actor_type(),
+            actor_id=_actor_id(),
+            action="feedback_status_update",
+            target_type="feedback",
+            target_id=feedback_id,
+            detail=f"status: {before} -> {status}",
+            ip=request.remote_addr or "",
+            user_agent=request.headers.get("User-Agent", "")[:200],
+        )
+    return jsonify(result)
+
+
+# ---------------------------------------------------------------------------
 # Stats overview
 # ---------------------------------------------------------------------------
 
@@ -901,16 +1062,60 @@ def traffic_stats():
 # User management
 # ---------------------------------------------------------------------------
 
+def _admin_user_payload(user: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(user)
+    payload.pop("auth_version", None)
+    return payload
+
+
+def _is_current_session_user(user: dict[str, Any]) -> bool:
+    principal = current_request_context().actor
+    session_user_id = session.get("user_id")
+    try:
+        same_user_id = int(session_user_id) == int(user.get("id"))
+    except (TypeError, ValueError):
+        same_user_id = False
+    return (
+        principal.auth_method == "session"
+        and same_user_id
+        and principal.actor_id.casefold() == str(user.get("username") or "").casefold()
+    )
+
+
 @admin_api.route("/users", methods=["GET"])
 def list_users():
     from services.auth_service import list_users as _list_users
 
     users = _list_users(_get_ctx().cache)
-    principal = current_request_context().actor
-    current_username = principal.actor_id.casefold() if principal.auth_method == "session" else ""
     for user in users:
-        user["is_current"] = bool(current_username) and str(user.get("username") or "").casefold() == current_username
-    return jsonify(users)
+        user["is_current"] = _is_current_session_user(user)
+    return jsonify([_admin_user_payload(user) for user in users])
+
+
+@admin_api.route("/users", methods=["POST"])
+def create_user_account():
+    from services.auth_service import create_user
+
+    ctx = _get_ctx()
+    data = request.get_json(silent=True) or {}
+    username = str(data.get("username") or "").strip()
+    password = str(data.get("password") or "")
+    role = str(data.get("role") or "user")
+    user, error = create_user(ctx.cache, username, password, role=role)
+    if error or not user:
+        return jsonify({"error": error or "Account creation failed"}), 400
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_create",
+        target_type="user",
+        target_id=str(user["id"]),
+        detail=f"username={user['username']};role={user['role']}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(_admin_user_payload(user)), 201
 
 
 def _set_user_status(user_id: int, *, active: bool):
@@ -921,11 +1126,7 @@ def _set_user_status(user_id: int, *, active: bool):
     if not target:
         return jsonify({"error": "User not found"}), 404
 
-    principal = current_request_context().actor
-    is_current_session = (
-        principal.auth_method == "session"
-        and principal.actor_id.casefold() == str(target.get("username") or "").casefold()
-    )
+    is_current_session = _is_current_session_user(target)
     if not active and is_current_session:
         return jsonify({"error": "The current session account cannot be disabled"}), 409
 
@@ -946,7 +1147,7 @@ def _set_user_status(user_id: int, *, active: bool):
         ip=request.remote_addr or "",
         user_agent=request.headers.get("User-Agent", "")[:200],
     )
-    return jsonify(updated)
+    return jsonify(_admin_user_payload(updated))
 
 
 @admin_api.route("/users/<int:user_id>/enable", methods=["POST"])
@@ -957,6 +1158,81 @@ def enable_user(user_id: int):
 @admin_api.route("/users/<int:user_id>/disable", methods=["POST"])
 def disable_user(user_id: int):
     return _set_user_status(user_id, active=False)
+
+
+@admin_api.route("/users/<int:user_id>/role", methods=["PUT"])
+def update_user_role(user_id: int):
+    from services.auth_service import get_user_by_id, set_user_role
+
+    ctx = _get_ctx()
+    target = get_user_by_id(ctx.cache, user_id)
+    if not target:
+        return jsonify({"error": "User not found"}), 404
+    if _is_current_session_user(target):
+        return jsonify({"error": "The current session account role cannot be changed"}), 409
+
+    data = request.get_json(silent=True) or {}
+    role = str(data.get("role") or "")
+    updated, error = set_user_role(ctx.cache, user_id, role=role)
+    if error == "invalid_role":
+        return jsonify({"error": "role must be 'admin' or 'user'"}), 400
+    if error == "last_active_admin":
+        return jsonify({"error": "The last active administrator cannot be demoted"}), 409
+    if error == "user_not_found":
+        return jsonify({"error": "User not found"}), 404
+    if error or not updated:
+        return jsonify({"error": "User role update failed"}), 500
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_role_update",
+        target_type="user",
+        target_id=str(user_id),
+        detail=f"username={updated['username']};old_role={target['role']};new_role={updated['role']}",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    return jsonify(_admin_user_payload(updated))
+
+
+@admin_api.route("/users/<int:user_id>/password", methods=["POST"])
+def reset_user_password(user_id: int):
+    from services.auth_service import get_user_by_id, reset_user_password as _reset_password
+
+    ctx = _get_ctx()
+    target = get_user_by_id(ctx.cache, user_id)
+    if not target:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    password = str(data.get("password") or "")
+    updated, error = _reset_password(ctx.cache, user_id, password=password)
+    if error == "user_not_found":
+        return jsonify({"error": "User not found"}), 404
+    if error in {"password_service_unavailable", "password_reset_failed"}:
+        return jsonify({"error": "Password reset failed"}), 500
+    if error or not updated:
+        return jsonify({"error": error or "Password reset failed"}), 400
+
+    current_session_preserved = _is_current_session_user(target)
+    if current_session_preserved:
+        session["auth_version"] = int(updated.get("auth_version") or 0)
+
+    ctx.cache.write_audit(
+        actor_type=_actor_type(),
+        actor_id=_actor_id(),
+        action="user_password_reset",
+        target_type="user",
+        target_id=str(user_id),
+        detail=f"username={updated['username']};sessions_invalidated=true",
+        ip=request.remote_addr or "",
+        user_agent=request.headers.get("User-Agent", "")[:200],
+    )
+    payload = _admin_user_payload(updated)
+    payload["sessions_invalidated"] = True
+    payload["current_session_preserved"] = current_session_preserved
+    return jsonify(payload)
 
 
 # ---------------------------------------------------------------------------

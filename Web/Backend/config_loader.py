@@ -30,6 +30,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "job_run_retention_days": 30,
     "audit_log_retention_days": 365,
     "admin_db_backup_keep_count": 10,
+    "public_registration_enabled": False,
     "upload_auth": {"username": "admin", "password": "admin"},
     "copilot_sync": {"version_keys": []},
 }

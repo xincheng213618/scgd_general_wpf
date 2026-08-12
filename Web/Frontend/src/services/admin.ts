@@ -1,4 +1,7 @@
 import type {
+  AccountSettingsResponse,
+  AccountSettingsUpdateResponse,
+  AccountSettingsValues,
   AdminStats,
   AllIndexRefreshResult,
   ApiKeyItem,
@@ -10,10 +13,14 @@ import type {
   DatabaseBackupResult,
   CopilotProfile,
   CopilotProfilePayload,
+  CreateUserPayload,
   CreateApiKeyPayload,
   CreateApiKeyResult,
   DocsStatus,
   DeploymentHistoryResponse,
+  FeedbackDetail,
+  FeedbackInboxResponse,
+  FeedbackStatus,
   PublishIntegrityReport,
   PerformanceSummary,
   IndexRefreshResult,
@@ -27,6 +34,8 @@ import type {
   RetentionSettingsValues,
   TrafficStatsResponse,
   UserAccount,
+  UserPasswordResetResult,
+  UserRole,
 } from '../types/admin'
 import { deleteJson, getJson, postJson, putJson } from './request'
 
@@ -97,6 +106,14 @@ export function getRetentionSettings(signal?: AbortSignal) {
 
 export function updateRetentionSettings(values: RetentionSettingsValues) {
   return putJson<RetentionSettingsUpdateResponse>('/api/admin/settings/retention', { values })
+}
+
+export function getAccountSettings(signal?: AbortSignal) {
+  return getJson<AccountSettingsResponse>('/api/admin/settings/accounts', signal)
+}
+
+export function updateAccountSettings(values: AccountSettingsValues) {
+  return putJson<AccountSettingsUpdateResponse>('/api/admin/settings/accounts', values)
 }
 
 export function listJobs() {
@@ -196,8 +213,55 @@ export function listUsers() {
   return getJson<UserAccount[]>('/api/admin/users')
 }
 
+export function getFeedbackInbox(params: {
+  current?: number
+  pageSize?: number
+  status?: FeedbackStatus
+  query?: string
+}) {
+  const pageSize = params.pageSize ?? 20
+  const current = params.current ?? 1
+  const search = new URLSearchParams({
+    limit: String(pageSize),
+    offset: String((current - 1) * pageSize),
+  })
+  if (params.status) search.set('status', params.status)
+  if (params.query) search.set('query', params.query)
+  return getJson<FeedbackInboxResponse>(`/api/admin/feedback?${search.toString()}`)
+}
+
+export function getFeedbackDetail(feedbackId: string, signal?: AbortSignal) {
+  return getJson<FeedbackDetail>(
+    `/api/admin/feedback/${encodeURIComponent(feedbackId)}`,
+    signal,
+  )
+}
+
+export function updateFeedbackStatus(feedbackId: string, status: FeedbackStatus) {
+  return putJson<FeedbackDetail>(
+    `/api/admin/feedback/${encodeURIComponent(feedbackId)}/status`,
+    { status },
+  )
+}
+
+export function feedbackAttachmentUrl(feedbackId: string, filename: string) {
+  return `/api/admin/feedback/${encodeURIComponent(feedbackId)}/attachments/${encodeURIComponent(filename)}`
+}
+
+export function createUserAccount(payload: CreateUserPayload) {
+  return postJson<UserAccount>('/api/admin/users', payload)
+}
+
 export function setUserEnabled(id: number, enabled: boolean) {
   return postJson<UserAccount>(`/api/admin/users/${id}/${enabled ? 'enable' : 'disable'}`)
+}
+
+export function updateUserRole(id: number, role: UserRole) {
+  return putJson<UserAccount>(`/api/admin/users/${id}/role`, { role })
+}
+
+export function resetUserPassword(id: number, password: string) {
+  return postJson<UserPasswordResetResult>(`/api/admin/users/${id}/password`, { password })
 }
 
 export function listCopilotProfiles() {

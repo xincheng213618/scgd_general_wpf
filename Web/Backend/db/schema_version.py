@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 10
+CURRENT_SCHEMA_VERSION = 11
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -65,6 +65,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v9(db)
     if from_version < 10:
         _migration_v10(db)
+    if from_version < 11:
+        _migration_v11(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -307,6 +309,11 @@ def _migration_v10(db: sqlite3.Connection):
             """CREATE INDEX IF NOT EXISTS idx_audit_actor
                ON audit_log(actor_type, actor_id, id DESC)"""
         )
+
+
+def _migration_v11(db: sqlite3.Connection):
+    """v11: Version account authentication state for session revocation."""
+    _add_column_if_missing(db, "users", "auth_version INTEGER NOT NULL DEFAULT 0")
 
 
 def _add_column_if_missing(db: sqlite3.Connection, table: str, column_def: str):

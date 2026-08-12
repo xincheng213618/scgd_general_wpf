@@ -1,17 +1,28 @@
 import { LockOutlined, LoginOutlined, UserAddOutlined, UserOutlined } from '@ant-design/icons'
-import { App, Button, Card, Form, Input, Segmented, Typography } from 'antd'
+import { Alert, App, Button, Card, Form, Input, Segmented, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { login, register } from '../services/auth'
 import type { AuthSession } from '../types/site'
+import { resolveAuthEntryMode } from '../utils/registrationPolicy'
 
-export function LoginPage({ onLoggedIn }: { onLoggedIn: () => Promise<void> }) {
+export function LoginPage({
+  session,
+  onLoggedIn,
+}: {
+  session: AuthSession | null
+  onLoggedIn: () => Promise<void>
+}) {
   const { message } = App.useApp()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [mode, setMode] = useState<'login' | 'register'>(() => (
+    searchParams.get('mode') === 'register' ? 'register' : 'login'
+  ))
   const [submitting, setSubmitting] = useState(false)
   const next = useMemo(() => searchParams.get('next') || '/transfer', [searchParams])
+  const registrationEnabled = session?.public_registration_enabled === true
+  const effectiveMode = resolveAuthEntryMode(mode, registrationEnabled)
 
   const resolveNext = (result: AuthSession & { next?: string }) => {
     const target = result.next || next
@@ -29,18 +40,29 @@ export function LoginPage({ onLoggedIn }: { onLoggedIn: () => Promise<void> }) {
             <img src="/brand/colorvision-icon.png" alt="" />
           </span>
           <Typography.Title level={3}>ColorVision 账号</Typography.Title>
-          <Typography.Paragraph type="secondary">普通账号用于文件中转；管理员账号继续进入后台。</Typography.Paragraph>
+          <Typography.Paragraph type="secondary">
+            普通账号用于文件中转；管理员账号继续进入后台。
+          </Typography.Paragraph>
         </div>
-        <Segmented
-          block
-          value={mode}
-          onChange={(value) => setMode(value as 'login' | 'register')}
-          options={[
-            { label: '登录', value: 'login', icon: <LoginOutlined /> },
-            { label: '注册', value: 'register', icon: <UserAddOutlined /> },
-          ]}
-        />
-        {mode === 'login' ? (
+        {registrationEnabled ? (
+          <Segmented
+            block
+            value={effectiveMode}
+            onChange={(value) => setMode(value as 'login' | 'register')}
+            options={[
+              { label: '登录', value: 'login', icon: <LoginOutlined aria-hidden="true" /> },
+              { label: '注册', value: 'register', icon: <UserAddOutlined aria-hidden="true" /> },
+            ]}
+          />
+        ) : session && (
+          <Alert
+            type="info"
+            showIcon
+            message="公开注册已关闭"
+            description="请使用管理员创建的账号登录。"
+          />
+        )}
+        {effectiveMode === 'login' ? (
           <Form
             layout="vertical"
             className="auth-form"
@@ -58,10 +80,10 @@ export function LoginPage({ onLoggedIn }: { onLoggedIn: () => Promise<void> }) {
             }}
           >
             <Form.Item name="username" label="用户名" rules={[{ required: true, message: '请输入用户名' }]}>
-              <Input prefix={<UserOutlined />} autoComplete="username" />
+              <Input prefix={<UserOutlined aria-hidden="true" />} autoComplete="username" />
             </Form.Item>
             <Form.Item name="password" label="密码" rules={[{ required: true, message: '请输入密码' }]}>
-              <Input.Password prefix={<LockOutlined />} autoComplete="current-password" />
+              <Input.Password prefix={<LockOutlined aria-hidden="true" />} autoComplete="current-password" />
             </Form.Item>
             <Button type="primary" htmlType="submit" block loading={submitting}>
               登录
@@ -92,7 +114,7 @@ export function LoginPage({ onLoggedIn }: { onLoggedIn: () => Promise<void> }) {
                 { pattern: /^[A-Za-z0-9_.-]{3,32}$/, message: '3-32 位字母、数字、下划线、点或连字符' },
               ]}
             >
-              <Input prefix={<UserOutlined />} autoComplete="username" />
+              <Input prefix={<UserOutlined aria-hidden="true" />} autoComplete="username" />
             </Form.Item>
             <Form.Item
               name="password"
@@ -102,7 +124,7 @@ export function LoginPage({ onLoggedIn }: { onLoggedIn: () => Promise<void> }) {
                 { min: 6, message: '密码至少需要 6 位' },
               ]}
             >
-              <Input.Password prefix={<LockOutlined />} autoComplete="new-password" />
+              <Input.Password prefix={<LockOutlined aria-hidden="true" />} autoComplete="new-password" />
             </Form.Item>
             <Form.Item
               name="confirm"
@@ -120,7 +142,7 @@ export function LoginPage({ onLoggedIn }: { onLoggedIn: () => Promise<void> }) {
                 }),
               ]}
             >
-              <Input.Password prefix={<LockOutlined />} autoComplete="new-password" />
+              <Input.Password prefix={<LockOutlined aria-hidden="true" />} autoComplete="new-password" />
             </Form.Item>
             <Button type="primary" htmlType="submit" block loading={submitting}>
               注册并进入中转

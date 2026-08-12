@@ -89,7 +89,7 @@ class OperationalSettingsTests(unittest.TestCase):
             next_values = {**self.values, "job_run_retention_days": 45}
 
             with mock.patch(
-                "services.operational_settings.os.replace",
+                "services.config_persistence.os.replace",
                 side_effect=OSError("replace failed"),
             ), self.assertRaises(OSError):
                 persist_operational_retention_settings(path, active, next_values)

@@ -128,6 +128,8 @@ continuous SQLite writes.
 | GET `/api/admin/deployments` | `admin:*` |
 | GET `/api/admin/settings/retention` | `admin:*` |
 | PUT `/api/admin/settings/retention` | `admin:*` |
+| GET `/api/admin/settings/accounts` | `admin:*` |
+| PUT `/api/admin/settings/accounts` | `admin:*` |
 | User account management | `admin:*` |
 | API Key management | `admin:*` |
 
@@ -179,6 +181,19 @@ configuration only after the file is durable. Reducing a value may delete old
 artifacts or records when the corresponding publish or scheduled cleanup next
 runs; the administrator UI confirms the exact changes before saving.
 
+### Account Access Settings
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/settings/accounts` | Read whether public self-registration is enabled |
+| PUT | `/api/admin/settings/accounts` | Atomically update the registration policy and apply it immediately |
+
+Public registration fails closed and is disabled by default. When disabled,
+the login UI hides the registration entry and `POST /api/auth/register`
+returns `403`; existing accounts and administrator-created accounts are not
+affected. Enabling the policy permits any visitor who can reach the site to
+create a regular `user` account, never an administrator account.
+
 ### API Keys
 
 | Method | Endpoint | Description |
@@ -209,13 +224,24 @@ cannot authenticate.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/admin/users` | List registered accounts without password hashes |
-| POST | `/api/admin/users/<id>/enable` | Re-enable an account |
-| POST | `/api/admin/users/<id>/disable` | Disable an account and invalidate its next authenticated request |
+| POST | `/api/admin/users` | Create a `user` or `admin` account |
+| PUT | `/api/admin/users/<id>/role` | Change an account role and revoke its existing sessions |
+| POST | `/api/admin/users/<id>/password` | Reset a password and revoke the account's other sessions |
+| POST | `/api/admin/users/<id>/enable` | Re-enable an account and revoke its previous sessions |
+| POST | `/api/admin/users/<id>/disable` | Disable an account and revoke its existing sessions |
 
-The current session account and the last active administrator cannot be disabled.
+The current session account cannot be disabled or assigned a different role,
+and the last active administrator cannot be disabled or demoted. When an
+administrator resets their own password, the current browser session is updated
+to the new authentication version while all other sessions are revoked.
 When a database account has the same username as the legacy `upload_auth`
 administrator, its database status is authoritative and cannot be bypassed by
 the configuration credential fallback.
+
+`GET /api/auth/session` includes `public_registration_enabled` so the public
+navigation and login page reflect the server-enforced policy. The value is a
+capability hint only; the registration endpoint rechecks the live setting for
+every request.
 
 ### Copilot Desktop Sync
 
@@ -263,6 +289,23 @@ The response includes exact filtered totals plus aggregate status/source and
 malformed-record counts. It intentionally omits server names, absolute paths,
 runtime log paths, and raw errors; failed records expose only a coarse failure
 category. The deployment writer keeps 500 valid records by default.
+
+### Feedback Inbox
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/admin/feedback?status=&query=&limit=&offset=` | List feedback with aggregate status and attachment totals |
+| GET | `/api/admin/feedback/<id>` | Read one feedback submission and its attachment inventory |
+| GET | `/api/admin/feedback/<id>/attachments/<name>` | Download a direct diagnostic attachment |
+| PUT | `/api/admin/feedback/<id>/status` | Move feedback between `new`, `in_progress`, and `resolved` |
+
+Feedback remains filesystem-authoritative under the existing `Feedback`
+storage directory. The inbox preserves legacy directories with missing or
+malformed metadata, displays their attachment inventory, and never rewrites
+the submitted `feedback.json`. Administrator workflow state is persisted in a
+separate atomic `.admin.json` sidecar. Attachment delivery rejects traversal,
+metadata/state files, symbolic links, and non-direct files. Downloads and
+status changes are recorded in the administrator audit log.
 
 ### Stats
 
@@ -361,6 +404,7 @@ and any rotation errors.
 | `/admin/users` | Registered account status management |
 | `/admin/jobs` | Scheduled jobs, single-flight actions, status totals, and filterable run history |
 | `/admin/deployments` | Sanitized NAS deployment history and retention results |
+| `/admin/feedback` | Feedback inbox, diagnostic attachments, and processing lifecycle |
 | `/admin/audit` | Audit log viewer |
 | `/admin/traffic` | Privacy-preserving request traffic and recorder health |
 | `/admin/settings` | Browser appearance plus server-side operational retention policies |
@@ -436,7 +480,7 @@ Signature-based check: each index check computes a directory signature and compa
    - Call `POST /api/admin/index/refresh-all`
 3. **Database backup**: `POST /api/admin/backup/db` creates, privacy-scrubs, integrity-checks, and rotates a timestamped backup of `marketplace.db`.
 4. **API Key security**: Keys are shown only once at creation. Revoke and rotate if compromised. Scopes are validated against a whitelist at creation time; expiry timestamps are normalized to UTC, and expired or malformed legacy records fail closed.
-5. **Config**: Use `/admin/settings` for the six safe live retention policies. Edit `config.json` directly for protected or restart-bound values such as `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
+5. **Config**: Use `/admin/settings` for the account-access policy and six safe live retention policies. Edit `config.json` directly for protected or restart-bound values such as `storage_path`, `upload_auth`, `secret_key`, and scheduler settings.
 
 ### Large File Transfer
 
@@ -573,6 +617,6 @@ All existing API endpoints remain unchanged:
 - `GET /api/health` — Health check
 - `GET /api/ready` — Readiness check
 - `GET /api/stats` — Download statistics
-- `GET /api/feedback` — Submit feedback
+- `POST /api/feedback` — Submit feedback
 
 The `/api/plugins/<id>` response structure is fully compatible with the old API: `latestVersion`, `requiresVersion`, `versions` (with `fileHash`), `archivedVersions`, `readme`, `changelog`, `iconUrl`, `totalDownloads`, etc.
