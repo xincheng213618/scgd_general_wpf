@@ -187,7 +187,6 @@ def api_android_update_download(version):
         for release in _services().scan_app_release_artifacts()
         if str(release.get("version", "")).strip() == version
         and str(release.get("kind", "")).upper() == "APK"
-        and str(release.get("platform", "")).lower() == "android"
         and str(release.get("source", "")).lower() == "current"
     ]
     if not candidates:

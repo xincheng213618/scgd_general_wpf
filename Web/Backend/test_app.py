@@ -284,6 +284,33 @@ class MarketplaceAppTests(unittest.TestCase):
             {"schemaVersion": 1, "available": False, "release": None},
         )
 
+    def test_android_update_manifest_accepts_release_index_shape_without_platform(self):
+        latest = self._create_android_release("2.10", b"signed-apk-payload")
+        indexed_release = {
+            "version": "2.10",
+            "filename": latest.name,
+            "size": latest.stat().st_size,
+            "kind": "APK",
+            "source": "current",
+            "relative_path": latest.name,
+            "modified": "2026-08-13T00:00:00+08:00",
+        }
+
+        with patch.object(
+            marketplace_app.SERVICES,
+            "scan_app_release_artifacts",
+            return_value=[indexed_release],
+        ):
+            manifest = self.client.get("/api/android/update")
+            download = self.client.get("/api/android/update/2.10/download")
+
+        self.assertEqual(manifest.status_code, 200)
+        self.assertTrue(manifest.get_json()["available"])
+        self.assertEqual(manifest.get_json()["release"]["version"], "2.10")
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download.data, b"signed-apk-payload")
+        download.close()
+
     def test_android_update_download_serves_only_named_current_apk(self):
         expected = b"signed-apk-payload"
         self._create_android_release("2.10", expected)

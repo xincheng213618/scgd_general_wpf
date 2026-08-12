@@ -21,7 +21,6 @@ def select_latest_android_release(releases: Iterable[dict[str, Any]]) -> dict[st
         release
         for release in releases
         if str(release.get("kind", "")).upper() == "APK"
-        and str(release.get("platform", "")).lower() == "android"
         and str(release.get("source", "")).lower() == "current"
     ]
     if not candidates:
@@ -42,7 +41,9 @@ def resolve_android_release_file(storage: Path, release: dict[str, Any]) -> Path
         target.relative_to(storage.resolve())
     except ValueError as exc:
         raise FileNotFoundError("Android release path escapes storage") from exc
-    if not target.is_file() or target.suffix.lower() != ".apk":
+    version = str(release.get("version", "")).strip()
+    expected_name = f"ColorVision-Android-{version}.apk"
+    if target.parent != storage.resolve() or target.name != expected_name or not target.is_file():
         raise FileNotFoundError("Android release APK not found")
     return target
 
