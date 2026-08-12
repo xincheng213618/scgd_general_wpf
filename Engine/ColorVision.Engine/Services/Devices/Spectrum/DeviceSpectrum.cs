@@ -964,18 +964,68 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return (CorrectionSpectrumStart, CorrectionSpectrumEnd, CorrectionSpectrumInterval, CorrectionSpectrumPointCount);
         }
 
-        private string ResolveActiveMagnitudeFilePath()
+        internal bool TryValidateMeasurementCalibrationFiles(out string rejectionReason)
         {
             Config.EnsureCalibrationGroups();
-            string path = Config.ActiveCalibrationGroup.MaguideFile;
-            if (string.IsNullOrWhiteSpace(path))
-                path = Config.MaguideFile;
+            SpectrumCalibrationGroup activeGroup = Config.ActiveCalibrationGroup;
+            string wavelengthFile = string.IsNullOrWhiteSpace(Config.WavelengthFile)
+                ? activeGroup.WavelengthFile
+                : Config.WavelengthFile;
+            string magnitudeFile = string.IsNullOrWhiteSpace(Config.MaguideFile)
+                ? activeGroup.MaguideFile
+                : Config.MaguideFile;
+
+            try
+            {
+                string wavelengthPath = ResolveCalibrationFilePath(wavelengthFile, ServiceConfig.Instance.CVMainService_x64);
+                string magnitudePath = ResolveCalibrationFilePath(magnitudeFile, ServiceConfig.Instance.CVMainService_x64);
+                string? validationError = ValidateMeasurementCalibrationFiles(wavelengthPath, magnitudePath);
+                if (validationError == null)
+                {
+                    rejectionReason = string.Empty;
+                    return true;
+                }
+
+                rejectionReason = $"光谱校正文件检查未通过，已取消取图：\n\n{validationError}";
+                log.Warn(rejectionReason);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                rejectionReason = $"光谱校正文件路径无效，已取消取图：{ex.Message}";
+                log.Warn(rejectionReason, ex);
+                return false;
+            }
+        }
+
+        internal static string? ValidateMeasurementCalibrationFiles(string wavelengthPath, string magnitudePath)
+        {
+            var errors = new List<string>();
+            SpectrumCalibrationFileValidationResult wavelengthResult = SpectrumCalibrationFileValidator.ValidateWavelengthFile(wavelengthPath);
+            if (!wavelengthResult.IsValid)
+                errors.Add(FormatCalibrationFileError(wavelengthResult, wavelengthPath));
+
+            SpectrumCalibrationFileValidationResult magnitudeResult = SpectrumCalibrationFileValidator.ValidateMaguideFile(magnitudePath);
+            if (!magnitudeResult.IsValid)
+                errors.Add(FormatCalibrationFileError(magnitudeResult, magnitudePath));
+
+            return errors.Count == 0 ? null : string.Join("\n\n", errors);
+        }
+
+        private static string FormatCalibrationFileError(SpectrumCalibrationFileValidationResult result, string path)
+        {
+            string displayPath = string.IsNullOrWhiteSpace(path) ? "（未配置）" : path;
+            return $"{result.FileType}文件：{result.Message}\n路径：{displayPath}";
+        }
+
+        internal static string ResolveCalibrationFilePath(string path, string? mainServicePath)
+        {
             if (string.IsNullOrWhiteSpace(path))
                 return string.Empty;
             if (Path.IsPathRooted(path))
                 return Path.GetFullPath(path);
 
-            string? serviceDirectory = Path.GetDirectoryName(ServiceConfig.Instance.CVMainService_x64);
+            string? serviceDirectory = Path.GetDirectoryName(mainServicePath);
             if (string.IsNullOrWhiteSpace(serviceDirectory))
                 return Path.GetFullPath(path);
 
@@ -985,6 +1035,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             string servicePath = Path.GetFullPath(Path.Combine(serviceDirectory, path));
             return File.Exists(servicePath) ? servicePath : pluginPath;
+        }
+
+        private string ResolveActiveMagnitudeFilePath()
+        {
+            Config.EnsureCalibrationGroups();
+            string path = Config.ActiveCalibrationGroup.MaguideFile;
+            if (string.IsNullOrWhiteSpace(path))
+                path = Config.MaguideFile;
+            return ResolveCalibrationFilePath(path, ServiceConfig.Instance.CVMainService_x64);
         }
 
         private static string ComputeFileSha256(string path)
@@ -1010,13 +1069,20 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             string? mainServicePath = ServiceConfig.Instance.CVMainService_x64;
             string? baseDir = string.IsNullOrWhiteSpace(mainServicePath) ? null : Directory.GetParent(mainServicePath)?.FullName;
             if (string.IsNullOrWhiteSpace(baseDir))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "未配置光谱服务路径，无法定位光谱日志。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
+            }
 
             string? latestLogPath = ServiceLogFileLocator.GetMostRecentLogFile(Path.Combine(baseDir, "log"), "CVMainWindowsService_x64_Spectrum");
             if (!string.IsNullOrEmpty(latestLogPath))
             {
                 WindowLogLocal windowLogLocal = new WindowLogLocal(latestLogPath, Encoding.GetEncoding("GB2312"));
                 windowLogLocal.Show();
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "未找到光谱日志文件。", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 

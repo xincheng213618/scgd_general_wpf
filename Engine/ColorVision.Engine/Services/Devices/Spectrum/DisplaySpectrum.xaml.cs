@@ -179,10 +179,28 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 if (e == MsgRecordState.Fail)
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
-                }
+                    ShowGetDataFailure(msgRecord);
             };
+        }
+
+        private static void ShowGetDataFailure(MsgRecord msgRecord)
+        {
+            string detail = string.IsNullOrWhiteSpace(msgRecord.MsgReturn?.Message)
+                ? "未返回具体错误信息。"
+                : msgRecord.MsgReturn.Message;
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MessageBoxResult result = MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"光谱取图失败：{detail}\n\n是否打开光谱日志？",
+                    "ColorVision",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Error,
+                    MessageBoxResult.Yes);
+                if (result == MessageBoxResult.Yes)
+                    DeviceSpectrum.OpenSpectrumLog();
+            });
         }
 
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)

@@ -276,6 +276,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public MsgRecord GetData(double timeoutMilliseconds = 30000)
         {
+            if (!Device.TryValidateMeasurementCalibrationFiles(out string calibrationError))
+                return CreateRejectedMeasurementRecord("GetData", calibrationError);
             if (!Device.TryEnterSpectrumMeasurement(out string rejectionReason))
                 return CreateRejectedMeasurementRecord("GetData", rejectionReason);
 
