@@ -3,6 +3,8 @@ package com.colorvision.xcviewer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class OperationsWatchPolicyTest {
     @Test
@@ -44,5 +46,35 @@ public class OperationsWatchPolicyTest {
         assertEquals("连接已恢复 · 在线 · 当前状态稳定 · 刚刚检查",
                 OperationsWatchPolicy.successfulCheckNotification(
                         "在线 · 当前状态稳定", true));
+    }
+
+    @Test
+    public void attentionPolicyAlertsOnlyWhenTheActionableStateChanges() {
+        assertEquals(OperationsWatchPolicy.ATTENTION_UI_UNRESPONSIVE,
+                OperationsWatchPolicy.attentionKey("unresponsive", 2, 3, 4, true));
+        assertEquals(OperationsWatchPolicy.ATTENTION_CRITICAL,
+                OperationsWatchPolicy.attentionKey("ready", 2, 3, 4, true));
+        assertEquals(OperationsWatchPolicy.ATTENTION_MESSAGE_CHANNEL,
+                OperationsWatchPolicy.attentionKey("ready", 0, 3, 4, true));
+        assertEquals(OperationsWatchPolicy.ATTENTION_DEVICES,
+                OperationsWatchPolicy.attentionKey("ready", 0, 3, 4, false));
+        assertEquals(OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsWatchPolicy.attentionKey("ready", 0, 3, 0, false));
+        assertEquals("", OperationsWatchPolicy.attentionKey("slow", 0, 0, 0, false));
+
+        assertTrue(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_ERRORS, ""));
+        assertFalse(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_ERRORS, OperationsWatchPolicy.ATTENTION_ERRORS));
+        assertFalse(OperationsWatchPolicy.shouldPostAttention("", OperationsWatchPolicy.ATTENTION_ERRORS));
+    }
+
+    @Test
+    public void offlineAlertRequiresARealOnlineToOfflineTransition() {
+        assertFalse(OperationsWatchPolicy.shouldPostOffline(false, false, ""));
+        assertFalse(OperationsWatchPolicy.shouldPostOffline(true, false, ""));
+        assertTrue(OperationsWatchPolicy.shouldPostOffline(true, true, ""));
+        assertFalse(OperationsWatchPolicy.shouldPostOffline(
+                true, true, OperationsWatchPolicy.ATTENTION_OFFLINE));
     }
 }

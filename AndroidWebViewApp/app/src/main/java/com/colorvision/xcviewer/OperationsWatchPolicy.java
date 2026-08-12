@@ -1,6 +1,12 @@
 package com.colorvision.xcviewer;
 
 final class OperationsWatchPolicy {
+    static final String ATTENTION_UI_UNRESPONSIVE = "ui_unresponsive";
+    static final String ATTENTION_CRITICAL = "critical";
+    static final String ATTENTION_MESSAGE_CHANNEL = "message_channel";
+    static final String ATTENTION_DEVICES = "devices";
+    static final String ATTENTION_ERRORS = "errors";
+    static final String ATTENTION_OFFLINE = "offline";
     static final long HEALTHY_CHECK_MILLISECONDS = 60_000L;
     static final long FIRST_RETRY_MILLISECONDS = 30_000L;
     static final long MAXIMUM_RETRY_MILLISECONDS = 5 * 60_000L;
@@ -47,5 +53,57 @@ final class OperationsWatchPolicy {
 
     static String successfulCheckNotification(String status, boolean reconnected) {
         return (reconnected ? "连接已恢复 · " : "") + status + " · 刚刚检查";
+    }
+
+    static String attentionKey(
+            String uiState,
+            int criticalCount,
+            int errorCount,
+            int deviceAttentionCount,
+            boolean messageChannelAttention) {
+        if ("unresponsive".equals(uiState)) {
+            return ATTENTION_UI_UNRESPONSIVE;
+        }
+        if (criticalCount > 0) {
+            return ATTENTION_CRITICAL;
+        }
+        if (messageChannelAttention) {
+            return ATTENTION_MESSAGE_CHANNEL;
+        }
+        if (deviceAttentionCount > 0) {
+            return ATTENTION_DEVICES;
+        }
+        if (errorCount > 0) {
+            return ATTENTION_ERRORS;
+        }
+        return "";
+    }
+
+    static String attentionMessage(String attentionKey) {
+        switch (attentionKey) {
+            case ATTENTION_UI_UNRESPONSIVE:
+                return "主界面响应超时 · 点击进入远程排障";
+            case ATTENTION_CRITICAL:
+                return "发现严重告警 · 点击查看脱敏证据";
+            case ATTENTION_MESSAGE_CHANNEL:
+                return "消息通道需要关注 · 可在手机确认恢复";
+            case ATTENTION_DEVICES:
+                return "检测设备状态需要关注 · 点击查看汇总";
+            case ATTENTION_ERRORS:
+                return "发现错误事件 · 点击进入远程排障";
+            case ATTENTION_OFFLINE:
+                return "已配对主机连接中断 · 后台正在自动重试";
+            default:
+                return "";
+        }
+    }
+
+    static boolean shouldPostAttention(String currentAttentionKey, String lastAttentionKey) {
+        return !currentAttentionKey.isEmpty() && !currentAttentionKey.equals(lastAttentionKey);
+    }
+
+    static boolean shouldPostOffline(boolean hasCompletedCheck, boolean lastCheckOnline,
+            String lastAttentionKey) {
+        return hasCompletedCheck && lastCheckOnline && !ATTENTION_OFFLINE.equals(lastAttentionKey);
     }
 }
