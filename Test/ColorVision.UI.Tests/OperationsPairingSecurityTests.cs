@@ -873,6 +873,84 @@ namespace ColorVision.UI.Tests
             }
         }
 
+        [Fact]
+        public void ApplicationRestartRejectsRemoteParametersAndSchedulesOnceAfterMobileApproval()
+        {
+            string devicePath = CreateStorePath();
+            string workPath = Path.Combine(Path.GetDirectoryName(devicePath)!, "work.json");
+            try
+            {
+                using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+                OperationsDeviceRegistry registry = new(devicePath);
+                registry.Approve("device-application-restart", "Phone",
+                    Convert.ToBase64String(key.ExportSubjectPublicKeyInfo()),
+                    OperationsPairingService.InitialScopes);
+                OperationsWorkStore workStore = new(workPath);
+                RecordingApplicationRestartController controller = new();
+                OperationsSecureApiRouter router = new(new OperationsPairingService(registry),
+                    new OperationsRequestAuthenticator(registry), workStore, () => new { healthy = true },
+                    applicationRestartController: controller);
+                const string jobsPath = "/ops/v1/jobs";
+
+                byte[] rejectedBody = Encoding.UTF8.GetBytes(
+                    "{\"capabilityId\":\"ops.application.restart\",\"input\":{\"path\":\"remote.exe\"}}");
+                OperationsApiResponse rejected = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = jobsPath,
+                    Body = rejectedBody,
+                    Headers = Sign(key, "device-application-restart", "POST", jobsPath, rejectedBody),
+                });
+                Assert.Equal(400, rejected.StatusCode);
+                Assert.Empty(workStore.GetJobs());
+
+                byte[] createBody = Encoding.UTF8.GetBytes(
+                    "{\"capabilityId\":\"ops.application.restart\",\"reason\":\"confirmed\",\"input\":{}}");
+                OperationsApiResponse created = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = jobsPath,
+                    Body = createBody,
+                    Headers = Sign(key, "device-application-restart", "POST", jobsPath, createBody),
+                });
+                Assert.Equal(202, created.StatusCode);
+                using JsonDocument createdDocument = JsonDocument.Parse(created.Body);
+                JsonElement createdJob = createdDocument.RootElement.GetProperty("data").GetProperty("job");
+                string jobId = Assert.IsType<string>(createdJob.GetProperty("jobId").GetString());
+                Assert.False(createdJob.GetProperty("requiresLocalCoSign").GetBoolean());
+
+                string decisionPath = $"/ops/v1/jobs/{jobId}/decision";
+                byte[] decisionBody = Encoding.UTF8.GetBytes("{\"approved\":true,\"reason\":\"confirmed\"}");
+                OperationsApiResponse scheduled = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = decisionPath,
+                    Body = decisionBody,
+                    Headers = Sign(key, "device-application-restart", "POST", decisionPath, decisionBody),
+                });
+                Assert.Equal(200, scheduled.StatusCode);
+                using JsonDocument scheduledDocument = JsonDocument.Parse(scheduled.Body);
+                Assert.Equal("executing", scheduledDocument.RootElement.GetProperty("data")
+                    .GetProperty("job").GetProperty("status").GetString());
+                Assert.Equal(jobId, controller.JobId);
+                Assert.Equal(1, controller.RequestCount);
+
+                OperationsApiResponse repeated = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "POST",
+                    Path = decisionPath,
+                    Body = decisionBody,
+                    Headers = Sign(key, "device-application-restart", "POST", decisionPath, decisionBody),
+                });
+                Assert.Equal(409, repeated.StatusCode);
+                Assert.Equal(1, controller.RequestCount);
+            }
+            finally
+            {
+                DeleteStore(devicePath);
+            }
+        }
+
         private static Dictionary<string, string> Sign(ECDsa key, string deviceId, string method, string path, byte[] body)
         {
             string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -962,6 +1040,20 @@ namespace ColorVision.UI.Tests
             {
                 RestartCount++;
                 return new OperationsMqttRestartResult(true, $"servicehost:request-{RestartCount}");
+            }
+        }
+
+        private sealed class RecordingApplicationRestartController : IOperationsApplicationRestartController
+        {
+            public int RequestCount { get; private set; }
+
+            public string JobId { get; private set; } = string.Empty;
+
+            public OperationsApplicationRestartResult RequestRestart(string jobId)
+            {
+                RequestCount++;
+                JobId = jobId;
+                return new OperationsApplicationRestartResult(true, "application_restart:scheduled");
             }
         }
 

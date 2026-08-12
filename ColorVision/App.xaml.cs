@@ -7,6 +7,7 @@ using ColorVision.Recovery;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.LanRemote;
+using ColorVision.UI.Desktop.Operations;
 using ColorVision.UI.Desktop.Wizards;
 using ColorVision.UI.Languages;
 using ColorVision.UI.Plugins;
@@ -270,11 +271,23 @@ namespace ColorVision
             Rbac.ApplicationUsageTracker.StartSession();
 
             CopilotMcpServer.Instance.ApplyConfig();
+            FlowOperationsRuntimeStatusProvider flowOperations = new();
+            OperationsApplicationRestartHandoff applicationRestartHandoff = new();
+            OperationsWorkStore operationsWorkStore = LanRemoteControlService.Instance.OperationsHost.WorkStore;
+            applicationRestartHandoff.CompletePending(
+                operationsWorkStore, OperationsApplicationRestartController.RestartJobId);
             LanRemoteControlService.Instance.ConfigureOperationsServiceHealthProvider(new WindowsOperationsServiceHealthProvider());
-            LanRemoteControlService.Instance.ConfigureOperationsFlowRuntimeStatusProvider(new FlowOperationsRuntimeStatusProvider());
+            LanRemoteControlService.Instance.ConfigureOperationsFlowRuntimeStatusProvider(flowOperations);
             LanRemoteControlService.Instance.ConfigureOperationsDeviceHealthProvider(new EngineOperationsDeviceHealthProvider());
             LanRemoteControlService.Instance.ConfigureOperationsMessageChannelHealthProvider(new EngineOperationsMessageChannelHealthProvider());
             LanRemoteControlService.Instance.ConfigureOperationsMqttRestartController(new ServiceHostOperationsMqttRestartController());
+            LanRemoteControlService.Instance.ConfigureOperationsApplicationRestartController(
+                new OperationsApplicationRestartController(
+                    this,
+                    flowOperations,
+                    operationsWorkStore,
+                    applicationRestartHandoff,
+                    () => _isSingleInstanceReplacement = true));
             LanRemoteControlService.Instance.ApplyConfig();
 
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");

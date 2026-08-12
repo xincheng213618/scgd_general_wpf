@@ -29,6 +29,7 @@ namespace ColorVision.UI.Desktop.Operations
             "ops.window.snapshot.capture" => "采集 ColorVision 主窗口安全快照",
             "ops.diagnostics.bundle.create" => "生成脱敏安全诊断包",
             "ops.service.restart" => "重启白名单 MQTT 服务",
+            "ops.application.restart" => "重启 ColorVision 应用",
             "ops.flow.cancel" => "取消当前主检测流程",
             _ => "现场运维作业",
         };
@@ -39,6 +40,7 @@ namespace ColorVision.UI.Desktop.Operations
             "ops.window.snapshot.capture" => "只捕获 ColorVision 主窗口；可能包含当前可见的检测数据。手机明确确认后立即采集，JPEG 仅保留 5 分钟，由申请设备读取一次后删除。",
             "ops.diagnostics.bundle.create" => "手机明确确认后生成不含图像、凭据、用户名、机器名、网络地址或原始日志的脱敏 ZIP。",
             "ops.service.restart" => "仅允许通过 ServiceHost 重启固定的 Mosquitto 服务；手机明确确认后立即执行，无需电脑端再次共签。",
+            "ops.application.restart" => "只干净重启当前 ColorVision 应用，不接受路径、参数或其他进程；检测运行中会拒绝。",
             "ops.flow.cancel" => "只向当前主工作区正在执行的检测发送取消请求，不接受流程、节点或参数。无需电脑端再次共签。",
             _ => "请确认作业来源和固定能力范围。",
         };
@@ -144,10 +146,12 @@ namespace ColorVision.UI.Desktop.Operations
 
         public OperationsJob CreateJob(string capabilityId, string deviceId, string reason, JsonElement input, string correlationId)
         {
-            if (capabilityId is not ("ops.diagnostics.bundle.create" or "ops.window.snapshot.capture" or "ops.service.restart" or "ops.flow.cancel"))
+            if (capabilityId is not ("ops.diagnostics.bundle.create" or "ops.window.snapshot.capture" or "ops.service.restart" or "ops.application.restart" or "ops.flow.cancel"))
                 throw new InvalidOperationException("capability_not_allowed_for_remote_job");
             if (capabilityId == "ops.service.restart" && !IsAllowedMqttRestartInput(input))
                 throw new InvalidOperationException("mqtt_restart_input_not_allowed");
+            if (capabilityId == "ops.application.restart" && !IsEmptyInput(input))
+                throw new InvalidOperationException("job_input_not_allowed");
             if (deviceId != "web-relay"
                 && capabilityId is "ops.diagnostics.bundle.create" or "ops.window.snapshot.capture" or "ops.flow.cancel"
                 && !IsEmptyInput(input))
@@ -269,7 +273,7 @@ namespace ColorVision.UI.Desktop.Operations
             job.RequestedByDeviceId == "web-relay" || RequiresLocalCoSign(job.CapabilityId);
 
         internal static bool RequiresLocalCoSign(string capabilityId) =>
-            capabilityId is not ("ops.flow.cancel" or "ops.service.restart"
+            capabilityId is not ("ops.flow.cancel" or "ops.service.restart" or "ops.application.restart"
                 or "ops.diagnostics.bundle.create" or "ops.window.snapshot.capture");
 
         internal static bool IsEmptyInput(JsonElement input) =>

@@ -279,7 +279,7 @@
                 <StackPanel>
                     <TextBlock Text="等待本机共签的作业" FontSize="15" FontWeight="SemiBold"
                                Foreground="{DynamicResource GlobalTextBrush}"/>
-                    <TextBlock Text="已配对手机可确认生成脱敏诊断包、单次主窗口快照或固定 MQTT 恢复；Web 中继诊断和支持会话仍需本机同意。"
+                    <TextBlock Text="已配对手机可确认生成脱敏诊断包、单次主窗口快照、固定 MQTT 恢复或 ColorVision 应用重启；检测运行中不会重启，Web 中继诊断和支持会话仍需本机同意。"
                                Margin="0,5,0,10" FontSize="12" Opacity="0.68" TextWrapping="Wrap"
                                Foreground="{DynamicResource GlobalTextBrush}"/>
                     <ListBox x:Name="LocalCoSignJobsListBox" MinHeight="72">

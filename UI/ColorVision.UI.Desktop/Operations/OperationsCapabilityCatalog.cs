@@ -2,7 +2,7 @@ namespace ColorVision.UI.Desktop.Operations
 {
     public static class OperationsCapabilityCatalog
     {
-        public const string SchemaVersion = "1.7";
+        public const string SchemaVersion = "1.8";
 
         private static readonly IReadOnlyList<OperationsCapabilityDescriptor> Capabilities =
         [
@@ -418,6 +418,36 @@ namespace ColorVision.UI.Desktop.Operations
                 },
                 Audit = new OperationsAuditPolicy { Required = true },
                 Evidence = ["diagnostic.bundle.sha256"],
+                Available = true,
+            },
+            new()
+            {
+                Id = "ops.application.restart",
+                Title = "Restart the current ColorVision application",
+                Description = "Cleanly restart only the current ColorVision application after explicit confirmation on the paired phone. Active inspection execution blocks the restart, and no executable path or arguments are accepted.",
+                Category = "maintenance",
+                Provider = "desktop.application",
+                RiskLevel = OperationsRiskLevels.ApprovalRequired,
+                Permission = "ops.jobs.create",
+                DiscoverableOn = ["desktop", "android"],
+                InputSchema = new { type = "object", additionalProperties = false },
+                TimeoutMs = 90000,
+                Idempotency = "keyed",
+                SupportsCancellation = false,
+                Approval = new OperationsApprovalPolicy
+                {
+                    Mode = "paired-device-confirmation",
+                    TtlSeconds = 300,
+                    SingleUse = true,
+                    RequiresLocalCoSign = false,
+                },
+                Audit = new OperationsAuditPolicy { Required = true },
+                Execution = new OperationsExecutionPolicy
+                {
+                    Target = "desktop-application",
+                    BrokerCapability = "application.restart.current",
+                },
+                Evidence = ["application.restart.handoff", "application.restart.reconnected"],
                 Available = true,
             },
             new()

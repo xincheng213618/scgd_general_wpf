@@ -47,6 +47,14 @@ namespace ColorVision.UI.Tests
             Assert.True(messageChannel.Available);
             Assert.Equal(OperationsRiskLevels.ReadOnly, messageChannel.RiskLevel);
             Assert.Equal("ops.diagnostics.read", messageChannel.Permission);
+            OperationsCapabilityDescriptor applicationRestart = Assert.Single(capabilities,
+                capability => capability.Id == "ops.application.restart");
+            Assert.True(applicationRestart.Available);
+            Assert.Equal(OperationsRiskLevels.ApprovalRequired, applicationRestart.RiskLevel);
+            Assert.Equal("paired-device-confirmation", applicationRestart.Approval.Mode);
+            Assert.False(applicationRestart.Approval.RequiresLocalCoSign);
+            Assert.False(applicationRestart.SupportsCancellation);
+            Assert.Equal("desktop-application", applicationRestart.Execution.Target);
         }
 
         [Fact]

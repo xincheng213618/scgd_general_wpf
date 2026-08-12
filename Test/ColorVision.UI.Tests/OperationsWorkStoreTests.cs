@@ -116,7 +116,8 @@ namespace ColorVision.UI.Tests
         [Theory]
         [InlineData("ops.diagnostics.bundle.create")]
         [InlineData("ops.window.snapshot.capture")]
-        public void PairedPhoneEvidenceJobsExecuteAfterMobileDecisionWithoutLocalCoSign(string capabilityId)
+        [InlineData("ops.application.restart")]
+        public void PairedPhoneDirectJobsExecuteAfterMobileDecisionWithoutLocalCoSign(string capabilityId)
         {
             string path = NewPath();
             try
@@ -141,6 +142,7 @@ namespace ColorVision.UI.Tests
         [InlineData("ops.diagnostics.bundle.create")]
         [InlineData("ops.window.snapshot.capture")]
         [InlineData("ops.flow.cancel")]
+        [InlineData("ops.application.restart")]
         public void PairedPhoneParameterlessJobsRejectRemoteInput(string capabilityId)
         {
             string path = NewPath();
@@ -150,6 +152,26 @@ namespace ColorVision.UI.Tests
                 InvalidOperationException error = Assert.Throws<InvalidOperationException>(() =>
                     store.CreateJob(capabilityId, "phone-1", "Remote evidence",
                         JsonSerializer.SerializeToElement(new { command = "remote" }), "correlation"));
+
+                Assert.Equal("job_input_not_allowed", error.Message);
+                Assert.Empty(store.GetJobs());
+            }
+            finally
+            {
+                DeletePath(path);
+            }
+        }
+
+        [Fact]
+        public void ApplicationRestartRejectsInputFromEverySource()
+        {
+            string path = NewPath();
+            try
+            {
+                OperationsWorkStore store = new(path);
+                InvalidOperationException error = Assert.Throws<InvalidOperationException>(() =>
+                    store.CreateJob("ops.application.restart", "web-relay", "restart",
+                        JsonSerializer.SerializeToElement(new { path = "remote.exe" }), "task"));
 
                 Assert.Equal("job_input_not_allowed", error.Message);
                 Assert.Empty(store.GetJobs());

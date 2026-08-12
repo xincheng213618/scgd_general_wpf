@@ -65,6 +65,9 @@ namespace ColorVision.UI.Desktop.LanRemote
         public void ConfigureOperationsMqttRestartController(IOperationsMqttRestartController controller) =>
             _operationsHost.ConfigureMqttRestartController(controller);
 
+        public void ConfigureOperationsApplicationRestartController(IOperationsApplicationRestartController controller) =>
+            _operationsHost.ConfigureApplicationRestartController(controller);
+
         public void ApplyConfig()
         {
             var config = LanRemoteControlConfig.Instance;

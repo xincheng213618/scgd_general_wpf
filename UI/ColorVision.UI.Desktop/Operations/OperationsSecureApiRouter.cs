@@ -35,6 +35,7 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly IOperationsFlowRuntimeStatusProvider _flowRuntimeStatus;
         private readonly IOperationsFlowRuntimeController _flowRuntimeController;
         private readonly IOperationsMqttRestartController _mqttRestartController;
+        private readonly IOperationsApplicationRestartController _applicationRestartController;
         private readonly IOperationsDeviceHealthProvider _deviceHealthProvider;
         private readonly IOperationsMessageChannelHealthProvider _messageChannelHealthProvider;
 
@@ -52,6 +53,7 @@ namespace ColorVision.UI.Desktop.Operations
             IOperationsFlowRuntimeStatusProvider? flowRuntimeStatus = null,
             IOperationsFlowRuntimeController? flowRuntimeController = null,
             IOperationsMqttRestartController? mqttRestartController = null,
+            IOperationsApplicationRestartController? applicationRestartController = null,
             IOperationsDeviceHealthProvider? deviceHealthProvider = null,
             IOperationsMessageChannelHealthProvider? messageChannelHealthProvider = null)
         {
@@ -68,6 +70,7 @@ namespace ColorVision.UI.Desktop.Operations
             _flowRuntimeStatus = flowRuntimeStatus ?? UnavailableOperationsFlowRuntimeStatusProvider.Instance;
             _flowRuntimeController = flowRuntimeController ?? UnavailableOperationsFlowRuntimeController.Instance;
             _mqttRestartController = mqttRestartController ?? UnavailableOperationsMqttRestartController.Instance;
+            _applicationRestartController = applicationRestartController ?? UnavailableOperationsApplicationRestartController.Instance;
             _deviceHealthProvider = deviceHealthProvider ?? UnavailableOperationsDeviceHealthProvider.Instance;
             _messageChannelHealthProvider = messageChannelHealthProvider ?? UnavailableOperationsMessageChannelHealthProvider.Instance;
         }
@@ -507,7 +510,7 @@ namespace ColorVision.UI.Desktop.Operations
                 string reason = OptionalString(root, "reason", 200);
                 bool approved = approvedElement.GetBoolean();
                 bool executesAfterMobileApproval = currentJob.CapabilityId is
-                    "ops.flow.cancel" or "ops.service.restart"
+                    "ops.flow.cancel" or "ops.service.restart" or "ops.application.restart"
                     or "ops.diagnostics.bundle.create" or "ops.window.snapshot.capture";
                 OperationsJob? job = approved
                     && executesAfterMobileApproval
@@ -515,7 +518,7 @@ namespace ColorVision.UI.Desktop.Operations
                         ? currentJob
                         : _workStore.DecideJob(jobId, device.DeviceId, approved, reason, correlationId);
                 if (job is { Status: "approved_mobile" }
-                    && job.CapabilityId is "ops.flow.cancel" or "ops.service.restart"
+                    && job.CapabilityId is "ops.flow.cancel" or "ops.service.restart" or "ops.application.restart"
                         or "ops.diagnostics.bundle.create" or "ops.window.snapshot.capture")
                 {
                     OperationsJob? executingJob = _workStore.BeginExecution(job.JobId);
@@ -526,6 +529,7 @@ namespace ColorVision.UI.Desktop.Operations
                     {
                         "ops.flow.cancel" => ExecuteFlowCancellation(executingJob),
                         "ops.service.restart" => ExecuteMqttRestart(executingJob),
+                        "ops.application.restart" => ExecuteApplicationRestart(executingJob),
                         "ops.diagnostics.bundle.create" => ExecuteDiagnosticBundle(executingJob),
                         "ops.window.snapshot.capture" => ExecuteWindowSnapshot(executingJob),
                         _ => executingJob,
@@ -572,6 +576,23 @@ namespace ColorVision.UI.Desktop.Operations
                 result = new OperationsMqttRestartResult(false, "mqtt_restart_controller_failed");
             }
             return _workStore.CompleteJob(job.JobId, result.Success, result.EvidenceId) ?? job;
+        }
+
+        private OperationsJob ExecuteApplicationRestart(OperationsJob job)
+        {
+            OperationsApplicationRestartResult result;
+            try
+            {
+                result = _applicationRestartController.RequestRestart(job.JobId);
+            }
+            catch
+            {
+                result = new OperationsApplicationRestartResult(
+                    false, "application_restart:controller_failed");
+            }
+            return result.Accepted
+                ? job
+                : _workStore.CompleteJob(job.JobId, false, result.EvidenceId) ?? job;
         }
 
         private OperationsJob ExecuteDiagnosticBundle(OperationsJob job)

@@ -27,6 +27,7 @@ namespace ColorVision
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
+            args = OperationsApplicationRestartController.WaitForEarlierProcessAndRemoveHandoffArguments(args);
             ProgramTimer.Start();
             ArgumentParser.GetInstance().CommandLineArgs = args;
             log.Debug("args" + string.Join(", ", args));

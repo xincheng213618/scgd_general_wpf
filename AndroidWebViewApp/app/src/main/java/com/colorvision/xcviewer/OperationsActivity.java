@@ -239,7 +239,7 @@ public class OperationsActivity extends Activity {
         progress.setVisibility(View.GONE);
         title.setText("现场运维概览");
         state.setText("已通过设备密钥与 TLS 证书指纹验证");
-        details.setText("状态、性能、告警、消息通道和设备运行状态汇总可直接查看；显示/最小化窗口属于低风险审计操作。取消当前检测、固定 MQTT 恢复、脱敏诊断包和单次主窗口快照只需手机明确确认；支持会话仍需电脑端同意。");
+        details.setText("状态、性能、告警、消息通道和设备运行状态汇总可直接查看；显示/最小化窗口属于低风险审计操作。取消当前检测、固定 MQTT 恢复、ColorVision 干净重启、脱敏诊断包和单次主窗口快照只需手机明确确认；支持会话仍需电脑端同意。");
         actions.removeAllViews();
 
         Button connectionCheck = new Button(this);
@@ -263,6 +263,10 @@ public class OperationsActivity extends Activity {
         restartMqtt.setText("重启 MQTT 消息服务");
         restartMqtt.setOnClickListener(v -> confirmRestartMqtt());
         actions.addView(restartMqtt, actionParams());
+        Button restartApplication = new Button(this);
+        restartApplication.setText("重启 ColorVision 应用");
+        restartApplication.setOnClickListener(v -> confirmRestartApplication());
+        actions.addView(restartApplication, actionParams());
         addAction("查看检测设备状态概览", "/ops/v1/devices/health");
         addAction("刷新运行状态", "/ops/v1/snapshot");
         addAction("查看当前检测状态", "/ops/v1/flow/runtime");
@@ -1004,6 +1008,139 @@ public class OperationsActivity extends Activity {
                 runOnUiThread(() -> showTransientError(ex));
             }
         });
+    }
+
+    private void confirmRestartApplication() {
+        new AlertDialog.Builder(this)
+                .setTitle("确认重启 ColorVision")
+                .setMessage("确认后只会干净重启当前 ColorVision 应用，不会选择程序、路径、命令或启动参数。正在执行检测时电脑端会拒绝；重启期间会短暂断线，应用将保留配对资料并自动等待恢复。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("确认重启", (dialog, which) -> restartApplication())
+                .show();
+    }
+
+    private void restartApplication() {
+        progress.setVisibility(View.VISIBLE);
+        title.setText("正在重启 ColorVision");
+        state.setText("正在检查检测状态并提交固定重启作业…");
+        details.setText("安全通道会短暂断开；请保持此页打开，配对资料不会被移除。");
+        executor.execute(() -> {
+            try {
+                JSONObject snapshotResponse = client.get("/ops/v1/snapshot");
+                JSONObject snapshot = snapshotResponse.optJSONObject("data");
+                long previousUptimeSeconds = snapshot == null
+                        ? 0L : snapshot.optLong("uptimeSeconds", 0L);
+
+                JSONObject flowResponse = client.get("/ops/v1/flow/runtime");
+                JSONObject flow = flowResponse.optJSONObject("data");
+                if (flow == null || !flow.optBoolean("available", false)) {
+                    throw new IllegalStateException("application_restart_flow_status_unavailable");
+                }
+                if (flow.optBoolean("isActive", false)) {
+                    throw new IllegalStateException("application_restart_flow_active");
+                }
+
+                JSONObject job = createAndApproveJob(
+                        "ops.application.restart", "现场 ColorVision 应用恢复", new JSONObject(),
+                        "application_restart_job_missing", "已配对手机明确确认重启当前 ColorVision 应用");
+                String jobId = job.optString("jobId", "");
+                String status = job.optString("status", "");
+                if (jobId.isEmpty()) {
+                    throw new IllegalStateException("application_restart_job_missing");
+                }
+                if (!"executing".equals(status) && !"completed".equals(status)) {
+                    throw new IllegalStateException("application_restart_not_scheduled");
+                }
+
+                waitForApplicationRestart(jobId, previousUptimeSeconds);
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    Toast.makeText(this, "ColorVision 已完成重启并自动重连", Toast.LENGTH_LONG).show();
+                    showDashboard();
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> showApplicationRestartFailure(ex));
+            }
+        });
+    }
+
+    private void waitForApplicationRestart(String jobId, long previousUptimeSeconds) throws Exception {
+        long deadline = System.currentTimeMillis() + 90_000L;
+        boolean sawDisconnect = false;
+        while (System.currentTimeMillis() < deadline) {
+            Thread.sleep(2_000L);
+            try {
+                JSONObject snapshotResponse = client.get("/ops/v1/snapshot");
+                JSONObject snapshot = snapshotResponse.optJSONObject("data");
+                JSONObject jobsResponse = client.get("/ops/v1/jobs");
+                JSONObject job = findJobById(jobsResponse, jobId);
+                if (job == null) {
+                    throw new IllegalStateException("application_restart_job_missing");
+                }
+
+                String status = job.optString("status", "");
+                if ("failed".equals(status) || "rejected".equals(status)
+                        || "rejected_local".equals(status)) {
+                    throw new IllegalStateException("application_restart_failed");
+                }
+                long currentUptimeSeconds = snapshot == null
+                        ? Long.MAX_VALUE : snapshot.optLong("uptimeSeconds", Long.MAX_VALUE);
+                boolean restarted = sawDisconnect
+                        || currentUptimeSeconds < previousUptimeSeconds
+                        || currentUptimeSeconds < 90L;
+                if ("completed".equals(status) && restarted) {
+                    return;
+                }
+            } catch (IllegalStateException ex) {
+                String message = ex.getMessage();
+                if (message != null && message.startsWith("application_restart_")) {
+                    throw ex;
+                }
+                sawDisconnect = true;
+            } catch (Exception ex) {
+                sawDisconnect = true;
+            }
+        }
+        throw new IllegalStateException("application_restart_reconnect_timeout");
+    }
+
+    private JSONObject findJobById(JSONObject response, String jobId) {
+        JSONObject data = response.optJSONObject("data");
+        JSONArray jobs = data == null ? null : data.optJSONArray("jobs");
+        if (jobs == null) {
+            return null;
+        }
+        for (int index = 0; index < jobs.length(); index++) {
+            JSONObject job = jobs.optJSONObject(index);
+            if (job != null && jobId.equals(job.optString("jobId", ""))) {
+                return job;
+            }
+        }
+        return null;
+    }
+
+    private void showApplicationRestartFailure(Exception ex) {
+        progress.setVisibility(View.GONE);
+        dashboardVisible = false;
+        title.setText("ColorVision 重启未完成");
+        state.setText(readableError(ex));
+        details.setText("本机设备密钥、证书指纹和配对资料均已保留。可以返回运维主页重试连接，或查看作业时间线确认电脑端结果。");
+        actions.removeAllViews();
+
+        Button reconnect = new Button(this);
+        reconnect.setText("重新连接运维通道");
+        reconnect.setOnClickListener(v -> openExistingProfile());
+        actions.addView(reconnect, actionParams());
+
+        Button jobs = new Button(this);
+        jobs.setText("查看作业时间线");
+        jobs.setOnClickListener(v -> showJobs());
+        actions.addView(jobs, actionParams());
+
+        Button selfCheck = new Button(this);
+        selfCheck.setText("运行连接自检");
+        selfCheck.setOnClickListener(v -> runConnectionSelfCheck());
+        actions.addView(selfCheck, actionParams());
     }
 
     private void confirmDeploymentReceipt() {
@@ -2691,6 +2828,22 @@ public class OperationsActivity extends Activity {
         }
         if (message.contains("unknown_or_revoked_device")) {
             return "设备已被电脑端撤销，请重新配对。";
+        }
+        if (message.contains("application_restart_flow_active")) {
+            return "当前检测仍在执行，为避免中断检测，电脑端已拒绝重启。";
+        }
+        if (message.contains("application_restart_flow_status_unavailable")) {
+            return "暂时无法确认检测是否正在执行，已阻止重启。";
+        }
+        if (message.contains("application_restart_not_scheduled")
+                || message.contains("application_restart_failed")) {
+            return "电脑端未能完成 ColorVision 重启，请查看作业时间线。";
+        }
+        if (message.contains("application_restart_reconnect_timeout")) {
+            return "90 秒内未确认 ColorVision 恢复；配对资料已保留。";
+        }
+        if (message.contains("application_restart_job_missing")) {
+            return "未找到本次 ColorVision 重启作业回执。";
         }
         if (message.contains("window_snapshot_expired")) {
             return "主窗口快照的 5 分钟读取窗口已结束，请重新采集。";
