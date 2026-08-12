@@ -1142,6 +1142,18 @@ def get_all_index_states_summary(cache: CacheManager) -> dict[str, Any]:
         states = cache.index_states.get_many(
             ("plugins", "releases", "updates", "tools", "docs")
         )
+        public_states = {
+            scope: {
+                "scope": state.get("scope", scope),
+                "status": state.get("status", "not_initialized"),
+                "last_started_at": state.get("last_started_at"),
+                "last_finished_at": state.get("last_finished_at"),
+                "last_error": state.get("last_error", ""),
+                "item_count": int(state.get("item_count") or 0),
+                "duration_ms": int(state.get("duration_ms") or 0),
+            }
+            for scope, state in states.items()
+        }
 
         # Item counts from actual tables
         counts = {}
@@ -1153,7 +1165,7 @@ def get_all_index_states_summary(cache: CacheManager) -> dict[str, Any]:
         docs_index = cache.get_cache_entry(DOCS_INDEX_CACHE_KEY)
         counts["docs"] = int(((docs_index or {}).get("value") or {}).get("summary", {}).get("total") or 0)
 
-        return {"states": states, "counts": counts}
+        return {"states": public_states, "counts": counts}
     except Exception as exc:
         return {"states": {}, "counts": {}, "error": str(exc)}
     finally:

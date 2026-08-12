@@ -65,6 +65,7 @@ ENDPOINT_SCOPES: dict[str, list[str]] = {
     "refresh_docs_index": ["cache:refresh"],
     "refresh_all_indexes": ["cache:refresh"],
     "index_status": ["cache:read"],
+    "list_db_backups": ["admin:*"],
     "backup_db": ["admin:*"],
     "list_jobs": ["jobs:read"],
     "run_job": ["jobs:write"],
@@ -476,6 +477,23 @@ def index_status():
 # DB backup
 # ---------------------------------------------------------------------------
 
+@admin_api.route("/backup/db", methods=["GET"])
+def list_db_backups():
+    ctx = _get_ctx()
+    from services.admin_data_retention import (
+        list_manual_db_backups,
+        parse_admin_retention_config,
+    )
+
+    _, keep_count = parse_admin_retention_config(ctx.config_getter())
+    backups = list_manual_db_backups(ctx.cache.db_path.parent)
+    return jsonify({
+        "backups": backups,
+        "count": len(backups),
+        "keep_count": keep_count,
+    })
+
+
 @admin_api.route("/backup/db", methods=["POST"])
 def backup_db():
     ctx = _get_ctx()
@@ -535,6 +553,7 @@ def backup_db():
 
     return jsonify({
         "status": "ok",
+        "backup_name": backup_path.name,
         "backup_path": str(backup_path),
         "backup_size_bytes": backup_path.stat().st_size if backup_path.exists() else 0,
         "backup_retention": backup_retention,

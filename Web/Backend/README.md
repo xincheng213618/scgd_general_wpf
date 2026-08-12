@@ -115,6 +115,7 @@ continuous SQLite writes.
 | POST `/api/admin/index/tools/refresh` | `cache:refresh` |
 | POST `/api/admin/index/refresh-all` | `cache:refresh` |
 | GET `/api/admin/index/status` | `cache:read` |
+| GET `/api/admin/backup/db` | `admin:*` |
 | POST `/api/admin/backup/db` | `admin:*` |
 | GET `/api/admin/jobs` | `jobs:read` |
 | POST `/api/admin/jobs/<id>/run` | `jobs:write` |
@@ -135,6 +136,9 @@ continuous SQLite writes.
 |--------|----------|-------------|
 | GET | `/api/admin/cache/status` | Database and cache status |
 | POST | `/api/admin/cache/cleanup` | Delete expired cache entries |
+| GET | `/api/admin/index/status` | Compact per-index status, counts, timing, and errors |
+| GET | `/api/admin/backup/db` | List recognized manual snapshots without server paths |
+| POST | `/api/admin/backup/db` | Create and privacy-scrub a retained database snapshot |
 
 ### Plugin Index
 
@@ -303,7 +307,9 @@ recognized `marketplace_backup_YYYYMMDD_HHMMSS.db` snapshots. A newly created
 admin backup is scrubbed to the current cutoff before it is reported as
 successful, so database snapshots cannot bypass visitor retention.
 
-`POST /api/admin/backup/db` also applies the audit cutoff and immediately
+`GET /api/admin/backup/db` lists only recognized snapshot names, UTC creation
+times, and sizes; filesystem paths are not returned. `POST /api/admin/backup/db`
+also applies the audit cutoff and immediately
 rotates exact `marketplace_backup_YYYYMMDD_HHMMSS.db` files. The backup created
 by the current request is explicitly protected. Non-matching names, symbolic
 links, paths outside the database directory, and snapshots that fail audit

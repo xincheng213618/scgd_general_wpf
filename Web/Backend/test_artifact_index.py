@@ -626,10 +626,18 @@ class ArtifactIndexTests(unittest.TestCase):
 
         from services.artifact_index import refresh_all_indexes, get_all_index_states_summary
         refresh_all_indexes(self.cache, self.storage)
+        self.cache.index_states.update(
+            "releases",
+            status="ready",
+            signature="private-filesystem-signature|" * 2000,
+            item_count=1,
+        )
 
         summary = get_all_index_states_summary(self.cache)
         self.assertIn("states", summary)
         self.assertIn("counts", summary)
+        self.assertNotIn("signature", summary["states"]["releases"])
+        self.assertLess(len(json.dumps(summary)), 2500)
         self.assertEqual(summary["counts"]["releases"], 1)
         self.assertEqual(summary["counts"]["updates"], 1)
         self.assertEqual(summary["counts"]["tools"], 1)

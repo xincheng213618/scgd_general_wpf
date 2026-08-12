@@ -97,6 +97,67 @@ export interface CacheStatus {
   storage_path: string
 }
 
+export type IndexScope = 'plugins' | 'releases' | 'updates' | 'tools' | 'docs'
+
+export interface IndexState {
+  scope: IndexScope
+  status: string
+  last_started_at?: string | null
+  last_finished_at?: string | null
+  last_error?: string
+  item_count: number
+  duration_ms: number
+}
+
+export interface IndexStatusResponse {
+  states: Partial<Record<IndexScope, IndexState>>
+  counts: Record<string, number>
+  error?: string
+}
+
+export interface IndexStatusRow extends IndexState {
+  name: string
+  indexed_count: number
+}
+
+export interface IndexRefreshResult {
+  status?: string
+  indexed_count?: number
+  deleted_count?: number
+  duration_ms?: number
+  errors?: string[]
+}
+
+export type AllIndexRefreshResult = Record<IndexScope, IndexRefreshResult>
+
+export interface DatabaseBackupItem {
+  name: string
+  created_at: string
+  size_bytes: number
+}
+
+export interface DatabaseBackupInventory {
+  backups: DatabaseBackupItem[]
+  count: number
+  keep_count: number
+}
+
+export interface DatabaseBackupResult {
+  status: string
+  backup_name: string
+  backup_size_bytes: number
+  backup_retention: {
+    status: string
+    keepCount: number
+    beforeCount: number
+    afterCount: number
+    removedCount: number
+    removedBytes: number
+    preservedUnclassified: number
+    errors: string[]
+  }
+}
+
 export interface DocsStatus {
   basePath: string
   entryUrl: string

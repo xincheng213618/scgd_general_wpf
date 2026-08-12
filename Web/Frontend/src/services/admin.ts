@@ -1,8 +1,11 @@
 import type {
   AdminStats,
+  AllIndexRefreshResult,
   ApiKeyItem,
   AuditLogResponse,
   CacheStatus,
+  DatabaseBackupInventory,
+  DatabaseBackupResult,
   CopilotProfile,
   CopilotProfilePayload,
   CreateApiKeyPayload,
@@ -11,6 +14,9 @@ import type {
   DeploymentHistoryResponse,
   PublishIntegrityReport,
   PerformanceSummary,
+  IndexRefreshResult,
+  IndexScope,
+  IndexStatusResponse,
   ScheduledJob,
   TrafficStatsResponse,
   UserAccount,
@@ -34,6 +40,10 @@ export function getCacheStatus() {
   return getJson<CacheStatus>('/api/admin/cache/status')
 }
 
+export function getIndexStatus() {
+  return getJson<IndexStatusResponse>('/api/admin/index/status')
+}
+
 export function getDocsStatus() {
   return getJson<DocsStatus>('/api/admin/docs/status')
 }
@@ -43,7 +53,19 @@ export function getPublishIntegrity() {
 }
 
 export function refreshAllIndexes() {
-  return postJson('/api/admin/index/refresh-all')
+  return postJson<AllIndexRefreshResult>('/api/admin/index/refresh-all')
+}
+
+const indexRefreshPaths: Record<IndexScope, string> = {
+  plugins: '/api/admin/index/plugins/refresh',
+  releases: '/api/admin/index/releases/refresh',
+  updates: '/api/admin/index/updates/refresh',
+  tools: '/api/admin/index/tools/refresh',
+  docs: '/api/admin/index/docs/refresh',
+}
+
+export function refreshIndex(scope: IndexScope) {
+  return postJson<IndexRefreshResult>(indexRefreshPaths[scope])
 }
 
 export function refreshDocsIndex() {
@@ -52,6 +74,14 @@ export function refreshDocsIndex() {
 
 export function cleanupCache() {
   return postJson<{ deleted_count: number }>('/api/admin/cache/cleanup')
+}
+
+export function listDatabaseBackups() {
+  return getJson<DatabaseBackupInventory>('/api/admin/backup/db')
+}
+
+export function backupDatabase() {
+  return postJson<DatabaseBackupResult>('/api/admin/backup/db')
 }
 
 export function listJobs() {

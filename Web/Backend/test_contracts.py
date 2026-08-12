@@ -970,6 +970,8 @@ class AdminApiContracts(ContractTestBase):
         data = resp.get_json()
         self.assertIn("states", data)
         self.assertIn("counts", data)
+        for state in data["states"].values():
+            self.assertNotIn("signature", state)
 
     def test_index_refresh_all_returns_results(self):
         self.create_plugin()
@@ -1193,6 +1195,22 @@ class AdminApiContracts(ContractTestBase):
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
         self.assertEqual(data["status"], "ok")
+        self.assertRegex(data["backup_name"], r"^marketplace_backup_\d{8}_\d{6}\.db$")
+
+        listing = self.client.get("/api/admin/backup/db", headers=self.basic_auth())
+        self.assertEqual(listing.status_code, 200)
+        inventory = listing.get_json()
+        self.assertEqual(inventory["count"], 1)
+        self.assertEqual(inventory["keep_count"], 10)
+        self.assertEqual(inventory["backups"][0]["name"], data["backup_name"])
+        self.assertNotIn("path", inventory["backups"][0])
+
+        limited_key = self.create_admin_key("cache:read")
+        forbidden = self.client.get(
+            "/api/admin/backup/db",
+            headers={"Authorization": f"Bearer {limited_key['key']}"},
+        )
+        self.assertEqual(forbidden.status_code, 403)
 
     def test_perf_summary_returns_data(self):
         resp = self.client.get("/api/admin/perf/summary", headers=self.basic_auth())

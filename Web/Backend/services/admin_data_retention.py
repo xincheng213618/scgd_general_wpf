@@ -16,6 +16,31 @@ DEFAULT_AUDIT_LOG_RETENTION_DAYS = 365
 DEFAULT_ADMIN_DB_BACKUP_KEEP_COUNT = 10
 
 
+def list_manual_db_backups(directory: Path) -> list[dict[str, Any]]:
+    """List recognized manual snapshots without exposing filesystem paths."""
+    root = Path(directory).resolve()
+    if not root.is_dir():
+        return []
+
+    backups: list[dict[str, Any]] = []
+    for path in sorted(root.glob("marketplace_backup_*.db"), reverse=True):
+        if not _is_recognized_backup(path, root):
+            continue
+        try:
+            created_at = datetime.strptime(
+                path.name,
+                "marketplace_backup_%Y%m%d_%H%M%S.db",
+            ).replace(tzinfo=timezone.utc).isoformat()
+            backups.append({
+                "name": path.name,
+                "created_at": created_at,
+                "size_bytes": path.stat().st_size,
+            })
+        except (OSError, ValueError):
+            continue
+    return backups
+
+
 def parse_admin_retention_config(config: dict[str, Any]) -> tuple[int, int]:
     """Return validated audit-day and manual-backup limits."""
     audit_days = parse_bounded_int(
