@@ -107,6 +107,7 @@ $frontendTestIndex = $deploySource.IndexOf($frontendTestCommand, [StringComparis
 $frontendBuildIndex = $deploySource.IndexOf($frontendBuildCommand, [StringComparison]::Ordinal)
 Assert-Equal $true ($frontendTestIndex -ge 0) 'NAS deployment does not run the frontend behavior tests.'
 Assert-Equal $true ($frontendBuildIndex -gt $frontendTestIndex) 'Frontend tests must pass before the NAS build starts.'
+Assert-Equal $true $deploySource.Contains("'test_schema_version'") 'NAS deployment does not exercise database migrations.'
 
 [ordered]@{
     status = 'success'
@@ -119,4 +120,5 @@ Assert-Equal $true ($frontendBuildIndex -gt $frontendTestIndex) 'Frontend tests 
     origin_fetch_count = 1
     duplicate_pull_removed = $true
     frontend_tests_before_build = $true
+    schema_migration_tested = $true
 } | ConvertTo-Json -Compress

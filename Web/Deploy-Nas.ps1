@@ -602,6 +602,7 @@ try {
             '-m',
             'unittest',
             'test_access_analytics',
+            'test_schema_version',
             'test_artifact_delivery',
             'test_docs_site',
             'test_frontend_spa',

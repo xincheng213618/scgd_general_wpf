@@ -143,6 +143,13 @@ package hash costing about 381.9 ms moved to index refresh work.
   now move directly to `/login?next=/transfer` without a protected API request
   or a transient upload panel. A Node test runs in both local checks and NAS
   deployment before the frontend build.
+- Correct response-volume analytics for HTTP responses that cannot carry a
+  body. The 2026-08-12 production audit found 45 `HEAD` requests contributing
+  2,275,254,516 impossible bytes (5.96% of the recorded response volume), led
+  by 1.76 GB from desktop-installer probes. New `HEAD`, 1xx, 204, 205, and 304
+  events record zero bytes, while schema v6 idempotently subtracts historical
+  `HEAD` bytes from route and daily aggregates without guessing about statuses
+  that the legacy aggregate cannot distinguish.
 - Replaced the audit page's inferred row count with an exact filtered total from
   the existing `audit_log` query boundary. The production baseline had 378 rows
   while the first page claimed 40; the most common action had 347 rows and was
@@ -179,8 +186,8 @@ package hash costing about 381.9 ms moved to index refresh work.
 
 ## Verification snapshot
 
-- Backend: 565 tests passed.
-- Frontend: ESLint passed; production build passed (3,780 modules).
+- Backend: 569 tests passed.
+- Frontend: 4 behavior tests and ESLint passed; production build passed (3,789 modules).
 - Dependency audit: zero npm vulnerabilities.
 - Whitespace check: `git diff --check -- Web` passed.
 

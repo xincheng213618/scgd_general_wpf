@@ -271,6 +271,7 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
                 try:
                     from services.access_analytics import (
                         build_access_event,
+                        declared_response_body_bytes,
                         should_record_access,
                     )
 
@@ -280,13 +281,11 @@ def register_slow_request_logging(app, ctx: MarketplaceContext, access_recorder=
                         config.get("access_analytics_enabled", True)
                         and should_record_access(route_rule, request.method)
                     ):
-                        content_length = 0
-                        raw_content_length = response.headers.get("Content-Length")
-                        if raw_content_length:
-                            try:
-                                content_length = max(0, int(raw_content_length))
-                            except (TypeError, ValueError):
-                                content_length = 0
+                        content_length = declared_response_body_bytes(
+                            method=request.method,
+                            status_code=response.status_code,
+                            content_length=response.headers.get("Content-Length"),
+                        )
                         event = build_access_event(
                             route_template=route_rule,
                             method=request.method,
