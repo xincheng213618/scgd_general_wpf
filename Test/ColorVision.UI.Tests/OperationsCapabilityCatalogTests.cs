@@ -18,6 +18,10 @@ namespace ColorVision.UI.Tests
                 Assert.True(capability.Audit.Required);
             });
             Assert.Equal(capabilities.Count, capabilities.Select(capability => capability.Id).Distinct(StringComparer.Ordinal).Count());
+            OperationsCapabilityDescriptor monitor = Assert.Single(capabilities, capability => capability.Id == "ops.monitor.read");
+            Assert.True(monitor.Available);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, monitor.RiskLevel);
+            Assert.Equal("ops.diagnostics.read", monitor.Permission);
         }
 
         [Fact]

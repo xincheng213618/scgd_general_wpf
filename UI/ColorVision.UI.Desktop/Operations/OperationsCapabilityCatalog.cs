@@ -104,6 +104,22 @@ namespace ColorVision.UI.Desktop.Operations
             },
             new()
             {
+                Id = "ops.monitor.read",
+                Title = "Read a bounded live operations snapshot",
+                Description = "Read aggregate flow state, process counters, UI responsiveness, and alert counts in one foreground monitoring request without returning identities, log text, or inspection data.",
+                Category = "diagnostics",
+                Provider = "desktop.operations",
+                Permission = "ops.diagnostics.read",
+                DiscoverableOn = ["desktop", "android", "copilot"],
+                InputSchema = new { type = "object", additionalProperties = false },
+                OutputSchema = new { type = "object", additionalProperties = true },
+                TimeoutMs = 2500,
+                Audit = new OperationsAuditPolicy { Required = true },
+                Evidence = ["flow.lifecycle.aggregate", "process.aggregate-counters", "desktop.ui-latency", "application.alert.counts"],
+                Available = true,
+            },
+            new()
+            {
                 Id = "ops.audit.read",
                 Title = "Read a bounded operations activity timeline",
                 Description = "Read the latest 30 de-identified operations audit summaries without returning actor, device, target, or correlation identifiers.",

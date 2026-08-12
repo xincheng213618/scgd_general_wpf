@@ -46,14 +46,27 @@ import javax.net.ssl.SSLHandshakeException;
 
 public class OperationsActivity extends Activity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
+    private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
+    private boolean liveMonitorVisible;
+    private boolean liveMonitorAutoRefresh;
+    private boolean liveMonitorRefreshInFlight;
+    private boolean activityResumed;
+    private int liveMonitorSampleCount;
+    private int liveMonitorGeneration;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler supportRefreshHandler = new Handler(Looper.getMainLooper());
     private final Runnable supportRefresh = () -> {
-        if (supportCenterVisible && supportAutoRefresh) {
+        if (activityResumed && supportCenterVisible && supportAutoRefresh) {
             loadSupportCenter(false);
+        }
+    };
+    private final Handler liveMonitorRefreshHandler = new Handler(Looper.getMainLooper());
+    private final Runnable liveMonitorRefresh = () -> {
+        if (activityResumed && liveMonitorVisible && liveMonitorAutoRefresh) {
+            loadLiveMonitor(false);
         }
     };
     private AppPreferences preferences;
@@ -215,6 +228,7 @@ public class OperationsActivity extends Activity {
 
     private void showDashboard() {
         leaveSupportCenter();
+        leaveLiveMonitor();
         dashboardVisible = true;
         progress.setVisibility(View.GONE);
         title.setText("现场运维概览");
@@ -231,6 +245,11 @@ public class OperationsActivity extends Activity {
         triage.setText("打开远程排障中心");
         triage.setOnClickListener(v -> showTriageCenter());
         actions.addView(triage, actionParams());
+
+        Button liveMonitor = new Button(this);
+        liveMonitor.setText("持续观察（每 10 秒）");
+        liveMonitor.setOnClickListener(v -> showLiveMonitor());
+        actions.addView(liveMonitor, actionParams());
 
         addAction("查看白名单服务健康", "/ops/v1/services/health");
         addAction("刷新运行状态", "/ops/v1/snapshot");
@@ -393,6 +412,7 @@ public class OperationsActivity extends Activity {
 
     private void showTriageCenter() {
         leaveSupportCenter();
+        leaveLiveMonitor();
         dashboardVisible = true;
         progress.setVisibility(View.VISIBLE);
         state.setText("正在汇总有界证据与可用处置动作…");
@@ -546,6 +566,7 @@ public class OperationsActivity extends Activity {
 
     private void showJobs() {
         leaveSupportCenter();
+        leaveLiveMonitor();
         progress.setVisibility(View.VISIBLE);
         state.setText("正在读取安全作业摘要…");
         executor.execute(() -> {
@@ -938,6 +959,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void showSupportCenter() {
+        leaveLiveMonitor();
         supportCenterVisible = true;
         supportAutoRefresh = false;
         loadSupportCenter(true);
@@ -1123,7 +1145,7 @@ public class OperationsActivity extends Activity {
 
     private void scheduleSupportRefresh() {
         supportRefreshHandler.removeCallbacks(supportRefresh);
-        if (supportCenterVisible && supportAutoRefresh) {
+        if (activityResumed && supportCenterVisible && supportAutoRefresh) {
             supportRefreshHandler.postDelayed(supportRefresh, 5000);
         }
     }
@@ -1132,6 +1154,211 @@ public class OperationsActivity extends Activity {
         supportCenterVisible = false;
         supportAutoRefresh = false;
         supportRefreshHandler.removeCallbacks(supportRefresh);
+    }
+
+    private void showLiveMonitor() {
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        dashboardVisible = true;
+        liveMonitorVisible = true;
+        liveMonitorAutoRefresh = true;
+        liveMonitorSampleCount = 0;
+        title.setText("远程持续观察");
+        state.setText("正在采集第一份有界运行快照…");
+        details.setText("仅在此页面位于前台时每 10 秒刷新；切到后台会自动停止网络请求。服务器不保存采样历史。 ");
+        renderLiveMonitorActions();
+        loadLiveMonitor(true);
+    }
+
+    private void loadLiveMonitor(boolean showBusy) {
+        if (!liveMonitorVisible || liveMonitorRefreshInFlight) {
+            return;
+        }
+        liveMonitorRefreshInFlight = true;
+        int requestGeneration = liveMonitorGeneration;
+        liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
+        renderLiveMonitorActions();
+        if (showBusy) {
+            progress.setVisibility(View.VISIBLE);
+            state.setText(liveMonitorSampleCount == 0
+                    ? "正在采集第一份有界运行快照…"
+                    : "正在立即刷新持续观察…");
+        }
+        executor.execute(() -> {
+            try {
+                JSONObject response = client.get("/ops/v1/monitor");
+                JSONObject snapshot = response.optJSONObject("data");
+                if (snapshot == null) {
+                    throw new IllegalStateException("incomplete_live_monitor_response");
+                }
+                runOnUiThread(() -> {
+                    if (requestGeneration != liveMonitorGeneration) {
+                        return;
+                    }
+                    liveMonitorRefreshInFlight = false;
+                    if (!liveMonitorVisible) {
+                        return;
+                    }
+                    progress.setVisibility(View.GONE);
+                    liveMonitorSampleCount++;
+                    state.setText(liveMonitorState(snapshot));
+                    details.setText(formatLiveMonitorSnapshot(snapshot));
+                    renderLiveMonitorActions();
+                    scheduleLiveMonitorRefresh();
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> {
+                    if (requestGeneration != liveMonitorGeneration) {
+                        return;
+                    }
+                    liveMonitorRefreshInFlight = false;
+                    if (!liveMonitorVisible) {
+                        return;
+                    }
+                    progress.setVisibility(View.GONE);
+                    state.setText(liveMonitorAutoRefresh
+                            ? "本轮观察失败 · 10 秒后自动重试"
+                            : "本轮观察失败");
+                    details.setText(readableError(ex)
+                            + "\n\n持续观察不会删除配对资料，也不会执行、停止或修改检测流程。 ");
+                    renderLiveMonitorActions();
+                    scheduleLiveMonitorRefresh();
+                });
+            }
+        });
+    }
+
+    private void renderLiveMonitorActions() {
+        actions.removeAllViews();
+
+        Button refresh = new Button(this);
+        refresh.setText("立即刷新");
+        refresh.setEnabled(!liveMonitorRefreshInFlight);
+        refresh.setOnClickListener(v -> loadLiveMonitor(true));
+        actions.addView(refresh, actionParams());
+
+        Button toggle = new Button(this);
+        toggle.setText(liveMonitorAutoRefresh ? "暂停自动观察" : "恢复每 10 秒观察");
+        toggle.setOnClickListener(v -> {
+            liveMonitorAutoRefresh = !liveMonitorAutoRefresh;
+            liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
+            if (liveMonitorAutoRefresh) {
+                state.setText("自动观察已恢复 · 正在刷新");
+                renderLiveMonitorActions();
+                loadLiveMonitor(true);
+            } else {
+                state.setText("自动观察已暂停 · 当前快照保留");
+                renderLiveMonitorActions();
+            }
+        });
+        actions.addView(toggle, actionParams());
+
+        Button back = new Button(this);
+        back.setText("返回现场运维概览");
+        back.setOnClickListener(v -> showDashboard());
+        actions.addView(back, actionParams());
+    }
+
+    private void scheduleLiveMonitorRefresh() {
+        liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
+        if (activityResumed && liveMonitorVisible && liveMonitorAutoRefresh && !isFinishing()) {
+            liveMonitorRefreshHandler.postDelayed(
+                    liveMonitorRefresh, LIVE_MONITOR_REFRESH_MILLISECONDS);
+        }
+    }
+
+    private void leaveLiveMonitor() {
+        liveMonitorGeneration++;
+        liveMonitorVisible = false;
+        liveMonitorAutoRefresh = false;
+        liveMonitorRefreshInFlight = false;
+        liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
+    }
+
+    private String liveMonitorState(JSONObject snapshot) {
+        JSONObject flow = snapshot.optJSONObject("flow");
+        JSONObject performance = snapshot.optJSONObject("performance");
+        JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
+        JSONObject alerts = snapshot.optJSONObject("alerts");
+        String uiState = mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable");
+        int criticalCount = alerts == null ? 0 : alerts.optInt("criticalCount", 0);
+        int errorCount = alerts == null ? 0 : alerts.optInt("errorCount", 0);
+        boolean flowActive = flow != null && flow.optBoolean("isActive", false);
+
+        String prefix;
+        if ("unresponsive".equals(uiState)) {
+            prefix = "主界面响应超时";
+        } else if (criticalCount > 0) {
+            prefix = "发现严重告警";
+        } else if (errorCount > 0) {
+            prefix = "发现错误事件";
+        } else if ("slow".equals(uiState)) {
+            prefix = "主界面响应偏慢";
+        } else if (flowActive) {
+            prefix = "检测活动正在进行";
+        } else {
+            prefix = "当前聚合状态稳定";
+        }
+        return prefix + " · 持续观察第 " + liveMonitorSampleCount + " 次";
+    }
+
+    private String formatLiveMonitorSnapshot(JSONObject snapshot) {
+        JSONObject flow = snapshot.optJSONObject("flow");
+        JSONObject performance = snapshot.optJSONObject("performance");
+        JSONObject alerts = snapshot.optJSONObject("alerts");
+        StringBuilder text = new StringBuilder();
+        if (flow == null || !flow.optBoolean("available", false)) {
+            text.append("检测：流程运行时暂不可用");
+        } else {
+            text.append("检测：").append(flowPhaseLabel(flow.optString("phase", "idle")));
+            if (flow.optBoolean("progressAvailable", false)
+                    && flow.has("progressPercent") && !flow.isNull("progressPercent")) {
+                text.append(" · ").append(roundOne(flow.optDouble("progressPercent", 0))).append('%');
+            }
+            if (flow.has("elapsedMilliseconds") && !flow.isNull("elapsedMilliseconds")) {
+                text.append(" · 已用时 ")
+                        .append(formatElapsedMilliseconds(flow.optLong("elapsedMilliseconds", 0)));
+            }
+            String lastStatus = flow.optString("lastRunStatus", "none");
+            if (!"none".equals(lastStatus)) {
+                text.append("\n最近结果：").append(flowOutcomeLabel(lastStatus));
+            }
+        }
+
+        if (performance == null) {
+            text.append("\n\n性能：暂不可用");
+        } else {
+            text.append("\n\n性能：CPU ")
+                    .append(roundOne(performance.optDouble("cpuPercent", 0))).append('%')
+                    .append(" · 工作集 ")
+                    .append(roundOne(performance.optDouble("workingSetMb", 0))).append(" MB");
+            JSONObject mainUi = performance.optJSONObject("mainUi");
+            text.append("\n主界面：")
+                    .append(mainUi == null ? "不可用"
+                            : uiResponsivenessLabel(mainUi.optString("state", "unavailable")));
+            if (mainUi != null && mainUi.has("latencyMilliseconds")
+                    && !mainUi.isNull("latencyMilliseconds")) {
+                text.append(" · ").append(mainUi.optLong("latencyMilliseconds", 0)).append(" ms");
+            }
+        }
+
+        int alertCount = alerts == null ? 0 : alerts.optInt("count", 0);
+        text.append("\n\n近期告警：").append(alertCount).append(" 条");
+        if (alerts != null && alertCount > 0) {
+            text.append(" · 警告 ").append(alerts.optInt("warningCount", 0))
+                    .append(" · 错误 ").append(alerts.optInt("errorCount", 0))
+                    .append(" · 严重 ").append(alerts.optInt("criticalCount", 0));
+            String latestAt = shortTime(alerts.optString("latestOccurredAt", ""));
+            if (!latestAt.isEmpty()) {
+                text.append("\n最近告警：").append(latestAt);
+            }
+        }
+
+        text.append("\n\n采集时间：").append(shortTime(snapshot.optString("capturedAt", "")))
+                .append("\n刷新策略：仅当前台可见时每 ")
+                .append(snapshot.optInt("suggestedRefreshSeconds", 10)).append(" 秒")
+                .append("\n\n服务器不保存采样历史；快照不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、日志正文或检测数据。 ");
+        return text.toString();
     }
 
     private void confirmSupportRequest() {
@@ -1202,6 +1429,7 @@ public class OperationsActivity extends Activity {
 
     private void loadCapability(String path) {
         leaveSupportCenter();
+        leaveLiveMonitor();
         progress.setVisibility(View.VISIBLE);
         state.setText("正在读取…");
         executor.execute(() -> {
@@ -1359,6 +1587,7 @@ public class OperationsActivity extends Activity {
             case "desktop.action.execute": return "执行主窗口控制";
             case "diagnostics.performance.read": return "读取进程性能快照";
             case "flow.runtime.read": return "读取当前检测状态";
+            case "monitor.read": return "持续观察运行状态";
             case "diagnostic.bundle.download": return "下载安全诊断包";
             case "window.snapshot.download": return "读取主窗口安全快照";
             case "deployment.receipt.create": return "提交部署确认";
@@ -1916,6 +2145,7 @@ public class OperationsActivity extends Activity {
 
     private void clearProfile() {
         leaveSupportCenter();
+        leaveLiveMonitor();
         dashboardVisible = false;
         try {
             String hostId = preferences.getOperationsHostId();
@@ -1931,6 +2161,7 @@ public class OperationsActivity extends Activity {
 
     private void setBusy(String message) {
         leaveSupportCenter();
+        leaveLiveMonitor();
         dashboardVisible = false;
         state.setText(message);
         details.setText("设备私钥只保存在 Android Keystore，不会写入二维码、网址或应用配置。 ");
@@ -1940,6 +2171,7 @@ public class OperationsActivity extends Activity {
 
     private void showError(String heading, String message, Runnable recovery) {
         leaveSupportCenter();
+        leaveLiveMonitor();
         dashboardVisible = false;
         progress.setVisibility(View.GONE);
         title.setText(heading);
@@ -2050,21 +2282,28 @@ public class OperationsActivity extends Activity {
 
     @Override
     protected void onPause() {
+        activityResumed = false;
         supportRefreshHandler.removeCallbacks(supportRefresh);
+        liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
         super.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        activityResumed = true;
         if (supportCenterVisible) {
             scheduleSupportRefresh();
+        }
+        if (liveMonitorVisible && liveMonitorAutoRefresh) {
+            liveMonitorRefreshHandler.post(liveMonitorRefresh);
         }
     }
 
     @Override
     protected void onDestroy() {
         leaveSupportCenter();
+        leaveLiveMonitor();
         executor.shutdownNow();
         super.onDestroy();
     }

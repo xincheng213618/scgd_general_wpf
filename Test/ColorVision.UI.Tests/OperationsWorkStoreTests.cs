@@ -171,6 +171,32 @@ namespace ColorVision.UI.Tests
             }
         }
 
+        [Fact]
+        public void ThrottledAuditCoalescesEquivalentHighFrequencyReads()
+        {
+            string path = NewPath();
+            try
+            {
+                OperationsWorkStore store = new(path);
+
+                Assert.True(store.RecordAuditThrottled(
+                    "phone", "device", "monitor.read", "live-monitor", "completed", "corr-1",
+                    TimeSpan.FromMinutes(5)));
+                Assert.False(store.RecordAuditThrottled(
+                    "phone", "device", "monitor.read", "live-monitor", "completed", "corr-2",
+                    TimeSpan.FromMinutes(5)));
+                Assert.True(store.RecordAuditThrottled(
+                    "phone", "device", "monitor.read", "live-monitor", "failed", "corr-3",
+                    TimeSpan.FromMinutes(5)));
+
+                Assert.Equal(2, store.GetAudit().Count(item => item.Action == "monitor.read"));
+            }
+            finally
+            {
+                DeletePath(path);
+            }
+        }
+
         private static string NewPath() => Path.Combine(Path.GetTempPath(), "ColorVision.Tests", Guid.NewGuid().ToString("N"), "work.json");
 
         private static void DeletePath(string path)

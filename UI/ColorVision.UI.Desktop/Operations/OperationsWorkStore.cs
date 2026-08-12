@@ -462,6 +462,40 @@ namespace ColorVision.UI.Desktop.Operations
             Changed?.Invoke(this, EventArgs.Empty);
         }
 
+        public bool RecordAuditThrottled(
+            string actorId,
+            string actorType,
+            string action,
+            string targetId,
+            string outcome,
+            string correlationId,
+            TimeSpan minimumInterval)
+        {
+            if (minimumInterval < TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException(nameof(minimumInterval));
+
+            bool recorded;
+            lock (_syncRoot)
+            {
+                DateTimeOffset cutoff = DateTimeOffset.UtcNow - minimumInterval;
+                recorded = !_state.Audit.Any(item =>
+                    item.Timestamp >= cutoff
+                    && string.Equals(item.ActorId, actorId, StringComparison.Ordinal)
+                    && string.Equals(item.ActorType, actorType, StringComparison.Ordinal)
+                    && string.Equals(item.Action, action, StringComparison.Ordinal)
+                    && string.Equals(item.TargetId, targetId, StringComparison.Ordinal)
+                    && string.Equals(item.Outcome, outcome, StringComparison.Ordinal));
+                if (recorded)
+                {
+                    AuditNoLock(actorId, actorType, action, targetId, outcome, correlationId);
+                    SaveNoLock();
+                }
+            }
+            if (recorded)
+                Changed?.Invoke(this, EventArgs.Empty);
+            return recorded;
+        }
+
         private void AuditNoLock(string actorId, string actorType, string action, string targetId, string outcome, string correlationId)
         {
             _state.Audit.Add(new OperationsAuditEntry

@@ -230,6 +230,7 @@ namespace ColorVision.UI.Tests
                     OperationsPairingService.InitialScopes);
                 OperationsSecureApiRouter router = new(new OperationsPairingService(registry),
                     new OperationsRequestAuthenticator(registry), new OperationsWorkStore(workPath), () => new { healthy = true },
+                    runtimePerformance: new FixedRuntimePerformanceProvider(),
                     flowRuntimeStatus: new FixedFlowRuntimeStatusProvider());
                 const string path = "/ops/v1/diagnostics/connection";
 
@@ -296,6 +297,23 @@ namespace ColorVision.UI.Tests
                 Assert.False(flowData.TryGetProperty("batchSerialNumber", out _));
                 Assert.False(flowData.TryGetProperty("nodeName", out _));
                 Assert.False(flowData.TryGetProperty("resultText", out _));
+
+                const string monitorPath = "/ops/v1/monitor";
+                OperationsApiResponse monitor = router.Handle(new OperationsSecureRequest
+                {
+                    Method = "GET",
+                    Path = monitorPath,
+                    Headers = Sign(key, "device-diagnostics", "GET", monitorPath, []),
+                });
+                Assert.Equal(200, monitor.StatusCode);
+                using JsonDocument monitorDocument = JsonDocument.Parse(monitor.Body);
+                JsonElement monitorData = monitorDocument.RootElement.GetProperty("data");
+                Assert.Equal("running", monitorData.GetProperty("flow").GetProperty("phase").GetString());
+                Assert.Equal(9.5, monitorData.GetProperty("performance").GetProperty("cpuPercent").GetDouble());
+                Assert.Equal(10, monitorData.GetProperty("suggestedRefreshSeconds").GetInt32());
+                Assert.False(monitorData.GetProperty("alerts").TryGetProperty("items", out _));
+                Assert.DoesNotContain(Environment.MachineName, monitor.Body, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain(Environment.UserName, monitor.Body, StringComparison.OrdinalIgnoreCase);
             }
             finally
             {
@@ -701,6 +719,27 @@ namespace ColorVision.UI.Tests
                 ElapsedMilliseconds = 12000,
                 LastRunStatus = "none",
                 ObservedAt = DateTimeOffset.UtcNow,
+            };
+        }
+
+        private sealed class FixedRuntimePerformanceProvider : IOperationsRuntimePerformanceProvider
+        {
+            public OperationsRuntimePerformanceSnapshot Capture() => new()
+            {
+                CapturedAt = DateTimeOffset.UtcNow,
+                SampleMilliseconds = 300,
+                CpuPercent = 9.5,
+                WorkingSetMb = 256,
+                PrivateMemoryMb = 300,
+                ManagedHeapMb = 24,
+                ThreadCount = 18,
+                HandleCount = 400,
+                MainUi = new OperationsUiResponsivenessSnapshot
+                {
+                    Available = true,
+                    State = "responsive",
+                    LatencyMilliseconds = 12,
+                },
             };
         }
     }

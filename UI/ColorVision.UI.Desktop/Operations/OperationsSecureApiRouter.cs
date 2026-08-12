@@ -20,6 +20,7 @@ namespace ColorVision.UI.Desktop.Operations
     public sealed class OperationsSecureApiRouter
     {
         private const string ApiPrefix = "/ops/v1";
+        private static readonly TimeSpan LiveMonitorAuditInterval = TimeSpan.FromMinutes(5);
         private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         private readonly OperationsPairingService _pairing;
         private readonly OperationsRequestAuthenticator _authenticator;
@@ -159,6 +160,9 @@ namespace ColorVision.UI.Desktop.Operations
             if (request.Path.Equals($"{ApiPrefix}/flow/runtime", StringComparison.OrdinalIgnoreCase))
                 return HandleFlowRuntimeStatus(request, correlationId, authentication.Device);
 
+            if (request.Path.Equals($"{ApiPrefix}/monitor", StringComparison.OrdinalIgnoreCase))
+                return HandleLiveMonitor(request, correlationId, authentication.Device);
+
             if (request.Path.Equals($"{ApiPrefix}/jobs", StringComparison.OrdinalIgnoreCase))
                 return HandleJobs(request, correlationId, authentication.Device);
 
@@ -267,6 +271,46 @@ namespace ColorVision.UI.Desktop.Operations
                     "flow-runtime", "failed", correlationId);
                 return Error(503, correlationId, "flow_runtime_unavailable",
                     "The aggregate flow runtime status is temporarily unavailable.");
+            }
+        }
+
+        private OperationsApiResponse HandleLiveMonitor(
+            OperationsSecureRequest request,
+            string correlationId,
+            OperationsPairedDevice device)
+        {
+            if (!string.Equals(request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return Error(405, correlationId, "method_not_allowed", "Use GET for this endpoint.", "GET");
+            if (!HasScope(device, "ops.diagnostics.read"))
+                return ScopeRequired(correlationId, "ops.diagnostics.read");
+            try
+            {
+                OperationsLiveMonitorSnapshot snapshot = OperationsLiveMonitorSnapshotFactory.Create(
+                    _flowRuntimeStatus.Capture(),
+                    _runtimePerformance.Capture(),
+                    _alerts.GetRecent());
+                _workStore.RecordAuditThrottled(
+                    device.DeviceId,
+                    "device",
+                    "monitor.read",
+                    "live-monitor",
+                    "completed",
+                    correlationId,
+                    LiveMonitorAuditInterval);
+                return Json(200, correlationId, snapshot);
+            }
+            catch
+            {
+                _workStore.RecordAuditThrottled(
+                    device.DeviceId,
+                    "device",
+                    "monitor.read",
+                    "live-monitor",
+                    "failed",
+                    correlationId,
+                    LiveMonitorAuditInterval);
+                return Error(503, correlationId, "live_monitor_unavailable",
+                    "The bounded live monitor snapshot is temporarily unavailable.");
             }
         }
 
