@@ -89,7 +89,7 @@ navigations redirect to `/login` with an internal `next` path.
 
 Session and Basic Auth always have full access. Bearer API Key access is controlled by per-endpoint scopes:
 
-Operations relay uses two dedicated scopes and does not accept Basic/session auth:
+Legacy API-key Operations relay uses two dedicated scopes and does not accept Basic/session auth:
 
 - `ops:relay` — desktop outbound heartbeat, task polling, receipts, and bounded support events.
 - `ops:operator` — list hosts and create catalog-bound tasks. Privileged ServiceHost commands are not valid relay tasks.
@@ -97,7 +97,11 @@ Operations relay uses two dedicated scopes and does not accept Basic/session aut
 Create a desktop relay key with `python app.py --create-api-key colorvision-relay --scopes ops:relay`, then set
 `COLORVISION_OPERATIONS_RELAY_URL` (HTTPS, or loopback HTTP for development only) and
 `COLORVISION_OPERATIONS_RELAY_KEY` in the ColorVision process environment. The desktop initiates every Web connection;
-no inbound port or arbitrary command channel is opened.
+no inbound port or arbitrary command channel is opened. Current desktop builds
+use the signed device relay by default: the host sync and task/receipt exchange
+are authenticated by the desktop Operations certificate, while task requests
+from approved devices retain their P-256 signature for a second verification
+on the desktop. The API-key relay remains available for compatible deployments.
 
 Successful Bearer authentication still checks the active flag, expiry, secret,
 and scopes on every request. Only advisory `last_used_at` persistence is
@@ -314,16 +318,19 @@ status changes are recorded in the administrator audit log.
 
 `GET /api/admin/operations/overview?hostLimit=100&activityLimit=100` powers the
 read-only `/admin/operations/hosts` page. It reports exact host/task/session
-summary counts, a bounded host list, recent task lifecycle state, receipt
-counts, and support-session state. A heartbeat is treated as online for 90
+summary counts, signed host-identity and paired-device status, a bounded host
+list, task origin and lifecycle state, receipt counts, and support-session
+state. A heartbeat is treated as online for 90
 seconds, matching the desktop Relay's 20-second polling cadence without hiding
 short network interruptions.
 
-The endpoint deliberately returns neither task payloads, receipt evidence,
+The endpoint deliberately returns neither host certificates, device public
+keys, request signatures/nonces/bodies, task payloads, receipt evidence,
 support message bodies, nor arbitrary snapshot keys. Desktop heartbeats are
 projected back onto the fixed `OperationsSafeSnapshot` fields before the React
-client receives them. Creating catalog-bound tasks remains on the separate
-`ops:operator` API-key contract; the administrator page cannot dispatch work.
+client receives them. Legacy operator task creation remains on the separate
+`ops:operator` API-key contract, while paired devices use the signed Relay
+endpoint; the administrator page itself cannot dispatch work.
 
 ### Stats
 
