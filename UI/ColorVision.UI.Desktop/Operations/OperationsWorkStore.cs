@@ -184,7 +184,11 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 if (!string.IsNullOrWhiteSpace(job.SourceTaskId))
                 {
-                    OperationsJob? existing = _state.Jobs.FirstOrDefault(item => item.SourceTaskId == job.SourceTaskId);
+                    OperationsJob? existing = _state.Jobs.FirstOrDefault(item =>
+                        string.Equals(item.SourceTaskId, job.SourceTaskId, StringComparison.Ordinal)
+                        || (!string.IsNullOrWhiteSpace(job.SourceIdempotencyKey)
+                            && string.Equals(item.RequestedByDeviceId, job.RequestedByDeviceId, StringComparison.Ordinal)
+                            && string.Equals(item.SourceIdempotencyKey, job.SourceIdempotencyKey, StringComparison.Ordinal)));
                     if (existing != null)
                         return Clone(existing);
                 }
@@ -539,13 +543,14 @@ namespace ColorVision.UI.Desktop.Operations
                     && string.Equals(item.CorrelationId, idempotencyKey, StringComparison.Ordinal))?.Outcome;
         }
 
-        public bool HasSentRelayRestartReceipt(string sourceTaskId, string status)
+        public bool HasSentRelayRestartReceipt(string sourceTaskId, string idempotencyKey, string status)
         {
             lock (_syncRoot)
                 return _state.Audit.Any(item =>
                     string.Equals(item.ActorType, "system", StringComparison.Ordinal)
                     && string.Equals(item.Action, "relay.restart.receipt", StringComparison.Ordinal)
                     && string.Equals(item.TargetId, sourceTaskId, StringComparison.Ordinal)
+                    && string.Equals(item.CorrelationId, idempotencyKey, StringComparison.Ordinal)
                     && string.Equals(item.Outcome, status, StringComparison.Ordinal));
         }
 

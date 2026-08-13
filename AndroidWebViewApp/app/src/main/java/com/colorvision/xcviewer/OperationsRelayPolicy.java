@@ -6,6 +6,7 @@ final class OperationsRelayPolicy {
     static final String CAPABILITY_SHOW_WINDOW = "ops.window.show";
     static final String CAPABILITY_MINIMIZE_WINDOW = "ops.window.minimize";
     static final String CAPABILITY_RECOVER_MESSAGE_CHANNEL = "ops.messaging.reconnect";
+    static final String CAPABILITY_RESTART_MQTT = "ops.service.restart";
     static final String CAPABILITY_CANCEL_FLOW = "ops.flow.cancel";
     static final String CAPABILITY_RESTART_APPLICATION = "ops.application.restart";
     static final String CAPABILITY_REQUEST_DIAGNOSTICS = "ops.diagnostics.request";
@@ -52,6 +53,7 @@ final class OperationsRelayPolicy {
         return CAPABILITY_SHOW_WINDOW.equals(capabilityId)
                 || CAPABILITY_MINIMIZE_WINDOW.equals(capabilityId)
                 || CAPABILITY_RECOVER_MESSAGE_CHANNEL.equals(capabilityId)
+                || CAPABILITY_RESTART_MQTT.equals(capabilityId)
                 || CAPABILITY_CANCEL_FLOW.equals(capabilityId)
                 || CAPABILITY_RESTART_APPLICATION.equals(capabilityId)
                 || CAPABILITY_REQUEST_DIAGNOSTICS.equals(capabilityId);
@@ -63,6 +65,39 @@ final class OperationsRelayPolicy {
         }
         long age = nowMilliseconds - signedAtSeconds * 1_000L;
         return age >= -FUTURE_TOLERANCE_MILLISECONDS && age <= HOST_FRESH_MILLISECONDS;
+    }
+
+    static boolean canRestartMqttService(
+            boolean capabilityAvailable,
+            boolean hostFresh,
+            boolean flowAvailable,
+            boolean flowActive,
+            boolean serviceAvailable,
+            String serviceStatus,
+            boolean maintenanceSupported) {
+        return capabilityAvailable
+                && hostFresh
+                && flowAvailable
+                && !flowActive
+                && serviceAvailable
+                && maintenanceSupported
+                && isStableMqttServiceStatus(serviceStatus);
+    }
+
+    static int remoteTaskPollingAttempts(String capabilityId) {
+        if (CAPABILITY_RESTART_MQTT.equals(capabilityId)) {
+            return 61;
+        }
+        if (CAPABILITY_RESTART_APPLICATION.equals(capabilityId)) {
+            return 46;
+        }
+        return 13;
+    }
+
+    private static boolean isStableMqttServiceStatus(String status) {
+        return "running".equals(status)
+                || "stopped".equals(status)
+                || "paused".equals(status);
     }
 
     private static int effectivePort(URL url) {

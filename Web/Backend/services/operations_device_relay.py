@@ -33,6 +33,7 @@ ALLOWED_DEVICE_TASK_CAPABILITIES = {
     "ops.diagnostics.request": "ops.jobs.create",
     "ops.flow.cancel": "ops.jobs.create",
     "ops.messaging.reconnect": "ops.jobs.create",
+    "ops.service.restart": "ops.jobs.create",
     "ops.window.minimize": "ops.window.control",
     "ops.window.show": "ops.window.control",
 }
@@ -331,6 +332,8 @@ class OperationsDeviceRelayService:
             raise DeviceRelayError("task_payload_not_allowed")
         if capability_id == "ops.application.restart" and payload:
             raise DeviceRelayError("application_restart_payload_not_allowed")
+        if capability_id == "ops.service.restart" and payload:
+            raise DeviceRelayError("mqtt_restart_payload_not_allowed")
         if any(name in payload for name in ("command", "executablePath", "shell", "script")):
             raise DeviceRelayError("task_payload_not_allowed")
         if capability_id == "ops.window.show" and payload:
@@ -448,6 +451,19 @@ class OperationsDeviceRelayService:
                         or abs(receipt_signed_at - int(timestamp)) > 5):
                     raise DeviceRelayError("receipt_envelope_mismatch")
                 now = _iso()
+                existing_receipt = db.execute(
+                    """SELECT receipt_id FROM operations_task_receipts
+                       WHERE task_id=? AND host_id=? AND status=?
+                         AND relay_receipt_body=? AND relay_receipt_signature=?""",
+                    (task_id, host_id, status, receipt_body, receipt_signature),
+                ).fetchone()
+                if existing_receipt:
+                    return {
+                        "ok": True,
+                        "receiptId": existing_receipt["receipt_id"],
+                        "status": status,
+                        "deduplicated": True,
+                    }, 200
                 db.execute(
                     """INSERT INTO operations_task_receipts
                        (receipt_id, task_id, host_id, status, evidence, created_at,

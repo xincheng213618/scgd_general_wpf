@@ -105,7 +105,10 @@ on the desktop. Device tasks are limited to empty-payload show/minimize actions
 for the current ColorVision main window, an empty-payload recovery of the current
 configured message connection and subscriptions, an empty-payload cancellation
 request for the active primary flow, an empty-payload restart of the current
-ColorVision application, and a bounded diagnostic request. Application restart
+ColorVision application, an empty-payload restart of the fixed local Mosquitto
+service, and a bounded diagnostic request. The Mosquitto target is injected by
+the desktop after it rechecks an idle flow and applicable service state; devices
+cannot submit a service name or maintenance parameters. Application restart
 uses a signed accepted receipt before shutdown and a final signed receipt from
 the replacement process after persistent handoff; window handles, titles,
 process or program selectors, flow or node selectors, endpoints, topics,

@@ -130,6 +130,7 @@ namespace ColorVision.UI.Desktop.Operations
                 if (IsRunning)
                     throw new InvalidOperationException("Configure the Operations MQTT restart controller before starting the secure host.");
                 _mqttRestartController = controller;
+                _relay.ConfigureMqttRestartController(controller);
             }
         }
 
@@ -276,13 +277,23 @@ namespace ColorVision.UI.Desktop.Operations
         {
             try
             {
+                OperationsServiceHealthReport serviceHealth;
+                try
+                {
+                    serviceHealth = _serviceHealthProvider.Capture();
+                }
+                catch
+                {
+                    serviceHealth = OperationsServiceHealthReport.CreateUnavailable();
+                }
                 return OperationsLiveMonitorSnapshotFactory.Create(
                     _flowRuntimeStatusProvider.Capture(),
                     _runtimePerformanceProvider.Capture(),
                     _alerts.GetRecent(),
                     _deviceHealthProvider.Capture(),
                     messageChannel: _messageChannelHealthProvider.Capture(),
-                    applicationRecovery: WindowsApplicationRestartRegistration.CaptureStatus());
+                    applicationRecovery: WindowsApplicationRestartRegistration.CaptureStatus(),
+                    serviceHealth: serviceHealth);
             }
             catch
             {

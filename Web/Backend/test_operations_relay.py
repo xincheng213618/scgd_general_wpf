@@ -350,6 +350,7 @@ class OperationsRelayTests(unittest.TestCase):
             ("ops.messaging.reconnect", "reconnect-message-channel"),
             ("ops.flow.cancel", "cancel-current-flow"),
             ("ops.application.restart", "restart-application"),
+            ("ops.service.restart", "restart-mqtt-service"),
         ):
             body = self.json_bytes({
                 "hostId": identity["host_id"],
@@ -434,6 +435,148 @@ class OperationsRelayTests(unittest.TestCase):
             "application_restart_payload_not_allowed",
         )
 
+        for index, payload in enumerate((
+            {"serviceId": "mosquitto"},
+            {"command": "restart"},
+            {"path": "another-service"},
+        )):
+            mqtt_restart_body = self.json_bytes({
+                "hostId": identity["host_id"],
+                "capabilityId": "ops.service.restart",
+                "payload": payload,
+                "idempotencyKey": f"mqtt-restart-with-payload-{index}",
+            })
+            mqtt_restart_rejected = self.client.post(
+                path,
+                data=mqtt_restart_body,
+                content_type="application/json",
+                headers=self.device_headers(identity, "POST", path, mqtt_restart_body),
+            )
+            self.assertEqual(mqtt_restart_rejected.status_code, 400)
+            self.assertEqual(
+                mqtt_restart_rejected.get_json()["error"],
+                "mqtt_restart_payload_not_allowed",
+            )
+
+    def test_device_relay_mqtt_restart_is_idempotent_and_rejects_conflicts(self):
+        identity = self.device_relay_identity()
+        self.assertEqual(self.sync_device_relay(identity).status_code, 200)
+        path = "/api/ops/v1/device-relay/tasks"
+        body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.service.restart",
+            "payload": {},
+            "idempotencyKey": "restart-mqtt-idempotent",
+            "ttlSeconds": 300,
+        })
+
+        created = self.client.post(
+            path,
+            data=body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, body),
+        )
+        self.assertEqual(created.status_code, 202)
+        task_id = created.get_json()["taskId"]
+
+        duplicate = self.client.post(
+            path,
+            data=body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, body),
+        )
+        self.assertEqual(duplicate.status_code, 200)
+        self.assertTrue(duplicate.get_json()["deduplicated"])
+        self.assertEqual(duplicate.get_json()["taskId"], task_id)
+
+        conflicting_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.service.restart",
+            "payload": {},
+            "idempotencyKey": "restart-mqtt-idempotent",
+            "ttlSeconds": 600,
+        })
+        conflict = self.client.post(
+            path,
+            data=conflicting_body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, conflicting_body),
+        )
+        self.assertEqual(conflict.status_code, 409)
+        self.assertEqual(conflict.get_json()["error"], "idempotency_conflict")
+
+    def test_host_signed_terminal_receipt_retry_is_idempotent(self):
+        identity = self.device_relay_identity()
+        self.assertEqual(self.sync_device_relay(identity).status_code, 200)
+        task_path = "/api/ops/v1/device-relay/tasks"
+        task_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.service.restart",
+            "payload": {},
+            "idempotencyKey": "restart-mqtt-receipt-retry",
+        })
+        created = self.client.post(
+            task_path,
+            data=task_body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", task_path, task_body),
+        )
+        self.assertEqual(created.status_code, 202)
+        task_id = created.get_json()["taskId"]
+
+        receipt_path = (
+            f"/api/ops/v1/device-relay/hosts/{identity['host_id']}"
+            f"/tasks/{task_id}/receipts"
+        )
+        signed_at = int(datetime.now(timezone.utc).timestamp())
+        evidence = {"evidenceId": "servicehost:request-1"}
+        receipt_envelope_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "taskId": task_id,
+            "idempotencyKey": "restart-mqtt-receipt-retry",
+            "status": "completed",
+            "evidence": evidence,
+            "signedAt": signed_at,
+        }).decode("utf-8")
+        receipt_body = self.json_bytes({
+            "status": "completed",
+            "evidence": evidence,
+            "receiptEnvelope": self.host_envelope(
+                identity, "colorvision-relay-receipt-v1", receipt_envelope_body
+            ),
+        })
+        headers = self.host_headers(
+            identity, "POST", receipt_path, receipt_body, timestamp=signed_at
+        )
+
+        first = self.client.post(
+            receipt_path, data=receipt_body, content_type="application/json", headers=headers
+        )
+        self.assertEqual(first.status_code, 201)
+        first_receipt_id = first.get_json()["receiptId"]
+
+        retry_headers = self.host_headers(
+            identity, "POST", receipt_path, receipt_body, timestamp=signed_at
+        )
+        retry = self.client.post(
+            receipt_path,
+            data=receipt_body,
+            content_type="application/json",
+            headers=retry_headers,
+        )
+        self.assertEqual(retry.status_code, 200)
+        self.assertTrue(retry.get_json()["deduplicated"])
+        self.assertEqual(retry.get_json()["receiptId"], first_receipt_id)
+
+        with self.cache.get_db() as db:
+            self.assertEqual(
+                db.execute(
+                    "SELECT COUNT(*) FROM operations_task_receipts WHERE task_id=?",
+                    (task_id,),
+                ).fetchone()[0],
+                1,
+            )
+
     @staticmethod
     def json_bytes(value):
         return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -480,6 +623,7 @@ class OperationsRelayTests(unittest.TestCase):
             "ops.messaging.reconnect",
             "ops.flow.cancel",
             "ops.application.restart",
+            "ops.service.restart",
             "ops.diagnostics.request",
         ]
         snapshot = {"isRunning": True, "mainWindow": {"state": "Normal"}}
@@ -533,8 +677,9 @@ class OperationsRelayTests(unittest.TestCase):
             method.upper(), path, timestamp, nonce, hashlib.sha256(body).hexdigest()
         )).encode("utf-8")
 
-    def host_headers(self, identity, method, path, body):
-        timestamp = str(int(datetime.now(timezone.utc).timestamp()))
+    def host_headers(self, identity, method, path, body, timestamp=None):
+        timestamp = str(timestamp if timestamp is not None else int(
+            datetime.now(timezone.utc).timestamp()))
         nonce = uuid.uuid4().hex
         signature = identity["host_key"].sign(
             self.signed_canonical(method, path, timestamp, nonce, body),

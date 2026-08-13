@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import java.net.URL;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -37,7 +38,7 @@ public class OperationsRelayPolicyTest {
     }
 
     @Test
-    public void remoteTaskCatalogAllowsOnlyTheSixBoundedIntents() {
+    public void remoteTaskCatalogAllowsOnlyTheSevenBoundedIntents() {
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
                 OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW));
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
@@ -47,10 +48,48 @@ public class OperationsRelayPolicyTest {
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
                 OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL));
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
+                OperationsRelayPolicy.CAPABILITY_RESTART_MQTT));
+        assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
                 OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW));
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
                 OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION));
-        assertFalse(OperationsRelayPolicy.isAllowedTaskCapability("ops.service.restart"));
         assertFalse(OperationsRelayPolicy.isAllowedTaskCapability("cmd.exe"));
+    }
+
+    @Test
+    public void mqttRestartRequiresFreshIdleHostAndMaintainableFixedService() {
+        assertTrue(OperationsRelayPolicy.canRestartMqttService(
+                true, true, true, false, true, "running", true));
+        assertTrue(OperationsRelayPolicy.canRestartMqttService(
+                true, true, true, false, true, "stopped", true));
+        assertTrue(OperationsRelayPolicy.canRestartMqttService(
+                true, true, true, false, true, "paused", true));
+
+        assertFalse(OperationsRelayPolicy.canRestartMqttService(
+                false, true, true, false, true, "running", true));
+        assertFalse(OperationsRelayPolicy.canRestartMqttService(
+                true, false, true, false, true, "running", true));
+        assertFalse(OperationsRelayPolicy.canRestartMqttService(
+                true, true, false, false, true, "running", true));
+        assertFalse(OperationsRelayPolicy.canRestartMqttService(
+                true, true, true, true, true, "running", true));
+        assertFalse(OperationsRelayPolicy.canRestartMqttService(
+                true, true, true, false, false, "running", true));
+        assertFalse(OperationsRelayPolicy.canRestartMqttService(
+                true, true, true, false, true, "running", false));
+        assertFalse(OperationsRelayPolicy.canRestartMqttService(
+                true, true, true, false, true, "not_applicable", true));
+        assertFalse(OperationsRelayPolicy.canRestartMqttService(
+                true, true, true, false, true, "start_pending", true));
+    }
+
+    @Test
+    public void mqttRestartAllowsTheServiceHostTimeoutWithoutChangingOtherPolling() {
+        assertEquals(61, OperationsRelayPolicy.remoteTaskPollingAttempts(
+                OperationsRelayPolicy.CAPABILITY_RESTART_MQTT));
+        assertEquals(46, OperationsRelayPolicy.remoteTaskPollingAttempts(
+                OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION));
+        assertEquals(13, OperationsRelayPolicy.remoteTaskPollingAttempts(
+                OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW));
     }
 }

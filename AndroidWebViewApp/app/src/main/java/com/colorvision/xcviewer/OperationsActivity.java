@@ -98,6 +98,7 @@ public class OperationsActivity extends Activity {
     private Button dashboardRecoveryStatus;
     private Button dashboardCancelFlowButton;
     private Button dashboardRestartApplicationButton;
+    private Button remoteRestartMqttButton;
     private boolean dashboardFlowAvailable;
     private boolean dashboardFlowActive;
     private boolean dashboardFlowCancelAvailable;
@@ -448,6 +449,8 @@ public class OperationsActivity extends Activity {
                 capabilities, OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW);
         boolean canRecoverMessageChannel = contains(
                 capabilities, OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL);
+        boolean canRestartMqtt = contains(
+                capabilities, OperationsRelayPolicy.CAPABILITY_RESTART_MQTT);
         boolean canCancelFlow = contains(capabilities, OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW);
         boolean canRestartApplication = contains(
                 capabilities, OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION);
@@ -475,10 +478,11 @@ public class OperationsActivity extends Activity {
             runRemoteTask(OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS, payload);
         });
         diagnostics.setEnabled(canRequestDiagnostics);
-        Button recoverMessageChannel = dashboardButton("恢复消息通道",
-                v -> confirmRemoteMessageChannelRecovery());
-        recoverMessageChannel.setEnabled(canRecoverMessageChannel);
-        addDashboardActionRow(diagnostics, recoverMessageChannel);
+        Button messageActions = dashboardButton("消息处置",
+                v -> showLatestRemoteMonitorDetail("message"));
+        messageActions.setEnabled(monitor != null
+                && (canRecoverMessageChannel || canRestartMqtt));
+        addDashboardActionRow(diagnostics, messageActions);
         dashboardCancelFlowButton = dashboardButton(
                 "取消检测（读取中）", v -> confirmCancelCurrentFlow());
         dashboardCancelFlowButton.setEnabled(false);
@@ -579,12 +583,24 @@ public class OperationsActivity extends Activity {
 
     private void showRemoteMonitorDetail(String section, JSONObject monitor) {
         showingDashboardSummary = false;
+        remoteRestartMqttButton = null;
         progress.setVisibility(View.GONE);
         title.setText(remoteMonitorTitle(section));
         state.setText("电脑签名远程状态");
         details.setText(formatRemoteMonitorSection(section, monitor)
                 + "\n\n该摘要由电脑证书签名，手机按配对证书指纹核验后展示；固定站点无法修改或伪造。 ");
         actions.removeAllViews();
+        if ("message".equals(section)) {
+            Button recoverMessageChannel = dashboardButton("恢复消息通道",
+                    v -> confirmRemoteMessageChannelRecovery());
+            recoverMessageChannel.setEnabled(isRemoteCapabilityAvailable(
+                    OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL));
+            remoteRestartMqttButton = dashboardButton("重启 MQTT",
+                    v -> confirmRemoteMqttRestart());
+            remoteRestartMqttButton.setEnabled(canRestartRemoteMqttService(
+                    lastRelaySnapshotResponse));
+            addDashboardActionRow(recoverMessageChannel, remoteRestartMqttButton);
+        }
         addDashboardActionRow(
                 dashboardButton("刷新远程状态", v -> refreshRemoteMonitorDetail(section)),
                 dashboardButton("返回运维概览", v -> showCurrentDashboard()));
@@ -626,6 +642,29 @@ public class OperationsActivity extends Activity {
         return snapshot == null ? null : snapshot.optJSONObject("monitor");
     }
 
+    private boolean isRemoteCapabilityAvailable(String capabilityId) {
+        JSONObject host = lastRelaySnapshotResponse == null
+                ? null : lastRelaySnapshotResponse.optJSONObject("host");
+        return host != null && contains(host.optJSONArray("capabilities"), capabilityId);
+    }
+
+    private boolean canRestartRemoteMqttService(JSONObject response) {
+        JSONObject host = response == null ? null : response.optJSONObject("host");
+        JSONObject monitor = remoteMonitor(response);
+        JSONObject flow = monitor == null ? null : monitor.optJSONObject("flow");
+        JSONObject mqttService = monitor == null ? null : monitor.optJSONObject("mqttService");
+        return OperationsRelayPolicy.canRestartMqttService(
+                host != null && contains(host.optJSONArray("capabilities"),
+                        OperationsRelayPolicy.CAPABILITY_RESTART_MQTT),
+                host != null && OperationsRelayPolicy.isHostFresh(
+                        host.optLong("signedAt", 0L), System.currentTimeMillis()),
+                flow != null && flow.optBoolean("available", false),
+                flow != null && flow.optBoolean("isActive", false),
+                mqttService != null && mqttService.optBoolean("available", false),
+                mqttService == null ? "unknown" : mqttService.optString("status", "unknown"),
+                mqttService != null && mqttService.optBoolean("maintenanceSupported", false));
+    }
+
     private String remoteMonitorTitle(String section) {
         switch (section) {
             case "flow": return "远程检测状态";
@@ -649,7 +688,10 @@ public class OperationsActivity extends Activity {
                 return payload == null ? "当前无法读取检测设备汇总。" : formatDeviceHealth(payload);
             case "message":
                 payload = monitor.optJSONObject("messageChannel");
-                return payload == null ? "当前无法读取消息通道状态。" : formatMessageChannelHealth(payload, true);
+                return (payload == null
+                        ? "当前无法读取消息通道状态。"
+                        : formatMessageChannelHealth(payload, true))
+                        + "\n\n" + formatRemoteMqttService(monitor.optJSONObject("mqttService"));
             case "alerts":
                 return formatRemoteAlertSummary(monitor.optJSONObject("alerts"));
             case "performance":
@@ -696,6 +738,23 @@ public class OperationsActivity extends Activity {
         return text.append("手机不能指定程序、路径、命令或启动参数。 ").toString();
     }
 
+    private String formatRemoteMqttService(JSONObject mqttService) {
+        if (mqttService == null || !mqttService.optBoolean("available", false)) {
+            return "MQTT 固定服务：签名状态暂不可用，远程重启已禁用。";
+        }
+        String status = mqttService.optString("status", "unknown");
+        StringBuilder text = new StringBuilder("MQTT 固定服务：")
+                .append(serviceStatusLabel(status));
+        if (mqttService.optBoolean("maintenanceSupported", false)
+                && ("running".equals(status) || "stopped".equals(status)
+                || "paused".equals(status))) {
+            text.append(" · 可受控重启");
+        } else {
+            text.append(" · 当前不提供远程重启");
+        }
+        return text.append("\n该状态独立于 ColorVision 消息连接和订阅状态。 ").toString();
+    }
+
     private void refreshRemoteDashboard() {
         progress.setVisibility(View.VISIBLE);
         state.setText("正在刷新远程中继状态…");
@@ -727,6 +786,27 @@ public class OperationsActivity extends Activity {
                 .setPositiveButton("确认恢复", (dialog, which) -> runRemoteTask(
                         OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL,
                         new JSONObject()))
+                .show();
+    }
+
+    private void confirmRemoteMqttRestart() {
+        if (!canRestartRemoteMqttService(lastRelaySnapshotResponse)) {
+            Toast.makeText(this,
+                    "电脑签名状态尚未确认固定 MQTT 服务可安全重启",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("远程重启 MQTT 服务？")
+                .setMessage("只会通过已配对电脑的 ColorVisionServiceHost 重启固定的本机 Mosquitto 服务。消息与检测设备通信会短暂中断并自动恢复；不会选择服务、地址、Topic、命令、路径或参数。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("确认重启", (dialog, which) -> {
+                    if (remoteRestartMqttButton != null) {
+                        remoteRestartMqttButton.setEnabled(false);
+                    }
+                    runRemoteTask(OperationsRelayPolicy.CAPABILITY_RESTART_MQTT,
+                            new JSONObject());
+                })
                 .show();
     }
 
@@ -778,8 +858,7 @@ public class OperationsActivity extends Activity {
             String idempotencyKey) throws Exception {
         JSONObject latest = null;
         String status = "queued";
-        int maximumAttempts = OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION.equals(capabilityId)
-                ? 46 : 13;
+        int maximumAttempts = OperationsRelayPolicy.remoteTaskPollingAttempts(capabilityId);
         for (int attempt = 0; attempt < maximumAttempts && !isFinishing(); attempt++) {
             latest = relayClient.getTask(taskId, idempotencyKey);
             JSONObject task = latest.optJSONObject("task");
@@ -829,6 +908,8 @@ public class OperationsActivity extends Activity {
                 state.setText("电脑主窗口已最小化");
             } else if (OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL.equals(capabilityId)) {
                 state.setText("电脑消息通道已就绪");
+            } else if (OperationsRelayPolicy.CAPABILITY_RESTART_MQTT.equals(capabilityId)) {
+                state.setText("MQTT 消息服务已远程重启");
             } else if (OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW.equals(capabilityId)) {
                 dashboardFlowCancelAvailable = false;
                 updateDashboardCancelFlowAction();
@@ -838,7 +919,9 @@ public class OperationsActivity extends Activity {
             } else {
                 state.setText("远程诊断请求已完成");
             }
-            details.setText("电脑已验证设备签名并完成请求，结果已写入运维审计。\n\n点击“刷新远程状态”可读取最新脱敏摘要。");
+            details.setText(OperationsRelayPolicy.CAPABILITY_RESTART_MQTT.equals(capabilityId)
+                    ? "电脑已通过固定白名单完成服务重启，结果已写入运维审计。消息连接与检测设备可能仍在恢复，请刷新“消息”状态确认连接和订阅。"
+                    : "电脑已验证设备签名并完成请求，结果已写入运维审计。\n\n点击“刷新远程状态”可读取最新脱敏摘要。");
         } else if ("awaiting_local_consent".equals(status)) {
             state.setText("诊断请求已到达电脑");
             details.setText("为避免远程静默取证，诊断包仍需电脑端本机同意后生成。请求身份、时间和状态已写入运维审计。");
@@ -847,8 +930,13 @@ public class OperationsActivity extends Activity {
                 dashboardFlowCancelAvailable = false;
                 updateDashboardCancelFlowAction();
             }
-            state.setText("电脑端未执行远程请求");
-            details.setText("请求已安全送达，但电脑端拒绝或执行失败。可刷新远程状态后重试；不会回退为任意命令执行。");
+            if (OperationsRelayPolicy.CAPABILITY_RESTART_MQTT.equals(capabilityId)) {
+                state.setText("电脑端未执行 MQTT 重启");
+                details.setText("固定服务不适用、检测状态发生变化，或 ColorVisionServiceHost 拒绝或执行失败。请求不会回退为任意命令执行。");
+            } else {
+                state.setText("电脑端未执行远程请求");
+                details.setText("请求已安全送达，但电脑端拒绝或执行失败。可刷新远程状态后重试；不会回退为任意命令执行。");
+            }
         } else if ("expired".equals(status)) {
             state.setText("远程请求已过期");
             details.setText("电脑未在 15 分钟有效期内领取该请求。配对资料仍然保留，可在电脑上线后重新提交。");
@@ -856,6 +944,10 @@ public class OperationsActivity extends Activity {
                 && OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION.equals(capabilityId)) {
             state.setText("重启已受理，等待电脑重新上线");
             details.setText("电脑已复核当前检测为空闲并开始固定重启。配对资料已保留，可稍后通过“最近远程请求”继续查看最终签名结果。");
+        } else if ("accepted".equals(status)
+                && OperationsRelayPolicy.CAPABILITY_RESTART_MQTT.equals(capabilityId)) {
+            state.setText("MQTT 重启已受理，等待服务恢复");
+            details.setText("电脑已复核固定服务与检测状态，并通过 ColorVisionServiceHost 开始执行。可稍后通过“最近远程请求”继续查看最终签名结果。");
         } else {
             state.setText("远程请求已安全排队");
             details.setText("电脑暂未返回最终结果。后台中继会在有效期内继续等待；稍后点击“最近远程请求”即可继续查看。");
@@ -1168,6 +1260,7 @@ public class OperationsActivity extends Activity {
         dashboardRecoveryStatus = null;
         dashboardCancelFlowButton = null;
         dashboardRestartApplicationButton = null;
+        remoteRestartMqttButton = null;
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;

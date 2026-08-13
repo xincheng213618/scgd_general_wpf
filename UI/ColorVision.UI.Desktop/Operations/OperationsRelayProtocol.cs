@@ -95,6 +95,7 @@ namespace ColorVision.UI.Desktop.Operations
                 "ops.window.minimize" => "ops.window.control",
                 "ops.messaging.reconnect" => "ops.jobs.create",
                 "ops.flow.cancel" => "ops.jobs.create",
+                "ops.service.restart" => "ops.jobs.create",
                 "ops.application.restart" => "ops.jobs.create",
                 "ops.diagnostics.request" => "ops.jobs.create",
                 _ => string.Empty,
@@ -159,6 +160,8 @@ namespace ColorVision.UI.Desktop.Operations
                     return Fail("message_reconnect_payload_not_allowed", out error);
                 if (task.CapabilityId == "ops.flow.cancel" && payload.EnumerateObject().Any())
                     return Fail("flow_cancel_payload_not_allowed", out error);
+                if (task.CapabilityId == "ops.service.restart" && payload.EnumerateObject().Any())
+                    return Fail("mqtt_restart_payload_not_allowed", out error);
                 if (task.CapabilityId == "ops.application.restart" && payload.EnumerateObject().Any())
                     return Fail("application_restart_payload_not_allowed", out error);
                 if (task.CapabilityId == "ops.diagnostics.request"

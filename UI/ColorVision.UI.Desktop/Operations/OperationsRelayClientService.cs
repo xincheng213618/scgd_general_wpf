@@ -19,6 +19,7 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly bool _signedDeviceRelay;
         private readonly HashSet<string> _processedTasks = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _processedIntentOutcomes = new(StringComparer.Ordinal);
+        private int _mqttRestartInFlight;
         private CancellationTokenSource? _cts;
         private Task? _loop;
         private Func<object>? _snapshotProvider;
@@ -27,6 +28,8 @@ namespace ColorVision.UI.Desktop.Operations
             UnavailableOperationsMessageChannelRecoveryController.Instance;
         private IOperationsFlowRuntimeController _flowRuntimeController =
             UnavailableOperationsFlowRuntimeController.Instance;
+        private IOperationsMqttRestartController _mqttRestartController =
+            UnavailableOperationsMqttRestartController.Instance;
         private IOperationsApplicationRestartController _applicationRestartController =
             UnavailableOperationsApplicationRestartController.Instance;
 
@@ -84,6 +87,15 @@ namespace ColorVision.UI.Desktop.Operations
             _flowRuntimeController = controller;
         }
 
+        public void ConfigureMqttRestartController(IOperationsMqttRestartController controller)
+        {
+            ArgumentNullException.ThrowIfNull(controller);
+            if (IsRunning)
+                throw new InvalidOperationException(
+                    "Configure the Operations MQTT restart controller before starting the relay.");
+            _mqttRestartController = controller;
+        }
+
         public void ConfigureApplicationRestartController(
             IOperationsApplicationRestartController controller)
         {
@@ -127,6 +139,8 @@ namespace ColorVision.UI.Desktop.Operations
                     if (_signedDeviceRelay)
                     {
                         await SyncSignedHostAsync(cancellationToken).ConfigureAwait(false);
+                        ReconcileInterruptedSignedMqttRestarts();
+                        await FlushSignedMqttRestartReceiptsAsync(cancellationToken).ConfigureAwait(false);
                         await FlushSignedApplicationRestartReceiptsAsync(cancellationToken).ConfigureAwait(false);
                         await ResumeSignedApplicationRestartsAsync(cancellationToken).ConfigureAwait(false);
                         await PollSignedTasksAsync(cancellationToken).ConfigureAwait(false);
@@ -185,7 +199,7 @@ namespace ColorVision.UI.Desktop.Operations
                 _monitorProvider?.Invoke());
             string appVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty;
             string[] capabilities =
-                ["ops.window.show", "ops.window.minimize", "ops.messaging.reconnect", "ops.flow.cancel", "ops.application.restart", "ops.diagnostics.request"];
+                ["ops.window.show", "ops.window.minimize", "ops.messaging.reconnect", "ops.flow.cancel", "ops.service.restart", "ops.application.restart", "ops.diagnostics.request"];
             long signedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             string snapshotBody = JsonSerializer.Serialize(new
             {
@@ -253,6 +267,12 @@ namespace ColorVision.UI.Desktop.Operations
                 {
                     status = "rejected";
                     evidence = new { error };
+                }
+                else if (verified!.CapabilityId == "ops.service.restart")
+                {
+                    await HandleSignedMqttRestartTaskAsync(verified, cancellationToken)
+                        .ConfigureAwait(false);
+                    continue;
                 }
                 else if (verified!.CapabilityId == "ops.application.restart")
                 {
@@ -366,6 +386,272 @@ namespace ColorVision.UI.Desktop.Operations
             }
         }
 
+        private async Task HandleSignedMqttRestartTaskAsync(
+            OperationsRelayVerifiedTask task,
+            CancellationToken cancellationToken)
+        {
+            OperationsJob? job;
+            bool acquiredExecution = false;
+            try
+            {
+                job = _workStore.CreateJob(
+                    "ops.service.restart",
+                    task.Device.DeviceId,
+                    "已配对手机明确确认远程恢复固定 MQTT 消息服务",
+                    JsonSerializer.SerializeToElement(new { serviceId = "mosquitto" }),
+                    task.IdempotencyKey,
+                    task.TaskId,
+                    task.IdempotencyKey);
+                if (job.CapabilityId != "ops.service.restart"
+                    || !string.Equals(job.RequestedByDeviceId, task.Device.DeviceId, StringComparison.Ordinal)
+                    || !string.Equals(job.SourceTaskId, task.TaskId, StringComparison.Ordinal)
+                    || !string.Equals(job.SourceIdempotencyKey, task.IdempotencyKey, StringComparison.Ordinal))
+                    throw new InvalidOperationException("mqtt_restart_source_task_conflict");
+                if (job.Status == "awaiting_mobile_approval")
+                    job = _workStore.DecideJob(
+                        job.JobId, task.Device.DeviceId, approved: true,
+                        "已配对手机已明确确认", task.IdempotencyKey);
+                if (job == null)
+                    throw new InvalidOperationException("mqtt_restart_job_transition_failed");
+            }
+            catch
+            {
+                await SendSignedTaskReceiptAsync(
+                    task.TaskId,
+                    "failed",
+                    new { evidenceId = "mqtt_restart:relay_execution_failed" },
+                    task.IdempotencyKey,
+                    cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            if (job.Status is "completed" or "failed")
+            {
+                await SendSignedMqttRestartFinalReceiptAsync(job, cancellationToken)
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            if (job.Status == "executing")
+            {
+                if (Volatile.Read(ref _mqttRestartInFlight) != 0)
+                    return;
+                OperationsJob? interrupted = _workStore.CompleteJob(
+                    job.JobId, false, "mqtt_restart:execution_interrupted_ambiguous");
+                if (interrupted != null)
+                {
+                    _workStore.RecordAudit(
+                        job.RequestedByDeviceId, "device", "relay.intent.execute",
+                        job.CapabilityId, "ambiguous", job.SourceIdempotencyKey!);
+                    job = interrupted;
+                }
+                await SendSignedMqttRestartFinalReceiptAsync(job, cancellationToken)
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            if (job.Status != "approved_mobile")
+            {
+                await SendSignedTaskReceiptAsync(
+                    task.TaskId,
+                    "failed",
+                    new { evidenceId = "mqtt_restart:invalid_job_state" },
+                    task.IdempotencyKey,
+                    cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
+            string? preconditionFailure = CaptureSignedMqttRestartPreconditionFailure();
+            OperationsJob? executing = _workStore.BeginExecution(job.JobId);
+            if (executing == null)
+            {
+                await SendSignedTaskReceiptAsync(
+                    task.TaskId,
+                    "failed",
+                    new { evidenceId = "mqtt_restart:job_execution_already_started" },
+                    task.IdempotencyKey,
+                    cancellationToken).ConfigureAwait(false);
+                return;
+            }
+            job = executing;
+
+            if (preconditionFailure != null)
+            {
+                OperationsJob? failed = _workStore.CompleteJob(job.JobId, false, preconditionFailure);
+                await SendSignedMqttRestartFinalReceiptAsync(failed ?? job, cancellationToken)
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            acquiredExecution = Interlocked.CompareExchange(ref _mqttRestartInFlight, 1, 0) == 0;
+            if (!acquiredExecution)
+            {
+                OperationsJob? failed = _workStore.CompleteJob(
+                    job.JobId, false, "mqtt_restart:already_in_progress");
+                await SendSignedMqttRestartFinalReceiptAsync(failed ?? job, cancellationToken)
+                    .ConfigureAwait(false);
+                return;
+            }
+
+            try
+            {
+                try
+                {
+                    await SendSignedTaskReceiptAsync(
+                        task.TaskId,
+                        "accepted",
+                        new { jobId = job.JobId, state = "restart_validated" },
+                        task.IdempotencyKey,
+                        cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    _workStore.CompleteJob(
+                        job.JobId, false, "mqtt_restart:acceptance_receipt_failed");
+                    return;
+                }
+
+                string? finalPreconditionFailure = CaptureSignedMqttRestartPreconditionFailure();
+                if (finalPreconditionFailure != null)
+                {
+                    OperationsJob? failed = _workStore.CompleteJob(
+                        job.JobId, false, finalPreconditionFailure);
+                    await SendSignedMqttRestartFinalReceiptAsync(failed ?? job, cancellationToken)
+                        .ConfigureAwait(false);
+                    return;
+                }
+
+                OperationsMqttRestartResult result;
+                try
+                {
+                    result = _mqttRestartController.Restart();
+                }
+                catch
+                {
+                    result = new OperationsMqttRestartResult(
+                        false, "mqtt_restart_controller_failed");
+                }
+
+                _workStore.RecordAudit(
+                    job.RequestedByDeviceId,
+                    "device",
+                    "relay.intent.execute",
+                    job.CapabilityId,
+                    result.Success ? "completed" : "failed",
+                    job.SourceIdempotencyKey!);
+                OperationsJob? completed = _workStore.CompleteJob(
+                    job.JobId, result.Success, result.EvidenceId);
+                await SendSignedMqttRestartFinalReceiptAsync(completed ?? job, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            finally
+            {
+                Volatile.Write(ref _mqttRestartInFlight, 0);
+            }
+        }
+
+        internal void ReconcileInterruptedSignedMqttRestarts()
+        {
+            if (Volatile.Read(ref _mqttRestartInFlight) != 0)
+                return;
+
+            foreach (OperationsJob job in _workStore.GetJobs().Where(item =>
+                item.CapabilityId == "ops.service.restart"
+                && item.Status == "executing"
+                && IsSafeRelayIdentifier(item.SourceTaskId)
+                && IsSafeRelayIdentifier(item.SourceIdempotencyKey)))
+            {
+                OperationsJob? failed = _workStore.CompleteJob(
+                    job.JobId, false, "mqtt_restart:execution_interrupted_ambiguous");
+                if (failed != null)
+                {
+                    _workStore.RecordAudit(
+                        job.RequestedByDeviceId, "device", "relay.intent.execute",
+                        job.CapabilityId, "ambiguous", job.SourceIdempotencyKey!);
+                }
+            }
+        }
+
+        internal static string? GetSignedMqttRestartPreconditionFailure(
+            OperationsLiveMonitorSnapshot? monitor)
+        {
+            if (monitor == null)
+                return "mqtt_restart:monitor_unavailable";
+            if (!monitor.Flow.Available)
+                return "mqtt_restart:flow_status_unavailable";
+            if (monitor.Flow.IsActive)
+                return "mqtt_restart:flow_active";
+            if (!monitor.MqttService.Available)
+                return "mqtt_restart:service_status_unavailable";
+            if (monitor.MqttService.Status == "not_applicable")
+                return "mqtt_restart:service_not_applicable";
+            if (monitor.MqttService.Status == "not_installed")
+                return "mqtt_restart:service_not_installed";
+            if (!monitor.MqttService.MaintenanceSupported)
+                return "mqtt_restart:maintenance_not_supported";
+            if (monitor.MqttService.Status is not ("running" or "stopped" or "paused"))
+                return "mqtt_restart:service_status_unstable";
+            return null;
+        }
+
+        private string? CaptureSignedMqttRestartPreconditionFailure()
+        {
+            try
+            {
+                return GetSignedMqttRestartPreconditionFailure(_monitorProvider?.Invoke());
+            }
+            catch
+            {
+                return "mqtt_restart:monitor_unavailable";
+            }
+        }
+
+        private async Task FlushSignedMqttRestartReceiptsAsync(
+            CancellationToken cancellationToken)
+        {
+            foreach (OperationsJob job in _workStore.GetJobs().Where(item =>
+                item.CapabilityId == "ops.service.restart"
+                && item.Status is "completed" or "failed"
+                && IsSafeRelayIdentifier(item.SourceTaskId)
+                && IsSafeRelayIdentifier(item.SourceIdempotencyKey)))
+            {
+                await SendSignedMqttRestartFinalReceiptAsync(job, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        private async Task SendSignedMqttRestartFinalReceiptAsync(
+            OperationsJob job,
+            CancellationToken cancellationToken)
+        {
+            string status = job.Status == "completed" ? "completed" : "failed";
+            if (!IsSafeRelayIdentifier(job.SourceTaskId)
+                || !IsSafeRelayIdentifier(job.SourceIdempotencyKey)
+                || _workStore.HasSentRelayRestartReceipt(
+                    job.SourceTaskId!, job.SourceIdempotencyKey!, status))
+                return;
+
+            await SendSignedTaskReceiptAsync(
+                job.SourceTaskId!,
+                status,
+                new
+                {
+                    jobId = job.JobId,
+                    evidenceId = string.IsNullOrWhiteSpace(job.ResultEvidenceId)
+                        ? "mqtt_restart:result_unavailable"
+                        : job.ResultEvidenceId,
+                },
+                job.SourceIdempotencyKey!,
+                cancellationToken).ConfigureAwait(false);
+            _workStore.RecordAudit(
+                "operations-relay",
+                "system",
+                "relay.restart.receipt",
+                job.SourceTaskId!,
+                status,
+                job.SourceIdempotencyKey!);
+        }
+
         private async Task HandleSignedApplicationRestartTaskAsync(
             OperationsRelayVerifiedTask task,
             CancellationToken cancellationToken)
@@ -381,6 +667,11 @@ namespace ColorVision.UI.Desktop.Operations
                     task.IdempotencyKey,
                     task.TaskId,
                     task.IdempotencyKey);
+                if (job.CapabilityId != "ops.application.restart"
+                    || !string.Equals(job.RequestedByDeviceId, task.Device.DeviceId, StringComparison.Ordinal)
+                    || !string.Equals(job.SourceTaskId, task.TaskId, StringComparison.Ordinal)
+                    || !string.Equals(job.SourceIdempotencyKey, task.IdempotencyKey, StringComparison.Ordinal))
+                    throw new InvalidOperationException("application_restart_source_task_conflict");
                 if (job.Status == "awaiting_mobile_approval")
                     job = _workStore.DecideJob(
                         job.JobId, task.Device.DeviceId, approved: true,
@@ -489,7 +780,8 @@ namespace ColorVision.UI.Desktop.Operations
             string status = job.Status == "completed" ? "completed" : "failed";
             if (!IsSafeRelayIdentifier(job.SourceTaskId)
                 || !IsSafeRelayIdentifier(job.SourceIdempotencyKey)
-                || _workStore.HasSentRelayRestartReceipt(job.SourceTaskId!, status))
+                || _workStore.HasSentRelayRestartReceipt(
+                    job.SourceTaskId!, job.SourceIdempotencyKey!, status))
                 return;
 
             await SendSignedTaskReceiptAsync(

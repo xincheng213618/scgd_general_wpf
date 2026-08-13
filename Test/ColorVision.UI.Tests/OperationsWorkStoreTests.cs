@@ -267,6 +267,62 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void RelayMqttRestartSourceIdentityAndTerminalResultSurviveProcessRestart()
+        {
+            string path = NewPath();
+            try
+            {
+                OperationsWorkStore firstStore = new(path);
+                OperationsJob job = firstStore.CreateJob(
+                    "ops.service.restart",
+                    "phone-1",
+                    "Restart fixed MQTT service",
+                    JsonSerializer.SerializeToElement(new { serviceId = "mosquitto" }),
+                    "mqtt-restart-idempotency",
+                    "mqtt-restart-task",
+                    "mqtt-restart-idempotency");
+                job = Assert.IsType<OperationsJob>(firstStore.DecideJob(
+                    job.JobId, "phone-1", true, "confirmed", "mqtt-restart-idempotency"));
+                job = Assert.IsType<OperationsJob>(firstStore.BeginExecution(job.JobId));
+                job = Assert.IsType<OperationsJob>(firstStore.CompleteJob(
+                    job.JobId, true, "servicehost:request-1"));
+
+                OperationsWorkStore reloadedStore = new(path);
+                OperationsJob reloaded = Assert.Single(reloadedStore.GetJobs());
+                Assert.Equal("completed", reloaded.Status);
+                Assert.Equal("mqtt-restart-task", reloaded.SourceTaskId);
+                Assert.Equal("mqtt-restart-idempotency", reloaded.SourceIdempotencyKey);
+                Assert.Equal("servicehost:request-1", reloaded.ResultEvidenceId);
+
+                OperationsJob deduplicated = reloadedStore.CreateJob(
+                    "ops.service.restart",
+                    "phone-1",
+                    "Restart fixed MQTT service",
+                    JsonSerializer.SerializeToElement(new { serviceId = "mosquitto" }),
+                    "mqtt-restart-idempotency",
+                    "mqtt-restart-task",
+                    "mqtt-restart-idempotency");
+                Assert.Equal(reloaded.JobId, deduplicated.JobId);
+                Assert.Equal("completed", deduplicated.Status);
+
+                OperationsJob replayedWithAnotherRelayTaskId = reloadedStore.CreateJob(
+                    "ops.service.restart",
+                    "phone-1",
+                    "Restart fixed MQTT service",
+                    JsonSerializer.SerializeToElement(new { serviceId = "mosquitto" }),
+                    "mqtt-restart-idempotency",
+                    "mqtt-restart-task-rewrapped",
+                    "mqtt-restart-idempotency");
+                Assert.Equal(reloaded.JobId, replayedWithAnotherRelayTaskId.JobId);
+                Assert.Single(reloadedStore.GetJobs());
+            }
+            finally
+            {
+                DeletePath(path);
+            }
+        }
+
+        [Fact]
         public void DeploymentReceiptAndSupportRequestAreBoundedAndAudited()
         {
             string path = NewPath();
