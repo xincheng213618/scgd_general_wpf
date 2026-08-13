@@ -693,6 +693,12 @@ public class OperationsActivity extends Activity {
             remoteRestartMqttButton.setEnabled(canRestartRemoteMqttService(
                     lastRelaySnapshotResponse));
             addDashboardActionRow(recoverMessageChannel, remoteRestartMqttButton);
+        } else if ("alerts".equals(section)) {
+            Button failureEvidence = dashboardButton("读取崩溃与卡死线索",
+                    v -> readRemoteFailureEvidence());
+            failureEvidence.setEnabled(canReadRemoteFailureEvidence(
+                    lastRelaySnapshotResponse));
+            addDashboardWideAction(failureEvidence);
         }
         addDashboardActionRow(
                 dashboardButton("刷新远程状态", v -> refreshRemoteMonitorDetail(section)),
@@ -756,6 +762,25 @@ public class OperationsActivity extends Activity {
                 mqttService != null && mqttService.optBoolean("available", false),
                 mqttService == null ? "unknown" : mqttService.optString("status", "unknown"),
                 mqttService != null && mqttService.optBoolean("maintenanceSupported", false));
+    }
+
+    private boolean canReadRemoteFailureEvidence(JSONObject response) {
+        JSONObject host = response == null ? null : response.optJSONObject("host");
+        return OperationsRelayPolicy.canReadFailureEvidence(
+                host != null && contains(host.optJSONArray("capabilities"),
+                        OperationsRelayPolicy.CAPABILITY_READ_FAILURE_EVIDENCE),
+                host != null && OperationsRelayPolicy.isHostFresh(
+                        host.optLong("signedAt", 0L), System.currentTimeMillis()));
+    }
+
+    private void readRemoteFailureEvidence() {
+        if (!canReadRemoteFailureEvidence(lastRelaySnapshotResponse)) {
+            Toast.makeText(this, "电脑签名状态已过期或未声明该能力，请先刷新远程状态",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        runRemoteTask(OperationsRelayPolicy.CAPABILITY_READ_FAILURE_EVIDENCE,
+                new JSONObject());
     }
 
     private String remoteMonitorTitle(String section) {
@@ -950,6 +975,7 @@ public class OperationsActivity extends Activity {
             String capabilityId,
             String idempotencyKey) throws Exception {
         JSONObject latest = null;
+        JSONObject latestTask = null;
         String status = "queued";
         int maximumAttempts = OperationsRelayPolicy.remoteTaskPollingAttempts(capabilityId);
         for (int attempt = 0; attempt < maximumAttempts && !isFinishing(); attempt++) {
@@ -958,6 +984,7 @@ public class OperationsActivity extends Activity {
             if (task == null) {
                 throw new IllegalStateException("invalid_relay_task_response");
             }
+            latestTask = task;
             status = effectiveRemoteTaskStatus(task);
             if (isRemoteTaskResultReady(status)) {
                 break;
@@ -966,22 +993,41 @@ public class OperationsActivity extends Activity {
                 Thread.sleep(2_000L);
             }
         }
+        String formattedResult = "";
+        if (OperationsRelayPolicy.CAPABILITY_READ_FAILURE_EVIDENCE.equals(capabilityId)
+                && ("completed".equals(status) || "failed".equals(status))) {
+            JSONObject receipt = latestRemoteTaskReceipt(latestTask);
+            JSONObject evidence = receipt == null ? null : receipt.optJSONObject("evidence");
+            if ("completed".equals(status)) {
+                OperationsFailureEvidence.Snapshot snapshot =
+                        OperationsFailureEvidence.parseStrictReceipt(evidence);
+                formattedResult = OperationsFailureEvidence.format(
+                        snapshot, shortTime(snapshot.latestEvidenceAt));
+            } else {
+                OperationsFailureEvidence.validateStrictErrorReceipt(evidence);
+            }
+        }
         String finalStatus = status;
-        runOnUiThread(() -> renderRemoteTaskStatus(capabilityId, finalStatus));
+        String finalFormattedResult = formattedResult;
+        runOnUiThread(() -> renderRemoteTaskStatus(
+                capabilityId, finalStatus, finalFormattedResult));
     }
 
     private String effectiveRemoteTaskStatus(JSONObject task) {
-        JSONArray receipts = task.optJSONArray("receipts");
-        if (receipts != null && receipts.length() > 0) {
-            JSONObject latest = receipts.optJSONObject(receipts.length() - 1);
-            if (latest != null) {
-                String receiptStatus = latest.optString("status", "");
-                if (!receiptStatus.isEmpty()) {
-                    return receiptStatus;
-                }
+        JSONObject latest = latestRemoteTaskReceipt(task);
+        if (latest != null) {
+            String receiptStatus = latest.optString("status", "");
+            if (!receiptStatus.isEmpty()) {
+                return receiptStatus;
             }
         }
         return "queued";
+    }
+
+    private JSONObject latestRemoteTaskReceipt(JSONObject task) {
+        JSONArray receipts = task == null ? null : task.optJSONArray("receipts");
+        return receipts == null || receipts.length() == 0
+                ? null : receipts.optJSONObject(receipts.length() - 1);
     }
 
     private boolean isRemoteTaskResultReady(String status) {
@@ -992,7 +1038,8 @@ public class OperationsActivity extends Activity {
                 || "awaiting_local_consent".equals(status);
     }
 
-    private void renderRemoteTaskStatus(String capabilityId, String status) {
+    private void renderRemoteTaskStatus(
+            String capabilityId, String status, String formattedResult) {
         progress.setVisibility(View.GONE);
         if ("completed".equals(status)) {
             if (OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW.equals(capabilityId)) {
@@ -1009,12 +1056,18 @@ public class OperationsActivity extends Activity {
                 state.setText("已向当前检测发送取消请求");
             } else if (OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION.equals(capabilityId)) {
                 state.setText("ColorVision 已远程重启并重新上线");
+            } else if (OperationsRelayPolicy.CAPABILITY_READ_FAILURE_EVIDENCE.equals(capabilityId)) {
+                state.setText("崩溃与卡死线索已刷新");
             } else {
                 state.setText("远程诊断请求已完成");
             }
-            details.setText(OperationsRelayPolicy.CAPABILITY_RESTART_MQTT.equals(capabilityId)
-                    ? "电脑已通过固定白名单完成服务重启，结果已写入运维审计。消息连接与检测设备可能仍在恢复，请刷新“消息”状态确认连接和订阅。"
-                    : "电脑已验证设备签名并完成请求，结果已写入运维审计。\n\n点击“刷新远程状态”可读取最新脱敏摘要。");
+            if (OperationsRelayPolicy.CAPABILITY_READ_FAILURE_EVIDENCE.equals(capabilityId)) {
+                details.setText(formattedResult);
+            } else {
+                details.setText(OperationsRelayPolicy.CAPABILITY_RESTART_MQTT.equals(capabilityId)
+                        ? "电脑已通过固定白名单完成服务重启，结果已写入运维审计。消息连接与检测设备可能仍在恢复，请刷新“消息”状态确认连接和订阅。"
+                        : "电脑已验证设备签名并完成请求，结果已写入运维审计。\n\n点击“刷新远程状态”可读取最新脱敏摘要。");
+            }
         } else if ("awaiting_local_consent".equals(status)) {
             state.setText("诊断请求已到达电脑");
             details.setText("为避免远程静默取证，诊断包仍需电脑端本机同意后生成。请求身份、时间和状态已写入运维审计。");
@@ -1026,6 +1079,9 @@ public class OperationsActivity extends Activity {
             if (OperationsRelayPolicy.CAPABILITY_RESTART_MQTT.equals(capabilityId)) {
                 state.setText("电脑端未执行 MQTT 重启");
                 details.setText("固定服务不适用、检测状态发生变化，或 ColorVisionServiceHost 拒绝或执行失败。请求不会回退为任意命令执行。");
+            } else if (OperationsRelayPolicy.CAPABILITY_READ_FAILURE_EVIDENCE.equals(capabilityId)) {
+                state.setText("电脑暂无法读取聚合线索");
+                details.setText("电脑当前无法读取最近 7 天的有界崩溃、卡死与本机转储聚合线索。配对资料已保留，可刷新远程状态后重试。");
             } else {
                 state.setText("电脑端未执行远程请求");
                 details.setText("请求已安全送达，但电脑端拒绝或执行失败。可刷新远程状态后重试；不会回退为任意命令执行。");
@@ -3965,41 +4021,10 @@ public class OperationsActivity extends Activity {
     }
 
     private String formatFailureEvidence(JSONObject payload) {
-        int windowDays = payload.optInt("windowDays", 7);
-        int failureEventCount = payload.optInt("failureEventCount", 0);
-        int crashCount = payload.optInt("crashCount", 0);
-        int hangCount = payload.optInt("hangCount", 0);
-        int runtimeCount = payload.optInt("managedRuntimeFailureCount", 0);
-        int werCount = payload.optInt("windowsErrorReportCount", 0);
-        int dumpCount = payload.optInt("dumpCount", 0);
-        StringBuilder text = new StringBuilder();
-        if (!payload.optBoolean("hasEvidence", false)) {
-            text.append("最近 ").append(windowDays).append(" 天未发现 ColorVision 崩溃、卡死或本机转储线索。");
-        } else {
-            text.append("最近 ").append(windowDays).append(" 天聚合线索")
-                    .append("\n失败事件：").append(failureEventCount).append(" 条")
-                    .append("\n应用崩溃：").append(crashCount).append(" 条")
-                    .append(" · 应用卡死：").append(hangCount).append(" 条")
-                    .append("\n.NET 运行时失败：").append(runtimeCount).append(" 条")
-                    .append(" · Windows 错误报告：").append(werCount).append(" 条")
-                    .append("\n本机转储：").append(dumpCount).append(" 个");
-            String latest = shortTime(payload.optString("latestEvidenceAt", ""));
-            if (!latest.isEmpty()) {
-                text.append("\n最近线索：").append(latest);
-            }
-            text.append("\n\n同一次故障可能留下多条事件和转储，因此计数不能直接当作故障次数。");
-        }
-        if (!payload.optBoolean("eventLogAvailable", false)) {
-            text.append("\n\nWindows 应用事件当前不可读取。");
-        }
-        if (!payload.optBoolean("dumpFolderAvailable", false)) {
-            text.append("\n本机转储目录当前不可读取。");
-        }
-        if (payload.optBoolean("eventScanLimited", false) || payload.optBoolean("dumpScanLimited", false)) {
-            text.append("\n扫描已达到安全上限，显示的是有界结果。");
-        }
-        text.append("\n\n只显示固定类别计数和聚合时间；不返回事件正文、文件名、路径、转储内容、进程标识、用户/机器信息或堆栈。");
-        return text.toString();
+        OperationsFailureEvidence.Snapshot snapshot =
+                OperationsFailureEvidence.fromLocalPayload(payload);
+        return OperationsFailureEvidence.format(
+                snapshot, shortTime(snapshot.latestEvidenceAt));
     }
 
     private void loadAndShareSafeDiagnostics() {
@@ -4185,6 +4210,9 @@ public class OperationsActivity extends Activity {
         if (message.contains("relay_response_too_large")
                 || message.contains("invalid_relay_task_response")) {
             return "远程中继响应不符合应用的安全边界，已停止处理。";
+        }
+        if (message.contains("invalid_failure_evidence_receipt")) {
+            return "电脑返回的聚合线索未通过精确安全校验，已阻止显示。";
         }
         if (message.contains("application_restart_flow_active")) {
             return "当前检测仍在执行，为避免中断检测，电脑端已拒绝重启。";

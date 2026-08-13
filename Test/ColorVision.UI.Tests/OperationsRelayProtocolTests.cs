@@ -446,6 +446,67 @@ public sealed class OperationsRelayProtocolTests
     }
 
     [Fact]
+    public void FailureEvidenceReadRequiresDiagnosticsScopeAndAnEmptySignedPayload()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"cv-relay-failures-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+            OperationsDeviceRegistry registry = new(Path.Combine(root, "devices.json"));
+            registry.Approve(
+                "device-1", "Test phone",
+                Convert.ToBase64String(key.ExportSubjectPublicKeyInfo()),
+                ["ops.diagnostics.read"]);
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            string body = JsonSerializer.Serialize(new
+            {
+                hostId = "host-1",
+                capabilityId = "ops.diagnostics.failures.read",
+                payload = new { },
+                idempotencyKey = "failure-evidence-1",
+                ttlSeconds = 300,
+            });
+            OperationsRelayDeviceTask task = CreateTask(
+                key, body, "ops.diagnostics.failures.read", now, now.AddMinutes(5));
+
+            Assert.True(OperationsRelayProtocol.TryVerifyDeviceTask(
+                task, "host-1", registry, now,
+                out OperationsRelayVerifiedTask? verified, out string error), error);
+            Assert.NotNull(verified);
+            Assert.Equal("failure-evidence-1", verified.IdempotencyKey);
+
+            OperationsDeviceRegistry insufficientRegistry =
+                new(Path.Combine(root, "insufficient-devices.json"));
+            insufficientRegistry.Approve(
+                "device-1", "Test phone",
+                Convert.ToBase64String(key.ExportSubjectPublicKeyInfo()),
+                ["ops.jobs.create"]);
+            Assert.False(OperationsRelayProtocol.TryVerifyDeviceTask(
+                task, "host-1", insufficientRegistry, now, out _, out error));
+            Assert.Equal("device_scope_required", error);
+
+            string payloadBody = JsonSerializer.Serialize(new
+            {
+                hostId = "host-1",
+                capabilityId = "ops.diagnostics.failures.read",
+                payload = new { query = "Application" },
+                idempotencyKey = "failure-evidence-2",
+                ttlSeconds = 300,
+            });
+            OperationsRelayDeviceTask payloadTask = CreateTask(
+                key, payloadBody, "ops.diagnostics.failures.read", now, now.AddMinutes(5));
+            Assert.False(OperationsRelayProtocol.TryVerifyDeviceTask(
+                payloadTask, "host-1", registry, now, out _, out error));
+            Assert.Equal("failure_evidence_payload_not_allowed", error);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void MqttRestartPreconditionsRequireIdleFlowAndStableApplicableService()
     {
         OperationsLiveMonitorSnapshot allowed = new()
@@ -528,6 +589,19 @@ public sealed class OperationsRelayProtocolTests
         {
             Directory.Delete(root, recursive: true);
         }
+    }
+
+    [Fact]
+    public void SignedHostAdvertisesBoundedFailureEvidenceRead()
+    {
+        var method = typeof(OperationsRelayClientService).GetMethod(
+            "GetSignedHostCapabilities",
+            System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        string[] capabilities = Assert.IsType<string[]>(method.Invoke(null, null));
+
+        Assert.Contains("ops.diagnostics.failures.read", capabilities);
+        Assert.Equal(capabilities.Length, capabilities.Distinct(StringComparer.Ordinal).Count());
     }
 
     private static string? GetSignedMqttRestartPreconditionFailure(

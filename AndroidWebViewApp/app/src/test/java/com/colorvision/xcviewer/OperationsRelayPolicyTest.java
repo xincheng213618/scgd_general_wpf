@@ -38,7 +38,7 @@ public class OperationsRelayPolicyTest {
     }
 
     @Test
-    public void remoteTaskCatalogAllowsOnlyTheSevenBoundedIntents() {
+    public void remoteTaskCatalogAllowsOnlyTheEightBoundedIntents() {
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
                 OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW));
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
@@ -53,7 +53,17 @@ public class OperationsRelayPolicyTest {
                 OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW));
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
                 OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION));
+        assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
+                OperationsRelayPolicy.CAPABILITY_READ_FAILURE_EVIDENCE));
         assertFalse(OperationsRelayPolicy.isAllowedTaskCapability("cmd.exe"));
+    }
+
+    @Test
+    public void failureEvidenceReadRequiresDeclaredCapabilityAndFreshSignedHost() {
+        assertTrue(OperationsRelayPolicy.canReadFailureEvidence(true, true));
+        assertFalse(OperationsRelayPolicy.canReadFailureEvidence(false, true));
+        assertFalse(OperationsRelayPolicy.canReadFailureEvidence(true, false));
+        assertFalse(OperationsRelayPolicy.canReadFailureEvidence(false, false));
     }
 
     @Test

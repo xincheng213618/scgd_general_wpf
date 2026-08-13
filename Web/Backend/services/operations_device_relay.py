@@ -27,7 +27,8 @@ from cryptography.x509.oid import NameOID
 SAFE_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 SAFE_NONCE = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
 RFC3339_TIMESTAMP = re.compile(
-    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$"
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?"
+    r"(?:Z|[+-](?:(?:0\d|1[0-7]):[0-5]\d|18:00))$"
 )
 ALLOWED_CLOCK_SKEW = timedelta(minutes=2)
 NONCE_LIFETIME = timedelta(minutes=5)
@@ -103,7 +104,8 @@ def _is_timezone_aware_iso(value) -> bool:
     normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
     try:
         parsed = datetime.fromisoformat(normalized)
-        return parsed.utcoffset() is not None
+        offset = parsed.utcoffset()
+        return offset is not None and abs(offset) <= timedelta(hours=18)
     except (TypeError, ValueError):
         return False
 
@@ -158,6 +160,9 @@ def _validate_failure_evidence_receipt(status: str, evidence: dict) -> None:
                 or (evidence["dumpCount"] == 0) != (dump_at is None)
                 or evidence["hasEvidence"] != (
                     evidence["failureEventCount"] > 0 or evidence["dumpCount"] > 0
+                )
+                or not evidence["hasEvidence"] and any(
+                    evidence[name] > 0 for name in FAILURE_EVIDENCE_COUNT_KEYS
                 )):
             raise DeviceRelayError("invalid_failure_evidence")
     elif status == "failed" and evidence != {

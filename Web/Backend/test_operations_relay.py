@@ -659,6 +659,10 @@ class OperationsRelayTests(unittest.TestCase):
             ("observedAt", "2026-08-13T12:00:00"),
             ("observedAt", "2026-08-13 12:00:00+00:00"),
             ("observedAt", "2026-W33-4T12:00:00+00:00"),
+            ("observedAt", "2026-08-13T12:00:00.1234567890Z"),
+            ("observedAt", "2026-08-13T12:00:00+00:99"),
+            ("observedAt", "2026-08-13T12:00:00+18:01"),
+            ("observedAt", "2026-08-13T12:00:00+19:00"),
         ):
             invalid = copy.deepcopy(valid)
             invalid[name] = value
@@ -696,6 +700,10 @@ class OperationsRelayTests(unittest.TestCase):
         evidence_without_counts["latestDumpAt"] = None
         evidence_without_counts["latestEvidenceAt"] = None
         invalid_values.append(evidence_without_counts)
+        category_without_total = copy.deepcopy(evidence_without_counts)
+        category_without_total["hasEvidence"] = False
+        category_without_total["crashCount"] = 1
+        invalid_values.append(category_without_total)
         event_count_without_time = copy.deepcopy(valid)
         event_count_without_time["latestEventAt"] = None
         invalid_values.append(event_count_without_time)

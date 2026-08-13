@@ -134,7 +134,6 @@ namespace ColorVision.UI.Desktop.Operations
             if (!snapshot.Available
                 || snapshot.WindowDays != 7
                 || snapshot.WindowStartedAt > snapshot.ObservedAt
-                || snapshot.ObservedAt - snapshot.WindowStartedAt != TimeSpan.FromDays(7)
                 || !ValidCount(snapshot.FailureEventCount)
                 || !ValidCount(snapshot.CrashCount)
                 || !ValidCount(snapshot.HangCount)
@@ -143,16 +142,10 @@ namespace ColorVision.UI.Desktop.Operations
                 || !ValidCount(snapshot.DumpCount))
                 return false;
 
-            int classifiedEventCount = snapshot.CrashCount
-                + snapshot.HangCount
-                + snapshot.ManagedRuntimeFailureCount
-                + snapshot.WindowsErrorReportCount;
-            if (classifiedEventCount != snapshot.FailureEventCount
-                || snapshot.HasEvidence != (snapshot.FailureEventCount > 0 || snapshot.DumpCount > 0)
+            if (snapshot.HasEvidence != (snapshot.FailureEventCount > 0 || snapshot.DumpCount > 0)
                 || (snapshot.FailureEventCount == 0) != (snapshot.LatestEventAt == null)
                 || (snapshot.DumpCount == 0) != (snapshot.LatestDumpAt == null)
-                || (!snapshot.EventLogAvailable && snapshot.FailureEventCount > 0)
-                || (!snapshot.DumpFolderAvailable && snapshot.DumpCount > 0))
+                || (!snapshot.HasEvidence && HasAnyCount(snapshot)))
                 return false;
 
             if (!InsideWindow(snapshot.LatestEventAt, snapshot)
@@ -166,6 +159,14 @@ namespace ColorVision.UI.Desktop.Operations
         }
 
         private static bool ValidCount(int count) => count is >= 0 and <= MaximumCount;
+
+        private static bool HasAnyCount(OperationsFailureEvidenceSnapshot snapshot) =>
+            snapshot.FailureEventCount > 0
+            || snapshot.CrashCount > 0
+            || snapshot.HangCount > 0
+            || snapshot.ManagedRuntimeFailureCount > 0
+            || snapshot.WindowsErrorReportCount > 0
+            || snapshot.DumpCount > 0;
 
         private static bool InsideWindow(
             DateTimeOffset? timestamp,

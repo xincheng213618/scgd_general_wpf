@@ -10,6 +10,7 @@ final class OperationsRelayPolicy {
     static final String CAPABILITY_CANCEL_FLOW = "ops.flow.cancel";
     static final String CAPABILITY_RESTART_APPLICATION = "ops.application.restart";
     static final String CAPABILITY_REQUEST_DIAGNOSTICS = "ops.diagnostics.request";
+    static final String CAPABILITY_READ_FAILURE_EVIDENCE = "ops.diagnostics.failures.read";
     static final long HOST_FRESH_MILLISECONDS = 180_000L;
     private static final long FUTURE_TOLERANCE_MILLISECONDS = 125_000L;
 
@@ -56,7 +57,8 @@ final class OperationsRelayPolicy {
                 || CAPABILITY_RESTART_MQTT.equals(capabilityId)
                 || CAPABILITY_CANCEL_FLOW.equals(capabilityId)
                 || CAPABILITY_RESTART_APPLICATION.equals(capabilityId)
-                || CAPABILITY_REQUEST_DIAGNOSTICS.equals(capabilityId);
+                || CAPABILITY_REQUEST_DIAGNOSTICS.equals(capabilityId)
+                || CAPABILITY_READ_FAILURE_EVIDENCE.equals(capabilityId);
     }
 
     static boolean isHostFresh(long signedAtSeconds, long nowMilliseconds) {
@@ -82,6 +84,10 @@ final class OperationsRelayPolicy {
                 && serviceAvailable
                 && maintenanceSupported
                 && isStableMqttServiceStatus(serviceStatus);
+    }
+
+    static boolean canReadFailureEvidence(boolean capabilityAvailable, boolean hostFresh) {
+        return capabilityAvailable && hostFresh;
     }
 
     static int remoteTaskPollingAttempts(String capabilityId) {
