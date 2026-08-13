@@ -24,6 +24,7 @@ import androidx.core.content.ContextCompat;
 
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -414,6 +415,7 @@ public final class OperationsWatchService extends Service {
         checkInFlight = false;
         hasCompletedCheck = true;
         if (code.contains("unknown_or_revoked_device")) {
+            clearRemoteWindowSnapshotSecrets();
             preferences.recordOperationsWatchState(
                     OperationsWatchHistory.STATE_REVOKED, System.currentTimeMillis());
             preferences.markOperationsProfileRevoked();
@@ -444,6 +446,25 @@ public final class OperationsWatchService extends Service {
         relayClient = null;
         relayClientProfileKey = "";
         scheduleNext(retryDelay);
+    }
+
+    private void clearRemoteWindowSnapshotSecrets() {
+        String hostId = preferences.getOperationsHostId();
+        if (OperationsRelayPolicy.isSafeIdentifier(hostId)) {
+            try {
+                new OperationsE2eIdentity(hostId).delete();
+            } catch (Exception ignored) {
+            }
+        }
+        File directory = new File(getCacheDir(), "diagnostic-share");
+        File[] files = directory.listFiles((parent, name) ->
+                name.startsWith("ColorVision-remote-window-snapshot-")
+                        && name.endsWith(".jpg"));
+        if (files != null) {
+            for (File file : files) {
+                file.delete();
+            }
+        }
     }
 
     private static String errorCode(Exception exception) {

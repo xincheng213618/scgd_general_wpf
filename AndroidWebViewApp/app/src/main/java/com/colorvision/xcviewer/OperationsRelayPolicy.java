@@ -11,6 +11,8 @@ final class OperationsRelayPolicy {
     static final String CAPABILITY_RESTART_APPLICATION = "ops.application.restart";
     static final String CAPABILITY_REQUEST_DIAGNOSTICS = "ops.diagnostics.request";
     static final String CAPABILITY_READ_FAILURE_EVIDENCE = "ops.diagnostics.failures.read";
+    static final String CAPABILITY_CAPTURE_WINDOW_SNAPSHOT =
+            OperationsRemoteWindowSnapshot.CAPABILITY_ID;
     static final long HOST_FRESH_MILLISECONDS = 180_000L;
     private static final long FUTURE_TOLERANCE_MILLISECONDS = 125_000L;
 
@@ -58,7 +60,8 @@ final class OperationsRelayPolicy {
                 || CAPABILITY_CANCEL_FLOW.equals(capabilityId)
                 || CAPABILITY_RESTART_APPLICATION.equals(capabilityId)
                 || CAPABILITY_REQUEST_DIAGNOSTICS.equals(capabilityId)
-                || CAPABILITY_READ_FAILURE_EVIDENCE.equals(capabilityId);
+                || CAPABILITY_READ_FAILURE_EVIDENCE.equals(capabilityId)
+                || CAPABILITY_CAPTURE_WINDOW_SNAPSHOT.equals(capabilityId);
     }
 
     static boolean isHostFresh(long signedAtSeconds, long nowMilliseconds) {
@@ -90,12 +93,22 @@ final class OperationsRelayPolicy {
         return capabilityAvailable && hostFresh;
     }
 
+    static boolean canCaptureWindowSnapshot(
+            boolean capabilityAvailable, boolean hostFresh, int androidSdk) {
+        return capabilityAvailable
+                && hostFresh
+                && androidSdk >= OperationsRemoteWindowSnapshot.MINIMUM_ANDROID_SDK;
+    }
+
     static int remoteTaskPollingAttempts(String capabilityId) {
         if (CAPABILITY_RESTART_MQTT.equals(capabilityId)) {
             return 61;
         }
         if (CAPABILITY_RESTART_APPLICATION.equals(capabilityId)) {
             return 46;
+        }
+        if (CAPABILITY_CAPTURE_WINDOW_SNAPSHOT.equals(capabilityId)) {
+            return 31;
         }
         return 13;
     }

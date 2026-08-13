@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
-CURRENT_SCHEMA_VERSION = 14
+CURRENT_SCHEMA_VERSION = 15
 
 
 def ensure_schema_version(db: sqlite3.Connection) -> int:
@@ -73,6 +73,8 @@ def _run_migrations(db: sqlite3.Connection, from_version: int):
         _migration_v13(db)
     if from_version < 14:
         _migration_v14(db)
+    if from_version < 15:
+        _migration_v15(db)
 
 
 def _migration_v1(db: sqlite3.Connection):
@@ -421,6 +423,28 @@ def _migration_v14(db: sqlite3.Connection):
     _add_column_if_missing(db, "operations_hosts", "relay_snapshot_signature TEXT")
     _add_column_if_missing(db, "operations_task_receipts", "relay_receipt_body TEXT")
     _add_column_if_missing(db, "operations_task_receipts", "relay_receipt_signature TEXT")
+
+
+def _migration_v15(db: sqlite3.Connection):
+    """v15: Index short-lived encrypted window snapshots stored outside SQLite."""
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS operations_relay_window_snapshots (
+            task_id       TEXT PRIMARY KEY,
+            host_id       TEXT NOT NULL,
+            device_id     TEXT NOT NULL,
+            job_id        TEXT NOT NULL,
+            sealed_sha256 TEXT NOT NULL,
+            sealed_bytes  INTEGER NOT NULL,
+            captured_at   TEXT NOT NULL,
+            expires_at    TEXT NOT NULL,
+            created_at    TEXT NOT NULL,
+            FOREIGN KEY(task_id) REFERENCES operations_tasks(task_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_ops_relay_window_snapshots_expiry
+            ON operations_relay_window_snapshots(expires_at);
+        """
+    )
 
 
 def _add_column_if_missing(db: sqlite3.Connection, table: str, column_def: str):

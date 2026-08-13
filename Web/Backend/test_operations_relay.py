@@ -2,11 +2,13 @@ import copy
 import base64
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 import app as marketplace_app
 from cryptography import x509
@@ -889,6 +891,123 @@ class OperationsRelayTests(unittest.TestCase):
     def json_bytes(value):
         return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
+    @staticmethod
+    def p256_public_key_spki(key):
+        return base64.b64encode(key.public_key().public_bytes(
+            serialization.Encoding.DER,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        )).decode("ascii")
+
+    def create_window_snapshot_task(
+            self, identity, idempotency_key, *, payload=None, ttl=300):
+        recipient_key = ec.generate_private_key(ec.SECP256R1())
+        if payload is None:
+            payload = {
+                "scheme": "p256-hkdf-sha256-aes256gcm-v1",
+                "recipientPublicKeySpki": self.p256_public_key_spki(recipient_key),
+            }
+        body_value = {
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.window.snapshot.capture",
+            "payload": payload,
+            "idempotencyKey": idempotency_key,
+        }
+        if ttl is not None:
+            body_value["ttlSeconds"] = ttl
+        path = "/api/ops/v1/device-relay/tasks"
+        body = self.json_bytes(body_value)
+        response = self.client.post(
+            path,
+            data=body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, body),
+        )
+        return response, recipient_key
+
+    def window_snapshot_evidence(self, sealed, *, captured_at=None, expires_at=None):
+        captured_at = captured_at or datetime.now(timezone.utc)
+        expires_at = expires_at or captured_at + timedelta(minutes=4)
+        host_ephemeral_key = ec.generate_private_key(ec.SECP256R1())
+        return {
+            "kind": "window-snapshot-encrypted-v1",
+            "scheme": "p256-hkdf-sha256-aes256gcm-v1",
+            "jobId": uuid.uuid4().hex,
+            "hostEphemeralPublicKeySpki": self.p256_public_key_spki(host_ephemeral_key),
+            "sealedSha256": hashlib.sha256(sealed).hexdigest(),
+            "sealedBytes": len(sealed),
+            "capturedAt": captured_at.isoformat(),
+            "expiresAt": expires_at.isoformat(),
+        }
+
+    def upload_window_snapshot(
+            self, identity, task_id, idempotency_key, sealed, *, evidence=None,
+            signed_at=None, corrupt_envelope_signature=False,
+            corrupt_request_signature=False, extra_metadata=None):
+        evidence = copy.deepcopy(evidence or self.window_snapshot_evidence(sealed))
+        signed_at = signed_at if signed_at is not None else int(
+            datetime.now(timezone.utc).timestamp())
+        receipt_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "taskId": task_id,
+            "idempotencyKey": idempotency_key,
+            "status": "completed",
+            "evidence": evidence,
+            "signedAt": signed_at,
+        }).decode("utf-8")
+        envelope = self.host_envelope(
+            identity, "colorvision-relay-receipt-v1", receipt_body
+        )
+        if corrupt_envelope_signature:
+            envelope["signature"] = base64.b64encode(b"invalid").decode("ascii")
+        metadata = {
+            "status": "completed",
+            "evidence": evidence,
+            "receiptEnvelope": envelope,
+        }
+        if extra_metadata:
+            metadata.update(extra_metadata)
+        metadata_header = base64.b64encode(self.json_bytes(metadata)).decode("ascii")
+        path = (
+            f"/api/ops/v1/device-relay/hosts/{identity['host_id']}"
+            f"/tasks/{task_id}/window-snapshot"
+        )
+        signed_body = b"not-the-uploaded-ciphertext" if corrupt_request_signature else sealed
+        headers = self.host_headers(
+            identity, "POST", path, signed_body, timestamp=signed_at
+        )
+        headers["X-CV-Receipt-Metadata"] = metadata_header
+        response = self.client.post(
+            path,
+            data=sealed,
+            content_type="application/octet-stream",
+            headers=headers,
+        )
+        return response, metadata_header, evidence
+
+    def download_window_snapshot(self, identity, task_id, *, timestamp=None):
+        path = f"/api/ops/v1/device-relay/tasks/{task_id}/window-snapshot"
+        body = self.json_bytes({"hostId": identity["host_id"]})
+        return self.client.post(
+            path,
+            data=body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, body, timestamp=timestamp),
+        )
+
+    def consume_window_snapshot(
+            self, identity, task_id, sealed_sha256, *, timestamp=None):
+        path = f"/api/ops/v1/device-relay/tasks/{task_id}/window-snapshot/consume"
+        body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "sealedSha256": sealed_sha256,
+        })
+        return self.client.post(
+            path,
+            data=body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, body, timestamp=timestamp),
+        )
+
     def create_failure_evidence_task(self, identity, idempotency_key):
         path = "/api/ops/v1/device-relay/tasks"
         body = self.json_bytes({
@@ -1008,6 +1127,7 @@ class OperationsRelayTests(unittest.TestCase):
             "ops.flow.cancel",
             "ops.application.restart",
             "ops.service.restart",
+            "ops.window.snapshot.capture",
             "ops.diagnostics.failures.read",
             "ops.diagnostics.request",
         ]
@@ -1080,8 +1200,9 @@ class OperationsRelayTests(unittest.TestCase):
             "X-CV-Signature": base64.b64encode(signature).decode("ascii"),
         }
 
-    def device_headers(self, identity, method, path, body):
-        timestamp = str(int(datetime.now(timezone.utc).timestamp()))
+    def device_headers(self, identity, method, path, body, timestamp=None):
+        timestamp = str(timestamp if timestamp is not None else int(
+            datetime.now(timezone.utc).timestamp()))
         nonce = uuid.uuid4().hex
         signature = identity["device_key"].sign(
             self.signed_canonical(method, path, timestamp, nonce, body),

@@ -38,6 +38,7 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -110,6 +111,7 @@ public class OperationsActivity extends Activity {
     private boolean showingDashboardSummary;
     private boolean connectionHeartbeatInFlight;
     private int connectionRequestGeneration;
+    private int remoteTaskGeneration;
     private String pendingOperationsDestination = "";
 
     @Override
@@ -694,11 +696,15 @@ public class OperationsActivity extends Activity {
                     lastRelaySnapshotResponse));
             addDashboardActionRow(recoverMessageChannel, remoteRestartMqttButton);
         } else if ("alerts".equals(section)) {
-            Button failureEvidence = dashboardButton("读取崩溃与卡死线索",
+            Button failureEvidence = dashboardButton("崩溃线索",
                     v -> readRemoteFailureEvidence());
             failureEvidence.setEnabled(canReadRemoteFailureEvidence(
                     lastRelaySnapshotResponse));
-            addDashboardWideAction(failureEvidence);
+            Button windowSnapshot = dashboardButton("主窗口快照",
+                    v -> confirmRemoteWindowSnapshot());
+            windowSnapshot.setEnabled(canCaptureRemoteWindowSnapshot(
+                    lastRelaySnapshotResponse));
+            addDashboardActionRow(failureEvidence, windowSnapshot);
         }
         addDashboardActionRow(
                 dashboardButton("刷新远程状态", v -> refreshRemoteMonitorDetail(section)),
@@ -781,6 +787,32 @@ public class OperationsActivity extends Activity {
         }
         runRemoteTask(OperationsRelayPolicy.CAPABILITY_READ_FAILURE_EVIDENCE,
                 new JSONObject());
+    }
+
+    private boolean canCaptureRemoteWindowSnapshot(JSONObject response) {
+        JSONObject host = response == null ? null : response.optJSONObject("host");
+        return OperationsRelayPolicy.canCaptureWindowSnapshot(
+                host != null && contains(host.optJSONArray("capabilities"),
+                        OperationsRelayPolicy.CAPABILITY_CAPTURE_WINDOW_SNAPSHOT),
+                host != null && OperationsRelayPolicy.isHostFresh(
+                        host.optLong("signedAt", 0L), System.currentTimeMillis()),
+                Build.VERSION.SDK_INT);
+    }
+
+    private void confirmRemoteWindowSnapshot() {
+        if (!canCaptureRemoteWindowSnapshot(lastRelaySnapshotResponse)) {
+            String message = OperationsE2eIdentity.isSupported()
+                    ? "电脑签名状态已过期或未声明端到端快照能力，请先刷新远程状态"
+                    : "远程端到端快照需要 Android 12 或更高版本；现场局域网快照仍可使用";
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("采集远程主窗口快照？")
+                .setMessage("只会捕获当前 ColorVision 主窗口的一张 JPEG，不会捕获整个桌面或连续录屏；画面可能包含当前可见的业务图像。\n\n确认后，电脑会为本次快照端到端加密。固定站点只能短时保存最多 5 分钟的密文，无法查看画面；手机校验电脑签名、密文完整性、加密标签、JPEG 格式与尺寸后才会在应用内预览。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("确认采集", (dialog, which) -> runRemoteWindowSnapshotTask())
+                .show();
     }
 
     private String remoteMonitorTitle(String section) {
@@ -932,21 +964,62 @@ public class OperationsActivity extends Activity {
         showingDashboardSummary = false;
         progress.setVisibility(View.VISIBLE);
         state.setText("正在签名并提交远程请求…");
+        int generation = ++remoteTaskGeneration;
         executor.execute(() -> {
             try {
-                JSONObject created = relayClient.createTask(capabilityId, payload);
-                String taskId = created.optString("taskId", "");
-                String idempotencyKey = created.optString("requestIdempotencyKey", "");
-                if (!OperationsRelayPolicy.isSafeIdentifier(taskId)
-                        || !OperationsRelayPolicy.isSafeIdentifier(idempotencyKey)) {
-                    throw new IllegalStateException("invalid_relay_task_response");
-                }
-                preferences.saveOperationsRelayTask(taskId, capabilityId, idempotencyKey);
-                pollRemoteTask(taskId, capabilityId, idempotencyKey);
+                submitAndPollRemoteTask(capabilityId, payload, generation);
             } catch (Exception ex) {
-                runOnUiThread(() -> showTransientError(ex));
+                runOnUiThread(() -> {
+                    if (isRemoteTaskGenerationActive(generation)) {
+                        showTransientError(ex);
+                    }
+                });
             }
         });
+    }
+
+    private void runRemoteWindowSnapshotTask() {
+        if (!canCaptureRemoteWindowSnapshot(lastRelaySnapshotResponse)) {
+            Toast.makeText(this, "电脑签名状态已变化，请刷新远程状态后重试",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        showingDashboardSummary = false;
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在生成端到端加密身份并提交快照请求…");
+        int generation = ++remoteTaskGeneration;
+        executor.execute(() -> {
+            try {
+                OperationsE2eIdentity e2eIdentity = new OperationsE2eIdentity(
+                        preferences.getOperationsHostId());
+                JSONObject payload = new JSONObject();
+                payload.put("scheme", OperationsRemoteWindowSnapshot.SCHEME);
+                payload.put("recipientPublicKeySpki", e2eIdentity.getPublicKeySpki());
+                submitAndPollRemoteTask(
+                        OperationsRelayPolicy.CAPABILITY_CAPTURE_WINDOW_SNAPSHOT,
+                        payload,
+                        generation);
+            } catch (Exception ex) {
+                runOnUiThread(() -> {
+                    if (isRemoteTaskGenerationActive(generation)) {
+                        showTransientError(ex);
+                    }
+                });
+            }
+        });
+    }
+
+    private void submitAndPollRemoteTask(
+            String capabilityId, JSONObject payload, int generation) throws Exception {
+        JSONObject created = relayClient.createTask(capabilityId, payload);
+        String taskId = created.optString("taskId", "");
+        String idempotencyKey = created.optString("requestIdempotencyKey", "");
+        if (!OperationsRelayPolicy.isSafeIdentifier(taskId)
+                || !OperationsRelayPolicy.isSafeIdentifier(idempotencyKey)) {
+            throw new IllegalStateException("invalid_relay_task_response");
+        }
+        preferences.saveOperationsRelayTask(taskId, capabilityId, idempotencyKey);
+        pollRemoteTask(taskId, capabilityId, idempotencyKey, generation);
     }
 
     private void refreshRecentRemoteTask() {
@@ -961,11 +1034,16 @@ public class OperationsActivity extends Activity {
         showingDashboardSummary = false;
         progress.setVisibility(View.VISIBLE);
         state.setText("正在读取最近远程请求…");
+        int generation = ++remoteTaskGeneration;
         executor.execute(() -> {
             try {
-                pollRemoteTask(taskId, capabilityId, idempotencyKey);
+                pollRemoteTask(taskId, capabilityId, idempotencyKey, generation);
             } catch (Exception ex) {
-                runOnUiThread(() -> showTransientError(ex));
+                runOnUiThread(() -> {
+                    if (isRemoteTaskGenerationActive(generation)) {
+                        showTransientError(ex);
+                    }
+                });
             }
         });
     }
@@ -973,12 +1051,14 @@ public class OperationsActivity extends Activity {
     private void pollRemoteTask(
             String taskId,
             String capabilityId,
-            String idempotencyKey) throws Exception {
+            String idempotencyKey,
+            int generation) throws Exception {
         JSONObject latest = null;
         JSONObject latestTask = null;
         String status = "queued";
         int maximumAttempts = OperationsRelayPolicy.remoteTaskPollingAttempts(capabilityId);
-        for (int attempt = 0; attempt < maximumAttempts && !isFinishing(); attempt++) {
+        for (int attempt = 0; attempt < maximumAttempts
+                && isRemoteTaskGenerationActive(generation); attempt++) {
             latest = relayClient.getTask(taskId, idempotencyKey);
             JSONObject task = latest.optJSONObject("task");
             if (task == null) {
@@ -1007,10 +1087,158 @@ public class OperationsActivity extends Activity {
                 OperationsFailureEvidence.validateStrictErrorReceipt(evidence);
             }
         }
+        if (OperationsRelayPolicy.CAPABILITY_CAPTURE_WINDOW_SNAPSHOT.equals(capabilityId)
+                && ("completed".equals(status) || "failed".equals(status))) {
+            JSONObject receipt = latestRemoteTaskReceipt(latestTask);
+            JSONObject evidence = receipt == null ? null : receipt.optJSONObject("evidence");
+            if ("completed".equals(status)) {
+                OperationsRemoteWindowSnapshot.Receipt snapshotReceipt =
+                        OperationsRemoteWindowSnapshot.parseCompletedReceipt(
+                                evidence, System.currentTimeMillis());
+                downloadAndPreviewRemoteWindowSnapshot(
+                        taskId, idempotencyKey, snapshotReceipt, generation);
+                return;
+            }
+            OperationsRemoteWindowSnapshot.validateFailedReceipt(evidence);
+        }
         String finalStatus = status;
         String finalFormattedResult = formattedResult;
-        runOnUiThread(() -> renderRemoteTaskStatus(
-                capabilityId, finalStatus, finalFormattedResult));
+        runOnUiThread(() -> {
+            if (isRemoteTaskGenerationActive(generation)) {
+                renderRemoteTaskStatus(capabilityId, finalStatus, finalFormattedResult);
+            }
+        });
+    }
+
+    private boolean isRemoteTaskGenerationActive(int generation) {
+        return generation == remoteTaskGeneration && !isFinishing() && !isDestroyed();
+    }
+
+    private void downloadAndPreviewRemoteWindowSnapshot(
+            String taskId,
+            String idempotencyKey,
+            OperationsRemoteWindowSnapshot.Receipt receipt,
+            int generation) throws Exception {
+        if (!OperationsE2eIdentity.isSupported()) {
+            throw new UnsupportedOperationException("window_snapshot_e2e_requires_android_31");
+        }
+        String hostId = preferences.getOperationsHostId();
+        String deviceId = preferences.getOrCreateDeviceId();
+        OperationsE2eIdentity e2eIdentity = new OperationsE2eIdentity(hostId);
+        String recipientPublicKeySpki = e2eIdentity.getPublicKeySpki();
+        byte[] sealed = null;
+        byte[] sharedSecret = null;
+        byte[] plaintext = null;
+        Bitmap bitmap = null;
+        File file = null;
+        boolean handedToUi = false;
+        try {
+            sealed = relayClient.downloadWindowSnapshot(
+                    taskId, receipt.sealedBytes, receipt.sealedSha256);
+            sharedSecret = e2eIdentity.deriveSharedSecret(
+                    receipt.hostEphemeralPublicKeySpki);
+            plaintext = OperationsRemoteWindowSnapshot.decrypt(
+                    sealed,
+                    sharedSecret,
+                    receipt,
+                    hostId,
+                    deviceId,
+                    taskId,
+                    idempotencyKey,
+                    recipientPublicKeySpki);
+
+            BitmapFactory.Options bounds = new BitmapFactory.Options();
+            bounds.inJustDecodeBounds = true;
+            BitmapFactory.decodeByteArray(plaintext, 0, plaintext.length, bounds);
+            if (!"image/jpeg".equalsIgnoreCase(bounds.outMimeType)
+                    || bounds.outWidth < 1 || bounds.outHeight < 1
+                    || bounds.outWidth > 1280 || bounds.outHeight > 1280) {
+                throw new SecurityException("window_snapshot_dimensions_rejected");
+            }
+            bitmap = BitmapFactory.decodeByteArray(plaintext, 0, plaintext.length);
+            if (bitmap == null
+                    || bitmap.getWidth() != bounds.outWidth
+                    || bitmap.getHeight() != bounds.outHeight) {
+                throw new SecurityException("window_snapshot_format_rejected");
+            }
+
+            clearRemoteWindowSnapshotCache();
+            File directory = new File(getCacheDir(), "diagnostic-share");
+            if ((!directory.exists() && !directory.mkdirs()) || !directory.isDirectory()) {
+                throw new IllegalStateException("window_snapshot_cache_unavailable");
+            }
+            file = new File(directory,
+                    "ColorVision-remote-window-snapshot-" + taskId + ".jpg");
+            try (FileOutputStream output = new FileOutputStream(file, false)) {
+                output.write(plaintext);
+                output.flush();
+            }
+            Uri uri = FileProvider.getUriForFile(
+                    this, getPackageName() + ".fileprovider", file);
+
+            boolean consumed = true;
+            try {
+                relayClient.consumeWindowSnapshot(taskId, receipt.sealedSha256);
+            } catch (Exception ignored) {
+                consumed = false;
+            }
+            Bitmap previewBitmap = bitmap;
+            File previewFile = file;
+            Uri previewUri = uri;
+            boolean consumeConfirmed = consumed;
+            int plaintextBytes = plaintext.length;
+            runOnUiThread(() -> {
+                if (!isRemoteTaskGenerationActive(generation)) {
+                    previewBitmap.recycle();
+                    previewFile.delete();
+                    return;
+                }
+                showWindowSnapshotPreview(
+                        previewBitmap, previewUri, plaintextBytes, true, consumeConfirmed);
+            });
+            handedToUi = true;
+        } finally {
+            if (sealed != null) {
+                Arrays.fill(sealed, (byte) 0);
+            }
+            if (sharedSecret != null) {
+                Arrays.fill(sharedSecret, (byte) 0);
+            }
+            if (plaintext != null) {
+                Arrays.fill(plaintext, (byte) 0);
+            }
+            if (!handedToUi) {
+                if (bitmap != null) {
+                    bitmap.recycle();
+                }
+                if (file != null) {
+                    file.delete();
+                }
+            }
+        }
+    }
+
+    private void clearRemoteWindowSnapshotCache() {
+        File directory = new File(getCacheDir(), "diagnostic-share");
+        File[] files = directory.listFiles((parent, name) ->
+                name.startsWith("ColorVision-remote-window-snapshot-")
+                        && name.endsWith(".jpg"));
+        if (files == null) {
+            return;
+        }
+        for (File file : files) {
+            file.delete();
+        }
+    }
+
+    private void clearRemoteWindowSnapshotSecrets(String hostId) {
+        if (OperationsRelayPolicy.isSafeIdentifier(hostId)) {
+            try {
+                new OperationsE2eIdentity(hostId).delete();
+            } catch (Exception ignored) {
+            }
+        }
+        clearRemoteWindowSnapshotCache();
     }
 
     private String effectiveRemoteTaskStatus(JSONObject task) {
@@ -1058,6 +1286,8 @@ public class OperationsActivity extends Activity {
                 state.setText("ColorVision 已远程重启并重新上线");
             } else if (OperationsRelayPolicy.CAPABILITY_READ_FAILURE_EVIDENCE.equals(capabilityId)) {
                 state.setText("崩溃与卡死线索已刷新");
+            } else if (OperationsRelayPolicy.CAPABILITY_CAPTURE_WINDOW_SNAPSHOT.equals(capabilityId)) {
+                state.setText("远程主窗口快照已就绪");
             } else {
                 state.setText("远程诊断请求已完成");
             }
@@ -1082,6 +1312,9 @@ public class OperationsActivity extends Activity {
             } else if (OperationsRelayPolicy.CAPABILITY_READ_FAILURE_EVIDENCE.equals(capabilityId)) {
                 state.setText("电脑暂无法读取聚合线索");
                 details.setText("电脑当前无法读取最近 7 天的有界崩溃、卡死与本机转储聚合线索。配对资料已保留，可刷新远程状态后重试。");
+            } else if (OperationsRelayPolicy.CAPABILITY_CAPTURE_WINDOW_SNAPSHOT.equals(capabilityId)) {
+                state.setText("电脑暂无法生成远程快照");
+                details.setText("电脑没有生成可端到端加密的 ColorVision 主窗口快照。固定站点不会接收未加密画面；可刷新远程状态后重新采集。");
             } else {
                 state.setText("电脑端未执行远程请求");
                 details.setText("请求已安全送达，但电脑端拒绝或执行失败。可刷新远程状态后重试；不会回退为任意命令执行。");
@@ -1360,6 +1593,7 @@ public class OperationsActivity extends Activity {
 
     private void showRevokedProfile() {
         connectionRequestGeneration++;
+        clearRemoteWindowSnapshotSecrets(preferences.getOperationsHostId());
         preferences.markOperationsProfileRevoked();
         OperationsWatchService.stopForProfileRemoval(this);
         showError("配对授权已失效", "设备已被电脑端撤销，请重新配对。", this::clearProfile);
@@ -2168,19 +2402,35 @@ public class OperationsActivity extends Activity {
                 }
                 Uri uri = FileProvider.getUriForFile(
                         this, getPackageName() + ".fileprovider", file);
-                runOnUiThread(() -> showWindowSnapshotPreview(bitmap, uri, data.length));
+                runOnUiThread(() -> showWindowSnapshotPreview(
+                        bitmap, uri, data.length, false, true));
             } catch (Exception ex) {
                 runOnUiThread(() -> showTransientError(ex));
             }
         });
     }
 
-    private void showWindowSnapshotPreview(Bitmap bitmap, Uri uri, int sizeBytes) {
+    private void showWindowSnapshotPreview(
+            Bitmap bitmap,
+            Uri uri,
+            int sizeBytes,
+            boolean remote,
+            boolean consumeConfirmed) {
         progress.setVisibility(View.GONE);
         title.setText("主窗口安全快照");
-        state.setText("一次性证据已校验并从电脑端销毁");
-        details.setText("已读取 " + Math.max(1, Math.round(sizeBytes / 1024f))
-                + " KiB JPEG，仅包含采集时的 ColorVision 主窗口。当前预览副本位于 Android 应用缓存；请确认画面后再决定是否分享。");
+        state.setText(remote
+                ? "端到端加密快照已校验并预览"
+                : "一次性证据已校验并从电脑端销毁");
+        StringBuilder previewDetails = new StringBuilder("已读取 ")
+                .append(Math.max(1, Math.round(sizeBytes / 1024f)))
+                .append(" KiB JPEG，仅包含采集时的 ColorVision 主窗口。当前预览副本位于 Android 应用缓存；请确认画面后再决定是否分享。");
+        if (remote) {
+            previewDetails.append("\n\n图片在电脑端加密后才进入固定站点；固定站点只接触短时密文。");
+            previewDetails.append(consumeConfirmed
+                    ? " 密文消费确认已送达，固定站点副本已销毁。"
+                    : " 密文消费确认暂未送达，但不影响当前已验证预览；固定站点会在 5 分钟有效期结束时自动清理。");
+        }
+        details.setText(previewDetails.toString());
         actions.removeAllViews();
 
         ImageView preview = new ImageView(this);
@@ -2200,10 +2450,16 @@ public class OperationsActivity extends Activity {
         share.setOnClickListener(v -> shareWindowSnapshot(uri));
         actions.addView(share, actionParams());
 
-        Button jobs = new Button(this);
-        jobs.setText("返回作业与审批");
-        jobs.setOnClickListener(v -> showJobs());
-        actions.addView(jobs, actionParams());
+        Button back = new Button(this);
+        back.setText(remote ? "返回远程告警" : "返回作业与审批");
+        back.setOnClickListener(v -> {
+            if (remote) {
+                showLatestRemoteMonitorDetail("alerts");
+            } else {
+                showJobs();
+            }
+        });
+        actions.addView(back, actionParams());
     }
 
     private void shareWindowSnapshot(Uri uri) {
@@ -4125,8 +4381,9 @@ public class OperationsActivity extends Activity {
         lastRelaySnapshotResponse = null;
         dashboardVisible = false;
         OperationsWatchService.stopForProfileRemoval(this);
+        String hostId = preferences.getOperationsHostId();
+        clearRemoteWindowSnapshotSecrets(hostId);
         try {
-            String hostId = preferences.getOperationsHostId();
             if (!hostId.isEmpty()) {
                 new OperationsDeviceIdentity(hostId).delete();
             }
@@ -4214,6 +4471,21 @@ public class OperationsActivity extends Activity {
         if (message.contains("invalid_failure_evidence_receipt")) {
             return "电脑返回的聚合线索未通过精确安全校验，已阻止显示。";
         }
+        if (message.contains("window_snapshot_e2e_requires_android_31")) {
+            return "远程端到端快照需要 Android 12 或更高版本；现场局域网快照仍可使用。";
+        }
+        if (message.contains("invalid_window_snapshot_receipt")
+                || message.contains("invalid_window_snapshot_public_key")
+                || message.contains("invalid_window_snapshot_context")) {
+            return "电脑返回的远程快照收据未通过精确签名、时间或加密参数校验，已阻止下载。";
+        }
+        if (message.contains("window_snapshot_payload_not_allowed")) {
+            return "远程快照请求不符合固定端到端加密协议，已阻止提交。";
+        }
+        if (message.contains("window_snapshot_consumed")
+                || message.contains("window_snapshot_already_consumed")) {
+            return "这张远程快照已在手机成功读取并从固定站点销毁，请重新采集。";
+        }
         if (message.contains("application_restart_flow_active")) {
             return "当前检测仍在执行，为避免中断检测，电脑端已拒绝重启。";
         }
@@ -4256,7 +4528,9 @@ public class OperationsActivity extends Activity {
         if (message.contains("window_snapshot_read_failed")) {
             return "电脑端暂时无法读取主窗口快照，请重新申请。";
         }
-        if (message.contains("window_snapshot_hash_mismatch")) {
+        if (message.contains("window_snapshot_hash_mismatch")
+                || message.contains("window_snapshot_sealed_hash_mismatch")
+                || message.contains("window_snapshot_decryption_failed")) {
             return "主窗口快照完整性校验失败，已阻止预览。";
         }
         if (message.contains("window_snapshot_size_rejected")
@@ -4264,6 +4538,7 @@ public class OperationsActivity extends Activity {
             return "主窗口快照超出 1.5 MiB 安全上限，已阻止下载。";
         }
         if (message.contains("window_snapshot_type_rejected")
+                || message.contains("window_snapshot_encoding_rejected")
                 || message.contains("window_snapshot_format_rejected")
                 || message.contains("window_snapshot_dimensions_rejected")) {
             return "主窗口快照格式或尺寸不符合安全约束，已阻止预览。";
@@ -4352,6 +4627,7 @@ public class OperationsActivity extends Activity {
     @Override
     protected void onDestroy() {
         connectionRequestGeneration++;
+        remoteTaskGeneration++;
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         leaveSupportCenter();
         leaveLiveMonitor();

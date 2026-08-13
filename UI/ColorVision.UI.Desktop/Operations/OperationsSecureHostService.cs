@@ -48,6 +48,7 @@ namespace ColorVision.UI.Desktop.Operations
             _diagnosticBundles = new OperationsDiagnosticBundleService(_workStore);
             _windowSnapshots = new OperationsWindowSnapshotService();
             _relay = new OperationsRelayClientService(_identity, _registry, _workStore);
+            _relay.ConfigureWindowSnapshotService(_windowSnapshots);
             _runtimePerformanceProvider = new OperationsRuntimePerformanceService();
         }
 

@@ -72,6 +72,17 @@ namespace ColorVision.UI.Desktop.Operations
             }
         }
 
+        public OperationsWindowSnapshotResult CaptureInMemory()
+        {
+            lock (_syncRoot)
+            {
+                byte[] data = _captureProvider();
+                ValidateCapturedData(data);
+                DateTimeOffset createdAt = _clock();
+                return CreateResult(string.Empty, string.Empty, data, createdAt, includeData: true);
+            }
+        }
+
         public OperationsWindowSnapshotLookupStatus TryTake(string snapshotId, out OperationsWindowSnapshotResult? result)
         {
             result = null;

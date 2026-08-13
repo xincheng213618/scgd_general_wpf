@@ -353,6 +353,21 @@ class CacheManager:
             CREATE INDEX IF NOT EXISTS idx_ops_relay_nonces_expiry
                 ON operations_relay_nonces(expires_at);
 
+            CREATE TABLE IF NOT EXISTS operations_relay_window_snapshots (
+                task_id          TEXT PRIMARY KEY,
+                host_id          TEXT NOT NULL,
+                device_id        TEXT NOT NULL,
+                job_id           TEXT NOT NULL,
+                sealed_sha256    TEXT NOT NULL,
+                sealed_bytes     INTEGER NOT NULL,
+                captured_at      TEXT NOT NULL,
+                expires_at       TEXT NOT NULL,
+                created_at       TEXT NOT NULL,
+                FOREIGN KEY(task_id) REFERENCES operations_tasks(task_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_ops_relay_window_snapshots_expiry
+                ON operations_relay_window_snapshots(expires_at);
+
             -- Scheduled jobs: persistent job definitions
             CREATE TABLE IF NOT EXISTS scheduled_jobs (
                 id              TEXT PRIMARY KEY,

@@ -5,6 +5,7 @@ import android.util.Base64;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -60,13 +61,18 @@ final class OperationsRelayApiClient {
         if (!OperationsRelayPolicy.isAllowedTaskCapability(capabilityId)) {
             throw new SecurityException("task_capability_not_allowed");
         }
+        if (OperationsRelayPolicy.CAPABILITY_CAPTURE_WINDOW_SNAPSHOT.equals(capabilityId)) {
+            validateWindowSnapshotPayload(payload);
+        }
         JSONObject body = new JSONObject();
         body.put("hostId", hostId);
         body.put("capabilityId", capabilityId);
         body.put("payload", payload == null ? new JSONObject() : payload);
         String idempotencyKey = UUID.randomUUID().toString().replace("-", "");
         body.put("idempotencyKey", idempotencyKey);
-        body.put("ttlSeconds", 900);
+        body.put("ttlSeconds",
+                OperationsRelayPolicy.CAPABILITY_CAPTURE_WINDOW_SNAPSHOT.equals(capabilityId)
+                        ? 300 : 900);
         JSONObject response = post("/api/ops/v1/device-relay/tasks", body);
         response.put("requestIdempotencyKey", idempotencyKey);
         return response;
@@ -83,6 +89,88 @@ final class OperationsRelayApiClient {
                 post("/api/ops/v1/device-relay/tasks/" + taskId, body),
                 taskId,
                 expectedIdempotencyKey);
+    }
+
+    byte[] downloadWindowSnapshot(
+            String taskId, int expectedBytes, String expectedSha256) throws Exception {
+        if (!OperationsRelayPolicy.isSafeIdentifier(taskId)
+                || expectedBytes < OperationsRemoteWindowSnapshot.MINIMUM_SEALED_BYTES
+                || expectedBytes > OperationsRemoteWindowSnapshot.MAXIMUM_SEALED_BYTES
+                || expectedSha256 == null
+                || !expectedSha256.matches("[0-9a-f]{64}")) {
+            throw new SecurityException("invalid_window_snapshot_download_request");
+        }
+        String path = "/api/ops/v1/device-relay/tasks/" + taskId + "/window-snapshot";
+        JSONObject body = new JSONObject();
+        body.put("hostId", hostId);
+        byte[] requestBytes = body.toString().getBytes(StandardCharsets.UTF_8);
+        URL url = new URL(endpoint + path);
+        if (!OperationsRelayPolicy.isAllowedRequestUrl(url)) {
+            throw new SecurityException("relay_request_origin_rejected");
+        }
+
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        try {
+            connection.setInstanceFollowRedirects(false);
+            connection.setRequestMethod("POST");
+            connection.setConnectTimeout(7_000);
+            connection.setReadTimeout(30_000);
+            connection.setUseCaches(false);
+            connection.setDoOutput(true);
+            connection.setRequestProperty("Accept", "application/octet-stream");
+            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+            connection.setRequestProperty("Cache-Control", "no-store");
+            connection.setRequestProperty("X-Correlation-Id", UUID.randomUUID().toString());
+            connection.setFixedLengthStreamingMode(requestBytes.length);
+            applySignedHeaders(connection, path, requestBytes);
+            try (OutputStream output = connection.getOutputStream()) {
+                output.write(requestBytes);
+            }
+
+            int status = connection.getResponseCode();
+            if (status != 200) {
+                throw new IllegalStateException(readErrorCode(connection, status));
+            }
+            String contentType = connection.getContentType();
+            if (contentType == null
+                    || !"application/octet-stream".equalsIgnoreCase(
+                            contentType.split(";", 2)[0].trim())) {
+                throw new SecurityException("window_snapshot_type_rejected");
+            }
+            String contentEncoding = connection.getHeaderField("Content-Encoding");
+            if (contentEncoding != null && !contentEncoding.trim().isEmpty()) {
+                throw new SecurityException("window_snapshot_encoding_rejected");
+            }
+            long contentLength = connection.getContentLengthLong();
+            if (contentLength != expectedBytes
+                    || contentLength < OperationsRemoteWindowSnapshot.MINIMUM_SEALED_BYTES
+                    || contentLength > OperationsRemoteWindowSnapshot.MAXIMUM_SEALED_BYTES) {
+                throw new SecurityException("window_snapshot_size_rejected");
+            }
+            byte[] sealed = readAllBytes(
+                    connection.getInputStream(), OperationsRemoteWindowSnapshot.MAXIMUM_SEALED_BYTES);
+            if (sealed.length != expectedBytes
+                    || !MessageDigest.isEqual(
+                            expectedSha256.getBytes(StandardCharsets.US_ASCII),
+                            hex(MessageDigest.getInstance("SHA-256").digest(sealed))
+                                    .getBytes(StandardCharsets.US_ASCII))) {
+                throw new SecurityException("window_snapshot_sealed_hash_mismatch");
+            }
+            return sealed;
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    void consumeWindowSnapshot(String taskId, String sealedSha256) throws Exception {
+        if (!OperationsRelayPolicy.isSafeIdentifier(taskId)
+                || sealedSha256 == null || !sealedSha256.matches("[0-9a-f]{64}")) {
+            throw new SecurityException("invalid_window_snapshot_consume_request");
+        }
+        JSONObject body = new JSONObject();
+        body.put("hostId", hostId);
+        body.put("sealedSha256", sealedSha256);
+        post("/api/ops/v1/device-relay/tasks/" + taskId + "/window-snapshot/consume", body);
     }
 
     private JSONObject verifySnapshotResponse(JSONObject response) throws Exception {
@@ -111,6 +199,23 @@ final class OperationsRelayApiClient {
         verified.put("ok", true);
         verified.put("host", host);
         return verified;
+    }
+
+    private static void validateWindowSnapshotPayload(JSONObject payload) {
+        if (payload == null || payload.length() != 2
+                || !OperationsRemoteWindowSnapshot.SCHEME.equals(
+                        payload.optString("scheme", ""))
+                || !OperationsRemoteWindowSnapshot.isCanonicalP256PublicKey(
+                        payload.optString("recipientPublicKeySpki", ""))) {
+            throw new SecurityException("window_snapshot_payload_not_allowed");
+        }
+        java.util.Iterator<String> names = payload.keys();
+        while (names.hasNext()) {
+            String name = names.next();
+            if (!"scheme".equals(name) && !"recipientPublicKeySpki".equals(name)) {
+                throw new SecurityException("window_snapshot_payload_not_allowed");
+            }
+        }
     }
 
     private JSONObject verifyTaskResponse(
@@ -279,6 +384,39 @@ final class OperationsRelayApiClient {
             }
         }
         return text.toString();
+    }
+
+    private static byte[] readAllBytes(InputStream input, int maximumBytes) throws Exception {
+        if (input == null) {
+            throw new IllegalStateException("empty_window_snapshot");
+        }
+        try (InputStream source = input;
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int read;
+            int total = 0;
+            while ((read = source.read(buffer)) >= 0) {
+                total += read;
+                if (total > maximumBytes) {
+                    throw new SecurityException("window_snapshot_size_rejected");
+                }
+                output.write(buffer, 0, read);
+            }
+            if (total == 0) {
+                throw new IllegalStateException("empty_window_snapshot");
+            }
+            return output.toByteArray();
+        }
+    }
+
+    private static String readErrorCode(HttpURLConnection connection, int status) throws Exception {
+        String text = readAll(connection.getErrorStream());
+        JSONObject response = text.isEmpty() ? new JSONObject() : new JSONObject(text);
+        Object rawError = response.opt("error");
+        if (rawError instanceof JSONObject) {
+            return ((JSONObject) rawError).optString("code", "http_" + status);
+        }
+        return response.optString("error", "http_" + status);
     }
 
     private static String randomNonce() {

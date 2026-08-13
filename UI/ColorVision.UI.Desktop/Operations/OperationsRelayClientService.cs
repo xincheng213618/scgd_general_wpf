@@ -34,11 +34,13 @@ namespace ColorVision.UI.Desktop.Operations
             UnavailableOperationsApplicationRestartController.Instance;
         private IOperationsFailureEvidenceProvider _failureEvidenceProvider =
             UnavailableOperationsFailureEvidenceProvider.Instance;
+        private OperationsWindowSnapshotService? _windowSnapshots;
 
         public OperationsRelayClientService(
             OperationsServerIdentity identity,
             OperationsDeviceRegistry registry,
-            OperationsWorkStore workStore)
+            OperationsWorkStore workStore,
+            HttpMessageHandler? httpMessageHandler = null)
         {
             _identity = identity;
             _hostId = identity.HostId;
@@ -53,7 +55,9 @@ namespace ColorVision.UI.Desktop.Operations
             if (_signedDeviceRelay)
                 uri = new Uri(DefaultEndpoint, UriKind.Absolute);
             IsConfigured = true;
-            _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            _httpClient = httpMessageHandler == null
+                ? new HttpClient { Timeout = TimeSpan.FromSeconds(15) }
+                : new HttpClient(httpMessageHandler) { Timeout = TimeSpan.FromSeconds(15) };
             _httpClient.BaseAddress = uri;
             if (legacyConfigured)
             {
@@ -115,6 +119,15 @@ namespace ColorVision.UI.Desktop.Operations
                 throw new InvalidOperationException(
                     "Configure the Operations failure-evidence provider before starting the relay.");
             _failureEvidenceProvider = provider;
+        }
+
+        public void ConfigureWindowSnapshotService(OperationsWindowSnapshotService service)
+        {
+            ArgumentNullException.ThrowIfNull(service);
+            if (IsRunning)
+                throw new InvalidOperationException(
+                    "Configure the Operations window-snapshot service before starting the relay.");
+            _windowSnapshots = service;
         }
 
         public void Start(
@@ -288,6 +301,34 @@ namespace ColorVision.UI.Desktop.Operations
                 {
                     await HandleSignedApplicationRestartTaskAsync(verified, cancellationToken)
                         .ConfigureAwait(false);
+                    continue;
+                }
+                else if (verified!.CapabilityId == OperationsRelayWindowSnapshotContract.CapabilityId)
+                {
+                    OperationsRelayWindowSnapshotHandleResult result;
+                    if (_windowSnapshots == null)
+                    {
+                        result = new OperationsRelayWindowSnapshotHandleResult();
+                    }
+                    else
+                    {
+                        result = await new OperationsRelayWindowSnapshotHandler(
+                            _hostId, _workStore, _windowSnapshots).HandleAsync(
+                                verified,
+                                (snapshotEvidence, sealedData, token) =>
+                                    SendSignedWindowSnapshotAsync(
+                                        verified, snapshotEvidence, sealedData, token),
+                                cancellationToken).ConfigureAwait(false);
+                    }
+                    if (!result.CompletedReceiptUploaded)
+                    {
+                        await SendSignedTaskReceiptAsync(
+                            verified.TaskId,
+                            "failed",
+                            new OperationsRelayWindowSnapshotError(),
+                            verified.IdempotencyKey,
+                            cancellationToken).ConfigureAwait(false);
+                    }
                     continue;
                 }
                 else if (verified!.CapabilityId == "ops.diagnostics.failures.read")
@@ -836,6 +877,7 @@ namespace ColorVision.UI.Desktop.Operations
         [
             "ops.window.show",
             "ops.window.minimize",
+            OperationsRelayWindowSnapshotContract.CapabilityId,
             "ops.messaging.reconnect",
             "ops.flow.cancel",
             "ops.service.restart",
@@ -877,6 +919,68 @@ namespace ColorVision.UI.Desktop.Operations
             using HttpResponseMessage response = await SendSignedHostRequestAsync(
                 path, body, includeCertificate: false, cancellationToken).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
+        }
+
+        private async Task SendSignedWindowSnapshotAsync(
+            OperationsRelayVerifiedTask task,
+            OperationsRelayWindowSnapshotEvidence evidence,
+            byte[] sealedData,
+            CancellationToken cancellationToken)
+        {
+            string path = $"/api/ops/v1/device-relay/hosts/{Uri.EscapeDataString(_hostId)}"
+                + $"/tasks/{Uri.EscapeDataString(task.TaskId)}/window-snapshot";
+            long signedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            string receiptBody = JsonSerializer.Serialize(new
+            {
+                hostId = _hostId,
+                taskId = task.TaskId,
+                idempotencyKey = task.IdempotencyKey,
+                status = "completed",
+                evidence,
+                signedAt,
+            }, JsonOptions);
+            object metadata = new
+            {
+                status = "completed",
+                evidence,
+                receiptEnvelope = new
+                {
+                    body = receiptBody,
+                    signature = _identity.Sign(OperationsRelayProtocol.BuildHostEnvelopeCanonical(
+                        OperationsRelayProtocol.HostReceiptEnvelopePrefix, receiptBody)),
+                },
+            };
+            string metadataBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(
+                JsonSerializer.Serialize(metadata, JsonOptions)));
+            using HttpResponseMessage response = await SendSignedHostBinaryRequestAsync(
+                path, sealedData, metadataBase64, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+        }
+
+        private async Task<HttpResponseMessage> SendSignedHostBinaryRequestAsync(
+            string path,
+            byte[] body,
+            string receiptMetadata,
+            CancellationToken cancellationToken)
+        {
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(
+                System.Globalization.CultureInfo.InvariantCulture);
+            string nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(24))
+                .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+            string canonical = OperationsRelayProtocol.BuildCanonical(
+                "POST", path, timestamp, nonce, body);
+            using HttpRequestMessage request = new(HttpMethod.Post, path)
+            {
+                Content = new ByteArrayContent(body),
+            };
+            request.Content.Headers.ContentType = new MediaTypeHeaderValue(
+                "application/octet-stream");
+            request.Headers.Add("X-CV-Host-Id", _hostId);
+            request.Headers.Add("X-CV-Timestamp", timestamp);
+            request.Headers.Add("X-CV-Nonce", nonce);
+            request.Headers.Add("X-CV-Signature", _identity.Sign(canonical));
+            request.Headers.Add("X-CV-Receipt-Metadata", receiptMetadata);
+            return await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<HttpResponseMessage> SendSignedHostRequestAsync(

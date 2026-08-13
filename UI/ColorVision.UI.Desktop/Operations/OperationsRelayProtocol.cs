@@ -39,6 +39,8 @@ namespace ColorVision.UI.Desktop.Operations
         public OperationsPairedDevice Device { get; init; } = new();
 
         public JsonElement Payload { get; init; }
+
+        public DateTimeOffset EnvelopeExpiresAt { get; init; }
     }
 
     public static class OperationsRelayProtocol
@@ -97,6 +99,7 @@ namespace ColorVision.UI.Desktop.Operations
                 "ops.flow.cancel" => "ops.jobs.create",
                 "ops.service.restart" => "ops.jobs.create",
                 "ops.application.restart" => "ops.jobs.create",
+                OperationsRelayWindowSnapshotContract.CapabilityId => "ops.jobs.create",
                 "ops.diagnostics.request" => "ops.jobs.create",
                 "ops.diagnostics.failures.read" => "ops.diagnostics.read",
                 _ => string.Empty,
@@ -147,9 +150,16 @@ namespace ColorVision.UI.Desktop.Operations
                 if (root.TryGetProperty("ttlSeconds", out JsonElement ttlElement))
                 {
                     if (!ttlElement.TryGetInt32(out ttlSeconds))
-                        return Fail("invalid_task_ttl", out error);
-                    ttlSeconds = Math.Clamp(ttlSeconds, 60, 3600);
+                        return Fail(task.CapabilityId == OperationsRelayWindowSnapshotContract.CapabilityId
+                            ? "window_snapshot_ttl_not_allowed" : "invalid_task_ttl", out error);
+                    if (task.CapabilityId != OperationsRelayWindowSnapshotContract.CapabilityId)
+                        ttlSeconds = Math.Clamp(ttlSeconds, 60, 3600);
                 }
+                else if (task.CapabilityId == OperationsRelayWindowSnapshotContract.CapabilityId)
+                    return Fail("window_snapshot_ttl_not_allowed", out error);
+                if (task.CapabilityId == OperationsRelayWindowSnapshotContract.CapabilityId
+                    && ttlSeconds != OperationsRelayWindowSnapshotContract.TtlSeconds)
+                    return Fail("window_snapshot_ttl_not_allowed", out error);
                 if (requestTime > now.Add(AllowedCreatedAtSkew)
                     || requestTime.AddSeconds(ttlSeconds) <= now)
                     return Fail("expired_task_envelope", out error);
@@ -167,6 +177,14 @@ namespace ColorVision.UI.Desktop.Operations
                     return Fail("application_restart_payload_not_allowed", out error);
                 if (task.CapabilityId == "ops.diagnostics.failures.read" && payload.EnumerateObject().Any())
                     return Fail("failure_evidence_payload_not_allowed", out error);
+                if (task.CapabilityId == OperationsRelayWindowSnapshotContract.CapabilityId
+                    && (payload.GetPropertyCount() != 2
+                        || !TextEquals(payload, "scheme", OperationsRelayWindowSnapshotContract.Scheme)
+                        || !payload.TryGetProperty("recipientPublicKeySpki", out JsonElement recipientKey)
+                        || recipientKey.ValueKind != JsonValueKind.String
+                        || !OperationsRelayWindowSnapshotContract.IsCanonicalP256PublicKey(
+                            recipientKey.GetString())))
+                    return Fail("window_snapshot_payload_not_allowed", out error);
                 if (task.CapabilityId == "ops.diagnostics.request"
                     && payload.EnumerateObject().Any(item => item.Name != "reason"
                         || item.Value.ValueKind != JsonValueKind.String
@@ -180,6 +198,7 @@ namespace ColorVision.UI.Desktop.Operations
                     IdempotencyKey = idempotency.GetString()!,
                     Device = device,
                     Payload = payload.Clone(),
+                    EnvelopeExpiresAt = requestTime.AddSeconds(ttlSeconds).ToUniversalTime(),
                 };
                 return true;
             }
