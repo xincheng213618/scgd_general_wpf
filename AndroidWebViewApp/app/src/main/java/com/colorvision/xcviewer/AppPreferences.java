@@ -21,6 +21,8 @@ final class AppPreferences {
     private static final String KEY_OPERATIONS_ENDPOINT = "operations_endpoint";
     private static final String KEY_OPERATIONS_PIN = "operations_certificate_pin";
     private static final String KEY_OPERATIONS_HOST_ID = "operations_host_id";
+    private static final String KEY_OPERATIONS_CONNECTION_PREFERENCE =
+            "operations_connection_preference";
     private static final String KEY_OPERATIONS_PROFILE_REVOKED = "operations_profile_revoked";
     private static final String KEY_LEGACY_OPERATIONS_WATCH_ENABLED = "operations_watch_enabled";
     private static final String KEY_LEGACY_OPERATIONS_WATCH_STATE = "operations_watch_state";
@@ -111,6 +113,8 @@ final class AppPreferences {
                 .putString(KEY_OPERATIONS_ENDPOINT, endpoint)
                 .putString(KEY_OPERATIONS_PIN, certificatePin)
                 .putString(KEY_OPERATIONS_HOST_ID, hostId)
+                .putString(KEY_OPERATIONS_CONNECTION_PREFERENCE,
+                        OperationsConnectionPreference.DIRECT)
                 .putBoolean(KEY_OPERATIONS_PROFILE_REVOKED, false)
                 .remove(KEY_OPERATIONS_WATCH_HISTORY)
                 .remove(KEY_OPERATIONS_RELAY_TASK_ID)
@@ -129,6 +133,19 @@ final class AppPreferences {
 
     String getOperationsHostId() {
         return preferences.getString(KEY_OPERATIONS_HOST_ID, "");
+    }
+
+    String getOperationsConnectionPreference() {
+        return OperationsConnectionPreference.normalize(preferences.getString(
+                KEY_OPERATIONS_CONNECTION_PREFERENCE,
+                OperationsConnectionPreference.DIRECT));
+    }
+
+    void saveOperationsConnectionPreference(String connectionPreference) {
+        preferences.edit()
+                .putString(KEY_OPERATIONS_CONNECTION_PREFERENCE,
+                        OperationsConnectionPreference.normalize(connectionPreference))
+                .apply();
     }
 
     boolean hasOperationsProfile() {
@@ -190,6 +207,7 @@ final class AppPreferences {
                 .remove(KEY_OPERATIONS_ENDPOINT)
                 .remove(KEY_OPERATIONS_PIN)
                 .remove(KEY_OPERATIONS_HOST_ID)
+                .remove(KEY_OPERATIONS_CONNECTION_PREFERENCE)
                 .remove(KEY_OPERATIONS_PROFILE_REVOKED)
                 .remove(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)
                 .remove(KEY_LEGACY_OPERATIONS_WATCH_STATE)

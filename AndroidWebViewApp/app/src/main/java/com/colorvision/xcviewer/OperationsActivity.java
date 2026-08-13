@@ -109,6 +109,7 @@ public class OperationsActivity extends Activity {
     private volatile boolean remoteDashboard;
     private boolean showingDashboardSummary;
     private boolean connectionHeartbeatInFlight;
+    private int connectionRequestGeneration;
     private String pendingOperationsDestination = "";
 
     @Override
@@ -272,6 +273,11 @@ public class OperationsActivity extends Activity {
             if ("approved".equals(status)) {
                 preferences.saveOperationsProfile(payload.endpoint, payload.certificateSha256, payload.hostId);
                 client = pairingClient;
+                relayClient = new OperationsRelayApiClient(
+                        payload.hostId,
+                        preferences.getOrCreateDeviceId(),
+                        payload.certificateSha256,
+                        new OperationsDeviceIdentity(payload.hostId));
                 runOnUiThread(this::showDashboard);
                 return;
             }
@@ -303,45 +309,137 @@ public class OperationsActivity extends Activity {
     }
 
     private void openExistingProfile() {
+        int requestGeneration = ++connectionRequestGeneration;
         setBusy("正在连接已配对的 ColorVision 主机…");
         executor.execute(() -> {
             Exception localFailure = null;
+            Exception relayFailure = null;
+            JSONObject relayResponse = null;
+            boolean localConnected = false;
             try {
-                String hostId = preferences.getOperationsHostId();
-                OperationsDeviceIdentity identity = new OperationsDeviceIdentity(hostId);
-                relayClient = new OperationsRelayApiClient(
-                        hostId,
-                        preferences.getOrCreateDeviceId(),
-                        preferences.getOperationsCertificatePin(),
-                        identity);
-                client = new OperationsApiClient(
-                        preferences.getOperationsEndpoint(),
-                        preferences.getOperationsCertificatePin(),
-                        preferences.getOrCreateDeviceId(),
-                        identity);
-                client.get("/ops/v1/snapshot");
-                runOnUiThread(this::showDashboard);
+                ensureOperationsClients();
             } catch (Exception ex) {
                 localFailure = ex;
+                relayFailure = ex;
+            }
+
+            boolean relayFirst = OperationsConnectionPreference.prefersRelay(
+                    preferences.getOperationsConnectionPreference());
+            if (localFailure == null && relayFirst) {
                 try {
-                    if (relayClient == null) {
-                        String hostId = preferences.getOperationsHostId();
-                        OperationsDeviceIdentity identity = new OperationsDeviceIdentity(hostId);
-                        relayClient = new OperationsRelayApiClient(
-                                hostId,
-                                preferences.getOrCreateDeviceId(),
-                                preferences.getOperationsCertificatePin(),
-                                identity);
+                    relayResponse = relayClient.getSnapshot();
+                } catch (Exception ex) {
+                    relayFailure = ex;
+                    if (!canFallbackAfter(ex)) {
+                        localFailure = ex;
+                    } else {
+                        try {
+                            client.get("/ops/v1/snapshot");
+                            localConnected = true;
+                        } catch (Exception localException) {
+                            localFailure = localException;
+                        }
                     }
-                    JSONObject response = relayClient.getSnapshot();
-                    runOnUiThread(() -> showRemoteDashboard(response));
-                } catch (Exception relayException) {
-                    Exception finalLocalFailure = localFailure;
-                    runOnUiThread(() -> showExistingProfileFailure(
-                            finalLocalFailure, relayException));
+                }
+            } else if (localFailure == null) {
+                try {
+                    client.get("/ops/v1/snapshot");
+                    localConnected = true;
+                } catch (Exception ex) {
+                    localFailure = ex;
+                    if (!canFallbackAfter(ex)) {
+                        relayFailure = ex;
+                    } else {
+                        try {
+                            relayResponse = relayClient.getSnapshot();
+                        } catch (Exception relayException) {
+                            relayFailure = relayException;
+                        }
+                    }
                 }
             }
+
+            JSONObject finalRelayResponse = relayResponse;
+            boolean finalLocalConnected = localConnected;
+            Exception finalLocalFailure = localFailure;
+            Exception finalRelayFailure = relayFailure;
+            runOnUiThread(() -> {
+                if (requestGeneration != connectionRequestGeneration
+                        || isFinishing() || isDestroyed()) {
+                    return;
+                }
+                connectionHeartbeatInFlight = false;
+                if (isRevokedException(finalLocalFailure)
+                        || isRevokedException(finalRelayFailure)) {
+                    showRevokedProfile();
+                } else if (finalRelayResponse != null) {
+                    showRemoteDashboard(finalRelayResponse);
+                } else if (finalLocalConnected) {
+                    showDashboard();
+                } else {
+                    showExistingProfileFailure(finalLocalFailure, finalRelayFailure);
+                }
+            });
         });
+    }
+
+    private void ensureOperationsClients() throws Exception {
+        String hostId = preferences.getOperationsHostId();
+        OperationsDeviceIdentity identity = new OperationsDeviceIdentity(hostId);
+        if (relayClient == null) {
+            relayClient = new OperationsRelayApiClient(
+                    hostId,
+                    preferences.getOrCreateDeviceId(),
+                    preferences.getOperationsCertificatePin(),
+                    identity);
+        }
+        if (client == null) {
+            client = new OperationsApiClient(
+                    preferences.getOperationsEndpoint(),
+                    preferences.getOperationsCertificatePin(),
+                    preferences.getOrCreateDeviceId(),
+                    identity);
+        }
+    }
+
+    private void selectConnectionPreference(String connectionPreference) {
+        String normalized = OperationsConnectionPreference.normalize(connectionPreference);
+        preferences.saveOperationsConnectionPreference(normalized);
+        OperationsWatchService.refreshConnectionPreference(this);
+        Toast.makeText(this,
+                OperationsConnectionPreference.prefersRelay(normalized)
+                        ? "已设为固定中继优先"
+                        : "已设为现场直连优先",
+                Toast.LENGTH_SHORT).show();
+        openExistingProfile();
+    }
+
+    private void showConnectionPreference() {
+        showingDashboardSummary = false;
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        dashboardVisible = true;
+        progress.setVisibility(View.GONE);
+        title.setText("连接方式");
+        boolean relayPreferred = OperationsConnectionPreference.prefersRelay(
+                preferences.getOperationsConnectionPreference());
+        state.setText(relayPreferred ? "固定中继优先" : "现场直连优先");
+        details.setText("当前通道：" + (remoteDashboard ? "固定中继" : "现场直连")
+                + "\n首选方式会保存在本机，应用重启后继续使用。"
+                + "\n首选通道临时不可用时会安全回退；恢复后自动切回。"
+                + "\n固定中继地址由应用内置，不能填写或选择网址。");
+        actions.removeAllViews();
+
+        addDashboardActionRow(
+                dashboardButton(relayPreferred ? "现场直连优先" : "✓ 现场直连优先",
+                        v -> selectConnectionPreference(OperationsConnectionPreference.DIRECT)),
+                dashboardButton(relayPreferred ? "✓ 固定中继优先" : "固定中继优先",
+                        v -> selectConnectionPreference(OperationsConnectionPreference.RELAY)));
+        addDashboardActionRow(
+                dashboardButton("运行现场连接自检", v -> runConnectionSelfCheck()),
+                dashboardButton("移除配对资料", v -> confirmClearProfile()));
+        addDashboardWideAction(dashboardButton("返回运维概览", v -> showCurrentDashboard()));
+        scheduleConnectionHeartbeat();
     }
 
     private void showDashboard() {
@@ -353,7 +451,7 @@ public class OperationsActivity extends Activity {
         showingDashboardSummary = true;
         progress.setVisibility(View.GONE);
         title.setText("运维伴侣");
-        state.setText("● 已连接 · 后台持续守护");
+        state.setText(directConnectionState());
         details.setText("正在读取 ColorVision 运行摘要…");
         actions.removeAllViews();
         dashboardFlowAvailable = false;
@@ -378,7 +476,7 @@ public class OperationsActivity extends Activity {
         dashboardCancelFlowButton.setEnabled(false);
         addDashboardActionRow(
                 dashboardCancelFlowButton,
-                dashboardButton("连接自检", v -> runConnectionSelfCheck()));
+                dashboardButton("连接方式", v -> showConnectionPreference()));
 
         addDashboardSection("实时状态");
         addDashboardActionRow(
@@ -514,16 +612,13 @@ public class OperationsActivity extends Activity {
         addDashboardSection("连接与记录");
         addDashboardActionRow(
                 dashboardButton("刷新远程状态", v -> refreshRemoteDashboard()),
-                dashboardButton("尝试现场直连", v -> openExistingProfile()));
+                dashboardButton("连接方式", v -> showConnectionPreference()));
         Button recentTask = dashboardButton("最近远程请求", v -> refreshRecentRemoteTask());
         recentTask.setEnabled(OperationsRelayPolicy.isSafeIdentifier(
                 preferences.getOperationsRelayTaskId()));
         addDashboardActionRow(
                 recentTask,
                 dashboardButton("运维时间线", v -> showOperationsWatchHistory()));
-        addDashboardActionRow(
-                dashboardButton("现场连接自检", v -> runConnectionSelfCheck()),
-                dashboardButton("移除配对资料", v -> confirmClearProfile()));
 
         scheduleConnectionHeartbeat();
         ensureOperationsWatchRunning();
@@ -547,9 +642,7 @@ public class OperationsActivity extends Activity {
         boolean windowExists = window != null && window.optBoolean("exists", false);
         boolean windowVisible = window != null && window.optBoolean("isVisible", false);
 
-        state.setText(fresh
-                ? "● 远程中继已连接 · 自动保持"
-                : "○ 远程中继在线 · 等待电脑上线");
+        state.setText(remoteConnectionState(fresh));
         StringBuilder text = new StringBuilder();
         text.append("连接方式：固定站点设备签名中继")
                 .append("\n电脑状态：").append(fresh ? "在线" : "暂未上线")
@@ -1080,64 +1173,166 @@ public class OperationsActivity extends Activity {
 
     private void runConnectionHeartbeat() {
         if (!activityResumed || !dashboardVisible
+                || !showingDashboardSummary
                 || (client == null && relayClient == null)
                 || connectionHeartbeatInFlight) {
             return;
         }
         connectionHeartbeatInFlight = true;
+        boolean relayFirst = OperationsConnectionPreference.prefersRelay(
+                preferences.getOperationsConnectionPreference());
+        int requestGeneration = connectionRequestGeneration;
         executor.execute(() -> {
+            if (relayFirst) {
+                try {
+                    if (relayClient == null) {
+                        throw new IllegalStateException("relay_client_unavailable");
+                    }
+                    JSONObject response = relayClient.getSnapshot();
+                    postHeartbeatResult(requestGeneration, () -> applyRelayHeartbeat(response));
+                } catch (Exception relayException) {
+                    if (isRevokedException(relayException)) {
+                        postHeartbeatResult(requestGeneration, this::completeHeartbeatRevoked);
+                        return;
+                    }
+                    try {
+                        if (client == null) {
+                            throw new IllegalStateException("local_operations_client_unavailable");
+                        }
+                        JSONObject response = client.get("/ops/v1/monitor");
+                        JSONObject snapshot = response.optJSONObject("data");
+                        postHeartbeatResult(requestGeneration, () -> applyLocalHeartbeat(snapshot));
+                    } catch (Exception localException) {
+                        if (isRevokedException(localException)) {
+                            postHeartbeatResult(requestGeneration, this::completeHeartbeatRevoked);
+                        } else {
+                            postHeartbeatResult(requestGeneration,
+                                    () -> completeHeartbeatFailure(true));
+                        }
+                    }
+                }
+                return;
+            }
+
             try {
                 if (client == null) {
                     throw new IllegalStateException("local_operations_client_unavailable");
                 }
                 JSONObject response = client.get("/ops/v1/monitor");
                 JSONObject snapshot = response.optJSONObject("data");
-                runOnUiThread(() -> {
-                    connectionHeartbeatInFlight = false;
-                    if (remoteDashboard) {
-                        showDashboard();
-                        return;
-                    } else if (showingDashboardSummary) {
-                        state.setText("● 已连接 · 后台持续守护");
-                    }
-                    if (snapshot != null) {
-                        updateDashboardLiveStatus(snapshot);
-                    }
-                    scheduleConnectionHeartbeat();
-                });
+                postHeartbeatResult(requestGeneration, () -> applyLocalHeartbeat(snapshot));
             } catch (Exception localException) {
+                if (isRevokedException(localException)) {
+                    postHeartbeatResult(requestGeneration, this::completeHeartbeatRevoked);
+                    return;
+                }
                 try {
                     if (relayClient == null) {
                         throw new IllegalStateException("relay_client_unavailable");
                     }
                     JSONObject response = relayClient.getSnapshot();
-                    runOnUiThread(() -> {
-                        connectionHeartbeatInFlight = false;
-                        if (remoteDashboard) {
-                            lastRelaySnapshotResponse = response;
-                            if (showingDashboardSummary) {
-                                updateRemoteDashboardStatus(response);
-                                progress.setVisibility(View.GONE);
-                            }
-                        } else {
-                            showRemoteDashboard(response);
-                            return;
-                        }
-                        scheduleConnectionHeartbeat();
-                    });
+                    postHeartbeatResult(requestGeneration, () -> applyRelayHeartbeat(response));
                 } catch (Exception relayException) {
-                    runOnUiThread(() -> {
-                        connectionHeartbeatInFlight = false;
-                        if (remoteDashboard) {
-                            state.setText("○ 远程中继暂断 · 正在自动重试");
-                        } else if (showingDashboardSummary) {
-                            state.setText("● 连接暂断 · 正在自动重试");
-                        }
-                        scheduleConnectionHeartbeat();
-                    });
+                    if (isRevokedException(relayException)) {
+                        postHeartbeatResult(requestGeneration, this::completeHeartbeatRevoked);
+                    } else {
+                        postHeartbeatResult(requestGeneration,
+                                () -> completeHeartbeatFailure(false));
+                    }
                 }
             }
         });
+    }
+
+    private void postHeartbeatResult(int requestGeneration, Runnable result) {
+        runOnUiThread(() -> {
+            if (requestGeneration != connectionRequestGeneration
+                    || isFinishing() || isDestroyed()) {
+                return;
+            }
+            if (!activityResumed || !showingDashboardSummary) {
+                connectionHeartbeatInFlight = false;
+                return;
+            }
+            result.run();
+        });
+    }
+
+    private void applyLocalHeartbeat(JSONObject snapshot) {
+        connectionHeartbeatInFlight = false;
+        if (remoteDashboard) {
+            showDashboard();
+            return;
+        }
+        if (showingDashboardSummary) {
+            state.setText(directConnectionState());
+        }
+        if (snapshot != null) {
+            updateDashboardLiveStatus(snapshot);
+        }
+        scheduleConnectionHeartbeat();
+    }
+
+    private void applyRelayHeartbeat(JSONObject response) {
+        connectionHeartbeatInFlight = false;
+        if (!remoteDashboard) {
+            showRemoteDashboard(response);
+            return;
+        }
+        lastRelaySnapshotResponse = response;
+        if (showingDashboardSummary) {
+            updateRemoteDashboardStatus(response);
+            progress.setVisibility(View.GONE);
+        }
+        scheduleConnectionHeartbeat();
+    }
+
+    private void completeHeartbeatFailure(boolean relayPreferred) {
+        connectionHeartbeatInFlight = false;
+        if (showingDashboardSummary) {
+            state.setText(relayPreferred
+                    ? "○ 固定中继暂断 · 现场直连也不可达"
+                    : "○ 现场直连暂断 · 固定中继也不可达");
+        }
+        scheduleConnectionHeartbeat();
+    }
+
+    private void completeHeartbeatRevoked() {
+        connectionHeartbeatInFlight = false;
+        showRevokedProfile();
+    }
+
+    private void showRevokedProfile() {
+        connectionRequestGeneration++;
+        preferences.markOperationsProfileRevoked();
+        OperationsWatchService.stopForProfileRemoval(this);
+        showError("配对授权已失效", "设备已被电脑端撤销，请重新配对。", this::clearProfile);
+    }
+
+    private static boolean isRevokedException(Exception exception) {
+        return !canFallbackAfter(exception);
+    }
+
+    private static boolean canFallbackAfter(Exception exception) {
+        return OperationsConnectionPreference.canFallbackAfter(
+                exception == null ? null : exception.getMessage());
+    }
+
+    private String directConnectionState() {
+        return OperationsConnectionPreference.prefersRelay(
+                preferences.getOperationsConnectionPreference())
+                ? "● 现场直连（临时） · 固定中继恢复后切回"
+                : "● 现场直连 · 自动保持";
+    }
+
+    private String remoteConnectionState(boolean hostFresh) {
+        if (!hostFresh) {
+            return "○ 固定中继在线 · 等待电脑上线";
+        }
+        return OperationsConnectionPreference.prefersRelay(
+                preferences.getOperationsConnectionPreference())
+                ? "● 固定中继 · 自动保持"
+                : "● 固定中继（临时） · 现场直连恢复后切回";
     }
 
     private void addDashboardSection(String label) {
@@ -4128,6 +4323,7 @@ public class OperationsActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        connectionRequestGeneration++;
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         leaveSupportCenter();
         leaveLiveMonitor();
