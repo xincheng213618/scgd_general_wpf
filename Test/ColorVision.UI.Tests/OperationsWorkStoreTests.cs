@@ -256,9 +256,9 @@ namespace ColorVision.UI.Tests
                 Assert.Equal("restart-task-1", reloaded.SourceTaskId);
                 Assert.Equal("restart-idempotency-1", reloaded.SourceIdempotencyKey);
                 Assert.True(reloadedStore.HasSentRelayRestartReceipt(
-                    "restart-task-1", "completed"));
+                    "restart-task-1", "restart-idempotency-1", "completed"));
                 Assert.False(reloadedStore.HasSentRelayRestartReceipt(
-                    "restart-task-1", "failed"));
+                    "restart-task-1", "restart-idempotency-1", "failed"));
             }
             finally
             {
@@ -315,6 +315,30 @@ namespace ColorVision.UI.Tests
                     "mqtt-restart-idempotency");
                 Assert.Equal(reloaded.JobId, replayedWithAnotherRelayTaskId.JobId);
                 Assert.Single(reloadedStore.GetJobs());
+            }
+            finally
+            {
+                DeletePath(path);
+            }
+        }
+
+        [Fact]
+        public void RelayRestartReceiptMarkerIncludesTheSourceIdempotencyKey()
+        {
+            string path = NewPath();
+            try
+            {
+                OperationsWorkStore store = new(path);
+                store.RecordAudit(
+                    "operations-relay", "system", "relay.restart.receipt",
+                    "shared-task", "completed", "first-key");
+
+                Assert.True(store.HasSentRelayRestartReceipt(
+                    "shared-task", "first-key", "completed"));
+                Assert.False(store.HasSentRelayRestartReceipt(
+                    "shared-task", "second-key", "completed"));
+                Assert.False(store.HasSentRelayRestartReceipt(
+                    "shared-task", "first-key", "failed"));
             }
             finally
             {

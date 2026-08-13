@@ -451,11 +451,14 @@ class OperationsDeviceRelayService:
                         or abs(receipt_signed_at - int(timestamp)) > 5):
                     raise DeviceRelayError("receipt_envelope_mismatch")
                 now = _iso()
+                # A host may retry the exact signed envelope when the first HTTP
+                # response is lost.  Treat that as the same receipt; a new signedAt
+                # produces a different body and remains a distinct audit record.
                 existing_receipt = db.execute(
                     """SELECT receipt_id FROM operations_task_receipts
                        WHERE task_id=? AND host_id=? AND status=?
-                         AND relay_receipt_body=? AND relay_receipt_signature=?""",
-                    (task_id, host_id, status, receipt_body, receipt_signature),
+                         AND relay_receipt_body=?""",
+                    (task_id, host_id, status, receipt_body),
                 ).fetchone()
                 if existing_receipt:
                     return {

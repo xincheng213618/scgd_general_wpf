@@ -568,7 +568,8 @@ class OperationsRelayTests(unittest.TestCase):
         self.assertTrue(retry.get_json()["deduplicated"])
         self.assertEqual(retry.get_json()["receiptId"], first_receipt_id)
 
-        with self.cache.get_db() as db:
+        db = marketplace_app._cache.get_db()
+        try:
             self.assertEqual(
                 db.execute(
                     "SELECT COUNT(*) FROM operations_task_receipts WHERE task_id=?",
@@ -576,6 +577,8 @@ class OperationsRelayTests(unittest.TestCase):
                 ).fetchone()[0],
                 1,
             )
+        finally:
+            db.close()
 
     @staticmethod
     def json_bytes(value):
