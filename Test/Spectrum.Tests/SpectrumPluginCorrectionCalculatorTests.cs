@@ -36,14 +36,16 @@ public class SpectrumPluginCorrectionCalculatorTests
     }
 
     [Fact]
-    public void FullCorrection_RejectsUnsafeCorrectionFactor()
+    public void FullCorrection_AllowsLargeFiniteCorrectionFactor()
     {
         MagnitudeCalibrationFile source = CreateCanonicalFile(1d);
         ViewResultSpectrum measured = CreateResult(relativeValue: 1f, absoluteScale: 1f, brightness: 100f);
         (double Wavelength, double Value)[] standard = [(380d, 20d), (780d, 20d)];
 
-        Assert.Throws<InvalidOperationException>(() =>
-            SpectrumCorrectionCalculator.CorrectSpectrum(source, measured, standard));
+        SpectrumCorrectionOutput output = SpectrumCorrectionCalculator.CorrectSpectrum(source, measured, standard);
+
+        Assert.All(output.CorrectionFactors, factor => Assert.Equal(20d, factor, 10));
+        Assert.All(output.CorrectedFile.Coefficients, coefficient => Assert.Equal(20d, coefficient, 10));
     }
 
     private static MagnitudeCalibrationFile CreateCanonicalFile(double coefficient)

@@ -17,7 +17,6 @@ internal static class SpectrumCorrectionCalculator
     private const double End = 780d;
     private const double Interval = 0.1d;
     private const double MinimumFactor = 0.1d;
-    private const double MaximumFactor = 10d;
 
     public static SpectrumCorrectionOutput CorrectSpectrum(
         MagnitudeCalibrationFile source,
@@ -169,7 +168,7 @@ internal static class SpectrumCorrectionCalculator
     private static void ValidateFactor(double factor, double? wavelength)
     {
         string where = wavelength.HasValue ? $"（{wavelength:F1} nm）" : string.Empty;
-        if (!double.IsFinite(factor) || factor < MinimumFactor || factor > MaximumFactor)
-            throw new InvalidOperationException($"修正倍率{where}必须在 {MinimumFactor}–{MaximumFactor} 之间，实际为 {factor:G8}。");
+        if (!double.IsFinite(factor) || factor < MinimumFactor)
+            throw new InvalidOperationException($"修正倍率{where}必须为不小于 {MinimumFactor} 的有限值，实际为 {factor:G8}。");
     }
 }

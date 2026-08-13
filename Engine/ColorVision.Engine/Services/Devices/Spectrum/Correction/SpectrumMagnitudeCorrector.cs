@@ -18,7 +18,7 @@ public sealed class SpectrumCorrectionOptions
     public double MinimumValidPointFraction { get; init; } = 0.1;
     public double MinimumValidWavelengthSpanFraction { get; init; } = 0.5;
     public double MinimumCorrectionFactor { get; init; } = 0.1;
-    public double MaximumCorrectionFactor { get; init; } = 10;
+    public double MaximumCorrectionFactor { get; init; } = double.PositiveInfinity;
 }
 
 public sealed class SpectrumCorrectionResult
@@ -221,8 +221,8 @@ public static class SpectrumMagnitudeCorrector
             throw new ArgumentOutOfRangeException(nameof(options), "Minimum valid wavelength span fraction must be finite and in the range (0, 1].");
         if (!double.IsFinite(options.MinimumCorrectionFactor) || options.MinimumCorrectionFactor < 0)
             throw new ArgumentOutOfRangeException(nameof(options), "Minimum correction factor must be finite and non-negative.");
-        if (!double.IsFinite(options.MaximumCorrectionFactor) || options.MaximumCorrectionFactor <= 0)
-            throw new ArgumentOutOfRangeException(nameof(options), "Maximum correction factor must be finite and positive.");
+        if (double.IsNaN(options.MaximumCorrectionFactor) || options.MaximumCorrectionFactor <= 0)
+            throw new ArgumentOutOfRangeException(nameof(options), "Maximum correction factor must be positive.");
         if (options.MinimumCorrectionFactor > options.MaximumCorrectionFactor)
             throw new ArgumentException("Minimum correction factor cannot exceed maximum correction factor.", nameof(options));
         return options;
