@@ -229,18 +229,21 @@ public class SpectrumMagnitudeCorrectorTests
     }
 
     [Fact]
-    public void Correction_AllowsLargeFiniteFactorsByDefault()
+    public void Correction_AllowsFactorsOutsideFormerDefaultBounds()
     {
         ServiceSpectrumMeasurement measured = new(380, 382, 1, new[] { 1d, 1d, 1d }, 1);
-        SpectrumSeries standard = new([380d, 382d], [20d, 20d]);
+        SpectrumSeries largeStandard = new([380d, 382d], [20d, 20d]);
+        SpectrumSeries smallStandard = new([380d, 382d], [0.01d, 0.01d]);
 
-        SpectrumCorrectionResult fullSpectrum = SpectrumMagnitudeCorrector.CorrectFullSpectrum(CreateMagnitudeFile(), measured, standard);
-        SpectrumCorrectionResult brightness = SpectrumMagnitudeCorrector.CorrectBrightness(CreateMagnitudeFile(), 20, 1);
+        SpectrumCorrectionResult largeFullSpectrum = SpectrumMagnitudeCorrector.CorrectFullSpectrum(CreateMagnitudeFile(), measured, largeStandard);
+        SpectrumCorrectionResult smallFullSpectrum = SpectrumMagnitudeCorrector.CorrectFullSpectrum(CreateMagnitudeFile(), measured, smallStandard);
+        SpectrumCorrectionResult largeBrightness = SpectrumMagnitudeCorrector.CorrectBrightness(CreateMagnitudeFile(), 20, 1);
+        SpectrumCorrectionResult smallBrightness = SpectrumMagnitudeCorrector.CorrectBrightness(CreateMagnitudeFile(), 0.01, 1);
 
-        Assert.All(fullSpectrum.CorrectionFactors, factor => Assert.Equal(20d, factor, 10));
-        Assert.Equal(20d, brightness.UniformCorrectionFactor);
-        Assert.Throws<InvalidOperationException>(() =>
-            SpectrumMagnitudeCorrector.CorrectBrightness(CreateMagnitudeFile(), 0.01, 1));
+        Assert.All(largeFullSpectrum.CorrectionFactors, factor => Assert.Equal(20d, factor, 10));
+        Assert.All(smallFullSpectrum.CorrectionFactors, factor => Assert.Equal(0.01d, factor, 10));
+        Assert.Equal(20d, largeBrightness.UniformCorrectionFactor);
+        Assert.Equal(0.01d, smallBrightness.UniformCorrectionFactor);
     }
 
     [Fact]

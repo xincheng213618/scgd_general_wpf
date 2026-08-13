@@ -48,6 +48,21 @@ public class SpectrumPluginCorrectionCalculatorTests
         Assert.All(output.CorrectedFile.Coefficients, coefficient => Assert.Equal(20d, coefficient, 10));
     }
 
+    [Fact]
+    public void Correction_AllowsSmallNonNegativeCorrectionFactor()
+    {
+        MagnitudeCalibrationFile source = CreateCanonicalFile(1d);
+        ViewResultSpectrum measured = CreateResult(relativeValue: 1f, absoluteScale: 1f, brightness: 100f);
+        (double Wavelength, double Value)[] standard = [(380d, 0.01d), (780d, 0.01d)];
+
+        SpectrumCorrectionOutput output = SpectrumCorrectionCalculator.CorrectSpectrum(source, measured, standard);
+        MagnitudeCalibrationFile brightness = SpectrumCorrectionCalculator.CorrectBrightness(source, 1, 100);
+
+        Assert.All(output.CorrectionFactors, factor => Assert.Equal(0.01d, factor, 10));
+        Assert.All(output.CorrectedFile.Coefficients, coefficient => Assert.Equal(0.01d, coefficient, 10));
+        Assert.All(brightness.Coefficients, coefficient => Assert.Equal(0.01d, coefficient, 10));
+    }
+
     private static MagnitudeCalibrationFile CreateCanonicalFile(double coefficient)
     {
         double[] wavelengths = Enumerable.Range(0, 4001).Select(index => 380d + 0.1d * index).ToArray();
