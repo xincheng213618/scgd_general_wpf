@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numeric>
 
 namespace cvcore {
@@ -166,6 +167,14 @@ bool rectsTouchOrOverlap(const cv::Rect& a, const cv::Rect& b, int distance)
     return (expanded & b).area() > 0;
 }
 
+struct ComponentAccumulator
+{
+    int pixelCount = 0;
+    double sum = 0.0;
+    double minDelta = std::numeric_limits<double>::infinity();
+    double maxDelta = -std::numeric_limits<double>::infinity();
+};
+
 void appendComponents(
     const cv::Mat& signedDelta,
     const cv::Mat& mask,
@@ -178,6 +187,13 @@ void appendComponents(
     cv::Mat stats;
     cv::Mat centroids;
     const int labelCount = cv::connectedComponentsWithStats(mask, labels, stats, centroids, 8, CV_32S);
+    if (labelCount <= 1) {
+        return;
+    }
+
+    std::vector<unsigned char> eligible(static_cast<size_t>(labelCount), 0);
+    std::vector<ComponentAccumulator> accumulators(static_cast<size_t>(labelCount));
+    bool hasEligibleComponent = false;
 
     for (int label = 1; label < labelCount; ++label) {
         const int area = stats.at<int>(label, cv::CC_STAT_AREA);
@@ -194,14 +210,56 @@ void appendComponents(
             continue;
         }
 
-        cv::Mat componentMask;
-        cv::compare(labels, label, componentMask, cv::CMP_EQ);
+        eligible[static_cast<size_t>(label)] = 1;
+        hasEligibleComponent = true;
+    }
 
-        cv::Scalar mean = cv::mean(signedDelta, componentMask);
-        double minDelta = 0.0;
-        double maxDelta = 0.0;
-        cv::minMaxLoc(signedDelta, &minDelta, &maxDelta, nullptr, nullptr, componentMask);
+    if (!hasEligibleComponent) {
+        return;
+    }
 
+    for (int y = 0; y < labels.rows; ++y) {
+        const int* labelRow = labels.ptr<int>(y);
+        const float* deltaRow = signedDelta.ptr<float>(y);
+
+        for (int x = 0; x < labels.cols; ++x) {
+            const int label = labelRow[x];
+            if (label <= 0 || !eligible[static_cast<size_t>(label)]) {
+                continue;
+            }
+
+            ComponentAccumulator& accumulator = accumulators[static_cast<size_t>(label)];
+            const double value = static_cast<double>(deltaRow[x]);
+            accumulator.sum += value;
+            accumulator.minDelta = std::min(accumulator.minDelta, value);
+            accumulator.maxDelta = std::max(accumulator.maxDelta, value);
+            ++accumulator.pixelCount;
+        }
+    }
+
+    for (int label = 1; label < labelCount; ++label) {
+        if (!eligible[static_cast<size_t>(label)]) {
+            continue;
+        }
+
+        const int area = stats.at<int>(label, cv::CC_STAT_AREA);
+        const cv::Rect rect(
+            stats.at<int>(label, cv::CC_STAT_LEFT),
+            stats.at<int>(label, cv::CC_STAT_TOP),
+            stats.at<int>(label, cv::CC_STAT_WIDTH),
+            stats.at<int>(label, cv::CC_STAT_HEIGHT));
+        if (rect.width <= 0 || rect.height <= 0) {
+            continue;
+        }
+
+        const ComponentAccumulator& accumulator = accumulators[static_cast<size_t>(label)];
+        if (accumulator.pixelCount <= 0) {
+            continue;
+        }
+
+        const double meanDelta = accumulator.sum / static_cast<double>(area);
+        const double minDelta = accumulator.minDelta;
+        const double maxDelta = accumulator.maxDelta;
         const double maxDeltaAbs = std::max(std::abs(minDelta), std::abs(maxDelta));
         const double severity = maxDeltaAbs * std::sqrt(static_cast<double>(area));
         if (severity < config.minSeverity) {
@@ -215,7 +273,7 @@ void appendComponents(
         item.boundingRect = rect;
         item.center = cv::Point2d(centroids.at<double>(label, 0), centroids.at<double>(label, 1));
         item.area = area;
-        item.meanDelta = mean[0];
+        item.meanDelta = meanDelta;
         item.minDelta = minDelta;
         item.maxDelta = maxDelta;
         item.maxDeltaAbs = maxDeltaAbs;
