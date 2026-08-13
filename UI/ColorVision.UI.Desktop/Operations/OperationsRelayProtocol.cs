@@ -98,6 +98,7 @@ namespace ColorVision.UI.Desktop.Operations
                 "ops.service.restart" => "ops.jobs.create",
                 "ops.application.restart" => "ops.jobs.create",
                 "ops.diagnostics.request" => "ops.jobs.create",
+                "ops.diagnostics.failures.read" => "ops.diagnostics.read",
                 _ => string.Empty,
             };
             if (string.IsNullOrEmpty(requiredScope))
@@ -164,6 +165,8 @@ namespace ColorVision.UI.Desktop.Operations
                     return Fail("mqtt_restart_payload_not_allowed", out error);
                 if (task.CapabilityId == "ops.application.restart" && payload.EnumerateObject().Any())
                     return Fail("application_restart_payload_not_allowed", out error);
+                if (task.CapabilityId == "ops.diagnostics.failures.read" && payload.EnumerateObject().Any())
+                    return Fail("failure_evidence_payload_not_allowed", out error);
                 if (task.CapabilityId == "ops.diagnostics.request"
                     && payload.EnumerateObject().Any(item => item.Name != "reason"
                         || item.Value.ValueKind != JsonValueKind.String

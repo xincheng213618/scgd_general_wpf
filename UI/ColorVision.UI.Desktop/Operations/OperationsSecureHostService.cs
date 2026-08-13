@@ -154,6 +154,7 @@ namespace ColorVision.UI.Desktop.Operations
                 if (IsRunning)
                     throw new InvalidOperationException("Configure the Operations failure-evidence provider before starting the secure host.");
                 _failureEvidenceProvider = provider;
+                _relay.ConfigureFailureEvidenceProvider(provider);
             }
         }
 

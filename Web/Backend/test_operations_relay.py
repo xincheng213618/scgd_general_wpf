@@ -505,6 +505,303 @@ class OperationsRelayTests(unittest.TestCase):
         self.assertEqual(conflict.status_code, 409)
         self.assertEqual(conflict.get_json()["error"], "idempotency_conflict")
 
+    def test_failure_evidence_task_requires_empty_payload_scope_and_is_idempotent(self):
+        identity = self.device_relay_identity()
+        self.assertEqual(self.sync_device_relay(identity).status_code, 200)
+        path = "/api/ops/v1/device-relay/tasks"
+        body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.diagnostics.failures.read",
+            "payload": {},
+            "idempotencyKey": "failure-evidence-idempotent",
+            "ttlSeconds": 300,
+        })
+
+        missing_scope = self.client.post(
+            path,
+            data=body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, body),
+        )
+        self.assertEqual(missing_scope.status_code, 403)
+        self.assertEqual(missing_scope.get_json()["error"], "device_scope_required")
+
+        scopes = ["ops.window.control", "ops.jobs.create", "ops.diagnostics.read"]
+        self.assertEqual(self.sync_device_relay(identity, scopes=scopes).status_code, 200)
+        created = self.client.post(
+            path,
+            data=body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, body),
+        )
+        self.assertEqual(created.status_code, 202)
+        task_id = created.get_json()["taskId"]
+
+        duplicate = self.client.post(
+            path,
+            data=body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, body),
+        )
+        self.assertEqual(duplicate.status_code, 200)
+        self.assertTrue(duplicate.get_json()["deduplicated"])
+        self.assertEqual(duplicate.get_json()["taskId"], task_id)
+
+        conflicting_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.diagnostics.failures.read",
+            "payload": {},
+            "idempotencyKey": "failure-evidence-idempotent",
+            "ttlSeconds": 600,
+        })
+        conflict = self.client.post(
+            path,
+            data=conflicting_body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, conflicting_body),
+        )
+        self.assertEqual(conflict.status_code, 409)
+        self.assertEqual(conflict.get_json()["error"], "idempotency_conflict")
+
+        for index, payload in enumerate((
+            {"serviceId": "event-log"},
+            {"command": "wevtutil"},
+            {"path": "C:\\Windows"},
+            {"rawLog": "secret"},
+            {"file": "dump.dmp"},
+            [],
+            None,
+        )):
+            rejected_body = self.json_bytes({
+                "hostId": identity["host_id"],
+                "capabilityId": "ops.diagnostics.failures.read",
+                "payload": payload,
+                "idempotencyKey": f"failure-evidence-payload-{index}",
+            })
+            rejected = self.client.post(
+                path,
+                data=rejected_body,
+                content_type="application/json",
+                headers=self.device_headers(identity, "POST", path, rejected_body),
+            )
+            self.assertEqual(rejected.status_code, 400)
+            self.assertEqual(
+                rejected.get_json()["error"], "failure_evidence_payload_not_allowed"
+            )
+
+        missing_payload_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.diagnostics.failures.read",
+            "idempotencyKey": "failure-evidence-missing-payload",
+        })
+        missing_payload = self.client.post(
+            path,
+            data=missing_payload_body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, missing_payload_body),
+        )
+        self.assertEqual(missing_payload.status_code, 400)
+        self.assertEqual(
+            missing_payload.get_json()["error"], "failure_evidence_payload_not_allowed"
+        )
+
+        snapshot_path = f"/api/ops/v1/device-relay/hosts/{identity['host_id']}/snapshot"
+        snapshot_body = self.json_bytes({})
+        snapshot = self.client.post(
+            snapshot_path,
+            data=snapshot_body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", snapshot_path, snapshot_body),
+        )
+        self.assertEqual(snapshot.status_code, 200)
+        self.assertIn(
+            "ops.diagnostics.failures.read", snapshot.get_json()["host"]["capabilities"]
+        )
+
+        self.assertEqual(self.heartbeat("legacy-host").status_code, 200)
+        legacy = self.client.post(
+            "/api/ops/v1/tasks",
+            headers=self.auth(self.operator_key),
+            json={
+                "hostId": "legacy-host",
+                "capabilityId": "ops.diagnostics.failures.read",
+                "payload": {},
+            },
+        )
+        self.assertEqual(legacy.status_code, 400)
+        self.assertEqual(legacy.get_json()["error"], "task_capability_not_allowed")
+
+    def test_failure_evidence_completed_receipt_requires_exact_signed_schema(self):
+        identity = self.device_relay_identity()
+        scopes = ["ops.window.control", "ops.jobs.create", "ops.diagnostics.read"]
+        self.assertEqual(self.sync_device_relay(identity, scopes=scopes).status_code, 200)
+        task_id = self.create_failure_evidence_task(identity, "failure-evidence-receipt")
+        valid = self.failure_evidence()
+
+        invalid_values = []
+        for extra_name in ("rawLog", "path", "file"):
+            value = copy.deepcopy(valid)
+            value[extra_name] = "forbidden"
+            invalid_values.append(value)
+        missing = copy.deepcopy(valid)
+        missing.pop("dumpCount")
+        invalid_values.append(missing)
+        for name, value in (
+            ("kind", "failure-evidence-v2"),
+            ("eventLogAvailable", 1),
+            ("windowDays", 6),
+            ("windowDays", 7.0),
+            ("crashCount", -1),
+            ("hangCount", 1000),
+            ("dumpCount", True),
+            ("latestEventAt", "not-an-iso-time"),
+            ("windowStartedAt", None),
+            ("observedAt", "2026-08-13T12:00:00"),
+            ("observedAt", "2026-08-13 12:00:00+00:00"),
+            ("observedAt", "2026-W33-4T12:00:00+00:00"),
+        ):
+            invalid = copy.deepcopy(valid)
+            invalid[name] = value
+            invalid_values.append(invalid)
+
+        reversed_window = copy.deepcopy(valid)
+        reversed_window["windowStartedAt"] = "2026-08-14T00:00:00+00:00"
+        invalid_values.append(reversed_window)
+        outside_window = copy.deepcopy(valid)
+        outside_window["latestDumpAt"] = "2026-08-20T00:00:00+00:00"
+        outside_window["latestEvidenceAt"] = outside_window["latestDumpAt"]
+        invalid_values.append(outside_window)
+        wrong_latest = copy.deepcopy(valid)
+        wrong_latest["latestEvidenceAt"] = wrong_latest["latestEventAt"]
+        invalid_values.append(wrong_latest)
+        no_evidence_with_counts = copy.deepcopy(valid)
+        no_evidence_with_counts["hasEvidence"] = False
+        invalid_values.append(no_evidence_with_counts)
+        no_evidence_with_latest = copy.deepcopy(valid)
+        no_evidence_with_latest["hasEvidence"] = False
+        for name in (
+            "failureEventCount", "crashCount", "hangCount", "managedRuntimeFailureCount",
+            "windowsErrorReportCount", "dumpCount",
+        ):
+            no_evidence_with_latest[name] = 0
+        invalid_values.append(no_evidence_with_latest)
+        evidence_without_counts = copy.deepcopy(valid)
+        evidence_without_counts["hasEvidence"] = True
+        for name in (
+            "failureEventCount", "crashCount", "hangCount", "managedRuntimeFailureCount",
+            "windowsErrorReportCount", "dumpCount",
+        ):
+            evidence_without_counts[name] = 0
+        evidence_without_counts["latestEventAt"] = None
+        evidence_without_counts["latestDumpAt"] = None
+        evidence_without_counts["latestEvidenceAt"] = None
+        invalid_values.append(evidence_without_counts)
+        event_count_without_time = copy.deepcopy(valid)
+        event_count_without_time["latestEventAt"] = None
+        invalid_values.append(event_count_without_time)
+        event_time_without_count = copy.deepcopy(valid)
+        event_time_without_count["failureEventCount"] = 0
+        invalid_values.append(event_time_without_count)
+        dump_count_without_time = copy.deepcopy(valid)
+        dump_count_without_time["latestDumpAt"] = None
+        dump_count_without_time["latestEvidenceAt"] = dump_count_without_time["latestEventAt"]
+        invalid_values.append(dump_count_without_time)
+        dump_time_without_count = copy.deepcopy(valid)
+        dump_time_without_count["dumpCount"] = 0
+        invalid_values.append(dump_time_without_count)
+
+        for evidence in invalid_values:
+            response = self.post_failure_evidence_receipt(
+                identity,
+                task_id,
+                "failure-evidence-receipt",
+                "completed",
+                evidence,
+            )
+            self.assertEqual(response.status_code, 400)
+            self.assertEqual(response.get_json()["error"], "invalid_failure_evidence")
+
+        invalid_signature = self.post_failure_evidence_receipt(
+            identity,
+            task_id,
+            "failure-evidence-receipt",
+            "completed",
+            valid,
+            corrupt_envelope_signature=True,
+        )
+        self.assertEqual(invalid_signature.status_code, 401)
+        self.assertEqual(
+            invalid_signature.get_json()["error"], "invalid_host_envelope_signature"
+        )
+
+        accepted = self.post_failure_evidence_receipt(
+            identity,
+            task_id,
+            "failure-evidence-receipt",
+            "completed",
+            valid,
+        )
+        self.assertEqual(accepted.status_code, 201)
+
+        empty_task_id = self.create_failure_evidence_task(
+            identity, "failure-evidence-empty-receipt"
+        )
+        empty = copy.deepcopy(valid)
+        empty["hasEvidence"] = False
+        for name in (
+            "failureEventCount", "crashCount", "hangCount", "managedRuntimeFailureCount",
+            "windowsErrorReportCount", "dumpCount",
+        ):
+            empty[name] = 0
+        empty["latestEventAt"] = None
+        empty["latestDumpAt"] = None
+        empty["latestEvidenceAt"] = None
+        empty_accepted = self.post_failure_evidence_receipt(
+            identity,
+            empty_task_id,
+            "failure-evidence-empty-receipt",
+            "completed",
+            empty,
+        )
+        self.assertEqual(empty_accepted.status_code, 201)
+
+        for status in ("received", "accepted", "awaiting_local_consent", "rejected"):
+            rejected = self.post_failure_evidence_receipt(
+                identity,
+                task_id,
+                "failure-evidence-receipt",
+                status,
+                {},
+            )
+            self.assertEqual(rejected.status_code, 400)
+            self.assertEqual(rejected.get_json()["error"], "invalid_failure_evidence")
+
+    def test_failure_evidence_failed_receipt_has_exact_error_schema(self):
+        identity = self.device_relay_identity()
+        scopes = ["ops.window.control", "ops.jobs.create", "ops.diagnostics.read"]
+        self.assertEqual(self.sync_device_relay(identity, scopes=scopes).status_code, 200)
+        task_id = self.create_failure_evidence_task(identity, "failure-evidence-failed")
+        exact = {
+            "kind": "failure-evidence-error-v1",
+            "code": "failure_evidence_unavailable",
+        }
+        accepted = self.post_failure_evidence_receipt(
+            identity, task_id, "failure-evidence-failed", "failed", exact
+        )
+        self.assertEqual(accepted.status_code, 201)
+
+        for invalid in (
+            {**exact, "path": "C:\\Windows"},
+            {**exact, "rawLog": "access denied"},
+            {"kind": "failure-evidence-error-v1", "code": "other"},
+            self.failure_evidence(),
+        ):
+            rejected = self.post_failure_evidence_receipt(
+                identity, task_id, "failure-evidence-failed", "failed", invalid
+            )
+            self.assertEqual(rejected.status_code, 400)
+            self.assertEqual(rejected.get_json()["error"], "invalid_failure_evidence")
+
     def test_host_signed_terminal_receipt_retry_is_idempotent(self):
         identity = self.device_relay_identity()
         self.assertEqual(self.sync_device_relay(identity).status_code, 200)
@@ -584,6 +881,82 @@ class OperationsRelayTests(unittest.TestCase):
     def json_bytes(value):
         return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
+    def create_failure_evidence_task(self, identity, idempotency_key):
+        path = "/api/ops/v1/device-relay/tasks"
+        body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "capabilityId": "ops.diagnostics.failures.read",
+            "payload": {},
+            "idempotencyKey": idempotency_key,
+        })
+        response = self.client.post(
+            path,
+            data=body,
+            content_type="application/json",
+            headers=self.device_headers(identity, "POST", path, body),
+        )
+        self.assertEqual(response.status_code, 202)
+        return response.get_json()["taskId"]
+
+    @staticmethod
+    def failure_evidence():
+        observed_at = datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc)
+        event_at = observed_at - timedelta(hours=2)
+        dump_at = observed_at - timedelta(hours=1)
+        return {
+            "kind": "failure-evidence-v1",
+            "eventLogAvailable": True,
+            "dumpFolderAvailable": True,
+            "eventScanLimited": False,
+            "dumpScanLimited": False,
+            "hasEvidence": True,
+            "windowDays": 7,
+            "failureEventCount": 1,
+            "crashCount": 1,
+            "hangCount": 0,
+            "managedRuntimeFailureCount": 0,
+            "windowsErrorReportCount": 0,
+            "dumpCount": 1,
+            "latestEventAt": event_at.isoformat(),
+            "latestDumpAt": dump_at.isoformat(),
+            "latestEvidenceAt": dump_at.isoformat(),
+            "windowStartedAt": (observed_at - timedelta(days=7)).isoformat(),
+            "observedAt": observed_at.isoformat(),
+        }
+
+    def post_failure_evidence_receipt(
+            self, identity, task_id, idempotency_key, status, evidence,
+            *, corrupt_envelope_signature=False):
+        path = (
+            f"/api/ops/v1/device-relay/hosts/{identity['host_id']}"
+            f"/tasks/{task_id}/receipts"
+        )
+        signed_at = int(datetime.now(timezone.utc).timestamp())
+        envelope_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "taskId": task_id,
+            "idempotencyKey": idempotency_key,
+            "status": status,
+            "evidence": evidence,
+            "signedAt": signed_at,
+        }).decode("utf-8")
+        envelope = self.host_envelope(
+            identity, "colorvision-relay-receipt-v1", envelope_body
+        )
+        if corrupt_envelope_signature:
+            envelope["signature"] = base64.b64encode(b"invalid-signature").decode("ascii")
+        body = self.json_bytes({
+            "status": status,
+            "evidence": evidence,
+            "receiptEnvelope": envelope,
+        })
+        return self.client.post(
+            path,
+            data=body,
+            content_type="application/json",
+            headers=self.host_headers(identity, "POST", path, body, timestamp=signed_at),
+        )
+
     def device_relay_identity(self):
         host_id = uuid.uuid4().hex
         host_key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
@@ -616,7 +989,7 @@ class OperationsRelayTests(unittest.TestCase):
             ).decode("ascii"),
         }
 
-    def sync_device_relay(self, identity, revoked_at=None):
+    def sync_device_relay(self, identity, revoked_at=None, scopes=None):
         path = f"/api/ops/v1/device-relay/hosts/{identity['host_id']}/sync"
         app_version = "1.4.10.4"
         status = "online"
@@ -627,6 +1000,7 @@ class OperationsRelayTests(unittest.TestCase):
             "ops.flow.cancel",
             "ops.application.restart",
             "ops.service.restart",
+            "ops.diagnostics.failures.read",
             "ops.diagnostics.request",
         ]
         snapshot = {"isRunning": True, "mainWindow": {"state": "Normal"}}
@@ -653,7 +1027,9 @@ class OperationsRelayTests(unittest.TestCase):
                 "deviceId": identity["device_id"],
                 "displayName": "Test phone",
                 "publicKeySpki": identity["public_key"],
-                "scopes": ["ops.window.control", "ops.jobs.create"],
+                "scopes": scopes if scopes is not None else [
+                    "ops.window.control", "ops.jobs.create"
+                ],
                 "approvedAt": datetime.now(timezone.utc).isoformat(),
                 "revokedAt": revoked_at,
             }],

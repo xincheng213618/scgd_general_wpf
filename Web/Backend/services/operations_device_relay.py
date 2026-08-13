@@ -26,10 +26,14 @@ from cryptography.x509.oid import NameOID
 
 SAFE_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 SAFE_NONCE = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
+RFC3339_TIMESTAMP = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$"
+)
 ALLOWED_CLOCK_SKEW = timedelta(minutes=2)
 NONCE_LIFETIME = timedelta(minutes=5)
 ALLOWED_DEVICE_TASK_CAPABILITIES = {
     "ops.application.restart": "ops.jobs.create",
+    "ops.diagnostics.failures.read": "ops.diagnostics.read",
     "ops.diagnostics.request": "ops.jobs.create",
     "ops.flow.cancel": "ops.jobs.create",
     "ops.messaging.reconnect": "ops.jobs.create",
@@ -42,6 +46,25 @@ ALLOWED_RECEIPT_STATUSES = {
 }
 HOST_SNAPSHOT_ENVELOPE_PREFIX = "colorvision-relay-snapshot-v1"
 HOST_RECEIPT_ENVELOPE_PREFIX = "colorvision-relay-receipt-v1"
+FAILURE_EVIDENCE_COMPLETED_KEYS = {
+    "kind", "eventLogAvailable", "dumpFolderAvailable", "eventScanLimited",
+    "dumpScanLimited", "hasEvidence", "windowDays", "failureEventCount",
+    "crashCount", "hangCount", "managedRuntimeFailureCount",
+    "windowsErrorReportCount", "dumpCount", "latestEventAt", "latestDumpAt",
+    "latestEvidenceAt", "windowStartedAt", "observedAt",
+}
+FAILURE_EVIDENCE_BOOLEAN_KEYS = {
+    "eventLogAvailable", "dumpFolderAvailable", "eventScanLimited",
+    "dumpScanLimited", "hasEvidence",
+}
+FAILURE_EVIDENCE_COUNT_KEYS = {
+    "failureEventCount", "crashCount", "hangCount", "managedRuntimeFailureCount",
+    "windowsErrorReportCount", "dumpCount",
+}
+FAILURE_EVIDENCE_NULLABLE_TIME_KEYS = {
+    "latestEventAt", "latestDumpAt", "latestEvidenceAt",
+}
+FAILURE_EVIDENCE_REQUIRED_TIME_KEYS = {"windowStartedAt", "observedAt"}
 
 
 class DeviceRelayError(ValueError):
@@ -71,6 +94,77 @@ def _bounded_text(value, field: str, maximum: int, *, required: bool = False) ->
     if len(text) > maximum or required and not text:
         raise DeviceRelayError(f"invalid_{field}")
     return text
+
+
+def _is_timezone_aware_iso(value) -> bool:
+    if (not isinstance(value, str) or len(value) > 64
+            or not RFC3339_TIMESTAMP.fullmatch(value)):
+        return False
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    try:
+        parsed = datetime.fromisoformat(normalized)
+        return parsed.utcoffset() is not None
+    except (TypeError, ValueError):
+        return False
+
+
+def _parse_timezone_aware_iso(value: str) -> datetime:
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    return datetime.fromisoformat(normalized)
+
+
+def _validate_failure_evidence_receipt(status: str, evidence: dict) -> None:
+    if status not in {"completed", "failed"}:
+        raise DeviceRelayError("invalid_failure_evidence")
+    if status == "completed":
+        valid = (
+            set(evidence) == FAILURE_EVIDENCE_COMPLETED_KEYS
+            and evidence.get("kind") == "failure-evidence-v1"
+            and type(evidence.get("windowDays")) is int
+            and evidence["windowDays"] == 7
+            and all(type(evidence.get(name)) is bool for name in FAILURE_EVIDENCE_BOOLEAN_KEYS)
+            and all(
+                type(evidence.get(name)) is int and 0 <= evidence[name] <= 999
+                for name in FAILURE_EVIDENCE_COUNT_KEYS
+            )
+            and all(
+                evidence.get(name) is None or _is_timezone_aware_iso(evidence.get(name))
+                for name in FAILURE_EVIDENCE_NULLABLE_TIME_KEYS
+            )
+            and all(
+                _is_timezone_aware_iso(evidence.get(name))
+                for name in FAILURE_EVIDENCE_REQUIRED_TIME_KEYS
+            )
+        )
+        if not valid:
+            raise DeviceRelayError("invalid_failure_evidence")
+        window_started_at = _parse_timezone_aware_iso(evidence["windowStartedAt"])
+        observed_at = _parse_timezone_aware_iso(evidence["observedAt"])
+        latest = {
+            name: None if evidence[name] is None else _parse_timezone_aware_iso(evidence[name])
+            for name in FAILURE_EVIDENCE_NULLABLE_TIME_KEYS
+        }
+        event_at = latest["latestEventAt"]
+        dump_at = latest["latestDumpAt"]
+        expected_latest = max(
+            (value for value in (event_at, dump_at) if value is not None),
+            default=None,
+        )
+        if (window_started_at > observed_at
+                or any(value is not None and not window_started_at <= value <= observed_at
+                       for value in latest.values())
+                or latest["latestEvidenceAt"] != expected_latest
+                or (evidence["failureEventCount"] == 0) != (event_at is None)
+                or (evidence["dumpCount"] == 0) != (dump_at is None)
+                or evidence["hasEvidence"] != (
+                    evidence["failureEventCount"] > 0 or evidence["dumpCount"] > 0
+                )):
+            raise DeviceRelayError("invalid_failure_evidence")
+    elif status == "failed" and evidence != {
+            "kind": "failure-evidence-error-v1",
+            "code": "failure_evidence_unavailable",
+    }:
+        raise DeviceRelayError("invalid_failure_evidence")
 
 
 def _header(headers, name: str) -> str:
@@ -328,6 +422,9 @@ class OperationsDeviceRelayService:
         if not required_scope:
             raise DeviceRelayError("task_capability_not_allowed")
         payload = request.get("payload", {})
+        if capability_id == "ops.diagnostics.failures.read":
+            if "payload" not in request or not isinstance(payload, dict) or payload:
+                raise DeviceRelayError("failure_evidence_payload_not_allowed")
         if not isinstance(payload, dict):
             raise DeviceRelayError("task_payload_not_allowed")
         if capability_id == "ops.application.restart" and payload:
@@ -429,7 +526,7 @@ class OperationsDeviceRelayService:
                 timestamp, _nonce, _request_signature, public_key = self._authenticate_host(
                     db, host_id, "POST", path, headers, body)
                 task = db.execute(
-                    """SELECT task_id, idempotency_key FROM operations_tasks
+                    """SELECT task_id, idempotency_key, capability_id FROM operations_tasks
                        WHERE task_id=? AND host_id=? AND source_type='device'""",
                     (task_id, host_id),
                 ).fetchone()
@@ -450,6 +547,8 @@ class OperationsDeviceRelayService:
                         or signed_receipt.get("evidence") != evidence
                         or abs(receipt_signed_at - int(timestamp)) > 5):
                     raise DeviceRelayError("receipt_envelope_mismatch")
+                if task["capability_id"] == "ops.diagnostics.failures.read":
+                    _validate_failure_evidence_receipt(status, evidence)
                 now = _iso()
                 # A host may retry the exact signed envelope when the first HTTP
                 # response is lost.  Treat that as the same receipt; a new signedAt

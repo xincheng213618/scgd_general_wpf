@@ -32,6 +32,8 @@ namespace ColorVision.UI.Desktop.Operations
             UnavailableOperationsMqttRestartController.Instance;
         private IOperationsApplicationRestartController _applicationRestartController =
             UnavailableOperationsApplicationRestartController.Instance;
+        private IOperationsFailureEvidenceProvider _failureEvidenceProvider =
+            UnavailableOperationsFailureEvidenceProvider.Instance;
 
         public OperationsRelayClientService(
             OperationsServerIdentity identity,
@@ -104,6 +106,15 @@ namespace ColorVision.UI.Desktop.Operations
                 throw new InvalidOperationException(
                     "Configure the Operations application restart controller before starting the relay.");
             _applicationRestartController = controller;
+        }
+
+        public void ConfigureFailureEvidenceProvider(IOperationsFailureEvidenceProvider provider)
+        {
+            ArgumentNullException.ThrowIfNull(provider);
+            if (IsRunning)
+                throw new InvalidOperationException(
+                    "Configure the Operations failure-evidence provider before starting the relay.");
+            _failureEvidenceProvider = provider;
         }
 
         public void Start(
@@ -198,8 +209,7 @@ namespace ColorVision.UI.Desktop.Operations
                 _snapshotProvider?.Invoke() ?? new { },
                 _monitorProvider?.Invoke());
             string appVersion = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? string.Empty;
-            string[] capabilities =
-                ["ops.window.show", "ops.window.minimize", "ops.messaging.reconnect", "ops.flow.cancel", "ops.service.restart", "ops.application.restart", "ops.diagnostics.request"];
+            string[] capabilities = GetSignedHostCapabilities();
             long signedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             string snapshotBody = JsonSerializer.Serialize(new
             {
@@ -278,6 +288,19 @@ namespace ColorVision.UI.Desktop.Operations
                 {
                     await HandleSignedApplicationRestartTaskAsync(verified, cancellationToken)
                         .ConfigureAwait(false);
+                    continue;
+                }
+                else if (verified!.CapabilityId == "ops.diagnostics.failures.read")
+                {
+                    OperationsRelayFailureEvidenceResult result =
+                        new OperationsRelayFailureEvidenceHandler(
+                            _failureEvidenceProvider, _workStore).Handle(verified);
+                    await SendSignedTaskReceiptAsync(
+                        verified.TaskId,
+                        result.Status,
+                        result.Evidence,
+                        verified.IdempotencyKey,
+                        cancellationToken).ConfigureAwait(false);
                     continue;
                 }
                 else if (verified!.CapabilityId is "ops.window.show" or "ops.window.minimize")
@@ -808,6 +831,18 @@ namespace ColorVision.UI.Desktop.Operations
         private static bool IsSafeRelayIdentifier(string? value) =>
             value is { Length: >= 1 and <= 64 }
             && value.All(character => char.IsLetterOrDigit(character) || character is '_' or '-');
+
+        private static string[] GetSignedHostCapabilities() =>
+        [
+            "ops.window.show",
+            "ops.window.minimize",
+            "ops.messaging.reconnect",
+            "ops.flow.cancel",
+            "ops.service.restart",
+            "ops.application.restart",
+            "ops.diagnostics.request",
+            "ops.diagnostics.failures.read",
+        ];
 
         private async Task SendSignedTaskReceiptAsync(
             string taskId,

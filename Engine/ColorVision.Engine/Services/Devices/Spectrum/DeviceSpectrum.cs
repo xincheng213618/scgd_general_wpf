@@ -1040,9 +1040,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private string ResolveActiveMagnitudeFilePath()
         {
             Config.EnsureCalibrationGroups();
-            string path = Config.ActiveCalibrationGroup.MaguideFile;
+            string path = Config.MaguideFile;
             if (string.IsNullOrWhiteSpace(path))
-                path = Config.MaguideFile;
+                path = Config.ActiveCalibrationGroup.MaguideFile;
             return ResolveCalibrationFilePath(path, ServiceConfig.Instance.CVMainService_x64);
         }
 
