@@ -125,6 +125,7 @@ Mat Fusion(std::vector<Mat> imgs, int STEP) {
     CudaMemoryGuard guard_phi((void**)&d_phi);
     CudaMemoryGuard guard_I((void**)&d_I);
     CudaMemoryGuard guard_Ic((void**)&d_Ic);
+    CudaMemoryGuard guard_fmn((void**)&d_fmn);
 
     CUDA_CHECK(cudaMalloc(&d_all_gray, P * img_size_bytes));
     CUDA_CHECK(cudaMalloc(&d_all_fms, P * img_size_bytes));
@@ -142,6 +143,7 @@ Mat Fusion(std::vector<Mat> imgs, int STEP) {
     CUDA_CHECK(cudaMalloc(&d_phi, img_size_bytes));
     CUDA_CHECK(cudaMalloc(&d_I, img_size_int));
     CUDA_CHECK(cudaMalloc(&d_Ic, img_size_int));
+    CUDA_CHECK(cudaMalloc(&d_fmn, img_size_bytes));
 
     CUDA_CHECK(cudaMemset(d_err, 0, img_size_bytes));
 
@@ -212,14 +214,12 @@ Mat Fusion(std::vector<Mat> imgs, int STEP) {
         d_I, d_y1t, d_y2t, d_y3t, d_Ic, d_s2, d_u, d_A, M, N, STEP);
 
     // --- 4. Calculate Error and Normalize Focus Maps ---
-    for (int p = 0; p < P; ++p) {
-        calculate_err_kernel<<<grid, block, 0, stream>>>(
-            d_all_fms + p * M * N, d_err, d_A, d_u, d_s2, d_ymax, M, N, p);
-    }
-
-    // --- 5. Calculate S and Phi (Weight Maps) ---
     dim3 block_1d(256);
     dim3 grid_1d((M * N + block_1d.x - 1) / block_1d.x);
+    calculate_err_and_normalize_kernel<<<grid_1d, block_1d, 0, stream>>>(
+        d_all_fms, d_err, d_A, d_u, d_s2, d_ymax, M * N, P);
+
+    // --- 5. Calculate S and Phi (Weight Maps) ---
     element_divide_kernel<<<grid_1d, block_1d, 0, stream>>>(
         d_err, d_ymax, d_inv_psnr, M, N, P);
 
@@ -234,11 +234,9 @@ Mat Fusion(std::vector<Mat> imgs, int STEP) {
     median_filter_3x3_kernel<<<grid, block, 0, stream>>>(
         d_phi, d_phi_filtered, M, N);
 
-    // --- 6. Apply Weights to Focus Maps ---
-    for (int p = 0; p < P; ++p) {
-        tanh_weight_kernel<<<grid_1d, block_1d, 0, stream>>>(
-            d_all_fms + p * M * N, d_phi_filtered, M, N);
-    }
+    // --- 6. Apply Weights and compute their sum ---
+    apply_weights_and_sum_kernel<<<grid_1d, block_1d, 0, stream>>>(
+        d_all_fms, d_phi_filtered, d_fmn, M * N, P);
 
     // Single sync for all GPU compute stages 2-6
     CUDA_CHECK(cudaStreamSynchronize(stream));
@@ -248,15 +246,6 @@ Mat Fusion(std::vector<Mat> imgs, int STEP) {
     // --- 7. Final Fusion - Fully on GPU ---
     Mat result;
     const int total_pixels = M * N;
-
-    // Compute fmn = sum of all weight maps (on GPU)
-    CUDA_CHECK(cudaMalloc(&d_fmn, img_size_bytes));
-    CudaMemoryGuard guard_fmn((void**)&d_fmn);
-    CUDA_CHECK(cudaMemset(d_fmn, 0, img_size_bytes));
-    for (int p = 0; p < P; ++p) {
-        accumulate_kernel<<<grid_1d, block_1d, 0, stream>>>(
-            d_all_fms + p * M * N, d_fmn, total_pixels);
-    }
 
     if (channels == 3) {
         // Allocate accumulators for BGR channels

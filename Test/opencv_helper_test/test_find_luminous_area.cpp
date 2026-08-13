@@ -28,6 +28,8 @@
 #include <thread>
 #include <vector>
 
+#include "test_cuda_fusion.h"
+
 using json = nlohmann::json;
 
 #include "../../Native/opencv_helper/algorithm/surface_defect/surface_defect.h"
@@ -2738,6 +2740,9 @@ int main(int argc, char* argv[])
     }
     if (argc == 2 && std::string(argv[1]) == "--surface-defect-benchmark") {
         return runSurfaceDefectBenchmarkMode() ? 0 : 1;
+    }
+    if (argc >= 2 && std::string(argv[1]).rfind("--cuda-fusion-", 0) == 0) {
+        return RunCudaFusionCommand(argc, argv);
     }
     if (argc == 2 && std::string(argv[1]) == "--calibration-smoke") {
         return RunCalibrationApiSmokeTests() ? 0 : 1;
