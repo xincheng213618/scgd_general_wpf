@@ -5,6 +5,7 @@ import { createPageViewPayload, normalizeExperienceRoute } from '../src/services
 test('browser paths are reduced to the same fixed route templates as the backend', () => {
   assert.equal(normalizeExperienceRoute('/'), '/')
   assert.equal(normalizeExperienceRoute('/admin/traffic/'), '/admin/traffic')
+  assert.equal(normalizeExperienceRoute('/admin/operations/hosts'), '/admin/operations/hosts')
   assert.equal(normalizeExperienceRoute('/plugins/ProjectARVRPro'), '/plugins/:pluginId')
   assert.equal(normalizeExperienceRoute('/browse/Plugins/Camera'), '/browse/*')
   assert.equal(normalizeExperienceRoute('/unknown'), null)

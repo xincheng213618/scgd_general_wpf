@@ -1,6 +1,10 @@
 // Test for M_FindLuminousArea with self-adaptive thresholding
 // Test M_FindLuminousArea adaptive threshold function
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <nlohmann/json.hpp>
@@ -16,12 +20,19 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <iomanip>
 #include <limits>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
 
+#include "test_cuda_fusion.h"
+
 using json = nlohmann::json;
+
+#include "../../Native/opencv_helper/algorithm/surface_defect/surface_defect.h"
 
 bool RunCalibrationApiSmokeTests();
 bool RunCalibrationCacheSmallBudgetTests();
@@ -1000,6 +1011,960 @@ bool smokeSurfaceDefectDetectsSyntheticBrightAndDark()
     return hasBright && hasDark;
 }
 
+namespace {
+
+using SurfaceDefectConfig = cvcore::surface_defect::SurfaceDefectConfig;
+using SurfaceDefectItem = cvcore::surface_defect::SurfaceDefectItem;
+using SurfaceDefectResult = cvcore::surface_defect::SurfaceDefectResult;
+
+constexpr double kSurfaceDefectComparisonTolerance = 1e-9;
+
+struct SurfaceDefectTestCase
+{
+    std::string name;
+    cv::Mat image;
+    RoiRect roi{ 0, 0, 0, 0 };
+    SurfaceDefectConfig config;
+};
+
+struct SurfaceDefectDiffReport
+{
+    bool exactMatch = true;
+    double maxNumericDiff = 0.0;
+    int mismatchCount = 0;
+    std::vector<std::string> samples;
+};
+
+struct SurfaceDefectBenchmarkRow
+{
+    std::string name;
+    int requestedComponents = 0;
+    int detectedComponents = 0;
+    double prepareMs = 0.0;
+    double coldMs = 0.0;
+    double warmMs = 0.0;
+};
+
+int normalizedOddKernel(int value)
+{
+    if (value <= 1) {
+        return 0;
+    }
+
+    return (value % 2 == 0) ? value + 1 : value;
+}
+
+std::vector<int> normalizedScales(const std::vector<int>& scales)
+{
+    std::vector<int> output;
+    output.reserve(scales.size());
+    for (int scale : scales) {
+        int normalized = normalizedOddKernel(scale);
+        if (normalized > 1) {
+            output.push_back(normalized);
+        }
+    }
+
+    if (output.empty()) {
+        output = { 31, 61, 121 };
+    }
+
+    std::sort(output.begin(), output.end());
+    output.erase(std::unique(output.begin(), output.end()), output.end());
+    return output;
+}
+
+cv::Mat selectAnalysisChannel(const cv::Mat& image, int channel)
+{
+    if (image.empty()) {
+        return {};
+    }
+
+    cv::Mat gray;
+    if (image.channels() == 1) {
+        gray = image;
+    }
+    else if (channel >= 0 && channel < image.channels()) {
+        cv::extractChannel(image, gray, channel);
+    }
+    else if (image.channels() == 3) {
+        cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+    }
+    else if (image.channels() == 4) {
+        cv::cvtColor(image, gray, cv::COLOR_BGRA2GRAY);
+    }
+
+    return gray;
+}
+
+bool convertToAnalysisFloat(const cv::Mat& image, int channel, cv::Mat& gray32)
+{
+    cv::Mat gray = selectAnalysisChannel(image, channel);
+    if (gray.empty()) {
+        return false;
+    }
+
+    double scale = 1.0;
+    switch (gray.depth())
+    {
+    case CV_8U:
+        scale = 1.0 / 255.0;
+        break;
+    case CV_16U:
+        scale = 1.0 / 65535.0;
+        break;
+    case CV_32F:
+    case CV_64F:
+        scale = 1.0;
+        break;
+    default:
+        return false;
+    }
+
+    gray.convertTo(gray32, CV_32F, scale);
+    cv::patchNaNs(gray32, 0.0);
+    return !gray32.empty();
+}
+
+void buildSignedRelativeDelta(const cv::Mat& source32, int scale, cv::Mat& delta)
+{
+    cv::Mat background;
+    cv::GaussianBlur(source32, background, cv::Size(scale, scale), 0.0, 0.0, cv::BORDER_REPLICATE);
+
+    cv::Mat denominator;
+    cv::absdiff(background, cv::Scalar::all(0.0), denominator);
+    cv::Mat epsilon(denominator.size(), denominator.type(), cv::Scalar::all(1e-6));
+    cv::max(denominator, epsilon, denominator);
+
+    cv::subtract(source32, background, delta);
+    cv::divide(delta, denominator, delta);
+}
+
+void thresholdResidual(const cv::Mat& residual, double threshold, int openKernel, int closeKernel, cv::Mat& mask)
+{
+    cv::threshold(residual, mask, threshold, 255.0, cv::THRESH_BINARY);
+    mask.convertTo(mask, CV_8U);
+
+    int openSize = normalizedOddKernel(openKernel);
+    if (openSize > 1) {
+        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(openSize, openSize));
+        cv::morphologyEx(mask, mask, cv::MORPH_OPEN, kernel);
+    }
+
+    int closeSize = normalizedOddKernel(closeKernel);
+    if (closeSize > 1) {
+        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(closeSize, closeSize));
+        cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
+    }
+}
+
+double aspectRatio(const cv::Rect& rect)
+{
+    const int minSide = (std::max)(1, (std::min)(rect.width, rect.height));
+    const int maxSide = (std::max)(rect.width, rect.height);
+    return static_cast<double>(maxSide) / static_cast<double>(minSide);
+}
+
+std::string gradeForSeverity(double severity, const SurfaceDefectConfig& config)
+{
+    if (severity >= config.criticalSeverity) {
+        return "critical";
+    }
+    if (severity >= config.majorSeverity) {
+        return "major";
+    }
+    if (severity >= config.minorSeverity) {
+        return "minor";
+    }
+    return severity > 0.0 ? "trace" : "ok";
+}
+
+std::string classifyDefect(const std::string& polarity, int area, double aspect, int scale, const SurfaceDefectConfig& config)
+{
+    if (config.enableLineDetect && aspect >= config.lineAspectRatio) {
+        return polarity == "bright" ? "brightLine" : "darkLine";
+    }
+
+    if (area >= config.muraMinArea || scale >= 61) {
+        return polarity == "bright" ? "brightMura" : "darkMura";
+    }
+
+    return polarity == "bright" ? "brightSpot" : "darkSpot";
+}
+
+bool rectsTouchOrOverlap(const cv::Rect& a, const cv::Rect& b, int distance)
+{
+    cv::Rect expanded(
+        a.x - distance,
+        a.y - distance,
+        a.width + distance * 2,
+        a.height + distance * 2);
+    return (expanded & b).area() > 0;
+}
+
+json surfaceDefectConfigToJson(const SurfaceDefectConfig& config)
+{
+    return json{
+        { "channel", config.channel },
+        { "scales", config.scales },
+        { "darkThreshold", config.darkThreshold },
+        { "brightThreshold", config.brightThreshold },
+        { "minArea", config.minArea },
+        { "maxArea", config.maxArea },
+        { "muraMinArea", config.muraMinArea },
+        { "openKernel", config.openKernel },
+        { "closeKernel", config.closeKernel },
+        { "mergeDistance", config.mergeDistance },
+        { "maxDefects", config.maxDefects },
+        { "enableDark", config.enableDark },
+        { "enableBright", config.enableBright },
+        { "enableLineDetect", config.enableLineDetect },
+        { "lineAspectRatio", config.lineAspectRatio },
+        { "minSeverity", config.minSeverity },
+        { "minorSeverity", config.minorSeverity },
+        { "majorSeverity", config.majorSeverity },
+        { "criticalSeverity", config.criticalSeverity }
+    };
+}
+
+void appendComponentsReference(
+    const cv::Mat& signedDelta,
+    const cv::Mat& mask,
+    const std::string& polarity,
+    int scale,
+    const SurfaceDefectConfig& config,
+    std::vector<SurfaceDefectItem>& defects)
+{
+    cv::Mat labels;
+    cv::Mat stats;
+    cv::Mat centroids;
+    const int labelCount = cv::connectedComponentsWithStats(mask, labels, stats, centroids, 8, CV_32S);
+
+    for (int label = 1; label < labelCount; ++label) {
+        const int area = stats.at<int>(label, cv::CC_STAT_AREA);
+        if (area < config.minArea || (config.maxArea > 0 && area > config.maxArea)) {
+            continue;
+        }
+
+        const cv::Rect rect(
+            stats.at<int>(label, cv::CC_STAT_LEFT),
+            stats.at<int>(label, cv::CC_STAT_TOP),
+            stats.at<int>(label, cv::CC_STAT_WIDTH),
+            stats.at<int>(label, cv::CC_STAT_HEIGHT));
+        if (rect.width <= 0 || rect.height <= 0) {
+            continue;
+        }
+
+        cv::Mat componentMask;
+        cv::compare(labels, label, componentMask, cv::CMP_EQ);
+
+        cv::Scalar mean = cv::mean(signedDelta, componentMask);
+        double minDelta = 0.0;
+        double maxDelta = 0.0;
+        cv::minMaxLoc(signedDelta, &minDelta, &maxDelta, nullptr, nullptr, componentMask);
+
+        const double maxDeltaAbs = (std::max)(std::abs(minDelta), std::abs(maxDelta));
+        const double severity = maxDeltaAbs * std::sqrt(static_cast<double>(area));
+        if (severity < config.minSeverity) {
+            continue;
+        }
+
+        const double aspect = aspectRatio(rect);
+        SurfaceDefectItem item;
+        item.scale = scale;
+        item.polarity = polarity;
+        item.boundingRect = rect;
+        item.center = cv::Point2d(centroids.at<double>(label, 0), centroids.at<double>(label, 1));
+        item.area = area;
+        item.meanDelta = mean[0];
+        item.minDelta = minDelta;
+        item.maxDelta = maxDelta;
+        item.maxDeltaAbs = maxDeltaAbs;
+        item.severity = severity;
+        item.aspectRatio = aspect;
+        item.fillRatio = static_cast<double>(area) / static_cast<double>((std::max)(1, rect.area()));
+        item.type = classifyDefect(polarity, area, aspect, scale, config);
+        defects.push_back(std::move(item));
+    }
+}
+
+std::vector<SurfaceDefectItem> mergeDefectsReference(std::vector<SurfaceDefectItem> defects, const SurfaceDefectConfig& config)
+{
+    std::sort(defects.begin(), defects.end(), [](const auto& a, const auto& b) {
+        return a.severity > b.severity;
+    });
+
+    std::vector<SurfaceDefectItem> selected;
+    selected.reserve(defects.size());
+    for (const SurfaceDefectItem& defect : defects) {
+        bool duplicate = false;
+        for (const SurfaceDefectItem& existing : selected) {
+            if (defect.polarity == existing.polarity &&
+                rectsTouchOrOverlap(defect.boundingRect, existing.boundingRect, config.mergeDistance)) {
+                duplicate = true;
+                break;
+            }
+        }
+
+        if (duplicate) {
+            continue;
+        }
+
+        selected.push_back(defect);
+        if (config.maxDefects > 0 && static_cast<int>(selected.size()) >= config.maxDefects) {
+            break;
+        }
+    }
+
+    std::sort(selected.begin(), selected.end(), [](const auto& a, const auto& b) {
+        if (a.boundingRect.y != b.boundingRect.y) {
+            return a.boundingRect.y < b.boundingRect.y;
+        }
+        return a.boundingRect.x < b.boundingRect.x;
+    });
+
+    for (int i = 0; i < static_cast<int>(selected.size()); ++i) {
+        selected[static_cast<size_t>(i)].id = i + 1;
+    }
+
+    return selected;
+}
+
+cvcore::surface_defect::SurfaceDefectSummary summarizeReference(const std::vector<SurfaceDefectItem>& defects, const SurfaceDefectConfig& config)
+{
+    cvcore::surface_defect::SurfaceDefectSummary summary;
+    summary.defectCount = static_cast<int>(defects.size());
+    double totalSeverity = 0.0;
+    for (const SurfaceDefectItem& defect : defects) {
+        if (defect.polarity == "dark") {
+            summary.darkCount++;
+        }
+        else if (defect.polarity == "bright") {
+            summary.brightCount++;
+        }
+
+        summary.maxSeverity = (std::max)(summary.maxSeverity, defect.severity);
+        totalSeverity += defect.severity;
+    }
+
+    summary.meanSeverity = defects.empty() ? 0.0 : totalSeverity / static_cast<double>(defects.size());
+    summary.grade = gradeForSeverity(summary.maxSeverity, config);
+    return summary;
+}
+
+SurfaceDefectResult detectSurfaceDefectsReference(const cv::Mat& image, const SurfaceDefectConfig& config)
+{
+    SurfaceDefectResult result;
+    result.imageSize = image.empty() ? cv::Size() : cv::Size(image.cols, image.rows);
+
+    cv::Mat source32;
+    if (!convertToAnalysisFloat(image, config.channel, source32)) {
+        result.statusCode = "invalid_image";
+        result.message = "Invalid image or unsupported channel count/depth.";
+        return result;
+    }
+
+    std::vector<SurfaceDefectItem> defects;
+    const std::vector<int> scales = normalizedScales(config.scales);
+    for (int scale : scales) {
+        cv::Mat delta;
+        buildSignedRelativeDelta(source32, scale, delta);
+
+        if (config.enableBright && config.brightThreshold > 0.0) {
+            cv::Mat brightMask;
+            thresholdResidual(delta, config.brightThreshold, config.openKernel, config.closeKernel, brightMask);
+            appendComponentsReference(delta, brightMask, "bright", scale, config, defects);
+        }
+
+        if (config.enableDark && config.darkThreshold > 0.0) {
+            cv::Mat darkResidual;
+            cv::multiply(delta, -1.0, darkResidual);
+            cv::Mat darkMask;
+            thresholdResidual(darkResidual, config.darkThreshold, config.openKernel, config.closeKernel, darkMask);
+            appendComponentsReference(delta, darkMask, "dark", scale, config, defects);
+        }
+    }
+
+    result.defects = mergeDefectsReference(std::move(defects), config);
+    result.summary = summarizeReference(result.defects, config);
+    result.success = true;
+    result.statusCode = "ok";
+    result.message = result.defects.empty() ? "No surface defects detected." : "ok";
+    return result;
+}
+
+double durationToMs(const std::chrono::steady_clock::duration& duration)
+{
+    return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(duration).count();
+}
+
+bool compareSurfaceDefectOutputs(
+    const json& actual,
+    const SurfaceDefectResult& expected,
+    const SurfaceDefectConfig& config,
+    const cv::Mat& originalImage,
+    const RoiRect& roi,
+    SurfaceDefectDiffReport& report)
+{
+    auto fail = [&](const std::string& path, const std::string& message) {
+        report.exactMatch = false;
+        report.mismatchCount++;
+        if (report.samples.size() < 8) {
+            report.samples.push_back(path + ": " + message);
+        }
+    };
+
+    auto compareDouble = [&](const std::string& path, double actualValue, double expectedValue) {
+        const double diff = std::abs(actualValue - expectedValue);
+        report.maxNumericDiff = (std::max)(report.maxNumericDiff, diff);
+        if (diff > kSurfaceDefectComparisonTolerance) {
+            fail(path, "numeric mismatch actual=" + std::to_string(actualValue) + " expected=" + std::to_string(expectedValue));
+        }
+    };
+
+    if (!actual.is_object()) {
+        fail("$", "output is not an object");
+        return false;
+    }
+
+    const cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+    const cv::Rect imageRect(0, 0, originalImage.cols, originalImage.rows);
+    const bool useRoi = (mroi.width > 0 && mroi.height > 0 && (mroi & imageRect) == mroi);
+    const cv::Rect expectedRoi = useRoi ? mroi : cv::Rect(0, 0, originalImage.cols, originalImage.rows);
+    const cv::Point origin = useRoi ? cv::Point(mroi.x, mroi.y) : cv::Point(0, 0);
+    const json expectedConfig = surfaceDefectConfigToJson(config);
+
+    if (actual.value("algorithm", "") != "SurfaceDefect") {
+        fail("$.algorithm", "unexpected algorithm");
+    }
+    if (actual.value("version", "") != "0.1") {
+        fail("$.version", "unexpected version");
+    }
+    if (!actual.value("success", false) || !expected.success) {
+        fail("$.success", "unexpected success flag");
+    }
+    if (actual.value("statusCode", "") != expected.statusCode) {
+        fail("$.statusCode", "unexpected status code");
+    }
+    if (actual.value("message", "") != expected.message) {
+        fail("$.message", "unexpected message");
+    }
+    if (actual.value("count", -1) != static_cast<int>(expected.defects.size())) {
+        fail("$.count", "unexpected defect count");
+    }
+
+    if (!actual.contains("image") || !actual.at("image").is_object()) {
+        fail("$.image", "missing image object");
+        return false;
+    }
+
+    const json& image = actual.at("image");
+    if (image.value("width", -1) != originalImage.cols) {
+        fail("$.image.width", "unexpected width");
+    }
+    if (image.value("height", -1) != originalImage.rows) {
+        fail("$.image.height", "unexpected height");
+    }
+    if (!image.contains("roi") || !image.at("roi").is_object()) {
+        fail("$.image.roi", "missing roi");
+    }
+    else {
+        const json& actualRoi = image.at("roi");
+        if (actualRoi.value("x", -1) != expectedRoi.x) {
+            fail("$.image.roi.x", "unexpected roi x");
+        }
+        if (actualRoi.value("y", -1) != expectedRoi.y) {
+            fail("$.image.roi.y", "unexpected roi y");
+        }
+        if (actualRoi.value("w", -1) != expectedRoi.width) {
+            fail("$.image.roi.w", "unexpected roi width");
+        }
+        if (actualRoi.value("h", -1) != expectedRoi.height) {
+            fail("$.image.roi.h", "unexpected roi height");
+        }
+    }
+
+    if (actual.value("configUsed", json::object()) != expectedConfig) {
+        fail("$.configUsed", "unexpected config");
+    }
+
+    if (!actual.contains("summary") || !actual.at("summary").is_object()) {
+        fail("$.summary", "missing summary");
+        return false;
+    }
+
+    const json& summary = actual.at("summary");
+    if (summary.value("defectCount", -1) != expected.summary.defectCount) {
+        fail("$.summary.defectCount", "unexpected summary count");
+    }
+    if (summary.value("darkCount", -1) != expected.summary.darkCount) {
+        fail("$.summary.darkCount", "unexpected dark count");
+    }
+    if (summary.value("brightCount", -1) != expected.summary.brightCount) {
+        fail("$.summary.brightCount", "unexpected bright count");
+    }
+    compareDouble("$.summary.maxSeverity", summary.value("maxSeverity", 0.0), expected.summary.maxSeverity);
+    compareDouble("$.summary.meanSeverity", summary.value("meanSeverity", 0.0), expected.summary.meanSeverity);
+    if (summary.value("grade", "") != expected.summary.grade) {
+        fail("$.summary.grade", "unexpected grade");
+    }
+
+    if (!actual.contains("diagnostics") || !actual.at("diagnostics").is_object()) {
+        fail("$.diagnostics", "missing diagnostics");
+        return false;
+    }
+
+    const json& diagnostics = actual.at("diagnostics");
+    if (diagnostics.value("roiUsed", !useRoi) != useRoi) {
+        fail("$.diagnostics.roiUsed", "unexpected roi flag");
+    }
+    if (diagnostics.value("relativeResidual", false) != true) {
+        fail("$.diagnostics.relativeResidual", "unexpected residual flag");
+    }
+    if (diagnostics.value("background", "") != "gaussian") {
+        fail("$.diagnostics.background", "unexpected background");
+    }
+
+    if (!actual.contains("defects") || !actual.at("defects").is_array()) {
+        fail("$.defects", "missing defects array");
+        return false;
+    }
+
+    const json& defects = actual.at("defects");
+    if (defects.size() != expected.defects.size()) {
+        fail("$.defects", "unexpected defect array size");
+    }
+
+    const size_t count = (std::min)(defects.size(), expected.defects.size());
+    for (size_t i = 0; i < count; ++i) {
+        const json& actualDefect = defects.at(i);
+        const SurfaceDefectItem& expectedDefect = expected.defects[i];
+        const std::string basePath = "$.defects[" + std::to_string(i) + "]";
+        const cv::Rect expectedRect(
+            expectedDefect.boundingRect.x + origin.x,
+            expectedDefect.boundingRect.y + origin.y,
+            expectedDefect.boundingRect.width,
+            expectedDefect.boundingRect.height);
+        const cv::Point2d expectedCenter(expectedDefect.center.x + origin.x, expectedDefect.center.y + origin.y);
+
+        if (actualDefect.value("id", -1) != expectedDefect.id) {
+            fail(basePath + ".id", "unexpected id");
+        }
+        if (actualDefect.value("type", "") != expectedDefect.type) {
+            fail(basePath + ".type", "unexpected type");
+        }
+        if (actualDefect.value("polarity", "") != expectedDefect.polarity) {
+            fail(basePath + ".polarity", "unexpected polarity");
+        }
+        if (actualDefect.value("grade", "") != gradeForSeverity(expectedDefect.severity, config)) {
+            fail(basePath + ".grade", "unexpected grade");
+        }
+        if (actualDefect.value("scale", -1) != expectedDefect.scale) {
+            fail(basePath + ".scale", "unexpected scale");
+        }
+        if (actualDefect.value("x", (std::numeric_limits<int>::lowest)()) != expectedRect.x) {
+            fail(basePath + ".x", "unexpected x");
+        }
+        if (actualDefect.value("y", (std::numeric_limits<int>::lowest)()) != expectedRect.y) {
+            fail(basePath + ".y", "unexpected y");
+        }
+        if (actualDefect.value("w", (std::numeric_limits<int>::lowest)()) != expectedRect.width) {
+            fail(basePath + ".w", "unexpected width");
+        }
+        if (actualDefect.value("h", (std::numeric_limits<int>::lowest)()) != expectedRect.height) {
+            fail(basePath + ".h", "unexpected height");
+        }
+        compareDouble(basePath + ".centerX", actualDefect.value("centerX", 0.0), expectedCenter.x);
+        compareDouble(basePath + ".centerY", actualDefect.value("centerY", 0.0), expectedCenter.y);
+        if (actualDefect.value("area", -1) != expectedDefect.area) {
+            fail(basePath + ".area", "unexpected area");
+        }
+        compareDouble(basePath + ".meanDelta", actualDefect.value("meanDelta", 0.0), expectedDefect.meanDelta);
+        compareDouble(basePath + ".minDelta", actualDefect.value("minDelta", 0.0), expectedDefect.minDelta);
+        compareDouble(basePath + ".maxDelta", actualDefect.value("maxDelta", 0.0), expectedDefect.maxDelta);
+        compareDouble(basePath + ".maxDeltaAbs", actualDefect.value("maxDeltaAbs", 0.0), expectedDefect.maxDeltaAbs);
+        compareDouble(basePath + ".severity", actualDefect.value("severity", 0.0), expectedDefect.severity);
+        compareDouble(basePath + ".aspectRatio", actualDefect.value("aspectRatio", 0.0), expectedDefect.aspectRatio);
+        compareDouble(basePath + ".fillRatio", actualDefect.value("fillRatio", 0.0), expectedDefect.fillRatio);
+
+        if (!actualDefect.contains("boundingRect") || !actualDefect.at("boundingRect").is_object()) {
+            fail(basePath + ".boundingRect", "missing boundingRect");
+        }
+        else {
+            const json& boundingRect = actualDefect.at("boundingRect");
+            if (boundingRect.value("x", (std::numeric_limits<int>::lowest)()) != expectedRect.x
+                || boundingRect.value("y", (std::numeric_limits<int>::lowest)()) != expectedRect.y
+                || boundingRect.value("w", (std::numeric_limits<int>::lowest)()) != expectedRect.width
+                || boundingRect.value("h", (std::numeric_limits<int>::lowest)()) != expectedRect.height) {
+                fail(basePath + ".boundingRect", "unexpected bounding rect");
+            }
+        }
+    }
+
+    return report.exactMatch;
+}
+
+cv::Mat makeSurfaceDefectFlatImage8U(int width, int height)
+{
+    return cv::Mat(height, width, CV_8UC1, cv::Scalar(128)).clone();
+}
+
+cv::Mat makeSurfaceDefectBgrImage8U()
+{
+    cv::Mat image(240, 320, CV_8UC3, cv::Scalar(112, 118, 126));
+    cv::rectangle(image, cv::Rect(52, 46, 30, 20), cv::Scalar(210, 210, 210), cv::FILLED);
+    cv::rectangle(image, cv::Rect(184, 138, 28, 22), cv::Scalar(36, 36, 36), cv::FILLED);
+    cv::rectangle(image, cv::Rect(68, 170, 116, 8), cv::Scalar(202, 202, 202), cv::FILLED);
+    cv::rectangle(image, cv::Rect(236, 58, 14, 72), cv::Scalar(44, 44, 44), cv::FILLED);
+    return image;
+}
+
+cv::Mat makeSurfaceDefectRoi16UImage()
+{
+    cv::Mat image(320, 420, CV_16UC1, cv::Scalar(32768));
+    cv::rectangle(image, cv::Rect(90, 58, 18, 96), cv::Scalar(56320), cv::FILLED);
+    cv::rectangle(image, cv::Rect(228, 174, 30, 20), cv::Scalar(12000), cv::FILLED);
+    cv::rectangle(image, cv::Rect(256, 48, 56, 10), cv::Scalar(54800), cv::FILLED);
+    cv::rectangle(image, cv::Rect(116, 206, 12, 54), cv::Scalar(14500), cv::FILLED);
+    return image;
+}
+
+cv::Mat makeSurfaceDefectNonContiguousView()
+{
+    cv::Mat backing(280, 280, CV_8UC1, cv::Scalar(128));
+    for (int y = 0; y < 8; ++y) {
+        for (int x = 0; x < 8; ++x) {
+            const int left = 18 + x * 30;
+            const int top = 16 + y * 30;
+            const cv::Rect rect(left, top, 12, 12);
+            if (((x + y) % 2) == 0) {
+                cv::rectangle(backing, rect, cv::Scalar(214 - (x + y)), cv::FILLED);
+            }
+            else {
+                cv::rectangle(backing, rect, cv::Scalar(42 + (x + y)), cv::FILLED);
+            }
+        }
+    }
+
+    return backing(cv::Rect(10, 12, 252, 240));
+}
+
+cv::Mat makeSurfaceDefectSelectionImage16U()
+{
+    cv::Mat image(360, 360, CV_16UC1, cv::Scalar(32000));
+    for (int y = 0; y < 6; ++y) {
+        for (int x = 0; x < 6; ++x) {
+            const int left = 30 + x * 52;
+            const int top = 28 + y * 52;
+            const cv::Rect rect(left, top, 14, 14);
+            const unsigned short value = ((x + y) % 2 == 0)
+                ? static_cast<unsigned short>(51000 - (x + y) * 120)
+                : static_cast<unsigned short>(11800 + (x + y) * 120);
+            cv::rectangle(image, rect, cv::Scalar(value), cv::FILLED);
+        }
+    }
+
+    return image;
+}
+
+SurfaceDefectTestCase makeSurfaceDefectFlatCase()
+{
+    SurfaceDefectTestCase testCase;
+    testCase.name = "flat-no-defect";
+    testCase.image = makeSurfaceDefectFlatImage8U(240, 180);
+    testCase.config.scales = { 31 };
+    testCase.config.brightThreshold = 0.5;
+    testCase.config.darkThreshold = 0.5;
+    testCase.config.minArea = 20;
+    testCase.config.maxArea = 0;
+    testCase.config.minSeverity = 0.05;
+    return testCase;
+}
+
+SurfaceDefectTestCase makeSurfaceDefectBgrCase()
+{
+    SurfaceDefectTestCase testCase;
+    testCase.name = "bgr-line-and-blobs";
+    testCase.image = makeSurfaceDefectBgrImage8U();
+    testCase.config.channel = -1;
+    testCase.config.scales = { 31, 61, 121 };
+    testCase.config.brightThreshold = 0.03;
+    testCase.config.darkThreshold = 0.03;
+    testCase.config.minArea = 18;
+    testCase.config.maxArea = 0;
+    testCase.config.muraMinArea = 1200;
+    testCase.config.openKernel = 1;
+    testCase.config.closeKernel = 3;
+    testCase.config.mergeDistance = 5;
+    testCase.config.minSeverity = 0.0;
+    testCase.config.lineAspectRatio = 6.0;
+    return testCase;
+}
+
+SurfaceDefectTestCase makeSurfaceDefectRoi16BitCase()
+{
+    SurfaceDefectTestCase testCase;
+    testCase.name = "roi-16bit";
+    testCase.image = makeSurfaceDefectRoi16UImage();
+    testCase.roi = { 38, 42, 260, 192 };
+    testCase.config.channel = -1;
+    testCase.config.scales = { 31, 61 };
+    testCase.config.brightThreshold = 0.025;
+    testCase.config.darkThreshold = 0.025;
+    testCase.config.minArea = 16;
+    testCase.config.maxArea = 0;
+    testCase.config.muraMinArea = 1200;
+    testCase.config.openKernel = 1;
+    testCase.config.closeKernel = 5;
+    testCase.config.mergeDistance = 4;
+    testCase.config.minSeverity = 0.0;
+    testCase.config.lineAspectRatio = 5.0;
+    return testCase;
+}
+
+SurfaceDefectTestCase makeSurfaceDefectNonContiguousSelectionCase()
+{
+    SurfaceDefectTestCase testCase;
+    testCase.name = "non-contiguous-selection";
+    testCase.image = makeSurfaceDefectNonContiguousView();
+    testCase.config.scales = { 31 };
+    testCase.config.brightThreshold = 0.04;
+    testCase.config.darkThreshold = 0.04;
+    testCase.config.minArea = 14;
+    testCase.config.maxArea = 0;
+    testCase.config.muraMinArea = 2000;
+    testCase.config.openKernel = 1;
+    testCase.config.closeKernel = 3;
+    testCase.config.mergeDistance = 2;
+    testCase.config.maxDefects = 8;
+    testCase.config.minSeverity = 0.0;
+    return testCase;
+}
+
+SurfaceDefectBenchmarkRow runSurfaceDefectBenchmarkRow(
+    const std::string& name,
+    const cv::Mat& image,
+    const RoiRect& roi,
+    const SurfaceDefectConfig& config,
+    int requestedComponents,
+    int warmIterations)
+{
+    SurfaceDefectBenchmarkRow row;
+    row.name = name;
+    row.requestedComponents = requestedComponents;
+
+    const auto prepareStart = std::chrono::steady_clock::now();
+    const std::string configJson = surfaceDefectConfigToJson(config).dump();
+    HImage hImage = createHImageFromMat(image);
+    const auto prepareEnd = std::chrono::steady_clock::now();
+    row.prepareMs = durationToMs(prepareEnd - prepareStart);
+
+    char* result = nullptr;
+    const auto coldStart = std::chrono::steady_clock::now();
+    const int coldRet = M_DetectSurfaceDefects(hImage, roi, configJson.c_str(), &result);
+    const auto coldEnd = std::chrono::steady_clock::now();
+    row.coldMs = durationToMs(coldEnd - coldStart);
+
+    if (coldRet <= 0 || result == nullptr) {
+        std::ostringstream message;
+        message << "SurfaceDefect benchmark cold run failed for " << name << " ret=" << coldRet;
+        throw std::runtime_error(message.str());
+    }
+
+    json coldJson = json::parse(result, nullptr, false);
+    FreeResult(result);
+    if (coldJson.is_discarded()) {
+        throw std::runtime_error("SurfaceDefect benchmark cold JSON parse failed for " + name);
+    }
+
+    row.detectedComponents = coldJson.value("count", 0);
+
+    double warmTotal = 0.0;
+    for (int i = 0; i < warmIterations; ++i) {
+        char* warmResult = nullptr;
+        const auto warmStart = std::chrono::steady_clock::now();
+        const int warmRet = M_DetectSurfaceDefects(hImage, roi, configJson.c_str(), &warmResult);
+        const auto warmEnd = std::chrono::steady_clock::now();
+        warmTotal += durationToMs(warmEnd - warmStart);
+
+        if (warmRet <= 0 || warmResult == nullptr) {
+            throw std::runtime_error("SurfaceDefect benchmark warm run failed for " + name);
+        }
+        FreeResult(warmResult);
+    }
+
+    row.warmMs = warmTotal / static_cast<double>(warmIterations);
+    return row;
+}
+
+bool runSurfaceDefectEquivalenceCase(const SurfaceDefectTestCase& testCase, SurfaceDefectDiffReport& aggregate)
+{
+    HImage hImage = createHImageFromMat(testCase.image);
+    const std::string configJson = surfaceDefectConfigToJson(testCase.config).dump();
+
+    char* result = nullptr;
+    const int ret = M_DetectSurfaceDefects(hImage, testCase.roi, configJson.c_str(), &result);
+    if (ret <= 0 || result == nullptr) {
+        std::cerr << "SurfaceDefect case " << testCase.name << " returned " << ret << std::endl;
+        return false;
+    }
+
+    json actual = json::parse(result, nullptr, false);
+    FreeResult(result);
+    if (actual.is_discarded()) {
+        std::cerr << "SurfaceDefect case " << testCase.name << " produced invalid JSON" << std::endl;
+        return false;
+    }
+
+    const cv::Rect referenceRoi(testCase.roi.x, testCase.roi.y, testCase.roi.width, testCase.roi.height);
+    const cv::Rect imageRect(0, 0, testCase.image.cols, testCase.image.rows);
+    const bool useRoi = (referenceRoi.width > 0 && referenceRoi.height > 0 && (referenceRoi & imageRect) == referenceRoi);
+    const cv::Mat referenceImage = useRoi ? testCase.image(referenceRoi) : testCase.image;
+    SurfaceDefectResult reference = detectSurfaceDefectsReference(referenceImage, testCase.config);
+    SurfaceDefectDiffReport report;
+    compareSurfaceDefectOutputs(actual, reference, testCase.config, testCase.image, testCase.roi, report);
+    aggregate.exactMatch = aggregate.exactMatch && report.exactMatch;
+    aggregate.maxNumericDiff = std::max(aggregate.maxNumericDiff, report.maxNumericDiff);
+    aggregate.mismatchCount += report.mismatchCount;
+    aggregate.samples.insert(aggregate.samples.end(), report.samples.begin(), report.samples.end());
+
+    if (!report.exactMatch) {
+        std::cerr << "SurfaceDefect case " << testCase.name << " mismatch count=" << report.mismatchCount
+                  << " maxNumericDiff=" << report.maxNumericDiff << std::endl;
+        for (const std::string& sample : report.samples) {
+            std::cerr << "  " << sample << std::endl;
+        }
+        return false;
+    }
+
+    return true;
+}
+
+std::vector<SurfaceDefectTestCase> buildSurfaceDefectEquivalenceCases()
+{
+    std::vector<SurfaceDefectTestCase> cases;
+    cases.push_back(makeSurfaceDefectFlatCase());
+    cases.push_back(makeSurfaceDefectBgrCase());
+    cases.push_back(makeSurfaceDefectRoi16BitCase());
+    cases.push_back(makeSurfaceDefectNonContiguousSelectionCase());
+    return cases;
+}
+
+cv::Mat makeSurfaceDefectBenchmarkImage(int gridSide, int cellSize, int spotSize, int activeSide)
+{
+    const int imageSize = gridSide * cellSize;
+    cv::Mat image(imageSize, imageSize, CV_8UC1, cv::Scalar(128));
+    const int startCell = (gridSide - activeSide) / 2;
+    const int gap = (cellSize - spotSize) / 2;
+
+    for (int gy = 0; gy < activeSide; ++gy) {
+        for (int gx = 0; gx < activeSide; ++gx) {
+            const int cellX = startCell + gx;
+            const int cellY = startCell + gy;
+            const int left = cellX * cellSize + gap;
+            const int top = cellY * cellSize + gap;
+            const cv::Rect rect(left, top, spotSize, spotSize);
+            const bool bright = ((cellX + cellY) % 2) == 0;
+            cv::rectangle(image, rect, cv::Scalar(bright ? 224 : 32), cv::FILLED);
+        }
+    }
+
+    return image;
+}
+
+std::vector<SurfaceDefectBenchmarkRow> runSurfaceDefectBenchmarks()
+{
+    std::vector<SurfaceDefectBenchmarkRow> rows;
+    const int gridSide = 32;
+    const int cellSize = 48;
+    const int spotSize = 18;
+    const std::array<int, 6> activeSides = { 1, 2, 4, 8, 16, 32 };
+    SurfaceDefectConfig config;
+    config.scales = { 31 };
+    config.brightThreshold = 0.03;
+    config.darkThreshold = 0.03;
+    config.minArea = 12;
+    config.maxArea = 0;
+    config.muraMinArea = 2000;
+    config.openKernel = 1;
+    config.closeKernel = 3;
+    config.mergeDistance = 2;
+    config.maxDefects = 0;
+    config.minSeverity = 0.0;
+    config.lineAspectRatio = 8.0;
+
+    const int warmIterations = 5;
+    for (int activeSide : activeSides) {
+        const auto prepareStart = std::chrono::steady_clock::now();
+        cv::Mat image = makeSurfaceDefectBenchmarkImage(gridSide, cellSize, spotSize, activeSide);
+        const auto prepareEnd = std::chrono::steady_clock::now();
+        SurfaceDefectBenchmarkRow row = runSurfaceDefectBenchmarkRow(
+            "grid-" + std::to_string(activeSide * activeSide),
+            image,
+            { 0, 0, 0, 0 },
+            config,
+            activeSide * activeSide,
+            warmIterations);
+        row.prepareMs += durationToMs(prepareEnd - prepareStart);
+        rows.push_back(std::move(row));
+    }
+
+    return rows;
+}
+
+bool runSurfaceDefectEquivalenceTests()
+{
+    const std::vector<SurfaceDefectTestCase> cases = buildSurfaceDefectEquivalenceCases();
+    SurfaceDefectDiffReport aggregate;
+    for (const SurfaceDefectTestCase& testCase : cases) {
+        if (!runSurfaceDefectEquivalenceCase(testCase, aggregate)) {
+            return false;
+        }
+    }
+
+    std::cout << "SurfaceDefect equivalence cases passed: " << cases.size()
+              << ", maxNumericDiff=" << std::setprecision(15) << aggregate.maxNumericDiff
+              << ", mismatchCount=" << aggregate.mismatchCount << std::endl;
+    return aggregate.mismatchCount == 0 && aggregate.maxNumericDiff <= kSurfaceDefectComparisonTolerance;
+}
+
+bool runSurfaceDefectBenchmarkMode()
+{
+    std::vector<SurfaceDefectBenchmarkRow> rows;
+    try {
+        rows = runSurfaceDefectBenchmarks();
+    }
+    catch (const std::exception& ex) {
+        std::cerr << ex.what() << std::endl;
+        return false;
+    }
+
+    std::cout << "SurfaceDefect benchmark (Release|x64)" << std::endl;
+    std::cout << std::left
+              << std::setw(14) << "case"
+              << std::setw(14) << "components"
+              << std::setw(14) << "detected"
+              << std::setw(14) << "prepare_ms"
+              << std::setw(14) << "cold_ms"
+              << std::setw(14) << "warm_ms"
+              << std::endl;
+
+    for (const SurfaceDefectBenchmarkRow& row : rows) {
+        std::cout << std::left
+                  << std::setw(14) << row.name
+                  << std::setw(14) << row.requestedComponents
+                  << std::setw(14) << row.detectedComponents
+                  << std::setw(14) << std::fixed << std::setprecision(3) << row.prepareMs
+                  << std::setw(14) << row.coldMs
+                  << std::setw(14) << row.warmMs
+                  << std::endl;
+    }
+
+    return true;
+}
+
+} // namespace
+
 bool smokeConvertImageHandlesStrideAndOwnedBuffer()
 {
     const int width = 7;
@@ -1770,6 +2735,15 @@ void testWithRealImage(const std::string& imagePath)
 
 int main(int argc, char* argv[])
 {
+    if (argc == 2 && std::string(argv[1]) == "--surface-defect-equivalence") {
+        return runSurfaceDefectEquivalenceTests() ? 0 : 1;
+    }
+    if (argc == 2 && std::string(argv[1]) == "--surface-defect-benchmark") {
+        return runSurfaceDefectBenchmarkMode() ? 0 : 1;
+    }
+    if (argc >= 2 && std::string(argv[1]).rfind("--cuda-fusion-", 0) == 0) {
+        return RunCudaFusionCommand(argc, argv);
+    }
     if (argc == 2 && std::string(argv[1]) == "--calibration-smoke") {
         return RunCalibrationApiSmokeTests() ? 0 : 1;
     }

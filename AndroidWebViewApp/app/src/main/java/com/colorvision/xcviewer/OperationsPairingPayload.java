@@ -63,11 +63,15 @@ final class OperationsPairingPayload {
         if (!pin.matches("[0-9a-f]{64}")) {
             throw new IllegalArgumentException("证书指纹格式无效");
         }
+        String hostId = required(json, "hostId");
+        if (!OperationsRelayPolicy.isSafeIdentifier(hostId)) {
+            throw new IllegalArgumentException("主机身份格式无效");
+        }
         String expiresAt = required(json, "expiresAt");
         return new OperationsPairingPayload(
                 required(json, "pairingId"),
                 required(json, "nonce"),
-                required(json, "hostId"),
+                hostId,
                 endpoint,
                 pin,
                 expiresAt);

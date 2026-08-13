@@ -1370,9 +1370,342 @@ void runPoiV2SyntheticCoverage()
         || luminanceResult.Y != 13.0F) {
         throw std::runtime_error("POI V2 incorrectly applies MNP to one-channel CIE");
     }
+
+    const std::array<MPoiRequestV1, 4> boundaryRequests{{
+        { 1, 0, 0, 7, 7 },
+        { 1, width - 1, height - 1, 7, 7 },
+        { 2, 0, height - 1, 8, 6 },
+        { 2, width - 1, 0, 8, 6 },
+    }};
+    std::array<MPoiResultV1, boundaryRequests.size()> boundaryResults{};
+    if (M_CalculatePoiBatchV1(width, height, 32, 3, cie.data(), cie.size(),
+            boundaryRequests.data(), static_cast<std::uint32_t>(boundaryRequests.size()), boundaryResults.data()) != M_POI_OK
+        || std::fabs(boundaryResults[0].X - 8.384615F) > 0.0001F
+        || std::fabs(boundaryResults[1].X - 17.615385F) > 0.0001F
+        || boundaryResults[2].X != 15.5F || boundaryResults[3].X != 10.5F) {
+        throw std::runtime_error("POI V1 boundary ROI clipping changed");
+    }
+
+    std::array<MPoiRequestV1, 1> invalidRequest{{ { 2, -1, 0, 1, 1 } }};
+    std::array<MPoiResultV1, 1> unchanged{};
+    std::memset(unchanged.data(), 0x5A, sizeof(unchanged));
+    const auto unchangedBefore = unchanged;
+    if (M_CalculatePoiBatchV1(width, height, 32, 3, cie.data(), cie.size(),
+            invalidRequest.data(), 1, unchanged.data()) != M_POI_INVALID_ARGUMENT
+        || std::memcmp(unchanged.data(), unchangedBefore.data(), sizeof(unchanged)) != 0) {
+        throw std::runtime_error("POI V1 invalid request changed output");
+    }
+
+    options = {};
+    options.structSize = sizeof(options);
+    options.filterMode = 1;
+    options.threshold = std::numeric_limits<float>::quiet_NaN();
+    if (M_CalculatePoiBatchV2(width, height, 32, 3, cie.data(), cie.size(),
+            requests.data(), static_cast<std::uint32_t>(requests.size()), &options, v2.data()) != M_POI_INVALID_ARGUMENT) {
+        throw std::runtime_error("POI V2 accepted a NaN threshold");
+    }
+}
+
+using CalculatePoiBatchV1 = int(__cdecl*)(
+    std::int32_t, std::int32_t, std::int32_t, std::int32_t,
+    const float*, std::uint64_t, const MPoiRequestV1*, std::uint32_t, MPoiResultV1*);
+using CalculatePoiBatchV2 = int(__cdecl*)(
+    std::int32_t, std::int32_t, std::int32_t, std::int32_t,
+    const float*, std::uint64_t, const MPoiRequestV1*, std::uint32_t, const MPoiOptionsV2*, MPoiResultV1*);
+
+struct PoiBatchExports {
+    CalculatePoiBatchV1 v1 = nullptr;
+    CalculatePoiBatchV2 v2 = nullptr;
+};
+
+PoiBatchExports loadPoiBatchExports(HMODULE module)
+{
+    PoiBatchExports exports{
+        reinterpret_cast<CalculatePoiBatchV1>(GetProcAddress(module, "M_CalculatePoiBatchV1")),
+        reinterpret_cast<CalculatePoiBatchV2>(GetProcAddress(module, "M_CalculatePoiBatchV2")),
+    };
+    if (exports.v1 == nullptr || exports.v2 == nullptr) {
+        throw std::runtime_error("POI baseline DLL is missing a batch export");
+    }
+    return exports;
+}
+
+void requirePoiResultsEqual(
+    const std::vector<MPoiResultV1>& expected,
+    const std::vector<MPoiResultV1>& actual,
+    std::string_view label)
+{
+    if (expected.size() != actual.size()
+        || std::memcmp(expected.data(), actual.data(), expected.size() * sizeof(MPoiResultV1)) != 0) {
+        float maxDifference = 0.0F;
+        for (std::size_t index = 0; index < expected.size() * 9; ++index) {
+            const float expectedValue = reinterpret_cast<const float*>(expected.data())[index];
+            const float actualValue = reinterpret_cast<const float*>(actual.data())[index];
+            if (std::isfinite(expectedValue) && std::isfinite(actualValue)) {
+                maxDifference = (std::max)(maxDifference, std::fabs(expectedValue - actualValue));
+            }
+        }
+        throw std::runtime_error("POI baseline result mismatch for " + std::string(label)
+            + "; max finite difference=" + std::to_string(maxDifference));
+    }
+}
+
+std::vector<MPoiRequestV1> makePoiBenchmarkRequests(int width, int height, std::size_t count)
+{
+    const std::array<MPoiRequestV1, 9> boundaryRequests{{
+        { 0, 0, 0, 1, 1 },
+        { 1, 0, 0, 95, 95 },
+        { 2, 0, height - 1, 96, 80 },
+        { 1, width - 1, height - 1, 95, 95 },
+        { 2, width - 1, 0, 96, 80 },
+        { 0, width / 2, height / 2, 1, 1 },
+        { 1, width / 2, height / 2, 79, 79 },
+        { 2, width / 2, height / 2, 96, 80 },
+        { 2, 1, 1, 192, 128 },
+    }};
+
+    std::vector<MPoiRequestV1> requests;
+    requests.reserve(count);
+    for (std::size_t index = 0; index < count; ++index) {
+        if (index < boundaryRequests.size()) {
+            requests.push_back(boundaryRequests[index]);
+            continue;
+        }
+        const int type = static_cast<int>(index % 3);
+        const int x = static_cast<int>((index * 37U) % static_cast<std::size_t>(width));
+        const int y = static_cast<int>((index * 61U) % static_cast<std::size_t>(height));
+        const int size = 47 + static_cast<int>((index % 4) * 16U);
+        requests.push_back({ type, x, y, type == 0 ? 1 : size, type == 2 ? size - 8 : size });
+    }
+    return requests;
+}
+
+double millisecondsSince(const std::chrono::steady_clock::time_point& start)
+{
+    return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+}
+
+template <typename Call>
+double measurePoiWarmAverage(Call&& call, std::size_t iterations)
+{
+    const auto start = std::chrono::steady_clock::now();
+    for (std::size_t iteration = 0; iteration < iterations; ++iteration) call();
+    return millisecondsSince(start) / static_cast<double>(iterations);
 }
 
 } // namespace
+
+bool RunPoiBatchBaselineComparison(const std::filesystem::path& baselineDll)
+{
+    HMODULE baselineModule = nullptr;
+    try {
+        constexpr int width = 640;
+        constexpr int height = 480;
+        constexpr std::size_t largeRequestCount = 384;
+        constexpr std::size_t warmIterations = 80;
+        const auto setupStart = std::chrono::steady_clock::now();
+        const std::size_t pixels = static_cast<std::size_t>(width) * height;
+        std::vector<float> xyz(pixels * 3);
+        std::vector<float> gray(pixels);
+        for (std::size_t index = 0; index < pixels; ++index) {
+            const float value = 0.1F + static_cast<float>((index * 17U) % 1009U) / 100.0F;
+            xyz[index] = value;
+            xyz[pixels + index] = value * 1.2F + 0.01F;
+            xyz[pixels * 2 + index] = value * 0.8F + 0.02F;
+            gray[index] = value;
+        }
+        xyz[0] = std::numeric_limits<float>::quiet_NaN();
+        xyz[pixels + pixels / 2] = std::numeric_limits<float>::infinity();
+        gray[pixels - 1] = -std::numeric_limits<float>::infinity();
+        const std::vector<MPoiRequestV1> smallRequests = makePoiBenchmarkRequests(width, height, 9);
+        const std::vector<MPoiRequestV1> largeRequests = makePoiBenchmarkRequests(width, height, largeRequestCount);
+        const double setupMs = millisecondsSince(setupStart);
+
+        const auto moduleLoadStart = std::chrono::steady_clock::now();
+        baselineModule = LoadLibraryExW(baselineDll.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+        if (baselineModule == nullptr) {
+            throw std::runtime_error("Unable to load POI baseline DLL: " + std::to_string(GetLastError()));
+        }
+        const PoiBatchExports baseline = loadPoiBatchExports(baselineModule);
+        const double baselineLoadMs = millisecondsSince(moduleLoadStart);
+        const PoiBatchExports current{ M_CalculatePoiBatchV1, M_CalculatePoiBatchV2 };
+
+        auto compareV1 = [&](std::string_view label, const std::vector<float>& data, int channels,
+                             const std::vector<MPoiRequestV1>& requests) {
+            std::vector<MPoiResultV1> expected(requests.size());
+            std::vector<MPoiResultV1> actual(requests.size());
+            const int expectedResult = baseline.v1(width, height, 32, channels, data.data(), data.size(),
+                requests.data(), static_cast<std::uint32_t>(requests.size()), expected.data());
+            const int actualResult = current.v1(width, height, 32, channels, data.data(), data.size(),
+                requests.data(), static_cast<std::uint32_t>(requests.size()), actual.data());
+            if (expectedResult != actualResult || actualResult != M_POI_OK) {
+                throw std::runtime_error("POI V1 return-code mismatch for " + std::string(label));
+            }
+            requirePoiResultsEqual(expected, actual, label);
+        };
+
+        auto compareV2 = [&](std::string_view label, const std::vector<float>& data, int channels,
+                             const std::vector<MPoiRequestV1>& requests, const MPoiOptionsV2& options) {
+            std::vector<MPoiResultV1> expected(requests.size());
+            std::vector<MPoiResultV1> actual(requests.size());
+            const int expectedResult = baseline.v2(width, height, 32, channels, data.data(), data.size(),
+                requests.data(), static_cast<std::uint32_t>(requests.size()), &options, expected.data());
+            const int actualResult = current.v2(width, height, 32, channels, data.data(), data.size(),
+                requests.data(), static_cast<std::uint32_t>(requests.size()), &options, actual.data());
+            if (expectedResult != actualResult || actualResult != M_POI_OK) {
+                throw std::runtime_error("POI V2 return-code mismatch for " + std::string(label));
+            }
+            requirePoiResultsEqual(expected, actual, label);
+        };
+
+        std::vector<MPoiResultV1> baselineFirst(largeRequests.size());
+        const auto baselineFirstStart = std::chrono::steady_clock::now();
+        if (baseline.v1(width, height, 32, 3, xyz.data(), xyz.size(), largeRequests.data(),
+                static_cast<std::uint32_t>(largeRequests.size()), baselineFirst.data()) != M_POI_OK) {
+            throw std::runtime_error("Baseline POI V1 cold call failed");
+        }
+        const double baselineFirstMs = millisecondsSince(baselineFirstStart);
+        std::vector<MPoiResultV1> currentFirst(largeRequests.size());
+        const auto currentFirstStart = std::chrono::steady_clock::now();
+        if (current.v1(width, height, 32, 3, xyz.data(), xyz.size(), largeRequests.data(),
+                static_cast<std::uint32_t>(largeRequests.size()), currentFirst.data()) != M_POI_OK) {
+            throw std::runtime_error("Current POI V1 cold call failed");
+        }
+        const double currentFirstMs = millisecondsSince(currentFirstStart);
+        requirePoiResultsEqual(baselineFirst, currentFirst, "v1_xyz_large_first_call");
+
+        compareV1("v1_gray_small_boundary_nan_inf", gray, 1, smallRequests);
+        compareV1("v1_gray_large", gray, 1, largeRequests);
+        compareV1("v1_xyz_small_boundary_nan_inf", xyz, 3, smallRequests);
+        compareV1("v1_xyz_large", xyz, 3, largeRequests);
+
+        MPoiOptionsV2 options{};
+        options.structSize = sizeof(options);
+        options.maxPercent = 0.25F;
+        options.scaleX = 1.0F;
+        options.scaleY = 1.0F;
+        options.scaleZ = 1.0F;
+        compareV2("v2_default_xyz", xyz, 3, largeRequests, options);
+        options.filterMode = 1;
+        options.threshold = 1.0F;
+        compareV2("v2_value_filter_xyz", xyz, 3, largeRequests, options);
+        options.filterMode = 2;
+        options.xyzChannel = 1;
+        compareV2("v2_xyz_filter_xyz", xyz, 3, largeRequests, options);
+        options.filterMode = 3;
+        options.xyzChannel = 0;
+        compareV2("v2_no_area_filter_xyz", xyz, 3, largeRequests, options);
+        options.flags = M_POI_OPTION_PERCENT_THRESHOLD;
+        options.filterMode = 1;
+        options.threshold = 0.8F;
+        compareV2("v2_percent_value_filter_xyz", xyz, 3, smallRequests, options);
+        options.filterMode = 2;
+        options.xyzChannel = 0;
+        compareV2("v2_percent_xyz_filter_xyz", xyz, 3, smallRequests, options);
+        options.flags = 0;
+        options.filterMode = 1;
+        options.threshold = 1.0F;
+        compareV2("v2_value_filter_gray", gray, 1, largeRequests, options);
+        options.filterMode = 2;
+        options.xyzChannel = 0;
+        compareV2("v2_xyz_filter_gray", gray, 1, largeRequests, options);
+        options.filterMode = 3;
+        compareV2("v2_no_area_filter_gray", gray, 1, largeRequests, options);
+
+        std::vector<MPoiRequestV1> invalidRequests = smallRequests;
+        invalidRequests[0].x = -1;
+        std::array<MPoiResultV1, 9> invalidExpected{};
+        std::array<MPoiResultV1, 9> invalidActual{};
+        std::memset(invalidExpected.data(), 0xA5, sizeof(invalidExpected));
+        std::memset(invalidActual.data(), 0xA5, sizeof(invalidActual));
+        const int invalidV1Expected = baseline.v1(width, height, 32, 3, xyz.data(), xyz.size(),
+            invalidRequests.data(), static_cast<std::uint32_t>(invalidRequests.size()), invalidExpected.data());
+        const int invalidV1Actual = current.v1(width, height, 32, 3, xyz.data(), xyz.size(),
+            invalidRequests.data(), static_cast<std::uint32_t>(invalidRequests.size()), invalidActual.data());
+        if (invalidV1Expected != M_POI_INVALID_ARGUMENT || invalidV1Actual != invalidV1Expected
+            || std::memcmp(invalidExpected.data(), invalidActual.data(), sizeof(invalidExpected)) != 0) {
+            throw std::runtime_error("POI V1 invalid-request behavior differs from baseline");
+        }
+        options = {};
+        options.structSize = sizeof(options);
+        options.filterMode = 1;
+        options.threshold = std::numeric_limits<float>::quiet_NaN();
+        const int invalidV2Expected = baseline.v2(width, height, 32, 3, xyz.data(), xyz.size(),
+            smallRequests.data(), static_cast<std::uint32_t>(smallRequests.size()), &options, invalidExpected.data());
+        const int invalidV2Actual = current.v2(width, height, 32, 3, xyz.data(), xyz.size(),
+            smallRequests.data(), static_cast<std::uint32_t>(smallRequests.size()), &options, invalidActual.data());
+        if (invalidV2Expected != M_POI_INVALID_ARGUMENT || invalidV2Actual != invalidV2Expected
+            || std::memcmp(invalidExpected.data(), invalidActual.data(), sizeof(invalidExpected)) != 0) {
+            throw std::runtime_error("POI V2 invalid-options behavior differs from baseline");
+        }
+
+        options = {};
+        options.structSize = sizeof(options);
+        options.filterMode = 2;
+        options.xyzChannel = 1;
+        options.threshold = 1.0F;
+        options.maxPercent = 0.25F;
+        options.scaleX = 1.0F;
+        options.scaleY = 1.0F;
+        options.scaleZ = 1.0F;
+        std::vector<MPoiResultV1> baselineWarm(largeRequests.size());
+        std::vector<MPoiResultV1> currentWarm(largeRequests.size());
+        const auto callBaselineV1 = [&] {
+            if (baseline.v1(width, height, 32, 3, xyz.data(), xyz.size(), largeRequests.data(),
+                    static_cast<std::uint32_t>(largeRequests.size()), baselineWarm.data()) != M_POI_OK) {
+                throw std::runtime_error("Baseline POI V1 warm call failed");
+            }
+        };
+        const auto callCurrentV1 = [&] {
+            if (current.v1(width, height, 32, 3, xyz.data(), xyz.size(), largeRequests.data(),
+                    static_cast<std::uint32_t>(largeRequests.size()), currentWarm.data()) != M_POI_OK) {
+                throw std::runtime_error("Current POI V1 warm call failed");
+            }
+        };
+        const auto callBaselineFiltered = [&] {
+            if (baseline.v2(width, height, 32, 3, xyz.data(), xyz.size(), largeRequests.data(),
+                    static_cast<std::uint32_t>(largeRequests.size()), &options, baselineWarm.data()) != M_POI_OK) {
+                throw std::runtime_error("Baseline filtered POI warm call failed");
+            }
+        };
+        const auto callCurrentFiltered = [&] {
+            if (current.v2(width, height, 32, 3, xyz.data(), xyz.size(), largeRequests.data(),
+                    static_cast<std::uint32_t>(largeRequests.size()), &options, currentWarm.data()) != M_POI_OK) {
+                throw std::runtime_error("Current filtered POI warm call failed");
+            }
+        };
+        callBaselineV1();
+        callCurrentV1();
+        callBaselineFiltered();
+        callCurrentFiltered();
+        requirePoiResultsEqual(baselineWarm, currentWarm, "v2_xyz_filter_warm");
+        const double baselineV1WarmMs = measurePoiWarmAverage(callBaselineV1, warmIterations);
+        const double currentV1WarmMs = measurePoiWarmAverage(callCurrentV1, warmIterations);
+        const double baselineFilteredWarmMs = measurePoiWarmAverage(callBaselineFiltered, warmIterations);
+        const double currentFilteredWarmMs = measurePoiWarmAverage(callCurrentFiltered, warmIterations);
+
+        std::cout << std::fixed << std::setprecision(4);
+        std::cout << "poi_batch_benchmark,setup_data_requests_ms," << setupMs << std::endl;
+        std::cout << "poi_batch_benchmark,baseline_module_load_ms," << baselineLoadMs << std::endl;
+        std::cout << "poi_batch_benchmark,requests_small," << smallRequests.size() << std::endl;
+        std::cout << "poi_batch_benchmark,requests_large," << largeRequests.size() << std::endl;
+        std::cout << "poi_batch_benchmark,warm_iterations," << warmIterations << std::endl;
+        std::cout << "poi_batch_benchmark,v1_xyz_large_first_baseline_ms," << baselineFirstMs << std::endl;
+        std::cout << "poi_batch_benchmark,v1_xyz_large_first_current_ms," << currentFirstMs << std::endl;
+        std::cout << "poi_batch_benchmark,v1_xyz_large_warm_baseline_ms," << baselineV1WarmMs << std::endl;
+        std::cout << "poi_batch_benchmark,v1_xyz_large_warm_current_ms," << currentV1WarmMs << std::endl;
+        std::cout << "poi_batch_benchmark,v2_xyz_filter_large_warm_baseline_ms," << baselineFilteredWarmMs << std::endl;
+        std::cout << "poi_batch_benchmark,v2_xyz_filter_large_warm_current_ms," << currentFilteredWarmMs << std::endl;
+        std::cout << "poi_batch_benchmark,max_result_difference,0" << std::endl;
+        FreeLibrary(baselineModule);
+        return true;
+    }
+    catch (const std::exception& ex) {
+        if (baselineModule != nullptr) FreeLibrary(baselineModule);
+        std::cerr << "POI batch baseline comparison failed: " << ex.what() << std::endl;
+        return false;
+    }
+}
 
 bool RunCalibrationApiSmokeTests()
 {
@@ -1404,6 +1737,15 @@ bool RunCalibrationApiSmokeTests()
         requireResult(M_CalibrationClear(context.get()), context.get(), "M_CalibrationClear");
         runSyntheticCoverage();
         runPoiV2SyntheticCoverage();
+        std::array<wchar_t, 32768> baselinePath{};
+        const DWORD baselinePathLength = GetEnvironmentVariableW(
+            L"COLORVISION_POI_BATCH_BASELINE_DLL", baselinePath.data(), static_cast<DWORD>(baselinePath.size()));
+        if (baselinePathLength != 0 && baselinePathLength < baselinePath.size()) {
+            return RunPoiBatchBaselineComparison(std::filesystem::path(baselinePath.data()));
+        }
+        if (baselinePathLength >= baselinePath.size()) {
+            throw std::runtime_error("COLORVISION_POI_BATCH_BASELINE_DLL path is too long");
+        }
         return true;
     }
     catch (const std::exception& ex) {

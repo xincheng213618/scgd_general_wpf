@@ -26,6 +26,11 @@ app_setup / composition
 - Database migrations own schema evolution. Repositories own SQL. Cache,
   audit, analytics, and artifact indexes are separate responsibilities even
   when they share one SQLite file.
+- `db/repositories/operations_admin.py` owns the bounded, sanitized read model
+  used by the Web Operations dashboard, including safe signed-relay identity,
+  device, and task-origin metadata. Cryptographic material and request bodies
+  never cross that read-model boundary. Legacy Relay write-path SQL remains in
+  the transitional route until that complete contract is migrated.
 
 ### Known transitional route SQL
 

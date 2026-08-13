@@ -161,6 +161,7 @@
     </ClCompile>
     <ClCompile Include="test_p2_algorithms.cpp" />
     <ClCompile Include="test_calibration.cpp" />
+    <ClCompile Include="test_cuda_fusion.cpp" />
     <ClCompile Include="test_find_luminous_area.cpp" />
     <ClCompile Include="test_native_logging.cpp" />
     <ClCompile Include="DatFileReader.cpp" />
@@ -169,6 +170,7 @@
   <ItemGroup>
     <ClInclude Include="CVCIEFile.hpp" />
     <ClInclude Include="function.h" />
+    <ClInclude Include="test_cuda_fusion.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="data\sfrmat5\Test_edge1.tif">

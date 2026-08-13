@@ -7,6 +7,7 @@ import {
   CloudServerOutlined,
   DashboardOutlined,
   DatabaseOutlined,
+  DesktopOutlined,
   FolderOpenOutlined,
   InboxOutlined,
   LogoutOutlined,
@@ -33,6 +34,7 @@ const routeTitles: Record<string, string> = {
   '/admin/cache': '缓存与索引',
   '/admin/jobs': '任务调度',
   '/admin/deployments': '部署历史',
+  '/admin/operations/hosts': '终端运维',
   '/admin/feedback': '反馈收件箱',
   '/admin/users': '账号管理',
   '/admin/api-keys': 'API Key',
@@ -72,6 +74,11 @@ const route = {
       name: '系统运维',
       icon: <DatabaseOutlined />,
       routes: [
+        {
+          path: '/admin/operations/hosts',
+          name: '终端运维',
+          icon: <DesktopOutlined />,
+        },
         {
           path: '/admin/cache',
           name: '缓存与索引',

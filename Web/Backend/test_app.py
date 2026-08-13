@@ -126,6 +126,11 @@ class MarketplaceAppTests(unittest.TestCase):
             os.utime(path, (mtime, mtime))
         return path
 
+    def _create_android_release(self, version: str, payload: bytes = b"android-release") -> Path:
+        path = self.storage / f"ColorVision-Android-{version}.apk"
+        path.write_bytes(payload)
+        return path
+
     def test_old_upload_page_is_removed(self):
         response = self.client.get("/upload", follow_redirects=False)
         self.assertEqual(response.status_code, 404)
@@ -245,6 +250,81 @@ class MarketplaceAppTests(unittest.TestCase):
             for item in group["visible_items"]
         ]
         self.assertTrue(any(re.match(r"2026-0[34]-\d{2} \d{2}:\d{2}", value) for value in modified_values))
+
+    def test_android_update_manifest_selects_latest_release_and_publishes_integrity(self):
+        import hashlib
+
+        self._create_android_release("2.9", b"older")
+        latest = self._create_android_release("2.10", b"signed-apk-payload")
+
+        response = self.client.get("/api/android/update")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Cache-Control"], "public, max-age=60")
+        payload = response.get_json()
+        self.assertEqual(payload["schemaVersion"], 1)
+        self.assertTrue(payload["available"])
+        self.assertEqual(
+            payload["release"],
+            {
+                "version": "2.10",
+                "filename": latest.name,
+                "size": latest.stat().st_size,
+                "sha256": hashlib.sha256(latest.read_bytes()).hexdigest(),
+                "downloadUrl": "/api/android/update/2.10/download",
+            },
+        )
+
+    def test_android_update_manifest_is_empty_without_current_apk(self):
+        response = self.client.get("/api/android/update")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json(),
+            {"schemaVersion": 1, "available": False, "release": None},
+        )
+
+    def test_android_update_manifest_accepts_release_index_shape_without_platform(self):
+        latest = self._create_android_release("2.10", b"signed-apk-payload")
+        indexed_release = {
+            "version": "2.10",
+            "filename": latest.name,
+            "size": latest.stat().st_size,
+            "kind": "APK",
+            "source": "current",
+            "relative_path": latest.name,
+            "modified": "2026-08-13T00:00:00+08:00",
+        }
+
+        with patch.object(
+            marketplace_app.SERVICES,
+            "scan_app_release_artifacts",
+            return_value=[indexed_release],
+        ):
+            manifest = self.client.get("/api/android/update")
+            download = self.client.get("/api/android/update/2.10/download")
+
+        self.assertEqual(manifest.status_code, 200)
+        self.assertTrue(manifest.get_json()["available"])
+        self.assertEqual(manifest.get_json()["release"]["version"], "2.10")
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download.data, b"signed-apk-payload")
+        download.close()
+
+    def test_android_update_download_serves_only_named_current_apk(self):
+        expected = b"signed-apk-payload"
+        self._create_android_release("2.10", expected)
+
+        response = self.client.get("/api/android/update/2.10/download")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, expected)
+        self.assertEqual(response.mimetype, "application/vnd.android.package-archive")
+        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(response.headers["Accept-Ranges"], "bytes")
+        response.close()
+        self.assertEqual(self.client.get("/api/android/update/2.11/download").status_code, 404)
+        self.assertEqual(self.client.get("/api/android/update/not-a-version/download").status_code, 400)
 
     def test_site_releases_api_supports_archive_filters(self):
         self._create_app_release("1.2.0.1", suffix=".exe", mtime=1_775_000_000)

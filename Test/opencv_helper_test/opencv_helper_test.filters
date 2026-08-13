@@ -24,6 +24,9 @@
     <ClCompile Include="test_find_luminous_area.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="test_cuda_fusion.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="test_native_logging.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -33,6 +36,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="function.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="test_cuda_fusion.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

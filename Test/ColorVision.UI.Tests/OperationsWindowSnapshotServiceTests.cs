@@ -42,6 +42,33 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void InMemoryCaptureDoesNotCreateAPlaintextArtifact()
+        {
+            string root = NewRoot();
+            string snapshotDirectory = Path.Combine(root, "snapshots");
+            DateTimeOffset now = new(2026, 8, 13, 1, 0, 0, TimeSpan.Zero);
+            try
+            {
+                OperationsWindowSnapshotService service = new(
+                    snapshotDirectory, () => now, () => [.. TestJpeg]);
+
+                OperationsWindowSnapshotResult captured = service.CaptureInMemory();
+
+                Assert.Equal(string.Empty, captured.SnapshotId);
+                Assert.Equal(string.Empty, captured.FilePath);
+                Assert.Equal(TestJpeg, captured.Data);
+                Assert.Equal(now, captured.CreatedAt);
+                Assert.Equal(now.AddMinutes(5), captured.ExpiresAt);
+                Assert.False(Directory.Exists(snapshotDirectory));
+                Assert.False(Directory.Exists(root));
+            }
+            finally
+            {
+                DeleteRoot(root);
+            }
+        }
+
+        [Fact]
         public void ExpiredSnapshotIsRejectedAndRemoved()
         {
             string root = NewRoot();

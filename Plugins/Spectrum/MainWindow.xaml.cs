@@ -91,21 +91,21 @@ namespace Spectrum
             if (continuousMeasurementTask is { IsCompleted: false } || Manager.IsBusy)
             {
                 result = null;
-                reason = "光谱仪正在测量或执行其他操作，请完成后再打开光谱修正。";
+                reason = "光谱仪正在测量或执行其他操作，请完成后再打开光谱校正。";
                 return false;
             }
 
             if (latestSessionMeasurementResultId <= 0)
             {
                 result = null;
-                reason = "当前会话还没有可用于修正的测量结果，请先用当前标定文件完成一次正常测量。";
+                reason = "当前会话还没有可用于校正的测量结果，请先用当前标定文件完成一次正常测量。";
                 return false;
             }
 
             result = ViewResultSpectrums.FirstOrDefault(item => item.Id == latestSessionMeasurementResultId);
             if (result == null)
             {
-                reason = "当前会话最近一次测量结果已不在列表中，请重新测量后再修正。";
+                reason = "当前会话最近一次测量结果已不在列表中，请重新测量后再校正。";
                 return false;
             }
 
@@ -133,13 +133,13 @@ namespace Spectrum
             if (!string.Equals(currentMagnitudeFile, latestSessionMagnitudeFile, StringComparison.OrdinalIgnoreCase))
             {
                 result = null;
-                reason = "最近一次测量后当前幅值 DAT 已发生切换，请使用当前标定文件重新测量后再修正。";
+                reason = "最近一次测量后当前幅值 DAT 已发生切换，请使用当前标定文件重新测量后再校正。";
                 return false;
             }
             if (!string.Equals(currentMagnitudeHash, latestSessionMagnitudeFileSha256, StringComparison.OrdinalIgnoreCase))
             {
                 result = null;
-                reason = "最近一次测量后当前幅值 DAT 内容已发生变化，请重新测量后再修正。";
+                reason = "最近一次测量后当前幅值 DAT 内容已发生变化，请重新测量后再校正。";
                 return false;
             }
 

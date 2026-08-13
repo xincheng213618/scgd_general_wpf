@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 
+import java.util.List;
+
 final class AppPreferences {
     static final String THEME_SYSTEM = "system";
     static final String THEME_LIGHT = "light";
@@ -19,18 +21,27 @@ final class AppPreferences {
     private static final String KEY_OPERATIONS_ENDPOINT = "operations_endpoint";
     private static final String KEY_OPERATIONS_PIN = "operations_certificate_pin";
     private static final String KEY_OPERATIONS_HOST_ID = "operations_host_id";
+    private static final String KEY_OPERATIONS_CONNECTION_PREFERENCE =
+            "operations_connection_preference";
     private static final String KEY_OPERATIONS_PROFILE_REVOKED = "operations_profile_revoked";
     private static final String KEY_LEGACY_OPERATIONS_WATCH_ENABLED = "operations_watch_enabled";
+    private static final String KEY_LEGACY_OPERATIONS_WATCH_STATE = "operations_watch_state";
+    private static final String KEY_OPERATIONS_WATCH_HISTORY = "operations_watch_history";
+    private static final String KEY_OPERATIONS_RELAY_TASK_ID = "operations_relay_task_id";
+    private static final String KEY_OPERATIONS_RELAY_TASK_CAPABILITY = "operations_relay_task_capability";
+    private static final String KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY = "operations_relay_task_idempotency";
 
     private final SharedPreferences preferences;
 
     AppPreferences(Context context) {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         if (preferences.contains(KEY_LEGACY_LAN_URL)
-                || preferences.contains(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)) {
+                || preferences.contains(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)
+                || preferences.contains(KEY_LEGACY_OPERATIONS_WATCH_STATE)) {
             preferences.edit()
                     .remove(KEY_LEGACY_LAN_URL)
                     .remove(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)
+                    .remove(KEY_LEGACY_OPERATIONS_WATCH_STATE)
                     .apply();
         }
     }
@@ -102,7 +113,13 @@ final class AppPreferences {
                 .putString(KEY_OPERATIONS_ENDPOINT, endpoint)
                 .putString(KEY_OPERATIONS_PIN, certificatePin)
                 .putString(KEY_OPERATIONS_HOST_ID, hostId)
+                .putString(KEY_OPERATIONS_CONNECTION_PREFERENCE,
+                        OperationsConnectionPreference.DIRECT)
                 .putBoolean(KEY_OPERATIONS_PROFILE_REVOKED, false)
+                .remove(KEY_OPERATIONS_WATCH_HISTORY)
+                .remove(KEY_OPERATIONS_RELAY_TASK_ID)
+                .remove(KEY_OPERATIONS_RELAY_TASK_CAPABILITY)
+                .remove(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY)
                 .apply();
     }
 
@@ -118,6 +135,19 @@ final class AppPreferences {
         return preferences.getString(KEY_OPERATIONS_HOST_ID, "");
     }
 
+    String getOperationsConnectionPreference() {
+        return OperationsConnectionPreference.normalize(preferences.getString(
+                KEY_OPERATIONS_CONNECTION_PREFERENCE,
+                OperationsConnectionPreference.DIRECT));
+    }
+
+    void saveOperationsConnectionPreference(String connectionPreference) {
+        preferences.edit()
+                .putString(KEY_OPERATIONS_CONNECTION_PREFERENCE,
+                        OperationsConnectionPreference.normalize(connectionPreference))
+                .apply();
+    }
+
     boolean hasOperationsProfile() {
         return !getOperationsEndpoint().isEmpty()
                 && !getOperationsCertificatePin().isEmpty()
@@ -129,13 +159,62 @@ final class AppPreferences {
         preferences.edit().putBoolean(KEY_OPERATIONS_PROFILE_REVOKED, true).apply();
     }
 
+    String getOperationsWatchState() {
+        List<OperationsWatchHistory.Entry> entries = getOperationsWatchHistory(
+                System.currentTimeMillis());
+        return entries.isEmpty() ? "" : entries.get(entries.size() - 1).state;
+    }
+
+    List<OperationsWatchHistory.Entry> getOperationsWatchHistory(long nowMilliseconds) {
+        return OperationsWatchHistory.parse(
+                preferences.getString(KEY_OPERATIONS_WATCH_HISTORY, ""), nowMilliseconds);
+    }
+
+    boolean recordOperationsWatchState(String state, long nowMilliseconds) {
+        String previousHistory = preferences.getString(KEY_OPERATIONS_WATCH_HISTORY, "");
+        OperationsWatchHistory.Transition transition = OperationsWatchHistory.transition(
+                previousHistory, state, nowMilliseconds);
+        if (transition.changed || !transition.serializedHistory.equals(previousHistory)) {
+            preferences.edit()
+                    .putString(KEY_OPERATIONS_WATCH_HISTORY, transition.serializedHistory)
+                    .apply();
+        }
+        return transition.changed;
+    }
+
+    void saveOperationsRelayTask(String taskId, String capabilityId, String idempotencyKey) {
+        preferences.edit()
+                .putString(KEY_OPERATIONS_RELAY_TASK_ID, taskId)
+                .putString(KEY_OPERATIONS_RELAY_TASK_CAPABILITY, capabilityId)
+                .putString(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY, idempotencyKey)
+                .apply();
+    }
+
+    String getOperationsRelayTaskId() {
+        return preferences.getString(KEY_OPERATIONS_RELAY_TASK_ID, "");
+    }
+
+    String getOperationsRelayTaskCapability() {
+        return preferences.getString(KEY_OPERATIONS_RELAY_TASK_CAPABILITY, "");
+    }
+
+    String getOperationsRelayTaskIdempotencyKey() {
+        return preferences.getString(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY, "");
+    }
+
     void clearOperationsProfile() {
         preferences.edit()
                 .remove(KEY_OPERATIONS_ENDPOINT)
                 .remove(KEY_OPERATIONS_PIN)
                 .remove(KEY_OPERATIONS_HOST_ID)
+                .remove(KEY_OPERATIONS_CONNECTION_PREFERENCE)
                 .remove(KEY_OPERATIONS_PROFILE_REVOKED)
                 .remove(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)
+                .remove(KEY_LEGACY_OPERATIONS_WATCH_STATE)
+                .remove(KEY_OPERATIONS_WATCH_HISTORY)
+                .remove(KEY_OPERATIONS_RELAY_TASK_ID)
+                .remove(KEY_OPERATIONS_RELAY_TASK_CAPABILITY)
+                .remove(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY)
                 .apply();
     }
 

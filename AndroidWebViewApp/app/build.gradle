@@ -22,8 +22,9 @@ android {
         applicationId "com.colorvision.xcviewer"
         minSdk 23
         targetSdk 35
-        versionCode 42
-        versionName "2.31"
+        versionCode 55
+        versionName "2.44"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -55,6 +56,9 @@ dependencies {
     implementation "androidx.core:core:1.15.0"
     implementation "androidx.media3:media3-exoplayer:1.7.1"
     testImplementation "junit:junit:4.13.2"
+    testImplementation "org.json:json:20250517"
+    androidTestImplementation "androidx.test.ext:junit:1.3.0"
+    androidTestImplementation "androidx.test:runner:1.7.0"
 }
 
 gradle.taskGraph.whenReady { graph ->

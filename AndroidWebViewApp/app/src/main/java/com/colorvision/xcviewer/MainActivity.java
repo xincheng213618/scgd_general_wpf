@@ -3,6 +3,8 @@ package com.colorvision.xcviewer;
 import android.annotation.SuppressLint;
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -10,7 +12,9 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
 import android.webkit.PermissionRequest;
@@ -30,11 +34,22 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.content.FileProvider;
+
+import java.io.File;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class MainActivity extends Activity {
     static final String EXTRA_START_TAB = "start_tab";
     private static final int REQUEST_QR_SCAN = 1001;
     private static final int REQUEST_WEB_CAMERA_PERMISSION = 1002;
     private static final int REQUEST_AUDIO_PICK = 1003;
+    private static final int REQUEST_INSTALL_PERMISSION = 1004;
     static final int TAB_OPERATIONS = 0;
     static final int TAB_DOWNLOADS = 1;
     static final int TAB_SETTINGS = 2;
@@ -58,6 +73,9 @@ public class MainActivity extends Activity {
     private TextView profileTabLabel;
     private int currentTab = TAB_OPERATIONS;
     private String currentHomeUrl = "";
+    private final ExecutorService appUpdateExecutor = Executors.newSingleThreadExecutor();
+    private boolean appUpdateInFlight;
+    private File pendingInstallFile;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -567,7 +585,7 @@ public class MainActivity extends Activity {
         addSettingsRow(appSection, "固定下载站", "应用内置 · 无网址选项", v -> showHomePage());
         addSettingsRow(appSection, "音乐播放", musicController.getSavedAudioTitle(), v -> chooseAudioFile());
         addSettingsRow(appSection, "主题模式", getThemeModeLabel(), v -> showThemeDialog());
-        addSettingsRow(appSection, "应用版本", getAppVersionName(), null);
+        addSettingsRow(appSection, "应用更新", "当前 " + getAppVersionName() + " · 固定下载站", v -> checkForAppUpdate());
 
         LinearLayout actionSection = makeSettingsSection();
         content.addView(actionSection, settingsSectionParams());
@@ -717,6 +735,17 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_INSTALL_PERMISSION) {
+            File verifiedApk = pendingInstallFile;
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O
+                    || getPackageManager().canRequestPackageInstalls()) {
+                launchPackageInstaller(verifiedApk);
+            } else {
+                Toast.makeText(this, "系统尚未允许安装更新；已保留校验后的安装包", Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
+
         if (requestCode == REQUEST_QR_SCAN) {
             if (resultCode == RESULT_OK && data != null) {
                 String result = data.getStringExtra(QrScanActivity.EXTRA_QR_RESULT);
@@ -746,6 +775,163 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "请扫描电脑端现场运维配对码", Toast.LENGTH_SHORT).show();
             startQrScan();
         }
+    }
+
+    private void checkForAppUpdate() {
+        if (appUpdateInFlight) {
+            return;
+        }
+        appUpdateInFlight = true;
+        progressBar.setIndeterminate(true);
+        progressBar.setVisibility(View.VISIBLE);
+        headerSubtitle.setText("正在检查固定下载站…");
+        appUpdateExecutor.execute(() -> {
+            try {
+                AndroidUpdateClient.Release release = new AndroidUpdateClient(this).check();
+                String currentVersion = getAppVersionName();
+                runOnUiThread(() -> {
+                    finishAppUpdateWork();
+                    if (release == null || !AndroidUpdatePolicy.isNewerVersion(release.version, currentVersion)) {
+                        showAppUpdateMessage(
+                                "已经是最新版本",
+                                "当前版本 " + currentVersion + "，固定下载站暂无更高版本。");
+                        return;
+                    }
+                    showAvailableUpdate(release, currentVersion);
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> {
+                    finishAppUpdateWork();
+                    showAppUpdateMessage("检查更新失败", readableAppUpdateError(ex));
+                });
+            }
+        });
+    }
+
+    private void showAvailableUpdate(AndroidUpdateClient.Release release, String currentVersion) {
+        String size = String.format(Locale.CHINA, "%.1f MB", release.size / 1024d / 1024d);
+        new AlertDialog.Builder(this)
+                .setTitle("发现 ColorVision Android " + release.version)
+                .setMessage("当前 " + currentVersion + " · 安装包 " + size
+                        + "\n\n将从固定下载站下载，并在交给系统安装前校验文件长度、SHA-256、应用包名、版本和签名。")
+                .setNegativeButton("稍后", null)
+                .setPositiveButton("下载并安装", (dialog, which) -> downloadAndInstallUpdate(release))
+                .show();
+    }
+
+    private void downloadAndInstallUpdate(AndroidUpdateClient.Release release) {
+        if (appUpdateInFlight) {
+            return;
+        }
+        appUpdateInFlight = true;
+        progressBar.setIndeterminate(false);
+        progressBar.setMax(100);
+        progressBar.setProgress(0);
+        progressBar.setVisibility(View.VISIBLE);
+        headerSubtitle.setText("正在下载并校验 " + release.version + "…");
+        appUpdateExecutor.execute(() -> {
+            try {
+                File verified = new AndroidUpdateClient(this).downloadAndVerify(
+                        release,
+                        percent -> runOnUiThread(() -> progressBar.setProgress(percent)));
+                runOnUiThread(() -> {
+                    finishAppUpdateWork();
+                    requestInstallUpdate(verified);
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> {
+                    finishAppUpdateWork();
+                    showAppUpdateMessage("更新包已阻止", readableAppUpdateError(ex));
+                });
+            }
+        });
+    }
+
+    private void requestInstallUpdate(File verifiedApk) {
+        pendingInstallFile = verifiedApk;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                && !getPackageManager().canRequestPackageInstalls()) {
+            try {
+                Intent settings = new Intent(
+                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:" + getPackageName()));
+                Toast.makeText(this, "请在系统页允许 ColorVision 安装本次更新", Toast.LENGTH_LONG).show();
+                startActivityForResult(settings, REQUEST_INSTALL_PERMISSION);
+            } catch (Exception ex) {
+                showAppUpdateMessage("无法打开系统安装授权", "更新包已经安全校验，可稍后从应用更新入口重试。");
+            }
+            return;
+        }
+        launchPackageInstaller(verifiedApk);
+    }
+
+    private void launchPackageInstaller(File verifiedApk) {
+        if (verifiedApk == null || !verifiedApk.isFile()) {
+            showAppUpdateMessage("更新包不可用", "请重新从固定下载站检查更新。");
+            return;
+        }
+        try {
+            Uri uri = FileProvider.getUriForFile(
+                    this,
+                    getPackageName() + ".fileprovider",
+                    verifiedApk);
+            Intent install = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+            install.setDataAndType(uri, "application/vnd.android.package-archive");
+            install.setClipData(ClipData.newRawUri("ColorVision Android 更新", uri));
+            install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(install);
+            pendingInstallFile = null;
+        } catch (Exception ex) {
+            showAppUpdateMessage("无法启动系统安装器", "更新包已经安全校验，请稍后重试。");
+        }
+    }
+
+    private void finishAppUpdateWork() {
+        appUpdateInFlight = false;
+        progressBar.setVisibility(View.GONE);
+        if (currentTab == TAB_SETTINGS) {
+            headerSubtitle.setText("安全配对与应用信息");
+        }
+    }
+
+    private void showAppUpdateMessage(String title, String message) {
+        if (isFinishing()) {
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("知道了", null)
+                .show();
+    }
+
+    private String readableAppUpdateError(Exception ex) {
+        String message = ex.getMessage() == null ? "" : ex.getMessage();
+        if (ex instanceof UnknownHostException || ex instanceof ConnectException) {
+            return "固定下载站当前不可达，请稍后重试。";
+        }
+        if (ex instanceof SocketTimeoutException) {
+            return "固定下载站响应超时，请稍后重试。";
+        }
+        if (message.contains("manifest_http_404")) {
+            return "固定下载站尚未启用移动端更新清单。";
+        }
+        if (message.contains("signature_mismatch")) {
+            return "安装包签名与当前应用不一致，已阻止安装。";
+        }
+        if (message.contains("hash_mismatch")) {
+            return "安装包完整性校验失败，已删除临时文件。";
+        }
+        if (message.contains("not_newer")) {
+            return "下载的安装包不是更高版本，已阻止降级或重复安装。";
+        }
+        if (message.contains("package_name_mismatch") || message.contains("package_version_mismatch")) {
+            return "安装包身份与更新清单不一致，已阻止安装。";
+        }
+        if (message.contains("rejected") || message.contains("incomplete") || message.contains("too_large")) {
+            return "固定下载站返回的更新数据不符合安全约束，已阻止安装。";
+        }
+        return "无法完成固定下载站更新校验，请稍后重试。";
     }
 
     private void openOperationsDirectly() {
@@ -961,6 +1147,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        appUpdateExecutor.shutdownNow();
         if (musicController != null) {
             musicController.release();
         }

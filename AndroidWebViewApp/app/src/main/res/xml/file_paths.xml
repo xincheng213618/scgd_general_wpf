@@ -3,4 +3,7 @@
     <cache-path
         name="diagnostic_share"
         path="diagnostic-share/" />
+    <cache-path
+        name="android_update"
+        path="android-update/" />
 </paths>

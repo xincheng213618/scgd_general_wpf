@@ -8,6 +8,10 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -20,12 +24,15 @@ import androidx.core.content.ContextCompat;
 
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public final class OperationsWatchService extends Service {
     private static final String ACTION_START =
             "com.colorvision.xcviewer.action.START_OPERATIONS_WATCH";
+    private static final String ACTION_REFRESH_CONNECTION =
+            "com.colorvision.xcviewer.action.REFRESH_OPERATIONS_CONNECTION";
     private static final String NOTIFICATION_CHANNEL_ID = "operations_watch";
     private static final String ATTENTION_CHANNEL_ID = "operations_attention";
     private static final int NOTIFICATION_ID = 22023;
@@ -38,12 +45,18 @@ public final class OperationsWatchService extends Service {
     private AppPreferences preferences;
     private OperationsApiClient client;
     private String clientProfileKey = "";
+    private OperationsRelayApiClient relayClient;
+    private String relayClientProfileKey = "";
     private boolean monitoring;
     private boolean checkInFlight;
+    private boolean checkAgainAfterCurrent;
     private int consecutiveFailures;
     private boolean lastCheckOnline;
     private boolean hasCompletedCheck;
     private String lastAttentionKey = "";
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
+    private boolean networkCallbackRegistered;
 
     static void start(Context context) {
         AppPreferences preferences = new AppPreferences(context);
@@ -62,11 +75,26 @@ public final class OperationsWatchService extends Service {
         }
     }
 
+    static void refreshConnectionPreference(Context context) {
+        AppPreferences preferences = new AppPreferences(context);
+        if (!preferences.hasOperationsProfile()) {
+            return;
+        }
+        Intent intent = new Intent(context, OperationsWatchService.class)
+                .setAction(ACTION_REFRESH_CONNECTION);
+        ContextCompat.startForegroundService(context, intent);
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
         preferences = new AppPreferences(this);
+        String persistedState = preferences.getOperationsWatchState();
+        hasCompletedCheck = !persistedState.isEmpty();
+        lastCheckOnline = OperationsWatchHistory.isOnlineState(persistedState);
+        lastAttentionKey = OperationsWatchHistory.attentionKey(persistedState);
         createNotificationChannels();
+        registerNetworkCallback();
     }
 
     @Override
@@ -76,10 +104,14 @@ public final class OperationsWatchService extends Service {
             return START_NOT_STICKY;
         }
 
+        boolean refreshRequested = intent != null
+                && ACTION_REFRESH_CONNECTION.equals(intent.getAction());
         if (!monitoring) {
             monitoring = true;
             startInForeground("正在连接已配对主机…");
             handler.post(scheduledCheck);
+        } else if (refreshRequested) {
+            requestImmediateCheck();
         }
         return START_STICKY;
     }
@@ -93,8 +125,70 @@ public final class OperationsWatchService extends Service {
     public void onDestroy() {
         monitoring = false;
         handler.removeCallbacks(scheduledCheck);
+        unregisterNetworkCallback();
         executor.shutdownNow();
         super.onDestroy();
+    }
+
+    private void registerNetworkCallback() {
+        connectivityManager = getSystemService(ConnectivityManager.class);
+        if (connectivityManager == null) {
+            return;
+        }
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+                requestImmediateCheckAfterNetworkChange();
+            }
+
+            @Override
+            public void onLost(Network network) {
+                requestImmediateCheckAfterNetworkChange();
+            }
+        };
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                connectivityManager.registerDefaultNetworkCallback(networkCallback);
+            } else {
+                NetworkRequest request = new NetworkRequest.Builder()
+                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        .build();
+                connectivityManager.registerNetworkCallback(request, networkCallback);
+            }
+            networkCallbackRegistered = true;
+            Log.i(LOG_TAG, "operations_watch_network_callback_registered");
+        } catch (RuntimeException ignored) {
+            networkCallback = null;
+            Log.w(LOG_TAG, "operations_watch_network_callback_unavailable");
+        }
+    }
+
+    private void unregisterNetworkCallback() {
+        if (!networkCallbackRegistered || connectivityManager == null || networkCallback == null) {
+            return;
+        }
+        try {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+        } catch (RuntimeException ignored) {
+        }
+        networkCallbackRegistered = false;
+        networkCallback = null;
+    }
+
+    private void requestImmediateCheckAfterNetworkChange() {
+        handler.post(this::requestImmediateCheck);
+    }
+
+    private void requestImmediateCheck() {
+        if (!monitoring) {
+            return;
+        }
+        handler.removeCallbacks(scheduledCheck);
+        if (checkInFlight) {
+            checkAgainAfterCurrent = true;
+            return;
+        }
+        handler.post(scheduledCheck);
     }
 
     private void runCheck() {
@@ -108,20 +202,116 @@ public final class OperationsWatchService extends Service {
 
         checkInFlight = true;
         executor.execute(() -> {
-            try {
-                JSONObject response = getClient().get("/ops/v1/monitor");
-                JSONObject snapshot = response.optJSONObject("data");
-                if (snapshot == null) {
-                    throw new IllegalStateException("incomplete_live_monitor_response");
-                }
-                String status = notificationStatus(snapshot);
-                String attentionKey = notificationAttentionKey(snapshot);
-                handler.post(() -> completeSuccessfulCheck(status, attentionKey));
-            } catch (Exception ex) {
-                String code = ex.getMessage() == null ? "" : ex.getMessage();
-                handler.post(() -> completeFailedCheck(code));
+            if (OperationsConnectionPreference.prefersRelay(
+                    preferences.getOperationsConnectionPreference())) {
+                runRelayPreferredCheck();
+            } else {
+                runDirectPreferredCheck();
             }
         });
+    }
+
+    private void runDirectPreferredCheck() {
+        String localCode;
+        try {
+            LocalCheck check = readLocalCheck();
+            handler.post(() -> completeSuccessfulCheck(check.status, check.attentionKey));
+            return;
+        } catch (Exception localException) {
+            localCode = errorCode(localException);
+            if (isRevoked(localCode)) {
+                handler.post(() -> completeFailedCheck(localCode));
+                return;
+            }
+        }
+
+        try {
+            RelayCheck check = readRelayCheck();
+            handler.post(() -> completeRemoteCheck(check));
+        } catch (Exception relayException) {
+            String relayCode = errorCode(relayException);
+            Log.w(LOG_TAG, "operations_watch_relay_unavailable code=" + relayCode);
+            handler.post(() -> completeFailedCheck(isRevoked(relayCode) ? relayCode : localCode));
+        }
+    }
+
+    private void runRelayPreferredCheck() {
+        String relayCode;
+        try {
+            RelayCheck check = readRelayCheck();
+            handler.post(() -> completeRemoteCheck(check));
+            return;
+        } catch (Exception relayException) {
+            relayCode = errorCode(relayException);
+            Log.w(LOG_TAG, "operations_watch_relay_unavailable code=" + relayCode);
+            if (isRevoked(relayCode)) {
+                handler.post(() -> completeFailedCheck(relayCode));
+                return;
+            }
+        }
+
+        try {
+            LocalCheck check = readLocalCheck();
+            handler.post(() -> completeSuccessfulCheck(check.status, check.attentionKey));
+        } catch (Exception localException) {
+            String localCode = errorCode(localException);
+            handler.post(() -> completeFailedCheck(isRevoked(localCode) ? localCode : relayCode));
+        }
+    }
+
+    private LocalCheck readLocalCheck() throws Exception {
+        JSONObject response = getClient().get("/ops/v1/monitor");
+        JSONObject snapshot = response.optJSONObject("data");
+        if (snapshot == null) {
+            throw new IllegalStateException("incomplete_live_monitor_response");
+        }
+        return new LocalCheck(notificationStatus(snapshot), notificationAttentionKey(snapshot));
+    }
+
+    private RelayCheck readRelayCheck() throws Exception {
+        JSONObject response = getRelayClient().getSnapshot();
+        JSONObject host = response.optJSONObject("host");
+        if (host == null) {
+            throw new IllegalStateException("incomplete_relay_snapshot");
+        }
+        boolean hostFresh = OperationsRelayPolicy.isHostFresh(
+                host.optLong("signedAt", 0L),
+                System.currentTimeMillis());
+        JSONObject snapshot = host.optJSONObject("snapshot");
+        JSONObject monitor = snapshot == null ? null : snapshot.optJSONObject("monitor");
+        if (!hostFresh || monitor == null) {
+            return new RelayCheck(hostFresh, "", "");
+        }
+        return new RelayCheck(
+                true,
+                notificationStatus(monitor),
+                notificationAttentionKey(monitor));
+    }
+
+    private static boolean isRevoked(String code) {
+        return !OperationsConnectionPreference.canFallbackAfter(code);
+    }
+
+    private static final class LocalCheck {
+        final String status;
+        final String attentionKey;
+
+        LocalCheck(String status, String attentionKey) {
+            this.status = status;
+            this.attentionKey = attentionKey;
+        }
+    }
+
+    private static final class RelayCheck {
+        final boolean hostFresh;
+        final String status;
+        final String attentionKey;
+
+        RelayCheck(boolean hostFresh, String status, String attentionKey) {
+            this.hostFresh = hostFresh;
+            this.status = status;
+            this.attentionKey = attentionKey;
+        }
     }
 
     private OperationsApiClient getClient() throws Exception {
@@ -141,6 +331,22 @@ public final class OperationsWatchService extends Service {
         return client;
     }
 
+    private OperationsRelayApiClient getRelayClient() throws Exception {
+        String profileKey = preferences.getOperationsHostId()
+                + "\n" + preferences.getOrCreateDeviceId();
+        if (relayClient == null || !profileKey.equals(relayClientProfileKey)) {
+            OperationsDeviceIdentity identity =
+                    new OperationsDeviceIdentity(preferences.getOperationsHostId());
+            relayClient = new OperationsRelayApiClient(
+                    preferences.getOperationsHostId(),
+                    preferences.getOrCreateDeviceId(),
+                    preferences.getOperationsCertificatePin(),
+                    identity);
+            relayClientProfileKey = profileKey;
+        }
+        return relayClient;
+    }
+
     private void completeSuccessfulCheck(String status, String attentionKey) {
         if (!monitoring) {
             return;
@@ -153,6 +359,11 @@ public final class OperationsWatchService extends Service {
             Log.i(LOG_TAG, "operations_watch_online");
         }
         lastCheckOnline = true;
+        preferences.recordOperationsWatchState(
+                attentionKey.isEmpty()
+                        ? OperationsWatchHistory.STATE_ONLINE
+                        : OperationsWatchHistory.attentionState(attentionKey),
+                System.currentTimeMillis());
         updateNotification(OperationsWatchPolicy.successfulCheckNotification(status, reconnected), true);
         if (OperationsWatchPolicy.shouldPostAttention(attentionKey, lastAttentionKey)) {
             postAttentionNotification(attentionKey);
@@ -163,6 +374,40 @@ public final class OperationsWatchService extends Service {
         scheduleNext(OperationsWatchPolicy.HEALTHY_CHECK_MILLISECONDS);
     }
 
+    private void completeRemoteCheck(RelayCheck check) {
+        if (!monitoring) {
+            return;
+        }
+        checkInFlight = false;
+        boolean reconnected = hasCompletedCheck && !lastCheckOnline;
+        hasCompletedCheck = true;
+        consecutiveFailures = 0;
+        lastCheckOnline = true;
+        String attentionKey = check.hostFresh ? check.attentionKey : "";
+        String relayState = !attentionKey.isEmpty()
+                ? OperationsWatchHistory.attentionState(attentionKey)
+                : check.hostFresh
+                        ? OperationsWatchHistory.STATE_REMOTE_ONLINE
+                        : OperationsWatchHistory.STATE_REMOTE_WAITING;
+        preferences.recordOperationsWatchState(relayState, System.currentTimeMillis());
+        String status = check.hostFresh
+                ? check.status.isEmpty()
+                        ? "固定中继在线 · 电脑已连接"
+                        : "固定中继 · " + check.status
+                : "远程中继在线 · 等待电脑上线";
+        updateNotification((reconnected ? "连接已恢复 · " : "") + status + " · 刚刚检查", true);
+        if (OperationsWatchPolicy.shouldPostAttention(attentionKey, lastAttentionKey)) {
+            postAttentionNotification(attentionKey);
+        } else if (attentionKey.isEmpty()) {
+            clearAttentionNotification();
+        }
+        lastAttentionKey = attentionKey;
+        Log.i(LOG_TAG, check.hostFresh
+                ? "operations_watch_remote_online"
+                : "operations_watch_remote_waiting");
+        scheduleNext(OperationsWatchPolicy.HEALTHY_CHECK_MILLISECONDS);
+    }
+
     private void completeFailedCheck(String code) {
         if (!monitoring) {
             return;
@@ -170,6 +415,9 @@ public final class OperationsWatchService extends Service {
         checkInFlight = false;
         hasCompletedCheck = true;
         if (code.contains("unknown_or_revoked_device")) {
+            clearRemoteWindowSnapshotSecrets();
+            preferences.recordOperationsWatchState(
+                    OperationsWatchHistory.STATE_REVOKED, System.currentTimeMillis());
             preferences.markOperationsProfileRevoked();
             Log.w(LOG_TAG, "operations_watch_pairing_revoked");
             clearAttentionNotification();
@@ -186,6 +434,8 @@ public final class OperationsWatchService extends Service {
             Log.w(LOG_TAG, "operations_watch_offline retry_seconds=" + (retryDelay / 1000L));
         }
         lastCheckOnline = false;
+        preferences.recordOperationsWatchState(
+                OperationsWatchHistory.STATE_OFFLINE, System.currentTimeMillis());
         updateNotification("连接暂断 · " + (retryDelay / 1000L) + " 秒后重试", true);
         if (notifyOffline) {
             postAttentionNotification(OperationsWatchPolicy.ATTENTION_OFFLINE);
@@ -193,7 +443,32 @@ public final class OperationsWatchService extends Service {
         }
         client = null;
         clientProfileKey = "";
+        relayClient = null;
+        relayClientProfileKey = "";
         scheduleNext(retryDelay);
+    }
+
+    private void clearRemoteWindowSnapshotSecrets() {
+        String hostId = preferences.getOperationsHostId();
+        if (OperationsRelayPolicy.isSafeIdentifier(hostId)) {
+            try {
+                new OperationsE2eIdentity(hostId).delete();
+            } catch (Exception ignored) {
+            }
+        }
+        File directory = new File(getCacheDir(), "diagnostic-share");
+        File[] files = directory.listFiles((parent, name) ->
+                name.startsWith("ColorVision-remote-window-snapshot-")
+                        && name.endsWith(".jpg"));
+        if (files != null) {
+            for (File file : files) {
+                file.delete();
+            }
+        }
+    }
+
+    private static String errorCode(Exception exception) {
+        return exception.getMessage() == null ? "" : exception.getMessage();
     }
 
     private String notificationStatus(JSONObject snapshot) {
@@ -234,7 +509,13 @@ public final class OperationsWatchService extends Service {
 
     private void scheduleNext(long delayMilliseconds) {
         handler.removeCallbacks(scheduledCheck);
-        if (monitoring) {
+        if (!monitoring) {
+            return;
+        }
+        if (checkAgainAfterCurrent) {
+            checkAgainAfterCurrent = false;
+            handler.post(scheduledCheck);
+        } else {
             handler.postDelayed(scheduledCheck, delayMilliseconds);
         }
     }

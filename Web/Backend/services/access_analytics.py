@@ -78,6 +78,7 @@ WEB_ROUTE_EXACT = frozenset({
     "/admin/copilot",
     "/admin/audit",
     "/admin/traffic",
+    "/admin/operations/hosts",
     "/admin/settings",
 })
 WEB_PLUGIN_ROUTE = re.compile(r"^/plugins/[A-Za-z0-9._-]{1,128}$")

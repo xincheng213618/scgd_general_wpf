@@ -45,6 +45,7 @@ unchanged for legacy consumers:
 | `GET /api/site/home?view=compact` | Home-only release counters, previews, update/tool summaries, recent changes, and docs |
 | `GET /api/site/changelog?view=compact&page=1&page_size=20` | Latest version plus one bounded rendered changelog page; 5–50 releases per page |
 | `GET /api/site/releases?view=compact&page=1&page_size=100&android_page=1&android_page_size=100` | Independently paged Windows and Android archives |
+| `GET /api/android/update` | Latest fixed-source Android APK metadata with size, SHA-256, and a bounded download URL |
 | `GET /api/plugins?Page=1&PageSize=20` | Paged plugin summaries plus the complete category filter list, so the web page needs one catalog request |
 | `GET /api/plugins/<id>?view=compact&archive_page=1&archive_page_size=20` | Web detail metadata and rendered docs plus one bounded, order-preserving History page; raw Markdown is omitted |
 | `GET /api/plugins/<id>?view=update` | Desktop update metadata without README or per-version changelog duplication |
@@ -88,7 +89,7 @@ navigations redirect to `/login` with an internal `next` path.
 
 Session and Basic Auth always have full access. Bearer API Key access is controlled by per-endpoint scopes:
 
-Operations relay uses two dedicated scopes and does not accept Basic/session auth:
+Legacy API-key Operations relay uses two dedicated scopes and does not accept Basic/session auth:
 
 - `ops:relay` — desktop outbound heartbeat, task polling, receipts, and bounded support events.
 - `ops:operator` — list hosts and create catalog-bound tasks. Privileged ServiceHost commands are not valid relay tasks.
@@ -96,7 +97,24 @@ Operations relay uses two dedicated scopes and does not accept Basic/session aut
 Create a desktop relay key with `python app.py --create-api-key colorvision-relay --scopes ops:relay`, then set
 `COLORVISION_OPERATIONS_RELAY_URL` (HTTPS, or loopback HTTP for development only) and
 `COLORVISION_OPERATIONS_RELAY_KEY` in the ColorVision process environment. The desktop initiates every Web connection;
-no inbound port or arbitrary command channel is opened.
+no inbound port or arbitrary command channel is opened. Current desktop builds
+use the signed device relay by default: the host sync and task/receipt exchange
+are authenticated by the desktop Operations certificate, while task requests
+from approved devices retain their P-256 signature for a second verification
+on the desktop. Device tasks are limited to empty-payload show/minimize actions
+for the current ColorVision main window, an empty-payload recovery of the current
+configured message connection and subscriptions, an empty-payload cancellation
+request for the active primary flow, an empty-payload restart of the current
+ColorVision application, an empty-payload restart of the fixed local Mosquitto
+service, and a bounded diagnostic request. The Mosquitto target is injected by
+the desktop after it rechecks an idle flow and applicable service state; devices
+cannot submit a service name or maintenance parameters. Application restart
+uses a signed accepted receipt before shutdown and a final signed receipt from
+the replacement process after persistent handoff; window handles, titles,
+process or program selectors, flow or node selectors, endpoints, topics,
+credentials, paths, arguments, commands, scripts, and arbitrary payload fields
+are rejected.
+The API-key relay remains available for compatible deployments.
 
 Successful Bearer authentication still checks the active flag, expiry, secret,
 and scopes on every request. Only advisory `last_used_at` persistence is
@@ -121,6 +139,7 @@ continuous SQLite writes.
 | GET `/api/admin/jobs` | `jobs:read` |
 | GET `/api/admin/jobs/<id>/runs` | `jobs:read` |
 | POST `/api/admin/jobs/<id>/run` | `jobs:write` |
+| GET `/api/admin/operations/overview` | `admin:*` |
 | POST `/api/admin/jobs/<id>/enable` | `jobs:write` |
 | POST `/api/admin/jobs/<id>/disable` | `jobs:write` |
 | GET `/api/admin/stats/overview` | `stats:read` |
@@ -307,6 +326,24 @@ the submitted `feedback.json`. Administrator workflow state is persisted in a
 separate atomic `.admin.json` sidecar. Attachment delivery rejects traversal,
 metadata/state files, symbolic links, and non-direct files. Downloads and
 status changes are recorded in the administrator audit log.
+
+### Operations Overview
+
+`GET /api/admin/operations/overview?hostLimit=100&activityLimit=100` powers the
+read-only `/admin/operations/hosts` page. It reports exact host/task/session
+summary counts, signed host-identity and paired-device status, a bounded host
+list, task origin and lifecycle state, receipt counts, and support-session
+state. A heartbeat is treated as online for 90
+seconds, matching the desktop Relay's 20-second polling cadence without hiding
+short network interruptions.
+
+The endpoint deliberately returns neither host certificates, device public
+keys, request signatures/nonces/bodies, task payloads, receipt evidence,
+support message bodies, nor arbitrary snapshot keys. Desktop heartbeats are
+projected back onto the fixed `OperationsSafeSnapshot` fields before the React
+client receives them. Legacy operator task creation remains on the separate
+`ops:operator` API-key contract, while paired devices use the signed Relay
+endpoint; the administrator page itself cannot dispatch work.
 
 ### Stats
 
@@ -571,6 +608,7 @@ When indexes are populated, most API requests read from SQLite instead of scanni
 - `GET /download/<path>` — serves public artifacts directly from disk. Operational storage requires administrator authentication, while Transfer keeps its separate file-transfer authorization policy.
 - `GET /api/app/changelog` — reads `CHANGELOG.md` (single file read)
 - `GET /api/app/latest-version` — reads in-memory `LATEST_RELEASE` cache (warmed at startup, refreshed on upload)
+- `GET /api/android/update` — reads the latest indexed root APK and caches its SHA-256 by path, size, and modification time
 - `GET /api/health`, `GET /api/ready` — filesystem probes for liveness
 
 ### Scheduler signature checks (lightweight)

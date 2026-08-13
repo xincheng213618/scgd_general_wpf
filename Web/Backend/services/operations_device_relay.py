@@ -1,0 +1,1340 @@
+"""End-to-end signed Operations relay for paired Android devices.
+
+The fixed download station may be reached over plain HTTP, so this protocol
+never sends a bearer secret. Android task intents are signed by the existing
+P-256 device key and are verified again by the desktop before execution. Host
+sync, polling, and receipts are signed by the desktop Operations certificate.
+"""
+
+from __future__ import annotations
+
+import base64
+import binascii
+import hashlib
+import json
+import os
+import re
+import sqlite3
+import threading
+import uuid
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+from cryptography import x509
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+from cryptography.x509.oid import NameOID
+
+
+SAFE_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+SAFE_NONCE = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
+RFC3339_TIMESTAMP = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?"
+    r"(?:Z|[+-](?:(?:0\d|1[0-7]):[0-5]\d|18:00))$"
+)
+ALLOWED_CLOCK_SKEW = timedelta(minutes=2)
+NONCE_LIFETIME = timedelta(minutes=5)
+ALLOWED_DEVICE_TASK_CAPABILITIES = {
+    "ops.application.restart": "ops.jobs.create",
+    "ops.diagnostics.failures.read": "ops.diagnostics.read",
+    "ops.diagnostics.request": "ops.jobs.create",
+    "ops.flow.cancel": "ops.jobs.create",
+    "ops.messaging.reconnect": "ops.jobs.create",
+    "ops.service.restart": "ops.jobs.create",
+    "ops.window.snapshot.capture": "ops.jobs.create",
+    "ops.window.minimize": "ops.window.control",
+    "ops.window.show": "ops.window.control",
+}
+ALLOWED_RECEIPT_STATUSES = {
+    "received", "accepted", "awaiting_local_consent", "completed", "failed", "rejected"
+}
+HOST_SNAPSHOT_ENVELOPE_PREFIX = "colorvision-relay-snapshot-v1"
+HOST_RECEIPT_ENVELOPE_PREFIX = "colorvision-relay-receipt-v1"
+WINDOW_SNAPSHOT_SCHEME = "p256-hkdf-sha256-aes256gcm-v1"
+WINDOW_SNAPSHOT_KIND = "window-snapshot-encrypted-v1"
+WINDOW_SNAPSHOT_ERROR_KIND = "window-snapshot-error-v1"
+WINDOW_SNAPSHOT_MAXIMUM_SEALED_BYTES = 1536 * 1024 + 60
+WINDOW_SNAPSHOT_MINIMUM_SEALED_BYTES = 61
+WINDOW_SNAPSHOT_TTL_SECONDS = 300
+WINDOW_SNAPSHOT_METADATA_HEADER_MAXIMUM = 16384
+WINDOW_SNAPSHOT_EVIDENCE_KEYS = {
+    "kind", "scheme", "jobId", "hostEphemeralPublicKeySpki", "sealedSha256",
+    "sealedBytes", "capturedAt", "expiresAt",
+}
+SAFE_HEX_32 = re.compile(r"^[0-9a-f]{32}$")
+SAFE_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+FAILURE_EVIDENCE_COMPLETED_KEYS = {
+    "kind", "eventLogAvailable", "dumpFolderAvailable", "eventScanLimited",
+    "dumpScanLimited", "hasEvidence", "windowDays", "failureEventCount",
+    "crashCount", "hangCount", "managedRuntimeFailureCount",
+    "windowsErrorReportCount", "dumpCount", "latestEventAt", "latestDumpAt",
+    "latestEvidenceAt", "windowStartedAt", "observedAt",
+}
+FAILURE_EVIDENCE_BOOLEAN_KEYS = {
+    "eventLogAvailable", "dumpFolderAvailable", "eventScanLimited",
+    "dumpScanLimited", "hasEvidence",
+}
+FAILURE_EVIDENCE_COUNT_KEYS = {
+    "failureEventCount", "crashCount", "hangCount", "managedRuntimeFailureCount",
+    "windowsErrorReportCount", "dumpCount",
+}
+FAILURE_EVIDENCE_NULLABLE_TIME_KEYS = {
+    "latestEventAt", "latestDumpAt", "latestEvidenceAt",
+}
+FAILURE_EVIDENCE_REQUIRED_TIME_KEYS = {"windowStartedAt", "observedAt"}
+
+
+class DeviceRelayError(ValueError):
+    def __init__(self, code: str, status: int = 400):
+        super().__init__(code)
+        self.code = code
+        self.status = status
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _iso(value: datetime | None = None) -> str:
+    return (value or _now()).isoformat()
+
+
+def _safe_id(value, field: str) -> str:
+    text = str(value or "").strip()
+    if not SAFE_ID.fullmatch(text):
+        raise DeviceRelayError(f"invalid_{field}")
+    return text
+
+
+def _bounded_text(value, field: str, maximum: int, *, required: bool = False) -> str:
+    text = str(value or "").strip()
+    if len(text) > maximum or required and not text:
+        raise DeviceRelayError(f"invalid_{field}")
+    return text
+
+
+def _is_timezone_aware_iso(value) -> bool:
+    if (not isinstance(value, str) or len(value) > 64
+            or not RFC3339_TIMESTAMP.fullmatch(value)):
+        return False
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    try:
+        parsed = datetime.fromisoformat(normalized)
+        offset = parsed.utcoffset()
+        return offset is not None and abs(offset) <= timedelta(hours=18)
+    except (TypeError, ValueError):
+        return False
+
+
+def _parse_timezone_aware_iso(value: str) -> datetime:
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    return datetime.fromisoformat(normalized)
+
+
+def _validate_failure_evidence_receipt(status: str, evidence: dict) -> None:
+    if status not in {"completed", "failed"}:
+        raise DeviceRelayError("invalid_failure_evidence")
+    if status == "completed":
+        valid = (
+            set(evidence) == FAILURE_EVIDENCE_COMPLETED_KEYS
+            and evidence.get("kind") == "failure-evidence-v1"
+            and type(evidence.get("windowDays")) is int
+            and evidence["windowDays"] == 7
+            and all(type(evidence.get(name)) is bool for name in FAILURE_EVIDENCE_BOOLEAN_KEYS)
+            and all(
+                type(evidence.get(name)) is int and 0 <= evidence[name] <= 999
+                for name in FAILURE_EVIDENCE_COUNT_KEYS
+            )
+            and all(
+                evidence.get(name) is None or _is_timezone_aware_iso(evidence.get(name))
+                for name in FAILURE_EVIDENCE_NULLABLE_TIME_KEYS
+            )
+            and all(
+                _is_timezone_aware_iso(evidence.get(name))
+                for name in FAILURE_EVIDENCE_REQUIRED_TIME_KEYS
+            )
+        )
+        if not valid:
+            raise DeviceRelayError("invalid_failure_evidence")
+        window_started_at = _parse_timezone_aware_iso(evidence["windowStartedAt"])
+        observed_at = _parse_timezone_aware_iso(evidence["observedAt"])
+        latest = {
+            name: None if evidence[name] is None else _parse_timezone_aware_iso(evidence[name])
+            for name in FAILURE_EVIDENCE_NULLABLE_TIME_KEYS
+        }
+        event_at = latest["latestEventAt"]
+        dump_at = latest["latestDumpAt"]
+        expected_latest = max(
+            (value for value in (event_at, dump_at) if value is not None),
+            default=None,
+        )
+        if (window_started_at > observed_at
+                or any(value is not None and not window_started_at <= value <= observed_at
+                       for value in latest.values())
+                or latest["latestEvidenceAt"] != expected_latest
+                or (evidence["failureEventCount"] == 0) != (event_at is None)
+                or (evidence["dumpCount"] == 0) != (dump_at is None)
+                or evidence["hasEvidence"] != (
+                    evidence["failureEventCount"] > 0 or evidence["dumpCount"] > 0
+                )
+                or not evidence["hasEvidence"] and any(
+                    evidence[name] > 0 for name in FAILURE_EVIDENCE_COUNT_KEYS
+                )):
+            raise DeviceRelayError("invalid_failure_evidence")
+    elif status == "failed" and evidence != {
+            "kind": "failure-evidence-error-v1",
+            "code": "failure_evidence_unavailable",
+    }:
+        raise DeviceRelayError("invalid_failure_evidence")
+
+
+def _header(headers, name: str) -> str:
+    value = str(headers.get(name, "") or "").strip()
+    if not value:
+        raise DeviceRelayError("signed_headers_required", 401)
+    return value
+
+
+def _decode_base64(value: str, code: str) -> bytes:
+    try:
+        return base64.b64decode(value, validate=True)
+    except (ValueError, binascii.Error) as exc:
+        raise DeviceRelayError(code, 401) from exc
+
+
+def _request_parts(headers):
+    timestamp_text = _header(headers, "X-CV-Timestamp")
+    nonce = _header(headers, "X-CV-Nonce")
+    signature = _decode_base64(_header(headers, "X-CV-Signature"), "invalid_signature_encoding")
+    try:
+        timestamp = int(timestamp_text)
+        request_time = datetime.fromtimestamp(timestamp, timezone.utc)
+    except (ValueError, OverflowError, OSError) as exc:
+        raise DeviceRelayError("invalid_timestamp", 401) from exc
+    if abs(_now() - request_time) > ALLOWED_CLOCK_SKEW:
+        raise DeviceRelayError("request_time_out_of_range", 401)
+    if not SAFE_NONCE.fullmatch(nonce):
+        raise DeviceRelayError("invalid_nonce", 401)
+    return timestamp_text, nonce, signature
+
+
+def _canonical(method: str, path: str, timestamp: str, nonce: str, body: bytes) -> bytes:
+    digest = hashlib.sha256(body).hexdigest()
+    return "\n".join((method.upper(), path, timestamp, nonce, digest)).encode("utf-8")
+
+
+def _verify_host_envelope(public_key, prefix: str, envelope, maximum: int) -> tuple[str, str, dict]:
+    if not isinstance(envelope, dict) or set(envelope) != {"body", "signature"}:
+        raise DeviceRelayError("invalid_host_envelope")
+    body_text = str(envelope.get("body") or "")
+    if not body_text or len(body_text.encode("utf-8")) > maximum:
+        raise DeviceRelayError("invalid_host_envelope")
+    signature_text = str(envelope.get("signature") or "")
+    signature = _decode_base64(signature_text, "invalid_host_envelope_signature")
+    canonical = f"{prefix}\n{body_text}".encode("utf-8")
+    try:
+        public_key.verify(signature, canonical, padding.PKCS1v15(), hashes.SHA256())
+    except InvalidSignature as exc:
+        raise DeviceRelayError("invalid_host_envelope_signature", 401) from exc
+    try:
+        value = json.loads(body_text)
+    except json.JSONDecodeError as exc:
+        raise DeviceRelayError("invalid_host_envelope") from exc
+    if not isinstance(value, dict):
+        raise DeviceRelayError("invalid_host_envelope")
+    return body_text, signature_text, value
+
+
+def _json_body(body: bytes, maximum: int = 65536) -> dict:
+    if not body or len(body) > maximum:
+        raise DeviceRelayError("invalid_request_body")
+    try:
+        value = json.loads(body)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise DeviceRelayError("invalid_json") from exc
+    if not isinstance(value, dict):
+        raise DeviceRelayError("json_object_required")
+    return value
+
+
+def _device_public_key(public_key_spki: str) -> ec.EllipticCurvePublicKey:
+    encoded = _decode_base64(public_key_spki, "invalid_device_public_key")
+    try:
+        key = serialization.load_der_public_key(encoded)
+    except (ValueError, TypeError) as exc:
+        raise DeviceRelayError("invalid_device_public_key") from exc
+    if not isinstance(key, ec.EllipticCurvePublicKey) or not isinstance(key.curve, ec.SECP256R1):
+        raise DeviceRelayError("invalid_device_public_key")
+    return key
+
+
+def _canonical_p256_spki(value, code: str) -> str:
+    if not isinstance(value, str) or not value or len(value) > 512:
+        raise DeviceRelayError(code)
+    try:
+        encoded = base64.b64decode(value, validate=True)
+    except (ValueError, binascii.Error) as exc:
+        raise DeviceRelayError(code) from exc
+    if base64.b64encode(encoded).decode("ascii") != value:
+        raise DeviceRelayError(code)
+    try:
+        key = serialization.load_der_public_key(encoded)
+    except (ValueError, TypeError) as exc:
+        raise DeviceRelayError(code) from exc
+    if not isinstance(key, ec.EllipticCurvePublicKey) or not isinstance(key.curve, ec.SECP256R1):
+        raise DeviceRelayError(code)
+    canonical = key.public_bytes(
+        serialization.Encoding.DER,
+        serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    if canonical != encoded:
+        raise DeviceRelayError(code)
+    return value
+
+
+def _decode_standard_base64_json(value, code: str, maximum: int) -> dict:
+    if not isinstance(value, str) or not value or len(value) > maximum:
+        raise DeviceRelayError(code)
+    try:
+        encoded = base64.b64decode(value, validate=True)
+    except (ValueError, binascii.Error) as exc:
+        raise DeviceRelayError(code) from exc
+    if base64.b64encode(encoded).decode("ascii") != value:
+        raise DeviceRelayError(code)
+    try:
+        result = json.loads(encoded.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise DeviceRelayError(code) from exc
+    if not isinstance(result, dict):
+        raise DeviceRelayError(code)
+    return result
+
+
+def _validate_window_snapshot_evidence(
+        evidence, *, sealed_size: int | None = None,
+        task_expires_at: datetime | None = None) -> tuple[datetime, datetime]:
+    valid = (
+        isinstance(evidence, dict)
+        and set(evidence) == WINDOW_SNAPSHOT_EVIDENCE_KEYS
+        and evidence.get("kind") == WINDOW_SNAPSHOT_KIND
+        and evidence.get("scheme") == WINDOW_SNAPSHOT_SCHEME
+        and isinstance(evidence.get("jobId"), str)
+        and SAFE_HEX_32.fullmatch(evidence["jobId"]) is not None
+        and isinstance(evidence.get("sealedSha256"), str)
+        and SAFE_SHA256.fullmatch(evidence["sealedSha256"]) is not None
+        and type(evidence.get("sealedBytes")) is int
+        and WINDOW_SNAPSHOT_MINIMUM_SEALED_BYTES
+            <= evidence["sealedBytes"] <= WINDOW_SNAPSHOT_MAXIMUM_SEALED_BYTES
+        and _is_timezone_aware_iso(evidence.get("capturedAt"))
+        and _is_timezone_aware_iso(evidence.get("expiresAt"))
+    )
+    if not valid:
+        raise DeviceRelayError("invalid_window_snapshot_evidence")
+    _canonical_p256_spki(
+        evidence.get("hostEphemeralPublicKeySpki"),
+        "invalid_window_snapshot_evidence",
+    )
+    if sealed_size is not None and evidence["sealedBytes"] != sealed_size:
+        raise DeviceRelayError("window_snapshot_size_mismatch")
+    captured_at = _parse_timezone_aware_iso(evidence["capturedAt"])
+    expires_at = _parse_timezone_aware_iso(evidence["expiresAt"])
+    if (captured_at >= expires_at
+            or expires_at - captured_at > timedelta(seconds=WINDOW_SNAPSHOT_TTL_SECONDS)
+            or task_expires_at is not None and expires_at > task_expires_at):
+        raise DeviceRelayError("invalid_window_snapshot_expiry")
+    return captured_at, expires_at
+
+
+def _validate_window_snapshot_failed_evidence(status: str, evidence) -> None:
+    if status != "failed" or evidence != {
+            "kind": WINDOW_SNAPSHOT_ERROR_KIND,
+            "code": "window_snapshot_unavailable",
+    }:
+        raise DeviceRelayError("invalid_window_snapshot_receipt")
+
+
+def _host_certificate(certificate_der: str, host_id: str):
+    encoded = _decode_base64(certificate_der, "invalid_host_certificate")
+    try:
+        certificate = x509.load_der_x509_certificate(encoded)
+    except ValueError as exc:
+        raise DeviceRelayError("invalid_host_certificate", 401) from exc
+    names = certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
+    if len(names) != 1 or names[0].value != f"ColorVision Operations {host_id}":
+        raise DeviceRelayError("host_certificate_subject_mismatch", 401)
+    if certificate.issuer != certificate.subject:
+        raise DeviceRelayError("host_certificate_not_self_signed", 401)
+    public_key = certificate.public_key()
+    if not isinstance(public_key, rsa.RSAPublicKey) or public_key.key_size < 3072:
+        raise DeviceRelayError("invalid_host_certificate_key", 401)
+    now = _now()
+    not_before = certificate.not_valid_before_utc
+    not_after = certificate.not_valid_after_utc
+    if now < not_before or now > not_after:
+        raise DeviceRelayError("host_certificate_expired", 401)
+    try:
+        public_key.verify(
+            certificate.signature,
+            certificate.tbs_certificate_bytes,
+            padding.PKCS1v15(),
+            certificate.signature_hash_algorithm,
+        )
+    except InvalidSignature as exc:
+        raise DeviceRelayError("host_certificate_not_self_signed", 401) from exc
+    return certificate, public_key
+
+
+class OperationsDeviceRelayService:
+    def __init__(self, cache):
+        self._cache = cache
+        self._window_snapshot_lock = threading.RLock()
+        self._try_prune_window_snapshots()
+
+    @property
+    def _window_snapshot_directory(self) -> Path:
+        return Path(self._cache.db_path).parent / ".operations-relay-window-snapshots"
+
+    def sync_host(self, host_id: str, path: str, headers, body: bytes) -> dict:
+        host_id = _safe_id(host_id, "host_id")
+        request = _json_body(body)
+        if _safe_id(request.get("hostId"), "host_id") != host_id:
+            raise DeviceRelayError("host_id_mismatch")
+        certificate_der = _header(headers, "X-CV-Host-Certificate")
+        certificate, public_key = _host_certificate(certificate_der, host_id)
+        timestamp, nonce, signature = _request_parts(headers)
+        try:
+            public_key.verify(signature, _canonical("POST", path, timestamp, nonce, body), padding.PKCS1v15(), hashes.SHA256())
+        except InvalidSignature as exc:
+            raise DeviceRelayError("invalid_host_signature", 401) from exc
+
+        display_name = _bounded_text(request.get("displayName"), "display_name", 120)
+        app_version = _bounded_text(request.get("appVersion"), "app_version", 40)
+        status = _bounded_text(request.get("status", "online"), "status", 32, required=True)
+        capabilities = request.get("capabilities", [])
+        snapshot = request.get("snapshot", {})
+        devices = request.get("devices", [])
+        if (not isinstance(capabilities, list) or len(capabilities) > 200
+                or not isinstance(snapshot, dict) or not isinstance(devices, list) or len(devices) > 100):
+            raise DeviceRelayError("invalid_host_sync_payload")
+        capabilities_json = json.dumps(capabilities, ensure_ascii=False, separators=(",", ":"))
+        snapshot_json = json.dumps(snapshot, ensure_ascii=False, separators=(",", ":"))
+        if len(capabilities_json) > 32768 or len(snapshot_json) > 32768:
+            raise DeviceRelayError("host_sync_payload_too_large")
+        normalized_devices = [self._normalize_device(item) for item in devices]
+        if len({item["deviceId"] for item in normalized_devices}) != len(normalized_devices):
+            raise DeviceRelayError("duplicate_device_id")
+        snapshot_body, snapshot_signature, signed_snapshot = _verify_host_envelope(
+            public_key, HOST_SNAPSHOT_ENVELOPE_PREFIX, request.get("snapshotEnvelope"), 65536)
+        try:
+            snapshot_signed_at = int(signed_snapshot.get("signedAt"))
+        except (TypeError, ValueError) as exc:
+            raise DeviceRelayError("invalid_snapshot_envelope") from exc
+        if (set(signed_snapshot) != {"hostId", "appVersion", "status", "capabilities", "snapshot", "signedAt"}
+                or signed_snapshot.get("hostId") != host_id
+                or signed_snapshot.get("appVersion") != app_version
+                or signed_snapshot.get("status") != status
+                or signed_snapshot.get("capabilities") != capabilities
+                or signed_snapshot.get("snapshot") != snapshot
+                or abs(snapshot_signed_at - int(timestamp)) > 5):
+            raise DeviceRelayError("snapshot_envelope_mismatch")
+
+        certificate_sha256 = certificate.fingerprint(hashes.SHA256()).hex()
+        now = _iso()
+        db = self._cache.get_db()
+        try:
+            with db:
+                existing = db.execute(
+                    "SELECT certificate_sha256 FROM operations_relay_host_identities WHERE host_id=?",
+                    (host_id,),
+                ).fetchone()
+                if existing and existing["certificate_sha256"] != certificate_sha256:
+                    raise DeviceRelayError("host_identity_conflict", 409)
+                self._claim_nonce(db, "host", host_id, nonce)
+                db.execute(
+                    """INSERT INTO operations_relay_host_identities
+                       (host_id, certificate_der, certificate_sha256, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?)
+                       ON CONFLICT(host_id) DO UPDATE SET updated_at=excluded.updated_at""",
+                    (host_id, certificate_der, certificate_sha256, now, now),
+                )
+                db.execute(
+                    """INSERT INTO operations_hosts
+                       (host_id, display_name, app_version, status, capabilities, snapshot,
+                        relay_snapshot_body, relay_snapshot_signature,
+                        last_seen_at, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                       ON CONFLICT(host_id) DO UPDATE SET display_name=excluded.display_name,
+                         app_version=excluded.app_version, status=excluded.status,
+                         capabilities=excluded.capabilities, snapshot=excluded.snapshot,
+                         relay_snapshot_body=excluded.relay_snapshot_body,
+                         relay_snapshot_signature=excluded.relay_snapshot_signature,
+                         last_seen_at=excluded.last_seen_at, updated_at=excluded.updated_at""",
+                    (host_id, display_name, app_version, status, capabilities_json, snapshot_json,
+                     snapshot_body, snapshot_signature, now, now, now),
+                )
+                db.execute(
+                    "UPDATE operations_relay_devices SET revoked_at=?, updated_at=? WHERE host_id=?",
+                    (now, now, host_id),
+                )
+                for device in normalized_devices:
+                    db.execute(
+                        """INSERT INTO operations_relay_devices
+                           (host_id, device_id, display_name, public_key_spki, scopes, approved_at, revoked_at, updated_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                           ON CONFLICT(host_id, device_id) DO UPDATE SET
+                             display_name=excluded.display_name,
+                             public_key_spki=excluded.public_key_spki,
+                             scopes=excluded.scopes,
+                             approved_at=excluded.approved_at,
+                             revoked_at=excluded.revoked_at,
+                             updated_at=excluded.updated_at""",
+                        (host_id, device["deviceId"], device["displayName"], device["publicKeySpki"],
+                         device["scopes"], device["approvedAt"], device["revokedAt"], now),
+                    )
+        finally:
+            db.close()
+        self._try_prune_window_snapshots()
+        self._cache.write_audit(
+            actor_type="operations_host", actor_id=host_id, action="operations.device_relay.sync",
+            target_type="operations_host", target_id=host_id,
+            detail=json.dumps({"deviceCount": len(normalized_devices)}, separators=(",", ":")),
+        )
+        return {"ok": True, "hostId": host_id, "serverTime": now, "deviceCount": len(normalized_devices)}
+
+    def poll_tasks(self, host_id: str, path: str, headers, body: bytes) -> dict:
+        host_id = _safe_id(host_id, "host_id")
+        db = self._cache.get_db()
+        try:
+            with db:
+                self._authenticate_host(db, host_id, "POST", path, headers, body)
+                now = _iso()
+                rows = db.execute(
+                    """SELECT * FROM operations_tasks
+                       WHERE host_id=? AND source_type='device'
+                         AND status IN ('queued','delivered') AND expires_at>?
+                       ORDER BY created_at LIMIT 50""",
+                    (host_id, now),
+                ).fetchall()
+                for row in rows:
+                    if row["status"] == "queued":
+                        db.execute(
+                            "UPDATE operations_tasks SET status='delivered', delivered_at=? WHERE task_id=?",
+                            (now, row["task_id"]),
+                        )
+            tasks = [self._task_for_host(row) for row in rows]
+        finally:
+            db.close()
+        self._try_prune_window_snapshots()
+        return {"ok": True, "tasks": tasks, "count": len(tasks), "serverTime": _iso()}
+
+    def create_task(self, path: str, headers, body: bytes) -> tuple[dict, int]:
+        request = _json_body(body, 16384)
+        host_id = _safe_id(request.get("hostId"), "host_id")
+        device_id = _safe_id(_header(headers, "X-CV-Device-Id"), "device_id")
+        capability_id = str(request.get("capabilityId") or "")
+        required_scope = ALLOWED_DEVICE_TASK_CAPABILITIES.get(capability_id)
+        if not required_scope:
+            raise DeviceRelayError("task_capability_not_allowed")
+        payload = request.get("payload", {})
+        if capability_id == "ops.window.snapshot.capture":
+            if (not isinstance(payload, dict)
+                    or set(payload) != {"scheme", "recipientPublicKeySpki"}
+                    or payload.get("scheme") != WINDOW_SNAPSHOT_SCHEME):
+                raise DeviceRelayError("window_snapshot_payload_not_allowed")
+            _canonical_p256_spki(
+                payload.get("recipientPublicKeySpki"),
+                "window_snapshot_payload_not_allowed",
+            )
+        if capability_id == "ops.diagnostics.failures.read":
+            if "payload" not in request or not isinstance(payload, dict) or payload:
+                raise DeviceRelayError("failure_evidence_payload_not_allowed")
+        if not isinstance(payload, dict):
+            raise DeviceRelayError("task_payload_not_allowed")
+        if capability_id == "ops.application.restart" and payload:
+            raise DeviceRelayError("application_restart_payload_not_allowed")
+        if capability_id == "ops.service.restart" and payload:
+            raise DeviceRelayError("mqtt_restart_payload_not_allowed")
+        if any(name in payload for name in ("command", "executablePath", "shell", "script")):
+            raise DeviceRelayError("task_payload_not_allowed")
+        if capability_id == "ops.window.show" and payload:
+            raise DeviceRelayError("window_show_payload_not_allowed")
+        if capability_id == "ops.window.minimize" and payload:
+            raise DeviceRelayError("window_minimize_payload_not_allowed")
+        if capability_id == "ops.messaging.reconnect" and payload:
+            raise DeviceRelayError("message_reconnect_payload_not_allowed")
+        if capability_id == "ops.flow.cancel" and payload:
+            raise DeviceRelayError("flow_cancel_payload_not_allowed")
+        if capability_id == "ops.diagnostics.request":
+            if not set(payload).issubset({"reason"}):
+                raise DeviceRelayError("invalid_diagnostics_payload")
+            payload = {"reason": _bounded_text(payload.get("reason"), "diagnostic_reason", 200)}
+        idempotency_key = _safe_id(request.get("idempotencyKey"), "idempotency_key")
+        if capability_id == "ops.window.snapshot.capture":
+            if ("ttlSeconds" not in request
+                    or type(request.get("ttlSeconds")) is not int
+                    or request["ttlSeconds"] != WINDOW_SNAPSHOT_TTL_SECONDS):
+                raise DeviceRelayError("window_snapshot_ttl_not_allowed")
+            ttl_seconds = WINDOW_SNAPSHOT_TTL_SECONDS
+        else:
+            try:
+                ttl_seconds = max(60, min(int(request.get("ttlSeconds", 900)), 3600))
+            except (TypeError, ValueError) as exc:
+                raise DeviceRelayError("invalid_ttl_seconds") from exc
+
+        timestamp, nonce, signature = _request_parts(headers)
+        db = self._cache.get_db()
+        try:
+            with db:
+                row = db.execute(
+                    """SELECT public_key_spki, scopes FROM operations_relay_devices
+                       WHERE host_id=? AND device_id=? AND revoked_at IS NULL""",
+                    (host_id, device_id),
+                ).fetchone()
+                if not row:
+                    raise DeviceRelayError("unknown_or_revoked_device", 401)
+                scopes = json.loads(row["scopes"])
+                if required_scope not in scopes:
+                    raise DeviceRelayError("device_scope_required", 403)
+                public_key = _device_public_key(row["public_key_spki"])
+                try:
+                    public_key.verify(signature, _canonical("POST", path, timestamp, nonce, body), ec.ECDSA(hashes.SHA256()))
+                except InvalidSignature as exc:
+                    raise DeviceRelayError("invalid_request_signature", 401) from exc
+                self._claim_nonce(db, "device", f"{host_id}:{device_id}", nonce)
+
+                task_id = uuid.uuid4().hex
+                created_at = _now()
+                expires_at = created_at + timedelta(seconds=ttl_seconds)
+                payload_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+                body_text = body.decode("utf-8")
+                try:
+                    db.execute(
+                        """INSERT INTO operations_tasks
+                           (task_id, host_id, capability_id, payload, status, idempotency_key,
+                            created_by, created_at, expires_at, source_type, device_id,
+                            request_body, request_timestamp, request_nonce, request_signature)
+                           VALUES (?, ?, ?, ?, 'queued', ?, ?, ?, ?, 'device', ?, ?, ?, ?, ?)""",
+                        (task_id, host_id, capability_id, payload_json, idempotency_key, device_id,
+                         _iso(created_at), _iso(expires_at), device_id, body_text, timestamp, nonce,
+                         base64.b64encode(signature).decode("ascii")),
+                    )
+                except sqlite3.IntegrityError:
+                    existing = db.execute(
+                        """SELECT task_id, request_body FROM operations_tasks
+                           WHERE host_id=? AND idempotency_key=?""",
+                        (host_id, idempotency_key),
+                    ).fetchone()
+                    if not existing or existing["request_body"] != body_text:
+                        raise DeviceRelayError("idempotency_conflict", 409)
+                    return {"ok": True, "taskId": existing["task_id"], "deduplicated": True}, 200
+        finally:
+            db.close()
+        self._cache.write_audit(
+            actor_type="operations_device", actor_id=device_id, action="operations.device_task.create",
+            target_type="operations_task", target_id=task_id,
+            detail=json.dumps({"hostId": host_id, "capabilityId": capability_id}, separators=(",", ":")),
+        )
+        return {"ok": True, "taskId": task_id, "status": "queued", "expiresAt": _iso(expires_at)}, 202
+
+    def store_window_snapshot(
+            self, host_id: str, task_id: str, path: str, headers,
+            body: bytes, metadata_header: str) -> tuple[dict, int]:
+        host_id = _safe_id(host_id, "host_id")
+        task_id = _safe_id(task_id, "task_id")
+        if not WINDOW_SNAPSHOT_MINIMUM_SEALED_BYTES <= len(body) <= WINDOW_SNAPSHOT_MAXIMUM_SEALED_BYTES:
+            raise DeviceRelayError("window_snapshot_size_not_allowed", 413)
+        request = _decode_standard_base64_json(
+            metadata_header,
+            "invalid_window_snapshot_metadata",
+            WINDOW_SNAPSHOT_METADATA_HEADER_MAXIMUM,
+        )
+        if set(request) != {"status", "evidence", "receiptEnvelope"}:
+            raise DeviceRelayError("invalid_window_snapshot_metadata")
+
+        target = self._window_snapshot_path(task_id)
+        temporary = target.parent / f".{task_id}.{uuid.uuid4().hex}.tmp"
+        published = False
+        receipt_id = uuid.uuid4().hex
+        evidence = request.get("evidence")
+        evidence_json = ""
+        with self._window_snapshot_lock:
+            db = self._cache.get_db()
+            try:
+                with db:
+                    timestamp, _nonce, _request_signature, public_key = self._authenticate_host(
+                        db, host_id, "POST", path, headers, body)
+                    self._prune_window_snapshots_no_lock(db, _now())
+                    db.commit()
+                    task = db.execute(
+                        """SELECT task_id, host_id, device_id, capability_id, status,
+                                  idempotency_key, created_at, expires_at
+                           FROM operations_tasks
+                           WHERE task_id=? AND host_id=? AND source_type='device'""",
+                        (task_id, host_id),
+                    ).fetchone()
+                    if not task:
+                        raise DeviceRelayError("task_not_found", 404)
+                    if task["capability_id"] != "ops.window.snapshot.capture":
+                        raise DeviceRelayError("window_snapshot_task_required")
+                    if not task["device_id"]:
+                        raise DeviceRelayError("window_snapshot_device_required")
+                    task_expires_at = _parse_timezone_aware_iso(task["expires_at"])
+                    now = _now()
+                    if task_expires_at <= now:
+                        raise DeviceRelayError("window_snapshot_task_expired", 410)
+
+                    receipt_body, receipt_signature, signed_receipt = self._verify_window_snapshot_receipt(
+                        public_key, request, host_id, task, timestamp)
+                    evidence_json = json.dumps(evidence, ensure_ascii=False, separators=(",", ":"))
+                    _captured_at, artifact_expires_at = _validate_window_snapshot_evidence(
+                        evidence,
+                        sealed_size=len(body),
+                        task_expires_at=task_expires_at,
+                    )
+                    if artifact_expires_at <= now:
+                        raise DeviceRelayError("window_snapshot_expired", 410)
+                    sealed_sha256 = hashlib.sha256(body).hexdigest()
+                    if evidence["sealedSha256"] != sealed_sha256:
+                        raise DeviceRelayError("window_snapshot_hash_mismatch")
+
+                    existing = db.execute(
+                        "SELECT * FROM operations_relay_window_snapshots WHERE task_id=?",
+                        (task_id,),
+                    ).fetchone()
+                    existing_receipt = db.execute(
+                        """SELECT receipt_id, relay_receipt_body, relay_receipt_signature
+                           FROM operations_task_receipts
+                           WHERE task_id=? AND host_id=? AND status='completed'
+                           ORDER BY created_at DESC LIMIT 1""",
+                        (task_id, host_id),
+                    ).fetchone()
+                    if existing or existing_receipt:
+                        if (not existing or not existing_receipt
+                                or not self._window_snapshot_row_matches(existing, task, evidence)
+                                or existing_receipt["relay_receipt_body"] != receipt_body
+                                or existing_receipt["relay_receipt_signature"] != receipt_signature
+                                or not self._window_snapshot_file_matches(target, evidence)):
+                            raise DeviceRelayError("window_snapshot_conflict", 409)
+                        return {
+                            "ok": True,
+                            "taskId": task_id,
+                            "receiptId": existing_receipt["receipt_id"],
+                            "status": "completed",
+                            "deduplicated": True,
+                        }, 200
+                    if task["status"] not in {"queued", "delivered"}:
+                        raise DeviceRelayError("window_snapshot_task_not_uploadable", 409)
+
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    with temporary.open("xb") as stream:
+                        stream.write(body)
+                        stream.flush()
+                        os.fsync(stream.fileno())
+                    os.replace(temporary, target)
+                    published = True
+                    now_text = _iso(now)
+                    db.execute(
+                        """INSERT INTO operations_relay_window_snapshots
+                           (task_id, host_id, device_id, job_id, sealed_sha256, sealed_bytes,
+                            captured_at, expires_at, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (task_id, host_id, task["device_id"], evidence["jobId"],
+                         evidence["sealedSha256"], evidence["sealedBytes"],
+                         evidence["capturedAt"], evidence["expiresAt"], now_text),
+                    )
+                    db.execute(
+                        """INSERT INTO operations_task_receipts
+                           (receipt_id, task_id, host_id, status, evidence, created_at,
+                            relay_receipt_body, relay_receipt_signature)
+                           VALUES (?, ?, ?, 'completed', ?, ?, ?, ?)""",
+                        (receipt_id, task_id, host_id, evidence_json, now_text,
+                         receipt_body, receipt_signature),
+                    )
+                    db.execute(
+                        "UPDATE operations_tasks SET status='completed' WHERE task_id=?",
+                        (task_id,),
+                    )
+            except Exception:
+                temporary.unlink(missing_ok=True)
+                if published:
+                    target.unlink(missing_ok=True)
+                raise
+            finally:
+                db.close()
+                temporary.unlink(missing_ok=True)
+
+        self._cache.write_audit(
+            actor_type="operations_host", actor_id=host_id,
+            action="operations.window_snapshot.store",
+            target_type="operations_task", target_id=task_id,
+            detail=json.dumps({"sealedBytes": len(body)}, separators=(",", ":")),
+        )
+        return {
+            "ok": True,
+            "taskId": task_id,
+            "receiptId": receipt_id,
+            "status": "completed",
+        }, 201
+
+    def download_window_snapshot(
+            self, task_id: str, path: str, headers, body: bytes) -> tuple[bytes, dict]:
+        task_id = _safe_id(task_id, "task_id")
+        request = _json_body(body, 1024)
+        if set(request) != {"hostId"}:
+            raise DeviceRelayError("invalid_window_snapshot_download_body")
+        host_id = _safe_id(request.get("hostId"), "host_id")
+        with self._window_snapshot_lock:
+            db = self._cache.get_db()
+            try:
+                with db:
+                    device_id = self._authenticate_device(db, host_id, "POST", path, headers, body)
+                    now = _now()
+                    self._prune_window_snapshots_no_lock(db, now)
+                    db.commit()
+                    task = self._window_snapshot_task_for_device(db, task_id, host_id, device_id)
+                    if task["status"] == "consumed":
+                        raise DeviceRelayError("window_snapshot_consumed", 410)
+                    if task["status"] != "completed":
+                        raise DeviceRelayError("window_snapshot_not_ready", 409)
+                    evidence = self._read_completed_window_snapshot_receipt(db, task)
+                    _captured_at, expires_at = _validate_window_snapshot_evidence(
+                        evidence,
+                        task_expires_at=_parse_timezone_aware_iso(task["expires_at"]),
+                    )
+                    if expires_at <= now:
+                        self._discard_window_snapshot_no_lock(db, task_id)
+                        db.commit()
+                        raise DeviceRelayError("window_snapshot_expired", 410)
+                    row = db.execute(
+                        "SELECT * FROM operations_relay_window_snapshots WHERE task_id=?",
+                        (task_id,),
+                    ).fetchone()
+                    if not row or not self._window_snapshot_row_matches(row, task, evidence):
+                        raise DeviceRelayError("window_snapshot_not_found", 404)
+                    target = self._window_snapshot_path(task_id)
+                    try:
+                        sealed = target.read_bytes()
+                    except (OSError, IOError) as exc:
+                        raise DeviceRelayError("window_snapshot_not_found", 404) from exc
+                    if (len(sealed) != evidence["sealedBytes"]
+                            or hashlib.sha256(sealed).hexdigest() != evidence["sealedSha256"]):
+                        self._discard_window_snapshot_no_lock(db, task_id)
+                        db.commit()
+                        raise DeviceRelayError("window_snapshot_integrity_failed", 409)
+                    return sealed, evidence
+            finally:
+                db.close()
+
+    def consume_window_snapshot(
+            self, task_id: str, path: str, headers, body: bytes) -> tuple[dict, int]:
+        task_id = _safe_id(task_id, "task_id")
+        request = _json_body(body, 1024)
+        if set(request) != {"hostId", "sealedSha256"}:
+            raise DeviceRelayError("invalid_window_snapshot_consume_body")
+        host_id = _safe_id(request.get("hostId"), "host_id")
+        sealed_sha256 = request.get("sealedSha256")
+        if not isinstance(sealed_sha256, str) or not SAFE_SHA256.fullmatch(sealed_sha256):
+            raise DeviceRelayError("invalid_window_snapshot_consume_body")
+        deduplicated = False
+        with self._window_snapshot_lock:
+            db = self._cache.get_db()
+            try:
+                with db:
+                    device_id = self._authenticate_device(db, host_id, "POST", path, headers, body)
+                    task = self._window_snapshot_task_for_device(
+                        db, task_id, host_id, device_id, allow_consumed=True)
+                    evidence = self._read_completed_window_snapshot_receipt(db, task)
+                    if evidence["sealedSha256"] != sealed_sha256:
+                        raise DeviceRelayError("window_snapshot_hash_mismatch", 409)
+                    if task["status"] == "consumed":
+                        deduplicated = True
+                    else:
+                        now = _now()
+                        _captured_at, expires_at = _validate_window_snapshot_evidence(
+                            evidence,
+                            task_expires_at=_parse_timezone_aware_iso(task["expires_at"]),
+                        )
+                        if expires_at <= now:
+                            self._discard_window_snapshot_no_lock(db, task_id)
+                            db.commit()
+                            raise DeviceRelayError("window_snapshot_expired", 410)
+                        row = db.execute(
+                            "SELECT * FROM operations_relay_window_snapshots WHERE task_id=?",
+                            (task_id,),
+                        ).fetchone()
+                        if not row or not self._window_snapshot_row_matches(row, task, evidence):
+                            raise DeviceRelayError("window_snapshot_not_found", 404)
+                        target = self._window_snapshot_path(task_id)
+                        if not self._window_snapshot_file_matches(target, evidence):
+                            self._discard_window_snapshot_no_lock(db, task_id)
+                            db.commit()
+                            raise DeviceRelayError("window_snapshot_integrity_failed", 409)
+                        try:
+                            target.unlink()
+                        except OSError as exc:
+                            raise DeviceRelayError("window_snapshot_delete_failed", 503) from exc
+                        db.execute(
+                            "DELETE FROM operations_relay_window_snapshots WHERE task_id=?",
+                            (task_id,),
+                        )
+                        db.execute(
+                            "UPDATE operations_tasks SET status='consumed' WHERE task_id=?",
+                            (task_id,),
+                        )
+            finally:
+                db.close()
+
+        if not deduplicated:
+            self._cache.write_audit(
+                actor_type="operations_device", actor_id=device_id,
+                action="operations.window_snapshot.consume",
+                target_type="operations_task", target_id=task_id,
+                detail="{}",
+            )
+        return {
+            "ok": True,
+            "taskId": task_id,
+            "status": "consumed",
+            "deduplicated": deduplicated,
+        }, 200
+
+    @staticmethod
+    def _verify_window_snapshot_receipt(public_key, request, host_id, task, timestamp):
+        if request.get("status") != "completed" or not isinstance(request.get("evidence"), dict):
+            raise DeviceRelayError("invalid_window_snapshot_metadata")
+        receipt_body, receipt_signature, signed_receipt = _verify_host_envelope(
+            public_key,
+            HOST_RECEIPT_ENVELOPE_PREFIX,
+            request.get("receiptEnvelope"),
+            16384,
+        )
+        signed_at = signed_receipt.get("signedAt")
+        if (type(signed_at) is not int
+                or set(signed_receipt) != {
+                    "hostId", "taskId", "idempotencyKey", "status", "evidence", "signedAt"
+                }
+                or signed_receipt.get("hostId") != host_id
+                or signed_receipt.get("taskId") != task["task_id"]
+                or signed_receipt.get("idempotencyKey") != task["idempotency_key"]
+                or signed_receipt.get("status") != "completed"
+                or signed_receipt.get("evidence") != request["evidence"]
+                or abs(signed_at - int(timestamp)) > 5):
+            raise DeviceRelayError("window_snapshot_receipt_mismatch")
+        return receipt_body, receipt_signature, signed_receipt
+
+    def _read_completed_window_snapshot_receipt(self, db, task) -> dict:
+        receipt = db.execute(
+            """SELECT evidence, relay_receipt_body, relay_receipt_signature
+               FROM operations_task_receipts
+               WHERE task_id=? AND host_id=? AND status='completed'
+               ORDER BY created_at DESC LIMIT 1""",
+            (task["task_id"], task["host_id"]),
+        ).fetchone()
+        identity = db.execute(
+            "SELECT certificate_der FROM operations_relay_host_identities WHERE host_id=?",
+            (task["host_id"],),
+        ).fetchone()
+        if (not receipt or not identity or not receipt["relay_receipt_body"]
+                or not receipt["relay_receipt_signature"]):
+            raise DeviceRelayError("window_snapshot_receipt_not_found", 404)
+        _certificate, public_key = _host_certificate(identity["certificate_der"], task["host_id"])
+        _body_text, _signature_text, signed_receipt = _verify_host_envelope(
+            public_key,
+            HOST_RECEIPT_ENVELOPE_PREFIX,
+            {
+                "body": receipt["relay_receipt_body"],
+                "signature": receipt["relay_receipt_signature"],
+            },
+            16384,
+        )
+        if (set(signed_receipt) != {
+                "hostId", "taskId", "idempotencyKey", "status", "evidence", "signedAt"
+                }
+                or signed_receipt.get("hostId") != task["host_id"]
+                or signed_receipt.get("taskId") != task["task_id"]
+                or signed_receipt.get("idempotencyKey") != task["idempotency_key"]
+                or signed_receipt.get("status") != "completed"
+                or type(signed_receipt.get("signedAt")) is not int
+                or not isinstance(signed_receipt.get("evidence"), dict)):
+            raise DeviceRelayError("invalid_window_snapshot_receipt")
+        try:
+            persisted_evidence = json.loads(receipt["evidence"])
+        except (TypeError, json.JSONDecodeError) as exc:
+            raise DeviceRelayError("invalid_window_snapshot_receipt") from exc
+        if persisted_evidence != signed_receipt["evidence"]:
+            raise DeviceRelayError("invalid_window_snapshot_receipt")
+        _validate_window_snapshot_evidence(signed_receipt["evidence"])
+        return signed_receipt["evidence"]
+
+    @staticmethod
+    def _window_snapshot_task_for_device(
+            db, task_id: str, host_id: str, device_id: str, *, allow_consumed: bool = False):
+        task = db.execute(
+            """SELECT task_id, host_id, device_id, capability_id, status,
+                      idempotency_key, created_at, expires_at
+               FROM operations_tasks
+               WHERE task_id=? AND host_id=? AND device_id=? AND source_type='device'""",
+            (task_id, host_id, device_id),
+        ).fetchone()
+        if not task or task["capability_id"] != "ops.window.snapshot.capture":
+            raise DeviceRelayError("window_snapshot_not_found", 404)
+        if task["status"] == "consumed" and allow_consumed:
+            return task
+        return task
+
+    @staticmethod
+    def _window_snapshot_row_matches(row, task, evidence: dict) -> bool:
+        return (
+            row["task_id"] == task["task_id"]
+            and row["host_id"] == task["host_id"]
+            and row["device_id"] == task["device_id"]
+            and row["job_id"] == evidence["jobId"]
+            and row["sealed_sha256"] == evidence["sealedSha256"]
+            and row["sealed_bytes"] == evidence["sealedBytes"]
+            and row["captured_at"] == evidence["capturedAt"]
+            and row["expires_at"] == evidence["expiresAt"]
+        )
+
+    @staticmethod
+    def _window_snapshot_file_matches(path: Path, evidence: dict) -> bool:
+        try:
+            if not path.is_file() or path.stat().st_size != evidence["sealedBytes"]:
+                return False
+            return hashlib.sha256(path.read_bytes()).hexdigest() == evidence["sealedSha256"]
+        except OSError:
+            return False
+
+    def _window_snapshot_path(self, task_id: str) -> Path:
+        if not SAFE_HEX_32.fullmatch(task_id):
+            raise DeviceRelayError("invalid_task_id")
+        directory = self._window_snapshot_directory.resolve()
+        target = (directory / task_id).resolve()
+        if target.parent != directory:
+            raise DeviceRelayError("invalid_task_id")
+        return target
+
+    def _discard_window_snapshot_no_lock(self, db, task_id: str) -> None:
+        target = self._window_snapshot_path(task_id)
+        try:
+            target.unlink(missing_ok=True)
+        except OSError as exc:
+            raise DeviceRelayError("window_snapshot_delete_failed", 503) from exc
+        db.execute(
+            "DELETE FROM operations_relay_window_snapshots WHERE task_id=?",
+            (task_id,),
+        )
+
+    def _prune_window_snapshots(self) -> None:
+        with self._window_snapshot_lock:
+            db = self._cache.get_db()
+            try:
+                with db:
+                    self._prune_window_snapshots_no_lock(db, _now())
+            finally:
+                db.close()
+
+    def _try_prune_window_snapshots(self) -> None:
+        try:
+            self._prune_window_snapshots()
+        except (OSError, sqlite3.Error):
+            # Artifact cleanup is best-effort. A later signed sync or poll retries it
+            # without turning an already-successful control-plane request into a failure.
+            pass
+
+    def _prune_window_snapshots_no_lock(self, db, now: datetime) -> None:
+        rows = db.execute(
+            "SELECT task_id, expires_at FROM operations_relay_window_snapshots"
+        ).fetchall()
+        known = set()
+        for row in rows:
+            task_id = row["task_id"]
+            known.add(task_id)
+            target = self._window_snapshot_path(task_id)
+            try:
+                expired = _parse_timezone_aware_iso(row["expires_at"]) <= now
+            except (TypeError, ValueError):
+                expired = True
+            if expired or not target.is_file():
+                if expired:
+                    try:
+                        target.unlink(missing_ok=True)
+                    except OSError:
+                        continue
+                db.execute(
+                    "DELETE FROM operations_relay_window_snapshots WHERE task_id=?",
+                    (task_id,),
+                )
+
+        directory = self._window_snapshot_directory
+        if not directory.is_dir():
+            return
+        orphan_cutoff = now - timedelta(minutes=10)
+        for path in directory.iterdir():
+            try:
+                modified_at = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+                final_orphan = SAFE_HEX_32.fullmatch(path.name) and path.name not in known
+                stale_temporary = path.name.startswith(".") and path.name.endswith(".tmp")
+                if path.is_file() and modified_at <= orphan_cutoff and (final_orphan or stale_temporary):
+                    path.unlink()
+            except OSError:
+                continue
+
+    def record_receipt(self, host_id: str, task_id: str, path: str, headers, body: bytes) -> tuple[dict, int]:
+        with self._window_snapshot_lock:
+            return self._record_receipt(host_id, task_id, path, headers, body)
+
+    def _record_receipt(self, host_id: str, task_id: str, path: str, headers, body: bytes) -> tuple[dict, int]:
+        host_id = _safe_id(host_id, "host_id")
+        task_id = _safe_id(task_id, "task_id")
+        request = _json_body(body, 16384)
+        status = str(request.get("status") or "")
+        evidence = request.get("evidence", {})
+        if status not in ALLOWED_RECEIPT_STATUSES:
+            raise DeviceRelayError("invalid_receipt_status")
+        if not isinstance(evidence, dict):
+            raise DeviceRelayError("invalid_receipt_evidence")
+        evidence_json = json.dumps(evidence, ensure_ascii=False, separators=(",", ":"))
+        if len(evidence_json) > 8192:
+            raise DeviceRelayError("receipt_evidence_too_large")
+        receipt_id = uuid.uuid4().hex
+        db = self._cache.get_db()
+        try:
+            with db:
+                timestamp, _nonce, _request_signature, public_key = self._authenticate_host(
+                    db, host_id, "POST", path, headers, body)
+                task = db.execute(
+                    """SELECT task_id, idempotency_key, capability_id, status FROM operations_tasks
+                       WHERE task_id=? AND host_id=? AND source_type='device'""",
+                    (task_id, host_id),
+                ).fetchone()
+                if not task:
+                    raise DeviceRelayError("task_not_found", 404)
+                receipt_body, receipt_signature, signed_receipt = _verify_host_envelope(
+                    public_key, HOST_RECEIPT_ENVELOPE_PREFIX,
+                    request.get("receiptEnvelope"), 16384)
+                try:
+                    receipt_signed_at = int(signed_receipt.get("signedAt"))
+                except (TypeError, ValueError) as exc:
+                    raise DeviceRelayError("invalid_receipt_envelope") from exc
+                if (set(signed_receipt) != {"hostId", "taskId", "idempotencyKey", "status", "evidence", "signedAt"}
+                        or signed_receipt.get("hostId") != host_id
+                        or signed_receipt.get("taskId") != task_id
+                        or signed_receipt.get("idempotencyKey") != task["idempotency_key"]
+                        or signed_receipt.get("status") != status
+                        or signed_receipt.get("evidence") != evidence
+                        or abs(receipt_signed_at - int(timestamp)) > 5):
+                    raise DeviceRelayError("receipt_envelope_mismatch")
+                if task["capability_id"] == "ops.diagnostics.failures.read":
+                    _validate_failure_evidence_receipt(status, evidence)
+                if task["capability_id"] == "ops.window.snapshot.capture":
+                    if status == "completed":
+                        raise DeviceRelayError("window_snapshot_upload_required")
+                    _validate_window_snapshot_failed_evidence(status, evidence)
+                now = _iso()
+                # A host may retry the exact signed envelope when the first HTTP
+                # response is lost.  Treat that as the same receipt; a new signedAt
+                # produces a different body and remains a distinct audit record.
+                existing_receipt = db.execute(
+                    """SELECT receipt_id FROM operations_task_receipts
+                       WHERE task_id=? AND host_id=? AND status=?
+                         AND relay_receipt_body=?""",
+                    (task_id, host_id, status, receipt_body),
+                ).fetchone()
+                if existing_receipt:
+                    return {
+                        "ok": True,
+                        "receiptId": existing_receipt["receipt_id"],
+                        "status": status,
+                        "deduplicated": True,
+                    }, 200
+                if task["capability_id"] == "ops.window.snapshot.capture":
+                    if task["status"] in {"completed", "consumed"}:
+                        raise DeviceRelayError("window_snapshot_receipt_conflict", 409)
+                    self._discard_window_snapshot_no_lock(db, task_id)
+                db.execute(
+                    """INSERT INTO operations_task_receipts
+                       (receipt_id, task_id, host_id, status, evidence, created_at,
+                        relay_receipt_body, relay_receipt_signature)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (receipt_id, task_id, host_id, status, evidence_json, now,
+                     receipt_body, receipt_signature),
+                )
+                terminal = status if status in {"completed", "failed", "rejected"} else "accepted"
+                db.execute("UPDATE operations_tasks SET status=? WHERE task_id=?", (terminal, task_id))
+        finally:
+            db.close()
+        return {"ok": True, "receiptId": receipt_id, "status": status}, 201
+
+    def get_snapshot(self, host_id: str, path: str, headers, body: bytes) -> dict:
+        host_id = _safe_id(host_id, "host_id")
+        db = self._cache.get_db()
+        try:
+            with db:
+                device_id = self._authenticate_device(db, host_id, "POST", path, headers, body)
+                host = db.execute(
+                    """SELECT hosts.*, identities.certificate_der
+                       FROM operations_hosts AS hosts
+                       JOIN operations_relay_host_identities AS identities USING(host_id)
+                       WHERE hosts.host_id=?""", (host_id,)).fetchone()
+                if not host:
+                    raise DeviceRelayError("host_not_found", 404)
+            return {
+                "ok": True,
+                "host": {
+                    "hostId": host_id,
+                    "displayName": host["display_name"],
+                    "appVersion": host["app_version"],
+                    "status": host["status"],
+                    "capabilities": json.loads(host["capabilities"]),
+                    "snapshot": json.loads(host["snapshot"]),
+                    "lastSeenAt": host["last_seen_at"],
+                },
+                "deviceId": device_id,
+                "serverTime": _iso(),
+                "hostCertificateDer": host["certificate_der"],
+                "hostEnvelope": {
+                    "body": host["relay_snapshot_body"],
+                    "signature": host["relay_snapshot_signature"],
+                },
+            }
+        finally:
+            db.close()
+
+    def get_task(self, task_id: str, path: str, headers, body: bytes) -> dict:
+        task_id = _safe_id(task_id, "task_id")
+        request = _json_body(body, 1024)
+        host_id = _safe_id(request.get("hostId"), "host_id")
+        db = self._cache.get_db()
+        try:
+            with db:
+                device_id = self._authenticate_device(db, host_id, "POST", path, headers, body)
+                task = db.execute(
+                    """SELECT * FROM operations_tasks
+                       WHERE task_id=? AND host_id=? AND device_id=? AND source_type='device'""",
+                    (task_id, host_id, device_id),
+                ).fetchone()
+                if not task:
+                    raise DeviceRelayError("task_not_found", 404)
+                certificate = db.execute(
+                    "SELECT certificate_der FROM operations_relay_host_identities WHERE host_id=?",
+                    (host_id,),
+                ).fetchone()
+                receipts = db.execute(
+                    """SELECT status, evidence, created_at, relay_receipt_body, relay_receipt_signature
+                       FROM operations_task_receipts WHERE task_id=? ORDER BY created_at""",
+                    (task_id,),
+                ).fetchall()
+            return {
+                "ok": True,
+                "task": {
+                    "taskId": task_id,
+                    "capabilityId": task["capability_id"],
+                    "status": task["status"],
+                    "createdAt": task["created_at"],
+                    "expiresAt": task["expires_at"],
+                    "receipts": [
+                        {
+                            "status": row["status"],
+                            "evidence": json.loads(row["evidence"]),
+                            "createdAt": row["created_at"],
+                            "hostEnvelope": {
+                                "body": row["relay_receipt_body"],
+                                "signature": row["relay_receipt_signature"],
+                            } if row["relay_receipt_body"] and row["relay_receipt_signature"] else None,
+                        }
+                        for row in receipts
+                    ],
+                },
+                "serverTime": _iso(),
+                "hostCertificateDer": certificate["certificate_der"] if certificate else "",
+            }
+        finally:
+            db.close()
+
+    def _authenticate_host(self, db, host_id: str, method: str, path: str, headers, body: bytes):
+        if _safe_id(_header(headers, "X-CV-Host-Id"), "host_id") != host_id:
+            raise DeviceRelayError("host_id_mismatch", 401)
+        row = db.execute(
+            "SELECT certificate_der FROM operations_relay_host_identities WHERE host_id=?", (host_id,)
+        ).fetchone()
+        if not row:
+            raise DeviceRelayError("unknown_host_identity", 401)
+        _certificate, public_key = _host_certificate(row["certificate_der"], host_id)
+        timestamp, nonce, signature = _request_parts(headers)
+        try:
+            public_key.verify(signature, _canonical(method, path, timestamp, nonce, body), padding.PKCS1v15(), hashes.SHA256())
+        except InvalidSignature as exc:
+            raise DeviceRelayError("invalid_host_signature", 401) from exc
+        self._claim_nonce(db, "host", host_id, nonce)
+        return timestamp, nonce, signature, public_key
+
+    def _authenticate_device(self, db, host_id: str, method: str, path: str, headers, body: bytes) -> str:
+        device_id = _safe_id(_header(headers, "X-CV-Device-Id"), "device_id")
+        row = db.execute(
+            """SELECT public_key_spki FROM operations_relay_devices
+               WHERE host_id=? AND device_id=? AND revoked_at IS NULL""",
+            (host_id, device_id),
+        ).fetchone()
+        if not row:
+            raise DeviceRelayError("unknown_or_revoked_device", 401)
+        timestamp, nonce, signature = _request_parts(headers)
+        try:
+            _device_public_key(row["public_key_spki"]).verify(
+                signature, _canonical(method, path, timestamp, nonce, body), ec.ECDSA(hashes.SHA256())
+            )
+        except InvalidSignature as exc:
+            raise DeviceRelayError("invalid_request_signature", 401) from exc
+        self._claim_nonce(db, "device", f"{host_id}:{device_id}", nonce)
+        return device_id
+
+    @staticmethod
+    def _claim_nonce(db, principal_type: str, principal_id: str, nonce: str):
+        now = _now()
+        db.execute("DELETE FROM operations_relay_nonces WHERE expires_at<?", (_iso(now),))
+        try:
+            db.execute(
+                "INSERT INTO operations_relay_nonces VALUES (?, ?, ?, ?)",
+                (principal_type, principal_id, nonce, _iso(now + NONCE_LIFETIME)),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise DeviceRelayError("replayed_request", 409) from exc
+
+    @staticmethod
+    def _normalize_device(value) -> dict:
+        if not isinstance(value, dict):
+            raise DeviceRelayError("invalid_device_record")
+        device_id = _safe_id(value.get("deviceId"), "device_id")
+        display_name = _bounded_text(value.get("displayName"), "device_name", 80, required=True)
+        public_key_spki = str(value.get("publicKeySpki") or "")
+        _device_public_key(public_key_spki)
+        scopes = value.get("scopes", [])
+        if (not isinstance(scopes, list) or len(scopes) > 100
+                or any(not isinstance(item, str) or not 1 <= len(item) <= 100 for item in scopes)):
+            raise DeviceRelayError("invalid_device_scopes")
+        approved_at = _bounded_text(value.get("approvedAt"), "approved_at", 64, required=True)
+        revoked = value.get("revokedAt")
+        revoked_at = None if revoked in (None, "") else _bounded_text(revoked, "revoked_at", 64, required=True)
+        return {
+            "deviceId": device_id,
+            "displayName": display_name,
+            "publicKeySpki": public_key_spki,
+            "scopes": json.dumps(sorted(set(scopes)), ensure_ascii=False, separators=(",", ":")),
+            "approvedAt": approved_at,
+            "revokedAt": revoked_at,
+        }
+
+    @staticmethod
+    def _task_for_host(row) -> dict:
+        return {
+            "taskId": row["task_id"],
+            "capabilityId": row["capability_id"],
+            "idempotencyKey": row["idempotency_key"],
+            "requestBody": row["request_body"],
+            "deviceId": row["device_id"],
+            "timestamp": row["request_timestamp"],
+            "nonce": row["request_nonce"],
+            "signature": row["request_signature"],
+            "createdAt": row["created_at"],
+            "expiresAt": row["expires_at"],
+        }

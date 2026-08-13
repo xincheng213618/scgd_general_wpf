@@ -13,10 +13,16 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request
 
 from ports.operations_support import OperationsSupportStore
 from services.api_key_service import api_key_actor_id, verify_api_key
+from services.operations_device_relay import (
+    DeviceRelayError,
+    OperationsDeviceRelayService,
+    WINDOW_SNAPSHOT_MAXIMUM_SEALED_BYTES,
+    WINDOW_SNAPSHOT_MINIMUM_SEALED_BYTES,
+)
 
 operations_relay = Blueprint("operations_relay", __name__)
 
@@ -34,6 +40,7 @@ ALLOWED_SUPPORT_EVENTS = {"session.requested", "session.active", "message", "ses
 class OperationsRelayContext:
     cache: object
     support_store: OperationsSupportStore
+    device_relay: OperationsDeviceRelayService
 
 
 _ctx: OperationsRelayContext | None = None
@@ -93,6 +100,130 @@ def _bounded_text(value, field: str, maximum: int) -> str:
 
 def _error(exc: ValueError):
     return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+def _device_relay_error(exc: DeviceRelayError):
+    return jsonify({"ok": False, "error": exc.code}), exc.status
+
+
+@operations_relay.route("/api/ops/v1/device-relay/hosts/<host_id>/sync", methods=["POST"])
+def device_relay_sync_host(host_id):
+    try:
+        result = _ctx.device_relay.sync_host(host_id, request.path, request.headers, request.get_data(cache=True))
+        return jsonify(result)
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
+
+
+@operations_relay.route("/api/ops/v1/device-relay/hosts/<host_id>/tasks", methods=["POST"])
+def device_relay_poll_tasks(host_id):
+    try:
+        result = _ctx.device_relay.poll_tasks(host_id, request.path, request.headers, request.get_data(cache=True))
+        return jsonify(result)
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
+
+
+@operations_relay.route("/api/ops/v1/device-relay/tasks", methods=["POST"])
+def device_relay_create_task():
+    try:
+        result, status = _ctx.device_relay.create_task(request.path, request.headers, request.get_data(cache=True))
+        return jsonify(result), status
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
+
+
+@operations_relay.route(
+    "/api/ops/v1/device-relay/hosts/<host_id>/tasks/<task_id>/receipts",
+    methods=["POST"],
+)
+def device_relay_task_receipt(host_id, task_id):
+    try:
+        result, status = _ctx.device_relay.record_receipt(
+            host_id, task_id, request.path, request.headers, request.get_data(cache=True)
+        )
+        return jsonify(result), status
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
+
+
+@operations_relay.route(
+    "/api/ops/v1/device-relay/hosts/<host_id>/tasks/<task_id>/window-snapshot",
+    methods=["POST"],
+)
+def device_relay_upload_window_snapshot(host_id, task_id):
+    if request.mimetype != "application/octet-stream" or request.headers.get("Content-Encoding"):
+        return jsonify({"ok": False, "error": "window_snapshot_content_type_required"}), 415
+    if (request.content_length is None
+            or not WINDOW_SNAPSHOT_MINIMUM_SEALED_BYTES
+                <= request.content_length <= WINDOW_SNAPSHOT_MAXIMUM_SEALED_BYTES):
+        return jsonify({"ok": False, "error": "window_snapshot_size_not_allowed"}), 413
+    body = request.get_data(cache=False)
+    if len(body) != request.content_length:
+        return jsonify({"ok": False, "error": "window_snapshot_size_not_allowed"}), 400
+    try:
+        result, status = _ctx.device_relay.store_window_snapshot(
+            host_id,
+            task_id,
+            request.path,
+            request.headers,
+            body,
+            request.headers.get("X-CV-Receipt-Metadata", ""),
+        )
+        return jsonify(result), status
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
+
+
+@operations_relay.route(
+    "/api/ops/v1/device-relay/tasks/<task_id>/window-snapshot",
+    methods=["POST"],
+)
+def device_relay_download_window_snapshot(task_id):
+    try:
+        sealed, evidence = _ctx.device_relay.download_window_snapshot(
+            task_id, request.path, request.headers, request.get_data(cache=True)
+        )
+        response = Response(sealed, status=200, content_type="application/octet-stream")
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Content-Length"] = str(len(sealed))
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-CV-Sealed-SHA256"] = evidence["sealedSha256"]
+        return response
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
+
+
+@operations_relay.route(
+    "/api/ops/v1/device-relay/tasks/<task_id>/window-snapshot/consume",
+    methods=["POST"],
+)
+def device_relay_consume_window_snapshot(task_id):
+    try:
+        result, status = _ctx.device_relay.consume_window_snapshot(
+            task_id, request.path, request.headers, request.get_data(cache=True)
+        )
+        return jsonify(result), status
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
+
+
+@operations_relay.route("/api/ops/v1/device-relay/hosts/<host_id>/snapshot", methods=["POST"])
+def device_relay_snapshot(host_id):
+    try:
+        result = _ctx.device_relay.get_snapshot(host_id, request.path, request.headers, request.get_data(cache=True))
+        return jsonify(result)
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
+
+
+@operations_relay.route("/api/ops/v1/device-relay/tasks/<task_id>", methods=["POST"])
+def device_relay_task_status(task_id):
+    try:
+        result = _ctx.device_relay.get_task(task_id, request.path, request.headers, request.get_data(cache=True))
+        return jsonify(result)
+    except DeviceRelayError as exc:
+        return _device_relay_error(exc)
 
 
 @operations_relay.route("/api/ops/v1/hosts/<host_id>/heartbeat", methods=["POST"])
@@ -284,8 +415,12 @@ def task_receipt(host_id, task_id):
         task = db.execute("SELECT * FROM operations_tasks WHERE task_id=? AND host_id=?", (task_id, host_id)).fetchone()
         if not task:
             return jsonify({"ok": False, "error": "task_not_found"}), 404
-        db.execute("INSERT INTO operations_task_receipts VALUES (?, ?, ?, ?, ?, ?)",
-                   (receipt_id, task_id, host_id, status, evidence_json, _iso()))
+        db.execute(
+            """INSERT INTO operations_task_receipts
+               (receipt_id, task_id, host_id, status, evidence, created_at)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (receipt_id, task_id, host_id, status, evidence_json, _iso()),
+        )
         db.execute("UPDATE operations_tasks SET status=? WHERE task_id=?",
                    (status if status in {"completed", "failed", "rejected"} else "accepted", task_id))
         db.commit()

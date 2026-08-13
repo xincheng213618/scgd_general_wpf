@@ -269,6 +269,8 @@ class CacheManager:
                 status          TEXT DEFAULT 'unknown',
                 capabilities    TEXT DEFAULT '[]',
                 snapshot        TEXT DEFAULT '{}',
+                relay_snapshot_body TEXT,
+                relay_snapshot_signature TEXT,
                 last_seen_at    TEXT NOT NULL,
                 created_at      TEXT NOT NULL,
                 updated_at      TEXT NOT NULL
@@ -286,6 +288,12 @@ class CacheManager:
                 created_at      TEXT NOT NULL,
                 expires_at      TEXT NOT NULL,
                 delivered_at    TEXT,
+                source_type     TEXT NOT NULL DEFAULT 'operator',
+                device_id       TEXT,
+                request_body    TEXT,
+                request_timestamp TEXT,
+                request_nonce   TEXT,
+                request_signature TEXT,
                 UNIQUE(host_id, idempotency_key)
             );
             CREATE INDEX IF NOT EXISTS idx_ops_tasks_host_status ON operations_tasks(host_id, status, created_at);
@@ -297,6 +305,8 @@ class CacheManager:
                 status          TEXT NOT NULL,
                 evidence        TEXT NOT NULL DEFAULT '{}',
                 created_at      TEXT NOT NULL,
+                relay_receipt_body TEXT,
+                relay_receipt_signature TEXT,
                 FOREIGN KEY(task_id) REFERENCES operations_tasks(task_id)
             );
             CREATE INDEX IF NOT EXISTS idx_ops_receipts_task ON operations_task_receipts(task_id, created_at);
@@ -310,6 +320,53 @@ class CacheManager:
                 created_at      TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_ops_support_session ON operations_support_events(session_id, created_at);
+
+            CREATE TABLE IF NOT EXISTS operations_relay_host_identities (
+                host_id          TEXT PRIMARY KEY,
+                certificate_der  TEXT NOT NULL,
+                certificate_sha256 TEXT NOT NULL,
+                created_at       TEXT NOT NULL,
+                updated_at       TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS operations_relay_devices (
+                host_id          TEXT NOT NULL,
+                device_id        TEXT NOT NULL,
+                display_name     TEXT NOT NULL,
+                public_key_spki  TEXT NOT NULL,
+                scopes           TEXT NOT NULL DEFAULT '[]',
+                approved_at      TEXT NOT NULL,
+                revoked_at       TEXT,
+                updated_at       TEXT NOT NULL,
+                PRIMARY KEY (host_id, device_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_ops_relay_devices_active
+                ON operations_relay_devices(host_id, revoked_at);
+
+            CREATE TABLE IF NOT EXISTS operations_relay_nonces (
+                principal_type   TEXT NOT NULL,
+                principal_id     TEXT NOT NULL,
+                nonce            TEXT NOT NULL,
+                expires_at       TEXT NOT NULL,
+                PRIMARY KEY (principal_type, principal_id, nonce)
+            );
+            CREATE INDEX IF NOT EXISTS idx_ops_relay_nonces_expiry
+                ON operations_relay_nonces(expires_at);
+
+            CREATE TABLE IF NOT EXISTS operations_relay_window_snapshots (
+                task_id          TEXT PRIMARY KEY,
+                host_id          TEXT NOT NULL,
+                device_id        TEXT NOT NULL,
+                job_id           TEXT NOT NULL,
+                sealed_sha256    TEXT NOT NULL,
+                sealed_bytes     INTEGER NOT NULL,
+                captured_at      TEXT NOT NULL,
+                expires_at       TEXT NOT NULL,
+                created_at       TEXT NOT NULL,
+                FOREIGN KEY(task_id) REFERENCES operations_tasks(task_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_ops_relay_window_snapshots_expiry
+                ON operations_relay_window_snapshots(expires_at);
 
             -- Scheduled jobs: persistent job definitions
             CREATE TABLE IF NOT EXISTS scheduled_jobs (
