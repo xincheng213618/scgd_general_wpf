@@ -554,6 +554,20 @@ namespace ColorVision.UI.Desktop.Operations
                     && string.Equals(item.Outcome, status, StringComparison.Ordinal));
         }
 
+        public bool HasSentRelayWindowSnapshotReceipt(
+            string sourceTaskId,
+            string idempotencyKey,
+            string status)
+        {
+            lock (_syncRoot)
+                return _state.Audit.Any(item =>
+                    string.Equals(item.ActorType, "system", StringComparison.Ordinal)
+                    && string.Equals(item.Action, "relay.window-snapshot.receipt", StringComparison.Ordinal)
+                    && string.Equals(item.TargetId, sourceTaskId, StringComparison.Ordinal)
+                    && string.Equals(item.CorrelationId, idempotencyKey, StringComparison.Ordinal)
+                    && string.Equals(item.Outcome, status, StringComparison.Ordinal));
+        }
+
         public bool RecordAuditThrottled(
             string actorId,
             string actorType,

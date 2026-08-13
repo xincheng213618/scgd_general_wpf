@@ -339,7 +339,7 @@ def _validate_window_snapshot_evidence(
         raise DeviceRelayError("window_snapshot_size_mismatch")
     captured_at = _parse_timezone_aware_iso(evidence["capturedAt"])
     expires_at = _parse_timezone_aware_iso(evidence["expiresAt"])
-    if (captured_at > expires_at
+    if (captured_at >= expires_at
             or expires_at - captured_at > timedelta(seconds=WINDOW_SNAPSHOT_TTL_SECONDS)
             or task_expires_at is not None and expires_at > task_expires_at):
         raise DeviceRelayError("invalid_window_snapshot_expiry")
@@ -389,6 +389,7 @@ class OperationsDeviceRelayService:
     def __init__(self, cache):
         self._cache = cache
         self._window_snapshot_lock = threading.RLock()
+        self._try_prune_window_snapshots()
 
     @property
     def _window_snapshot_directory(self) -> Path:
@@ -493,6 +494,7 @@ class OperationsDeviceRelayService:
                     )
         finally:
             db.close()
+        self._try_prune_window_snapshots()
         self._cache.write_audit(
             actor_type="operations_host", actor_id=host_id, action="operations.device_relay.sync",
             target_type="operations_host", target_id=host_id,
@@ -523,6 +525,7 @@ class OperationsDeviceRelayService:
             tasks = [self._task_for_host(row) for row in rows]
         finally:
             db.close()
+        self._try_prune_window_snapshots()
         return {"ok": True, "tasks": tasks, "count": len(tasks), "serverTime": _iso()}
 
     def create_task(self, path: str, headers, body: bytes) -> tuple[dict, int]:
@@ -662,6 +665,7 @@ class OperationsDeviceRelayService:
                     timestamp, _nonce, _request_signature, public_key = self._authenticate_host(
                         db, host_id, "POST", path, headers, body)
                     self._prune_window_snapshots_no_lock(db, _now())
+                    db.commit()
                     task = db.execute(
                         """SELECT task_id, host_id, device_id, capability_id, status,
                                   idempotency_key, created_at, expires_at
@@ -787,6 +791,7 @@ class OperationsDeviceRelayService:
                     device_id = self._authenticate_device(db, host_id, "POST", path, headers, body)
                     now = _now()
                     self._prune_window_snapshots_no_lock(db, now)
+                    db.commit()
                     task = self._window_snapshot_task_for_device(db, task_id, host_id, device_id)
                     if task["status"] == "consumed":
                         raise DeviceRelayError("window_snapshot_consumed", 410)
@@ -799,6 +804,7 @@ class OperationsDeviceRelayService:
                     )
                     if expires_at <= now:
                         self._discard_window_snapshot_no_lock(db, task_id)
+                        db.commit()
                         raise DeviceRelayError("window_snapshot_expired", 410)
                     row = db.execute(
                         "SELECT * FROM operations_relay_window_snapshots WHERE task_id=?",
@@ -814,6 +820,7 @@ class OperationsDeviceRelayService:
                     if (len(sealed) != evidence["sealedBytes"]
                             or hashlib.sha256(sealed).hexdigest() != evidence["sealedSha256"]):
                         self._discard_window_snapshot_no_lock(db, task_id)
+                        db.commit()
                         raise DeviceRelayError("window_snapshot_integrity_failed", 409)
                     return sealed, evidence
             finally:
@@ -850,6 +857,7 @@ class OperationsDeviceRelayService:
                         )
                         if expires_at <= now:
                             self._discard_window_snapshot_no_lock(db, task_id)
+                            db.commit()
                             raise DeviceRelayError("window_snapshot_expired", 410)
                         row = db.execute(
                             "SELECT * FROM operations_relay_window_snapshots WHERE task_id=?",
@@ -860,6 +868,7 @@ class OperationsDeviceRelayService:
                         target = self._window_snapshot_path(task_id)
                         if not self._window_snapshot_file_matches(target, evidence):
                             self._discard_window_snapshot_no_lock(db, task_id)
+                            db.commit()
                             raise DeviceRelayError("window_snapshot_integrity_failed", 409)
                         try:
                             target.unlink()
@@ -1015,6 +1024,23 @@ class OperationsDeviceRelayService:
             "DELETE FROM operations_relay_window_snapshots WHERE task_id=?",
             (task_id,),
         )
+
+    def _prune_window_snapshots(self) -> None:
+        with self._window_snapshot_lock:
+            db = self._cache.get_db()
+            try:
+                with db:
+                    self._prune_window_snapshots_no_lock(db, _now())
+            finally:
+                db.close()
+
+    def _try_prune_window_snapshots(self) -> None:
+        try:
+            self._prune_window_snapshots()
+        except (OSError, sqlite3.Error):
+            # Artifact cleanup is best-effort. A later signed sync or poll retries it
+            # without turning an already-successful control-plane request into a failure.
+            pass
 
     def _prune_window_snapshots_no_lock(self, db, now: datetime) -> None:
         rows = db.execute(

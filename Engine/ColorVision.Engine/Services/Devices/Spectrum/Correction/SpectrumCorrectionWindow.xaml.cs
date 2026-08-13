@@ -27,7 +27,6 @@ public partial class SpectrumCorrectionWindow : Window
     private string? _generatedFilePath;
     private string _sourceMagnitudeSha256 = string.Empty;
     private bool _operationInProgress;
-    private bool _restartAwaitingConfirmation;
 
     public ObservableCollection<SpectrumTableRow> StandardRows { get; } = [];
     public ObservableCollection<SpectrumTableRow> MeasuredRows { get; } = [];
@@ -45,13 +44,14 @@ public partial class SpectrumCorrectionWindow : Window
 
     private void InitializePlot()
     {
-        string fontName = Fonts.Detect("标准光谱 / 实测光谱 / 修正预测");
-        PreviewPlot.Plot.Title("光谱修正预览");
+        string fontName = Fonts.Detect("标准光谱 / 实测光谱 / 校正预测");
+        PreviewPlot.Plot.Title("光谱校正预览");
         PreviewPlot.Plot.XLabel("波长 (nm)");
         PreviewPlot.Plot.YLabel("绝对光谱值");
         PreviewPlot.Plot.Axes.Title.Label.FontName = fontName;
         PreviewPlot.Plot.Axes.Left.Label.FontName = fontName;
         PreviewPlot.Plot.Axes.Bottom.Label.FontName = fontName;
+        PreviewPlot.Plot.Legend.FontName = fontName;
         PreviewPlot.Refresh();
     }
 
@@ -214,7 +214,7 @@ public partial class SpectrumCorrectionWindow : Window
         }
         catch (Exception ex)
         {
-            ShowError("无法计算修正预览", ex);
+            ShowError("无法计算校正预览", ex);
         }
     }
 
@@ -262,7 +262,7 @@ public partial class SpectrumCorrectionWindow : Window
 
         try
         {
-            SetBusy(true, "正在应用新 DAT，并让服务重新加载……");
+            SetBusy(true, "正在应用新 DAT……");
             SpectrumCorrectionApplyResult result = await _host.ApplyMagnitudeFileAsync(
                 new SpectrumCorrectionApplyRequest(
                     _generatedFilePath,
@@ -275,14 +275,13 @@ public partial class SpectrumCorrectionWindow : Window
 
             bool restartRequested = result.Status == SpectrumCorrectionApplyStatus.RestartRequested;
             ClearCapturedMeasurement();
-            _restartAwaitingConfirmation = restartRequested;
             GeneratedFileText.Text = string.IsNullOrWhiteSpace(result.AppliedMagnitudeFilePath)
-                ? restartRequested ? "配置已更新，服务重启请求已发送。" : "已应用；重新采集后方可再次生成。"
-                : restartRequested ? $"待服务重启确认：{result.AppliedMagnitudeFilePath}" : $"配置已应用：{result.AppliedMagnitudeFilePath}";
+                ? restartRequested ? "已应用，服务正在重启。" : "已应用。"
+                : $"当前 DAT：{result.AppliedMagnitudeFilePath}";
             StatusText.Text = string.IsNullOrWhiteSpace(result.Message)
                 ? restartRequested
-                    ? "配置已更新且重启请求已发送，但尚未证明服务已加载新 DAT。请等待设备状态恢复后重新打开窗口采集验证。"
-                    : "新 DAT 已应用。请在服务恢复后重新采集验证。"
+                    ? "服务恢复后请重新采集验证。"
+                    : "新 DAT 已应用。"
                 : result.Message;
             if (!string.IsNullOrWhiteSpace(result.AppliedMagnitudeFilePath))
                 MagnitudeFileText.Text = result.AppliedMagnitudeFilePath;
@@ -356,7 +355,7 @@ public partial class SpectrumCorrectionWindow : Window
             double factor = result.UniformCorrectionFactor!.Value;
             double[] predicted = measured.Values.Select(value => value * factor).ToArray();
             AddLine(measured.Wavelengths, measured.Values, "服务实测", System.Drawing.Color.DodgerBlue);
-            AddLine(measured.Wavelengths, predicted, "修正预测", System.Drawing.Color.OrangeRed);
+            AddLine(measured.Wavelengths, predicted, "校正预测", System.Drawing.Color.OrangeRed);
         }
         else
         {
@@ -366,7 +365,7 @@ public partial class SpectrumCorrectionWindow : Window
 
             AddLine(wavelengths, result.MeasuredValues, "服务实测", System.Drawing.Color.DodgerBlue);
             AddLine(wavelengths, result.StandardValues, "标准光谱", System.Drawing.Color.ForestGreen);
-            AddLine(wavelengths, predicted, "修正预测", System.Drawing.Color.OrangeRed);
+            AddLine(wavelengths, predicted, "校正预测", System.Drawing.Color.OrangeRed);
         }
 
         FinishPlot();
@@ -391,14 +390,14 @@ public partial class SpectrumCorrectionWindow : Window
     private static string BuildPreviewStatus(SpectrumCorrectionResult result)
     {
         if (result.Mode == SpectrumCorrectionMode.BrightnessOnly)
-            return $"亮度修正比例：{result.UniformCorrectionFactor:G8}。点击“生成新 DAT”后才会写入文件。";
-        return $"完整光谱修正预览完成，共 {result.CorrectionFactors.Count} 点。{BuildFilledPointWarning(result)}";
+            return $"亮度校正比例：{result.UniformCorrectionFactor:G8}。点击“导出 DAT”后写入文件。";
+        return $"完整光谱校正预览完成，共 {result.CorrectionFactors.Count} 点。{BuildFilledPointWarning(result)}";
     }
 
     private static string BuildFilledPointWarning(SpectrumCorrectionResult result) =>
         result.FilledFactorCount == 0
             ? string.Empty
-            : $"注意：{result.FilledFactorCount} 个低/零实测点未参与除法，修正比例由相邻有效点插值或延伸。";
+            : $"注意：{result.FilledFactorCount} 个低/零实测点未参与除法，校正比例由相邻有效点插值或延伸。";
 
     private void CorrectionTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -462,7 +461,7 @@ public partial class SpectrumCorrectionWindow : Window
     {
         _operationInProgress = busy;
         bool hasCapturedMeasurement = _snapshot != null && _measurement != null && _currentFile != null;
-        CaptureButton.IsEnabled = !busy && !_restartAwaitingConfirmation;
+        CaptureButton.IsEnabled = !busy;
         PreviewButton.IsEnabled = !busy && hasCapturedMeasurement;
         GenerateButton.IsEnabled = !busy && hasCapturedMeasurement;
         ApplyButton.IsEnabled = !busy && !string.IsNullOrWhiteSpace(_generatedFilePath);

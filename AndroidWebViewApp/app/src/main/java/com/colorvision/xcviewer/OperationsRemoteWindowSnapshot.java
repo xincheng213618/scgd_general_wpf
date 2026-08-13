@@ -1,5 +1,7 @@
 package com.colorvision.xcviewer;
 
+import android.annotation.SuppressLint;
+
 import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
@@ -29,10 +31,14 @@ import javax.crypto.Mac;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+// Every executable entry point is exposed only when OperationsE2eIdentity.isSupported()
+// (Android 12 / API 31). Keeping the protocol code together also lets JVM tests exercise
+// the exact Java/.NET wire format without a second parser.
+@SuppressLint("NewApi")
 final class OperationsRemoteWindowSnapshot {
     static final String CAPABILITY_ID = "ops.window.snapshot.capture";
     static final String SCHEME = "p256-hkdf-sha256-aes256gcm-v1";
-    static final String RECEIPT_KIND = "window-snapshot-v1";
+    static final String RECEIPT_KIND = "window-snapshot-encrypted-v1";
     static final String ERROR_KIND = "window-snapshot-error-v1";
     static final String ERROR_CODE = "window_snapshot_unavailable";
     static final int MAXIMUM_PLAINTEXT_BYTES = 1536 * 1024;
@@ -52,8 +58,27 @@ final class OperationsRemoteWindowSnapshot {
             "kind", "scheme", "jobId", "hostEphemeralPublicKeySpki",
             "sealedSha256", "sealedBytes", "capturedAt", "expiresAt");
     private static final Set<String> ERROR_KEYS = Set.of("kind", "code");
+    private static final Set<String> REQUEST_KEYS = Set.of(
+            "scheme", "recipientPublicKeySpki");
 
     private OperationsRemoteWindowSnapshot() {
+    }
+
+    static JSONObject createRequestPayload(String recipientPublicKeySpki) throws Exception {
+        JSONObject payload = new JSONObject();
+        payload.put("scheme", SCHEME);
+        payload.put("recipientPublicKeySpki", recipientPublicKeySpki);
+        validateRequestPayload(payload);
+        return payload;
+    }
+
+    static void validateRequestPayload(JSONObject payload) {
+        if (payload == null || !keys(payload).equals(REQUEST_KEYS)
+                || !SCHEME.equals(strictString(payload, "scheme"))
+                || !isCanonicalP256PublicKey(
+                        strictString(payload, "recipientPublicKeySpki"))) {
+            throw new SecurityException("window_snapshot_payload_not_allowed");
+        }
     }
 
     static final class Receipt {
@@ -105,7 +130,7 @@ final class OperationsRemoteWindowSnapshot {
         OffsetDateTime expires = parseRfc3339(expiresAt);
         Duration lifetime = Duration.between(captured.toInstant(), expires.toInstant());
         Instant now = Instant.ofEpochMilli(nowMilliseconds);
-        if (lifetime.isNegative()
+        if (lifetime.isZero() || lifetime.isNegative()
                 || lifetime.compareTo(Duration.ofMinutes(5)) > 0
                 || captured.toInstant().isAfter(now.plusMillis(CLOCK_TOLERANCE_MILLISECONDS))
                 || expires.toInstant().isBefore(now.minusMillis(CLOCK_TOLERANCE_MILLISECONDS))) {
@@ -149,6 +174,9 @@ final class OperationsRemoteWindowSnapshot {
         if (!(value instanceof ECPublicKey)) {
             throw new SecurityException("invalid_window_snapshot_public_key");
         }
+        if (!MessageDigest.isEqual(der, value.getEncoded())) {
+            throw new SecurityException("invalid_window_snapshot_public_key");
+        }
         ECPublicKey key = (ECPublicKey) value;
         AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC");
         parameters.init(new ECGenParameterSpec("secp256r1"));
@@ -174,6 +202,9 @@ final class OperationsRemoteWindowSnapshot {
             String taskId,
             String idempotencyKey,
             String recipientPublicKeySpki) throws Exception {
+        if (sharedSecret == null || sharedSecret.length != 32) {
+            throw new SecurityException("invalid_window_snapshot_shared_secret");
+        }
         if (sealed == null || sealed.length != receipt.sealedBytes
                 || sealed.length < MINIMUM_SEALED_BYTES
                 || sealed.length > MAXIMUM_SEALED_BYTES

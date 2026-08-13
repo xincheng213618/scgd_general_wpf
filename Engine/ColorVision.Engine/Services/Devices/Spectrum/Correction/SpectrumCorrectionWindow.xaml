@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="光谱修正" Width="1220" Height="820" MinWidth="1050" MinHeight="720"
+        Title="光谱校正" Width="1220" Height="820" MinWidth="1050" MinHeight="720"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource GlobalBackground}"
         Foreground="{DynamicResource GlobalTextBrush}">
@@ -80,7 +80,7 @@
         </Border>
 
         <TabControl x:Name="CorrectionTabs" Grid.Row="1" Margin="0,0,0,8" SelectedIndex="1" SelectionChanged="CorrectionTabs_SelectionChanged">
-            <TabItem Header="单独亮度修正">
+            <TabItem Header="单独亮度校正">
                 <Grid Margin="14">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -98,23 +98,23 @@
                     <TextBox x:Name="TargetBrightnessTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" TextChanged="CorrectionInput_Changed" />
                     <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,12,10" Text="本次服务实测值" />
                     <TextBox x:Name="MeasuredBrightnessTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" IsReadOnly="True" />
-                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,12,10" Text="修正比例" />
+                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,12,10" Text="校正比例" />
                     <TextBox x:Name="BrightnessRatioTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,10" IsReadOnly="True" />
 
                     <Border Grid.Row="0" Grid.RowSpan="3" Grid.Column="2" Margin="28,0,0,0" Padding="14" CornerRadius="4"
                             Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1">
                         <StackPanel>
-                            <TextBlock FontSize="15" FontWeight="SemiBold" Text="只调整整体亮度，保持相对光谱形状" />
+                            <TextBlock FontSize="15" FontWeight="SemiBold" Text="整体亮度校正" />
                             <TextBlock Margin="0,10,0,0" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"
-                                       Text="新幅值系数 = 当前幅值系数 ×（目标值 ÷ 实测值）。目标值必须与服务返回的 fPh 使用同一种测量模式和单位。" />
+                                       Text="输入目标值，预览后导出 DAT；相对光谱形状不变。" />
                             <TextBlock Margin="0,10,0,0" Foreground="{StaticResource SpectrumCorrectionWarningBrush}" TextWrapping="Wrap"
-                                       Text="应用后不会在本窗口自动复测；请等待服务重新加载后再正常测量验证。" />
+                                       Text="应用会重启服务；恢复后请重新采集验证。" />
                         </StackPanel>
                     </Border>
                 </Grid>
             </TabItem>
 
-            <TabItem Header="完整光谱修正">
+            <TabItem Header="完整光谱校正">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -126,7 +126,7 @@
                             <Button Content="清空标准值" Click="ClearStandardButton_Click" />
                         </StackPanel>
                         <TextBlock Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"
-                                   Text="标准谱必须覆盖当前 DAT 全波段，且单位和测量光路必须与服务实测一致；表格支持双击编辑，也可在表格中按 Ctrl+V 粘贴两列数据。" />
+                                   Text="导入覆盖当前波段的两列标准谱；可编辑或按 Ctrl+V 粘贴。" />
                     </DockPanel>
 
                     <Grid Grid.Row="1">
@@ -174,9 +174,9 @@
                            TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="PreviewButton" Margin="0,0,8,0" MinWidth="95" Content="计算预览" Click="PreviewButton_Click" />
-                <Button x:Name="GenerateButton" Margin="0,0,8,0" MinWidth="120" Content="生成新 DAT" Click="GenerateButton_Click" />
-                <Button x:Name="ApplyButton" MinWidth="130" Content="应用已生成 DAT" IsEnabled="False" Click="ApplyButton_Click" />
+                <Button x:Name="PreviewButton" Margin="0,0,8,0" MinWidth="95" Content="预览" Click="PreviewButton_Click" />
+                <Button x:Name="GenerateButton" Margin="0,0,8,0" MinWidth="120" Content="导出 DAT" Click="GenerateButton_Click" />
+                <Button x:Name="ApplyButton" MinWidth="140" Content="应用并重启服务" IsEnabled="False" Click="ApplyButton_Click" />
             </StackPanel>
         </Grid>
     </Grid>

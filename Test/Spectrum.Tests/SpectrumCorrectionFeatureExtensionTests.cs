@@ -19,7 +19,7 @@ public class SpectrumCorrectionFeatureExtensionTests
         CommandDisplayAttribute attribute = Assert.IsType<CommandDisplayAttribute>(
             property.GetCustomAttribute<CommandDisplayAttribute>());
 
-        Assert.Equal("光谱修正", attribute.DisplayName);
+        Assert.Equal("光谱校正", attribute.DisplayName);
         Assert.Equal(-3, attribute.Order);
     }
 
@@ -28,7 +28,7 @@ public class SpectrumCorrectionFeatureExtensionTests
     {
         var menu = new MenuSpectrumCorrection();
 
-        Assert.Equal("光谱修正", menu.Header);
+        Assert.Equal("光谱校正", menu.Header);
         Assert.Equal("Spectrum", menu.TargetName);
         Assert.Equal(ColorVision.UI.Menus.MenuItemConstants.Tool, menu.OwnerGuid);
     }

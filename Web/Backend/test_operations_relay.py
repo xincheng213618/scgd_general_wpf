@@ -887,6 +887,500 @@ class OperationsRelayTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_window_snapshot_task_requires_exact_p256_payload_ttl_scope_and_device_lane(self):
+        identity = self.device_relay_identity()
+        self.assertEqual(self.sync_device_relay(identity).status_code, 200)
+
+        created, _recipient_key = self.create_window_snapshot_task(
+            identity, "window-snapshot-valid"
+        )
+        self.assertEqual(created.status_code, 202)
+
+        p256 = ec.generate_private_key(ec.SECP256R1())
+        valid_payload = {
+            "scheme": "p256-hkdf-sha256-aes256gcm-v1",
+            "recipientPublicKeySpki": self.p256_public_key_spki(p256),
+        }
+        p384 = ec.generate_private_key(ec.SECP384R1())
+        invalid_payloads = (
+            {},
+            {**valid_payload, "windowTitle": "secret"},
+            {**valid_payload, "scheme": "other"},
+            {**valid_payload, "recipientPublicKeySpki": self.p256_public_key_spki(p384)},
+            {**valid_payload, "recipientPublicKeySpki": valid_payload["recipientPublicKeySpki"] + "="},
+        )
+        for index, payload in enumerate(invalid_payloads):
+            rejected, _ = self.create_window_snapshot_task(
+                identity, f"window-snapshot-payload-{index}", payload=payload
+            )
+            self.assertEqual(rejected.status_code, 400)
+            self.assertEqual(
+                rejected.get_json()["error"], "window_snapshot_payload_not_allowed"
+            )
+
+        for index, ttl in enumerate((None, 299, 301, 300.0, True)):
+            rejected, _ = self.create_window_snapshot_task(
+                identity, f"window-snapshot-ttl-{index}", payload=valid_payload, ttl=ttl
+            )
+            self.assertEqual(rejected.status_code, 400)
+            self.assertEqual(
+                rejected.get_json()["error"], "window_snapshot_ttl_not_allowed"
+            )
+
+        no_scope = self.device_relay_identity()
+        self.assertEqual(
+            self.sync_device_relay(no_scope, scopes=["ops.window.control"]).status_code,
+            200,
+        )
+        denied, _ = self.create_window_snapshot_task(no_scope, "window-snapshot-no-scope")
+        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(denied.get_json()["error"], "device_scope_required")
+
+        self.assertEqual(self.heartbeat("legacy-snapshot-host").status_code, 200)
+        legacy = self.client.post(
+            "/api/ops/v1/tasks",
+            headers=self.auth(self.operator_key),
+            json={
+                "hostId": "legacy-snapshot-host",
+                "capabilityId": "ops.window.snapshot.capture",
+                "payload": valid_payload,
+                "ttlSeconds": 300,
+            },
+        )
+        self.assertEqual(legacy.status_code, 400)
+        self.assertEqual(legacy.get_json()["error"], "task_capability_not_allowed")
+
+    def test_encrypted_window_snapshot_upload_download_consume_and_exact_retry(self):
+        identity = self.device_relay_identity()
+        self.assertEqual(self.sync_device_relay(identity).status_code, 200)
+        idempotency_key = "window-snapshot-round-trip"
+        created, _ = self.create_window_snapshot_task(identity, idempotency_key)
+        self.assertEqual(created.status_code, 202)
+        task_id = created.get_json()["taskId"]
+        sealed = (b"sealed-window-snapshot-not-plaintext-" * 20) + bytes(range(64))
+        evidence = self.window_snapshot_evidence(sealed)
+        signed_at = int(datetime.now(timezone.utc).timestamp())
+
+        uploaded, metadata_header, _ = self.upload_window_snapshot(
+            identity,
+            task_id,
+            idempotency_key,
+            sealed,
+            evidence=evidence,
+            signed_at=signed_at,
+        )
+        self.assertEqual(uploaded.status_code, 201)
+        receipt_id = uploaded.get_json()["receiptId"]
+
+        retried, retry_metadata_header, _ = self.upload_window_snapshot(
+            identity,
+            task_id,
+            idempotency_key,
+            sealed,
+            evidence=evidence,
+            signed_at=signed_at,
+        )
+        self.assertEqual(metadata_header, retry_metadata_header)
+        self.assertEqual(retried.status_code, 200)
+        self.assertTrue(retried.get_json()["deduplicated"])
+        self.assertEqual(retried.get_json()["receiptId"], receipt_id)
+
+        artifact_directory = self.root / ".operations-relay-window-snapshots"
+        artifact = artifact_directory / task_id
+        self.assertEqual([path.name for path in artifact_directory.iterdir()], [task_id])
+        self.assertEqual(artifact.read_bytes(), sealed)
+        self.assertFalse(any(path.suffix.lower() in {".jpg", ".jpeg"}
+                             for path in artifact_directory.iterdir()))
+
+        db = marketplace_app._cache.get_db()
+        try:
+            row = db.execute(
+                "SELECT * FROM operations_relay_window_snapshots WHERE task_id=?",
+                (task_id,),
+            ).fetchone()
+            self.assertEqual(row["sealed_sha256"], evidence["sealedSha256"])
+            self.assertEqual(row["sealed_bytes"], len(sealed))
+            columns = {
+                item["name"] for item in db.execute(
+                    "PRAGMA table_info(operations_relay_window_snapshots)"
+                )
+            }
+            self.assertFalse({"ciphertext", "sealed_data", "data", "blob"} & columns)
+        finally:
+            db.close()
+        for database_file in self.root.glob("marketplace.db*"):
+            self.assertNotIn(sealed, database_file.read_bytes())
+
+        downloaded = self.download_window_snapshot(identity, task_id)
+        self.assertEqual(downloaded.status_code, 200)
+        self.assertEqual(downloaded.mimetype, "application/octet-stream")
+        self.assertEqual(downloaded.headers["Cache-Control"], "no-store")
+        self.assertNotIn("Content-Encoding", downloaded.headers)
+        self.assertEqual(downloaded.get_data(), sealed)
+        self.assertTrue(artifact.is_file(), "download must not consume before client acknowledgement")
+
+        consumed = self.consume_window_snapshot(
+            identity, task_id, evidence["sealedSha256"]
+        )
+        self.assertEqual(consumed.status_code, 200)
+        self.assertFalse(consumed.get_json()["deduplicated"])
+        self.assertFalse(artifact.exists())
+        repeated = self.consume_window_snapshot(
+            identity, task_id, evidence["sealedSha256"]
+        )
+        self.assertEqual(repeated.status_code, 200)
+        self.assertTrue(repeated.get_json()["deduplicated"])
+        unavailable = self.download_window_snapshot(identity, task_id)
+        self.assertEqual(unavailable.status_code, 410)
+        self.assertEqual(unavailable.get_json()["error"], "window_snapshot_consumed")
+
+        db = marketplace_app._cache.get_db()
+        try:
+            self.assertEqual(db.execute(
+                "SELECT COUNT(*) FROM operations_relay_window_snapshots WHERE task_id=?",
+                (task_id,),
+            ).fetchone()[0], 0)
+            self.assertEqual(db.execute(
+                "SELECT status FROM operations_tasks WHERE task_id=?", (task_id,)
+            ).fetchone()[0], "consumed")
+        finally:
+            db.close()
+
+    def test_window_snapshot_upload_rejects_tampering_invalid_metadata_and_conflicts(self):
+        identity = self.device_relay_identity()
+        self.assertEqual(self.sync_device_relay(identity).status_code, 200)
+        sealed = b"s" * 256
+
+        cases = []
+        task_id = self.create_window_snapshot_task(identity, "snapshot-bad-request")[0].get_json()["taskId"]
+        cases.append((
+            self.upload_window_snapshot(
+                identity, task_id, "snapshot-bad-request", sealed,
+                corrupt_request_signature=True,
+            )[0],
+            401,
+            "invalid_host_signature",
+        ))
+        task_id = self.create_window_snapshot_task(identity, "snapshot-bad-envelope")[0].get_json()["taskId"]
+        cases.append((
+            self.upload_window_snapshot(
+                identity, task_id, "snapshot-bad-envelope", sealed,
+                corrupt_envelope_signature=True,
+            )[0],
+            401,
+            "invalid_host_envelope_signature",
+        ))
+
+        for name, mutate, expected_error in (
+            ("hash", lambda item: item.update(sealedSha256="0" * 64), "window_snapshot_hash_mismatch"),
+            ("size", lambda item: item.update(sealedBytes=len(sealed) + 1), "window_snapshot_size_mismatch"),
+            ("extra", lambda item: item.update(path="C:\\secret.jpg"), "invalid_window_snapshot_evidence"),
+            ("zero-lifetime", lambda item: item.update(
+                expiresAt=item["capturedAt"]
+            ), "invalid_window_snapshot_expiry"),
+            ("expiry", lambda item: item.update(
+                expiresAt=(datetime.now(timezone.utc) + timedelta(minutes=6)).isoformat()
+            ), "invalid_window_snapshot_expiry"),
+        ):
+            idempotency_key = f"snapshot-invalid-{name}"
+            created, _ = self.create_window_snapshot_task(identity, idempotency_key)
+            self.assertEqual(created.status_code, 202)
+            evidence = self.window_snapshot_evidence(sealed)
+            mutate(evidence)
+            response, _header, _ = self.upload_window_snapshot(
+                identity, created.get_json()["taskId"], idempotency_key,
+                sealed, evidence=evidence,
+            )
+            cases.append((response, 400, expected_error))
+
+        idempotency_key = "snapshot-extra-metadata"
+        created, _ = self.create_window_snapshot_task(identity, idempotency_key)
+        response, _header, _ = self.upload_window_snapshot(
+            identity, created.get_json()["taskId"], idempotency_key, sealed,
+            extra_metadata={"raw": "forbidden"},
+        )
+        cases.append((response, 400, "invalid_window_snapshot_metadata"))
+
+        for response, status, error in cases:
+            self.assertEqual(response.status_code, status)
+            self.assertEqual(response.get_json()["error"], error)
+
+        too_small_path = (
+            f"/api/ops/v1/device-relay/hosts/{identity['host_id']}"
+            f"/tasks/{'0' * 32}/window-snapshot"
+        )
+        too_small = self.client.post(
+            too_small_path,
+            data=b"x" * 60,
+            content_type="application/octet-stream",
+            headers={"X-CV-Receipt-Metadata": "e30="},
+        )
+        self.assertEqual(too_small.status_code, 413)
+
+        idempotency_key = "snapshot-conflict"
+        created, _ = self.create_window_snapshot_task(identity, idempotency_key)
+        task_id = created.get_json()["taskId"]
+        first, _header, _ = self.upload_window_snapshot(
+            identity, task_id, idempotency_key, sealed
+        )
+        self.assertEqual(first.status_code, 201)
+        conflicting = b"t" * len(sealed)
+        conflict, _header, _ = self.upload_window_snapshot(
+            identity, task_id, idempotency_key, conflicting
+        )
+        self.assertEqual(conflict.status_code, 409)
+        self.assertEqual(conflict.get_json()["error"], "window_snapshot_conflict")
+
+    def test_window_snapshot_is_device_owned_and_revocation_blocks_download(self):
+        identity = self.device_relay_identity()
+        self.assertEqual(self.sync_device_relay(identity).status_code, 200)
+        idempotency_key = "snapshot-device-owner"
+        created, _ = self.create_window_snapshot_task(identity, idempotency_key)
+        task_id = created.get_json()["taskId"]
+        sealed = b"owner-bound-sealed-snapshot" * 8
+        uploaded, _header, evidence = self.upload_window_snapshot(
+            identity, task_id, idempotency_key, sealed
+        )
+        self.assertEqual(uploaded.status_code, 201)
+
+        other_key = ec.generate_private_key(ec.SECP256R1())
+        other = dict(identity)
+        other["device_id"] = uuid.uuid4().hex
+        other["device_key"] = other_key
+        other["public_key"] = self.p256_public_key_spki(other_key)
+        db = marketplace_app._cache.get_db()
+        try:
+            db.execute(
+                """INSERT INTO operations_relay_devices
+                   (host_id, device_id, display_name, public_key_spki, scopes,
+                    approved_at, revoked_at, updated_at)
+                   VALUES (?, ?, 'Other phone', ?, '[\"ops.jobs.create\"]', ?, NULL, ?)""",
+                (identity["host_id"], other["device_id"], other["public_key"],
+                 datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()),
+            )
+            db.commit()
+        finally:
+            db.close()
+        wrong_device = self.download_window_snapshot(other, task_id)
+        self.assertEqual(wrong_device.status_code, 404)
+
+        revoked_at = datetime.now(timezone.utc).isoformat()
+        self.assertEqual(
+            self.sync_device_relay(identity, revoked_at=revoked_at).status_code, 200
+        )
+        revoked = self.download_window_snapshot(identity, task_id)
+        self.assertEqual(revoked.status_code, 401)
+        self.assertEqual(revoked.get_json()["error"], "unknown_or_revoked_device")
+
+        artifact = self.root / ".operations-relay-window-snapshots" / task_id
+        self.assertTrue(artifact.is_file())
+        self.assertEqual(hashlib.sha256(artifact.read_bytes()).hexdigest(), evidence["sealedSha256"])
+
+    def test_window_snapshot_failed_receipt_is_exact_and_clears_stale_artifact(self):
+        identity = self.device_relay_identity()
+        self.assertEqual(self.sync_device_relay(identity).status_code, 200)
+        idempotency_key = "snapshot-failed-receipt"
+        created, _ = self.create_window_snapshot_task(identity, idempotency_key)
+        self.assertEqual(created.status_code, 202)
+        task_id = created.get_json()["taskId"]
+        sealed = b"stale-sealed-snapshot" * 8
+        evidence = self.window_snapshot_evidence(sealed)
+        directory = self.root / ".operations-relay-window-snapshots"
+        directory.mkdir()
+        artifact = directory / task_id
+        artifact.write_bytes(sealed)
+        db = marketplace_app._cache.get_db()
+        try:
+            db.execute(
+                """INSERT INTO operations_relay_window_snapshots
+                   (task_id, host_id, device_id, job_id, sealed_sha256, sealed_bytes,
+                    captured_at, expires_at, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (task_id, identity["host_id"], identity["device_id"], evidence["jobId"],
+                 evidence["sealedSha256"], evidence["sealedBytes"], evidence["capturedAt"],
+                 evidence["expiresAt"], datetime.now(timezone.utc).isoformat()),
+            )
+            db.commit()
+        finally:
+            db.close()
+
+        receipt_path = (
+            f"/api/ops/v1/device-relay/hosts/{identity['host_id']}"
+            f"/tasks/{task_id}/receipts"
+        )
+        signed_at = int(datetime.now(timezone.utc).timestamp())
+        failed_evidence = {
+            "kind": "window-snapshot-error-v1",
+            "code": "window_snapshot_unavailable",
+        }
+        envelope_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "taskId": task_id,
+            "idempotencyKey": idempotency_key,
+            "status": "failed",
+            "evidence": failed_evidence,
+            "signedAt": signed_at,
+        }).decode("utf-8")
+        receipt_body = self.json_bytes({
+            "status": "failed",
+            "evidence": failed_evidence,
+            "receiptEnvelope": self.host_envelope(
+                identity, "colorvision-relay-receipt-v1", envelope_body
+            ),
+        })
+        failed = self.client.post(
+            receipt_path,
+            data=receipt_body,
+            content_type="application/json",
+            headers=self.host_headers(
+                identity, "POST", receipt_path, receipt_body, timestamp=signed_at
+            ),
+        )
+        self.assertEqual(failed.status_code, 201)
+        self.assertFalse(artifact.exists())
+        db = marketplace_app._cache.get_db()
+        try:
+            self.assertEqual(db.execute(
+                "SELECT COUNT(*) FROM operations_relay_window_snapshots WHERE task_id=?",
+                (task_id,),
+            ).fetchone()[0], 0)
+        finally:
+            db.close()
+
+        invalid_key = "snapshot-failed-receipt-extra"
+        invalid_created, _ = self.create_window_snapshot_task(identity, invalid_key)
+        invalid = self.post_failure_evidence_receipt(
+            identity,
+            invalid_created.get_json()["taskId"],
+            invalid_key,
+            "failed",
+            {
+                "kind": "window-snapshot-error-v1",
+                "code": "window_snapshot_unavailable",
+                "detail": "must not be persisted",
+            },
+        )
+        self.assertEqual(invalid.status_code, 400)
+        self.assertEqual(
+            invalid.get_json()["error"], "invalid_window_snapshot_receipt"
+        )
+
+        invalid_key = "snapshot-completed-via-receipt"
+        created, _ = self.create_window_snapshot_task(identity, invalid_key)
+        completed_task_id = created.get_json()["taskId"]
+        completed_evidence = self.window_snapshot_evidence(b"c" * 128)
+        completed_signed_at = int(datetime.now(timezone.utc).timestamp())
+        completed_envelope_body = self.json_bytes({
+            "hostId": identity["host_id"],
+            "taskId": completed_task_id,
+            "idempotencyKey": invalid_key,
+            "status": "completed",
+            "evidence": completed_evidence,
+            "signedAt": completed_signed_at,
+        }).decode("utf-8")
+        completed_body = self.json_bytes({
+            "status": "completed",
+            "evidence": completed_evidence,
+            "receiptEnvelope": self.host_envelope(
+                identity, "colorvision-relay-receipt-v1", completed_envelope_body
+            ),
+        })
+        completed_path = (
+            f"/api/ops/v1/device-relay/hosts/{identity['host_id']}"
+            f"/tasks/{completed_task_id}/receipts"
+        )
+        rejected = self.client.post(
+            completed_path,
+            data=completed_body,
+            content_type="application/json",
+            headers=self.host_headers(
+                identity, "POST", completed_path, completed_body,
+                timestamp=completed_signed_at,
+            ),
+        )
+        self.assertEqual(rejected.status_code, 400)
+        self.assertEqual(rejected.get_json()["error"], "window_snapshot_upload_required")
+
+    def test_window_snapshot_expiry_lazily_prunes_ciphertext_and_safe_orphans(self):
+        identity = self.device_relay_identity()
+        base = datetime.now(timezone.utc).replace(microsecond=0)
+        with patch("services.operations_device_relay._now", return_value=base):
+            self.assertEqual(self.sync_device_relay(identity).status_code, 200)
+            idempotency_key = "snapshot-expiry-prune"
+            created, _ = self.create_window_snapshot_task(identity, idempotency_key)
+            self.assertEqual(created.status_code, 202)
+            task_id = created.get_json()["taskId"]
+            sealed = b"expiring-sealed-window-snapshot" * 8
+            evidence = self.window_snapshot_evidence(
+                sealed,
+                captured_at=base,
+                expires_at=base + timedelta(minutes=4),
+            )
+            uploaded, _header, _ = self.upload_window_snapshot(
+                identity, task_id, idempotency_key, sealed,
+                evidence=evidence, signed_at=int(base.timestamp()),
+            )
+            self.assertEqual(uploaded.status_code, 201)
+
+        directory = self.root / ".operations-relay-window-snapshots"
+        orphan_task_id = "f" * 32
+        orphan = directory / orphan_task_id
+        orphan.write_bytes(b"ciphertext-orphan")
+        old_epoch = (base - timedelta(minutes=20)).timestamp()
+        os.utime(orphan, (old_epoch, old_epoch))
+
+        future = base + timedelta(minutes=6)
+        with patch("services.operations_device_relay._now", return_value=future):
+            poll_path = f"/api/ops/v1/device-relay/hosts/{identity['host_id']}/tasks"
+            poll_body = self.json_bytes({})
+            polled = self.client.post(
+                poll_path,
+                data=poll_body,
+                content_type="application/json",
+                headers=self.host_headers(
+                    identity, "POST", poll_path, poll_body,
+                    timestamp=int(future.timestamp()),
+                ),
+            )
+            self.assertEqual(polled.status_code, 200)
+            self.assertFalse((directory / task_id).exists())
+            self.assertFalse(orphan.exists())
+            expired = self.download_window_snapshot(
+                identity, task_id, timestamp=int(future.timestamp())
+            )
+        self.assertEqual(expired.status_code, 410)
+        self.assertEqual(expired.get_json()["error"], "window_snapshot_expired")
+        self.assertTrue(all(path.parent == directory and path.name.isalnum()
+                            for path in directory.iterdir()))
+
+        db = marketplace_app._cache.get_db()
+        try:
+            self.assertEqual(db.execute(
+                "SELECT COUNT(*) FROM operations_relay_window_snapshots"
+            ).fetchone()[0], 0)
+        finally:
+            db.close()
+
+    def test_window_snapshot_prune_io_failure_does_not_block_signed_sync_or_poll(self):
+        identity = self.device_relay_identity()
+        self.assertEqual(self.sync_device_relay(identity).status_code, 200)
+
+        with patch(
+                "services.operations_device_relay.OperationsDeviceRelayService"
+                "._prune_window_snapshots",
+                side_effect=OSError("artifact directory unavailable")):
+            self.assertEqual(self.sync_device_relay(identity).status_code, 200)
+
+            poll_path = f"/api/ops/v1/device-relay/hosts/{identity['host_id']}/tasks"
+            poll_body = self.json_bytes({})
+            polled = self.client.post(
+                poll_path,
+                data=poll_body,
+                content_type="application/json",
+                headers=self.host_headers(identity, "POST", poll_path, poll_body),
+            )
+            self.assertEqual(polled.status_code, 200)
+
     @staticmethod
     def json_bytes(value):
         return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")

@@ -38,7 +38,7 @@ public class OperationsRelayPolicyTest {
     }
 
     @Test
-    public void remoteTaskCatalogAllowsOnlyTheEightBoundedIntents() {
+    public void remoteTaskCatalogAllowsOnlyTheNineBoundedIntents() {
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
                 OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW));
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
@@ -55,6 +55,8 @@ public class OperationsRelayPolicyTest {
                 OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION));
         assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
                 OperationsRelayPolicy.CAPABILITY_READ_FAILURE_EVIDENCE));
+        assertTrue(OperationsRelayPolicy.isAllowedTaskCapability(
+                OperationsRelayPolicy.CAPABILITY_CAPTURE_WINDOW_SNAPSHOT));
         assertFalse(OperationsRelayPolicy.isAllowedTaskCapability("cmd.exe"));
     }
 
@@ -64,6 +66,15 @@ public class OperationsRelayPolicyTest {
         assertFalse(OperationsRelayPolicy.canReadFailureEvidence(false, true));
         assertFalse(OperationsRelayPolicy.canReadFailureEvidence(true, false));
         assertFalse(OperationsRelayPolicy.canReadFailureEvidence(false, false));
+    }
+
+    @Test
+    public void encryptedWindowSnapshotRequiresCapabilityFreshHostAndAndroid31() {
+        assertTrue(OperationsRelayPolicy.canCaptureWindowSnapshot(true, true, 31));
+        assertTrue(OperationsRelayPolicy.canCaptureWindowSnapshot(true, true, 36));
+        assertFalse(OperationsRelayPolicy.canCaptureWindowSnapshot(false, true, 36));
+        assertFalse(OperationsRelayPolicy.canCaptureWindowSnapshot(true, false, 36));
+        assertFalse(OperationsRelayPolicy.canCaptureWindowSnapshot(true, true, 30));
     }
 
     @Test
@@ -99,7 +110,13 @@ public class OperationsRelayPolicyTest {
                 OperationsRelayPolicy.CAPABILITY_RESTART_MQTT));
         assertEquals(46, OperationsRelayPolicy.remoteTaskPollingAttempts(
                 OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION));
+        assertEquals(31, OperationsRelayPolicy.remoteTaskPollingAttempts(
+                OperationsRelayPolicy.CAPABILITY_CAPTURE_WINDOW_SNAPSHOT));
         assertEquals(13, OperationsRelayPolicy.remoteTaskPollingAttempts(
+                OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW));
+        assertEquals(300, OperationsRelayPolicy.remoteTaskTtlSeconds(
+                OperationsRelayPolicy.CAPABILITY_CAPTURE_WINDOW_SNAPSHOT));
+        assertEquals(900, OperationsRelayPolicy.remoteTaskTtlSeconds(
                 OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW));
     }
 }

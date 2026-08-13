@@ -160,8 +160,13 @@ namespace ColorVision.UI.Desktop.Operations
                 if (task.CapabilityId == OperationsRelayWindowSnapshotContract.CapabilityId
                     && ttlSeconds != OperationsRelayWindowSnapshotContract.TtlSeconds)
                     return Fail("window_snapshot_ttl_not_allowed", out error);
+                DateTimeOffset signedEnvelopeExpiresAt = requestTime.AddSeconds(ttlSeconds);
+                DateTimeOffset relayEnvelopeExpiresAt = task.ExpiresAt.ToUniversalTime();
+                DateTimeOffset envelopeExpiresAt = signedEnvelopeExpiresAt < relayEnvelopeExpiresAt
+                    ? signedEnvelopeExpiresAt
+                    : relayEnvelopeExpiresAt;
                 if (requestTime > now.Add(AllowedCreatedAtSkew)
-                    || requestTime.AddSeconds(ttlSeconds) <= now)
+                    || envelopeExpiresAt <= now)
                     return Fail("expired_task_envelope", out error);
                 if (task.CapabilityId == "ops.window.show" && payload.EnumerateObject().Any())
                     return Fail("window_show_payload_not_allowed", out error);
@@ -198,7 +203,7 @@ namespace ColorVision.UI.Desktop.Operations
                     IdempotencyKey = idempotency.GetString()!,
                     Device = device,
                     Payload = payload.Clone(),
-                    EnvelopeExpiresAt = requestTime.AddSeconds(ttlSeconds).ToUniversalTime(),
+                    EnvelopeExpiresAt = envelopeExpiresAt.ToUniversalTime(),
                 };
                 return true;
             }

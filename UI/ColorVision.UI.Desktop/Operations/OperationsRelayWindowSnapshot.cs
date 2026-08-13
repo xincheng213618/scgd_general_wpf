@@ -146,6 +146,11 @@ namespace ColorVision.UI.Desktop.Operations
             ArgumentNullException.ThrowIfNull(jpeg);
             if (task.CapabilityId != OperationsRelayWindowSnapshotContract.CapabilityId
                 || task.Payload.ValueKind != JsonValueKind.Object
+                || task.Payload.GetPropertyCount() != 2
+                || !task.Payload.TryGetProperty("scheme", out JsonElement schemeElement)
+                || schemeElement.ValueKind != JsonValueKind.String
+                || !string.Equals(schemeElement.GetString(),
+                    OperationsRelayWindowSnapshotContract.Scheme, StringComparison.Ordinal)
                 || !task.Payload.TryGetProperty("recipientPublicKeySpki", out JsonElement recipientElement)
                 || recipientElement.ValueKind != JsonValueKind.String
                 || !OperationsRelayWindowSnapshotContract.IsCanonicalP256PublicKey(
@@ -373,7 +378,7 @@ namespace ColorVision.UI.Desktop.Operations
                 {
                     OperationsJob? current = _workStore.GetJobForDevice(
                         job.JobId, task.Device.DeviceId, allowWebRelay: false);
-                    if (current?.Status == "executing")
+                    if (current?.Status is "executing" or "approved_local")
                         _workStore.CompleteJob(current.JobId, false, "window_snapshot:relay_failed");
                     _workStore.RecordAudit(task.Device.DeviceId, "device",
                         "window.snapshot.relay.capture", job.JobId, "failed", task.IdempotencyKey);

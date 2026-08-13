@@ -39,7 +39,12 @@ final class OperationsE2eIdentity {
         agreement.init(pair.getPrivate());
         agreement.doPhase(
                 OperationsRemoteWindowSnapshot.parseP256PublicKey(peerPublicKeySpki), true);
-        return agreement.generateSecret();
+        byte[] secret = agreement.generateSecret();
+        if (secret.length != 32) {
+            java.util.Arrays.fill(secret, (byte) 0);
+            throw new SecurityException("invalid_window_snapshot_shared_secret");
+        }
+        return secret;
     }
 
     void delete() throws Exception {

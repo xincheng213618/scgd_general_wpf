@@ -162,8 +162,11 @@ namespace ColorVision.UI.Desktop.Operations
                 {
                     if (_signedDeviceRelay)
                     {
+                        ReconcileInterruptedSignedWindowSnapshots();
                         await SyncSignedHostAsync(cancellationToken).ConfigureAwait(false);
                         ReconcileInterruptedSignedMqttRestarts();
+                        await FlushSignedWindowSnapshotFailureReceiptsAsync(cancellationToken)
+                            .ConfigureAwait(false);
                         await FlushSignedMqttRestartReceiptsAsync(cancellationToken).ConfigureAwait(false);
                         await FlushSignedApplicationRestartReceiptsAsync(cancellationToken).ConfigureAwait(false);
                         await ResumeSignedApplicationRestartsAsync(cancellationToken).ConfigureAwait(false);
@@ -328,6 +331,13 @@ namespace ColorVision.UI.Desktop.Operations
                             new OperationsRelayWindowSnapshotError(),
                             verified.IdempotencyKey,
                             cancellationToken).ConfigureAwait(false);
+                        _workStore.RecordAudit(
+                            "operations-relay",
+                            "system",
+                            "relay.window-snapshot.receipt",
+                            verified.TaskId,
+                            "failed",
+                            verified.IdempotencyKey);
                     }
                     continue;
                 }
@@ -872,6 +882,56 @@ namespace ColorVision.UI.Desktop.Operations
         private static bool IsSafeRelayIdentifier(string? value) =>
             value is { Length: >= 1 and <= 64 }
             && value.All(character => char.IsLetterOrDigit(character) || character is '_' or '-');
+
+        private void ReconcileInterruptedSignedWindowSnapshots()
+        {
+            foreach (OperationsJob job in _workStore.GetJobs().Where(item =>
+                item.CapabilityId == OperationsRelayWindowSnapshotContract.CapabilityId
+                && item.Status == "executing"
+                && IsSafeRelayIdentifier(item.SourceTaskId)
+                && IsSafeRelayIdentifier(item.SourceIdempotencyKey)))
+            {
+                OperationsJob? failed = _workStore.CompleteJob(
+                    job.JobId, false, "window_snapshot:execution_interrupted_ambiguous");
+                if (failed != null)
+                {
+                    _workStore.RecordAudit(
+                        job.RequestedByDeviceId,
+                        "device",
+                        "window.snapshot.relay.capture",
+                        job.JobId,
+                        "ambiguous",
+                        job.SourceIdempotencyKey!);
+                }
+            }
+        }
+
+        private async Task FlushSignedWindowSnapshotFailureReceiptsAsync(
+            CancellationToken cancellationToken)
+        {
+            foreach (OperationsJob job in _workStore.GetJobs().Where(item =>
+                item.CapabilityId == OperationsRelayWindowSnapshotContract.CapabilityId
+                && item.Status == "failed"
+                && IsSafeRelayIdentifier(item.SourceTaskId)
+                && IsSafeRelayIdentifier(item.SourceIdempotencyKey)
+                && !_workStore.HasSentRelayWindowSnapshotReceipt(
+                    item.SourceTaskId!, item.SourceIdempotencyKey!, "failed")))
+            {
+                await SendSignedTaskReceiptAsync(
+                    job.SourceTaskId!,
+                    "failed",
+                    new OperationsRelayWindowSnapshotError(),
+                    job.SourceIdempotencyKey!,
+                    cancellationToken).ConfigureAwait(false);
+                _workStore.RecordAudit(
+                    "operations-relay",
+                    "system",
+                    "relay.window-snapshot.receipt",
+                    job.SourceTaskId!,
+                    "failed",
+                    job.SourceIdempotencyKey!);
+            }
+        }
 
         private static string[] GetSignedHostCapabilities() =>
         [

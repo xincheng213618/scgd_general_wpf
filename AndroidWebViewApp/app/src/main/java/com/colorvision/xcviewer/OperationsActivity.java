@@ -992,9 +992,8 @@ public class OperationsActivity extends Activity {
             try {
                 OperationsE2eIdentity e2eIdentity = new OperationsE2eIdentity(
                         preferences.getOperationsHostId());
-                JSONObject payload = new JSONObject();
-                payload.put("scheme", OperationsRemoteWindowSnapshot.SCHEME);
-                payload.put("recipientPublicKeySpki", e2eIdentity.getPublicKeySpki());
+                JSONObject payload = OperationsRemoteWindowSnapshot.createRequestPayload(
+                        e2eIdentity.getPublicKeySpki());
                 submitAndPollRemoteTask(
                         OperationsRelayPolicy.CAPABILITY_CAPTURE_WINDOW_SNAPSHOT,
                         payload,
@@ -2427,7 +2426,7 @@ public class OperationsActivity extends Activity {
         if (remote) {
             previewDetails.append("\n\n图片在电脑端加密后才进入固定站点；固定站点只接触短时密文。");
             previewDetails.append(consumeConfirmed
-                    ? " 密文消费确认已送达，固定站点副本已销毁。"
+                    ? " 手机已提交签名消费确认；固定站点按协议删除密文，并始终受 5 分钟有效期约束。"
                     : " 密文消费确认暂未送达，但不影响当前已验证预览；固定站点会在 5 分钟有效期结束时自动清理。");
         }
         details.setText(previewDetails.toString());

@@ -113,6 +113,10 @@ final class OperationsRelayPolicy {
         return 13;
     }
 
+    static int remoteTaskTtlSeconds(String capabilityId) {
+        return CAPABILITY_CAPTURE_WINDOW_SNAPSHOT.equals(capabilityId) ? 300 : 900;
+    }
+
     private static boolean isStableMqttServiceStatus(String status) {
         return "running".equals(status)
                 || "stopped".equals(status)

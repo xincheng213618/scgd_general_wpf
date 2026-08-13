@@ -169,6 +169,6 @@ internal static class SpectrumCorrectionCalculator
     {
         string where = wavelength.HasValue ? $"（{wavelength:F1} nm）" : string.Empty;
         if (!double.IsFinite(factor) || factor < MinimumFactor)
-            throw new InvalidOperationException($"修正倍率{where}必须为不小于 {MinimumFactor} 的有限值，实际为 {factor:G8}。");
+            throw new InvalidOperationException($"校正倍率{where}必须为不小于 {MinimumFactor} 的有限值，实际为 {factor:G8}。");
     }
 }

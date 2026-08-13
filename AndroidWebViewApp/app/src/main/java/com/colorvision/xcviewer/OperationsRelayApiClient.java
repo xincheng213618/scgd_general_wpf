@@ -62,7 +62,7 @@ final class OperationsRelayApiClient {
             throw new SecurityException("task_capability_not_allowed");
         }
         if (OperationsRelayPolicy.CAPABILITY_CAPTURE_WINDOW_SNAPSHOT.equals(capabilityId)) {
-            validateWindowSnapshotPayload(payload);
+            OperationsRemoteWindowSnapshot.validateRequestPayload(payload);
         }
         JSONObject body = new JSONObject();
         body.put("hostId", hostId);
@@ -70,9 +70,7 @@ final class OperationsRelayApiClient {
         body.put("payload", payload == null ? new JSONObject() : payload);
         String idempotencyKey = UUID.randomUUID().toString().replace("-", "");
         body.put("idempotencyKey", idempotencyKey);
-        body.put("ttlSeconds",
-                OperationsRelayPolicy.CAPABILITY_CAPTURE_WINDOW_SNAPSHOT.equals(capabilityId)
-                        ? 300 : 900);
+        body.put("ttlSeconds", OperationsRelayPolicy.remoteTaskTtlSeconds(capabilityId));
         JSONObject response = post("/api/ops/v1/device-relay/tasks", body);
         response.put("requestIdempotencyKey", idempotencyKey);
         return response;
@@ -141,7 +139,7 @@ final class OperationsRelayApiClient {
             if (contentEncoding != null && !contentEncoding.trim().isEmpty()) {
                 throw new SecurityException("window_snapshot_encoding_rejected");
             }
-            long contentLength = connection.getContentLengthLong();
+            int contentLength = connection.getContentLength();
             if (contentLength != expectedBytes
                     || contentLength < OperationsRemoteWindowSnapshot.MINIMUM_SEALED_BYTES
                     || contentLength > OperationsRemoteWindowSnapshot.MAXIMUM_SEALED_BYTES) {
@@ -199,23 +197,6 @@ final class OperationsRelayApiClient {
         verified.put("ok", true);
         verified.put("host", host);
         return verified;
-    }
-
-    private static void validateWindowSnapshotPayload(JSONObject payload) {
-        if (payload == null || payload.length() != 2
-                || !OperationsRemoteWindowSnapshot.SCHEME.equals(
-                        payload.optString("scheme", ""))
-                || !OperationsRemoteWindowSnapshot.isCanonicalP256PublicKey(
-                        payload.optString("recipientPublicKeySpki", ""))) {
-            throw new SecurityException("window_snapshot_payload_not_allowed");
-        }
-        java.util.Iterator<String> names = payload.keys();
-        while (names.hasNext()) {
-            String name = names.next();
-            if (!"scheme".equals(name) && !"recipientPublicKeySpki".equals(name)) {
-                throw new SecurityException("window_snapshot_payload_not_allowed");
-            }
-        }
     }
 
     private JSONObject verifyTaskResponse(
