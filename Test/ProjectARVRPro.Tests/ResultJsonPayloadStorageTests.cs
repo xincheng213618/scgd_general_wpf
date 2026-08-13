@@ -102,6 +102,7 @@ public sealed class ResultJsonPayloadStorageTests
 
         Assert.Equal(1, first.ViewResultRowsMigrated);
         Assert.Equal(1, first.ObjectiveResultRowsMigrated);
+        Assert.False(first.ViewFileNameMadeNullable);
         Assert.Equal("ok", first.IntegrityCheck);
         Assert.True(first.AfterBytes < beforeBytes);
         Assert.Equal(0L, database.ExecuteScalarInt64("SELECT COUNT(*) FROM \"ARVRReuslt\" WHERE \"ViewResultJson\" IS NOT NULL;"));
@@ -123,8 +124,34 @@ public sealed class ResultJsonPayloadStorageTests
 
         Assert.Equal(0, second.ViewResultRowsMigrated);
         Assert.Equal(0, second.ObjectiveResultRowsMigrated);
+        Assert.False(second.ViewFileNameMadeNullable);
         Assert.Equal("ok", second.IntegrityCheck);
         Assert.Equal(0L, database.ExecuteScalarInt64("PRAGMA freelist_count;"));
+    }
+
+    [Fact]
+    public void LegacyMigrationMakesFileNameNullableAndPreservesRowsIndexesAndIdentity()
+    {
+        using var database = new TemporaryPayloadDatabase();
+        const string json = "{\"name\":\"legacy-not-null\"}";
+        database.CreateLegacySchemaWithRequiredFileName();
+        database.InsertLegacyResultWithFileName(7, "legacy.png", json, "keep-this-value");
+
+        LegacyResultJsonMigrationReport first = LegacyResultJsonMigration.Execute(database.Path);
+
+        Assert.True(first.ViewFileNameMadeNullable);
+        Assert.False(database.IsColumnNotNull("ARVRReuslt", "FileName"));
+        Assert.Equal("legacy.png", database.ExecuteScalarString("SELECT \"FileName\" FROM \"ARVRReuslt\" WHERE \"Id\" = 7;"));
+        Assert.Equal("keep-this-value", database.ExecuteScalarString("SELECT \"CustomField\" FROM \"ARVRReuslt\" WHERE \"Id\" = 7;"));
+        Assert.Equal(json, database.LoadGzip("ARVRReuslt", ResultJsonPayloadStorage.ViewResultColumnName, 7));
+        Assert.True(database.IndexExists("IX_ARVRReuslt_CustomField"));
+        Assert.Equal(8, database.InsertNullFileNameRow());
+
+        LegacyResultJsonMigrationReport second = LegacyResultJsonMigration.Execute(database.Path);
+
+        Assert.False(second.ViewFileNameMadeNullable);
+        Assert.False(database.IsColumnNotNull("ARVRReuslt", "FileName"));
+        Assert.Equal("ok", second.IntegrityCheck);
     }
 
     [Fact]
@@ -233,6 +260,75 @@ public sealed class ResultJsonPayloadStorageTests
                 );
                 """;
             command.ExecuteNonQuery();
+        }
+
+        public void CreateLegacySchemaWithRequiredFileName()
+        {
+            using var connection = OpenConnection();
+            using SqliteCommand command = connection.CreateCommand();
+            command.CommandText = """
+                CREATE TABLE "ARVRReuslt"
+                (
+                    "Id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    "FileName" varchar(255) NOT NULL,
+                    "ViewResultJson" TEXT NULL,
+                    "CustomField" TEXT NULL
+                );
+                CREATE INDEX "IX_ARVRReuslt_CustomField" ON "ARVRReuslt" ("CustomField");
+                CREATE TABLE "ObjectiveTestResultRecord"
+                (
+                    "Id" INTEGER PRIMARY KEY AUTOINCREMENT,
+                    "ObjectiveTestResultJson" TEXT NULL
+                );
+                """;
+            command.ExecuteNonQuery();
+        }
+
+        public void InsertLegacyResultWithFileName(int id, string fileName, string json, string customField)
+        {
+            using var connection = OpenConnection();
+            using SqliteCommand command = connection.CreateCommand();
+            command.CommandText =
+                "INSERT INTO \"ARVRReuslt\" (\"Id\", \"FileName\", \"ViewResultJson\", \"CustomField\") " +
+                "VALUES ($id, $fileName, $json, $customField);";
+            command.Parameters.AddWithValue("$id", id);
+            command.Parameters.AddWithValue("$fileName", fileName);
+            command.Parameters.AddWithValue("$json", json);
+            command.Parameters.AddWithValue("$customField", customField);
+            command.ExecuteNonQuery();
+        }
+
+        public bool IsColumnNotNull(string tableName, string columnName)
+        {
+            using var connection = OpenConnection();
+            using SqliteCommand command = connection.CreateCommand();
+            command.CommandText = $"PRAGMA table_info(\"{tableName}\");";
+            using SqliteDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                if (string.Equals(reader.GetString(1), columnName, StringComparison.OrdinalIgnoreCase))
+                    return reader.GetInt32(3) != 0;
+            }
+            throw new InvalidOperationException($"未找到 {tableName}.{columnName}。");
+        }
+
+        public bool IndexExists(string indexName)
+        {
+            using var connection = OpenConnection();
+            using SqliteCommand command = connection.CreateCommand();
+            command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = $name;";
+            command.Parameters.AddWithValue("$name", indexName);
+            return Convert.ToInt64(command.ExecuteScalar()) == 1;
+        }
+
+        public int InsertNullFileNameRow()
+        {
+            using var connection = OpenConnection();
+            using SqliteCommand command = connection.CreateCommand();
+            command.CommandText =
+                "INSERT INTO \"ARVRReuslt\" (\"FileName\", \"ViewResultJson\", \"CustomField\") " +
+                "VALUES (NULL, NULL, 'new-row'); SELECT last_insert_rowid();";
+            return Convert.ToInt32(command.ExecuteScalar());
         }
 
         public void InsertLegacyRow(

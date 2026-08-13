@@ -22,7 +22,8 @@ namespace ProjectARVRPro
         public int Order => 21;
         public string MigrationActionName => "迁移并压缩历史结果";
         public string MigrationConfirmationMessage =>
-            "将把两张结果表中的旧 TEXT JSON 迁移为同表 GZip BLOB，并在校验一致后清空旧字段、执行 VACUUM 释放空间。" +
+            "将把两张结果表中的旧 TEXT JSON 迁移为同表 GZip BLOB，把旧结果表的 FileName 列改为可空，" +
+            "并在校验一致后清空旧字段、执行 VACUUM 释放空间。" +
             Environment.NewLine +
             "迁移后旧版插件不能读取这些历史 JSON；迁移过程中请勿执行 ARVR 测试。此按钮仅用于现场数据库过渡，全部迁移完成后可移除。";
 
@@ -239,14 +240,21 @@ namespace ProjectARVRPro
 
             int migrated = report.ViewResultRowsMigrated + report.ObjectiveResultRowsMigrated;
             int residualCleared = report.ViewResidualRowsCleared + report.ObjectiveResidualRowsCleared;
+            bool changed = migrated > 0 || residualCleared > 0 || report.ViewFileNameMadeNullable;
+            string statusMessage = !changed
+                ? "未发现待迁移的旧 JSON，已完成数据库压缩整理。"
+                : report.ViewFileNameMadeNullable && migrated == 0 && residualCleared == 0
+                    ? "已将结果表 FileName 列改为可空，并释放 SQLite 空闲空间。"
+                    : report.ViewFileNameMadeNullable
+                        ? $"已迁移 {migrated:N0} 条历史 JSON、更新结果表结构，并释放 SQLite 空闲空间。"
+                        : $"已迁移 {migrated:N0} 条历史 JSON，并释放 SQLite 空闲空间。";
             var result = new DatabaseCleanupExecutionResult
             {
-                StatusMessage = migrated == 0 && residualCleared == 0
-                    ? "未发现待迁移的旧 JSON，已完成数据库压缩整理。"
-                    : $"已迁移 {migrated:N0} 条历史 JSON，并释放 SQLite 空闲空间。"
+                StatusMessage = statusMessage
             };
             result.SummaryLines.Add($"{ResultTableName}: 迁移 {report.ViewResultRowsMigrated:N0} 条，清理残留旧字段 {report.ViewResidualRowsCleared:N0} 条");
             result.SummaryLines.Add($"{ObjectiveResultTableName}: 迁移 {report.ObjectiveResultRowsMigrated:N0} 条，清理残留旧字段 {report.ObjectiveResidualRowsCleared:N0} 条");
+            result.SummaryLines.Add($"{ResultTableName}.FileName: {(report.ViewFileNameMadeNullable ? "已由 NOT NULL 改为可空" : "已是可空，无需调整")}");
             result.SummaryLines.Add($"数据库大小: {FormatSize(report.BeforeBytes)} → {FormatSize(report.AfterBytes)}");
             result.SummaryLines.Add($"SQLite 完整性检查: {report.IntegrityCheck}");
             return result;
