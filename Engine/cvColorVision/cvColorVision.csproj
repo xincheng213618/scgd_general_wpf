@@ -35,7 +35,7 @@
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\cvCamera.dll" Link="runtimes\win-x64\native\cvCamera.dll">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</None>
@@ -124,6 +124,26 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\glaDevSys64.dll" Link="glaDevSys64.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\glaDevSys64.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\xGUSB64.dll" Link="xGUSB64.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\xGUSB64.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\xGCOM64.dll" Link="xGCOM64.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\xGCOM64.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\xserial64.dll" Link="xserial64.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\xserial64.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
+		<None Include="..\..\DLL\scgd_internal_dll\FTD2XX.dll" Link="FTD2XX.dll" Condition="Exists('..\..\DLL\scgd_internal_dll\FTD2XX.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+		</None>
 		<None Include="..\..\DLL\scgd_internal_dll\cfg\sys.cfg" Link="cfg\sys.cfg">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
@@ -145,6 +165,10 @@
 			<Pack>true</Pack>
 		</None>
 	</ItemGroup>
+
+	<Target Name="ValidateGaolitongNativeDependencies" BeforeTargets="Build" Condition="'$(Configuration)' == 'Release'">
+		<Error Condition="!Exists('..\..\DLL\scgd_internal_dll\glaDevSys64.dll') or !Exists('..\..\DLL\scgd_internal_dll\xGUSB64.dll') or !Exists('..\..\DLL\scgd_internal_dll\xGCOM64.dll') or !Exists('..\..\DLL\scgd_internal_dll\xserial64.dll') or !Exists('..\..\DLL\scgd_internal_dll\FTD2XX.dll')" Text="Missing one or more Gaolitong x64 runtime dependencies in DLL\scgd_internal_dll: glaDevSys64.dll, xGUSB64.dll, xGCOM64.dll, xserial64.dll, FTD2XX.dll." />
+	</Target>
 
 	<ItemGroup>
 		<None Include="README.md">
