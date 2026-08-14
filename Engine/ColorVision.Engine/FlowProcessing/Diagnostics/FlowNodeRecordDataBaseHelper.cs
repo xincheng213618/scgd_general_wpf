@@ -504,34 +504,6 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
-        public static List<FlowNodeRecord> GetRecentByNodeIds(
-            IEnumerable<string> nodeIds,
-            int limit = 5000)
-        {
-            string[] selectedNodeIds = nodeIds?
-                .Where(nodeId => !string.IsNullOrWhiteSpace(nodeId))
-                .Distinct(StringComparer.Ordinal)
-                .ToArray() ?? Array.Empty<string>();
-            if (selectedNodeIds.Length == 0 || limit <= 0)
-                return new List<FlowNodeRecord>();
-
-            EnsureInitialized();
-            try
-            {
-                using var db = CreateReadDb();
-                return db.Queryable<FlowNodeRecord>()
-                    .Where(item => selectedNodeIds.Contains(item.NodeId))
-                    .OrderByDescending(item => item.StartTime)
-                    .Take(limit)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                log.Error("按节点查询相同流程执行记录失败", ex);
-                return new List<FlowNodeRecord>();
-            }
-        }
-
         public static Dictionary<string, long> GetLastElapsedByNodeIds(IEnumerable<string> nodeIds)
         {
             EnsureInitialized();
@@ -619,30 +591,30 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
         }
 
-        internal static FlowRunRecord? GetLatestFlowRun(
-            FlowIdentity identity)
+        internal static List<FlowRunRecord> GetFlowRuns(
+            FlowIdentity identity,
+            int limit = 500)
         {
-            if (identity.IsEmpty)
-                return null;
+            if (identity.IsEmpty || limit <= 0)
+                return new List<FlowRunRecord>();
 
             if (!EnsureInitialized())
-                return null;
+                return new List<FlowRunRecord>();
 
             try
             {
                 using var db = CreateReadDb();
-                var query = db.Queryable<FlowRunRecord>()
-                    .Where(item => item.BatchId != null && item.BatchId > 0);
-                query = ApplyFlowIdentityFilter(query, identity);
-
-                return query
-                    .OrderByDescending(item => item.Id)
-                    .First();
+                return ApplyFlowIdentityFilter(
+                        db.Queryable<FlowRunRecord>(),
+                        identity)
+                    .OrderByDescending(item => item.CompletedTime)
+                    .Take(limit)
+                    .ToList();
             }
             catch (Exception ex)
             {
-                log.Error("查询当前流程最近执行记录失败", ex);
-                return null;
+                log.Error("查询当前流程执行记录失败", ex);
+                return new List<FlowRunRecord>();
             }
         }
 
@@ -730,11 +702,14 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             EnsureInitialized();
             try
             {
-                using var db = CreateReadDb();
-                FlowRunRecord? currentRun = db.Queryable<FlowRunRecord>()
-                    .Where(item => item.SerialNumber == serialNumber)
-                    .OrderByDescending(item => item.CompletedTime)
-                    .First();
+                FlowRunRecord? currentRun;
+                using (var db = CreateReadDb())
+                {
+                    currentRun = db.Queryable<FlowRunRecord>()
+                        .Where(item => item.SerialNumber == serialNumber)
+                        .OrderByDescending(item => item.CompletedTime)
+                        .First();
+                }
                 if (currentRun == null)
                     return new List<FlowRunRecord>();
 
@@ -742,16 +717,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     currentRun.TemplateId,
                     currentRun.FlowKey,
                     currentRun.FlowName);
-                if (identity.IsEmpty)
-                    return new List<FlowRunRecord>();
-                var query = ApplyFlowIdentityFilter(
-                    db.Queryable<FlowRunRecord>(),
-                    identity);
-
-                return query
-                    .OrderByDescending(item => item.CompletedTime)
-                    .Take(limit)
-                    .ToList();
+                return GetFlowRuns(identity, limit);
             }
             catch (Exception ex)
             {
