@@ -17,6 +17,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { TransferPanel } from '../components/TransferPanel'
 import { getPublishIntegrity } from '../services/admin'
 import {
@@ -25,9 +26,14 @@ import {
   publishCvwsPackage,
   publishPluginPackage,
 } from '../services/site'
-import type { PublishIntegrityReport } from '../types/admin'
+import type { PublishIntegrityPluginIssue, PublishIntegrityReport } from '../types/admin'
 import type { CvwsContext, UploadContext } from '../types/site'
 import { humanSize, shortDate } from '../utils/format'
+import {
+  pluginIntegrityIssueHref,
+  pluginIntegrityIssueLabel,
+  publishIntegrityPluginIssues,
+} from '../utils/publishIntegrity'
 import { UploadProgress } from '../components/UploadProgress'
 
 const integrityStatusText = {
@@ -42,7 +48,12 @@ const integrityStatusType = {
   error: 'error',
 } as const
 
-function PublishIntegrityPanel() {
+interface PublishIntegrityPanelProps {
+  refreshToken: number
+  onPreparePluginPublish: (issue: PublishIntegrityPluginIssue) => void
+}
+
+function PublishIntegrityPanel({ refreshToken, onPreparePluginPublish }: PublishIntegrityPanelProps) {
   const { message } = App.useApp()
   const [report, setReport] = useState<PublishIntegrityReport | null>(null)
   const [loading, setLoading] = useState(true)
@@ -59,21 +70,21 @@ function PublishIntegrityPanel() {
   }, [message])
 
   useEffect(() => {
-    let mounted = true
-    getPublishIntegrity()
+    const controller = new AbortController()
+    void getPublishIntegrity(controller.signal)
       .then((payload) => {
-        if (mounted) setReport(payload)
+        if (!controller.signal.aborted) setReport(payload)
       })
       .catch((error) => {
-        if (mounted) message.error(error instanceof Error ? error.message : '发布完整性检查失败')
+        if (!controller.signal.aborted) {
+          message.error(error instanceof Error ? error.message : '发布完整性检查失败')
+        }
       })
       .finally(() => {
-        if (mounted) setLoading(false)
+        if (!controller.signal.aborted) setLoading(false)
       })
-    return () => {
-      mounted = false
-    }
-  }, [message])
+    return () => controller.abort()
+  }, [message, refreshToken])
 
   const status = report?.status || 'warning'
 
@@ -86,7 +97,7 @@ function PublishIntegrityPanel() {
             showIcon
             message={integrityStatusText[status]}
             description={`安装包、增量包、发布说明、插件文档和文档站索引的当前检查结果。`}
-            action={<Button onClick={load}>重新检查</Button>}
+            action={<Button onClick={() => void load()}>重新检查</Button>}
           />
           <Space wrap size={18}>
             <Progress type="circle" percent={report.score} size={86} status={report.status === 'error' ? 'exception' : undefined} />
@@ -102,13 +113,39 @@ function PublishIntegrityPanel() {
           <List
             size="small"
             dataSource={report.checks}
-            renderItem={(item) => (
-              <List.Item actions={item.actionHref ? [<a href={item.actionHref} key="fix">处理</a>] : undefined}>
-                <List.Item.Meta
-                  title={<Space><Tag color={item.status === 'ok' ? 'green' : item.status === 'warning' ? 'gold' : 'red'}>{item.title}</Tag>{item.detail}</Space>}
-                />
-              </List.Item>
-            )}
+            renderItem={(item) => {
+              const pluginIssues = publishIntegrityPluginIssues(report, item.key)
+              const actions = item.status !== 'ok' && item.actionHref && pluginIssues.length === 0
+                ? [<Link to={item.actionHref} key="fix">处理</Link>]
+                : undefined
+              return (
+                <List.Item actions={actions}>
+                  <List.Item.Meta
+                    title={(
+                      <Space wrap>
+                        <Tag color={item.status === 'ok' ? 'green' : item.status === 'warning' ? 'gold' : 'red'}>{item.title}</Tag>
+                        <Typography.Text>{item.detail}</Typography.Text>
+                      </Space>
+                    )}
+                    description={pluginIssues.length > 0 ? (
+                      <Space direction="vertical" size={4} style={{ marginTop: 8 }}>
+                        <Typography.Text type="secondary">受影响插件</Typography.Text>
+                        {pluginIssues.map((issue) => (
+                          <Space key={issue.pluginId || issue.name} wrap size={4}>
+                            <Link to={pluginIntegrityIssueHref(issue)}>
+                              <Tag color="gold">{pluginIntegrityIssueLabel(issue)}</Tag>
+                            </Link>
+                            <Button type="link" size="small" onClick={() => onPreparePluginPublish(issue)}>
+                              补充发布资料
+                            </Button>
+                          </Space>
+                        ))}
+                      </Space>
+                    ) : undefined}
+                  />
+                </List.Item>
+              )
+            }}
           />
         </Space>
       )}
@@ -116,7 +153,13 @@ function PublishIntegrityPanel() {
   )
 }
 
-function PluginPublishPanel() {
+interface PluginPublishPanelProps {
+  draft: PublishIntegrityPluginIssue | null
+  onClearDraft: () => void
+  onPublished: () => void
+}
+
+function PluginPublishPanel({ draft, onClearDraft, onPublished }: PluginPublishPanelProps) {
   const { message } = App.useApp()
   const [form] = Form.useForm()
   const [context, setContext] = useState<UploadContext | null>(null)
@@ -129,9 +172,31 @@ function PluginPublishPanel() {
     getUploadContext().then(setContext).catch(() => undefined)
   }, [])
 
+  useEffect(() => {
+    if (!draft) return
+    form.setFieldsValue({
+      PluginId: draft.pluginId,
+      Version: draft.latestVersion,
+      Name: draft.name,
+    })
+  }, [draft, form])
+
   return (
-    <Card>
+    <Card id="plugin-publish-panel">
       <Space direction="vertical" size={16} className="wide-space">
+        {draft && (
+          <Alert
+            type="warning"
+            showIcon
+            closable
+            onClose={() => {
+              form.resetFields()
+              onClearDraft()
+            }}
+            message={`正在补充 ${pluginIntegrityIssueLabel(draft)} 的发布资料`}
+            description="插件 ID、版本和名称已带入。请选择对应插件包并补齐缺失资料；发布成功后完整性检查会自动刷新。"
+          />
+        )}
         <Space wrap>
           <Tag icon={<CloudUploadOutlined />}>最大上传 {humanSize(context?.max_upload_size_bytes)}</Tag>
           <Tag>保留包数 {context?.plugin_package_keep_count ?? '-'}</Tag>
@@ -160,6 +225,8 @@ function PluginPublishPanel() {
               form.resetFields()
               setFile(null)
               setIcon(null)
+              onClearDraft()
+              onPublished()
             } catch (error) {
               message.error(error instanceof Error ? error.message : '发布失败')
             } finally {
@@ -296,12 +363,39 @@ function CvwsPublishPanel() {
 }
 
 export function PublishPage() {
+  const [activeTab, setActiveTab] = useState('plugin')
+  const [pluginDraft, setPluginDraft] = useState<PublishIntegrityPluginIssue | null>(null)
+  const [integrityRefreshToken, setIntegrityRefreshToken] = useState(0)
+
+  const preparePluginPublish = (issue: PublishIntegrityPluginIssue) => {
+    setPluginDraft({ ...issue })
+    setActiveTab('plugin')
+    window.requestAnimationFrame(() => {
+      document.getElementById('plugin-publish-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+
   return (
     <Space direction="vertical" size={16} className="page-stack">
-      <PublishIntegrityPanel />
+      <PublishIntegrityPanel
+        refreshToken={integrityRefreshToken}
+        onPreparePluginPublish={preparePluginPublish}
+      />
       <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
         items={[
-          { key: 'plugin', label: '插件包发布', children: <PluginPublishPanel /> },
+          {
+            key: 'plugin',
+            label: '插件包发布',
+            children: (
+              <PluginPublishPanel
+                draft={pluginDraft}
+                onClearDraft={() => setPluginDraft(null)}
+                onPublished={() => setIntegrityRefreshToken((value) => value + 1)}
+              />
+            ),
+          },
           { key: 'cvws', label: '服务包发布', children: <CvwsPublishPanel /> },
           { key: 'transfer', label: '文件中转', children: <TransferPanel /> },
         ]}

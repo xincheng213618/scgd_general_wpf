@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { ScheduledJob } from '../src/types/admin.ts'
-import { formatJobDuration, formatJobInterval, summarizeJobs } from '../src/utils/jobOperations.ts'
+import {
+  formatJobDuration,
+  formatJobInterval,
+  jobTypeLabels,
+  summarizeJobs,
+} from '../src/utils/jobOperations.ts'
 
 function job(overrides: Partial<ScheduledJob> = {}): ScheduledJob {
   return {
@@ -21,6 +26,10 @@ test('job intervals use readable operational units', () => {
   assert.equal(formatJobInterval(7200), '2 小时')
   assert.equal(formatJobInterval(172800), '2 天')
   assert.equal(formatJobInterval(45), '45 秒')
+})
+
+test('database backup jobs have an operator-facing type label', () => {
+  assert.equal(jobTypeLabels.database_backup, '数据库备份')
 })
 
 test('job durations stay readable from milliseconds through multi-day interruptions', () => {

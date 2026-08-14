@@ -2355,6 +2355,10 @@ body.cv-home-light .workflow-icon {
   align-items: center;
 }
 
+.dashboard-shortcuts {
+  max-width: 100%;
+}
+
 .status-value {
   margin-top: 6px;
   font-size: 18px;
@@ -2508,6 +2512,13 @@ body.cv-home-light .workflow-icon {
 }
 
 @media (max-width: 768px) {
+  .cache-index-table .ant-pro-table-list-toolbar-right,
+  .cache-index-table .ant-pro-table-list-toolbar-right > div:first-child {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
   .site-header.home-header {
     position: sticky;
     background: rgba(255, 255, 255, 0.92);
@@ -2877,6 +2888,23 @@ body.cv-home-light .workflow-icon {
 }
 
 @media (max-width: 520px) {
+  .hero-card h2.ant-typography {
+    font-size: 26px;
+    line-height: 1.2;
+  }
+
+  .dashboard-shortcuts {
+    width: 100%;
+  }
+
+  .dashboard-shortcuts .ant-space-item {
+    flex: 1 1 132px;
+  }
+
+  .dashboard-shortcuts .ant-btn {
+    width: 100%;
+  }
+
   .site-header {
     padding: 8px 0;
   }

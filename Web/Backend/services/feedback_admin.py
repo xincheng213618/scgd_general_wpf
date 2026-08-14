@@ -12,6 +12,7 @@ from typing import Any, Mapping
 
 
 FEEDBACK_STATUSES = ("new", "in_progress", "resolved")
+FEEDBACK_FILTERS = ("open", *FEEDBACK_STATUSES)
 _METADATA_NAME = "feedback.json"
 _STATE_NAME = ".admin.json"
 _MAX_JSON_BYTES = 1024 * 1024
@@ -21,6 +22,16 @@ _write_lock = threading.Lock()
 
 def _utc_iso(timestamp: float) -> str:
     return datetime.fromtimestamp(timestamp, timezone.utc).isoformat()
+
+
+def _parse_timestamp(value: str) -> datetime | None:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (AttributeError, TypeError, ValueError):
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def _bounded_text(value: Any, maximum: int = 4000) -> str:
@@ -157,8 +168,8 @@ def query_feedback(
     limit: int = 20,
     offset: int = 0,
 ) -> dict[str, Any]:
-    if status and status not in FEEDBACK_STATUSES:
-        raise ValueError("status must be new, in_progress, or resolved")
+    if status and status not in FEEDBACK_FILTERS:
+        raise ValueError("status must be open, new, in_progress, or resolved")
     normalized_query = (query or "").strip()
     if len(normalized_query) > _MAX_QUERY_LENGTH:
         raise ValueError(f"query must not exceed {_MAX_QUERY_LENGTH} characters")
@@ -168,6 +179,12 @@ def query_feedback(
         raise ValueError("offset must be non-negative")
 
     records = _all_feedback(storage)
+    open_timestamps = [
+        timestamp
+        for item in records
+        if item["status"] != "resolved"
+        if (timestamp := _parse_timestamp(item["created_at"])) is not None
+    ]
     summary = {
         "records": len(records),
         "status_counts": {
@@ -178,10 +195,13 @@ def query_feedback(
         "attachment_bytes": sum(item["attachment_bytes"] for item in records),
         "invalid_metadata": sum(1 for item in records if not item["metadata_valid"]),
         "invalid_state": sum(1 for item in records if not item["state_valid"]),
+        "oldest_open_at": min(open_timestamps).isoformat() if open_timestamps else None,
     }
 
     filtered = records
-    if status:
+    if status == "open":
+        filtered = [item for item in filtered if item["status"] != "resolved"]
+    elif status:
         filtered = [item for item in filtered if item["status"] == status]
     if normalized_query:
         needle = normalized_query.casefold()
