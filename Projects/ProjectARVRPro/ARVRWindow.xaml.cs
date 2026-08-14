@@ -1813,7 +1813,7 @@ namespace ProjectARVRPro
                     log.Error(ex);
                 }
 
-                string? filePath = result.FileName;
+                IReadOnlyList<ResultImageFileCandidate> imageCandidates = ResultImageFileCandidates.GetExisting(result);
                 CancellationTokenSource requestCancellation = new();
                 Interlocked.Exchange(ref _resultImagePresentationCancellation, requestCancellation)?.Cancel();
                 _ = Application.Current.Dispatcher.BeginInvoke(async () =>
@@ -1827,34 +1827,37 @@ namespace ProjectARVRPro
                             return;
 
                         bool hasDisplaySurface = false;
-                        if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
-                        {
-                            try
+                        bool renderOverlays = true;
+                        ResultImageFileCandidate? openedCandidate = await ResultImageFileCandidates.OpenFirstAsync(
+                            imageCandidates,
+                            async (candidate, cancellationToken) =>
                             {
-                                await OpenResultImageAsync(filePath, requestCancellation.Token);
+                                BitmapSource? loadedSource = await OpenResultImageAsync(candidate.FilePath, cancellationToken);
                                 if (!IsCurrentResultImageRequest(requestVersion, result))
-                                    return;
-
-                                if (GetLoadedImageSource() is BitmapSource source)
-                                {
-                                    _resultImageBackgroundKind = ResultImageBackgroundKind.Real;
-                                    _loadedResultImagePath = filePath;
-                                    PersistResultImageDimensions(result, source.PixelWidth, source.PixelHeight);
-                                    hasDisplaySurface = true;
-                                }
-                            }
-                            catch (TimeoutException ex)
+                                    throw new OperationCanceledException(cancellationToken);
+                                return loadedSource != null;
+                            },
+                            (candidate, exception) =>
                             {
-                                log.Warn($"加载结果图片超时，将尝试显示空白画布：{filePath}", ex);
-                            }
-                            catch (OperationCanceledException)
-                            {
-                                throw;
-                            }
-                            catch (Exception ex)
-                            {
-                                log.Warn($"加载结果图片失败，将尝试显示空白画布：{filePath}", ex);
-                            }
+                                if (exception is TimeoutException)
+                                    log.Warn($"加载结果图片超时，将尝试下一候选图：{candidate.FilePath}", exception);
+                                else if (exception != null)
+                                    log.Warn($"加载结果图片失败，将尝试下一候选图：{candidate.FilePath}", exception);
+                                else
+                                    log.Warn($"加载结果图片后没有有效图像，将尝试下一候选图：{candidate.FilePath}");
+                            },
+                            requestCancellation.Token);
+                        if (openedCandidate is ResultImageFileCandidate candidate
+                            && GetLoadedImageSource() is BitmapSource source)
+                        {
+                            _resultImageBackgroundKind = ResultImageBackgroundKind.Real;
+                            _loadedResultImagePath = candidate.FilePath;
+                            if (candidate.RequiresOverlayRendering)
+                                PersistResultImageDimensions(result, source.PixelWidth, source.PixelHeight);
+                            hasDisplaySurface = true;
+                            renderOverlays = candidate.RequiresOverlayRendering;
+                            if (candidate.Kind != ResultImageFileKind.Original)
+                                log.Info($"原始结果图不可用，已改用{DescribeResultImageCandidate(candidate.Kind)}：{candidate.FilePath}");
                         }
 
                         if (!hasDisplaySurface)
@@ -1866,7 +1869,7 @@ namespace ProjectARVRPro
                                 ClearResultImageSurface();
                             }
 
-                            await EnsureResultImageDimensionsAsync(result, filePath, requestCancellation.Token);
+                            await EnsureResultImageDimensionsAsync(result, result.FileName, requestCancellation.Token);
                             if (!IsCurrentResultImageRequest(requestVersion, result))
                                 return;
 
@@ -1878,13 +1881,16 @@ namespace ProjectARVRPro
                             else
                             {
                                 ClearResultImageSurface();
-                                log.Warn($"结果图片不存在且没有可用尺寸，已清除旧底图：resultId={result.Id}, file={filePath}");
+                                log.Warn($"结果图片不存在且没有可用尺寸，已清除旧底图：resultId={result.Id}, file={result.FileName}");
                             }
                         }
 
                         if (hasDisplaySurface && HasResultDisplaySurface())
                         {
-                            RenderResultImage(result);
+                            if (renderOverlays)
+                                RenderResultImage(result);
+                            else
+                                ShowSavedResultImage(result);
                         }
                         else
                         {
@@ -1953,22 +1959,43 @@ namespace ProjectARVRPro
             }
         }
 
-        private async Task OpenResultImageAsync(string filePath, CancellationToken cancellationToken)
+        private void ShowSavedResultImage(ProjectARVRReuslt result)
+        {
+            ImageView.ImageShow.Clear();
+            ImageView.NotifyExternalRenderCompleted(result, succeeded: HasResultDisplaySurface());
+        }
+
+        private static string DescribeResultImageCandidate(ResultImageFileKind kind) => kind switch
+        {
+            ResultImageFileKind.SavedSource => "已保存原图并重新渲染标记",
+            ResultImageFileKind.SavedResult => "已保存标记图",
+            _ => "算法原图",
+        };
+
+        private async Task<BitmapSource?> OpenResultImageAsync(string filePath, CancellationToken cancellationToken)
         {
             string? activeFilePath = ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
             if (_resultImageBackgroundKind == ResultImageBackgroundKind.Real
                 && GetLoadedImageSource() != null
                 && string.Equals(_loadedResultImagePath, filePath, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(activeFilePath, filePath, StringComparison.OrdinalIgnoreCase))
-                return;
+                return GetLoadedImageSource();
 
-            TaskCompletionSource<object?> imageLoaded = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            EventHandler<ImageViewImageSourceLoadedEventArgs> imageSourceLoaded = (_, _) => imageLoaded.TrySetResult(null);
+            TaskCompletionSource<ImageViewImageSourceLoadedEventArgs> imageLoaded = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            EventHandler<ImageViewImageSourceLoadedEventArgs> imageSourceLoaded = (_, e) => imageLoaded.TrySetResult(e);
             ImageView.ImageSourceLoaded += imageSourceLoaded;
             try
             {
                 ImageView.OpenImage(filePath);
-                await imageLoaded.Task.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
+                ImageViewImageSourceLoadedEventArgs loaded = await imageLoaded.Task.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
+                activeFilePath = ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
+                if (!string.Equals(activeFilePath, filePath, StringComparison.OrdinalIgnoreCase)
+                    || !ImageView.IsCurrentImageRevision(loaded.ImageRevision))
+                {
+                    return null;
+                }
+
+                return loaded.Source as BitmapSource;
             }
             finally
             {
@@ -2209,7 +2236,9 @@ namespace ProjectARVRPro
             string? renderedFilePath = null;
             string? sourceFilePath = null;
             Stopwatch? exportStopwatch = null;
-            bool exportSucceeded = false;
+            bool exportCompleted = false;
+            ProjectImageExportAttempt? exportAttempt = null;
+            ProjectImageExportAttemptResult exportResult = new();
             try
             {
                 if (_isDisposed)
@@ -2255,13 +2284,10 @@ namespace ProjectARVRPro
                     log.Info($"后台导出原尺寸、原位深、无标记原图：{sourceDescription}");
                 }
 
-                ImageViewSnapshotExportOptions exportOptions = new()
-                {
-                    RenderedFileName = renderedFilePath,
-                    RenderedOptions = ProjectImageExportService.CreateRenderedOptions(resultFormat, resultSize),
-                    SourceFileName = sourceFilePath,
-                    SourceOptions = ProjectImageExportService.CreateSourceOptions(sourceFormat, sourceTiffCompression),
-                };
+                exportAttempt = new ProjectImageExportAttempt(renderedFilePath, sourceFilePath);
+                ImageViewSnapshotExportOptions exportOptions = exportAttempt.CreateOptions(
+                    ProjectImageExportService.CreateRenderedOptions(resultFormat, resultSize),
+                    ProjectImageExportService.CreateSourceOptions(sourceFormat, sourceTiffCompression));
 
                 exportStopwatch = Stopwatch.StartNew();
                 ImageViewSnapshot ownedSnapshot = snapshot;
@@ -2269,7 +2295,7 @@ namespace ProjectARVRPro
                 await ColorVision.ImageEditor.ImageView.SaveSnapshotExportsAsync(
                     ownedSnapshot,
                     exportOptions).ConfigureAwait(false);
-                exportSucceeded = true;
+                exportCompleted = true;
             }
             catch (Exception ex)
             {
@@ -2278,14 +2304,32 @@ namespace ProjectARVRPro
             finally
             {
                 exportStopwatch?.Stop();
-                if (exportSucceeded)
+                if (exportAttempt != null)
                 {
-                    LogExportedImage("8位标记图", renderedFilePath);
-                    LogExportedImage("原位深原图", sourceFilePath);
+                    exportResult = exportAttempt.CommitSuccessfulChannels((channel, fileName, ex) =>
+                        log.Error($"{channel}已编码，但替换正式导出文件失败：{fileName}", ex));
+                    exportAttempt.Dispose();
                 }
+                ResultImageExportPathUpdate pathUpdate = ResultImageExportPathUpdate.From(
+                    exportResult,
+                    includeOverlays,
+                    result.SavedResultImageFileName);
+                if (pathUpdate.UpdateSavedResultImageFileName || pathUpdate.UpdateSavedSourceImageFileName)
+                {
+                    try
+                    {
+                        ViewResultManager.UpdateSavedImagePaths(result, pathUpdate);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("图像已写盘，但保存本次成功导出路径到结果数据库失败；内存结果未更新。", ex);
+                    }
+                }
+                LogExportedImage("8位标记图", exportResult.RenderedFileName);
+                LogExportedImage("原位深原图", exportResult.SourceFileName);
                 if (exportStopwatch != null)
                 {
-                    string outcome = exportSucceeded ? "完成" : "结束（含失败）";
+                    string outcome = exportCompleted ? "完成" : "结束（含失败）";
                     log.Info($"ImageEditor图像导出任务{outcome}，总耗时 {exportStopwatch.ElapsedMilliseconds}ms。");
                 }
                 snapshot?.Dispose();

@@ -20,6 +20,18 @@ namespace ProjectARVRPro
         public string? FileName { get; set; }
 
         /// <summary>
+        /// ImageEditor 导出的原位深、无标记原图。算法原图被清理后优先用它恢复底图并重新渲染标记。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public string? SavedSourceImageFileName { get; set; }
+
+        /// <summary>
+        /// ImageEditor 导出的标记图。没有任何可用原图时直接显示，避免重复绘制标记。
+        /// </summary>
+        [SugarColumn(IsNullable = true)]
+        public string? SavedResultImageFileName { get; set; }
+
+        /// <summary>
         /// 原始图像的像素宽度。原图被清理后仍用于恢复结果叠图的坐标空间。
         /// </summary>
         [SugarColumn(IsNullable = true)]
