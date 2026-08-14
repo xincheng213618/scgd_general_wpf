@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 1.4.3.25 - 2026-08-13
+
+### Fixed
+
+- Rebuilt the service manager against the current database migration API so
+  preserved-table backup no longer fails with `MissingMethodException`.
+
 ## 1.4.3.24 - 2026-07-23
 
 ### Added

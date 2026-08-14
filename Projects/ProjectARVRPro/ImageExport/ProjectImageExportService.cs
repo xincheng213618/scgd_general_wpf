@@ -3,6 +3,118 @@ using System.IO;
 
 namespace ProjectARVRPro.ImageExport;
 
+internal sealed class ProjectImageExportAttemptResult
+{
+    public string? RenderedFileName { get; internal set; }
+    public string? SourceFileName { get; internal set; }
+}
+
+internal sealed class ProjectImageExportAttempt : IDisposable
+{
+    private readonly string? renderedFileName;
+    private readonly string? sourceFileName;
+
+    public string? RenderedStagingFileName { get; }
+    public string? SourceStagingFileName { get; }
+
+    public ProjectImageExportAttempt(string? renderedFileName, string? sourceFileName)
+    {
+        this.renderedFileName = NormalizeTargetFileName(renderedFileName);
+        this.sourceFileName = NormalizeTargetFileName(sourceFileName);
+        RenderedStagingFileName = CreateUniqueStagingFileName(this.renderedFileName);
+        SourceStagingFileName = CreateUniqueStagingFileName(this.sourceFileName);
+    }
+
+    public ImageViewSnapshotExportOptions CreateOptions(
+        ImageViewSnapshotSaveOptions renderedOptions,
+        ImageViewSourceSaveOptions sourceOptions)
+    {
+        return new ImageViewSnapshotExportOptions
+        {
+            RenderedFileName = RenderedStagingFileName,
+            RenderedOptions = renderedOptions,
+            SourceFileName = SourceStagingFileName,
+            SourceOptions = sourceOptions,
+        };
+    }
+
+    public ProjectImageExportAttemptResult CommitSuccessfulChannels(
+        Action<string, string, Exception>? onFailure = null)
+    {
+        ProjectImageExportAttemptResult result = new();
+        PromoteIfWritten(
+            "结果图",
+            RenderedStagingFileName,
+            renderedFileName,
+            fileName => result.RenderedFileName = fileName,
+            onFailure);
+        PromoteIfWritten(
+            "原图",
+            SourceStagingFileName,
+            sourceFileName,
+            fileName => result.SourceFileName = fileName,
+            onFailure);
+        return result;
+    }
+
+    public void Dispose()
+    {
+        DeleteStagingFile(RenderedStagingFileName);
+        DeleteStagingFile(SourceStagingFileName);
+    }
+
+    private static string? NormalizeTargetFileName(string? fileName) =>
+        string.IsNullOrWhiteSpace(fileName) ? null : Path.GetFullPath(fileName);
+
+    private static string? CreateUniqueStagingFileName(string? targetFileName)
+    {
+        if (targetFileName == null)
+            return null;
+
+        string directory = Path.GetDirectoryName(targetFileName)
+            ?? throw new ArgumentException("导出文件必须包含有效目录。", nameof(targetFileName));
+        return Path.Combine(
+            directory,
+            $".{Path.GetFileName(targetFileName)}.{Guid.NewGuid():N}.arvrexport.tmp");
+    }
+
+    private static void PromoteIfWritten(
+        string channelName,
+        string? stagingFileName,
+        string? targetFileName,
+        Action<string> markSaved,
+        Action<string, string, Exception>? onFailure)
+    {
+        if (stagingFileName == null || targetFileName == null || !File.Exists(stagingFileName))
+            return;
+
+        try
+        {
+            File.Move(stagingFileName, targetFileName, overwrite: true);
+            markSaved(targetFileName);
+        }
+        catch (Exception ex)
+        {
+            onFailure?.Invoke(channelName, targetFileName, ex);
+        }
+    }
+
+    private static void DeleteStagingFile(string? stagingFileName)
+    {
+        if (stagingFileName == null)
+            return;
+
+        try
+        {
+            File.Delete(stagingFileName);
+        }
+        catch
+        {
+            // Best-effort cleanup; the unique staging name can never be mistaken for a later attempt.
+        }
+    }
+}
+
 /// <summary>
 /// Maps ProjectARVRPro naming and configuration onto the reusable ImageEditor export API.
 /// Pixel capture and encoding intentionally remain in ColorVision.ImageEditor.

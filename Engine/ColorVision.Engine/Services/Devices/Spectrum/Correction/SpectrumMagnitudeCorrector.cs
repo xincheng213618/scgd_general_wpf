@@ -17,7 +17,7 @@ public sealed class SpectrumCorrectionOptions
     public double RelativeMeasuredThreshold { get; init; } = 1e-4;
     public double MinimumValidPointFraction { get; init; } = 0.1;
     public double MinimumValidWavelengthSpanFraction { get; init; } = 0.5;
-    public double MinimumCorrectionFactor { get; init; } = 0.1;
+    public double MinimumCorrectionFactor { get; init; }
     public double MaximumCorrectionFactor { get; init; } = double.PositiveInfinity;
 }
 

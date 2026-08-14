@@ -691,7 +691,7 @@ public sealed class ResultStatisticsTests
     }
 
     [Fact]
-    public void DataStoreUpgradesLegacyFlowTableWithNullableImageDimensions()
+    public void DataStoreUpgradesLegacyFlowTableWithNullableImagePresentationColumns()
     {
         using var database = new TemporaryResultDatabase();
         new ResultStatisticsDataStore(database.Path).InitializeSchema();
@@ -701,16 +701,20 @@ public sealed class ResultStatisticsTests
             Model = "White255_Fast_Test",
             FileName = @"C:\missing\legacy.cvraw",
         });
-        database.DropFlowImageDimensionColumnsForLegacySchema();
+        database.DropFlowImagePresentationColumnsForLegacySchema();
 
         Assert.DoesNotContain(nameof(ProjectARVRReuslt.ImageWidth), database.QueryFlowColumnNames());
         Assert.DoesNotContain(nameof(ProjectARVRReuslt.ImageHeight), database.QueryFlowColumnNames());
+        Assert.DoesNotContain(nameof(ProjectARVRReuslt.SavedSourceImageFileName), database.QueryFlowColumnNames());
+        Assert.DoesNotContain(nameof(ProjectARVRReuslt.SavedResultImageFileName), database.QueryFlowColumnNames());
 
         new ResultStatisticsDataStore(database.Path).InitializeSchema();
 
         Assert.Contains(nameof(ProjectARVRReuslt.ImageWidth), database.QueryFlowColumnNames());
         Assert.Contains(nameof(ProjectARVRReuslt.ImageHeight), database.QueryFlowColumnNames());
-        Assert.True(database.FirstFlowImageDimensionsAreNull());
+        Assert.Contains(nameof(ProjectARVRReuslt.SavedSourceImageFileName), database.QueryFlowColumnNames());
+        Assert.Contains(nameof(ProjectARVRReuslt.SavedResultImageFileName), database.QueryFlowColumnNames());
+        Assert.True(database.FirstFlowImagePresentationValuesAreNull());
     }
 
     private static ResultStatisticsSample CreateSample(int id, string sn, bool result, DateTime start, double milliseconds)
@@ -810,11 +814,13 @@ public sealed class ResultStatisticsTests
             db.Ado.ExecuteCommand("ALTER TABLE \"ObjectiveTestResultRecord\" DROP COLUMN \"IsFinalized\";");
         }
 
-        public void DropFlowImageDimensionColumnsForLegacySchema()
+        public void DropFlowImagePresentationColumnsForLegacySchema()
         {
             using SqlSugarClient db = CreateClient();
             db.Ado.ExecuteCommand("ALTER TABLE \"ARVRReuslt\" DROP COLUMN \"ImageWidth\";");
             db.Ado.ExecuteCommand("ALTER TABLE \"ARVRReuslt\" DROP COLUMN \"ImageHeight\";");
+            db.Ado.ExecuteCommand("ALTER TABLE \"ARVRReuslt\" DROP COLUMN \"SavedSourceImageFileName\";");
+            db.Ado.ExecuteCommand("ALTER TABLE \"ARVRReuslt\" DROP COLUMN \"SavedResultImageFileName\";");
         }
 
         public bool FirstFinalizationValueIsNull()
@@ -825,14 +831,17 @@ public sealed class ResultStatisticsTests
             return table.Rows.Count == 1 && table.Rows[0].IsNull("IsFinalized");
         }
 
-        public bool FirstFlowImageDimensionsAreNull()
+        public bool FirstFlowImagePresentationValuesAreNull()
         {
             using SqlSugarClient db = CreateClient();
             DataTable table = db.Ado.GetDataTable(
-                "SELECT \"ImageWidth\", \"ImageHeight\" FROM \"ARVRReuslt\" ORDER BY \"Id\" LIMIT 1;");
+                "SELECT \"ImageWidth\", \"ImageHeight\", \"SavedSourceImageFileName\", \"SavedResultImageFileName\" "
+                + "FROM \"ARVRReuslt\" ORDER BY \"Id\" LIMIT 1;");
             return table.Rows.Count == 1
                 && table.Rows[0].IsNull("ImageWidth")
-                && table.Rows[0].IsNull("ImageHeight");
+                && table.Rows[0].IsNull("ImageHeight")
+                && table.Rows[0].IsNull("SavedSourceImageFileName")
+                && table.Rows[0].IsNull("SavedResultImageFileName");
         }
 
         public void Dispose()

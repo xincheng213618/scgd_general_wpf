@@ -476,6 +476,57 @@ namespace ProjectARVRPro
             return true;
         }
 
+        internal bool UpdateSavedImagePaths(
+            ProjectARVRReuslt item,
+            ResultImageExportPathUpdate update)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            return ApplySavedImagePathUpdate(item, update, (savedResultImageFileName, savedSourceImageFileName) =>
+            {
+                int updatedRows = ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+                    _db.Updateable<ProjectARVRReuslt>()
+                        .SetColumns(result => new ProjectARVRReuslt
+                        {
+                            SavedResultImageFileName = savedResultImageFileName,
+                            SavedSourceImageFileName = savedSourceImageFileName,
+                        })
+                        .Where(result => result.Id == item.Id)
+                        .ExecuteCommand());
+                if (updatedRows != 1)
+                    throw new InvalidOperationException($"未能更新结果图像路径：resultId={item.Id}, affectedRows={updatedRows}");
+            });
+        }
+
+        internal static bool ApplySavedImagePathUpdate(
+            ProjectARVRReuslt item,
+            ResultImageExportPathUpdate update,
+            Action<string?, string?> persist)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            ArgumentNullException.ThrowIfNull(persist);
+
+            string? savedResultImageFileName = update.UpdateSavedResultImageFileName
+                ? update.SavedResultImageFileName
+                : item.SavedResultImageFileName;
+            string? savedSourceImageFileName = update.UpdateSavedSourceImageFileName
+                ? update.SavedSourceImageFileName
+                : item.SavedSourceImageFileName;
+            bool resultPathChanged = update.UpdateSavedResultImageFileName
+                && !string.Equals(item.SavedResultImageFileName, savedResultImageFileName, StringComparison.OrdinalIgnoreCase);
+            bool sourcePathChanged = update.UpdateSavedSourceImageFileName
+                && !string.Equals(item.SavedSourceImageFileName, savedSourceImageFileName, StringComparison.OrdinalIgnoreCase);
+            if (!resultPathChanged && !sourcePathChanged)
+                return false;
+
+            if (item.Id > 0)
+                persist(savedResultImageFileName, savedSourceImageFileName);
+
+            item.SavedResultImageFileName = savedResultImageFileName;
+            item.SavedSourceImageFileName = savedSourceImageFileName;
+
+            return true;
+        }
+
         public string? LoadViewResultJson(ProjectARVRReuslt item)
         {
             ArgumentNullException.ThrowIfNull(item);

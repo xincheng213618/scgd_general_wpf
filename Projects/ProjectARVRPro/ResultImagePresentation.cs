@@ -3,11 +3,128 @@ using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.FileIO;
 using Newtonsoft.Json.Linq;
+using ProjectARVRPro.ImageExport;
 using System.IO;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ProjectARVRPro;
+
+internal enum ResultImageFileKind
+{
+    Original,
+    SavedSource,
+    SavedResult,
+}
+
+internal readonly record struct ResultImageFileCandidate(string FilePath, ResultImageFileKind Kind)
+{
+    public bool RequiresOverlayRendering => Kind != ResultImageFileKind.SavedResult;
+}
+
+internal static class ResultImageFileCandidates
+{
+    public static IReadOnlyList<ResultImageFileCandidate> GetExisting(
+        ProjectARVRReuslt result,
+        Func<string, bool>? fileExists = null)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        fileExists ??= File.Exists;
+
+        List<ResultImageFileCandidate> candidates = [];
+        HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
+        Add(result.FileName, ResultImageFileKind.Original);
+        Add(result.SavedSourceImageFileName, ResultImageFileKind.SavedSource);
+        Add(result.SavedResultImageFileName, ResultImageFileKind.SavedResult);
+        return candidates;
+
+        void Add(string? filePath, ResultImageFileKind kind)
+        {
+            if (string.IsNullOrWhiteSpace(filePath)
+                || !paths.Add(filePath)
+                || !fileExists(filePath))
+                return;
+
+            candidates.Add(new ResultImageFileCandidate(filePath, kind));
+        }
+    }
+
+    public static async Task<ResultImageFileCandidate?> OpenFirstAsync(
+        IReadOnlyList<ResultImageFileCandidate> candidates,
+        Func<ResultImageFileCandidate, CancellationToken, Task<bool>> tryOpen,
+        Action<ResultImageFileCandidate, Exception?>? onFailure = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(candidates);
+        ArgumentNullException.ThrowIfNull(tryOpen);
+
+        foreach (ResultImageFileCandidate candidate in candidates)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                if (await tryOpen(candidate, cancellationToken))
+                    return candidate;
+
+                onFailure?.Invoke(candidate, null);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                onFailure?.Invoke(candidate, ex);
+            }
+        }
+
+        return null;
+    }
+}
+
+internal readonly record struct ResultImageExportPathUpdate(
+    bool UpdateSavedResultImageFileName,
+    string? SavedResultImageFileName,
+    bool UpdateSavedSourceImageFileName,
+    string? SavedSourceImageFileName)
+{
+    public static ResultImageExportPathUpdate From(
+        ProjectImageExportAttemptResult exportResult,
+        bool renderedImageIncludesOverlays,
+        string? currentSavedResultImageFileName)
+    {
+        ArgumentNullException.ThrowIfNull(exportResult);
+        bool renderedImageSaved = !string.IsNullOrWhiteSpace(exportResult.RenderedFileName);
+        bool sourceImageSaved = !string.IsNullOrWhiteSpace(exportResult.SourceFileName);
+        bool clearSavedResultImageFileName = renderedImageSaved
+            && !renderedImageIncludesOverlays
+            && AreSameWindowsFilePath(currentSavedResultImageFileName, exportResult.RenderedFileName);
+        return new ResultImageExportPathUpdate(
+            (renderedImageSaved && renderedImageIncludesOverlays) || clearSavedResultImageFileName,
+            renderedImageIncludesOverlays ? exportResult.RenderedFileName : null,
+            sourceImageSaved,
+            sourceImageSaved ? exportResult.SourceFileName : null);
+    }
+
+    internal static bool AreSameWindowsFilePath(string? left, string? right)
+    {
+        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+            return false;
+
+        try
+        {
+            string normalizedLeft = Path.GetFullPath(left)
+                .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            string normalizedRight = Path.GetFullPath(right)
+                .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            return string.Equals(normalizedLeft, normalizedRight, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+}
 
 internal sealed class ResultImagePlaceholderCache
 {
