@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Templates.POI
         public int Y { get; init; }
         public int Width { get; init; }
         public int Height { get; init; }
-        public required IPOIResultData Value { get; init; }
+        public required object Value { get; init; }
     }
 
     internal sealed class LocalPoiResultSet
@@ -74,7 +74,7 @@ namespace ColorVision.Engine.Templates.POI
                 PoiPoint point = poi.PoiPoints[index];
                 (int x, int y, int width, int height, POIPointTypes type) = definitions[index];
                 PoiMeasurementResult measurement = measurements[index];
-                IPOIResultData value = frame.Metadata.Channels == 1
+                object value = frame.Metadata.Channels == 1
                     ? new POIResultDataCIEY(measurement.Y)
                     : new POIResultDataCIExyuv(
                         measurement.Cct,
