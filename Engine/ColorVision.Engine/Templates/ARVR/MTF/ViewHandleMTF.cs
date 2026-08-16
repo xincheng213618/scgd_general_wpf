@@ -140,8 +140,7 @@ namespace ColorVision.Engine.Templates.MTF
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            if (File.Exists(result.FilePath))
-                ctx.ImageView.OpenImage(result.FilePath);
+            OpenSourceImage(ctx, result);
 
             foreach (ViewResultMTF poiResultData in result.ViewResults.OfType<ViewResultMTF>())
                 PoiOverlayRenderer.Add(ctx.ImageView, poiResultData.Point, FormatNumber(poiResultData.Articulation));

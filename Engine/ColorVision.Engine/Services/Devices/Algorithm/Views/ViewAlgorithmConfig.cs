@@ -1,8 +1,5 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
-using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -16,20 +13,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
     {
         public static ViewAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<ViewAlgorithmConfig>();
 
-        [JsonIgnore]
-        public ObservableCollection<ViewResultAlg> ViewResults { get; set; } = new ObservableCollection<ViewResultAlg>();
-
-        [JsonIgnore]
-        public RelayCommand ClearListCommand { get; set; }
-        public ViewAlgorithmConfig()
-        {
-            ClearListCommand = new RelayCommand(a => ViewResults.Clear());
-        }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
-        [Browsable(false)]
-        public DisplayShaderFilterState DisplayShaderFilter { get => _DisplayShaderFilter; set { _DisplayShaderFilter = value ?? new DisplayShaderFilterState(); OnPropertyChanged(); } }
-        private DisplayShaderFilterState _DisplayShaderFilter = new DisplayShaderFilterState();
 
         [LocalizedDisplayName(nameof(Resources.ShowList)), Category("View")]
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; OnPropertyChanged(); } }

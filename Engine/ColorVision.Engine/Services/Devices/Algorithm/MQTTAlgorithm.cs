@@ -54,12 +54,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     break;
             }
         }
-
-        public MsgRecord CacheClear()
-        {
-            return PublishAsyncClient(new MsgSend { EventName = "" });
-        }
-
         public override void Dispose()
         {
             if (_isDisposed)

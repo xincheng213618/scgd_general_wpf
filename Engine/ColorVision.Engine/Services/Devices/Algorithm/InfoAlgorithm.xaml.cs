@@ -25,22 +25,5 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             DataContext = Device;
             PropertyEditorHelper.GenCommand(Device, CommandGrid);
         }
-
-
-        private void ServiceCache_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.FileDeletionPermanent, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-                {
-                    var MsgRecord = DService.CacheClear();
-                    MsgRecord.MsgSucessed += (s,e) =>
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.FileServiceCleanupComplete, "ColorVison");
-                    };
-                    ServicesHelper.SendCommand(button, MsgRecord);
-                }
-            }
-        }
     }
 }

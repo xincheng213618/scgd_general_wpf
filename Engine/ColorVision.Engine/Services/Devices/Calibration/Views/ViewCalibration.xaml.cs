@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             InitializeComponent();
         }
         public static ViewCalibrationConfig Config => ViewCalibrationConfig.Instance;
-        public static ObservableCollection<ViewResultImage> ViewResults => Config.ViewResults;
+        public ObservableCollection<ViewResultImage> ViewResults { get; } = new ObservableCollection<ViewResultImage>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -83,6 +83,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                     ViewResults.Remove(item);
             }
         }
+
+        private void ClearList_Click(object sender, RoutedEventArgs e) => ViewResults.Clear();
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
             if (_isDisposed)
@@ -170,9 +172,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 ShowPlaceholderOrClear(data.ImgFrameInfo);
                 return;
             }
-
-            if (data.FileUrl.Equals(ImageView.Config.FilePath, StringComparison.OrdinalIgnoreCase) && ImageView.ViewBitmapSource != null)
-                return;
 
             ImageView.OpenImage(data.FileUrl);
         }

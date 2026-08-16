@@ -92,8 +92,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 			}
             else
             {
-                if (File.Exists(result.FilePath))
-                    ctx.ImageView.OpenImage(result.FilePath);
+                OpenSourceImage(ctx, result);
             }
 
             List<PoiPoint> poiPoints = new();

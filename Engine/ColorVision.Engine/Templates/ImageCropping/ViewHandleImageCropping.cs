@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.Database;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -38,13 +37,9 @@ namespace ColorVision.Engine.Templates.ImageCropping
                 csvBuilder.AppendLine(string.Join(",", values));
             }
 
-            File.WriteAllText(selectedPath, csvBuilder.ToString(), Encoding.UTF8);
-
-            string saveng = System.IO.Path.Combine(selectedPath, $"{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}.png");
-            AlgorithmView.ImageView.Save(saveng);
+            string filePath = Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
+            File.WriteAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
         }
-
-        public ViewResultContext AlgorithmView { get; set; }
 
 
         public override void Load(ViewResultContext ctx, ViewResultAlg result)
@@ -58,10 +53,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            AlgorithmView = ctx;
-
-            if (File.Exists(result.FilePath))
-                ctx.ImageView.OpenImage(result.FilePath);
+            OpenSourceImage(ctx, result);
 
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();

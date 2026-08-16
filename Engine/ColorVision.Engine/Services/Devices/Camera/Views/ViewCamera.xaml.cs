@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public DeviceCamera Device { get; set; }
 
         public static ViewCameraConfig Config => ViewCameraConfig.Instance;
-        public static ObservableCollection<ViewResultImage> ViewResults => Config.ViewResults;
+        public ObservableCollection<ViewResultImage> ViewResults { get; } = new ObservableCollection<ViewResultImage>();
 
         public ViewCamera(DeviceCamera device)
         {
@@ -89,6 +89,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                     ViewResults.Remove(item);
             }
         }
+
+        private void ClearList_Click(object sender, RoutedEventArgs e) => ViewResults.Clear();
 
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
@@ -196,8 +198,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 ShowPlaceholderOrClear(imgFrameInfo);
                 return;
             }
-
-            if (string.Equals(filePath, ImageView.Config.FilePath, StringComparison.OrdinalIgnoreCase) && ImageView.ViewBitmapSource != null) return;
 
             // CVRawOpen reuses a compatible WriteableBitmap and keeps the current viewport.
             ImageView.OpenImage(filePath);

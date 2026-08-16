@@ -187,8 +187,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
 
         public override void Handle(ViewResultContext view, ViewResultAlg result)
         {
-            if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+            OpenSourceImage(view, result);
 
             if (result.ViewResults.Count == 1)
             {

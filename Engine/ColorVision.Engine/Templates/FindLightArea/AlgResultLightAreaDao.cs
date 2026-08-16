@@ -54,15 +54,7 @@ namespace ColorVision.Engine.Templates.FindLightArea
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            ctx.ImageView.ImageShow.Clear();
-
-
-            if (File.Exists(result.FilePath))
-                ctx.ImageView.OpenImage(result.FilePath);
-
-            Load(ctx, result);
-
-            ctx.ImageView.ImageShow.Clear();
+            OpenSourceImage(ctx, result);
             DVPolygon polygon = new DVPolygon();
             List<System.Windows.Point> point1s = new List<System.Windows.Point>();
             foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultLightAreaModel>())

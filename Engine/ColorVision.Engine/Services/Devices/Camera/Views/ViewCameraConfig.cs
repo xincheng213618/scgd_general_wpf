@@ -1,8 +1,5 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Devices.Camera.Video;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using ColorVision.UI.Sorts;
-using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using ColorVision.Engine.Utilities;
@@ -14,16 +11,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
     public class ViewCameraConfig : ViewConfigBase, IConfig
     {
         public static ViewCameraConfig Instance => ConfigService.Instance.GetRequiredService<ViewCameraConfig>();
-
-        [JsonIgnore]
-        public ObservableCollection<ViewResultImage> ViewResults { get; set; } = new ObservableCollection<ViewResultImage>();
-
-        [JsonIgnore]
-        public RelayCommand ClearListCommand { get; set; }
-        public ViewCameraConfig()
-        {
-            ClearListCommand = new RelayCommand(a => ViewResults.Clear());
-        }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 

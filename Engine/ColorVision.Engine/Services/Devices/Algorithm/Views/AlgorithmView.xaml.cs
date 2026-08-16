@@ -101,7 +101,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public ObservableCollection<ViewResultAlg> ViewResults => Config.ViewResults;
+        public ObservableCollection<ViewResultAlg> ViewResults { get; } = new ObservableCollection<ViewResultAlg>();
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -156,9 +156,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             {
                 ViewResultAlg ViewResultAlg = new ViewResultAlg(result);
 
-                var ResultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResultAlg));
-                    ResultHandle?.Load(ViewResultContext, ViewResultAlg);
-
                 if (Config.InsertAtBeginning)
                     ViewResults.Insert(0, ViewResultAlg);
                 else
@@ -206,13 +203,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             ImageView.ImageShow.Clear();
 
-            if (AlgorithmResultImageDimensions.TryReadExistingSourceImage(result, out int width, out int height))
+            if (File.Exists(result.FilePath))
             {
                 // The result handler may reuse the current bitmap when it opens a compatible CVRAW file.
                 return;
             }
 
-            if (!AlgorithmResultImageDimensions.TryRecoverFromMeasureResults(result, out width, out height))
+            if (!AlgorithmResultImageDimensions.TryRecoverFromMeasureResults(result, out int width, out int height))
             {
                 ImageView.Clear();
                 log.Warn($"算法结果图像不存在且没有可恢复尺寸，已清除旧底图：resultId={result.Id}, file={result.FilePath}");
@@ -268,10 +265,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
 
 
-        private void Button_Delete_Click(object sender, RoutedEventArgs e)
-        {
-            ViewResults.Clear();
-        }
+        private void Button_Delete_Click(object sender, RoutedEventArgs e) => ViewResults.Clear();
         public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         private void ContextMenu1_Opened(object sender, RoutedEventArgs e)
@@ -315,12 +309,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void SideSave(ViewResultAlg result,string selectedPath)
         {
-            var ResultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(result.ResultType));
-            if (ResultHandle != null)
-            {
-                ResultHandle.SideSave(result,selectedPath);
+            var resultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(item => item.CanHandle1(result));
+            if (resultHandle == null)
                 return;
-            }
+
+            resultHandle.Load(ViewResultContext, result);
+            resultHandle.SideSave(result, selectedPath);
         }
 
         private void SideSave_Click(object sender, RoutedEventArgs e)
