@@ -38,11 +38,6 @@ namespace ProjectARVRPro
     {
         public static ProjectARVRProConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRProConfig>();
 
-        public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
-        public static ProcessManager ProcessManager => ProcessManager.GetInstance();
-        public static ThunderbirdSerialManager ThunderbirdSerialManager => ThunderbirdSerialManager.GetInstance();
-        public static SocketRelayManager SocketRelayManager => ProjectARVRPro.Services.SocketRelayManager.GetInstance();
-
         [Browsable(false)]
         [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }
@@ -63,7 +58,6 @@ namespace ProjectARVRPro
             TemplateItemSource = TemplateFlow.Params;
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
             InitTestCommand = new RelayCommand(a => InitTest());
-
         }
 
         public void InitTest()

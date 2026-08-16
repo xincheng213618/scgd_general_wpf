@@ -305,13 +305,6 @@
                     <Button Content="InitTest"
                             Command="{Binding InitTestCommand}"
                             Margin="2,0"/>
-                    <Button x:Name="ContinuousTestButton"
-                            Content="测试"
-                            Click="ContinuousTestClick"
-                            Padding="12,5"
-                            Margin="2,0"
-                            FontWeight="Bold"
-                            ToolTip="连续执行当前组的一键流程"/>
                 </StackPanel>
             </StatusBarItem>
         </StatusBar>
