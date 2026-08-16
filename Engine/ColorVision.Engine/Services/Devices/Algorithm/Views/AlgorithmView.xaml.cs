@@ -2,13 +2,11 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using log4net;
 using SqlSugar;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -31,7 +29,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private bool _isInitialized;
         private bool _isDisposed;
         private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
-        private readonly Dictionary<int, (int Width, int Height)> _resultImageDimensions = new();
 
         public ImageView ImageView { get; set; }
 
@@ -56,14 +53,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             _isInitialized = true;
             this.DataContext = Config;
             ImageView = new ImageView();
-            ImageView.Initialized += ImageView_Initialized;
             ListView = listViewSide;
             SideTextBox = TextBoxside;
             Grid1.Children.Add(ImageView);
-            if (ImageView.IsInitialized)
-            {
-                AttachDisplayFilterConfig();
-            }
             if (listView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
@@ -83,28 +75,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ViewResultContext.LeftGridViewColumnVisibilitys = LeftGridViewColumnVisibilitys;
             ViewResultContext.ListView = ListView;
 
-        }
-
-        private void ImageView_Initialized(object sender, EventArgs e)
-        {
-            ImageView.Initialized -= ImageView_Initialized;
-            if (_isDisposed)
-                return;
-
-            AttachDisplayFilterConfig();
-        }
-
-        private void AttachDisplayFilterConfig()
-        {
-            if (ImageView.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>() is DisplayShaderFilterEditorTool filterService)
-            {
-                filterService.AttachPersistence(Config.DisplayShaderFilter, SaveDisplayFilterConfig);
-            }
-        }
-
-        private static void SaveDisplayFilterConfig()
-        {
-            ConfigService.Instance?.Save<ViewAlgorithmConfig>();
         }
 
         private void Delete()
@@ -220,23 +190,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             SideTextBox.Visibility = Visibility.Collapsed;
             SideTextBox.Clear();
 
-            if (listView1.SelectedItem is not ViewResultAlg result)
+            if (listView1.SelectedItem is not ViewResultAlg result ||
+                ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(item => item.CanHandle1(result)) is not { } resultHandle)
             {
                 ImageView.Clear();
                 return;
             }
 
-            var ResultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(result));
-
-            if (ResultHandle != null)
-            {
-                ResultHandle.Load(ViewResultContext, result);
-                PrepareResultImageSurface(result);
-                ResultHandle.Handle(ViewResultContext, result);
-                return;
-            }
-
-            ImageView.Clear();
+            resultHandle.Load(ViewResultContext, result);
+            PrepareResultImageSurface(result);
+            resultHandle.Handle(ViewResultContext, result);
         }
 
         private void PrepareResultImageSurface(ViewResultAlg result)
@@ -245,19 +208,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
             if (AlgorithmResultImageDimensions.TryReadExistingSourceImage(result, out int width, out int height))
             {
-                CacheResultImageDimensions(result, width, height);
                 // The result handler may reuse the current bitmap when it opens a compatible CVRAW file.
                 return;
             }
 
-            if (AlgorithmResultImageDimensions.TryReadExistingRenderedImage(result, out width, out height))
-            {
-                CacheResultImageDimensions(result, width, height);
-                ShowResultImagePlaceholder(width, height);
-                return;
-            }
-
-            if (!TryGetResultImageDimensions(result, out width, out height))
+            if (!AlgorithmResultImageDimensions.TryRecoverFromMeasureResults(result, out width, out height))
             {
                 ImageView.Clear();
                 log.Warn($"算法结果图像不存在且没有可恢复尺寸，已清除旧底图：resultId={result.Id}, file={result.FilePath}");
@@ -265,28 +220,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
 
             ShowResultImagePlaceholder(width, height);
-        }
-
-        private bool TryGetResultImageDimensions(ViewResultAlg result, out int width, out int height)
-        {
-            if (result.Id > 0 && _resultImageDimensions.TryGetValue(result.Id, out var cached))
-            {
-                width = cached.Width;
-                height = cached.Height;
-                return true;
-            }
-
-            if (!AlgorithmResultImageDimensions.TryRecoverFromMeasureResults(result, out width, out height))
-                return false;
-
-            CacheResultImageDimensions(result, width, height);
-            return true;
-        }
-
-        private void CacheResultImageDimensions(ViewResultAlg result, int width, int height)
-        {
-            if (result.Id > 0 && ResultImageDimensions.IsValid(width, height))
-                _resultImageDimensions[result.Id] = (width, height);
         }
 
         private void ShowResultImagePlaceholder(int width, int height)
@@ -431,8 +364,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             listView1.ItemsSource = null;
             listView1.CommandBindings.Clear();
             listViewSide.ItemsSource = null;
-            _resultImageDimensions.Clear();
-            ImageView.Initialized -= ImageView_Initialized;
             ImageView.Dispose();
             Grid1.Children.Remove(ImageView);
             DataContext = null;

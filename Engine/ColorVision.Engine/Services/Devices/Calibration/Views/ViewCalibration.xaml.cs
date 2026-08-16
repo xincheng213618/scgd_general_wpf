@@ -7,7 +7,6 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
@@ -18,8 +17,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -39,7 +36,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         private bool _isInitialized;
         private bool _isDisposed;
         private bool _messageSubscribed;
-        private int _imageRequestVersion;
 
         public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
@@ -59,7 +55,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
             _isInitialized = true;
             this.DataContext = Config;
-            AttachDisplayFilterConfig();
             listView1.ItemsSource = ViewResults;
 
             if (listView1.View is GridView gridView)
@@ -75,19 +70,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
-        }
-
-        private void AttachDisplayFilterConfig()
-        {
-            if (ImageView.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>() is DisplayShaderFilterEditorTool filterService)
-            {
-                filterService.AttachPersistence(Device.DisplayConfig.DisplayShaderFilter, SaveDisplayFilterConfig);
-            }
-        }
-
-        private static void SaveDisplayFilterConfig()
-        {
-            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
         }
 
         private void Delete()
@@ -177,61 +159,22 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             if (_isDisposed)
                 return;
 
-            int requestVersion = Interlocked.Increment(ref _imageRequestVersion);
             if (listView1.SelectedItem is not ViewResultImage data)
             {
                 ImageView.Clear();
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(data.FileUrl) || !File.Exists(data.FileUrl))
+            if (!File.Exists(data.FileUrl))
             {
                 ShowPlaceholderOrClear(data.ImgFrameInfo);
                 return;
             }
 
-            string filePath = data.FileUrl;
-            if (filePath.Equals(ImageView.Config.FilePath, StringComparison.OrdinalIgnoreCase) && ImageView.ViewBitmapSource != null)
+            if (data.FileUrl.Equals(ImageView.Config.FilePath, StringComparison.OrdinalIgnoreCase) && ImageView.ViewBitmapSource != null)
                 return;
 
-            // Keep the current bitmap available while the selected file becomes readable.
-            _ = OpenSelectedImageAsync(filePath, requestVersion);
-        }
-
-        private async Task OpenSelectedImageAsync(string filePath, int requestVersion)
-        {
-            try
-            {
-
-                if (!IsCurrentImageRequest(filePath, requestVersion))
-                    return;
-
-                if (!File.Exists(filePath))
-                {
-                    ShowSelectedPlaceholder(filePath, requestVersion);
-                    return;
-                }
-
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    if (IsCurrentImageRequest(filePath, requestVersion))
-                        ImageView.OpenImage(filePath);
-                });
-            }
-            catch (Exception ex)
-            {
-                if (IsCurrentImageRequest(filePath, requestVersion))
-                {
-                    log.Warn($"Could not open calibration result image: {filePath}", ex);
-                    ShowSelectedPlaceholder(filePath, requestVersion);
-                }
-            }
-        }
-
-        private void ShowSelectedPlaceholder(string filePath, int requestVersion)
-        {
-            if (IsCurrentImageRequest(filePath, requestVersion) && listView1.SelectedItem is ViewResultImage selected)
-                ShowPlaceholderOrClear(selected.ImgFrameInfo);
+            ImageView.OpenImage(data.FileUrl);
         }
 
         private void ShowPlaceholderOrClear(string? imgFrameInfo)
@@ -257,14 +200,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             ImageView.UpdateZoomAndScale();
         }
 
-        private bool IsCurrentImageRequest(string filePath, int requestVersion)
-        {
-            return !_isDisposed &&
-                   requestVersion == Volatile.Read(ref _imageRequestVersion) &&
-                   listView1.SelectedItem is ViewResultImage selected &&
-                   string.Equals(selected.FileUrl, filePath, StringComparison.OrdinalIgnoreCase);
-        }
-
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
@@ -279,7 +214,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             if (_isDisposed)
                 return;
 
-            Interlocked.Increment(ref _imageRequestVersion);
             ImageView.Clear();
             ImageView.OpenImage(fileData.ToWriteableBitmap());
         }
@@ -328,7 +262,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 return;
 
             _isDisposed = true;
-            Interlocked.Increment(ref _imageRequestVersion);
 
             if (_messageSubscribed)
             {

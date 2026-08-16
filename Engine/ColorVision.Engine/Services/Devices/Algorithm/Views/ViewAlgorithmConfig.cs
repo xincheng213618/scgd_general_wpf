@@ -34,6 +34,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         [LocalizedDisplayName(nameof(Resources.ShowList)), Category("View")]
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; OnPropertyChanged(); } }
         private bool _IsShowListView = true;
+
         [LocalizedDisplayName(nameof(Resources.ListHeight)), Category("View")]
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 200;
@@ -49,18 +50,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         [LocalizedDisplayName(nameof(Resources.AutoSaveDataColum))]
         public bool AutoSaveSideData { get => _AutoSaveSideData; set { _AutoSaveSideData = value; OnPropertyChanged(); } }
         private bool _AutoSaveSideData;
-
-        [LocalizedDisplayName(nameof(Resources.AutoSaveRenderedImage))]
-        public bool AutoSaveRendering { get => _AutoSaveRendering; set { _AutoSaveRendering = value; OnPropertyChanged(); } }
-        private bool _AutoSaveRendering;
-
-        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
-        private int _ViewImageReadDelay = 1000;
-
-        [LocalizedDisplayName(nameof(Resources.HistoricalDataQuery))]
-        public int HistoyDay { get => _HistoyDay; set { _HistoyDay = value; OnPropertyChanged(); } }
-        private int _HistoyDay = 1;
-
 
         [LocalizedDisplayName(nameof(Resources.ShowSiteInfo))]
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]

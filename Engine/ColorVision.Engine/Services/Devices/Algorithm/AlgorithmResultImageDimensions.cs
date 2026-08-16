@@ -26,21 +26,6 @@ internal static class AlgorithmResultImageDimensions
         return false;
     }
 
-    public static bool TryReadExistingRenderedImage(ViewResultAlg result, out int width, out int height)
-    {
-        ArgumentNullException.ThrowIfNull(result);
-
-        foreach (string path in SplitPaths(result.ResultImagFile))
-        {
-            if (TryReadImageFile(path, out width, out height))
-                return true;
-        }
-
-        width = 0;
-        height = 0;
-        return false;
-    }
-
     public static bool TryRecoverFromMeasureResults(ViewResultAlg result, out int width, out int height)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -58,7 +43,7 @@ internal static class AlgorithmResultImageDimensions
         List<MeasureResultImgModel> measureResults = MeasureImgResultDao.Instance.GetAllByBatchId(batchId.Value);
         return TrySelectFromMeasureResults(
             measureResults,
-            EnumerateResultImagePaths(result),
+            SplitPaths(result.FilePath),
             result.AlgResultMasterModel?.Zindex,
             out width,
             out height);
@@ -136,13 +121,6 @@ internal static class AlgorithmResultImageDimensions
             height = 0;
             return false;
         }
-    }
-
-    private static IEnumerable<string> EnumerateResultImagePaths(ViewResultAlg result)
-    {
-        return SplitPaths(result.ResultImagFile)
-            .Concat(SplitPaths(result.FilePath))
-            .Distinct(StringComparer.OrdinalIgnoreCase);
     }
 
     private static IEnumerable<string> SplitPaths(string? value)
