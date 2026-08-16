@@ -36,11 +36,5 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 200;
 
-
-        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
-        private int _ViewImageReadDelay = 1000;
-
-
-
     }
 }

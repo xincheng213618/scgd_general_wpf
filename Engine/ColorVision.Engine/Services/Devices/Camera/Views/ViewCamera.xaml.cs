@@ -2,10 +2,9 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
