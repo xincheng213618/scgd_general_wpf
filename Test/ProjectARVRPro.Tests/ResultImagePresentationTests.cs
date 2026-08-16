@@ -1,4 +1,3 @@
-using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ProjectARVRPro.ImageExport;
 using System.IO;
@@ -323,27 +322,6 @@ public sealed class ResultImagePresentationTests
     public void FrameInfoReaderRejectsUnknownOrInvalidDimensions(string? json)
     {
         Assert.False(ResultImageDimensions.TryReadFrameInfo(json, out _, out _));
-    }
-
-    [Fact]
-    public void FileDimensionReaderUsesTheCvHeaderWithoutOpeningAPixelView()
-    {
-        string filePath = Path.Combine(Path.GetTempPath(), $"ProjectARVRPro.Dimensions.{Guid.NewGuid():N}.cvcie");
-        try
-        {
-            Assert.True(CVFileUtil.WriteCIEFile(filePath, new byte[15], rows: 3, cols: 5, bpp: 8, channels: 1));
-
-            bool found = ResultImageDimensions.TryReadFromFile(filePath, out int width, out int height);
-
-            Assert.True(found);
-            Assert.Equal(5, width);
-            Assert.Equal(3, height);
-        }
-        finally
-        {
-            if (File.Exists(filePath))
-                File.Delete(filePath);
-        }
     }
 
     private static ImageViewSnapshot CreateRenderedOnlySnapshot()

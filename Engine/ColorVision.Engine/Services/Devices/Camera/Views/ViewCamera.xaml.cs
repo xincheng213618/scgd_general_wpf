@@ -31,7 +31,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
     public partial class ViewCamera : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
-        private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
         private int _disposeState;
         private bool _messageSubscribed;
 
@@ -108,7 +107,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                                 if (IsDisposed) return;
 
                                 Device.Config.MotorConfig.Position = arg.Data.Position;
-                                OpenImageOrPlaceholder((string?)arg.Data.ImageTmpFile, null);
+                                OpenImage((string?)arg.Data.ImageTmpFile);
                             });
                         }
                         catch (Exception ex)
@@ -185,45 +184,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (IsDisposed) return;
 
-            ViewResultImage? result = listView1.SelectedItem as ViewResultImage;
-            OpenImageOrPlaceholder(result?.FileUrl, result?.ImgFrameInfo);
+            if (listView1.SelectedItem is ViewResultImage result)
+                OpenImage(result.FileUrl);
+            else
+                ImageView.Clear();
         }
 
-        private void OpenImageOrPlaceholder(string? filePath, string? imgFrameInfo)
+        private void OpenImage(string? filePath)
         {
             if (IsDisposed) return;
-
-            if (!File.Exists(filePath))
-            {
-                ShowPlaceholderOrClear(imgFrameInfo);
-                return;
-            }
-
-            // CVRawOpen reuses a compatible WriteableBitmap and keeps the current viewport.
-            ImageView.OpenImage(filePath);
-        }
-
-        private void ShowPlaceholderOrClear(string? imgFrameInfo)
-        {
-            if (!ResultImageDimensions.TryReadFrameInfo(imgFrameInfo, out int width, out int height))
-            {
+            if (string.IsNullOrWhiteSpace(filePath))
                 ImageView.Clear();
-                return;
-            }
-
-            if (_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
-            {
-                ImageView.ClearAnnotations();
-                return;
-            }
-
-            ImageView.Clear();
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(ViewCamera), "历史结果坐标空间宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(ViewCamera), "历史结果坐标空间高度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(ViewCamera), "历史结果图像像素宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(ViewCamera), "历史结果图像像素高度");
-            ImageView.SetImageSource(_resultImagePlaceholderCache.GetOrCreate(width, height), enableEditorImageServices: false, configureDefaultLayerController: false);
-            ImageView.UpdateZoomAndScale();
+            else
+                ImageView.OpenImage(filePath);
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)

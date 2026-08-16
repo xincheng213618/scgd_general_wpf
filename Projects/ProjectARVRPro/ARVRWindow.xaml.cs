@@ -283,7 +283,6 @@ namespace ProjectARVRPro
         private CopilotDynamicContextSession? _copilotContextSession;
         private int _copilotPublishQueued;
         private EventHandler? _activeGroupChangedHandler;
-        private Func<bool>? _sourceBmpAvailabilityProvider;
         private void Window_Initialized(object sender, EventArgs e)
         {
             RefreshStepBar();
@@ -313,10 +312,7 @@ namespace ProjectARVRPro
             };
 
 
-            ViewResultManager.ListView = listView1;
             ImageView.ExternalRenderCompleted += ImageView_ExternalRenderCompleted;
-            _sourceBmpAvailabilityProvider = CanCurrentSourceExportBmp;
-            ViewResultManager.SourceBmpAvailabilityProvider = _sourceBmpAvailabilityProvider;
             listView1.ItemsSource = ViewResluts;
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
@@ -378,6 +374,14 @@ namespace ProjectARVRPro
 
         private void ViewResults_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
+            if (e.Action == NotifyCollectionChangedAction.Add
+                && e.NewStartingIndex == 0
+                && e.NewItems?[0] is ProjectARVRReuslt result)
+            {
+                listView1.SelectedItem = result;
+                listView1.ScrollIntoView(result);
+            }
+
             QueueCopilotContextPublish();
         }
 
@@ -1663,6 +1667,17 @@ namespace ProjectARVRPro
             outputText.Background = Brushes.Transparent;
         }
 
+        private void Button_Click_EditResultConfig(object sender, RoutedEventArgs e)
+        {
+            ViewResultManager.Config.SourceImageSupportsBmp = CanCurrentSourceExportBmp();
+            new PropertyEditorWindow(ViewResultManager.Config)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            }.ShowDialog();
+            ConfigService.Instance.SaveConfigs();
+        }
+
         public async Task OpenBatchResultAsync(MeasureBatchModel batch, string flowName)
         {
             ArgumentNullException.ThrowIfNull(batch);
@@ -1852,8 +1867,6 @@ namespace ProjectARVRPro
                         {
                             _resultImageBackgroundKind = ResultImageBackgroundKind.Real;
                             _loadedResultImagePath = candidate.FilePath;
-                            if (candidate.RequiresOverlayRendering)
-                                PersistResultImageDimensions(result, source.PixelWidth, source.PixelHeight);
                             hasDisplaySurface = true;
                             renderOverlays = candidate.RequiresOverlayRendering;
                             if (candidate.Kind != ResultImageFileKind.Original)
@@ -1869,13 +1882,9 @@ namespace ProjectARVRPro
                                 ClearResultImageSurface();
                             }
 
-                            await EnsureResultImageDimensionsAsync(result, result.FileName, requestCancellation.Token);
-                            if (!IsCurrentResultImageRequest(requestVersion, result))
-                                return;
-
-                            if (ResultImageDimensions.IsValid(result.ImageWidth, result.ImageHeight))
+                            if (TryGetResultImageDimensions(result, out int width, out int height))
                             {
-                                ShowResultImagePlaceholder(result.ImageWidth!.Value, result.ImageHeight!.Value);
+                                ShowResultImagePlaceholder(width, height);
                                 hasDisplaySurface = true;
                             }
                             else
@@ -2013,38 +2022,11 @@ namespace ProjectARVRPro
                 && ReferenceEquals(listView1.SelectedItem, result);
         }
 
-        private static async Task EnsureResultImageDimensionsAsync(ProjectARVRReuslt result, string? filePath, CancellationToken cancellationToken)
+        private static bool TryGetResultImageDimensions(ProjectARVRReuslt result, out int width, out int height)
         {
-            if (ResultImageDimensions.IsValid(result.ImageWidth, result.ImageHeight))
-                return;
-
-            if (ResultImageDimensions.TryReadFromFile(filePath, out int fileWidth, out int fileHeight))
-            {
-                PersistResultImageDimensions(result, fileWidth, fileHeight);
-                return;
-            }
-
-            Task<(bool Found, int Width, int Height)> recoveryTask = Task.Run(() =>
-            {
-                bool found = ResultImageDimensions.TryReadFromMeasureResults(result.BatchId, filePath, out int width, out int height);
-                return (found, width, height);
-            });
-            (bool Found, int Width, int Height) recovered = await recoveryTask.WaitAsync(cancellationToken);
-
-            if (recovered.Found)
-                PersistResultImageDimensions(result, recovered.Width, recovered.Height);
-        }
-
-        private static void PersistResultImageDimensions(ProjectARVRReuslt result, int width, int height)
-        {
-            try
-            {
-                ViewResultManager.UpdateImageDimensions(result, width, height);
-            }
-            catch (Exception ex)
-            {
-                log.Warn($"保存历史结果图像尺寸失败：resultId={result.Id}, size={width}x{height}", ex);
-            }
+            width = result.ImageWidth.GetValueOrDefault();
+            height = result.ImageHeight.GetValueOrDefault();
+            return width > 0 && height > 0;
         }
 
         private void ShowResultImagePlaceholder(int width, int height)
@@ -2953,12 +2935,6 @@ namespace ProjectARVRPro
                 ProcessManager.ActiveGroupChanged -= _activeGroupChangedHandler;
                 _activeGroupChangedHandler = null;
             }
-            if (ReferenceEquals(ViewResultManager.ListView, listView1))
-                ViewResultManager.ListView = null;
-            if (ReferenceEquals(ViewResultManager.SourceBmpAvailabilityProvider, _sourceBmpAvailabilityProvider))
-                ViewResultManager.SourceBmpAvailabilityProvider = null;
-            _sourceBmpAvailabilityProvider = null;
-
             listView1.SelectionChanged -= listView1_SelectionChanged;
             listView1.ItemsSource = null;
             listView1.ContextMenu = null;

@@ -53,10 +53,7 @@
                             <Button Content="结果统计" Click="OpenCycleTimeStatistics_Click" Margin="2,0,0,0"/>
                         </StackPanel>
                         <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
-                            <Button Command="{Binding ViewResultManager.SaveCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0">
-                                <Rectangle Width="16" Height="16" Fill="{DynamicResource DISave}" />
-                            </Button>
-                            <Button  Click="Button_Click_Clear" Command="{Binding ViewResultManager.ViewReslutsClearCommand}" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
+                            <Button Click="Button_Click_Clear" Padding="2" Height="25" Width="25" Margin="0,1,5,0" >
                                 <Button.Triggers>
                                     <EventTrigger RoutedEvent="Button.Click">
                                         <BeginStoryboard>
@@ -73,7 +70,7 @@
                                     </Image.RenderTransform>
                                 </Image>
                             </Button>
-                            <Button Grid.Column="1" Margin="0,1,5,0" HorizontalAlignment="Left" Command="{Binding ViewResultManager.EditConfigCommand}" Padding="2" Height="25" Width="25" >
+                            <Button Grid.Column="1" Margin="0,1,5,0" HorizontalAlignment="Left" Click="Button_Click_EditResultConfig" Padding="2" Height="25" Width="25" >
                                 <Button.Triggers>
                                     <EventTrigger RoutedEvent="Button.Click">
                                         <BeginStoryboard>
@@ -92,7 +89,7 @@
                         </StackPanel>
                     </Grid>
                     <Grid  Grid.Row="1">
-                        <ListView x:Name="listView1" BorderThickness="0" Padding="0" SelectedIndex="{Binding ViewResultManager.ViewReslutsSelectedIndex}"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                        <ListView x:Name="listView1" BorderThickness="0" Padding="0" SelectionChanged="listView1_SelectionChanged" PreviewKeyDown="listView1_PreviewKeyDown">
                             <ListView.Resources >
                                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                             </ListView.Resources>

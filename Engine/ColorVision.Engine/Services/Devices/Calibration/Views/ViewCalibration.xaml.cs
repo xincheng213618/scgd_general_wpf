@@ -32,7 +32,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     public partial class ViewCalibration : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewCalibration));
-        private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
         private bool _isInitialized;
         private bool _isDisposed;
         private bool _messageSubscribed;
@@ -167,36 +166,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 return;
             }
 
-            if (!File.Exists(data.FileUrl))
-            {
-                ShowPlaceholderOrClear(data.ImgFrameInfo);
-                return;
-            }
-
             ImageView.OpenImage(data.FileUrl);
-        }
-
-        private void ShowPlaceholderOrClear(string? imgFrameInfo)
-        {
-            if (!ResultImageDimensions.TryReadFrameInfo(imgFrameInfo, out int width, out int height))
-            {
-                ImageView.Clear();
-                return;
-            }
-
-            if (_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
-            {
-                ImageView.ClearAnnotations();
-                return;
-            }
-
-            ImageView.Clear();
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(ViewCalibration), "历史结果坐标空间宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(ViewCalibration), "历史结果坐标空间高度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(ViewCalibration), "历史结果图像像素宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(ViewCalibration), "历史结果图像像素高度");
-            ImageView.SetImageSource(_resultImagePlaceholderCache.GetOrCreate(width, height), enableEditorImageServices: false, configureDefaultLayerController: false);
-            ImageView.UpdateZoomAndScale();
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)

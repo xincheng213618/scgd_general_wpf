@@ -1,12 +1,10 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
-using ColorVision.FileIO;
 using Newtonsoft.Json.Linq;
 using ProjectARVRPro.ImageExport;
 using System.IO;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace ProjectARVRPro;
 
@@ -156,60 +154,6 @@ internal sealed class ResultImagePlaceholderCache
 
 internal static class ResultImageDimensions
 {
-    public static bool IsValid(int? width, int? height)
-    {
-        return width > 0 && height > 0;
-    }
-
-    public static bool TryPopulateFromFile(ProjectARVRReuslt result)
-    {
-        ArgumentNullException.ThrowIfNull(result);
-        if (IsValid(result.ImageWidth, result.ImageHeight))
-            return false;
-
-        if (!TryReadFromFile(result.FileName, out int width, out int height))
-            return false;
-
-        result.ImageWidth = width;
-        result.ImageHeight = height;
-        return true;
-    }
-
-    public static bool TryReadFromFile(string? filePath, out int width, out int height)
-    {
-        width = 0;
-        height = 0;
-        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-            return false;
-
-        try
-        {
-            if (CVFileUtil.IsCIEFile(filePath))
-            {
-                int headerEnd = CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile fileInfo);
-                using (fileInfo)
-                {
-                    width = fileInfo.Cols;
-                    height = fileInfo.Rows;
-                    return headerEnd > 0 && width > 0 && height > 0;
-                }
-            }
-
-            using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation | BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.None);
-            BitmapFrame frame = decoder.Frames[0];
-            width = frame.PixelWidth;
-            height = frame.PixelHeight;
-            return width > 0 && height > 0;
-        }
-        catch
-        {
-            width = 0;
-            height = 0;
-            return false;
-        }
-    }
-
     public static bool TryReadFromMeasureResults(int batchId, string? expectedFilePath, out int width, out int height)
     {
         width = 0;
