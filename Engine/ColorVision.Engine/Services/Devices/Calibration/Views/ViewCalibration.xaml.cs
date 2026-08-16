@@ -202,12 +202,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             try
             {
-                bool isReady = await Task.Run(() => IsImageReady(filePath));
-                if (!isReady)
-                {
-                    log.Warn($"Image file is not ready: {filePath}");
-                    await Task.Delay(Config.ViewImageReadDelay);
-                }
 
                 if (!IsCurrentImageRequest(filePath, requestVersion))
                     return;
@@ -269,23 +263,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                    requestVersion == Volatile.Read(ref _imageRequestVersion) &&
                    listView1.SelectedItem is ViewResultImage selected &&
                    string.Equals(selected.FileUrl, filePath, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool IsImageReady(string filePath)
-        {
-            try
-            {
-                var fileInfo = new FileInfo(filePath);
-                if (!fileInfo.Exists || fileInfo.Length <= 0)
-                    return false;
-
-                using FileStream fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
