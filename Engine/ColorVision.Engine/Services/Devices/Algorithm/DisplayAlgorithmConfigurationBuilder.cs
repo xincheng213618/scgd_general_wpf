@@ -229,7 +229,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 property.Name == nameof(DisplayAlgorithmConfigBase.ImageFilePath)
                     ? Properties.Resources.Image
                     : GetDisplayName(property));
-            TextBox textBox = CreateTextBox(source, property);
+            TextBox textBox = CreateTextBox(source, property, usePlaceholderStyle: true);
             HandyControl.Controls.InfoElement.SetPlaceholder(textBox, ColorVision.Themes.Properties.Resources.Upload_SelectFile);
             Button browseButton = new()
             {
@@ -315,14 +315,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             return row;
         }
 
-        private static TextBox CreateTextBox(object source, PropertyInfo property)
+        private static TextBox CreateTextBox(object source, PropertyInfo property, bool usePlaceholderStyle = false)
         {
-            TextBox textBox = new()
-            {
-                MinWidth = 0,
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-            textBox.SetResourceReference(FrameworkElement.StyleProperty, "TextBox.Small");
+            TextBox textBox = usePlaceholderStyle
+                ? new HandyControl.Controls.TextBox()
+                : new TextBox();
+            textBox.MinWidth = 0;
+            textBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            textBox.SetResourceReference(
+                FrameworkElement.StyleProperty,
+                usePlaceholderStyle ? "TextBoxPlus.Small" : "TextBox.Small");
             textBox.SetBinding(TextBox.TextProperty, CreateBinding(source, property.Name));
             return textBox;
         }
