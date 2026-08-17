@@ -9,7 +9,7 @@ namespace ColorVision.Copilot
         private const int MaxLogLines = 300;
         private const int MaxLogChars = 20000;
 
-        public string Name => "GetRecentLog";
+        public string Name => CopilotSharedCapabilityCatalog.RecentLog.AgentToolName;
 
         public string Description => "Read recent ColorVision application logs for failure or exception diagnosis. Do not use this tool for Windows version, port, process, service, or other machine-state inspection.";
 

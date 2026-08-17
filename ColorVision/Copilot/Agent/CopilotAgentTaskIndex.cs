@@ -113,7 +113,7 @@ namespace ColorVision.Copilot
             if (task == null)
                 return false;
 
-            task.Conversation.AgentSessionCheckpoint = null;
+            task.Conversation.SetAgentSessionCheckpoint(null);
             task.Message.IsAgentRecoveryDismissed = true;
             task.Conversation.ClearAgentActivityForMessage(task.Message.Id);
             task.Conversation.Touch();

@@ -6,16 +6,11 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotSearchFilesTool : ICopilotAgentDrivenTool
     {
-        public string Name => "SearchFiles";
+        public string Name => CopilotSharedCapabilityCatalog.SearchFiles.AgentToolName;
 
         public string Description => "Find one stable bounded page of candidate files by file name or path fragment, optionally limited to one workspace directory, with a continuation cursor when more matches remain. A completed empty search is successful evidence, not a tool failure; inspect scan_complete before concluding that a file is absent.";
 
-        public CopilotToolInputSchema InputSchema { get; } = new CopilotToolInputSchema(new[]
-        {
-            new CopilotToolParameter { Name = "query", Description = "Literal file name or workspace-relative path fragment to locate; not a natural-language instruction or glob.", Type = CopilotToolParameterType.Text, Required = true },
-            new CopilotToolParameter { Name = "path", Description = "Optional workspace-relative or absolute directory to search within.", Type = CopilotToolParameterType.Text },
-            new CopilotToolParameter { Name = "cursor", Description = "Optional opaque next_cursor returned by the preceding SearchFiles page for the same query and path. Never invent or modify it.", Type = CopilotToolParameterType.Text },
-        });
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.SearchFiles.SharedInputSchema!;
 
         public bool IsAvailable(CopilotAgentRequest request)
         {

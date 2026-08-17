@@ -21,6 +21,7 @@ namespace ProjectARVRPro.Process
     public abstract class ProcessConfigBase<TRecipeConfig> : ProcessConfigBase
         where TRecipeConfig : class, IRecipeConfig, new()
     {
+        [Browsable(false)]
         public TRecipeConfig RecipeConfig { get => _RecipeConfig; set { _RecipeConfig = value ?? new(); OnPropertyChanged(); } }
         private TRecipeConfig _RecipeConfig = new();
     }

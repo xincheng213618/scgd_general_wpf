@@ -631,7 +631,7 @@ namespace ColorVision.Copilot
                             SourceMessageCount = compactionPlan.TotalSourceMessageCount,
                             SourceCharacters = compactionPlan.TotalSourceCharacters,
                         };
-                        conversation.AgentSessionCheckpoint = null;
+                        conversation.SetAgentSessionCheckpoint(null);
                         _turnRuntime.QueueSessionStart(
                             conversation.Id,
                             CopilotCodexSessionStartSource.Compact);

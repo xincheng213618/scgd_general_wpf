@@ -20,9 +20,12 @@
 | Task host | 活动/等待任务、admission、取消和宿主生命周期 | `Agent/CopilotAgentTaskHost.cs` |
 | Prepared hosted turn | 单次执行固定使用的会话、配置、消息和上下文 | `Runtime/CopilotPreparedHostedTurn.cs` |
 | Turn runtime | Provider/Agent 执行和事件流 | `Runtime/ICopilotTurnRuntime.cs`、`Runtime/CopilotTurnRuntime.cs` |
+| Conversation Agent state | 当前可恢复 checkpoint、最新有界事件证据及两者的原子提交 | `CopilotConversationRecord.cs`、`CopilotConversationRecord.Validation.cs` |
 | Persistence coordinator | 保存合并、Flush、失败通知和重试 | `State/CopilotChatStatePersistenceCoordinator.cs` |
 
 `CopilotChatState` 仍是持久化 aggregate，但不是业务 God object；各 owner 只管理自己的字段，持久化 coordinator 只负责快照和保存。
+
+`CopilotTurnEvent` 是单次运行的瞬时协议，不是第二份会话状态；事件由 `CopilotTurnEventReducer` 回放成执行结果。Agent checkpoint 内的 task journal 用于安全恢复，conversation 的 `LatestAgentTaskEventJournal` 只负责在 checkpoint 退役后保留诊断证据。业务代码通过 `SetAgentSessionCheckpoint` / `CommitAgentRunState` 更新这组状态，并从 `CurrentAgentTaskEventJournal` 读取派生值；相同 journal 已包含在 checkpoint 时不会重复序列化。
 
 ## 核心流程
 
@@ -71,6 +74,7 @@ WPF 负责审查窗口和反馈；eligibility、TOCTOU 复核、决定和 trace 
 - `await` 后不全量清空当前附件。
 - 后台执行不读取当前 profile/config，使用已捕获快照。
 - 不绕过 `CopilotApprovalCoordinator` 操作 approval store。
+- 不直接双写 `AgentSessionCheckpoint` 与 `LatestAgentTaskEventJournal`；使用 conversation 的原子提交方法。
 - 不把持久化、UI 通知和 Provider 执行合成 God service。
 - 不用“再拆一个 partial”代替明确 owner。
 

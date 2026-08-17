@@ -61,12 +61,12 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 | 待确认操作 | `execute_menu`、`apply_template_patch`、`set_language`、`confirm_action` | 需要用户批准 |
 | 资源 | `colorvision://live-context/current`、`workspace/current`、`logs/recent`、`template/current`、`flow/current`、`mcp/audit-*`、`copilot/capabilities`、`copilot/task-events` | 只读快照 |
 
-工具列表由 `CopilotMcpToolDispatcher.ListTools()` 生成。新增或删除工具时，先改源码和测试，再同步本页。`colorvision://copilot/task-events` 和 `get_agent_task_events` 只读取当前选中会话最近一次已保存的有界、脱敏 Agent journal。开始新一轮时旧快照会撤下，运行完成后再发布；默认 diagnostic bundle 不包含该数据。查询支持事件类型、run、工具、subject/related ID 和序号游标，但不会返回工具参数、steering 原文或可复用审批。
+工具列表和路由都由 `CopilotMcpToolDefinition` 集合生成；每项把 descriptor 与 handler 绑定在一起，不再维护第二份路由名称表。新增或删除工具时修改该定义集合和测试，再同步本页。与内置 Agent 重叠的能力名称及同形 Schema 还必须经过 `CopilotSharedCapabilityCatalog`。`colorvision://copilot/task-events` 和 `get_agent_task_events` 只读取当前选中会话最近一次已保存的有界、脱敏 Agent journal。开始新一轮时旧快照会撤下，运行完成后再发布；默认 diagnostic bundle 不包含该数据。查询支持事件类型、run、工具、subject/related ID 和序号游标，但不会返回工具参数、steering 原文或可复用审批。
 
 ## 业务上下文扩展
 
 流程、设备、图像和模板通过 `CopilotBusinessContextCoordinator` 发布同一种 `CopilotBusinessContextBundle`。新增界面上下文时优先实现 `ICopilotBusinessContextSource`，只提供结构化快照，使用 `CopilotBusinessContextBuilder` 脱敏，并让发布和发送复用同一个 bundle。
-诊断入口默认使用 `CopilotPromptMode.Diagnose`。外部 MCP 模板写入保持 `suggest_template_patch -> preview_template_patch -> apply_template_patch -> 用户批准 -> confirm_action`；内置 Agent 的 `TemplatePatch` 工具复用相同预览和冲突校验，但其待确认动作在 ColorVision 用户批准后直接应用到未保存的编辑器。MCP 描述与处理器在构造时会做集合一致性检查。
+诊断入口默认使用 `CopilotPromptMode.Diagnose`。外部 MCP 模板写入保持 `suggest_template_patch -> preview_template_patch -> apply_template_patch -> 用户批准 -> confirm_action`；内置 Agent 的 `TemplatePatch` 工具复用相同预览和冲突校验，但其待确认动作在 ColorVision 用户批准后直接应用到未保存的编辑器。MCP 构造时从同一组定义生成描述和路由，并校验名称唯一性；共享 capability 还会校验 Agent 与 MCP 两侧均存在。
 
 ## 安全要求
 

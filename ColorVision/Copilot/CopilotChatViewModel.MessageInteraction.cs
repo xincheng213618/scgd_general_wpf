@@ -540,7 +540,7 @@ namespace ColorVision.Copilot
 
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
-            conversation.AgentSessionCheckpoint = null;
+            conversation.SetAgentSessionCheckpoint(null);
             PersistState();
 
             Task ExecuteAsync(CopilotHostedAgentRun run) => ExecuteHostedRetryAsync(

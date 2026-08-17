@@ -317,8 +317,7 @@ namespace ColorVision.Copilot
                             continue;
                         }
 
-                        conversation.AgentSessionCheckpoint = agentEvent.SessionCheckpoint;
-                        conversation.UpdateLatestAgentTaskEventJournal(agentEvent.SessionCheckpoint.TaskEventJournal);
+                        conversation.SetAgentSessionCheckpoint(agentEvent.SessionCheckpoint);
                         var deliveredBatch = hostedRun.GetDeliveredSteeringAwaitingCheckpoint();
                         if (deliveredBatch.Messages.Count > 0
                             && CopilotSteeringRecovery.AreNewMessagesIncludedInCheckpoint(
@@ -472,7 +471,7 @@ namespace ColorVision.Copilot
                         return null;
                     }
 
-                    var taskEventJournal = conversation.LatestAgentTaskEventJournal;
+                    var taskEventJournal = conversation.CurrentAgentTaskEventJournal;
                     if (taskEventJournal?.IsStructurallyValid() != true)
                         taskEventJournal = conversation.AgentSessionCheckpoint?.TaskEventJournal;
                     return new CopilotGoalEvaluationContext(

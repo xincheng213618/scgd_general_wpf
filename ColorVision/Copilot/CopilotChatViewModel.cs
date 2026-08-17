@@ -383,8 +383,7 @@ namespace ColorVision.Copilot
         private void PublishSelectedTaskEventJournal()
         {
             var conversation = SelectedConversation;
-            var journal = conversation?.LatestAgentTaskEventJournal
-                ?? conversation?.AgentSessionCheckpoint?.TaskEventJournal;
+            var journal = conversation?.CurrentAgentTaskEventJournal;
             if (conversation != null
                 && journal?.Events?.Count > 0
                 && journal.IsStructurallyValid()

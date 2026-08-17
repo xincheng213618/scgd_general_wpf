@@ -10,39 +10,26 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotInspectFlowGraphTool : CopilotFlowReadToolBase
     {
-        private static readonly CopilotToolInputSchema Schema = CreateSchema(new Dictionary<string, object?>
-        {
-            ["node_id"] = new { type = "string", description = "Optional stable node instance id or node id to focus." },
-            ["include_properties"] = new { type = "boolean", description = "Include redacted node property values. Defaults to false." },
-            ["max_nodes"] = new { type = "integer", minimum = 1, maximum = 200, description = "Maximum nodes to return. Defaults to 80." },
-        });
-
         public CopilotInspectFlowGraphTool()
             : this(CopilotApplicationCapabilityInvokerFactory.CreateDefault())
         {
         }
 
         public CopilotInspectFlowGraphTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
-            : base("InspectFlowGraph", "get_flow_graph", "Inspect the active ColorVision flow as a structured graph with a revision, stable node ids, exact runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.", Schema, capabilityInvoker)
+            : base(CopilotSharedCapabilityCatalog.FlowGraph.AgentToolName, CopilotSharedCapabilityCatalog.FlowGraph.McpToolName, "Inspect the active ColorVision flow as a structured graph with a revision, stable node ids, exact runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.", CopilotSharedCapabilityCatalog.FlowGraph.SharedInputSchema!, capabilityInvoker)
         {
         }
     }
 
     public sealed class CopilotSearchFlowNodeCatalogTool : CopilotFlowReadToolBase
     {
-        private static readonly CopilotToolInputSchema Schema = CreateSchema(new Dictionary<string, object?>
-        {
-            ["query"] = new { type = "string", description = "Optional title, category, runtime type, node type, or device-code search text such as 相机 or camera." },
-            ["max_results"] = new { type = "integer", minimum = 1, maximum = 100, description = "Maximum matching node types to return. Defaults to 30." },
-        });
-
         public CopilotSearchFlowNodeCatalogTool()
             : this(CopilotApplicationCapabilityInvokerFactory.CreateDefault())
         {
         }
 
         public CopilotSearchFlowNodeCatalogTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
-            : base("SearchFlowNodeCatalog", "get_flow_node_catalog", "Search the node types loaded by the active Flow editor. Returns exact type keys and writable property schemas. Search first and never guess which camera node the user means.", Schema, capabilityInvoker)
+            : base(CopilotSharedCapabilityCatalog.FlowNodeCatalog.AgentToolName, CopilotSharedCapabilityCatalog.FlowNodeCatalog.McpToolName, "Search the node types loaded by the active Flow editor. Returns exact type keys and writable property schemas. Search first and never guess which camera node the user means.", CopilotSharedCapabilityCatalog.FlowNodeCatalog.SharedInputSchema!, capabilityInvoker)
         {
         }
     }
@@ -55,7 +42,7 @@ namespace ColorVision.Copilot
         }
 
         public CopilotPreviewFlowPatchTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
-            : base("PreviewFlowPatch", "preview_flow_patch", "Validate exactly one add_node, set_property, or connect operation against the active Flow graph revision. Use exact ids, port ids, and type keys from the read tools. This never edits, saves, or runs the flow.", CopilotFlowPatchSchema.Value, capabilityInvoker)
+            : base(CopilotSharedCapabilityCatalog.PreviewFlowPatch.AgentToolName, CopilotSharedCapabilityCatalog.PreviewFlowPatch.McpToolName, "Validate exactly one add_node, set_property, or connect operation against the active Flow graph revision. Use exact ids, port ids, and type keys from the read tools. This never edits, saves, or runs the flow.", CopilotSharedCapabilityCatalog.PreviewFlowPatch.SharedInputSchema!, capabilityInvoker)
         {
         }
 
@@ -76,11 +63,11 @@ namespace ColorVision.Copilot
             _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
-        public string Name => "ApplyFlowPatch";
+        public string Name => CopilotSharedCapabilityCatalog.ApplyFlowPatch.AgentToolName;
 
         public string Description => "Apply one previously previewed add_node, set_property, or connect operation to the active Flow editor. Rechecks the revision, requires explicit approval, and never saves or runs the flow.";
 
-        public CopilotToolInputSchema InputSchema => CopilotFlowPatchSchema.Value;
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.ApplyFlowPatch.SharedInputSchema!;
 
         public CopilotToolCapabilityDescriptor Capability { get; } = new()
         {
@@ -129,7 +116,7 @@ namespace ColorVision.Copilot
             var arguments = CopilotFlowReadToolBase.ToJsonArguments(toolInput);
             var result = await CopilotApplicationCapabilityInvocation.InvokeAsync(
                 _capabilityInvoker,
-                "apply_flow_patch",
+                CopilotSharedCapabilityCatalog.ApplyFlowPatch.McpToolName,
                 arguments,
                 request,
                 frameworkApprovalGranted,
@@ -187,6 +174,7 @@ namespace ColorVision.Copilot
         {
             Name = name;
             _mcpToolName = mcpToolName;
+            CopilotSharedCapabilityCatalog.ValidateBinding(name, mcpToolName);
             Description = description;
             InputSchema = inputSchema;
             _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));

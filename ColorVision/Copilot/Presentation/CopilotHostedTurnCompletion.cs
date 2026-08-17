@@ -51,7 +51,7 @@ namespace ColorVision.Copilot
                 "The tool call was cancelled with the hosted Agent turn.");
             if (controlIntent == CopilotAgentControlIntent.Cancel)
             {
-                conversation.AgentSessionCheckpoint = null;
+                conversation.SetAgentSessionCheckpoint(null);
                 assistantMessage.AgentStopReason = CopilotAgentStopReason.Cancelled;
             }
             else if (controlIntent == CopilotAgentControlIntent.Pause)

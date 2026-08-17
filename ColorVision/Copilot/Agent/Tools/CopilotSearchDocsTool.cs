@@ -6,13 +6,13 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotSearchDocsTool : ICopilotTool
     {
-        public string Name => "SearchDocs";
+        public string Name => CopilotSharedCapabilityCatalog.SearchDocs.AgentToolName;
 
         public string Description => "Search the ColorVision online documentation index and return the most relevant snippets by section, page, and heading. Useful for software usage, menus, devices, plugins, developer guides, and architecture questions.";
 
         public CopilotToolEvidenceMode EvidenceMode => CopilotToolEvidenceMode.RedactedExcerpt;
 
-        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("Focused ColorVision documentation search terms.", required: true);
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.SearchDocs.SharedInputSchema!;
 
         public bool CanHandle(CopilotAgentRequest request)
         {

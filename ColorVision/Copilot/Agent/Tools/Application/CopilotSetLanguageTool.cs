@@ -21,7 +21,7 @@ namespace ColorVision.Copilot
             _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
-        public string Name => "SetLanguage";
+        public string Name => CopilotSharedCapabilityCatalog.SetLanguage.AgentToolName;
 
         public string Description => "Switch the UI language requested by the user. input.query can contain a language or culture name such as English, Chinese, en-US, or zh-Hans. The change may ask for confirmation and restart the application.";
 
@@ -77,7 +77,7 @@ namespace ColorVision.Copilot
             };
             var result = await CopilotApplicationCapabilityInvocation.InvokeAsync(
                 _capabilityInvoker,
-                "set_language",
+                CopilotSharedCapabilityCatalog.SetLanguage.McpToolName,
                 arguments,
                 request,
                 frameworkApprovalGranted,

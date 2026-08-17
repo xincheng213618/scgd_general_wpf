@@ -36,7 +36,7 @@ namespace ColorVision.Copilot
             if (updatedCheckpoint == null)
                 return false;
 
-            conversation.AgentSessionCheckpoint = updatedCheckpoint;
+            conversation.SetAgentSessionCheckpoint(updatedCheckpoint);
             assistantMessage.AgentStopReason = CopilotAgentStopReason.Interrupted;
             assistantMessage.IsExecutionInProgress = false;
             assistantMessage.IsReasoningInProgress = false;

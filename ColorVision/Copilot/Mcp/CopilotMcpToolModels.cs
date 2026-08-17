@@ -42,6 +42,10 @@ namespace ColorVision.Copilot.Mcp
         public object InputSchema { get; init; } = new { type = "object" };
     }
 
+    internal sealed record CopilotMcpToolDefinition(
+        CopilotMcpToolDescriptor Descriptor,
+        CopilotScopedMcpToolHandler Handler);
+
     public sealed class CopilotMcpResourceDescriptor
     {
         [JsonPropertyName("uri")]

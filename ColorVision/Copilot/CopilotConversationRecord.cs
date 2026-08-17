@@ -244,9 +244,21 @@ namespace ColorVision.Copilot
 
         public CopilotAgentTaskEventJournalSnapshot? LatestAgentTaskEventJournal { get; set; }
 
+        [JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        public CopilotAgentTaskEventJournalSnapshot? CurrentAgentTaskEventJournal =>
+            LatestAgentTaskEventJournal?.IsStructurallyValid() == true
+                ? LatestAgentTaskEventJournal
+                : AgentSessionCheckpoint?.TaskEventJournal?.IsStructurallyValid() == true
+                    ? AgentSessionCheckpoint.TaskEventJournal
+                    : null;
+
         public bool ShouldSerializeLatestAgentTaskEventJournal() =>
             LatestAgentTaskEventJournal?.Events?.Count > 0
-            && LatestAgentTaskEventJournal.IsStructurallyValid();
+            && LatestAgentTaskEventJournal.IsStructurallyValid()
+            && !CopilotAgentTaskEventJournal.AreEquivalent(
+                LatestAgentTaskEventJournal,
+                AgentSessionCheckpoint?.TaskEventJournal);
 
         public CopilotConversationCompaction? Compaction { get; set; }
 

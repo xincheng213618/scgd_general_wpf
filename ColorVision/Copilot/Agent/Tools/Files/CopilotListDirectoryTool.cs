@@ -9,7 +9,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotListDirectoryTool : ICopilotAgentDrivenTool
     {
-        public string Name => "ListDirectory";
+        public string Name => CopilotSharedCapabilityCatalog.ListAllowedDirectory.AgentToolName;
 
         public string Description => "List one stable, bounded page of files and subdirectories from an allowed local directory, with an opaque continuation cursor when more entries remain.";
 

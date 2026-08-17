@@ -27,7 +27,7 @@ namespace ColorVision.Copilot
             _maximumReadCharacters = maximumReadCharacters;
         }
 
-        public string Name => "ReadLocalFile";
+        public string Name => CopilotSharedCapabilityCatalog.ReadAllowedFile.AgentToolName;
 
         public string Description => "Read bounded local text allowed for the current round, prefix every returned source line with its authoritative one-based L<number>: coordinate, and report a safe line-and-column continuation cursor when content is truncated. When multiple exact files are preselected, omit path and line range to batch-read one task-focused evidence window from every file in one call. Otherwise, for known files or symbols, use GrepText on each exact file first and request focused line ranges; an unbounded read intentionally returns only the first bounded segment.";
 

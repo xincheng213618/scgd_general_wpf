@@ -22,7 +22,7 @@ namespace ColorVision.Copilot
             _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
-        public string Name => "TemplatePatch";
+        public string Name => CopilotSharedCapabilityCatalog.PreviewTemplatePatch.AgentToolName;
 
         public string Description => "Preview guarded changes to the active template JSON. input.query must be a JSON string like {\"proposed_changes\":{\"Exposure\":12}}. This function never applies or saves the template; use ApplyTemplatePatch for an existing preview.";
 
@@ -84,7 +84,7 @@ namespace ColorVision.Copilot
                 };
                 var result = await CopilotApplicationCapabilityInvocation.InvokeAsync(
                     _capabilityInvoker,
-                    "preview_template_patch",
+                    CopilotSharedCapabilityCatalog.PreviewTemplatePatch.McpToolName,
                     arguments,
                     request,
                     frameworkApprovalGranted: false,

@@ -154,7 +154,7 @@ namespace ColorVision.Copilot
             var workspacePatchStore = new CopilotWorkspacePatchStore(
                 CopilotWorkspaceChangeSetCheckpointStore.CreateDefault());
             var applicationCapabilities = CopilotApplicationCapabilityInvokerFactory.CreateDefault();
-            return new ICopilotTool[]
+            var tools = new ICopilotTool[]
             {
                 new CopilotCreateFlowTool(applicationCapabilities),
                 new CopilotConvertBatchImagesTool(),
@@ -204,6 +204,8 @@ namespace ColorVision.Copilot
                 new CopilotRollbackWorkspacePatchEnvelopeTool(workspacePatchStore),
                 new CopilotWorkspaceValidationTool(),
             };
+            CopilotSharedCapabilityCatalog.ValidateAgentSurface(tools);
+            return tools;
         }
 
         private ICopilotTool[] GetCurrentTools(bool includeExtensionTools = true)

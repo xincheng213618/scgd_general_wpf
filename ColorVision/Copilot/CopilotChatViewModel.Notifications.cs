@@ -26,7 +26,7 @@ namespace ColorVision.Copilot
                 var conversation = Conversations.FirstOrDefault(item => string.Equals(item.Id, e.Run.ConversationId, StringComparison.Ordinal));
                 if (conversation?.AgentSessionCheckpoint != null)
                 {
-                    conversation.AgentSessionCheckpoint = null;
+                    conversation.SetAgentSessionCheckpoint(null);
                     PersistState(immediate: true);
                 }
             }

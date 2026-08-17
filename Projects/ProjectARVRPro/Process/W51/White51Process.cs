@@ -31,7 +31,7 @@ namespace ProjectARVRPro.Process.W51
                 foreach (var master in masters)
                 {
                     if (master.ImgFileType == ColorVision.Engine.ViewResultAlgType.FindLightArea)
-                    {
+                    {  
                         testResult.AlgResultLightAreaModels = AlgResultLightAreaDao.Instance.GetAllByPid(master.Id);
                     }
 

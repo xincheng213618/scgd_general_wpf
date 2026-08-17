@@ -21,7 +21,7 @@ namespace ColorVision.Copilot
             _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
-        public string Name => "CreateFlow";
+        public string Name => CopilotSharedCapabilityCatalog.CreateFlow.AgentToolName;
 
         public string Description => "Create a new empty ColorVision flow after explicit user approval. Put only the requested flow name in input.query, or leave it empty to generate a timestamped name. This tool stages the action and never opens the flow-template manager.";
 
@@ -74,7 +74,7 @@ namespace ColorVision.Copilot
             };
             var result = await CopilotApplicationCapabilityInvocation.InvokeAsync(
                 _capabilityInvoker,
-                "create_flow",
+                CopilotSharedCapabilityCatalog.CreateFlow.McpToolName,
                 arguments,
                 request,
                 frameworkApprovalGranted,

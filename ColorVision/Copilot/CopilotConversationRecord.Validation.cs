@@ -263,5 +263,23 @@ namespace ColorVision.Copilot
             LatestAgentTaskEventJournal = journal;
             return true;
         }
+
+        internal bool SetAgentSessionCheckpoint(CopilotAgentSessionCheckpoint? checkpoint)
+        {
+            var changed = !ReferenceEquals(AgentSessionCheckpoint, checkpoint);
+            AgentSessionCheckpoint = checkpoint;
+            if (checkpoint != null)
+                changed |= UpdateLatestAgentTaskEventJournal(checkpoint.TaskEventJournal);
+            return changed;
+        }
+
+        internal bool CommitAgentRunState(
+            CopilotAgentTaskEventJournalSnapshot? journal,
+            CopilotAgentSessionCheckpoint? checkpoint)
+        {
+            var changed = UpdateLatestAgentTaskEventJournal(journal);
+            changed |= SetAgentSessionCheckpoint(checkpoint);
+            return changed;
+        }
     }
 }

@@ -23,7 +23,7 @@ namespace ColorVision.Copilot
             _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
-        public string Name => "ExecuteMenu";
+        public string Name => CopilotSharedCapabilityCatalog.ExecuteMenu.AgentToolName;
 
         public string Description => "Execute a generic main-menu command by exact menu selector, name, or path after explicit approval. For an attached @ menu reference, copy its ExecuteMenu query value exactly into input.query. Prefer dedicated tools such as SetTheme, ConvertBatchImages, or OpenBatchImageProcessing when available; never use this generic fallback for batch image conversion or processing.";
 
@@ -105,7 +105,7 @@ namespace ColorVision.Copilot
             };
             var result = await CopilotApplicationCapabilityInvocation.InvokeAsync(
                 _capabilityInvoker,
-                "execute_menu",
+                CopilotSharedCapabilityCatalog.ExecuteMenu.McpToolName,
                 arguments,
                 request,
                 frameworkApprovalGranted,

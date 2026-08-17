@@ -7,7 +7,7 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotSetThemeTool : ICopilotTool
     {
-        public string Name => "SetTheme";
+        public string Name => CopilotSharedCapabilityCatalog.SetTheme.AgentToolName;
 
         public string Description => "Switch the application theme requested by the user. input.query can contain a target theme such as default, dark, light, pink, or cyan.";
 

@@ -186,44 +186,13 @@ namespace ColorVision.Copilot.Mcp
             };
         }
 
-        private CopilotMcpToolRouter CreateRouter()
+        private static CopilotMcpToolRouter CreateRouter(
+            IEnumerable<CopilotMcpToolDefinition> definitions)
         {
-            return new CopilotMcpToolRouter()
-                .RegisterScoped("get_server_status", (_, scope, _) => Task.FromResult(GetServerStatus(scope)))
-                .RegisterScoped("get_enabled_tools", (_, _, _) => Task.FromResult(GetEnabledTools()))
-                .RegisterScoped("get_audit_log", (arguments, scope, _) => Task.FromResult(GetAuditLog(arguments, scope)))
-                .RegisterScoped("get_audit_summary", (arguments, scope, _) => Task.FromResult(GetAuditSummary(arguments, scope)))
-                .RegisterScoped("get_last_tool_error", (_, scope, _) => Task.FromResult(GetLastToolError(scope)))
-                .RegisterScoped("get_agent_task_events", (arguments, scope, _) => Task.FromResult(GetAgentTaskEvents(arguments, scope)))
-                .RegisterScoped("get_runtime_environment_summary", (_, _, token) => GetRuntimeEnvironmentSummaryAsync(token))
-                .RegisterScoped("get_diagnostic_bundle", (arguments, scope, token) => GetDiagnosticBundleAsync(arguments, scope, token))
-                .RegisterScoped("get_live_context", (_, _, _) => Task.FromResult(GetLiveContext()))
-                .RegisterScoped("get_workspace_context", (_, _, _) => Task.FromResult(GetWorkspaceContext()))
-                .RegisterScoped("get_recent_log", (arguments, _, token) => GetRecentLogAsync(arguments, token))
-                .RegisterScoped("search_docs", (arguments, _, token) => SearchDocsAsync(arguments, token))
-                .RegisterScoped("search_files", (arguments, _, token) => Task.FromResult(SearchFiles(arguments, token)))
-                .RegisterScoped("grep_text", (arguments, _, token) => Task.FromResult(GrepText(arguments, token)))
-                .RegisterScoped("read_allowed_file", (arguments, _, token) => ReadAllowedFileAsync(arguments, token))
-                .RegisterScoped("list_allowed_directory", (arguments, _, token) => Task.FromResult(ListAllowedDirectory(arguments, token)))
-                .RegisterScoped("get_active_template_context", (_, _, _) => Task.FromResult(GetActiveTemplateContext()))
-                .RegisterScoped("get_saved_template_context", (arguments, _, _) => Task.FromResult(GetSavedTemplateContext(arguments)))
-                .RegisterScoped("get_template_type_context", (arguments, _, _) => Task.FromResult(GetTemplateTypeContext(arguments)))
-                .RegisterScoped("get_flow_summary", (_, _, token) => GetFlowSummaryAsync(token))
-                .RegisterScoped("get_flow_graph", (arguments, _, token) => GetFlowGraphAsync(arguments, token))
-                .RegisterScoped("get_flow_node_catalog", (arguments, _, token) => GetFlowNodeCatalogAsync(arguments, token))
-                .RegisterScoped("preview_flow_patch", (arguments, _, token) => PreviewFlowPatchAsync(arguments, token))
-                .RegisterScoped("apply_flow_patch", (arguments, scope, token) => ApplyFlowPatchAsync(arguments, scope, token))
-                .RegisterScoped("diagnose_flow_failure", (arguments, _, token) => DiagnoseFlowFailureAsync(arguments, token))
-                .RegisterScoped("open_panel", (arguments, _, token) => OpenPanelAsync(arguments, token))
-                .RegisterScoped("execute_menu", (arguments, scope, token) => ExecuteMenuAsync(arguments, scope, token))
-                .RegisterScoped("create_flow", (arguments, scope, token) => CreateFlowAsync(arguments, scope, token))
-                .RegisterScoped("confirm_action", ConfirmActionAsync)
-                .RegisterScoped("preview_template_patch", (arguments, _, _) => Task.FromResult(PreviewTemplatePatch(arguments)))
-                .RegisterScoped("suggest_template_patch", (arguments, _, token) => SuggestTemplatePatchAsync(arguments, token))
-                .RegisterScoped("apply_template_patch", (arguments, scope, token) => ApplyTemplatePatchAsync(arguments, scope, token))
-                .RegisterScoped("preview_flow_action", (arguments, _, token) => PreviewFlowActionAsync(arguments, token))
-                .RegisterScoped("set_theme", (arguments, _, token) => SetThemeAsync(arguments, token))
-                .RegisterScoped("set_language", (arguments, scope, token) => SetLanguageAsync(arguments, scope, token));
+            var router = new CopilotMcpToolRouter();
+            foreach (var definition in definitions)
+                router.RegisterScoped(definition.Descriptor.Name, definition.Handler);
+            return router;
         }
 
         private void ValidateRouterMatchesDescriptors()

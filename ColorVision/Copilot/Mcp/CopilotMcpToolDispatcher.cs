@@ -59,6 +59,7 @@ namespace ColorVision.Copilot.Mcp
         };
 
         private readonly CopilotMcpToolEnvironment _environment;
+        private readonly IReadOnlyList<CopilotMcpToolDefinition> _toolDefinitions;
         private readonly CopilotMcpToolRouter _router;
 
         private readonly record struct CopilotPanelTarget(string Alias, string TargetId);
@@ -83,8 +84,10 @@ namespace ColorVision.Copilot.Mcp
         public CopilotMcpToolDispatcher(CopilotMcpToolEnvironment? environment = null)
         {
             _environment = environment ?? new CopilotMcpToolEnvironment();
-            _router = CreateRouter();
+            _toolDefinitions = CreateToolDefinitions();
+            _router = CreateRouter(_toolDefinitions);
             ValidateRouterMatchesDescriptors();
+            CopilotSharedCapabilityCatalog.ValidateMcpSurface(ListTools());
         }
 
         private static CopilotMcpToolCallResult GetCapabilityCatalog()
