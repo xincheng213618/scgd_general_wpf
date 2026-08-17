@@ -53,10 +53,23 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             DisplayLazy = new Lazy<DisplayCalibration>(() => new DisplayCalibration(this));
             AttachPhyCamera(PhyCamera);
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
+            EditDisplayConfigCommand = new RelayCommand(_ => EditDisplayConfig());
         }
 
         [CommandDisplay("EditCalibration",Order =100)]
         public RelayCommand EditCalibrationCommand { get; set; }
+
+        [CommandDisplay("EditDisplayConfig", Order = -1)]
+        public RelayCommand EditDisplayConfigCommand { get; }
+
+        private void EditDisplayConfig()
+        {
+            new PropertyEditorWindow(DisplayConfig)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog();
+        }
 
         public void EditCalibration()
         {

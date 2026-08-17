@@ -7,8 +7,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     /// <summary>
     /// Applies a camera calibration template to a process-local RAW buffer.
-    /// Basic correction-only templates return corrected RAW; templates containing one
-    /// luminance/color item return CIE without mutating the upstream frame.
+    /// Basic correction-only templates return corrected RAW; basic plus color returns corrected RAW
+    /// together with CIE; color-only returns CIE and keeps the upstream RAW as its source.
     /// </summary>
     internal static class LocalFrameCalibrationService
     {
@@ -48,7 +48,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 FlipMode = source.Metadata.FlipMode,
                 IsMirrorReady = true
             };
-            LocalFlowFrame result = LocalFlowFrame.Allocate(metadata, plan.GeneratesCie ? 0 : rawLength, plan.CieLength);
+            int correctedRawLength = plan.HasBasicCalibration ? rawLength : 0;
+            LocalFlowFrame result = LocalFlowFrame.Allocate(metadata, correctedRawLength, plan.CieLength);
             try
             {
                 using (LocalFlowFrameLease destination = result.Acquire())
@@ -58,7 +59,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         new LocalCalibrationLayout(source.Metadata.Width, source.Metadata.Height, source.Metadata.SourceBpp, source.Metadata.Channels),
                         calibrationFiles,
                         source.RawPointer,
-                        plan.GeneratesCie ? IntPtr.Zero : destination.RawPointer,
+                        plan.HasBasicCalibration ? destination.RawPointer : IntPtr.Zero,
                         destination.CiePointer,
                         exposure);
                 }

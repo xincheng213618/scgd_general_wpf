@@ -44,33 +44,48 @@
                         <TextBox x:Name="ImageFile" Grid.Column="0" Margin="0,0,2,0" HorizontalAlignment="Stretch" Style="{StaticResource TextBox.Small}" Text="" />
                         <Button Grid.Column="1" Margin="0,0,5,0" HorizontalAlignment="Right" Click="Open_File" Content="..." />
                     </Grid>
-                    <DockPanel Margin="0,0,0,3" >
-                        <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.ExposureR}" />
-                        <TextBox x:Name="TextBoxExpR" Width="50" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeR}" />
-                        <hc:PreviewSlider x:Name="SliderExpR" IsSnapToTickEnabled="True" LargeChange="100" Maximum="6000" Minimum="1" SmallChange="1" TickFrequency="1" Value="{Binding DisplayConfig.ExpTimeR}">
-                            <hc:PreviewSlider.PreviewContent>
-                                <Label Content="{Binding Path=(hc:PreviewSlider.PreviewPosition), RelativeSource={RelativeSource Self}}" ContentStringFormat="#0." Style="{StaticResource LabelPrimary}" />
-                            </hc:PreviewSlider.PreviewContent>
-                        </hc:PreviewSlider>
-                    </DockPanel>
-                    <DockPanel Margin="0,0,0,3" >
-                        <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.ExposureG}" />
-                        <TextBox x:Name="TextBoxExpG" Width="50" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeG}" />
-                        <hc:PreviewSlider x:Name="SliderExpG" IsSnapToTickEnabled="True" LargeChange="100" Maximum="6000" Minimum="1" SmallChange="1" TickFrequency="1" Value="{Binding DisplayConfig.ExpTimeG}">
-                            <hc:PreviewSlider.PreviewContent>
-                                <Label Content="{Binding Path=(hc:PreviewSlider.PreviewPosition), RelativeSource={RelativeSource Self}}" ContentStringFormat="#0." Style="{StaticResource LabelPrimary}" />
-                            </hc:PreviewSlider.PreviewContent>
-                        </hc:PreviewSlider>
-                    </DockPanel>
-                    <DockPanel Margin="0,0,0,3">
-                        <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.ExposureB}" />
-                        <TextBox x:Name="TextBoxExpB" Width="50" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeB}" />
-                        <hc:PreviewSlider x:Name="SliderExpB" IsSnapToTickEnabled="True" LargeChange="100" Maximum="6000" Minimum="1" SmallChange="1" TickFrequency="1" Value="{Binding DisplayConfig.ExpTimeB}">
-                            <hc:PreviewSlider.PreviewContent>
-                                <Label Content="{Binding Path=(hc:PreviewSlider.PreviewPosition), RelativeSource={RelativeSource Self}}" ContentStringFormat="#0." Style="{StaticResource LabelPrimary}" />
-                            </hc:PreviewSlider.PreviewContent>
-                        </hc:PreviewSlider>
-                    </DockPanel>
+                    <StackPanel x:Name="ExposurePanel" Visibility="Collapsed">
+                        <DockPanel Margin="0,0,0,3" Visibility="{Binding DisplayConfig.IsAdvancedExposure, Converter={StaticResource bool2VisibilityConverter1}}">
+                            <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.Exposure}" />
+                            <TextBox x:Name="TextBoxExp" Width="50" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeR}" />
+                            <hc:PreviewSlider x:Name="SliderExp" IsSnapToTickEnabled="True" LargeChange="100" Maximum="6000" Minimum="1" SmallChange="1" TickFrequency="1" Value="{Binding DisplayConfig.ExpTimeR}">
+                                <hc:PreviewSlider.PreviewContent>
+                                    <Label Content="{Binding Path=(hc:PreviewSlider.PreviewPosition), RelativeSource={RelativeSource Self}}" ContentStringFormat="#0." Style="{StaticResource LabelPrimary}" />
+                                </hc:PreviewSlider.PreviewContent>
+                            </hc:PreviewSlider>
+                        </DockPanel>
+
+                        <StackPanel Visibility="{Binding DisplayConfig.IsAdvancedExposure, Converter={StaticResource bool2VisibilityConverter}}">
+                            <DockPanel Margin="0,0,0,3">
+                                <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.ExposureR}" />
+                                <TextBox x:Name="TextBoxExpR" Width="50" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeR}" />
+                                <hc:PreviewSlider x:Name="SliderExpR" IsSnapToTickEnabled="True" LargeChange="100" Maximum="6000" Minimum="1" SmallChange="1" TickFrequency="1" Value="{Binding DisplayConfig.ExpTimeR}">
+                                    <hc:PreviewSlider.PreviewContent>
+                                        <Label Content="{Binding Path=(hc:PreviewSlider.PreviewPosition), RelativeSource={RelativeSource Self}}" ContentStringFormat="#0." Style="{StaticResource LabelPrimary}" />
+                                    </hc:PreviewSlider.PreviewContent>
+                                </hc:PreviewSlider>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,3">
+                                <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.ExposureG}" />
+                                <TextBox x:Name="TextBoxExpG" Width="50" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeG}" />
+                                <hc:PreviewSlider x:Name="SliderExpG" IsSnapToTickEnabled="True" LargeChange="100" Maximum="6000" Minimum="1" SmallChange="1" TickFrequency="1" Value="{Binding DisplayConfig.ExpTimeG}">
+                                    <hc:PreviewSlider.PreviewContent>
+                                        <Label Content="{Binding Path=(hc:PreviewSlider.PreviewPosition), RelativeSource={RelativeSource Self}}" ContentStringFormat="#0." Style="{StaticResource LabelPrimary}" />
+                                    </hc:PreviewSlider.PreviewContent>
+                                </hc:PreviewSlider>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,3">
+                                <TextBlock Margin="0,0,5,0" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{x:Static properties:Resources.ExposureB}" />
+                                <TextBox x:Name="TextBoxExpB" Width="50" DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTimeB}" />
+                                <hc:PreviewSlider x:Name="SliderExpB" IsSnapToTickEnabled="True" LargeChange="100" Maximum="6000" Minimum="1" SmallChange="1" TickFrequency="1" Value="{Binding DisplayConfig.ExpTimeB}">
+                                    <hc:PreviewSlider.PreviewContent>
+                                        <Label Content="{Binding Path=(hc:PreviewSlider.PreviewPosition), RelativeSource={RelativeSource Self}}" ContentStringFormat="#0." Style="{StaticResource LabelPrimary}" />
+                                    </hc:PreviewSlider.PreviewContent>
+                                </hc:PreviewSlider>
+                            </DockPanel>
+                        </StackPanel>
+                    </StackPanel>
+
                     <DockPanel>
                         <Button x:Name="CalibrationButton" Padding="15,3" HorizontalAlignment="Right" Click="Calibration_Click" Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right" />
                         <Grid Width="20" Margin="5,0" DockPanel.Dock="Right">

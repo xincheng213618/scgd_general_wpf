@@ -14,6 +14,8 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -22,14 +24,29 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 {
     public class DisplayCalibrationConfig : IDisplayConfigBase
     {
+        [Browsable(false)]
         public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; OnPropertyChanged(); } }
         private double _ExpTimeR = 10;
 
+        [Browsable(false)]
         public double ExpTimeG { get => _ExpTimeG; set { _ExpTimeG = value; OnPropertyChanged(); } }
         private double _ExpTimeG = 10;
 
+        [Browsable(false)]
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; OnPropertyChanged(); } }
         private double _ExpTimeB = 10;
+
+        [Category("高级设置")]
+        [DisplayName("使用三通道曝光")]
+        [Description("分别配置 R、G、B 三个曝光值；关闭时只使用一个曝光值。")]
+        public bool IsAdvancedExposure { get => _IsAdvancedExposure; set { _IsAdvancedExposure = value; OnPropertyChanged(); } }
+        private bool _IsAdvancedExposure;
+
+        [Category("高级设置")]
+        [DisplayName("使用本地校正")]
+        [Description("使用进程内优化校正；关闭后通过 MQTT 校正服务执行。")]
+        public bool UseLocalCalibration { get => _UseLocalCalibration; set { _UseLocalCalibration = value; OnPropertyChanged(); } }
+        private bool _UseLocalCalibration = true;
 
         [Browsable(false)]
         public DisplayShaderFilterState DisplayShaderFilter { get => _DisplayShaderFilter; set { _DisplayShaderFilter = value ?? new DisplayShaderFilterState(); OnPropertyChanged(); } }
@@ -43,6 +60,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     {
         private bool _isInitialized;
         private bool _isDisposed;
+        private DeviceStatusType _deviceStatus = DeviceStatusType.Unknown;
 
         public DeviceCalibration Device { get; set; }
         private MQTTCalibration DeviceService { get => Device.DService;  }
@@ -72,10 +90,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
             ImageFile.TextChanged += ImageFile_TextChanged;
+            Device.DisplayConfig.PropertyChanged += DisplayConfig_PropertyChanged;
 
-
-            DService_DeviceStatusChanged(sender,Device.DService.DeviceStatus);
-            Device.DService.DeviceStatusChanged += DService_DeviceStatusChanged; ;
+            UpdateFileExposureInfo(ImageFile.Text);
+            DService_DeviceStatusChanged(sender, Device.DService.DeviceStatus);
+            Device.DService.DeviceStatusChanged += DService_DeviceStatusChanged;
         }
 
         private void Device_ConfigChanged(object? sender, EventArgs e) => UpdateCalibrationTemplates();
@@ -96,6 +115,33 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             if (_isDisposed)
                 return;
 
+            _deviceStatus = e;
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(RefreshServiceState);
+                return;
+            }
+            RefreshServiceState();
+        }
+
+        private void DisplayConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(DisplayCalibrationConfig.UseLocalCalibration))
+            {
+                if (!Dispatcher.CheckAccess())
+                {
+                    Dispatcher.BeginInvoke(RefreshServiceState);
+                    return;
+                }
+                RefreshServiceState();
+            }
+        }
+
+        private void RefreshServiceState()
+        {
+            if (_isDisposed)
+                return;
+
             void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
 
             void HideAllButtons()
@@ -107,7 +153,13 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             }
             // Default state
             HideAllButtons();
-            switch (e)
+            if (Device.DisplayConfig.UseLocalCalibration)
+            {
+                SetVisibility(StackPanelContent, Visibility.Visible);
+                return;
+            }
+
+            switch (_deviceStatus)
             {
                 case DeviceStatusType.Unauthorized:
                     SetVisibility(ButtonUnauthorized, Visibility.Visible);
@@ -141,7 +193,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
 
-        private void Calibration_Click(object sender, RoutedEventArgs e)
+        private async void Calibration_Click(object sender, RoutedEventArgs e)
         {
             if (Device.PhyCamera == null)
             {
@@ -162,16 +214,67 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                     if (GetSN(ref sn, ref imgFileName, ref fileExtType))
                     {
                         var pm = Device.PhyCamera.CalibrationParams[ComboxCalibrationTemplate.SelectedIndex].Value;
-
-                        MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, fileExtType, pm.Id, ComboxCalibrationTemplate.Text, sn, (float)Device.DisplayConfig.ExpTimeR, (float)Device.DisplayConfig.ExpTimeG, (float)Device.DisplayConfig.ExpTimeB);
-                        this.SendTimedCommand(button, msgRecord, onTerminalStateChanged: state =>
+                        float[] exposure = GetExposureValues();
+                        if (Device.DisplayConfig.UseLocalCalibration)
                         {
-                            if (state == MsgRecordState.Fail)
+                            await RunLocalCalibrationAsync(button, pm, imgFileName, exposure);
+                        }
+                        else
+                        {
+                            MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, fileExtType, pm.Id, ComboxCalibrationTemplate.Text, sn, exposure[0], exposure[1], exposure[2]);
+                            this.SendTimedCommand(button, msgRecord, onTerminalStateChanged: state =>
                             {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
-                            }
-                        });
+                                if (state == MsgRecordState.Fail)
+                                {
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                                }
+                            });
+                        }
                     }
+                }
+            }
+        }
+
+        private float[] GetExposureValues()
+        {
+            float exposure = (float)Device.DisplayConfig.ExpTimeR;
+            return Device.DisplayConfig.IsAdvancedExposure
+                ? new[] { exposure, (float)Device.DisplayConfig.ExpTimeG, (float)Device.DisplayConfig.ExpTimeB }
+                : new[] { exposure, exposure, exposure };
+        }
+
+        private async Task RunLocalCalibrationAsync(Button button, CalibrationParam calibration, string imageFileName, float[] exposure)
+        {
+            TimedButtonOperationRegistry operations = EnsureTimedButtonOperations();
+            TimedButtonOperationScope? operationScope = operations.Begin(button);
+            bool succeeded = false;
+            try
+            {
+                string serialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                LocalFileCalibrationResult result = await Task.Run(() => LocalFileCalibrationService.Calibrate(
+                    Device,
+                    calibration,
+                    imageFileName,
+                    serialNumber,
+                    exposure));
+                if (_isDisposed) return;
+
+                Device.View.ShowResult(result.Model);
+                succeeded = true;
+            }
+            catch (Exception ex)
+            {
+                if (!_isDisposed)
+                {
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                }
+            }
+            finally
+            {
+                if (!_isDisposed)
+                {
+                    operationScope?.Complete(succeeded);
+                    operations.RefreshIdleState(button);
                 }
             }
         }
@@ -181,7 +284,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             TimedButtonOperationRegistry operations = this.GetTimedButtonOperations(BuildButtonOperationKey);
             operations.Register(CalibrationButton, options =>
             {
-                options.ExpectedDurationProvider = () => Math.Max(500, Device.DisplayConfig.ExpTimeR + Device.DisplayConfig.ExpTimeG + Device.DisplayConfig.ExpTimeB);
+                options.ExpectedDurationProvider = () => Math.Max(500, GetExposureValues().Sum());
             });
             return operations;
         }
@@ -206,21 +309,26 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         private void UpdateFileExposureInfo(string filePath)
         {
             bool isCVFile = false;
-            if (!string.IsNullOrEmpty(filePath))
+            bool fileExists = !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath.Trim());
+            if (fileExists)
             {
-                string ext = Path.GetExtension(filePath).ToLowerInvariant();
-                if ((ext == ".cvraw" || ext == ".cvcie") && File.Exists(filePath))
+                string normalizedPath = filePath.Trim();
+                string ext = Path.GetExtension(normalizedPath).ToLowerInvariant();
+                if (ext == ".cvraw" || ext == ".cvcie")
                 {
-                    int headerEnd = CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile cvcie);
-                    if (headerEnd > 0 && cvcie.Exp != null)
+                    int headerEnd = CVFileUtil.ReadCIEFileHeader(normalizedPath, out CVCIEFile cvcie);
+                    if (headerEnd > 0 && cvcie.Exp != null && cvcie.Exp.Any(value => value > 0))
                     {
                         isCVFile = true;
-                        if (cvcie.Channels >= 1 && cvcie.Exp.Length >= 1) Device.DisplayConfig.ExpTimeR = cvcie.Exp[0];
-                        if (cvcie.Channels >= 2 && cvcie.Exp.Length >= 2) Device.DisplayConfig.ExpTimeG = cvcie.Exp[1];
-                        if (cvcie.Channels >= 3 && cvcie.Exp.Length >= 3) Device.DisplayConfig.ExpTimeB = cvcie.Exp[2];
+                        Device.DisplayConfig.ExpTimeR = cvcie.Exp[0];
+                        Device.DisplayConfig.ExpTimeG = cvcie.Exp[Math.Min(1, cvcie.Exp.Length - 1)];
+                        Device.DisplayConfig.ExpTimeB = cvcie.Exp[Math.Min(2, cvcie.Exp.Length - 1)];
                     }
                 }
             }
+            ExposurePanel.Visibility = fileExists ? Visibility.Visible : Visibility.Collapsed;
+            TextBoxExp.IsReadOnly = isCVFile;
+            SliderExp.IsEnabled = !isCVFile;
             TextBoxExpR.IsReadOnly = isCVFile;
             SliderExpR.IsEnabled = !isCVFile;
             TextBoxExpG.IsReadOnly = isCVFile;
@@ -299,6 +407,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             Device.ConfigChanged -= Device_ConfigChanged;
             PhyCameraManager.GetInstance().Loaded -= PhyCameraManager_Loaded;
             ImageFile.TextChanged -= ImageFile_TextChanged;
+            Device.DisplayConfig.PropertyChanged -= DisplayConfig_PropertyChanged;
             this.DisposeTimedButtonOperations();
             ComboxCalibrationTemplate.ItemsSource = null;
             DataContext = null;
