@@ -1,46 +1,14 @@
 using ColorVision.Database;
 using ColorVision.Engine.Services;
-using ColorVision.FileIO;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm;
 
 internal static class AlgorithmResultImageDimensions
 {
-    public static bool TryReadExistingSourceImage(ViewResultAlg result, out int width, out int height)
-    {
-        ArgumentNullException.ThrowIfNull(result);
-
-        foreach (string path in SplitPaths(result.FilePath))
-        {
-            if (TryReadImageFile(path, out width, out height))
-                return true;
-        }
-
-        width = 0;
-        height = 0;
-        return false;
-    }
-
-    public static bool TryReadExistingRenderedImage(ViewResultAlg result, out int width, out int height)
-    {
-        ArgumentNullException.ThrowIfNull(result);
-
-        foreach (string path in SplitPaths(result.ResultImagFile))
-        {
-            if (TryReadImageFile(path, out width, out height))
-                return true;
-        }
-
-        width = 0;
-        height = 0;
-        return false;
-    }
-
     public static bool TryRecoverFromMeasureResults(ViewResultAlg result, out int width, out int height)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -58,7 +26,7 @@ internal static class AlgorithmResultImageDimensions
         List<MeasureResultImgModel> measureResults = MeasureImgResultDao.Instance.GetAllByBatchId(batchId.Value);
         return TrySelectFromMeasureResults(
             measureResults,
-            EnumerateResultImagePaths(result),
+            SplitPaths(result.FilePath),
             result.AlgResultMasterModel?.Zindex,
             out width,
             out height);
@@ -98,51 +66,6 @@ internal static class AlgorithmResultImageDimensions
         }
 
         return TrySelectUniqueSize(measureResults, out width, out height);
-    }
-
-    internal static bool TryReadImageFile(string? filePath, out int width, out int height)
-    {
-        width = 0;
-        height = 0;
-        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-            return false;
-
-        try
-        {
-            if (CVFileUtil.IsCIEFile(filePath))
-            {
-                int headerEnd = CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile fileInfo);
-                using (fileInfo)
-                {
-                    width = fileInfo.Cols;
-                    height = fileInfo.Rows;
-                    return headerEnd > 0 && ResultImageDimensions.IsValid(width, height);
-                }
-            }
-
-            using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            BitmapDecoder decoder = BitmapDecoder.Create(
-                stream,
-                BitmapCreateOptions.DelayCreation | BitmapCreateOptions.PreservePixelFormat,
-                BitmapCacheOption.None);
-            BitmapFrame frame = decoder.Frames[0];
-            width = frame.PixelWidth;
-            height = frame.PixelHeight;
-            return ResultImageDimensions.IsValid(width, height);
-        }
-        catch
-        {
-            width = 0;
-            height = 0;
-            return false;
-        }
-    }
-
-    private static IEnumerable<string> EnumerateResultImagePaths(ViewResultAlg result)
-    {
-        return SplitPaths(result.ResultImagFile)
-            .Concat(SplitPaths(result.FilePath))
-            .Distinct(StringComparer.OrdinalIgnoreCase);
     }
 
     private static IEnumerable<string> SplitPaths(string? value)

@@ -156,89 +156,70 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
         }
 
+        private static void ShowSourceImage(ViewResultContext ctx, ViewResultAlg result)
+        {
+            ctx.ImageView.ImageShow.Clear();
+            OpenSourceImage(ctx, result);
+            log.Info(result.FilePath);
+
+            foreach (BlackMuraView viewResult in result.ViewResults.OfType<BlackMuraView>())
+            {
+                if (string.IsNullOrEmpty(viewResult.AreaJsonVal) || JsonConvert.DeserializeObject<List<FloatPoint>>(viewResult.AreaJsonVal) is not { } points)
+                    continue;
+
+                DVPolygon polygon = new();
+                polygon.Attribute.Brush = Brushes.Transparent;
+                polygon.Attribute.Pen = new Pen(Brushes.Red, 1);
+                foreach (FloatPoint point in points)
+                    polygon.Points.Add(point.ToPoint());
+
+                polygon.IsComple = true;
+                ctx.ImageView.AddVisual(polygon);
+            }
+
+            Application.Current.Dispatcher.BeginInvoke(() => ctx.ImageView.Zoombox1.ZoomUniform());
+        }
+
+        private static void ShowAaImage(ViewResultContext ctx, ViewResultAlg result)
+        {
+            ctx.ImageView.ImageShow.Clear();
+            if (result.ViewResults.OfType<BlackMuraView>().FirstOrDefault() is not { } viewResult)
+                return;
+
+            if (File.Exists(viewResult.Outputfile.AAPath))
+                ctx.ImageView.OpenImage(viewResult.Outputfile.AAPath);
+
+            ResultJson details = viewResult.ResultJson;
+            DVCircleText maxCircle = new();
+            maxCircle.Attribute.Center = new Point(details.MaxPtX, details.MaxPtY);
+            maxCircle.Attribute.Radius = details.Nle;
+            maxCircle.Attribute.Brush = Brushes.Transparent;
+            maxCircle.Attribute.Pen = new Pen(Brushes.Red, 1);
+            maxCircle.Attribute.Id = -1;
+            maxCircle.Attribute.Text = string.Empty;
+            maxCircle.Attribute.Msg = $"Max({details.MaxPtX},{details.MaxPtY}) Lv:{details.LvMax}";
+            maxCircle.Render();
+            ctx.ImageView.AddVisual(maxCircle);
+
+            DVCircleText minCircle = new();
+            minCircle.Attribute.Center = new Point(details.MinPtX, details.MinPtY);
+            minCircle.Attribute.Radius = details.Nle;
+            minCircle.Attribute.Brush = Brushes.Transparent;
+            minCircle.Attribute.Pen = new Pen(Brushes.Yellow, 1);
+            minCircle.Attribute.Id = -1;
+            minCircle.Attribute.Text = string.Empty;
+            minCircle.Attribute.Msg = $"Min({details.MinPtX},{details.MinPtY}) Lv:{details.LvMin}";
+            minCircle.Render();
+            ctx.ImageView.AddVisual(minCircle);
+
+            Application.Current.Dispatcher.BeginInvoke(() => ctx.ImageView.Zoombox1.ZoomUniform());
+        }
+
 
         public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
-                void OpenSource()
-                {
-                    ctx.ImageView.ImageShow.Clear();
-                    foreach (var item in result.ViewResults)
-                    {
-                        if (item is BlackMuraView blackMuraModel)
-                        {
-                            if (File.Exists(result.FilePath))
-                                ctx.ImageView.OpenImage(result.FilePath);
-                            log.Info(result.FilePath);
-
-                            if (!string.IsNullOrEmpty(blackMuraModel.AreaJsonVal))
-                            {
-                                List<FloatPoint> floatPoints = JsonConvert.DeserializeObject<List<FloatPoint>>(blackMuraModel.AreaJsonVal);
-                                log.Info(floatPoints.Count);
-                                DVPolygon dVPolygon = new DVPolygon();
-                                dVPolygon.Attribute.Brush = Brushes.Transparent;
-                                dVPolygon.Attribute.Pen = new Pen(Brushes.Red, 1);
-                                foreach (var item1 in floatPoints)
-                                {
-                                    dVPolygon.Points.Add(item1.ToPoint());
-                                }
-                                dVPolygon.IsComple = true;
-                                ctx.ImageView.AddVisual(dVPolygon);
-                                log.Info(dVPolygon);
-                            }
-                            Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                ctx.ImageView.Zoombox1.ZoomUniform();
-                            });
-                        }
-                    }
-                }
-
-
-                void OpenAA()
-                {
-                    ctx.ImageView.ImageShow.Clear();
-                    foreach (var item in result.ViewResults)
-                    {
-                        if (item is BlackMuraView blackMuraModel)
-                        {
-                            Outputfile outputfile = blackMuraModel.Outputfile;
-                            if (File.Exists(outputfile.AAPath))
-                                ctx.ImageView.OpenImage(outputfile.AAPath);
-
-
-                            ResultJson lvDetails = blackMuraModel.ResultJson;
-                            DVCircleText maxcirle = new();
-                            maxcirle.Attribute.Center = new System.Windows.Point(lvDetails.MaxPtX, lvDetails.MaxPtY);
-                            maxcirle.Attribute.Radius = lvDetails.Nle;
-                            maxcirle.Attribute.Brush = Brushes.Transparent;
-                            maxcirle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                            maxcirle.Attribute.Id = -1;
-                            maxcirle.Attribute.Text = string.Empty;
-                            maxcirle.Attribute.Msg = $"Max({lvDetails.MaxPtX},{lvDetails.MaxPtY}) Lv:{lvDetails.LvMax}";
-                            maxcirle.Render();
-                            ctx.ImageView.AddVisual(maxcirle);
-
-                            DVCircleText mincirle = new();    
-                            mincirle.Attribute.Center = new System.Windows.Point(lvDetails.MinPtX, lvDetails.MinPtY);
-                            mincirle.Attribute.Radius = lvDetails.Nle;
-                            mincirle.Attribute.Brush = Brushes.Transparent;
-                            mincirle.Attribute.Pen = new Pen(Brushes.Yellow, 1);
-                            mincirle.Attribute.Id = -1;
-                            mincirle.Attribute.Text = string.Empty;
-                            mincirle.Attribute.Msg = $"Min({lvDetails.MinPtX},{lvDetails.MinPtY}) Lv:{lvDetails.LvMin}";
-                            mincirle.Render();
-                            ctx.ImageView.AddVisual(mincirle);
-                        }
-                    }
-
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        ctx.ImageView.Zoombox1.ZoomUniform();
-                    });
-                }
-
                 result.ViewResults = new ObservableCollection<IViewResult>();
                 List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(result.Id);
                 foreach (var item in AlgResultModels)
@@ -253,9 +234,9 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
 
                 var ContextMenu = result.ContextMenu;
-                RelayCommand relayCommand = new RelayCommand(a => OpenSource());
+                RelayCommand relayCommand = new RelayCommand(a => ShowSourceImage(ctx, result));
                 ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.SplitDiagram, Command = relayCommand });
-                RelayCommand relayCommand1 = new RelayCommand(a => OpenAA());
+                RelayCommand relayCommand1 = new RelayCommand(a => ShowAaImage(ctx, result));
                 ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.AARegion, Command = relayCommand1 });
 
                 result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmBlackMura), ImageFilePath = result.FilePath })) });
@@ -265,40 +246,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            void OpenSource()
-            {
-                ctx.ImageView.ImageShow.Clear();
-                foreach (var item in result.ViewResults)
-                {
-                    if (item is BlackMuraView blackMuraModel)
-                    {
-                        if (File.Exists(result.FilePath))
-                            ctx.ImageView.OpenImage(result.FilePath);
-                        log.Info(result.FilePath);
-
-                        if (!string.IsNullOrEmpty(blackMuraModel.AreaJsonVal))
-                        {
-                            List<FloatPoint> floatPoints = JsonConvert.DeserializeObject<List<FloatPoint>>(blackMuraModel.AreaJsonVal);
-                            log.Info(floatPoints.Count);
-                            DVPolygon dVPolygon = new DVPolygon();
-                            dVPolygon.Attribute.Brush = Brushes.Transparent;
-                            dVPolygon.Attribute.Pen = new Pen(Brushes.Red, 1);
-                            foreach (var item1 in floatPoints)
-                            {
-                                dVPolygon.Points.Add(item1.ToPoint());
-                            }
-                            dVPolygon.IsComple = true;
-                            ctx.ImageView.AddVisual(dVPolygon);
-                            log.Info(dVPolygon);
-                        }
-                        Application.Current.Dispatcher.BeginInvoke(() =>
-                        {
-                            ctx.ImageView.Zoombox1.ZoomUniform();
-                        });
-                    }
-                }
-            }
-            OpenSource();
+            ShowSourceImage(ctx, result);
 
             List<string> header = new() { "LvAvg", "LvMax", "LvMin", "Uniformity(%)", "ZaRelMax", "AreaJsonVal" };
             List<string> bdHeader = new() { "ResultJson.LvAvg", "ResultJson.LvMax", "ResultJson.LvMin", "ResultJson.Uniformity", "ResultJson.ZaRelMax", "AreaJsonVal" };
@@ -313,7 +261,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             }
 
             ctx.SideTextBox.Visibility = System.Windows.Visibility.Visible;
-            ctx.SideTextBox.Text = result.ViewResults.ToSpecificViewResults<BlackMuraView>()[0].ToJsonN();
+            ctx.SideTextBox.Text = result.ViewResults.OfType<BlackMuraView>().FirstOrDefault()?.ToJsonN() ?? string.Empty;
         }
 
 

@@ -14,12 +14,8 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
     public class ViewHanlePOIXZYFile : IResultHandleBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleRealPOI));
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.POI_XYZ_File, ViewResultAlgType.POI_Y_File, ViewResultAlgType.POI_CIE_File };
 
-        public override void SideSave(ViewResultAlg result, string selectedPath)
-        {
-        }
         public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
@@ -30,8 +26,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         }
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            if (File.Exists(result.FilePath))
-                ctx.ImageView.OpenImage(result.FilePath);
+            OpenSourceImage(ctx, result);
         }
     }
 
@@ -65,8 +60,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
 
-            if (File.Exists(result.FilePath))
-                ctx.ImageView.OpenImage(result.FilePath);
+            OpenSourceImage(ctx, result);
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
 

@@ -10,7 +10,6 @@ using Microsoft.Win32;
 using Newtonsoft.Json;
 using ProjectARVRPro.LegacyARVR;
 using SqlSugar;
-using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
@@ -35,10 +34,8 @@ namespace ProjectARVRPro
         private string[] _flowNameSuggestions = [];
         private readonly ObservableCollection<ProjectARVRReuslt> _details = [];
         private readonly Dictionary<int, ObjectiveTestResultRecord> _recordCache = [];
-        private CopilotDynamicContextSession? _copilotContextSession;
         private TextBox? _snEditor;
         private TextBox? _flowNameEditor;
-        private int _copilotPublishQueued;
         private int _homeLoadVersion;
         private int _recordLoadVersion;
         private int _flowLoadVersion;
@@ -69,9 +66,7 @@ namespace ProjectARVRPro
             FlowDataGrid.ItemsSource = _flowRows;
             DetailList.ItemsSource = _details;
             RecordDataGrid.SelectionChanged += RecordDataGrid_SelectionChanged;
-            _recordRows.CollectionChanged += RecordRows_CollectionChanged;
             BuildDetailContextMenu();
-            RegisterCopilotContext();
             ConfigureHomeTrendPlot();
             ApplyStatistics(new ResultStatistics());
             _restoringSearchState = false;
@@ -1306,33 +1301,18 @@ namespace ProjectARVRPro
             return fileName;
         }
 
-        private async void RecordDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void RecordDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            _copilotContextSession?.Activate();
             ResultStatisticsRecordRow? selectedRow = SelectedRecordRow;
             if (selectedRow == null)
             {
                 ++_detailLoadVersion;
                 _details.Clear();
                 DetailHeader.Text = "流程 CT 明细";
-                QueueCopilotContextPublish();
                 return;
             }
 
             _ = LoadFlowDetailsAsync(selectedRow);
-            if (!_recordCache.ContainsKey(selectedRow.Id))
-            {
-                try
-                {
-                    await LoadRecordAsync(selectedRow);
-                }
-                catch (Exception ex)
-                {
-                    Log.Debug($"Could not load the selected ARVRPro statistics record for Copilot context: {ex.Message}");
-                }
-            }
-
-            QueueCopilotContextPublish();
         }
 
         private async Task LoadFlowDetailsAsync(ResultStatisticsRecordRow row)
@@ -1357,110 +1337,6 @@ namespace ProjectARVRPro
                 _details.Clear();
                 DetailHeader.Text = $"{row.SN} - 流程 CT 明细读取失败";
                 MessageBox.Show(this, $"读取流程 CT 明细失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void RecordRows_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            QueueCopilotContextPublish();
-        }
-
-        private void RegisterCopilotContext()
-        {
-            try
-            {
-                _copilotContextSession = ProjectARVRCopilotContextHub.Shared.Register(
-                    CaptureCopilotSnapshotAsync,
-                    typeof(CycleTimeStatisticsWindow).Assembly.GetName().Version?.ToString());
-            }
-            catch (Exception ex)
-            {
-                Log.Warn("Could not register the ARVRPro result-statistics Copilot context; the statistics window will continue to operate.", ex);
-            }
-        }
-
-        private async Task<CopilotProjectResultContextSnapshot?> CaptureCopilotSnapshotAsync(CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (!Dispatcher.CheckAccess())
-            {
-                return await Dispatcher.InvokeAsync(() =>
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    return CaptureCopilotSnapshot();
-                });
-            }
-
-            return CaptureCopilotSnapshot();
-        }
-
-        private CopilotProjectResultContextSnapshot CaptureCopilotSnapshot()
-        {
-            ObjectiveTestResultRecord[] records = _recordRows.Select(CreateContextRecord).ToArray();
-            ObjectiveTestResultRecord? selected = SelectedRecordRow is ResultStatisticsRecordRow row
-                ? CreateContextRecord(row)
-                : null;
-            return ProjectARVRCopilotSnapshotFactory.CreateForObjectiveResultRecords(
-                "ARVRPro result statistics",
-                records,
-                selected);
-        }
-
-        private ObjectiveTestResultRecord CreateContextRecord(ResultStatisticsRecordRow row)
-        {
-            if (_recordCache.TryGetValue(row.Id, out ObjectiveTestResultRecord? record))
-                return record;
-
-            return new ObjectiveTestResultRecord
-            {
-                Id = row.Id,
-                ResultId = row.ResultId,
-                BatchId = row.BatchId,
-                SN = row.SN,
-                LastModel = row.LastModel,
-                LastFlowStatus = "Completed",
-                Msg = row.Msg,
-                LastResult = row.Result,
-                TotalResult = row.Result,
-                CreateTime = row.StartTime,
-                UpdateTime = row.EndTime,
-            };
-        }
-
-        protected override void OnActivated(EventArgs e)
-        {
-            base.OnActivated(e);
-            _copilotContextSession?.Activate();
-            PublishCopilotContext();
-        }
-
-        private void QueueCopilotContextPublish()
-        {
-            if (Interlocked.Exchange(ref _copilotPublishQueued, 1) != 0)
-                return;
-
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                Interlocked.Exchange(ref _copilotPublishQueued, 0);
-                PublishCopilotContext();
-            }));
-        }
-
-        private void PublishCopilotContext()
-        {
-            if (_copilotContextSession?.IsCurrent != true || !IsActive)
-                return;
-
-            try
-            {
-                var item = CopilotBusinessContextBuilder.BuildProjectResultContextItem(CaptureCopilotSnapshot());
-                CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromItem(
-                    ProjectARVRCopilotAgentExtension.SourceId,
-                    item));
-            }
-            catch (Exception ex)
-            {
-                Log.Debug($"Could not publish the active ARVRPro result-statistics context to Copilot: {ex.Message}");
             }
         }
 
@@ -1590,12 +1466,6 @@ namespace ProjectARVRPro
             if (_flowNameEditor != null)
                 _flowNameEditor.TextChanged -= FlowNameEditor_TextChanged;
             RecordDataGrid.SelectionChanged -= RecordDataGrid_SelectionChanged;
-            _recordRows.CollectionChanged -= RecordRows_CollectionChanged;
-            bool wasCurrent = _copilotContextSession?.IsCurrent == true;
-            _copilotContextSession?.Dispose();
-            _copilotContextSession = null;
-            if (wasCurrent)
-                CopilotLiveContextRegistry.Clear(ProjectARVRCopilotAgentExtension.SourceId);
             base.OnClosed(e);
         }
     }

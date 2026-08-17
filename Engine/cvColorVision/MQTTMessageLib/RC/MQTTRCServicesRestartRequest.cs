@@ -26,7 +26,4 @@ public class MQTTRCServicesRestartRequest : MQTTNodeServiceTokenHeader
 	{
 	}
 
-	public MQTTRCServicesRestartRequest()
-	{
-	}
 }

@@ -5,7 +5,8 @@ Provides periodic background jobs for:
   - plugin_index_check: verify Plugins directory signature
   - cache_cleanup: delete expired cache_entry rows
   - job_history_retention: bound completed scheduler history
-  - admin_data_retention: bound audit rows and manual database snapshots
+  - admin_data_retention: bound audit rows and recognized database snapshots
+  - database_backup: create a daily privacy-cleaned database snapshot
   - startup_index_check: ensure plugin_index is populated
 """
 
@@ -86,6 +87,13 @@ DEFAULT_JOBS = [
         "config": "{}",
     },
     {
+        "id": "database_backup",
+        "name": "Database Backup",
+        "job_type": "database_backup",
+        "interval_seconds": 86400,
+        "config": "{}",
+    },
+    {
         "id": "startup_index_check",
         "name": "Startup Index Check",
         "job_type": "startup_check",
@@ -148,6 +156,8 @@ def run_job_now(
             summary = _run_job_history_retention(cache, config_getter)
         elif job_id == "admin_data_retention":
             summary = _run_admin_data_retention(cache, config_getter)
+        elif job_id == "database_backup":
+            summary = _run_database_backup(cache, config_getter)
         elif job_id == "startup_index_check":
             summary = _run_startup_check(cache, storage, get_db)
         else:
@@ -337,6 +347,23 @@ def _run_admin_data_retention(
         f"{result['backupAudit']['deleted']} snapshot audit rows; "
         f"removed {result['backupFiles']['removedCount']} old database backups "
         f"(limit {result['backupFiles']['keepCount']})"
+    )
+
+
+def _run_database_backup(
+    cache: CacheManager,
+    config_getter: Callable[[], dict[str, Any]],
+) -> str:
+    from services.database_backup import create_database_backup
+
+    result = create_database_backup(cache, config_getter())
+    retention = result["backup_retention"]
+    warning_count = len(retention["errors"])
+    warning = f"; {warning_count} retention warning(s)" if warning_count else ""
+    return (
+        f"Created {result['backup_name']} ({result['backup_size_bytes']} bytes); "
+        f"retained {retention['afterCount']} of {retention['keepCount']} backups"
+        f"{warning}"
     )
 
 

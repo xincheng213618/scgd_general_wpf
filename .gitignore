@@ -404,6 +404,7 @@ Backend/**/__pycache__/
 Web/Backend/marketplace.db
 Web/Backend/marketplace.db-shm
 Web/Backend/marketplace.db-wal
+Web/Backend/marketplace_backup_*.db
 Web/Backend/storage/
 Web/Backend/__pycache__/
 

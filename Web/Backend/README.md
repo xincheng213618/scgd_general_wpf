@@ -162,7 +162,7 @@ continuous SQLite writes.
 | GET | `/api/admin/cache/status` | Database and cache status |
 | POST | `/api/admin/cache/cleanup` | Delete expired cache entries |
 | GET | `/api/admin/index/status` | Compact per-index status, counts, timing, and errors |
-| GET | `/api/admin/backup/db` | List recognized manual snapshots without server paths |
+| GET | `/api/admin/backup/db` | List recognized scheduled and administrator-created snapshots without server paths |
 | POST | `/api/admin/backup/db` | Create and privacy-scrub a retained database snapshot |
 
 ### Plugin Index
@@ -294,10 +294,13 @@ minutes are rejected before model provider credentials are returned.
 
 Audit rows are retained for 365 days by default. The daily
 `admin_data_retention` job applies the cutoff to the live database and every
-recognized administrator-created database snapshot, so a backup cannot bypass
+recognized database snapshot, so a backup cannot bypass
 the audit retention contract.
 Pagination accepts `limit` from 1 through 500 and a non-negative `offset`;
 invalid values return HTTP 400 instead of becoming an unbounded SQLite query.
+The administrator viewer localizes known event, actor, target, and detail
+contracts while preserving raw action codes. Source IP and user-agent data are
+available only in the authenticated event drawer for incident investigation.
 
 ### Deployment History
 
@@ -429,11 +432,13 @@ Configuration defaults:
 | `reporting_utc_offset_minutes` | `480` | Fixed UTC offset used by daily dashboard metrics (`UTC+08:00`) |
 | `job_run_retention_days` | `30` | Completed scheduler runs retained; each job's latest run and running rows are always kept |
 | `audit_log_retention_days` | `365` | Administrator audit rows retained in the live database and recognized snapshots |
-| `admin_db_backup_keep_count` | `10` | Newest recognized administrator-created database snapshots retained; minimum 2 |
+| `admin_db_backup_keep_count` | `10` | Newest recognized scheduled or administrator-created database snapshots retained; minimum 2 |
 
-The same scheduled retention pass also removes expired access rows from
+The daily `database_backup` task creates a transactionally consistent SQLite
+snapshot and applies the same privacy cleanup and rotation contract used by the
+administrator backup action. The same scheduled retention pass also removes expired access rows from
 recognized `marketplace_backup_YYYYMMDD_HHMMSS.db` snapshots. A newly created
-admin backup is scrubbed to the current cutoff before it is reported as
+database backup is scrubbed to the current cutoff before it is reported as
 successful, so database snapshots cannot bypass visitor retention.
 
 `GET /api/admin/backup/db` lists only recognized snapshot names, UTC creation

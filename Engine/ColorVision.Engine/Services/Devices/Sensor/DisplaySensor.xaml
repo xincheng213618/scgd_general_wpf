@@ -36,14 +36,19 @@
                 <StackPanel x:Name="StackPanelContent">
                     <Button x:Name="ButtonOpen" Margin="0,2" Click="Open_Click" Content="{x:Static properties:Resources.Connect}" />
                     <Button x:Name="ButtonClose" Margin="0,2" Click="Close_Click" Content="{x:Static properties:Resources.Close}" Visibility="Collapsed" />
-                    <DockPanel Margin="0,0,0,5">
-                        <Button Margin="5,0,0,0" Click="SendTemp_Click" Content="{x:Static properties:Resources.ExecteTemplate}" DockPanel.Dock="Right" />
-                        <ComboBox x:Name="ComboxSensorTemplate" Width="130" HorizontalAlignment="Left" DisplayMemberPath="Key" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" />
-                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                    <Grid Margin="0,0,0,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox x:Name="ComboxSensorTemplate" Grid.Column="0" DisplayMemberPath="Key" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" />
+                        <Grid Grid.Column="1" Width="20" Margin="5,0">
                             <TextBlock HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}" Text="&#xE713;" />
                             <Button Width="20" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Click="MenuItem_Template" />
                         </Grid>
-                    </DockPanel>
+                        <Button Grid.Column="2" Margin="5,0,0,0" Click="SendTemp_Click" Content="{x:Static properties:Resources.ExecteTemplate}" />
+                    </Grid>
                     <TextBlock Margin="0,0,0,5" Text="{x:Static properties:Resources.DebugMode}" />
                     <StackPanel>
                         <DockPanel Margin="0,0,0,5">

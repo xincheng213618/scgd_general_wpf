@@ -168,13 +168,15 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             if (_initialFlowIdentity is FlowIdentity flowIdentity)
             {
-                FlowRunRecord? flowRun =
-                    FlowNodeRecordDataBaseHelper.GetLatestFlowRun(
-                        flowIdentity);
-                return flowRun?.BatchId is > 0
+                IReadOnlyList<FlowRunNavigationItem> runs = LoadFlowRunOrder(
+                    FlowNodeRecordDataBaseHelper.GetFlowRuns(flowIdentity));
+                FlowRunNavigationItem latestRun = runs.Count > 0
+                    ? runs[^1]
+                    : default;
+                return latestRun.BatchId > 0
                     ? new InitialRunSelection(
-                        flowRun.BatchId,
-                        flowRun.SerialNumber ?? string.Empty,
+                        latestRun.BatchId,
+                        latestRun.SerialNumber,
                         null)
                     : new InitialRunSelection(null, string.Empty, null);
             }
@@ -239,7 +241,9 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                             ? serialNumber
                             : records.FirstOrDefault()?.SerialNumber);
                     IReadOnlyList<FlowRunNavigationItem> sameFlowRuns =
-                        LoadSameFlowRunOrder(effectiveSerialNumber, records);
+                        LoadFlowRunOrder(
+                            FlowNodeRecordDataBaseHelper.GetSameFlowRuns(
+                                effectiveSerialNumber));
                     IReadOnlyList<FlowRunNavigationItem> allRuns = BuildFlowRunOrder(
                         recentRecords
                             .Concat(records)
@@ -913,38 +917,16 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 : "没有下次相同流程执行";
         }
 
-        private static IReadOnlyList<FlowRunNavigationItem> LoadSameFlowRunOrder(
-            string serialNumber,
-            List<FlowNodeRecord> currentRecords)
+        private static IReadOnlyList<FlowRunNavigationItem> LoadFlowRunOrder(
+            List<FlowRunRecord> flowRuns)
         {
-            List<FlowRunRecord> flowRuns =
-                FlowNodeRecordDataBaseHelper.GetSameFlowRuns(serialNumber);
-            if (flowRuns.Count > 0)
-            {
-                List<FlowNodeRecord> nodeRecords =
-                    FlowNodeRecordDataBaseHelper.GetBySerialNumbers(
-                        flowRuns.Select(run => run.SerialNumber ?? string.Empty));
-                IReadOnlyList<FlowRunNavigationItem> exactRuns =
-                    BuildSameFlowRunOrder(flowRuns, nodeRecords);
-                int currentBatchId = currentRecords.Count > 0
-                    ? currentRecords[0].BatchId
-                    : 0;
-                if (FindCurrentRunIndex(
-                        exactRuns,
-                        currentBatchId,
-                        serialNumber) >= 0)
-                {
-                    return exactRuns;
-                }
-            }
+            if (flowRuns.Count == 0)
+                return Array.Empty<FlowRunNavigationItem>();
 
-            string[] nodeIds = currentRecords
-                .Select(record => record.NodeId)
-                .Where(nodeId => !string.IsNullOrWhiteSpace(nodeId))
-                .Distinct(StringComparer.Ordinal)
-                .ToArray();
-            return BuildFlowRunOrder(
-                FlowNodeRecordDataBaseHelper.GetRecentByNodeIds(nodeIds));
+            List<FlowNodeRecord> nodeRecords =
+                FlowNodeRecordDataBaseHelper.GetBySerialNumbers(
+                    flowRuns.Select(run => run.SerialNumber ?? string.Empty));
+            return BuildSameFlowRunOrder(flowRuns, nodeRecords);
         }
 
         internal static IReadOnlyList<FlowRunNavigationItem> BuildSameFlowRunOrder(

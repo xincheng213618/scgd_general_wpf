@@ -2,9 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -33,9 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
     public partial class ViewCamera : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
-        private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
         private int _disposeState;
-        private int _imageRequestId;
         private bool _messageSubscribed;
 
         private bool IsDisposed => Volatile.Read(ref _disposeState) != 0;
@@ -43,7 +39,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public DeviceCamera Device { get; set; }
 
         public static ViewCameraConfig Config => ViewCameraConfig.Instance;
-        public static ObservableCollection<ViewResultImage> ViewResults => Config.ViewResults;
+        public ObservableCollection<ViewResultImage> ViewResults { get; } = new ObservableCollection<ViewResultImage>();
 
         public ViewCamera(DeviceCamera device)
         {
@@ -56,7 +52,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (IsDisposed) return;
 
             this.DataContext = Config;
-            AttachDisplayFilterConfig();
             if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
             {
                 toolReferenceLine.ReferenceLine = new ReferenceLine(Device.DisplayConfig.ReferenceLineParam);
@@ -82,19 +77,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
         }
 
-        private void AttachDisplayFilterConfig()
-        {
-            if (ImageView.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>() is DisplayShaderFilterEditorTool filterService)
-            {
-                filterService.AttachPersistence(Device.DisplayConfig.DisplayShaderFilter, SaveDisplayFilterConfig);
-            }
-        }
-
-        private static void SaveDisplayFilterConfig()
-        {
-            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
-        }
-
         private void Delete()
         {
             if (listView1.SelectedItems.Count == listView1.Items.Count)
@@ -106,6 +88,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                     ViewResults.Remove(item);
             }
         }
+
+        private void ClearList_Click(object sender, RoutedEventArgs e) => ViewResults.Clear();
 
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
@@ -123,8 +107,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                                 if (IsDisposed) return;
 
                                 Device.Config.MotorConfig.Position = arg.Data.Position;
-                                int requestId = Interlocked.Increment(ref _imageRequestId);
-                                OpenImageOrPlaceholder((string?)arg.Data.ImageTmpFile, null, requestId);
+                                OpenImage((string?)arg.Data.ImageTmpFile);
                             });
                         }
                         catch (Exception ex)
@@ -199,56 +182,21 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (IsDisposed || sender is not ListView listView) return;
+            if (IsDisposed) return;
 
-            int requestId = Interlocked.Increment(ref _imageRequestId);
-            ViewResultImage? result = listView.SelectedItem as ViewResultImage;
-            OpenImageOrPlaceholder(result?.FileUrl, result?.ImgFrameInfo, requestId);
-        }
-
-        private void OpenImageOrPlaceholder(string? filePath, string? imgFrameInfo, int requestId)
-        {
-            if (IsDisposed || requestId != Volatile.Read(ref _imageRequestId)) return;
-
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
-            {
-                ShowPlaceholderOrClear(imgFrameInfo);
-                return;
-            }
-
-            if (filePath.Equals(ImageView.Config.FilePath, StringComparison.OrdinalIgnoreCase) && ImageView.ImageShow.Source != null) return;
-
-            if (IsDisposed || requestId != Volatile.Read(ref _imageRequestId)) return;
-            if (!File.Exists(filePath))
-            {
-                ShowPlaceholderOrClear(imgFrameInfo);
-                return;
-            }
-            // CVRawOpen reuses a compatible WriteableBitmap and keeps the current viewport.
-            ImageView.OpenImage(filePath);
-        }
-
-        private void ShowPlaceholderOrClear(string? imgFrameInfo)
-        {
-            if (!ResultImageDimensions.TryReadFrameInfo(imgFrameInfo, out int width, out int height))
-            {
+            if (listView1.SelectedItem is ViewResultImage result)
+                OpenImage(result.FileUrl);
+            else
                 ImageView.Clear();
-                return;
-            }
+        }
 
-            if (_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
-            {
-                ImageView.ClearAnnotations();
-                return;
-            }
-
-            ImageView.Clear();
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(ViewCamera), "历史结果坐标空间宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(ViewCamera), "历史结果坐标空间高度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(ViewCamera), "历史结果图像像素宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(ViewCamera), "历史结果图像像素高度");
-            ImageView.SetImageSource(_resultImagePlaceholderCache.GetOrCreate(width, height), enableEditorImageServices: false, configureDefaultLayerController: false);
-            ImageView.UpdateZoomAndScale();
+        private void OpenImage(string? filePath)
+        {
+            if (IsDisposed) return;
+            if (string.IsNullOrWhiteSpace(filePath))
+                ImageView.Clear();
+            else
+                ImageView.OpenImage(filePath);
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -343,7 +291,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void DisposeCore()
         {
-            Interlocked.Increment(ref _imageRequestId);
             if (_messageSubscribed)
             {
                 Device.DService.MsgReturnReceived -= DeviceService_OnMessageRecved;

@@ -79,8 +79,7 @@ namespace ColorVision.Engine.Templates.Distortion
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            if (File.Exists(result.FilePath))
-                ctx.ImageView.OpenImage(result.FilePath);
+            OpenSourceImage(ctx, result);
 
             int id = 0;
             foreach (var item in result.ViewResults.ToSpecificViewResults<ViewResultDistortion>())

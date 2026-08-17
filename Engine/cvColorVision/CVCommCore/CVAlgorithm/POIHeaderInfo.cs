@@ -14,8 +14,4 @@ public class POIHeaderInfo
 
 	public float Angle { get; set; }
 
-	public bool IsTotalLen(int len)
-	{
-		return Cols * Rows == len;
-	}
 }

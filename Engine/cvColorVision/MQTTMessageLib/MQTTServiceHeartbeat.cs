@@ -17,10 +17,6 @@ public class MQTTServiceHeartbeat : MQTTNodeServiceTokenHeader
 
 	public List<DeviceHeartbeat> Devices { get; set; }
 
-	public MQTTServiceHeartbeat()
-	{
-	}
-
 	public MQTTServiceHeartbeat(string nodeName, string upChannel, string downChannel, string serviceType, string serviceCode, List<DeviceHeartbeat> deviceHbs, string token, int overTime)
 		: this("1.1", nodeName, upChannel, downChannel, serviceType, serviceCode, deviceHbs, token, overTime)
 	{

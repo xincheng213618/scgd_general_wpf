@@ -124,8 +124,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            if (File.Exists(result.FilePath))
-                ctx.ImageView.OpenImage(result.FilePath);
+            OpenSourceImage(ctx, result);
 
             if (result.ViewResults.Count > 0 && result.ViewResults[0] is PoiCieFileModel model)
             {

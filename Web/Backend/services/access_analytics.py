@@ -23,6 +23,7 @@ from typing import Any, Callable, Protocol, Sequence
 
 CLIENT_TYPES = frozenset({"desktop", "mobile", "tablet", "bot", "other"})
 ACCESS_ANALYTICS_TABLES = (
+    "access_error_daily",
     "web_page_visitor_daily",
     "web_vital_daily",
     "web_page_daily",
@@ -717,6 +718,24 @@ def _write_access_event(db: sqlite3.Connection, event: AccessEvent):
             event.occurred_at,
         ),
     )
+    if error_count:
+        db.execute(
+            """
+            INSERT INTO access_error_daily
+                (day, route, method, status_code, responses, updated_at)
+            VALUES (?, ?, ?, ?, 1, ?)
+            ON CONFLICT(day, route, method, status_code) DO UPDATE SET
+                responses = responses + 1,
+                updated_at = excluded.updated_at
+            """,
+            (
+                event.day,
+                event.route,
+                event.method,
+                event.status_code,
+                event.occurred_at,
+            ),
+        )
     db.execute(
         """
         INSERT INTO access_route_daily
@@ -924,6 +943,25 @@ class SqliteAccessTrafficQuery:
                 """,
                 (start.isoformat(), today.isoformat(), limit),
             ).fetchall()
+            error_total_row = db.execute(
+                """
+                SELECT SUM(responses) AS responses
+                FROM access_error_daily
+                WHERE day BETWEEN ? AND ?
+                """,
+                (start.isoformat(), today.isoformat()),
+            ).fetchone()
+            error_route_rows = db.execute(
+                """
+                SELECT route, method, status_code, SUM(responses) AS responses
+                FROM access_error_daily
+                WHERE day BETWEEN ? AND ?
+                GROUP BY route, method, status_code
+                ORDER BY responses DESC, status_code DESC, route, method
+                LIMIT ?
+                """,
+                (start.isoformat(), today.isoformat(), limit),
+            ).fetchall()
             client_rows = db.execute(
                 """
                 SELECT client_type, SUM(visits) AS visits,
@@ -1065,6 +1103,18 @@ class SqliteAccessTrafficQuery:
                 "avgResponseMs": _average(int(row["total_duration_ms"] or 0), client_visits),
             })
 
+        recorded_error_responses = int(error_total_row["responses"] or 0)
+        error_routes = [{
+            "route": str(row["route"]),
+            "method": str(row["method"]),
+            "statusCode": int(row["status_code"]),
+            "responses": int(row["responses"] or 0),
+            "share": _percentage(
+                int(row["responses"] or 0),
+                recorded_error_responses,
+            ),
+        } for row in error_route_rows]
+
         web_daily_base = {
             str(row["day"]): {
                 "pageViews": int(row["page_views"] or 0),
@@ -1152,6 +1202,17 @@ class SqliteAccessTrafficQuery:
             "today": daily[-1],
             "daily": daily,
             "topRoutes": top_routes,
+            "errorDiagnostics": {
+                "totalErrorResponses": errors,
+                "recordedResponses": recorded_error_responses,
+                "coverageRate": (
+                    100.0
+                    if errors == 0
+                    else min(100.0, _percentage(recorded_error_responses, errors))
+                ),
+                "partial": recorded_error_responses < errors,
+                "items": error_routes,
+            },
             "clients": clients,
             "web": {
                 "summary": {

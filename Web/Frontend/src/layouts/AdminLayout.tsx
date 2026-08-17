@@ -26,6 +26,7 @@ import { useState, type ReactNode } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { logout } from '../services/auth'
 import type { ThemeMode } from '../types/admin'
+import type { AuthSession } from '../types/site'
 
 const routeTitles: Record<string, string> = {
   '/admin': '管理控制台',
@@ -148,12 +149,14 @@ export function AdminLayout({
   mode,
   setMode,
   resolvedTheme,
+  session,
   onSessionChanged,
 }: {
   children: ReactNode
   mode: ThemeMode
   setMode: (mode: ThemeMode) => void
   resolvedTheme: 'light' | 'dark'
+  session: AuthSession | null
   onSessionChanged: () => Promise<void>
 }) {
   const { message } = App.useApp()
@@ -184,6 +187,7 @@ export function AdminLayout({
       actionsRender={() => [
         <Segmented
           key="theme"
+          aria-label="主题模式"
           size="small"
           value={mode}
           onChange={(value) => setMode(value as ThemeMode)}
@@ -217,7 +221,7 @@ export function AdminLayout({
           }}
         >
           <Button type="text" icon={<SafetyCertificateOutlined />} loading={loggingOut}>
-            管理员
+            {session?.username || '管理员'}
           </Button>
         </Dropdown>,
       ]}

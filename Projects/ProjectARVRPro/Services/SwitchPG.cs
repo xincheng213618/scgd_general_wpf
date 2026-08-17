@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS4014,CS8602,CS8603,CS8625
-namespace ProjectARVRPro.Services
+﻿namespace ProjectARVRPro.Services
 {
     public class SwitchPG
     {

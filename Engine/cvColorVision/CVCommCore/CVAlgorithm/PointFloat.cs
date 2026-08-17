@@ -1,8 +1,8 @@
 namespace CVCommCore.CVAlgorithm;
 
-public struct PointFloat(float x, float y)
+public struct PointFloat
 {
-	public float X = x;
+	public float X;
 
-	public float Y = y;
+	public float Y;
 }

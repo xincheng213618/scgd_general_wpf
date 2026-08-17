@@ -6,7 +6,6 @@ using ColorVision.Database;
 using ColorVision.ImageEditor.Draw;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
@@ -20,7 +19,7 @@ namespace ColorVision.Engine.Templates.Matching
 
         public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
-           if (result.ViewResults != null)
+            if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>(AlgResultAoiDao.Instance.GetAllByPid(result.Id));
                 result.ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Debug, Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmMatching), ImageFilePath = result.FilePath })) });
@@ -30,8 +29,7 @@ namespace ColorVision.Engine.Templates.Matching
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
 
-            if (File.Exists(result.FilePath))
-                ctx.ImageView.OpenImage(result.FilePath);
+            OpenSourceImage(ctx, result);
 
             foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultAoiModel>())
             {

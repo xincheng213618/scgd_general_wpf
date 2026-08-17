@@ -344,6 +344,19 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
         self.assertEqual(payload["topRoutes"][0]["visits"], 2)
         self.assertEqual(payload["topRoutes"][0]["responseBytes"], 200)
         self.assertEqual(payload["topRoutes"][0]["serverErrorResponses"], 1)
+        self.assertEqual(payload["errorDiagnostics"], {
+            "totalErrorResponses": 1,
+            "recordedResponses": 1,
+            "coverageRate": 100.0,
+            "partial": False,
+            "items": [{
+                "route": "/plugins/<plugin_id>",
+                "method": "GET",
+                "statusCode": 500,
+                "responses": 1,
+                "share": 100.0,
+            }],
+        })
         clients = {item["client"]: item for item in payload["clients"]}
         self.assertEqual(clients["desktop"]["visits"], 2)
         self.assertEqual(clients["desktop"]["uniqueVisitorDays"], 1)
@@ -364,6 +377,7 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
             db.close()
         for table in (
             "access_daily",
+            "access_error_daily",
             "access_route_daily",
             "access_client_daily",
             "access_visitor_daily",
@@ -445,6 +459,7 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
                         f"UPDATE {table} SET client_error_responses = 0, "
                         "server_error_responses = 0"
                     )
+                db.execute("DELETE FROM access_error_daily")
         finally:
             db.close()
 
@@ -464,6 +479,10 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
             self.assertEqual(item["serverErrorResponses"], 0)
             self.assertEqual(item["unclassifiedErrorResponses"], 1)
             self.assertEqual(item["unclassifiedErrorRate"], 100.0)
+        self.assertEqual(payload["errorDiagnostics"]["recordedResponses"], 0)
+        self.assertEqual(payload["errorDiagnostics"]["coverageRate"], 0.0)
+        self.assertTrue(payload["errorDiagnostics"]["partial"])
+        self.assertEqual(payload["errorDiagnostics"]["items"], [])
 
     def test_calendar_configuration_marks_existing_aggregates_without_rewriting_them(self):
         recorder = AccessAnalyticsRecorder(background_worker=False)
@@ -592,9 +611,10 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
 
         recorder = AccessAnalyticsRecorder(background_worker=False)
         old_event = self._event(
+            status=404,
             occurred_at=datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
         )
-        current_event = self._event()
+        current_event = self._event(status=500)
         recorder.submit(old_event, db_path=self.db_path, synchronous=True)
         recorder.submit(current_event, db_path=self.db_path, synchronous=True)
         for occurred_at in (
@@ -631,6 +651,7 @@ class AccessAnalyticsUnitTests(unittest.TestCase):
                 ).fetchall()]
                 for table in (
                     "access_daily",
+                    "access_error_daily",
                     "web_page_daily",
                     "web_page_visitor_daily",
                     "web_vital_daily",

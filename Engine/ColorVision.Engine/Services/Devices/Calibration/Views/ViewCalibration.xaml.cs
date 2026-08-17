@@ -7,7 +7,6 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.EditorTools.Filters;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
@@ -18,8 +17,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -35,11 +32,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     public partial class ViewCalibration : UserControl, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewCalibration));
-        private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
         private bool _isInitialized;
         private bool _isDisposed;
         private bool _messageSubscribed;
-        private int _imageRequestVersion;
 
         public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
@@ -50,7 +45,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             InitializeComponent();
         }
         public static ViewCalibrationConfig Config => ViewCalibrationConfig.Instance;
-        public static ObservableCollection<ViewResultImage> ViewResults => Config.ViewResults;
+        public ObservableCollection<ViewResultImage> ViewResults { get; } = new ObservableCollection<ViewResultImage>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -59,7 +54,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
             _isInitialized = true;
             this.DataContext = Config;
-            AttachDisplayFilterConfig();
             listView1.ItemsSource = ViewResults;
 
             if (listView1.View is GridView gridView)
@@ -77,19 +71,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
         }
 
-        private void AttachDisplayFilterConfig()
-        {
-            if (ImageView.IEditorToolFactory.GetIEditorTool<DisplayShaderFilterEditorTool>() is DisplayShaderFilterEditorTool filterService)
-            {
-                filterService.AttachPersistence(Device.DisplayConfig.DisplayShaderFilter, SaveDisplayFilterConfig);
-            }
-        }
-
-        private static void SaveDisplayFilterConfig()
-        {
-            ConfigHandler.GetInstance().Save<DisplayConfigManager>();
-        }
-
         private void Delete()
         {
             if (listView1.SelectedItems.Count == listView1.Items.Count)
@@ -101,6 +82,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                     ViewResults.Remove(item);
             }
         }
+
+        private void ClearList_Click(object sender, RoutedEventArgs e) => ViewResults.Clear();
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
             if (_isDisposed)
@@ -177,115 +160,13 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             if (_isDisposed)
                 return;
 
-            int requestVersion = Interlocked.Increment(ref _imageRequestVersion);
             if (listView1.SelectedItem is not ViewResultImage data)
             {
                 ImageView.Clear();
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(data.FileUrl) || !File.Exists(data.FileUrl))
-            {
-                ShowPlaceholderOrClear(data.ImgFrameInfo);
-                return;
-            }
-
-            string filePath = data.FileUrl;
-            if (filePath.Equals(ImageView.Config.FilePath, StringComparison.OrdinalIgnoreCase) && ImageView.ViewBitmapSource != null)
-                return;
-
-            // Keep the current bitmap available while the selected file becomes readable.
-            _ = OpenSelectedImageAsync(filePath, requestVersion);
-        }
-
-        private async Task OpenSelectedImageAsync(string filePath, int requestVersion)
-        {
-            try
-            {
-                bool isReady = await Task.Run(() => IsImageReady(filePath));
-                if (!isReady)
-                {
-                    log.Warn($"Image file is not ready: {filePath}");
-                    await Task.Delay(Config.ViewImageReadDelay);
-                }
-
-                if (!IsCurrentImageRequest(filePath, requestVersion))
-                    return;
-
-                if (!File.Exists(filePath))
-                {
-                    ShowSelectedPlaceholder(filePath, requestVersion);
-                    return;
-                }
-
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    if (IsCurrentImageRequest(filePath, requestVersion))
-                        ImageView.OpenImage(filePath);
-                });
-            }
-            catch (Exception ex)
-            {
-                if (IsCurrentImageRequest(filePath, requestVersion))
-                {
-                    log.Warn($"Could not open calibration result image: {filePath}", ex);
-                    ShowSelectedPlaceholder(filePath, requestVersion);
-                }
-            }
-        }
-
-        private void ShowSelectedPlaceholder(string filePath, int requestVersion)
-        {
-            if (IsCurrentImageRequest(filePath, requestVersion) && listView1.SelectedItem is ViewResultImage selected)
-                ShowPlaceholderOrClear(selected.ImgFrameInfo);
-        }
-
-        private void ShowPlaceholderOrClear(string? imgFrameInfo)
-        {
-            if (!ResultImageDimensions.TryReadFrameInfo(imgFrameInfo, out int width, out int height))
-            {
-                ImageView.Clear();
-                return;
-            }
-
-            if (_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
-            {
-                ImageView.ClearAnnotations();
-                return;
-            }
-
-            ImageView.Clear();
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(ViewCalibration), "历史结果坐标空间宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(ViewCalibration), "历史结果坐标空间高度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(ViewCalibration), "历史结果图像像素宽度");
-            ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, height, nameof(ViewCalibration), "历史结果图像像素高度");
-            ImageView.SetImageSource(_resultImagePlaceholderCache.GetOrCreate(width, height), enableEditorImageServices: false, configureDefaultLayerController: false);
-            ImageView.UpdateZoomAndScale();
-        }
-
-        private bool IsCurrentImageRequest(string filePath, int requestVersion)
-        {
-            return !_isDisposed &&
-                   requestVersion == Volatile.Read(ref _imageRequestVersion) &&
-                   listView1.SelectedItem is ViewResultImage selected &&
-                   string.Equals(selected.FileUrl, filePath, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool IsImageReady(string filePath)
-        {
-            try
-            {
-                var fileInfo = new FileInfo(filePath);
-                if (!fileInfo.Exists || fileInfo.Length <= 0)
-                    return false;
-
-                using FileStream fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
+            ImageView.OpenImage(data.FileUrl);
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -302,7 +183,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             if (_isDisposed)
                 return;
 
-            Interlocked.Increment(ref _imageRequestVersion);
             ImageView.Clear();
             ImageView.OpenImage(fileData.ToWriteableBitmap());
         }
@@ -351,7 +231,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 return;
 
             _isDisposed = true;
-            Interlocked.Increment(ref _imageRequestVersion);
 
             if (_messageSubscribed)
             {

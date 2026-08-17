@@ -32,13 +32,13 @@ namespace ProjectARVRPro
         public string? SavedResultImageFileName { get; set; }
 
         /// <summary>
-        /// 原始图像的像素宽度。原图被清理后仍用于恢复结果叠图的坐标空间。
+        /// 结果生成时写入 SQLite 的图像坐标空间宽度。
         /// </summary>
         [SugarColumn(IsNullable = true)]
         public int? ImageWidth { get; set; }
 
         /// <summary>
-        /// 原始图像的像素高度。原图被清理后仍用于恢复结果叠图的坐标空间。
+        /// 结果生成时写入 SQLite 的图像坐标空间高度。
         /// </summary>
         [SugarColumn(IsNullable = true)]
         public int? ImageHeight { get; set; }

@@ -12,13 +12,4 @@ public class DeviceHeartbeat
 		DeviceStatus = status;
 	}
 
-	public DeviceHeartbeat(DeviceHeartbeat heartbeat)
-	{
-		DeviceCode = heartbeat.DeviceCode;
-		DeviceStatus = heartbeat.DeviceStatus;
-	}
-
-	public DeviceHeartbeat()
-	{
-	}
 }

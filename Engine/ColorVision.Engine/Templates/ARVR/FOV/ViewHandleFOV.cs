@@ -4,7 +4,6 @@ using ColorVision.Engine.Services;
 using ColorVision.Database;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -33,8 +32,7 @@ namespace ColorVision.Engine.Templates.FOV
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            if (File.Exists(result.FilePath))
-                ctx.ImageView.OpenImage(result.FilePath);
+            OpenSourceImage(ctx, result);
 
             List<string> header =  new() { "Pattern", "Type", "Degrees" };
             List<string> bdHeader = new() { "Pattern", "Type", "Degrees" };

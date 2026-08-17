@@ -15,6 +15,7 @@ export const jobTypeLabels: Record<string, string> = {
   analytics_retention: '访问统计保留',
   history_retention: '运行历史保留',
   data_retention: '管理数据保留',
+  database_backup: '数据库备份',
 }
 
 export function formatJobInterval(seconds: number) {

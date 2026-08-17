@@ -60,7 +60,7 @@
                     <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Button_Click">
                         <Rectangle Width="16" Height="16" Fill="{DynamicResource DISave}" />
                     </Button>
-                    <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Command="{Binding ClearListCommand}">
+                    <Button Width="25" Height="25" Margin="0,1,5,0" Padding="2" Click="Button_Delete_Click">
                         <Button.Triggers>
                             <EventTrigger RoutedEvent="Button.Click">
                                 <BeginStoryboard>

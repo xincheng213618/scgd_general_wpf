@@ -210,6 +210,52 @@ class AdminDataRetentionTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_scheduler_registers_and_runs_daily_database_backup(self):
+        from services.database_backup import create_database_backup
+        from services.scheduler import ensure_default_jobs, run_job_now
+
+        config = {
+            "access_analytics_retention_days": 30,
+            "reporting_utc_offset_minutes": 480,
+            "audit_log_retention_days": 30,
+            "admin_db_backup_keep_count": 3,
+        }
+        ensure_default_jobs(self.cache)
+        backup_job = self.cache.jobs.get("database_backup")
+        self.assertIsNotNone(backup_job)
+        self.assertEqual(backup_job["job_type"], "database_backup")
+        self.assertEqual(backup_job["interval_seconds"], 86400)
+
+        self._insert_audit("2000-01-01T00:00:00+00:00", "expired")
+        self._insert_audit("2999-01-01T00:00:00+00:00", "current")
+        fixed_now = datetime(2026, 8, 12, 12, 0, tzinfo=timezone.utc)
+        first = create_database_backup(self.cache, config, now=fixed_now)
+        second = create_database_backup(self.cache, config, now=fixed_now)
+        self.assertEqual(first["backup_name"], "marketplace_backup_20260812_120000.db")
+        self.assertEqual(second["backup_name"], "marketplace_backup_20260812_120001.db")
+        self.assertGreater(first["backup_size_bytes"], 0)
+
+        snapshot = sqlite3.connect(first["backup_path"])
+        try:
+            actions = [row[0] for row in snapshot.execute(
+                "SELECT action FROM audit_log ORDER BY id"
+            ).fetchall()]
+            self.assertEqual(snapshot.execute("PRAGMA quick_check").fetchone()[0], "ok")
+        finally:
+            snapshot.close()
+        self.assertEqual(actions, ["current"])
+
+        result = run_job_now(
+            self.cache,
+            self.root,
+            lambda: config,
+            self.cache.get_db,
+            "database_backup",
+        )
+        self.assertEqual(result["status"], "success")
+        self.assertIn("Created marketplace_backup_", result["summary"])
+        self.assertEqual(len(list_manual_db_backups(self.root)), 3)
+
 
 if __name__ == "__main__":
     unittest.main()

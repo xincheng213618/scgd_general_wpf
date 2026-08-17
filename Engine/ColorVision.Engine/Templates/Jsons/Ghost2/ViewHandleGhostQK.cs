@@ -76,15 +76,8 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            foreach (var item in result.ViewResults)
-            {
-                if (item is GhostView blackMuraModel)
-                {
-                    if (File.Exists(result.FilePath))
-                        ctx.ImageView.OpenImage(result.FilePath);
-                    log.Info(result.FilePath);
-                }
-            }
+            OpenSourceImage(ctx, result);
+            log.Info(result.FilePath);
 
             List<string> header = new() { "Analysis", "Bright", "Ghost" };
             List<string> bdHeader = new() { "GhostReslut.Analysis", "GhostReslut.Bright", "GhostReslut.Ghost" };
