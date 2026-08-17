@@ -32,6 +32,20 @@
 - `opencv_helper.dll`、`opencv_cuda.dll`、OpenCV runtime 和项目输出目录要一起验证。
 - 不要把 `cvColorVision` 写成纯托管算法库，它主要是 native 能力绑定层和消息数据类型集合。
 
+## 为什么仓库单独跟踪 `opencv_cuda.dll`
+
+`x64/Release/opencv_cuda.dll` 是有意保留的第一方发布输入，不是误提交的普通构建产物。标准 GitHub Windows runner 不保证具备 `opencv_cuda.vcxproj` 所需的 CUDA 12.9 与受支持的 Visual Studio 集成，当前 `build.sln` 也不编译该 CUDA 项目。托管构建、NuGet 打包和本地发布因此从这个固定路径取得已审核的 DLL，避免普通构建环境必须安装 CUDA 工具链。
+
+不要因为 `x64/` 已在忽略规则中就直接删除该文件。只有同时满足以下条件后，才能移除 Git 中的 DLL：
+
+- GitHub Actions 能在干净的 `windows-2022` runner 上先安装精简 CUDA 组件并生成 DLL，再构建托管解决方案。
+- Actions 只缓存生成的 DLL，并以 CUDA 源码、共享 ABI 头文件、CUDA/OpenCV 属性表、OpenCV 导入库和工具链版本共同生成缓存键。
+- 缓存缺失或被清理时必须自动执行真实 CUDA 编译，缓存不能成为 DLL 的唯一来源。
+- 本地 `Scripts/release.bat` 流程能够自行编译或获取同一制品，不再依赖仓库中的兜底文件。
+- 新生成的 DLL 通过现有 ABI/打包检查，并在带 NVIDIA GPU 的环境完成烟雾测试。
+
+这项决定最后复核于 2026-08-17。当前阶段即使远端增加了按需生成和 DLL 缓存，也应先保留仓库里的兜底文件；待远端至少稳定跑通并补齐本地发布链路后再删除。
+
 ## `.cvraw` / `.cvcie` 链路
 
 | 入口 | 说明 |
