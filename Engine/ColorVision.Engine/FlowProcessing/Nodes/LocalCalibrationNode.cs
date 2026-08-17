@@ -118,14 +118,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             else
             {
-                if (!SupportsFileFallback)
-                {
-                    throw new InvalidOperationException("流程中没有可用的本地图像内存帧。");
-                }
                 string sourceFilePath = ResolveSourceFilePath(action, SourceImageFilePath);
                 if (string.IsNullOrWhiteSpace(sourceFilePath))
                 {
-                    throw new InvalidOperationException("IN_IMG 没有本地图像内存帧，也没有可读取的图像结果，请配置备用图像文件。");
+                    throw new InvalidOperationException("输入端没有本地图像内存帧，也没有可读取的图像结果。请连接相机取图或图像节点。");
                 }
                 sourceFrame = LocalFrameFileService.Load(sourceFilePath);
                 ownsSourceFrame = true;
@@ -280,11 +276,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.SerialNumber,
                 CalibTempName,
                 SaveFiles,
-                InputMode = "CurrentFrame"
+                InputMode = "CurrentFrameThenInputFile"
             });
         }
-
-        private protected virtual bool SupportsFileFallback => false;
 
         private protected virtual string SourceImageFilePath => string.Empty;
 
@@ -326,7 +320,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             MeasureResultImgModel? imageResult = MeasureImgResultDao.Instance.GetById(masterId);
             if (imageResult == null) return string.Empty;
             string? firstCandidate = null;
-            foreach (string? candidate in new[] { imageResult.RawFile, imageResult.FileUrl })
+            foreach (string? candidate in new[] { imageResult.FileUrl, imageResult.RawFile })
             {
                 if (string.IsNullOrWhiteSpace(candidate)) continue;
                 firstCandidate ??= candidate;

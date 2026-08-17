@@ -31,7 +31,7 @@ public class LocalFlowNodePortTests
     }
 
     [Fact]
-    public void LocalCalibrationNodeUsesOnlyCurrentFrame()
+    public void LocalCalibrationNodeUsesSingleImageInputWithoutManualFileProperty()
     {
         LocalCalibrationNode node = new();
 

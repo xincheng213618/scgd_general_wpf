@@ -98,8 +98,6 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
         }
 
-        private protected override bool SupportsFileFallback => true;
-
         private protected override string SourceImageFilePath => ImageFilePath;
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
