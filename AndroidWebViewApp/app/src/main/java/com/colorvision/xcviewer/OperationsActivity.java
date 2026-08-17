@@ -97,9 +97,11 @@ public class OperationsActivity extends Activity {
     private Button dashboardAlertStatus;
     private Button dashboardPerformanceStatus;
     private Button dashboardRecoveryStatus;
+    private Button dashboardPriorityAction;
     private Button dashboardCancelFlowButton;
     private Button dashboardRestartApplicationButton;
     private Button remoteRestartMqttButton;
+    private TextView dashboardStatusHeading;
     private boolean dashboardFlowAvailable;
     private boolean dashboardFlowActive;
     private boolean dashboardFlowCancelAvailable;
@@ -463,6 +465,11 @@ public class OperationsActivity extends Activity {
         dashboardRestartCapabilityAvailable = true;
         dashboardRemoteHostFresh = true;
 
+        addDashboardSection("当前重点");
+        dashboardPriorityAction = dashboardButton("正在分析运行状态…", null);
+        dashboardPriorityAction.setEnabled(false);
+        addDashboardWideAction(dashboardPriorityAction);
+
         addDashboardSection("远程操作");
         addDashboardActionRow(
                 dashboardButton("远程排障", v -> showTriageCenter()),
@@ -480,7 +487,7 @@ public class OperationsActivity extends Activity {
                 dashboardCancelFlowButton,
                 dashboardButton("连接方式", v -> showConnectionPreference()));
 
-        addDashboardSection("实时状态");
+        dashboardStatusHeading = addDashboardSection("实时状态");
         addDashboardActionRow(
                 dashboardFlowStatus = dashboardStatusButton("检测\n读取中…",
                         v -> loadCapability("/ops/v1/flow/runtime")),
@@ -561,6 +568,13 @@ public class OperationsActivity extends Activity {
         dashboardRemoteHostFresh = host != null && OperationsRelayPolicy.isHostFresh(
                 host.optLong("signedAt", 0L), System.currentTimeMillis());
 
+        addDashboardSection("当前重点");
+        dashboardPriorityAction = dashboardButton("正在分析运行状态…", null);
+        addDashboardWideAction(dashboardPriorityAction);
+        updateDashboardPriority(dashboardRemoteHostFresh
+                ? OperationsDashboardAdvisor.fromMonitor(monitor)
+                : OperationsDashboardAdvisor.staleRemoteSnapshot());
+
         addDashboardSection("远程操作");
         Button showWindow = dashboardButton("显示电脑主窗口", v -> runRemoteTask(
                 OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW, new JSONObject()));
@@ -592,7 +606,9 @@ public class OperationsActivity extends Activity {
         addDashboardActionRow(dashboardCancelFlowButton, dashboardRestartApplicationButton);
 
         if (monitor != null) {
-            addDashboardSection("电脑签名状态");
+            dashboardStatusHeading = addDashboardSection(dashboardRemoteHostFresh
+                    ? "电脑签名状态"
+                    : "上次电脑签名状态（已过期）");
             addDashboardActionRow(
                     dashboardFlowStatus = dashboardStatusButton("检测\n读取中…",
                             v -> showLatestRemoteMonitorDetail("flow")),
@@ -645,11 +661,17 @@ public class OperationsActivity extends Activity {
         boolean windowVisible = window != null && window.optBoolean("isVisible", false);
 
         state.setText(remoteConnectionState(fresh));
+        if (dashboardStatusHeading != null) {
+            dashboardStatusHeading.setText(fresh
+                    ? "电脑签名状态"
+                    : "上次电脑签名状态（已过期）");
+        }
         StringBuilder text = new StringBuilder();
         text.append("连接方式：固定站点设备签名中继")
                 .append("\n电脑状态：").append(fresh ? "在线" : "暂未上线")
-                .append("\nColorVision：").append(running ? "运行中" : "暂未确认")
-                .append("\n主窗口：");
+                .append(fresh ? "\nColorVision：" : "\n上次快照 · ColorVision：")
+                .append(running ? "运行中" : "暂未确认")
+                .append(fresh ? "\n主窗口：" : "\n上次快照 · 主窗口：");
         if (!windowExists) {
             text.append("暂未确认");
         } else if (windowVisible) {
@@ -658,19 +680,24 @@ public class OperationsActivity extends Activity {
             text.append("当前隐藏或最小化");
         }
         if (secure != null) {
-            text.append("\n电脑中继：")
+            text.append(fresh ? "\n电脑中继：" : "\n上次快照 · 电脑中继：")
                     .append(secure.optBoolean("relayRunning", false) ? "运行中" : "等待恢复");
         }
         long signedAt = host.optLong("signedAt", 0L);
         if (signedAt > 0L) {
             text.append("\n最近更新：").append(new SimpleDateFormat(
-                    "MM-dd HH:mm:ss", Locale.getDefault()).format(new Date(signedAt * 1_000L)));
+                    "MM-dd HH:mm:ss", Locale.getDefault()).format(new Date(signedAt * 1_000L)))
+                    .append(fresh ? "" : "（已过期）");
         }
         if (monitor == null) {
             text.append("\n远程状态摘要：等待电脑端更新");
+            markDashboardLiveStatusUnavailable();
         } else if (dashboardFlowStatus != null) {
             updateDashboardLiveStatus(monitor);
         }
+        updateDashboardPriority(fresh
+                ? OperationsDashboardAdvisor.fromMonitor(monitor)
+                : OperationsDashboardAdvisor.staleRemoteSnapshot());
         updateDashboardRestartApplicationAction();
         text.append("\n\n控制请求由本机密钥签名，并由电脑再次核验；固定站点不持有设备私钥，也不接收命令文本。");
         details.setText(text.toString());
@@ -1624,7 +1651,7 @@ public class OperationsActivity extends Activity {
                 : "● 固定中继（临时） · 现场直连恢复后切回";
     }
 
-    private void addDashboardSection(String label) {
+    private TextView addDashboardSection(String label) {
         TextView heading = new TextView(this);
         heading.setText(label);
         heading.setTextSize(15);
@@ -1633,6 +1660,7 @@ public class OperationsActivity extends Activity {
         heading.setPadding(dp(2), dp(8), 0, dp(5));
         actions.addView(heading, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        return heading;
     }
 
     private Button dashboardButton(String label, View.OnClickListener listener) {
@@ -1650,6 +1678,64 @@ public class OperationsActivity extends Activity {
         button.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         button.setPadding(dp(12), 0, dp(8), 0);
         return button;
+    }
+
+    private void updateDashboardPriority(OperationsDashboardAdvisor.Recommendation recommendation) {
+        if (dashboardPriorityAction == null || recommendation == null) {
+            return;
+        }
+        dashboardPriorityAction.setText(recommendation.label);
+        dashboardPriorityAction.setEnabled(
+                !OperationsDashboardAdvisor.ACTION_NONE.equals(recommendation.action));
+        dashboardPriorityAction.setOnClickListener(v -> runDashboardPriorityAction(
+                recommendation.action));
+    }
+
+    private void runDashboardPriorityAction(String action) {
+        switch (action) {
+            case OperationsDashboardAdvisor.ACTION_REFRESH_REMOTE:
+                refreshRemoteDashboard();
+                return;
+            case OperationsDashboardAdvisor.ACTION_CONNECTION_CHECK:
+                runConnectionSelfCheck();
+                return;
+            case OperationsDashboardAdvisor.ACTION_FLOW:
+                if (remoteDashboard) {
+                    showLatestRemoteMonitorDetail("flow");
+                } else {
+                    showLiveMonitor();
+                }
+                return;
+            case OperationsDashboardAdvisor.ACTION_DEVICES:
+                openDashboardMonitorDetail("devices", "/ops/v1/devices/health");
+                return;
+            case OperationsDashboardAdvisor.ACTION_MESSAGE:
+                openDashboardMonitorDetail("message", "/ops/v1/messaging/health");
+                return;
+            case OperationsDashboardAdvisor.ACTION_ALERTS:
+                openDashboardMonitorDetail("alerts", "/ops/v1/alerts");
+                return;
+            case OperationsDashboardAdvisor.ACTION_PERFORMANCE:
+                openDashboardMonitorDetail("performance", "/ops/v1/diagnostics/performance");
+                return;
+            case OperationsDashboardAdvisor.ACTION_MONITOR:
+                if (remoteDashboard) {
+                    showLatestRemoteMonitorDetail("flow");
+                } else {
+                    showLiveMonitor();
+                }
+                return;
+            default:
+                return;
+        }
+    }
+
+    private void openDashboardMonitorDetail(String remoteSection, String directPath) {
+        if (remoteDashboard) {
+            showLatestRemoteMonitorDetail(remoteSection);
+        } else {
+            loadCapability(directPath);
+        }
     }
 
     private void loadDashboardLiveStatus() {
@@ -1714,6 +1800,9 @@ public class OperationsActivity extends Activity {
                 recovery != null && recovery.optBoolean("supported", false),
                 recovery != null && recovery.optBoolean("registered", false),
                 recovery != null && recovery.optBoolean("automaticWatchdogActive", false)));
+        updateDashboardPriority(remoteDashboard && !dashboardRemoteHostFresh
+                ? OperationsDashboardAdvisor.staleRemoteSnapshot()
+                : OperationsDashboardAdvisor.fromMonitor(snapshot));
         updateDashboardCancelFlowAction();
         updateDashboardRestartApplicationAction();
     }
@@ -1731,6 +1820,9 @@ public class OperationsActivity extends Activity {
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
+        updateDashboardPriority(remoteDashboard && !dashboardRemoteHostFresh
+                ? OperationsDashboardAdvisor.staleRemoteSnapshot()
+                : OperationsDashboardAdvisor.unavailable());
         updateDashboardCancelFlowAction();
         updateDashboardRestartApplicationAction();
     }
@@ -1742,9 +1834,11 @@ public class OperationsActivity extends Activity {
         dashboardAlertStatus = null;
         dashboardPerformanceStatus = null;
         dashboardRecoveryStatus = null;
+        dashboardPriorityAction = null;
         dashboardCancelFlowButton = null;
         dashboardRestartApplicationButton = null;
         remoteRestartMqttButton = null;
+        dashboardStatusHeading = null;
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
