@@ -1067,13 +1067,13 @@ namespace Spectrum
                     if (!IsConnected || Handle == IntPtr.Zero)
                         return -1;
 
-                    bool shouldCloseShutter = ShutterController.IsConnected;
+                    bool shouldControlShutter = ShutterController.IsConnected;
                     try
                     {
-                        if (shouldCloseShutter)
+                        if (shouldControlShutter)
                         {
-                            log.Debug("开启快门进行校零");
-                            await ShutterController.OpenShutter();
+                            log.Debug("关闭快门进行校零");
+                            await ShutterController.CloseShutter();
                         }
 
                         token.ThrowIfCancellationRequested();
@@ -1081,10 +1081,10 @@ namespace Spectrum
                     }
                     finally
                     {
-                        if (shouldCloseShutter && ShutterController.IsConnected)
+                        if (shouldControlShutter && ShutterController.IsConnected)
                         {
-                            log.Debug("关闭快门");
-                            await ShutterController.CloseShutter();
+                            log.Debug("打开快门");
+                            await ShutterController.OpenShutter();
                         }
                     }
                 }, CancellationToken.None),

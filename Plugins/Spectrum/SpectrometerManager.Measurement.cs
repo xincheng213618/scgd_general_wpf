@@ -188,7 +188,7 @@ namespace Spectrum
 
                 Stopwatch stepStopwatch = Stopwatch.StartNew();
                 int darkResult;
-                await ShutterController.OpenShutter().ConfigureAwait(false);
+                await ShutterController.CloseShutter().ConfigureAwait(false);
                 try
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -196,7 +196,7 @@ namespace Spectrum
                 }
                 finally
                 {
-                    await ShutterController.CloseShutter().ConfigureAwait(false);
+                    await ShutterController.OpenShutter().ConfigureAwait(false);
                 }
 
                 profile.AutoDarkDurationMs = stepStopwatch.ElapsedMilliseconds;
