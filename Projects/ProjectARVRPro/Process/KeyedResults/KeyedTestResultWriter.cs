@@ -1,3 +1,4 @@
+using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.KeyedResults.FieldOfView;
 using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
 
@@ -25,6 +26,17 @@ namespace ProjectARVRPro.Process.KeyedResults
             string outputKey = Write(destination.FieldOfViewTestResults, key, result);
             if (KeyedTestResultDictionary.IsKey(outputKey, "White"))
                 destination.W51TestResult = FieldOfViewCompatibility.ToW51TestResult(result);
+        }
+
+        public static void Write(ObjectiveTestResult destination, string? key, ChessboardTestResult result)
+        {
+            ArgumentNullException.ThrowIfNull(destination);
+            ArgumentNullException.ThrowIfNull(result);
+
+            destination.ChessboardTestResults ??= new();
+            string outputKey = Write(destination.ChessboardTestResults, key, result, "Chessboard");
+            if (KeyedTestResultDictionary.IsKey(outputKey, "Chessboard"))
+                destination.ChessboardTestResult = result;
         }
 
         public static string Write<T>(IDictionary<string, T> results, string? key, T result, string defaultKey = "White") where T : class

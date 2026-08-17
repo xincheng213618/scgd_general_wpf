@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Newtonsoft.Json;
+using ProjectARVRPro.Process.KeyedResults;
 
 namespace ProjectARVRPro.Process.Chessboard
 {
@@ -51,16 +52,22 @@ namespace ProjectARVRPro.Process.Chessboard
         public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
         private string _ShowConfig = "F3";
 
-        [Category("导出配置")]
-        [DisplayName("导出名称")]
-        [Description("导出CSV和DynamicTestResults时显示的测试画面名称")]
-        public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
-        private string _Name = "Chessboard";
+        [Category("输出配置")]
+        [DisplayName("输出Key")]
+        [Description("写入棋盘格测试结果字典的Key，例如Chessboard、ChessboardNear、ChessboardFar")]
+        public string Key { get => _Key; set { _Key = value; OnPropertyChanged(); } }
+        private string _Key = "Chessboard";
+
+        [Browsable(false)]
+        [JsonProperty("Name")]
+        private string LegacyName { set => Key = value; }
 
         [Category("导出配置")]
         [DisplayName("单位")]
         [Description("棋盘格结果单位")]
         public string Unit { get => _Unit; set { _Unit = value; OnPropertyChanged(); } }
         private string _Unit = "%";
+
+        public string GetOutputKey() => KeyedTestResultDictionary.NormalizeKey(Key, "Chessboard");
     }
 }

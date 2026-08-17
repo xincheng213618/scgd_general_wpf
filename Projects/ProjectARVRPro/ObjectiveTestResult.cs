@@ -44,6 +44,9 @@ namespace ProjectARVRPro
         [DisplayName("Chessborad")]
         public ChessboardTestResult ChessboardTestResult { get; set; }
 
+        [DisplayName("棋盘格测试")]
+        public Dictionary<string, ChessboardTestResult> ChessboardTestResults { get; set; } = new();
+
         [DisplayName("MTF")]
         public MTFHVTestResult MTFHVTestResult { get; set; }
 

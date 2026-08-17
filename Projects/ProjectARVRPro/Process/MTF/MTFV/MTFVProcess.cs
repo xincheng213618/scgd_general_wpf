@@ -181,7 +181,7 @@ namespace ProjectARVRPro.Process.MTF.MTFV
         {
             var result = ctx.Result;
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("MTFV(旧版) 画面结果");
+            sb.AppendLine("MTFV 画面结果");
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return; }
 

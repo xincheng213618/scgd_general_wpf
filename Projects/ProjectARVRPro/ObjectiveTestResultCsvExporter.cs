@@ -110,7 +110,8 @@ namespace ProjectARVRPro
                     prop.Name == nameof(ObjectiveTestResult.DynamicScreenDefectResults) ||
                     prop.Name == nameof(ObjectiveTestResult.DynamicMTFHV058TestResults) ||
                     prop.Name == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults) ||
-                    prop.Name == nameof(ObjectiveTestResult.FieldOfViewTestResults))
+                    prop.Name == nameof(ObjectiveTestResult.FieldOfViewTestResults) ||
+                    prop.Name == nameof(ObjectiveTestResult.ChessboardTestResults))
                     continue;
 
                 if (prop.Name == nameof(ObjectiveTestResult.W255TestResult) &&
@@ -119,6 +120,10 @@ namespace ProjectARVRPro
 
                 if (prop.Name == nameof(ObjectiveTestResult.W51TestResult) &&
                     KeyedTestResultDictionary.TryGetValue(results.FieldOfViewTestResults, "White", out _))
+                    continue;
+
+                if (prop.Name == nameof(ObjectiveTestResult.ChessboardTestResult) &&
+                    KeyedTestResultDictionary.TryGetValue(results.ChessboardTestResults, "Chessboard", out _))
                     continue;
 
                 if (!prop.PropertyType.IsValueType && prop.PropertyType != typeof(string))
@@ -164,6 +169,7 @@ namespace ProjectARVRPro
             CollectRowsFromKeyedResults(results.DynamicMTFHV058TestResults, rows);
             CollectRowsFromKeyedResults(results.LuminanceChromaticityTestResults, rows);
             CollectRowsFromKeyedResults(results.FieldOfViewTestResults, rows);
+            CollectRowsFromKeyedResults(results.ChessboardTestResults, rows);
 
             if (results.DynamicPoixyuvDatas != null)
             {

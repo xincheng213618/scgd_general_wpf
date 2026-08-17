@@ -38,6 +38,12 @@ namespace ProjectARVRPro
                     continue;
                 }
 
+                if (property.Name == nameof(ObjectiveTestResult.ChessboardTestResult) &&
+                    ContainsKey(result.ChessboardTestResults, "Chessboard"))
+                {
+                    continue;
+                }
+
                 object? value = property.GetValue(result);
                 if (value == null || property.PropertyType.IsValueType || property.PropertyType == typeof(string))
                     continue;
@@ -61,6 +67,7 @@ namespace ProjectARVRPro
             CollectKeyedObjects(result.DynamicMTFHV058TestResults, metrics, keys);
             CollectKeyedObjects(result.LuminanceChromaticityTestResults, metrics, keys);
             CollectKeyedObjects(result.FieldOfViewTestResults, metrics, keys);
+            CollectKeyedObjects(result.ChessboardTestResults, metrics, keys);
             CollectDynamicPois(result.DynamicPoixyuvDatas, metrics, keys);
 
             return metrics;
@@ -73,7 +80,8 @@ namespace ProjectARVRPro
                    propertyName == nameof(ObjectiveTestResult.DynamicScreenDefectResults) ||
                    propertyName == nameof(ObjectiveTestResult.DynamicMTFHV058TestResults) ||
                    propertyName == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults) ||
-                   propertyName == nameof(ObjectiveTestResult.FieldOfViewTestResults);
+                   propertyName == nameof(ObjectiveTestResult.FieldOfViewTestResults) ||
+                   propertyName == nameof(ObjectiveTestResult.ChessboardTestResults);
         }
 
         private static bool ContainsKey<T>(IReadOnlyDictionary<string, T>? results, string key)
