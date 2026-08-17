@@ -21,6 +21,17 @@ public class TempCommonSensorNode : CVBaseServerNode
 		}
 	}
 
+	[STNodeProperty("IgnoreErrors", "IgnoreErrors", true)]
+	public bool IgnoreErrors
+	{
+		get => _ignoreErrors;
+		set
+		{
+			_ignoreErrors = value;
+			OnPropertyChanged();
+		}
+	}
+
 	public TempCommonSensorNode()
 		: base("通用传感器-模板", "Sensor", "SVR.Sensor.Default", "DEV.Sensor.Default")
 	{

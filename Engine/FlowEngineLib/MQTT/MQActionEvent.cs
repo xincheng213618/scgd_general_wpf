@@ -17,6 +17,8 @@ public class MQActionEvent
 
 	public string Token { get; set; }
 
+	public string NodeId { get; set; }
+
 	public string Message { get; set; }
 
 	public MQActionEvent()
@@ -25,7 +27,13 @@ public class MQActionEvent
 	}
 
 	public MQActionEvent(string msgId, string serviceCode, string deviceCode, string topic, string eventName, string message, string token)
+		: this(string.Empty, msgId, serviceCode, deviceCode, topic, eventName, message, token)
 	{
+	}
+
+	public MQActionEvent(string nodeId, string msgId, string serviceCode, string deviceCode, string topic, string eventName, string message, string token)
+	{
+		NodeId = nodeId;
 		MsgID = msgId;
 		ServiceCode = serviceCode;
 		DeviceCode = deviceCode;

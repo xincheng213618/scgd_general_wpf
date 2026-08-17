@@ -504,6 +504,11 @@ public class MQTTStartNode : BaseStartNode
 			if (serverSubscribers != null)
 			{
 				CVBaseDataFlowResp statusEvent = JsonConvert.DeserializeObject<CVBaseDataFlowResp>(value);
+				if (!string.IsNullOrEmpty(statusEvent.DeviceNodeCode))
+				{
+					serverSubscribers.Find(node => node.NodeID == statusEvent.DeviceNodeCode)?.DoServerStatusRecv(statusEvent);
+					return;
+				}
 				using List<CVBaseServerNode>.Enumerator enumerator = serverSubscribers.GetEnumerator();
 				while (enumerator.MoveNext() && !enumerator.Current.DoServerStatusRecv(statusEvent))
 				{

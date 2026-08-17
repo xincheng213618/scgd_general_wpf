@@ -121,6 +121,17 @@ public class RealCommonSensorNode : CVBaseServerNode
 		}
 	}
 
+	[STNodeProperty("IgnoreErrors", "IgnoreErrors", true)]
+	public bool IgnoreErrors
+	{
+		get => _ignoreErrors;
+		set
+		{
+			_ignoreErrors = value;
+			OnPropertyChanged();
+		}
+	}
+
 	public RealCommonSensorNode()
 		: base("通用传感器-指令", "Sensor", "SVR.Sensor.Default", "DEV.Sensor.Default")
 	{

@@ -68,6 +68,76 @@ public sealed class FlowRuntimeCompletionTests
     }
 
     [Fact]
+    public void ResponseRoutingUsesNodeId()
+    {
+        RunInSta(async () =>
+        {
+            using var graph = CreateGraph();
+            graph.Start.OnPublish = action =>
+            {
+                CVMQTTRequest request = DecodeRequest(action);
+                Assert.Equal(graph.Sensor.NodeID, action.NodeId);
+                Assert.Equal(graph.Sensor.NodeID, request.DeviceNodeCode);
+                Assert.False(graph.Sensor.DoServerStatusRecv(
+                    CreateResponse(request, 0, Guid.NewGuid().ToString())));
+                Assert.True(graph.Sensor.DoServerStatusRecv(
+                    CreateResponse(request, 0, graph.Sensor.NodeID)));
+            };
+
+            FlowEngineEventArgs completed = await StartAndWaitAsync(
+                graph.Control,
+                graph.Start.NodeName,
+                "SN-NODE-ID-ROUTING");
+
+            Assert.Equal(StatusTypeEnum.Completed, completed.Status);
+            Assert.Equal(1, graph.Start.PublishCount);
+        });
+    }
+
+    [Fact]
+    public void IgnoreErrorsRunsCleanupNodeAfterUpstreamFailure()
+    {
+        RunInSta(async () =>
+        {
+            using var graph = CreateCleanupGraph();
+            graph.Cleanup.IgnoreErrors = true;
+            var cleanupEnded =
+                new TaskCompletionSource<FlowEngineNodeEndEventArgs>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+            graph.Cleanup.nodeEndEvent += (_, args) =>
+                cleanupEnded.TrySetResult(args);
+            var publishedNodeIds = new ConcurrentQueue<string>();
+            graph.Start.OnPublish = action =>
+            {
+                publishedNodeIds.Enqueue(action.NodeId);
+                if (action.NodeId == graph.Failing.NodeID)
+                {
+                    Respond(graph.Failing, action, 500);
+                    return;
+                }
+                if (action.NodeId == graph.Cleanup.NodeID)
+                {
+                    Respond(graph.Cleanup, action, 0);
+                    return;
+                }
+                throw new InvalidOperationException(
+                    $"Unexpected publishing node: {action.NodeId}.");
+            };
+
+            FlowEngineEventArgs completed = await StartAndWaitAsync(
+                graph.Control,
+                graph.Start.NodeName,
+                "SN-IGNORE-UPSTREAM-ERROR");
+            await cleanupEnded.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+            Assert.Equal(StatusTypeEnum.Failed, completed.Status);
+            Assert.Equal(
+                new[] { graph.Failing.NodeID, graph.Cleanup.NodeID },
+                publishedNodeIds);
+        });
+    }
+
+    [Fact]
     public void StopPairsActiveNodeAsCanceled()
     {
         RunInSta(async () =>
@@ -139,24 +209,39 @@ public sealed class FlowRuntimeCompletionTests
         MQActionEvent action,
         int code)
     {
-        CVMQTTRequest request =
-            JsonConvert.DeserializeObject<CVMQTTRequest>(action.Message)
+        CVMQTTRequest request = DecodeRequest(action);
+        Assert.Equal(sensor.NodeID, action.NodeId);
+        Assert.Equal(sensor.NodeID, request.DeviceNodeCode);
+        Assert.True(sensor.DoServerStatusRecv(
+            CreateResponse(request, code, sensor.NodeID)));
+    }
+
+    private static CVMQTTRequest DecodeRequest(MQActionEvent action)
+    {
+        return JsonConvert.DeserializeObject<CVMQTTRequest>(action.Message)
             ?? throw new InvalidOperationException(
                 "Flow test request could not be decoded.");
-        Assert.True(sensor.DoServerStatusRecv(
-            new CVBaseDataFlowResp
-            {
-                Code = code,
-                Message = code == 0 ? "ok" : "simulated failure",
-                Version = request.Version,
-                ServiceName = request.ServiceCode,
-                EventName = request.EventName,
-                SerialNumber = request.SerialNumber,
-                MsgID = request.MsgID,
-                Data = null,
-                SendTime = DateTime.Now,
-                ZIndex = request.ZIndex
-            }));
+    }
+
+    private static CVBaseDataFlowResp CreateResponse(
+        CVMQTTRequest request,
+        int code,
+        string deviceNodeCode)
+    {
+        return new CVBaseDataFlowResp
+        {
+            Code = code,
+            Message = code == 0 ? "ok" : "simulated failure",
+            Version = request.Version,
+            ServiceName = request.ServiceCode,
+            DeviceNodeCode = deviceNodeCode,
+            EventName = request.EventName,
+            SerialNumber = request.SerialNumber,
+            MsgID = request.MsgID,
+            Data = null,
+            SendTime = DateTime.Now,
+            ZIndex = request.ZIndex
+        };
     }
 
     private static RuntimeTestGraph CreateGraph()
@@ -207,6 +292,62 @@ public sealed class FlowRuntimeCompletionTests
             normalEnd,
             nodeRuns,
             nodeEnds);
+    }
+
+    private static CleanupRuntimeTestGraph CreateCleanupGraph()
+    {
+        var container = new CVNodeContainer();
+        var start = new RuntimeTestStartNode();
+        var failing = new TempCommonSensorNode();
+        var cleanup = new TempCommonSensorNode();
+        var normalEnd = new RuntimeTestEndNode();
+        start.Create();
+        failing.Create();
+        cleanup.Create();
+        normalEnd.Create();
+        container.Nodes.Add(start);
+        container.Nodes.Add(failing);
+        container.Nodes.Add(cleanup);
+        container.Nodes.Add(normalEnd);
+
+        STNodeOption failingInput = failing
+            .GetAllInputOptions()
+            .Single(option => option.DataType == typeof(CVStartCFC));
+        STNodeOption failingOutput = failing
+            .GetAllOutputOptions()
+            .Single(option => option.DataType == typeof(CVStartCFC));
+        STNodeOption cleanupInput = cleanup
+            .GetAllInputOptions()
+            .Single(option => option.DataType == typeof(CVStartCFC));
+        STNodeOption cleanupOutput = cleanup
+            .GetAllOutputOptions()
+            .Single(option => option.DataType == typeof(CVStartCFC));
+        Assert.Equal(
+            ConnectionStatus.Connected,
+            start.m_op_start.ConnectOption(
+                failingInput,
+                isOwnerOfOwner: false));
+        Assert.Equal(
+            ConnectionStatus.Connected,
+            failingOutput.ConnectOption(
+                cleanupInput,
+                isOwnerOfOwner: false));
+        Assert.Equal(
+            ConnectionStatus.Connected,
+            cleanupOutput.ConnectOption(
+                normalEnd.m_in_start,
+                isOwnerOfOwner: false));
+
+        var control = new FlowEngineControl(
+            container,
+            isAutoStartName: false,
+            new FlowNodeManager());
+        return new CleanupRuntimeTestGraph(
+            container,
+            control,
+            start,
+            failing,
+            cleanup);
     }
 
     private static async Task WaitUntilAsync(Func<bool> predicate)
@@ -274,6 +415,39 @@ public sealed class FlowRuntimeCompletionTests
         public ConcurrentQueue<FlowEngineNodeRunEventArgs> NodeRuns { get; }
 
         public ConcurrentQueue<FlowEngineNodeEndEventArgs> NodeEnds { get; }
+
+        public void Dispose()
+        {
+            Control.Dispose();
+            Container.Dispose();
+        }
+    }
+
+    private sealed class CleanupRuntimeTestGraph : IDisposable
+    {
+        public CleanupRuntimeTestGraph(
+            CVNodeContainer container,
+            FlowEngineControl control,
+            RuntimeTestStartNode start,
+            TempCommonSensorNode failing,
+            TempCommonSensorNode cleanup)
+        {
+            Container = container;
+            Control = control;
+            Start = start;
+            Failing = failing;
+            Cleanup = cleanup;
+        }
+
+        public CVNodeContainer Container { get; }
+
+        public FlowEngineControl Control { get; }
+
+        public RuntimeTestStartNode Start { get; }
+
+        public TempCommonSensorNode Failing { get; }
+
+        public TempCommonSensorNode Cleanup { get; }
 
         public void Dispose()
         {

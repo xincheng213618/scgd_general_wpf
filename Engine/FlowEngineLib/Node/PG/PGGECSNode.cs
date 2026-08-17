@@ -42,6 +42,17 @@ public class PGGECSNode : CVBaseServerNode
 		}
 	}
 
+	[STNodeProperty("IgnoreErrors", "IgnoreErrors", true)]
+	public bool IgnoreErrors
+	{
+		get => _ignoreErrors;
+		set
+		{
+			_ignoreErrors = value;
+			OnPropertyChanged();
+		}
+	}
+
 	public PGGECSNode()
 		: base("PG.GECS", "PG", "SVR.PG.Default", "DEV.PG.Default")
 	{
@@ -70,7 +81,8 @@ public class PGGECSNode : CVBaseServerNode
 		case PGGECSCommCmdType.下电:
 			pGParamFunction = new PGParamFunction
 			{
-				Name = "CM_StopPG"
+				Name = "CM_StopPG",
+				Params = new Dictionary<string, bool> { { "IgnoreErrors", IgnoreErrors } }
 			};
 			break;
 		case PGGECSCommCmdType.上:

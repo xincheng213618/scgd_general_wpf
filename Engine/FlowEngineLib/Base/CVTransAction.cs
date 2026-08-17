@@ -116,11 +116,12 @@ public class CVTransAction
 
 	internal bool TryStartActionCommand(
 		CVMQTTRequest request,
+		bool allowStoppedFlow,
 		out CVBaseEventCmd command)
 	{
 		lock (actionEventsLock)
 		{
-			if (IsCanceled || !trans_action.IsRunning)
+			if (IsCanceled || (!allowStoppedFlow && !trans_action.IsRunning))
 			{
 				command = null;
 				return false;
