@@ -149,6 +149,36 @@ public sealed class LocalFrameMirrorTests
     }
 
     [Fact]
+    public void PreparingColorCalibrationKeepsRawAndAddsOnlyCieData()
+    {
+        LocalFrameMetadata metadata = new()
+        {
+            Width = 2,
+            Height = 1,
+            SourceBpp = 16,
+            Channels = 3,
+            SourceFilePath = "source.cvraw",
+            PrimaryBufferKind = LocalFrameBufferKind.CvRaw
+        };
+        using LocalFlowFrame frame = LocalFlowFrame.Allocate(metadata, 2 * 3 * sizeof(short), 0);
+        IntPtr rawPointer;
+        using (LocalFlowFrameLease before = frame.Acquire())
+        {
+            rawPointer = before.RawPointer;
+        }
+
+        frame.PrepareForCalibration("color", 2 * 3 * sizeof(float), hasBasicCalibration: false);
+
+        using LocalFlowFrameLease after = frame.Acquire();
+        Assert.Equal(rawPointer, after.RawPointer);
+        Assert.Equal(2 * 3 * sizeof(short), after.RawLength);
+        Assert.NotEqual(IntPtr.Zero, after.CiePointer);
+        Assert.Equal(2 * 3 * sizeof(float), after.CieLength);
+        Assert.Equal(LocalFrameBufferKind.CvCie, after.Metadata.PrimaryBufferKind);
+        Assert.Equal("source.cvraw", after.Metadata.SourceFilePath);
+    }
+
+    [Fact]
     public void InheritedFlipStatePreventsGeneratedCieFromBeingMirroredTwice()
     {
         LocalFrameMetadata metadata = new()

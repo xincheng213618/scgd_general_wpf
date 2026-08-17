@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 _ = cvCameraCSLib.CM_SetGain(cameraHandle, cameraParameters.Gain);
                 if (!device.Config.IsExpThree) _ = cvCameraCSLib.CM_SetExpTime(cameraHandle, cameraParameters.ExpTime);
 
-                string captureJson = BuildCaptureJson(device, cameraParameters, request.IsAutoExposure);
+                string captureJson = BuildRawCaptureJson(device, cameraParameters, request.IsAutoExposure);
                 uint width = 0, height = 0, sourceBpp = 0, channels = 0;
                 if (cvCameraCSLib.CM_GetSrcFrameInfo(cameraHandle, ref width, ref height, ref sourceBpp, ref channels) == 0
                     || width == 0 || height == 0 || sourceBpp == 0 || channels == 0)
@@ -126,6 +126,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 {
                     Stopwatch captureStopwatch = Stopwatch.StartNew();
                     uint destinationBpp = 32;
+                    // CM_GetFrame is retained for its CFW, averaging and auto-exposure
+                    // acquisition pipeline. BuildRawCaptureJson deliberately supplies no
+                    // calibration items; all calibration runs once below on these buffers.
                     int captureResult = cvCameraCSLib.CM_GetFrame(
                         cameraHandle,
                         captureJson,
@@ -143,24 +146,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                         throw CreateNativeException("本地相机取图失败", captureResult);
                     }
 
-                    if (calibrationFiles.Count > 0)
-                    {
-                        Stopwatch calibrationStopwatch = Stopwatch.StartNew();
-                        LocalFrameCalibrationService.CalibrateCapturedFrame(
-                            lease,
-                            device.LocalCalibrationCacheManager,
-                            calibrationFiles,
-                            request.Calibration?.Name ?? string.Empty);
-                        calibrationStopwatch.Stop();
-                        calibrationTimeMs = ToMilliseconds(calibrationStopwatch.ElapsedMilliseconds);
-                    }
                 }
 
-                // An uncalibrated RAW frame must stay in sensor coordinates so a
-                // downstream local-calibration node can still use spatial maps.
                 if (calibrationFiles.Count > 0)
                 {
-                    LocalFrameMirrorService.ApplyPending(frame);
+                    Stopwatch calibrationStopwatch = Stopwatch.StartNew();
+                    LocalFrameCalibrationService.CalibrateInPlace(
+                        frame,
+                        device.LocalCalibrationCacheManager,
+                        calibrationFiles,
+                        request.Calibration?.Name ?? string.Empty);
+                    calibrationStopwatch.Stop();
+                    calibrationTimeMs = ToMilliseconds(calibrationStopwatch.ElapsedMilliseconds);
                 }
 
                 if (request.SaveFiles)
@@ -206,7 +203,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             };
         }
 
-        private static string BuildCaptureJson(DeviceCamera device, CameraRunParam cameraParameters, bool isAutoExposure)
+        private static string BuildRawCaptureJson(DeviceCamera device, CameraRunParam cameraParameters, bool isAutoExposure)
         {
             int channelCount = device.Config.Channel == ImageChannel.Three ? 3 : 1;
             GetFrameParam param = new()

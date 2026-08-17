@@ -140,47 +140,48 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             bool calibrated = false;
             try
             {
-                using (LocalFlowFrameLease source = sourceFrame.Acquire())
+                bool canReuseExistingCie = sourceFrame.HasCie
+                    && (!sourceFrame.HasRaw
+                        || string.IsNullOrWhiteSpace(CalibTempName)
+                        || string.Equals(sourceFrame.Metadata.CalibrationTemplate, CalibTempName, StringComparison.Ordinal));
+                if (canReuseExistingCie)
                 {
-                    bool canReuseExistingCie = source.HasCie
-                        && (!source.HasRaw
-                            || string.IsNullOrWhiteSpace(CalibTempName)
-                            || string.Equals(source.Metadata.CalibrationTemplate, CalibTempName, StringComparison.Ordinal));
-                    if (canReuseExistingCie)
+                    outputFrame = sourceFrame;
+                    ownsOutputFrame = ownsSourceFrame;
+                    ownsSourceFrame = false;
+                    if (!outputFrame.IsCieFlipApplied)
                     {
-                        outputFrame = sourceFrame;
-                        ownsOutputFrame = ownsSourceFrame;
-                        ownsSourceFrame = false;
-                        if (!outputFrame.IsCieFlipApplied)
-                        {
-                            throw new InvalidOperationException("The reusable CIE frame has a pending mirror operation and was published before its orientation was finalized.");
-                        }
-                        if (SaveFiles && string.IsNullOrWhiteSpace(outputFrame.CvCieFilePath))
-                        {
-                            DeviceCamera device = ResolveDevice(source.Metadata.DeviceCode);
-                            LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code);
-                        }
+                        throw new InvalidOperationException("The reusable CIE frame has a pending mirror operation and was published before its orientation was finalized.");
                     }
-                    else if (source.HasRaw)
+                    if (SaveFiles && string.IsNullOrWhiteSpace(outputFrame.CvCieFilePath))
                     {
-                        DeviceCamera device = ResolveDevice(source.Metadata.DeviceCode);
-                        calibration = ResolveCalibration(device);
-                        if (!device.TryGetCalibrationTemplateFiles(calibration, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles, out string? errorMessage))
-                        {
-                            throw new InvalidOperationException(errorMessage ?? "校正模板无效。");
-                        }
-                        outputFrame = LocalFrameCalibrationService.Calibrate(source, device.LocalCalibrationCacheManager, calibrationFiles, calibration.Name);
-                        ownsOutputFrame = true;
-                        calibrated = true;
-                        if (SaveFiles)
-                        {
-                            LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code);
-                        }
+                        DeviceCamera device = ResolveDevice(sourceFrame.Metadata.DeviceCode);
+                        LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code);
                     }
-                    else
+                }
+                else if (sourceFrame.HasRaw)
+                {
+                    DeviceCamera device = ResolveDevice(sourceFrame.Metadata.DeviceCode);
+                    calibration = ResolveCalibration(device);
+                    if (!device.TryGetCalibrationTemplateFiles(calibration, out IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles, out string? errorMessage))
                     {
-                        throw new InvalidOperationException("当前本地帧既没有 RAW 内存，也没有 CIE 内存。");
+                        throw new InvalidOperationException(errorMessage ?? "校正模板无效。");
                     }
+                    bool hasBasicCalibration = !LocalFrameCalibrationService.IsColorOnlyTemplate(calibrationFiles);
+                    LocalFrameCalibrationService.CalibrateInPlace(sourceFrame, device.LocalCalibrationCacheManager, calibrationFiles, calibration.Name);
+                    outputFrame = sourceFrame;
+                    ownsOutputFrame = ownsSourceFrame;
+                    ownsSourceFrame = false;
+                    calibrated = true;
+                    if (SaveFiles)
+                    {
+                        bool includeRaw = hasBasicCalibration || string.IsNullOrWhiteSpace(outputFrame.Metadata.SourceFilePath);
+                        LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code, includeRaw);
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException("当前本地帧既没有 RAW 内存，也没有 CIE 内存。");
                 }
 
                 stopwatch.Stop();

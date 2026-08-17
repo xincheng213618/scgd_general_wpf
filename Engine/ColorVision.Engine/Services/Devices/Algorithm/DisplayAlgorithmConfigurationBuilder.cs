@@ -17,7 +17,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
     public sealed class DisplayAlgorithmConfigurationBuilder
     {
         private const double LabelWidth = 110;
-        private const double EditorMinWidth = 150;
+        private const double TemplateInlineActionMinWidth = 340;
 
         public FrameworkElement Build(
             DisplayAlgorithmConfigBase configuration,
@@ -144,11 +144,21 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             DisplayAlgorithmTemplateSelection selection,
             FrameworkElement? action)
         {
-            DockPanel row = CreateRow();
+            Grid row = new()
+            {
+                Margin = new Thickness(0, 2, 0, 2)
+            };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(LabelWidth) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            row.RowDefinitions.Add(new RowDefinition { Height = new GridLength(0) });
+
             TextBlock label = CreateLabel(selection.DisplayName);
             ComboBox comboBox = new()
             {
-                MinWidth = EditorMinWidth,
+                MinWidth = 0,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 ItemsSource = selection.ItemsSource,
                 DisplayMemberPath = "Key",
@@ -180,21 +190,33 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 BorderThickness = new Thickness(0)
             });
 
-            DockPanel.SetDock(label, Dock.Left);
-            if (action != null)
-            {
-                action.Margin = new Thickness(8, 0, 0, 0);
-                DockPanel.SetDock(action, Dock.Right);
-            }
-            DockPanel.SetDock(editButton, Dock.Right);
+            Grid.SetColumn(label, 0);
+            Grid.SetColumn(comboBox, 1);
+            Grid.SetColumn(editButton, 2);
             row.Children.Add(label);
+            row.Children.Add(comboBox);
+            row.Children.Add(editButton);
+
             if (action != null)
             {
+                Grid.SetColumn(action, 3);
                 row.Children.Add(action);
+                row.SizeChanged += (_, e) => UpdateTemplateActionLayout(row, action, e.NewSize.Width);
             }
-            row.Children.Add(editButton);
-            row.Children.Add(comboBox);
             return row;
+        }
+
+        private static void UpdateTemplateActionLayout(Grid row, FrameworkElement action, double availableWidth)
+        {
+            bool stackAction = availableWidth < TemplateInlineActionMinWidth;
+            row.RowDefinitions[1].Height = stackAction ? GridLength.Auto : new GridLength(0);
+            Grid.SetRow(action, stackAction ? 1 : 0);
+            Grid.SetColumn(action, stackAction ? 1 : 3);
+            Grid.SetColumnSpan(action, stackAction ? 3 : 1);
+            action.HorizontalAlignment = HorizontalAlignment.Right;
+            action.Margin = stackAction
+                ? new Thickness(0, 4, 0, 0)
+                : new Thickness(8, 0, 0, 0);
         }
 
         private static FrameworkElement CreateFileEditor(
@@ -208,6 +230,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     ? Properties.Resources.Image
                     : GetDisplayName(property));
             TextBox textBox = CreateTextBox(source, property);
+            HandyControl.Controls.InfoElement.SetPlaceholder(textBox, ColorVision.Themes.Properties.Resources.Upload_SelectFile);
             Button browseButton = new()
             {
                 Content = "...",
@@ -268,7 +291,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             TextBlock label = CreateLabel(GetDisplayName(property));
             ComboBox comboBox = new()
             {
-                MinWidth = EditorMinWidth,
+                MinWidth = 0,
                 ItemsSource = Enum.GetValues(enumType)
             };
             comboBox.SetResourceReference(FrameworkElement.StyleProperty, "ComboBox.Small");
@@ -296,7 +319,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             TextBox textBox = new()
             {
-                MinWidth = EditorMinWidth,
+                MinWidth = 0,
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
             textBox.SetResourceReference(FrameworkElement.StyleProperty, "TextBox.Small");

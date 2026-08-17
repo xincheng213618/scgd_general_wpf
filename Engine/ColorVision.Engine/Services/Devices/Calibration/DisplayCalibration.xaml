@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Calibration"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+             xmlns:themeProperties="clr-namespace:ColorVision.Themes.Properties;assembly=ColorVision.Themes"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:DeviceCalibration}"
              d:DesignWidth="300"
@@ -41,7 +42,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="ImageFile" Grid.Column="0" Margin="0,0,2,0" HorizontalAlignment="Stretch" Style="{StaticResource TextBox.Small}" Text="" />
+                        <TextBox x:Name="ImageFile" Grid.Column="0" Margin="0,0,2,0" HorizontalAlignment="Stretch" hc:InfoElement.Placeholder="{x:Static themeProperties:Resources.Upload_SelectFile}" Style="{StaticResource TextBox.Small}" Text="" />
                         <Button Grid.Column="1" Margin="0,0,5,0" HorizontalAlignment="Right" Click="Open_File" Content="..." />
                     </Grid>
                     <StackPanel x:Name="ExposurePanel" Visibility="Collapsed">

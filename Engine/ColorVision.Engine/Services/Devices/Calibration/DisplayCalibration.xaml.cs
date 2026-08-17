@@ -251,7 +251,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             try
             {
                 string serialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                LocalFileCalibrationResult result = await Task.Run(() => LocalFileCalibrationService.Calibrate(
+                MeasureResultImgModel result = await Task.Run(() => LocalFileCalibrationService.Calibrate(
                     Device,
                     calibration,
                     imageFileName,
@@ -259,7 +259,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                     exposure));
                 if (_isDisposed) return;
 
-                Device.View.ShowResult(result.Model);
+                Device.View.ShowResult(result);
                 succeeded = true;
             }
             catch (Exception ex)

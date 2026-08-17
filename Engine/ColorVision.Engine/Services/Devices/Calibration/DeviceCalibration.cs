@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -54,6 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             AttachPhyCamera(PhyCamera);
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
             EditDisplayConfigCommand = new RelayCommand(_ => EditDisplayConfig());
+            ReleaseLocalCalibrationCacheCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
         }
 
         [CommandDisplay("EditCalibration",Order =100)]
@@ -61,6 +63,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         [CommandDisplay("EditDisplayConfig", Order = -1)]
         public RelayCommand EditDisplayConfigCommand { get; }
+
+        [CommandDisplay("本地校正缓存管理")]
+        public RelayCommand ReleaseLocalCalibrationCacheCommand { get; }
 
         private void EditDisplayConfig()
         {

@@ -12,8 +12,6 @@ using System.IO;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {
-    internal sealed record LocalFileCalibrationResult(MeasureResultImgModel Model);
-
     /// <summary>
     /// Runs the optimized process-local calibration backend for the compact calibration control.
     /// The MQTT service remains available as a compatibility backend for unsupported source formats.
@@ -22,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(LocalFileCalibrationService));
 
-        public static LocalFileCalibrationResult Calibrate(
+        public static MeasureResultImgModel Calibrate(
             DeviceCalibration device,
             CalibrationParam calibration,
             string filePath,
@@ -46,30 +44,34 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             }
 
             Stopwatch stopwatch = Stopwatch.StartNew();
-            using LocalFlowFrame sourceFrame = LocalFrameFileService.Load(fullPath, normalizedExposure, 1);
-            using LocalFlowFrameLease source = sourceFrame.Acquire();
-            if (!source.HasRaw)
+            using LocalFlowFrame frame = LocalFrameFileService.Load(fullPath, normalizedExposure, 1);
+            if (!frame.HasRaw)
             {
                 throw new NotSupportedException("本地校正需要 RAW、TIFF 或常规位图源；CVCIE 请切换到 MQTT 服务处理。");
             }
 
-            using LocalFlowFrame outputFrame = LocalFrameCalibrationService.Calibrate(
-                source,
+            bool hasBasicCalibration = !LocalFrameCalibrationService.IsColorOnlyTemplate(calibrationFiles);
+            LocalFrameCalibrationService.CalibrateInPlace(
+                frame,
                 cameraDevice.LocalCalibrationCacheManager,
                 calibrationFiles,
                 calibration.Name);
-            LocalFrameFileService.SaveCapture(outputFrame, device.Config.FileServerCfg.DataBasePath, device.Code);
+            LocalFrameFileService.SaveCapture(
+                frame,
+                device.Config.FileServerCfg.DataBasePath,
+                device.Code,
+                includeRaw: hasBasicCalibration);
             stopwatch.Stop();
 
-            string outputPath = !string.IsNullOrWhiteSpace(outputFrame.CvCieFilePath)
-                ? outputFrame.CvCieFilePath
-                : outputFrame.CvRawFilePath;
+            string outputPath = !string.IsNullOrWhiteSpace(frame.CvCieFilePath)
+                ? frame.CvCieFilePath
+                : frame.CvRawFilePath;
             if (string.IsNullOrWhiteSpace(outputPath) || !File.Exists(outputPath))
             {
                 throw new IOException("本地校正已完成，但没有生成可用的输出文件。");
             }
 
-            using LocalFlowFrameLease output = outputFrame.Acquire();
+            using LocalFlowFrameLease output = frame.Acquire();
             MeasureResultImgModel model = BuildResultModel(
                 device,
                 calibration,
@@ -81,7 +83,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 cameraDevice.LocalCalibrationCacheManager.BackendName,
                 checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue)));
             TryPersist(serialNumber, model);
-            return new LocalFileCalibrationResult(model);
+            return model;
         }
 
         private static float[] NormalizeExposure(IReadOnlyList<float> exposure)
