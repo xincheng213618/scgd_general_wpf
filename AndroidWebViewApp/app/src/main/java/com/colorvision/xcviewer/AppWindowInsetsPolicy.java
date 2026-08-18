@@ -1,7 +1,7 @@
 package com.colorvision.xcviewer;
 
-final class OperationsWindowInsetsPolicy {
-    private OperationsWindowInsetsPolicy() {
+final class AppWindowInsetsPolicy {
+    private AppWindowInsetsPolicy() {
     }
 
     static int topContentInset(int statusBarTop, int displayCutoutTop) {

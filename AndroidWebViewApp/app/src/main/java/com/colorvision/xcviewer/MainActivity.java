@@ -25,6 +25,10 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.TextViewCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -71,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         appPreferences = new AppPreferences(this);
         int startTab = consumeStartTab(getIntent());
@@ -88,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
         themeManager.applySystemBars(this);
 
         root = new FrameLayout(this);
+        root.setBackgroundColor(shellBackgroundColor());
         setupContainer = new FrameLayout(this);
         appShell = createAppShell();
         progressBar = new LinearProgressIndicator(this);
@@ -97,7 +103,9 @@ public class MainActivity extends AppCompatActivity {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT));
 
+        applyTopSystemBarInset(root);
         setContentView(root);
+        ViewCompat.requestApplyInsets(root);
 
         showInitialTab(startTab);
     }
@@ -164,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
         shell.setBackgroundColor(shellBackgroundColor());
         shell.addView(createTopBar(), new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                getStatusBarHeight() + dp(48)));
+                LinearLayout.LayoutParams.WRAP_CONTENT));
 
         shell.addView(setupContainer, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -182,7 +190,8 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(dp(18), getStatusBarHeight() + dp(2), dp(14), dp(2));
+        bar.setMinimumHeight(dp(48));
+        bar.setPadding(dp(18), dp(2), dp(14), dp(2));
         bar.setBackgroundColor(shellBackgroundColor());
 
         LinearLayout titleBlock = new LinearLayout(this);
@@ -456,6 +465,7 @@ public class MainActivity extends AppCompatActivity {
         if (listener != null) {
             row.setOnClickListener(listener);
             row.setFocusable(true);
+            row.setContentDescription(SettingsRowAccessibility.contentDescription(label, value));
         }
 
         TextView labelView = new TextView(this);
@@ -468,7 +478,7 @@ public class MainActivity extends AppCompatActivity {
         valueView.setText(value == null ? "" : value);
         TextViewCompat.setTextAppearance(valueView, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
         valueView.setTextColor(mutedTextColor());
-        valueView.setGravity(Gravity.RIGHT);
+        valueView.setGravity(Gravity.END);
         valueView.setSingleLine(false);
         row.addView(valueView, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.35f));
 
@@ -784,7 +794,7 @@ public class MainActivity extends AppCompatActivity {
                 ? com.google.android.material.R.style.TextAppearance_Material3_HeadlineSmall
                 : com.google.android.material.R.style.TextAppearance_Material3_TitleMedium);
         title.setTextColor(primaryTextColor());
-        title.setGravity(Gravity.LEFT);
+        title.setGravity(Gravity.START);
         return title;
     }
 
@@ -873,9 +883,16 @@ public class MainActivity extends AppCompatActivity {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
-    private int getStatusBarHeight() {
-        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        return resourceId > 0 ? getResources().getDimensionPixelSize(resourceId) : dp(24);
+    private void applyTopSystemBarInset(View insetHost) {
+        ViewCompat.setOnApplyWindowInsetsListener(insetHost, (view, windowInsets) -> {
+            Insets statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars());
+            Insets displayCutout = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout());
+            int topInset = AppWindowInsetsPolicy.topContentInset(
+                    statusBars.top, displayCutout.top);
+            view.setPadding(view.getPaddingLeft(), topInset,
+                    view.getPaddingRight(), view.getPaddingBottom());
+            return windowInsets;
+        });
     }
 
     @Override

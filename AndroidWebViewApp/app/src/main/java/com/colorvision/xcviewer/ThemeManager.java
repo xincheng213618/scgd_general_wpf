@@ -3,11 +3,12 @@ package com.colorvision.xcviewer;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
-import android.os.Build;
-import android.view.View;
+import android.view.Window;
 
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.R;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -34,25 +35,15 @@ final class ThemeManager {
 
     void applySystemBars(Activity activity) {
         int surface = cardBackgroundColor();
-        activity.getWindow().setStatusBarColor(surface);
-        activity.getWindow().setNavigationBarColor(surface);
+        Window window = activity.getWindow();
+        window.setStatusBarColor(surface);
+        window.setNavigationBarColor(surface);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            int flags = activity.getWindow().getDecorView().getSystemUiVisibility();
-            boolean lightSurface = MaterialColors.isColorLight(surface);
-            if (lightSurface) {
-                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-                }
-            } else {
-                flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-                }
-            }
-            activity.getWindow().getDecorView().setSystemUiVisibility(flags);
-        }
+        boolean lightSurface = MaterialColors.isColorLight(surface);
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(
+                window, window.getDecorView());
+        controller.setAppearanceLightStatusBars(lightSurface);
+        controller.setAppearanceLightNavigationBars(lightSurface);
     }
 
     void showThemeDialog(Activity activity, int startTab) {

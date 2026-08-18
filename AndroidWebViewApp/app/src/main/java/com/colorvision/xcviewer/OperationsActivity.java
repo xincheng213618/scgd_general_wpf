@@ -286,7 +286,7 @@ public class OperationsActivity extends AppCompatActivity {
         ViewCompat.setOnApplyWindowInsetsListener(insetHost, (view, windowInsets) -> {
             Insets statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars());
             Insets displayCutout = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout());
-            int topInset = OperationsWindowInsetsPolicy.topContentInset(
+            int topInset = AppWindowInsetsPolicy.topContentInset(
                     statusBars.top, displayCutout.top);
             view.setPadding(view.getPaddingLeft(), topInset,
                     view.getPaddingRight(), view.getPaddingBottom());
