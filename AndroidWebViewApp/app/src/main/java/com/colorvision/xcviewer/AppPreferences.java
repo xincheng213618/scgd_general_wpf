@@ -17,6 +17,7 @@ final class AppPreferences {
     private static final String KEY_START_TAB = "start_tab";
     private static final String KEY_AUDIO_URI = "audio_uri";
     private static final String KEY_AUDIO_TITLE = "audio_title";
+    private static final String KEY_CAMERA_PERMISSION_BLOCKED = "camera_permission_blocked";
     private static final String KEY_DEVICE_ID = "operations_device_id";
     private static final String KEY_OPERATIONS_PROFILES = "operations_profiles_v1";
     private static final String KEY_OPERATIONS_ENDPOINT = "operations_endpoint";
@@ -99,6 +100,14 @@ final class AppPreferences {
 
     String getAudioTitle() {
         return getAudioUri() == null ? "未选择音乐" : preferences.getString(KEY_AUDIO_TITLE, "已选择音乐");
+    }
+
+    boolean isCameraPermissionBlocked() {
+        return preferences.getBoolean(KEY_CAMERA_PERMISSION_BLOCKED, false);
+    }
+
+    void saveCameraPermissionBlocked(boolean blocked) {
+        preferences.edit().putBoolean(KEY_CAMERA_PERMISSION_BLOCKED, blocked).apply();
     }
 
     String getOrCreateDeviceId() {

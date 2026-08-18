@@ -1,7 +1,6 @@
 package com.colorvision.xcviewer;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -14,7 +13,13 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.BinaryBitmap;
@@ -31,8 +36,9 @@ import java.util.List;
 import java.util.Map;
 
 @SuppressWarnings("deprecation")
-public class QrScanActivity extends Activity implements SurfaceHolder.Callback, Camera.PreviewCallback {
+public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.Callback, Camera.PreviewCallback {
     public static final String EXTRA_QR_RESULT = "qr_result";
+    public static final String EXTRA_SCAN_FAILURE = "qr_scan_failure";
 
     private static final int REQUEST_CAMERA_PERMISSION = 2001;
 
@@ -48,6 +54,7 @@ public class QrScanActivity extends Activity implements SurfaceHolder.Callback, 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        configureSystemBars();
         reader = createReader();
         createContentView();
         if (hasCameraPermission()) {
@@ -55,6 +62,16 @@ public class QrScanActivity extends Activity implements SurfaceHolder.Callback, 
         } else {
             requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
         }
+    }
+
+    private void configureSystemBars() {
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        getWindow().setStatusBarColor(Color.BLACK);
+        getWindow().setNavigationBarColor(Color.BLACK);
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(
+                getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
     }
 
     private void createContentView() {
@@ -74,8 +91,9 @@ public class QrScanActivity extends Activity implements SurfaceHolder.Callback, 
         backButton.setContentDescription("返回");
         backButton.setBackgroundColor(Color.argb(96, 0, 0, 0));
         backButton.setOnClickListener(v -> finish());
-        FrameLayout.LayoutParams backParams = new FrameLayout.LayoutParams(dp(58), dp(58), Gravity.TOP | Gravity.LEFT);
-        backParams.setMargins(dp(12), dp(18), 0, 0);
+        FrameLayout.LayoutParams backParams = new FrameLayout.LayoutParams(
+                dp(58), dp(58), Gravity.TOP | Gravity.START);
+        backParams.setMargins(dp(12), dp(12), 0, 0);
         root.addView(backButton, backParams);
 
         statusText = new TextView(this);
@@ -89,10 +107,23 @@ public class QrScanActivity extends Activity implements SurfaceHolder.Callback, 
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM);
-        statusParams.setMargins(dp(18), 0, dp(18), dp(28));
+        statusParams.setMargins(dp(18), 0, dp(18), dp(16));
         root.addView(statusText, statusParams);
 
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, windowInsets) -> {
+            Insets statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars());
+            Insets displayCutout = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout());
+            Insets navigationBars = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars());
+            backParams.topMargin = AppWindowInsetsPolicy.topContentInset(
+                    statusBars.top, displayCutout.top) + dp(12);
+            statusParams.bottomMargin = Math.max(
+                    navigationBars.bottom, displayCutout.bottom) + dp(16);
+            backButton.setLayoutParams(backParams);
+            statusText.setLayoutParams(statusParams);
+            return windowInsets;
+        });
         setContentView(root);
+        ViewCompat.requestApplyInsets(root);
     }
 
     private MultiFormatReader createReader() {
@@ -120,9 +151,10 @@ public class QrScanActivity extends Activity implements SurfaceHolder.Callback, 
             return;
         }
 
-        Toast.makeText(this, "没有相机权限，请授权后重新扫描运维配对码", Toast.LENGTH_LONG).show();
-        setResult(RESULT_CANCELED);
-        finish();
+        boolean blocked = !shouldShowRequestPermissionRationale(Manifest.permission.CAMERA);
+        finishWithFailure(blocked
+                ? QrScanFailurePresentation.CAMERA_PERMISSION_BLOCKED
+                : QrScanFailurePresentation.CAMERA_PERMISSION_DENIED);
     }
 
     @Override
@@ -154,10 +186,15 @@ public class QrScanActivity extends Activity implements SurfaceHolder.Callback, 
             camera.startPreview();
         } catch (Exception ex) {
             releaseCamera();
-            Toast.makeText(this, "相机启动失败，请返回后重新扫描运维配对码", Toast.LENGTH_LONG).show();
-            setResult(RESULT_CANCELED);
-            finish();
+            finishWithFailure(QrScanFailurePresentation.CAMERA_UNAVAILABLE);
         }
+    }
+
+    private void finishWithFailure(String reason) {
+        Intent result = new Intent();
+        result.putExtra(EXTRA_SCAN_FAILURE, reason);
+        setResult(RESULT_CANCELED, result);
+        finish();
     }
 
     private void configureCamera(Camera targetCamera) {

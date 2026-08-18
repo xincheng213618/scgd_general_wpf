@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean updatingBottomNavigation;
     private boolean openedFromOperations;
     private int currentTab = TAB_OPERATIONS;
+    private boolean cameraPermissionGranted;
     private final ExecutorService appUpdateExecutor = Executors.newSingleThreadExecutor();
     private boolean appUpdateInFlight;
     private File pendingInstallFile;
@@ -78,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         appPreferences = new AppPreferences(this);
+        cameraPermissionGranted = hasCameraPermission();
         int startTab = consumeStartTab(getIntent());
         openedFromOperations = getIntent().getBooleanExtra(EXTRA_FROM_OPERATIONS, false);
         if (openedFromOperations && startTab == TAB_SETTINGS) {
@@ -386,7 +388,7 @@ public class MainActivity extends AppCompatActivity {
 
         LinearLayout permissionSection = makeSettingsSection();
         content.addView(permissionSection, settingsSectionParams());
-        addSettingsRow(permissionSection, "相机权限", hasCameraPermission() ? "已授权" : "需要时申请", v -> startQrScan());
+        addSettingsRow(permissionSection, "相机权限", cameraPermissionStatus(), v -> startQrScan());
         addSettingsRow(permissionSection, "网络权限", "已配置", null);
         addSettingsRow(permissionSection, "音乐权限", "选择单曲授权", v -> chooseAudioFile());
 
@@ -541,7 +543,36 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startQrScan() {
+        if (hasCameraPermission()
+                || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
+            appPreferences.saveCameraPermissionBlocked(false);
+        } else if (cameraPermissionNeedsSystemSettings()) {
+            showQrScanFailure(QrScanFailurePresentation.CAMERA_PERMISSION_BLOCKED);
+            return;
+        }
         startActivityForResult(new Intent(this, QrScanActivity.class), REQUEST_QR_SCAN);
+    }
+
+    private String cameraPermissionStatus() {
+        if (hasCameraPermission()) {
+            return "已授权";
+        }
+        return cameraPermissionNeedsSystemSettings() ? "需在系统设置开启" : "需要时申请";
+    }
+
+    private boolean cameraPermissionNeedsSystemSettings() {
+        return !hasCameraPermission()
+                && appPreferences.isCameraPermissionBlocked()
+                && !shouldShowRequestPermissionRationale(Manifest.permission.CAMERA);
+    }
+
+    private void showQrScanFailure(String reason) {
+        boolean blocked = QrScanFailurePresentation.CAMERA_PERMISSION_BLOCKED.equals(reason);
+        appPreferences.saveCameraPermissionBlocked(blocked);
+        if (currentTab == TAB_SETTINGS) {
+            showProfileView();
+        }
+        QrScanRecoveryDialog.show(this, reason, this::startQrScan);
     }
 
     @Override
@@ -559,8 +590,15 @@ public class MainActivity extends AppCompatActivity {
 
         if (requestCode == REQUEST_QR_SCAN) {
             if (resultCode == RESULT_OK && data != null) {
+                appPreferences.saveCameraPermissionBlocked(false);
                 String result = data.getStringExtra(QrScanActivity.EXTRA_QR_RESULT);
                 saveAndOpen(result);
+                return;
+            }
+            String failureReason = data == null
+                    ? "" : data.getStringExtra(QrScanActivity.EXTRA_SCAN_FAILURE);
+            if (failureReason != null && !failureReason.isEmpty()) {
+                showQrScanFailure(failureReason);
                 return;
             }
             Toast.makeText(this, "已取消运维配对扫码", Toast.LENGTH_SHORT).show();
@@ -577,6 +615,20 @@ public class MainActivity extends AppCompatActivity {
         }
 
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        boolean granted = hasCameraPermission();
+        if (appPreferences != null && (granted
+                || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA))) {
+            appPreferences.saveCameraPermissionBlocked(false);
+        }
+        if (root != null && currentTab == TAB_SETTINGS && granted != cameraPermissionGranted) {
+            showProfileView();
+        }
+        cameraPermissionGranted = granted;
     }
 
     private void openOperations() {

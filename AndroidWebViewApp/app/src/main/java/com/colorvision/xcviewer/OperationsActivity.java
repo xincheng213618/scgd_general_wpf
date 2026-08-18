@@ -1,7 +1,9 @@
 package com.colorvision.xcviewer;
 
+import android.Manifest;
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -853,7 +855,30 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void startOperationsPairingScan() {
+        if (hasCameraPermission()
+                || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
+            preferences.saveCameraPermissionBlocked(false);
+        } else if (cameraPermissionNeedsSystemSettings()) {
+            showQrScanFailure(QrScanFailurePresentation.CAMERA_PERMISSION_BLOCKED);
+            return;
+        }
         startActivityForResult(new Intent(this, QrScanActivity.class), REQUEST_QR_SCAN);
+    }
+
+    private boolean hasCameraPermission() {
+        return checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private boolean cameraPermissionNeedsSystemSettings() {
+        return !hasCameraPermission()
+                && preferences.isCameraPermissionBlocked()
+                && !shouldShowRequestPermissionRationale(Manifest.permission.CAMERA);
+    }
+
+    private void showQrScanFailure(String reason) {
+        preferences.saveCameraPermissionBlocked(
+                QrScanFailurePresentation.CAMERA_PERMISSION_BLOCKED.equals(reason));
+        QrScanRecoveryDialog.show(this, reason, this::startOperationsPairingScan);
     }
 
     private void promptRenameCurrentOperationsProfile() {
@@ -881,6 +906,7 @@ public class OperationsActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_QR_SCAN) {
             if (resultCode == RESULT_OK && data != null) {
+                preferences.saveCameraPermissionBlocked(false);
                 String result = data.getStringExtra(QrScanActivity.EXTRA_QR_RESULT);
                 if (OperationsPairingPayload.isPairingInput(result)) {
                     beginPairing(result);
@@ -888,6 +914,12 @@ public class OperationsActivity extends AppCompatActivity {
                     Toast.makeText(this, "请扫描电脑端的安全运维配对码",
                             Toast.LENGTH_LONG).show();
                 }
+                return;
+            }
+            String failureReason = data == null
+                    ? "" : data.getStringExtra(QrScanActivity.EXTRA_SCAN_FAILURE);
+            if (failureReason != null && !failureReason.isEmpty()) {
+                showQrScanFailure(failureReason);
             } else {
                 Toast.makeText(this, "已取消添加电脑", Toast.LENGTH_SHORT).show();
             }
