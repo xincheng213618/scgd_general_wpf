@@ -1,0 +1,47 @@
+package com.colorvision.xcviewer;
+
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
+
+public class OperationsDashboardRefreshPolicyTest {
+    @Test
+    public void visibleDashboardStartsANewRefresh() {
+        assertEquals(
+                OperationsDashboardRefreshPolicy.Decision.START,
+                OperationsDashboardRefreshPolicy.decide(
+                        true, true, true, true, true, false));
+    }
+
+    @Test
+    public void manualRefreshJoinsAnAutomaticHeartbeatAlreadyInFlight() {
+        assertEquals(
+                OperationsDashboardRefreshPolicy.Decision.JOIN,
+                OperationsDashboardRefreshPolicy.decide(
+                        true, true, true, true, true, true));
+    }
+
+    @Test
+    public void nonDashboardAndUnavailableClientsRejectTheGesture() {
+        assertEquals(
+                OperationsDashboardRefreshPolicy.Decision.REJECT,
+                OperationsDashboardRefreshPolicy.decide(
+                        true, true, false, true, true, false));
+        assertEquals(
+                OperationsDashboardRefreshPolicy.Decision.REJECT,
+                OperationsDashboardRefreshPolicy.decide(
+                        true, true, true, true, false, false));
+    }
+
+    @Test
+    public void completionCopyDistinguishesDirectStaleAndFailedRefreshes() {
+        assertEquals("刷新完成 · 现场直连",
+                OperationsDashboardRefreshPolicy.completionMessage(true, false, true));
+        assertEquals("刷新完成 · 电脑在线",
+                OperationsDashboardRefreshPolicy.completionMessage(true, true, true));
+        assertEquals("刷新完成 · 电脑仍未上线",
+                OperationsDashboardRefreshPolicy.completionMessage(true, true, false));
+        assertEquals("刷新失败 · 连接仍不可达",
+                OperationsDashboardRefreshPolicy.completionMessage(false, false, false));
+    }
+}

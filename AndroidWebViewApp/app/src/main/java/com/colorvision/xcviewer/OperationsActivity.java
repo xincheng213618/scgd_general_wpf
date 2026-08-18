@@ -33,6 +33,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.TextViewCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -40,6 +41,7 @@ import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
+import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -115,6 +117,7 @@ public class OperationsActivity extends AppCompatActivity {
     private TextView state;
     private TextView details;
     private LinearProgressIndicator progress;
+    private SwipeRefreshLayout dashboardRefresh;
     private ScrollView dashboardScroll;
     private LinearLayout actions;
     private DashboardStatusRow dashboardFlowStatus;
@@ -139,6 +142,7 @@ public class OperationsActivity extends AppCompatActivity {
     private volatile boolean remoteDashboard;
     private boolean showingDashboardSummary;
     private boolean connectionHeartbeatInFlight;
+    private boolean manualDashboardRefresh;
     private int connectionRequestGeneration;
     private int connectionCheckGeneration;
     private int remoteTaskGeneration;
@@ -281,7 +285,18 @@ public class OperationsActivity extends AppCompatActivity {
         actionsParams.setMargins(0, dp(7), 0, 0);
         root.addView(actions, actionsParams);
 
-        shell.addView(scroll, new LinearLayout.LayoutParams(
+        dashboardRefresh = new SwipeRefreshLayout(this);
+        dashboardRefresh.setColorSchemeColors(themeManager.primaryColor());
+        dashboardRefresh.setProgressBackgroundColorSchemeColor(themeManager.cardBackgroundColor());
+        dashboardRefresh.setOnRefreshListener(() -> requestDashboardRefresh());
+        dashboardRefresh.setOnChildScrollUpCallback((parent, child) ->
+                !showingDashboardSummary || dashboardScroll.canScrollVertically(-1));
+        ViewCompat.addAccessibilityAction(scroll, "刷新运维状态", (view, arguments) ->
+                requestDashboardRefresh());
+        dashboardRefresh.addView(scroll, new SwipeRefreshLayout.LayoutParams(
+                SwipeRefreshLayout.LayoutParams.MATCH_PARENT,
+                SwipeRefreshLayout.LayoutParams.MATCH_PARENT));
+        shell.addView(dashboardRefresh, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
         bottomNavigation = createBottomNavigation();
         shell.addView(bottomNavigation, new LinearLayout.LayoutParams(
@@ -2268,6 +2283,52 @@ public class OperationsActivity extends AppCompatActivity {
         OperationsWatchService.start(this);
     }
 
+    private boolean requestDashboardRefresh() {
+        OperationsDashboardRefreshPolicy.Decision decision = OperationsDashboardRefreshPolicy.decide(
+                activityResumed,
+                dashboardVisible,
+                showingDashboardSummary,
+                preferences != null && preferences.hasOperationsProfile(),
+                client != null || relayClient != null,
+                connectionHeartbeatInFlight);
+        if (decision == OperationsDashboardRefreshPolicy.Decision.REJECT) {
+            dashboardRefresh.setRefreshing(false);
+            return false;
+        }
+
+        manualDashboardRefresh = true;
+        dashboardRefresh.setRefreshing(true);
+        dashboardRefresh.announceForAccessibility("正在刷新运维状态");
+        if (decision == OperationsDashboardRefreshPolicy.Decision.START) {
+            connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
+            runConnectionHeartbeat();
+        }
+        return true;
+    }
+
+    private void finishDashboardRefresh(String message) {
+        boolean showResult = manualDashboardRefresh;
+        manualDashboardRefresh = false;
+        if (dashboardRefresh != null) {
+            dashboardRefresh.setRefreshing(false);
+        }
+        if (showResult && activityResumed && dashboardRefresh != null
+                && message != null && !message.isEmpty()) {
+            Snackbar snackbar = Snackbar.make(dashboardRefresh, message, Snackbar.LENGTH_SHORT);
+            if (bottomNavigation != null) {
+                snackbar.setAnchorView(bottomNavigation);
+            }
+            snackbar.show();
+        }
+    }
+
+    private void cancelDashboardRefresh() {
+        manualDashboardRefresh = false;
+        if (dashboardRefresh != null) {
+            dashboardRefresh.setRefreshing(false);
+        }
+    }
+
     private void scheduleConnectionHeartbeat() {
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         if (activityResumed && dashboardVisible && (client != null || relayClient != null)) {
@@ -2403,6 +2464,8 @@ public class OperationsActivity extends AppCompatActivity {
         connectionHeartbeatInFlight = false;
         if (remoteDashboard) {
             showDashboard();
+            finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
+                    true, false, true));
             return;
         }
         if (showingDashboardSummary) {
@@ -2411,13 +2474,20 @@ public class OperationsActivity extends AppCompatActivity {
         if (snapshot != null) {
             updateDashboardLiveStatus(snapshot);
         }
+        finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
+                true, false, true));
         scheduleConnectionHeartbeat();
     }
 
     private void applyRelayHeartbeat(JSONObject response) {
         connectionHeartbeatInFlight = false;
+        JSONObject host = response.optJSONObject("host");
+        boolean hostFresh = host != null && OperationsRelayPolicy.isHostFresh(
+                host.optLong("signedAt", 0L), System.currentTimeMillis());
         if (!remoteDashboard) {
             showRemoteDashboard(response);
+            finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
+                    true, true, hostFresh));
             return;
         }
         lastRelaySnapshotResponse = response;
@@ -2425,6 +2495,8 @@ public class OperationsActivity extends AppCompatActivity {
             updateRemoteDashboardStatus(response);
             progress.setVisibility(View.GONE);
         }
+        finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
+                true, true, hostFresh));
         scheduleConnectionHeartbeat();
     }
 
@@ -2435,11 +2507,14 @@ public class OperationsActivity extends AppCompatActivity {
                     ? "○ 固定中继暂断 · 现场直连也不可达"
                     : "○ 现场直连暂断 · 固定中继也不可达");
         }
+        finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
+                false, false, false));
         scheduleConnectionHeartbeat();
     }
 
     private void completeHeartbeatRevoked() {
         connectionHeartbeatInFlight = false;
+        cancelDashboardRefresh();
         showRevokedProfile();
     }
 
@@ -5626,6 +5701,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void setBusy(String message) {
+        cancelDashboardRefresh();
         stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -5638,6 +5714,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showError(String heading, String message, Runnable recovery) {
+        cancelDashboardRefresh();
         stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -5823,6 +5900,7 @@ public class OperationsActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         activityResumed = false;
+        cancelDashboardRefresh();
         pairingApprovalHandler.removeCallbacks(pairingApprovalTick);
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         supportRefreshHandler.removeCallbacks(supportRefresh);
@@ -5843,6 +5921,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showPairingFailure(String reason) {
+        cancelDashboardRefresh();
         stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
