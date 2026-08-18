@@ -1713,27 +1713,6 @@ public class OperationsActivity extends AppCompatActivity {
                 dashboardAlertStatus,
                 dashboardPerformanceStatus,
                 dashboardRecoveryStatus);
-
-        addDashboardSection("远程控制");
-        addDashboardInfoCard(OperationsRemoteActionPresentation.scopeNote(false, true));
-        addDashboardTaskGroup(
-                "窗口控制",
-                OperationsRemoteActionPresentation.windowDescription(false),
-                dashboardTonalButton("显示主窗口", v -> runWindowAction("show", "主窗口已显示")),
-                dashboardButton("最小化窗口", v -> confirmMinimizeWindow()));
-        addDashboardTaskGroup(
-                "恢复与控制",
-                OperationsRemoteActionPresentation.recoveryDescription(false),
-                dashboardTonalButton("恢复消息通道", v -> confirmRecoverMessageChannel()),
-                dashboardRestartApplicationButton = dashboardDestructiveButton(
-                        "重启 ColorVision", v -> confirmRestartApplication()));
-        dashboardCancelFlowButton = dashboardButton("取消检测（读取中）", v -> confirmCancelCurrentFlow());
-        dashboardCancelFlowButton.setEnabled(false);
-        addDashboardTaskGroup(
-                "检测控制",
-                "仅在检测正在运行时开放取消；电脑与连接已提升到上方连接入口。",
-                dashboardCancelFlowButton,
-                dashboardButton("电脑与连接", v -> showConnectionPreference()));
         scheduleConnectionHeartbeat();
         ensureOperationsWatchRunning();
         if (openPendingOperationsDestination()) {
@@ -1812,8 +1791,23 @@ public class OperationsActivity extends AppCompatActivity {
             case OperationsToolboxPresentation.ACTION_SERVICES_HEALTH:
                 loadCapability("/ops/v1/services/health");
                 return;
+            case OperationsToolboxPresentation.ACTION_SHOW_WINDOW:
+                runWindowAction("show", "主窗口已显示");
+                return;
+            case OperationsToolboxPresentation.ACTION_MINIMIZE_WINDOW:
+                confirmMinimizeWindow();
+                return;
+            case OperationsToolboxPresentation.ACTION_CANCEL_FLOW:
+                checkAndConfirmCancelCurrentFlowFromToolbox();
+                return;
+            case OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE:
+                confirmRecoverMessageChannel();
+                return;
             case OperationsToolboxPresentation.ACTION_RESTART_MQTT:
                 confirmRestartMqtt();
+                return;
+            case OperationsToolboxPresentation.ACTION_RESTART_APPLICATION:
+                confirmRestartApplication();
                 return;
             case OperationsToolboxPresentation.ACTION_RECENT_EVENTS:
                 loadCapability("/ops/v1/diagnostics/recent-events");
@@ -5156,6 +5150,44 @@ public class OperationsActivity extends AppCompatActivity {
         boolean cancelAvailable = liveMonitorVisible
                 ? liveMonitorCancelAvailable
                 : showingDashboardSummary && dashboardFlowCancelAvailable;
+        confirmCancelCurrentFlow(cancelAvailable);
+    }
+
+    private void checkAndConfirmCancelCurrentFlowFromToolbox() {
+        if (!ensureOperationsClientTargetIsCurrent()) {
+            return;
+        }
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在核对当前检测状态…");
+        executor.execute(() -> {
+            try {
+                JSONObject response = client.get("/ops/v1/flow/runtime");
+                JSONObject data = response.optJSONObject("data");
+                JSONObject flow = data == null ? response : data;
+                boolean available = flow.optBoolean("available", false)
+                        && flow.optBoolean("isActive", false)
+                        && flow.optBoolean("cancelAvailable", false)
+                        && dashboardFlowCancelCapabilityAvailable;
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    dashboardFlowAvailable = flow.optBoolean("available", false);
+                    dashboardFlowActive = flow.optBoolean("isActive", false);
+                    dashboardFlowCancelAvailable = available;
+                    state.setText(available
+                            ? "检测运行中 · 等待确认"
+                            : "当前没有可取消的主检测");
+                    details.setText(available
+                            ? R.string.operations_cancel_flow_toolbox_available_details
+                            : R.string.operations_cancel_flow_toolbox_unavailable_details);
+                    confirmCancelCurrentFlow(available);
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> showTransientError(ex));
+            }
+        });
+    }
+
+    private void confirmCancelCurrentFlow(boolean cancelAvailable) {
         if (!cancelAvailable) {
             Toast.makeText(this, "当前没有可取消的主检测", Toast.LENGTH_LONG).show();
             return;

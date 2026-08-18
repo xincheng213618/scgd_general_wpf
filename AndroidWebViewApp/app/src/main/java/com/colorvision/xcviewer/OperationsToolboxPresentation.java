@@ -8,7 +8,12 @@ import java.util.Set;
 
 final class OperationsToolboxPresentation {
     static final String ACTION_SERVICES_HEALTH = "toolbox.services.health";
+    static final String ACTION_SHOW_WINDOW = "toolbox.window.show";
+    static final String ACTION_MINIMIZE_WINDOW = "toolbox.window.minimize";
+    static final String ACTION_CANCEL_FLOW = "toolbox.flow.cancel";
+    static final String ACTION_RECOVER_MESSAGE = "toolbox.message.recover";
     static final String ACTION_RESTART_MQTT = "toolbox.mqtt.restart";
+    static final String ACTION_RESTART_APPLICATION = "toolbox.application.restart";
     static final String ACTION_RECENT_EVENTS = "toolbox.events.recent";
     static final String ACTION_FAILURES = "toolbox.failures";
     static final String ACTION_JOBS = "toolbox.jobs";
@@ -25,6 +30,13 @@ final class OperationsToolboxPresentation {
 
     static ViewModel create() {
         List<Section> sections = new ArrayList<>();
+        sections.add(section("控制",
+                action(ACTION_SHOW_WINDOW,
+                        "显示主窗口", "显示或还原当前 ColorVision 主窗口"),
+                action(ACTION_MINIMIZE_WINDOW,
+                        "最小化主窗口", "最小化当前 ColorVision 主窗口 · 执行前确认"),
+                action(ACTION_CANCEL_FLOW,
+                        "取消当前检测", "仅在主检测运行且允许取消时开放 · 执行前确认")));
         sections.add(section("诊断",
                 action(ACTION_SERVICES_HEALTH,
                         "服务健康", "查看服务、依赖与运行状态"),
@@ -33,8 +45,12 @@ final class OperationsToolboxPresentation {
                 action(ACTION_FAILURES,
                         "崩溃与卡死", "查看崩溃、卡死与转储线索")));
         sections.add(section("恢复",
+                action(ACTION_RECOVER_MESSAGE,
+                        "恢复消息通道", "按电脑现有配置恢复连接与订阅 · 执行前确认"),
                 action(ACTION_RESTART_MQTT,
-                        "重启 MQTT", "重新启动消息服务 · 执行前再次确认")));
+                        "重启 MQTT", "重新启动消息服务 · 执行前再次确认"),
+                action(ACTION_RESTART_APPLICATION,
+                        "重启 ColorVision", "仅在检测空闲时重启应用 · 执行前确认")));
         sections.add(section("取证",
                 action(ACTION_CREATE_DIAGNOSTIC,
                         "生成诊断包", "创建有界脱敏诊断包 · 需手机确认"),
@@ -59,7 +75,12 @@ final class OperationsToolboxPresentation {
     static boolean isSupportedAction(String actionId) {
         switch (actionId) {
             case ACTION_SERVICES_HEALTH:
+            case ACTION_SHOW_WINDOW:
+            case ACTION_MINIMIZE_WINDOW:
+            case ACTION_CANCEL_FLOW:
+            case ACTION_RECOVER_MESSAGE:
             case ACTION_RESTART_MQTT:
+            case ACTION_RESTART_APPLICATION:
             case ACTION_RECENT_EVENTS:
             case ACTION_FAILURES:
             case ACTION_JOBS:
