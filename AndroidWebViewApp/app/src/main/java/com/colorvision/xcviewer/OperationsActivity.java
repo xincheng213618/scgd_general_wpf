@@ -117,6 +117,7 @@ public class OperationsActivity extends AppCompatActivity {
     private MenuItem dashboardRefreshMenuItem;
     private Chip profileTarget;
     private TextView state;
+    private TextView dashboardFreshness;
     private TextView details;
     private LinearProgressIndicator progress;
     private SwipeRefreshLayout dashboardRefresh;
@@ -141,12 +142,14 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean dashboardFlowCancelCapabilityAvailable;
     private boolean dashboardRestartCapabilityAvailable;
     private boolean dashboardRemoteHostFresh;
+    private boolean dashboardSummaryLoaded;
     private boolean dashboardVisible;
     private volatile boolean remoteDashboard;
     private boolean showingDashboardSummary;
     private boolean connectionRecoveryVisible;
     private boolean connectionHeartbeatInFlight;
     private boolean manualDashboardRefresh;
+    private String lastSuccessfulDashboardUpdateLabel = "";
     private int connectionRequestGeneration;
     private int connectionCheckGeneration;
     private int remoteTaskGeneration;
@@ -284,10 +287,23 @@ public class OperationsActivity extends AppCompatActivity {
         state = new TextView(this);
         TextViewCompat.setTextAppearance(state, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
         state.setTextColor(themeManager.onPrimaryContainerColor());
-        state.setPadding(dp(16), dp(12), dp(16), dp(12));
+        LinearLayout stateContent = new LinearLayout(this);
+        stateContent.setOrientation(LinearLayout.VERTICAL);
+        stateContent.setPadding(dp(16), dp(12), dp(16), dp(12));
+        stateContent.addView(state, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+        dashboardFreshness = new TextView(this);
+        TextViewCompat.setTextAppearance(dashboardFreshness,
+                com.google.android.material.R.style.TextAppearance_Material3_BodySmall);
+        dashboardFreshness.setPadding(0, dp(3), 0, 0);
+        dashboardFreshness.setVisibility(View.GONE);
+        stateContent.addView(dashboardFreshness, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         MaterialCardView stateCard = new MaterialCardView(this);
         stateCard.setCardBackgroundColor(themeManager.primaryContainerColor());
-        stateCard.addView(state, new MaterialCardView.LayoutParams(
+        stateCard.addView(stateContent, new MaterialCardView.LayoutParams(
                 MaterialCardView.LayoutParams.MATCH_PARENT,
                 MaterialCardView.LayoutParams.WRAP_CONTENT));
         LinearLayout.LayoutParams stateParams = new LinearLayout.LayoutParams(
@@ -1261,6 +1277,8 @@ public class OperationsActivity extends AppCompatActivity {
         lastRelaySnapshotResponse = null;
         remoteDashboard = false;
         connectionHeartbeatInFlight = false;
+        dashboardSummaryLoaded = false;
+        lastSuccessfulDashboardUpdateLabel = "";
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         clearDashboardLiveStatusReferences();
     }
@@ -1324,6 +1342,11 @@ public class OperationsActivity extends AppCompatActivity {
             dashboardRefreshMenuItem.setEnabled(
                     OperationsDashboardRefreshPolicy.toolbarActionEnabled(
                             showRefresh, manualDashboardRefresh));
+        }
+        if (dashboardFreshness != null) {
+            dashboardFreshness.setVisibility(
+                    dashboardVisible && showingDashboardSummary
+                            ? View.VISIBLE : View.GONE);
         }
         boolean showProfileTarget = paired
                 && dashboardVisible
@@ -1432,6 +1455,8 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardFlowCancelCapabilityAvailable = true;
         dashboardRestartCapabilityAvailable = true;
         dashboardRemoteHostFresh = true;
+        dashboardSummaryLoaded = false;
+        showDashboardFreshness(OperationsDashboardFreshness.loading());
 
         addDashboardSection("建议操作");
         dashboardPriorityAction = dashboardPrimaryButton("正在分析运行状态…", null);
@@ -1704,6 +1729,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (host == null) {
             state.setText("远程中继响应不完整");
             details.setText("配对资料已保留，后台会继续重试。");
+            markDashboardFreshnessUnavailable("中继响应不完整");
             return;
         }
         boolean fresh = OperationsRelayPolicy.isHostFresh(
@@ -1727,9 +1753,12 @@ public class OperationsActivity extends AppCompatActivity {
         }
         long signedAt = host.optLong("signedAt", 0L);
         if (monitor == null) {
-            markDashboardLiveStatusUnavailable();
-        } else if (dashboardFlowStatus != null) {
-            updateDashboardLiveStatus(monitor);
+            markDashboardFreshnessUnavailable("实时摘要不可用");
+        } else {
+            if (dashboardFlowStatus != null) {
+                updateDashboardLiveStatus(monitor);
+            }
+            markDashboardFreshnessUpdated(true, fresh, signedAt);
         }
         updateDashboardPriority(fresh
                 ? OperationsDashboardAdvisor.fromMonitor(
@@ -2610,6 +2639,40 @@ public class OperationsActivity extends AppCompatActivity {
         }
     }
 
+    private void showDashboardFreshness(
+            OperationsDashboardFreshness.Presentation presentation) {
+        if (dashboardFreshness == null || presentation == null) {
+            return;
+        }
+        dashboardFreshness.setText(presentation.label);
+        dashboardFreshness.setTextColor(
+                presentation.tone == OperationsDashboardFreshness.TONE_ATTENTION
+                        ? themeManager.errorColor()
+                        : themeManager.onPrimaryContainerColor());
+        dashboardFreshness.setAlpha(
+                presentation.tone == OperationsDashboardFreshness.TONE_MUTED ? 0.72f : 1f);
+        dashboardFreshness.setVisibility(
+                dashboardVisible && showingDashboardSummary ? View.VISIBLE : View.GONE);
+    }
+
+    private void markDashboardFreshnessUpdated(
+            boolean relay, boolean sourceFresh, long timestampMilliseconds) {
+        String timeLabel = formatClock(timestampMilliseconds);
+        if (!relay || sourceFresh) {
+            lastSuccessfulDashboardUpdateLabel = timeLabel;
+        }
+        showDashboardFreshness(OperationsDashboardFreshness.updated(
+                timeLabel, relay, sourceFresh));
+    }
+
+    private void markDashboardFreshnessUnavailable(String reason) {
+        if (!dashboardSummaryLoaded) {
+            markDashboardLiveStatusUnavailable();
+        }
+        showDashboardFreshness(OperationsDashboardFreshness.unavailable(
+                reason, lastSuccessfulDashboardUpdateLabel));
+    }
+
     private void scheduleConnectionHeartbeat() {
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         if (OperationsConnectionRecoveryPolicy.shouldSchedule(
@@ -2758,13 +2821,13 @@ public class OperationsActivity extends AppCompatActivity {
         if (connectionRecoveryVisible) {
             showDashboard();
             finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
-                    true, false, true));
+                    true, snapshot != null, false, true));
             return;
         }
         if (remoteDashboard) {
             showDashboard();
             finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
-                    true, false, true));
+                    true, snapshot != null, false, true));
             return;
         }
         if (showingDashboardSummary) {
@@ -2772,9 +2835,12 @@ public class OperationsActivity extends AppCompatActivity {
         }
         if (snapshot != null) {
             updateDashboardLiveStatus(snapshot);
+            markDashboardFreshnessUpdated(false, true, System.currentTimeMillis());
+        } else {
+            markDashboardFreshnessUnavailable("实时摘要不可用");
         }
         finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
-                true, false, true));
+                true, snapshot != null, false, true));
         scheduleConnectionHeartbeat();
     }
 
@@ -2783,10 +2849,11 @@ public class OperationsActivity extends AppCompatActivity {
         JSONObject host = response.optJSONObject("host");
         boolean hostFresh = host != null && OperationsRelayPolicy.isHostFresh(
                 host.optLong("signedAt", 0L), System.currentTimeMillis());
+        boolean summaryAvailable = remoteMonitor(response) != null;
         if (!remoteDashboard) {
             showRemoteDashboard(response);
             finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
-                    true, true, hostFresh));
+                    true, summaryAvailable, true, hostFresh));
             return;
         }
         boolean rebuildForFreshness = OperationsRelayPolicy.shouldRebuildDashboardForFreshness(
@@ -2796,14 +2863,14 @@ public class OperationsActivity extends AppCompatActivity {
             if (rebuildForFreshness) {
                 showRemoteDashboard(response);
                 finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
-                        true, true, hostFresh));
+                        true, summaryAvailable, true, hostFresh));
                 return;
             }
             updateRemoteDashboardStatus(response);
             progress.setVisibility(View.GONE);
         }
         finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
-                true, true, hostFresh));
+                true, summaryAvailable, true, hostFresh));
         scheduleConnectionHeartbeat();
     }
 
@@ -2815,9 +2882,10 @@ public class OperationsActivity extends AppCompatActivity {
             state.setText(relayPreferred
                     ? "○ 固定中继暂断 · 现场直连也不可达"
                     : "○ 现场直连暂断 · 固定中继也不可达");
+            markDashboardFreshnessUnavailable("连接不可达");
         }
         finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
-                false, false, false));
+                false, false, false, false));
         scheduleConnectionHeartbeat();
     }
 
@@ -3099,10 +3167,18 @@ public class OperationsActivity extends AppCompatActivity {
                 JSONObject response = client.get("/ops/v1/monitor");
                 JSONObject snapshot = response.optJSONObject("data");
                 if (snapshot != null) {
-                    runOnUiThread(() -> updateDashboardLiveStatus(snapshot));
+                    runOnUiThread(() -> {
+                        updateDashboardLiveStatus(snapshot);
+                        markDashboardFreshnessUpdated(
+                                false, true, System.currentTimeMillis());
+                    });
+                } else {
+                    runOnUiThread(() ->
+                            markDashboardFreshnessUnavailable("实时摘要不可用"));
                 }
             } catch (Exception ignored) {
-                runOnUiThread(this::markDashboardLiveStatusUnavailable);
+                runOnUiThread(() ->
+                        markDashboardFreshnessUnavailable("实时摘要读取失败"));
             }
         });
     }
@@ -3111,6 +3187,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (dashboardFlowStatus == null) {
             return;
         }
+        dashboardSummaryLoaded = true;
         JSONObject flow = snapshot.optJSONObject("flow");
         JSONObject devices = snapshot.optJSONObject("devices");
         JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
@@ -3184,6 +3261,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
+        dashboardSummaryLoaded = false;
         updateDashboardPriority(remoteDashboard && !dashboardRemoteHostFresh
                 ? OperationsDashboardAdvisor.staleRemoteSnapshot()
                 : OperationsDashboardAdvisor.unavailable());
@@ -3210,6 +3288,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardFlowCancelCapabilityAvailable = false;
         dashboardRestartCapabilityAvailable = false;
         dashboardRemoteHostFresh = false;
+        dashboardSummaryLoaded = false;
     }
 
     private void updateDashboardCancelFlowAction() {

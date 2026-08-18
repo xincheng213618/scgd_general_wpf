@@ -59,12 +59,19 @@ public class OperationsDashboardRefreshPolicyTest {
     @Test
     public void completionCopyDistinguishesDirectStaleAndFailedRefreshes() {
         assertEquals("刷新完成 · 现场直连",
-                OperationsDashboardRefreshPolicy.completionMessage(true, false, true));
+                OperationsDashboardRefreshPolicy.completionMessage(
+                        true, true, false, true));
         assertEquals("刷新完成 · 电脑在线",
-                OperationsDashboardRefreshPolicy.completionMessage(true, true, true));
+                OperationsDashboardRefreshPolicy.completionMessage(
+                        true, true, true, true));
         assertEquals("刷新完成 · 电脑仍未上线",
-                OperationsDashboardRefreshPolicy.completionMessage(true, true, false));
+                OperationsDashboardRefreshPolicy.completionMessage(
+                        true, true, true, false));
+        assertEquals("刷新未完成 · 实时摘要不可用",
+                OperationsDashboardRefreshPolicy.completionMessage(
+                        true, false, false, true));
         assertEquals("刷新失败 · 连接仍不可达",
-                OperationsDashboardRefreshPolicy.completionMessage(false, false, false));
+                OperationsDashboardRefreshPolicy.completionMessage(
+                        false, false, false, false));
     }
 }
