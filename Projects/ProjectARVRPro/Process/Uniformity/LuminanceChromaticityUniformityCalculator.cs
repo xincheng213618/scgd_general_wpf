@@ -7,6 +7,7 @@ namespace ProjectARVRPro.Process.Uniformity
         public bool Success { get; init; }
         public string ErrorMessage { get; init; } = string.Empty;
         public int PointCount { get; init; }
+        public double AverageLuminance { get; init; }
         public double LuminanceUniformity { get; init; }
         public double ColorUniformity { get; init; }
     }
@@ -35,15 +36,17 @@ namespace ProjectARVRPro.Process.Uniformity
 
             double minimumLuminance = points.Min(point => point.Y);
             double maximumLuminance = points.Max(point => point.Y);
+            double averageLuminance = points.Average(point => point.Y);
             double luminanceUniformity = minimumLuminance / maximumLuminance;
             double colorUniformity = CalculateMaximumDeltaUv(points);
-            if (!double.IsFinite(luminanceUniformity) || !double.IsFinite(colorUniformity))
+            if (!double.IsFinite(averageLuminance) || !double.IsFinite(luminanceUniformity) || !double.IsFinite(colorUniformity))
                 return Fail("修正后的POI均匀性计算结果无效。");
 
             return new LuminanceChromaticityUniformityCalculationResult
             {
                 Success = true,
                 PointCount = points.Count,
+                AverageLuminance = averageLuminance,
                 LuminanceUniformity = luminanceUniformity,
                 ColorUniformity = colorUniformity
             };

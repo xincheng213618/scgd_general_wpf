@@ -86,6 +86,7 @@ namespace ProjectARVRPro.Process
 
             if (typeName is "BlackProcess"
                 or "LuminanceChromaticityProcess"
+                or "LuminanceChromaticityYWProcess"
                 or "PoiDynamicProcess"
                 or "White51Process"
                 or "White255Process")
@@ -150,6 +151,7 @@ namespace ProjectARVRPro.Process
             "DistortionDynamicProcess" => ("动态畸变", "解析动态点位的畸变测量结果，适配点位数量或布局变化的测试。", "动态点位 · 畸变计算 · 图形叠加 · 文本结果"),
             "FieldOfViewProcess" => ("视场角", "解析视场角关键结果，计算水平、垂直及对角视场并显示边界。", "FOV 计算 · 阈值判定 · 边界叠加 · 结构化结果"),
             "LuminanceChromaticityProcess" => ("亮色度", "解析关键点亮度与色度结果，用于亮度、色坐标及均匀性评价。", "亮度 · 色度 · 均匀性 · 点位叠加"),
+            "LuminanceChromaticityYWProcess" => ("YW亮色度（12X7 + 8X7）", "分别解析YW的12X7与8X7两组POI，并直接计算平均亮度、亮度均匀性和色度均匀性。", "双POI组 · 本地均匀性计算 · 独立Recipe · 强类型Key"),
             "MTFProcess" => ("MTF 通用", "解析通用 MTF 结果，按测量点输出清晰度评价。", "MTF 解析 · 阈值判定 · 区域叠加 · 文本结果"),
             "MTFHProcess" => ("MTF 058-H（横条纹）", "解析058测试点位方案的横条纹MTF结果。", "横条纹 · 058点位 · 固定区域 · 独立阈值"),
             "MTFVProcess" => ("MTF 058-V（竖条纹）", "解析058测试点位方案的竖条纹MTF结果。", "竖条纹 · 058点位 · 固定区域 · 独立阈值"),

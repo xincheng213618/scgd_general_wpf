@@ -43,6 +43,9 @@ namespace ProjectARVRPro
         [DisplayName("亮色度测试")]
         public Dictionary<string, LuminanceChromaticityTestResult> LuminanceChromaticityTestResults { get; set; } = new();
 
+        [DisplayName("YW亮色度测试")]
+        public Dictionary<string, LuminanceChromaticityYWTestResult> LuminanceChromaticityYWTestResults { get; set; } = new();
+
         [DisplayName("Chessborad")]
         public ChessboardTestResult ChessboardTestResult { get; set; }
 

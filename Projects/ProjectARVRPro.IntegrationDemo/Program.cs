@@ -706,6 +706,7 @@ namespace ProjectARVRPro.IntegrationDemo
         {
             return propertyName == "FieldOfViewTestResults" ||
                    propertyName == "LuminanceChromaticityTestResults" ||
+                   propertyName == "LuminanceChromaticityYWTestResults" ||
                    propertyName == "DynamicMTFHV058TestResults" ||
                    propertyName == "DynamicPoixyuvDatas";
         }

@@ -404,6 +404,7 @@ namespace ProjectARVRPro.IntegrationDemo
                    "    public BlackTestResult BlackTestResult { get; set; }\r\n" +
                    "    public Dictionary<string, FieldOfViewTestResult> FieldOfViewTestResults { get; set; }\r\n" +
                    "    public Dictionary<string, LuminanceChromaticityTestResult> LuminanceChromaticityTestResults { get; set; }\r\n" +
+                   "    public Dictionary<string, LuminanceChromaticityYWTestResult> LuminanceChromaticityYWTestResults { get; set; }\r\n" +
                    "    public ChessboardTestResult ChessboardTestResult { get; set; }\r\n" +
                    "    public MTFHVTestResult MTFHVTestResult { get; set; }\r\n" +
                    "    public List<MTFHV048TestResult> MTFHV048TestResults { get; set; }\r\n" +

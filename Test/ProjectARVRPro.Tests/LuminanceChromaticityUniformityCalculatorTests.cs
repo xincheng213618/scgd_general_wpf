@@ -26,6 +26,7 @@ public sealed class LuminanceChromaticityUniformityCalculatorTests
 
         Assert.True(result.Success, result.ErrorMessage);
         Assert.Equal(2, result.PointCount);
+        Assert.Equal(110d, result.AverageLuminance, 12);
         Assert.Equal(100d / 120d, result.LuminanceUniformity, 12);
         Assert.Equal(Math.Sqrt(0.06 * 0.06 + 0.02 * 0.02), result.ColorUniformity, 12);
     }

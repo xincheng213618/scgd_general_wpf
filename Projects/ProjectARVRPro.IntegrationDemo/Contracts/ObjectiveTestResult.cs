@@ -43,6 +43,10 @@ namespace ProjectARVRPro
         [DisplayName("亮色度测试")]
         public Dictionary<string, LuminanceChromaticityTestResult> LuminanceChromaticityTestResults { get; set; } = new Dictionary<string, LuminanceChromaticityTestResult>();
 
+        /// <summary>按配置名称输出的YW 12X7与8X7双POI组亮色度结果。</summary>
+        [DisplayName("YW亮色度测试")]
+        public Dictionary<string, LuminanceChromaticityYWTestResult> LuminanceChromaticityYWTestResults { get; set; } = new Dictionary<string, LuminanceChromaticityYWTestResult>();
+
         /// <summary>棋盘格测试结果，主要包含棋盘格对比度。</summary>
         [DisplayName("Chessborad")]
         public ChessboardTestResult ChessboardTestResult { get; set; }

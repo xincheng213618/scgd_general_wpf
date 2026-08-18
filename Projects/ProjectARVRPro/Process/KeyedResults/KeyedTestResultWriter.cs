@@ -19,6 +19,15 @@ namespace ProjectARVRPro.Process.KeyedResults
                 destination.W255TestResult = LuminanceChromaticityCompatibility.ToW255TestResult(result);
         }
 
+        public static void Write(ObjectiveTestResult destination, string? key, LuminanceChromaticityYWTestResult result)
+        {
+            ArgumentNullException.ThrowIfNull(destination);
+            ArgumentNullException.ThrowIfNull(result);
+
+            destination.LuminanceChromaticityYWTestResults ??= new();
+            Write(destination.LuminanceChromaticityYWTestResults, key, result, "YW");
+        }
+
         public static void Write(ObjectiveTestResult destination, string? key, FieldOfViewTestResult result)
         {
             ArgumentNullException.ThrowIfNull(destination);

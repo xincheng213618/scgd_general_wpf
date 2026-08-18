@@ -25,6 +25,7 @@ namespace ProjectARVRPro.Exports
             ObjectiveTestItem? keyedItem =
                 FindKeyedResult(_result.FieldOfViewTestResults, testScreenName, itemName) ??
                 FindKeyedResult(_result.LuminanceChromaticityTestResults, testScreenName, itemName) ??
+                FindKeyedResult(_result.LuminanceChromaticityYWTestResults, testScreenName, itemName) ??
                 FindKeyedResult(_result.ChessboardTestResults, testScreenName, itemName) ??
                 FindKeyedResult(_result.MTFH07TestResults, testScreenName, itemName) ??
                 FindKeyedResult(_result.MTFV07TestResults, testScreenName, itemName) ??
@@ -79,6 +80,7 @@ namespace ProjectARVRPro.Exports
                     property.Name == nameof(ObjectiveTestResult.MTFH07TestResults) ||
                     property.Name == nameof(ObjectiveTestResult.MTFV07TestResults) ||
                     property.Name == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults) ||
+                    property.Name == nameof(ObjectiveTestResult.LuminanceChromaticityYWTestResults) ||
                     property.Name == nameof(ObjectiveTestResult.FieldOfViewTestResults) ||
                     property.Name == nameof(ObjectiveTestResult.ChessboardTestResults))
                     continue;

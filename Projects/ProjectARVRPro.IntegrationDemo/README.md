@@ -40,7 +40,7 @@ public class W51TestResult : ViewModelBase
 
 | 类型 | 顶层字段 | 说明 |
 | --- | --- | --- |
-| 键化结果 | `FieldOfViewTestResults`、`LuminanceChromaticityTestResults`、`DynamicMTFHV058TestResults` | 第一层 Key 是流程配置的输出名称，例如 `White`、`W25` 或客户自定义名称；客户端不能把 Key 集合写死。 |
+| 键化结果 | `FieldOfViewTestResults`、`LuminanceChromaticityTestResults`、`LuminanceChromaticityYWTestResults`、`DynamicMTFHV058TestResults` | 第一层 Key 是流程配置的输出名称，例如 `White`、`YW`、`W25` 或客户自定义名称；客户端不能把 Key 集合写死。YW 结果内分别保存 12X7、8X7 两组 POI，以及各组平均亮度、亮度均匀性和色度均匀性。 |
 | 动态结果 | `DynamicTestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults` | 分别承载动态 `ObjectiveTestItem`、POI 光色数据和屏幕缺陷汇总/缺陷框。 |
 | 固定与兼容结果 | `W51TestResult`、`W255TestResult`、`BlackTestResult`、`ChessboardTestResult`、`MTFHVTestResult`、`MTFHV048TestResults`、`MTFHV058TestResults`、`DistortionTestResult`、`OpticCenterTestResult` | `FieldOfViewTestResults["White"]` 和 `LuminanceChromaticityTestResults["White"]` 会同时保留 W51/W255 兼容字段。 |
 
