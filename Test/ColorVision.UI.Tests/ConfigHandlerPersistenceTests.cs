@@ -111,6 +111,95 @@ namespace ColorVision.UI.Tests
             Assert.Equal(["before-item"], loadedConfig.Items);
         }
 
+        [Theory]
+        [InlineData("")]
+        [InlineData("{")]
+        [InlineData("not-json")]
+        [InlineData("[]")]
+        public void LoadConfigsRestoresLatestValidBackupWhenTheMainFileIsInvalid(string invalidJson)
+        {
+            string configFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json");
+            string backupFolderPath = Path.Combine(_rootDirectory, "Backup");
+            Directory.CreateDirectory(backupFolderPath);
+            File.WriteAllText(configFilePath, invalidJson);
+            WriteConfig(
+                Path.Combine(backupFolderPath, "ColorVisionConfigBackup_20260818_120000.json"),
+                "backup",
+                "backup-item",
+                "backup-second");
+
+            var configHandler = new ConfigHandler
+            {
+                ConfigDIFileName = "ColorVisionConfig",
+                ConfigFilePath = configFilePath,
+                BackupFolderPath = backupFolderPath,
+            };
+
+            configHandler.LoadConfigs();
+
+            FirstConfig restoredConfig = configHandler.GetRequiredService<FirstConfig>();
+            Assert.Equal("backup", restoredConfig.Value);
+            Assert.Equal(["backup-item"], restoredConfig.Items);
+            Assert.Equal("backup-second", configHandler.GetRequiredService<SecondConfig>().Value);
+            Assert.Equal("backup", JObject.Parse(File.ReadAllText(configFilePath))[nameof(FirstConfig)]![nameof(FirstConfig.Value)]);
+        }
+
+        [Fact]
+        public void LoadConfigsSkipsAnInvalidNewerBackupAndRestoresAnOlderValidBackup()
+        {
+            string configFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json");
+            string backupFolderPath = Path.Combine(_rootDirectory, "Backup");
+            Directory.CreateDirectory(backupFolderPath);
+            File.WriteAllText(configFilePath, "{");
+            WriteConfig(
+                Path.Combine(backupFolderPath, "ColorVisionConfigBackup_20260818_120000.json"),
+                "older-valid-backup",
+                "older-item",
+                "older-second");
+            File.WriteAllText(
+                Path.Combine(backupFolderPath, "ColorVisionConfigBackup_20260818_130000.json"),
+                "{");
+
+            var configHandler = new ConfigHandler
+            {
+                ConfigDIFileName = "ColorVisionConfig",
+                ConfigFilePath = configFilePath,
+                BackupFolderPath = backupFolderPath,
+            };
+
+            configHandler.LoadConfigs();
+
+            FirstConfig restoredConfig = configHandler.GetRequiredService<FirstConfig>();
+            Assert.Equal("older-valid-backup", restoredConfig.Value);
+            Assert.Equal(["older-item"], restoredConfig.Items);
+            Assert.Equal("older-second", configHandler.GetRequiredService<SecondConfig>().Value);
+        }
+
+        [Fact]
+        public void LoadConfigsUsesDefaultsWhenTheMainFileAndEveryBackupAreInvalid()
+        {
+            string configFilePath = Path.Combine(_rootDirectory, "ColorVisionConfig.json");
+            string backupFolderPath = Path.Combine(_rootDirectory, "Backup");
+            Directory.CreateDirectory(backupFolderPath);
+            File.WriteAllText(configFilePath, string.Empty);
+            File.WriteAllText(
+                Path.Combine(backupFolderPath, "ColorVisionConfigBackup_20260818_120000.json"),
+                "not-json");
+
+            var configHandler = new ConfigHandler
+            {
+                ConfigDIFileName = "ColorVisionConfig",
+                ConfigFilePath = configFilePath,
+                BackupFolderPath = backupFolderPath,
+            };
+
+            configHandler.LoadConfigs();
+
+            FirstConfig defaultConfig = configHandler.GetRequiredService<FirstConfig>();
+            Assert.Equal(string.Empty, defaultConfig.Value);
+            Assert.Empty(defaultConfig.Items);
+        }
+
         private static void WriteConfig(
             string fileName,
             string firstValue,
