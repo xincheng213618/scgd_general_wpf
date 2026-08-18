@@ -15,7 +15,7 @@
     <string name="operations_target_content_description">当前操作电脑：%1$s，点按管理或切换电脑</string>
     <string name="operations_target_unpaired_content_description">尚未配对电脑</string>
     <string name="operations_dashboard_loading_summary">正在读取 ColorVision 运行摘要…</string>
-    <string name="operations_toolbox_count">%1$d 项安全运维工具</string>
+    <string name="operations_toolbox_compact_state">%1$d 项工具 · 高风险操作执行前确认</string>
     <string name="operations_remote_monitor_signed_summary">%1$s\n\n该摘要由电脑证书签名，手机按配对证书指纹核验后展示；固定站点无法修改或伪造。</string>
     <string name="operations_window_action_audit_details">%1$s\n该操作已记录设备身份、时间和结果。</string>
     <string name="operations_diagnostic_bundle_ready_details">已下载 %1$d KiB 的脱敏 ZIP。临时副本位于应用缓存，由 Android 控制访问；接收应用仅获得本次文件的只读权限。</string>

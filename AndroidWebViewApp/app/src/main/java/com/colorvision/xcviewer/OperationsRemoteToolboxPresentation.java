@@ -151,13 +151,14 @@ final class OperationsRemoteToolboxPresentation {
         OperationsToolboxPresentation.ViewModel toolbox =
                 new OperationsToolboxPresentation.ViewModel(
                         Collections.unmodifiableList(sections));
-        String stateLabel = toolbox.enabledActionCount()
-                + " / " + toolbox.actionCount() + " 项当前可用";
+        String compactStateLabel = toolbox.enabledActionCount()
+                + " / " + toolbox.actionCount() + " 项可用 · "
+                + (hostFresh ? "电脑签名状态已核验" : "仅显示安全可用项");
         String summary = hostFresh
                 ? "能力来自当前电脑刚刚签名的状态；改变运行状态的操作仍会再次确认。"
                 : "电脑尚未提供新鲜签名状态；窗口、恢复与取证操作已暂停，"
                         + "只保留本机记录和电脑已发布的可排队诊断。";
-        return new ViewModel(hostFresh, stateLabel, summary, toolbox);
+        return new ViewModel(hostFresh, compactStateLabel, summary, toolbox);
     }
 
     private static String snapshotSummary(boolean enabled, int androidSdk) {
@@ -198,17 +199,17 @@ final class OperationsRemoteToolboxPresentation {
 
     static final class ViewModel {
         final boolean hostFresh;
-        final String stateLabel;
+        final String compactStateLabel;
         final String summary;
         final OperationsToolboxPresentation.ViewModel toolbox;
 
         ViewModel(
                 boolean hostFresh,
-                String stateLabel,
+                String compactStateLabel,
                 String summary,
                 OperationsToolboxPresentation.ViewModel toolbox) {
             this.hostFresh = hostFresh;
-            this.stateLabel = stateLabel;
+            this.compactStateLabel = compactStateLabel;
             this.summary = summary;
             this.toolbox = toolbox;
         }

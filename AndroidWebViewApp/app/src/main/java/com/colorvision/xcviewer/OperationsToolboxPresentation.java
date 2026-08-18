@@ -155,6 +155,14 @@ final class OperationsToolboxPresentation {
             this.title = title;
             this.actions = actions;
         }
+
+        String shortcutLabel() {
+            return title.replace("与", "");
+        }
+
+        String shortcutAccessibilityLabel() {
+            return "跳到" + title + "分组";
+        }
     }
 
     static final class Action {

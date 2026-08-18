@@ -18,6 +18,9 @@ public class OperationsToolboxPresentationTest {
         assertEquals("恢复", model.sections.get(2).title);
         assertEquals("取证", model.sections.get(3).title);
         assertEquals("支持与记录", model.sections.get(4).title);
+        assertEquals("支持记录", model.sections.get(4).shortcutLabel());
+        assertEquals("跳到支持与记录分组",
+                model.sections.get(4).shortcutAccessibilityLabel());
         assertEquals(17, model.actionCount());
         assertEquals(17, model.enabledActionCount());
         assertTrue(model.hasUniqueActionIds());

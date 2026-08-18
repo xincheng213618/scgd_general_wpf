@@ -23,13 +23,16 @@ public class OperationsRemoteToolboxPresentationTest {
         assertEquals("恢复", model.toolbox.sections.get(1).title);
         assertEquals("诊断与取证", model.toolbox.sections.get(2).title);
         assertEquals("记录", model.toolbox.sections.get(3).title);
+        assertEquals("窗口检测", model.toolbox.sections.get(0).shortcutLabel());
+        assertEquals("跳到诊断与取证分组",
+                model.toolbox.sections.get(2).shortcutAccessibilityLabel());
         assertEquals(11, model.toolbox.actionCount());
         assertEquals(10, model.toolbox.enabledActionCount());
         assertTrue(model.toolbox.hasUniqueActionIds());
         assertFalse(find(model, OperationsToolboxPresentation.ACTION_CANCEL_FLOW).enabled);
         assertTrue(find(model, OperationsToolboxPresentation.ACTION_RESTART_MQTT).enabled);
         assertTrue(find(model, OperationsToolboxPresentation.ACTION_RESTART_APPLICATION).enabled);
-        assertEquals("10 / 11 项当前可用", model.stateLabel);
+        assertEquals("10 / 11 项可用 · 电脑签名状态已核验", model.compactStateLabel);
     }
 
     @Test
@@ -66,6 +69,7 @@ public class OperationsRemoteToolboxPresentationTest {
         assertFalse(find(model,
                 OperationsRemoteToolboxPresentation.ACTION_RECENT_REMOTE_TASK).enabled);
         assertTrue(model.summary.contains("窗口、恢复与取证操作已暂停"));
+        assertEquals("2 / 11 项可用 · 仅显示安全可用项", model.compactStateLabel);
     }
 
     @Test
@@ -88,7 +92,7 @@ public class OperationsRemoteToolboxPresentationTest {
 
         assertFalse(model.hostFresh);
         assertEquals(1, model.toolbox.enabledActionCount());
-        assertEquals("1 / 11 项当前可用", model.stateLabel);
+        assertEquals("1 / 11 项可用 · 仅显示安全可用项", model.compactStateLabel);
         assertTrue(find(model, OperationsToolboxPresentation.ACTION_TIMELINE).enabled);
         assertFalse(find(model, OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE).enabled);
         assertFalse(find(model, OperationsToolboxPresentation.ACTION_CREATE_DIAGNOSTIC).enabled);

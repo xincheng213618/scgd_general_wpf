@@ -1563,9 +1563,10 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         boolean hideForTriage = OperationsDestinationState.TRIAGE.equals(currentDestination);
+        boolean hideForToolbox = OperationsDestinationState.TOOLS.equals(currentDestination);
         boolean hideDirectDashboardSummary = OperationsDestinationState.OVERVIEW.equals(
                 currentDestination) && showingDashboardSummary && !remoteDashboard;
-        detailsCard.setVisibility(hideForTriage || hideDirectDashboardSummary
+        detailsCard.setVisibility(hideForTriage || hideForToolbox || hideDirectDashboardSummary
                 ? View.GONE : View.VISIBLE);
     }
 
@@ -1825,7 +1826,9 @@ public class OperationsActivity extends AppCompatActivity {
         title.setTitle("运维工具");
         OperationsToolboxPresentation.ViewModel toolbox =
                 OperationsToolboxPresentation.create();
-        state.setText(getString(R.string.operations_toolbox_count, toolbox.actionCount()));
+        state.setText(getString(
+                R.string.operations_toolbox_compact_state,
+                toolbox.actionCount()));
         details.setText("按任务分组。只读项目可直接打开；恢复、取证和支持动作仍会在执行前确认。");
         actions.removeAllViews();
         OperationsToolboxContent.addTo(
@@ -1833,7 +1836,8 @@ public class OperationsActivity extends AppCompatActivity {
                 themeManager,
                 actions,
                 toolbox,
-                this::runOperationsToolboxAction);
+                this::runOperationsToolboxAction,
+                this::scrollToToolboxSection);
         scheduleConnectionHeartbeat();
     }
 
@@ -1862,7 +1866,7 @@ public class OperationsActivity extends AppCompatActivity {
                         Build.VERSION.SDK_INT,
                         System.currentTimeMillis());
         dashboardRemoteHostFresh = model.hostFresh;
-        state.setText(model.stateLabel);
+        state.setText(model.compactStateLabel);
         details.setText(model.summary);
         actions.removeAllViews();
         addDashboardWideAction(dashboardTonalButton(
@@ -1872,7 +1876,14 @@ public class OperationsActivity extends AppCompatActivity {
                 themeManager,
                 actions,
                 model.toolbox,
-                this::runRemoteOperationsToolboxAction);
+                this::runRemoteOperationsToolboxAction,
+                this::scrollToToolboxSection);
+    }
+
+    private void scrollToToolboxSection(View sectionHeading) {
+        sectionHeading.post(() -> dashboardScroll.smoothScrollTo(
+                0,
+                actions.getTop() + sectionHeading.getTop()));
     }
 
     private void refreshRemoteOperationsToolbox() {

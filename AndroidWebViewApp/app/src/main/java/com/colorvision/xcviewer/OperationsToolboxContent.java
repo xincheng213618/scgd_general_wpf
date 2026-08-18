@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -12,6 +13,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.widget.TextViewCompat;
 
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
+
+import java.util.ArrayList;
+import java.util.List;
 
 final class OperationsToolboxContent {
     private OperationsToolboxContent() {
@@ -22,11 +28,43 @@ final class OperationsToolboxContent {
             ThemeManager themeManager,
             LinearLayout target,
             OperationsToolboxPresentation.ViewModel model,
-            ActionHandler actionHandler) {
+            ActionHandler actionHandler,
+            SectionHandler sectionHandler) {
+        List<Chip> shortcutChips = new ArrayList<>();
+        ChipGroup shortcutGroup = new ChipGroup(activity);
+        shortcutGroup.setSingleLine(true);
+        shortcutGroup.setChipSpacingHorizontal(dp(activity, 8));
         for (OperationsToolboxPresentation.Section section : model.sections) {
-            target.addView(sectionTitle(activity, themeManager, section.title), matchWidth());
+            Chip shortcut = new Chip(activity);
+            shortcut.setText(section.shortcutLabel());
+            shortcut.setCheckable(false);
+            shortcut.setEnsureMinTouchTargetSize(true);
+            shortcut.setContentDescription(section.shortcutAccessibilityLabel());
+            shortcutGroup.addView(shortcut);
+            shortcutChips.add(shortcut);
+        }
+        HorizontalScrollView shortcuts = new HorizontalScrollView(activity);
+        shortcuts.setHorizontalScrollBarEnabled(false);
+        shortcuts.setFillViewport(false);
+        shortcuts.addView(shortcutGroup, new HorizontalScrollView.LayoutParams(
+                HorizontalScrollView.LayoutParams.WRAP_CONTENT,
+                HorizontalScrollView.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams shortcutParams = matchWidth();
+        shortcutParams.setMargins(0, dp(activity, 2), 0, dp(activity, 2));
+        target.addView(shortcuts, shortcutParams);
+
+        List<TextView> sectionHeadings = new ArrayList<>();
+        for (OperationsToolboxPresentation.Section section : model.sections) {
+            TextView heading = sectionTitle(activity, themeManager, section.title);
+            sectionHeadings.add(heading);
+            target.addView(heading, matchWidth());
             target.addView(sectionCard(
                     activity, themeManager, section, actionHandler), cardParams(activity));
+        }
+        for (int index = 0; index < shortcutChips.size(); index++) {
+            TextView heading = sectionHeadings.get(index);
+            shortcutChips.get(index).setOnClickListener(
+                    view -> sectionHandler.onSection(heading));
         }
     }
 
@@ -153,5 +191,9 @@ final class OperationsToolboxContent {
 
     interface ActionHandler {
         void onAction(String actionId);
+    }
+
+    interface SectionHandler {
+        void onSection(View sectionHeading);
     }
 }
