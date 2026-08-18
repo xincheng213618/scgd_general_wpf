@@ -769,6 +769,87 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     }
 
     [Fact]
+    public async Task UserQuestionAnswerStateChangesOnlyWhenTheRuntimeEventArrives()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "question-answer-event-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var runtime = new AcceptingQuestionTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        var releaseRun = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(conversation, config, runtime, taskHost);
+        var hostedRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Plan,
+            async _ => await releaseRun.Task);
+        var question = new CopilotUserQuestionSnapshot
+        {
+            RequestId = "question:" + new string('a', 32),
+            ConversationId = conversation.Id,
+            TaskId = hostedRun.Id,
+            Header = "Scope",
+            Question = "Which scope should be used?",
+            Options =
+            [
+                new CopilotUserQuestionOption
+                {
+                    RequestId = "question:" + new string('a', 32),
+                    TaskId = hostedRun.Id,
+                    Label = "Current (Recommended)",
+                    Description = "Keep the current bounded scope.",
+                },
+                new CopilotUserQuestionOption
+                {
+                    RequestId = "question:" + new string('a', 32),
+                    TaskId = hostedRun.Id,
+                    Label = "Expand",
+                    Description = "Include adjacent modules.",
+                },
+            ],
+            RequestedAtUtc = DateTimeOffset.UtcNow,
+        };
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            UserQuestion = question,
+        };
+        conversation.Messages.Add(assistantMessage);
+        try
+        {
+            viewModel.InputText = "Keep the current scope";
+
+            Assert.True(viewModel.SubmitUserQuestionAnswerCommand.CanExecute(null));
+            viewModel.SubmitUserQuestionAnswerCommand.Execute(null);
+
+            Assert.Equal(string.Empty, viewModel.InputText);
+            Assert.Equal("Keep the current scope", runtime.Answer);
+            Assert.Same(question, assistantMessage.UserQuestion);
+            Assert.True(assistantMessage.UserQuestion.IsPending);
+
+            ApplyAgentEvents(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                CopilotAgentEvent.UserQuestionResolved(
+                    question.Resolve(
+                        CopilotUserQuestionResolution.Answered,
+                        "Keep the current scope")));
+
+            Assert.Equal(
+                CopilotUserQuestionResolution.Answered,
+                assistantMessage.UserQuestion.Resolution);
+            Assert.Equal("Keep the current scope", assistantMessage.UserQuestion.Answer);
+        }
+        finally
+        {
+            releaseRun.TrySetResult();
+            await hostedRun.Completion.WaitAsync(TestTimeout);
+        }
+    }
+
+    [Fact]
     public async Task EditingGoalDuringActiveTurnQueuesOnlyTheLatestGoalAsNextWork()
     {
         var profile = CreateProfile("profile-a", "Profile A", "model-a");
@@ -1756,6 +1837,39 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         public bool TryEnqueueBackgroundShellCommandOutput(CopilotBackgroundShellOutputMonitorEventArgs eventArgs) => false;
 
         public bool TryAnswerUserQuestion(string taskId, string requestId, string answer) => false;
+
+        public Task<CopilotWorkspaceRollbackActionResult> RequestWorkspaceRollbackAsync(
+            CopilotWorkspaceRollbackActionRequest request,
+            Action<CopilotAgentEvent> onEvent,
+            CancellationToken cancellationToken) =>
+            Task.FromException<CopilotWorkspaceRollbackActionResult>(new NotSupportedException());
+    }
+
+    private sealed class AcceptingQuestionTurnRuntime : ICopilotTurnRuntime
+    {
+        public string Answer { get; private set; } = string.Empty;
+
+        public async IAsyncEnumerable<CopilotTurnEvent> RunAsync(
+            CopilotTurnRequest request,
+            [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.CompletedTask;
+            yield break;
+        }
+
+        public CopilotSteeringAdmissionResult EnqueueSteeringMessage(string taskId, string message) =>
+            new(CopilotSteeringAdmissionReason.RuntimeUnavailable);
+
+        public bool TryEnqueueBackgroundShellCommandCompletion(CopilotBackgroundShellCommandSnapshot snapshot) => false;
+
+        public bool TryEnqueueBackgroundShellCommandOutput(CopilotBackgroundShellOutputMonitorEventArgs eventArgs) => false;
+
+        public bool TryAnswerUserQuestion(string taskId, string requestId, string answer)
+        {
+            Answer = answer;
+            return true;
+        }
 
         public Task<CopilotWorkspaceRollbackActionResult> RequestWorkspaceRollbackAsync(
             CopilotWorkspaceRollbackActionRequest request,
