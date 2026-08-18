@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ColorVision 运维</string>
+    <string name="qr_scan_back">返回</string>
+    <string name="qr_scan_prompt">将电脑端二维码放入取景框</string>
+    <string name="qr_scan_torch_on">开启补光灯</string>
+    <string name="qr_scan_torch_off">关闭补光灯</string>
 </resources>

@@ -37,8 +37,7 @@
         </activity>
         <activity
             android:name=".QrScanActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
+            android:exported="false" />
         <activity
             android:name=".OperationsActivity"
             android:exported="false" />

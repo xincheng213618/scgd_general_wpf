@@ -3,64 +3,68 @@ package com.colorvision.xcviewer;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.hardware.Camera;
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 import android.widget.FrameLayout;
-import android.widget.ImageButton;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.Camera;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.ImageProxy;
+import androidx.camera.core.Preview;
+import androidx.camera.core.TorchState;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.view.PreviewView;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.BinaryBitmap;
-import com.google.zxing.DecodeHintType;
-import com.google.zxing.MultiFormatReader;
-import com.google.zxing.NotFoundException;
-import com.google.zxing.PlanarYUVLuminanceSource;
-import com.google.zxing.Result;
-import com.google.zxing.common.HybridBinarizer;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
+import com.google.common.util.concurrent.ListenableFuture;
 
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-@SuppressWarnings("deprecation")
-public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.Callback, Camera.PreviewCallback {
+public class QrScanActivity extends AppCompatActivity {
     public static final String EXTRA_QR_RESULT = "qr_result";
     public static final String EXTRA_SCAN_FAILURE = "qr_scan_failure";
 
     private static final int REQUEST_CAMERA_PERMISSION = 2001;
 
-    private SurfaceView surfaceView;
-    private TextView statusText;
-    private FrameLayout root;
-    private ImageButton torchButton;
-    private Camera camera;
-    private SurfaceHolder surfaceHolder;
-    private MultiFormatReader reader;
-    private boolean surfaceReady;
-    private boolean decoding;
-    private boolean completed;
-    private boolean torchEnabled;
     private final RuntimePermissionDialogState cameraPermissionDialogState =
             new RuntimePermissionDialogState();
+    private final ExecutorService analysisExecutor = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "ColorVisionQrAnalysis");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private final QrFrameDecoder frameDecoder = new QrFrameDecoder();
+    private final AtomicBoolean completed = new AtomicBoolean();
+
+    private FrameLayout root;
+    private PreviewView previewView;
+    private MaterialButton torchButton;
+    private ProcessCameraProvider cameraProvider;
+    private ImageAnalysis imageAnalysis;
+    private Camera camera;
+    private boolean cameraStartRequested;
+    private boolean torchEnabled;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         configureSystemBars();
-        reader = createReader();
         createContentView();
         if (hasCameraPermission()) {
             startCameraIfReady();
@@ -83,49 +87,49 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
         root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
 
-        surfaceView = new SurfaceView(this);
-        surfaceHolder = surfaceView.getHolder();
-        surfaceHolder.addCallback(this);
-        root.addView(surfaceView, new FrameLayout.LayoutParams(
+        previewView = new PreviewView(this);
+        previewView.setImplementationMode(PreviewView.ImplementationMode.COMPATIBLE);
+        previewView.setScaleType(PreviewView.ScaleType.FILL_CENTER);
+        root.addView(previewView, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
 
-        ImageButton backButton = new ImageButton(this);
-        backButton.setImageResource(R.drawable.ic_arrow_back_24);
-        backButton.setColorFilter(Color.WHITE);
-        backButton.setContentDescription("返回");
-        backButton.setBackgroundColor(Color.argb(96, 0, 0, 0));
-        backButton.setOnClickListener(v -> finish());
+        MaterialButton backButton = createCameraIconButton(
+                R.drawable.ic_arrow_back_24, getString(R.string.qr_scan_back));
+        backButton.setOnClickListener(view -> finish());
         FrameLayout.LayoutParams backParams = new FrameLayout.LayoutParams(
-                dp(58), dp(58), Gravity.TOP | Gravity.START);
+                dp(56), dp(56), Gravity.TOP | Gravity.START);
         backParams.setMargins(dp(12), dp(12), 0, 0);
         root.addView(backButton, backParams);
 
-        torchButton = new ImageButton(this);
-        torchButton.setImageResource(R.drawable.ic_flash_on_24);
-        torchButton.setColorFilter(Color.WHITE);
-        torchButton.setContentDescription("开启补光灯");
-        torchButton.setBackgroundColor(Color.argb(96, 0, 0, 0));
+        torchButton = createCameraIconButton(
+                R.drawable.ic_flash_on_24, getString(R.string.qr_scan_torch_on));
         torchButton.setVisibility(View.GONE);
-        torchButton.setOnClickListener(v -> toggleTorch());
+        torchButton.setOnClickListener(view -> toggleTorch());
         FrameLayout.LayoutParams torchParams = new FrameLayout.LayoutParams(
-                dp(58), dp(58), Gravity.TOP | Gravity.END);
+                dp(56), dp(56), Gravity.TOP | Gravity.END);
         torchParams.setMargins(0, dp(12), dp(12), 0);
         root.addView(torchButton, torchParams);
 
-        statusText = new TextView(this);
-        statusText.setText("将电脑端二维码放入取景框");
+        MaterialCardView statusCard = new MaterialCardView(this);
+        statusCard.setCardBackgroundColor(Color.argb(184, 0, 0, 0));
+        statusCard.setCardElevation(0);
+        statusCard.setRadius(dp(16));
+        TextView statusText = new TextView(this);
+        statusText.setText(R.string.qr_scan_prompt);
+        statusText.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyLarge);
         statusText.setTextColor(Color.WHITE);
-        statusText.setTextSize(16);
         statusText.setGravity(Gravity.CENTER);
-        statusText.setPadding(dp(18), dp(10), dp(18), dp(10));
-        statusText.setBackgroundColor(Color.argb(132, 0, 0, 0));
+        statusText.setPadding(dp(18), dp(12), dp(18), dp(12));
+        statusCard.addView(statusText, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT));
         FrameLayout.LayoutParams statusParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM);
         statusParams.setMargins(dp(18), 0, dp(18), dp(16));
-        root.addView(statusText, statusParams);
+        root.addView(statusCard, statusParams);
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (view, windowInsets) -> {
             Insets statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars());
@@ -138,20 +142,28 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
                     navigationBars.bottom, displayCutout.bottom) + dp(16);
             backButton.setLayoutParams(backParams);
             torchButton.setLayoutParams(torchParams);
-            statusText.setLayoutParams(statusParams);
+            statusCard.setLayoutParams(statusParams);
             return windowInsets;
         });
         setContentView(root);
         ViewCompat.requestApplyInsets(root);
     }
 
-    private MultiFormatReader createReader() {
-        MultiFormatReader formatReader = new MultiFormatReader();
-        Map<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
-        hints.put(DecodeHintType.POSSIBLE_FORMATS, Arrays.asList(BarcodeFormat.QR_CODE));
-        hints.put(DecodeHintType.CHARACTER_SET, "UTF-8");
-        formatReader.setHints(hints);
-        return formatReader;
+    private MaterialButton createCameraIconButton(int iconResource, String description) {
+        MaterialButton button = new MaterialButton(
+                this, null, com.google.android.material.R.attr.materialIconButtonStyle);
+        button.setIconResource(iconResource);
+        button.setIconTint(ColorStateList.valueOf(Color.WHITE));
+        button.setIconSize(dp(24));
+        button.setIconPadding(0);
+        button.setGravity(Gravity.CENTER);
+        button.setPadding(0, 0, 0, 0);
+        button.setInsetTop(0);
+        button.setInsetBottom(0);
+        button.setCornerRadius(dp(28));
+        button.setBackgroundTintList(ColorStateList.valueOf(Color.argb(128, 0, 0, 0)));
+        button.setContentDescription(description);
+        return button;
     }
 
     private boolean hasCameraPermission() {
@@ -169,7 +181,7 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
     }
 
     private void recoverBlockedCameraPermissionRequest(int requestGeneration) {
-        if (completed || !cameraPermissionDialogState.shouldRecoverAsBlocked(
+        if (completed.get() || !cameraPermissionDialogState.shouldRecoverAsBlocked(
                 requestGeneration, hasCameraPermission(), hasWindowFocus())) {
             return;
         }
@@ -195,203 +207,137 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
         }
     }
 
-    @Override
-    public void surfaceCreated(SurfaceHolder holder) {
-        surfaceReady = true;
-        startCameraIfReady();
-    }
-
-    @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        surfaceReady = false;
-        releaseCamera();
-    }
-
     private void startCameraIfReady() {
-        if (!surfaceReady || !hasCameraPermission() || camera != null) {
+        if (!hasCameraPermission() || cameraStartRequested || completed.get()) {
             return;
         }
+        cameraStartRequested = true;
+        ListenableFuture<ProcessCameraProvider> providerFuture =
+                ProcessCameraProvider.getInstance(this);
+        providerFuture.addListener(() -> bindCamera(providerFuture),
+                ContextCompat.getMainExecutor(this));
+    }
 
+    private void bindCamera(ListenableFuture<ProcessCameraProvider> providerFuture) {
+        if (completed.get() || isFinishing() || isDestroyed()) {
+            return;
+        }
         try {
-            camera = Camera.open();
-            configureCamera(camera);
-            camera.setPreviewDisplay(surfaceHolder);
-            camera.setPreviewCallback(this);
-            camera.startPreview();
+            cameraProvider = providerFuture.get();
+            Preview preview = new Preview.Builder().build();
+            preview.setSurfaceProvider(previewView.getSurfaceProvider());
+
+            imageAnalysis = new ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build();
+            imageAnalysis.setAnalyzer(analysisExecutor, this::analyzeFrame);
+
+            cameraProvider.unbindAll();
+            camera = cameraProvider.bindToLifecycle(
+                    this,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    preview,
+                    imageAnalysis);
+            boolean hasFlash = camera.getCameraInfo().hasFlashUnit();
+            torchButton.setVisibility(hasFlash ? View.VISIBLE : View.GONE);
+            camera.getCameraInfo().getTorchState().observe(this, state -> {
+                torchEnabled = state != null && state == TorchState.ON;
+                updateTorchButton();
+            });
         } catch (Exception ex) {
-            releaseCamera();
+            cameraStartRequested = false;
             finishWithFailure(QrScanFailurePresentation.CAMERA_UNAVAILABLE);
         }
     }
 
+    private void analyzeFrame(ImageProxy image) {
+        try {
+            if (completed.get() || image.getPlanes().length == 0) {
+                return;
+            }
+            ImageProxy.PlaneProxy lumaPlane = image.getPlanes()[0];
+            ByteBuffer buffer = lumaPlane.getBuffer();
+            byte[] luma = QrFrameDecoder.copyLumaPlane(
+                    buffer,
+                    image.getWidth(),
+                    image.getHeight(),
+                    lumaPlane.getRowStride(),
+                    lumaPlane.getPixelStride());
+            String text = frameDecoder.decode(
+                    luma,
+                    image.getWidth(),
+                    image.getHeight(),
+                    image.getImageInfo().getRotationDegrees());
+            if (text != null && !text.isEmpty()) {
+                finishWithQrResult(text);
+            }
+        } catch (RuntimeException ignored) {
+            // A malformed vendor frame is dropped; CameraX supplies the next latest frame.
+        } finally {
+            image.close();
+        }
+    }
+
+    private void finishWithQrResult(String text) {
+        if (!completed.compareAndSet(false, true)) {
+            return;
+        }
+        ContextCompat.getMainExecutor(this).execute(() -> {
+            if (isFinishing() || isDestroyed()) {
+                return;
+            }
+            Intent result = new Intent();
+            result.putExtra(EXTRA_QR_RESULT, text);
+            setResult(RESULT_OK, result);
+            finish();
+        });
+    }
+
     private void finishWithFailure(String reason) {
-        completed = true;
+        if (!completed.compareAndSet(false, true)) {
+            return;
+        }
         Intent result = new Intent();
         result.putExtra(EXTRA_SCAN_FAILURE, reason);
         setResult(RESULT_CANCELED, result);
         finish();
     }
 
-    private void configureCamera(Camera targetCamera) {
-        targetCamera.setDisplayOrientation(90);
-        Camera.Parameters parameters = targetCamera.getParameters();
-        List<String> focusModes = parameters.getSupportedFocusModes();
-        if (focusModes != null) {
-            if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
-                parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
-            } else if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
-                parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
-            } else if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
-                parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
-            }
-        }
-        targetCamera.setParameters(parameters);
-        updateTorchAvailability(parameters);
-    }
-
-    private void updateTorchAvailability(Camera.Parameters parameters) {
-        List<String> flashModes = parameters.getSupportedFlashModes();
-        boolean torchSupported = flashModes != null
-                && flashModes.contains(Camera.Parameters.FLASH_MODE_TORCH);
-        torchButton.setVisibility(torchSupported ? View.VISIBLE : View.GONE);
-        if (!torchSupported) {
-            torchEnabled = false;
-            updateTorchButton();
-        }
-    }
-
     private void toggleTorch() {
-        if (camera == null) {
+        if (camera == null || !camera.getCameraInfo().hasFlashUnit()) {
             return;
         }
-        try {
-            Camera.Parameters parameters = camera.getParameters();
-            List<String> flashModes = parameters.getSupportedFlashModes();
-            if (flashModes == null || !flashModes.contains(Camera.Parameters.FLASH_MODE_TORCH)) {
-                torchButton.setVisibility(View.GONE);
-                return;
+        torchButton.setEnabled(false);
+        ListenableFuture<Void> request = camera.getCameraControl().enableTorch(!torchEnabled);
+        request.addListener(() -> {
+            if (!isDestroyed()) {
+                torchButton.setEnabled(true);
             }
-            torchEnabled = !torchEnabled;
-            parameters.setFlashMode(torchEnabled
-                    ? Camera.Parameters.FLASH_MODE_TORCH
-                    : Camera.Parameters.FLASH_MODE_OFF);
-            camera.setParameters(parameters);
-            updateTorchButton();
-        } catch (Exception ignored) {
-            torchEnabled = false;
-            updateTorchButton();
-        }
+        }, ContextCompat.getMainExecutor(this));
     }
 
     private void updateTorchButton() {
         if (torchButton == null) {
             return;
         }
-        torchButton.setColorFilter(torchEnabled ? Color.BLACK : Color.WHITE);
-        torchButton.setBackgroundColor(torchEnabled
-                ? Color.WHITE : Color.argb(96, 0, 0, 0));
-        torchButton.setContentDescription(torchEnabled ? "关闭补光灯" : "开启补光灯");
+        torchButton.setIconTint(ColorStateList.valueOf(torchEnabled ? Color.BLACK : Color.WHITE));
+        torchButton.setBackgroundTintList(ColorStateList.valueOf(torchEnabled
+                ? Color.WHITE : Color.argb(128, 0, 0, 0)));
+        torchButton.setContentDescription(getString(torchEnabled
+                ? R.string.qr_scan_torch_off : R.string.qr_scan_torch_on));
     }
 
     @Override
-    public void onPreviewFrame(byte[] data, Camera sourceCamera) {
-        if (completed || decoding || data == null || sourceCamera == null) {
-            return;
+    protected void onDestroy() {
+        completed.set(true);
+        if (imageAnalysis != null) {
+            imageAnalysis.clearAnalyzer();
         }
-
-        Camera.Size size = sourceCamera.getParameters().getPreviewSize();
-        if (size == null) {
-            return;
+        if (cameraProvider != null) {
+            cameraProvider.unbindAll();
         }
-
-        decoding = true;
-        byte[] frame = Arrays.copyOf(data, data.length);
-        int width = size.width;
-        int height = size.height;
-
-        new Thread(() -> {
-            String text = decodeFrame(frame, width, height);
-            runOnUiThread(() -> {
-                decoding = false;
-                if (text != null && !text.isEmpty()) {
-                    completed = true;
-                    Intent result = new Intent();
-                    result.putExtra(EXTRA_QR_RESULT, text);
-                    setResult(RESULT_OK, result);
-                    finish();
-                }
-            });
-        }, "ColorVisionQrDecode").start();
-    }
-
-    private String decodeFrame(byte[] frame, int width, int height) {
-        String rotated = decodeLuminance(rotateYPlane90(frame, width, height), height, width);
-        if (rotated != null) {
-            return rotated;
-        }
-        return decodeLuminance(frame, width, height);
-    }
-
-    private String decodeLuminance(byte[] data, int width, int height) {
-        try {
-            PlanarYUVLuminanceSource source = new PlanarYUVLuminanceSource(
-                    data,
-                    width,
-                    height,
-                    0,
-                    0,
-                    width,
-                    height,
-                    false);
-            BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
-            Result result = reader.decodeWithState(bitmap);
-            return result == null ? null : result.getText();
-        } catch (NotFoundException ex) {
-            return null;
-        } catch (Exception ex) {
-            return null;
-        } finally {
-            reader.reset();
-        }
-    }
-
-    private byte[] rotateYPlane90(byte[] data, int width, int height) {
-        byte[] rotated = new byte[width * height];
-        int index = 0;
-        for (int x = 0; x < width; x++) {
-            for (int y = height - 1; y >= 0; y--) {
-                rotated[index++] = data[y * width + x];
-            }
-        }
-        return rotated;
-    }
-
-    @Override
-    protected void onPause() {
-        releaseCamera();
-        super.onPause();
-    }
-
-    private void releaseCamera() {
-        if (camera == null) {
-            return;
-        }
-
-        try {
-            camera.setPreviewCallback(null);
-            camera.stopPreview();
-            camera.release();
-        } catch (Exception ignored) {
-        } finally {
-            camera = null;
-            torchEnabled = false;
-            updateTorchButton();
-            torchButton.setVisibility(View.GONE);
-        }
+        analysisExecutor.shutdownNow();
+        super.onDestroy();
     }
 
     private int dp(int value) {
