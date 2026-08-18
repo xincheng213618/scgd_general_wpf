@@ -239,8 +239,20 @@ namespace ColorVision.Copilot
 
         public void RecordStop(CopilotAgentStopReason reason)
         {
+            if (!Enum.IsDefined(reason) || reason == CopilotAgentStopReason.None)
+                throw new ArgumentOutOfRangeException(nameof(reason));
             lock (_syncRoot)
             {
+                var existingStop = _events.LastOrDefault(item =>
+                    item.Type == CopilotAgentTaskEventType.RunStopped
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal));
+                if (existingStop != null)
+                {
+                    if (string.Equals(existingStop.State, reason.ToString(), StringComparison.Ordinal))
+                        return;
+                    throw new InvalidOperationException(
+                        $"Agent run {RunId} already stopped with reason {existingStop.State}.");
+                }
                 CloseDanglingToolExecutions(reason);
                 CloseDanglingUserQuestions(reason);
                 Append(CopilotAgentTaskEventType.RunStopped, RunId, reason.ToString(), $"Agent run stopped with reason {reason}.");

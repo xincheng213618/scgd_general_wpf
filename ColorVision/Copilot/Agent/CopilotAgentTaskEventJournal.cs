@@ -120,7 +120,16 @@ namespace ColorVision.Copilot
                 || Events.Count > CopilotAgentTaskEventJournal.MaxEvents
                 || Events.Any(item => item?.IsStructurallyValid() != true)
                 || Events.Select(item => item.Id).Distinct(StringComparer.Ordinal).Count() != Events.Count
-                || Events.Select(item => item.Sequence).Distinct().Count() != Events.Count)
+                || Events.Select(item => item.Sequence).Distinct().Count() != Events.Count
+                || Events
+                    .Where(item => item.Type == CopilotAgentTaskEventType.RunStopped)
+                    .GroupBy(item => item.RunId, StringComparer.Ordinal)
+                    .Any(group => group.Count() > 1)
+                || Events
+                    .Where(item => item.Type == CopilotAgentTaskEventType.RunStopped)
+                    .Any(item => !Enum.TryParse<CopilotAgentStopReason>(item.State, out var reason)
+                        || reason == CopilotAgentStopReason.None
+                        || !string.Equals(item.State, reason.ToString(), StringComparison.Ordinal)))
             {
                 return false;
             }

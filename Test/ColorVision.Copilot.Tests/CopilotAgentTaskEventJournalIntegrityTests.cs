@@ -887,6 +887,48 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void RunStopIsIdempotentButCannotBeRewritten()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            journal.RecordStop(CopilotAgentStopReason.Interrupted));
+
+        var stopped = Assert.Single(
+            journal.Snapshot().Events,
+            item => item.Type == CopilotAgentTaskEventType.RunStopped);
+        Assert.Equal(CopilotAgentStopReason.Completed.ToString(), stopped.State);
+        Assert.Contains("already stopped", exception.Message, StringComparison.Ordinal);
+        Assert.True(journal.Snapshot().IsStructurallyValid());
+
+        var duplicateTimestamp = stopped.OccurredAtUtc.AddTicks(1);
+        var duplicate = new CopilotAgentTaskEvent
+        {
+            Sequence = stopped.Sequence + 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                stopped.Sequence + 1,
+                stopped.RunId,
+                CopilotAgentTaskEventType.RunStopped,
+                duplicateTimestamp),
+            Type = CopilotAgentTaskEventType.RunStopped,
+            OccurredAtUtc = duplicateTimestamp,
+            RunId = stopped.RunId,
+            SubjectId = stopped.SubjectId,
+            State = stopped.State,
+            Summary = stopped.Summary,
+        };
+        var duplicatedSnapshot = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = journal.Snapshot().Events.Append(duplicate).ToArray(),
+        };
+        Assert.True(duplicate.IsStructurallyValid());
+        Assert.False(duplicatedSnapshot.IsStructurallyValid());
+    }
+
+    [Fact]
     public void InterruptedRunRecoveryRepairsCheckpointJournalBeforeRunStop()
     {
         var profile = CreateProfile();
