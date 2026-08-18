@@ -131,4 +131,11 @@ final class OperationsWatchPolicy {
             String lastAttentionKey) {
         return hasCompletedCheck && lastCheckOnline && !ATTENTION_OFFLINE.equals(lastAttentionKey);
     }
+
+    static boolean isCurrentProfileCheck(
+            String expectedHostId, String activeHostId, int generation, int activeGeneration) {
+        return generation == activeGeneration
+                && expectedHostId != null
+                && expectedHostId.equals(activeHostId);
+    }
 }

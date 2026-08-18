@@ -53,6 +53,7 @@ import javax.net.ssl.SSLHandshakeException;
 public class OperationsActivity extends Activity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
     static final String EXTRA_OPEN_DESTINATION = "operations_open_destination";
+    private static final int REQUEST_QR_SCAN = 2406;
     private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
     private static final long CONNECTION_HEARTBEAT_MILLISECONDS = 30_000L;
 
@@ -275,7 +276,20 @@ public class OperationsActivity extends Activity {
             JSONObject data = response.optJSONObject("data");
             String status = data == null ? "" : data.optString("status", "");
             if ("approved".equals(status)) {
-                preferences.saveOperationsProfile(payload.endpoint, payload.certificateSha256, payload.hostId);
+                if (!preferences.saveOperationsProfile(
+                        payload.endpoint, payload.certificateSha256, payload.hostId)) {
+                    try {
+                        new OperationsDeviceIdentity(payload.hostId).delete();
+                    } catch (Exception ignored) {
+                    }
+                    runOnUiThread(() -> showError(
+                            "已配对电脑数量已满",
+                            "手机最多保留 " + OperationsProfileRegistry.MAX_PROFILES
+                                    + " 台电脑。请先在连接方式中移除不再使用的电脑。",
+                            null));
+                    return;
+                }
+                OperationsWatchService.restartForProfileChange(this);
                 client = pairingClient;
                 relayClient = new OperationsRelayApiClient(
                         payload.hostId,
@@ -428,7 +442,12 @@ public class OperationsActivity extends Activity {
         boolean relayPreferred = OperationsConnectionPreference.prefersRelay(
                 preferences.getOperationsConnectionPreference());
         state.setText(relayPreferred ? "固定中继优先" : "现场直连优先");
-        details.setText("当前通道：" + (remoteDashboard ? "固定中继" : "现场直连")
+        int profileCount = preferences.getOperationsProfileCount();
+        details.setText("当前电脑：" + operationsProfileLabel(
+                        preferences.getOperationsProfiles(), preferences.getOperationsHostId())
+                + "\n已配对电脑：" + profileCount + " / "
+                + OperationsProfileRegistry.MAX_PROFILES
+                + "\n当前通道：" + (remoteDashboard ? "固定中继" : "现场直连")
                 + "\n首选方式会保存在本机，应用重启后继续使用。"
                 + "\n首选通道临时不可用时会安全回退；恢复后自动切回。"
                 + "\n固定中继地址由应用内置，不能填写或选择网址。");
@@ -442,8 +461,125 @@ public class OperationsActivity extends Activity {
         addDashboardActionRow(
                 dashboardButton("运行现场连接自检", v -> runConnectionSelfCheck()),
                 dashboardButton("移除配对资料", v -> confirmClearProfile()));
+        addDashboardSection("已配对电脑");
+        List<OperationsProfileRegistry.Profile> profiles = preferences.getOperationsProfiles();
+        for (int index = 0; index < profiles.size(); index += 2) {
+            Button left = operationsProfileButton(profiles.get(index), profiles);
+            if (index + 1 < profiles.size()) {
+                addDashboardActionRow(left,
+                        operationsProfileButton(profiles.get(index + 1), profiles));
+            } else {
+                addDashboardWideAction(left);
+            }
+        }
+        addDashboardActionRow(
+                dashboardButton("命名当前电脑", v -> promptRenameCurrentOperationsProfile()),
+                dashboardButton("扫描并添加电脑", v -> startOperationsPairingScan()));
         addDashboardWideAction(dashboardButton("返回运维概览", v -> showCurrentDashboard()));
         scheduleConnectionHeartbeat();
+    }
+
+    private Button operationsProfileButton(
+            OperationsProfileRegistry.Profile profile,
+            List<OperationsProfileRegistry.Profile> profiles) {
+        boolean current = profile.hostId.equals(preferences.getOperationsHostId());
+        String profileLabel = operationsProfileLabel(profiles, profile.hostId);
+        String label = profileLabel;
+        if (profile.revoked) {
+            label += "（授权失效）";
+        } else if (current) {
+            label += "（当前）";
+        }
+        Button button = dashboardButton(label, v -> {
+            if (profile.revoked) {
+                confirmRemoveOperationsProfile(profile.hostId, profileLabel);
+            } else {
+                switchOperationsProfile(profile.hostId);
+            }
+        });
+        button.setEnabled(profile.revoked || !current);
+        return button;
+    }
+
+    private String operationsProfileLabel(
+            List<OperationsProfileRegistry.Profile> profiles, String hostId) {
+        for (int index = 0; index < profiles.size(); index++) {
+            OperationsProfileRegistry.Profile profile = profiles.get(index);
+            if (profile.hostId.equals(hostId)) {
+                return profile.label.isEmpty() ? "电脑 " + (index + 1) : profile.label;
+            }
+        }
+        return "未选择";
+    }
+
+    private void startOperationsPairingScan() {
+        startActivityForResult(new Intent(this, QrScanActivity.class), REQUEST_QR_SCAN);
+    }
+
+    private void promptRenameCurrentOperationsProfile() {
+        String hostId = preferences.getOperationsHostId();
+        List<OperationsProfileRegistry.Profile> profiles = preferences.getOperationsProfiles();
+        String currentLabel = operationsProfileLabel(profiles, hostId);
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setMaxLines(1);
+        input.setText(currentLabel.startsWith("电脑 ") ? "" : currentLabel);
+        input.setHint("例如：一号线 AOI");
+        new AlertDialog.Builder(this)
+                .setTitle("命名当前电脑")
+                .setMessage("名称只保存在这台手机，不会发送给电脑或固定中继。最多 20 个字符。")
+                .setView(input)
+                .setNegativeButton("取消", null)
+                .setPositiveButton("保存", (dialog, which) -> {
+                    preferences.renameOperationsProfile(hostId, input.getText().toString());
+                    showConnectionPreference();
+                })
+                .show();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_QR_SCAN) {
+            if (resultCode == RESULT_OK && data != null) {
+                String result = data.getStringExtra(QrScanActivity.EXTRA_QR_RESULT);
+                if (OperationsPairingPayload.isPairingInput(result)) {
+                    beginPairing(result);
+                } else {
+                    Toast.makeText(this, "请扫描电脑端的安全运维配对码",
+                            Toast.LENGTH_LONG).show();
+                }
+            } else {
+                Toast.makeText(this, "已取消添加电脑", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void switchOperationsProfile(String hostId) {
+        if (hostId.equals(preferences.getOperationsHostId())) {
+            return;
+        }
+        if (!preferences.selectOperationsProfile(hostId)) {
+            Toast.makeText(this, "这台电脑的配对资料不可用", Toast.LENGTH_LONG).show();
+            return;
+        }
+        resetOperationsClientsForProfileChange();
+        OperationsWatchService.restartForProfileChange(this);
+        Toast.makeText(this, "已切换当前运维电脑", Toast.LENGTH_SHORT).show();
+        openExistingProfile();
+    }
+
+    private void resetOperationsClientsForProfileChange() {
+        connectionRequestGeneration++;
+        remoteTaskGeneration++;
+        client = null;
+        relayClient = null;
+        lastRelaySnapshotResponse = null;
+        remoteDashboard = false;
+        connectionHeartbeatInFlight = false;
+        connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
+        clearDashboardLiveStatusReferences();
     }
 
     private void showDashboard() {
@@ -1619,10 +1755,12 @@ public class OperationsActivity extends Activity {
 
     private void showRevokedProfile() {
         connectionRequestGeneration++;
-        clearRemoteWindowSnapshotSecrets(preferences.getOperationsHostId());
+        String revokedHostId = preferences.getOperationsHostId();
+        clearRemoteWindowSnapshotSecrets(revokedHostId);
         preferences.markOperationsProfileRevoked();
         OperationsWatchService.stopForProfileRemoval(this);
-        showError("配对授权已失效", "设备已被电脑端撤销，请重新配对。", this::clearProfile);
+        showError("配对授权已失效", "这台电脑已撤销设备授权；其他已配对电脑不会受影响。",
+                () -> removeOperationsProfile(revokedHostId));
     }
 
     private static boolean isRevokedException(Exception exception) {
@@ -1968,11 +2106,22 @@ public class OperationsActivity extends Activity {
     }
 
     private void confirmClearProfile() {
+        String hostId = preferences.getOperationsHostId();
         new AlertDialog.Builder(this)
                 .setTitle("移除本机配对资料")
-                .setMessage("仅删除手机中的设备密钥、证书指纹和端点记录。电脑端的已配对设备仍需单独撤销。")
+                .setMessage("仅删除当前电脑在手机中的设备密钥、证书指纹和端点记录。其他已配对电脑不受影响；电脑端的设备授权仍需单独撤销。")
                 .setNegativeButton("取消", null)
-                .setPositiveButton("确认移除", (dialog, which) -> clearProfile())
+                .setPositiveButton("确认移除", (dialog, which) -> removeOperationsProfile(hostId))
+                .show();
+    }
+
+    private void confirmRemoveOperationsProfile(String hostId, String label) {
+        new AlertDialog.Builder(this)
+                .setTitle("移除" + label)
+                .setMessage("将删除这台电脑在手机中的独立密钥、证书指纹、时间线和最近任务。其他电脑不受影响。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("确认移除",
+                        (dialog, which) -> removeOperationsProfile(hostId))
                 .show();
     }
 
@@ -4466,15 +4615,12 @@ public class OperationsActivity extends Activity {
         return value;
     }
 
-    private void clearProfile() {
+    private void removeOperationsProfile(String hostId) {
         leaveSupportCenter();
         leaveLiveMonitor();
-        remoteDashboard = false;
-        relayClient = null;
-        lastRelaySnapshotResponse = null;
-        dashboardVisible = false;
         OperationsWatchService.stopForProfileRemoval(this);
-        String hostId = preferences.getOperationsHostId();
+        resetOperationsClientsForProfileChange();
+        dashboardVisible = false;
         clearRemoteWindowSnapshotSecrets(hostId);
         try {
             if (!hostId.isEmpty()) {
@@ -4482,9 +4628,17 @@ public class OperationsActivity extends Activity {
             }
         } catch (Exception ignored) {
         }
-        preferences.clearOperationsProfile();
-        Toast.makeText(this, "本机配对资料已移除；电脑端仍可单独撤销设备", Toast.LENGTH_LONG).show();
-        finish();
+        preferences.removeOperationsProfile(hostId);
+        if (preferences.hasOperationsProfile()) {
+            OperationsWatchService.start(this);
+            Toast.makeText(this, "这台电脑的本机配对资料已移除，已切换到下一台电脑",
+                    Toast.LENGTH_LONG).show();
+            openExistingProfile();
+        } else {
+            Toast.makeText(this, "本机配对资料已移除；电脑端仍可单独撤销设备",
+                    Toast.LENGTH_LONG).show();
+            finish();
+        }
     }
 
     private void setBusy(String message) {

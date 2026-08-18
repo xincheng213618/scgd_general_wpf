@@ -50,6 +50,7 @@ public final class OperationsWatchService extends Service {
     private boolean monitoring;
     private boolean checkInFlight;
     private boolean checkAgainAfterCurrent;
+    private int checkGeneration;
     private int consecutiveFailures;
     private boolean lastCheckOnline;
     private boolean hasCompletedCheck;
@@ -83,6 +84,11 @@ public final class OperationsWatchService extends Service {
         Intent intent = new Intent(context, OperationsWatchService.class)
                 .setAction(ACTION_REFRESH_CONNECTION);
         ContextCompat.startForegroundService(context, intent);
+    }
+
+    static void restartForProfileChange(Context context) {
+        stopForProfileRemoval(context);
+        start(context);
     }
 
     @Override
@@ -124,6 +130,7 @@ public final class OperationsWatchService extends Service {
     @Override
     public void onDestroy() {
         monitoring = false;
+        checkGeneration++;
         handler.removeCallbacks(scheduledCheck);
         unregisterNetworkCallback();
         executor.shutdownNow();
@@ -201,62 +208,89 @@ public final class OperationsWatchService extends Service {
         }
 
         checkInFlight = true;
+        int generation = ++checkGeneration;
+        String hostId = preferences.getOperationsHostId();
         executor.execute(() -> {
             if (OperationsConnectionPreference.prefersRelay(
                     preferences.getOperationsConnectionPreference())) {
-                runRelayPreferredCheck();
+                runRelayPreferredCheck(generation, hostId);
             } else {
-                runDirectPreferredCheck();
+                runDirectPreferredCheck(generation, hostId);
             }
         });
     }
 
-    private void runDirectPreferredCheck() {
+    private void runDirectPreferredCheck(int generation, String hostId) {
         String localCode;
         try {
             LocalCheck check = readLocalCheck();
-            handler.post(() -> completeSuccessfulCheck(check.status, check.attentionKey));
+            postCheckCompletion(generation, hostId,
+                    () -> completeSuccessfulCheck(check.status, check.attentionKey));
             return;
         } catch (Exception localException) {
             localCode = errorCode(localException);
             if (isRevoked(localCode)) {
-                handler.post(() -> completeFailedCheck(localCode));
+                postCheckCompletion(generation, hostId, () -> completeFailedCheck(localCode));
                 return;
             }
         }
 
         try {
             RelayCheck check = readRelayCheck();
-            handler.post(() -> completeRemoteCheck(check));
+            postCheckCompletion(generation, hostId, () -> completeRemoteCheck(check));
         } catch (Exception relayException) {
             String relayCode = errorCode(relayException);
             Log.w(LOG_TAG, "operations_watch_relay_unavailable code=" + relayCode);
-            handler.post(() -> completeFailedCheck(isRevoked(relayCode) ? relayCode : localCode));
+            postCheckCompletion(generation, hostId,
+                    () -> completeFailedCheck(isRevoked(relayCode) ? relayCode : localCode));
         }
     }
 
-    private void runRelayPreferredCheck() {
+    private void runRelayPreferredCheck(int generation, String hostId) {
         String relayCode;
         try {
             RelayCheck check = readRelayCheck();
-            handler.post(() -> completeRemoteCheck(check));
+            postCheckCompletion(generation, hostId, () -> completeRemoteCheck(check));
             return;
         } catch (Exception relayException) {
             relayCode = errorCode(relayException);
             Log.w(LOG_TAG, "operations_watch_relay_unavailable code=" + relayCode);
             if (isRevoked(relayCode)) {
-                handler.post(() -> completeFailedCheck(relayCode));
+                postCheckCompletion(generation, hostId, () -> completeFailedCheck(relayCode));
                 return;
             }
         }
 
         try {
             LocalCheck check = readLocalCheck();
-            handler.post(() -> completeSuccessfulCheck(check.status, check.attentionKey));
+            postCheckCompletion(generation, hostId,
+                    () -> completeSuccessfulCheck(check.status, check.attentionKey));
         } catch (Exception localException) {
             String localCode = errorCode(localException);
-            handler.post(() -> completeFailedCheck(isRevoked(localCode) ? localCode : relayCode));
+            postCheckCompletion(generation, hostId,
+                    () -> completeFailedCheck(isRevoked(localCode) ? localCode : relayCode));
         }
+    }
+
+    private void postCheckCompletion(int generation, String hostId, Runnable completion) {
+        handler.post(() -> {
+            if (!monitoring) {
+                return;
+            }
+            if (!OperationsWatchPolicy.isCurrentProfileCheck(
+                    hostId, preferences.getOperationsHostId(), generation, checkGeneration)) {
+                checkInFlight = false;
+                checkAgainAfterCurrent = false;
+                client = null;
+                clientProfileKey = "";
+                relayClient = null;
+                relayClientProfileKey = "";
+                handler.removeCallbacks(scheduledCheck);
+                handler.post(scheduledCheck);
+                return;
+            }
+            completion.run();
+        });
     }
 
     private LocalCheck readLocalCheck() throws Exception {
@@ -626,6 +660,7 @@ public final class OperationsWatchService extends Service {
 
     private void stopMonitoring(boolean removeNotification) {
         monitoring = false;
+        checkGeneration++;
         handler.removeCallbacks(scheduledCheck);
         stopForegroundCompat(removeNotification);
         stopSelf();
@@ -633,6 +668,7 @@ public final class OperationsWatchService extends Service {
 
     private void detachNotificationAndStop() {
         monitoring = false;
+        checkGeneration++;
         handler.removeCallbacks(scheduledCheck);
         stopForegroundCompat(false);
         stopSelf();

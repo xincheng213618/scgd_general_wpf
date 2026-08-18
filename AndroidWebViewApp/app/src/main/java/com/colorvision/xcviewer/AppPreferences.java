@@ -18,6 +18,7 @@ final class AppPreferences {
     private static final String KEY_AUDIO_URI = "audio_uri";
     private static final String KEY_AUDIO_TITLE = "audio_title";
     private static final String KEY_DEVICE_ID = "operations_device_id";
+    private static final String KEY_OPERATIONS_PROFILES = "operations_profiles_v1";
     private static final String KEY_OPERATIONS_ENDPOINT = "operations_endpoint";
     private static final String KEY_OPERATIONS_PIN = "operations_certificate_pin";
     private static final String KEY_OPERATIONS_HOST_ID = "operations_host_id";
@@ -30,11 +31,13 @@ final class AppPreferences {
     private static final String KEY_OPERATIONS_RELAY_TASK_ID = "operations_relay_task_id";
     private static final String KEY_OPERATIONS_RELAY_TASK_CAPABILITY = "operations_relay_task_capability";
     private static final String KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY = "operations_relay_task_idempotency";
+    private static final Object OPERATIONS_PROFILE_LOCK = new Object();
 
     private final SharedPreferences preferences;
 
     AppPreferences(Context context) {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        migrateOperationsProfiles();
         if (preferences.contains(KEY_LEGACY_LAN_URL)
                 || preferences.contains(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)
                 || preferences.contains(KEY_LEGACY_OPERATIONS_WATCH_STATE)) {
@@ -108,55 +111,87 @@ final class AppPreferences {
         return created;
     }
 
-    void saveOperationsProfile(String endpoint, String certificatePin, String hostId) {
-        preferences.edit()
-                .putString(KEY_OPERATIONS_ENDPOINT, endpoint)
-                .putString(KEY_OPERATIONS_PIN, certificatePin)
-                .putString(KEY_OPERATIONS_HOST_ID, hostId)
-                .putString(KEY_OPERATIONS_CONNECTION_PREFERENCE,
-                        OperationsConnectionPreference.DIRECT)
-                .putBoolean(KEY_OPERATIONS_PROFILE_REVOKED, false)
-                .remove(KEY_OPERATIONS_WATCH_HISTORY)
-                .remove(KEY_OPERATIONS_RELAY_TASK_ID)
-                .remove(KEY_OPERATIONS_RELAY_TASK_CAPABILITY)
-                .remove(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY)
-                .apply();
+    boolean saveOperationsProfile(String endpoint, String certificatePin, String hostId) {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            OperationsProfileRegistry.State state = readOperationsProfiles();
+            try {
+                writeOperationsProfiles(state.upsert(endpoint, certificatePin, hostId));
+                return true;
+            } catch (IllegalStateException exception) {
+                return false;
+            }
+        }
     }
 
     String getOperationsEndpoint() {
-        return preferences.getString(KEY_OPERATIONS_ENDPOINT, "");
+        OperationsProfileRegistry.Profile profile = activeOperationsProfile();
+        return profile == null ? "" : profile.endpoint;
     }
 
     String getOperationsCertificatePin() {
-        return preferences.getString(KEY_OPERATIONS_PIN, "");
+        OperationsProfileRegistry.Profile profile = activeOperationsProfile();
+        return profile == null ? "" : profile.certificatePin;
     }
 
     String getOperationsHostId() {
-        return preferences.getString(KEY_OPERATIONS_HOST_ID, "");
+        OperationsProfileRegistry.Profile profile = activeOperationsProfile();
+        return profile == null ? "" : profile.hostId;
     }
 
     String getOperationsConnectionPreference() {
-        return OperationsConnectionPreference.normalize(preferences.getString(
-                KEY_OPERATIONS_CONNECTION_PREFERENCE,
-                OperationsConnectionPreference.DIRECT));
+        OperationsProfileRegistry.Profile profile = activeOperationsProfile();
+        return profile == null ? OperationsConnectionPreference.DIRECT
+                : profile.connectionPreference;
     }
 
     void saveOperationsConnectionPreference(String connectionPreference) {
-        preferences.edit()
-                .putString(KEY_OPERATIONS_CONNECTION_PREFERENCE,
-                        OperationsConnectionPreference.normalize(connectionPreference))
-                .apply();
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            writeOperationsProfiles(readOperationsProfiles()
+                    .updateConnectionPreference(connectionPreference));
+        }
     }
 
     boolean hasOperationsProfile() {
-        return !getOperationsEndpoint().isEmpty()
-                && !getOperationsCertificatePin().isEmpty()
-                && !getOperationsHostId().isEmpty()
-                && !preferences.getBoolean(KEY_OPERATIONS_PROFILE_REVOKED, false);
+        OperationsProfileRegistry.Profile profile = activeOperationsProfile();
+        return profile != null && !profile.revoked;
+    }
+
+    int getOperationsProfileCount() {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            return readOperationsProfiles().profiles.size();
+        }
+    }
+
+    List<OperationsProfileRegistry.Profile> getOperationsProfiles() {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            return readOperationsProfiles().profiles;
+        }
+    }
+
+    boolean selectOperationsProfile(String hostId) {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            OperationsProfileRegistry.State before = readOperationsProfiles();
+            OperationsProfileRegistry.State after = before.select(hostId);
+            if (after.activeHostId.equals(before.activeHostId)) {
+                return hostId != null && hostId.equals(before.activeHostId)
+                        && before.active() != null && !before.active().revoked;
+            }
+            writeOperationsProfiles(after);
+            return true;
+        }
+    }
+
+    void renameOperationsProfile(String hostId, String label) {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            writeOperationsProfiles(readOperationsProfiles().rename(hostId, label));
+        }
     }
 
     void markOperationsProfileRevoked() {
-        preferences.edit().putBoolean(KEY_OPERATIONS_PROFILE_REVOKED, true).apply();
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            OperationsProfileRegistry.State state = readOperationsProfiles();
+            writeOperationsProfiles(state.revoke(state.activeHostId));
+        }
     }
 
     String getOperationsWatchState() {
@@ -166,44 +201,100 @@ final class AppPreferences {
     }
 
     List<OperationsWatchHistory.Entry> getOperationsWatchHistory(long nowMilliseconds) {
+        OperationsProfileRegistry.Profile profile = activeOperationsProfile();
         return OperationsWatchHistory.parse(
-                preferences.getString(KEY_OPERATIONS_WATCH_HISTORY, ""), nowMilliseconds);
+                profile == null ? "" : profile.watchHistory, nowMilliseconds);
     }
 
     boolean recordOperationsWatchState(String state, long nowMilliseconds) {
-        String previousHistory = preferences.getString(KEY_OPERATIONS_WATCH_HISTORY, "");
-        OperationsWatchHistory.Transition transition = OperationsWatchHistory.transition(
-                previousHistory, state, nowMilliseconds);
-        if (transition.changed || !transition.serializedHistory.equals(previousHistory)) {
-            preferences.edit()
-                    .putString(KEY_OPERATIONS_WATCH_HISTORY, transition.serializedHistory)
-                    .apply();
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            OperationsProfileRegistry.State profiles = readOperationsProfiles();
+            OperationsProfileRegistry.Profile active = profiles.active();
+            String previousHistory = active == null ? "" : active.watchHistory;
+            OperationsWatchHistory.Transition transition = OperationsWatchHistory.transition(
+                    previousHistory, state, nowMilliseconds);
+            if (transition.changed || !transition.serializedHistory.equals(previousHistory)) {
+                writeOperationsProfiles(profiles.updateWatchHistory(
+                        transition.serializedHistory));
+            }
+            return transition.changed;
         }
-        return transition.changed;
     }
 
     void saveOperationsRelayTask(String taskId, String capabilityId, String idempotencyKey) {
-        preferences.edit()
-                .putString(KEY_OPERATIONS_RELAY_TASK_ID, taskId)
-                .putString(KEY_OPERATIONS_RELAY_TASK_CAPABILITY, capabilityId)
-                .putString(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY, idempotencyKey)
-                .apply();
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            writeOperationsProfiles(readOperationsProfiles().updateRelayTask(
+                    taskId, capabilityId, idempotencyKey));
+        }
     }
 
     String getOperationsRelayTaskId() {
-        return preferences.getString(KEY_OPERATIONS_RELAY_TASK_ID, "");
+        OperationsProfileRegistry.Profile profile = activeOperationsProfile();
+        return profile == null ? "" : profile.relayTaskId;
     }
 
     String getOperationsRelayTaskCapability() {
-        return preferences.getString(KEY_OPERATIONS_RELAY_TASK_CAPABILITY, "");
+        OperationsProfileRegistry.Profile profile = activeOperationsProfile();
+        return profile == null ? "" : profile.relayTaskCapability;
     }
 
     String getOperationsRelayTaskIdempotencyKey() {
-        return preferences.getString(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY, "");
+        OperationsProfileRegistry.Profile profile = activeOperationsProfile();
+        return profile == null ? "" : profile.relayTaskIdempotency;
     }
 
-    void clearOperationsProfile() {
-        preferences.edit()
+    void removeOperationsProfile(String hostId) {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            writeOperationsProfiles(readOperationsProfiles().remove(hostId));
+        }
+    }
+
+    private OperationsProfileRegistry.Profile activeOperationsProfile() {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            return readOperationsProfiles().active();
+        }
+    }
+
+    private OperationsProfileRegistry.State readOperationsProfiles() {
+        return OperationsProfileRegistry.parse(
+                preferences.getString(KEY_OPERATIONS_PROFILES, ""));
+    }
+
+    private void writeOperationsProfiles(OperationsProfileRegistry.State state) {
+        SharedPreferences.Editor editor = preferences.edit();
+        if (state.profiles.isEmpty()) {
+            editor.remove(KEY_OPERATIONS_PROFILES);
+        } else {
+            editor.putString(KEY_OPERATIONS_PROFILES, OperationsProfileRegistry.serialize(state));
+        }
+        removeLegacyOperationsProfile(editor).apply();
+    }
+
+    private void migrateOperationsProfiles() {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            if (preferences.contains(KEY_OPERATIONS_PROFILES)) {
+                return;
+            }
+            OperationsProfileRegistry.State migrated = OperationsProfileRegistry.fromLegacy(
+                    preferences.getString(KEY_OPERATIONS_ENDPOINT, ""),
+                    preferences.getString(KEY_OPERATIONS_PIN, ""),
+                    preferences.getString(KEY_OPERATIONS_HOST_ID, ""),
+                    preferences.getString(KEY_OPERATIONS_CONNECTION_PREFERENCE,
+                            OperationsConnectionPreference.DIRECT),
+                    preferences.getBoolean(KEY_OPERATIONS_PROFILE_REVOKED, false),
+                    preferences.getString(KEY_OPERATIONS_WATCH_HISTORY, ""),
+                    preferences.getString(KEY_OPERATIONS_RELAY_TASK_ID, ""),
+                    preferences.getString(KEY_OPERATIONS_RELAY_TASK_CAPABILITY, ""),
+                    preferences.getString(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY, ""));
+            if (!migrated.profiles.isEmpty()) {
+                writeOperationsProfiles(migrated);
+            }
+        }
+    }
+
+    private static SharedPreferences.Editor removeLegacyOperationsProfile(
+            SharedPreferences.Editor editor) {
+        return editor
                 .remove(KEY_OPERATIONS_ENDPOINT)
                 .remove(KEY_OPERATIONS_PIN)
                 .remove(KEY_OPERATIONS_HOST_ID)
@@ -214,8 +305,7 @@ final class AppPreferences {
                 .remove(KEY_OPERATIONS_WATCH_HISTORY)
                 .remove(KEY_OPERATIONS_RELAY_TASK_ID)
                 .remove(KEY_OPERATIONS_RELAY_TASK_CAPABILITY)
-                .remove(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY)
-                .apply();
+                .remove(KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY);
     }
 
 }

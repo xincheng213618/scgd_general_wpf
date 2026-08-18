@@ -566,13 +566,14 @@ public class MainActivity extends Activity {
         LinearLayout connectionSection = makeSettingsSection();
         content.addView(connectionSection, settingsSectionParams());
         boolean paired = appPreferences.hasOperationsProfile();
+        int pairedComputerCount = appPreferences.getOperationsProfileCount();
         addSettingsRow(connectionSection, "现场运维",
-                paired ? "已配对 · 自动连接" : "尚未配对",
+                paired ? "已配对 " + pairedComputerCount + " 台 · 当前电脑自动连接" : "尚未配对",
                 v -> openOperations());
         addSettingsRow(connectionSection, "安全通道",
                 paired ? "设备密钥 + TLS 证书固定" : "等待安全配对",
                 null);
-        addSettingsRow(connectionSection, paired ? "重新配对" : "连接电脑", "扫描二维码", v -> startQrScan());
+        addSettingsRow(connectionSection, paired ? "添加电脑" : "连接电脑", "扫描二维码", v -> startQrScan());
 
         LinearLayout permissionSection = makeSettingsSection();
         content.addView(permissionSection, settingsSectionParams());

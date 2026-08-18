@@ -101,4 +101,16 @@ public class OperationsWatchPolicyTest {
         assertEquals("", OperationsWatchPolicy.normalizeDestination("/ops/v1/audit"));
         assertEquals("", OperationsWatchPolicy.normalizeDestination(null));
     }
+
+    @Test
+    public void completedBackgroundCheckMustStillBelongToTheActiveComputer() {
+        assertTrue(OperationsWatchPolicy.isCurrentProfileCheck(
+                "host_1", "host_1", 7, 7));
+        assertFalse(OperationsWatchPolicy.isCurrentProfileCheck(
+                "host_1", "host_2", 7, 7));
+        assertFalse(OperationsWatchPolicy.isCurrentProfileCheck(
+                "host_1", "host_1", 6, 7));
+        assertFalse(OperationsWatchPolicy.isCurrentProfileCheck(
+                null, "host_1", 7, 7));
+    }
 }
