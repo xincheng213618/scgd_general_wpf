@@ -837,7 +837,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void showConnectionPreference() {
         setCurrentDestination(OperationsDestinationState.CONNECTIONS);
-        connectionCheckGeneration++;
+        int overviewGeneration = ++connectionCheckGeneration;
         scrollDashboardToTop();
         refreshOperationsTargetPresentation();
         setShowingDashboardSummary(false);
@@ -845,7 +845,7 @@ public class OperationsActivity extends AppCompatActivity {
         leaveSupportCenter();
         leaveLiveMonitor();
         setDashboardVisible(true);
-        progress.setVisibility(View.GONE);
+        progress.setVisibility(View.VISIBLE);
         title.setTitle("电脑与连接");
         boolean relayPreferred = OperationsConnectionPreference.prefersRelay(
                 preferences.getOperationsConnectionPreference());
@@ -854,26 +854,13 @@ public class OperationsActivity extends AppCompatActivity {
         OperationsFleetOverview.Assessment fleet = OperationsFleetOverview.assess(
                 profiles, nowMilliseconds);
         int profileCount = profiles.size();
-        OperationsProfileRegistry.Profile activeProfile = null;
-        for (OperationsProfileRegistry.Profile profile : profiles) {
-            if (profile.hostId.equals(preferences.getOperationsHostId())) {
-                activeProfile = profile;
-                break;
-            }
-        }
-        String activeProfileState = activeProfile == null
-                ? "尚未检查"
-                : OperationsProfileOverview.summary(
-                activeProfile.watchHistory,
-                activeProfile.watchCheckedAt,
-                activeProfile.revoked,
-                nowMilliseconds);
-        state.setText(OperationsConnectionOverview.pageStatus(
-                profileCount, activeProfileState, fleet.summary));
+        OperationsConnectionOverviewProbe.Result checking =
+                OperationsConnectionOverviewProbe.checking();
+        state.setText(OperationsConnectionOverview.pageStatus(checking));
         details.setText(OperationsConnectionOverview.summary(
                 preferences.getActiveOperationsProfileLabel(),
                 relayPreferred ? "固定中继" : "现场直连",
-                remoteDashboard ? "固定中继" : "现场直连",
+                checking,
                 profileCount,
                 OperationsProfileRegistry.MAX_PROFILES));
         actions.removeAllViews();
@@ -892,6 +879,18 @@ public class OperationsActivity extends AppCompatActivity {
                     "查看全部电脑动态", v -> showFleetTimeline(false)));
         }
 
+        addDashboardSection(OperationsConnectionOverview.showsFleetTools(profileCount)
+                ? "检查与巡检" : "检查连接");
+        if (OperationsConnectionOverview.showsFleetTools(profileCount)) {
+            addDashboardActionRow(
+                    dashboardPrimaryButton(
+                            "运行现场连接自检", v -> runConnectionSelfCheck()),
+                    dashboardButton("只读巡检全部电脑", v -> refreshAllOperationsProfiles()));
+        } else {
+            addDashboardWideAction(dashboardPrimaryButton(
+                    "运行现场连接自检", v -> runConnectionSelfCheck()));
+        }
+
         addDashboardSection("连接偏好");
         addDashboardSegmentedChoices(
                 "现场直连优先",
@@ -899,17 +898,6 @@ public class OperationsActivity extends AppCompatActivity {
                 relayPreferred,
                 v -> selectConnectionPreference(OperationsConnectionPreference.DIRECT),
                 v -> selectConnectionPreference(OperationsConnectionPreference.RELAY));
-
-        addDashboardSection(OperationsConnectionOverview.showsFleetTools(profileCount)
-                ? "检查与巡检" : "检查连接");
-        if (OperationsConnectionOverview.showsFleetTools(profileCount)) {
-            addDashboardActionRow(
-                    dashboardButton("运行现场连接自检", v -> runConnectionSelfCheck()),
-                    dashboardButton("只读巡检全部电脑", v -> refreshAllOperationsProfiles()));
-        } else {
-            addDashboardWideAction(dashboardButton(
-                    "运行现场连接自检", v -> runConnectionSelfCheck()));
-        }
 
         addDashboardSection("电脑管理");
         addDashboardActionRow(
@@ -925,7 +913,62 @@ public class OperationsActivity extends AppCompatActivity {
         addDashboardInfoCard(OperationsConnectionOverview.removalNote());
         addDashboardWideAction(dashboardDestructiveButton(
                 "移除当前电脑配对", v -> confirmClearProfile()));
-        scheduleConnectionHeartbeat();
+        probeConnectionPreference(overviewGeneration, relayPreferred);
+    }
+
+    private void probeConnectionPreference(int overviewGeneration, boolean relayPreferred) {
+        String requestHostId = preferences.getOperationsHostId();
+        executor.execute(() -> {
+            OperationsConnectionOverviewProbe.Result result;
+            try {
+                ensureOperationsClients();
+                result = OperationsConnectionOverviewProbe.run(
+                        relayPreferred,
+                        System.currentTimeMillis(),
+                        () -> client.get("/ops/v1/diagnostics/connection"),
+                        () -> relayClient.getSnapshot());
+            } catch (Exception ex) {
+                result = new OperationsConnectionOverviewProbe.Result(
+                        OperationsConnectionOverviewProbe.Channel.UNAVAILABLE,
+                        false,
+                        !OperationsConnectionPreference.canFallbackAfter(ex.getMessage()),
+                        ex,
+                        ex);
+            }
+            OperationsConnectionOverviewProbe.Result finalResult = result;
+            runOnUiThread(() -> applyConnectionPreferenceProbe(
+                    overviewGeneration, requestHostId, finalResult));
+        });
+    }
+
+    private void applyConnectionPreferenceProbe(
+            int overviewGeneration,
+            String requestHostId,
+            OperationsConnectionOverviewProbe.Result result) {
+        if (overviewGeneration != connectionCheckGeneration
+                || !OperationsDestinationState.CONNECTIONS.equals(currentDestination)
+                || isFinishing() || isDestroyed()) {
+            return;
+        }
+        if (!OperationsTargetPolicy.isSameTarget(
+                requestHostId, preferences.getOperationsHostId())) {
+            showConnectionPreference();
+            return;
+        }
+        progress.setVisibility(View.GONE);
+        if (result.revoked) {
+            showRevokedProfile();
+            return;
+        }
+        boolean relayPreferred = OperationsConnectionPreference.prefersRelay(
+                preferences.getOperationsConnectionPreference());
+        state.setText(OperationsConnectionOverview.pageStatus(result));
+        details.setText(OperationsConnectionOverview.summary(
+                preferences.getActiveOperationsProfileLabel(),
+                relayPreferred ? "固定中继" : "现场直连",
+                result,
+                preferences.getOperationsProfiles().size(),
+                OperationsProfileRegistry.MAX_PROFILES));
     }
 
     private View operationsProfileButton(
