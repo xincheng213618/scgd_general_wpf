@@ -22,6 +22,7 @@ namespace ColorVision.Copilot
             bool ProviderInterrupted,
             bool ContextWindowExceeded,
             bool ToolBudgetForcedFinalization,
+            bool PostToolStopRequested,
             AIChatFinishReason? ProviderFinishReason,
             CopilotAutomaticApprovalDenialCircuitBreakerSnapshot? AutomaticReviewCircuitBreaker);
 
@@ -33,6 +34,7 @@ namespace ColorVision.Copilot
             CancellationToken callerCancellationToken,
             CancellationToken cancellationToken,
             CancellationToken toolBudgetCancellationToken,
+            CancellationToken postToolStopCancellationToken,
             CancellationToken agentLoopCancellationToken,
             AIAgent agent,
             IReadOnlyList<ChatMessage> initialMessages,
@@ -58,6 +60,7 @@ namespace ColorVision.Copilot
             var providerInterrupted = false;
             var contextWindowExceeded = false;
             var toolBudgetForcedFinalization = false;
+            var postToolStopRequested = false;
             var deferredBackgroundSignalsAccepted = false;
             var frameworkApprovalAwaitingProviderUpdate = false;
             var steeringInputSealed = false;
@@ -180,6 +183,20 @@ namespace ColorVision.Copilot
                     frameworkApprovalAwaitingProviderUpdate = true;
                 }
             }
+            catch (OperationCanceledException) when (postToolStopCancellationToken.IsCancellationRequested
+                && !callerCancellationToken.IsCancellationRequested
+                && !timeBudgetCancellation.IsCancellationRequested
+                && request.RunControl?.Intent is not (CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel))
+            {
+                postToolStopRequested = true;
+                var blocker = bridge.GetPostToolStopBlocker();
+                emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    blocker?.Summary
+                    ?? "A synchronous PostToolUse policy stopped the Agent after a completed tool call."));
+                emit(CopilotAgentEvent.AnswerDelta(
+                    (answerText.Length == 0 ? string.Empty : Environment.NewLine + Environment.NewLine)
+                    + "PostToolUse 策略已在工具完成后停止本轮 Agent。工具结果和任务状态已保存；处理该策略后可安全恢复。"));
+            }
             catch (OperationCanceledException) when (toolBudgetCancellationToken.IsCancellationRequested
                 && !callerCancellationToken.IsCancellationRequested
                 && !timeBudgetCancellation.IsCancellationRequested
@@ -281,6 +298,7 @@ namespace ColorVision.Copilot
                 providerInterrupted,
                 contextWindowExceeded,
                 toolBudgetForcedFinalization,
+                postToolStopRequested,
                 providerFinishReason,
                 automaticReviewCircuitBreakerSnapshot);
         }

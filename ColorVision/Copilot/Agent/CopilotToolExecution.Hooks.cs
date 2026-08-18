@@ -452,6 +452,7 @@ namespace ColorVision.Copilot
             }
 
             outcome.ApplyModelVisibleFeedback(output.FeedbackMessage);
+            outcome.ApplyPostExecutionControl(output.Control, output.FeedbackMessage);
             outcome.AddModelAdditionalContext(
                 output.AdditionalContext,
                 output.AdditionalContextLimitTokens);

@@ -10,6 +10,7 @@ namespace ColorVision.Copilot
         Approval,
         ToolFailure,
         ProviderOutput,
+        Policy,
     }
 
     public sealed class CopilotAgentBlockerSnapshot

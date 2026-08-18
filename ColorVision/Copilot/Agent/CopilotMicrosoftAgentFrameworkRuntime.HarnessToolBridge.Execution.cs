@@ -175,8 +175,58 @@ namespace ColorVision.Copilot
                 await EnqueueHookAdditionalContextAsync(
                     outcome.ModelAdditionalContexts,
                     cancellationToken).ConfigureAwait(false);
+                RequestPostToolStop(outcome);
 
                 return formattedModelResult;
+            }
+
+            private void RequestPostToolStop(CopilotToolExecutionOutcome outcome)
+            {
+                if (outcome.PostExecutionControl != CopilotToolPostExecutionControl.Stopped)
+                    return;
+
+                var summary = CreatePostToolStopSummary(outcome.PostExecutionControlReason);
+                var notify = false;
+                lock (_syncRoot)
+                {
+                    if (_postToolStopBlocker == null)
+                    {
+                        _postToolStopBlocker = new CopilotAgentBlockerSnapshot
+                        {
+                            Kind = CopilotAgentBlockerKind.Policy,
+                            Code = "post_tool_hook_stopped",
+                            Summary = summary,
+                            ToolName = outcome.Execution.ToolName,
+                            SourceCallKey = CopilotAgentTaskEventIds.ForCall(outcome.Execution.CallId),
+                            RetryEligible = false,
+                            RequiresUserInput = true,
+                        };
+                        notify = true;
+                    }
+                }
+                if (notify)
+                    _onPostToolStopRequested?.Invoke();
+            }
+
+            private static string CreatePostToolStopSummary(string? reason)
+            {
+                const string defaultSummary =
+                    "A synchronous PostToolUse policy stopped the Agent after the completed tool call.";
+                var normalizedReason = string.Join(
+                    " ",
+                    CopilotApprovalRequestReason.Normalize(reason).Split(
+                        (char[]?)null,
+                        StringSplitOptions.RemoveEmptyEntries));
+                var summary = normalizedReason.Length == 0
+                    ? defaultSummary
+                    : "A synchronous PostToolUse policy stopped the Agent: " + normalizedReason;
+                if (summary.Length <= CopilotAgentTaskEventJournal.MaxSummaryLength)
+                    return summary;
+
+                var maximumContentLength = CopilotAgentTaskEventJournal.MaxSummaryLength - 3;
+                if (maximumContentLength > 0 && char.IsHighSurrogate(summary[maximumContentLength - 1]))
+                    maximumContentLength--;
+                return summary[..maximumContentLength].TrimEnd() + "...";
             }
 
             private void RecordExecutionOutcome(

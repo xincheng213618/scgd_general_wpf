@@ -714,6 +714,79 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public async Task AgentRuntimeFinalizesStoppedPostToolHookAsPolicyBlocker()
+    {
+        var hookRunner = new PostToolStoppingHookRunner();
+        var chatClient = new ValidationCallingChatClient();
+        var runtime = new CopilotMicrosoftAgentFrameworkRuntime(
+            new CopilotToolRegistry([new ValidationProbeTool()]),
+            new CopilotAgentContextBuilder(),
+            new CopilotToolExecutor(
+                Array.Empty<ICopilotToolExecutionHook>(),
+                utcNow: null,
+                hookPhaseTimeout: TimeSpan.FromSeconds(2),
+                progressInterval: TimeSpan.FromSeconds(1),
+                codexCommandHookRunner: hookRunner),
+            _ => chatClient,
+            new EmptyExternalToolProvider(),
+            new CopilotCapabilityCatalog(),
+            new CopilotCodexStopHookExecutor());
+        var fingerprint = new string('a', 64);
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "runtime-post-tool-stop-conversation",
+            TaskId = "runtime-post-tool-stop-task",
+            WorkspacePath = System.IO.Path.GetTempPath(),
+            UserText = "Run the validation probe and obey its post-tool policy.",
+            TaskIntentText = "Run the validation probe and obey its post-tool policy.",
+            Profile = CreateProfile(),
+            Mode = CopilotAgentMode.Code,
+            HarnessFeatures = CopilotAgentHarnessFeatures.None,
+            CodexHooksEnabled = true,
+            CodexPluginsEnabled = true,
+            CodexCommandHooks =
+            [
+                new CopilotCodexCommandHookDefinition(
+                    "codex-config:" + fingerprint[..32],
+                    System.IO.Path.Combine(System.IO.Path.GetTempPath(), "runtime-post-tool-hooks.json"),
+                    CopilotProjectInstructionConfigSources.CodexHome,
+                    CopilotCodexConfiguredHookEvent.PostToolUse,
+                    "^RunWorkspaceValidation$",
+                    "test-command",
+                    5,
+                    string.Empty,
+                    CopilotToolExecutionHookMode.Sync,
+                    0,
+                    fingerprint),
+            ],
+            CodexApprovalPolicy = CopilotCodexApprovalPolicy.CreateScalar(
+                CopilotCodexApprovalPolicyMode.Untrusted),
+            RunBudgetOverride = new CopilotAgentRunBudgetOverride
+            {
+                RequestTokenBudget = 16_384,
+                MaxToolCalls = 2,
+                MaxAgentPasses = 2,
+                TotalDuration = TimeSpan.FromSeconds(30),
+            },
+        };
+
+        var result = await runtime.RunAsync(request, _ => { }, CancellationToken.None);
+
+        Assert.Equal(CopilotAgentStopReason.Blocked, result.StopReason);
+        Assert.Equal(1, chatClient.CallCount);
+        Assert.Equal(1, hookRunner.CallCount);
+        Assert.True(Assert.Single(result.StepRecords).Observation.Success);
+        var blocker = Assert.Single(result.Blockers, item =>
+            string.Equals(item.Code, "post_tool_hook_stopped", StringComparison.Ordinal));
+        Assert.Equal(CopilotAgentBlockerKind.Policy, blocker.Kind);
+        Assert.True(blocker.IsStructurallyValid());
+        Assert.Contains(result.TaskEventJournal.Events, item =>
+            item.Type == CopilotAgentTaskEventType.BlockerDetected
+            && string.Equals(item.State, "post_tool_hook_stopped", StringComparison.Ordinal));
+        Assert.True(result.TaskEventJournal.IsStructurallyValid());
+    }
+
+    [Fact]
     public void ApprovalDenialIsTerminalWithoutSyntheticToolCompletion()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
@@ -1109,5 +1182,27 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
                 "runtime-validation-call",
                 "colorvision_run_workspace_validation",
                 new Dictionary<string, object?>());
+    }
+
+    private sealed class PostToolStoppingHookRunner : ICopilotCodexCommandHookRunner
+    {
+        private int _callCount;
+
+        public int CallCount => Volatile.Read(ref _callCount);
+
+        public Task<CopilotCodexCommandHookProcessResult> RunAsync(
+            CopilotCodexCommandHookDefinition definition,
+            CopilotAgentRequest request,
+            string standardInput,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Interlocked.Increment(ref _callCount);
+            return Task.FromResult(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                """{"continue":false,"reason":"validation policy requires review"}""",
+                string.Empty));
+        }
     }
 }

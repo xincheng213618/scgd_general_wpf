@@ -24,7 +24,7 @@ CopilotToolRegistry
   -> 返回 failure_kind / retry_allowed / attempt
   -> 仅当模型显式重试幂等工具的瞬时失败时允许第二次尝试
   -> 用户批准、拒绝或审批过期后回写同一 CallId
-  -> 写入脱敏审计并运行后置 Hook
+  -> 写入脱敏审计并运行同步后置 Hook；`decision:block` 仅替换模型可见反馈，`continue:false` 则在已完成结果落账后以策略阻塞结束本轮
   -> 发布 ToolResult
   -> 将 observation 交回模型进入下一轮
   -> ExecutionContractLoopEvaluator 校验显式 URL / Web 搜索是否已有成功工具证据

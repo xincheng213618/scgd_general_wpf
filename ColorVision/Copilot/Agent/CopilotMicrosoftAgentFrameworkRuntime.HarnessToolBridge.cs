@@ -38,8 +38,10 @@ namespace ColorVision.Copilot
             private readonly object _syncRoot = new();
             private readonly int _maxToolCalls;
             private readonly Action<CopilotDelegatedRunUsage>? _recordDelegatedRunUsage;
+            private readonly Action? _onPostToolStopRequested;
             private readonly CopilotAgentToolBudgetCompletionGate _toolBudgetCompletionGate;
             private CopilotTokenUsage _delegatedUsage;
+            private CopilotAgentBlockerSnapshot? _postToolStopBlocker;
             private int _reservedToolCalls;
             private MessageInjectingChatClient? _messageInjector;
             private AgentSession? _messageInjectionSession;
@@ -54,7 +56,8 @@ namespace ColorVision.Copilot
                 Action<CopilotAgentEvent> emit,
                 Func<long> capabilityRevisionProvider,
                 Action<CopilotDelegatedRunUsage>? recordDelegatedRunUsage = null,
-                Action? onToolBudgetExhausted = null)
+                Action? onToolBudgetExhausted = null,
+                Action? onPostToolStopRequested = null)
             {
                 _request = request;
                 _executionScope = executionScope ?? throw new ArgumentNullException(nameof(executionScope));
@@ -66,6 +69,7 @@ namespace ColorVision.Copilot
                 _capabilityRevisionProvider = capabilityRevisionProvider ?? throw new ArgumentNullException(nameof(capabilityRevisionProvider));
                 _recordDelegatedRunUsage = recordDelegatedRunUsage;
                 _toolBudgetCompletionGate = new CopilotAgentToolBudgetCompletionGate(onToolBudgetExhausted);
+                _onPostToolStopRequested = onPostToolStopRequested;
             }
 
             public IReadOnlyList<CopilotAgentStepRecord> StepRecords
@@ -80,6 +84,21 @@ namespace ColorVision.Copilot
             public bool ToolBudgetExhausted
             {
                 get => _toolBudgetCompletionGate.IsExhausted;
+            }
+
+            public bool PostToolStopRequested
+            {
+                get
+                {
+                    lock (_syncRoot)
+                        return _postToolStopBlocker != null;
+                }
+            }
+
+            public CopilotAgentBlockerSnapshot? GetPostToolStopBlocker()
+            {
+                lock (_syncRoot)
+                    return _postToolStopBlocker;
             }
 
             public CopilotTokenUsage DelegatedUsage

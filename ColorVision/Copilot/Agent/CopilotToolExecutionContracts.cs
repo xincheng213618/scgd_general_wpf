@@ -120,6 +120,8 @@ namespace ColorVision.Copilot
             "\n...[PreToolUse additional context truncated]...\n";
         private CopilotToolResult? _modelVisibleResult;
         private readonly List<string> _modelAdditionalContexts = [];
+        private CopilotToolPostExecutionControl _postExecutionControl;
+        private string _postExecutionControlReason = string.Empty;
 
         internal string? FormattedModelResult { get; set; }
 
@@ -135,6 +137,10 @@ namespace ColorVision.Copilot
             Array.Empty<CopilotToolExecutionHookRun>();
 
         internal CopilotToolResult EffectiveModelResult => _modelVisibleResult ?? Result;
+
+        internal CopilotToolPostExecutionControl PostExecutionControl => _postExecutionControl;
+
+        internal string PostExecutionControlReason => _postExecutionControlReason;
 
         internal IReadOnlyList<string> ModelAdditionalContexts
         {
@@ -184,6 +190,24 @@ namespace ColorVision.Copilot
                 ProcessTimedOut = original.ProcessTimedOut,
                 SuppressModelOutput = false,
             };
+        }
+
+        internal void ApplyPostExecutionControl(
+            CopilotToolPostExecutionControl control,
+            string? reason)
+        {
+            if (control == CopilotToolPostExecutionControl.None
+                || _postExecutionControl == CopilotToolPostExecutionControl.Stopped)
+            {
+                return;
+            }
+
+            if (control == CopilotToolPostExecutionControl.Stopped
+                || _postExecutionControl == CopilotToolPostExecutionControl.None)
+            {
+                _postExecutionControl = control;
+                _postExecutionControlReason = CopilotApprovalRequestReason.Normalize(reason);
+            }
         }
 
         internal void AddModelAdditionalContext(
