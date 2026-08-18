@@ -16,4 +16,17 @@ final class AppNavigationPolicy {
         }
         return persistedTab == settingsTab ? settingsTab : operationsTab;
     }
+
+    static int resolveCreationTab(
+            boolean restoring,
+            int restoredTab,
+            int requestedTab,
+            int operationsTab,
+            int settingsTab) {
+        return normalizeStartTab(
+                restoring ? restoredTab : requestedTab,
+                requestedTab,
+                operationsTab,
+                settingsTab);
+    }
 }

@@ -203,7 +203,7 @@ public class OperationsActivity extends AppCompatActivity {
                 ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
 
         LinearLayout header = new LinearLayout(this);
-        boolean singleColumn = OperationsResponsiveLayout.usesSingleColumn(
+        boolean singleColumn = AppResponsiveLayout.usesSingleColumn(
                 getResources().getConfiguration().fontScale);
         header.setOrientation(singleColumn ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
         header.setGravity(singleColumn ? Gravity.START : Gravity.CENTER_VERTICAL);
@@ -3045,7 +3045,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private LinearLayout createDashboardActionRow(Button left, Button right) {
         LinearLayout row = new LinearLayout(this);
-        boolean singleColumn = OperationsResponsiveLayout.usesSingleColumn(
+        boolean singleColumn = AppResponsiveLayout.usesSingleColumn(
                 getResources().getConfiguration().fontScale);
         row.setOrientation(singleColumn ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
 

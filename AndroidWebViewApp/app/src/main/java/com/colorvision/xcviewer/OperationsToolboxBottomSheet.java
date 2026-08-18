@@ -50,7 +50,7 @@ final class OperationsToolboxBottomSheet {
 
         int horizontalPadding = dp(activity, 24);
         LinearLayout heading = new LinearLayout(activity);
-        boolean singleColumn = OperationsResponsiveLayout.usesSingleColumn(
+        boolean singleColumn = AppResponsiveLayout.usesSingleColumn(
                 activity.getResources().getConfiguration().fontScale);
         heading.setOrientation(singleColumn
                 ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);

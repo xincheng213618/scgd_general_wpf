@@ -49,6 +49,8 @@ import java.util.concurrent.Executors;
 public class MainActivity extends AppCompatActivity {
     static final String EXTRA_START_TAB = "start_tab";
     static final String EXTRA_FROM_OPERATIONS = "from_operations";
+    private static final String STATE_CURRENT_TAB = "current_tab";
+    private static final String STATE_OPENED_FROM_OPERATIONS = "opened_from_operations";
     private static final int REQUEST_QR_SCAN = 1001;
     private static final int REQUEST_INSTALL_PERMISSION = 1004;
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1005;
@@ -86,8 +88,17 @@ public class MainActivity extends AppCompatActivity {
         OperationsWatchService.start(this);
         cameraPermissionGranted = hasCameraPermission();
         lastNotificationPermissionStatus = notificationPermissionStatus();
-        int startTab = consumeStartTab(getIntent());
-        openedFromOperations = getIntent().getBooleanExtra(EXTRA_FROM_OPERATIONS, false);
+        int requestedTab = consumeStartTab(getIntent());
+        boolean restoring = savedInstanceState != null;
+        int restoredTab = restoring
+                ? savedInstanceState.getInt(STATE_CURRENT_TAB, -1) : -1;
+        int startTab = AppNavigationPolicy.resolveCreationTab(
+                restoring, restoredTab, requestedTab, TAB_OPERATIONS, TAB_SETTINGS);
+        openedFromOperations = restoring
+                ? savedInstanceState.getBoolean(
+                        STATE_OPENED_FROM_OPERATIONS,
+                        getIntent().getBooleanExtra(EXTRA_FROM_OPERATIONS, false))
+                : getIntent().getBooleanExtra(EXTRA_FROM_OPERATIONS, false);
         if (openedFromOperations && startTab == TAB_SETTINGS) {
             AppScreenMotion.configureSettingsActivity(this);
         }
@@ -450,11 +461,14 @@ public class MainActivity extends AppCompatActivity {
             String value,
             View.OnClickListener listener,
             boolean showDivider) {
+        boolean supportingTextLayout = AppResponsiveLayout.usesSingleColumn(
+                getResources().getConfiguration().fontScale);
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(22), 0, dp(18), 0);
-        row.setMinimumHeight(dp(58));
+        row.setPadding(dp(22), supportingTextLayout ? dp(10) : 0,
+                dp(18), supportingTextLayout ? dp(10) : 0);
+        row.setMinimumHeight(dp(supportingTextLayout ? 72 : 58));
         row.setBackgroundColor(cardBackgroundColor());
         if (listener != null) {
             row.setOnClickListener(listener);
@@ -466,15 +480,33 @@ public class MainActivity extends AppCompatActivity {
         labelView.setText(label);
         TextViewCompat.setTextAppearance(labelView, com.google.android.material.R.style.TextAppearance_Material3_BodyLarge);
         labelView.setTextColor(primaryTextColor());
-        row.addView(labelView, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
         TextView valueView = new TextView(this);
         valueView.setText(value == null ? "" : value);
         TextViewCompat.setTextAppearance(valueView, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
         valueView.setTextColor(mutedTextColor());
-        valueView.setGravity(Gravity.END);
+        valueView.setGravity(supportingTextLayout ? Gravity.START : Gravity.END);
         valueView.setSingleLine(false);
-        row.addView(valueView, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.35f));
+        if (listener != null) {
+            labelView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            valueView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        }
+
+        if (supportingTextLayout) {
+            LinearLayout text = new LinearLayout(this);
+            text.setOrientation(LinearLayout.VERTICAL);
+            text.addView(labelView, matchWidthWrapParams());
+            LinearLayout.LayoutParams valueParams = matchWidthWrapParams();
+            valueParams.setMargins(0, dp(2), 0, 0);
+            text.addView(valueView, valueParams);
+            row.addView(text, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        } else {
+            row.addView(labelView, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+            row.addView(valueView, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.35f));
+        }
 
         if (listener != null) {
             ImageView arrow = new ImageView(this);
@@ -1076,6 +1108,13 @@ public class MainActivity extends AppCompatActivity {
                     view.getPaddingRight(), view.getPaddingBottom());
             return windowInsets;
         });
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putInt(STATE_CURRENT_TAB, currentTab);
+        outState.putBoolean(STATE_OPENED_FROM_OPERATIONS, openedFromOperations);
+        super.onSaveInstanceState(outState);
     }
 
     @Override

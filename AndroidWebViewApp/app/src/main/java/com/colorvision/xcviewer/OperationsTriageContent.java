@@ -53,7 +53,7 @@ final class OperationsTriageContent {
         root.addView(safetyCard(activity, themeManager, model.safetyNotice),
                 topMargin(dp(activity, 8)));
 
-        boolean singleColumn = OperationsResponsiveLayout.usesSingleColumn(
+        boolean singleColumn = AppResponsiveLayout.usesSingleColumn(
                 activity.getResources().getConfiguration().fontScale);
         LinearLayout navigation = new LinearLayout(activity);
         navigation.setOrientation(singleColumn
