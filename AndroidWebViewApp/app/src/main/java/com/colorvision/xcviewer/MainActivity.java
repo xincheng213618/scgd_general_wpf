@@ -1,8 +1,6 @@
 package com.colorvision.xcviewer;
 
 import android.Manifest;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -25,7 +23,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
-import androidx.core.app.NotificationManagerCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -627,17 +624,11 @@ public class MainActivity extends AppCompatActivity {
     private String notificationPermissionStatus() {
         return NotificationPermissionPolicy.status(
                 Build.VERSION.SDK_INT,
-                hasPostNotificationPermission(),
-                NotificationManagerCompat.from(this).areNotificationsEnabled(),
-                attentionNotificationChannelEnabled(),
+                NotificationPermissionState.hasRuntimePermission(this),
+                NotificationPermissionState.appNotificationsEnabled(this),
+                NotificationPermissionState.attentionChannelEnabled(this),
                 appPreferences.isNotificationPermissionBlocked(),
                 shouldShowNotificationPermissionRationale());
-    }
-
-    private boolean hasPostNotificationPermission() {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
-                || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                == PackageManager.PERMISSION_GRANTED;
     }
 
     private boolean shouldShowNotificationPermissionRationale() {
@@ -645,22 +636,12 @@ public class MainActivity extends AppCompatActivity {
                 && shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS);
     }
 
-    private boolean attentionNotificationChannelEnabled() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            return true;
-        }
-        NotificationManager manager = getSystemService(NotificationManager.class);
-        NotificationChannel channel = manager == null ? null
-                : manager.getNotificationChannel(OperationsWatchService.ATTENTION_CHANNEL_ID);
-        return channel == null || channel.getImportance() != NotificationManager.IMPORTANCE_NONE;
-    }
-
     private void manageNotificationPermission() {
         int action = NotificationPermissionPolicy.action(
                 Build.VERSION.SDK_INT,
-                hasPostNotificationPermission(),
-                NotificationManagerCompat.from(this).areNotificationsEnabled(),
-                attentionNotificationChannelEnabled(),
+                NotificationPermissionState.hasRuntimePermission(this),
+                NotificationPermissionState.appNotificationsEnabled(this),
+                NotificationPermissionState.attentionChannelEnabled(this),
                 appPreferences.isNotificationPermissionBlocked(),
                 shouldShowNotificationPermissionRationale());
         if (action == NotificationPermissionPolicy.ACTION_REQUEST) {
@@ -697,14 +678,14 @@ public class MainActivity extends AppCompatActivity {
     private void observeNotificationPermissionDialog(int requestGeneration) {
         notificationPermissionDialogState.observe(
                 requestGeneration,
-                hasPostNotificationPermission(),
+                NotificationPermissionState.hasRuntimePermission(this),
                 hasWindowFocus());
     }
 
     private void recoverBlockedNotificationPermissionRequest(int requestGeneration) {
         if (!notificationPermissionDialogState.shouldRecoverAsBlocked(
                 requestGeneration,
-                hasPostNotificationPermission(),
+                NotificationPermissionState.hasRuntimePermission(this),
                 hasWindowFocus())) {
             return;
         }
@@ -782,7 +763,7 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(
             int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
-            boolean granted = hasPostNotificationPermission();
+            boolean granted = NotificationPermissionState.hasRuntimePermission(this);
             notificationPermissionDialogState.completeFromSystemResult(granted);
             lastNotificationPermissionStatus = notificationPermissionStatus();
             if (root != null && currentTab == TAB_SETTINGS) {

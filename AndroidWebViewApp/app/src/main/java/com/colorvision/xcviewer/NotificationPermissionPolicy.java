@@ -53,4 +53,13 @@ final class NotificationPermissionPolicy {
         }
         return "需在系统设置开启";
     }
+
+    static boolean canPostAttention(
+            int androidSdk,
+            boolean runtimePermissionGranted,
+            boolean appNotificationsEnabled,
+            boolean attentionChannelEnabled) {
+        boolean runtimeGranted = androidSdk < 33 || runtimePermissionGranted;
+        return runtimeGranted && appNotificationsEnabled && attentionChannelEnabled;
+    }
 }

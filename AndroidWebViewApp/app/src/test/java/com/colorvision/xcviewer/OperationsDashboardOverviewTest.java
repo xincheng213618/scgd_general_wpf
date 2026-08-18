@@ -53,4 +53,14 @@ public class OperationsDashboardOverviewTest {
         assertEquals("固定中继（临时） · 直连恢复后自动切回",
                 OperationsDashboardOverview.remoteConnectionState(true, false));
     }
+
+    @Test
+    public void monitoringAndReminderAvailabilityRemainDistinct() {
+        assertEquals("后台检查与运维提醒可用",
+                OperationsDashboardOverview.monitoringSummary(true, true));
+        assertEquals("后台检查中 · 运维提醒未开启",
+                OperationsDashboardOverview.monitoringSummary(true, false));
+        assertEquals("仅前台运维 · 持续守护已关闭",
+                OperationsDashboardOverview.monitoringSummary(false, true));
+    }
 }

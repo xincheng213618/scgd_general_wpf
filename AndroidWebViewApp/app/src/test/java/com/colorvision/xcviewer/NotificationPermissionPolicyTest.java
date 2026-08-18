@@ -3,6 +3,8 @@ package com.colorvision.xcviewer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class NotificationPermissionPolicyTest {
     @Test
@@ -41,5 +43,19 @@ public class NotificationPermissionPolicyTest {
                 NotificationPermissionPolicy.action(32, false, true, true, false, false));
         assertEquals(NotificationPermissionPolicy.ACTION_OPEN_SETTINGS,
                 NotificationPermissionPolicy.action(32, false, false, true, false, false));
+    }
+
+    @Test
+    public void attentionAvailabilityRequiresEveryNotificationBoundary() {
+        assertTrue(NotificationPermissionPolicy.canPostAttention(
+                35, true, true, true));
+        assertFalse(NotificationPermissionPolicy.canPostAttention(
+                35, false, true, true));
+        assertFalse(NotificationPermissionPolicy.canPostAttention(
+                35, true, false, true));
+        assertFalse(NotificationPermissionPolicy.canPostAttention(
+                35, true, true, false));
+        assertTrue(NotificationPermissionPolicy.canPostAttention(
+                32, false, true, true));
     }
 }

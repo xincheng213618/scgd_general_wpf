@@ -2658,14 +2658,26 @@ public class OperationsActivity extends AppCompatActivity {
     private String directConnectionState() {
         return OperationsDashboardOverview.directConnectionState(
                 OperationsConnectionPreference.prefersRelay(
-                        preferences.getOperationsConnectionPreference()));
+                        preferences.getOperationsConnectionPreference()))
+                + "\n" + monitoringSummary();
     }
 
     private String remoteConnectionState(boolean hostFresh) {
         return OperationsDashboardOverview.remoteConnectionState(
                 hostFresh,
                 OperationsConnectionPreference.prefersRelay(
-                        preferences.getOperationsConnectionPreference()));
+                        preferences.getOperationsConnectionPreference()))
+                + "\n" + monitoringSummary();
+    }
+
+    private String monitoringSummary() {
+        boolean remindersAvailable = NotificationPermissionPolicy.canPostAttention(
+                Build.VERSION.SDK_INT,
+                NotificationPermissionState.hasRuntimePermission(this),
+                NotificationPermissionState.appNotificationsEnabled(this),
+                NotificationPermissionState.attentionChannelEnabled(this));
+        return OperationsDashboardOverview.monitoringSummary(
+                preferences.isOperationsWatchUserEnabled(), remindersAvailable);
     }
 
     private TextView addDashboardSection(String label) {
@@ -4893,7 +4905,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private String capabilityHeading(String path) {
         if ("/ops/v1/snapshot".equals(path)) {
-            return "● 已连接 · 后台持续守护";
+            return directConnectionState();
         }
         if ("/ops/v1/alerts".equals(path)) {
             return "当前告警已刷新";
@@ -5994,6 +6006,11 @@ public class OperationsActivity extends AppCompatActivity {
         refreshOperationsTargetPresentation();
         if (preferences != null && preferences.hasOperationsProfile()) {
             OperationsWatchService.start(this);
+        }
+        if (state != null && showingDashboardSummary) {
+            state.setText(remoteDashboard
+                    ? remoteConnectionState(dashboardRemoteHostFresh)
+                    : directConnectionState());
         }
         if (supportCenterVisible) {
             scheduleSupportRefresh();

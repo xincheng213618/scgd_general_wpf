@@ -23,6 +23,15 @@ final class OperationsDashboardOverview {
                 : "固定中继（临时） · 直连恢复后自动切回";
     }
 
+    static String monitoringSummary(boolean watchEnabled, boolean remindersAvailable) {
+        if (!watchEnabled) {
+            return "仅前台运维 · 持续守护已关闭";
+        }
+        return remindersAvailable
+                ? "后台检查与运维提醒可用"
+                : "后台检查中 · 运维提醒未开启";
+    }
+
     static String remoteSummary(
             boolean hostFresh,
             boolean applicationRunning,
