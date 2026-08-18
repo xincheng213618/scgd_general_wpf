@@ -7,13 +7,24 @@ final class OperationsRecoveryOverview {
     }
 
     static String failureSummary(String directFailure, String relayFailure) {
-        return "现场直连：" + compactReason(directFailure)
-                + "\n固定中继：" + compactReason(relayFailure)
-                + "\n\n配对资料已保留，无需重新扫码。";
+        String directReason = compactReason(directFailure);
+        String relayReason = compactReason(relayFailure);
+        String channels = directReason.equals(relayReason)
+                ? "现场直连与固定中继当前均不可达"
+                : "现场直连：" + directReason + "\n固定中继：" + relayReason;
+        return channels + "\n\n配对资料已安全保留，无需重新扫码。";
     }
 
-    static String pairingRemovalNote() {
-        return "配对资料包含当前电脑的设备密钥。只有确认不再使用这台电脑时才移除。";
+    static String waitingStatus() {
+        return "电脑暂时不可达 · 将自动重试";
+    }
+
+    static String checkingStatus() {
+        return "正在自动重试安全连接…";
+    }
+
+    static String automaticRetryNote() {
+        return "停留在此页面时每 30 秒自动重试；离开后后台守护仍会保留配对并继续检查。";
     }
 
     private static String compactReason(String value) {

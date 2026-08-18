@@ -141,6 +141,7 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean dashboardVisible;
     private volatile boolean remoteDashboard;
     private boolean showingDashboardSummary;
+    private boolean connectionRecoveryVisible;
     private boolean connectionHeartbeatInFlight;
     private boolean manualDashboardRefresh;
     private int connectionRequestGeneration;
@@ -677,6 +678,7 @@ public class OperationsActivity extends AppCompatActivity {
         scrollDashboardToTop();
         refreshOperationsTargetPresentation();
         showingDashboardSummary = false;
+        connectionRecoveryVisible = false;
         leaveSupportCenter();
         leaveLiveMonitor();
         dashboardVisible = true;
@@ -1184,6 +1186,7 @@ public class OperationsActivity extends AppCompatActivity {
         leaveSupportCenter();
         leaveLiveMonitor();
         remoteDashboard = false;
+        connectionRecoveryVisible = false;
         lastRelaySnapshotResponse = null;
         dashboardVisible = true;
         showingDashboardSummary = true;
@@ -1288,6 +1291,7 @@ public class OperationsActivity extends AppCompatActivity {
         leaveSupportCenter();
         leaveLiveMonitor();
         remoteDashboard = true;
+        connectionRecoveryVisible = false;
         lastRelaySnapshotResponse = response;
         dashboardVisible = true;
         showingDashboardSummary = true;
@@ -2331,7 +2335,12 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void scheduleConnectionHeartbeat() {
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
-        if (activityResumed && dashboardVisible && (client != null || relayClient != null)) {
+        if (OperationsConnectionRecoveryPolicy.shouldSchedule(
+                activityResumed,
+                dashboardVisible,
+                showingDashboardSummary,
+                connectionRecoveryVisible,
+                client != null || relayClient != null)) {
             connectionHeartbeatHandler.postDelayed(connectionHeartbeat, CONNECTION_HEARTBEAT_MILLISECONDS);
         }
     }
@@ -2359,13 +2368,19 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void runConnectionHeartbeat() {
-        if (!activityResumed || !dashboardVisible
-                || !showingDashboardSummary
-                || (client == null && relayClient == null)
-                || connectionHeartbeatInFlight) {
+        if (!OperationsConnectionRecoveryPolicy.shouldStart(
+                activityResumed,
+                dashboardVisible,
+                showingDashboardSummary,
+                connectionRecoveryVisible,
+                client != null || relayClient != null,
+                connectionHeartbeatInFlight)) {
             return;
         }
         connectionHeartbeatInFlight = true;
+        if (connectionRecoveryVisible) {
+            state.setText(OperationsRecoveryOverview.checkingStatus());
+        }
         boolean relayFirst = OperationsConnectionPreference.prefersRelay(
                 preferences.getOperationsConnectionPreference());
         int requestGeneration = connectionRequestGeneration;
@@ -2452,7 +2467,8 @@ public class OperationsActivity extends AppCompatActivity {
                 reconnectAfterOperationsTargetChange();
                 return;
             }
-            if (!activityResumed || !showingDashboardSummary) {
+            if (!activityResumed
+                    || (!showingDashboardSummary && !connectionRecoveryVisible)) {
                 connectionHeartbeatInFlight = false;
                 return;
             }
@@ -2462,6 +2478,12 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void applyLocalHeartbeat(JSONObject snapshot) {
         connectionHeartbeatInFlight = false;
+        if (connectionRecoveryVisible) {
+            showDashboard();
+            finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
+                    true, false, true));
+            return;
+        }
         if (remoteDashboard) {
             showDashboard();
             finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
@@ -2502,7 +2524,9 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void completeHeartbeatFailure(boolean relayPreferred) {
         connectionHeartbeatInFlight = false;
-        if (showingDashboardSummary) {
+        if (connectionRecoveryVisible) {
+            state.setText(OperationsRecoveryOverview.waitingStatus());
+        } else if (showingDashboardSummary) {
             state.setText(relayPreferred
                     ? "○ 固定中继暂断 · 现场直连也不可达"
                     : "○ 现场直连暂断 · 固定中继也不可达");
@@ -3067,19 +3091,23 @@ public class OperationsActivity extends AppCompatActivity {
         scrollDashboardToTop();
         leaveSupportCenter();
         remoteDashboard = false;
-        dashboardVisible = false;
+        dashboardVisible = true;
+        showingDashboardSummary = false;
+        connectionRecoveryVisible = true;
         progress.setVisibility(View.GONE);
         title.setText("连接恢复");
-        state.setText("电脑暂时不可达 · 配对资料已保留");
+        state.setText(OperationsRecoveryOverview.waitingStatus());
         details.setText(OperationsRecoveryOverview.failureSummary(
                 readableError(localException),
                 readableError(relayException)));
-        showConnectionRecoveryActions(false);
+        showConnectionRecoveryActions();
+        scheduleConnectionHeartbeat();
     }
 
     private void runConnectionSelfCheck() {
         int checkGeneration = ++connectionCheckGeneration;
         showingDashboardSummary = false;
+        connectionRecoveryVisible = false;
         scrollDashboardToTop();
         refreshOperationsTargetPresentation();
         leaveSupportCenter();
@@ -3153,24 +3181,19 @@ public class OperationsActivity extends AppCompatActivity {
         }
     }
 
-    private void showConnectionRecoveryActions(boolean channelReady) {
+    private void showConnectionRecoveryActions() {
         actions.removeAllViews();
 
-        addDashboardSection(channelReady ? "下一步" : "恢复连接");
+        addDashboardSection("恢复连接");
         addDashboardWideAction(dashboardPrimaryButton(
-                channelReady ? "进入现场运维" : "重新连接电脑",
+                "立即重试",
                 v -> openExistingProfile()));
+        addDashboardInfoCard(OperationsRecoveryOverview.automaticRetryNote());
 
-        addDashboardSection("诊断与设置");
+        addDashboardSection("需要排查");
         addDashboardActionRow(
-                dashboardButton(channelReady ? "再次运行连接自检" : "运行连接自检",
-                        v -> runConnectionSelfCheck()),
+                dashboardButton("运行连接自检", v -> runConnectionSelfCheck()),
                 dashboardButton("管理连接方式", v -> showConnectionPreference()));
-
-        addDashboardSection("配对资料");
-        addDashboardInfoCard(OperationsRecoveryOverview.pairingRemovalNote());
-        addDashboardWideAction(dashboardDestructiveButton(
-                "移除当前电脑配对", v -> confirmClearProfile()));
     }
 
     private void confirmClearProfile() {
@@ -5702,6 +5725,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void setBusy(String message) {
         cancelDashboardRefresh();
+        connectionRecoveryVisible = false;
         stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -5715,6 +5739,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void showError(String heading, String message, Runnable recovery) {
         cancelDashboardRefresh();
+        connectionRecoveryVisible = false;
         stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -5922,6 +5947,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void showPairingFailure(String reason) {
         cancelDashboardRefresh();
+        connectionRecoveryVisible = false;
         stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
