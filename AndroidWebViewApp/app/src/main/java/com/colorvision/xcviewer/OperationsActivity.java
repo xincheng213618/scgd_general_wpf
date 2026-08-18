@@ -1567,31 +1567,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardPriorityAction.setEnabled(false);
         addDashboardWideAction(dashboardPriorityAction);
 
-        addDashboardSection("远程操作");
-        addDashboardInfoCard(OperationsRemoteActionPresentation.scopeNote(false, true));
-        addDashboardTaskGroup(
-                "分析与监控",
-                OperationsRemoteActionPresentation.diagnosticsDescription(false),
-                dashboardTonalButton("远程排障", v -> showTriageCenter()),
-                dashboardButton("持续监控", v -> showLiveMonitor()));
-        addDashboardTaskGroup(
-                "窗口控制",
-                OperationsRemoteActionPresentation.windowDescription(false),
-                dashboardTonalButton("显示主窗口", v -> runWindowAction("show", "主窗口已显示")),
-                dashboardButton("最小化窗口", v -> confirmMinimizeWindow()));
-        addDashboardTaskGroup(
-                "恢复与控制",
-                OperationsRemoteActionPresentation.recoveryDescription(false),
-                dashboardTonalButton("恢复消息通道", v -> confirmRecoverMessageChannel()),
-                dashboardRestartApplicationButton = dashboardDestructiveButton(
-                        "重启 ColorVision", v -> confirmRestartApplication()));
-        dashboardCancelFlowButton = dashboardButton("取消检测（读取中）", v -> confirmCancelCurrentFlow());
-        dashboardCancelFlowButton.setEnabled(false);
-        addDashboardTaskGroup(
-                "检测与连接",
-                "中断当前检测，或调整这台电脑的首选连接方式。",
-                dashboardCancelFlowButton,
-                dashboardButton("连接方式", v -> showConnectionPreference()));
+        addDashboardShortcuts();
 
         dashboardStatusHeading = addDashboardSection(
                 OperationsDashboardStatusFormatter.sectionTitle(false, true));
@@ -1615,14 +1591,26 @@ public class OperationsActivity extends AppCompatActivity {
                 dashboardPerformanceStatus,
                 dashboardRecoveryStatus);
 
-        addDashboardSection("更多工具");
-        MaterialCardView toolboxEntry = OperationsToolboxBottomSheet.createDashboardEntry(
-                this, themeManager, v -> showOperationsToolbox());
-        LinearLayout.LayoutParams toolboxParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        toolboxParams.setMargins(0, 0, 0, dp(8));
-        actions.addView(toolboxEntry, toolboxParams);
+        addDashboardSection("远程控制");
+        addDashboardInfoCard(OperationsRemoteActionPresentation.scopeNote(false, true));
+        addDashboardTaskGroup(
+                "窗口控制",
+                OperationsRemoteActionPresentation.windowDescription(false),
+                dashboardTonalButton("显示主窗口", v -> runWindowAction("show", "主窗口已显示")),
+                dashboardButton("最小化窗口", v -> confirmMinimizeWindow()));
+        addDashboardTaskGroup(
+                "恢复与控制",
+                OperationsRemoteActionPresentation.recoveryDescription(false),
+                dashboardTonalButton("恢复消息通道", v -> confirmRecoverMessageChannel()),
+                dashboardRestartApplicationButton = dashboardDestructiveButton(
+                        "重启 ColorVision", v -> confirmRestartApplication()));
+        dashboardCancelFlowButton = dashboardButton("取消检测（读取中）", v -> confirmCancelCurrentFlow());
+        dashboardCancelFlowButton.setEnabled(false);
+        addDashboardTaskGroup(
+                "检测控制",
+                "仅在检测正在运行时开放取消；电脑与连接已提升到上方常用入口。",
+                dashboardCancelFlowButton,
+                dashboardButton("电脑与连接", v -> showConnectionPreference()));
         scheduleConnectionHeartbeat();
         ensureOperationsWatchRunning();
         if (openPendingOperationsDestination()) {
@@ -1630,6 +1618,47 @@ public class OperationsActivity extends AppCompatActivity {
         }
         loadCapability("/ops/v1/snapshot");
         loadDashboardLiveStatus();
+    }
+
+    private void addDashboardShortcuts() {
+        List<OperationsDashboardShortcutPresentation.Shortcut> shortcuts =
+                OperationsDashboardShortcutPresentation.direct();
+        addDashboardSection("常用入口");
+        for (int index = 0; index < shortcuts.size(); index += 2) {
+            addDashboardActionRow(
+                    dashboardShortcutButton(shortcuts.get(index)),
+                    dashboardShortcutButton(shortcuts.get(index + 1)));
+        }
+    }
+
+    private Button dashboardShortcutButton(
+            OperationsDashboardShortcutPresentation.Shortcut shortcut) {
+        Button button = shortcut.tonal
+                ? dashboardTonalButton(
+                        shortcut.label, v -> runDashboardShortcut(shortcut.actionId))
+                : dashboardButton(
+                        shortcut.label, v -> runDashboardShortcut(shortcut.actionId));
+        button.setContentDescription(shortcut.accessibilityLabel());
+        return button;
+    }
+
+    private void runDashboardShortcut(String actionId) {
+        switch (actionId) {
+            case OperationsDashboardShortcutPresentation.ACTION_TRIAGE:
+                showTriageCenter();
+                return;
+            case OperationsDashboardShortcutPresentation.ACTION_MONITOR:
+                showLiveMonitor();
+                return;
+            case OperationsDashboardShortcutPresentation.ACTION_CONNECTIONS:
+                showConnectionPreference();
+                return;
+            case OperationsDashboardShortcutPresentation.ACTION_TOOLBOX:
+                showOperationsToolbox();
+                return;
+            default:
+                return;
+        }
     }
 
     private void showOperationsToolbox() {
