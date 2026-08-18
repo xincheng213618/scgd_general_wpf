@@ -37,9 +37,6 @@ import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.io.File;
-import java.net.ConnectException;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -908,7 +905,9 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception ex) {
                 runOnUiThread(() -> {
                     finishAppUpdateWork();
-                    showAppUpdateMessage("检查更新失败", readableAppUpdateError(ex));
+                    showAppUpdateFailure(
+                            "检查更新失败",
+                            AndroidUpdateFailurePresentation.message(ex));
                 });
             }
         });
@@ -947,7 +946,9 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception ex) {
                 runOnUiThread(() -> {
                     finishAppUpdateWork();
-                    showAppUpdateMessage("更新包已阻止", readableAppUpdateError(ex));
+                    showAppUpdateFailure(
+                            "更新包已阻止",
+                            AndroidUpdateFailurePresentation.message(ex));
                 });
             }
         });
@@ -1011,33 +1012,16 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
-    private String readableAppUpdateError(Exception ex) {
-        String message = ex.getMessage() == null ? "" : ex.getMessage();
-        if (ex instanceof UnknownHostException || ex instanceof ConnectException) {
-            return "安全更新服务当前不可达，请稍后重试。";
+    private void showAppUpdateFailure(String title, String message) {
+        if (isFinishing()) {
+            return;
         }
-        if (ex instanceof SocketTimeoutException) {
-            return "安全更新服务响应超时，请稍后重试。";
-        }
-        if (message.contains("manifest_http_404")) {
-            return "安全更新服务尚未提供移动端更新清单。";
-        }
-        if (message.contains("signature_mismatch")) {
-            return "安装包签名与当前应用不一致，已阻止安装。";
-        }
-        if (message.contains("hash_mismatch")) {
-            return "安装包完整性校验失败，已删除临时文件。";
-        }
-        if (message.contains("not_newer")) {
-            return "下载的安装包不是更高版本，已阻止降级或重复安装。";
-        }
-        if (message.contains("package_name_mismatch") || message.contains("package_version_mismatch")) {
-            return "安装包身份与更新清单不一致，已阻止安装。";
-        }
-        if (message.contains("rejected") || message.contains("incomplete") || message.contains("too_large")) {
-            return "更新数据不符合安全约束，已阻止安装。";
-        }
-        return "无法完成安全更新校验，请稍后重试。";
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setNegativeButton("稍后", null)
+                .setPositiveButton("重新检查", (dialog, which) -> checkForAppUpdate())
+                .show();
     }
 
     private void openOperationsDirectly() {
