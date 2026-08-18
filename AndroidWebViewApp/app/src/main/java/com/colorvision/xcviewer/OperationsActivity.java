@@ -63,6 +63,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class OperationsActivity extends AppCompatActivity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
     static final String EXTRA_OPEN_DESTINATION = "operations_open_destination";
+    private static final String STATE_DESTINATION = "operations_destination";
     private static final int REQUEST_QR_SCAN = 2406;
     private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
     private static final long CONNECTION_HEARTBEAT_MILLISECONDS = 30_000L;
@@ -145,6 +146,8 @@ public class OperationsActivity extends AppCompatActivity {
     private BottomNavigationView bottomNavigation;
     private boolean fleetCheckInFlight;
     private String pendingOperationsDestination = "";
+    private String currentDestination = OperationsDestinationState.OVERVIEW;
+    private String pendingRestoredDestination = "";
     private boolean pairingApprovalWaiting;
     private long pairingApprovalDeadlineMilliseconds;
     private volatile int pairingRequestGeneration;
@@ -169,14 +172,28 @@ public class OperationsActivity extends AppCompatActivity {
         themeManager = new ThemeManager(this, preferences);
         themeManager.applySystemBars(this);
         acceptOperationsDestination(getIntent());
+        boolean restoring = savedInstanceState != null;
+        String restoredDestination = OperationsDestinationState.normalize(
+                restoring ? savedInstanceState.getString(STATE_DESTINATION) : null);
+        currentDestination = restoredDestination;
+        if (OperationsDestinationState.shouldRestore(restoredDestination)) {
+            pendingRestoredDestination = restoredDestination;
+        }
         createView();
         installInPageBackNavigation();
 
         String rawPairing = getIntent().getStringExtra(EXTRA_PAIRING_PAYLOAD);
-        if (rawPairing != null && !rawPairing.isEmpty()) {
+        boolean hasPairingPayload = rawPairing != null && !rawPairing.isEmpty();
+        if (OperationsDestinationState.shouldSubmitPairingAutomatically(
+                restoring, hasPairingPayload)) {
             beginPairing(rawPairing);
+        } else if (hasPairingPayload
+                && OperationsDestinationState.PAIRING.equals(restoredDestination)) {
+            showInterruptedPairing(rawPairing);
         } else if (preferences.hasOperationsProfile()) {
             openExistingProfile();
+        } else if (hasPairingPayload) {
+            showInterruptedPairing(rawPairing);
         } else {
             showError("尚未安全配对", "请返回并扫描电脑端的现场运维配对码。", null);
         }
@@ -375,6 +392,8 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void beginPairing(String rawPairing) {
+        currentDestination = OperationsDestinationState.PAIRING;
+        pendingRestoredDestination = "";
         int claimGeneration = ++pairingRequestGeneration;
         setBusy("第 1 步（共 2 步） · 正在验证配对码并创建设备身份…");
         title.setText("安全配对");
@@ -400,6 +419,35 @@ public class OperationsActivity extends AppCompatActivity {
                 });
             }
         });
+    }
+
+    private void showInterruptedPairing(String rawPairing) {
+        currentDestination = OperationsDestinationState.PAIRING;
+        pendingRestoredDestination = "";
+        pairingApprovalWaiting = false;
+        pairingApprovalHandler.removeCallbacks(pairingApprovalTick);
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        dashboardVisible = false;
+        showingDashboardSummary = false;
+        connectionRecoveryVisible = false;
+        progress.setVisibility(View.GONE);
+        title.setText("安全配对");
+        state.setText("页面已由系统重新创建");
+        details.setText("为避免重复提交同一份配对申请，应用没有自动重放扫码结果。你可以明确继续验证；若配对码已经超过两分钟，请返回电脑端刷新二维码。");
+        actions.removeAllViews();
+        addDashboardSection("下一步");
+        addDashboardWideAction(dashboardPrimaryButton(
+                "继续验证配对码", v -> beginPairing(rawPairing)));
+        addDashboardWideAction(dashboardButton(
+                preferences.hasOperationsProfile() ? "返回当前电脑" : "返回设置",
+                v -> {
+                    if (preferences.hasOperationsProfile()) {
+                        openExistingProfile();
+                    } else {
+                        openMainTab(MainActivity.TAB_SETTINGS);
+                    }
+                }));
     }
 
     private void startPairingApprovalChecks(
@@ -699,6 +747,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showConnectionPreference() {
+        currentDestination = OperationsDestinationState.CONNECTIONS;
         connectionCheckGeneration++;
         scrollDashboardToTop();
         refreshOperationsTargetPresentation();
@@ -1224,6 +1273,10 @@ public class OperationsActivity extends AppCompatActivity {
         remoteDashboard = false;
         connectionRecoveryVisible = false;
         lastRelaySnapshotResponse = null;
+        if (restorePendingDestination(true)) {
+            return;
+        }
+        currentDestination = OperationsDestinationState.OVERVIEW;
         dashboardVisible = true;
         showingDashboardSummary = true;
         progress.setVisibility(View.GONE);
@@ -1367,6 +1420,10 @@ public class OperationsActivity extends AppCompatActivity {
         remoteDashboard = true;
         connectionRecoveryVisible = false;
         lastRelaySnapshotResponse = response;
+        if (restorePendingDestination(false)) {
+            return;
+        }
+        currentDestination = OperationsDestinationState.OVERVIEW;
         dashboardVisible = true;
         showingDashboardSummary = true;
         progress.setVisibility(View.GONE);
@@ -2153,6 +2210,50 @@ public class OperationsActivity extends AppCompatActivity {
         }
     }
 
+    private boolean restorePendingDestination(boolean directConnectionAvailable) {
+        String destination = pendingRestoredDestination;
+        pendingRestoredDestination = "";
+        if (!OperationsDestinationState.shouldRestore(destination)) {
+            return false;
+        }
+        if (OperationsDestinationState.requiresDirectConnection(destination)
+                && !directConnectionAvailable) {
+            return false;
+        }
+        dashboardVisible = true;
+        switch (destination) {
+            case OperationsDestinationState.CONNECTIONS:
+                showConnectionPreference();
+                return true;
+            case OperationsDestinationState.CONNECTION_CHECK:
+                runConnectionSelfCheck();
+                return true;
+            case OperationsDestinationState.HISTORY:
+                showOperationsWatchHistory();
+                return true;
+            case OperationsDestinationState.FLEET_ALL:
+                showFleetTimeline(false);
+                return true;
+            case OperationsDestinationState.FLEET_ISSUES:
+                showFleetTimeline(true);
+                return true;
+            case OperationsDestinationState.TRIAGE:
+                showTriageCenter();
+                return true;
+            case OperationsDestinationState.JOBS:
+                showJobs();
+                return true;
+            case OperationsDestinationState.SUPPORT:
+                showSupportCenter();
+                return true;
+            case OperationsDestinationState.LIVE_MONITOR:
+                showLiveMonitor();
+                return true;
+            default:
+                return false;
+        }
+    }
+
     private boolean contains(JSONArray values, String expected) {
         if (values == null) {
             return false;
@@ -2183,6 +2284,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showOperationsWatchHistory() {
+        currentDestination = OperationsDestinationState.HISTORY;
         scrollDashboardToTop();
         showingDashboardSummary = false;
         leaveSupportCenter();
@@ -2219,6 +2321,9 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showFleetTimeline(boolean issuesOnly) {
+        currentDestination = issuesOnly
+                ? OperationsDestinationState.FLEET_ISSUES
+                : OperationsDestinationState.FLEET_ALL;
         scrollDashboardToTop();
         showingDashboardSummary = false;
         leaveSupportCenter();
@@ -3142,6 +3247,10 @@ public class OperationsActivity extends AppCompatActivity {
         scrollDashboardToTop();
         leaveSupportCenter();
         remoteDashboard = false;
+        if (restorePendingDestination(false)) {
+            return;
+        }
+        currentDestination = OperationsDestinationState.OVERVIEW;
         dashboardVisible = true;
         showingDashboardSummary = false;
         connectionRecoveryVisible = true;
@@ -3156,6 +3265,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void runConnectionSelfCheck() {
+        currentDestination = OperationsDestinationState.CONNECTION_CHECK;
         int checkGeneration = ++connectionCheckGeneration;
         showingDashboardSummary = false;
         connectionRecoveryVisible = false;
@@ -3205,6 +3315,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void showConnectionCheckResult(
             OperationsConnectionCheck.Result result, boolean detailsExpanded) {
+        currentDestination = OperationsDestinationState.CONNECTION_CHECK;
         title.setText("连接自检");
         state.setText(OperationsConnectionCheckPresentation.status(result.success, result.heading));
         details.setText(result.recommendation);
@@ -3298,6 +3409,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showTriageCenter() {
+        currentDestination = OperationsDestinationState.TRIAGE;
         showingDashboardSummary = false;
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -3371,6 +3483,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showJobs() {
+        currentDestination = OperationsDestinationState.JOBS;
         showingDashboardSummary = false;
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -3999,6 +4112,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showSupportCenter() {
+        currentDestination = OperationsDestinationState.SUPPORT;
         showingDashboardSummary = false;
         leaveLiveMonitor();
         supportCenterVisible = true;
@@ -4198,6 +4312,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showLiveMonitor() {
+        currentDestination = OperationsDestinationState.LIVE_MONITOR;
         showingDashboardSummary = false;
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -5797,6 +5912,13 @@ public class OperationsActivity extends AppCompatActivity {
             }
         });
         actions.addView(secondary, actionParams());
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putString(STATE_DESTINATION,
+                OperationsDestinationState.normalize(currentDestination));
+        super.onSaveInstanceState(outState);
     }
 
     @Override
