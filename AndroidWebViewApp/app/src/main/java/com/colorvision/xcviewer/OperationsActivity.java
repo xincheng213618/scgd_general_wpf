@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
@@ -108,17 +109,18 @@ public class OperationsActivity extends AppCompatActivity {
     private ProgressBar progress;
     private ScrollView dashboardScroll;
     private LinearLayout actions;
-    private Button dashboardFlowStatus;
-    private Button dashboardDeviceStatus;
-    private Button dashboardMessageStatus;
-    private Button dashboardAlertStatus;
-    private Button dashboardPerformanceStatus;
-    private Button dashboardRecoveryStatus;
+    private DashboardStatusRow dashboardFlowStatus;
+    private DashboardStatusRow dashboardDeviceStatus;
+    private DashboardStatusRow dashboardMessageStatus;
+    private DashboardStatusRow dashboardAlertStatus;
+    private DashboardStatusRow dashboardPerformanceStatus;
+    private DashboardStatusRow dashboardRecoveryStatus;
     private Button dashboardPriorityAction;
     private Button dashboardCancelFlowButton;
     private Button dashboardRestartApplicationButton;
     private Button remoteRestartMqttButton;
     private TextView dashboardStatusHeading;
+    private TextView dashboardStatusCaption;
     private boolean dashboardFlowAvailable;
     private boolean dashboardFlowActive;
     private boolean dashboardFlowCancelAvailable;
@@ -135,6 +137,18 @@ public class OperationsActivity extends AppCompatActivity {
     private int fleetCheckGeneration;
     private boolean fleetCheckInFlight;
     private String pendingOperationsDestination = "";
+
+    private static final class DashboardStatusRow {
+        final LinearLayout container;
+        final TextView title;
+        final TextView summary;
+
+        DashboardStatusRow(LinearLayout container, TextView title, TextView summary) {
+            this.container = container;
+            this.title = title;
+            this.summary = summary;
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -1016,22 +1030,27 @@ public class OperationsActivity extends AppCompatActivity {
                 dashboardCancelFlowButton,
                 dashboardButton("连接方式", v -> showConnectionPreference()));
 
-        dashboardStatusHeading = addDashboardSection("实时状态");
-        addDashboardActionRow(
-                dashboardFlowStatus = dashboardStatusButton("检测\n读取中…",
-                        v -> loadCapability("/ops/v1/flow/runtime")),
-                dashboardDeviceStatus = dashboardStatusButton("设备\n读取中…",
-                        v -> loadCapability("/ops/v1/devices/health")));
-        addDashboardActionRow(
-                dashboardMessageStatus = dashboardStatusButton("消息\n读取中…",
-                        v -> loadCapability("/ops/v1/messaging/health")),
-                dashboardAlertStatus = dashboardStatusButton("告警\n读取中…",
-                        v -> loadCapability("/ops/v1/alerts")));
-        addDashboardActionRow(
-                dashboardPerformanceStatus = dashboardStatusButton("性能\n读取中…",
-                        v -> loadCapability("/ops/v1/diagnostics/performance")),
-                dashboardRecoveryStatus = dashboardStatusButton("恢复\n读取中…",
-                        v -> showLiveMonitor()));
+        dashboardStatusHeading = addDashboardSection(
+                OperationsDashboardStatusFormatter.sectionTitle(false, true));
+        dashboardFlowStatus = dashboardStatusRow("检测",
+                v -> loadCapability("/ops/v1/flow/runtime"));
+        dashboardDeviceStatus = dashboardStatusRow("设备",
+                v -> loadCapability("/ops/v1/devices/health"));
+        dashboardMessageStatus = dashboardStatusRow("消息",
+                v -> loadCapability("/ops/v1/messaging/health"));
+        dashboardAlertStatus = dashboardStatusRow("告警",
+                v -> loadCapability("/ops/v1/alerts"));
+        dashboardPerformanceStatus = dashboardStatusRow("性能",
+                v -> loadCapability("/ops/v1/diagnostics/performance"));
+        dashboardRecoveryStatus = dashboardStatusRow("恢复", v -> showLiveMonitor());
+        dashboardStatusCaption = addDashboardStatusCard(
+                OperationsDashboardStatusFormatter.sectionCaption(false, true),
+                dashboardFlowStatus,
+                dashboardDeviceStatus,
+                dashboardMessageStatus,
+                dashboardAlertStatus,
+                dashboardPerformanceStatus,
+                dashboardRecoveryStatus);
 
         addDashboardSection("进一步排查");
         addDashboardActionRow(
@@ -1153,24 +1172,30 @@ public class OperationsActivity extends AppCompatActivity {
         }
 
         if (monitor != null) {
-            dashboardStatusHeading = addDashboardSection(dashboardRemoteHostFresh
-                    ? "电脑签名状态"
-                    : "上次电脑签名状态（已过期）");
-            addDashboardActionRow(
-                    dashboardFlowStatus = dashboardStatusButton("检测\n读取中…",
-                            v -> showLatestRemoteMonitorDetail("flow")),
-                    dashboardDeviceStatus = dashboardStatusButton("设备\n读取中…",
-                            v -> showLatestRemoteMonitorDetail("devices")));
-            addDashboardActionRow(
-                    dashboardMessageStatus = dashboardStatusButton("消息\n读取中…",
-                            v -> showLatestRemoteMonitorDetail("message")),
-                    dashboardAlertStatus = dashboardStatusButton("告警\n读取中…",
-                            v -> showLatestRemoteMonitorDetail("alerts")));
-            addDashboardActionRow(
-                    dashboardPerformanceStatus = dashboardStatusButton("性能\n读取中…",
-                            v -> showLatestRemoteMonitorDetail("performance")),
-                    dashboardRecoveryStatus = dashboardStatusButton("恢复\n读取中…",
-                            v -> showLatestRemoteMonitorDetail("recovery")));
+            dashboardStatusHeading = addDashboardSection(
+                    OperationsDashboardStatusFormatter.sectionTitle(
+                            true, dashboardRemoteHostFresh));
+            dashboardFlowStatus = dashboardStatusRow("检测",
+                    v -> showLatestRemoteMonitorDetail("flow"));
+            dashboardDeviceStatus = dashboardStatusRow("设备",
+                    v -> showLatestRemoteMonitorDetail("devices"));
+            dashboardMessageStatus = dashboardStatusRow("消息",
+                    v -> showLatestRemoteMonitorDetail("message"));
+            dashboardAlertStatus = dashboardStatusRow("告警",
+                    v -> showLatestRemoteMonitorDetail("alerts"));
+            dashboardPerformanceStatus = dashboardStatusRow("性能",
+                    v -> showLatestRemoteMonitorDetail("performance"));
+            dashboardRecoveryStatus = dashboardStatusRow("恢复",
+                    v -> showLatestRemoteMonitorDetail("recovery"));
+            dashboardStatusCaption = addDashboardStatusCard(
+                    OperationsDashboardStatusFormatter.sectionCaption(
+                            true, dashboardRemoteHostFresh),
+                    dashboardFlowStatus,
+                    dashboardDeviceStatus,
+                    dashboardMessageStatus,
+                    dashboardAlertStatus,
+                    dashboardPerformanceStatus,
+                    dashboardRecoveryStatus);
             updateDashboardLiveStatus(monitor);
         }
 
@@ -1208,9 +1233,12 @@ public class OperationsActivity extends AppCompatActivity {
 
         state.setText(remoteConnectionState(fresh));
         if (dashboardStatusHeading != null) {
-            dashboardStatusHeading.setText(fresh
-                    ? "电脑签名状态"
-                    : "上次电脑签名状态（已过期）");
+            dashboardStatusHeading.setText(
+                    OperationsDashboardStatusFormatter.sectionTitle(true, fresh));
+        }
+        if (dashboardStatusCaption != null) {
+            dashboardStatusCaption.setText(
+                    OperationsDashboardStatusFormatter.sectionCaption(true, fresh));
         }
         long signedAt = host.optLong("signedAt", 0L);
         if (monitor == null) {
@@ -2310,12 +2338,115 @@ public class OperationsActivity extends AppCompatActivity {
         return button;
     }
 
-    private Button dashboardStatusButton(String label, View.OnClickListener listener) {
-        Button button = dashboardButton(label, listener);
-        button.setTextSize(12);
-        button.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
-        button.setPadding(dp(12), 0, dp(8), 0);
-        return button;
+    private DashboardStatusRow dashboardStatusRow(
+            String title, View.OnClickListener listener) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setMinimumHeight(dp(64));
+        row.setPadding(dp(16), dp(8), dp(12), dp(8));
+        row.setOnClickListener(listener);
+        row.setClickable(true);
+        row.setFocusable(true);
+        TypedValue selectableBackground = new TypedValue();
+        if (getTheme().resolveAttribute(
+                android.R.attr.selectableItemBackground, selectableBackground, true)) {
+            row.setBackgroundResource(selectableBackground.resourceId);
+        }
+
+        LinearLayout text = new LinearLayout(this);
+        text.setOrientation(LinearLayout.VERTICAL);
+        TextView titleView = new TextView(this);
+        titleView.setText(title);
+        TextViewCompat.setTextAppearance(titleView,
+                com.google.android.material.R.style.TextAppearance_Material3_LabelMedium);
+        titleView.setTextColor(themeManager.secondaryTextColor());
+        titleView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        text.addView(titleView, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        TextView summaryView = new TextView(this);
+        TextViewCompat.setTextAppearance(summaryView,
+                com.google.android.material.R.style.TextAppearance_Material3_BodyLarge);
+        summaryView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        text.addView(summaryView, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        row.addView(text, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+        ImageView arrow = new ImageView(this);
+        arrow.setImageResource(R.drawable.ic_chevron_right_24);
+        arrow.setColorFilter(themeManager.secondaryTextColor());
+        arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        row.addView(arrow, new LinearLayout.LayoutParams(dp(24), dp(24)));
+
+        DashboardStatusRow result = new DashboardStatusRow(row, titleView, summaryView);
+        updateDashboardStatus(result, OperationsDashboardStatusFormatter.loading(title));
+        return result;
+    }
+
+    private TextView addDashboardStatusCard(
+            String caption, DashboardStatusRow... statusRows) {
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+
+        TextView captionView = new TextView(this);
+        captionView.setText(caption);
+        TextViewCompat.setTextAppearance(captionView,
+                com.google.android.material.R.style.TextAppearance_Material3_BodySmall);
+        captionView.setTextColor(themeManager.secondaryTextColor());
+        captionView.setPadding(dp(16), dp(12), dp(16), dp(10));
+        content.addView(captionView, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        for (int index = 0; index < statusRows.length; index++) {
+            content.addView(statusRows[index].container, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+            if (index < statusRows.length - 1) {
+                View divider = new View(this);
+                divider.setBackgroundColor(themeManager.dividerColor());
+                LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, 1);
+                dividerParams.setMargins(dp(16), 0, 0, 0);
+                content.addView(divider, dividerParams);
+            }
+        }
+
+        MaterialCardView card = new MaterialCardView(this);
+        card.setCardBackgroundColor(themeManager.cardBackgroundColor());
+        card.addView(content, new MaterialCardView.LayoutParams(
+                MaterialCardView.LayoutParams.MATCH_PARENT,
+                MaterialCardView.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, 0, dp(8));
+        actions.addView(card, params);
+        return captionView;
+    }
+
+    private void updateDashboardStatus(
+            DashboardStatusRow row, OperationsDashboardStatusFormatter.Item item) {
+        if (row == null || item == null) {
+            return;
+        }
+        row.title.setText(item.title);
+        row.summary.setText(item.summary);
+        row.summary.setTextColor(dashboardStatusColor(item.tone));
+        row.container.setContentDescription(item.accessibilityLabel());
+    }
+
+    private int dashboardStatusColor(int tone) {
+        if (tone == OperationsDashboardStatusFormatter.TONE_ACTIVE) {
+            return themeManager.primaryColor();
+        }
+        if (tone == OperationsDashboardStatusFormatter.TONE_ATTENTION) {
+            return themeManager.errorColor();
+        }
+        if (tone == OperationsDashboardStatusFormatter.TONE_MUTED) {
+            return themeManager.secondaryTextColor();
+        }
+        return themeManager.primaryTextColor();
     }
 
     private void updateDashboardPriority(OperationsDashboardAdvisor.Recommendation recommendation) {
@@ -2409,32 +2540,34 @@ public class OperationsActivity extends AppCompatActivity {
                 && flow.optBoolean("cancelAvailable", false)
                 && dashboardFlowCancelCapabilityAvailable;
 
-        dashboardFlowStatus.setText(OperationsDashboardStatusFormatter.flow(
+        updateDashboardStatus(dashboardFlowStatus, OperationsDashboardStatusFormatter.flow(
                 dashboardFlowAvailable,
                 dashboardFlowActive,
                 flow == null ? "idle" : flow.optString("phase", "idle")));
-        dashboardDeviceStatus.setText(OperationsDashboardStatusFormatter.devices(
+        updateDashboardStatus(dashboardDeviceStatus, OperationsDashboardStatusFormatter.devices(
                 devices != null && devices.optBoolean("available", false),
                 devices != null && devices.optBoolean("hasConfiguredDevices", false),
                 devices == null ? 0 : devices.optInt("readyCount", 0),
                 devices == null ? 0 : devices.optInt("busyCount", 0),
                 devices == null ? 0 : devices.optInt("attentionCount", 0),
                 devices == null ? 0 : devices.optInt("totalCount", 0)));
-        dashboardMessageStatus.setText(OperationsDashboardStatusFormatter.messageChannel(
+        updateDashboardStatus(dashboardMessageStatus, OperationsDashboardStatusFormatter.messageChannel(
                 messageChannel != null && messageChannel.optBoolean("available", false),
                 messageChannel != null && messageChannel.optBoolean("connected", false),
                 messageChannel != null && messageChannel.optBoolean("subscriptionReady", false),
                 messageChannel == null ? 0 : messageChannel.optInt("activeSubscriptionCount", 0),
                 messageChannel == null ? 0 : messageChannel.optInt("registeredSubscriptionCount", 0)));
-        dashboardAlertStatus.setText(OperationsDashboardStatusFormatter.alerts(
+        updateDashboardStatus(dashboardAlertStatus, OperationsDashboardStatusFormatter.alerts(
+                alerts != null,
                 alerts == null ? 0 : alerts.optInt("warningCount", 0),
                 alerts == null ? 0 : alerts.optInt("errorCount", 0),
                 alerts == null ? 0 : alerts.optInt("criticalCount", 0)));
-        dashboardPerformanceStatus.setText(OperationsDashboardStatusFormatter.performance(
+        updateDashboardStatus(dashboardPerformanceStatus, OperationsDashboardStatusFormatter.performance(
                 performance != null,
                 performance == null ? 0 : performance.optDouble("cpuPercent", 0),
                 mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable")));
-        dashboardRecoveryStatus.setText(OperationsDashboardStatusFormatter.recovery(
+        updateDashboardStatus(dashboardRecoveryStatus, OperationsDashboardStatusFormatter.recovery(
+                recovery != null,
                 recovery != null && recovery.optBoolean("supported", false),
                 recovery != null && recovery.optBoolean("registered", false),
                 recovery != null && recovery.optBoolean("automaticWatchdogActive", false)));
@@ -2449,12 +2582,18 @@ public class OperationsActivity extends AppCompatActivity {
         if (dashboardFlowStatus == null) {
             return;
         }
-        dashboardFlowStatus.setText("检测\n暂不可用");
-        dashboardDeviceStatus.setText("设备\n暂不可用");
-        dashboardMessageStatus.setText("消息\n暂不可用");
-        dashboardAlertStatus.setText("告警\n暂不可用");
-        dashboardPerformanceStatus.setText("性能\n暂不可用");
-        dashboardRecoveryStatus.setText("恢复\n暂不可用");
+        updateDashboardStatus(dashboardFlowStatus,
+                OperationsDashboardStatusFormatter.flow(false, false, "idle"));
+        updateDashboardStatus(dashboardDeviceStatus,
+                OperationsDashboardStatusFormatter.devices(false, false, 0, 0, 0, 0));
+        updateDashboardStatus(dashboardMessageStatus,
+                OperationsDashboardStatusFormatter.messageChannel(false, false, false, 0, 0));
+        updateDashboardStatus(dashboardAlertStatus,
+                OperationsDashboardStatusFormatter.unavailable("告警"));
+        updateDashboardStatus(dashboardPerformanceStatus,
+                OperationsDashboardStatusFormatter.performance(false, 0, "unavailable"));
+        updateDashboardStatus(dashboardRecoveryStatus,
+                OperationsDashboardStatusFormatter.unavailable("恢复"));
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
@@ -2477,6 +2616,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardRestartApplicationButton = null;
         remoteRestartMqttButton = null;
         dashboardStatusHeading = null;
+        dashboardStatusCaption = null;
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
