@@ -367,6 +367,7 @@ public class OperationsActivity extends AppCompatActivity {
                 connectionRecoveryVisible)) {
             return false;
         }
+        connectionCheckGeneration++;
         showCurrentDashboard();
         return true;
     }
@@ -1373,16 +1374,20 @@ public class OperationsActivity extends AppCompatActivity {
                 true, dashboardRemoteHostFresh));
         Button showWindow = dashboardTonalButton("显示主窗口", v -> runRemoteTask(
                 OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW, new JSONObject()));
-        showWindow.setEnabled(canShowWindow);
+        showWindow.setEnabled(OperationsRelayPolicy.canControlWindow(
+                canShowWindow, dashboardRemoteHostFresh));
         Button minimizeWindow = dashboardButton("最小化主窗口",
                 v -> confirmRemoteMinimizeWindow());
-        minimizeWindow.setEnabled(canMinimizeWindow);
+        minimizeWindow.setEnabled(OperationsRelayPolicy.canControlWindow(
+                canMinimizeWindow, dashboardRemoteHostFresh));
         addDashboardTaskGroup(
                 "窗口控制",
-                OperationsRemoteActionPresentation.windowDescription(true),
+                OperationsRemoteActionPresentation.windowDescription(
+                        true, dashboardRemoteHostFresh),
                 showWindow,
                 minimizeWindow);
-        Button diagnostics = dashboardTonalButton("请求远程诊断", v -> {
+        Button diagnostics = dashboardTonalButton(
+                dashboardRemoteHostFresh ? "请求远程诊断" : "排队请求诊断", v -> {
             JSONObject payload = new JSONObject();
             try {
                 payload.put("reason", "Android 运维伴侣远程调试请求");
@@ -1391,13 +1396,15 @@ public class OperationsActivity extends AppCompatActivity {
             runRemoteTask(OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS, payload);
         });
         diagnostics.setEnabled(canRequestDiagnostics);
-        Button messageActions = dashboardButton("检查消息通道",
+        Button messageActions = dashboardButton(
+                dashboardRemoteHostFresh ? "检查消息通道" : "上次消息状态",
                 v -> showLatestRemoteMonitorDetail("message"));
         messageActions.setEnabled(monitor != null
                 && (canRecoverMessageChannel || canRestartMqtt));
         addDashboardTaskGroup(
                 "诊断与恢复",
-                OperationsRemoteActionPresentation.diagnosticsDescription(true),
+                OperationsRemoteActionPresentation.diagnosticsDescription(
+                        true, dashboardRemoteHostFresh),
                 diagnostics,
                 messageActions);
         if (dashboardRemoteHostFresh) {
@@ -2551,8 +2558,16 @@ public class OperationsActivity extends AppCompatActivity {
                     true, true, hostFresh));
             return;
         }
+        boolean rebuildForFreshness = OperationsRelayPolicy.shouldRebuildDashboardForFreshness(
+                showingDashboardSummary, dashboardRemoteHostFresh, hostFresh);
         lastRelaySnapshotResponse = response;
         if (showingDashboardSummary) {
+            if (rebuildForFreshness) {
+                showRemoteDashboard(response);
+                finishDashboardRefresh(OperationsDashboardRefreshPolicy.completionMessage(
+                        true, true, hostFresh));
+                return;
+            }
             updateRemoteDashboardStatus(response);
             progress.setVisibility(View.GONE);
         }
@@ -2787,9 +2802,6 @@ public class OperationsActivity extends AppCompatActivity {
         switch (action) {
             case OperationsDashboardAdvisor.ACTION_CONNECTION_CHECK:
                 runConnectionSelfCheck();
-                return;
-            case OperationsDashboardAdvisor.ACTION_CONNECTION_CENTER:
-                showConnectionPreference();
                 return;
             case OperationsDashboardAdvisor.ACTION_FLOW:
                 if (remoteDashboard) {
@@ -3151,7 +3163,7 @@ public class OperationsActivity extends AppCompatActivity {
         refreshOperationsTargetPresentation();
         leaveSupportCenter();
         leaveLiveMonitor();
-        dashboardVisible = false;
+        dashboardVisible = true;
         progress.setVisibility(View.VISIBLE);
         title.setText("连接自检");
         state.setText("正在检查安全连接…");

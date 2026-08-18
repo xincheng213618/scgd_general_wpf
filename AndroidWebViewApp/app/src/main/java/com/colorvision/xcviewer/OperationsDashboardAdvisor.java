@@ -5,7 +5,6 @@ import org.json.JSONObject;
 final class OperationsDashboardAdvisor {
     static final String ACTION_NONE = "none";
     static final String ACTION_CONNECTION_CHECK = "connection_check";
-    static final String ACTION_CONNECTION_CENTER = "connection_center";
     static final String ACTION_FLOW = "flow";
     static final String ACTION_DEVICES = "devices";
     static final String ACTION_MESSAGE = "message";
@@ -21,7 +20,7 @@ final class OperationsDashboardAdvisor {
     }
 
     static Recommendation staleRemoteSnapshot() {
-        return new Recommendation("排查电脑连接", ACTION_CONNECTION_CENTER);
+        return new Recommendation("电脑未上线 · 运行连接自检", ACTION_CONNECTION_CHECK);
     }
 
     static Recommendation unavailable() {

@@ -69,6 +69,28 @@ public class OperationsRelayPolicyTest {
     }
 
     @Test
+    public void windowControlRequiresDeclaredCapabilityAndFreshSignedHost() {
+        assertTrue(OperationsRelayPolicy.canControlWindow(true, true));
+        assertFalse(OperationsRelayPolicy.canControlWindow(false, true));
+        assertFalse(OperationsRelayPolicy.canControlWindow(true, false));
+        assertFalse(OperationsRelayPolicy.canControlWindow(false, false));
+    }
+
+    @Test
+    public void dashboardRebuildsOnlyWhenVisibleHostFreshnessChanges() {
+        assertTrue(OperationsRelayPolicy.shouldRebuildDashboardForFreshness(
+                true, false, true));
+        assertTrue(OperationsRelayPolicy.shouldRebuildDashboardForFreshness(
+                true, true, false));
+        assertFalse(OperationsRelayPolicy.shouldRebuildDashboardForFreshness(
+                true, true, true));
+        assertFalse(OperationsRelayPolicy.shouldRebuildDashboardForFreshness(
+                true, false, false));
+        assertFalse(OperationsRelayPolicy.shouldRebuildDashboardForFreshness(
+                false, false, true));
+    }
+
+    @Test
     public void encryptedWindowSnapshotRequiresCapabilityFreshHostAndAndroid31() {
         assertTrue(OperationsRelayPolicy.canCaptureWindowSnapshot(true, true, 31));
         assertTrue(OperationsRelayPolicy.canCaptureWindowSnapshot(true, true, 36));

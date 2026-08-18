@@ -93,6 +93,17 @@ final class OperationsRelayPolicy {
         return capabilityAvailable && hostFresh;
     }
 
+    static boolean canControlWindow(boolean capabilityAvailable, boolean hostFresh) {
+        return capabilityAvailable && hostFresh;
+    }
+
+    static boolean shouldRebuildDashboardForFreshness(
+            boolean showingDashboardSummary,
+            boolean currentHostFresh,
+            boolean nextHostFresh) {
+        return showingDashboardSummary && currentHostFresh != nextHostFresh;
+    }
+
     static boolean canCaptureWindowSnapshot(
             boolean capabilityAvailable, boolean hostFresh, int androidSdk) {
         return capabilityAvailable
