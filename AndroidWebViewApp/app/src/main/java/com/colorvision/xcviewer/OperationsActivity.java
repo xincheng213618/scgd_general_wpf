@@ -1296,27 +1296,14 @@ public class OperationsActivity extends AppCompatActivity {
                 dashboardPerformanceStatus,
                 dashboardRecoveryStatus);
 
-        addDashboardSection("进一步排查");
-        addDashboardActionRow(
-                capabilityButton("服务健康", "/ops/v1/services/health"),
-                dashboardButton("重启 MQTT", v -> confirmRestartMqtt()));
-        addDashboardActionRow(
-                capabilityButton("近期事件", "/ops/v1/diagnostics/recent-events"),
-                capabilityButton("崩溃与卡死", "/ops/v1/diagnostics/failures"));
-
-        addDashboardSection("取证与支持");
-        addDashboardActionRow(
-                dashboardButton("作业与审批", v -> showJobs()),
-                capabilityButton("操作记录", "/ops/v1/audit"));
-        addDashboardActionRow(
-                dashboardButton("生成诊断包", v -> confirmCreateDiagnosticJob()),
-                dashboardButton("主窗口快照", v -> confirmCreateWindowSnapshotJob()));
-        addDashboardActionRow(
-                dashboardButton("分享诊断摘要", v -> loadAndShareSafeDiagnostics()),
-                dashboardButton("支持会话", v -> showSupportCenter()));
-        addDashboardActionRow(
-                dashboardButton("提交部署确认", v -> confirmDeploymentReceipt()),
-                dashboardButton("运维时间线", v -> showOperationsWatchHistory()));
+        addDashboardSection("更多工具");
+        MaterialCardView toolboxEntry = OperationsToolboxBottomSheet.createDashboardEntry(
+                this, themeManager, v -> showOperationsToolbox());
+        LinearLayout.LayoutParams toolboxParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        toolboxParams.setMargins(0, 0, 0, dp(8));
+        actions.addView(toolboxEntry, toolboxParams);
         scheduleConnectionHeartbeat();
         ensureOperationsWatchRunning();
         if (openPendingOperationsDestination()) {
@@ -1324,6 +1311,57 @@ public class OperationsActivity extends AppCompatActivity {
         }
         loadCapability("/ops/v1/snapshot");
         loadDashboardLiveStatus();
+    }
+
+    private void showOperationsToolbox() {
+        OperationsToolboxBottomSheet.show(
+                this,
+                themeManager,
+                OperationsToolboxPresentation.create(),
+                this::runOperationsToolboxAction);
+    }
+
+    private void runOperationsToolboxAction(String actionId) {
+        switch (actionId) {
+            case OperationsToolboxPresentation.ACTION_SERVICES_HEALTH:
+                loadCapability("/ops/v1/services/health");
+                return;
+            case OperationsToolboxPresentation.ACTION_RESTART_MQTT:
+                confirmRestartMqtt();
+                return;
+            case OperationsToolboxPresentation.ACTION_RECENT_EVENTS:
+                loadCapability("/ops/v1/diagnostics/recent-events");
+                return;
+            case OperationsToolboxPresentation.ACTION_FAILURES:
+                loadCapability("/ops/v1/diagnostics/failures");
+                return;
+            case OperationsToolboxPresentation.ACTION_JOBS:
+                showJobs();
+                return;
+            case OperationsToolboxPresentation.ACTION_AUDIT:
+                loadCapability("/ops/v1/audit");
+                return;
+            case OperationsToolboxPresentation.ACTION_CREATE_DIAGNOSTIC:
+                confirmCreateDiagnosticJob();
+                return;
+            case OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT:
+                confirmCreateWindowSnapshotJob();
+                return;
+            case OperationsToolboxPresentation.ACTION_SHARE_SUMMARY:
+                loadAndShareSafeDiagnostics();
+                return;
+            case OperationsToolboxPresentation.ACTION_SUPPORT:
+                showSupportCenter();
+                return;
+            case OperationsToolboxPresentation.ACTION_DEPLOYMENT:
+                confirmDeploymentReceipt();
+                return;
+            case OperationsToolboxPresentation.ACTION_TIMELINE:
+                showOperationsWatchHistory();
+                return;
+            default:
+                return;
+        }
     }
 
     private void showRemoteDashboard(JSONObject response) {
