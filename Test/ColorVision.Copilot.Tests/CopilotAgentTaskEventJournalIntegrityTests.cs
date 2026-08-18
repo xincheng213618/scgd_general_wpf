@@ -850,12 +850,53 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void RunStopClosesOnlyDanglingStructuredUserQuestions()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var answered = CreatePendingQuestion(journal.RunId, "question:11111111111111111111111111111111");
+        var interrupted = CreatePendingQuestion(journal.RunId, "question:22222222222222222222222222222222");
+        journal.Observe(CopilotAgentEvent.UserQuestionRequested(answered));
+        journal.Observe(CopilotAgentEvent.UserQuestionResolved(
+            answered.Resolve(CopilotUserQuestionResolution.Answered, "Option A")));
+        journal.Observe(CopilotAgentEvent.UserQuestionRequested(interrupted));
+
+        journal.RecordStop(CopilotAgentStopReason.Interrupted);
+
+        var snapshot = journal.Snapshot();
+        var resolutions = snapshot.Events
+            .Where(item => item.Type == CopilotAgentTaskEventType.UserQuestionResolved)
+            .ToArray();
+        Assert.Equal(2, resolutions.Length);
+        Assert.Single(resolutions, item =>
+            string.Equals(
+                item.SubjectId,
+                CopilotAgentTaskEventIds.ForUserQuestion(answered.RequestId),
+                StringComparison.Ordinal)
+            && string.Equals(item.State, CopilotUserQuestionResolution.Answered.ToString(), StringComparison.Ordinal));
+        var synthetic = Assert.Single(resolutions, item =>
+            string.Equals(
+                item.SubjectId,
+                CopilotAgentTaskEventIds.ForUserQuestion(interrupted.RequestId),
+                StringComparison.Ordinal));
+        Assert.Equal(CopilotUserQuestionResolution.Cancelled.ToString(), synthetic.State);
+        Assert.Contains("closed without an answer", synthetic.Summary, StringComparison.Ordinal);
+        var stopped = Assert.Single(snapshot.Events, item => item.Type == CopilotAgentTaskEventType.RunStopped);
+        Assert.True(synthetic.Sequence < stopped.Sequence);
+        Assert.True(snapshot.IsStructurallyValid());
+    }
+
+    [Fact]
     public void InterruptedRunRecoveryRepairsCheckpointJournalBeforeRunStop()
     {
         var profile = CreateProfile();
         var journal = new CopilotAgentTaskEventJournalBuilder();
         journal.RecordRunStarted();
         journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("crashed-call")));
+        var pendingQuestion = CreatePendingQuestion(
+            journal.RunId,
+            "question:33333333333333333333333333333333");
+        journal.Observe(CopilotAgentEvent.UserQuestionRequested(pendingQuestion));
         var checkpoint = CopilotAgentSessionCheckpoint.Create(
             profile,
             "{}",
@@ -881,10 +922,18 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             "crashed-call",
             CopilotToolExecutionState.Interrupted,
             CopilotToolFailureCode.OutcomeUnknown);
+        var questionResolution = Assert.Single(
+            recovered.TaskEventJournal.Events,
+            item => item.Type == CopilotAgentTaskEventType.UserQuestionResolved);
+        Assert.Equal(
+            CopilotAgentTaskEventIds.ForUserQuestion(pendingQuestion.RequestId),
+            questionResolution.SubjectId);
+        Assert.Equal(CopilotUserQuestionResolution.Cancelled.ToString(), questionResolution.State);
         var stopped = Assert.Single(
             recovered.TaskEventJournal.Events,
             item => item.Type == CopilotAgentTaskEventType.RunStopped);
         Assert.True(terminal.Sequence < stopped.Sequence);
+        Assert.True(questionResolution.Sequence < stopped.Sequence);
         Assert.Equal(CopilotAgentStopReason.Interrupted, assistant.AgentStopReason);
     }
 
@@ -938,6 +987,38 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             ExitCode: null,
             StandardOutput: string.Empty,
             StandardError: string.Empty);
+    }
+
+    private static CopilotUserQuestionSnapshot CreatePendingQuestion(
+        string taskId,
+        string requestId)
+    {
+        return new CopilotUserQuestionSnapshot
+        {
+            RequestId = requestId,
+            ConversationId = "conversation:journal-integrity",
+            TaskId = taskId,
+            Header = "Choice",
+            Question = "Which path should the Agent use?",
+            Options =
+            [
+                new CopilotUserQuestionOption
+                {
+                    RequestId = requestId,
+                    TaskId = taskId,
+                    Label = "Option A",
+                    Description = "Use the first path.",
+                },
+                new CopilotUserQuestionOption
+                {
+                    RequestId = requestId,
+                    TaskId = taskId,
+                    Label = "Option B",
+                    Description = "Use the second path.",
+                },
+            ],
+            RequestedAtUtc = DateTimeOffset.UtcNow,
+        };
     }
 
     private static CopilotBackgroundShellOutputMonitorEventArgs

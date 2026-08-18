@@ -242,6 +242,7 @@ namespace ColorVision.Copilot
             lock (_syncRoot)
             {
                 CloseDanglingToolExecutions(reason);
+                CloseDanglingUserQuestions(reason);
                 Append(CopilotAgentTaskEventType.RunStopped, RunId, reason.ToString(), $"Agent run stopped with reason {reason}.");
             }
         }
@@ -408,6 +409,36 @@ namespace ColorVision.Copilot
                         or CopilotAgentTaskEventType.ApprovalDenied)
                     && (string.Equals(item.SubjectId, callSubjectId, StringComparison.Ordinal)
                         || item.RelatedIds.Contains(callSubjectId, StringComparer.Ordinal)));
+        }
+
+        private void CloseDanglingUserQuestions(CopilotAgentStopReason stopReason)
+        {
+            var pendingRequests = _events
+                .Where(item => item.Type == CopilotAgentTaskEventType.UserQuestionRequested
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal))
+                .GroupBy(item => item.SubjectId, StringComparer.Ordinal)
+                .Select(group => group.OrderByDescending(item => item.Sequence).First())
+                .Where(request => !_events.Any(item =>
+                    item.Type == CopilotAgentTaskEventType.UserQuestionResolved
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                    && string.Equals(item.SubjectId, request.SubjectId, StringComparison.Ordinal)
+                    && item.Sequence > request.Sequence))
+                .OrderBy(item => item.Sequence)
+                .ToArray();
+            if (pendingRequests.Length == 0)
+                return;
+
+            var summary = stopReason == CopilotAgentStopReason.Cancelled
+                ? "The structured user clarification was cancelled before a terminal response was recorded."
+                : "The structured user clarification was interrupted before a terminal response was recorded; the pending request was closed without an answer.";
+            foreach (var request in pendingRequests)
+            {
+                Append(
+                    CopilotAgentTaskEventType.UserQuestionResolved,
+                    request.SubjectId,
+                    CopilotUserQuestionResolution.Cancelled.ToString(),
+                    summary);
+            }
         }
 
         private void RecordBackgroundShellCommandCompletion(
