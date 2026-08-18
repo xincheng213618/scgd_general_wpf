@@ -138,11 +138,23 @@ public class OperationsProfileRegistryTest {
                 .rename("host_2", "实验室");
 
         assertEquals("实验室", state.active().label);
+        assertEquals("实验室", state.activeDisplayLabel());
         String firstLabel = state.select("host_1").active().label;
         assertFalse(firstLabel.contains("\n"));
         assertTrue(firstLabel.length() <= 20);
         assertEquals(firstLabel, OperationsProfileRegistry.parse(
                 OperationsProfileRegistry.serialize(state)).select("host_1").active().label);
+    }
+
+    @Test
+    public void unnamedComputersHaveStableLocalDisplayNames() {
+        OperationsProfileRegistry.State state = OperationsProfileRegistry.empty()
+                .upsert("https://192.168.1.21:5800", PIN, "host_1")
+                .upsert("https://192.168.1.22:5800", "b".repeat(64), "host_2");
+
+        assertEquals("电脑 2", state.activeDisplayLabel());
+        assertEquals("电脑 1", state.displayLabel("host_1"));
+        assertEquals("未选择", state.displayLabel("missing"));
     }
 
     private static JSONObject profile(String hostId, String endpoint, String pin) throws Exception {

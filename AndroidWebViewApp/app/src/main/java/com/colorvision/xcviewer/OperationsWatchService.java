@@ -573,9 +573,10 @@ public final class OperationsWatchService extends Service {
     }
 
     private Notification buildNotification(String status, boolean ongoing) {
+        String targetLabel = preferences.getActiveOperationsProfileLabel();
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_devices_24)
-                .setContentTitle("ColorVision 运维守护")
+                .setContentTitle(OperationsTargetPolicy.watchNotificationTitle(targetLabel))
                 .setContentText(status)
                 .setContentIntent(createOperationsPendingIntent(0, ""))
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
@@ -596,7 +597,8 @@ public final class OperationsWatchService extends Service {
         }
         Notification notification = new NotificationCompat.Builder(this, ATTENTION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_devices_24)
-                .setContentTitle("ColorVision 需要关注")
+                .setContentTitle(OperationsTargetPolicy.attentionNotificationTitle(
+                        preferences.getActiveOperationsProfileLabel()))
                 .setContentText(message)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
                 .setContentIntent(createOperationsPendingIntent(

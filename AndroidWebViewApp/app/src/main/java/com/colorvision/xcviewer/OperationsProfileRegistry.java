@@ -141,6 +141,20 @@ final class OperationsProfileRegistry {
             return count;
         }
 
+        String activeDisplayLabel() {
+            return displayLabel(activeHostId);
+        }
+
+        String displayLabel(String hostId) {
+            for (int index = 0; index < profiles.size(); index++) {
+                Profile profile = profiles.get(index);
+                if (profile.hostId.equals(hostId)) {
+                    return profile.label.isEmpty() ? "电脑 " + (index + 1) : profile.label;
+                }
+            }
+            return "未选择";
+        }
+
         State upsert(String endpoint, String certificatePin, String hostId) {
             Profile existing = find(profiles, hostId);
             Profile replacement = createProfile(

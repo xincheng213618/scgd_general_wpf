@@ -168,6 +168,18 @@ final class AppPreferences {
         }
     }
 
+    String getActiveOperationsProfileLabel() {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            return readOperationsProfiles().activeDisplayLabel();
+        }
+    }
+
+    String getOperationsProfileLabel(String hostId) {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            return readOperationsProfiles().displayLabel(hostId);
+        }
+    }
+
     boolean selectOperationsProfile(String hostId) {
         synchronized (OPERATIONS_PROFILE_LOCK) {
             OperationsProfileRegistry.State before = readOperationsProfiles();

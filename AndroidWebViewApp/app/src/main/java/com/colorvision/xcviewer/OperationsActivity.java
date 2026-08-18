@@ -86,8 +86,10 @@ public class OperationsActivity extends Activity {
     private AppPreferences preferences;
     private OperationsApiClient client;
     private OperationsRelayApiClient relayClient;
+    private String operationsClientHostId = "";
     private JSONObject lastRelaySnapshotResponse;
     private TextView title;
+    private TextView profileTarget;
     private TextView state;
     private TextView details;
     private ProgressBar progress;
@@ -163,6 +165,21 @@ public class OperationsActivity extends Activity {
         header.addView(title, new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
+        profileTarget = new TextView(this);
+        profileTarget.setTextSize(12);
+        profileTarget.setTextColor(Color.rgb(36, 76, 120));
+        profileTarget.setSingleLine(true);
+        profileTarget.setEllipsize(TextUtils.TruncateAt.END);
+        profileTarget.setGravity(Gravity.CENTER);
+        profileTarget.setPadding(dp(10), dp(6), dp(10), dp(6));
+        profileTarget.setMaxWidth(dp(190));
+        profileTarget.setBackground(compactPanel(
+                Color.rgb(232, 242, 255), Color.rgb(168, 204, 247)));
+        profileTarget.setOnClickListener(v -> showConnectionPreference());
+        header.addView(profileTarget, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
         state = new TextView(this);
         state.setTextSize(14);
         state.setTextColor(Color.rgb(58, 75, 92));
@@ -204,6 +221,7 @@ public class OperationsActivity extends Activity {
         shell.addView(createBottomNavigation(), new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(54)));
         setContentView(shell);
+        refreshOperationsTargetPresentation();
     }
 
     private LinearLayout createBottomNavigation() {
@@ -296,6 +314,7 @@ public class OperationsActivity extends Activity {
                         preferences.getOrCreateDeviceId(),
                         payload.certificateSha256,
                         new OperationsDeviceIdentity(payload.hostId));
+                operationsClientHostId = payload.hostId;
                 runOnUiThread(this::showDashboard);
                 return;
             }
@@ -327,6 +346,8 @@ public class OperationsActivity extends Activity {
     }
 
     private void openExistingProfile() {
+        refreshOperationsTargetPresentation();
+        String requestHostId = preferences.getOperationsHostId();
         int requestGeneration = ++connectionRequestGeneration;
         setBusy("正在连接已配对的 ColorVision 主机…");
         executor.execute(() -> {
@@ -386,6 +407,11 @@ public class OperationsActivity extends Activity {
                         || isFinishing() || isDestroyed()) {
                     return;
                 }
+                if (!OperationsTargetPolicy.isSameTarget(
+                        requestHostId, preferences.getOperationsHostId())) {
+                    reconnectAfterOperationsTargetChange();
+                    return;
+                }
                 connectionHeartbeatInFlight = false;
                 if (isRevokedException(finalLocalFailure)
                         || isRevokedException(finalRelayFailure)) {
@@ -403,6 +429,12 @@ public class OperationsActivity extends Activity {
 
     private void ensureOperationsClients() throws Exception {
         String hostId = preferences.getOperationsHostId();
+        if (!hostId.equals(operationsClientHostId)) {
+            client = null;
+            relayClient = null;
+            lastRelaySnapshotResponse = null;
+            operationsClientHostId = hostId;
+        }
         OperationsDeviceIdentity identity = new OperationsDeviceIdentity(hostId);
         if (relayClient == null) {
             relayClient = new OperationsRelayApiClient(
@@ -433,6 +465,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void showConnectionPreference() {
+        refreshOperationsTargetPresentation();
         showingDashboardSummary = false;
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -575,6 +608,7 @@ public class OperationsActivity extends Activity {
         remoteTaskGeneration++;
         client = null;
         relayClient = null;
+        operationsClientHostId = "";
         lastRelaySnapshotResponse = null;
         remoteDashboard = false;
         connectionHeartbeatInFlight = false;
@@ -582,7 +616,82 @@ public class OperationsActivity extends Activity {
         clearDashboardLiveStatusReferences();
     }
 
+    private void refreshOperationsTargetPresentation() {
+        if (profileTarget == null || preferences == null) {
+            return;
+        }
+        boolean paired = preferences.hasOperationsProfile();
+        String label = paired ? preferences.getActiveOperationsProfileLabel() : "未配对";
+        profileTarget.setText("目标 · " + label);
+        profileTarget.setContentDescription(paired
+                ? "当前操作电脑：" + label + "，点按管理或切换电脑"
+                : "尚未配对电脑");
+        profileTarget.setEnabled(paired);
+        profileTarget.setAlpha(paired ? 1f : 0.55f);
+    }
+
+    private void showTargetedConfirmation(
+            String dialogTitle,
+            String body,
+            String negativeLabel,
+            String positiveLabel,
+            Runnable confirmedAction) {
+        String expectedHostId = operationsClientHostId.isEmpty()
+                ? preferences.getOperationsHostId() : operationsClientHostId;
+        if (!OperationsTargetPolicy.isSameTarget(
+                expectedHostId, preferences.getOperationsHostId())) {
+            cancelActionAfterOperationsTargetChange();
+            return;
+        }
+        String targetLabel = preferences.getOperationsProfileLabel(expectedHostId);
+        new AlertDialog.Builder(this)
+                .setTitle(dialogTitle)
+                .setMessage(OperationsTargetPolicy.confirmationMessage(targetLabel, body))
+                .setNegativeButton(negativeLabel, null)
+                .setPositiveButton(positiveLabel,
+                        (dialog, which) -> runIfOperationsTargetUnchanged(
+                                expectedHostId, confirmedAction))
+                .show();
+    }
+
+    private void runIfOperationsTargetUnchanged(String expectedHostId, Runnable action) {
+        String activeHostId = preferences.getOperationsHostId();
+        if (!OperationsTargetPolicy.isSameTarget(expectedHostId, activeHostId)) {
+            cancelActionAfterOperationsTargetChange();
+            return;
+        }
+        action.run();
+    }
+
+    private boolean ensureOperationsClientTargetIsCurrent() {
+        String activeHostId = preferences.getOperationsHostId();
+        String expectedHostId = operationsClientHostId.isEmpty()
+                ? activeHostId : operationsClientHostId;
+        if (OperationsTargetPolicy.isSameTarget(expectedHostId, activeHostId)) {
+            return true;
+        }
+        cancelActionAfterOperationsTargetChange();
+        return false;
+    }
+
+    private void cancelActionAfterOperationsTargetChange() {
+        Toast.makeText(this,
+                "当前电脑已切换到 " + preferences.getActiveOperationsProfileLabel()
+                        + "，本次操作已取消",
+                Toast.LENGTH_LONG).show();
+        reconnectAfterOperationsTargetChange();
+    }
+
+    private void reconnectAfterOperationsTargetChange() {
+        resetOperationsClientsForProfileChange();
+        refreshOperationsTargetPresentation();
+        if (preferences.hasOperationsProfile()) {
+            openExistingProfile();
+        }
+    }
+
     private void showDashboard() {
+        refreshOperationsTargetPresentation();
         leaveSupportCenter();
         leaveLiveMonitor();
         remoteDashboard = false;
@@ -671,6 +780,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void showRemoteDashboard(JSONObject response) {
+        refreshOperationsTargetPresentation();
         leaveSupportCenter();
         leaveLiveMonitor();
         remoteDashboard = true;
@@ -970,12 +1080,10 @@ public class OperationsActivity extends Activity {
             Toast.makeText(this, message, Toast.LENGTH_LONG).show();
             return;
         }
-        new AlertDialog.Builder(this)
-                .setTitle("采集远程主窗口快照？")
-                .setMessage("只会捕获当前 ColorVision 主窗口的一张 JPEG，不会捕获整个桌面或连续录屏；画面可能包含当前可见的业务图像。\n\n确认后，电脑会为本次快照端到端加密。固定站点只能短时保存最多 5 分钟的密文，无法查看画面；手机校验电脑签名、密文完整性、加密标签、JPEG 格式与尺寸后才会在应用内预览。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确认采集", (dialog, which) -> runRemoteWindowSnapshotTask())
-                .show();
+        showTargetedConfirmation(
+                "采集远程主窗口快照？",
+                "只会捕获当前 ColorVision 主窗口的一张 JPEG，不会捕获整个桌面或连续录屏；画面可能包含当前可见的业务图像。\n\n确认后，电脑会为本次快照端到端加密。固定站点只能短时保存最多 5 分钟的密文，无法查看画面；手机校验电脑签名、密文完整性、加密标签、JPEG 格式与尺寸后才会在应用内预览。",
+                "取消", "确认采集", this::runRemoteWindowSnapshotTask);
     }
 
     private String remoteMonitorTitle(String section) {
@@ -1082,24 +1190,20 @@ public class OperationsActivity extends Activity {
     }
 
     private void confirmRemoteMinimizeWindow() {
-        new AlertDialog.Builder(this)
-                .setTitle("远程最小化电脑主窗口")
-                .setMessage("只会最小化已配对电脑上的 ColorVision 主窗口。请求由本机设备密钥签名，电脑核验后执行并返回签名收据。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("最小化", (dialog, which) -> runRemoteTask(
-                        OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW, new JSONObject()))
-                .show();
+        showTargetedConfirmation(
+                "远程最小化电脑主窗口",
+                "只会最小化已配对电脑上的 ColorVision 主窗口。请求由本机设备密钥签名，电脑核验后执行并返回签名收据。",
+                "取消", "最小化", () -> runRemoteTask(
+                        OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW, new JSONObject()));
     }
 
     private void confirmRemoteMessageChannelRecovery() {
-        new AlertDialog.Builder(this)
-                .setTitle("远程恢复电脑消息通道")
-                .setMessage("只会检查并恢复已配对电脑当前 ColorVision 的既有消息连接和订阅。不会修改地址、Topic、凭据或重启 Windows 服务；通道已健康时不会主动断开。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确认恢复", (dialog, which) -> runRemoteTask(
+        showTargetedConfirmation(
+                "远程恢复电脑消息通道",
+                "只会检查并恢复已配对电脑当前 ColorVision 的既有消息连接和订阅。不会修改地址、Topic、凭据或重启 Windows 服务；通道已健康时不会主动断开。",
+                "取消", "确认恢复", () -> runRemoteTask(
                         OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL,
-                        new JSONObject()))
-                .show();
+                        new JSONObject()));
     }
 
     private void confirmRemoteMqttRestart() {
@@ -1109,21 +1213,22 @@ public class OperationsActivity extends Activity {
                     Toast.LENGTH_LONG).show();
             return;
         }
-        new AlertDialog.Builder(this)
-                .setTitle("远程重启 MQTT 服务？")
-                .setMessage("只会通过已配对电脑的 ColorVisionServiceHost 重启固定的本机 Mosquitto 服务。消息与检测设备通信会短暂中断并自动恢复；不会选择服务、地址、Topic、命令、路径或参数。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确认重启", (dialog, which) -> {
+        showTargetedConfirmation(
+                "远程重启 MQTT 服务？",
+                "只会通过已配对电脑的 ColorVisionServiceHost 重启固定的本机 Mosquitto 服务。消息与检测设备通信会短暂中断并自动恢复；不会选择服务、地址、Topic、命令、路径或参数。",
+                "取消", "确认重启", () -> {
                     if (remoteRestartMqttButton != null) {
                         remoteRestartMqttButton.setEnabled(false);
                     }
                     runRemoteTask(OperationsRelayPolicy.CAPABILITY_RESTART_MQTT,
                             new JSONObject());
-                })
-                .show();
+                });
     }
 
     private void runRemoteTask(String capabilityId, JSONObject payload) {
+        if (!ensureOperationsClientTargetIsCurrent()) {
+            return;
+        }
         showingDashboardSummary = false;
         progress.setVisibility(View.VISIBLE);
         state.setText("正在签名并提交远程请求…");
@@ -1633,6 +1738,7 @@ public class OperationsActivity extends Activity {
         boolean relayFirst = OperationsConnectionPreference.prefersRelay(
                 preferences.getOperationsConnectionPreference());
         int requestGeneration = connectionRequestGeneration;
+        String requestHostId = operationsClientHostId;
         executor.execute(() -> {
             if (relayFirst) {
                 try {
@@ -1640,10 +1746,12 @@ public class OperationsActivity extends Activity {
                         throw new IllegalStateException("relay_client_unavailable");
                     }
                     JSONObject response = relayClient.getSnapshot();
-                    postHeartbeatResult(requestGeneration, () -> applyRelayHeartbeat(response));
+                    postHeartbeatResult(requestGeneration, requestHostId,
+                            () -> applyRelayHeartbeat(response));
                 } catch (Exception relayException) {
                     if (isRevokedException(relayException)) {
-                        postHeartbeatResult(requestGeneration, this::completeHeartbeatRevoked);
+                        postHeartbeatResult(requestGeneration, requestHostId,
+                                this::completeHeartbeatRevoked);
                         return;
                     }
                     try {
@@ -1652,12 +1760,14 @@ public class OperationsActivity extends Activity {
                         }
                         JSONObject response = client.get("/ops/v1/monitor");
                         JSONObject snapshot = response.optJSONObject("data");
-                        postHeartbeatResult(requestGeneration, () -> applyLocalHeartbeat(snapshot));
+                        postHeartbeatResult(requestGeneration, requestHostId,
+                                () -> applyLocalHeartbeat(snapshot));
                     } catch (Exception localException) {
                         if (isRevokedException(localException)) {
-                            postHeartbeatResult(requestGeneration, this::completeHeartbeatRevoked);
+                            postHeartbeatResult(requestGeneration, requestHostId,
+                                    this::completeHeartbeatRevoked);
                         } else {
-                            postHeartbeatResult(requestGeneration,
+                            postHeartbeatResult(requestGeneration, requestHostId,
                                     () -> completeHeartbeatFailure(true));
                         }
                     }
@@ -1671,10 +1781,12 @@ public class OperationsActivity extends Activity {
                 }
                 JSONObject response = client.get("/ops/v1/monitor");
                 JSONObject snapshot = response.optJSONObject("data");
-                postHeartbeatResult(requestGeneration, () -> applyLocalHeartbeat(snapshot));
+                postHeartbeatResult(requestGeneration, requestHostId,
+                        () -> applyLocalHeartbeat(snapshot));
             } catch (Exception localException) {
                 if (isRevokedException(localException)) {
-                    postHeartbeatResult(requestGeneration, this::completeHeartbeatRevoked);
+                    postHeartbeatResult(requestGeneration, requestHostId,
+                            this::completeHeartbeatRevoked);
                     return;
                 }
                 try {
@@ -1682,12 +1794,14 @@ public class OperationsActivity extends Activity {
                         throw new IllegalStateException("relay_client_unavailable");
                     }
                     JSONObject response = relayClient.getSnapshot();
-                    postHeartbeatResult(requestGeneration, () -> applyRelayHeartbeat(response));
+                    postHeartbeatResult(requestGeneration, requestHostId,
+                            () -> applyRelayHeartbeat(response));
                 } catch (Exception relayException) {
                     if (isRevokedException(relayException)) {
-                        postHeartbeatResult(requestGeneration, this::completeHeartbeatRevoked);
+                        postHeartbeatResult(requestGeneration, requestHostId,
+                                this::completeHeartbeatRevoked);
                     } else {
-                        postHeartbeatResult(requestGeneration,
+                        postHeartbeatResult(requestGeneration, requestHostId,
                                 () -> completeHeartbeatFailure(false));
                     }
                 }
@@ -1695,10 +1809,16 @@ public class OperationsActivity extends Activity {
         });
     }
 
-    private void postHeartbeatResult(int requestGeneration, Runnable result) {
+    private void postHeartbeatResult(
+            int requestGeneration, String requestHostId, Runnable result) {
         runOnUiThread(() -> {
             if (requestGeneration != connectionRequestGeneration
                     || isFinishing() || isDestroyed()) {
+                return;
+            }
+            if (!OperationsTargetPolicy.isSameTarget(
+                    requestHostId, preferences.getOperationsHostId())) {
+                reconnectAfterOperationsTargetChange();
                 return;
             }
             if (!activityResumed || !showingDashboardSummary) {
@@ -1758,6 +1878,7 @@ public class OperationsActivity extends Activity {
         String revokedHostId = preferences.getOperationsHostId();
         clearRemoteWindowSnapshotSecrets(revokedHostId);
         preferences.markOperationsProfileRevoked();
+        refreshOperationsTargetPresentation();
         OperationsWatchService.stopForProfileRemoval(this);
         showError("配对授权已失效", "这台电脑已撤销设备授权；其他已配对电脑不会受影响。",
                 () -> removeOperationsProfile(revokedHostId));
@@ -2126,15 +2247,16 @@ public class OperationsActivity extends Activity {
     }
 
     private void confirmMinimizeWindow() {
-        new AlertDialog.Builder(this)
-                .setTitle("最小化电脑主窗口")
-                .setMessage("该操作会立即最小化已连接电脑上的 ColorVision 主窗口，并写入运维审计。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("最小化", (dialog, which) -> runWindowAction("minimize", "主窗口已最小化"))
-                .show();
+        showTargetedConfirmation(
+                "最小化电脑主窗口",
+                "该操作会立即最小化已连接电脑上的 ColorVision 主窗口，并写入运维审计。",
+                "取消", "最小化", () -> runWindowAction("minimize", "主窗口已最小化"));
     }
 
     private void runWindowAction(String action, String successText) {
+        if (!ensureOperationsClientTargetIsCurrent()) {
+            return;
+        }
         showingDashboardSummary = false;
         progress.setVisibility(View.VISIBLE);
         state.setText("正在执行安全桌面操作…");
@@ -2439,9 +2561,21 @@ public class OperationsActivity extends Activity {
         if (!"approved_mobile".equals(job.optString("status"))) {
             Button reject = new Button(this);
             reject.setText("拒绝此作业");
-            reject.setOnClickListener(v -> decideJob(job.optString("jobId", ""), false));
+            reject.setOnClickListener(v -> confirmJobRejection(
+                    job.optString("jobId", ""), job.optString("title", "现场运维作业")));
             actions.addView(reject, actionParams());
         }
+    }
+
+    private void confirmJobRejection(String jobId, String jobTitle) {
+        if (jobId.isEmpty()) {
+            Toast.makeText(this, "作业标识无效", Toast.LENGTH_LONG).show();
+            return;
+        }
+        showTargetedConfirmation(
+                "拒绝作业：" + jobTitle,
+                "拒绝后该作业不会由这台手机批准；结果会写入去标识运维审计。",
+                "返回", "确认拒绝", () -> decideJob(jobId, false));
     }
 
     private void confirmJobApproval(JSONObject job) {
@@ -2453,15 +2587,13 @@ public class OperationsActivity extends Activity {
         String title = job.optString("title", "现场运维作业");
         String target = job.optString("target", "固定运维能力");
         boolean requiresLocalCoSign = job.optBoolean("requiresLocalCoSign", true);
-        new AlertDialog.Builder(this)
-                .setTitle("确认批准：" + title)
-                .setMessage("目标：" + target
+        showTargetedConfirmation(
+                "确认批准：" + title,
+                "作业能力：" + target
                         + (requiresLocalCoSign
                         ? "\n\n批准只记录这台已配对手机的明确意图，不会立即执行。电脑端仍需本机人员再次确认；未共签前作业保持阻塞。"
-                        : "\n\n这是固定、无参数的远程动作。确认后会立即执行并写入审计，不需要电脑端再次共签。"))
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确认批准", (dialog, which) -> decideJob(jobId, true))
-                .show();
+                        : "\n\n这是固定、无参数的远程动作。确认后会立即执行并写入审计，不需要电脑端再次共签。"),
+                "取消", "确认批准", () -> decideJob(jobId, true));
     }
 
     private void decideJob(String jobId, boolean approved) {
@@ -2492,12 +2624,10 @@ public class OperationsActivity extends Activity {
     }
 
     private void confirmCreateDiagnosticJob() {
-        new AlertDialog.Builder(this)
-                .setTitle("生成并分享诊断包")
-                .setMessage("确认后电脑端立即生成脱敏 ZIP，手机会校验 SHA-256 并打开系统分享面板，不再等待电脑端共签。包内只含有界运行状态、脱敏事件、白名单服务健康和去标识审计，不含凭据、用户名、机器名、设备 ID、用户文档、数据库或图像；仅本申请设备可在 24 小时内下载。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确认生成", (dialog, which) -> createDiagnosticJob())
-                .show();
+        showTargetedConfirmation(
+                "生成并分享诊断包",
+                "确认后电脑端立即生成脱敏 ZIP，手机会校验 SHA-256 并打开系统分享面板，不再等待电脑端共签。包内只含有界运行状态、脱敏事件、白名单服务健康和去标识审计，不含凭据、用户名、机器名、设备 ID、用户文档、数据库或图像；仅本申请设备可在 24 小时内下载。",
+                "取消", "确认生成", this::createDiagnosticJob);
     }
 
     private void confirmDiagnosticBundleDownload(String jobId) {
@@ -2505,12 +2635,10 @@ public class OperationsActivity extends Activity {
             Toast.makeText(this, "诊断作业标识无效", Toast.LENGTH_LONG).show();
             return;
         }
-        new AlertDialog.Builder(this)
-                .setTitle("下载安全诊断包")
-                .setMessage("仅下载当前设备已明确确认生成的脱敏 ZIP。下载内容会先校验 SHA-256，再交给你选择的应用；不要转发到不受信任的位置。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("下载并分享", (dialog, which) -> downloadAndShareDiagnosticBundle(jobId))
-                .show();
+        showTargetedConfirmation(
+                "下载安全诊断包",
+                "仅下载当前设备已明确确认生成的脱敏 ZIP。下载内容会先校验 SHA-256，再交给你选择的应用；不要转发到不受信任的位置。",
+                "取消", "下载并分享", () -> downloadAndShareDiagnosticBundle(jobId));
     }
 
     private void downloadAndShareDiagnosticBundle(String jobId) {
@@ -2572,12 +2700,10 @@ public class OperationsActivity extends Activity {
     }
 
     private void confirmCreateWindowSnapshotJob() {
-        new AlertDialog.Builder(this)
-                .setTitle("采集并预览主窗口快照")
-                .setMessage("确认后会先显示或还原 ColorVision 主窗口，再立即采集一张 JPEG；手机会校验后预览，不再等待电脑端共签。不会捕获整个桌面，也不会连续录屏；画面可能包含当前可见的检测数据。仅本申请设备可在 5 分钟内读取一次，读取后电脑端立即销毁。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确认采集", (dialog, which) -> createWindowSnapshotJob())
-                .show();
+        showTargetedConfirmation(
+                "采集并预览主窗口快照",
+                "确认后会先显示或还原 ColorVision 主窗口，再立即采集一张 JPEG；手机会校验后预览，不再等待电脑端共签。不会捕获整个桌面，也不会连续录屏；画面可能包含当前可见的检测数据。仅本申请设备可在 5 分钟内读取一次，读取后电脑端立即销毁。",
+                "取消", "确认采集", this::createWindowSnapshotJob);
     }
 
     private void createWindowSnapshotJob() {
@@ -2605,12 +2731,10 @@ public class OperationsActivity extends Activity {
             Toast.makeText(this, "快照作业标识无效", Toast.LENGTH_LONG).show();
             return;
         }
-        new AlertDialog.Builder(this)
-                .setTitle("读取一次主窗口快照")
-                .setMessage("将下载当前设备已明确确认采集的 ColorVision 主窗口 JPEG。SHA-256 校验通过后，电脑端证据立即销毁；应用先在本机预览，只有你再次点击分享才会交给其他应用。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("下载并预览", (dialog, which) -> downloadWindowSnapshot(jobId))
-                .show();
+        showTargetedConfirmation(
+                "读取一次主窗口快照",
+                "将下载当前设备已明确确认采集的 ColorVision 主窗口 JPEG。SHA-256 校验通过后，电脑端证据立即销毁；应用先在本机预览，只有你再次点击分享才会交给其他应用。",
+                "取消", "下载并预览", () -> downloadWindowSnapshot(jobId));
     }
 
     private void downloadWindowSnapshot(String jobId) {
@@ -2740,12 +2864,10 @@ public class OperationsActivity extends Activity {
     }
 
     private void confirmRestartMqtt() {
-        new AlertDialog.Builder(this)
-                .setTitle("确认重启 MQTT 服务")
-                .setMessage("确认后将立即通过 ColorVisionServiceHost 重启固定白名单中的 Mosquitto 服务，消息与设备通信可能短暂中断后自动恢复。手机不能选择其他服务、命令、路径或参数。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确认重启", (dialog, which) -> restartMqtt())
-                .show();
+        showTargetedConfirmation(
+                "确认重启 MQTT 服务",
+                "确认后将立即通过 ColorVisionServiceHost 重启固定白名单中的 Mosquitto 服务，消息与设备通信可能短暂中断后自动恢复。手机不能选择其他服务、命令、路径或参数。",
+                "取消", "确认重启", this::restartMqtt);
     }
 
     private void restartMqtt() {
@@ -2771,12 +2893,10 @@ public class OperationsActivity extends Activity {
     }
 
     private void confirmRecoverMessageChannel() {
-        new AlertDialog.Builder(this)
-                .setTitle("确认恢复消息通道")
-                .setMessage("只在 ColorVision 消息客户端断开或订阅未就绪时，使用电脑当前已有配置重建连接并恢复已登记订阅。健康通道不会断开；手机不能填写地址、端口、Topic、凭据或其他参数。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确认恢复", (dialog, which) -> recoverMessageChannel())
-                .show();
+        showTargetedConfirmation(
+                "确认恢复消息通道",
+                "只在 ColorVision 消息客户端断开或订阅未就绪时，使用电脑当前已有配置重建连接并恢复已登记订阅。健康通道不会断开；手机不能填写地址、端口、Topic、凭据或其他参数。",
+                "取消", "确认恢复", this::recoverMessageChannel);
     }
 
     private void recoverMessageChannel() {
@@ -2802,13 +2922,12 @@ public class OperationsActivity extends Activity {
     }
 
     private void confirmRestartApplication() {
-        new AlertDialog.Builder(this)
-                .setTitle("确认重启 ColorVision")
-                .setMessage(remoteDashboard
+        showTargetedConfirmation(
+                "确认重启 ColorVision",
+                remoteDashboard
                         ? "确认后会通过设备签名中继重启当前 ColorVision。电脑先复核检测为空闲并返回已受理回执，新进程重新上线后再返回最终回执；不会选择程序、路径、命令或启动参数。"
-                        : "确认后只会干净重启当前 ColorVision 应用，不会选择程序、路径、命令或启动参数。正在执行检测时电脑端会拒绝；重启期间会短暂断线，应用将保留配对资料并自动等待恢复。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确认重启", (dialog, which) -> {
+                        : "确认后只会干净重启当前 ColorVision 应用，不会选择程序、路径、命令或启动参数。正在执行检测时电脑端会拒绝；重启期间会短暂断线，应用将保留配对资料并自动等待恢复。",
+                "取消", "确认重启", () -> {
                     if (remoteDashboard) {
                         runRemoteTask(
                                 OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION,
@@ -2816,8 +2935,7 @@ public class OperationsActivity extends Activity {
                     } else {
                         restartApplication();
                     }
-                })
-                .show();
+                });
     }
 
     private void restartApplication() {
@@ -2945,12 +3063,10 @@ public class OperationsActivity extends Activity {
     }
 
     private void confirmDeploymentReceipt() {
-        new AlertDialog.Builder(this)
-                .setTitle("提交部署确认")
-                .setMessage("仅提交本移动伴侣当前版本的验证收据，不会触发远程部署。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确认", (dialog, which) -> submitDeploymentReceipt())
-                .show();
+        showTargetedConfirmation(
+                "提交部署确认",
+                "仅提交本移动伴侣当前版本的验证收据，不会触发远程部署。",
+                "取消", "确认", this::submitDeploymentReceipt);
     }
 
     private void submitDeploymentReceipt() {
@@ -3351,20 +3467,18 @@ public class OperationsActivity extends Activity {
             Toast.makeText(this, "当前没有可取消的主检测", Toast.LENGTH_LONG).show();
             return;
         }
-        new AlertDialog.Builder(this)
-                .setTitle("取消当前检测？")
-                .setMessage(remoteDashboard
+        showTargetedConfirmation(
+                "取消当前检测？",
+                remoteDashboard
                         ? "只会向已配对电脑当前主工作区正在执行的检测发送取消请求，不会选择、启动或修改其他流程，也不接受远程参数。请求由本机设备密钥签名，电脑核验后执行并返回签名收据。"
-                        : "只会向当前主工作区正在执行的检测发送取消请求，不会选择、启动或修改其他流程，也不接受远程参数。确认后立即执行并记录审计。")
-                .setNegativeButton("继续观察", null)
-                .setPositiveButton("确认取消检测", (dialog, which) -> {
+                        : "只会向当前主工作区正在执行的检测发送取消请求，不会选择、启动或修改其他流程，也不接受远程参数。确认后立即执行并记录审计。",
+                "继续观察", "确认取消检测", () -> {
                     if (remoteDashboard) {
                         runRemoteTask(OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW, new JSONObject());
                     } else {
                         requestCancelCurrentFlow();
                     }
-                })
-                .show();
+                });
     }
 
     private void requestCancelCurrentFlow() {
@@ -3643,12 +3757,10 @@ public class OperationsActivity extends Activity {
     }
 
     private void confirmSupportRequest() {
-        new AlertDialog.Builder(this)
-                .setTitle("申请引导支持")
-                .setMessage("申请 15 分钟有限文本会话。电脑端必须本机同意；不开放远程桌面、命令或文件。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("提交申请", (dialog, which) -> submitSupportRequest())
-                .show();
+        showTargetedConfirmation(
+                "申请引导支持",
+                "申请 15 分钟有限文本会话。电脑端必须本机同意；不开放远程桌面、命令或文件。",
+                "取消", "提交申请", this::submitSupportRequest);
     }
 
     private void submitSupportRequest() {
@@ -4859,6 +4971,7 @@ public class OperationsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         activityResumed = true;
+        refreshOperationsTargetPresentation();
         if (preferences != null && preferences.hasOperationsProfile()) {
             OperationsWatchService.start(this);
         }
