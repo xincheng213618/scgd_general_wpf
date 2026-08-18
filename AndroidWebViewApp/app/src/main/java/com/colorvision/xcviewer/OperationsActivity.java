@@ -26,6 +26,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
@@ -177,6 +178,7 @@ public class OperationsActivity extends AppCompatActivity {
         themeManager.applySystemBars(this);
         acceptOperationsDestination(getIntent());
         createView();
+        installInPageBackNavigation();
 
         String rawPairing = getIntent().getStringExtra(EXTRA_PAIRING_PAYLOAD);
         if (rawPairing != null && !rawPairing.isEmpty()) {
@@ -336,8 +338,38 @@ public class OperationsActivity extends AppCompatActivity {
             }
             return false;
         });
+        navigation.setOnItemReselectedListener(item -> {
+            if (item.getItemId() == NAV_OPERATIONS) {
+                returnToOperationsOverview();
+            }
+        });
         navigation.setSelectedItemId(NAV_OPERATIONS);
         return navigation;
+    }
+
+    private void installInPageBackNavigation() {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (returnToOperationsOverview()) {
+                    return;
+                }
+                setEnabled(false);
+                getOnBackPressedDispatcher().onBackPressed();
+            }
+        });
+    }
+
+    private boolean returnToOperationsOverview() {
+        if (!OperationsInPageNavigationPolicy.shouldReturnToOverview(
+                preferences != null && preferences.hasOperationsProfile(),
+                dashboardVisible,
+                showingDashboardSummary,
+                connectionRecoveryVisible)) {
+            return false;
+        }
+        showCurrentDashboard();
+        return true;
     }
 
     private void openMainTab(int tab) {
@@ -683,15 +715,13 @@ public class OperationsActivity extends AppCompatActivity {
         leaveLiveMonitor();
         dashboardVisible = true;
         progress.setVisibility(View.GONE);
-        title.setText("连接方式");
+        title.setText("电脑与连接");
         boolean relayPreferred = OperationsConnectionPreference.prefersRelay(
                 preferences.getOperationsConnectionPreference());
         List<OperationsProfileRegistry.Profile> profiles = preferences.getOperationsProfiles();
         long nowMilliseconds = System.currentTimeMillis();
         OperationsFleetOverview.Assessment fleet = OperationsFleetOverview.assess(
                 profiles, nowMilliseconds);
-        state.setText((relayPreferred ? "固定中继优先" : "现场直连优先")
-                + " · " + fleet.summary);
         int profileCount = profiles.size();
         OperationsProfileRegistry.Profile activeProfile = null;
         for (OperationsProfileRegistry.Profile profile : profiles) {
@@ -707,15 +737,30 @@ public class OperationsActivity extends AppCompatActivity {
                 activeProfile.watchCheckedAt,
                 activeProfile.revoked,
                 nowMilliseconds);
+        state.setText(OperationsConnectionOverview.pageStatus(
+                profileCount, activeProfileState, fleet.summary));
         details.setText(OperationsConnectionOverview.summary(
-                operationsProfileLabel(profiles, preferences.getOperationsHostId()),
-                activeProfileState,
+                relayPreferred ? "固定中继" : "现场直连",
                 remoteDashboard ? "固定中继" : "现场直连",
                 profileCount,
                 OperationsProfileRegistry.MAX_PROFILES));
         actions.removeAllViews();
 
-        addDashboardSection("首选连接");
+        if (OperationsConnectionOverview.showsFleetTools(profileCount)) {
+            addDashboardSection("电脑");
+            if (fleet.hasPriorityAction()) {
+                addDashboardWideAction(dashboardButton(
+                        fleet.priorityButtonLabel, v -> openFleetPriority(fleet)));
+            }
+            for (OperationsProfileRegistry.Profile profile : profiles) {
+                addOperationsProfileWideAction(operationsProfileButton(
+                        profile, profiles, nowMilliseconds));
+            }
+            addDashboardWideAction(dashboardButton(
+                    "查看全部电脑动态", v -> showFleetTimeline(false)));
+        }
+
+        addDashboardSection("连接偏好");
         addDashboardSegmentedChoices(
                 "现场直连优先",
                 "固定中继优先",
@@ -723,33 +768,28 @@ public class OperationsActivity extends AppCompatActivity {
                 v -> selectConnectionPreference(OperationsConnectionPreference.DIRECT),
                 v -> selectConnectionPreference(OperationsConnectionPreference.RELAY));
 
-        addDashboardSection("检查与巡检");
-        addDashboardActionRow(
-                dashboardButton("运行现场连接自检", v -> runConnectionSelfCheck()),
-                dashboardButton("只读巡检全部电脑", v -> refreshAllOperationsProfiles()));
-
-        addDashboardSection("电脑总览");
-        if (fleet.hasPriorityAction()) {
+        addDashboardSection(OperationsConnectionOverview.showsFleetTools(profileCount)
+                ? "检查与巡检" : "检查连接");
+        if (OperationsConnectionOverview.showsFleetTools(profileCount)) {
+            addDashboardActionRow(
+                    dashboardButton("运行现场连接自检", v -> runConnectionSelfCheck()),
+                    dashboardButton("只读巡检全部电脑", v -> refreshAllOperationsProfiles()));
+        } else {
             addDashboardWideAction(dashboardButton(
-                    fleet.priorityButtonLabel, v -> openFleetPriority(fleet)));
+                    "运行现场连接自检", v -> runConnectionSelfCheck()));
         }
-        for (OperationsProfileRegistry.Profile profile : profiles) {
-            addOperationsProfileWideAction(operationsProfileButton(
-                    profile, profiles, nowMilliseconds));
-        }
-        addDashboardWideAction(dashboardButton(
-                "查看全部电脑动态", v -> showFleetTimeline(false)));
 
         addDashboardSection("电脑管理");
         addDashboardActionRow(
                 dashboardButton("命名当前电脑", v -> promptRenameCurrentOperationsProfile()),
                 dashboardButton("扫描并添加电脑", v -> startOperationsPairingScan()));
 
-        addDashboardSection("连接说明");
+        addDashboardSection("安全说明");
         addDashboardInfoCard(OperationsConnectionOverview.connectionNote());
+        addDashboardSection("移除电脑");
+        addDashboardInfoCard(OperationsConnectionOverview.removalNote());
         addDashboardWideAction(dashboardDestructiveButton(
                 "移除当前电脑配对", v -> confirmClearProfile()));
-        addDashboardWideAction(dashboardButton("返回运维概览", v -> showCurrentDashboard()));
         scheduleConnectionHeartbeat();
     }
 
