@@ -4738,4 +4738,98 @@ Please close camera or other programs using this serial port, or check device co
   <data name="删除" xml:space="preserve"><value>Delete</value></data>
   <data name="还原" xml:space="preserve"><value>Restore</value></data>
   <data name="选中" xml:space="preserve"><value>Select</value></data>
+  <data name="数据库清理" xml:space="preserve"><value>Database Cleanup</value></data>
+  <data name="先确认范围和备份策略，再清理历史数据或指定数据表。" xml:space="preserve"><value>Confirm the scope and backup policy before cleaning historical data or selected tables.</value></data>
+  <data name="企业数据操作" xml:space="preserve"><value>Enterprise Data Operation</value></data>
+  <data name="刷新统计" xml:space="preserve"><value>Refresh Statistics</value></data>
+  <data name="仅创建完整备份" xml:space="preserve"><value>Create Full Backup Only</value></data>
+  <data name="清理策略" xml:space="preserve"><value>Cleanup Policy</value></data>
+  <data name="保留最近" xml:space="preserve"><value>Keep the latest</value></data>
+  <data name="个月" xml:space="preserve"><value>month(s)</value></data>
+  <data name="清理过期数据" xml:space="preserve"><value>Clean Expired Data</value></data>
+  <data name="清理前创建完整备份（推荐）" xml:space="preserve"><value>Create a full backup before cleanup (recommended)</value></data>
+  <data name="按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表；完全清理会清空所有可用表。" xml:space="preserve"><value>Table cleanup processes only selected items. When cleaning a primary table, select all existing related detail tables. Full cleanup clears every available table.</value></data>
+  <data name="清空选中表" xml:space="preserve"><value>Clear Selected Tables</value></data>
+  <data name="完全清理全部表" xml:space="preserve"><value>Fully Clear All Tables</value></data>
+  <data name="可清理数据表" xml:space="preserve"><value>Cleanable Tables</value></data>
+  <data name="全选可用表" xml:space="preserve"><value>Select All Available Tables</value></data>
+  <data name="清除选择" xml:space="preserve"><value>Clear Selection</value></data>
+  <data name="选择" xml:space="preserve"><value>Select</value></data>
+  <data name="表名" xml:space="preserve"><value>Table Name</value></data>
+  <data name="行数" xml:space="preserve"><value>Rows</value></data>
+  <data name="占用空间" xml:space="preserve"><value>Storage Used</value></data>
+  <data name="存在" xml:space="preserve"><value>Exists</value></data>
+  <data name="未找到" xml:space="preserve"><value>Not Found</value></data>
+  <data name="清理" xml:space="preserve"><value>cleanup</value></data>
+  <data name="迁移" xml:space="preserve"><value>migration</value></data>
+  <data name="打开窗口后会自动统计。" xml:space="preserve"><value>Statistics will load automatically when the window opens.</value></data>
+  <data name="{0:N0} 张表 · {1:N0} 行 · {2}" xml:space="preserve"><value>{0:N0} table(s) · {1:N0} row(s) · {2}</value></data>
+  <data name="已选择 {0:N0} 张表" xml:space="preserve"><value>{0:N0} table(s) selected</value></data>
+  <data name="尚未选择数据表" xml:space="preserve"><value>No tables selected</value></data>
+  <data name="正在统计表数据..." xml:space="preserve"><value>Loading table statistics...</value></data>
+  <data name="已加载 {0:N0} 张可清理数据表。" xml:space="preserve"><value>Loaded {0:N0} cleanable table(s).</value></data>
+  <data name="当前没有找到可清理数据表。" xml:space="preserve"><value>No cleanable tables were found.</value></data>
+  <data name="加载统计失败。" xml:space="preserve"><value>Failed to load statistics.</value></data>
+  <data name="{0} 统计失败：{1}" xml:space="preserve"><value>Failed to load statistics for {0}: {1}</value></data>
+  <data name="正在创建 {0} 完整备份..." xml:space="preserve"><value>Creating a full backup of {0}...</value></data>
+  <data name="完整备份失败。" xml:space="preserve"><value>Full backup failed.</value></data>
+  <data name="{0} 完整备份失败：{1}" xml:space="preserve"><value>Full backup of {0} failed: {1}</value></data>
+  <data name="保留月数必须是大于 0 的整数。" xml:space="preserve"><value>The number of months to keep must be a positive integer.</value></data>
+  <data name="将保留最近 {0} 个月的数据，并清理其余历史结果。" xml:space="preserve"><value>Data from the latest {0} month(s) will be kept, and older results will be cleaned.</value></data>
+  <data name="是否继续？" xml:space="preserve"><value>Continue?</value></data>
+  <data name="正在清理 {0} 历史数据..." xml:space="preserve"><value>Cleaning historical data from {0}...</value></data>
+  <data name="请先选择至少一张要清理的数据表。" xml:space="preserve"><value>Select at least one table to clean.</value></data>
+  <data name="将清空以下 {0:N0} 张数据表：" xml:space="preserve"><value>The following {0:N0} table(s) will be cleared:</value></data>
+  <data name="此操作不可撤销，是否继续？" xml:space="preserve"><value>This operation cannot be undone. Continue?</value></data>
+  <data name="正在清空选中的 {0:N0} 张数据表..." xml:space="preserve"><value>Clearing the selected {0:N0} table(s)...</value></data>
+  <data name="危险操作：将清空 {0} 中全部 {1:N0} 张可用数据表。" xml:space="preserve"><value>Dangerous operation: all {1:N0} available table(s) in {0} will be cleared.</value></data>
+  <data name="全部数据清理后无法撤销，是否确定继续？" xml:space="preserve"><value>Clearing all data cannot be undone. Are you sure you want to continue?</value></data>
+  <data name="正在清空 {0} 全部数据..." xml:space="preserve"><value>Clearing all data from {0}...</value></data>
+  <data name="该迁移没有可用的完整备份能力，已拒绝执行。" xml:space="preserve"><value>This migration has no full-backup capability and was refused.</value></data>
+  <data name="正在执行 {0} 数据迁移并释放空间..." xml:space="preserve"><value>Migrating {0} data and reclaiming space...</value></data>
+  <data name="正在同一维护操作中创建完整备份并执行{0}..." xml:space="preserve"><value>Creating a full backup and running {0} in the same maintenance operation...</value></data>
+  <data name="完整备份与{0}组合操作失败。" xml:space="preserve"><value>The combined full-backup and {0} operation failed.</value></data>
+  <data name="{0} 完整备份与{1}组合操作失败：{2}" xml:space="preserve"><value>The combined full-backup and {1} operation for {0} failed: {2}</value></data>
+  <data name="如备份已经生成，备份文件会保留；请刷新统计后确认当前数据状态。" xml:space="preserve"><value>If a backup was generated, it has been retained. Refresh statistics to confirm the current data state.</value></data>
+  <data name="正在创建{0}前完整备份..." xml:space="preserve"><value>Creating a full backup before {0}...</value></data>
+  <data name="备份失败，未执行{0}。" xml:space="preserve"><value>Backup failed; {0} was not performed.</value></data>
+  <data name="{0}前完整备份失败，数据尚未更改：{1}" xml:space="preserve"><value>The full backup before {0} failed. Data has not been changed: {1}</value></data>
+  <data name="{0}失败。" xml:space="preserve"><value>{0} failed.</value></data>
+  <data name="{0} {1}失败：{2}" xml:space="preserve"><value>{1} failed for {0}: {2}</value></data>
+  <data name=" 表统计刷新失败，请稍后手动刷新。" xml:space="preserve"><value> Table statistics could not be refreshed. Refresh them manually later.</value></data>
+  <data name="数据已完成{0}，但统计刷新失败：{1}" xml:space="preserve"><value>Data {0} completed, but statistics could not be refreshed: {1}</value></data>
+  <data name="当前数据源不支持自动备份，请确认已有可恢复副本。" xml:space="preserve"><value>This data source does not support automatic backup. Confirm that a recoverable copy already exists.</value></data>
+  <data name="本次迁移会强制先创建完整备份；备份失败时不会执行迁移。" xml:space="preserve"><value>This migration requires a full backup first. Migration will not run if the backup fails.</value></data>
+  <data name="操作前会先创建完整备份；备份失败时不会继续。" xml:space="preserve"><value>A full backup will be created first. The operation will not continue if the backup fails.</value></data>
+  <data name="本次操作不会自动创建备份。" xml:space="preserve"><value>This operation will not create a backup automatically.</value></data>
+  <data name="MySQL 结果表" xml:space="preserve"><value>MySQL Result Tables</value></data>
+  <data name="数据库: {0}    主机: {1}:{2}" xml:space="preserve"><value>Database: {0}    Host: {1}:{2}</value></data>
+  <data name="检测到未登记的结果明细表，无法安全清理历史数据。请先确认这些表与主表的关联关系：" xml:space="preserve"><value>Unregistered result detail tables were detected, so historical data cannot be cleaned safely. Confirm their relationship to the primary table:</value></data>
+  <data name="已保留最近 {0} 个月的 MySQL 结果数据。" xml:space="preserve"><value>Kept the latest {0} month(s) of MySQL result data.</value></data>
+  <data name="{0}: 删除 {1:N0} 行" xml:space="preserve"><value>{0}: deleted {1:N0} row(s)</value></data>
+  <data name="没有找到可执行的 MySQL 历史清理项。" xml:space="preserve"><value>No MySQL historical cleanup items were found.</value></data>
+  <data name="完整备份已创建：{0}" xml:space="preserve"><value>Full backup created: {0}</value></data>
+  <data name="至少选择一张要清理的数据表。" xml:space="preserve"><value>Select at least one table to clean.</value></data>
+  <data name="不允许清理未登记的数据表：{0}" xml:space="preserve"><value>Unregistered tables cannot be cleaned: {0}</value></data>
+  <data name="不能清理所选主表，因为仍存在未选中的关联明细表。请同时选择以下数据表：" xml:space="preserve"><value>The selected primary table cannot be cleaned while related detail tables remain unselected. Also select these tables:</value></data>
+  <data name="{0}: 未找到，已跳过" xml:space="preserve"><value>{0}: not found, skipped</value></data>
+  <data name="{0}: 已清空" xml:space="preserve"><value>{0}: cleared</value></data>
+  <data name="没有找到可清空的 MySQL 结果表。" xml:space="preserve"><value>No MySQL result tables were available to clear.</value></data>
+  <data name="已清空全部 {0:N0} 张可用 MySQL 结果表。" xml:space="preserve"><value>Cleared all {0:N0} available MySQL result table(s).</value></data>
+  <data name="已清空选中的 {0:N0} 张 MySQL 结果表。" xml:space="preserve"><value>Cleared the selected {0:N0} MySQL result table(s).</value></data>
+  <data name="Socket 消息 SQLite" xml:space="preserve"><value>Socket Messages SQLite</value></data>
+  <data name="数据库文件: {0}" xml:space="preserve"><value>Database file: {0}</value></data>
+  <data name="迁移并压缩历史消息" xml:space="preserve"><value>Migrate and Compress Historical Messages</value></data>
+  <data name="将把 SocketMessage.Content 旧 TEXT 正文迁移为同表 GZip BLOB，生成列表预览，校验一致后清空旧字段并执行 VACUUM 释放空间。" xml:space="preserve"><value>Legacy SocketMessage.Content TEXT bodies will be migrated to GZip BLOBs in the same table, with list previews generated. After verification, the legacy field will be cleared and VACUUM will reclaim space.</value></data>
+  <data name="迁移后旧版程序不能读取这些历史正文；迁移期间 Socket 消息写入会暂时等待。" xml:space="preserve"><value>Older application versions cannot read these historical bodies after migration. Socket message writes will wait temporarily during migration.</value></data>
+  <data name="已保留最近 {0} 个月的 Socket 消息。" xml:space="preserve"><value>Kept the latest {0} month(s) of Socket messages.</value></data>
+  <data name="已清空 Socket 消息数据库。" xml:space="preserve"><value>Cleared the Socket messages database.</value></data>
+  <data name="完整备份已保留：{0}" xml:space="preserve"><value>Full backup retained: {0}</value></data>
+  <data name="未发现待迁移的旧 Socket 正文，已完成数据库压缩整理。" xml:space="preserve"><value>No legacy Socket message bodies required migration. Database compaction is complete.</value></data>
+  <data name="已迁移 {0:N0} 条历史 Socket 正文，并释放 SQLite 空闲空间。" xml:space="preserve"><value>Migrated {0:N0} historical Socket message body/bodies and reclaimed free SQLite space.</value></data>
+  <data name="{0}: 迁移 {1:N0} 条，清理残留旧字段 {2:N0} 条" xml:space="preserve"><value>{0}: migrated {1:N0}, cleared {2:N0} residual legacy field(s)</value></data>
+  <data name="数据库大小: {0} → {1}" xml:space="preserve"><value>Database size: {0} → {1}</value></data>
+  <data name="SQLite 完整性检查: {0}" xml:space="preserve"><value>SQLite integrity check: {0}</value></data>
+  <data name="已创建 Socket 消息完整备份（{0}）。" xml:space="preserve"><value>Created a full Socket messages backup ({0}).</value></data>
+  <data name="Socket 消息 SQLite 数据库文件不存在。" xml:space="preserve"><value>The Socket messages SQLite database file does not exist.</value></data>
 </root>

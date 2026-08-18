@@ -1,5 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Themes.Controls;
+using ColorVision.Engine;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,7 @@ namespace ColorVision.Database
 
         private string _description = string.Empty;
         private string _keepMonthsText = "3";
-        private string _status = "打开窗口后会自动统计。";
+        private string _status = EngineLocalization.Get("打开窗口后会自动统计。");
         private bool _isBusy;
         private bool _backupBeforeCleanup;
         private bool _suppressTableStateNotifications;
@@ -127,8 +128,10 @@ namespace ColorVision.Database
         public int SelectedTableCount => Tables.Count(item => item.Exists && item.IsSelected);
         public long ExistingRowCount => Tables.Where(item => item.Exists).Sum(item => item.RowCount);
         public string ExistingSizeDisplay => FormatSize(Tables.Where(item => item.Exists).Sum(item => item.SizeBytes));
-        public string TableSummary => $"{ExistingTableCount:N0} 张表 · {ExistingRowCount:N0} 行 · {ExistingSizeDisplay}";
-        public string SelectionSummary => SelectedTableCount > 0 ? $"已选择 {SelectedTableCount:N0} 张表" : "尚未选择数据表";
+        public string TableSummary => EngineLocalization.Format($"{ExistingTableCount:N0} 张表 · {ExistingRowCount:N0} 行 · {ExistingSizeDisplay}");
+        public string SelectionSummary => SelectedTableCount > 0
+            ? EngineLocalization.Format($"已选择 {SelectedTableCount:N0} 张表")
+            : EngineLocalization.Get("尚未选择数据表");
 
         public async Task RefreshAsync()
         {
@@ -137,7 +140,7 @@ namespace ColorVision.Database
 
             var selectedTableNames = GetSelectedTableNames().ToHashSet(StringComparer.OrdinalIgnoreCase);
             SetBusy(true);
-            SetStatus("正在统计表数据...");
+            SetStatus(EngineLocalization.Get("正在统计表数据..."));
 
             try
             {
@@ -147,13 +150,13 @@ namespace ColorVision.Database
 
                 int existingCount = snapshot.Count(item => item.Exists);
                 SetStatus(existingCount > 0
-                    ? $"已加载 {existingCount:N0} 张可清理数据表。"
-                    : "当前没有找到可清理数据表。");
+                    ? EngineLocalization.Format($"已加载 {existingCount:N0} 张可清理数据表。")
+                    : EngineLocalization.Get("当前没有找到可清理数据表。"));
             }
             catch (Exception ex)
             {
-                SetStatus("加载统计失败。");
-                ShowMessage($"{DisplayName} 统计失败：{ex.Message}", MessageBoxImage.Error);
+                SetStatus(EngineLocalization.Get("加载统计失败。"));
+                ShowMessage(EngineLocalization.Format($"{DisplayName} 统计失败：{ex.Message}"), MessageBoxImage.Error);
             }
             finally
             {
@@ -167,7 +170,7 @@ namespace ColorVision.Database
                 return;
 
             SetBusy(true);
-            SetStatus($"正在创建 {DisplayName} 完整备份...");
+            SetStatus(EngineLocalization.Format($"正在创建 {DisplayName} 完整备份..."));
 
             try
             {
@@ -177,8 +180,8 @@ namespace ColorVision.Database
             }
             catch (Exception ex)
             {
-                SetStatus("完整备份失败。");
-                ShowMessage($"{DisplayName} 完整备份失败：{ex.Message}", MessageBoxImage.Error);
+                SetStatus(EngineLocalization.Get("完整备份失败。"));
+                ShowMessage(EngineLocalization.Format($"{DisplayName} 完整备份失败：{ex.Message}"), MessageBoxImage.Error);
             }
             finally
             {
@@ -190,21 +193,21 @@ namespace ColorVision.Database
         {
             if (!TryGetKeepMonths(out int keepMonths))
             {
-                ShowMessage("保留月数必须是大于 0 的整数。", MessageBoxImage.Warning);
+                ShowMessage(EngineLocalization.Get("保留月数必须是大于 0 的整数。"), MessageBoxImage.Warning);
                 return;
             }
 
             string confirmMessage =
-                $"将保留最近 {keepMonths} 个月的数据，并清理其余历史结果。{Environment.NewLine}{Environment.NewLine}" +
+                EngineLocalization.Format($"将保留最近 {keepMonths} 个月的数据，并清理其余历史结果。") + Environment.NewLine + Environment.NewLine +
                 BuildBackupNotice() + Environment.NewLine + Environment.NewLine +
-                "是否继续？";
+                EngineLocalization.Get("是否继续？");
 
             if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
                 return;
 
             _ = ExecuteCleanupAsync(
                 () => _provider.CleanupHistory(keepMonths),
-                $"正在清理 {DisplayName} 历史数据...");
+                EngineLocalization.Format($"正在清理 {DisplayName} 历史数据..."));
         }
 
         private void ExecuteCleanupSelected()
@@ -215,36 +218,36 @@ namespace ColorVision.Database
             var selectedTableNames = GetSelectedTableNames();
             if (selectedTableNames.Count == 0)
             {
-                ShowMessage("请先选择至少一张要清理的数据表。", MessageBoxImage.Warning);
+                ShowMessage(EngineLocalization.Get("请先选择至少一张要清理的数据表。"), MessageBoxImage.Warning);
                 return;
             }
 
             string confirmMessage =
-                $"将清空以下 {selectedTableNames.Count:N0} 张数据表：{Environment.NewLine}" +
+                EngineLocalization.Format($"将清空以下 {selectedTableNames.Count:N0} 张数据表：") + Environment.NewLine +
                 BuildTableList(selectedTableNames) + Environment.NewLine + Environment.NewLine +
                 BuildBackupNotice() + Environment.NewLine + Environment.NewLine +
-                "此操作不可撤销，是否继续？";
+                EngineLocalization.Get("此操作不可撤销，是否继续？");
 
             if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
                 return;
 
             _ = ExecuteCleanupAsync(
                 () => _selectionProvider.CleanupTables(selectedTableNames),
-                $"正在清空选中的 {selectedTableNames.Count:N0} 张数据表...");
+                EngineLocalization.Format($"正在清空选中的 {selectedTableNames.Count:N0} 张数据表..."));
         }
 
         private void ExecuteCleanupAll()
         {
             var existingTableNames = GetExistingTableNames();
             string confirmMessage =
-                $"危险操作：将清空 {DisplayName} 中全部 {existingTableNames.Count:N0} 张可用数据表。{Environment.NewLine}{Environment.NewLine}" +
+                EngineLocalization.Format($"危险操作：将清空 {DisplayName} 中全部 {existingTableNames.Count:N0} 张可用数据表。") + Environment.NewLine + Environment.NewLine +
                 BuildBackupNotice() + Environment.NewLine + Environment.NewLine +
-                "全部数据清理后无法撤销，是否确定继续？";
+                EngineLocalization.Get("全部数据清理后无法撤销，是否确定继续？");
 
             if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
                 return;
 
-            _ = ExecuteCleanupAsync(_provider.CleanupAll, $"正在清空 {DisplayName} 全部数据...");
+            _ = ExecuteCleanupAsync(_provider.CleanupAll, EngineLocalization.Format($"正在清空 {DisplayName} 全部数据..."));
         }
 
         private void ExecuteMigration()
@@ -254,20 +257,20 @@ namespace ColorVision.Database
 
             if (_backupProvider == null)
             {
-                ShowMessage("该迁移没有可用的完整备份能力，已拒绝执行。", MessageBoxImage.Error);
+                ShowMessage(EngineLocalization.Get("该迁移没有可用的完整备份能力，已拒绝执行。"), MessageBoxImage.Error);
                 return;
             }
 
             string confirmMessage =
                 _migrationProvider.MigrationConfirmationMessage + Environment.NewLine + Environment.NewLine +
                 BuildBackupNotice(forceBackup: true) + Environment.NewLine + Environment.NewLine +
-                "是否继续？";
+                EngineLocalization.Get("是否继续？");
             if (!ConfirmCleanup(confirmMessage, MessageBoxImage.Warning))
                 return;
 
             _ = ExecuteCleanupAsync(
                 _migrationProvider.ExecuteMigration,
-                $"正在执行 {DisplayName} 数据迁移并释放空间...",
+                EngineLocalization.Format($"正在执行 {DisplayName} 数据迁移并释放空间..."),
                 "迁移",
                 forceBackup: true);
         }
@@ -281,6 +284,7 @@ namespace ColorVision.Database
             if (IsBusy)
                 return;
 
+            string localizedOperationName = EngineLocalization.Get(operationName);
             SetBusy(true);
             DatabaseCleanupBackupResult? backup = null;
             DatabaseCleanupExecutionResult? result = null;
@@ -291,7 +295,7 @@ namespace ColorVision.Database
                 {
                     if (_maintenanceProvider != null)
                     {
-                        SetStatus($"正在同一维护操作中创建完整备份并执行{operationName}...");
+                        SetStatus(EngineLocalization.Format($"正在同一维护操作中创建完整备份并执行{localizedOperationName}..."));
                         try
                         {
                             var maintenanceResult = await Task.Run(() => ExecuteBackupAndCleanup(
@@ -303,25 +307,25 @@ namespace ColorVision.Database
                         }
                         catch (Exception ex)
                         {
-                            SetStatus($"完整备份与{operationName}组合操作失败。");
+                            SetStatus(EngineLocalization.Format($"完整备份与{localizedOperationName}组合操作失败。"));
                             ShowMessage(
-                                $"{DisplayName} 完整备份与{operationName}组合操作失败：{ex.Message}{Environment.NewLine}" +
-                                "如备份已经生成，备份文件会保留；请刷新统计后确认当前数据状态。",
+                                EngineLocalization.Format($"{DisplayName} 完整备份与{localizedOperationName}组合操作失败：{ex.Message}") + Environment.NewLine +
+                                EngineLocalization.Get("如备份已经生成，备份文件会保留；请刷新统计后确认当前数据状态。"),
                                 MessageBoxImage.Error);
                             return;
                         }
                     }
                     else
                     {
-                        SetStatus($"正在创建{operationName}前完整备份...");
+                        SetStatus(EngineLocalization.Format($"正在创建{localizedOperationName}前完整备份..."));
                         try
                         {
                             backup = await Task.Run(_backupProvider.CreateBackup).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
-                            SetStatus($"备份失败，未执行{operationName}。");
-                            ShowMessage($"{operationName}前完整备份失败，数据尚未更改：{ex.Message}", MessageBoxImage.Error);
+                            SetStatus(EngineLocalization.Format($"备份失败，未执行{localizedOperationName}。"));
+                            ShowMessage(EngineLocalization.Format($"{localizedOperationName}前完整备份失败，数据尚未更改：{ex.Message}"), MessageBoxImage.Error);
                             return;
                         }
                     }
@@ -336,8 +340,8 @@ namespace ColorVision.Database
                     }
                     catch (Exception ex)
                     {
-                        SetStatus($"{operationName}失败。");
-                        ShowMessage($"{DisplayName} {operationName}失败：{ex.Message}", MessageBoxImage.Error);
+                        SetStatus(EngineLocalization.Format($"{localizedOperationName}失败。"));
+                        ShowMessage(EngineLocalization.Format($"{DisplayName} {localizedOperationName}失败：{ex.Message}"), MessageBoxImage.Error);
                         return;
                     }
                 }
@@ -359,7 +363,7 @@ namespace ColorVision.Database
                     : $"{result.StatusMessage} {backup.StatusMessage}";
                 if (refreshError != null)
                 {
-                    status += " 表统计刷新失败，请稍后手动刷新。";
+                    status += EngineLocalization.Get(" 表统计刷新失败，请稍后手动刷新。");
                 }
                 SetStatus(status);
 
@@ -374,7 +378,7 @@ namespace ColorVision.Database
                 if (refreshError != null)
                 {
                     messageLines.Add(string.Empty);
-                    messageLines.Add($"数据已完成{operationName}，但统计刷新失败：{refreshError.Message}");
+                    messageLines.Add(EngineLocalization.Format($"数据已完成{localizedOperationName}，但统计刷新失败：{refreshError.Message}"));
                 }
 
                 ShowMessage(string.Join(Environment.NewLine, messageLines), refreshError == null ? MessageBoxImage.Information : MessageBoxImage.Warning);
@@ -411,14 +415,14 @@ namespace ColorVision.Database
         private string BuildBackupNotice(bool forceBackup = false)
         {
             if (!SupportsBackup)
-                return "当前数据源不支持自动备份，请确认已有可恢复副本。";
+                return EngineLocalization.Get("当前数据源不支持自动备份，请确认已有可恢复副本。");
 
             if (forceBackup)
-                return "本次迁移会强制先创建完整备份；备份失败时不会执行迁移。";
+                return EngineLocalization.Get("本次迁移会强制先创建完整备份；备份失败时不会执行迁移。");
 
             return BackupBeforeCleanup
-                ? "操作前会先创建完整备份；备份失败时不会继续。"
-                : "本次操作不会自动创建备份。";
+                ? EngineLocalization.Get("操作前会先创建完整备份；备份失败时不会继续。")
+                : EngineLocalization.Get("本次操作不会自动创建备份。");
         }
 
         private IReadOnlyList<string> GetExistingTableNames()

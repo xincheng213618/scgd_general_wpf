@@ -1,4 +1,5 @@
 using ColorVision.SocketProtocol;
+using ColorVision.Engine;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
@@ -18,14 +19,13 @@ namespace ColorVision.Database
         IDatabaseCleanupMigrationProvider
     {
         public string Id => "socketmessages-sqlite";
-        public string DisplayName => "Socket 消息 SQLite";
-        public string Description => $"数据库文件: {SocketMessageManager.SqliteDbPath}";
+        public string DisplayName => EngineLocalization.Get("Socket 消息 SQLite");
+        public string Description => EngineLocalization.Format($"数据库文件: {SocketMessageManager.SqliteDbPath}");
         public int Order => 22;
-        public string MigrationActionName => "迁移并压缩历史消息";
+        public string MigrationActionName => EngineLocalization.Get("迁移并压缩历史消息");
         public string MigrationConfirmationMessage =>
-            "将把 SocketMessage.Content 旧 TEXT 正文迁移为同表 GZip BLOB，生成列表预览，" +
-            "校验一致后清空旧字段并执行 VACUUM 释放空间。" + Environment.NewLine +
-            "迁移后旧版程序不能读取这些历史正文；迁移期间 Socket 消息写入会暂时等待。";
+            EngineLocalization.Get("将把 SocketMessage.Content 旧 TEXT 正文迁移为同表 GZip BLOB，生成列表预览，校验一致后清空旧字段并执行 VACUUM 释放空间。") + Environment.NewLine +
+            EngineLocalization.Get("迁移后旧版程序不能读取这些历史正文；迁移期间 Socket 消息写入会暂时等待。");
 
         public IReadOnlyList<DatabaseCleanupTableInfo> LoadTables()
         {
@@ -62,9 +62,9 @@ namespace ColorVision.Database
                 RefreshLoadedMessages();
                 var result = new DatabaseCleanupExecutionResult
                 {
-                    StatusMessage = $"已保留最近 {keepMonths} 个月的 Socket 消息。"
+                    StatusMessage = EngineLocalization.Format($"已保留最近 {keepMonths} 个月的 Socket 消息。")
                 };
-                result.SummaryLines.Add($"{SocketMessagePayloadStorage.TableName}: 删除 {deletedRows:N0} 行");
+                result.SummaryLines.Add(EngineLocalization.Format($"{SocketMessagePayloadStorage.TableName}: 删除 {deletedRows:N0} 行"));
                 AddVacuumSummary(result, vacuum);
                 return result;
             });
@@ -97,9 +97,9 @@ namespace ColorVision.Database
                 RefreshLoadedMessages();
                 var result = new DatabaseCleanupExecutionResult
                 {
-                    StatusMessage = "已清空 Socket 消息数据库。"
+                    StatusMessage = EngineLocalization.Get("已清空 Socket 消息数据库。")
                 };
-                result.SummaryLines.Add($"{SocketMessagePayloadStorage.TableName}: 删除 {deletedRows:N0} 行");
+                result.SummaryLines.Add(EngineLocalization.Format($"{SocketMessagePayloadStorage.TableName}: 删除 {deletedRows:N0} 行"));
                 AddVacuumSummary(result, vacuum);
                 return result;
             });
@@ -128,7 +128,7 @@ namespace ColorVision.Database
                 catch (Exception ex)
                 {
                     throw new InvalidOperationException(
-                        $"{ex.Message}{Environment.NewLine}完整备份已保留：{backup.FilePath}",
+                        ex.Message + Environment.NewLine + EngineLocalization.Format($"完整备份已保留：{backup.FilePath}"),
                         ex);
                 }
             });
@@ -145,15 +145,14 @@ namespace ColorVision.Database
                 var result = new DatabaseCleanupExecutionResult
                 {
                     StatusMessage = table.MigratedRows == 0 && table.ResidualRowsCleared == 0
-                        ? "未发现待迁移的旧 Socket 正文，已完成数据库压缩整理。"
-                        : $"已迁移 {table.MigratedRows:N0} 条历史 Socket 正文，并释放 SQLite 空闲空间。"
+                        ? EngineLocalization.Get("未发现待迁移的旧 Socket 正文，已完成数据库压缩整理。")
+                        : EngineLocalization.Format($"已迁移 {table.MigratedRows:N0} 条历史 Socket 正文，并释放 SQLite 空闲空间。")
                 };
                 result.SummaryLines.Add(
-                    $"{table.TableName}: 迁移 {table.MigratedRows:N0} 条，清理残留旧字段 {table.ResidualRowsCleared:N0} 条");
+                    EngineLocalization.Format($"{table.TableName}: 迁移 {table.MigratedRows:N0} 条，清理残留旧字段 {table.ResidualRowsCleared:N0} 条"));
                 result.SummaryLines.Add(
-                    $"数据库大小: {SqliteFileMaintenance.FormatSize(report.BeforeBytes)} → " +
-                    SqliteFileMaintenance.FormatSize(report.AfterBytes));
-                result.SummaryLines.Add($"SQLite 完整性检查: {report.IntegrityCheck}");
+                    EngineLocalization.Format($"数据库大小: {SqliteFileMaintenance.FormatSize(report.BeforeBytes)} → {SqliteFileMaintenance.FormatSize(report.AfterBytes)}"));
+                result.SummaryLines.Add(EngineLocalization.Format($"SQLite 完整性检查: {report.IntegrityCheck}"));
                 return result;
             });
         }
@@ -167,7 +166,7 @@ namespace ColorVision.Database
             return new DatabaseCleanupBackupResult
             {
                 StatusMessage =
-                    $"已创建 Socket 消息完整备份（{SqliteFileMaintenance.FormatSize(backup.FileSizeBytes)}）。",
+                    EngineLocalization.Format($"已创建 Socket 消息完整备份（{SqliteFileMaintenance.FormatSize(backup.FileSizeBytes)}）。"),
                 FilePath = backup.FilePath,
             };
         }
@@ -187,7 +186,7 @@ namespace ColorVision.Database
         {
             string databasePath = SocketMessageManager.SqliteDbPath;
             if (!File.Exists(databasePath))
-                throw new FileNotFoundException("Socket 消息 SQLite 数据库文件不存在。", databasePath);
+                throw new FileNotFoundException(EngineLocalization.Get("Socket 消息 SQLite 数据库文件不存在。"), databasePath);
             return databasePath;
         }
 
@@ -196,9 +195,8 @@ namespace ColorVision.Database
             SqliteVacuumResult vacuum)
         {
             result.SummaryLines.Add(
-                $"数据库大小: {SqliteFileMaintenance.FormatSize(vacuum.BeforeBytes)} → " +
-                SqliteFileMaintenance.FormatSize(vacuum.AfterBytes));
-            result.SummaryLines.Add($"SQLite 完整性检查: {vacuum.IntegrityCheck}");
+                EngineLocalization.Format($"数据库大小: {SqliteFileMaintenance.FormatSize(vacuum.BeforeBytes)} → {SqliteFileMaintenance.FormatSize(vacuum.AfterBytes)}"));
+            result.SummaryLines.Add(EngineLocalization.Format($"SQLite 完整性检查: {vacuum.IntegrityCheck}"));
         }
 
         private static void RefreshLoadedMessages()

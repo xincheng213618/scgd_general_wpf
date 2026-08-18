@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Database"
+        xmlns:engine="clr-namespace:ColorVision.Engine"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:DatabaseCleanupWindowViewModel}"
@@ -93,10 +94,10 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel>
-                <TextBlock Text="数据库清理" FontSize="24" FontWeight="SemiBold"/>
+                <TextBlock Text="{engine:EngineLang Key='数据库清理'}" FontSize="24" FontWeight="SemiBold"/>
                 <TextBlock Margin="0,5,0,0"
                            Foreground="{DynamicResource SecondaryTextBrush}"
-                           Text="先确认范围和备份策略，再清理历史数据或指定数据表。"
+                           Text="{engine:EngineLang Key='先确认范围和备份策略，再清理历史数据或指定数据表。'}"
                            TextWrapping="Wrap"/>
             </StackPanel>
 
@@ -105,7 +106,7 @@
                     CornerRadius="12"
                     Background="{DynamicResource GlobalBorderBrush1}"
                     VerticalAlignment="Center">
-                <TextBlock Text="企业数据操作" FontSize="12" FontWeight="SemiBold"/>
+                <TextBlock Text="{engine:EngineLang Key='企业数据操作'}" FontSize="12" FontWeight="SemiBold"/>
             </Border>
         </Grid>
 
@@ -147,7 +148,7 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                                    <Button Content="刷新统计"
+                                    <Button Content="{engine:EngineLang Key='刷新统计'}"
                                             Command="{Binding RefreshCommand}"
                                             Style="{StaticResource CleanupActionButtonStyle}"
                                             Margin="0,0,8,0"/>
@@ -156,7 +157,7 @@
                                             Style="{StaticResource CleanupPrimaryButtonStyle}"
                                             Margin="0,0,8,0"
                                             Visibility="{Binding SupportsMigration, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                    <Button Content="仅创建完整备份"
+                                    <Button Content="{engine:EngineLang Key='仅创建完整备份'}"
                                             Command="{Binding BackupCommand}"
                                             Style="{StaticResource CleanupPrimaryButtonStyle}"
                                             Visibility="{Binding SupportsBackup, Converter={StaticResource BooleanToVisibilityConverter}}"/>
@@ -178,21 +179,21 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <TextBlock Text="清理策略" Style="{StaticResource CleanupSectionTitleStyle}" Margin="0,0,18,0"/>
+                                    <TextBlock Text="{engine:EngineLang Key='清理策略'}" Style="{StaticResource CleanupSectionTitleStyle}" Margin="0,0,18,0"/>
 
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="保留最近" Margin="0,0,8,0"/>
+                                        <TextBlock Text="{engine:EngineLang Key='保留最近'}" Margin="0,0,8,0"/>
                                         <TextBox Width="64"
                                                  Text="{Binding KeepMonthsText, UpdateSourceTrigger=PropertyChanged}"
                                                  TextAlignment="Center"/>
-                                        <TextBlock Text="个月" Margin="8,0,12,0"/>
-                                        <Button Content="清理过期数据"
+                                        <TextBlock Text="{engine:EngineLang Key='个月'}" Margin="8,0,12,0"/>
+                                        <Button Content="{engine:EngineLang Key='清理过期数据'}"
                                                 Command="{Binding CleanupHistoryCommand}"
                                                 Style="{StaticResource CleanupActionButtonStyle}"/>
                                     </StackPanel>
 
                                     <CheckBox Grid.Column="2"
-                                              Content="清理前创建完整备份（推荐）"
+                                              Content="{engine:EngineLang Key='清理前创建完整备份（推荐）'}"
                                               IsChecked="{Binding BackupBeforeCleanup}"
                                               VerticalAlignment="Center"
                                               Margin="18,0,0,0"
@@ -210,17 +211,17 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <TextBlock Text="按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表；完全清理会清空所有可用表。"
+                                        <TextBlock Text="{engine:EngineLang Key='按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表；完全清理会清空所有可用表。'}"
                                                    Style="{StaticResource CleanupSecondaryTextStyle}"
                                                    TextWrapping="Wrap"/>
 
                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="18,0,0,0">
-                                            <Button Content="清空选中表"
+                                            <Button Content="{engine:EngineLang Key='清空选中表'}"
                                                     Command="{Binding CleanupSelectedCommand}"
                                                     Style="{StaticResource CleanupPrimaryButtonStyle}"
                                                     Margin="0,0,8,0"
                                                     Visibility="{Binding SupportsTableCleanup, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                            <Button Content="完全清理全部表"
+                                            <Button Content="{engine:EngineLang Key='完全清理全部表'}"
                                                     Command="{Binding CleanupAllCommand}"
                                                     Style="{StaticResource CleanupDangerButtonStyle}"/>
                                         </StackPanel>
@@ -243,20 +244,20 @@
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="可清理数据表" Style="{StaticResource CleanupSectionTitleStyle}" Margin="0,0,12,0"/>
+                                        <TextBlock Text="{engine:EngineLang Key='可清理数据表'}" Style="{StaticResource CleanupSectionTitleStyle}" Margin="0,0,12,0"/>
                                         <TextBlock Text="{Binding SelectionSummary}" Style="{StaticResource CleanupSecondaryTextStyle}"/>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1"
                                                 Orientation="Horizontal"
                                                 Visibility="{Binding SupportsTableCleanup, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                        <Button Content="全选可用表"
+                                        <Button Content="{engine:EngineLang Key='全选可用表'}"
                                                 Command="{Binding SelectAllCommand}"
                                                 Style="{StaticResource CleanupActionButtonStyle}"
                                                 Padding="10,3"
                                                 MinHeight="26"
                                                 Margin="0,0,6,0"/>
-                                        <Button Content="清除选择"
+                                        <Button Content="{engine:EngineLang Key='清除选择'}"
                                                 Command="{Binding ClearSelectionCommand}"
                                                 Style="{StaticResource CleanupActionButtonStyle}"
                                                 Padding="10,3"
@@ -280,7 +281,7 @@
                                           EnableRowVirtualization="True"
                                           ItemsSource="{Binding Tables}">
                                     <DataGrid.Columns>
-                                        <DataGridTemplateColumn Header="选择" Width="64" CanUserSort="False">
+                                        <DataGridTemplateColumn Header="{engine:EngineLang Key='选择'}" Width="64" CanUserSort="False">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <CheckBox HorizontalAlignment="Center"
@@ -308,22 +309,22 @@
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
-                                        <DataGridTextColumn Header="表名"
+                                        <DataGridTextColumn Header="{engine:EngineLang Key='表名'}"
                                                             Binding="{Binding TableName}"
                                                             SortMemberPath="TableName"
                                                             IsReadOnly="True"
                                                             Width="*"/>
-                                        <DataGridTextColumn Header="状态"
+                                        <DataGridTextColumn Header="{engine:EngineLang Key='状态'}"
                                                             Binding="{Binding ExistsDisplay}"
                                                             SortMemberPath="Exists"
                                                             IsReadOnly="True"
                                                             Width="95"/>
-                                        <DataGridTextColumn Header="行数"
+                                        <DataGridTextColumn Header="{engine:EngineLang Key='行数'}"
                                                             Binding="{Binding RowCountDisplay}"
                                                             SortMemberPath="RowCount"
                                                             IsReadOnly="True"
                                                             Width="140"/>
-                                        <DataGridTextColumn Header="占用空间"
+                                        <DataGridTextColumn Header="{engine:EngineLang Key='占用空间'}"
                                                             Binding="{Binding SizeDisplay}"
                                                             SortMemberPath="SizeBytes"
                                                             IsReadOnly="True"

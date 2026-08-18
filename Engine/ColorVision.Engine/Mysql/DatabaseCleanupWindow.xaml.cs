@@ -8,7 +8,7 @@ namespace ColorVision.Database
     {
         public override string OwnerGuid => nameof(ExportMySqlMenuItem);
         public override string GuidId => nameof(ExportDatabaseCleanupTool);
-        public override string Header => "数据清理";
+        public override string Header => ColorVision.Engine.Properties.Resources.DataCleanup;
         public override int Order => 3;
 
         public override void Execute()
