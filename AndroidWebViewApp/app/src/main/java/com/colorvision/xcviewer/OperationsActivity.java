@@ -147,6 +147,8 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean dashboardRestartCapabilityAvailable;
     private boolean dashboardRemoteHostFresh;
     private boolean dashboardSummaryLoaded;
+    private String cachedAlertPrimarySource = "";
+    private String cachedAlertSignature = "";
     private boolean dashboardVisible;
     private volatile boolean remoteDashboard;
     private boolean showingDashboardSummary;
@@ -510,6 +512,8 @@ public class OperationsActivity extends AppCompatActivity {
         if (OperationsDestinationState.OVERVIEW.equals(parent)) {
             returnToTriageOnBack = false;
             returnToToolboxOnBack = false;
+            AppScreenMotion.beginContentTransition(
+                    dashboardContent, AppScreenMotion.DIRECTION_BACKWARD);
             showCurrentDashboard();
             return true;
         }
@@ -1438,6 +1442,8 @@ public class OperationsActivity extends AppCompatActivity {
         remoteDashboard = false;
         connectionHeartbeatInFlight = false;
         dashboardSummaryLoaded = false;
+        cachedAlertPrimarySource = "";
+        cachedAlertSignature = "";
         lastSuccessfulDashboardUpdateLabel = "";
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         clearDashboardLiveStatusReferences();
@@ -1650,15 +1656,15 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardApplicationStatus = dashboardStatusRow("应用",
                 v -> showDashboardApplicationDetails());
         dashboardFlowStatus = dashboardStatusRow("检测",
-                v -> loadCapability("/ops/v1/flow/runtime"));
+                v -> showDashboardCapabilityDetails("/ops/v1/flow/runtime"));
         dashboardDeviceStatus = dashboardStatusRow("设备",
                 v -> showDeviceHealthOverview());
         dashboardMessageStatus = dashboardStatusRow("消息",
-                v -> loadCapability("/ops/v1/messaging/health"));
+                v -> showDashboardCapabilityDetails("/ops/v1/messaging/health"));
         dashboardAlertStatus = dashboardStatusRow("告警",
-                v -> loadCapability("/ops/v1/alerts"));
+                v -> showDashboardCapabilityDetails("/ops/v1/alerts"));
         dashboardPerformanceStatus = dashboardStatusRow("性能",
-                v -> loadCapability("/ops/v1/diagnostics/performance"));
+                v -> showDashboardCapabilityDetails("/ops/v1/diagnostics/performance"));
         dashboardRecoveryStatus = dashboardStatusRow("恢复", v -> showLiveMonitor());
         dashboardStatusCaption = addDashboardStatusCard(
                 OperationsDashboardStatusFormatter.sectionCaption(false, true),
@@ -3419,7 +3425,7 @@ public class OperationsActivity extends AppCompatActivity {
         } else if ("/ops/v1/devices/health".equals(directPath)) {
             showDeviceHealthOverview();
         } else {
-            loadCapability(directPath);
+            showDashboardCapabilityDetails(directPath);
         }
     }
 
@@ -3429,6 +3435,7 @@ public class OperationsActivity extends AppCompatActivity {
                 JSONObject response = client.get("/ops/v1/monitor");
                 JSONObject snapshot = response.optJSONObject("data");
                 if (snapshot != null) {
+                    enrichMonitorAlertSource(snapshot, true);
                     runOnUiThread(() -> {
                         updateDashboardLiveStatus(snapshot);
                         markDashboardFreshnessUpdated(
@@ -3449,6 +3456,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (dashboardFlowStatus == null) {
             return;
         }
+        enrichMonitorAlertSource(snapshot, false);
         dashboardSummaryLoaded = true;
         JSONObject flow = snapshot.optJSONObject("flow");
         JSONObject devices = snapshot.optJSONObject("devices");
@@ -3489,7 +3497,8 @@ public class OperationsActivity extends AppCompatActivity {
                 alerts != null,
                 alerts == null ? 0 : alerts.optInt("warningCount", 0),
                 alerts == null ? 0 : alerts.optInt("errorCount", 0),
-                alerts == null ? 0 : alerts.optInt("criticalCount", 0)));
+                alerts == null ? 0 : alerts.optInt("criticalCount", 0),
+                alerts == null ? "" : alerts.optString("primarySource", "")));
         updateDashboardStatus(dashboardPerformanceStatus, OperationsDashboardStatusFormatter.performance(
                 performance != null,
                 performance == null ? 0 : performance.optDouble("cpuPercent", 0),
@@ -4878,6 +4887,7 @@ public class OperationsActivity extends AppCompatActivity {
                 if (snapshot == null) {
                     throw new IllegalStateException("incomplete_live_monitor_response");
                 }
+                enrichMonitorAlertSource(snapshot, liveMonitorTrend.size() == 0);
                 runOnUiThread(() -> {
                     if (requestGeneration != liveMonitorGeneration) {
                         return;
@@ -5309,12 +5319,75 @@ public class OperationsActivity extends AppCompatActivity {
         loadCapability("/ops/v1/snapshot", false);
     }
 
+    private void enrichMonitorAlertSource(JSONObject snapshot, boolean allowDetailFallback) {
+        if (snapshot == null) {
+            return;
+        }
+        JSONObject alerts = snapshot.optJSONObject("alerts");
+        if (alerts == null) {
+            return;
+        }
+        int alertCount = alerts.optInt("warningCount", 0)
+                + alerts.optInt("errorCount", 0)
+                + alerts.optInt("criticalCount", 0);
+        if (alertCount <= 0) {
+            cachedAlertPrimarySource = "";
+            cachedAlertSignature = "";
+            return;
+        }
+        String signature = alerts.optInt("criticalCount", 0)
+                + "|" + alerts.optInt("errorCount", 0)
+                + "|" + alerts.optInt("warningCount", 0);
+        String source = OperationsAlertPresentation.safeSource(
+                alerts.optString("primarySource", ""));
+        if (source.isEmpty() && signature.equals(cachedAlertSignature)) {
+            source = cachedAlertPrimarySource;
+        }
+        if (source.isEmpty() && allowDetailFallback && client != null) {
+            try {
+                source = OperationsAlertPresentation.primarySourceFromDetails(
+                        alerts, client.get("/ops/v1/alerts"));
+            } catch (Exception ignored) {
+                source = "";
+            }
+        }
+        if (!source.isEmpty()) {
+            try {
+                alerts.put("primarySource", source);
+                cachedAlertPrimarySource = source;
+                cachedAlertSignature = signature;
+            } catch (org.json.JSONException ignored) {
+                cachedAlertPrimarySource = "";
+                cachedAlertSignature = "";
+            }
+        } else if (!signature.equals(cachedAlertSignature)) {
+            cachedAlertPrimarySource = "";
+            cachedAlertSignature = "";
+        }
+    }
+
     private void showDashboardApplicationDetails() {
+        AppScreenMotion.beginContentTransition(
+                dashboardContent, AppScreenMotion.DIRECTION_FORWARD);
+        scrollDashboardToTop();
         title.setTitle("应用概况");
         actions.removeAllViews();
         addDashboardWideAction(dashboardTonalButton(
-                "刷新应用概况", v -> showDashboardApplicationDetails()));
+                "刷新应用概况", v -> loadCapability("/ops/v1/snapshot", true)));
         loadCapability("/ops/v1/snapshot", true);
+    }
+
+    private void showDashboardCapabilityDetails(String path) {
+        OperationsDashboardDetailPresentation.Item presentation =
+                OperationsDashboardDetailPresentation.forPath(path);
+        AppScreenMotion.beginContentTransition(
+                dashboardContent, AppScreenMotion.DIRECTION_FORWARD);
+        scrollDashboardToTop();
+        title.setTitle(presentation.title);
+        actions.removeAllViews();
+        addDashboardWideAction(dashboardTonalButton(
+                presentation.refreshLabel, v -> loadCapability(path)));
+        loadCapability(path);
     }
 
     private void loadCapability(String path) {

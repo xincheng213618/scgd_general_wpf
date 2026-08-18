@@ -139,20 +139,47 @@ final class OperationsDashboardStatusFormatter {
         return new Item("消息", "已连接", TONE_DEFAULT);
     }
 
-    static Item alerts(boolean available, int warningCount, int errorCount, int criticalCount) {
+    static Item alerts(boolean available, int warningCount, int errorCount, int criticalCount,
+            String primarySource) {
         if (!available) {
             return unavailable("告警");
         }
         if (criticalCount > 0) {
-            return new Item("告警", "严重 " + criticalCount, TONE_ATTENTION);
+            return new Item("告警", alertSummary(primarySource, "严重", criticalCount),
+                    TONE_ATTENTION);
         }
         if (errorCount > 0) {
-            return new Item("告警", "错误 " + errorCount, TONE_ATTENTION);
+            return new Item("告警", alertSummary(primarySource, "错误", errorCount),
+                    TONE_ATTENTION);
         }
         if (warningCount > 0) {
-            return new Item("告警", "警告 " + warningCount, TONE_ATTENTION);
+            return new Item("告警", alertSummary(primarySource, "警告", warningCount),
+                    TONE_ATTENTION);
         }
         return new Item("告警", "暂无异常", TONE_DEFAULT);
+    }
+
+    static String alertActionSummary(
+            int warningCount, int errorCount, int criticalCount, String primarySource) {
+        String source = OperationsAlertPresentation.safeSource(primarySource);
+        if (criticalCount > 0) {
+            return source.isEmpty()
+                    ? "严重告警 " + criticalCount + " 个"
+                    : source + " · 严重 " + criticalCount;
+        }
+        if (errorCount > 0) {
+            return source.isEmpty()
+                    ? "错误事件 " + errorCount + " 个"
+                    : source + " · 错误 " + errorCount;
+        }
+        return source.isEmpty()
+                ? "警告 " + warningCount + " 个"
+                : source + " · 警告 " + warningCount;
+    }
+
+    private static String alertSummary(String primarySource, String severity, int count) {
+        String source = OperationsAlertPresentation.safeSource(primarySource);
+        return source.isEmpty() ? severity + " " + count : source + " · " + severity + " " + count;
     }
 
     static Item performance(boolean available, double cpuPercent, String uiState) {

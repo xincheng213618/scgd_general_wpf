@@ -18,7 +18,7 @@ public class OperationsDashboardStatusFormatterTest {
         assertStatus("消息", "订阅 3 / 5", OperationsDashboardStatusFormatter.TONE_ATTENTION,
                 OperationsDashboardStatusFormatter.messageChannel(true, true, false, 3, 5));
         assertStatus("告警", "严重 1", OperationsDashboardStatusFormatter.TONE_ATTENTION,
-                OperationsDashboardStatusFormatter.alerts(true, 4, 2, 1));
+                OperationsDashboardStatusFormatter.alerts(true, 4, 2, 1, ""));
         assertStatus("性能", "CPU 13% · 无响应",
                 OperationsDashboardStatusFormatter.TONE_ATTENTION,
                 OperationsDashboardStatusFormatter.performance(true, 12.6, "unresponsive"));
@@ -39,7 +39,7 @@ public class OperationsDashboardStatusFormatterTest {
         assertStatus("消息", "已连接", OperationsDashboardStatusFormatter.TONE_DEFAULT,
                 OperationsDashboardStatusFormatter.messageChannel(true, true, true, 5, 5));
         assertStatus("告警", "暂无异常", OperationsDashboardStatusFormatter.TONE_DEFAULT,
-                OperationsDashboardStatusFormatter.alerts(true, 0, 0, 0));
+                OperationsDashboardStatusFormatter.alerts(true, 0, 0, 0, ""));
         assertStatus("恢复", "Windows 后备", OperationsDashboardStatusFormatter.TONE_DEFAULT,
                 OperationsDashboardStatusFormatter.recovery(true, true, true, false));
     }
@@ -56,9 +56,26 @@ public class OperationsDashboardStatusFormatterTest {
         assertStatus("性能", "CPU 13% · 界面未知", OperationsDashboardStatusFormatter.TONE_MUTED,
                 OperationsDashboardStatusFormatter.performance(true, 12.6, "unavailable"));
         assertStatus("告警", "暂不可用", OperationsDashboardStatusFormatter.TONE_MUTED,
-                OperationsDashboardStatusFormatter.alerts(false, 0, 0, 0));
+                OperationsDashboardStatusFormatter.alerts(false, 0, 0, 0, ""));
         assertStatus("恢复", "暂不可用", OperationsDashboardStatusFormatter.TONE_MUTED,
                 OperationsDashboardStatusFormatter.recovery(false, false, false, false));
+    }
+
+    @Test
+    public void alertSourceIsSpecificButRestrictedToSafeCategories() {
+        assertStatus("告警", "安全运维 · 警告 2",
+                OperationsDashboardStatusFormatter.TONE_ATTENTION,
+                OperationsDashboardStatusFormatter.alerts(
+                        true, 2, 0, 0, "安全运维"));
+        assertStatus("告警", "警告 2", OperationsDashboardStatusFormatter.TONE_ATTENTION,
+                OperationsDashboardStatusFormatter.alerts(
+                        true, 2, 0, 0, "private-plugin-name"));
+        assertEquals("安全运维 · 警告 2",
+                OperationsDashboardStatusFormatter.alertActionSummary(
+                        2, 0, 0, "安全运维"));
+        assertEquals("警告 2 个",
+                OperationsDashboardStatusFormatter.alertActionSummary(
+                        2, 0, 0, "private-plugin-name"));
     }
 
     @Test

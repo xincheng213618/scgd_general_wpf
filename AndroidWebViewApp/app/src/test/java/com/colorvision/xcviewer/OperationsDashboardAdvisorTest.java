@@ -51,6 +51,15 @@ public class OperationsDashboardAdvisorTest {
     }
 
     @Test
+    public void warningRecommendationNamesTheSafePrimarySource() throws Exception {
+        JSONObject monitor = monitor("ready", false, 0, 0, 0, false, 2);
+        monitor.getJSONObject("alerts").put("primarySource", "安全运维");
+
+        assertRecommendation(monitor, "安全运维 · 警告 2 · 查看告警",
+                OperationsDashboardAdvisor.ACTION_ALERTS);
+    }
+
+    @Test
     public void deviceRecommendationNamesAffectedTypesAndReason() throws Exception {
         JSONObject monitor = monitor("ready", false, 0, 0, 2, false, 0);
         monitor.put("devices", new JSONObject("{"

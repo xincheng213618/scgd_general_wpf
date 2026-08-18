@@ -6,7 +6,7 @@ namespace ColorVision.UI.Tests
     public sealed class OperationsLiveMonitorSnapshotTests
     {
         [Fact]
-        public void FactoryReturnsOnlyAggregateAlertCountsAndSafeRuntimeFields()
+        public void FactoryReturnsSafeAlertSummaryAndRuntimeFields()
         {
             DateTimeOffset capturedAt = new(2026, 8, 12, 8, 0, 0, TimeSpan.Zero);
             OperationsLiveMonitorSnapshot snapshot = OperationsLiveMonitorSnapshotFactory.Create(
@@ -35,7 +35,7 @@ namespace ColorVision.UI.Tests
                     {
                         AlertId = "private-alert-id",
                         Severity = "warning",
-                        Source = "application",
+                        Source = "应用",
                         Summary = "private log body",
                         OccurredAt = capturedAt.AddMinutes(-2),
                     },
@@ -43,7 +43,7 @@ namespace ColorVision.UI.Tests
                     {
                         AlertId = "private-alert-id-2",
                         Severity = "error",
-                        Source = "service",
+                        Source = "服务",
                         Summary = "another private log body",
                         OccurredAt = capturedAt.AddMinutes(-1),
                     },
@@ -69,6 +69,7 @@ namespace ColorVision.UI.Tests
             Assert.Equal(2, snapshot.Alerts.Count);
             Assert.Equal(1, snapshot.Alerts.WarningCount);
             Assert.Equal(1, snapshot.Alerts.ErrorCount);
+            Assert.Equal("服务", snapshot.Alerts.PrimarySource);
             Assert.Equal(capturedAt.AddMinutes(-1), snapshot.Alerts.LatestOccurredAt);
             Assert.Equal(10, snapshot.SuggestedRefreshSeconds);
             Assert.Equal(2, snapshot.Devices.TotalCount);
@@ -86,6 +87,27 @@ namespace ColorVision.UI.Tests
             Assert.DoesNotContain("flowName", json, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("processId", json, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("deviceId", json, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void FactoryRejectsUnrecognizedAlertSourcesFromMonitorSummary()
+        {
+            OperationsLiveMonitorSnapshot snapshot = OperationsLiveMonitorSnapshotFactory.Create(
+                OperationsFlowRuntimeStatus.CreateUnavailable(),
+                new OperationsRuntimePerformanceSnapshot(),
+                [new OperationsAlert
+                {
+                    Severity = "critical",
+                    Source = "private-plugin-name",
+                    Summary = "private body",
+                    OccurredAt = DateTimeOffset.UtcNow,
+                }],
+                OperationsDeviceHealthSnapshot.CreateUnavailable());
+
+            Assert.Equal(string.Empty, snapshot.Alerts.PrimarySource);
+            string json = JsonSerializer.Serialize(snapshot);
+            Assert.DoesNotContain("private-plugin-name", json, StringComparison.Ordinal);
+            Assert.DoesNotContain("private body", json, StringComparison.Ordinal);
         }
     }
 }

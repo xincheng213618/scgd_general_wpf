@@ -76,7 +76,8 @@ final class OperationsLiveMonitorPresentation {
                 alerts != null,
                 count(alerts, "warningCount"),
                 count(alerts, "errorCount"),
-                count(alerts, "criticalCount")));
+                count(alerts, "criticalCount"),
+                alerts == null ? "" : alerts.optString("primarySource", "")));
 
         JSONObject recovery = child(snapshot, "applicationRecovery");
         statuses.add(OperationsDashboardStatusFormatter.recovery(

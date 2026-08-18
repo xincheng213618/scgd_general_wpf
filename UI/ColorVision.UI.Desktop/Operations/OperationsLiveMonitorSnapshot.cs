@@ -10,6 +10,8 @@ namespace ColorVision.UI.Desktop.Operations
 
         public int CriticalCount { get; init; }
 
+        public string PrimarySource { get; init; } = string.Empty;
+
         public DateTimeOffset? LatestOccurredAt { get; init; }
     }
 
@@ -46,7 +48,7 @@ namespace ColorVision.UI.Desktop.Operations
         public OperationsApplicationRecoveryStatus ApplicationRecovery { get; init; } = new();
 
         public string PrivacyNotice { get; init; } =
-            "This live snapshot contains aggregate flow state, process counters, UI latency, normalized message-channel, fixed local MQTT service, and device-category state, and alert counts only. It excludes flow, template, batch, node, parameter, result, process identity, host, user, endpoint, device identity, topic, payload, service identity, path, account, arguments, configuration, credentials, raw device status, log text, and inspection data.";
+            "This live snapshot contains aggregate flow state, process counters, UI latency, normalized message-channel, fixed local MQTT service, device-category state, alert counts, and one allowlisted alert source only. It excludes flow, template, batch, node, parameter, result, process identity, host, user, endpoint, device identity, topic, payload, service identity, path, account, arguments, configuration, credentials, raw device status, log text, and inspection data.";
     }
 
     public static class OperationsLiveMonitorSnapshotFactory
@@ -65,6 +67,10 @@ namespace ColorVision.UI.Desktop.Operations
             ArgumentNullException.ThrowIfNull(performance);
             ArgumentNullException.ThrowIfNull(alerts);
             ArgumentNullException.ThrowIfNull(devices);
+            OperationsAlert? primaryAlert = alerts
+                .OrderByDescending(item => AlertSeverityRank(item.Severity))
+                .ThenByDescending(item => item.OccurredAt)
+                .FirstOrDefault();
 
             return new OperationsLiveMonitorSnapshot
             {
@@ -81,12 +87,34 @@ namespace ColorVision.UI.Desktop.Operations
                     WarningCount = alerts.Count(item => item.Severity == "warning"),
                     ErrorCount = alerts.Count(item => item.Severity == "error"),
                     CriticalCount = alerts.Count(item => item.Severity == "critical"),
+                    PrimarySource = SafeAlertSource(primaryAlert?.Source),
                     LatestOccurredAt = alerts.Count == 0
                         ? null
                         : alerts.Max(item => item.OccurredAt),
                 },
             };
         }
+
+        private static int AlertSeverityRank(string? severity) => severity switch
+        {
+            "critical" => 3,
+            "error" => 2,
+            "warning" => 1,
+            _ => 0,
+        };
+
+        private static string SafeAlertSource(string? source) => source switch
+        {
+            "安全运维" => source,
+            "消息服务" => source,
+            "设备与图像" => source,
+            "流程" => source,
+            "更新与下载" => source,
+            "Copilot" => source,
+            "服务" => source,
+            "应用" => source,
+            _ => string.Empty,
+        };
 
         private static OperationsRelayMqttServiceSnapshot CreateMqttServiceSnapshot(
             OperationsServiceHealthReport? serviceHealth)

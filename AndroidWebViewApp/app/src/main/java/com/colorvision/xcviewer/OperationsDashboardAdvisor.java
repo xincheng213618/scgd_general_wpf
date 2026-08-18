@@ -55,6 +55,11 @@ final class OperationsDashboardAdvisor {
         boolean messageAttention = messageChannel != null
                 && messageChannel.optBoolean("available", false)
                 && messageChannel.optBoolean("attentionRequired", false);
+        String alertActionSummary = OperationsDashboardStatusFormatter.alertActionSummary(
+                warningCount,
+                errorCount,
+                criticalCount,
+                alerts == null ? "" : alerts.optString("primarySource", ""));
 
         String attentionKey = OperationsWatchPolicy.attentionKey(
                 uiState, criticalCount, errorCount, deviceAttentionCount, messageAttention);
@@ -62,7 +67,7 @@ final class OperationsDashboardAdvisor {
             case OperationsWatchPolicy.ATTENTION_UI_UNRESPONSIVE:
                 return new Recommendation("主界面无响应 · 查看性能", ACTION_PERFORMANCE);
             case OperationsWatchPolicy.ATTENTION_CRITICAL:
-                return new Recommendation("严重告警 " + criticalCount + " 个 · 查看告警", ACTION_ALERTS);
+                return new Recommendation(alertActionSummary + " · 查看告警", ACTION_ALERTS);
             case OperationsWatchPolicy.ATTENTION_MESSAGE_CHANNEL:
                 return new Recommendation("消息通道需处置 · 查看消息", ACTION_MESSAGE);
             case OperationsWatchPolicy.ATTENTION_DEVICES:
@@ -70,7 +75,7 @@ final class OperationsDashboardAdvisor {
                         deviceHealth.compactAttentionActionSummary() + " · 查看设备",
                         ACTION_DEVICES);
             case OperationsWatchPolicy.ATTENTION_ERRORS:
-                return new Recommendation("错误事件 " + errorCount + " 个 · 查看告警", ACTION_ALERTS);
+                return new Recommendation(alertActionSummary + " · 查看告警", ACTION_ALERTS);
             default:
                 break;
         }
@@ -79,7 +84,7 @@ final class OperationsDashboardAdvisor {
             return new Recommendation("主界面响应偏慢 · 查看性能", ACTION_PERFORMANCE);
         }
         if (warningCount > 0) {
-            return new Recommendation("警告 " + warningCount + " 个 · 查看告警", ACTION_ALERTS);
+            return new Recommendation(alertActionSummary + " · 查看告警", ACTION_ALERTS);
         }
         if (!isAvailable(flow) || !isAvailable(devices) || !isAvailable(messageChannel)
                 || performance == null || alerts == null) {
