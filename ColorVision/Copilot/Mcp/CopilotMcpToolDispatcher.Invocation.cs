@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,8 +57,20 @@ namespace ColorVision.Copilot.Mcp
 
             try
             {
-                if (_toolDefinitionsByName.TryGetValue(normalizedToolName, out var definition)
-                    && !CopilotToolInputContractValidator.TryValidate(
+                if (!_toolDefinitionsByName.TryGetValue(normalizedToolName, out var definition))
+                {
+                    var missingResult = CopilotMcpToolCallResult.Fail(
+                        "tool_not_found",
+                        $"Unknown MCP tool: {normalizedToolName}");
+                    CopilotMcpAuditLogger.ToolCallCompleted(
+                        normalizedToolName,
+                        false,
+                        stopwatch.Elapsed,
+                        missingResult.ErrorCode);
+                    return missingResult;
+                }
+
+                if (!CopilotToolInputContractValidator.TryValidate(
                         definition.Descriptor.InputSchema,
                         arguments,
                         out var argumentError))
@@ -76,7 +87,7 @@ namespace ColorVision.Copilot.Mcp
                     return invalidResult;
                 }
 
-                var result = await _router.DispatchAsync(normalizedToolName, arguments, executionScope, cancellationToken);
+                var result = await definition.Handler(arguments, executionScope, cancellationToken);
 
                 CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, result.Success, stopwatch.Elapsed, result.Success ? "OK" : FirstNonEmpty(result.ErrorCode, "tool_call_failed"));
                 return result;
@@ -204,26 +215,5 @@ namespace ColorVision.Copilot.Mcp
             };
         }
 
-        private static CopilotMcpToolRouter CreateRouter(
-            IEnumerable<CopilotMcpToolDefinition> definitions)
-        {
-            var router = new CopilotMcpToolRouter();
-            foreach (var definition in definitions)
-                router.RegisterScoped(definition.Descriptor.Name, definition.Handler);
-            return router;
-        }
-
-        private void ValidateRouterMatchesDescriptors()
-        {
-            var descriptorNames = ListTools().Select(tool => NormalizeToolName(tool.Name)).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var routeNames = _router.ToolNames.Select(NormalizeToolName).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            if (descriptorNames.SetEquals(routeNames))
-                return;
-
-            var missingRoutes = descriptorNames.Except(routeNames, StringComparer.OrdinalIgnoreCase);
-            var missingDescriptors = routeNames.Except(descriptorNames, StringComparer.OrdinalIgnoreCase);
-            throw new InvalidOperationException(
-                $"MCP tool descriptors and handlers are out of sync. Missing routes: {string.Join(", ", missingRoutes)}. Missing descriptors: {string.Join(", ", missingDescriptors)}.");
-        }
     }
 }

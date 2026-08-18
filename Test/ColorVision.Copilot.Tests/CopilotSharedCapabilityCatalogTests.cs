@@ -200,6 +200,39 @@ public sealed class CopilotSharedCapabilityCatalogTests
     }
 
     [Fact]
+    public async Task McpRuntimeDispatchesThePublishedToolDefinition()
+    {
+        var dispatcher = new CopilotMcpToolDispatcher();
+        var publishedName = dispatcher.ListTools()
+            .Single(tool => string.Equals(
+                tool.Name,
+                "get_server_status",
+                StringComparison.OrdinalIgnoreCase))
+            .Name;
+
+        var result = await dispatcher.CallAsync(
+            publishedName,
+            null,
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.NotEmpty(result.Text);
+    }
+
+    [Fact]
+    public async Task McpRuntimeRejectsNamesWithoutPublishedDefinitions()
+    {
+        var result = await new CopilotMcpToolDispatcher().CallAsync(
+            "not_a_published_tool",
+            null,
+            CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal("tool_not_found", result.ErrorCode);
+        Assert.Equal(CopilotToolFailureKind.NotFound, result.FailureKind);
+    }
+
+    [Fact]
     public async Task McpInputContractFailureDoesNotReachApplicationHandler()
     {
         var handlerInvoked = false;

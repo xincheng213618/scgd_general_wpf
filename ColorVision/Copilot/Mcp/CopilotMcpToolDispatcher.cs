@@ -57,7 +57,6 @@ namespace ColorVision.Copilot.Mcp
         private readonly CopilotMcpToolEnvironment _environment;
         private readonly IReadOnlyList<CopilotMcpToolDefinition> _toolDefinitions;
         private readonly IReadOnlyDictionary<string, CopilotMcpToolDefinition> _toolDefinitionsByName;
-        private readonly CopilotMcpToolRouter _router;
 
         private readonly record struct CopilotPanelTarget(string Alias, string TargetId);
 
@@ -86,8 +85,6 @@ namespace ColorVision.Copilot.Mcp
             _toolDefinitionsByName = _toolDefinitions.ToDictionary(
                 definition => definition.Descriptor.Name,
                 StringComparer.OrdinalIgnoreCase);
-            _router = CreateRouter(_toolDefinitions);
-            ValidateRouterMatchesDescriptors();
             CopilotSharedCapabilityCatalog.ValidateMcpSurface(ListTools());
         }
 
