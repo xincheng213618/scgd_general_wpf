@@ -49,6 +49,26 @@ final class OperationsDashboardStatusFormatter {
         return new Item(title, "暂不可用", TONE_MUTED);
     }
 
+    static Item application(
+            boolean available,
+            String version,
+            boolean windowExists,
+            boolean windowVisible,
+            String windowState,
+            double memoryMb) {
+        if (!available) {
+            return unavailable("应用");
+        }
+        String safeVersion = version == null || version.trim().isEmpty()
+                ? "版本未知" : version.trim();
+        String window = !windowExists ? "窗口不可用"
+                : windowVisible ? "窗口可见"
+                : "Minimized".equalsIgnoreCase(windowState) ? "已最小化" : "窗口未显示";
+        String memory = memoryMb > 0 ? " · " + Math.round(memoryMb) + " MB" : "";
+        return new Item("应用", safeVersion + " · " + window + memory,
+                windowExists ? TONE_DEFAULT : TONE_ATTENTION);
+    }
+
     static Item flow(boolean available, boolean active, String phase) {
         if (!available) {
             return unavailable("检测");

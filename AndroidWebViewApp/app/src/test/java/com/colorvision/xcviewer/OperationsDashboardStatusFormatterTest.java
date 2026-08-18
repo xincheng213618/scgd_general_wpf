@@ -26,6 +26,10 @@ public class OperationsDashboardStatusFormatterTest {
 
     @Test
     public void healthyStatesStayNeutralAndShort() {
+        assertStatus("应用", "1.4.12.56 · 窗口可见 · 472 MB",
+                OperationsDashboardStatusFormatter.TONE_DEFAULT,
+                OperationsDashboardStatusFormatter.application(
+                        true, "1.4.12.56", true, true, "Normal", 471.8));
         assertStatus("检测", "空闲", OperationsDashboardStatusFormatter.TONE_DEFAULT,
                 OperationsDashboardStatusFormatter.flow(true, false, "idle"));
         assertStatus("设备", "就绪 4 / 4", OperationsDashboardStatusFormatter.TONE_DEFAULT,
@@ -40,6 +44,13 @@ public class OperationsDashboardStatusFormatterTest {
 
     @Test
     public void missingUiResponsivenessIsNotReportedAsHealthy() {
+        assertStatus("应用", "1.4.12.56 · 窗口不可用",
+                OperationsDashboardStatusFormatter.TONE_ATTENTION,
+                OperationsDashboardStatusFormatter.application(
+                        true, "1.4.12.56", false, false, "", 0));
+        assertStatus("应用", "暂不可用", OperationsDashboardStatusFormatter.TONE_MUTED,
+                OperationsDashboardStatusFormatter.application(
+                        false, "", false, false, "", 0));
         assertStatus("性能", "CPU 13% · 界面未知", OperationsDashboardStatusFormatter.TONE_MUTED,
                 OperationsDashboardStatusFormatter.performance(true, 12.6, "unavailable"));
         assertStatus("告警", "暂不可用", OperationsDashboardStatusFormatter.TONE_MUTED,

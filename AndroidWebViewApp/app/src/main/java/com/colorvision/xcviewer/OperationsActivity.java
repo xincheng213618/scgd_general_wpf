@@ -127,6 +127,7 @@ public class OperationsActivity extends AppCompatActivity {
     private ScrollView dashboardScroll;
     private LinearLayout dashboardContent;
     private LinearLayout actions;
+    private DashboardStatusRow dashboardApplicationStatus;
     private DashboardStatusRow dashboardFlowStatus;
     private DashboardStatusRow dashboardDeviceStatus;
     private DashboardStatusRow dashboardMessageStatus;
@@ -1451,10 +1452,7 @@ public class OperationsActivity extends AppCompatActivity {
                 returnToToolboxOnBack);
         AppScreenMotion.beginContentTransition(dashboardContent, direction);
         currentDestination = normalized;
-        if (detailsCard != null) {
-            detailsCard.setVisibility(OperationsDestinationState.TRIAGE.equals(normalized)
-                    ? View.GONE : View.VISIBLE);
-        }
+        refreshDetailsCardVisibility();
         syncBottomNavigation();
         refreshOperationsHeaderNavigation();
     }
@@ -1466,7 +1464,19 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void setShowingDashboardSummary(boolean showing) {
         showingDashboardSummary = showing;
+        refreshDetailsCardVisibility();
         refreshOperationsHeaderNavigation();
+    }
+
+    private void refreshDetailsCardVisibility() {
+        if (detailsCard == null) {
+            return;
+        }
+        boolean hideForTriage = OperationsDestinationState.TRIAGE.equals(currentDestination);
+        boolean hideDirectDashboardSummary = OperationsDestinationState.OVERVIEW.equals(
+                currentDestination) && showingDashboardSummary && !remoteDashboard;
+        detailsCard.setVisibility(hideForTriage || hideDirectDashboardSummary
+                ? View.GONE : View.VISIBLE);
     }
 
     private void setConnectionRecoveryVisible(boolean visible) {
@@ -1637,6 +1647,8 @@ public class OperationsActivity extends AppCompatActivity {
 
         dashboardStatusHeading = addDashboardSection(
                 OperationsDashboardStatusFormatter.sectionTitle(false, true));
+        dashboardApplicationStatus = dashboardStatusRow("应用",
+                v -> showDashboardApplicationDetails());
         dashboardFlowStatus = dashboardStatusRow("检测",
                 v -> loadCapability("/ops/v1/flow/runtime"));
         dashboardDeviceStatus = dashboardStatusRow("设备",
@@ -1650,6 +1662,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardRecoveryStatus = dashboardStatusRow("恢复", v -> showLiveMonitor());
         dashboardStatusCaption = addDashboardStatusCard(
                 OperationsDashboardStatusFormatter.sectionCaption(false, true),
+                dashboardApplicationStatus,
                 dashboardFlowStatus,
                 dashboardDeviceStatus,
                 dashboardMessageStatus,
@@ -1682,7 +1695,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (openPendingOperationsDestination()) {
             return;
         }
-        loadCapability("/ops/v1/snapshot");
+        loadDashboardSnapshot();
         loadDashboardLiveStatus();
     }
 
@@ -1691,7 +1704,7 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsDashboardShortcutPresentation.direct();
         addDashboardSection("常用入口");
         for (int index = 0; index < shortcuts.size(); index += 2) {
-            addDashboardActionRow(
+            addDashboardShortcutRow(
                     dashboardShortcutButton(shortcuts.get(index)),
                     dashboardShortcutButton(shortcuts.get(index + 1)));
         }
@@ -2850,6 +2863,9 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardRefresh.setRefreshing(true);
         dashboardRefresh.announceForAccessibility("正在刷新运维状态");
         refreshOperationsHeaderNavigation();
+        if (!remoteDashboard) {
+            loadDashboardSnapshot();
+        }
         if (decision == OperationsDashboardRefreshPolicy.Decision.START) {
             connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
             runConnectionHeartbeat();
@@ -3492,6 +3508,8 @@ public class OperationsActivity extends AppCompatActivity {
         if (dashboardFlowStatus == null) {
             return;
         }
+        updateDashboardStatus(dashboardApplicationStatus,
+                OperationsDashboardStatusFormatter.unavailable("应用"));
         updateDashboardStatus(dashboardFlowStatus,
                 OperationsDashboardStatusFormatter.flow(false, false, "idle"));
         updateDashboardStatus(dashboardDeviceStatus,
@@ -3516,6 +3534,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void clearDashboardLiveStatusReferences() {
+        dashboardApplicationStatus = null;
         dashboardFlowStatus = null;
         dashboardDeviceStatus = null;
         dashboardMessageStatus = null;
@@ -3579,11 +3598,26 @@ public class OperationsActivity extends AppCompatActivity {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
+    private void addDashboardShortcutRow(Button left, Button right) {
+        boolean singleColumn = AppResponsiveLayout.usesSingleColumnDashboardShortcuts(
+                getResources().getConfiguration().screenWidthDp,
+                getResources().getConfiguration().fontScale);
+        actions.addView(createDashboardActionRow(left, right, singleColumn),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
     private LinearLayout createDashboardActionRow(Button left, Button right) {
-        LinearLayout row = new LinearLayout(this);
         boolean singleColumn = AppResponsiveLayout.usesSingleColumn(
                 getResources().getConfiguration().screenWidthDp,
                 getResources().getConfiguration().fontScale);
+        return createDashboardActionRow(left, right, singleColumn);
+    }
+
+    private LinearLayout createDashboardActionRow(
+            Button left, Button right, boolean singleColumn) {
+        LinearLayout row = new LinearLayout(this);
         row.setOrientation(singleColumn ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
 
         LinearLayout.LayoutParams leftParams = singleColumn
@@ -5268,28 +5302,71 @@ public class OperationsActivity extends AppCompatActivity {
         actions.addView(button, actionParams());
     }
 
+    private void loadDashboardSnapshot() {
+        loadCapability("/ops/v1/snapshot", false);
+    }
+
+    private void showDashboardApplicationDetails() {
+        title.setTitle("应用概况");
+        actions.removeAllViews();
+        addDashboardWideAction(dashboardTonalButton(
+                "刷新应用概况", v -> showDashboardApplicationDetails()));
+        loadCapability("/ops/v1/snapshot", true);
+    }
+
     private void loadCapability(String path) {
-        setShowingDashboardSummary("/ops/v1/snapshot".equals(path));
+        loadCapability(path, true);
+    }
+
+    private void loadCapability(String path, boolean showDetails) {
+        boolean dashboardSnapshot = "/ops/v1/snapshot".equals(path) && !showDetails;
+        setShowingDashboardSummary(dashboardSnapshot);
         leaveSupportCenter();
         leaveLiveMonitor();
         progress.setVisibility(View.VISIBLE);
-        state.setText("正在读取…");
+        state.setText(dashboardSnapshot ? directConnectionState() : "正在读取…");
         executor.execute(() -> {
             try {
                 JSONObject response = client.get(path);
                 runOnUiThread(() -> {
                     progress.setVisibility(View.GONE);
-                    state.setText(capabilityHeading(path));
+                    if ("/ops/v1/snapshot".equals(path)) {
+                        updateDashboardApplicationStatus(response);
+                    }
+                    state.setText(dashboardSnapshot
+                            ? directConnectionState() : capabilityHeading(path));
                     details.setText(formatCapability(path, response));
                 });
             } catch (Exception ex) {
                 runOnUiThread(() -> {
                     progress.setVisibility(View.GONE);
-                    state.setText("读取失败");
+                    if (dashboardSnapshot) {
+                        updateDashboardStatus(dashboardApplicationStatus,
+                                OperationsDashboardStatusFormatter.unavailable("应用"));
+                    }
+                    state.setText(dashboardSnapshot ? directConnectionState() : "读取失败");
                     details.setText(OperationsErrorPresentation.readable(ex));
                 });
             }
         });
+    }
+
+    private void updateDashboardApplicationStatus(JSONObject response) {
+        if (dashboardApplicationStatus == null || response == null) {
+            return;
+        }
+        JSONObject data = response.optJSONObject("data");
+        JSONObject payload = data == null ? response : data;
+        JSONObject process = payload.optJSONObject("process");
+        JSONObject window = payload.optJSONObject("mainWindow");
+        updateDashboardStatus(dashboardApplicationStatus,
+                OperationsDashboardStatusFormatter.application(
+                        true,
+                        payload.optString("version", "未知"),
+                        window != null && window.optBoolean("exists"),
+                        window != null && window.optBoolean("isVisible"),
+                        window == null ? "" : window.optString("state", ""),
+                        process == null ? 0 : process.optDouble("memoryMb", 0)));
     }
 
     private void showDeviceHealthOverview() {
