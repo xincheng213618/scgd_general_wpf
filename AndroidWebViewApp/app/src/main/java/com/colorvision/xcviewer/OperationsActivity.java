@@ -6129,8 +6129,14 @@ public class OperationsActivity extends AppCompatActivity {
         actions.removeAllViews();
 
         Button retry = new MaterialButton(this);
-        retry.setText("重新扫描");
-        retry.setOnClickListener(v -> startOperationsPairingScan());
+        retry.setText(PairingFailurePresentation.primaryAction(reason));
+        retry.setOnClickListener(v -> {
+            if (PairingFailurePresentation.opensPairingHelp(reason)) {
+                PairingHelpDialog.show(this, this::startOperationsPairingScan);
+            } else {
+                startOperationsPairingScan();
+            }
+        });
         actions.addView(retry, actionParams());
 
         Button secondary = new MaterialButton(

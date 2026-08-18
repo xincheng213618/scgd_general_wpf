@@ -106,4 +106,14 @@ final class PairingFailurePresentation {
     static String secondaryAction(boolean hasExistingProfile) {
         return hasExistingProfile ? "返回当前电脑" : "返回设置";
     }
+
+    static String primaryAction(String reason) {
+        return opensPairingHelp(reason) ? "查看配对步骤" : "重新扫描";
+    }
+
+    static boolean opensPairingHelp(String reason) {
+        return EXPIRED_QR.equals(reason)
+                || SECURITY_REJECTED.equals(reason)
+                || APPROVAL_REJECTED.equals(reason);
+    }
 }

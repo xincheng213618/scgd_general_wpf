@@ -8,6 +8,7 @@ import java.net.SocketTimeoutException;
 import javax.net.ssl.SSLHandshakeException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class PairingFailurePresentationTest {
@@ -25,6 +26,10 @@ public class PairingFailurePresentationTest {
                 PairingFailurePresentation.title(PairingFailurePresentation.EXPIRED_QR));
         assertTrue(PairingFailurePresentation.message(PairingFailurePresentation.EXPIRED_QR)
                 .contains("刷新配对码"));
+        assertEquals("查看配对步骤",
+                PairingFailurePresentation.primaryAction(PairingFailurePresentation.EXPIRED_QR));
+        assertTrue(PairingFailurePresentation.opensPairingHelp(
+                PairingFailurePresentation.EXPIRED_QR));
     }
 
     @Test
@@ -39,6 +44,10 @@ public class PairingFailurePresentationTest {
                         new IllegalArgumentException("pairing_qr_unsupported")));
         assertTrue(PairingFailurePresentation.message(PairingFailurePresentation.UNSUPPORTED_QR)
                 .contains("更新"));
+        assertEquals("重新扫描",
+                PairingFailurePresentation.primaryAction(PairingFailurePresentation.INVALID_QR));
+        assertFalse(PairingFailurePresentation.opensPairingHelp(
+                PairingFailurePresentation.INVALID_QR));
     }
 
     @Test
@@ -50,6 +59,11 @@ public class PairingFailurePresentationTest {
                 PairingFailurePresentation.SECURITY_REJECTED,
                 PairingFailurePresentation.reasonFor(
                         new IllegalStateException("invalid_pairing_signature")));
+        assertEquals("查看配对步骤",
+                PairingFailurePresentation.primaryAction(
+                        PairingFailurePresentation.SECURITY_REJECTED));
+        assertTrue(PairingFailurePresentation.opensPairingHelp(
+                PairingFailurePresentation.APPROVAL_REJECTED));
     }
 
     @Test
