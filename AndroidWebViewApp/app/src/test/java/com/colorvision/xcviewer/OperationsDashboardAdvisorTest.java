@@ -66,9 +66,44 @@ public class OperationsDashboardAdvisorTest {
                 OperationsDashboardAdvisor.ACTION_MONITOR);
     }
 
+    @Test
+    public void stableHostMakesDisabledAttentionRemindersActionable() throws Exception {
+        JSONObject stable = monitor("ready", false, 0, 0, 0, false, 0);
+
+        OperationsDashboardAdvisor.Recommendation withoutReminders =
+                OperationsDashboardAdvisor.fromMonitor(stable, false);
+        OperationsDashboardAdvisor.Recommendation withReminders =
+                OperationsDashboardAdvisor.fromMonitor(stable, true);
+
+        assertEquals("运维提醒未开启 · 前往设置", withoutReminders.label);
+        assertEquals(OperationsDashboardAdvisor.ACTION_NOTIFICATION_SETTINGS,
+                withoutReminders.action);
+        assertEquals("当前运行稳定 · 查看状态", withReminders.label);
+        assertEquals(OperationsDashboardAdvisor.ACTION_MONITOR, withReminders.action);
+    }
+
+    @Test
+    public void operationalProblemsRemainAheadOfReminderSetup() throws Exception {
+        JSONObject warning = monitor("ready", false, 0, 0, 0, false, 2);
+        JSONObject activeFlow = monitor("ready", true, 0, 0, 0, false, 0);
+
+        assertRecommendationWithoutReminders(warning,
+                "警告 2 个 · 查看告警", OperationsDashboardAdvisor.ACTION_ALERTS);
+        assertRecommendationWithoutReminders(activeFlow,
+                "检测运行中 · 查看进度", OperationsDashboardAdvisor.ACTION_FLOW);
+    }
+
     private static void assertRecommendation(JSONObject monitor, String label, String action) {
         OperationsDashboardAdvisor.Recommendation recommendation =
                 OperationsDashboardAdvisor.fromMonitor(monitor);
+        assertEquals(label, recommendation.label);
+        assertEquals(action, recommendation.action);
+    }
+
+    private static void assertRecommendationWithoutReminders(
+            JSONObject monitor, String label, String action) {
+        OperationsDashboardAdvisor.Recommendation recommendation =
+                OperationsDashboardAdvisor.fromMonitor(monitor, false);
         assertEquals(label, recommendation.label);
         assertEquals(action, recommendation.action);
     }

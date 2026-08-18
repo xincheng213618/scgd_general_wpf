@@ -49,9 +49,6 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.net.ConnectException;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,8 +59,6 @@ import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.net.ssl.SSLHandshakeException;
 
 public class OperationsActivity extends AppCompatActivity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
@@ -1405,7 +1400,8 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardPriorityAction = dashboardPrimaryButton("正在分析运行状态…", null);
         addDashboardWideAction(dashboardPriorityAction);
         updateDashboardPriority(dashboardRemoteHostFresh
-                ? OperationsDashboardAdvisor.fromMonitor(monitor)
+                ? OperationsDashboardAdvisor.fromMonitor(
+                        monitor, attentionRemindersAvailable())
                 : OperationsDashboardAdvisor.staleRemoteSnapshot());
 
         addDashboardSection("远程操作");
@@ -1536,7 +1532,8 @@ public class OperationsActivity extends AppCompatActivity {
             updateDashboardLiveStatus(monitor);
         }
         updateDashboardPriority(fresh
-                ? OperationsDashboardAdvisor.fromMonitor(monitor)
+                ? OperationsDashboardAdvisor.fromMonitor(
+                        monitor, attentionRemindersAvailable())
                 : OperationsDashboardAdvisor.staleRemoteSnapshot());
         updateDashboardRestartApplicationAction();
         details.setText(OperationsDashboardOverview.remoteSummary(
@@ -2614,13 +2611,16 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private String monitoringSummary() {
-        boolean remindersAvailable = NotificationPermissionPolicy.canPostAttention(
+        return OperationsDashboardOverview.monitoringSummary(
+                preferences.isOperationsWatchUserEnabled(), attentionRemindersAvailable());
+    }
+
+    private boolean attentionRemindersAvailable() {
+        return NotificationPermissionPolicy.canPostAttention(
                 Build.VERSION.SDK_INT,
                 NotificationPermissionState.hasRuntimePermission(this),
                 NotificationPermissionState.appNotificationsEnabled(this),
                 NotificationPermissionState.attentionChannelEnabled(this));
-        return OperationsDashboardOverview.monitoringSummary(
-                preferences.isOperationsWatchUserEnabled(), remindersAvailable);
     }
 
     private TextView addDashboardSection(String label) {
@@ -2823,6 +2823,9 @@ public class OperationsActivity extends AppCompatActivity {
                     showLiveMonitor();
                 }
                 return;
+            case OperationsDashboardAdvisor.ACTION_NOTIFICATION_SETTINGS:
+                openMainTab(MainActivity.TAB_SETTINGS);
+                return;
             default:
                 return;
         }
@@ -2904,7 +2907,8 @@ public class OperationsActivity extends AppCompatActivity {
                 recovery != null && recovery.optBoolean("automaticWatchdogActive", false)));
         updateDashboardPriority(remoteDashboard && !dashboardRemoteHostFresh
                 ? OperationsDashboardAdvisor.staleRemoteSnapshot()
-                : OperationsDashboardAdvisor.fromMonitor(snapshot));
+                : OperationsDashboardAdvisor.fromMonitor(
+                        snapshot, attentionRemindersAvailable()));
         updateDashboardCancelFlowAction();
         updateDashboardRestartApplicationAction();
     }
@@ -3145,8 +3149,8 @@ public class OperationsActivity extends AppCompatActivity {
         title.setText("连接恢复");
         state.setText(OperationsRecoveryOverview.waitingStatus());
         details.setText(OperationsRecoveryOverview.failureSummary(
-                readableError(localException),
-                readableError(relayException)));
+                OperationsErrorPresentation.readable(localException),
+                OperationsErrorPresentation.readable(relayException)));
         showConnectionRecoveryActions();
         scheduleConnectionHeartbeat();
     }
@@ -3185,7 +3189,7 @@ public class OperationsActivity extends AppCompatActivity {
                         false,
                         "无法启动连接自检",
                         "请稍后重试；若持续失败，请返回连接方式确认当前电脑和配对资料。",
-                        "启动自检：" + readableError(ex));
+                        "启动自检：" + OperationsErrorPresentation.readable(ex));
             }
             OperationsConnectionCheck.Result finalResult = result;
             runOnUiThread(() -> {
@@ -3947,7 +3951,7 @@ public class OperationsActivity extends AppCompatActivity {
         progress.setVisibility(View.GONE);
         dashboardVisible = false;
         title.setText("ColorVision 重启未完成");
-        state.setText(readableError(ex));
+        state.setText(OperationsErrorPresentation.readable(ex));
         details.setText("本机设备密钥、证书指纹和配对资料均已保留。可以返回运维主页重试连接，或查看作业时间线确认电脑端结果。");
         actions.removeAllViews();
 
@@ -4265,7 +4269,7 @@ public class OperationsActivity extends AppCompatActivity {
                     state.setText(liveMonitorAutoRefresh
                             ? "本轮观察失败 · 10 秒后自动重试"
                             : "本轮观察失败");
-                    details.setText(readableError(ex)
+                    details.setText(OperationsErrorPresentation.readable(ex)
                             + "\n\n持续观察本身不会删除配对资料或修改检测流程；只有你明确确认取消动作后才会介入当前检测。 ");
                     renderLiveMonitorActions();
                     scheduleLiveMonitorRefresh();
@@ -4715,7 +4719,7 @@ public class OperationsActivity extends AppCompatActivity {
     private void showTransientError(Exception ex) {
         progress.setVisibility(View.GONE);
         state.setText("操作失败");
-        details.setText(readableError(ex));
+        details.setText(OperationsErrorPresentation.readable(ex));
     }
 
     private void addAction(String label, String path) {
@@ -4743,7 +4747,7 @@ public class OperationsActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     progress.setVisibility(View.GONE);
                     state.setText("读取失败");
-                    details.setText(readableError(ex));
+                    details.setText(OperationsErrorPresentation.readable(ex));
                 });
             }
         });
@@ -5726,152 +5730,6 @@ public class OperationsActivity extends AppCompatActivity {
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(50));
         params.setMargins(0, 0, 0, dp(10));
         return params;
-    }
-
-    private String readableError(Exception ex) {
-        String message = ex.getMessage();
-        if (ex instanceof SocketTimeoutException || (message != null && message.contains("after 7000ms"))) {
-            return "连接电脑超时。配对资料已保留，请运行连接自检。";
-        }
-        if (ex instanceof ConnectException || (message != null && message.contains("failed to connect"))) {
-            return "电脑端安全通道当前不可达。配对资料已保留，请运行连接自检。";
-        }
-        if (ex instanceof UnknownHostException) {
-            return "无法解析电脑地址，请检查当前网络或重新获取配对地址。";
-        }
-        if (ex instanceof SSLHandshakeException) {
-            return "TLS 安全握手失败，已阻止连接。";
-        }
-        if (message == null || message.trim().isEmpty()) {
-            return ex.getClass().getSimpleName();
-        }
-        if (message.contains("Certificate pin mismatch")) {
-            return "服务器证书与二维码指纹不一致，已阻止连接。";
-        }
-        if (message.contains("unknown_or_revoked_device")) {
-            return "设备已被电脑端撤销，请重新配对。";
-        }
-        if (message.contains("host_not_found") || message.contains("unknown_host_identity")) {
-            return "电脑端尚未接入固定远程中继；配对资料已保留，电脑更新并启动后会自动接入。";
-        }
-        if (message.contains("device_scope_required")) {
-            return "当前配对未获准执行这项远程操作。";
-        }
-        if (message.contains("request_time_out_of_range")) {
-            return "手机时间与中继时间偏差过大，请开启系统自动校时后重试。";
-        }
-        if (message.contains("task_capability_not_allowed")
-                || message.contains("relay_request_origin_rejected")) {
-            return "该远程操作不在应用的固定安全能力清单中，已阻止提交。";
-        }
-        if (message.contains("relay_response_too_large")
-                || message.contains("invalid_relay_task_response")) {
-            return "远程中继响应不符合应用的安全边界，已停止处理。";
-        }
-        if (message.contains("invalid_failure_evidence_receipt")) {
-            return "电脑返回的聚合线索未通过精确安全校验，已阻止显示。";
-        }
-        if (message.contains("window_snapshot_e2e_requires_android_31")) {
-            return "远程端到端快照需要 Android 12 或更高版本；现场局域网快照仍可使用。";
-        }
-        if (message.contains("invalid_window_snapshot_receipt")
-                || message.contains("invalid_window_snapshot_public_key")
-                || message.contains("invalid_window_snapshot_context")) {
-            return "电脑返回的远程快照收据未通过精确签名、时间或加密参数校验，已阻止下载。";
-        }
-        if (message.contains("window_snapshot_payload_not_allowed")) {
-            return "远程快照请求不符合固定端到端加密协议，已阻止提交。";
-        }
-        if (message.contains("window_snapshot_consumed")
-                || message.contains("window_snapshot_already_consumed")) {
-            return "这张远程快照已在手机成功读取并从固定站点销毁，请重新采集。";
-        }
-        if (message.contains("application_restart_flow_active")) {
-            return "当前检测仍在执行，为避免中断检测，电脑端已拒绝重启。";
-        }
-        if (message.contains("message_channel:unconfigured")) {
-            return "电脑端尚未配置有效消息服务地址，请先在电脑端完成配置。";
-        }
-        if (message.contains("message_channel_recovery_job_missing")) {
-            return "未找到本次消息通道恢复作业回执。";
-        }
-        if (message.contains("message_channel_recovery_failed")
-                || message.contains("message_channel:recovery_failed")
-                || message.contains("message_channel:recovery_timeout")) {
-            return "消息通道尚未恢复，请查看消息通道健康和作业时间线。";
-        }
-        if (message.contains("application_restart_flow_status_unavailable")) {
-            return "暂时无法确认检测是否正在执行，已阻止重启。";
-        }
-        if (message.contains("application_restart_not_scheduled")
-                || message.contains("application_restart_failed")) {
-            return "电脑端未能完成 ColorVision 重启，请查看作业时间线。";
-        }
-        if (message.contains("application_restart_reconnect_timeout")) {
-            return "90 秒内未确认 ColorVision 恢复；配对资料已保留。";
-        }
-        if (message.contains("application_restart_job_missing")) {
-            return "未找到本次 ColorVision 重启作业回执。";
-        }
-        if (message.contains("window_snapshot_expired")) {
-            return "主窗口快照的 5 分钟读取窗口已结束，请重新采集。";
-        }
-        if (message.contains("window_snapshot_not_completed")) {
-            return "主窗口快照采集未完成。请确保电脑主窗口已显示且未最小化，然后重试。";
-        }
-        if (message.contains("window_snapshot_not_ready")) {
-            return "主窗口快照尚未完成采集。";
-        }
-        if (message.contains("window_snapshot_not_found")) {
-            return "一次性主窗口快照已读取销毁、已失效，或不属于当前设备。";
-        }
-        if (message.contains("window_snapshot_read_failed")) {
-            return "电脑端暂时无法读取主窗口快照，请重新申请。";
-        }
-        if (message.contains("window_snapshot_hash_mismatch")
-                || message.contains("window_snapshot_sealed_hash_mismatch")
-                || message.contains("window_snapshot_decryption_failed")) {
-            return "主窗口快照完整性校验失败，已阻止预览。";
-        }
-        if (message.contains("window_snapshot_size_rejected")
-                || message.contains("window_snapshot_too_large")) {
-            return "主窗口快照超出 1.5 MiB 安全上限，已阻止下载。";
-        }
-        if (message.contains("window_snapshot_type_rejected")
-                || message.contains("window_snapshot_encoding_rejected")
-                || message.contains("window_snapshot_format_rejected")
-                || message.contains("window_snapshot_dimensions_rejected")) {
-            return "主窗口快照格式或尺寸不符合安全约束，已阻止预览。";
-        }
-        if (message.contains("diagnostic_bundle_expired")) {
-            return "诊断包的 24 小时下载窗口已结束，请重新生成。";
-        }
-        if (message.contains("diagnostic_bundle_not_completed")) {
-            return "脱敏诊断包生成未完成，请稍后重试并查看作业结果。";
-        }
-        if (message.contains("diagnostic_bundle_not_ready")) {
-            return "诊断包尚未完成生成。";
-        }
-        if (message.contains("diagnostic_bundle_not_found")) {
-            return "当前设备无权读取该诊断包，或文件已经不可用。";
-        }
-        if (message.contains("diagnostic_bundle_regeneration_required")) {
-            return "旧版诊断包不符合当前脱敏规则，请重新生成。";
-        }
-        if (message.contains("diagnostic_bundle_read_failed")) {
-            return "电脑端暂时无法读取诊断包，请稍后重试。";
-        }
-        if (message.contains("diagnostic_bundle_hash_mismatch")) {
-            return "诊断包完整性校验失败，已阻止分享。";
-        }
-        if (message.contains("diagnostic_bundle_size_rejected")
-                || message.contains("diagnostic_bundle_too_large")) {
-            return "诊断包超出移动端 2 MiB 安全上限，已阻止下载。";
-        }
-        if (message.matches("[a-zA-Z0-9_.-]{1,64}")) {
-            return message;
-        }
-        return "连接失败：" + ex.getClass().getSimpleName();
     }
 
     private String pretty(JSONObject value) {

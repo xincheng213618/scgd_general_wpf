@@ -11,6 +11,7 @@ final class OperationsDashboardAdvisor {
     static final String ACTION_ALERTS = "alerts";
     static final String ACTION_PERFORMANCE = "performance";
     static final String ACTION_MONITOR = "monitor";
+    static final String ACTION_NOTIFICATION_SETTINGS = "notification_settings";
 
     private OperationsDashboardAdvisor() {
     }
@@ -28,6 +29,10 @@ final class OperationsDashboardAdvisor {
     }
 
     static Recommendation fromMonitor(JSONObject monitor) {
+        return fromMonitor(monitor, true);
+    }
+
+    static Recommendation fromMonitor(JSONObject monitor, boolean remindersAvailable) {
         if (monitor == null) {
             return unavailable();
         }
@@ -80,6 +85,10 @@ final class OperationsDashboardAdvisor {
         if (flow != null
                 && flow.optBoolean("isActive", false)) {
             return new Recommendation("检测运行中 · 查看进度", ACTION_FLOW);
+        }
+        if (!remindersAvailable) {
+            return new Recommendation(
+                    "运维提醒未开启 · 前往设置", ACTION_NOTIFICATION_SETTINGS);
         }
         return new Recommendation("当前运行稳定 · 查看状态", ACTION_MONITOR);
     }
