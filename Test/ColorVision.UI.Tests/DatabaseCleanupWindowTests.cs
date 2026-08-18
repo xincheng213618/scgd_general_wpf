@@ -1,4 +1,5 @@
 using ColorVision.Database;
+using ColorVision.Engine;
 
 namespace ColorVision.UI.Tests;
 
@@ -173,7 +174,7 @@ public class DatabaseCleanupWindowTests
         Assert.True(viewModel.SupportsTableCleanup);
         Assert.Equal(2, viewModel.ExistingTableCount);
         Assert.Equal(2, viewModel.SelectedTableCount);
-        Assert.Equal("已选择 2 张表", viewModel.SelectionSummary);
+        Assert.Equal(EngineLocalization.Format($"已选择 {2:N0} 张表"), viewModel.SelectionSummary);
         Assert.False(viewModel.Tables.Single(table => !table.Exists).IsSelected);
     }
 

@@ -381,9 +381,7 @@ namespace ColorVision.UI.Tests
 
             FlowNodeDocumentation documentation = FlowNodeDocumentationPresenter.GetDocumentation(node);
 
-            Assert.Contains("空间/普通校正", documentation.Processing);
-            Assert.Contains("色度校正", documentation.Processing);
-            Assert.Contains("图像翻转", documentation.Processing);
+            Assert.Equal(Lang.GetOrDefault("Flow_LocalCamera_Processing"), documentation.Processing);
             Assert.Contains(documentation.Properties, property => property.Name == Lang.GetOrDefault("图像翻转"));
         }
 

@@ -1,3 +1,4 @@
+using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.PostProcess;
 
 namespace ColorVision.UI.Tests;
@@ -18,7 +19,7 @@ public sealed class PostProcessTypeCatalogTests
         PostProcessTypeOption categorized = Assert.Single(options, option => option.Process is CategorizedPostProcessor);
         Assert.Equal("测试分类", categorized.Category);
         Assert.Equal("分类处理", categorized.DisplayName);
-        Assert.Equal("支持处理配置", categorized.ConfigurationSummary);
+        Assert.Equal(EngineLocalization.Get("支持处理配置"), categorized.ConfigurationSummary);
     }
 
     [Fact]
