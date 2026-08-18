@@ -61,15 +61,90 @@ namespace ColorVision.Copilot
             return outcome;
         }
 
-        private static CopilotToolInvocation NormalizeInvocation(CopilotToolInvocation invocation, string callId)
+        private static bool TryNormalizeInvocation(
+            CopilotToolInvocation invocation,
+            string callId,
+            out CopilotToolInvocation normalized,
+            out string error)
         {
             if (!CopilotAgentToolInputSnapshot.TryCreate(
                     invocation.ToolInput,
                     out var toolInput,
                     out var inputSnapshotError))
             {
-                throw new InvalidOperationException(inputSnapshotError);
+                normalized = CreateNormalizedInvocation(
+                    invocation,
+                    callId,
+                    CopilotAgentToolInput.Empty,
+                    inputIsValid: false);
+                error = inputSnapshotError;
+                return false;
             }
+
+            CopilotAgentToolInput boundInput;
+            try
+            {
+                var inputSchema = invocation.Tool.InputSchema;
+                if (inputSchema == null)
+                {
+                    normalized = CreateNormalizedInvocation(
+                        invocation,
+                        callId,
+                        toolInput,
+                        inputIsValid: false);
+                    error = "The registered tool does not declare an input schema.";
+                    return false;
+                }
+                if (!inputSchema.TryBind(toolInput.Arguments, out boundInput, out error))
+                {
+                    normalized = CreateNormalizedInvocation(
+                        invocation,
+                        callId,
+                        toolInput,
+                        inputIsValid: false);
+                    return false;
+                }
+            }
+            catch
+            {
+                normalized = CreateNormalizedInvocation(
+                    invocation,
+                    callId,
+                    toolInput,
+                    inputIsValid: false);
+                error = "The tool arguments could not be validated safely.";
+                return false;
+            }
+
+            if (!CopilotAgentToolInputSnapshot.TryCreate(
+                    boundInput,
+                    out toolInput,
+                    out inputSnapshotError))
+            {
+                normalized = CreateNormalizedInvocation(
+                    invocation,
+                    callId,
+                    CopilotAgentToolInput.Empty,
+                    inputIsValid: false);
+                error = inputSnapshotError;
+                return false;
+            }
+
+            normalized = CreateNormalizedInvocation(
+                invocation,
+                callId,
+                toolInput,
+                inputIsValid: true);
+            error = string.Empty;
+            return true;
+        }
+
+        private static CopilotToolInvocation CreateNormalizedInvocation(
+            CopilotToolInvocation invocation,
+            string callId,
+            CopilotAgentToolInput toolInput,
+            bool inputIsValid)
+        {
             var sourceToolCall = invocation.ToolCall ?? new CopilotToolCall();
             var toolCall = new CopilotToolCall
             {
@@ -104,8 +179,12 @@ namespace ColorVision.Copilot
                 ApprovalActionId = invocation.ApprovalActionId?.Trim() ?? string.Empty,
                 ApprovalPromptCategoryOverride = invocation.ApprovalPromptCategoryOverride,
                 ApprovalPromptReasonOverride = invocation.ApprovalPromptReasonOverride?.Trim() ?? string.Empty,
-                ConcurrencyMode = ResolveConcurrencyMode(invocation.Tool),
-                ConcurrencyKey = ResolveConcurrencyKey(invocation.Tool, invocation.AgentRequest, toolInput),
+                ConcurrencyMode = inputIsValid
+                    ? ResolveConcurrencyMode(invocation.Tool)
+                    : CopilotToolConcurrencyMode.Exclusive,
+                ConcurrencyKey = inputIsValid
+                    ? ResolveConcurrencyKey(invocation.Tool, invocation.AgentRequest, toolInput)
+                    : ResolveRejectedInputConcurrencyKey(invocation.Tool.Name),
                 PreviousObservationProgressSignature =
                     invocation.PreviousObservationProgressSignature,
                 InitialHookRuns = invocation.InitialHookRuns
@@ -174,6 +253,16 @@ namespace ColorVision.Copilot
         {
             var key = tool.GetConcurrencyKey(request, toolInput)?.Trim();
             key = string.IsNullOrWhiteSpace(key) ? $"tool:{tool.Name}" : key;
+            return CreateConcurrencyKey(key);
+        }
+
+        private static string ResolveRejectedInputConcurrencyKey(string toolName)
+        {
+            return CreateConcurrencyKey($"invalid-input:{toolName?.Trim()}");
+        }
+
+        private static string CreateConcurrencyKey(string key)
+        {
             var fingerprint = SHA256.HashData(Encoding.UTF8.GetBytes(key.ToUpperInvariant()));
             return $"resource:{Convert.ToHexString(fingerprint.AsSpan(0, 8)).ToLowerInvariant()}";
         }

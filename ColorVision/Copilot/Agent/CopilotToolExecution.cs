@@ -123,7 +123,32 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(onEvent);
 
             var callId = string.IsNullOrWhiteSpace(invocation.CallId) ? Guid.NewGuid().ToString("N") : invocation.CallId.Trim();
-            invocation = NormalizeInvocation(invocation, callId);
+            var sourceInvocation = invocation;
+            var startedAt = _utcNow();
+            var timeout = invocation.Tool.Capability.EffectiveExecutionTimeout;
+            var stopwatch = Stopwatch.StartNew();
+            if (!TryNormalizeInvocation(sourceInvocation, callId, out invocation, out var inputError))
+            {
+                var rejected = CreateOutcome(
+                    invocation,
+                    CopilotToolExecutionState.Failed,
+                    startedAt,
+                    timeout,
+                    stopwatch,
+                    Failure(
+                        invocation.Tool.Name,
+                        $"{invocation.Tool.Name} arguments were rejected before execution.",
+                        string.IsNullOrWhiteSpace(inputError)
+                            ? "The tool arguments do not match the registered input contract."
+                            : CopilotUserFacingErrorFormatter.Sanitize(inputError),
+                        CopilotToolFailureKind.Validation,
+                        "invalid_arguments"));
+                return await PublishOutcomeAsync(
+                    rejected,
+                    Array.Empty<CopilotToolExecutionHookBinding>(),
+                    [],
+                    onEvent);
+            }
             var hooks = BindMonotonicExecutionGuards(
                 invocation.InitialHookBindings.Count > 0
                     ? invocation.InitialHookBindings
@@ -133,9 +158,6 @@ namespace ColorVision.Copilot
             hookRuns.AddRange(invocation.InitialHookRuns
                 .Where(run => run?.IsStructurallyValid() == true)
                 .Take(MaxRecordedHookRuns));
-            var startedAt = _utcNow();
-            var timeout = invocation.Tool.Capability.EffectiveExecutionTimeout;
-            var stopwatch = Stopwatch.StartNew();
             if (!CopilotToolRegistry.IsAllowedForCodexAgentPolicy(
                 invocation.Tool,
                 invocation.AgentRequest))

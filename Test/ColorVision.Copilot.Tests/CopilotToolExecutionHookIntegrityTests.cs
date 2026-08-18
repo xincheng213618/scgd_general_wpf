@@ -384,7 +384,7 @@ public sealed class CopilotToolExecutionHookIntegrityTests
             Assert.Throws<NotSupportedException>(() => publishedArguments["query"] = "hook-tampered");
             return Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
         });
-        var tool = new RecordingTool();
+        var tool = new RecordingTool(inputSchema: CreateOpenObjectInputSchema());
         var invocation = CreateInvocation(tool, "immutable-input-snapshot");
         invocation = new CopilotToolInvocation
         {
@@ -415,6 +415,64 @@ public sealed class CopilotToolExecutionHookIntegrityTests
         Assert.Same(outcome.Invocation.ToolInput, outcome.Invocation.ToolCall.ToolInput);
         Assert.Equal(tool.Name, outcome.Invocation.ToolCall.ToolName);
         Assert.Equal("safe", outcome.Invocation.ToolInput.GetStringArgument("query"));
+    }
+
+    [Fact]
+    public async Task InvalidInputContractSkipsHooksAndToolExecution()
+    {
+        var hook = new RecordingHook((_, _) =>
+            Task.FromResult(CopilotToolExecutionHookDecision.Proceed));
+        var tool = new RecordingTool(
+            inputSchema: CopilotToolInputSchema.Query("Required query.", required: true));
+        var events = new List<CopilotAgentEvent>();
+
+        var outcome = await new CopilotToolExecutor([hook]).ExecuteAsync(
+            CreateInvocation(tool, "invalid-input-contract"),
+            events.Add,
+            CancellationToken.None);
+
+        Assert.Equal(CopilotToolExecutionState.Failed, outcome.Execution.State);
+        Assert.Equal(CopilotToolFailureKind.Validation, outcome.Result.FailureKind);
+        Assert.Equal("invalid_arguments", outcome.Result.FailureCode);
+        Assert.Equal(0, tool.ExecutionCount);
+        Assert.Equal(0, hook.BeforeCount);
+        Assert.Equal(0, hook.AfterCount);
+        Assert.Empty(outcome.HookRuns);
+        Assert.Equal(CopilotAgentEventType.ToolResult, Assert.Single(events).Type);
+    }
+
+    [Fact]
+    public async Task ValidatedArgumentsAreTheCanonicalExecutedInput()
+    {
+        var tool = new RecordingTool(
+            inputSchema: CopilotToolInputSchema.Query("Required query.", required: true));
+        var invocation = CreateInvocation(tool, "canonical-input-contract");
+        invocation = new CopilotToolInvocation
+        {
+            CallId = invocation.CallId,
+            Round = invocation.Round,
+            RuntimeName = invocation.RuntimeName,
+            Tool = tool,
+            AgentRequest = invocation.AgentRequest,
+            ToolInput = new CopilotAgentToolInput
+            {
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["query"] = "canonical",
+                },
+                Query = "untrusted-legacy-value",
+            },
+        };
+
+        var outcome = await new CopilotToolExecutor([]).ExecuteAsync(
+            invocation,
+            _ => { },
+            CancellationToken.None);
+
+        Assert.True(outcome.Result.Success);
+        Assert.Equal("canonical", Assert.IsType<CopilotAgentToolInput>(tool.LastInput).Query);
+        Assert.Equal("canonical", outcome.Invocation.ToolInput.Query);
+        Assert.Equal("canonical", outcome.Invocation.ToolCall.ToolInput.Query);
     }
 
     [Fact]
@@ -562,6 +620,17 @@ public sealed class CopilotToolExecutionHookIntegrityTests
         };
     }
 
+    private static CopilotToolInputSchema CreateOpenObjectInputSchema()
+    {
+        return CopilotToolInputSchema.FromJsonSchema(
+            System.Text.Json.JsonSerializer.SerializeToElement(
+                new Dictionary<string, object?>
+                {
+                    ["type"] = "object",
+                    ["additionalProperties"] = true,
+                }));
+    }
+
     private static CopilotToolInvocation CopyWithInitialHooks(
         CopilotToolInvocation source,
         IReadOnlyList<CopilotToolExecutionHookBinding> hookBindings)
@@ -634,11 +703,15 @@ public sealed class CopilotToolExecutionHookIntegrityTests
     private sealed class RecordingTool : ICopilotTool
     {
         private readonly bool _writeCapable;
+        private readonly CopilotToolInputSchema _inputSchema;
         private int _executionCount;
 
-        public RecordingTool(bool writeCapable = false)
+        public RecordingTool(
+            bool writeCapable = false,
+            CopilotToolInputSchema? inputSchema = null)
         {
             _writeCapable = writeCapable;
+            _inputSchema = inputSchema ?? CopilotToolInputSchema.OptionalQuery;
         }
 
         public int ExecutionCount => Volatile.Read(ref _executionCount);
@@ -648,6 +721,8 @@ public sealed class CopilotToolExecutionHookIntegrityTests
         public string Name => "HookIntegrityTool";
 
         public string Description => "Records whether hook integrity tests reached tool execution.";
+
+        public CopilotToolInputSchema InputSchema => _inputSchema;
 
         public CopilotToolCapabilityDescriptor Capability => _writeCapable
             ? new CopilotToolCapabilityDescriptor
