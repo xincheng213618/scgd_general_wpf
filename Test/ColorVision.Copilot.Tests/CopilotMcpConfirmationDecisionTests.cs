@@ -719,7 +719,7 @@ namespace ColorVision.Copilot.Tests
                 out var snapshot,
                 out var error));
             Assert.Same(CopilotAgentToolInput.Empty, snapshot);
-            Assert.Contains("immutable approval snapshot", error, StringComparison.Ordinal);
+            Assert.Contains("immutable execution snapshot", error, StringComparison.Ordinal);
         }
 
         [Fact]

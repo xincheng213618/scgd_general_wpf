@@ -11,7 +11,20 @@ namespace ColorVision.Copilot
         int NewSourceMessageCount,
         int NewSourceCharacters,
         int TotalSourceMessageCount,
-        int TotalSourceCharacters);
+        int TotalSourceCharacters,
+        long SourceEstimatedWeight)
+    {
+        public void EnsureSummaryShrinks(string summary)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(summary);
+            var summaryWeight = CopilotConversationCompactionContext.EstimateSummaryWeight(summary);
+            if (summaryWeight >= SourceEstimatedWeight)
+            {
+                throw new InvalidOperationException(
+                    $"模型返回的摘要没有缩小上下文（摘要估算 {summaryWeight:N0}，被替换内容估算 {SourceEstimatedWeight:N0}）；原有摘要和聊天记录均未改变。请缩小聚焦范围后重试。");
+            }
+        }
+    }
 
     internal static class CopilotConversationCompactionPlanner
     {
@@ -107,7 +120,9 @@ namespace ColorVision.Copilot
                 lastCompleteTurnCount,
                 lastCompleteTurnCharacters,
                 SaturatingAdd(previousMessageCount, lastCompleteTurnCount),
-                SaturatingAdd(previousCharacters, lastCompleteTurnCharacters));
+                SaturatingAdd(previousCharacters, lastCompleteTurnCharacters),
+                sourceMessages.Sum(message =>
+                    (long)CopilotTokenEstimator.EstimateTextWeight(message.Content)));
         }
 
         private static CopilotConversationCompaction? ResolveExistingCompaction(

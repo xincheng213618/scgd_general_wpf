@@ -6,6 +6,9 @@ namespace ColorVision.Copilot
     public static class CopilotToolFailureCode
     {
         public const int MaxLength = 64;
+        public const string ApprovalInterrupted = "approval_interrupted";
+        public const string NotStarted = "tool_not_started";
+        public const string OutcomeUnknown = "tool_outcome_unknown";
 
         public static string Normalize(string? value)
         {

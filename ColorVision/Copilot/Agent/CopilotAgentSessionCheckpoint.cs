@@ -436,9 +436,26 @@ namespace ColorVision.Copilot
             return CopyWithOutcome(taskEventJournal, ConversationMemory);
         }
 
+        internal CopilotAgentSessionCheckpoint? CopyWithTaskEventJournalForNormalization(
+            CopilotAgentTaskEventJournalSnapshot taskEventJournal)
+        {
+            return CopyWithOutcomeCore(taskEventJournal, ConversationMemory, UpdatedAtUtc);
+        }
+
         internal CopilotAgentSessionCheckpoint? CopyWithOutcome(
             CopilotAgentTaskEventJournalSnapshot taskEventJournal,
             IReadOnlyList<CopilotRequestMessage> conversationMemory)
+        {
+            return CopyWithOutcomeCore(
+                taskEventJournal,
+                conversationMemory,
+                DateTimeOffset.UtcNow);
+        }
+
+        private CopilotAgentSessionCheckpoint? CopyWithOutcomeCore(
+            CopilotAgentTaskEventJournalSnapshot taskEventJournal,
+            IReadOnlyList<CopilotRequestMessage> conversationMemory,
+            DateTimeOffset updatedAtUtc)
         {
             ArgumentNullException.ThrowIfNull(taskEventJournal);
             ArgumentNullException.ThrowIfNull(conversationMemory);
@@ -459,7 +476,7 @@ namespace ColorVision.Copilot
                 ConversationMemory = conversationMemory.ToArray(),
                 TaskIntentText = TaskIntentText,
                 TaskEventJournal = taskEventJournal,
-                UpdatedAtUtc = DateTimeOffset.UtcNow,
+                UpdatedAtUtc = updatedAtUtc,
             };
             return checkpoint.IsStructurallyValid() ? checkpoint : null;
         }

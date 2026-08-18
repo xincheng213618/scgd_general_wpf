@@ -144,6 +144,15 @@ namespace ColorVision.Copilot
                 {
                     outcome = await _toolExecutor.ExecuteAsync(invocation, _emit, cancellationToken);
                 }
+                catch (CopilotToolExecutionCancellationException ex)
+                {
+                    outcome = ex.Outcome;
+                    if (approvalReservation != null)
+                        _approvalCoordinator.Complete(approvalReservation.ApprovalActionId, outcome.Result);
+                    _ = FormatToolResult(outcome);
+                    RecordExecutionOutcome(signature, outcome);
+                    throw;
+                }
                 catch (OperationCanceledException)
                 {
                     if (approvalReservation != null)
@@ -158,13 +167,8 @@ namespace ColorVision.Copilot
                 if (approvalReservation != null)
                     _approvalCoordinator.Complete(approvalReservation.ApprovalActionId, outcome.Result);
 
-                lock (_syncRoot)
-                {
-                    _stepRecords.Add(outcome.StepRecord);
-                    RecordOutcome(signature, outcome);
-                    if (outcome.Result.DelegatedRunUsage != null)
-                        _delegatedUsage = _delegatedUsage.Add(outcome.Result.DelegatedRunUsage.Usage);
-                }
+                var formattedModelResult = FormatToolResult(outcome);
+                RecordExecutionOutcome(signature, outcome);
                 if (outcome.Result.DelegatedRunUsage != null)
                     _recordDelegatedRunUsage?.Invoke(outcome.Result.DelegatedRunUsage);
 
@@ -172,7 +176,20 @@ namespace ColorVision.Copilot
                     outcome.ModelAdditionalContexts,
                     cancellationToken).ConfigureAwait(false);
 
-                return FormatToolResult(outcome);
+                return formattedModelResult;
+            }
+
+            private void RecordExecutionOutcome(
+                string signature,
+                CopilotToolExecutionOutcome outcome)
+            {
+                lock (_syncRoot)
+                {
+                    _stepRecords.Add(outcome.StepRecord);
+                    RecordOutcome(signature, outcome);
+                    if (outcome.Result.DelegatedRunUsage != null)
+                        _delegatedUsage = _delegatedUsage.Add(outcome.Result.DelegatedRunUsage.Usage);
+                }
             }
 
         }

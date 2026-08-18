@@ -100,6 +100,7 @@ namespace ColorVision.Copilot
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"Project instructions enabled · {projectInstructionCount} scoped workspace instruction document(s)."));
                 if (!string.IsNullOrWhiteSpace(request.ActiveGoalText))
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"Active conversation goal bound · {request.ActiveGoalText.Length:N0} character(s) · completion constraint only, never authorization."));
+                emit(CopilotAgentEvent.RuntimeDiagnostic(preparedPrompt.ContextProvenance.FormatDiagnostic()));
 
                 return new HarnessPolicyPreparation
                 {

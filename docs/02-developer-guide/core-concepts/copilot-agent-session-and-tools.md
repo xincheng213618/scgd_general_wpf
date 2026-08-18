@@ -48,7 +48,7 @@ Runtime 使用 Harness 的 `ChatHistoryProvider.InvokedAsync` 正式持久化边
 - 同参数最多执行两次，并且未超过本请求工具轮次上限。
 - 受保护写工具每次重试都生成新的精确调用决定；按需确认时创建新的审批动作，临时授权也会重新执行全部范围校验，上一次批准不会被复用。
 
-`NonIdempotent`、`Unknown`、校验错误、权限拒绝、用户取消和业务失败都不可重试。这使失败恢复是可见、可审计的 Agent 决策，而不是无法观测的执行器副作用。
+`NonIdempotent`、`Unknown`、校验错误、权限拒绝、用户取消和业务失败都不可重试。写入或非幂等调用一旦发布 `ToolStarted`，如果在真实执行任务结束前跨过超时或调用方取消边界，执行器会快速返回但以 `OutcomeUnknown` / `tool_outcome_unknown` 闭合事件、继续占用同一资源闸门直到后台任务真实结束，并要求先核对外部状态；它不会把“已请求取消”误报成“副作用一定没有发生”。这使失败恢复是可见、可审计的 Agent 决策，而不是无法观测的执行器副作用。
 
 `CopilotToolExecutionAuditLogger` 保存最近 200 条调用并写入 log4net。参数摘要和错误会复用 MCP 的脱敏规则，不应记录 API key、token、密码、Authorization 或 bearer secret。聊天面板显示工具开始、完成状态和耗时，便于确认 Agent 是否真正执行了动作。未获得结果的文件、文档或网页搜索属于后台证据尝试，默认不显示活动行，也不会把整段处理状态标红；完整脱敏诊断仍保留在结构化 trace 中供恢复与排障使用。
 

@@ -10,15 +10,28 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotAgentPreparedPrompt
     {
-        public CopilotAgentPreparedPrompt(IReadOnlyList<CopilotRequestMessage> messages, string preparedUserMessageContent)
+        public CopilotAgentPreparedPrompt(
+            IReadOnlyList<CopilotRequestMessage> messages,
+            string preparedUserMessageContent)
+            : this(messages, preparedUserMessageContent, CopilotContextProvenanceSnapshot.Empty)
+        {
+        }
+
+        internal CopilotAgentPreparedPrompt(
+            IReadOnlyList<CopilotRequestMessage> messages,
+            string preparedUserMessageContent,
+            CopilotContextProvenanceSnapshot contextProvenance)
         {
             Messages = messages ?? Array.Empty<CopilotRequestMessage>();
             PreparedUserMessageContent = preparedUserMessageContent ?? string.Empty;
+            ContextProvenance = contextProvenance ?? CopilotContextProvenanceSnapshot.Empty;
         }
 
         public IReadOnlyList<CopilotRequestMessage> Messages { get; }
 
         public string PreparedUserMessageContent { get; }
+
+        internal CopilotContextProvenanceSnapshot ContextProvenance { get; }
     }
 
     public sealed class CopilotAgentRunResult

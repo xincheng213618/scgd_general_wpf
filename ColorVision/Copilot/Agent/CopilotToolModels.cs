@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -9,9 +10,15 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentToolInput
     {
-        public static CopilotAgentToolInput Empty { get; } = new();
+        private static readonly IReadOnlyDictionary<string, object?> EmptyArguments =
+            new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
 
-        public IReadOnlyDictionary<string, object?> Arguments { get; init; } = new Dictionary<string, object?>();
+        public static CopilotAgentToolInput Empty { get; } = new()
+        {
+            Arguments = EmptyArguments,
+        };
+
+        public IReadOnlyDictionary<string, object?> Arguments { get; init; } = EmptyArguments;
 
         public string Query { get; init; } = string.Empty;
 
@@ -275,6 +282,8 @@ namespace ColorVision.Copilot
         public CopilotAgentMode Mode { get; init; } = CopilotAgentMode.Auto;
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
+
+        internal CopilotAgentTaskEventJournalSnapshot? TaskEventJournalBaseline { get; init; }
 
         public CopilotAgentRecoveryRequest? Recovery { get; init; }
 
@@ -641,6 +650,17 @@ namespace ColorVision.Copilot
         Transient,
         Internal,
         Cancelled,
+        OutcomeUnknown,
+    }
+
+    internal static class CopilotToolFailureKindProtocol
+    {
+        public static string Format(CopilotToolFailureKind failureKind)
+        {
+            return failureKind == CopilotToolFailureKind.OutcomeUnknown
+                ? "outcome_unknown"
+                : failureKind.ToString().ToLowerInvariant();
+        }
     }
 
     public sealed class CopilotToolExecutionInfo

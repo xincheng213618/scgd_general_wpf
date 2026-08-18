@@ -9,7 +9,7 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(conversation);
             InferLegacyRequestMode(conversation, assistantMessage);
-            var checkpoint = conversation.AgentSessionCheckpoint;
+            var checkpoint = conversation.CreateAgentContinuationCheckpoint();
             if (assistantMessage == null
                 || assistantMessage.IsUser
                 || assistantMessage.RequestMode == CopilotAgentMode.Chat

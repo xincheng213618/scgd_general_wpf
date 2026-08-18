@@ -110,6 +110,7 @@ namespace ColorVision.Copilot
                     $"Copilot background process shutdown failed: {exception}");
             }
             CopilotShellCommandOutputArchiveRegistry.Shared.Dispose();
+            CopilotToolOutputArchiveRegistry.Shared.Dispose();
             FinalizeUnstartedRunsForShutdown(scheduledRuns);
             try
             {

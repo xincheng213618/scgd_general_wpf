@@ -344,7 +344,16 @@ namespace ColorVision.Copilot
                 var frozenArguments = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
                 foreach (var property in serializedArguments.EnumerateObject())
                 {
-                    if (!frozenArguments.TryAdd(property.Name, property.Value.Clone()))
+                    var sourceValue = input.Arguments[property.Name];
+                    var frozenValue = sourceValue switch
+                    {
+                        null => null,
+                        string or bool or byte or sbyte or short or ushort or int or uint
+                            or long or ulong or float or double or decimal => sourceValue,
+                        JsonElement element => element.Clone(),
+                        _ => property.Value.Clone(),
+                    };
+                    if (!frozenArguments.TryAdd(property.Name, frozenValue))
                     {
                         snapshot = CopilotAgentToolInput.Empty;
                         error = $"Tool arguments contain the duplicate field '{property.Name}'.";
@@ -368,7 +377,7 @@ namespace ColorVision.Copilot
             catch
             {
                 snapshot = CopilotAgentToolInput.Empty;
-                error = "Tool arguments could not be frozen into an immutable approval snapshot.";
+                error = "Tool arguments could not be frozen into an immutable execution snapshot.";
                 return false;
             }
         }

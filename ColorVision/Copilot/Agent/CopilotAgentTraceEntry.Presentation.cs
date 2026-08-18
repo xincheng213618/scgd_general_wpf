@@ -141,6 +141,7 @@ namespace ColorVision.Copilot
                 CopilotToolFailureKind.Authorization => "当前操作没有获得授权。",
                 CopilotToolFailureKind.Transient => "暂时无法完成，Agent 可以重试。",
                 CopilotToolFailureKind.Cancelled => "操作已取消。",
+                CopilotToolFailureKind.OutcomeUnknown => "操作可能仍在完成，重试前需要先核对当前状态。",
                 _ => !string.IsNullOrWhiteSpace(ResultSummary) ? ResultSummary : ErrorMessage,
             };
         }

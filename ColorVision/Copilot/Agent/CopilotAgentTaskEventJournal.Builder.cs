@@ -384,10 +384,10 @@ namespace ColorVision.Copilot
                 : CopilotToolExecutionState.Interrupted.ToString();
             var failureCode = cancelled
                 ? "tool_execution_cancelled"
-                : "tool_terminal_event_missing";
+                : CopilotToolFailureCode.OutcomeUnknown;
             var summary = cancelled
                 ? "Tool execution was cancelled before a terminal result was recorded."
-                : "Tool execution was interrupted before a terminal result was recorded.";
+                : "Tool execution started but was interrupted before a terminal result was recorded; its external outcome is unknown.";
             foreach (var start in latestStarts)
             {
                 Append(
@@ -404,7 +404,8 @@ namespace ColorVision.Copilot
         {
             return (item.Type == CopilotAgentTaskEventType.ToolCompleted
                     && string.Equals(item.SubjectId, callSubjectId, StringComparison.Ordinal))
-                || (item.Type == CopilotAgentTaskEventType.ApprovalDenied
+                || ((item.Type is CopilotAgentTaskEventType.ApprovalRequested
+                        or CopilotAgentTaskEventType.ApprovalDenied)
                     && (string.Equals(item.SubjectId, callSubjectId, StringComparison.Ordinal)
                         || item.RelatedIds.Contains(callSubjectId, StringComparer.Ordinal)));
         }

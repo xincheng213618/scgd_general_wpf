@@ -8,6 +8,84 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotTurnTranscriptReplayTests
 {
     [Fact]
+    public void TurnRequestFreezesTheSubmittedProfile()
+    {
+        var submittedProfile = new CopilotProfileConfig
+        {
+            Id = "submitted-profile",
+            Model = "submitted-model",
+            BaseUrl = "https://submitted.example/v1",
+        };
+        var request = new CopilotTurnRequest(
+            submittedProfile,
+            CopilotAgentMode.Auto,
+            userText: "inspect",
+            existingRequestContent: string.Empty,
+            chatAttachmentContextCaptured: false,
+            refreshExternalContext: true,
+            new CopilotAgentHostContextSnapshot(
+                activeDocumentPath: null,
+                solutionDirectoryPath: null,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: null),
+            CopilotConversationHistoryWindow.ResolveLimits(32_000, 4_096),
+            sessionCheckpoint: null,
+            recovery: null,
+            runControl: null,
+            new CopilotAgentDefaultsConfig(),
+            externalMcpServers: null,
+            conversationId: "profile-snapshot-conversation",
+            taskId: "profile-snapshot-turn");
+
+        submittedProfile.Model = "mutated-model";
+        submittedProfile.BaseUrl = "https://mutated.example/v1";
+
+        Assert.NotSame(submittedProfile, request.Profile);
+        Assert.Equal("submitted-model", request.Profile.Model);
+        Assert.Equal("https://submitted.example/v1", request.Profile.BaseUrl);
+    }
+
+    [Fact]
+    public void TurnRequestPreservesJournalBaselineWithoutARecoveryCheckpoint()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordStop(CopilotAgentStopReason.Cancelled);
+        var baseline = journal.Snapshot();
+
+        var request = new CopilotTurnRequest(
+            new CopilotProfileConfig(),
+            CopilotAgentMode.Auto,
+            userText: "continue",
+            existingRequestContent: string.Empty,
+            chatAttachmentContextCaptured: false,
+            refreshExternalContext: true,
+            new CopilotAgentHostContextSnapshot(
+                activeDocumentPath: null,
+                solutionDirectoryPath: null,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: null),
+            CopilotConversationHistoryWindow.ResolveLimits(32_000, 4_096),
+            sessionCheckpoint: null,
+            recovery: null,
+            runControl: null,
+            new CopilotAgentDefaultsConfig(),
+            externalMcpServers: null,
+            conversationId: "journal-baseline-conversation",
+            taskId: "journal-baseline-turn",
+            taskEventJournalBaseline: baseline);
+
+        Assert.Null(request.SessionCheckpoint);
+        Assert.Same(baseline, request.TaskEventJournalBaseline);
+    }
+
+    [Fact]
     public async Task CapturedChatRuntimeTranscriptReplaysToTheSameCompletion()
     {
         using var handler = new StaticChatHandler();

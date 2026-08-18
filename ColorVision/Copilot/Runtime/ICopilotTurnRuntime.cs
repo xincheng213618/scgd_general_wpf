@@ -464,9 +464,10 @@ namespace ColorVision.Copilot
             CopilotAgentAccessContext? accessContext = null,
             string? activeGoalText = null,
             CopilotWorkspaceReviewTargetContext? workspaceReviewTarget = null,
-            CopilotAgentSkillReference? agentSkillReference = null)
+            CopilotAgentSkillReference? agentSkillReference = null,
+            CopilotAgentTaskEventJournalSnapshot? taskEventJournalBaseline = null)
         {
-            Profile = profile ?? throw new ArgumentNullException(nameof(profile));
+            Profile = (profile ?? throw new ArgumentNullException(nameof(profile))).Clone();
             Mode = mode;
             UserText = userText ?? string.Empty;
             ExistingRequestContent = existingRequestContent ?? string.Empty;
@@ -475,6 +476,9 @@ namespace ColorVision.Copilot
             HostContext = hostContext ?? throw new ArgumentNullException(nameof(hostContext));
             HistoryLimits = historyLimits;
             SessionCheckpoint = sessionCheckpoint;
+            TaskEventJournalBaseline = taskEventJournalBaseline?.IsStructurallyValid() == true
+                ? taskEventJournalBaseline
+                : sessionCheckpoint?.TaskEventJournal;
             Recovery = recovery;
             RunControl = runControl;
             AgentDefaults = (agentDefaults ?? throw new ArgumentNullException(nameof(agentDefaults))).Clone();
@@ -518,6 +522,8 @@ namespace ColorVision.Copilot
         public CopilotConversationHistoryLimits HistoryLimits { get; }
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; }
+
+        public CopilotAgentTaskEventJournalSnapshot? TaskEventJournalBaseline { get; }
 
         public CopilotAgentRecoveryRequest? Recovery { get; }
 

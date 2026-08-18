@@ -227,6 +227,14 @@ namespace ColorVision.Copilot
 
         public int RetainedHistoryEstimatedTokens { get; init; }
 
+        public int CurrentModelSurfaceMessages { get; init; }
+
+        public int ShadowedModelSurfaceMessages { get; init; }
+
+        public int LogOnlySurfaceMessages { get; init; }
+
+        public bool HasCurrentCompactionSummary { get; init; }
+
         public int HistoryMaximumMessages { get; init; }
 
         public int HistoryMaximumCharacters { get; init; }
@@ -1048,6 +1056,15 @@ namespace ColorVision.Copilot
                     .Append(FormatCount(snapshot.SourceHistoryCharacters))
                     .AppendLine(" 字符保留");
             }
+            builder.Append("模型消息表面：当前 ")
+                .Append(FormatCount(snapshot.CurrentModelSurfaceMessages));
+            if (snapshot.HasCurrentCompactionSummary)
+                builder.Append(" + 1 条压缩摘要");
+            builder.Append("；已被摘要替代 ")
+                .Append(FormatCount(snapshot.ShadowedModelSurfaceMessages))
+                .Append("；仅本地日志 ")
+                .Append(FormatCount(snapshot.LogOnlySurfaceMessages))
+                .AppendLine("。");
             builder.Append("历史预算：最多 ")
                 .Append(FormatCount(snapshot.HistoryMaximumMessages))
                 .Append(" 条 / ")

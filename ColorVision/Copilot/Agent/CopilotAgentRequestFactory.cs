@@ -352,6 +352,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
 
+        internal CopilotAgentTaskEventJournalSnapshot? TaskEventJournalBaseline { get; init; }
+
         public CopilotAgentRecoveryRequest? Recovery { get; init; }
 
         public CopilotAgentRunControl? RunControl { get; init; }
@@ -660,6 +662,9 @@ namespace ColorVision.Copilot
                 PreferredShell = agentDefaults.PreferredShell,
                 Mode = plan.Mode,
                 SessionCheckpoint = input.SessionCheckpoint,
+                TaskEventJournalBaseline = input.TaskEventJournalBaseline?.IsStructurallyValid() == true
+                    ? input.TaskEventJournalBaseline
+                    : input.SessionCheckpoint?.TaskEventJournal,
                 Recovery = input.SessionCheckpoint == null ? null : input.Recovery,
                 RunControl = input.RunControl,
                 RunBudgetDefaults = agentDefaults.CreateRunBudgetDefaults(),

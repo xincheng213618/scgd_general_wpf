@@ -123,6 +123,8 @@ namespace ColorVision.Copilot
 
         internal string? FormattedModelResult { get; set; }
 
+        internal CopilotToolOutputArchiveSnapshot? ToolOutputArchive { get; set; }
+
         public CopilotToolInvocation Invocation { get; init; } = null!;
 
         public CopilotToolResult Result { get; init; } = new();
@@ -271,6 +273,22 @@ namespace ColorVision.Copilot
                 + truncationMarker
                 + value[tailStart..];
         }
+    }
+
+    internal sealed class CopilotToolExecutionCancellationException : OperationCanceledException
+    {
+        public CopilotToolExecutionCancellationException(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken)
+            : base(
+                "Tool execution was cancelled after it entered the running stage.",
+                innerException: null,
+                cancellationToken)
+        {
+            Outcome = outcome ?? throw new ArgumentNullException(nameof(outcome));
+        }
+
+        public CopilotToolExecutionOutcome Outcome { get; }
     }
 
     public sealed class CopilotToolExecutionHookContext

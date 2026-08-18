@@ -88,18 +88,29 @@ namespace ColorVision.Copilot
                 return [CreateToolBlocker(denied, CopilotAgentBlockerKind.Approval, "approval_denied", "A protected action was denied or expired.", true)];
 
             var permanentFailure = steps.LastOrDefault(step => step != null
-                && step.Execution.State is CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut
+                && (step.Execution.State is CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut
+                    || step.Execution.State == CopilotToolExecutionState.Interrupted
+                    && string.Equals(
+                        CopilotToolFailureCode.Normalize(step.Observation.FailureCode),
+                        CopilotToolFailureCode.OutcomeUnknown,
+                        StringComparison.Ordinal))
                 && !step.Execution.RetryEligible);
             if (permanentFailure == null)
                 return Array.Empty<CopilotAgentBlockerSnapshot>();
 
             var specificFailureCode = CopilotToolFailureCode.Normalize(permanentFailure.Observation.FailureCode);
             var failureCode = !string.IsNullOrWhiteSpace(specificFailureCode)
-                ? "tool_" + specificFailureCode
+                ? specificFailureCode.StartsWith("tool_", StringComparison.Ordinal)
+                    ? specificFailureCode
+                    : "tool_" + specificFailureCode
                 : permanentFailure.Execution.FailureKind == CopilotToolFailureKind.None
                     ? "tool_failure"
-                    : "tool_" + permanentFailure.Execution.FailureKind.ToString().ToLowerInvariant();
-            var summary = permanentFailure.Execution.FailureKind == CopilotToolFailureKind.Conflict
+                    : "tool_" + CopilotToolFailureKindProtocol.Format(permanentFailure.Execution.FailureKind);
+            var outcomeUnknown = permanentFailure.Execution.FailureKind == CopilotToolFailureKind.OutcomeUnknown
+                || string.Equals(specificFailureCode, CopilotToolFailureCode.OutcomeUnknown, StringComparison.Ordinal);
+            var summary = outcomeUnknown
+                ? "The tool crossed its execution boundary before the final external outcome was known. Verify the current state before retrying."
+                : permanentFailure.Execution.FailureKind == CopilotToolFailureKind.Conflict
                 ? "The Agent repeated an identical tool call without producing new progress."
                 : "A required tool failed and the executor did not permit an automatic retry.";
             return [CreateToolBlocker(
@@ -107,7 +118,7 @@ namespace ColorVision.Copilot
                 CopilotAgentBlockerKind.ToolFailure,
                 failureCode,
                 summary,
-                false)];
+                outcomeUnknown)];
         }
 
         private static CopilotAgentBlockerSnapshot CreateToolBlocker(

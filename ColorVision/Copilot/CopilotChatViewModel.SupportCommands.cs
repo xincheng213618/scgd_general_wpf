@@ -394,6 +394,9 @@ namespace ColorVision.Copilot
                 historyLimits,
                 InputText);
             var compaction = conversation?.Compaction;
+            var conversationSurface =
+                CopilotConversationCompactionContext.CaptureSurface(
+                    conversation);
             var personality = CopilotResponsePersonalitySelection.Resolve(
                 conversation,
                 projectInstructionOptions);
@@ -510,6 +513,14 @@ namespace ColorVision.Copilot
                 RetainedHistoryEstimatedTokens = history.Messages.Length == 0
                     ? 0
                     : CopilotTokenEstimator.WeightToTokenEstimate(retainedHistoryWeight),
+                CurrentModelSurfaceMessages =
+                    conversationSurface.CurrentMessages,
+                ShadowedModelSurfaceMessages =
+                    conversationSurface.ShadowedMessages,
+                LogOnlySurfaceMessages =
+                    conversationSurface.LogOnlyMessages,
+                HasCurrentCompactionSummary =
+                    conversationSurface.HasCompactionSummary,
                 HistoryMaximumMessages = historyLimits.MaximumMessages,
                 HistoryMaximumCharacters = historyLimits.MaximumCharacters,
                 HistoryMaximumContentCharacters = historyLimits.MaximumContentCharacters,

@@ -363,7 +363,10 @@ namespace ColorVision.Copilot
             }
             var id = sourceId + ":" + NormalizeCapabilityKey(capabilityKey);
             var description = Sanitize(rawDescription, MaximumDescriptionLength);
-            var schema = GetSchemaText(tool, name);
+            var schema = GetSchemaText(
+                tool,
+                name,
+                requireClosedObjects: sourceKind != CopilotCapabilitySourceKind.ExternalMcp);
             var schemaFingerprint = CreateHash(schema)[..16].ToLowerInvariant();
             var rawVersionFingerprint = tool is ICopilotCapabilityCatalogVersionIdentity versionIdentity
                 ? versionIdentity.CatalogVersionFingerprint ?? string.Empty
@@ -510,13 +513,24 @@ namespace ColorVision.Copilot
             return key.Length <= 96 ? key : key[..83] + "-" + CreateHash(source)[..12].ToLowerInvariant();
         }
 
-        private static string GetSchemaText(ICopilotTool tool, string toolName)
+        private static string GetSchemaText(
+            ICopilotTool tool,
+            string toolName,
+            bool requireClosedObjects)
         {
             string schema;
             try
             {
                 var inputSchema = tool.InputSchema
                     ?? throw new InvalidOperationException("The tool returned a null input schema.");
+                if (!CopilotToolInputContractValidator.TryValidateSchema(
+                        inputSchema.JsonSchema,
+                        out var schemaError,
+                        requireClosedObjects))
+                {
+                    throw new InvalidOperationException(
+                        $"The tool input schema is not executable by the shared runtime: {schemaError}");
+                }
                 schema = inputSchema.JsonSchema.GetRawText();
             }
             catch (Exception ex)

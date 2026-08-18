@@ -159,11 +159,8 @@ namespace ColorVision.Copilot
                     CompleteThinking(assistantMessage);
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);
                 case CopilotAgentEventType.Completed:
-                    assistantMessage.CompleteActiveAgentTraces(
-                        CopilotToolExecutionState.Interrupted,
-                        CopilotToolFailureKind.Internal,
-                        "tool_terminal_event_missing",
-                        "The Agent turn completed before this tool call emitted an authoritative terminal result.");
+                    assistantMessage.CompleteActiveAgentTracesAfterUnexpectedTurnEnd(
+                        "The Agent turn completed unexpectedly");
                     CancelPendingUserQuestion(assistantMessage);
                     CompleteThinking(assistantMessage);
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);

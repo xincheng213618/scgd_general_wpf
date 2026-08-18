@@ -320,6 +320,36 @@ public sealed class CopilotCodexPluginsFeatureTests
     }
 
     [Fact]
+    public void ExtensionToolWithUnsupportedSchemaIsRejectedAtTheRegistrationBoundary()
+    {
+        var extensionRegistry = new CopilotAgentExtensionRegistry();
+        var capabilityCatalog = new CopilotCapabilityCatalog();
+        using var bridge = new CopilotAgentExtensionBridge(
+            extensionRegistry,
+            capabilityCatalog,
+            reservedToolNames: [],
+            new CopilotToolExecutionHookRegistry());
+        using var registration = extensionRegistry.Register(
+            new CopilotAgentExtensionRegistration
+            {
+                SourceId = "test.invalid-tool-schema",
+                SourceName = "Invalid schema extension",
+                SourceVersion = "1.0.0",
+                Tools = [new UnsupportedSchemaModuleTool()],
+            });
+
+        var snapshot = bridge.GetSnapshot();
+        var source = Assert.Single(snapshot.Sources);
+        var issue = Assert.Single(snapshot.Issues);
+        Assert.Equal(1, source.DeclaredToolCount);
+        Assert.Equal(0, source.ActiveToolCount);
+        Assert.Empty(snapshot.Tools);
+        Assert.Empty(capabilityCatalog.GetSnapshot().Capabilities);
+        Assert.Equal(CopilotAgentExtensionFailureCodes.CapabilityPublishFailed, issue.FailureCode);
+        Assert.DoesNotContain("$ref", issue.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CapabilityCatalogActivationFailureUsesStableCodeWithoutCapacityDetails()
     {
         var catalog = new CopilotCapabilityCatalog();
@@ -509,6 +539,21 @@ public sealed class CopilotCodexPluginsFeatureTests
             Interlocked.Increment(ref _executionCount);
             return Task.FromResult(CopilotModuleToolResult.Ok("Module tool executed."));
         }
+    }
+
+    private sealed class UnsupportedSchemaModuleTool : ICopilotModuleTool
+    {
+        public string Name => "UnsupportedSchemaModuleTool";
+
+        public string Description => "A module tool with a schema keyword the shared runtime cannot execute.";
+
+        public string InputJsonSchema =>
+            "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\",\"$ref\":\"#/$defs/value\"}},\"additionalProperties\":false}";
+
+        public Task<CopilotModuleToolResult> ExecuteAsync(
+            CopilotModuleToolRequest request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotModuleToolResult.Ok("This tool must never be activated."));
     }
 
     private sealed class RecordingModuleHook : ICopilotModuleToolExecutionHook

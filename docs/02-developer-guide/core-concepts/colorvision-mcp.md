@@ -48,7 +48,6 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 | 9 | `apply_template_patch` + 用户批准 + `confirm_action` | 只对已预览、已批准、参数匹配的模板 patch 生效 |
 
 工具返回 `confirmation-required` 时，客户端应把 `action_id`、`tool_name`、用于展示的 `arguments_summary` 和绑定完整规范化原始参数的 `arguments_digest` 交给用户确认。用户在 ColorVision 待确认区批准后，客户端必须原样提交 `action_id`、`tool_name` 与 `arguments_digest` 调用 `confirm_action`；摘要不会作为执行授权。
-
 ## 工具和资源
 
 | 分类 | 工具或 URI | 风险 |
@@ -61,19 +60,20 @@ bearer_token_env_var = "COLORVISION_MCP_TOKEN"
 | 待确认操作 | `execute_menu`、`apply_template_patch`、`set_language`、`confirm_action` | 需要用户批准 |
 | 资源 | `colorvision://live-context/current`、`workspace/current`、`logs/recent`、`template/current`、`flow/current`、`mcp/audit-*`、`copilot/capabilities`、`copilot/task-events` | 只读快照 |
 
-工具列表和路由都由 `CopilotMcpToolDefinition` 集合生成；每项把 descriptor 与 handler 绑定在一起，不再维护第二份路由名称表。共享项通过 `SharedDefinition` 只声明目录项和 handler，名称、说明、Schema、分类、调用示例与风险均从目录生成。新增或删除工具时修改该定义集合和测试，再同步本页。统一调用入口在路由到 handler 之前执行 descriptor 的冻结 Schema：拒绝未知参数、缺失必填参数、类型错误、上下界/数组长度错误和非法枚举，返回可审计的 `invalid_arguments`，不会创建确认动作或触发应用状态。与内置 Agent 重叠的能力名称、两侧说明、两侧 Schema、MCP descriptor 元数据、执行路由、Agent trace 展示和执行策略必须经过 `CopilotSharedCapabilityCatalog`；具体 Agent 类、MCP descriptor 和 trace presenter 不再内联重复说明、Schema、调用提示、展示分类或风险字符串。16 项同形能力复用同一个 Schema，文件读取和菜单执行的两个安全/批处理差异则在目录中显式记录原因。目录集中持有 18 项共享能力的 Agent Descriptor，包括访问、风险、审批、幂等性、并发、超时、审计和 evidence 模式；Agent 工具运行时直接引用该对象，MCP 风险标签从同一策略派生。标记为 `ApplicationCapabilityRuntime` 的 12 项能力由 Agent wrapper 与本机 MCP 请求处理器共用进程级默认 dispatcher；自定义 environment 只能通过显式注入形成隔离实例。文档与日志读取标为 `SurfaceCapabilityAdapter`，共享业务能力但保留各自协议投影；四个文件系统读取能力标为 `WorkspaceAuthorizationAdapter`，只保留 Agent 本轮证据根与外部 MCP workspace 根的授权差异。每个共享能力必须显式声明一种非空执行路由，搜索算法和规范结果文本仍由同一 capability 生成。两个组合根启动时再次核对说明、Schema、MCP 分类/调用示例、完整 Agent 策略、执行路由与 MCP 风险标签，发现漂移就拒绝启动该工具面。`colorvision://copilot/task-events` 和 `get_agent_task_events` 只读取当前选中会话最近一次已保存的有界、脱敏 Agent journal。开始新一轮时保留上一安全点，直到新的增量 checkpoint 原子替换它；运行终态再由会话聚合根一次提交。默认 diagnostic bundle 不包含该数据。查询支持事件类型、run、工具、subject/related ID 和序号游标，但不会返回工具参数、steering 原文或可复用审批。
+工具列表和路由都由 `CopilotMcpToolDefinition` 集合生成；每项把 descriptor 与 handler 绑定在一起，不再维护第二份路由名称表。非共享项在 dispatcher 内直接定义；18 项共享能力则从 `CopilotSharedCapabilityCatalog.All` 自动物化 descriptor，名称、说明、Schema、分类、调用示例与风险均从目录生成，只在一个按稳定 capability ID 分派的 resolver 中选择具体 handler。目录新增共享能力但 resolver 未覆盖时，dispatcher 构造会立即失败，不需要再同步维护第二份共享 descriptor 清单。新增或删除非共享工具时修改本地定义集合和测试，再同步本页。dispatcher 构造时先验证所有冻结 Schema 都是递归封闭的对象契约，且 required 引用、类型、枚举及范围约束内部一致；未由运行时实现的 Schema 关键字也会直接拒绝，避免发布“只描述、不执行”的约束。任一 Schema 损坏会在工具面启动前失败。统一调用入口从不区分大小写的定义索引取得同一 descriptor，在路由到 handler 之前递归执行其 Schema：拒绝任意层级的未知参数、缺失必填参数、类型错误、上下界/数组长度错误和非法枚举，返回可审计的 `invalid_arguments`，不会创建确认动作或触发应用状态。与内置 Agent 重叠的能力名称、两侧说明、两侧 Schema、MCP descriptor 元数据、执行路由、Agent trace 展示和执行策略必须经过 `CopilotSharedCapabilityCatalog`；具体 Agent 类、MCP descriptor 和 trace presenter 不再内联重复说明、Schema、调用提示、展示分类或风险字符串。16 项同形能力复用同一个 Schema，文件读取和菜单执行的两个安全/批处理差异则在目录中显式记录原因。目录集中持有 18 项共享能力的 Agent Descriptor，包括访问、风险、审批、幂等性、并发、超时、审计和 evidence 模式；Agent 工具运行时直接引用该对象，MCP 风险标签从同一策略派生。标记为 `ApplicationCapabilityRuntime` 的 12 项能力由 Agent wrapper 与本机 MCP 请求处理器共用进程级默认 dispatcher；自定义 environment 只能通过显式注入形成隔离实例。文档与日志读取标为 `SurfaceCapabilityAdapter`，共享业务能力但保留各自协议投影；四个文件系统读取能力标为 `WorkspaceAuthorizationAdapter`，只保留 Agent 本轮证据根与外部 MCP workspace 根的授权差异。每个共享能力必须显式声明一种非空执行路由，搜索算法和规范结果文本仍由同一 capability 生成。两个组合根启动时再次核对说明、Schema、MCP 分类/调用示例、完整 Agent 策略、执行路由与 MCP 风险标签，发现漂移就拒绝启动该工具面。`colorvision://copilot/task-events` 和 `get_agent_task_events` 只读取当前选中会话最近一次已保存的有界、脱敏 Agent journal。开始新一轮时保留上一安全点，直到新的增量 checkpoint 原子替换它；运行终态再由会话聚合根一次提交。默认 diagnostic bundle 不包含该数据。查询支持事件类型、run、工具、subject/related ID 和序号游标，但不会返回工具参数、steering 原文或可复用审批。
 
 ## 业务上下文扩展
 
 流程、设备、图像和模板通过 `CopilotBusinessContextCoordinator` 发布同一种 `CopilotBusinessContextBundle`。新增界面上下文时优先实现 `ICopilotBusinessContextSource`，只提供结构化快照，使用 `CopilotBusinessContextBuilder` 脱敏，并让发布和发送复用同一个 bundle。
-诊断入口默认使用 `CopilotPromptMode.Diagnose`。外部 MCP 模板写入保持 `suggest_template_patch -> preview_template_patch -> apply_template_patch -> 用户批准 -> confirm_action`；内置 Agent 的 `TemplatePatch` 工具复用相同预览和冲突校验，但其待确认动作在 ColorVision 用户批准后直接应用到未保存的编辑器。MCP 构造时从同一组定义生成描述和路由，并校验名称唯一性；共享 capability 还会校验 Agent 与 MCP 两侧均存在。
+Agent 组合根同样遍历 `CopilotSharedCapabilityCatalog.All` 自动物化 18 项共享工具，只在一个 capability ID resolver 中选择具体 adapter；因此目录是两侧唯一共享清单，Agent 注册表和 MCP descriptor 表都不再复制名称集合。任一侧缺少 resolver 分支都会在构造阶段失败。
+
+诊断入口默认使用 `CopilotPromptMode.Diagnose`。外部 MCP 模板写入保持 `suggest_template_patch -> preview_template_patch -> apply_template_patch -> 用户批准 -> confirm_action`；内置 Agent 的 `TemplatePatch` 工具复用相同预览和冲突校验，但其待确认动作在 ColorVision 用户批准后直接应用到未保存的编辑器。MCP 构造时从本地定义和 canonical shared catalog 生成描述与路由，并校验名称唯一性；共享 capability 还会校验 Agent 与 MCP 两侧均存在。
 
 ## 安全要求
 
 明确不支持设备控制、流程启动/停止/重跑、任意 shell/cmd/PowerShell/batch/Python 或进程执行、文件删除、任意路径读取、配置静默修改、二进制图片通过上下文快照上传。
 
 文件工具只允许读取规范化后的 ColorVision 工作区根内文本文件。每个已初始化客户端使用由随机 session ID 派生的不可逆 caller identity；即使两个客户端都来自 `127.0.0.1`，一个客户端也不能确认或执行另一个客户端创建的动作。审计、审计摘要和待审批计数按该会话隔离；未绑定到应用内 Copilot 对话的外部 MCP 会话不能读取进程级 Agent 任务事件。确认动作会在本地记录 `action_id`、工具名、风险、过期时间、脱敏参数摘要和完整参数的 SHA-256 指纹；执行时使用固定时间比较核对该指纹和 caller identity。通用 MCP 审计资源只标记是否为审批事件，不返回可复用的 `action_id` 或参数指纹；客户端只能从自己创建动作的原始响应取得确认载荷。token、原始 session ID、密码、API key、Authorization、bearer secret 等敏感值不会进入待确认动作。
-
 ## 排查
 
 | 现象 | 先查 |

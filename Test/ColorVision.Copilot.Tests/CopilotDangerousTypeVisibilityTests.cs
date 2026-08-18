@@ -43,6 +43,7 @@ namespace ColorVision.Copilot.Tests
             yield return [typeof(CopilotTemporaryRedactedOutputArchive)];
             yield return [typeof(CopilotShellCommandOutputCapture)];
             yield return [typeof(CopilotShellCommandOutputArchiveRegistry)];
+            yield return [typeof(CopilotToolOutputArchiveRegistry)];
             yield return [typeof(CopilotGitWorkingTreeInspectionService)];
             yield return [typeof(CopilotGitDiffInspectionService)];
             yield return [typeof(CopilotDatabaseSqlService)];
@@ -75,6 +76,7 @@ namespace ColorVision.Copilot.Tests
                 typeof(CopilotTcpPortInspectionService),
                 typeof(CopilotShellCommandTool),
                 typeof(CopilotReadShellCommandOutputTool),
+                typeof(CopilotReadToolOutputTool),
                 typeof(CopilotInspectGitWorkingTreeTool),
                 typeof(CopilotInspectGitDiffTool),
                 typeof(CopilotQueryDatabaseSqlTool),

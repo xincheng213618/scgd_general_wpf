@@ -46,6 +46,59 @@ public sealed class CopilotSharedCapabilityInputContractTests
     }
 
     [Fact]
+    public void StructuredAgentInputsRecursivelyEnforceTheSharedJsonSchemaValidator()
+    {
+        var schema = CopilotToolInputSchema.FromJsonSchema(
+            JsonSerializer.Deserialize<JsonElement>(
+                """
+                {
+                  "type": "object",
+                  "properties": {
+                    "config": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string", "minLength": 1 }
+                      },
+                      "required": ["name"],
+                      "additionalProperties": false
+                    },
+                    "modes": {
+                      "type": "array",
+                      "items": { "type": "string", "enum": ["safe", "fast"] },
+                      "minItems": 1
+                    }
+                  },
+                  "required": ["config", "modes"],
+                  "additionalProperties": false
+                }
+                """));
+
+        Assert.False(schema.TryBind(
+            new Dictionary<string, object?>
+            {
+                ["config"] = new Dictionary<string, object?>
+                {
+                    ["name"] = "valid",
+                    ["unexpected"] = true,
+                },
+                ["modes"] = new[] { "safe" },
+            },
+            out _,
+            out var nestedError));
+        Assert.Contains("config.unexpected", nestedError, StringComparison.Ordinal);
+
+        Assert.False(schema.TryBind(
+            new Dictionary<string, object?>
+            {
+                ["config"] = new Dictionary<string, object?> { ["name"] = "valid" },
+                ["modes"] = new[] { "unsafe" },
+            },
+            out _,
+            out var arrayError));
+        Assert.Contains("modes[0]", arrayError, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task MigratedApplicationToolsForwardStructuredArguments()
     {
         var request = new CopilotAgentRequest

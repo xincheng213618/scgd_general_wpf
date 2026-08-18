@@ -77,7 +77,9 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
         Assert.True(original.IsStructurallyValid());
         Assert.True(rewritten.IsStructurallyValid());
         Assert.False(CopilotAgentTaskEventJournal.AreEquivalent(original, rewritten));
-        Assert.False(CopilotAgentTaskEventJournal.IsStrictlyNewerEvidence(rewritten, original));
+        Assert.False(CopilotAgentTaskEventJournal.IsLegacyNewerEvidenceForNormalization(
+            rewritten,
+            original));
     }
 
     [Fact]
@@ -264,10 +266,14 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             .ToArray();
         Assert.Collection(
             terminalEvents,
-            item => AssertSyntheticTerminal(item, "call-1", CopilotToolExecutionState.Interrupted, "tool_terminal_event_missing"),
-            item => AssertSyntheticTerminal(item, "call-2", CopilotToolExecutionState.Interrupted, "tool_terminal_event_missing"));
+            item => AssertSyntheticTerminal(item, "call-1", CopilotToolExecutionState.Interrupted, CopilotToolFailureCode.OutcomeUnknown),
+            item => AssertSyntheticTerminal(item, "call-2", CopilotToolExecutionState.Interrupted, CopilotToolFailureCode.OutcomeUnknown));
         var stopped = Assert.Single(snapshot.Events, item => item.Type == CopilotAgentTaskEventType.RunStopped);
         Assert.All(terminalEvents, item => Assert.True(item.Sequence < stopped.Sequence));
+        var recoveryPrompt = CopilotAgentTaskEventJournal.BuildAttemptedToolRecoveryPrompt(snapshot);
+        Assert.Contains("external outcome is unknown", recoveryPrompt, StringComparison.Ordinal);
+        Assert.Contains("do not retry a write or non-idempotent operation blindly", recoveryPrompt, StringComparison.Ordinal);
+        Assert.Contains(CopilotToolFailureCode.OutcomeUnknown, recoveryPrompt, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -739,6 +745,38 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void ApprovalRequestClosesTheInitialAttemptWithoutUnknownOutcome()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("approval-call")));
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = true,
+                Summary = "Approval required.",
+            },
+            CreateExecution(
+                "approval-call",
+                CopilotToolExecutionState.AwaitingApproval,
+                approvalActionId: "approval-action",
+                completedAtUtc: DateTimeOffset.UtcNow)));
+
+        journal.RecordStop(CopilotAgentStopReason.Interrupted);
+
+        var snapshot = journal.Snapshot();
+        Assert.DoesNotContain(snapshot.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        var approval = Assert.Single(snapshot.Events, item => item.Type == CopilotAgentTaskEventType.ApprovalRequested);
+        Assert.Equal(CopilotToolExecutionState.AwaitingApproval.ToString(), approval.State);
+        var recoveryPrompt = CopilotAgentTaskEventJournal.BuildAttemptedToolRecoveryPrompt(snapshot);
+        Assert.Contains("protected operation did not execute", recoveryPrompt, StringComparison.Ordinal);
+        var recovered = Assert.Single(ParseAttemptedToolCalls(recoveryPrompt)).Value;
+        Assert.Equal(CopilotToolExecutionState.AwaitingApproval.ToString(), recovered.GetProperty("State").GetString());
+        Assert.Equal(string.Empty, recovered.GetProperty("FailureCode").GetString());
+    }
+
+    [Fact]
     public void InterruptedRunRecoveryRepairsCheckpointJournalBeforeRunStop()
     {
         var profile = CreateProfile();
@@ -769,7 +807,7 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             terminal,
             "crashed-call",
             CopilotToolExecutionState.Interrupted,
-            "tool_terminal_event_missing");
+            CopilotToolFailureCode.OutcomeUnknown);
         var stopped = Assert.Single(
             recovered.TaskEventJournal.Events,
             item => item.Type == CopilotAgentTaskEventType.RunStopped);

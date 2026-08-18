@@ -35,8 +35,11 @@ namespace ColorVision.Copilot
 
             var requestedCheckpoint = request.SessionCheckpoint;
             var baseExecutionScope = CopilotExecutionScope.ForAgentRun(request);
+            var taskEventJournalBaseline = request.TaskEventJournalBaseline?.IsStructurallyValid() == true
+                ? request.TaskEventJournalBaseline
+                : requestedCheckpoint?.TaskEventJournal;
             var taskEventJournalBuilder = new CopilotAgentTaskEventJournalBuilder(
-                requestedCheckpoint?.TaskEventJournal,
+                taskEventJournalBaseline,
                 baseExecutionScope.RunId);
             var runStartBackgroundShellCommandSnapshots =
                 (_backgroundShellCommandSnapshotProvider(request.ConversationId)

@@ -14,6 +14,7 @@ namespace ColorVision.Copilot
         private readonly Func<Dispatcher?> _dispatcherProvider;
         private readonly Action<Exception> _onError;
         private readonly CopilotChatStateSaveScheduler _scheduler;
+        private int _lastSavePersisted;
         private int _stopState;
 
         public CopilotChatStatePersistenceCoordinator(
@@ -31,7 +32,11 @@ namespace ColorVision.Copilot
             _scheduler = new CopilotChatStateSaveScheduler(
                 SaveSnapshotAsync,
                 onError: onError,
-                onSaved: onSaved);
+                onSaved: () =>
+                {
+                    if (Interlocked.Exchange(ref _lastSavePersisted, 0) == 1)
+                        onSaved();
+                });
         }
 
         public void RequestSave(bool immediate = false) => _scheduler.RequestSave(immediate);
@@ -61,6 +66,8 @@ namespace ColorVision.Copilot
 
         private async Task SaveSnapshotAsync(CancellationToken cancellationToken)
         {
+            Interlocked.Exchange(ref _lastSavePersisted, 0);
+            var captureVersion = _scheduler.RequestedVersion;
             var state = GetState();
             var dispatcher = _dispatcherProvider();
             CopilotChatStateSnapshot snapshot;
@@ -89,10 +96,14 @@ namespace ColorVision.Copilot
                 snapshot = capture.Complete();
             }
 
+            if (_scheduler.RequestedVersion != captureVersion)
+                return;
+
             var serializedState = await Task.Run(
                 () => _stateStore.Serialize(snapshot),
                 cancellationToken).ConfigureAwait(false);
             await _stateStore.SaveSerializedAsync(serializedState, cancellationToken).ConfigureAwait(false);
+            Interlocked.Exchange(ref _lastSavePersisted, 1);
         }
 
         private CopilotChatState GetState() =>

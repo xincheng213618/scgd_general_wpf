@@ -147,6 +147,26 @@ public sealed class CopilotConversationCompactionIntegrityTests
     }
 
     [Fact]
+    public void SummaryMustActuallyShrinkTheReplacedContext()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, new string('a', 2_000)));
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, new string('b', 2_000)));
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.User, "Recent request"));
+        conversation.Messages.Add(new CopilotChatMessage(CopilotChatRole.Assistant, "Recent answer"));
+        var plan = CopilotConversationCompactionPlanner.Create(
+            conversation,
+            new CopilotConversationHistoryLimits(32, 64_000, 32_000),
+            CopilotConversationCompactionPrompt.BuildRequest(string.Empty));
+
+        plan.EnsureSummaryShrinks("Earlier work established the relevant bounded context.");
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            plan.EnsureSummaryShrinks(new string('x', 5_000)));
+
+        Assert.Contains("没有缩小上下文", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void InterruptedAgentTurnPreservesBothTerminalMarkers()
     {
         var paused = new CopilotChatMessage(CopilotChatRole.Assistant, "Partial Agent answer.")

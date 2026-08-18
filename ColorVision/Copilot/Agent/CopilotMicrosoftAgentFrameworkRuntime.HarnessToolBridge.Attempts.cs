@@ -169,7 +169,7 @@ namespace ColorVision.Copilot
 
             private string FormatToolResult(CopilotToolExecutionOutcome outcome)
             {
-                return outcome.FormattedModelResult ?? CopilotFrameworkToolResultFormatter.Format(
+                return CopilotToolOutputArchivePolicy.Format(
                     outcome,
                     _request.ToolOutputTokenLimitOverride);
             }

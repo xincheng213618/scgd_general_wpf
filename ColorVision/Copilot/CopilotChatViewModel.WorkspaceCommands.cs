@@ -619,6 +619,7 @@ namespace ColorVision.Copilot
                         if (summary.Length == 0)
                             throw new InvalidOperationException("模型没有返回可用的压缩摘要。");
                         compactionPlan.TerminalEvidence.EnsurePreserved(summary);
+                        compactionPlan.EnsureSummaryShrinks(summary);
                         if (!Conversations.Contains(conversation) || !conversation.Messages.Contains(compactionPlan.BoundaryMessage))
                             throw new InvalidOperationException("压缩期间会话已发生变化，结果未应用。");
 

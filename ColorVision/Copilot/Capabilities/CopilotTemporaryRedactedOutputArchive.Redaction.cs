@@ -85,13 +85,14 @@ namespace ColorVision.Copilot
                         : Math.Min(
                             MaximumMarkerCharacters - 1,
                             pending.Length);
+                    var writeLength = GetUnicodeSafePrefixLength(
+                        pending,
+                        pending.Length - retainedCharacters);
                     WriteUnderLock(
-                        pending.AsSpan(
-                            0,
-                            pending.Length - retainedCharacters));
+                        pending.AsSpan(0, writeLength));
                     _pendingRaw.Remove(
                         0,
-                        pending.Length - retainedCharacters);
+                        writeLength);
                     return;
                 }
 
@@ -219,10 +220,20 @@ namespace ColorVision.Copilot
             }
 
             var writeLength = Math.Min(value.Length, remaining);
+            if (writeLength < value.Length
+                && writeLength > 0
+                && char.IsHighSurrogate(value[writeLength - 1])
+                && char.IsLowSurrogate(value[writeLength]))
+            {
+                writeLength--;
+            }
             try
             {
-                _stream.Write(MemoryMarshal.AsBytes(
-                    value[..writeLength]));
+                if (writeLength > 0)
+                {
+                    _stream.Write(MemoryMarshal.AsBytes(
+                        value[..writeLength]));
+                }
                 _stream.Flush();
                 _archivedCharacters += writeLength;
                 if (writeLength < value.Length)
@@ -236,6 +247,46 @@ namespace ColorVision.Copilot
             {
                 MarkUnavailableUnderLock(ex);
             }
+        }
+
+        private static int GetUnicodeSafePrefixLength(
+            string value,
+            int maximumCharacters)
+        {
+            var length = Math.Clamp(
+                maximumCharacters,
+                0,
+                value.Length);
+            if (length > 0
+                && length < value.Length
+                && char.IsHighSurrogate(value[length - 1])
+                && char.IsLowSurrogate(value[length]))
+            {
+                length--;
+            }
+            return length;
+        }
+
+        private static string TakeUnicodeSafePage(
+            string value,
+            int maximumCharacters)
+        {
+            if (value.Length <= maximumCharacters)
+            {
+                return value.Length > 0
+                    && char.IsHighSurrogate(value[^1])
+                    ? value[..^1]
+                    : value;
+            }
+
+            var length = maximumCharacters;
+            if (length > 0
+                && char.IsHighSurrogate(value[length - 1])
+                && char.IsLowSurrogate(value[length]))
+            {
+                length++;
+            }
+            return value[..length];
         }
 
         private static int FindSensitiveMarker(

@@ -445,6 +445,7 @@ namespace ColorVision.Copilot
                 UserPromptSubmitAdditionalContexts = userPromptSubmitAdditionalContexts,
                 AsyncHookAdditionalContexts = asyncHookAdditionalContexts,
                 SessionCheckpoint = request.SessionCheckpoint,
+                TaskEventJournalBaseline = request.TaskEventJournalBaseline,
                 Recovery = request.Recovery,
                 RunControl = request.RunControl,
                 AgentDefaults = request.AgentDefaults,

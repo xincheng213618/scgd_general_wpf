@@ -307,6 +307,8 @@ namespace ColorVision.Copilot
                 CopilotBackgroundShellCommandRegistry.Shared.ClearCompleted(target.Id);
                 CopilotShellCommandOutputArchiveRegistry.Shared.ClearConversation(
                     target.Id);
+                CopilotToolOutputArchiveRegistry.Shared.ClearConversation(
+                    target.Id);
                 RemoveManagedAttachmentFiles(managedAttachments);
 
                 if (wasSelected)

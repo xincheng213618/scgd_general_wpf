@@ -63,8 +63,21 @@ namespace ColorVision.Copilot
 
         private static CopilotToolInvocation NormalizeInvocation(CopilotToolInvocation invocation, string callId)
         {
-            var toolInput = invocation.ToolInput ?? CopilotAgentToolInput.Empty;
-            var toolCall = invocation.ToolCall ?? new CopilotToolCall();
+            if (!CopilotAgentToolInputSnapshot.TryCreate(
+                    invocation.ToolInput,
+                    out var toolInput,
+                    out var inputSnapshotError))
+            {
+                throw new InvalidOperationException(inputSnapshotError);
+            }
+            var sourceToolCall = invocation.ToolCall ?? new CopilotToolCall();
+            var toolCall = new CopilotToolCall
+            {
+                ToolName = invocation.Tool.Name,
+                ToolInput = toolInput,
+                Reason = sourceToolCall.Reason ?? string.Empty,
+                IsFallback = sourceToolCall.IsFallback,
+            };
             var executionSignature = CopilotAgentToolInputExactBinding.CreateExecutionSignature(
                 invocation.Tool.Name,
                 toolInput);
@@ -75,17 +88,6 @@ namespace ColorVision.Copilot
                 invocation.Tool.Name,
                 callId,
                 executionSignature);
-            if (string.IsNullOrWhiteSpace(toolCall.ToolName))
-            {
-                toolCall = new CopilotToolCall
-                {
-                    ToolName = invocation.Tool.Name,
-                    ToolInput = toolInput,
-                    Reason = toolCall.Reason,
-                    IsFallback = toolCall.IsFallback,
-                };
-            }
-
             return new CopilotToolInvocation
             {
                 CallId = callId,
@@ -116,7 +118,7 @@ namespace ColorVision.Copilot
                     .Where(binding => binding?.Hook != null)
                     .Where(binding => invocation.AgentRequest.CodexExtensionHooksEnabled
                         || !IsExtensionHookSource(binding.SourceId))
-                    .Take(CopilotToolExecutionHookRegistry.MaxRegistrations + 1)
+                    .Take(MaxInvocationHookBindings)
                     .ToArray(),
             };
         }
@@ -192,6 +194,45 @@ namespace ColorVision.Copilot
                 FailureKind = failureKind,
                 FailureCode = CopilotToolFailureCode.Normalize(failureCode),
             };
+        }
+
+        private static CopilotToolResult CreateExecutionBoundaryFailure(
+            CopilotToolInvocation invocation,
+            TimeSpan timeout,
+            bool wasCancelled,
+            bool outcomeUnknown)
+        {
+            if (outcomeUnknown)
+            {
+                var boundary = wasCancelled
+                    ? "caller cancellation"
+                    : $"its {FormatTimeout(timeout)} execution timeout";
+                return Failure(
+                    invocation.Tool.Name,
+                    $"{invocation.Tool.Name} crossed {boundary} before its final outcome was known.",
+                    "The operation may still be completing or may already have completed. Verify the current external state before retrying.",
+                    CopilotToolFailureKind.OutcomeUnknown,
+                    CopilotToolFailureCode.OutcomeUnknown);
+            }
+
+            return wasCancelled
+                ? Failure(
+                    invocation.Tool.Name,
+                    $"{invocation.Tool.Name} was cancelled.",
+                    "Tool execution was cancelled.",
+                    CopilotToolFailureKind.Cancelled)
+                : Failure(
+                    invocation.Tool.Name,
+                    $"{invocation.Tool.Name} timed out.",
+                    $"The tool exceeded its {FormatTimeout(timeout)} execution timeout.",
+                    CopilotToolFailureKind.Transient);
+        }
+
+        private static bool HasUnknownOutcomeAfterExecutionBoundary(CopilotToolInvocation invocation)
+        {
+            var capability = invocation.Tool.Capability;
+            return capability.Access == CopilotToolAccess.Write
+                || capability.Idempotency != CopilotToolIdempotency.Idempotent;
         }
 
         private static CopilotToolFailureKind NormalizeFailureKind(CopilotToolFailureKind failureKind)

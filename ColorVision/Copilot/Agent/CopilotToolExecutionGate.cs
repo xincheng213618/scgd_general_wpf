@@ -12,7 +12,7 @@ namespace ColorVision.Copilot
     internal sealed class CopilotToolExecutionGate
     {
         public const int DefaultMaximumConcurrentReads = 4;
-        private const int ResourceStripeCount = 64;
+        internal const int ResourceStripeCount = 64;
 
         private readonly SemaphoreSlim _readCapacity;
         private readonly SemaphoreSlim _readerMutex = new(1, 1);

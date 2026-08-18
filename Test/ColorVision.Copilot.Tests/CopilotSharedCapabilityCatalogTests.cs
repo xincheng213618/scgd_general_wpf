@@ -37,6 +37,127 @@ public sealed class CopilotSharedCapabilityCatalogTests
         Assert.Throws<NotSupportedException>(() => annotations["readOnlyHint"] = false);
     }
 
+    [Fact]
+    public void EveryMcpDescriptorPublishesAClosedValidInputSchema()
+    {
+        foreach (var descriptor in new CopilotMcpToolDispatcher().ListTools())
+        {
+            Assert.True(
+                CopilotToolInputContractValidator.TryValidateSchema(
+                    descriptor.InputSchema,
+                    out var error),
+                $"{descriptor.Name}: {error}");
+        }
+    }
+
+    [Fact]
+    public void EveryBuiltInAgentToolPublishesAClosedValidInputSchema()
+    {
+        foreach (var tool in CopilotToolRegistry.CreateBuiltInCatalogTools())
+        {
+            Assert.True(
+                CopilotToolInputContractValidator.TryValidateSchema(
+                    tool.InputSchema.JsonSchema,
+                    out var error),
+                $"{tool.Name}: {error}");
+        }
+    }
+
+    [Theory]
+    [InlineData("{\"type\":\"object\",\"properties\":{},\"additionalProperties\":true}", "additionalProperties")]
+    [InlineData("{\"type\":\"object\",\"properties\":{},\"required\":[\"missing\"],\"additionalProperties\":false}", "undeclared")]
+    [InlineData("{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"mystery\"}},\"additionalProperties\":false}", "unsupported type")]
+    [InlineData("{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"integer\",\"minimum\":10,\"maximum\":1}},\"additionalProperties\":false}", "invalid minimum/maximum")]
+    [InlineData("{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\",\"enum\":[1]}},\"additionalProperties\":false}", "does not match")]
+    [InlineData("{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\",\"minimum\":1}},\"additionalProperties\":false}", "numeric constraints")]
+    [InlineData("{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\",\"$ref\":\"#/$defs/value\"}},\"additionalProperties\":false}", "unsupported keyword")]
+    [InlineData("{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":true}},\"additionalProperties\":false}", "additionalProperties")]
+    public void McpSchemaValidationRejectsInvalidPublishedContracts(
+        string schemaJson,
+        string expectedError)
+    {
+        var schema = JsonSerializer.Deserialize<JsonElement>(schemaJson);
+
+        Assert.False(CopilotToolInputContractValidator.TryValidateSchema(schema, out var error));
+        Assert.Contains(expectedError, error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ExternalMcpRegistrationAllowsOpenObjectsButRejectsUnsupportedSemantics()
+    {
+        var openSchema = CopilotToolInputSchema.FromJsonSchema(
+            JsonSerializer.Deserialize<JsonElement>(
+                "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"title\":\"External input\",\"properties\":{\"payload\":{\"type\":\"object\",\"default\":{},\"examples\":[{\"kind\":\"provider-specific\"}]}}}"));
+        var unsupportedSchema = CopilotToolInputSchema.FromJsonSchema(
+            JsonSerializer.Deserialize<JsonElement>(
+                "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\",\"$ref\":\"#/$defs/value\"}}}"));
+        var openTool = new SchemaOverrideTool("OpenExternalTool", openSchema);
+        var unsupportedTool = new SchemaOverrideTool("UnsupportedExternalTool", unsupportedSchema);
+
+        var compatible = CopilotMcpToolProvider.SelectRuntimeCompatibleTools(
+            [openTool, unsupportedTool],
+            out var rejectedCount);
+        var catalog = new CopilotCapabilityCatalog();
+        var snapshot = catalog.PublishSource(
+            CopilotCapabilitySourceKind.ExternalMcp,
+            "external:test",
+            "External test",
+            compatible);
+        var arguments = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+            "{\"payload\":{\"provider_specific\":true},\"provider_extension\":42}");
+
+        Assert.Equal(1, rejectedCount);
+        Assert.Same(openTool, Assert.Single(compatible));
+        Assert.Single(snapshot.Capabilities);
+        Assert.True(CopilotToolInputContractValidator.TryValidateSchema(
+            openSchema.JsonSchema,
+            out var schemaError,
+            requireClosedObjects: false), schemaError);
+        Assert.True(CopilotToolInputContractValidator.TryValidate(
+            openSchema.JsonSchema,
+            arguments,
+            out var validationError), validationError);
+        Assert.Throws<ArgumentException>(() => catalog.PublishSource(
+            CopilotCapabilitySourceKind.BuiltIn,
+            "builtin:open-test",
+            "Built-in open test",
+            [openTool]));
+    }
+
+    [Theory]
+    [InlineData("{\"config\":{\"name\":\"valid\",\"unexpected\":true}}", "config.unexpected", "not declared")]
+    [InlineData("{\"config\":{}}", "config.name", "missing")]
+    public void McpRuntimeValidatorRecursivelyEnforcesClosedObjectContracts(
+        string argumentsJson,
+        string expectedPath,
+        string expectedError)
+    {
+        var schema = JsonSerializer.Deserialize<JsonElement>(
+            """
+            {
+              "type": "object",
+              "properties": {
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" }
+                  },
+                  "required": ["name"],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["config"],
+              "additionalProperties": false
+            }
+            """);
+        var arguments = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(argumentsJson);
+
+        Assert.True(CopilotToolInputContractValidator.TryValidateSchema(schema, out var schemaError), schemaError);
+        Assert.False(CopilotToolInputContractValidator.TryValidate(schema, arguments, out var error));
+        Assert.Contains(expectedPath, error, StringComparison.Ordinal);
+        Assert.Contains(expectedError, error, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Theory]
     [InlineData("get_server_status", "{\"unexpected\":true}", "not declared")]
     [InlineData("search_files", "{\"query\":42}", "must be a string")]
@@ -135,6 +256,19 @@ public sealed class CopilotSharedCapabilityCatalogTests
                 definition.McpToolName,
                 StringComparison.OrdinalIgnoreCase));
         }
+    }
+
+    [Fact]
+    public void AgentSharedToolsAreMaterializedOnceInCanonicalCatalogOrder()
+    {
+        var sharedToolNames = CopilotToolRegistry.CreateCoreDefaultTools()
+            .Where(tool => CopilotSharedCapabilityCatalog.TryResolveAgentTool(tool.Name, out _))
+            .Select(tool => tool.Name)
+            .ToArray();
+
+        Assert.Equal(
+            CopilotSharedCapabilityCatalog.All.Select(definition => definition.AgentToolName),
+            sharedToolNames);
     }
 
     [Fact]

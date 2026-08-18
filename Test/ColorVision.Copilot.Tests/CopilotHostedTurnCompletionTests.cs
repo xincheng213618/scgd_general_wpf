@@ -180,6 +180,89 @@ public sealed class CopilotHostedTurnCompletionTests
     }
 
     [Fact]
+    public void FailingTurnMarksStartedToolWithoutTerminalEvidenceAsOutcomeUnknown()
+    {
+        var conversation = CreateConversation(CreateOpenCheckpoint());
+        var assistant = CreateAssistant(CopilotAgentMode.Auto);
+        assistant.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            CallId = "started-write",
+            ToolName = "WriteTool",
+            State = CopilotToolExecutionState.Running,
+            StartedAtUtc = DateTimeOffset.UtcNow.AddSeconds(-1),
+            RetryEligible = true,
+        });
+
+        CopilotHostedTurnCompletion.CompleteFailure(
+            conversation,
+            assistant,
+            "provider failed");
+
+        var trace = Assert.Single(assistant.AgentTraceEntries);
+        Assert.Equal(CopilotToolExecutionState.Interrupted, trace.State);
+        Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, trace.FailureCode);
+        Assert.False(trace.RetryEligible);
+        Assert.Contains("external outcome is unknown", trace.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FailingTurnDistinguishesCallsThatDidNotStartOrAwaitedApproval()
+    {
+        var conversation = CreateConversation(CreateOpenCheckpoint());
+        var assistant = CreateAssistant(CopilotAgentMode.Auto);
+        assistant.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            CallId = "queued",
+            ToolName = "QueuedTool",
+            State = CopilotToolExecutionState.Pending,
+        });
+        assistant.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            CallId = "approval",
+            ToolName = "ProtectedTool",
+            State = CopilotToolExecutionState.AwaitingApproval,
+            ApprovalActionId = "approval-action",
+        });
+
+        CopilotHostedTurnCompletion.CompleteFailure(
+            conversation,
+            assistant,
+            "provider failed");
+
+        Assert.Equal(CopilotToolFailureCode.NotStarted, assistant.AgentTraceEntries[0].FailureCode);
+        Assert.Contains("tool was not started", assistant.AgentTraceEntries[0].ErrorMessage, StringComparison.Ordinal);
+        Assert.Equal(CopilotToolFailureCode.ApprovalInterrupted, assistant.AgentTraceEntries[1].FailureCode);
+        Assert.Contains("protected operation was not started", assistant.AgentTraceEntries[1].ErrorMessage, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            assistant.AgentTraceEntries,
+            trace => trace.FailureCode == CopilotToolFailureCode.OutcomeUnknown);
+    }
+
+    [Fact]
+    public void StartupRecoveryWarnsBeforeRetryingAWriteWithUnknownOutcome()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var assistant = CreateAssistant(CopilotAgentMode.Auto);
+        assistant.IsExecutionInProgress = true;
+        assistant.AgentTraceEntries.Add(new CopilotAgentTraceEntry
+        {
+            CallId = "started-write",
+            ToolName = "WriteTool",
+            State = CopilotToolExecutionState.Running,
+            StartedAtUtc = DateTimeOffset.UtcNow.AddSeconds(-1),
+        });
+        conversation.Messages.Add(assistant);
+
+        Assert.True(CopilotInterruptedResponseRecovery.Normalize(conversation, assistant));
+
+        Assert.Contains("外部结果未知", assistant.Content, StringComparison.Ordinal);
+        Assert.Contains("不要直接重试", assistant.Content, StringComparison.Ordinal);
+        Assert.Equal(
+            CopilotToolFailureCode.OutcomeUnknown,
+            Assert.Single(assistant.AgentTraceEntries).FailureCode);
+    }
+
+    [Fact]
     public void FailingChatDoesNotRewriteRetainedAgentCheckpoint()
     {
         var checkpoint = CreateOpenCheckpoint();

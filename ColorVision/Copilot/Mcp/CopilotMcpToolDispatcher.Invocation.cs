@@ -58,12 +58,8 @@ namespace ColorVision.Copilot.Mcp
 
             try
             {
-                var definition = _toolDefinitions.FirstOrDefault(candidate => string.Equals(
-                    candidate.Descriptor.Name,
-                    normalizedToolName,
-                    StringComparison.OrdinalIgnoreCase));
-                if (definition != null
-                    && !CopilotMcpInputContractValidator.TryValidate(
+                if (_toolDefinitionsByName.TryGetValue(normalizedToolName, out var definition)
+                    && !CopilotToolInputContractValidator.TryValidate(
                         definition.Descriptor.InputSchema,
                         arguments,
                         out var argumentError))

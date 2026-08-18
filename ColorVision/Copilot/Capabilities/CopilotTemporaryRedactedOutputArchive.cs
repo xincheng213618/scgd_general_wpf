@@ -127,20 +127,18 @@ namespace ColorVision.Copilot
 
             try
             {
-                var safeArchiveKind =
-                    string.Equals(
-                        archiveKind,
-                        "ShellOutput",
-                        StringComparison.Ordinal)
-                        ? "ShellOutput"
-                        : "BackgroundOutput";
-                var safeStreamLabel =
-                    string.Equals(
-                        streamLabel,
-                        "stderr",
-                        StringComparison.OrdinalIgnoreCase)
-                        ? "stderr"
-                        : "stdout";
+                var safeArchiveKind = archiveKind switch
+                {
+                    "ShellOutput" => "ShellOutput",
+                    "ToolOutput" => "ToolOutput",
+                    _ => "BackgroundOutput",
+                };
+                var safeStreamLabel = streamLabel switch
+                {
+                    "stderr" => "stderr",
+                    "content" => "content",
+                    _ => "stdout",
+                };
                 var directory = Path.Combine(
                     Path.GetTempPath(),
                     "ColorVision",
@@ -260,18 +258,40 @@ namespace ColorVision.Copilot
                     stream.Seek(
                         checked((long)offsetCharacters * sizeof(char)),
                         SeekOrigin.Begin);
+                    var actualOffsetCharacters = offsetCharacters;
+                    if (actualOffsetCharacters > 0
+                        && actualOffsetCharacters < _archivedCharacters)
+                    {
+                        var leadingCharacter = ReadCharacters(
+                            stream,
+                            1,
+                            cancellationToken);
+                        if (leadingCharacter.Length == 1
+                            && char.IsLowSurrogate(leadingCharacter[0]))
+                        {
+                            actualOffsetCharacters++;
+                        }
+                    }
+                    stream.Seek(
+                        checked((long)actualOffsetCharacters * sizeof(char)),
+                        SeekOrigin.Begin);
                     var requestedCharacters = Math.Min(
                         maximumCharacters,
-                        _archivedCharacters - offsetCharacters);
+                        _archivedCharacters - actualOffsetCharacters);
                     var content = ReadCharacters(
                         stream,
-                        requestedCharacters,
+                        Math.Min(
+                            requestedCharacters + 1,
+                            _archivedCharacters - actualOffsetCharacters),
                         cancellationToken);
-                    var nextOffset = offsetCharacters + content.Length;
+                    content = TakeUnicodeSafePage(
+                        content,
+                        requestedCharacters);
+                    var nextOffset = actualOffsetCharacters + content.Length;
                     return new CopilotRedactedOutputArchivePage(
                         Available: true,
                         Content: content,
-                        OffsetCharacters: offsetCharacters,
+                        OffsetCharacters: actualOffsetCharacters,
                         ReturnedCharacters: content.Length,
                         NextOffsetCharacters: nextOffset,
                         ArchivedCharacters: _archivedCharacters,
