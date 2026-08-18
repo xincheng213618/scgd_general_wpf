@@ -122,6 +122,18 @@ final class OperationsToolboxPresentation {
             return count;
         }
 
+        int enabledActionCount() {
+            int count = 0;
+            for (Section section : sections) {
+                for (Action action : section.actions) {
+                    if (action.enabled) {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
+
         boolean hasUniqueActionIds() {
             Set<String> actionIds = new HashSet<>();
             for (Section section : sections) {
@@ -149,15 +161,22 @@ final class OperationsToolboxPresentation {
         final String actionId;
         final String title;
         final String summary;
+        final boolean enabled;
 
         Action(String actionId, String title, String summary) {
+            this(actionId, title, summary, true);
+        }
+
+        Action(String actionId, String title, String summary, boolean enabled) {
             this.actionId = actionId;
             this.title = title;
             this.summary = summary;
+            this.enabled = enabled;
         }
 
         String accessibilityLabel() {
-            return title + "，" + summary.replace(" · ", "，");
+            String availability = enabled ? "" : "，当前不可用";
+            return title + "，" + summary.replace(" · ", "，") + availability;
         }
     }
 }

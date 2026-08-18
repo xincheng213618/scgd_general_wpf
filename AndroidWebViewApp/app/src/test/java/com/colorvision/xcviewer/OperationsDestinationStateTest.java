@@ -50,10 +50,10 @@ public class OperationsDestinationStateTest {
     }
 
     @Test
-    public void remoteSafeProblemsRestoreWhileOperationalToolsWaitForDirectConnection() {
+    public void remoteSafeBottomDestinationsRestoreWithoutDirectConnection() {
         assertFalse(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.TRIAGE));
-        assertTrue(OperationsDestinationState.requiresDirectConnection(
+        assertFalse(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.TOOLS));
         assertTrue(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.JOBS));

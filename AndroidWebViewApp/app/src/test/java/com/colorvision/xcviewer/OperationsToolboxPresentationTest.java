@@ -19,6 +19,7 @@ public class OperationsToolboxPresentationTest {
         assertEquals("取证", model.sections.get(3).title);
         assertEquals("支持与记录", model.sections.get(4).title);
         assertEquals(17, model.actionCount());
+        assertEquals(17, model.enabledActionCount());
         assertTrue(model.hasUniqueActionIds());
     }
 

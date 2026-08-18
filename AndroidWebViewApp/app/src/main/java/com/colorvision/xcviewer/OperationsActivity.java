@@ -141,7 +141,6 @@ public class OperationsActivity extends AppCompatActivity {
     private Button dashboardPriorityAction;
     private Button dashboardCancelFlowButton;
     private Button dashboardRestartApplicationButton;
-    private Button remoteRestartMqttButton;
     private TextView dashboardStatusHeading;
     private TextView dashboardStatusCaption;
     private LinearLayout dashboardStatusContent;
@@ -431,12 +430,6 @@ public class OperationsActivity extends AppCompatActivity {
             }
             if (item.getItemId() == NAV_TOOLS) {
                 if (preferences == null || !preferences.hasOperationsProfile()) {
-                    return false;
-                }
-                if (remoteDashboard) {
-                    Snackbar.make(dashboardContent,
-                            "运维工具需要与电脑现场安全直连",
-                            Snackbar.LENGTH_LONG).show();
                     return false;
                 }
                 returnToSettingsOnBack = false;
@@ -1814,6 +1807,10 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showOperationsToolboxPage() {
+        if (remoteDashboard) {
+            showRemoteOperationsToolboxPage();
+            return;
+        }
         scrollDashboardToTop();
         refreshOperationsTargetPresentation();
         leaveSupportCenter();
@@ -1838,6 +1835,69 @@ public class OperationsActivity extends AppCompatActivity {
                 toolbox,
                 this::runOperationsToolboxAction);
         scheduleConnectionHeartbeat();
+    }
+
+    private void showRemoteOperationsToolboxPage() {
+        scrollDashboardToTop();
+        refreshOperationsTargetPresentation();
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        returnToTriageOnBack = false;
+        returnToToolboxOnBack = false;
+        setConnectionRecoveryVisible(false);
+        setCurrentDestination(OperationsDestinationState.TOOLS);
+        setDashboardVisible(true);
+        setShowingDashboardSummary(false);
+        progress.setVisibility(View.GONE);
+        title.setTitle("运维工具");
+
+        boolean hasRecentRemoteTask = OperationsRelayPolicy.isSafeIdentifier(
+                preferences.getOperationsRelayTaskId())
+                && OperationsRelayPolicy.isSafeIdentifier(
+                        preferences.getOperationsRelayTaskIdempotencyKey());
+        OperationsRemoteToolboxPresentation.ViewModel model =
+                OperationsRemoteToolboxPresentation.from(
+                        lastRelaySnapshotResponse,
+                        hasRecentRemoteTask,
+                        Build.VERSION.SDK_INT,
+                        System.currentTimeMillis());
+        dashboardRemoteHostFresh = model.hostFresh;
+        state.setText(model.stateLabel);
+        details.setText(model.summary);
+        actions.removeAllViews();
+        addDashboardWideAction(dashboardTonalButton(
+                "刷新工具可用性", v -> refreshRemoteOperationsToolbox()));
+        OperationsToolboxContent.addTo(
+                this,
+                themeManager,
+                actions,
+                model.toolbox,
+                this::runRemoteOperationsToolboxAction);
+    }
+
+    private void refreshRemoteOperationsToolbox() {
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在核验电脑签名能力…");
+        executor.execute(() -> {
+            try {
+                JSONObject response = relayClient.getSnapshot();
+                runOnUiThread(() -> {
+                    lastRelaySnapshotResponse = response;
+                    JSONObject host = response.optJSONObject("host");
+                    boolean fresh = host != null && OperationsRelayPolicy.isHostFresh(
+                            host.optLong("signedAt", 0L), System.currentTimeMillis());
+                    problemBadgeState = !fresh
+                            ? OperationsWatchHistory.STATE_REMOTE_WAITING
+                            : OperationsMonitorClassifier.watchState(
+                                    remoteMonitor(response),
+                                    OperationsWatchHistory.STATE_REMOTE_ONLINE);
+                    refreshProblemNavigationBadge();
+                    showRemoteOperationsToolboxPage();
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> showTransientError(ex));
+            }
+        });
     }
 
     private void runOperationsToolboxAction(String actionId) {
@@ -1900,6 +1960,49 @@ public class OperationsActivity extends AppCompatActivity {
         }
     }
 
+    private void runRemoteOperationsToolboxAction(String actionId) {
+        returnToTriageOnBack = false;
+        returnToToolboxOnBack = true;
+        switch (actionId) {
+            case OperationsToolboxPresentation.ACTION_SHOW_WINDOW:
+                runRemoteTask(
+                        OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW, new JSONObject());
+                return;
+            case OperationsToolboxPresentation.ACTION_MINIMIZE_WINDOW:
+                confirmRemoteMinimizeWindow();
+                return;
+            case OperationsToolboxPresentation.ACTION_CANCEL_FLOW:
+                confirmCancelCurrentFlow(canCancelRemoteFlow(lastRelaySnapshotResponse));
+                return;
+            case OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE:
+                confirmRemoteMessageChannelRecovery();
+                return;
+            case OperationsToolboxPresentation.ACTION_RESTART_MQTT:
+                confirmRemoteMqttRestart();
+                return;
+            case OperationsToolboxPresentation.ACTION_RESTART_APPLICATION:
+                confirmRestartApplication();
+                return;
+            case OperationsToolboxPresentation.ACTION_CREATE_DIAGNOSTIC:
+                requestRemoteDiagnostics();
+                return;
+            case OperationsToolboxPresentation.ACTION_FAILURES:
+                readRemoteFailureEvidence();
+                return;
+            case OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT:
+                confirmRemoteWindowSnapshot();
+                return;
+            case OperationsRemoteToolboxPresentation.ACTION_RECENT_REMOTE_TASK:
+                refreshRecentRemoteTask();
+                return;
+            case OperationsToolboxPresentation.ACTION_TIMELINE:
+                showOperationsWatchHistory();
+                return;
+            default:
+                return;
+        }
+    }
+
     private void showRemoteDashboard(JSONObject response) {
         scrollDashboardToTop();
         refreshOperationsTargetPresentation();
@@ -1925,21 +2028,6 @@ public class OperationsActivity extends AppCompatActivity {
         JSONObject host = response.optJSONObject("host");
         JSONObject snapshot = host == null ? null : host.optJSONObject("snapshot");
         JSONObject monitor = snapshot == null ? null : snapshot.optJSONObject("monitor");
-        JSONArray capabilities = host == null ? null : host.optJSONArray("capabilities");
-        boolean canShowWindow = contains(capabilities, OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW);
-        boolean canMinimizeWindow = contains(
-                capabilities, OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW);
-        boolean canRecoverMessageChannel = contains(
-                capabilities, OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL);
-        boolean canRestartMqtt = contains(
-                capabilities, OperationsRelayPolicy.CAPABILITY_RESTART_MQTT);
-        boolean canCancelFlow = contains(capabilities, OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW);
-        boolean canRestartApplication = contains(
-                capabilities, OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION);
-        boolean canRequestDiagnostics = contains(
-                capabilities, OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS);
-        dashboardFlowCancelCapabilityAvailable = canCancelFlow;
-        dashboardRestartCapabilityAvailable = canRestartApplication;
         dashboardRemoteHostFresh = host != null && OperationsRelayPolicy.isHostFresh(
                 host.optLong("signedAt", 0L), System.currentTimeMillis());
 
@@ -1950,58 +2038,6 @@ public class OperationsActivity extends AppCompatActivity {
                 ? OperationsDashboardAdvisor.fromMonitor(
                         monitor, attentionRemindersAvailable())
                 : OperationsDashboardAdvisor.staleRemoteSnapshot());
-
-        addDashboardSection("远程操作");
-        addDashboardInfoCard(OperationsRemoteActionPresentation.scopeNote(
-                true, dashboardRemoteHostFresh));
-        Button showWindow = dashboardTonalButton("显示主窗口", v -> runRemoteTask(
-                OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW, new JSONObject()));
-        showWindow.setEnabled(OperationsRelayPolicy.canControlWindow(
-                canShowWindow, dashboardRemoteHostFresh));
-        Button minimizeWindow = dashboardButton("最小化主窗口",
-                v -> confirmRemoteMinimizeWindow());
-        minimizeWindow.setEnabled(OperationsRelayPolicy.canControlWindow(
-                canMinimizeWindow, dashboardRemoteHostFresh));
-        addDashboardTaskGroup(
-                "窗口控制",
-                OperationsRemoteActionPresentation.windowDescription(
-                        true, dashboardRemoteHostFresh),
-                showWindow,
-                minimizeWindow);
-        Button diagnostics = dashboardTonalButton(
-                dashboardRemoteHostFresh ? "请求远程诊断" : "排队请求诊断", v -> {
-            JSONObject payload = new JSONObject();
-            try {
-                payload.put("reason", "Android 运维伴侣远程调试请求");
-            } catch (Exception ignored) {
-            }
-            runRemoteTask(OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS, payload);
-        });
-        diagnostics.setEnabled(canRequestDiagnostics);
-        Button messageActions = dashboardButton(
-                dashboardRemoteHostFresh ? "检查消息通道" : "上次消息状态",
-                v -> showLatestRemoteMonitorDetail("message"));
-        messageActions.setEnabled(monitor != null
-                && (canRecoverMessageChannel || canRestartMqtt));
-        addDashboardTaskGroup(
-                "诊断与恢复",
-                OperationsRemoteActionPresentation.diagnosticsDescription(
-                        true, dashboardRemoteHostFresh),
-                diagnostics,
-                messageActions);
-        if (dashboardRemoteHostFresh) {
-            dashboardCancelFlowButton = dashboardButton(
-                    "取消检测（读取中）", v -> confirmCancelCurrentFlow());
-            dashboardCancelFlowButton.setEnabled(false);
-            dashboardRestartApplicationButton = dashboardDestructiveButton(
-                    "重启 ColorVision", v -> confirmRestartApplication());
-            dashboardRestartApplicationButton.setEnabled(false);
-            addDashboardTaskGroup(
-                    "受控恢复",
-                    OperationsRemoteActionPresentation.recoveryDescription(true),
-                    dashboardCancelFlowButton,
-                    dashboardRestartApplicationButton);
-        }
 
         if (monitor != null) {
             dashboardStatusHeading = addDashboardSection(
@@ -2031,16 +2067,10 @@ public class OperationsActivity extends AppCompatActivity {
             updateDashboardLiveStatus(monitor);
         }
 
-        addDashboardSection("连接与记录");
+        addDashboardSection("连接");
         addDashboardActionRow(
                 dashboardButton("刷新远程状态", v -> refreshRemoteDashboard()),
                 dashboardButton("连接方式", v -> showConnectionPreference()));
-        Button recentTask = dashboardButton("最近远程请求", v -> refreshRecentRemoteTask());
-        recentTask.setEnabled(OperationsRelayPolicy.isSafeIdentifier(
-                preferences.getOperationsRelayTaskId()));
-        addDashboardActionRow(
-                recentTask,
-                dashboardButton("运维时间线", v -> showOperationsWatchHistory()));
 
         if (openPendingOperationsDestination()) {
             return;
@@ -2101,10 +2131,8 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showRemoteMonitorDetail(String section, JSONObject monitor) {
-        boolean openedFromProblemCenter = returnToTriageOnBack;
         setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         setShowingDashboardSummary(false);
-        remoteRestartMqttButton = null;
         progress.setVisibility(View.GONE);
         title.setTitle(remoteMonitorTitle(section));
         state.setText("电脑签名远程状态");
@@ -2112,27 +2140,6 @@ public class OperationsActivity extends AppCompatActivity {
                 R.string.operations_remote_monitor_signed_summary,
                 formatRemoteMonitorSection(section, monitor)));
         actions.removeAllViews();
-        if (!openedFromProblemCenter && "message".equals(section)) {
-            Button recoverMessageChannel = dashboardButton("恢复消息通道",
-                    v -> confirmRemoteMessageChannelRecovery());
-            recoverMessageChannel.setEnabled(isRemoteCapabilityAvailable(
-                    OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL));
-            remoteRestartMqttButton = dashboardButton("重启 MQTT",
-                    v -> confirmRemoteMqttRestart());
-            remoteRestartMqttButton.setEnabled(canRestartRemoteMqttService(
-                    lastRelaySnapshotResponse));
-            addDashboardActionRow(recoverMessageChannel, remoteRestartMqttButton);
-        } else if (!openedFromProblemCenter && "alerts".equals(section)) {
-            Button failureEvidence = dashboardButton("崩溃线索",
-                    v -> readRemoteFailureEvidence());
-            failureEvidence.setEnabled(canReadRemoteFailureEvidence(
-                    lastRelaySnapshotResponse));
-            Button windowSnapshot = dashboardButton("主窗口快照",
-                    v -> confirmRemoteWindowSnapshot());
-            windowSnapshot.setEnabled(canCaptureRemoteWindowSnapshot(
-                    lastRelaySnapshotResponse));
-            addDashboardActionRow(failureEvidence, windowSnapshot);
-        }
         addDashboardActionRow(
                 dashboardButton("刷新远程状态", v -> refreshRemoteMonitorDetail(section)),
                 dashboardButton(operationsDetailBackLabel(), v -> returnFromOperationsDetail()));
@@ -2179,12 +2186,6 @@ public class OperationsActivity extends AppCompatActivity {
         return snapshot == null ? null : snapshot.optJSONObject("monitor");
     }
 
-    private boolean isRemoteCapabilityAvailable(String capabilityId) {
-        JSONObject host = lastRelaySnapshotResponse == null
-                ? null : lastRelaySnapshotResponse.optJSONObject("host");
-        return host != null && contains(host.optJSONArray("capabilities"), capabilityId);
-    }
-
     private boolean canRestartRemoteMqttService(JSONObject response) {
         JSONObject host = response == null ? null : response.optJSONObject("host");
         JSONObject monitor = remoteMonitor(response);
@@ -2200,6 +2201,48 @@ public class OperationsActivity extends AppCompatActivity {
                 mqttService != null && mqttService.optBoolean("available", false),
                 mqttService == null ? "unknown" : mqttService.optString("status", "unknown"),
                 mqttService != null && mqttService.optBoolean("maintenanceSupported", false));
+    }
+
+    private boolean canCancelRemoteFlow(JSONObject response) {
+        JSONObject host = response == null ? null : response.optJSONObject("host");
+        JSONObject monitor = remoteMonitor(response);
+        JSONObject flow = monitor == null ? null : monitor.optJSONObject("flow");
+        return host != null
+                && contains(host.optJSONArray("capabilities"),
+                        OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW)
+                && OperationsRelayPolicy.isHostFresh(
+                        host.optLong("signedAt", 0L), System.currentTimeMillis())
+                && flow != null
+                && flow.optBoolean("available", false)
+                && flow.optBoolean("isActive", false)
+                && flow.optBoolean("cancelAvailable", false);
+    }
+
+    private boolean canSubmitRemoteTask(String capabilityId, JSONObject response) {
+        JSONObject host = response == null ? null : response.optJSONObject("host");
+        if (host == null || !contains(host.optJSONArray("capabilities"), capabilityId)) {
+            return false;
+        }
+        if (OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS.equals(capabilityId)) {
+            return true;
+        }
+        if (OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW.equals(capabilityId)) {
+            return canCancelRemoteFlow(response);
+        }
+        if (OperationsRelayPolicy.CAPABILITY_RESTART_MQTT.equals(capabilityId)) {
+            return canRestartRemoteMqttService(response);
+        }
+        if (OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION.equals(capabilityId)) {
+            JSONObject monitor = remoteMonitor(response);
+            JSONObject flow = monitor == null ? null : monitor.optJSONObject("flow");
+            return OperationsRelayPolicy.isHostFresh(
+                    host.optLong("signedAt", 0L), System.currentTimeMillis())
+                    && flow != null
+                    && flow.optBoolean("available", false)
+                    && !flow.optBoolean("isActive", false);
+        }
+        return OperationsRelayPolicy.isHostFresh(
+                host.optLong("signedAt", 0L), System.currentTimeMillis());
     }
 
     private boolean canReadRemoteFailureEvidence(JSONObject response) {
@@ -2356,6 +2399,15 @@ public class OperationsActivity extends AppCompatActivity {
                         OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW, new JSONObject()));
     }
 
+    private void requestRemoteDiagnostics() {
+        JSONObject payload = new JSONObject();
+        try {
+            payload.put("reason", "Android 运维伴侣远程调试请求");
+        } catch (Exception ignored) {
+        }
+        runRemoteTask(OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS, payload);
+    }
+
     private void confirmRemoteMessageChannelRecovery() {
         showTargetedConfirmation(
                 "远程恢复电脑消息通道",
@@ -2376,9 +2428,6 @@ public class OperationsActivity extends AppCompatActivity {
                 "远程重启 MQTT 服务？",
                 "只会通过已配对电脑的 ColorVisionServiceHost 重启固定的本机 Mosquitto 服务。消息与检测设备通信会短暂中断并自动恢复；不会选择服务、地址、Topic、命令、路径或参数。",
                 "取消", "确认重启", () -> {
-                    if (remoteRestartMqttButton != null) {
-                        remoteRestartMqttButton.setEnabled(false);
-                    }
                     runRemoteTask(OperationsRelayPolicy.CAPABILITY_RESTART_MQTT,
                             new JSONObject());
                 });
@@ -2388,7 +2437,17 @@ public class OperationsActivity extends AppCompatActivity {
         if (!ensureOperationsClientTargetIsCurrent()) {
             return;
         }
+        if (!canSubmitRemoteTask(capabilityId, lastRelaySnapshotResponse)) {
+            Toast.makeText(this,
+                    "电脑签名能力或运行状态已变化，请刷新工具可用性",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         setShowingDashboardSummary(false);
+        scrollDashboardToTop();
+        title.setTitle("远程请求");
+        actions.removeAllViews();
         progress.setVisibility(View.VISIBLE);
         state.setText("正在签名并提交远程请求…");
         int generation = ++remoteTaskGeneration;
@@ -2411,7 +2470,11 @@ public class OperationsActivity extends AppCompatActivity {
                     Toast.LENGTH_LONG).show();
             return;
         }
+        setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         setShowingDashboardSummary(false);
+        scrollDashboardToTop();
+        title.setTitle("远程主窗口快照");
+        actions.removeAllViews();
         progress.setVisibility(View.VISIBLE);
         state.setText("正在生成端到端加密身份并提交快照请求…");
         int generation = ++remoteTaskGeneration;
@@ -2457,7 +2520,11 @@ public class OperationsActivity extends AppCompatActivity {
             Toast.makeText(this, "还没有远程请求记录", Toast.LENGTH_SHORT).show();
             return;
         }
+        setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         setShowingDashboardSummary(false);
+        scrollDashboardToTop();
+        title.setTitle("最近远程请求");
+        actions.removeAllViews();
         progress.setVisibility(View.VISIBLE);
         state.setText("正在读取最近远程请求…");
         int generation = ++remoteTaskGeneration;
@@ -2804,12 +2871,6 @@ public class OperationsActivity extends AppCompatActivity {
             return true;
         }
         if (OperationsDestinationState.TOOLS.equals(destination)) {
-            if (remoteDashboard) {
-                Snackbar.make(dashboardContent,
-                        "运维工具需要与电脑现场安全直连",
-                        Snackbar.LENGTH_LONG).show();
-                return false;
-            }
             showOperationsToolboxPage();
             return true;
         }
@@ -3727,7 +3788,6 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardPriorityAction = null;
         dashboardCancelFlowButton = null;
         dashboardRestartApplicationButton = null;
-        remoteRestartMqttButton = null;
         dashboardStatusHeading = null;
         dashboardStatusCaption = null;
         dashboardStatusContent = null;
@@ -4627,10 +4687,10 @@ public class OperationsActivity extends AppCompatActivity {
         actions.addView(share, actionParams());
 
         Button back = new MaterialButton(this);
-        back.setText(remote ? "返回远程告警" : "返回作业与审批");
+        back.setText(remote ? operationsDetailBackLabel() : "返回作业与审批");
         back.setOnClickListener(v -> {
             if (remote) {
-                showLatestRemoteMonitorDetail("alerts");
+                returnFromOperationsDetail();
             } else {
                 showJobs();
             }

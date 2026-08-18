@@ -8,6 +8,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.view.ViewCompat;
 import androidx.core.widget.TextViewCompat;
 
 import com.google.android.material.card.MaterialCardView;
@@ -35,6 +36,7 @@ final class OperationsToolboxContent {
                 com.google.android.material.R.style.TextAppearance_Material3_TitleMedium,
                 themeManager.primaryTextColor());
         view.setPadding(dp(activity, 4), dp(activity, 12), 0, dp(activity, 8));
+        ViewCompat.setAccessibilityHeading(view, true);
         return view;
     }
 
@@ -72,9 +74,13 @@ final class OperationsToolboxContent {
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setMinimumHeight(dp(activity, 72));
         row.setPadding(dp(activity, 16), dp(activity, 10), dp(activity, 12), dp(activity, 10));
-        row.setClickable(true);
+        row.setClickable(action.enabled);
         row.setFocusable(true);
-        row.setOnClickListener(listener);
+        row.setEnabled(action.enabled);
+        row.setAlpha(action.enabled ? 1f : 0.56f);
+        if (action.enabled) {
+            row.setOnClickListener(listener);
+        }
         TypedValue selectableBackground = new TypedValue();
         if (activity.getTheme().resolveAttribute(
                 android.R.attr.selectableItemBackground, selectableBackground, true)) {
