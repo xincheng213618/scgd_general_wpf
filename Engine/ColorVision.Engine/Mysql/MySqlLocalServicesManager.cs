@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1822,CA1863,CS8602,CS8603
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.ServiceHost;
@@ -55,10 +56,10 @@ namespace ColorVision.Database
 
 
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = "复制", Command = ApplicationCommands.Copy });
-            ContextMenu.Items.Add(new MenuItem() { Header = "删除", Command = ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Header = "还原", Command = RestoreCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "选中", Command = SelectCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = EngineLocalization.Get("复制"), Command = ApplicationCommands.Copy });
+            ContextMenu.Items.Add(new MenuItem() { Header = EngineLocalization.Get("删除"), Command = ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Header = EngineLocalization.Get("还原"), Command = RestoreCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = EngineLocalization.Get("选中"), Command = SelectCommand });
 
         }
 

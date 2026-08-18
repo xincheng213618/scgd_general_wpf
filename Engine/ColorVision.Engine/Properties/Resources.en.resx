@@ -4720,4 +4720,22 @@ Please close camera or other programs using this serial port, or check device co
   <data name="上次相同流程执行：{0}" xml:space="preserve"><value>Previous execution of the same flow: {0}</value></data>
   <data name="下次相同流程执行：{0}" xml:space="preserve"><value>Next execution of the same flow: {0}</value></data>
   <data name="Batch {0} · {1} 次节点执行{2}" xml:space="preserve"><value>Batch {0} · {1} node execution(s){2}</value></data>
+  <data name="重命名" xml:space="preserve"><value>Rename</value></data>
+  <data name="重命名备份" xml:space="preserve"><value>Rename Backup</value></data>
+  <data name="重命名失败：{0}" xml:space="preserve"><value>Failed to rename: {0}</value></data>
+  <data name="备份名称不能为空。" xml:space="preserve"><value>Backup name cannot be empty.</value></data>
+  <data name="备份名称不能以空格开头或结尾。" xml:space="preserve"><value>Backup name cannot begin or end with a space.</value></data>
+  <data name="备份名称过长，请缩短后重试。" xml:space="preserve"><value>Backup name is too long. Shorten it and try again.</value></data>
+  <data name="备份名称包含 Windows 文件名不允许的字符或结尾。" xml:space="preserve"><value>Backup name contains characters or an ending that Windows file names do not allow.</value></data>
+  <data name="该名称是 Windows 保留文件名，请使用其他名称。" xml:space="preserve"><value>This is a reserved Windows file name. Use a different name.</value></data>
+  <data name="只能重命名备份目录中的 SQL 文件。" xml:space="preserve"><value>Only SQL files in the backup directory can be renamed.</value></data>
+  <data name="目标文件名超出了备份目录。" xml:space="preserve"><value>The target file name resolves outside the backup directory.</value></data>
+  <data name="同名备份已经存在，请使用其他名称。" xml:space="preserve"><value>A backup with this name already exists. Use a different name.</value></data>
+  <data name="备份名称无效：{0}" xml:space="preserve"><value>Invalid backup name: {0}</value></data>
+  <data name="备份名称（无需输入 .sql）：" xml:space="preserve"><value>Backup name (do not include .sql):</value></data>
+  <data name="确定" xml:space="preserve"><value>OK</value></data>
+  <data name="复制" xml:space="preserve"><value>Copy</value></data>
+  <data name="删除" xml:space="preserve"><value>Delete</value></data>
+  <data name="还原" xml:space="preserve"><value>Restore</value></data>
+  <data name="选中" xml:space="preserve"><value>Select</value></data>
 </root>
