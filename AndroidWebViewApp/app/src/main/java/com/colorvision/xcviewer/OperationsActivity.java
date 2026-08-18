@@ -425,14 +425,8 @@ public class OperationsActivity extends AppCompatActivity {
                 if (preferences == null || !preferences.hasOperationsProfile()) {
                     return false;
                 }
-                if (remoteDashboard) {
-                    Snackbar.make(dashboardContent,
-                            "问题中心需要与电脑现场安全直连",
-                            Snackbar.LENGTH_LONG).show();
-                    return false;
-                }
                 returnToSettingsOnBack = false;
-                showTriageCenter();
+                showProblemCenter();
                 return true;
             }
             if (item.getItemId() == NAV_TOOLS) {
@@ -464,7 +458,7 @@ public class OperationsActivity extends AppCompatActivity {
                         && !returnToTriageOnBack) {
                     scrollDashboardToTop();
                 } else {
-                    showTriageCenter();
+                    showProblemCenter();
                 }
             } else if (item.getItemId() == NAV_TOOLS) {
                 if (OperationsDestinationState.TOOLS.equals(currentDestination)) {
@@ -524,7 +518,7 @@ public class OperationsActivity extends AppCompatActivity {
                 returnToTriageOnBack)) {
             return false;
         }
-        showTriageCenter();
+        showProblemCenter();
         return true;
     }
 
@@ -585,7 +579,7 @@ public class OperationsActivity extends AppCompatActivity {
             return true;
         }
         if (OperationsDestinationState.TRIAGE.equals(parent)) {
-            showTriageCenter();
+            showProblemCenter();
             return true;
         }
         if (OperationsDestinationState.TOOLS.equals(parent)) {
@@ -2107,6 +2101,8 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showRemoteMonitorDetail(String section, JSONObject monitor) {
+        boolean openedFromProblemCenter = returnToTriageOnBack;
+        setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         setShowingDashboardSummary(false);
         remoteRestartMqttButton = null;
         progress.setVisibility(View.GONE);
@@ -2116,7 +2112,7 @@ public class OperationsActivity extends AppCompatActivity {
                 R.string.operations_remote_monitor_signed_summary,
                 formatRemoteMonitorSection(section, monitor)));
         actions.removeAllViews();
-        if ("message".equals(section)) {
+        if (!openedFromProblemCenter && "message".equals(section)) {
             Button recoverMessageChannel = dashboardButton("恢复消息通道",
                     v -> confirmRemoteMessageChannelRecovery());
             recoverMessageChannel.setEnabled(isRemoteCapabilityAvailable(
@@ -2126,7 +2122,7 @@ public class OperationsActivity extends AppCompatActivity {
             remoteRestartMqttButton.setEnabled(canRestartRemoteMqttService(
                     lastRelaySnapshotResponse));
             addDashboardActionRow(recoverMessageChannel, remoteRestartMqttButton);
-        } else if ("alerts".equals(section)) {
+        } else if (!openedFromProblemCenter && "alerts".equals(section)) {
             Button failureEvidence = dashboardButton("崩溃线索",
                     v -> readRemoteFailureEvidence());
             failureEvidence.setEnabled(canReadRemoteFailureEvidence(
@@ -2139,7 +2135,7 @@ public class OperationsActivity extends AppCompatActivity {
         }
         addDashboardActionRow(
                 dashboardButton("刷新远程状态", v -> refreshRemoteMonitorDetail(section)),
-                dashboardButton("返回运维概览", v -> showCurrentDashboard()));
+                dashboardButton(operationsDetailBackLabel(), v -> returnFromOperationsDetail()));
         scheduleConnectionHeartbeat();
     }
 
@@ -2150,6 +2146,11 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         showRemoteMonitorDetail(section, monitor);
+    }
+
+    private void showRemoteProblemDetail(String section) {
+        returnToTriageOnBack = true;
+        showLatestRemoteMonitorDetail(section);
     }
 
     private void refreshRemoteMonitorDetail(String section) {
@@ -2745,7 +2746,7 @@ public class OperationsActivity extends AppCompatActivity {
                 showFleetTimeline(true);
                 return true;
             case OperationsDestinationState.TRIAGE:
-                showTriageCenter();
+                showProblemCenter();
                 return true;
             case OperationsDestinationState.JOBS:
                 showJobs();
@@ -2780,6 +2781,7 @@ public class OperationsActivity extends AppCompatActivity {
         }
         if (remoteDashboard
                 && !OperationsDestinationState.OVERVIEW.equals(destination)
+                && !OperationsDestinationState.TRIAGE.equals(destination)
                 && !OperationsDestinationState.TOOLS.equals(destination)
                 && !OperationsDestinationState.CONNECTIONS.equals(destination)) {
             return false;
@@ -2790,7 +2792,7 @@ public class OperationsActivity extends AppCompatActivity {
             return true;
         }
         if (OperationsWatchPolicy.DESTINATION_TRIAGE.equals(destination)) {
-            showTriageCenter();
+            showProblemCenter();
             return true;
         }
         if (OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK.equals(destination)) {
@@ -4098,6 +4100,73 @@ public class OperationsActivity extends AppCompatActivity {
         });
     }
 
+    private void showProblemCenter() {
+        if (remoteDashboard) {
+            showRemoteProblemCenter();
+        } else {
+            showTriageCenter();
+        }
+    }
+
+    private void showRemoteProblemCenter() {
+        returnToToolboxOnBack = false;
+        setCurrentDestination(OperationsDestinationState.TRIAGE);
+        returnToTriageOnBack = false;
+        refreshOperationsHeaderNavigation();
+        setShowingDashboardSummary(false);
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        setDashboardVisible(true);
+        scrollDashboardToTop();
+        progress.setVisibility(View.GONE);
+        title.setTitle("问题中心");
+
+        JSONObject host = lastRelaySnapshotResponse == null
+                ? null : lastRelaySnapshotResponse.optJSONObject("host");
+        boolean fresh = host != null && OperationsRelayPolicy.isHostFresh(
+                host.optLong("signedAt", 0L), System.currentTimeMillis());
+        dashboardRemoteHostFresh = fresh;
+        OperationsRemoteProblemsPresentation.ViewModel model =
+                OperationsRemoteProblemsPresentation.from(
+                        remoteMonitor(lastRelaySnapshotResponse), fresh);
+        state.setText(model.stateLabel);
+        actions.removeAllViews();
+        actions.addView(OperationsRemoteProblemsContent.create(
+                        this,
+                        themeManager,
+                        model,
+                        this::showRemoteProblemDetail,
+                        this::refreshRemoteProblemCenter),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void refreshRemoteProblemCenter() {
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在读取电脑签名问题摘要…");
+        executor.execute(() -> {
+            try {
+                JSONObject response = relayClient.getSnapshot();
+                runOnUiThread(() -> {
+                    lastRelaySnapshotResponse = response;
+                    JSONObject host = response.optJSONObject("host");
+                    boolean fresh = host != null && OperationsRelayPolicy.isHostFresh(
+                            host.optLong("signedAt", 0L), System.currentTimeMillis());
+                    JSONObject monitor = remoteMonitor(response);
+                    problemBadgeState = !fresh
+                            ? OperationsWatchHistory.STATE_REMOTE_WAITING
+                            : OperationsMonitorClassifier.watchState(
+                                    monitor, OperationsWatchHistory.STATE_REMOTE_ONLINE);
+                    refreshProblemNavigationBadge();
+                    showRemoteProblemCenter();
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> showTransientError(ex));
+            }
+        });
+    }
+
     private void showTriageCenter() {
         boolean preservePreviousReport = OperationsDestinationState.TRIAGE.equals(
                 currentDestination) && actions.getChildCount() > 0;
@@ -4154,7 +4223,7 @@ public class OperationsActivity extends AppCompatActivity {
                         model,
                         this::runTriageAction,
                         this::showLiveMonitorFromTriage,
-                        this::showTriageCenter),
+                        this::showProblemCenter),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
@@ -5690,7 +5759,7 @@ public class OperationsActivity extends AppCompatActivity {
                             observedAt,
                             offerTriageAction,
                             this::showDeviceHealthOverview,
-                            this::showTriageCenter);
+                            this::showProblemCenter);
                 });
             } catch (Exception ex) {
                 runOnUiThread(() -> showTransientError(ex));

@@ -1,0 +1,168 @@
+package com.colorvision.xcviewer;
+
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+final class OperationsRemoteProblemsPresentation {
+    static final String SAFETY_NOTICE = "本页只读电脑签名摘要，不会直接执行操作。"
+            + "完整证据与现场处置仅限安全直连；受控远程操作从概览进入并再次确认。";
+
+    private OperationsRemoteProblemsPresentation() {
+    }
+
+    static ViewModel from(JSONObject monitor, boolean fresh) {
+        if (monitor == null) {
+            return unavailable(
+                    "远程问题状态暂不可用",
+                    "电脑签名快照尚未包含运行摘要。刷新后仍会重新核验电脑签名，不会把未知状态当作正常。");
+        }
+        if (!fresh) {
+            return unavailable(
+                    "等待电脑更新远程状态",
+                    "上次电脑签名快照已过期，旧问题不会作为当前问题展示。请刷新或改用现场直连。");
+        }
+
+        JSONObject flow = monitor.optJSONObject("flow");
+        JSONObject devices = monitor.optJSONObject("devices");
+        JSONObject messageChannel = monitor.optJSONObject("messageChannel");
+        JSONObject alerts = monitor.optJSONObject("alerts");
+        JSONObject performance = monitor.optJSONObject("performance");
+        JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
+        JSONObject recovery = monitor.optJSONObject("applicationRecovery");
+        DeviceHealthPresentation.ViewModel deviceHealth = DeviceHealthPresentation.from(devices);
+
+        List<Issue> issues = new ArrayList<>();
+        addIfAttention(issues, "flow", OperationsDashboardStatusFormatter.flow(
+                isAvailable(flow),
+                flow != null && flow.optBoolean("isActive", false),
+                flow == null ? "idle" : flow.optString("phase", "idle")));
+        addIfAttention(issues, "devices", OperationsDashboardStatusFormatter.devices(
+                isAvailable(devices),
+                devices != null && devices.optBoolean("hasConfiguredDevices", false),
+                count(devices, "readyCount"),
+                count(devices, "busyCount"),
+                count(devices, "attentionCount"),
+                count(devices, "totalCount"),
+                deviceHealth.compactAttentionSummary()));
+        addIfAttention(issues, "message", OperationsDashboardStatusFormatter.messageChannel(
+                isAvailable(messageChannel),
+                messageChannel != null && messageChannel.optBoolean("connected", false),
+                messageChannel != null && messageChannel.optBoolean("subscriptionReady", false),
+                count(messageChannel, "activeSubscriptionCount"),
+                count(messageChannel, "registeredSubscriptionCount")));
+        addIfAttention(issues, "alerts", OperationsDashboardStatusFormatter.alerts(
+                alerts != null,
+                count(alerts, "warningCount"),
+                count(alerts, "errorCount"),
+                count(alerts, "criticalCount"),
+                alerts == null ? "" : alerts.optString("primarySource", "")));
+        addIfAttention(issues, "performance", OperationsDashboardStatusFormatter.performance(
+                performance != null,
+                performance == null ? 0 : performance.optDouble("cpuPercent", 0),
+                mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable")));
+        addIfAttention(issues, "recovery", OperationsDashboardStatusFormatter.recovery(
+                recovery != null,
+                recovery != null && recovery.optBoolean("supported", false),
+                recovery != null && recovery.optBoolean("registered", false),
+                recovery != null && recovery.optBoolean("automaticWatchdogActive", false)));
+        Collections.sort(issues, (left, right) ->
+                OperationsDashboardStatusOrder.compare(left.status, right.status));
+
+        int incompleteCount = 0;
+        incompleteCount += isAvailable(flow) ? 0 : 1;
+        incompleteCount += isAvailable(devices) ? 0 : 1;
+        incompleteCount += isAvailable(messageChannel) ? 0 : 1;
+        incompleteCount += alerts == null ? 1 : 0;
+        incompleteCount += performance == null
+                || mainUi == null
+                || "unavailable".equals(mainUi.optString("state", "unavailable")) ? 1 : 0;
+        incompleteCount += recovery == null ? 1 : 0;
+
+        String stateLabel;
+        String summary;
+        if (!issues.isEmpty()) {
+            stateLabel = issues.size() + " 项需要关注";
+            summary = "来自当前电脑刚刚签名的只读快照，已按处置优先级排列。";
+            if (incompleteCount > 0) {
+                summary += "另有 " + incompleteCount + " 类状态尚未确认。";
+            }
+        } else if (incompleteCount > 0) {
+            stateLabel = "问题状态不完整";
+            summary = "未发现明确需关注项，但仍有 " + incompleteCount
+                    + " 类状态尚未确认，暂不能判断为全部正常。";
+        } else {
+            stateLabel = "未发现需要关注项目";
+            summary = "电脑签名状态未发现需要关注项目；这是只读快照，不替代电脑端现场确认。";
+        }
+        return new ViewModel(
+                true,
+                stateLabel,
+                summary,
+                incompleteCount,
+                Collections.unmodifiableList(issues));
+    }
+
+    private static ViewModel unavailable(String stateLabel, String summary) {
+        return new ViewModel(
+                false,
+                stateLabel,
+                summary,
+                0,
+                Collections.emptyList());
+    }
+
+    private static void addIfAttention(
+            List<Issue> issues,
+            String section,
+            OperationsDashboardStatusFormatter.Item status) {
+        if (status.tone == OperationsDashboardStatusFormatter.TONE_ATTENTION) {
+            issues.add(new Issue(section, status));
+        }
+    }
+
+    private static boolean isAvailable(JSONObject value) {
+        return value != null && value.optBoolean("available", false);
+    }
+
+    private static int count(JSONObject value, String field) {
+        return value == null ? 0 : Math.max(0, Math.min(999, value.optInt(field, 0)));
+    }
+
+    static final class ViewModel {
+        final boolean snapshotAvailable;
+        final String stateLabel;
+        final String summary;
+        final int incompleteCount;
+        final List<Issue> issues;
+
+        ViewModel(
+                boolean snapshotAvailable,
+                String stateLabel,
+                String summary,
+                int incompleteCount,
+                List<Issue> issues) {
+            this.snapshotAvailable = snapshotAvailable;
+            this.stateLabel = stateLabel;
+            this.summary = summary;
+            this.incompleteCount = Math.max(0, incompleteCount);
+            this.issues = issues;
+        }
+    }
+
+    static final class Issue {
+        final String section;
+        final OperationsDashboardStatusFormatter.Item status;
+
+        Issue(String section, OperationsDashboardStatusFormatter.Item status) {
+            this.section = section;
+            this.status = status;
+        }
+
+        String accessibilityLabel() {
+            return status.title + "，" + status.summary + "，查看电脑签名详情";
+        }
+    }
+}

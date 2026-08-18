@@ -18,6 +18,8 @@ public class OperationsInPageNavigationPolicyTest {
         assertEquals(OperationsDestinationState.TRIAGE,
                 parent(OperationsDestinationState.JOBS, true, false));
         assertEquals(OperationsDestinationState.TRIAGE,
+                parent(OperationsDestinationState.CAPABILITY_DETAIL, true, false));
+        assertEquals(OperationsDestinationState.TRIAGE,
                 parent(OperationsDestinationState.TRIAGE, true, false));
         assertEquals("", parent(OperationsDestinationState.TRIAGE, false, false));
         assertEquals(OperationsDestinationState.OVERVIEW,
@@ -110,6 +112,12 @@ public class OperationsInPageNavigationPolicyTest {
                         OperationsDestinationState.LIVE_MONITOR, true, false));
         assertEquals(AppScreenMotion.DIRECTION_BACKWARD,
                 motion(OperationsDestinationState.LIVE_MONITOR,
+                        OperationsDestinationState.TRIAGE, true, false));
+        assertEquals(AppScreenMotion.DIRECTION_FORWARD,
+                motion(OperationsDestinationState.TRIAGE,
+                        OperationsDestinationState.CAPABILITY_DETAIL, true, false));
+        assertEquals(AppScreenMotion.DIRECTION_BACKWARD,
+                motion(OperationsDestinationState.CAPABILITY_DETAIL,
                         OperationsDestinationState.TRIAGE, true, false));
         assertEquals(AppScreenMotion.DIRECTION_FORWARD,
                 motion(OperationsDestinationState.TOOLS,

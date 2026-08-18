@@ -50,8 +50,8 @@ public class OperationsDestinationStateTest {
     }
 
     @Test
-    public void activeRemoteToolsRestoreOnlyAfterDirectConnectionReturns() {
-        assertTrue(OperationsDestinationState.requiresDirectConnection(
+    public void remoteSafeProblemsRestoreWhileOperationalToolsWaitForDirectConnection() {
+        assertFalse(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.TRIAGE));
         assertTrue(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.TOOLS));

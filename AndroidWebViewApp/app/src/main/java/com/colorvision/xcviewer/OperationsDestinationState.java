@@ -51,8 +51,7 @@ final class OperationsDestinationState {
 
     static boolean requiresDirectConnection(String destination) {
         String normalized = normalize(destination);
-        return TRIAGE.equals(normalized)
-                || TOOLS.equals(normalized)
+        return TOOLS.equals(normalized)
                 || JOBS.equals(normalized)
                 || SUPPORT.equals(normalized)
                 || LIVE_MONITOR.equals(normalized)
