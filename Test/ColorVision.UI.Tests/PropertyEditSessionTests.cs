@@ -1,4 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Markup;
+using ColorVision.UI.Sorts;
 
 namespace ColorVision.UI.Tests;
 
@@ -19,6 +23,11 @@ public class PropertyEditSessionTests
         {
             ["first"] = new NestedConfig { Name = "Mapped" }
         };
+    }
+
+    private sealed class GridColumnConfig
+    {
+        public ObservableCollection<GridViewColumnVisibility> Columns { get; set; } = new();
     }
 
     [Fact]
@@ -84,5 +93,70 @@ public class PropertyEditSessionTests
 
         Assert.Same(source, session.EditableObject);
         Assert.False(session.IsTransactional);
+    }
+
+    [Fact]
+    public void ImmediateSession_ResetPreservesWpfRuntimeReferences()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            GridViewColumn column = CreateTemplatedGridViewColumn();
+            var source = new GridColumnConfig
+            {
+                Columns = new ObservableCollection<GridViewColumnVisibility>
+                {
+                    new() { ColumnName = "Value", GridViewColumn = column, IsVisible = true }
+                }
+            };
+
+            PropertyEditSession session = PropertyEditSession.Create(source, PropertyEditorEditMode.Immediate);
+            source.Columns[0].IsVisible = false;
+
+            session.Reset();
+
+            Assert.True(source.Columns[0].IsVisible);
+            Assert.Same(column, source.Columns[0].GridViewColumn);
+        });
+    }
+
+    [Fact]
+    public void TransactionalSession_ClonesConfigDataButPreservesWpfRuntimeReferences()
+    {
+        WpfTestHost.Invoke(() =>
+        {
+            GridViewColumn column = CreateTemplatedGridViewColumn();
+            var source = new GridColumnConfig
+            {
+                Columns = new ObservableCollection<GridViewColumnVisibility>
+                {
+                    new() { ColumnName = "Value", GridViewColumn = column, IsVisible = true }
+                }
+            };
+
+            PropertyEditSession session = PropertyEditSession.Create(source, PropertyEditorEditMode.Transactional);
+            var editable = Assert.IsType<GridColumnConfig>(session.EditableObject);
+
+            Assert.NotSame(source.Columns, editable.Columns);
+            Assert.NotSame(source.Columns[0], editable.Columns[0]);
+            Assert.Same(column, editable.Columns[0].GridViewColumn);
+
+            editable.Columns[0].IsVisible = false;
+            Assert.True(source.Columns[0].IsVisible);
+
+            session.Commit();
+
+            Assert.False(source.Columns[0].IsVisible);
+            Assert.Same(column, source.Columns[0].GridViewColumn);
+        });
+    }
+
+    private static GridViewColumn CreateTemplatedGridViewColumn()
+    {
+        const string xaml = """
+            <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+                <TextBlock Text="{Binding}" />
+            </DataTemplate>
+            """;
+        return new GridViewColumn { CellTemplate = (DataTemplate)XamlReader.Parse(xaml) };
     }
 }
