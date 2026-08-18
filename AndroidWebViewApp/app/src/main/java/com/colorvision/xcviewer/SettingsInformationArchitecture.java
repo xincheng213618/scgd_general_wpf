@@ -4,11 +4,11 @@ import java.util.Arrays;
 import java.util.List;
 
 final class SettingsInformationArchitecture {
-    static final String CONNECTION_SECTION = "电脑连接";
+    static final String CONNECTION_SECTION = "连接";
     static final String BACKGROUND_SECTION = "后台运行";
     static final String PERMISSION_SECTION = "权限";
-    static final String APPLICATION_SECTION = "应用";
-    static final String OPERATIONS = "现场运维";
+    static final String APPLICATION_SECTION = "外观与更新";
+    static final String COMPUTER_CONNECTIONS = "电脑与连接";
     static final String SECURE_CHANNEL = "安全通道";
     static final String ADD_COMPUTER = "添加电脑";
     static final String CONNECT_COMPUTER = "连接电脑";
@@ -25,19 +25,29 @@ final class SettingsInformationArchitecture {
         return Arrays.asList(
                 CONNECTION_SECTION,
                 BACKGROUND_SECTION,
-                PERMISSION_SECTION,
-                APPLICATION_SECTION);
+                APPLICATION_SECTION,
+                PERMISSION_SECTION);
     }
 
     static List<String> visibleRows(boolean paired) {
+        if (paired) {
+            return Arrays.asList(
+                    COMPUTER_CONNECTIONS,
+                    SECURE_CHANNEL,
+                    ADD_COMPUTER,
+                    OPERATIONS_WATCH,
+                    NOTIFICATION_PERMISSION,
+                    THEME_MODE,
+                    APP_UPDATE,
+                    CAMERA_PERMISSION);
+        }
         return Arrays.asList(
-                OPERATIONS,
+                CONNECT_COMPUTER,
                 SECURE_CHANNEL,
-                paired ? ADD_COMPUTER : CONNECT_COMPUTER,
                 OPERATIONS_WATCH,
                 NOTIFICATION_PERMISSION,
-                CAMERA_PERMISSION,
                 THEME_MODE,
-                APP_UPDATE);
+                APP_UPDATE,
+                CAMERA_PERMISSION);
     }
 }

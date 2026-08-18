@@ -429,7 +429,7 @@ public class MainActivity extends AppCompatActivity {
         AppScreenMotion.beginContentTransition(setupContainer, direction);
         selectTab(TAB_SETTINGS);
         headerTitle.setText("设置");
-        headerSubtitle.setText("安全配对与应用信息");
+        headerSubtitle.setText("连接、后台与应用");
         setupContainer.removeAllViews();
         setupContainer.addView(createProfileContent(), matchParentParams());
         setupContainer.setVisibility(View.VISIBLE);
@@ -454,17 +454,22 @@ public class MainActivity extends AppCompatActivity {
                 connectionSection);
         boolean paired = appPreferences.hasOperationsProfile();
         int pairedComputerCount = appPreferences.getOperationsProfileCount();
-        addSettingsRow(connectionSection, SettingsInformationArchitecture.OPERATIONS,
-                paired ? "当前 " + appPreferences.getActiveOperationsProfileLabel()
-                        + " · 共 " + pairedComputerCount + " 台" : "尚未配对",
-                v -> openOperations(), true);
-        addSettingsRow(connectionSection, SettingsInformationArchitecture.SECURE_CHANNEL,
-                paired ? "设备密钥 + TLS 证书固定" : "等待安全配对",
-                null, true);
-        addSettingsRow(connectionSection,
-                paired ? SettingsInformationArchitecture.ADD_COMPUTER
-                        : SettingsInformationArchitecture.CONNECT_COMPUTER,
-                "扫描二维码", v -> startQrScan(), false);
+        if (paired) {
+            addSettingsRow(connectionSection,
+                    SettingsInformationArchitecture.COMPUTER_CONNECTIONS,
+                    appPreferences.getActiveOperationsProfileLabel()
+                            + " · 共 " + pairedComputerCount + " 台",
+                    v -> openOperationsConnectionsFromSettings(), true);
+            addSettingsRow(connectionSection, SettingsInformationArchitecture.SECURE_CHANNEL,
+                    "设备密钥 + TLS 证书固定", null, true);
+            addSettingsRow(connectionSection, SettingsInformationArchitecture.ADD_COMPUTER,
+                    "扫描二维码", v -> startQrScan(), false);
+        } else {
+            addSettingsRow(connectionSection, SettingsInformationArchitecture.CONNECT_COMPUTER,
+                    "扫描电脑端安全配对码", v -> startQrScan(), true);
+            addSettingsRow(connectionSection, SettingsInformationArchitecture.SECURE_CHANNEL,
+                    "等待安全配对", null, false);
+        }
 
         LinearLayout backgroundSection = makeSettingsSection();
         addSettingsSection(content, SettingsInformationArchitecture.BACKGROUND_SECTION,
@@ -474,12 +479,6 @@ public class MainActivity extends AppCompatActivity {
                 SettingsInformationArchitecture.NOTIFICATION_PERMISSION,
                 notificationPermissionStatus(), v -> manageNotificationPermission(), false);
 
-        LinearLayout permissionSection = makeSettingsSection();
-        addSettingsSection(content, SettingsInformationArchitecture.PERMISSION_SECTION,
-                permissionSection);
-        addSettingsRow(permissionSection, SettingsInformationArchitecture.CAMERA_PERMISSION,
-                cameraPermissionStatus(), v -> startQrScan(), false);
-
         LinearLayout appSection = makeSettingsSection();
         addSettingsSection(content, SettingsInformationArchitecture.APPLICATION_SECTION,
                 appSection);
@@ -487,6 +486,12 @@ public class MainActivity extends AppCompatActivity {
                 getThemeModeLabel(), v -> showThemeDialog(), true);
         addSettingsRow(appSection, SettingsInformationArchitecture.APP_UPDATE,
                 "当前 " + getAppVersionName() + " · 签名校验", v -> checkForAppUpdate(), false);
+
+        LinearLayout permissionSection = makeSettingsSection();
+        addSettingsSection(content, SettingsInformationArchitecture.PERMISSION_SECTION,
+                permissionSection);
+        addSettingsRow(permissionSection, SettingsInformationArchitecture.CAMERA_PERMISSION,
+                cameraPermissionStatus(), v -> startQrScan(), false);
 
         return scrollView;
     }
@@ -1065,7 +1070,7 @@ public class MainActivity extends AppCompatActivity {
         appUpdateInFlight = false;
         progressBar.setVisibility(View.GONE);
         if (currentTab == TAB_SETTINGS) {
-            headerSubtitle.setText("安全配对与应用信息");
+            headerSubtitle.setText("连接、后台与应用");
         }
     }
 
@@ -1097,10 +1102,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openOperationsDirectly(String destination) {
+        openOperationsDirectly(destination, false);
+    }
+
+    private void openOperationsConnectionsFromSettings() {
+        openOperationsDirectly(OperationsDestinationState.CONNECTIONS, true);
+    }
+
+    private void openOperationsDirectly(String destination, boolean returnToSettings) {
         OperationsWatchService.start(this);
         Intent intent = new Intent(this, OperationsActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         intent.putExtra(OperationsActivity.EXTRA_OPEN_DESTINATION, destination);
+        intent.putExtra(OperationsActivity.EXTRA_RETURN_TO_SETTINGS, returnToSettings);
         startActivity(intent);
         if (openedFromOperations) {
             AppScreenMotion.finishBackward(this);

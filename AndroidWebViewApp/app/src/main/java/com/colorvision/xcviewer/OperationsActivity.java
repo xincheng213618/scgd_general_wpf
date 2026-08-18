@@ -68,9 +68,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class OperationsActivity extends AppCompatActivity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
     static final String EXTRA_OPEN_DESTINATION = "operations_open_destination";
+    static final String EXTRA_RETURN_TO_SETTINGS = "operations_return_to_settings";
     private static final String STATE_DESTINATION = "operations_destination";
     private static final String STATE_RETURN_TO_TRIAGE = "operations_return_to_triage";
     private static final String STATE_RETURN_TO_TOOLBOX = "operations_return_to_toolbox";
+    private static final String STATE_RETURN_TO_SETTINGS = "operations_return_to_settings";
     private static final int REQUEST_QR_SCAN = 2406;
     private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
     private static final long CONNECTION_HEARTBEAT_MILLISECONDS = 30_000L;
@@ -170,6 +172,7 @@ public class OperationsActivity extends AppCompatActivity {
     private String pendingRestoredDestination = "";
     private boolean returnToTriageOnBack;
     private boolean returnToToolboxOnBack;
+    private boolean returnToSettingsOnBack;
     private boolean updatingBottomNavigation;
     private boolean pairingApprovalWaiting;
     private long pairingApprovalDeadlineMilliseconds;
@@ -209,6 +212,9 @@ public class OperationsActivity extends AppCompatActivity {
                 && savedInstanceState.getBoolean(STATE_RETURN_TO_TRIAGE, false);
         returnToToolboxOnBack = restoring
                 && savedInstanceState.getBoolean(STATE_RETURN_TO_TOOLBOX, false);
+        returnToSettingsOnBack = restoring
+                ? savedInstanceState.getBoolean(STATE_RETURN_TO_SETTINGS, false)
+                : returnToSettingsOnBack;
         if (OperationsDestinationState.shouldRestore(restoredDestination)) {
             pendingRestoredDestination = restoredDestination;
         }
@@ -408,6 +414,7 @@ public class OperationsActivity extends AppCompatActivity {
                 return true;
             }
             if (item.getItemId() == NAV_OPERATIONS) {
+                returnToSettingsOnBack = false;
                 showCurrentDashboard();
                 return true;
             }
@@ -421,6 +428,7 @@ public class OperationsActivity extends AppCompatActivity {
                             Snackbar.LENGTH_LONG).show();
                     return false;
                 }
+                returnToSettingsOnBack = false;
                 showTriageCenter();
                 return true;
             }
@@ -434,10 +442,12 @@ public class OperationsActivity extends AppCompatActivity {
                             Snackbar.LENGTH_LONG).show();
                     return false;
                 }
+                returnToSettingsOnBack = false;
                 showOperationsToolboxPage();
                 return true;
             }
             if (item.getItemId() == NAV_SETTINGS) {
+                returnToSettingsOnBack = false;
                 openMainTab(MainActivity.TAB_SETTINGS);
                 return true;
             }
@@ -459,6 +469,8 @@ public class OperationsActivity extends AppCompatActivity {
                 } else {
                     showOperationsToolboxPage();
                 }
+            } else if (item.getItemId() == NAV_SETTINGS && returnToSettingsOnBack) {
+                returnToSettings();
             }
         });
         return navigation;
@@ -498,27 +510,41 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private String operationsDetailBackLabel() {
+        if (OperationsInPageNavigationPolicy.shouldReturnToSettings(
+                currentDestination, returnToSettingsOnBack)) {
+            return "返回设置";
+        }
         if (returnToTriageOnBack) {
             return "返回问题中心";
         }
         if (returnToToolboxOnBack) {
             return "返回运维工具";
         }
-        return "返回现场运维概览";
+        String parentLabel = OperationsInPageNavigationPolicy.navigateUpLabel(
+                currentDestination,
+                returnToTriageOnBack,
+                returnToToolboxOnBack,
+                showingDashboardSummary,
+                connectionRecoveryVisible);
+        return parentLabel.isEmpty() ? "返回现场运维概览" : parentLabel;
     }
 
     private void returnFromOperationsDetail() {
         if (returnToTriageCenter()) {
             return;
         }
-        if (returnToToolboxOnBack) {
-            showOperationsToolboxPage();
+        if (navigateUpWithinOperations()) {
             return;
         }
         showCurrentDashboard();
     }
 
     private boolean navigateUpWithinOperations() {
+        if (OperationsInPageNavigationPolicy.shouldReturnToSettings(
+                currentDestination, returnToSettingsOnBack)) {
+            returnToSettings();
+            return true;
+        }
         if (!OperationsInPageNavigationPolicy.showsNavigateUp(
                 preferences != null && preferences.hasOperationsProfile(),
                 dashboardVisible,
@@ -580,6 +606,17 @@ public class OperationsActivity extends AppCompatActivity {
         intent.putExtra(MainActivity.EXTRA_FROM_OPERATIONS, true);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         AppScreenMotion.startForward(this, intent);
+    }
+
+    private void returnToSettings() {
+        connectionCheckGeneration++;
+        returnToSettingsOnBack = false;
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra(MainActivity.EXTRA_START_TAB, MainActivity.TAB_SETTINGS);
+        intent.putExtra(MainActivity.EXTRA_FROM_OPERATIONS, true);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        AppScreenMotion.startBackward(this, intent);
+        finish();
     }
 
     private void beginPairing(String rawPairing) {
@@ -960,6 +997,7 @@ public class OperationsActivity extends AppCompatActivity {
                         ? "已设为固定中继优先"
                         : "已设为现场直连优先",
                 Toast.LENGTH_SHORT).show();
+        pendingOperationsDestination = OperationsDestinationState.CONNECTIONS;
         openExistingProfile();
     }
 
@@ -1544,12 +1582,15 @@ public class OperationsActivity extends AppCompatActivity {
         if (showNavigateUp) {
             title.setNavigationIcon(R.drawable.ic_arrow_back_24);
             title.setNavigationContentDescription(
-                    OperationsInPageNavigationPolicy.navigateUpLabel(
-                            currentDestination,
-                            returnToTriageOnBack,
-                            returnToToolboxOnBack,
-                            showingDashboardSummary,
-                            connectionRecoveryVisible));
+                    OperationsInPageNavigationPolicy.shouldReturnToSettings(
+                            currentDestination, returnToSettingsOnBack)
+                            ? "返回设置"
+                            : OperationsInPageNavigationPolicy.navigateUpLabel(
+                                    currentDestination,
+                                    returnToTriageOnBack,
+                                    returnToToolboxOnBack,
+                                    showingDashboardSummary,
+                                    connectionRecoveryVisible));
         } else {
             title.setNavigationIcon(null);
             title.setNavigationContentDescription(null);
@@ -1986,6 +2027,9 @@ public class OperationsActivity extends AppCompatActivity {
                 recentTask,
                 dashboardButton("运维时间线", v -> showOperationsWatchHistory()));
 
+        if (openPendingOperationsDestination()) {
+            return;
+        }
         scheduleConnectionHeartbeat();
         ensureOperationsWatchRunning();
     }
@@ -2715,7 +2759,8 @@ public class OperationsActivity extends AppCompatActivity {
         }
         if (remoteDashboard
                 && !OperationsDestinationState.OVERVIEW.equals(destination)
-                && !OperationsDestinationState.TOOLS.equals(destination)) {
+                && !OperationsDestinationState.TOOLS.equals(destination)
+                && !OperationsDestinationState.CONNECTIONS.equals(destination)) {
             return false;
         }
         pendingOperationsDestination = "";
@@ -2729,6 +2774,10 @@ public class OperationsActivity extends AppCompatActivity {
         }
         if (OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK.equals(destination)) {
             runConnectionSelfCheck();
+            return true;
+        }
+        if (OperationsDestinationState.CONNECTIONS.equals(destination)) {
+            showConnectionPreference();
             return true;
         }
         if (OperationsDestinationState.TOOLS.equals(destination)) {
@@ -2993,11 +3042,17 @@ public class OperationsActivity extends AppCompatActivity {
         String requestedDestination = intent.getStringExtra(EXTRA_OPEN_DESTINATION);
         String destination = OperationsDestinationState.TOOLS.equals(requestedDestination)
                 || OperationsDestinationState.OVERVIEW.equals(requestedDestination)
+                || OperationsDestinationState.CONNECTIONS.equals(requestedDestination)
                 ? requestedDestination
                 : OperationsWatchPolicy.normalizeDestination(requestedDestination);
+        boolean requestedReturnToSettings = intent.getBooleanExtra(
+                EXTRA_RETURN_TO_SETTINGS, false);
         intent.removeExtra(EXTRA_OPEN_DESTINATION);
+        intent.removeExtra(EXTRA_RETURN_TO_SETTINGS);
         if (!destination.isEmpty()) {
             pendingOperationsDestination = destination;
+            returnToSettingsOnBack = requestedReturnToSettings
+                    && OperationsDestinationState.CONNECTIONS.equals(destination);
         }
     }
 
@@ -6598,7 +6653,9 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         int destination;
-        if (OperationsDestinationState.TOOLS.equals(currentDestination)
+        if (returnToSettingsOnBack) {
+            destination = NAV_SETTINGS;
+        } else if (OperationsDestinationState.TOOLS.equals(currentDestination)
                 || returnToToolboxOnBack) {
             destination = NAV_TOOLS;
         } else if (OperationsDestinationState.TRIAGE.equals(currentDestination)
@@ -6658,6 +6715,7 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsDestinationState.normalize(currentDestination));
         outState.putBoolean(STATE_RETURN_TO_TRIAGE, returnToTriageOnBack);
         outState.putBoolean(STATE_RETURN_TO_TOOLBOX, returnToToolboxOnBack);
+        outState.putBoolean(STATE_RETURN_TO_SETTINGS, returnToSettingsOnBack);
         super.onSaveInstanceState(outState);
     }
 

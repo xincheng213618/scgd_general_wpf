@@ -164,4 +164,11 @@ final class OperationsInPageNavigationPolicy {
                 || (OperationsDestinationState.TOOLS.equals(normalized)
                         && !detailOpenedFromToolbox);
     }
+
+    static boolean shouldReturnToSettings(
+            String destination, boolean openedFromSettings) {
+        return openedFromSettings
+                && OperationsDestinationState.CONNECTIONS.equals(
+                        OperationsDestinationState.normalize(destination));
+    }
 }

@@ -170,6 +170,18 @@ public class OperationsInPageNavigationPolicyTest {
                 OperationsDestinationState.JOBS, false, true));
     }
 
+    @Test
+    public void settingsOwnedConnectionPageReturnsToSettingsOnlyAtItsRoot() {
+        assertTrue(OperationsInPageNavigationPolicy.shouldReturnToSettings(
+                OperationsDestinationState.CONNECTIONS, true));
+        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToSettings(
+                OperationsDestinationState.CONNECTIONS, false));
+        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToSettings(
+                OperationsDestinationState.CONNECTION_CHECK, true));
+        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToSettings(
+                OperationsDestinationState.OVERVIEW, true));
+    }
+
     private static String parent(
             String destination, boolean fromTriage, boolean fromToolbox) {
         return OperationsInPageNavigationPolicy.parentDestination(
