@@ -287,7 +287,7 @@ public class MainActivity extends AppCompatActivity {
         if (appPreferences.hasOperationsProfile()) {
             if (openedFromOperations
                     && direction == AppScreenMotion.DIRECTION_BACKWARD) {
-                finishAfterTransition();
+                AppScreenMotion.finishBackward(this);
                 return;
             }
             openOperations();

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<translate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="@integer/app_m3_motion_duration_medium4"
+    android:fromXDelta="100%p"
+    android:interpolator="@interpolator/app_m3_motion_easing_emphasized"
+    android:toXDelta="0" />

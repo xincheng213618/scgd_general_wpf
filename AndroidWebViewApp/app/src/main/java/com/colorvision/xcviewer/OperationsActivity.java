@@ -171,7 +171,6 @@ public class OperationsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        AppScreenMotion.configureOperationsActivity(this);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         preferences = new AppPreferences(this);
         themeManager = new ThemeManager(this, preferences);

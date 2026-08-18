@@ -43,4 +43,16 @@ public class AppScreenMotionTest {
         assertTrue(AppScreenMotion.usesSharedAxis(AppScreenMotion.DIRECTION_BACKWARD));
         assertFalse(AppScreenMotion.usesSharedAxis(AppScreenMotion.DIRECTION_NONE));
     }
+
+    @Test
+    public void ltrActivityMotionFollowsForwardAndBackwardDirection() {
+        assertTrue(AppScreenMotion.entersFromRight(true, false));
+        assertFalse(AppScreenMotion.entersFromRight(false, false));
+    }
+
+    @Test
+    public void rtlActivityMotionMirrorsForwardAndBackwardDirection() {
+        assertFalse(AppScreenMotion.entersFromRight(true, true));
+        assertTrue(AppScreenMotion.entersFromRight(false, true));
+    }
 }

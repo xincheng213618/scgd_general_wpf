@@ -3,6 +3,7 @@ package com.colorvision.xcviewer;
 import android.app.Activity;
 import android.app.ActivityOptions;
 import android.content.Intent;
+import android.os.Build;
 import android.view.ViewGroup;
 
 import androidx.transition.TransitionManager;
@@ -31,18 +32,31 @@ final class AppScreenMotion {
         return direction == DIRECTION_FORWARD || direction == DIRECTION_BACKWARD;
     }
 
-    static void configureOperationsActivity(Activity activity) {
-        activity.getWindow().setExitTransition(sharedAxisPlatform(true));
-        activity.getWindow().setReenterTransition(sharedAxisPlatform(false));
-    }
-
     static void configureSettingsActivity(Activity activity) {
-        activity.getWindow().setEnterTransition(sharedAxisPlatform(true));
-        activity.getWindow().setReturnTransition(sharedAxisPlatform(false));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            int[] animations = activityAnimations(activity, false);
+            activity.overrideActivityTransition(
+                    Activity.OVERRIDE_TRANSITION_CLOSE,
+                    animations[0],
+                    animations[1]);
+        }
     }
 
     static void startForward(Activity activity, Intent intent) {
-        activity.startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(activity).toBundle());
+        int[] animations = activityAnimations(activity, true);
+        activity.startActivity(intent, ActivityOptions.makeCustomAnimation(
+                activity,
+                animations[0],
+                animations[1]).toBundle());
+    }
+
+    @SuppressWarnings("deprecation")
+    static void finishBackward(Activity activity) {
+        activity.finish();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            int[] animations = activityAnimations(activity, false);
+            activity.overridePendingTransition(animations[0], animations[1]);
+        }
     }
 
     static void beginContentTransition(ViewGroup container, int direction) {
@@ -55,10 +69,16 @@ final class AppScreenMotion {
         TransitionManager.beginDelayedTransition(container, transition);
     }
 
-    private static com.google.android.material.transition.platform.MaterialSharedAxis sharedAxisPlatform(
-            boolean forward) {
-        return new com.google.android.material.transition.platform.MaterialSharedAxis(
-                com.google.android.material.transition.platform.MaterialSharedAxis.X,
-                forward);
+    private static int[] activityAnimations(Activity activity, boolean forward) {
+        boolean rtl = activity.getResources().getConfiguration().getLayoutDirection()
+                == android.view.View.LAYOUT_DIRECTION_RTL;
+        boolean enterFromRight = entersFromRight(forward, rtl);
+        return enterFromRight
+                ? new int[]{R.anim.m3_screen_enter_from_right, R.anim.m3_screen_exit_to_left}
+                : new int[]{R.anim.m3_screen_enter_from_left, R.anim.m3_screen_exit_to_right};
+    }
+
+    static boolean entersFromRight(boolean forward, boolean rtl) {
+        return forward != rtl;
     }
 }
