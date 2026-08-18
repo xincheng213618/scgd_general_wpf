@@ -58,6 +58,13 @@ public class OperationsDestinationStateTest {
     }
 
     @Test
+    public void triageContextCanRemoveNavigationBackToItself() {
+        assertTrue(OperationsDestinationState.isTriage(OperationsDestinationState.TRIAGE));
+        assertFalse(OperationsDestinationState.isTriage(OperationsDestinationState.OVERVIEW));
+        assertFalse(OperationsDestinationState.isTriage(null));
+    }
+
+    @Test
     public void pairingPayloadIsNeverSilentlyResubmittedAfterSystemRecreation() {
         assertTrue(OperationsDestinationState.shouldSubmitPairingAutomatically(false, true));
         assertFalse(OperationsDestinationState.shouldSubmitPairingAutomatically(true, true));

@@ -51,6 +51,10 @@ final class OperationsDestinationState {
                 || LIVE_MONITOR.equals(normalized);
     }
 
+    static boolean isTriage(String destination) {
+        return TRIAGE.equals(normalize(destination));
+    }
+
     static boolean shouldSubmitPairingAutomatically(boolean restoring, boolean hasPairingPayload) {
         return hasPairingPayload && !restoring;
     }

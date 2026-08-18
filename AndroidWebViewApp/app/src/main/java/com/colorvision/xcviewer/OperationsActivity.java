@@ -4907,6 +4907,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showDeviceHealthOverview() {
+        boolean offerTriageAction = !OperationsDestinationState.isTriage(currentDestination);
         showingDashboardSummary = false;
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -4926,6 +4927,7 @@ public class OperationsActivity extends AppCompatActivity {
                             themeManager,
                             model,
                             observedAt,
+                            offerTriageAction,
                             this::showDeviceHealthOverview,
                             this::showTriageCenter);
                 });

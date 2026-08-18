@@ -30,6 +30,7 @@ final class DeviceHealthBottomSheet {
             ThemeManager themeManager,
             DeviceHealthPresentation.ViewModel model,
             String observedAt,
+            boolean offerTriageAction,
             Runnable refresh,
             Runnable openTriage) {
         BottomSheetDialog dialog = new BottomSheetDialog(activity);
@@ -158,8 +159,12 @@ final class DeviceHealthBottomSheet {
         LinearLayout actions = new LinearLayout(activity);
         actions.setOrientation(singleColumnActions
                 ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
-        MaterialButton refreshButton = new MaterialButton(
-                activity, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        MaterialButton refreshButton = offerTriageAction
+                ? new MaterialButton(
+                        activity,
+                        null,
+                        com.google.android.material.R.attr.materialButtonOutlinedStyle)
+                : new MaterialButton(activity);
         refreshButton.setText("刷新状态");
         refreshButton.setMinHeight(dp(activity, 48));
         refreshButton.setOnClickListener(view -> {
@@ -168,19 +173,21 @@ final class DeviceHealthBottomSheet {
         });
         actions.addView(refreshButton, singleColumnActions ? matchWidth() : weightedButton());
 
-        MaterialButton triageButton = new MaterialButton(activity);
-        triageButton.setText("打开远程排障");
-        triageButton.setMinHeight(dp(activity, 48));
-        triageButton.setOnClickListener(view -> {
-            dialog.dismiss();
-            openTriage.run();
-        });
-        LinearLayout.LayoutParams triageParams = singleColumnActions
-                ? topMargin(dp(activity, 8)) : weightedButton();
-        if (!singleColumnActions) {
-            triageParams.setMargins(dp(activity, 8), 0, 0, 0);
+        if (offerTriageAction) {
+            MaterialButton triageButton = new MaterialButton(activity);
+            triageButton.setText("打开远程排障");
+            triageButton.setMinHeight(dp(activity, 48));
+            triageButton.setOnClickListener(view -> {
+                dialog.dismiss();
+                openTriage.run();
+            });
+            LinearLayout.LayoutParams triageParams = singleColumnActions
+                    ? topMargin(dp(activity, 8)) : weightedButton();
+            if (!singleColumnActions) {
+                triageParams.setMargins(dp(activity, 8), 0, 0, 0);
+            }
+            actions.addView(triageButton, triageParams);
         }
-        actions.addView(triageButton, triageParams);
 
         int footerBaseBottom = dp(activity, 16);
         int navigationBarFallback = navigationBarInset(activity);
