@@ -26,6 +26,7 @@ final class DeviceHealthPresentation {
                     "",
                     "请在电脑端检查设备注册表后再刷新。",
                     "",
+                    0,
                     Collections.emptyList());
         }
 
@@ -70,6 +71,24 @@ final class DeviceHealthPresentation {
             }
         }
 
+        List<Category> orderedCategories = new ArrayList<>(categories.size());
+        for (Category category : categories) {
+            if (category.attentionRequired) {
+                orderedCategories.add(category);
+            }
+        }
+        int attentionCategoryCount = orderedCategories.size();
+        for (Category category : categories) {
+            if (!category.attentionRequired) {
+                orderedCategories.add(category);
+            }
+        }
+        if (attentionCount > 0 && attentionCategoryCount > 0) {
+            guidance = "优先检查 "
+                    + categoryLabels(orderedCategories, attentionCategoryCount)
+                    + "；请在电脑端核对对应类型的进程、授权和连接状态。";
+        }
+
         return new ViewModel(
                 true,
                 hasConfiguredDevices,
@@ -81,7 +100,8 @@ final class DeviceHealthPresentation {
                 unavailableReasonSummary(payload),
                 guidance,
                 payload.optString("observedAt", ""),
-                Collections.unmodifiableList(categories));
+                attentionCategoryCount,
+                Collections.unmodifiableList(orderedCategories));
     }
 
     static String stateSummary(JSONObject source) {
@@ -122,6 +142,14 @@ final class DeviceHealthPresentation {
         }
     }
 
+    private static String categoryLabels(List<Category> categories, int count) {
+        List<String> labels = new ArrayList<>();
+        for (int index = 0; index < count && index < categories.size(); index++) {
+            labels.add(categories.get(index).label);
+        }
+        return String.join("、", labels);
+    }
+
     static final class ViewModel {
         final boolean available;
         final boolean hasConfiguredDevices;
@@ -131,6 +159,7 @@ final class DeviceHealthPresentation {
         final String unavailableReasons;
         final String guidance;
         final String observedAt;
+        final int attentionCategoryCount;
         final List<Category> categories;
 
         ViewModel(
@@ -142,6 +171,7 @@ final class DeviceHealthPresentation {
                 String unavailableReasons,
                 String guidance,
                 String observedAt,
+                int attentionCategoryCount,
                 List<Category> categories) {
             this.available = available;
             this.hasConfiguredDevices = hasConfiguredDevices;
@@ -151,13 +181,29 @@ final class DeviceHealthPresentation {
             this.unavailableReasons = unavailableReasons;
             this.guidance = guidance;
             this.observedAt = observedAt;
+            this.attentionCategoryCount = Math.max(
+                    0, Math.min(attentionCategoryCount, categories.size()));
             this.categories = categories;
+        }
+
+        List<Category> attentionCategories() {
+            return categories.subList(0, attentionCategoryCount);
+        }
+
+        List<Category> otherCategories() {
+            return categories.subList(attentionCategoryCount, categories.size());
+        }
+
+        String attentionCategorySummary() {
+            return categoryLabels(categories, attentionCategoryCount);
         }
 
         String accessibilitySummary() {
             String reasons = unavailableReasons.isEmpty()
                     ? "" : "。不可用原因，" + unavailableReasons;
-            return headline + "。" + summary + reasons;
+            String affected = attentionCategoryCount == 0
+                    ? "" : "。需关注类型，" + attentionCategorySummary();
+            return headline + "。" + summary + reasons + affected;
         }
     }
 

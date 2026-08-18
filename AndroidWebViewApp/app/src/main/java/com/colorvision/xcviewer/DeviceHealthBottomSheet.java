@@ -19,6 +19,8 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.util.List;
+
 final class DeviceHealthBottomSheet {
     private DeviceHealthBottomSheet() {
     }
@@ -107,12 +109,24 @@ final class DeviceHealthBottomSheet {
         overviewParams.setMargins(0, dp(activity, 16), 0, 0);
         content.addView(overviewCard, overviewParams);
 
-        if (!model.categories.isEmpty()) {
-            TextView categoryTitle = text(activity, "按设备类型",
+        List<DeviceHealthPresentation.Category> attentionCategories =
+                model.attentionCategories();
+        List<DeviceHealthPresentation.Category> otherCategories = model.otherCategories();
+        if (!attentionCategories.isEmpty()) {
+            TextView categoryTitle = text(activity, "需关注的设备类型",
                     com.google.android.material.R.style.TextAppearance_Material3_TitleMedium,
                     themeManager.primaryTextColor());
             content.addView(categoryTitle, topMargin(dp(activity, 20)));
-            content.addView(categoryCard(activity, themeManager, model),
+            content.addView(categoryCard(activity, themeManager, attentionCategories),
+                    topMargin(dp(activity, 8)));
+        }
+        if (!otherCategories.isEmpty()) {
+            TextView categoryTitle = text(activity,
+                    attentionCategories.isEmpty() ? "按设备类型" : "其他设备类型",
+                    com.google.android.material.R.style.TextAppearance_Material3_TitleMedium,
+                    themeManager.primaryTextColor());
+            content.addView(categoryTitle, topMargin(dp(activity, 20)));
+            content.addView(categoryCard(activity, themeManager, otherCategories),
                     topMargin(dp(activity, 8)));
         }
 
@@ -214,11 +228,11 @@ final class DeviceHealthBottomSheet {
     private static MaterialCardView categoryCard(
             Activity activity,
             ThemeManager themeManager,
-            DeviceHealthPresentation.ViewModel model) {
+            List<DeviceHealthPresentation.Category> categories) {
         LinearLayout rows = new LinearLayout(activity);
         rows.setOrientation(LinearLayout.VERTICAL);
-        for (int index = 0; index < model.categories.size(); index++) {
-            DeviceHealthPresentation.Category category = model.categories.get(index);
+        for (int index = 0; index < categories.size(); index++) {
+            DeviceHealthPresentation.Category category = categories.get(index);
             LinearLayout row = new LinearLayout(activity);
             row.setOrientation(LinearLayout.VERTICAL);
             row.setGravity(Gravity.START);
@@ -240,7 +254,7 @@ final class DeviceHealthBottomSheet {
             label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             status.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             rows.addView(row, matchWidth());
-            if (index < model.categories.size() - 1) {
+            if (index < categories.size() - 1) {
                 View divider = new View(activity);
                 divider.setBackgroundColor(themeManager.dividerColor());
                 LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(

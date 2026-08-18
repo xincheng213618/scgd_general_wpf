@@ -21,8 +21,9 @@ public class DeviceHealthPresentationTest {
                 + "\"offlineCount\":2,"
                 + "\"observedAt\":\"2026-08-18T08:11:00Z\","
                 + "\"categories\":["
+                + "{\"category\":\"algorithm\",\"totalCount\":1,\"readyCount\":1},"
                 + "{\"category\":\"camera\",\"totalCount\":1,\"readyCount\":0,\"unavailableCount\":1},"
-                + "{\"category\":\"algorithm\",\"totalCount\":1,\"readyCount\":1}"
+                + "{\"category\":\"spectrum\",\"totalCount\":1,\"readyCount\":0,\"unavailableCount\":1}"
                 + "]}");
 
         DeviceHealthPresentation.ViewModel model = DeviceHealthPresentation.from(payload);
@@ -32,13 +33,20 @@ public class DeviceHealthPresentationTest {
         assertEquals("2 台设备需要关注", model.headline);
         assertEquals("共 6 台 · 就绪 2 · 已关闭 2 · 不可用 2", model.summary);
         assertEquals("离线 2", model.unavailableReasons);
-        assertEquals(2, model.categories.size());
+        assertEquals(3, model.categories.size());
         assertEquals("相机类", model.categories.get(0).label);
+        assertEquals("光谱类", model.categories.get(1).label);
+        assertEquals("算法类", model.categories.get(2).label);
+        assertEquals(2, model.attentionCategories().size());
+        assertEquals(1, model.otherCategories().size());
+        assertEquals("相机类、光谱类", model.attentionCategorySummary());
         assertTrue(model.categories.get(0).attentionRequired);
         assertEquals("相机类，共 1 台，就绪 0，不可用 1",
                 model.categories.get(0).accessibilityLabel());
-        assertFalse(model.categories.get(1).attentionRequired);
+        assertFalse(model.categories.get(2).attentionRequired);
+        assertTrue(model.guidance.startsWith("优先检查 相机类、光谱类"));
         assertTrue(model.accessibilitySummary().contains("不可用原因，离线 2"));
+        assertTrue(model.accessibilitySummary().contains("需关注类型，相机类、光谱类"));
     }
 
     @Test
