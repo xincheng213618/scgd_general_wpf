@@ -1,6 +1,8 @@
 package com.colorvision.xcviewer;
 
 import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -23,6 +25,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -47,6 +50,9 @@ public class MainActivity extends AppCompatActivity {
     static final String EXTRA_FROM_OPERATIONS = "from_operations";
     private static final int REQUEST_QR_SCAN = 1001;
     private static final int REQUEST_INSTALL_PERMISSION = 1004;
+    private static final int REQUEST_NOTIFICATION_PERMISSION = 1005;
+    private static final long NOTIFICATION_DIALOG_OBSERVE_DELAY_MS = 250L;
+    private static final long NOTIFICATION_NO_DIALOG_RECOVERY_DELAY_MS = 800L;
     private static final int NAV_OPERATIONS = 2001;
     private static final int NAV_SETTINGS = 2002;
     static final int TAB_OPERATIONS = 0;
@@ -65,6 +71,10 @@ public class MainActivity extends AppCompatActivity {
     private boolean openedFromOperations;
     private int currentTab = TAB_OPERATIONS;
     private boolean cameraPermissionGranted;
+    private String lastNotificationPermissionStatus = "";
+    private boolean notificationPermissionRequestInFlight;
+    private boolean notificationPermissionDialogPresented;
+    private int notificationPermissionRequestGeneration;
     private final ExecutorService appUpdateExecutor = Executors.newSingleThreadExecutor();
     private boolean appUpdateInFlight;
     private File pendingInstallFile;
@@ -76,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
 
         appPreferences = new AppPreferences(this);
         cameraPermissionGranted = hasCameraPermission();
+        lastNotificationPermissionStatus = notificationPermissionStatus();
         int startTab = consumeStartTab(getIntent());
         openedFromOperations = getIntent().getBooleanExtra(EXTRA_FROM_OPERATIONS, false);
         if (openedFromOperations && startTab == TAB_SETTINGS) {
@@ -380,6 +391,8 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout permissionSection = makeSettingsSection();
         addSettingsSection(content, SettingsInformationArchitecture.PERMISSION_SECTION,
                 permissionSection);
+        addSettingsRow(permissionSection, SettingsInformationArchitecture.NOTIFICATION_PERMISSION,
+                notificationPermissionStatus(), v -> manageNotificationPermission(), true);
         addSettingsRow(permissionSection, SettingsInformationArchitecture.CAMERA_PERMISSION,
                 cameraPermissionStatus(), v -> startQrScan(), false);
 
@@ -499,6 +512,130 @@ public class MainActivity extends AppCompatActivity {
                 && !shouldShowRequestPermissionRationale(Manifest.permission.CAMERA);
     }
 
+    private String notificationPermissionStatus() {
+        return NotificationPermissionPolicy.status(
+                Build.VERSION.SDK_INT,
+                hasPostNotificationPermission(),
+                NotificationManagerCompat.from(this).areNotificationsEnabled(),
+                attentionNotificationChannelEnabled(),
+                appPreferences.isNotificationPermissionBlocked(),
+                shouldShowNotificationPermissionRationale());
+    }
+
+    private boolean hasPostNotificationPermission() {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private boolean shouldShowNotificationPermissionRationale() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS);
+    }
+
+    private boolean attentionNotificationChannelEnabled() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return true;
+        }
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        NotificationChannel channel = manager == null ? null
+                : manager.getNotificationChannel(OperationsWatchService.ATTENTION_CHANNEL_ID);
+        return channel == null || channel.getImportance() != NotificationManager.IMPORTANCE_NONE;
+    }
+
+    private void manageNotificationPermission() {
+        int action = NotificationPermissionPolicy.action(
+                Build.VERSION.SDK_INT,
+                hasPostNotificationPermission(),
+                NotificationManagerCompat.from(this).areNotificationsEnabled(),
+                attentionNotificationChannelEnabled(),
+                appPreferences.isNotificationPermissionBlocked(),
+                shouldShowNotificationPermissionRationale());
+        if (action == NotificationPermissionPolicy.ACTION_REQUEST) {
+            showNotificationPermissionExplanation();
+            return;
+        }
+        openNotificationSettings();
+    }
+
+    private void showNotificationPermissionExplanation() {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("开启运维提醒")
+                .setMessage("仅在电脑离线、严重告警、错误事件、消息通道异常或设备需关注等新状态出现时提醒。通知不显示端点、设备身份、日志或检测数据。")
+                .setNegativeButton("暂不开启", null)
+                .setPositiveButton("继续", (dialog, which) -> requestNotificationPermission())
+                .show();
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            openNotificationSettings();
+            return;
+        }
+        notificationPermissionRequestInFlight = true;
+        notificationPermissionDialogPresented = false;
+        int requestGeneration = ++notificationPermissionRequestGeneration;
+        requestPermissions(
+                new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                REQUEST_NOTIFICATION_PERMISSION);
+        root.postDelayed(() -> observeNotificationPermissionDialog(requestGeneration),
+                NOTIFICATION_DIALOG_OBSERVE_DELAY_MS);
+        root.postDelayed(() -> recoverBlockedNotificationPermissionRequest(requestGeneration),
+                NOTIFICATION_NO_DIALOG_RECOVERY_DELAY_MS);
+    }
+
+    private void observeNotificationPermissionDialog(int requestGeneration) {
+        if (notificationPermissionRequestInFlight
+                && requestGeneration == notificationPermissionRequestGeneration
+                && !hasPostNotificationPermission()
+                && !hasWindowFocus()) {
+            notificationPermissionDialogPresented = true;
+        }
+    }
+
+    private void recoverBlockedNotificationPermissionRequest(int requestGeneration) {
+        if (!notificationPermissionRequestInFlight
+                || requestGeneration != notificationPermissionRequestGeneration
+                || hasPostNotificationPermission()) {
+            return;
+        }
+        if (!hasWindowFocus()) {
+            notificationPermissionDialogPresented = true;
+            return;
+        }
+        if (notificationPermissionDialogPresented) {
+            notificationPermissionRequestInFlight = false;
+            return;
+        }
+        notificationPermissionRequestInFlight = false;
+        appPreferences.saveNotificationPermissionBlocked();
+        lastNotificationPermissionStatus = notificationPermissionStatus();
+        if (root != null && currentTab == TAB_SETTINGS) {
+            showProfileView();
+        }
+        Toast.makeText(this, "请在系统通知设置中开启运维提醒", Toast.LENGTH_LONG).show();
+        openNotificationSettings();
+    }
+
+    private void openNotificationSettings() {
+        try {
+            Intent settings = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                    ? new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName())
+                    : new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:" + getPackageName()));
+            startActivity(settings);
+        } catch (Exception ex) {
+            try {
+                startActivity(new Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:" + getPackageName())));
+            } catch (Exception ignored) {
+                Toast.makeText(this, "无法打开系统通知设置", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     private void showQrScanFailure(String reason) {
         boolean blocked = QrScanFailurePresentation.CAMERA_PERMISSION_BLOCKED.equals(reason);
         appPreferences.saveCameraPermissionBlocked(blocked);
@@ -542,17 +679,44 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onRequestPermissionsResult(
+            int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
+            boolean granted = hasPostNotificationPermission();
+            if (granted || notificationPermissionDialogPresented) {
+                notificationPermissionRequestInFlight = false;
+            }
+            lastNotificationPermissionStatus = notificationPermissionStatus();
+            if (root != null && currentTab == TAB_SETTINGS) {
+                showProfileView();
+            }
+            if (granted) {
+                OperationsWatchService.start(this);
+                Toast.makeText(this, "运维提醒已开启", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         boolean granted = hasCameraPermission();
+        String notificationStatus = appPreferences == null
+                ? "" : notificationPermissionStatus();
+        boolean notificationStatusChanged = !notificationStatus.equals(
+                lastNotificationPermissionStatus);
         if (appPreferences != null && (granted
                 || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA))) {
             appPreferences.saveCameraPermissionBlocked(false);
         }
-        if (root != null && currentTab == TAB_SETTINGS && granted != cameraPermissionGranted) {
+        if (root != null && currentTab == TAB_SETTINGS
+                && (granted != cameraPermissionGranted || notificationStatusChanged)) {
             showProfileView();
         }
         cameraPermissionGranted = granted;
+        lastNotificationPermissionStatus = notificationStatus;
     }
 
     private void openOperations() {

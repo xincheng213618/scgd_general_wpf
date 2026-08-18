@@ -19,6 +19,8 @@ final class AppPreferences {
     private static final String KEY_LEGACY_AUDIO_URI = "audio_uri";
     private static final String KEY_LEGACY_AUDIO_TITLE = "audio_title";
     private static final String KEY_CAMERA_PERMISSION_BLOCKED = "camera_permission_blocked";
+    private static final String KEY_NOTIFICATION_PERMISSION_BLOCKED =
+            "notification_runtime_request_blocked";
     private static final String KEY_DEVICE_ID = "operations_device_id";
     private static final String KEY_OPERATIONS_PROFILES = "operations_profiles_v1";
     private static final String KEY_OPERATIONS_ENDPOINT = "operations_endpoint";
@@ -86,6 +88,14 @@ final class AppPreferences {
 
     void saveCameraPermissionBlocked(boolean blocked) {
         preferences.edit().putBoolean(KEY_CAMERA_PERMISSION_BLOCKED, blocked).apply();
+    }
+
+    boolean isNotificationPermissionBlocked() {
+        return preferences.getBoolean(KEY_NOTIFICATION_PERMISSION_BLOCKED, false);
+    }
+
+    void saveNotificationPermissionBlocked() {
+        preferences.edit().putBoolean(KEY_NOTIFICATION_PERMISSION_BLOCKED, true).apply();
     }
 
     private void clearLegacyAudioAccess(Context context) {

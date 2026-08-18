@@ -11,6 +11,7 @@ final class SettingsInformationArchitecture {
     static final String SECURE_CHANNEL = "安全通道";
     static final String ADD_COMPUTER = "添加电脑";
     static final String CONNECT_COMPUTER = "连接电脑";
+    static final String NOTIFICATION_PERMISSION = "通知权限";
     static final String CAMERA_PERMISSION = "相机权限";
     static final String THEME_MODE = "主题模式";
     static final String APP_UPDATE = "应用更新";
@@ -27,6 +28,7 @@ final class SettingsInformationArchitecture {
                 OPERATIONS,
                 SECURE_CHANNEL,
                 paired ? ADD_COMPUTER : CONNECT_COMPUTER,
+                NOTIFICATION_PERMISSION,
                 CAMERA_PERMISSION,
                 THEME_MODE,
                 APP_UPDATE);

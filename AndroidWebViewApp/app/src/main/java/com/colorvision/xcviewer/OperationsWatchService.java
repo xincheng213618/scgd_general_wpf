@@ -35,7 +35,7 @@ public final class OperationsWatchService extends Service {
     private static final String ACTION_REFRESH_CONNECTION =
             "com.colorvision.xcviewer.action.REFRESH_OPERATIONS_CONNECTION";
     private static final String NOTIFICATION_CHANNEL_ID = "operations_watch";
-    private static final String ATTENTION_CHANNEL_ID = "operations_attention";
+    static final String ATTENTION_CHANNEL_ID = "operations_attention";
     private static final int NOTIFICATION_ID = 22023;
     private static final int ATTENTION_NOTIFICATION_ID = 22024;
     private static final String LOG_TAG = "CVOperationsWatch";
