@@ -40,6 +40,38 @@ public sealed class CopilotUserQuestionCheckpointTests
     }
 
     [Fact]
+    public async Task CoordinatorDoesNotAppendCancelledAfterAnsweredObserverFails()
+    {
+        var coordinator = new CopilotUserQuestionCoordinator();
+        var events = new List<CopilotAgentEvent>();
+        var askTask = coordinator.AskAsync(
+            CreateRequest(),
+            CreateInput(),
+            agentEvent =>
+            {
+                events.Add(agentEvent);
+                if (agentEvent.UserQuestion?.Resolution == CopilotUserQuestionResolution.Answered)
+                    throw new InvalidOperationException("Expected observer failure.");
+            },
+            _ => ValueTask.FromResult(true),
+            CancellationToken.None);
+        var requested = Assert.Single(events).UserQuestion!;
+
+        Assert.True(coordinator.TryAnswer(
+            requested.TaskId,
+            requested.RequestId,
+            "Keep the current scope"));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => askTask);
+
+        Assert.Equal("Expected observer failure.", exception.Message);
+        Assert.False(coordinator.HasPendingQuestion);
+        Assert.Collection(
+            events,
+            item => Assert.Equal(CopilotAgentEventType.UserQuestionRequested, item.Type),
+            item => Assert.Equal(CopilotUserQuestionResolution.Answered, item.UserQuestion!.Resolution));
+    }
+
+    [Fact]
     public async Task AgentRuntimePublishesRequestedQuestionBeforeWaitingForAnswer()
     {
         var chatClient = new QuestionCallingChatClient();

@@ -275,6 +275,7 @@ namespace ColorVision.Copilot
                 _pending = pending;
             }
 
+            var terminalResolutionRecorded = false;
             try
             {
                 emit(CopilotAgentEvent.UserQuestionRequested(snapshot));
@@ -287,13 +288,18 @@ namespace ColorVision.Copilot
                     () => pending.Completion.TrySetCanceled(cancellationToken));
                 var answer = await pending.Completion.Task.ConfigureAwait(false);
                 var resolved = snapshot.Resolve(CopilotUserQuestionResolution.Answered, answer);
+                terminalResolutionRecorded = true;
                 emit(CopilotAgentEvent.UserQuestionResolved(resolved));
                 return resolved;
             }
             catch
             {
-                emit(CopilotAgentEvent.UserQuestionResolved(
-                    snapshot.Resolve(CopilotUserQuestionResolution.Cancelled, string.Empty)));
+                if (!terminalResolutionRecorded)
+                {
+                    terminalResolutionRecorded = true;
+                    emit(CopilotAgentEvent.UserQuestionResolved(
+                        snapshot.Resolve(CopilotUserQuestionResolution.Cancelled, string.Empty)));
+                }
                 throw;
             }
             finally
