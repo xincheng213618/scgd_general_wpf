@@ -2,6 +2,7 @@ package com.colorvision.xcviewer;
 
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -28,6 +29,7 @@ import androidx.core.widget.TextViewCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
@@ -104,6 +106,7 @@ public class OperationsActivity extends AppCompatActivity {
     private TextView state;
     private TextView details;
     private ProgressBar progress;
+    private ScrollView dashboardScroll;
     private LinearLayout actions;
     private Button dashboardFlowStatus;
     private Button dashboardDeviceStatus;
@@ -157,6 +160,7 @@ public class OperationsActivity extends AppCompatActivity {
         shell.setBackgroundColor(themeManager.pageBackgroundColor());
 
         ScrollView scroll = new ScrollView(this);
+        dashboardScroll = scroll;
         scroll.setFillViewport(true);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -166,18 +170,29 @@ public class OperationsActivity extends AppCompatActivity {
                 ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
 
         LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
+        boolean singleColumn = OperationsResponsiveLayout.usesSingleColumn(
+                getResources().getConfiguration().fontScale);
+        header.setOrientation(singleColumn ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        header.setGravity(singleColumn ? Gravity.START : Gravity.CENTER_VERTICAL);
+        header.setMinimumHeight(dp(64));
         root.addView(header, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(44)));
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
 
         title = new TextView(this);
         title.setText("运维伴侣");
         TextViewCompat.setTextAppearance(title, com.google.android.material.R.style.TextAppearance_Material3_TitleLarge);
         title.setTextColor(themeManager.primaryTextColor());
-        title.setSingleLine(true);
-        header.addView(title, new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        title.setMaxLines(2);
+        title.setEllipsize(TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams titleParams = singleColumn
+                ? new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT)
+                : new LinearLayout.LayoutParams(
+                        0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        titleParams.setMargins(0, 0, singleColumn ? 0 : dp(8), singleColumn ? dp(4) : 0);
+        header.addView(title, titleParams);
 
         profileTarget = new MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
         profileTarget.setTextSize(12);
@@ -185,10 +200,13 @@ public class OperationsActivity extends AppCompatActivity {
         profileTarget.setEllipsize(TextUtils.TruncateAt.END);
         profileTarget.setGravity(Gravity.CENTER);
         profileTarget.setPadding(dp(10), dp(6), dp(10), dp(6));
-        profileTarget.setMaxWidth(dp(190));
+        profileTarget.setMinHeight(dp(48));
+        profileTarget.setMaxWidth(singleColumn ? Integer.MAX_VALUE : dp(180));
         profileTarget.setOnClickListener(v -> showConnectionPreference());
         header.addView(profileTarget, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                singleColumn
+                        ? LinearLayout.LayoutParams.MATCH_PARENT
+                        : LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
         state = new TextView(this);
@@ -479,6 +497,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showConnectionPreference() {
+        scrollDashboardToTop();
         refreshOperationsTargetPresentation();
         showingDashboardSummary = false;
         leaveSupportCenter();
@@ -495,28 +514,41 @@ public class OperationsActivity extends AppCompatActivity {
         state.setText((relayPreferred ? "固定中继优先" : "现场直连优先")
                 + " · " + fleet.summary);
         int profileCount = profiles.size();
-        details.setText("当前电脑：" + operationsProfileLabel(
-                        profiles, preferences.getOperationsHostId())
-                + "\n已配对电脑：" + profileCount + " / "
-                + OperationsProfileRegistry.MAX_PROFILES
-                + "\n当前通道：" + (remoteDashboard ? "固定中继" : "现场直连")
-                + "\n首选方式会保存在本机，应用重启后继续使用。"
-                + "\n首选通道临时不可用时会安全回退；恢复后自动切回。"
-                + "\n固定中继地址由应用内置，不能填写或选择网址。"
-                + "\n电脑总览来自各电脑最后一次本机守护检查；非当前电脑不会在后台刷新。"
-                + "\n队列摘要只采用最近 10 分钟内的检查；更早记录会标记为待巡检。");
+        OperationsProfileRegistry.Profile activeProfile = null;
+        for (OperationsProfileRegistry.Profile profile : profiles) {
+            if (profile.hostId.equals(preferences.getOperationsHostId())) {
+                activeProfile = profile;
+                break;
+            }
+        }
+        String activeProfileState = activeProfile == null
+                ? "尚未检查"
+                : OperationsProfileOverview.summary(
+                activeProfile.watchHistory,
+                activeProfile.watchCheckedAt,
+                activeProfile.revoked,
+                nowMilliseconds);
+        details.setText(OperationsConnectionOverview.summary(
+                operationsProfileLabel(profiles, preferences.getOperationsHostId()),
+                activeProfileState,
+                remoteDashboard ? "固定中继" : "现场直连",
+                profileCount,
+                OperationsProfileRegistry.MAX_PROFILES));
         actions.removeAllViews();
 
-        addDashboardActionRow(
-                dashboardButton(relayPreferred ? "现场直连优先" : "✓ 现场直连优先",
-                        v -> selectConnectionPreference(OperationsConnectionPreference.DIRECT)),
-                dashboardButton(relayPreferred ? "✓ 固定中继优先" : "固定中继优先",
-                        v -> selectConnectionPreference(OperationsConnectionPreference.RELAY)));
+        addDashboardSection("首选连接");
+        addDashboardSegmentedChoices(
+                "现场直连优先",
+                "固定中继优先",
+                relayPreferred,
+                v -> selectConnectionPreference(OperationsConnectionPreference.DIRECT),
+                v -> selectConnectionPreference(OperationsConnectionPreference.RELAY));
+
+        addDashboardSection("检查与巡检");
         addDashboardActionRow(
                 dashboardButton("运行现场连接自检", v -> runConnectionSelfCheck()),
-                dashboardButton("移除配对资料", v -> confirmClearProfile()));
-        addDashboardWideAction(dashboardButton(
-                "巡检全部电脑（只读）", v -> refreshAllOperationsProfiles()));
+                dashboardButton("只读巡检全部电脑", v -> refreshAllOperationsProfiles()));
+
         addDashboardSection("电脑总览");
         if (fleet.hasPriorityAction()) {
             addDashboardWideAction(dashboardButton(
@@ -528,14 +560,21 @@ public class OperationsActivity extends AppCompatActivity {
         }
         addDashboardWideAction(dashboardButton(
                 "查看全部电脑动态", v -> showFleetTimeline(false)));
+
+        addDashboardSection("电脑管理");
         addDashboardActionRow(
                 dashboardButton("命名当前电脑", v -> promptRenameCurrentOperationsProfile()),
                 dashboardButton("扫描并添加电脑", v -> startOperationsPairingScan()));
+
+        addDashboardSection("连接说明");
+        addDashboardInfoCard(OperationsConnectionOverview.connectionNote());
+        addDashboardWideAction(dashboardDestructiveButton(
+                "移除当前电脑配对", v -> confirmClearProfile()));
         addDashboardWideAction(dashboardButton("返回运维概览", v -> showCurrentDashboard()));
         scheduleConnectionHeartbeat();
     }
 
-    private Button operationsProfileButton(
+    private View operationsProfileButton(
             OperationsProfileRegistry.Profile profile,
             List<OperationsProfileRegistry.Profile> profiles,
             long nowMilliseconds) {
@@ -544,6 +583,24 @@ public class OperationsActivity extends AppCompatActivity {
         String summary = OperationsProfileOverview.summary(
                 profile.watchHistory, profile.watchCheckedAt, profile.revoked, nowMilliseconds);
         String heading = profileLabel + (current ? "（当前）" : "");
+        if (current && !profile.revoked) {
+            TextView currentProfile = new TextView(this);
+            currentProfile.setText(heading + "\n" + summary);
+            TextViewCompat.setTextAppearance(currentProfile,
+                    com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
+            currentProfile.setTextColor(themeManager.onPrimaryContainerColor());
+            currentProfile.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+            currentProfile.setPadding(dp(16), dp(6), dp(12), dp(6));
+            currentProfile.setMaxLines(2);
+            currentProfile.setEllipsize(TextUtils.TruncateAt.END);
+            MaterialCardView currentCard = new MaterialCardView(this);
+            currentCard.setCardBackgroundColor(themeManager.primaryContainerColor());
+            currentCard.setContentDescription(profileLabel + "，当前电脑，" + summary);
+            currentCard.addView(currentProfile, new MaterialCardView.LayoutParams(
+                    MaterialCardView.LayoutParams.MATCH_PARENT,
+                    MaterialCardView.LayoutParams.MATCH_PARENT));
+            return currentCard;
+        }
         Button button = dashboardButton(heading + "\n" + summary, v -> {
             if (profile.revoked) {
                 confirmRemoveOperationsProfile(profile.hostId, profileLabel);
@@ -559,7 +616,6 @@ public class OperationsActivity extends AppCompatActivity {
         button.setContentDescription(profileLabel
                 + (current ? "，当前电脑，" : profile.revoked ? "，点按移除，" : "，点按切换，")
                 + summary);
-        button.setEnabled(profile.revoked || !current);
         return button;
     }
 
@@ -1818,6 +1874,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showCurrentDashboard() {
+        scrollDashboardToTop();
         if (remoteDashboard && lastRelaySnapshotResponse != null) {
             showRemoteDashboard(lastRelaySnapshotResponse);
         } else {
@@ -1855,6 +1912,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showOperationsWatchHistory() {
+        scrollDashboardToTop();
         showingDashboardSummary = false;
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -1890,6 +1948,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showFleetTimeline(boolean issuesOnly) {
+        scrollDashboardToTop();
         showingDashboardSummary = false;
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -1907,11 +1966,12 @@ public class OperationsActivity extends AppCompatActivity {
 
         String issueFilterLabel = "只看需关注"
                 + (timeline.issueEntryCount > 0 ? "（" + timeline.issueEntryCount + "）" : "");
-        addDashboardActionRow(
-                dashboardButton(issuesOnly ? "全部变化" : "✓ 全部变化",
-                        v -> showFleetTimeline(false)),
-                dashboardButton(issuesOnly ? "✓ " + issueFilterLabel : issueFilterLabel,
-                        v -> showFleetTimeline(true)));
+        addDashboardSegmentedChoices(
+                "全部变化",
+                issueFilterLabel,
+                issuesOnly,
+                v -> showFleetTimeline(false),
+                v -> showFleetTimeline(true));
         addDashboardActionRow(
                 dashboardButton("重新读取本机动态", v -> showFleetTimeline(issuesOnly)),
                 dashboardButton("返回电脑总览", v -> showConnectionPreference()));
@@ -2222,6 +2282,14 @@ public class OperationsActivity extends AppCompatActivity {
         return button;
     }
 
+    private Button dashboardDestructiveButton(String label, View.OnClickListener listener) {
+        MaterialButton button = (MaterialButton) dashboardButton(label, listener);
+        int error = themeManager.errorColor();
+        button.setTextColor(error);
+        button.setStrokeColor(ColorStateList.valueOf(error));
+        return button;
+    }
+
     private Button dashboardStatusButton(String label, View.OnClickListener listener) {
         Button button = dashboardButton(label, listener);
         button.setTextSize(12);
@@ -2428,22 +2496,97 @@ public class OperationsActivity extends AppCompatActivity {
         return dashboardButton(label, v -> loadCapability(path));
     }
 
+    private void scrollDashboardToTop() {
+        if (dashboardScroll != null) {
+            dashboardScroll.post(() -> dashboardScroll.scrollTo(0, 0));
+        }
+    }
+
     private void addDashboardActionRow(Button left, Button right) {
         LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
+        boolean singleColumn = OperationsResponsiveLayout.usesSingleColumn(
+                getResources().getConfiguration().fontScale);
+        row.setOrientation(singleColumn ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
 
-        LinearLayout.LayoutParams leftParams = new LinearLayout.LayoutParams(0, dp(48), 1);
-        leftParams.setMargins(0, 0, dp(4), dp(4));
+        LinearLayout.LayoutParams leftParams = singleColumn
+                ? new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, dp(48))
+                : new LinearLayout.LayoutParams(0, dp(48), 1);
+        leftParams.setMargins(0, 0, singleColumn ? 0 : dp(4), dp(4));
         row.addView(left, leftParams);
 
-        LinearLayout.LayoutParams rightParams = new LinearLayout.LayoutParams(0, dp(48), 1);
-        rightParams.setMargins(dp(4), 0, 0, dp(4));
+        LinearLayout.LayoutParams rightParams = singleColumn
+                ? new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, dp(48))
+                : new LinearLayout.LayoutParams(0, dp(48), 1);
+        rightParams.setMargins(singleColumn ? 0 : dp(4), 0, 0, dp(4));
         row.addView(right, rightParams);
         actions.addView(row, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
-    private void addOperationsProfileWideAction(Button button) {
+    private void addDashboardSegmentedChoices(
+            String leftLabel,
+            String rightLabel,
+            boolean rightSelected,
+            View.OnClickListener leftListener,
+            View.OnClickListener rightListener) {
+        MaterialButtonToggleGroup group = new MaterialButtonToggleGroup(this);
+        group.setSingleSelection(true);
+        group.setSelectionRequired(true);
+        MaterialButton left = segmentedButton(leftLabel);
+        MaterialButton right = segmentedButton(rightLabel);
+        group.addView(left, new LinearLayout.LayoutParams(0, dp(48), 1));
+        group.addView(right, new LinearLayout.LayoutParams(0, dp(48), 1));
+        group.check(rightSelected ? right.getId() : left.getId());
+        group.addOnButtonCheckedListener((buttonGroup, checkedId, isChecked) -> {
+            if (!isChecked) {
+                return;
+            }
+            if (checkedId == left.getId()) {
+                leftListener.onClick(left);
+            } else if (checkedId == right.getId()) {
+                rightListener.onClick(right);
+            }
+        });
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, 0, dp(4));
+        actions.addView(group, params);
+    }
+
+    private MaterialButton segmentedButton(String label) {
+        MaterialButton button = new MaterialButton(
+                this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        button.setId(View.generateViewId());
+        button.setText(label);
+        button.setTextSize(13);
+        button.setAllCaps(false);
+        button.setMaxLines(1);
+        button.setEllipsize(TextUtils.TruncateAt.END);
+        return button;
+    }
+
+    private void addDashboardInfoCard(String value) {
+        TextView note = new TextView(this);
+        note.setText(value);
+        TextViewCompat.setTextAppearance(note,
+                com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
+        note.setTextColor(themeManager.secondaryTextColor());
+        note.setLineSpacing(0, 1.08f);
+        note.setPadding(dp(16), dp(14), dp(16), dp(14));
+        MaterialCardView card = new MaterialCardView(this);
+        card.setCardBackgroundColor(themeManager.cardBackgroundColor());
+        card.addView(note, new MaterialCardView.LayoutParams(
+                MaterialCardView.LayoutParams.MATCH_PARENT,
+                MaterialCardView.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, 0, dp(8));
+        actions.addView(card, params);
+    }
+
+    private void addOperationsProfileWideAction(View button) {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(66));
         params.setMargins(0, 0, 0, dp(4));

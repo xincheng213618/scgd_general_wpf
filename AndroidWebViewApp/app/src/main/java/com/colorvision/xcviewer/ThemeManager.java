@@ -142,6 +142,10 @@ final class ThemeManager {
         return color(com.google.android.material.R.attr.colorOutline, secondaryTextColor());
     }
 
+    int errorColor() {
+        return color(R.attr.colorError, Color.RED);
+    }
+
     private int color(int attribute, int fallback) {
         return MaterialColors.getColor(context, attribute, fallback);
     }
