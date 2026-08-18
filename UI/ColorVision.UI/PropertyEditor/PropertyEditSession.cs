@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace ColorVision.UI
 {
@@ -114,6 +115,13 @@ namespace ColorVision.UI
 
             if (value is Freezable freezable)
                 return freezable.CloneCurrentValue();
+
+            // WPF runtime objects are bound to their creating dispatcher and often contain
+            // framework-managed state (for example DataTemplate.TemplateContent) that cannot
+            // be reconstructed through reflection. They are runtime references, not owned
+            // configuration data, so keep the reference while cloning the surrounding graph.
+            if (value is DispatcherObject)
+                return value;
 
             if (value is Array array)
                 return CloneArray(array, visited);
