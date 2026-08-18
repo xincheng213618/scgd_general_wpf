@@ -13,23 +13,21 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 final class OperationsApiClient {
     private static final int DEFAULT_CONNECT_TIMEOUT_MILLISECONDS = 7_000;
     private static final int DEFAULT_READ_TIMEOUT_MILLISECONDS = 10_000;
 
     private final String endpoint;
-    private final String certificatePin;
     private final String deviceId;
     private final OperationsDeviceIdentity identity;
     private final SSLContext sslContext;
+    private final OperationsPinnedTlsPolicy tlsPolicy;
     private final int connectTimeoutMilliseconds;
     private final int readTimeoutMilliseconds;
 
@@ -49,14 +47,21 @@ final class OperationsApiClient {
                 || readTimeoutMilliseconds < 1_000 || readTimeoutMilliseconds > 30_000) {
             throw new IllegalArgumentException("invalid_operations_timeout");
         }
-        this.endpoint = endpoint.replaceAll("/+$", "");
-        this.certificatePin = certificatePin.toLowerCase(Locale.ROOT);
+        if (endpoint == null || endpoint.trim().isEmpty()) {
+            throw new IllegalArgumentException("invalid_operations_endpoint");
+        }
+        this.endpoint = endpoint.trim().replaceAll("/+$", "");
+        URL endpointUrl = new URL(this.endpoint);
+        if (!"https".equalsIgnoreCase(endpointUrl.getProtocol()) || endpointUrl.getHost().isEmpty()) {
+            throw new IllegalArgumentException("invalid_operations_endpoint");
+        }
         this.deviceId = deviceId;
         this.identity = identity;
         this.connectTimeoutMilliseconds = connectTimeoutMilliseconds;
         this.readTimeoutMilliseconds = readTimeoutMilliseconds;
+        tlsPolicy = new OperationsPinnedTlsPolicy(endpointUrl.getHost(), certificatePin);
         sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(null, new TrustManager[]{new PinnedTrustManager(this.certificatePin)}, new SecureRandom());
+        sslContext.init(null, new TrustManager[]{tlsPolicy}, new SecureRandom());
     }
 
     JSONObject submitClaim(OperationsPairingPayload payload, String deviceName) throws Exception {
@@ -92,7 +97,7 @@ final class OperationsApiClient {
         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
         try {
             connection.setSSLSocketFactory(sslContext.getSocketFactory());
-            connection.setHostnameVerifier((hostname, session) -> hostname.equalsIgnoreCase(url.getHost()));
+            connection.setHostnameVerifier(tlsPolicy);
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(7000);
             connection.setReadTimeout(30000);
@@ -136,7 +141,7 @@ final class OperationsApiClient {
         URL url = new URL(endpoint + path + query);
         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
         connection.setSSLSocketFactory(sslContext.getSocketFactory());
-        connection.setHostnameVerifier((hostname, session) -> hostname.equalsIgnoreCase(url.getHost()));
+        connection.setHostnameVerifier(tlsPolicy);
         connection.setRequestMethod(method);
         connection.setConnectTimeout(connectTimeoutMilliseconds);
         connection.setReadTimeout(readTimeoutMilliseconds);
@@ -229,39 +234,4 @@ final class OperationsApiClient {
         return text.toString();
     }
 
-    private static final class PinnedTrustManager implements X509TrustManager {
-        private final String expectedPin;
-
-        PinnedTrustManager(String expectedPin) {
-            this.expectedPin = expectedPin;
-        }
-
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType) {
-            throw new SecurityException("Client certificates are not accepted");
-        }
-
-        @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType) throws java.security.cert.CertificateException {
-            if (chain == null || chain.length != 1) {
-                throw new java.security.cert.CertificateException("Unexpected server certificate chain");
-            }
-            try {
-                String actual = hex(MessageDigest.getInstance("SHA-256").digest(chain[0].getEncoded()));
-                if (!MessageDigest.isEqual(actual.getBytes(StandardCharsets.US_ASCII), expectedPin.getBytes(StandardCharsets.US_ASCII))) {
-                    throw new java.security.cert.CertificateException("Certificate pin mismatch");
-                }
-                chain[0].checkValidity();
-            } catch (java.security.cert.CertificateException ex) {
-                throw ex;
-            } catch (Exception ex) {
-                throw new java.security.cert.CertificateException(ex);
-            }
-        }
-
-        @Override
-        public X509Certificate[] getAcceptedIssuers() {
-            return new X509Certificate[0];
-        }
-    }
 }
