@@ -44,12 +44,17 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
 
     private SurfaceView surfaceView;
     private TextView statusText;
+    private FrameLayout root;
+    private ImageButton torchButton;
     private Camera camera;
     private SurfaceHolder surfaceHolder;
     private MultiFormatReader reader;
     private boolean surfaceReady;
     private boolean decoding;
     private boolean completed;
+    private boolean torchEnabled;
+    private final RuntimePermissionDialogState cameraPermissionDialogState =
+            new RuntimePermissionDialogState();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,7 +65,7 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
         if (hasCameraPermission()) {
             startCameraIfReady();
         } else {
-            requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+            requestCameraPermission();
         }
     }
 
@@ -75,7 +80,7 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
     }
 
     private void createContentView() {
-        FrameLayout root = new FrameLayout(this);
+        root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
 
         surfaceView = new SurfaceView(this);
@@ -95,6 +100,18 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
                 dp(58), dp(58), Gravity.TOP | Gravity.START);
         backParams.setMargins(dp(12), dp(12), 0, 0);
         root.addView(backButton, backParams);
+
+        torchButton = new ImageButton(this);
+        torchButton.setImageResource(R.drawable.ic_flash_on_24);
+        torchButton.setColorFilter(Color.WHITE);
+        torchButton.setContentDescription("开启补光灯");
+        torchButton.setBackgroundColor(Color.argb(96, 0, 0, 0));
+        torchButton.setVisibility(View.GONE);
+        torchButton.setOnClickListener(v -> toggleTorch());
+        FrameLayout.LayoutParams torchParams = new FrameLayout.LayoutParams(
+                dp(58), dp(58), Gravity.TOP | Gravity.END);
+        torchParams.setMargins(0, dp(12), dp(12), 0);
+        root.addView(torchButton, torchParams);
 
         statusText = new TextView(this);
         statusText.setText("将电脑端二维码放入取景框");
@@ -116,9 +133,11 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
             Insets navigationBars = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars());
             backParams.topMargin = AppWindowInsetsPolicy.topContentInset(
                     statusBars.top, displayCutout.top) + dp(12);
+            torchParams.topMargin = backParams.topMargin;
             statusParams.bottomMargin = Math.max(
                     navigationBars.bottom, displayCutout.bottom) + dp(16);
             backButton.setLayoutParams(backParams);
+            torchButton.setLayoutParams(torchParams);
             statusText.setLayoutParams(statusParams);
             return windowInsets;
         });
@@ -139,6 +158,24 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
         return checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
     }
 
+    private void requestCameraPermission() {
+        int requestGeneration = cameraPermissionDialogState.begin();
+        requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+        root.postDelayed(() -> cameraPermissionDialogState.observe(
+                        requestGeneration, hasCameraPermission(), hasWindowFocus()),
+                RuntimePermissionDialogState.OBSERVE_DELAY_MILLISECONDS);
+        root.postDelayed(() -> recoverBlockedCameraPermissionRequest(requestGeneration),
+                RuntimePermissionDialogState.NO_DIALOG_RECOVERY_DELAY_MILLISECONDS);
+    }
+
+    private void recoverBlockedCameraPermissionRequest(int requestGeneration) {
+        if (completed || !cameraPermissionDialogState.shouldRecoverAsBlocked(
+                requestGeneration, hasCameraPermission(), hasWindowFocus())) {
+            return;
+        }
+        finishWithFailure(QrScanFailurePresentation.CAMERA_PERMISSION_BLOCKED);
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -146,15 +183,16 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
             return;
         }
 
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        boolean granted = grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+        if (granted) {
+            cameraPermissionDialogState.completeFromSystemResult(true);
             startCameraIfReady();
             return;
         }
-
-        boolean blocked = !shouldShowRequestPermissionRationale(Manifest.permission.CAMERA);
-        finishWithFailure(blocked
-                ? QrScanFailurePresentation.CAMERA_PERMISSION_BLOCKED
-                : QrScanFailurePresentation.CAMERA_PERMISSION_DENIED);
+        if (cameraPermissionDialogState.completeFromSystemResult(false)) {
+            finishWithFailure(QrScanFailurePresentation.CAMERA_PERMISSION_DENIED);
+        }
     }
 
     @Override
@@ -191,6 +229,7 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
     }
 
     private void finishWithFailure(String reason) {
+        completed = true;
         Intent result = new Intent();
         result.putExtra(EXTRA_SCAN_FAILURE, reason);
         setResult(RESULT_CANCELED, result);
@@ -211,6 +250,51 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
             }
         }
         targetCamera.setParameters(parameters);
+        updateTorchAvailability(parameters);
+    }
+
+    private void updateTorchAvailability(Camera.Parameters parameters) {
+        List<String> flashModes = parameters.getSupportedFlashModes();
+        boolean torchSupported = flashModes != null
+                && flashModes.contains(Camera.Parameters.FLASH_MODE_TORCH);
+        torchButton.setVisibility(torchSupported ? View.VISIBLE : View.GONE);
+        if (!torchSupported) {
+            torchEnabled = false;
+            updateTorchButton();
+        }
+    }
+
+    private void toggleTorch() {
+        if (camera == null) {
+            return;
+        }
+        try {
+            Camera.Parameters parameters = camera.getParameters();
+            List<String> flashModes = parameters.getSupportedFlashModes();
+            if (flashModes == null || !flashModes.contains(Camera.Parameters.FLASH_MODE_TORCH)) {
+                torchButton.setVisibility(View.GONE);
+                return;
+            }
+            torchEnabled = !torchEnabled;
+            parameters.setFlashMode(torchEnabled
+                    ? Camera.Parameters.FLASH_MODE_TORCH
+                    : Camera.Parameters.FLASH_MODE_OFF);
+            camera.setParameters(parameters);
+            updateTorchButton();
+        } catch (Exception ignored) {
+            torchEnabled = false;
+            updateTorchButton();
+        }
+    }
+
+    private void updateTorchButton() {
+        if (torchButton == null) {
+            return;
+        }
+        torchButton.setColorFilter(torchEnabled ? Color.BLACK : Color.WHITE);
+        torchButton.setBackgroundColor(torchEnabled
+                ? Color.WHITE : Color.argb(96, 0, 0, 0));
+        torchButton.setContentDescription(torchEnabled ? "关闭补光灯" : "开启补光灯");
     }
 
     @Override
@@ -304,6 +388,9 @@ public class QrScanActivity extends AppCompatActivity implements SurfaceHolder.C
         } catch (Exception ignored) {
         } finally {
             camera = null;
+            torchEnabled = false;
+            updateTorchButton();
+            torchButton.setVisibility(View.GONE);
         }
     }
 

@@ -52,8 +52,6 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_QR_SCAN = 1001;
     private static final int REQUEST_INSTALL_PERMISSION = 1004;
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1005;
-    private static final long NOTIFICATION_DIALOG_OBSERVE_DELAY_MS = 250L;
-    private static final long NOTIFICATION_NO_DIALOG_RECOVERY_DELAY_MS = 800L;
     private static final int NAV_OPERATIONS = 2001;
     private static final int NAV_SETTINGS = 2002;
     static final int TAB_OPERATIONS = 0;
@@ -73,9 +71,8 @@ public class MainActivity extends AppCompatActivity {
     private int currentTab = TAB_OPERATIONS;
     private boolean cameraPermissionGranted;
     private String lastNotificationPermissionStatus = "";
-    private boolean notificationPermissionRequestInFlight;
-    private boolean notificationPermissionDialogPresented;
-    private int notificationPermissionRequestGeneration;
+    private final RuntimePermissionDialogState notificationPermissionDialogState =
+            new RuntimePermissionDialogState();
     private final ExecutorService appUpdateExecutor = Executors.newSingleThreadExecutor();
     private boolean appUpdateInFlight;
     private File pendingInstallFile;
@@ -333,13 +330,17 @@ public class MainActivity extends AppCompatActivity {
         content.addView(operationsCard, fullWidthCardParams());
         operationsCard.addView(makeTitle("连接运维电脑", 22), matchWidthWrapParams());
 
-        TextView status = makeBodyText("扫描电脑端“设置 > 局域网控制”中的短时安全配对码。完成一次配对后，运维伴侣会成为首屏并持续守护安全连接。 ");
+        TextView status = makeBodyText("扫描电脑端“设置 > 局域网控制”中的短时安全配对码。完成一次配对后，运维伴侣会成为首屏并持续守护安全连接。");
         status.setPadding(0, dp(8), 0, dp(4));
         operationsCard.addView(status, matchWidthWrapParams());
 
         Button operationsButton = makePrimaryButton("扫描并连接电脑");
         operationsButton.setOnClickListener(v -> openOperations());
         operationsCard.addView(operationsButton, fullWidthButtonParams());
+
+        Button helpButton = makeSecondaryButton("配对码在哪里？");
+        helpButton.setOnClickListener(v -> PairingHelpDialog.show(this, this::startQrScan));
+        operationsCard.addView(helpButton, fullWidthButtonParams());
 
         return scrollView;
     }
@@ -651,42 +652,30 @@ public class MainActivity extends AppCompatActivity {
             openNotificationSettings();
             return;
         }
-        notificationPermissionRequestInFlight = true;
-        notificationPermissionDialogPresented = false;
-        int requestGeneration = ++notificationPermissionRequestGeneration;
+        int requestGeneration = notificationPermissionDialogState.begin();
         requestPermissions(
                 new String[]{Manifest.permission.POST_NOTIFICATIONS},
                 REQUEST_NOTIFICATION_PERMISSION);
         root.postDelayed(() -> observeNotificationPermissionDialog(requestGeneration),
-                NOTIFICATION_DIALOG_OBSERVE_DELAY_MS);
+                RuntimePermissionDialogState.OBSERVE_DELAY_MILLISECONDS);
         root.postDelayed(() -> recoverBlockedNotificationPermissionRequest(requestGeneration),
-                NOTIFICATION_NO_DIALOG_RECOVERY_DELAY_MS);
+                RuntimePermissionDialogState.NO_DIALOG_RECOVERY_DELAY_MILLISECONDS);
     }
 
     private void observeNotificationPermissionDialog(int requestGeneration) {
-        if (notificationPermissionRequestInFlight
-                && requestGeneration == notificationPermissionRequestGeneration
-                && !hasPostNotificationPermission()
-                && !hasWindowFocus()) {
-            notificationPermissionDialogPresented = true;
-        }
+        notificationPermissionDialogState.observe(
+                requestGeneration,
+                hasPostNotificationPermission(),
+                hasWindowFocus());
     }
 
     private void recoverBlockedNotificationPermissionRequest(int requestGeneration) {
-        if (!notificationPermissionRequestInFlight
-                || requestGeneration != notificationPermissionRequestGeneration
-                || hasPostNotificationPermission()) {
+        if (!notificationPermissionDialogState.shouldRecoverAsBlocked(
+                requestGeneration,
+                hasPostNotificationPermission(),
+                hasWindowFocus())) {
             return;
         }
-        if (!hasWindowFocus()) {
-            notificationPermissionDialogPresented = true;
-            return;
-        }
-        if (notificationPermissionDialogPresented) {
-            notificationPermissionRequestInFlight = false;
-            return;
-        }
-        notificationPermissionRequestInFlight = false;
         appPreferences.saveNotificationPermissionBlocked();
         lastNotificationPermissionStatus = notificationPermissionStatus();
         if (root != null && currentTab == TAB_SETTINGS) {
@@ -762,9 +751,7 @@ public class MainActivity extends AppCompatActivity {
             int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
             boolean granted = hasPostNotificationPermission();
-            if (granted || notificationPermissionDialogPresented) {
-                notificationPermissionRequestInFlight = false;
-            }
+            notificationPermissionDialogState.completeFromSystemResult(granted);
             lastNotificationPermissionStatus = notificationPermissionStatus();
             if (root != null && currentTab == TAB_SETTINGS) {
                 showProfileView();
@@ -802,7 +789,6 @@ public class MainActivity extends AppCompatActivity {
         if (appPreferences.hasOperationsProfile()) {
             openOperationsDirectly();
         } else {
-            Toast.makeText(this, "请扫描电脑端现场运维配对码", Toast.LENGTH_SHORT).show();
             startQrScan();
         }
     }

@@ -783,6 +783,9 @@ public class OperationsActivity extends AppCompatActivity {
         addDashboardActionRow(
                 dashboardButton("命名当前电脑", v -> promptRenameCurrentOperationsProfile()),
                 dashboardButton("扫描并添加电脑", v -> startOperationsPairingScan()));
+        addDashboardWideAction(dashboardButton(
+                "配对码在哪里？",
+                v -> PairingHelpDialog.show(this, this::startOperationsPairingScan)));
 
         addDashboardSection("安全说明");
         addDashboardInfoCard(OperationsConnectionOverview.connectionNote());
