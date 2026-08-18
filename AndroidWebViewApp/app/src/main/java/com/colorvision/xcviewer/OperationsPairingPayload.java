@@ -6,6 +6,7 @@ import android.util.Base64;
 import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 final class OperationsPairingPayload {
     private static final String ERROR_INVALID = "pairing_qr_invalid";
@@ -70,7 +71,7 @@ final class OperationsPairingPayload {
             if (!"https".equalsIgnoreCase(endpointUri.getScheme()) || endpointUri.getHost() == null) {
                 throw invalid(ERROR_SECURITY_INVALID);
             }
-            String pin = required(json, "certificateSha256").toLowerCase();
+            String pin = required(json, "certificateSha256").toLowerCase(Locale.ROOT);
             if (!pin.matches("[0-9a-f]{64}")) {
                 throw invalid(ERROR_SECURITY_INVALID);
             }

@@ -28,5 +28,4 @@
     <color name="md_theme_inverseSurface">#E6E1E5</color>
     <color name="md_theme_inverseOnSurface">#313033</color>
     <color name="md_theme_inversePrimary">#6750A4</color>
-    <color name="md_theme_surfaceTint">#D0BCFF</color>
 </resources>

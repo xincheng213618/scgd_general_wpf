@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 final class OperationsProfileRegistry {
@@ -341,7 +342,7 @@ final class OperationsProfileRegistry {
             String relayTaskCapability,
             String relayTaskIdempotency) {
         String normalizedEndpoint = endpoint == null ? "" : endpoint.trim();
-        String normalizedPin = certificatePin == null ? "" : certificatePin.trim().toLowerCase();
+        String normalizedPin = certificatePin == null ? "" : certificatePin.trim().toLowerCase(Locale.ROOT);
         String normalizedHostId = hostId == null ? "" : hostId.trim();
         if (!isSafeEndpoint(normalizedEndpoint)
                 || !normalizedPin.matches("[0-9a-f]{64}")
