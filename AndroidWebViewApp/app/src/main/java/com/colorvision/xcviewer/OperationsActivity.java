@@ -586,6 +586,7 @@ public class OperationsActivity extends AppCompatActivity {
             JSONObject data = response.optJSONObject("data");
             String status = data == null ? "" : data.optString("status", "");
             if ("approved".equals(status)) {
+                boolean existingProfile = isKnownOperationsProfile(payload.hostId);
                 if (!preferences.saveOperationsProfile(
                         payload.endpoint, payload.certificateSha256, payload.hostId)) {
                     try {
@@ -615,6 +616,7 @@ public class OperationsActivity extends AppCompatActivity {
                     if (requestGeneration == pairingRequestGeneration) {
                         stopPairingApprovalWait();
                         showDashboard();
+                        showPairingSuccessFeedback(existingProfile, payload.hostId);
                     }
                 });
                 return;
@@ -925,7 +927,8 @@ public class OperationsActivity extends AppCompatActivity {
 
         addDashboardSection("电脑管理");
         addDashboardActionRow(
-                dashboardButton("命名当前电脑", v -> promptRenameCurrentOperationsProfile()),
+                dashboardButton("命名当前电脑", v -> promptRenameOperationsProfile(
+                        preferences.getOperationsHostId(), this::showConnectionPreference)),
                 dashboardButton("扫描并添加电脑", v -> startOperationsPairingScan()));
         addDashboardWideAction(dashboardButton(
                 "配对码在哪里？",
@@ -1263,23 +1266,52 @@ public class OperationsActivity extends AppCompatActivity {
         QrScanRecoveryDialog.show(this, reason, this::startOperationsPairingScan);
     }
 
-    private void promptRenameCurrentOperationsProfile() {
-        String hostId = preferences.getOperationsHostId();
+    private boolean isKnownOperationsProfile(String hostId) {
+        for (OperationsProfileRegistry.Profile profile : preferences.getOperationsProfiles()) {
+            if (profile.hostId.equals(hostId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void showPairingSuccessFeedback(boolean existingProfile, String hostId) {
+        Snackbar snackbar = Snackbar.make(
+                dashboardRefresh,
+                PairingSuccessPresentation.message(
+                        existingProfile, preferences.getOperationsProfileLabel(hostId)),
+                Snackbar.LENGTH_LONG);
+        if (bottomNavigation != null) {
+            snackbar.setAnchorView(bottomNavigation);
+        }
+        snackbar.setAction(PairingSuccessPresentation.renameAction(),
+                v -> promptRenameOperationsProfile(
+                        hostId, this::refreshOperationsTargetPresentation));
+        snackbar.show();
+    }
+
+    private void promptRenameOperationsProfile(String hostId, Runnable afterSave) {
         List<OperationsProfileRegistry.Profile> profiles = preferences.getOperationsProfiles();
-        String currentLabel = operationsProfileLabel(profiles, hostId);
+        String storedLabel = "";
+        for (OperationsProfileRegistry.Profile profile : profiles) {
+            if (profile.hostId.equals(hostId)) {
+                storedLabel = profile.label;
+                break;
+            }
+        }
         EditText input = new EditText(this);
         input.setSingleLine(true);
         input.setMaxLines(1);
-        input.setText(currentLabel.startsWith("电脑 ") ? "" : currentLabel);
+        input.setText(storedLabel);
         input.setHint("例如：一号线 AOI");
         new MaterialAlertDialogBuilder(this)
-                .setTitle("命名当前电脑")
+                .setTitle("命名电脑")
                 .setMessage("名称只保存在这台手机，不会发送给电脑或固定中继。最多 20 个字符。")
                 .setView(input)
                 .setNegativeButton("取消", null)
                 .setPositiveButton("保存", (dialog, which) -> {
                     preferences.renameOperationsProfile(hostId, input.getText().toString());
-                    showConnectionPreference();
+                    afterSave.run();
                 })
                 .show();
     }
