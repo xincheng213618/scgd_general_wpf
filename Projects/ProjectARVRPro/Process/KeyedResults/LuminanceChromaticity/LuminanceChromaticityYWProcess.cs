@@ -64,13 +64,11 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
                 if (candidate12X7 != null)
                 {
                     ReadPoiGroup(candidate12X7.Points, testResult.ViewPoixyuvDatas12X7);
-                    ctx.Result.FileName = candidate12X7.Master.ImgFile;
                     found12X7 = true;
                 }
                 if (candidate8X7 != null)
                 {
                     ReadPoiGroup(candidate8X7.Points, testResult.ViewPoixyuvDatas8X7);
-                    ctx.Result.FileName = candidate8X7.Master.ImgFile;
                     found8X7 = true;
                 }
 
