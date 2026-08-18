@@ -17,10 +17,18 @@ final class PairingApprovalPresentation {
                 + "已提交的设备证明不会因上方自动检查结束而丢失。";
     }
 
+    static String pauseAction() {
+        return "暂停自动检查";
+    }
+
+    static String retryAction() {
+        return "再检查 2 分钟";
+    }
+
     static String timeoutDetails(String deviceName) {
         return "电脑端的待批准记录仍然保留。请在“设置 > 局域网控制 > 待批准设备”中选择“"
                 + displayDeviceName(deviceName)
-                + "”并批准，然后继续自动检查；无需刷新二维码或重新创建设备密钥。";
+                + "”并批准，然后再检查 2 分钟；无需刷新二维码或重新创建设备密钥。";
     }
 
     private static String displayDeviceName(String deviceName) {

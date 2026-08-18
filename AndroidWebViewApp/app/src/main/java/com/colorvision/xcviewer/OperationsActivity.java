@@ -546,7 +546,11 @@ public class OperationsActivity extends AppCompatActivity {
         int requestGeneration = ++pairingRequestGeneration;
         long deadlineMilliseconds = PairingApprovalWaitPolicy.deadlineFrom(
                 SystemClock.elapsedRealtime());
-        showPairingApprovalWait(deviceName, deadlineMilliseconds);
+        showPairingApprovalWait(
+                deviceName,
+                deadlineMilliseconds,
+                () -> pausePairingApprovalChecks(
+                        requestGeneration, payload, pairingClient, deviceName));
         executor.execute(() -> {
             try {
                 pollPairingApproval(
@@ -641,7 +645,10 @@ public class OperationsActivity extends AppCompatActivity {
         }
     }
 
-    private void showPairingApprovalWait(String deviceName, long deadlineMilliseconds) {
+    private void showPairingApprovalWait(
+            String deviceName,
+            long deadlineMilliseconds,
+            Runnable pauseChecks) {
         stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -651,6 +658,11 @@ public class OperationsActivity extends AppCompatActivity {
         title.setTitle("批准这台手机");
         details.setText(PairingApprovalPresentation.waitingDetails(deviceName));
         actions.removeAllViews();
+        Button pause = new MaterialButton(
+                this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        pause.setText(PairingApprovalPresentation.pauseAction());
+        pause.setOnClickListener(v -> pauseChecks.run());
+        actions.addView(pause, actionParams());
         progress.setVisibility(View.GONE);
         progress.setIndeterminate(false);
         progress.setMax(PairingApprovalWaitPolicy.PROGRESS_MAXIMUM);
@@ -675,6 +687,18 @@ public class OperationsActivity extends AppCompatActivity {
         }
     }
 
+    private void pausePairingApprovalChecks(
+            int requestGeneration,
+            OperationsPairingPayload payload,
+            OperationsApiClient pairingClient,
+            String deviceName) {
+        if (requestGeneration != pairingRequestGeneration || !pairingApprovalWaiting) {
+            return;
+        }
+        pairingRequestGeneration++;
+        showPairingTimeout(payload, pairingClient, deviceName);
+    }
+
     private void stopPairingApprovalWait() {
         pairingApprovalWaiting = false;
         pairingApprovalHandler.removeCallbacks(pairingApprovalTick);
@@ -696,7 +720,7 @@ public class OperationsActivity extends AppCompatActivity {
         actions.removeAllViews();
 
         Button retry = new MaterialButton(this);
-        retry.setText("继续自动检查");
+        retry.setText(PairingApprovalPresentation.retryAction());
         retry.setOnClickListener(v -> startPairingApprovalChecks(payload, pairingClient, deviceName));
         actions.addView(retry, actionParams());
 

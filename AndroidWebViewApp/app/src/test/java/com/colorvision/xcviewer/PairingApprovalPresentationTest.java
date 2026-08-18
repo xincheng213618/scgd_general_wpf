@@ -2,6 +2,7 @@ package com.colorvision.xcviewer;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class PairingApprovalPresentationTest {
@@ -29,7 +30,14 @@ public class PairingApprovalPresentationTest {
         String details = PairingApprovalPresentation.timeoutDetails("");
 
         assertTrue(details.contains("待批准记录仍然保留"));
+        assertTrue(details.contains("再检查 2 分钟"));
         assertTrue(details.contains("无需刷新二维码"));
         assertTrue(details.contains("这台手机"));
+    }
+
+    @Test
+    public void waitingActionsMakePauseAndRetryDurationExplicit() {
+        assertEquals("暂停自动检查", PairingApprovalPresentation.pauseAction());
+        assertEquals("再检查 2 分钟", PairingApprovalPresentation.retryAction());
     }
 }
