@@ -211,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
         bar.addView(titleBlock, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
 
         headerTitle = new TextView(this);
-        headerTitle.setText("ColorVision");
+        headerTitle.setText(R.string.brand_name);
         TextViewCompat.setTextAppearance(headerTitle, com.google.android.material.R.style.TextAppearance_Material3_TitleLarge);
         headerTitle.setTextColor(primaryTextColor());
         titleBlock.addView(headerTitle, matchWidthWrapParams());
@@ -857,7 +857,7 @@ public class MainActivity extends AppCompatActivity {
         progressBar.setMax(100);
         progressBar.setProgress(0);
         progressBar.setVisibility(View.VISIBLE);
-        headerSubtitle.setText("正在下载并校验 " + release.version + "…");
+        headerSubtitle.setText(getString(R.string.app_update_downloading, release.version));
         appUpdateExecutor.execute(() -> {
             try {
                 File verified = new AndroidUpdateClient(this).downloadAndVerify(

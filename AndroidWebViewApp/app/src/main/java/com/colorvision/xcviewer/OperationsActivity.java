@@ -849,7 +849,8 @@ public class OperationsActivity extends AppCompatActivity {
         String heading = profileLabel + (current ? "（当前）" : "");
         if (current && !profile.revoked) {
             TextView currentProfile = new TextView(this);
-            currentProfile.setText(heading + "\n" + summary);
+            currentProfile.setText(getString(
+                    R.string.operations_profile_current_summary, heading, summary));
             TextViewCompat.setTextAppearance(currentProfile,
                     com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
             currentProfile.setTextColor(themeManager.onPrimaryContainerColor());
@@ -1027,7 +1028,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (!fleetCheckInFlight) {
             return;
         }
-        state.setText("正在巡检 " + completed + " / " + total + " 台电脑…");
+        state.setText(getString(R.string.operations_fleet_progress, completed, total));
         if (completed < total) {
             return;
         }
@@ -1197,10 +1198,10 @@ public class OperationsActivity extends AppCompatActivity {
         }
         boolean paired = preferences.hasOperationsProfile();
         String label = paired ? preferences.getActiveOperationsProfileLabel() : "未配对";
-        profileTarget.setText("目标 · " + label);
+        profileTarget.setText(getString(R.string.operations_target_label, label));
         profileTarget.setContentDescription(paired
-                ? "当前操作电脑：" + label + "，点按管理或切换电脑"
-                : "尚未配对电脑");
+                ? getString(R.string.operations_target_content_description, label)
+                : getString(R.string.operations_target_unpaired_content_description));
         profileTarget.setEnabled(paired);
         profileTarget.setAlpha(paired ? 1f : 0.55f);
     }
@@ -1282,7 +1283,7 @@ public class OperationsActivity extends AppCompatActivity {
         progress.setVisibility(View.GONE);
         title.setText("运维伴侣");
         state.setText(directConnectionState());
-        details.setText("正在读取 ColorVision 运行摘要…");
+        details.setText(R.string.operations_dashboard_loading_summary);
         actions.removeAllViews();
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
@@ -1609,8 +1610,9 @@ public class OperationsActivity extends AppCompatActivity {
         progress.setVisibility(View.GONE);
         title.setText(remoteMonitorTitle(section));
         state.setText("电脑签名远程状态");
-        details.setText(formatRemoteMonitorSection(section, monitor)
-                + "\n\n该摘要由电脑证书签名，手机按配对证书指纹核验后展示；固定站点无法修改或伪造。 ");
+        details.setText(getString(
+                R.string.operations_remote_monitor_signed_summary,
+                formatRemoteMonitorSection(section, monitor)));
         actions.removeAllViews();
         if ("message".equals(section)) {
             Button recoverMessageChannel = dashboardButton("恢复消息通道",
@@ -3400,7 +3402,8 @@ public class OperationsActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     progress.setVisibility(View.GONE);
                     state.setText(successText);
-                    details.setText(message + "\n该操作已记录设备身份、时间和结果。");
+                    details.setText(getString(
+                            R.string.operations_window_action_audit_details, message));
                 });
             } catch (Exception ex) {
                 runOnUiThread(() -> showTransientError(ex));
@@ -3691,8 +3694,9 @@ public class OperationsActivity extends AppCompatActivity {
     private void shareDiagnosticBundle(Uri uri, int sizeBytes) {
         progress.setVisibility(View.GONE);
         state.setText("安全诊断包已校验，可选择接收应用");
-        details.setText("已下载 " + Math.max(1, Math.round(sizeBytes / 1024f))
-                + " KiB 的脱敏 ZIP。临时副本位于应用缓存，由 Android 控制访问；接收应用仅获得本次文件的只读权限。");
+        details.setText(getString(
+                R.string.operations_diagnostic_bundle_ready_details,
+                Math.max(1, Math.round(sizeBytes / 1024f))));
         Intent share = new Intent(Intent.ACTION_SEND);
         share.setType("application/zip");
         share.putExtra(Intent.EXTRA_SUBJECT, "ColorVision 安全诊断包");
@@ -3894,7 +3898,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void restartMqtt() {
         progress.setVisibility(View.VISIBLE);
-        state.setText("正在通过固定白名单重启 MQTT…");
+        state.setText(R.string.operations_mqtt_restarting);
         executor.execute(() -> {
             try {
                 JSONObject input = new JSONObject();
@@ -3923,7 +3927,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void recoverMessageChannel() {
         progress.setVisibility(View.VISIBLE);
-        state.setText("正在检查并恢复 ColorVision 消息通道…");
+        state.setText(R.string.operations_message_channel_recovering);
         executor.execute(() -> {
             try {
                 JSONObject job = createAndApproveJob(
@@ -3962,9 +3966,9 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void restartApplication() {
         progress.setVisibility(View.VISIBLE);
-        title.setText("正在重启 ColorVision");
-        state.setText("正在检查检测状态并提交固定重启作业…");
-        details.setText("安全通道会短暂断开；请保持此页打开，配对资料不会被移除。");
+        title.setText(R.string.operations_restart_title);
+        state.setText(R.string.operations_restart_checking);
+        details.setText(R.string.operations_restart_disconnect_note);
         executor.execute(() -> {
             try {
                 JSONObject snapshotResponse = client.get("/ops/v1/snapshot");
@@ -4063,9 +4067,9 @@ public class OperationsActivity extends AppCompatActivity {
     private void showApplicationRestartFailure(Exception ex) {
         progress.setVisibility(View.GONE);
         dashboardVisible = false;
-        title.setText("ColorVision 重启未完成");
+        title.setText(R.string.operations_restart_failed_title);
         state.setText(OperationsErrorPresentation.readable(ex));
-        details.setText("本机设备密钥、证书指纹和配对资料均已保留。可以返回运维主页重试连接，或查看作业时间线确认电脑端结果。");
+        details.setText(R.string.operations_restart_failed_details);
         actions.removeAllViews();
 
         Button reconnect = new MaterialButton(this);
@@ -4196,9 +4200,10 @@ public class OperationsActivity extends AppCompatActivity {
         String status = session == null ? "" : session.optString("status", "expired");
         supportAutoRefresh = "awaiting_local_consent".equals(status);
         if (session == null) {
-            state.setText("当前没有支持会话");
-            details.setText("可申请 15 分钟引导支持。电脑端必须本机同意后，双方才能交换最多 500 字的有限文本；不开放远程桌面、命令、文件或凭据。\n\n"
-                    + sessionsData.optString("privacyNotice", "请勿发送密码、密钥或客户数据。"));
+            state.setText(R.string.operations_support_empty_state);
+            details.setText(getString(
+                    R.string.operations_support_empty_details,
+                    sessionsData.optString("privacyNotice", "请勿发送密码、密钥或客户数据。")));
             addSupportRequestButton();
         } else {
             state.setText(supportStatusLabel(status));
@@ -4224,7 +4229,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void addSupportRequestButton() {
         Button request = new MaterialButton(this);
-        request.setText("申请 15 分钟引导支持");
+        request.setText(R.string.operations_support_request);
         request.setOnClickListener(v -> confirmSupportRequest());
         actions.addView(request, actionParams());
     }
@@ -4323,9 +4328,9 @@ public class OperationsActivity extends AppCompatActivity {
         liveMonitorCancelInFlight = false;
         liveMonitorLatestSnapshot = null;
         liveMonitorTrend.reset();
-        title.setText("远程持续观察");
-        state.setText("正在采集第一份有界运行快照…");
-        details.setText("本页前台每 10 秒刷新详细快照；离开页面后，运维守护仍会每 60 秒检查已配对主机，并在断线时自动退避重试。服务器不保存采样历史。只有主检测活动时才会提供有界取消动作。 ");
+        title.setText(R.string.operations_live_monitor_title);
+        state.setText(R.string.operations_live_monitor_loading);
+        details.setText(R.string.operations_live_monitor_details);
         renderLiveMonitorActions();
         loadLiveMonitor(true);
     }
@@ -4382,10 +4387,11 @@ public class OperationsActivity extends AppCompatActivity {
                     }
                     progress.setVisibility(View.GONE);
                     state.setText(liveMonitorAutoRefresh
-                            ? "本轮观察失败 · 10 秒后自动重试"
-                            : "本轮观察失败");
-                    details.setText(OperationsErrorPresentation.readable(ex)
-                            + "\n\n持续观察本身不会删除配对资料或修改检测流程；只有你明确确认取消动作后才会介入当前检测。 ");
+                            ? R.string.operations_live_monitor_retrying
+                            : R.string.operations_live_monitor_failed);
+                    details.setText(getString(
+                            R.string.operations_live_monitor_failure_details,
+                            OperationsErrorPresentation.readable(ex)));
                     renderLiveMonitorActions();
                     scheduleLiveMonitorRefresh();
                 });
@@ -5814,7 +5820,7 @@ public class OperationsActivity extends AppCompatActivity {
         leaveLiveMonitor();
         dashboardVisible = false;
         state.setText(message);
-        details.setText("设备私钥只保存在 Android Keystore，不会写入二维码、网址或应用配置。 ");
+        details.setText(R.string.operations_keystore_busy_details);
         progress.setIndeterminate(true);
         progress.setVisibility(View.VISIBLE);
         actions.removeAllViews();

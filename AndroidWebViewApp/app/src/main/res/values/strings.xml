@@ -1,8 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ColorVision 运维</string>
+    <string name="brand_name">ColorVision</string>
+    <string name="app_update_downloading">正在下载并校验 %1$s…</string>
     <string name="qr_scan_back">返回</string>
     <string name="qr_scan_prompt">将电脑端二维码放入取景框</string>
     <string name="qr_scan_torch_on">开启补光灯</string>
     <string name="qr_scan_torch_off">关闭补光灯</string>
+    <string name="operations_profile_current_summary">%1$s\n%2$s</string>
+    <string name="operations_fleet_progress">正在巡检 %1$d / %2$d 台电脑…</string>
+    <string name="operations_target_label">目标 · %1$s</string>
+    <string name="operations_target_content_description">当前操作电脑：%1$s，点按管理或切换电脑</string>
+    <string name="operations_target_unpaired_content_description">尚未配对电脑</string>
+    <string name="operations_dashboard_loading_summary">正在读取 ColorVision 运行摘要…</string>
+    <string name="operations_remote_monitor_signed_summary">%1$s\n\n该摘要由电脑证书签名，手机按配对证书指纹核验后展示；固定站点无法修改或伪造。</string>
+    <string name="operations_window_action_audit_details">%1$s\n该操作已记录设备身份、时间和结果。</string>
+    <string name="operations_diagnostic_bundle_ready_details">已下载 %1$d KiB 的脱敏 ZIP。临时副本位于应用缓存，由 Android 控制访问；接收应用仅获得本次文件的只读权限。</string>
+    <string name="operations_mqtt_restarting">正在通过固定白名单重启 MQTT…</string>
+    <string name="operations_message_channel_recovering">正在检查并恢复 ColorVision 消息通道…</string>
+    <string name="operations_restart_title">正在重启 ColorVision</string>
+    <string name="operations_restart_checking">正在检查检测状态并提交固定重启作业…</string>
+    <string name="operations_restart_disconnect_note">安全通道会短暂断开；请保持此页打开，配对资料不会被移除。</string>
+    <string name="operations_restart_failed_title">ColorVision 重启未完成</string>
+    <string name="operations_restart_failed_details">本机设备密钥、证书指纹和配对资料均已保留。可以返回运维主页重试连接，或查看作业时间线确认电脑端结果。</string>
+    <string name="operations_support_empty_state">当前没有支持会话</string>
+    <string name="operations_support_empty_details">可申请 15 分钟引导支持。电脑端必须本机同意后，双方才能交换最多 500 字的有限文本；不开放远程桌面、命令、文件或凭据。\n\n%1$s</string>
+    <string name="operations_support_request">申请 15 分钟引导支持</string>
+    <string name="operations_live_monitor_title">远程持续观察</string>
+    <string name="operations_live_monitor_loading">正在采集第一份有界运行快照…</string>
+    <string name="operations_live_monitor_details">本页前台每 10 秒刷新详细快照；离开页面后，运维守护仍会每 60 秒检查已配对主机，并在断线时自动退避重试。服务器不保存采样历史。只有主检测活动时才会提供有界取消动作。</string>
+    <string name="operations_live_monitor_retrying">本轮观察失败 · 10 秒后自动重试</string>
+    <string name="operations_live_monitor_failed">本轮观察失败</string>
+    <string name="operations_live_monitor_failure_details">%1$s\n\n持续观察本身不会删除配对资料或修改检测流程；只有你明确确认取消动作后才会介入当前检测。</string>
+    <string name="operations_keystore_busy_details">设备私钥只保存在 Android Keystore，不会写入二维码、网址或应用配置。</string>
 </resources>
