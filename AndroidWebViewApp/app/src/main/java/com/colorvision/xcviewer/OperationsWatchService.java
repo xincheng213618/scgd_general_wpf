@@ -449,13 +449,19 @@ public final class OperationsWatchService extends Service {
         checkInFlight = false;
         hasCompletedCheck = true;
         if (code.contains("unknown_or_revoked_device")) {
+            String revokedLabel = preferences.getActiveOperationsProfileLabel();
             clearRemoteWindowSnapshotSecrets();
             preferences.recordOperationsWatchState(
                     OperationsWatchHistory.STATE_REVOKED, System.currentTimeMillis());
             preferences.markOperationsProfileRevoked();
             Log.w(LOG_TAG, "operations_watch_pairing_revoked");
             clearAttentionNotification();
-            updateNotification("配对授权已失效 · 请打开应用重新配对", false);
+            if (preferences.hasOperationsProfile()) {
+                continueWithSelectedProfileAfterRevocation();
+                return;
+            }
+            updateNotificationForTarget(
+                    "配对授权已失效 · 请打开应用处理", false, revokedLabel);
             detachNotificationAndStop();
             return;
         }
@@ -572,8 +578,22 @@ public final class OperationsWatchService extends Service {
         }
     }
 
+    private void updateNotificationForTarget(
+            String status, boolean ongoing, String targetLabel) {
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        if (manager != null) {
+            manager.notify(NOTIFICATION_ID,
+                    buildNotification(status, ongoing, targetLabel));
+        }
+    }
+
     private Notification buildNotification(String status, boolean ongoing) {
-        String targetLabel = preferences.getActiveOperationsProfileLabel();
+        return buildNotification(
+                status, ongoing, preferences.getActiveOperationsProfileLabel());
+    }
+
+    private Notification buildNotification(
+            String status, boolean ongoing, String targetLabel) {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_devices_24)
                 .setContentTitle(OperationsTargetPolicy.watchNotificationTitle(targetLabel))
@@ -588,6 +608,23 @@ public final class OperationsWatchService extends Service {
                 .setPriority(NotificationCompat.PRIORITY_LOW);
 
         return builder.build();
+    }
+
+    private void continueWithSelectedProfileAfterRevocation() {
+        checkGeneration++;
+        checkAgainAfterCurrent = false;
+        client = null;
+        clientProfileKey = "";
+        relayClient = null;
+        relayClientProfileKey = "";
+        consecutiveFailures = 0;
+        String persistedState = preferences.getOperationsWatchState();
+        hasCompletedCheck = !persistedState.isEmpty();
+        lastCheckOnline = OperationsWatchHistory.isOnlineState(persistedState);
+        lastAttentionKey = OperationsWatchHistory.attentionKey(persistedState);
+        updateNotification("上一台电脑授权失效 · 正在连接当前电脑", true);
+        handler.removeCallbacks(scheduledCheck);
+        handler.post(scheduledCheck);
     }
 
     private void postAttentionNotification(String attentionKey) {

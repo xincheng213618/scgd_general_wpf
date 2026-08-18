@@ -483,7 +483,8 @@ public class OperationsActivity extends Activity {
                 + "\n当前通道：" + (remoteDashboard ? "固定中继" : "现场直连")
                 + "\n首选方式会保存在本机，应用重启后继续使用。"
                 + "\n首选通道临时不可用时会安全回退；恢复后自动切回。"
-                + "\n固定中继地址由应用内置，不能填写或选择网址。");
+                + "\n固定中继地址由应用内置，不能填写或选择网址。"
+                + "\n电脑总览来自各电脑最后一次本机守护检查；非当前电脑不会在后台刷新。");
         actions.removeAllViews();
 
         addDashboardActionRow(
@@ -494,16 +495,12 @@ public class OperationsActivity extends Activity {
         addDashboardActionRow(
                 dashboardButton("运行现场连接自检", v -> runConnectionSelfCheck()),
                 dashboardButton("移除配对资料", v -> confirmClearProfile()));
-        addDashboardSection("已配对电脑");
+        addDashboardSection("电脑总览");
         List<OperationsProfileRegistry.Profile> profiles = preferences.getOperationsProfiles();
-        for (int index = 0; index < profiles.size(); index += 2) {
-            Button left = operationsProfileButton(profiles.get(index), profiles);
-            if (index + 1 < profiles.size()) {
-                addDashboardActionRow(left,
-                        operationsProfileButton(profiles.get(index + 1), profiles));
-            } else {
-                addDashboardWideAction(left);
-            }
+        long nowMilliseconds = System.currentTimeMillis();
+        for (OperationsProfileRegistry.Profile profile : profiles) {
+            addOperationsProfileWideAction(operationsProfileButton(
+                    profile, profiles, nowMilliseconds));
         }
         addDashboardActionRow(
                 dashboardButton("命名当前电脑", v -> promptRenameCurrentOperationsProfile()),
@@ -514,22 +511,28 @@ public class OperationsActivity extends Activity {
 
     private Button operationsProfileButton(
             OperationsProfileRegistry.Profile profile,
-            List<OperationsProfileRegistry.Profile> profiles) {
+            List<OperationsProfileRegistry.Profile> profiles,
+            long nowMilliseconds) {
         boolean current = profile.hostId.equals(preferences.getOperationsHostId());
         String profileLabel = operationsProfileLabel(profiles, profile.hostId);
-        String label = profileLabel;
-        if (profile.revoked) {
-            label += "（授权失效）";
-        } else if (current) {
-            label += "（当前）";
-        }
-        Button button = dashboardButton(label, v -> {
+        String summary = OperationsProfileOverview.summary(
+                profile.watchHistory, profile.watchCheckedAt, profile.revoked, nowMilliseconds);
+        String heading = profileLabel + (current ? "（当前）" : "");
+        Button button = dashboardButton(heading + "\n" + summary, v -> {
             if (profile.revoked) {
                 confirmRemoveOperationsProfile(profile.hostId, profileLabel);
             } else {
                 switchOperationsProfile(profile.hostId);
             }
         });
+        button.setTextSize(12);
+        button.setMaxLines(2);
+        button.setEllipsize(TextUtils.TruncateAt.END);
+        button.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        button.setPadding(dp(12), dp(4), dp(8), dp(4));
+        button.setContentDescription(profileLabel
+                + (current ? "，当前电脑，" : profile.revoked ? "，点按移除，" : "，点按切换，")
+                + summary);
         button.setEnabled(profile.revoked || !current);
         return button;
     }
@@ -2150,6 +2153,13 @@ public class OperationsActivity extends Activity {
         row.addView(right, rightParams);
         actions.addView(row, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void addOperationsProfileWideAction(Button button) {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(66));
+        params.setMargins(0, 0, 0, dp(4));
+        actions.addView(button, params);
     }
 
     private void addDashboardWideAction(Button button) {

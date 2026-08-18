@@ -34,7 +34,7 @@ final class OperationsProfileRegistry {
             String relayTaskIdempotency) {
         Profile profile = createProfile(
                 endpoint, certificatePin, hostId, connectionPreference, revoked,
-                "", watchHistory, relayTaskId, relayTaskCapability, relayTaskIdempotency);
+                "", watchHistory, 0L, relayTaskId, relayTaskCapability, relayTaskIdempotency);
         if (profile == null) {
             return empty();
         }
@@ -69,6 +69,7 @@ final class OperationsProfileRegistry {
                         value.optBoolean("revoked", false),
                         value.optString("label", ""),
                         value.optString("watchHistory", ""),
+                        value.optLong("watchCheckedAt", 0L),
                         value.optString("relayTaskId", ""),
                         value.optString("relayTaskCapability", ""),
                         value.optString("relayTaskIdempotency", ""));
@@ -107,6 +108,7 @@ final class OperationsProfileRegistry {
                         .put("revoked", profile.revoked)
                         .put("label", profile.label)
                         .put("watchHistory", profile.watchHistory)
+                        .put("watchCheckedAt", profile.watchCheckedAt)
                         .put("relayTaskId", profile.relayTaskId)
                         .put("relayTaskCapability", profile.relayTaskCapability)
                         .put("relayTaskIdempotency", profile.relayTaskIdempotency));
@@ -159,7 +161,7 @@ final class OperationsProfileRegistry {
             Profile existing = find(profiles, hostId);
             Profile replacement = createProfile(
                     endpoint, certificatePin, hostId, OperationsConnectionPreference.DIRECT,
-                    false, existing == null ? "" : existing.label, "", "", "", "");
+                    false, existing == null ? "" : existing.label, "", 0L, "", "", "");
             if (replacement == null) {
                 throw new IllegalArgumentException("invalid_operations_profile");
             }
@@ -218,9 +220,9 @@ final class OperationsProfileRegistry {
             return profile == null ? this : replace(profile.withLabel(label));
         }
 
-        State updateWatchHistory(String value) {
+        State updateWatchHistory(String value, long checkedAt) {
             Profile active = active();
-            return active == null ? this : replace(active.withWatchHistory(value));
+            return active == null ? this : replace(active.withWatchHistory(value, checkedAt));
         }
 
         State updateRelayTask(String taskId, String capabilityId, String idempotencyKey) {
@@ -262,6 +264,7 @@ final class OperationsProfileRegistry {
         final boolean revoked;
         final String label;
         final String watchHistory;
+        final long watchCheckedAt;
         final String relayTaskId;
         final String relayTaskCapability;
         final String relayTaskIdempotency;
@@ -274,6 +277,7 @@ final class OperationsProfileRegistry {
                 boolean revoked,
                 String label,
                 String watchHistory,
+                long watchCheckedAt,
                 String relayTaskId,
                 String relayTaskCapability,
                 String relayTaskIdempotency) {
@@ -284,6 +288,7 @@ final class OperationsProfileRegistry {
             this.revoked = revoked;
             this.label = normalizedLabel(label);
             this.watchHistory = watchHistory;
+            this.watchCheckedAt = Math.max(0L, watchCheckedAt);
             this.relayTaskId = relayTaskId;
             this.relayTaskCapability = relayTaskCapability;
             this.relayTaskIdempotency = relayTaskIdempotency;
@@ -291,17 +296,18 @@ final class OperationsProfileRegistry {
 
         private Profile withConnectionPreference(String value) {
             return new Profile(endpoint, certificatePin, hostId, value, revoked, label, watchHistory,
-                    relayTaskId, relayTaskCapability, relayTaskIdempotency);
+                    watchCheckedAt, relayTaskId, relayTaskCapability, relayTaskIdempotency);
         }
 
         private Profile withLabel(String value) {
             return new Profile(endpoint, certificatePin, hostId, connectionPreference, revoked,
-                    value, watchHistory, relayTaskId, relayTaskCapability, relayTaskIdempotency);
+                    value, watchHistory, watchCheckedAt, relayTaskId, relayTaskCapability,
+                    relayTaskIdempotency);
         }
 
-        private Profile withWatchHistory(String value) {
+        private Profile withWatchHistory(String value, long checkedAt) {
             return new Profile(endpoint, certificatePin, hostId, connectionPreference, revoked,
-                    label, boundedHistory(value), relayTaskId, relayTaskCapability,
+                    label, boundedHistory(value), checkedAt, relayTaskId, relayTaskCapability,
                     relayTaskIdempotency);
         }
 
@@ -311,12 +317,14 @@ final class OperationsProfileRegistry {
             String safeCapability = safeTaskId.isEmpty() ? "" : normalized(capabilityId);
             String safeIdempotency = safeTaskId.isEmpty() ? "" : normalized(idempotencyKey);
             return new Profile(endpoint, certificatePin, hostId, connectionPreference, revoked,
-                    label, watchHistory, safeTaskId, safeCapability, safeIdempotency);
+                    label, watchHistory, watchCheckedAt, safeTaskId, safeCapability,
+                    safeIdempotency);
         }
 
         private Profile withRevoked(boolean value) {
             return new Profile(endpoint, certificatePin, hostId, connectionPreference, value,
-                    label, watchHistory, relayTaskId, relayTaskCapability, relayTaskIdempotency);
+                    label, watchHistory, watchCheckedAt, relayTaskId, relayTaskCapability,
+                    relayTaskIdempotency);
         }
     }
 
@@ -328,6 +336,7 @@ final class OperationsProfileRegistry {
             boolean revoked,
             String label,
             String watchHistory,
+            long watchCheckedAt,
             String relayTaskId,
             String relayTaskCapability,
             String relayTaskIdempotency) {
@@ -348,6 +357,7 @@ final class OperationsProfileRegistry {
                 revoked,
                 label,
                 boundedHistory(watchHistory),
+                Math.max(0L, watchCheckedAt),
                 safeTask ? normalized(relayTaskId) : "",
                 safeTask ? normalized(relayTaskCapability) : "",
                 safeTask ? normalized(relayTaskIdempotency) : "");

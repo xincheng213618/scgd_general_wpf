@@ -44,21 +44,24 @@ public class OperationsProfileRegistryTest {
         OperationsProfileRegistry.State state = OperationsProfileRegistry.empty()
                 .upsert("https://192.168.1.21:5800", PIN, "host_1")
                 .updateConnectionPreference(OperationsConnectionPreference.RELAY)
-                .updateWatchHistory("history_1")
+                .updateWatchHistory("history_1", 101L)
                 .updateRelayTask("task_1", OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW,
                         "idem_1")
                 .upsert("https://192.168.1.22:5800", "b".repeat(64), "host_2")
-                .updateWatchHistory("history_2");
+                .updateWatchHistory("history_2", 202L);
+        state = OperationsProfileRegistry.parse(OperationsProfileRegistry.serialize(state));
 
         assertEquals("host_2", state.active().hostId);
         assertEquals(OperationsConnectionPreference.DIRECT,
                 state.active().connectionPreference);
         assertEquals("history_2", state.active().watchHistory);
+        assertEquals(202L, state.active().watchCheckedAt);
         assertEquals("", state.active().relayTaskId);
 
         OperationsProfileRegistry.Profile first = state.select("host_1").active();
         assertEquals(OperationsConnectionPreference.RELAY, first.connectionPreference);
         assertEquals("history_1", first.watchHistory);
+        assertEquals(101L, first.watchCheckedAt);
         assertEquals("task_1", first.relayTaskId);
         assertEquals("idem_1", first.relayTaskIdempotency);
     }
@@ -67,12 +70,14 @@ public class OperationsProfileRegistryTest {
     public void removalAndRevocationSelectTheNextUsableComputer() {
         OperationsProfileRegistry.State state = OperationsProfileRegistry.empty()
                 .upsert("https://192.168.1.21:5800", PIN, "host_1")
-                .upsert("https://192.168.1.22:5800", "b".repeat(64), "host_2");
+                .upsert("https://192.168.1.22:5800", "b".repeat(64), "host_2")
+                .updateWatchHistory("history_2", 303L);
 
         OperationsProfileRegistry.State revoked = state.revoke("host_2");
         assertEquals("host_1", revoked.activeHostId);
         assertEquals(1, revoked.usableCount());
         assertTrue(revoked.profiles.get(1).revoked);
+        assertEquals(303L, revoked.profiles.get(1).watchCheckedAt);
         assertEquals("host_1", revoked.select("host_2").activeHostId);
 
         OperationsProfileRegistry.State removed = state.remove("host_2");

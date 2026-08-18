@@ -222,12 +222,18 @@ final class AppPreferences {
         synchronized (OPERATIONS_PROFILE_LOCK) {
             OperationsProfileRegistry.State profiles = readOperationsProfiles();
             OperationsProfileRegistry.Profile active = profiles.active();
-            String previousHistory = active == null ? "" : active.watchHistory;
+            if (active == null) {
+                return false;
+            }
+            String previousHistory = active.watchHistory;
             OperationsWatchHistory.Transition transition = OperationsWatchHistory.transition(
                     previousHistory, state, nowMilliseconds);
-            if (transition.changed || !transition.serializedHistory.equals(previousHistory)) {
+            if (!transition.currentState.isEmpty()
+                    && (transition.changed
+                    || !transition.serializedHistory.equals(previousHistory)
+                    || active.watchCheckedAt != nowMilliseconds)) {
                 writeOperationsProfiles(profiles.updateWatchHistory(
-                        transition.serializedHistory));
+                        transition.serializedHistory, nowMilliseconds));
             }
             return transition.changed;
         }
