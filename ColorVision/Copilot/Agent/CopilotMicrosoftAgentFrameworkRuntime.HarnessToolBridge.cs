@@ -45,6 +45,7 @@ namespace ColorVision.Copilot
             private int _reservedToolCalls;
             private MessageInjectingChatClient? _messageInjector;
             private AgentSession? _messageInjectionSession;
+            private Func<CancellationToken, ValueTask<bool>>? _interactionCheckpointPublisher;
 
             public HarnessToolBridge(
                 CopilotAgentRequest request,
@@ -134,6 +135,29 @@ namespace ColorVision.Copilot
                     _messageInjector = messageInjector;
                     _messageInjectionSession = session;
                 }
+            }
+
+            public void AttachInteractionCheckpointPublisher(
+                Func<CancellationToken, ValueTask<bool>> publisher)
+            {
+                ArgumentNullException.ThrowIfNull(publisher);
+                lock (_syncRoot)
+                {
+                    if (_interactionCheckpointPublisher != null)
+                        throw new InvalidOperationException("Interaction checkpoint publication is already attached.");
+                    _interactionCheckpointPublisher = publisher;
+                }
+            }
+
+            internal ValueTask<bool> TryPublishInteractionCheckpointAsync(
+                CancellationToken cancellationToken)
+            {
+                Func<CancellationToken, ValueTask<bool>>? publisher;
+                lock (_syncRoot)
+                    publisher = _interactionCheckpointPublisher;
+                return publisher != null
+                    ? publisher(cancellationToken)
+                    : ValueTask.FromResult(false);
             }
 
             internal static IReadOnlyList<ChatMessage> CreateHookAdditionalContextMessages(

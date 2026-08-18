@@ -375,6 +375,8 @@ namespace ColorVision.Copilot
             var sessionResumed = sessionPreparation.SessionResumed;
             var steeringRegistration = sessionPreparation.SteeringRegistration;
             liveCheckpointPublisher = sessionPreparation.LiveCheckpointPublisher;
+            bridge.AttachInteractionCheckpointPublisher(
+                token => liveCheckpointPublisher.TryPublishAsync(agent, session, token));
             var recoveredTaskLedger = sessionPreparation.RecoveredTaskLedger;
             var promptMessages = sessionPreparation.PromptMessages;
             using var deferredBackgroundOutputDelivery =

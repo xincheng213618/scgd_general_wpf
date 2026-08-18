@@ -51,7 +51,13 @@ namespace ColorVision.Copilot
             }
             var frameworkTools = bridge.CreateFunctions();
             if (IsRequestUserInputToolEnabled(request))
-                frameworkTools.Add(new HarnessToolBridge.UserQuestionAIFunction(_userQuestionCoordinator, request, emit));
+            {
+                frameworkTools.Add(new HarnessToolBridge.UserQuestionAIFunction(
+                    _userQuestionCoordinator,
+                    request,
+                    emit,
+                    bridge.TryPublishInteractionCheckpointAsync));
+            }
             var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile, runBudget);
             var compactionStrategy = new ContextWindowCompactionStrategy(
                 tokenBudget.ContextWindowTokens,

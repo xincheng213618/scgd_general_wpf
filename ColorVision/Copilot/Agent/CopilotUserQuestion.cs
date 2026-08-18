@@ -250,10 +250,12 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             CopilotUserQuestionInput input,
             Action<CopilotAgentEvent> emit,
+            Func<CancellationToken, ValueTask<bool>> publishCheckpoint,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(emit);
+            ArgumentNullException.ThrowIfNull(publishCheckpoint);
             cancellationToken.ThrowIfCancellationRequested();
             if (!CopilotUserQuestionSnapshot.TryCreate(
                     request.ConversationId,
@@ -276,6 +278,11 @@ namespace ColorVision.Copilot
             try
             {
                 emit(CopilotAgentEvent.UserQuestionRequested(snapshot));
+                if (!await publishCheckpoint(cancellationToken).ConfigureAwait(false))
+                {
+                    throw new InvalidOperationException(
+                        "The structured question could not be checkpointed before waiting for user input.");
+                }
                 using var cancellationRegistration = cancellationToken.Register(
                     () => pending.Completion.TrySetCanceled(cancellationToken));
                 var answer = await pending.Completion.Task.ConfigureAwait(false);
@@ -283,7 +290,7 @@ namespace ColorVision.Copilot
                 emit(CopilotAgentEvent.UserQuestionResolved(resolved));
                 return resolved;
             }
-            catch (OperationCanceledException)
+            catch
             {
                 emit(CopilotAgentEvent.UserQuestionResolved(
                     snapshot.Resolve(CopilotUserQuestionResolution.Cancelled, string.Empty)));
