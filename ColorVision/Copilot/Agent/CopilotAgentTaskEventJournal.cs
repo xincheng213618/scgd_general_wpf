@@ -129,6 +129,7 @@ namespace ColorVision.Copilot
                     .Where(item => item.Type == CopilotAgentTaskEventType.RunStarted)
                     .GroupBy(item => item.RunId, StringComparer.Ordinal)
                     .Any(group => group.Count() > 1)
+                || HasDuplicateLifecycleEvents(Events)
                 || Events
                     .Where(item => item.Type == CopilotAgentTaskEventType.RunStopped)
                     .Any(item => !Enum.TryParse<CopilotAgentStopReason>(item.State, out var reason)
@@ -148,6 +149,29 @@ namespace ColorVision.Copilot
             }
 
             return Events.Zip(Events.Skip(1), (left, right) => left.Sequence < right.Sequence).All(value => value);
+        }
+
+        private static bool HasDuplicateLifecycleEvents(
+            IReadOnlyList<CopilotAgentTaskEvent> events)
+        {
+            if (events
+                .Where(item => item.Type is CopilotAgentTaskEventType.ToolStarted
+                    or CopilotAgentTaskEventType.ToolCompleted
+                    or CopilotAgentTaskEventType.ApprovalRequested
+                    or CopilotAgentTaskEventType.UserQuestionRequested
+                    or CopilotAgentTaskEventType.UserQuestionResolved
+                    or CopilotAgentTaskEventType.BackgroundCommandCompleted)
+                .GroupBy(item => (item.RunId, item.Type, item.SubjectId))
+                .Any(group => group.Count() > 1))
+            {
+                return true;
+            }
+
+            return events
+                .Where(item => item.Type is CopilotAgentTaskEventType.ApprovalApproved
+                    or CopilotAgentTaskEventType.ApprovalDenied)
+                .GroupBy(item => (item.RunId, item.SubjectId))
+                .Any(group => group.Count() > 1);
         }
     }
 

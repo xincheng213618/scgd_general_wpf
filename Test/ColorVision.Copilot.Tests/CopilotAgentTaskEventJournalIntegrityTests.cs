@@ -324,6 +324,80 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void RepeatedToolLifecycleObservationsAreIdempotentButCannotConflict()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var started = CopilotAgentEvent.ToolStarted(
+            CreateExecution("repeated-call"));
+        journal.Observe(started);
+        journal.Observe(started);
+        var completed = CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = true,
+                Summary = "Tool completed once.",
+            },
+            CreateExecution(
+                "repeated-call",
+                CopilotToolExecutionState.Completed,
+                completedAtUtc: DateTimeOffset.UtcNow));
+        journal.Observe(completed);
+        journal.Observe(completed);
+
+        var conflict = CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = false,
+                Summary = "Conflicting terminal result.",
+                FailureCode = "conflicting_result",
+            },
+            CreateExecution(
+                "repeated-call",
+                CopilotToolExecutionState.Failed,
+                completedAtUtc: DateTimeOffset.UtcNow));
+        Assert.Throws<InvalidOperationException>(() =>
+            journal.Observe(conflict));
+
+        var snapshot = journal.Snapshot();
+        Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ToolStarted);
+        var terminal = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        Assert.Equal("Tool completed once.", terminal.Summary);
+        Assert.True(snapshot.IsStructurallyValid());
+
+        var duplicateTimestamp = terminal.OccurredAtUtc.AddTicks(1);
+        var duplicateTerminal = new CopilotAgentTaskEvent
+        {
+            Sequence = terminal.Sequence + 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                terminal.Sequence + 1,
+                terminal.RunId,
+                terminal.Type,
+                duplicateTimestamp),
+            Type = terminal.Type,
+            OccurredAtUtc = duplicateTimestamp,
+            RunId = terminal.RunId,
+            SubjectId = terminal.SubjectId,
+            RelatedIds = terminal.RelatedIds,
+            ToolName = terminal.ToolName,
+            State = terminal.State,
+            FailureCode = terminal.FailureCode,
+            Summary = terminal.Summary,
+        };
+        Assert.True(duplicateTerminal.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = snapshot.Events.Append(duplicateTerminal).ToArray(),
+        }.IsStructurallyValid());
+    }
+
+    [Fact]
     public void BackgroundCompletionKeepsStructuredExitCodeAndAcceptsLegacyMissingField()
     {
         var completedAtUtc = new DateTimeOffset(2026, 8, 10, 10, 0, 0, TimeSpan.Zero);

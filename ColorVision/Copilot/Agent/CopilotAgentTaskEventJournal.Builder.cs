@@ -143,7 +143,7 @@ namespace ColorVision.Copilot
         {
             var approvalId = CopilotAgentTaskEventIds.ForApproval(approvalActionId);
             var source = (decisionSource ?? string.Empty).Trim();
-            Append(
+            AppendUnique(
                 approved ? CopilotAgentTaskEventType.ApprovalApproved : CopilotAgentTaskEventType.ApprovalDenied,
                 approvalId,
                 approved
@@ -157,7 +157,12 @@ namespace ColorVision.Copilot
                             : "Protected tool call was approved by the user."
                     : "Protected tool call was denied or expired.",
                 toolName,
-                [CopilotAgentTaskEventIds.ForCall(callId)]);
+                [CopilotAgentTaskEventIds.ForCall(callId)],
+                uniqueTypes:
+                [
+                    CopilotAgentTaskEventType.ApprovalApproved,
+                    CopilotAgentTaskEventType.ApprovalDenied,
+                ]);
         }
 
         public void RecordSteering(string message)
@@ -307,7 +312,7 @@ namespace ColorVision.Copilot
             var execution = agentEvent.ToolExecution;
             if (agentEvent.Type == CopilotAgentEventType.ToolStarted && execution != null)
             {
-                Append(
+                AppendUnique(
                     CopilotAgentTaskEventType.ToolStarted,
                     CopilotAgentTaskEventIds.ForCall(execution.CallId),
                     execution.State.ToString(),
@@ -337,7 +342,7 @@ namespace ColorVision.Copilot
                         : [callId])
                     .Concat(backgroundCommands.Select(item =>
                         CopilotAgentTaskEventIds.ForBackgroundCommand(item.Id)));
-                Append(
+                AppendUnique(
                     type,
                     subjectId,
                     execution.State.ToString(),
@@ -345,7 +350,13 @@ namespace ColorVision.Copilot
                     execution.ToolName,
                     related,
                     execution.CompletedAtUtc ?? (execution.StartedAtUtc == default ? null : execution.StartedAtUtc),
-                    agentEvent.ToolResult?.Success == false ? agentEvent.ToolResult.FailureCode : string.Empty);
+                    agentEvent.ToolResult?.Success == false ? agentEvent.ToolResult.FailureCode : string.Empty,
+                    uniqueTypes: type == CopilotAgentTaskEventType.ApprovalDenied
+                        ? [
+                            CopilotAgentTaskEventType.ApprovalApproved,
+                            CopilotAgentTaskEventType.ApprovalDenied,
+                        ]
+                        : null);
                 foreach (var backgroundCommand in backgroundCommands.Where(item => item.IsTerminal))
                     RecordBackgroundShellCommandCompletion(backgroundCommand);
                 return;
@@ -363,7 +374,7 @@ namespace ColorVision.Copilot
             {
                 var question = agentEvent.UserQuestion;
                 var requested = agentEvent.Type == CopilotAgentEventType.UserQuestionRequested;
-                Append(
+                AppendUnique(
                     requested
                         ? CopilotAgentTaskEventType.UserQuestionRequested
                         : CopilotAgentTaskEventType.UserQuestionResolved,
@@ -469,34 +480,14 @@ namespace ColorVision.Copilot
         private void RecordBackgroundShellCommandCompletion(
             CopilotBackgroundShellCommandEvidence evidence)
         {
-            lock (_syncRoot)
-            {
-                var subjectId =
-                    CopilotAgentTaskEventIds.ForBackgroundCommand(evidence.Id);
-                if (_events.Any(item =>
-                        item.Type
-                            == CopilotAgentTaskEventType.BackgroundCommandCompleted
-                        && string.Equals(
-                            item.RunId,
-                            RunId,
-                            StringComparison.Ordinal)
-                        && string.Equals(
-                            item.SubjectId,
-                            subjectId,
-                            StringComparison.Ordinal)))
-                {
-                    return;
-                }
-
-                Append(
-                    CopilotAgentTaskEventType.BackgroundCommandCompleted,
-                    subjectId,
-                    evidence.State.ToString().ToLowerInvariant(),
-                    evidence.ExitCode.HasValue
-                        ? $"An application-managed background command reached a terminal state with exit code {evidence.ExitCode.Value}."
-                        : "An application-managed background command reached a terminal state.",
-                    exitCode: evidence.ExitCode);
-            }
+            AppendUnique(
+                CopilotAgentTaskEventType.BackgroundCommandCompleted,
+                CopilotAgentTaskEventIds.ForBackgroundCommand(evidence.Id),
+                evidence.State.ToString().ToLowerInvariant(),
+                evidence.ExitCode.HasValue
+                    ? $"An application-managed background command reached a terminal state with exit code {evidence.ExitCode.Value}."
+                    : "An application-managed background command reached a terminal state.",
+                exitCode: evidence.ExitCode);
         }
 
         private static CopilotBackgroundShellCommandEvidence[]
@@ -571,6 +562,81 @@ namespace ColorVision.Copilot
                     throw new InvalidOperationException("Agent task event could not be normalized into a valid journal entry.");
                 _events.Add(item);
                 TrimToCapacity();
+            }
+        }
+
+        private void AppendUnique(
+            CopilotAgentTaskEventType type,
+            string subjectId,
+            string state,
+            string summary,
+            string toolName = "",
+            IEnumerable<string>? relatedIds = null,
+            DateTimeOffset? occurredAtUtc = null,
+            string failureCode = "",
+            int? exitCode = null,
+            IReadOnlyCollection<CopilotAgentTaskEventType>? uniqueTypes = null)
+        {
+            lock (_syncRoot)
+            {
+                var normalizedSubjectId = NormalizeIdentifier(subjectId, RunId);
+                var normalizedRelatedIds = (relatedIds ?? Array.Empty<string>())
+                    .Select(value => NormalizeIdentifier(value, string.Empty))
+                    .Where(value => value.Length > 0)
+                    .Distinct(StringComparer.Ordinal)
+                    .Take(CopilotAgentTaskEventJournal.MaxRelatedIds)
+                    .ToArray();
+                var normalizedState = SanitizeText(
+                    state,
+                    CopilotAgentTaskEventJournal.MaxStateLength,
+                    collapseWhitespace: true);
+                var normalizedSummary = SanitizeText(
+                    summary,
+                    CopilotAgentTaskEventJournal.MaxSummaryLength,
+                    collapseWhitespace: true);
+                var normalizedToolName = SanitizeText(
+                    toolName,
+                    CopilotAgentTaskEventJournal.MaxToolNameLength,
+                    collapseWhitespace: true);
+                var normalizedFailureCode = CopilotToolFailureCode.Normalize(
+                    failureCode);
+                var eventTypes = uniqueTypes ?? [type];
+                var existing = _events.LastOrDefault(item =>
+                    eventTypes.Contains(item.Type)
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                    && string.Equals(
+                        item.SubjectId,
+                        normalizedSubjectId,
+                        StringComparison.Ordinal));
+                if (existing != null)
+                {
+                    if (existing.Type == type
+                        && string.Equals(existing.State, normalizedState, StringComparison.Ordinal)
+                        && string.Equals(existing.Summary, normalizedSummary, StringComparison.Ordinal)
+                        && string.Equals(existing.ToolName, normalizedToolName, StringComparison.Ordinal)
+                        && string.Equals(existing.FailureCode, normalizedFailureCode, StringComparison.Ordinal)
+                        && existing.ExitCode == exitCode
+                        && existing.RelatedIds.SequenceEqual(
+                            normalizedRelatedIds,
+                            StringComparer.Ordinal))
+                    {
+                        return;
+                    }
+
+                    throw new InvalidOperationException(
+                        $"Agent run {RunId} already recorded a conflicting {existing.Type} event for {normalizedSubjectId}.");
+                }
+
+                Append(
+                    type,
+                    normalizedSubjectId,
+                    normalizedState,
+                    normalizedSummary,
+                    normalizedToolName,
+                    normalizedRelatedIds,
+                    occurredAtUtc,
+                    normalizedFailureCode,
+                    exitCode);
             }
         }
 
