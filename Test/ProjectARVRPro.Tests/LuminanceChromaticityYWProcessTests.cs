@@ -9,17 +9,11 @@ namespace ProjectARVRPro.Tests;
 public sealed class LuminanceChromaticityYWProcessTests
 {
     [Fact]
-    public void DefaultsMatchTheTwoConfiguredPoiResultNamesExactly()
+    public void DefaultsProvideOutputKeyAndIndependentThresholds()
     {
         var config = new LuminanceChromaticityYWProcessConfig();
 
         Assert.Equal("YW", config.GetOutputKey());
-        Assert.Equal("POI_W255_12x7_YW", config.GetPoi12X7ResultName());
-        Assert.Equal("POI_W255_8x7_YW", config.GetPoi8X7ResultName());
-        Assert.True(config.IsPoi12X7Result("poi_w255_12X7_yw"));
-        Assert.True(config.IsPoi8X7Result(" POI_W255_8x7_YW "));
-        Assert.False(config.IsPoi8X7Result("POI_W255_12x7_YW"));
-        Assert.False(config.IsPoi12X7Result("Prefix_POI_W255_12x7_YW"));
         Assert.Equal(750, config.RecipeConfig.AverageLuminance12X7.Min);
         Assert.Equal(0.20, config.RecipeConfig.LuminanceUniformity12X7.Min);
         Assert.Equal(0.05, config.RecipeConfig.ColorUniformity12X7.Max);

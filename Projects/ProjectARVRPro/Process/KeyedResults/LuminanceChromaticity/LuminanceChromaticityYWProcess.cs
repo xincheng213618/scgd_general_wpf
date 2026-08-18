@@ -20,6 +20,8 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
         internal const int Expected12X7PointCount = 12 * 7;
         internal const int Expected8X7PointCount = 8 * 7;
 
+        private sealed record PoiCandidate(AlgResultMasterModel Master, List<PoiPointResultModel> Points);
+
         public override IRecipeConfig GetRecipeConfig() => Config.RecipeConfig;
 
         public override Task<bool> Execute(IProcessExecutionContext ctx)
@@ -36,40 +38,35 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
                 if (images.Count > 0)
                     ctx.Result.FileName = images[0].FileUrl;
 
-                foreach (AlgResultMasterModel master in AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id))
+                List<AlgResultMasterModel> masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
+                List<PoiCandidate> candidates = new();
+                foreach (AlgResultMasterModel master in masters)
                 {
                     if (master.ImgFileType != ViewResultAlgType.POI_XYZ)
                         continue;
 
-                    bool is12X7 = Config.IsPoi12X7Result(master.TName);
-                    bool is8X7 = Config.IsPoi8X7Result(master.TName);
-                    if (is12X7 && is8X7)
-                        throw new InvalidOperationException($"同一个POI结果名称同时匹配12X7和8X7: {master.TName}");
-                    if (!is12X7 && !is8X7)
-                        continue;
+                    List<PoiPointResultModel> points = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+                    candidates.Add(new PoiCandidate(master, points));
+                }
 
-                    ctx.Result.FileName = master.ImgFile;
-                    if (is12X7)
-                    {
-                        if (found12X7)
-                            throw new InvalidOperationException($"批次中存在多个12X7 POI结果: {master.TName}");
-
-                        ReadPoiGroup(master, testResult.ViewPoixyuvDatas12X7);
-                        found12X7 = true;
-                    }
-                    else
-                    {
-                        if (found8X7)
-                            throw new InvalidOperationException($"批次中存在多个8X7 POI结果: {master.TName}");
-
-                        ReadPoiGroup(master, testResult.ViewPoixyuvDatas8X7);
-                        found8X7 = true;
-                    }
+                PoiCandidate? candidate12X7 = SelectCandidate(candidates, Expected12X7PointCount, "12X7");
+                PoiCandidate? candidate8X7 = SelectCandidate(candidates, Expected8X7PointCount, "8X7", candidate12X7?.Master.Id);
+                if (candidate12X7 != null)
+                {
+                    ReadPoiGroup(candidate12X7.Points, testResult.ViewPoixyuvDatas12X7);
+                    ctx.Result.FileName = candidate12X7.Master.ImgFile;
+                    found12X7 = true;
+                }
+                if (candidate8X7 != null)
+                {
+                    ReadPoiGroup(candidate8X7.Points, testResult.ViewPoixyuvDatas8X7);
+                    ctx.Result.FileName = candidate8X7.Master.ImgFile;
+                    found8X7 = true;
                 }
 
                 if (!found12X7 || !found8X7)
                 {
-                    ctx.Log?.Error($"YW亮色度POI结果不完整: 12X7={found12X7}({Config.GetPoi12X7ResultName()}), 8X7={found8X7}({Config.GetPoi8X7ResultName()})");
+                    ctx.Log?.Error($"YW亮色度POI结果不完整: 12X7(84点)={found12X7}, 8X7(56点)={found8X7}, POI_XYZ候选=[{FormatCandidates(candidates)}]");
                     return Task.FromResult(false);
                 }
 
@@ -95,11 +92,30 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
             }
         }
 
-        private static void ReadPoiGroup(AlgResultMasterModel master, List<PoiResultCIExyuvData> destination)
+        private static PoiCandidate? SelectCandidate(
+            IReadOnlyCollection<PoiCandidate> candidates,
+            int expectedPointCount,
+            string groupName,
+            int? excludedMasterId = null)
+        {
+            List<PoiCandidate> byPointCount = candidates
+                .Where(candidate => candidate.Master.Id != excludedMasterId && candidate.Points.Count == expectedPointCount)
+                .ToList();
+            if (byPointCount.Count == 1)
+                return byPointCount[0];
+            if (byPointCount.Count > 1)
+                throw new InvalidOperationException($"批次中存在多个{expectedPointCount}点的{groupName} POI结果: {FormatCandidates(byPointCount)}");
+            return null;
+        }
+
+        private static string FormatCandidates(IEnumerable<PoiCandidate> candidates) => string.Join(", ", candidates.Select(candidate =>
+            $"Id={candidate.Master.Id},TName={candidate.Master.TName ?? "<null>"},Points={candidate.Points.Count}"));
+
+        private static void ReadPoiGroup(IEnumerable<PoiPointResultModel> points, List<PoiResultCIExyuvData> destination)
         {
             destination.Clear();
             int id = 0;
-            foreach (PoiPointResultModel item in PoiPointResultDao.Instance.GetAllByPid(master.Id))
+            foreach (PoiPointResultModel item in points)
                 destination.Add(new PoiResultCIExyuvData(item) { Id = id++ });
         }
 
@@ -198,14 +214,8 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
             if (testResult == null)
                 return;
 
-            RenderGroup(ctx, testResult.ViewPoixyuvDatas12X7, "12X7");
-            RenderGroup(ctx, testResult.ViewPoixyuvDatas8X7, "8X7");
-        }
-
-        private static void RenderGroup(IProcessExecutionContext ctx, IEnumerable<PoiResultCIExyuvData> points, string groupName)
-        {
-            foreach (PoiResultCIExyuvData poi in points)
-                PoiOverlayRenderer.Add(ctx.ImageView, poi.Point, $"[{groupName}] {CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poi)}");
+            foreach (PoiResultCIExyuvData poi in testResult.ViewPoixyuvDatas12X7)
+                PoiOverlayRenderer.Add(ctx.ImageView, poi.Point, CVRawOpen.FormatMessage("Y:@Y:F2", poi));
         }
 
         public override void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize)
