@@ -518,6 +518,8 @@ public class OperationsActivity extends Activity {
             addOperationsProfileWideAction(operationsProfileButton(
                     profile, profiles, nowMilliseconds));
         }
+        addDashboardWideAction(dashboardButton(
+                "查看全部电脑动态", v -> showFleetTimeline(false)));
         addDashboardActionRow(
                 dashboardButton("命名当前电脑", v -> promptRenameCurrentOperationsProfile()),
                 dashboardButton("扫描并添加电脑", v -> startOperationsPairingScan()));
@@ -1877,6 +1879,73 @@ public class OperationsActivity extends Activity {
         back.setText("返回现场运维概览");
         back.setOnClickListener(v -> showCurrentDashboard());
         actions.addView(back, actionParams());
+    }
+
+    private void showFleetTimeline(boolean issuesOnly) {
+        showingDashboardSummary = false;
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        dashboardVisible = true;
+        progress.setVisibility(View.GONE);
+        title.setText("全部电脑动态");
+        OperationsFleetTimeline.Timeline timeline = OperationsFleetTimeline.build(
+                preferences.getOperationsProfiles(),
+                preferences.getOperationsHostId(),
+                System.currentTimeMillis(),
+                issuesOnly);
+        state.setText(timeline.summary);
+        details.setText("合并手机已有的近七天固定状态变化，不发起网络刷新。电脑名称只由本机档案补充，不写入状态记录，也不会发送给电脑或固定中继；本页不提供批量分享。");
+        actions.removeAllViews();
+
+        String issueFilterLabel = "只看需关注"
+                + (timeline.issueEntryCount > 0 ? "（" + timeline.issueEntryCount + "）" : "");
+        addDashboardActionRow(
+                dashboardButton(issuesOnly ? "全部变化" : "✓ 全部变化",
+                        v -> showFleetTimeline(false)),
+                dashboardButton(issuesOnly ? "✓ " + issueFilterLabel : issueFilterLabel,
+                        v -> showFleetTimeline(true)));
+        addDashboardActionRow(
+                dashboardButton("重新读取本机动态", v -> showFleetTimeline(issuesOnly)),
+                dashboardButton("返回电脑总览", v -> showConnectionPreference()));
+        addDashboardSection("状态变化");
+        TextView timelineBody = new TextView(this);
+        timelineBody.setText(formatFleetTimeline(timeline));
+        timelineBody.setTextSize(13);
+        timelineBody.setTextColor(Color.rgb(41, 53, 66));
+        timelineBody.setLineSpacing(0, 1.08f);
+        timelineBody.setPadding(dp(12), dp(10), dp(12), dp(10));
+        timelineBody.setTextIsSelectable(true);
+        timelineBody.setBackground(compactPanel(Color.WHITE, Color.rgb(224, 229, 235)));
+        LinearLayout.LayoutParams timelineParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        timelineParams.setMargins(0, 0, 0, dp(8));
+        actions.addView(timelineBody, timelineParams);
+    }
+
+    private String formatFleetTimeline(OperationsFleetTimeline.Timeline timeline) {
+        StringBuilder text = new StringBuilder();
+        if (timeline.entries.isEmpty()) {
+            text.append(timeline.issuesOnly
+                    ? "最近七天没有需关注的电脑状态变化。"
+                    : "后台守护或只读巡检尚未记录电脑状态变化。");
+        } else {
+            text.append(timeline.issuesOnly
+                    ? "按时间倒序显示需关注变化"
+                    : "按时间倒序显示全部状态变化");
+            if (timeline.truncated()) {
+                text.append(" · 最近 ").append(timeline.entries.size())
+                        .append(" / ").append(timeline.matchingEntryCount).append(" 条");
+            }
+            SimpleDateFormat formatter = new SimpleDateFormat(
+                    "MM-dd HH:mm:ss", Locale.getDefault());
+            for (OperationsFleetTimeline.Entry entry : timeline.entries) {
+                text.append("\n\n")
+                        .append(formatter.format(new Date(entry.timestampMilliseconds)))
+                        .append(" · ").append(entry.profileLabel)
+                        .append("\n").append(OperationsWatchHistory.label(entry.state));
+            }
+        }
+        return text.toString();
     }
 
     private String formatOperationsWatchHistory(List<OperationsWatchHistory.Entry> entries) {
