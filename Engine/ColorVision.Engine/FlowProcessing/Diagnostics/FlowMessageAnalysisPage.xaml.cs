@@ -53,24 +53,23 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 : _session.SerialNumber;
             if (_scopeRecord == null)
             {
-                PageScopeText.Text = $"Batch {_session.BatchId} · SN {serialNumber} · 本次运行的全部消息";
+                PageScopeText.Text = EngineLocalization.Format($"Batch {_session.BatchId} · SN {serialNumber} · 本次运行的全部消息");
                 NodeScopePanel.Visibility = Visibility.Collapsed;
                 OverviewFilterPanel.Visibility = Visibility.Visible;
-                TotalMetricLabelText.Text = "本运行消息";
-                FilteredMetricLabelText.Text = "当前匹配";
+                TotalMetricLabelText.Text = EngineLocalization.Get("本运行消息");
+                FilteredMetricLabelText.Text = EngineLocalization.Get("当前匹配");
                 return;
             }
 
             string nodeName = GetNodeDisplayName(_scopeRecord);
             PageScopeText.Text =
                 $"Batch {_scopeRecord.BatchId} · {nodeName} · {_scopeRecord.StartTime:yyyy/MM/dd HH:mm:ss.fff}";
-            NodeScopeDescriptionText.Text =
-                $"仅显示“{nodeName}”在 {_scopeRecord.StartTime:HH:mm:ss.fff} 开始的这一次执行所关联的消息。" +
-                "作用域由节点执行记录确定，不会混入同名节点的其他批次或其他执行。";
+            NodeScopeDescriptionText.Text = EngineLocalization.Format(
+                $"仅显示“{nodeName}”在 {_scopeRecord.StartTime:HH:mm:ss.fff} 开始的这一次执行所关联的消息。作用域由节点执行记录确定，不会混入同名节点的其他批次或其他执行。");
             NodeScopePanel.Visibility = Visibility.Visible;
             OverviewFilterPanel.Visibility = Visibility.Collapsed;
-            TotalMetricLabelText.Text = "本次节点执行";
-            FilteredMetricLabelText.Text = "固定范围消息";
+            TotalMetricLabelText.Text = EngineLocalization.Get("本次节点执行");
+            FilteredMetricLabelText.Text = EngineLocalization.Get("固定范围消息");
         }
 
         private void InitializeFilters()
@@ -80,7 +79,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 var nodeOptions = new List<NodeFilterOption>
                 {
-                    new NodeFilterOption(null, "全部节点")
+                    new NodeFilterOption(null, EngineLocalization.Get("全部节点"))
                 };
                 nodeOptions.AddRange(_sourceMessages
                     .GroupBy(GetNodeKey, StringComparer.Ordinal)
@@ -102,13 +101,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
                 StateFilterComboBox.ItemsSource = new[]
                 {
-                    new StateFilterOption(null, "全部状态"),
-                    new StateFilterOption(FlowMessageState.Initial, "初始"),
-                    new StateFilterOption(FlowMessageState.Sent, "已发送"),
-                    new StateFilterOption(FlowMessageState.Success, "成功"),
-                    new StateFilterOption(FlowMessageState.Fail, "失败"),
-                    new StateFilterOption(FlowMessageState.Timeout, "超时"),
-                    new StateFilterOption(FlowMessageState.Canceled, "已取消")
+                    new StateFilterOption(null, EngineLocalization.Get("全部状态")),
+                    new StateFilterOption(FlowMessageState.Initial, EngineLocalization.Get("初始")),
+                    new StateFilterOption(FlowMessageState.Sent, EngineLocalization.Get("已发送")),
+                    new StateFilterOption(FlowMessageState.Success, EngineLocalization.Get("成功")),
+                    new StateFilterOption(FlowMessageState.Fail, EngineLocalization.Get("失败")),
+                    new StateFilterOption(FlowMessageState.Timeout, EngineLocalization.Get("超时")),
+                    new StateFilterOption(FlowMessageState.Canceled, EngineLocalization.Get("已取消"))
                 };
                 StateFilterComboBox.SelectedIndex = 0;
             }
@@ -185,14 +184,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             FilteredMessageCountText.Text = matchingCount.ToString("N0");
             DisplayedMessageCountText.Text = displayedCount.ToString("N0");
             ListScopeSummaryText.Text = matchingCount == _sourceMessages.Count
-                ? $"{matchingCount:N0} 条"
-                : $"{matchingCount:N0} / {_sourceMessages.Count:N0} 条";
+                ? EngineLocalization.Format($"{matchingCount:N0} 条")
+                : EngineLocalization.Format($"{matchingCount:N0} / {_sourceMessages.Count:N0} 条");
 
             bool isLimited = matchingCount > MaximumDisplayedMessages;
             LimitNoticePanel.Visibility = isLimited ? Visibility.Visible : Visibility.Collapsed;
             LimitNoticeText.Text = isLimited
-                ? $"为保证界面流畅，列表最多显示 {MaximumDisplayedMessages:N0} 条。" +
-                  $"当前筛选完整匹配 {matchingCount:N0} 条，上方统计仍基于完整数据。"
+                ? EngineLocalization.Format($"为保证界面流畅，列表最多显示 {MaximumDisplayedMessages:N0} 条。当前筛选完整匹配 {matchingCount:N0} 条，上方统计仍基于完整数据。")
                 : string.Empty;
         }
 
@@ -206,21 +204,18 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             if (_sourceMessages.Count == 0 && _scopeRecord != null)
             {
-                EmptyStateTitleText.Text = "本次节点执行没有消息记录";
-                EmptyStateDescriptionText.Text =
-                    "该节点在这个 Batch 的这一次执行中没有匹配到 MQTT 消息。" +
-                    "这通常表示节点未发送消息，或执行时消息追踪尚未启用。";
+                EmptyStateTitleText.Text = EngineLocalization.Get("本次节点执行没有消息记录");
+                EmptyStateDescriptionText.Text = EngineLocalization.Get("该节点在这个 Batch 的这一次执行中没有匹配到 MQTT 消息。这通常表示节点未发送消息，或执行时消息追踪尚未启用。");
             }
             else if (_sourceMessages.Count == 0)
             {
-                EmptyStateTitleText.Text = "本次运行没有消息记录";
-                EmptyStateDescriptionText.Text =
-                    "当前 Batch 没有记录 MQTT 消息。流程仍可能正常完成；也可能是本次执行未启用消息追踪。";
+                EmptyStateTitleText.Text = EngineLocalization.Get("本次运行没有消息记录");
+                EmptyStateDescriptionText.Text = EngineLocalization.Get("当前 Batch 没有记录 MQTT 消息。流程仍可能正常完成；也可能是本次执行未启用消息追踪。");
             }
             else
             {
-                EmptyStateTitleText.Text = "当前筛选没有匹配消息";
-                EmptyStateDescriptionText.Text = "完整消息仍然存在，请调整节点或状态筛选，或点击“重置筛选”。";
+                EmptyStateTitleText.Text = EngineLocalization.Get("当前筛选没有匹配消息");
+                EmptyStateDescriptionText.Text = EngineLocalization.Get("完整消息仍然存在，请调整节点或状态筛选，或点击“重置筛选”。");
             }
         }
 
@@ -235,24 +230,24 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 _selectedRecord = _scopeRecord;
                 OpenNodeButton.IsEnabled = _selectedRecord != null;
                 OpenNodeButton.ToolTip = _selectedRecord != null
-                    ? "打开当前固定范围对应的节点执行分析"
-                    : "请先选择一条能够关联到节点执行的消息";
+                    ? EngineLocalization.Get("打开当前固定范围对应的节点执行分析")
+                    : EngineLocalization.Get("请先选择一条能够关联到节点执行的消息");
                 return;
             }
 
             _selectedRecord = ResolveRecord(message);
             OpenNodeButton.IsEnabled = _selectedRecord != null;
             OpenNodeButton.ToolTip = _selectedRecord != null
-                ? "打开当前消息所属的节点执行分析"
-                : "这条消息没有可定位的节点执行记录";
+                ? EngineLocalization.Get("打开当前消息所属的节点执行分析")
+                : EngineLocalization.Get("这条消息没有可定位的节点执行记录");
 
             string eventName = string.IsNullOrWhiteSpace(message.EventName)
-                ? "MQTT 消息"
+                ? EngineLocalization.Get("MQTT 消息")
                 : message.EventName;
             string nodeName = GetNodeDisplayName(message);
             string elapsed = message.ElapsedMs >= 0
                 ? FlowExecutionAnalysisPresentation.FormatDuration(message.ElapsedMs)
-                : "等待接收";
+                : EngineLocalization.Get("等待接收");
             SelectedMessageTitleText.Text = eventName;
             SelectedMessageMetaText.Text =
                 $"{nodeName} · {message.SendTime:yyyy/MM/dd HH:mm:ss.fff} · {GetStateDisplayText(message.State)} · {elapsed}";
@@ -261,21 +256,21 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             if (!string.IsNullOrWhiteSpace(message.MsgId))
                 statusParts.Add($"MsgId {message.MsgId}");
             if (message.StatusCode.HasValue)
-                statusParts.Add($"状态码 {message.StatusCode.Value}");
+                statusParts.Add(EngineLocalization.Format($"状态码 {message.StatusCode.Value}"));
             if (!string.IsNullOrWhiteSpace(message.StatusMessage))
                 statusParts.Add(message.StatusMessage);
             SelectedMessageStatusText.Text = statusParts.Count == 0
-                ? "未记录额外状态信息"
+                ? EngineLocalization.Get("未记录额外状态信息")
                 : string.Join(" · ", statusParts);
 
             SendTopicTextBox.Text = string.IsNullOrWhiteSpace(message.SendTopic)
-                ? "（未记录发送 Topic）"
+                ? EngineLocalization.Get("（未记录发送 Topic）")
                 : message.SendTopic;
-            SendPayloadTextBox.Text = FormatPayload(message.SendPayload, "（无发送 Payload）");
+            SendPayloadTextBox.Text = FormatPayload(message.SendPayload, EngineLocalization.Get("（无发送 Payload）"));
             ReceiveTopicTextBox.Text = string.IsNullOrWhiteSpace(message.RecvTopic)
-                ? "（尚未记录接收 Topic）"
+                ? EngineLocalization.Get("（尚未记录接收 Topic）")
                 : message.RecvTopic;
-            ReceivePayloadTextBox.Text = FormatPayload(message.RecvPayload, "（尚未收到 Payload）");
+            ReceivePayloadTextBox.Text = FormatPayload(message.RecvPayload, EngineLocalization.Get("（尚未收到 Payload）"));
         }
 
         private FlowNodeRecord? ResolveRecord(FlowNodeMessage message)
@@ -356,7 +351,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 return message.NodeName;
             if (!string.IsNullOrWhiteSpace(message.NodeId))
                 return message.NodeId;
-            return "未知节点";
+            return EngineLocalization.Get("未知节点");
         }
 
         private static string GetNodeDisplayName(FlowNodeRecord record)
@@ -365,19 +360,19 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 return record.NodeName;
             if (!string.IsNullOrWhiteSpace(record.NodeId))
                 return record.NodeId;
-            return "未知节点";
+            return EngineLocalization.Get("未知节点");
         }
 
         private static string GetStateDisplayText(FlowMessageState state)
         {
             return state switch
             {
-                FlowMessageState.Initial => "初始",
-                FlowMessageState.Sent => "已发送",
-                FlowMessageState.Success => "成功",
-                FlowMessageState.Fail => "失败",
-                FlowMessageState.Timeout => "超时",
-                FlowMessageState.Canceled => "已取消",
+                FlowMessageState.Initial => EngineLocalization.Get("初始"),
+                FlowMessageState.Sent => EngineLocalization.Get("已发送"),
+                FlowMessageState.Success => EngineLocalization.Get("成功"),
+                FlowMessageState.Fail => EngineLocalization.Get("失败"),
+                FlowMessageState.Timeout => EngineLocalization.Get("超时"),
+                FlowMessageState.Canceled => EngineLocalization.Get("已取消"),
                 _ => state.ToString()
             };
         }
@@ -427,8 +422,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             UpdateMessageDetails(message);
             if (message?.Id is not > 0)
                 return;
-            SendPayloadTextBox.Text = "（正在加载 Payload…）";
-            ReceivePayloadTextBox.Text = "（正在加载 Payload…）";
+            SendPayloadTextBox.Text = EngineLocalization.Get("（正在加载 Payload…）");
+            ReceivePayloadTextBox.Text = EngineLocalization.Get("（正在加载 Payload…）");
 
             try
             {
@@ -446,7 +441,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 if (!ReferenceEquals(MessageListView.SelectedItem, message))
                     return;
 
-                string error = $"（Payload 读取失败：{ex.Message}）";
+                string error = EngineLocalization.Format($"（Payload 读取失败：{ex.Message}）");
                 SendPayloadTextBox.Text = error;
                 ReceivePayloadTextBox.Text = error;
             }

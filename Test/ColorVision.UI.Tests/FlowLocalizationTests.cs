@@ -126,6 +126,32 @@ public class FlowLocalizationTests
         }
     }
 
+    [Fact]
+    public void EnglishFlowDiagnosticsLocalizeStaticAndFormattedText()
+    {
+        CultureInfo originalCulture = CultureInfo.CurrentCulture;
+        CultureInfo originalUiCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+
+            Assert.Equal("Flow Overview / Node Analysis", EngineLocalization.Get("流程概览 / 节点分析"));
+            Assert.Equal("Succeeded ", new EngineLangExtension("成功 ").ProvideValue(null!));
+            Assert.Equal(
+                "Page 1 of 4; 120 total",
+                EngineLocalization.Format($"第 {1} / {4} 页，共 {120} 条"));
+            Assert.Equal(
+                "Batch 8 · 3 executed node(s)",
+                EngineLocalization.Format($"Batch {8} · {3} 个执行节点{string.Empty}"));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+            CultureInfo.CurrentUICulture = originalUiCulture;
+        }
+    }
+
     private static void EnsurePropertyEditorResources()
     {
         Application application = Application.Current!;

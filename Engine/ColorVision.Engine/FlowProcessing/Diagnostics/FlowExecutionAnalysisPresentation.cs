@@ -41,12 +41,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         public FlowNodeExecutionOutcome Outcome { get; }
 
-        public string StatusText => IsTimedOut ? "超时" : Outcome switch
+        public string StatusText => IsTimedOut ? EngineLocalization.Get("超时") : Outcome switch
         {
-            FlowNodeExecutionOutcome.Succeeded => "成功",
-            FlowNodeExecutionOutcome.Failed => "失败",
-            FlowNodeExecutionOutcome.Canceled => "已取消",
-            _ => "未判定"
+            FlowNodeExecutionOutcome.Succeeded => EngineLocalization.Get("成功"),
+            FlowNodeExecutionOutcome.Failed => EngineLocalization.Get("失败"),
+            FlowNodeExecutionOutcome.Canceled => EngineLocalization.Get("已取消"),
+            _ => EngineLocalization.Get("未判定")
         };
 
         public bool IsTimedOut { get; }
@@ -128,7 +128,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 string detail = string.IsNullOrWhiteSpace(NodeType)
                     ? Record.StartTime.ToString("HH:mm:ss.fff")
                     : $"{NodeType} · {Record.StartTime:HH:mm:ss.fff}";
-                return IsTimedOut ? $"{detail} · 超时" : detail;
+                return IsTimedOut ? EngineLocalization.Format($"{detail} · 超时") : detail;
             }
         }
     }

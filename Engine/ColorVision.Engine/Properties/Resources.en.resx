@@ -4471,4 +4471,253 @@ Please close camera or other programs using this serial port, or check device co
   <data name="版本已经恢复，但刷新编辑器失败：{0}" xml:space="preserve"><value>The version was restored, but the editor could not be refreshed: {0}</value></data>
   <data name="流程正在运行，请在运行结束后查看或恢复版本。" xml:space="preserve"><value>The flow is running. View or restore versions after execution finishes.</value></data>
   <data name="当前文档还没有可用的流程版本。" xml:space="preserve"><value>The current document has no available flow versions.</value></data>
+  <data name="   失败 " xml:space="preserve"><value>   Failed </value></data>
+  <data name="← 返回概览" xml:space="preserve"><value>← Back to Overview</value></data>
+  <data name="0 条消息" xml:space="preserve"><value>0 messages</value></data>
+  <data name="按耗时从高到低排列，条形长度相对本批最慢节点" xml:space="preserve"><value>Sorted by duration from longest to shortest; bar lengths are relative to the slowest node in this batch</value></data>
+  <data name="备注" xml:space="preserve"><value>Notes</value></data>
+  <data name="本次耗时" xml:space="preserve"><value>Current Duration</value></data>
+  <data name="本次节点消息" xml:space="preserve"><value>Messages for This Node Execution</value></data>
+  <data name="本次执行没有记录消息。&#xA;本地节点可能直接在进程内执行，不经过 MQTT；也可能尚未产生可追踪消息。" xml:space="preserve"><value>No messages were recorded for this execution.&#xA;The local node may run directly in process without MQTT, or it may not have produced traceable messages yet.</value></data>
+  <data name="本批次没有节点执行记录" xml:space="preserve"><value>This batch has no node execution records</value></data>
+  <data name="本批次没有可显示的执行时序" xml:space="preserve"><value>This batch has no execution timeline to display</value></data>
+  <data name="本运行消息" xml:space="preserve"><value>Run Messages</value></data>
+  <data name="操作人" xml:space="preserve"><value>Operator</value></data>
+  <data name="查看" xml:space="preserve"><value>View</value></data>
+  <data name="查看本批消息" xml:space="preserve"><value>View Batch Messages</value></data>
+  <data name="超时" xml:space="preserve"><value>Timed Out</value></data>
+  <data name="成功 " xml:space="preserve"><value>Succeeded </value></data>
+  <data name="成功平均耗时" xml:space="preserve"><value>Average Successful Duration</value></data>
+  <data name="错误" xml:space="preserve"><value>Error</value></data>
+  <data name="错误码" xml:space="preserve"><value>Error Code</value></data>
+  <data name="打开当前消息所属的节点执行分析" xml:space="preserve"><value>Open the node execution analysis associated with the current message</value></data>
+  <data name="打开运行分析" xml:space="preserve"><value>Open Run Analysis</value></data>
+  <data name="待处置" xml:space="preserve"><value>Active</value></data>
+  <data name="单击切换到该次节点执行" xml:space="preserve"><value>Click to switch to this node execution</value></data>
+  <data name="当前匹配" xml:space="preserve"><value>Current Matches</value></data>
+  <data name="导出" xml:space="preserve"><value>Export</value></data>
+  <data name="定位" xml:space="preserve"><value>Locate</value></data>
+  <data name="定位当前画布节点" xml:space="preserve"><value>Locate Node on Current Canvas</value></data>
+  <data name="定位到流程图" xml:space="preserve"><value>Locate in Flow Diagram</value></data>
+  <data name="发送 Payload" xml:space="preserve"><value>Send Payload</value></data>
+  <data name="发送（Send）" xml:space="preserve"><value>Send</value></data>
+  <data name="发送时间" xml:space="preserve"><value>Sent Time</value></data>
+  <data name="发现时间 (UTC)" xml:space="preserve"><value>Detected Time (UTC)</value></data>
+  <data name="返回执行概览" xml:space="preserve"><value>Back to Execution Overview</value></data>
+  <data name="复制稳定标识" xml:space="preserve"><value>Copy Stable Identifier</value></data>
+  <data name="关闭信息" xml:space="preserve"><value>Resolution Information</value></data>
+  <data name="观察节点执行、并行与调度衔接" xml:space="preserve"><value>Inspect node execution, parallelism, and scheduling transitions</value></data>
+  <data name="耗时" xml:space="preserve"><value>Duration</value></data>
+  <data name="耗时(ms)" xml:space="preserve"><value>Duration (ms)</value></data>
+  <data name="级别" xml:space="preserve"><value>Severity</value></data>
+  <data name="加载中…" xml:space="preserve"><value>Loading…</value></data>
+  <data name="接收 Payload" xml:space="preserve"><value>Receive Payload</value></data>
+  <data name="接收（Receive）" xml:space="preserve"><value>Receive</value></data>
+  <data name="接收时间" xml:space="preserve"><value>Received Time</value></data>
+  <data name="节点" xml:space="preserve"><value>Node</value></data>
+  <data name="节点尝试" xml:space="preserve"><value>Node Attempts</value></data>
+  <data name="节点分析" xml:space="preserve"><value>Node Analysis</value></data>
+  <data name="节点工作量占比" xml:space="preserve"><value>Share of Node Workload</value></data>
+  <data name="节点耗时分布" xml:space="preserve"><value>Node Duration Distribution</value></data>
+  <data name="结果" xml:space="preserve"><value>Result</value></data>
+  <data name="结束" xml:space="preserve"><value>End</value></data>
+  <data name="进入完整消息页" xml:space="preserve"><value>Open Full Message View</value></data>
+  <data name="开始" xml:space="preserve"><value>Start</value></data>
+  <data name="开始 (UTC)" xml:space="preserve"><value>Start (UTC)</value></data>
+  <data name="开始时间" xml:space="preserve"><value>Start Time</value></data>
+  <data name="列表显示" xml:space="preserve"><value>Displayed in List</value></data>
+  <data name="流程" xml:space="preserve"><value>Flow</value></data>
+  <data name="流程概览" xml:space="preserve"><value>Flow Overview</value></data>
+  <data name="流程执行分析" xml:space="preserve"><value>Flow Execution Analysis</value></data>
+  <data name="流程执行耗时" xml:space="preserve"><value>Flow Execution Duration</value></data>
+  <data name="留空表示全部；例如 Error、Warning" xml:space="preserve"><value>Leave empty for all; for example, Error or Warning</value></data>
+  <data name="留空表示全部；例如 NodeFailure" xml:space="preserve"><value>Leave empty for all; for example, NodeFailure</value></data>
+  <data name="慢节点" xml:space="preserve"><value>Slow Node</value></data>
+  <data name="没有消息" xml:space="preserve"><value>No Messages</value></data>
+  <data name="批次" xml:space="preserve"><value>Batch</value></data>
+  <data name="批次 / SN" xml:space="preserve"><value>Batch / SN</value></data>
+  <data name="其中超时 0 · 未判定 0" xml:space="preserve"><value>Timed out 0 · Undetermined 0</value></data>
+  <data name="清空当前流程所含节点的全部本地分析历史" xml:space="preserve"><value>Clear all local analysis history for nodes in the current flow</value></data>
+  <data name="清空该节点的全部本地分析历史与消息" xml:space="preserve"><value>Clear all local analysis history and messages for this node</value></data>
+  <data name="清空全部记录" xml:space="preserve"><value>Clear All Records</value></data>
+  <data name="清空所有流程的本地分析节点记录与消息记录" xml:space="preserve"><value>Clear local analysis node and message records for all flows</value></data>
+  <data name="清理当前节点" xml:space="preserve"><value>Clear Current Node</value></data>
+  <data name="清理当前流程" xml:space="preserve"><value>Clear Current Flow</value></data>
+  <data name="全部" xml:space="preserve"><value>All</value></data>
+  <data name="全部流程" xml:space="preserve"><value>All Flows</value></data>
+  <data name="确认" xml:space="preserve"><value>Acknowledge</value></data>
+  <data name="确认备注可选；关闭备注必填" xml:space="preserve"><value>Acknowledgment note is optional; resolution is required when closing</value></data>
+  <data name="确认信息" xml:space="preserve"><value>Acknowledgment Information</value></data>
+  <data name="筛选只影响列表；上方总量与异常统计始终基于本运行的全部消息。" xml:space="preserve"><value>Filters affect only the list; totals and issue statistics above always use all messages from this run.</value></data>
+  <data name="上次相同流程执行" xml:space="preserve"><value>Previous Same-flow Execution</value></data>
+  <data name="上一次流程执行" xml:space="preserve"><value>Previous Flow Execution</value></data>
+  <data name="上一个节点" xml:space="preserve"><value>Previous Node</value></data>
+  <data name="上一页" xml:space="preserve"><value>Previous Page</value></data>
+  <data name="尚未关闭" xml:space="preserve"><value>Not closed</value></data>
+  <data name="尚未确认" xml:space="preserve"><value>Not acknowledged</value></data>
+  <data name="失败 / 超时" xml:space="preserve"><value>Failed / Timed Out</value></data>
+  <data name="失败平均耗时" xml:space="preserve"><value>Average Failed Duration</value></data>
+  <data name="事件" xml:space="preserve"><value>Event</value></data>
+  <data name="双击或按 Enter 查看节点" xml:space="preserve"><value>Double-click or press Enter to view the node</value></data>
+  <data name="搜索" xml:space="preserve"><value>Search</value></data>
+  <data name="搜索摘要、节点 ID 和详细信息" xml:space="preserve"><value>Search summaries, node IDs, and details</value></data>
+  <data name="跳到关联节点" xml:space="preserve"><value>Go to Associated Node</value></data>
+  <data name="同流程" xml:space="preserve"><value>Same Flow</value></data>
+  <data name="完成" xml:space="preserve"><value>Completed</value></data>
+  <data name="未确认" xml:space="preserve"><value>Unacknowledged</value></data>
+  <data name="未知节点" xml:space="preserve"><value>Unknown Node</value></data>
+  <data name="下次相同流程执行" xml:space="preserve"><value>Next Same-flow Execution</value></data>
+  <data name="下一次流程执行" xml:space="preserve"><value>Next Flow Execution</value></data>
+  <data name="下一个节点" xml:space="preserve"><value>Next Node</value></data>
+  <data name="下一页" xml:space="preserve"><value>Next Page</value></data>
+  <data name="详情" xml:space="preserve"><value>Details</value></data>
+  <data name="消息" xml:space="preserve"><value>Message</value></data>
+  <data name="消息列表" xml:space="preserve"><value>Message List</value></data>
+  <data name="消息详情" xml:space="preserve"><value>Message Details</value></data>
+  <data name="消息追踪" xml:space="preserve"><value>Message Trace</value></data>
+  <data name="选择一条消息查看 Topic 与 Payload" xml:space="preserve"><value>Select a message to view its Topic and Payload</value></data>
+  <data name="选择一条消息查看详情" xml:space="preserve"><value>Select a message to view details</value></data>
+  <data name="严重级别" xml:space="preserve"><value>Severity</value></data>
+  <data name="已固定到这一次节点执行" xml:space="preserve"><value>Pinned to this node execution</value></data>
+  <data name="已关闭" xml:space="preserve"><value>Closed</value></data>
+  <data name="已确认" xml:space="preserve"><value>Acknowledged</value></data>
+  <data name="右侧会显示发送与接收 Topic，并自动格式化 JSON Payload。" xml:space="preserve"><value>The right pane shows send and receive Topics and automatically formats JSON Payloads.</value></data>
+  <data name="原始信息" xml:space="preserve"><value>Raw Information</value></data>
+  <data name="运行事件" xml:space="preserve"><value>Run Events</value></data>
+  <data name="摘要" xml:space="preserve"><value>Summary</value></data>
+  <data name="占比" xml:space="preserve"><value>Share</value></data>
+  <data name="正在读取最近一次流程执行" xml:space="preserve"><value>Reading the latest flow execution</value></data>
+  <data name="正在加载该节点最近的执行记录…" xml:space="preserve"><value>Loading recent executions for this node…</value></data>
+  <data name="正在加载流程执行记录…" xml:space="preserve"><value>Loading flow execution records…</value></data>
+  <data name="执行概览" xml:space="preserve"><value>Execution Overview</value></data>
+  <data name="执行节点" xml:space="preserve"><value>Executed Nodes</value></data>
+  <data name="执行时序" xml:space="preserve"><value>Execution Timeline</value></data>
+  <data name="重新读取本次流程的节点与消息记录" xml:space="preserve"><value>Reload node and message records for this flow execution</value></data>
+  <data name="重置筛选" xml:space="preserve"><value>Reset Filters</value></data>
+  <data name="状态" xml:space="preserve"><value>Status</value></data>
+  <data name="状态消息" xml:space="preserve"><value>Status Message</value></data>
+  <data name="最近执行结果" xml:space="preserve"><value>Recent Execution Results</value></data>
+  <data name="最近执行历史" xml:space="preserve"><value>Recent Execution History</value></data>
+  <data name="最慢节点" xml:space="preserve"><value>Slowest Node</value></data>
+  <data name="MQTT 消息" xml:space="preserve"><value>MQTT Messages</value></data>
+  <data name="（尚未记录接收 Topic）" xml:space="preserve"><value>(Receive Topic not recorded)</value></data>
+  <data name="（尚未收到 Payload）" xml:space="preserve"><value>(Payload not received)</value></data>
+  <data name="（未记录发送 Topic）" xml:space="preserve"><value>(Send Topic not recorded)</value></data>
+  <data name="（无发送 Payload）" xml:space="preserve"><value>(No send Payload)</value></data>
+  <data name="（正在加载 Payload…）" xml:space="preserve"><value>(Loading Payload…)</value></data>
+  <data name="本次节点执行" xml:space="preserve"><value>This Node Execution</value></data>
+  <data name="本次节点执行没有消息记录" xml:space="preserve"><value>This node execution has no message records</value></data>
+  <data name="本次运行没有消息记录" xml:space="preserve"><value>This run has no message records</value></data>
+  <data name="本次执行没有可追踪消息" xml:space="preserve"><value>This execution has no traceable messages</value></data>
+  <data name="本批次没有 MQTT 记录" xml:space="preserve"><value>This batch has no MQTT records</value></data>
+  <data name="成功" xml:space="preserve"><value>Succeeded</value></data>
+  <data name="成功 · 慢节点" xml:space="preserve"><value>Succeeded · Slow Node</value></data>
+  <data name="初始" xml:space="preserve"><value>Initial</value></data>
+  <data name="打开当前固定范围对应的节点执行分析" xml:space="preserve"><value>Open node execution analysis for the current pinned scope</value></data>
+  <data name="当前 Batch 没有记录 MQTT 消息。流程仍可能正常完成；也可能是本次执行未启用消息追踪。" xml:space="preserve"><value>The current Batch has no recorded MQTT messages. The flow may still have completed normally, or message tracing may not have been enabled for this execution.</value></data>
+  <data name="当前画布不是该 Incident 对应流程，或节点已不在当前版本中。" xml:space="preserve"><value>The current canvas is not the flow associated with this Incident, or the node is no longer in the current version.</value></data>
+  <data name="当前记录没有节点标识，为避免误删其他同名节点，未执行清理。" xml:space="preserve"><value>The current record has no node identifier. Nothing was cleared to avoid deleting records for another node with the same name.</value></data>
+  <data name="当前流程" xml:space="preserve"><value>Current Flow</value></data>
+  <data name="当前流程没有可识别的节点标识，未执行清理。" xml:space="preserve"><value>The current flow has no identifiable node IDs. Nothing was cleared.</value></data>
+  <data name="当前流程图中没有找到这个节点。历史记录可能来自另一个流程模板。" xml:space="preserve"><value>This node was not found in the current flow diagram. The history may come from a different flow template.</value></data>
+  <data name="当前筛选没有匹配消息" xml:space="preserve"><value>No messages match the current filters</value></data>
+  <data name="等待接收" xml:space="preserve"><value>Waiting to Receive</value></data>
+  <data name="等待执行记录" xml:space="preserve"><value>Waiting for Execution Records</value></data>
+  <data name="该节点在这个 Batch 的这一次执行中没有匹配到 MQTT 消息。这通常表示节点未发送消息，或执行时消息追踪尚未启用。" xml:space="preserve"><value>No MQTT messages matched this node execution in this Batch. This usually means the node did not send a message or message tracing was not enabled during execution.</value></data>
+  <data name="该批次可能来自旧版本，或没有执行到可记录节点。" xml:space="preserve"><value>This batch may come from an older version or may not have executed any recordable nodes.</value></data>
+  <data name="该运行没有关联旧版 Batch 记录，无法打开节点耗时分析。" xml:space="preserve"><value>This run has no associated legacy Batch record, so node duration analysis cannot be opened.</value></data>
+  <data name="固定范围消息" xml:space="preserve"><value>Pinned-scope Messages</value></data>
+  <data name="关闭 Incident 前请填写处置结果。" xml:space="preserve"><value>Enter a resolution before closing the Incident.</value></data>
+  <data name="还没有流程执行记录" xml:space="preserve"><value>No Flow Execution Records Yet</value></data>
+  <data name="将清空本机流程分析数据库中的全部节点记录和消息记录，包含所有流程。&#xA;&#xA;该操作不会删除测量结果或流程配置，但分析记录无法恢复。是否继续？" xml:space="preserve"><value>This clears all node and message records for every flow from the local flow analysis database.&#xA;&#xA;Measurement results and flow configuration will not be deleted, but analysis records cannot be recovered. Continue?</value></data>
+  <data name="节点记录仍在写入，请稍后点击刷新。" xml:space="preserve"><value>Node records are still being written. Click Refresh again shortly.</value></data>
+  <data name="流程 Incident" xml:space="preserve"><value>Flow Incident</value></data>
+  <data name="流程分析记录已清空" xml:space="preserve"><value>Flow Analysis Records Cleared</value></data>
+  <data name="没有上次相同流程执行" xml:space="preserve"><value>No previous execution of the same flow</value></data>
+  <data name="没有上一次流程执行" xml:space="preserve"><value>No previous flow execution</value></data>
+  <data name="没有下次相同流程执行" xml:space="preserve"><value>No next execution of the same flow</value></data>
+  <data name="没有下一次流程执行" xml:space="preserve"><value>No next flow execution</value></data>
+  <data name="其中超时 — · 未判定 —" xml:space="preserve"><value>Timed out — · Undetermined —</value></data>
+  <data name="请先选择一条能够关联到节点执行的消息" xml:space="preserve"><value>Select a message that can be associated with a node execution</value></data>
+  <data name="全部节点" xml:space="preserve"><value>All Nodes</value></data>
+  <data name="全部状态" xml:space="preserve"><value>All Statuses</value></data>
+  <data name="确认清空全部流程分析记录" xml:space="preserve"><value>Confirm Clearing All Flow Analysis Records</value></data>
+  <data name="确认清理当前节点分析记录" xml:space="preserve"><value>Confirm Clearing Current Node Analysis Records</value></data>
+  <data name="确认清理当前流程分析记录" xml:space="preserve"><value>Confirm Clearing Current Flow Analysis Records</value></data>
+  <data name="尚未收到响应或未记录接收 Topic" xml:space="preserve"><value>No response received or receive Topic not recorded</value></data>
+  <data name="失败" xml:space="preserve"><value>Failed</value></data>
+  <data name="失败 · 超时" xml:space="preserve"><value>Failed · Timed Out</value></data>
+  <data name="时间 (ms)" xml:space="preserve"><value>Time (ms)</value></data>
+  <data name="完整消息仍然存在，请调整节点或状态筛选，或点击“重置筛选”。" xml:space="preserve"><value>The complete messages still exist. Adjust the node or status filters, or click Reset Filters.</value></data>
+  <data name="未发现失败或超时" xml:space="preserve"><value>No failures or timeouts found</value></data>
+  <data name="未记录额外状态信息" xml:space="preserve"><value>No additional status information recorded</value></data>
+  <data name="未记录发送 Topic" xml:space="preserve"><value>Send Topic not recorded</value></data>
+  <data name="未判定" xml:space="preserve"><value>Undetermined</value></data>
+  <data name="未选择 Incident。" xml:space="preserve"><value>No Incident selected.</value></data>
+  <data name="未知类型" xml:space="preserve"><value>Unknown Type</value></data>
+  <data name="无 SN 流程" xml:space="preserve"><value>Flow without SN</value></data>
+  <data name="已发送" xml:space="preserve"><value>Sent</value></data>
+  <data name="已取消" xml:space="preserve"><value>Canceled</value></data>
+  <data name="已完成 · 未记录结果" xml:space="preserve"><value>Completed · Result Not Recorded</value></data>
+  <data name="已完成 · 未记录结果 · 慢节点" xml:space="preserve"><value>Completed · Result Not Recorded · Slow Node</value></data>
+  <data name="暂时没有该节点的历史记录" xml:space="preserve"><value>No history is currently available for this node</value></data>
+  <data name="这条消息没有可定位的节点执行记录" xml:space="preserve"><value>This message has no locatable node execution record</value></data>
+  <data name="正在加载 Payload…" xml:space="preserve"><value>Loading Payload…</value></data>
+  <data name="执行新的流程后，这里会重新开始记录节点耗时与消息。" xml:space="preserve"><value>After a new flow execution, node durations and messages will start being recorded here again.</value></data>
+  <data name="执行一次流程后，这里会显示节点耗时、执行时序和消息追踪。" xml:space="preserve"><value>After a flow executes, node durations, the execution timeline, and message traces will appear here.</value></data>
+  <data name="读取 Incident 失败" xml:space="preserve"><value>Failed to Read Incidents</value></data>
+  <data name="读取 Incident 详情失败" xml:space="preserve"><value>Failed to Read Incident Details</value></data>
+  <data name="确认 Incident 失败" xml:space="preserve"><value>Failed to Acknowledge Incident</value></data>
+  <data name="关闭 Incident 失败" xml:space="preserve"><value>Failed to Close Incident</value></data>
+  <data name="打开运行分析失败" xml:space="preserve"><value>Failed to Open Run Analysis</value></data>
+  <data name="定位流程节点失败" xml:space="preserve"><value>Failed to Locate Flow Node</value></data>
+  <data name="复制稳定标识失败" xml:space="preserve"><value>Failed to Copy Stable Identifier</value></data>
+  <data name="流程概览 / 节点分析" xml:space="preserve"><value>Flow Overview / Node Analysis</value></data>
+  <data name="流程概览 / 消息追踪" xml:space="preserve"><value>Flow Overview / Message Trace</value></data>
+  <data name="流程概览 / 节点分析 / 消息追踪" xml:space="preserve"><value>Flow Overview / Node Analysis / Message Trace</value></data>
+  <data name="空状态" xml:space="preserve"><value>Empty State</value></data>
+
+  <data name="第 {0} / {1} 页，共 {2} 条" xml:space="preserve"><value>Page {0} of {1}; {2} total</value></data>
+  <data name="Batch {0} · {1} · {2:yyyy/MM/dd HH:mm:ss.fff}" xml:space="preserve"><value>Batch {0} · {1} · {2:yyyy/MM/dd HH:mm:ss.fff}</value></data>
+  <data name="本次执行 {0} 条消息 · 双击可进入完整消息页" xml:space="preserve"><value>{0} message(s) for this execution · Double-click to open the full message view</value></data>
+  <data name="最近 {0} 次执行 · 单击一行切换；失败包含超时，超时不统计耗时" xml:space="preserve"><value>Last {0} execution(s) · Click a row to switch; failures include timeouts, and timeout duration is excluded</value></data>
+  <data name="历史记录加载失败：{0}" xml:space="preserve"><value>Failed to load history: {0}</value></data>
+  <data name="其中超时 {0} · 未判定 {1} · 成功率 {2}" xml:space="preserve"><value>Timed out {0} · Undetermined {1} · Success rate {2}</value></data>
+  <data name="Payload 读取失败：{0}" xml:space="preserve"><value>Failed to read Payload: {0}</value></data>
+  <data name="Batch {0} · SN {1} · 本次运行的全部消息" xml:space="preserve"><value>Batch {0} · SN {1} · All Messages for This Run</value></data>
+  <data name="仅显示“{0}”在 {1:HH:mm:ss.fff} 开始的这一次执行所关联的消息。作用域由节点执行记录确定，不会混入同名节点的其他批次或其他执行。" xml:space="preserve"><value>Shows only messages associated with the execution of “{0}” that started at {1:HH:mm:ss.fff}. The scope is determined by the node execution record and excludes other batches or executions of nodes with the same name.</value></data>
+  <data name="{0:N0} 条" xml:space="preserve"><value>{0:N0} item(s)</value></data>
+  <data name="{0:N0} / {1:N0} 条" xml:space="preserve"><value>{0:N0} / {1:N0} item(s)</value></data>
+  <data name="为保证界面流畅，列表最多显示 {0:N0} 条。当前筛选完整匹配 {1:N0} 条，上方统计仍基于完整数据。" xml:space="preserve"><value>To keep the UI responsive, the list shows at most {0:N0} items. The current filters match {1:N0} items in total; the statistics above still use the complete data.</value></data>
+  <data name="状态码 {0}" xml:space="preserve"><value>Status code {0}</value></data>
+  <data name="（Payload 读取失败：{0}）" xml:space="preserve"><value>(Failed to read Payload: {0})</value></data>
+  <data name="Batch {0} · {1} 个执行节点{2}" xml:space="preserve"><value>Batch {0} · {1} executed node(s){2}</value></data>
+  <data name="查看本批消息（{0}）" xml:space="preserve"><value>View Batch Messages ({0})</value></data>
+  <data name="前处理 {0}" xml:space="preserve"><value>Pre-processing {0}</value></data>
+  <data name="节点活动 {0}" xml:space="preserve"><value>Node activity {0}</value></data>
+  <data name="其他流程开销 {0}" xml:space="preserve"><value>Other flow overhead {0}</value></data>
+  <data name="节点外耗时 {0}" xml:space="preserve"><value>Time outside nodes {0}</value></data>
+  <data name="后处理 {0}（另计）" xml:space="preserve"><value>Post-processing {0} (reported separately)</value></data>
+  <data name="节点并行重叠 {0}" xml:space="preserve"><value>Parallel node overlap {0}</value></data>
+  <data name="{0} 条失败或超时" xml:space="preserve"><value>{0} failed or timed-out message(s)</value></data>
+  <data name="{0} 已完成" xml:space="preserve"><value>{0} completed</value></data>
+  <data name="{0} 超时" xml:space="preserve"><value>{0} timed out</value></data>
+  <data name="{0} 个慢节点" xml:space="preserve"><value>{0} slow node(s)</value></data>
+  <data name="执行时序 · Batch {0}" xml:space="preserve"><value>Execution Timeline · Batch {0}</value></data>
+  <data name="{0} · 超时" xml:space="preserve"><value>{0} · Timed Out</value></data>
+  <data name="Batch {0} 没有节点记录" xml:space="preserve"><value>Batch {0} Has No Node Records</value></data>
+  <data name="切换到该次执行失败：{0}" xml:space="preserve"><value>Failed to switch to this execution: {0}</value></data>
+  <data name="切换相同流程执行记录失败：{0}" xml:space="preserve"><value>Failed to switch to another execution of the same flow: {0}</value></data>
+  <data name="切换流程执行记录失败：{0}" xml:space="preserve"><value>Failed to switch flow execution records: {0}</value></data>
+  <data name="将清空当前流程中 {0} 个节点的全部本地分析历史和消息记录。&#xA;&#xA;该操作不会删除测量结果或流程配置，但分析记录无法恢复。是否继续？" xml:space="preserve"><value>This clears all local analysis history and message records for {0} node(s) in the current flow.&#xA;&#xA;Measurement results and flow configuration will not be deleted, but analysis records cannot be recovered. Continue?</value></data>
+  <data name="将清空节点“{0}”的全部本地分析历史和消息记录。&#xA;&#xA;该操作不会删除测量结果或流程配置，但分析记录无法恢复。是否继续？" xml:space="preserve"><value>This clears all local analysis history and message records for node “{0}”.&#xA;&#xA;Measurement results and flow configuration will not be deleted, but analysis records cannot be recovered. Continue?</value></data>
+  <data name="节点“{0}”" xml:space="preserve"><value>Node “{0}”</value></data>
+  <data name="{0}分析记录已清理：节点记录 {1} 条，消息记录 {2} 条。" xml:space="preserve"><value>{0} analysis records cleared: {1} node record(s), {2} message record(s).</value></data>
+  <data name="清理分析记录失败：{0}" xml:space="preserve"><value>Failed to clear analysis records: {0}</value></data>
+  <data name="流程执行分析_Batch{0}_{1:yyyy-MM-dd_HH-mm-ss}" xml:space="preserve"><value>FlowExecutionAnalysis_Batch{0}_{1:yyyy-MM-dd_HH-mm-ss}</value></data>
+  <data name="上一次流程执行：{0}" xml:space="preserve"><value>Previous flow execution: {0}</value></data>
+  <data name="下一次流程执行：{0}" xml:space="preserve"><value>Next flow execution: {0}</value></data>
+  <data name="上次相同流程执行：{0}" xml:space="preserve"><value>Previous execution of the same flow: {0}</value></data>
+  <data name="下次相同流程执行：{0}" xml:space="preserve"><value>Next execution of the same flow: {0}</value></data>
+  <data name="Batch {0} · {1} 次节点执行{2}" xml:space="preserve"><value>Batch {0} · {1} node execution(s){2}</value></data>
 </root>

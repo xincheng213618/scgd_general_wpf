@@ -73,8 +73,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                         _record,
                         _session.CapturedAt);
 
-            NodeTitleText.Text = string.IsNullOrWhiteSpace(_record.NodeName) ? "未知节点" : _record.NodeName;
-            NodeSubtitleText.Text = $"Batch {_record.BatchId} · {_record.NodeType ?? "未知类型"} · {_record.StartTime:yyyy/MM/dd HH:mm:ss.fff}";
+            NodeTitleText.Text = string.IsNullOrWhiteSpace(_record.NodeName) ? EngineLocalization.Get("未知节点") : _record.NodeName;
+            NodeSubtitleText.Text = EngineLocalization.Format($"Batch {_record.BatchId} · {_record.NodeType ?? EngineLocalization.Get("未知类型")} · {_record.StartTime:yyyy/MM/dd HH:mm:ss.fff}");
             NodeElapsedText.Text = elapsedMs.HasValue
                 ? FlowExecutionAnalysisPresentation.FormatDuration(elapsedMs.Value)
                 : "—";
@@ -92,19 +92,19 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 FlowExecutionAnalysisPresentation.GetNodeExecutionOutcome(_record, _messages);
             if (outcome == FlowNodeExecutionOutcome.Failed)
             {
-                NodeStateText.Text = timedOut ? "失败 · 超时" : "失败";
+                NodeStateText.Text = timedOut ? EngineLocalization.Get("失败 · 超时") : EngineLocalization.Get("失败");
                 NodeStateText.Foreground = (Brush)FindResource("AnalysisFailureBrush");
             }
             else if (outcome == FlowNodeExecutionOutcome.Succeeded)
             {
-                NodeStateText.Text = duration?.IsWarning == true ? "成功 · 慢节点" : "成功";
+                NodeStateText.Text = duration?.IsWarning == true ? EngineLocalization.Get("成功 · 慢节点") : EngineLocalization.Get("成功");
                 NodeStateText.Foreground = (Brush)FindResource("AnalysisSuccessBrush");
             }
             else
             {
                 NodeStateText.Text = duration?.IsWarning == true
-                    ? "已完成 · 未记录结果 · 慢节点"
-                    : "已完成 · 未记录结果";
+                    ? EngineLocalization.Get("已完成 · 未记录结果 · 慢节点")
+                    : EngineLocalization.Get("已完成 · 未记录结果");
                 NodeStateText.Foreground = (Brush)FindResource("AnalysisCompletedBrush");
             }
         }
@@ -113,8 +113,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         {
             MessageListView.ItemsSource = _messages;
             MessageSummaryText.Text = _messages.Count == 0
-                ? "本次执行没有可追踪消息"
-                : $"本次执行 {_messages.Count} 条消息 · 双击可进入完整消息页";
+                ? EngineLocalization.Get("本次执行没有可追踪消息")
+                : EngineLocalization.Format($"本次执行 {_messages.Count} 条消息 · 双击可进入完整消息页");
             bool hasMessages = _messages.Count > 0;
             MessageEmptyText.Visibility = hasMessages ? Visibility.Collapsed : Visibility.Visible;
             MessageListView.Visibility = hasMessages ? Visibility.Visible : Visibility.Collapsed;
@@ -148,7 +148,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             CancellationToken cancellationToken = cancellationTokenSource.Token;
 
             SetHistoryStatisticsLoading();
-            NodeHistoryHintText.Text = "正在加载该节点最近的执行记录…";
+            NodeHistoryHintText.Text = EngineLocalization.Get("正在加载该节点最近的执行记录…");
 
             try
             {
@@ -218,8 +218,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
                 UpdateHistoryStatistics(summary);
                 NodeHistoryHintText.Text = summary.TotalCount == 0
-                    ? "暂时没有该节点的历史记录"
-                    : $"最近 {summary.TotalCount} 次执行 · 单击一行切换；失败包含超时，超时不统计耗时";
+                    ? EngineLocalization.Get("暂时没有该节点的历史记录")
+                    : EngineLocalization.Format($"最近 {summary.TotalCount} 次执行 · 单击一行切换；失败包含超时，超时不统计耗时");
             }
             catch (OperationCanceledException)
             {
@@ -230,7 +230,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                     return;
 
                 ClearHistoryStatistics();
-                NodeHistoryHintText.Text = $"历史记录加载失败：{ex.Message}";
+                NodeHistoryHintText.Text = EngineLocalization.Format($"历史记录加载失败：{ex.Message}");
             }
             finally
             {
@@ -245,13 +245,13 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private void SetHistoryStatisticsLoading()
         {
-            NodeHistorySuccessAverageText.Text = "加载中…";
+            NodeHistorySuccessAverageText.Text = EngineLocalization.Get("加载中…");
             NodeHistorySuccessP95Text.Text = "P95 —";
-            NodeHistoryFailureAverageText.Text = "加载中…";
+            NodeHistoryFailureAverageText.Text = EngineLocalization.Get("加载中…");
             NodeHistoryFailureP95Text.Text = "P95 —";
             NodeHistorySuccessCountText.Text = "—";
             NodeHistoryFailureCountText.Text = "—";
-            NodeHistoryOtherCountText.Text = "其中超时 — · 未判定 —";
+            NodeHistoryOtherCountText.Text = EngineLocalization.Get("其中超时 — · 未判定 —");
         }
 
         private void ClearHistoryStatistics()
@@ -262,7 +262,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             NodeHistoryFailureP95Text.Text = "P95 —";
             NodeHistorySuccessCountText.Text = "0";
             NodeHistoryFailureCountText.Text = "0";
-            NodeHistoryOtherCountText.Text = "其中超时 0 · 未判定 0";
+            NodeHistoryOtherCountText.Text = EngineLocalization.Get("其中超时 0 · 未判定 0");
         }
 
         private void UpdateHistoryStatistics(FlowNodeHistorySummary summary)
@@ -276,8 +276,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             string successRate = summary.SuccessRatePercent.HasValue
                 ? $"{summary.SuccessRatePercent.Value:N1}%"
                 : "—";
-            NodeHistoryOtherCountText.Text =
-                $"其中超时 {summary.TimeoutCount} · 未判定 {summary.CompletedCount} · 成功率 {successRate}";
+            NodeHistoryOtherCountText.Text = EngineLocalization.Format(
+                $"其中超时 {summary.TimeoutCount} · 未判定 {summary.CompletedCount} · 成功率 {successRate}");
         }
 
         private static string FormatHistoryDuration(long? elapsedMs)
@@ -319,17 +319,17 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             }
 
             SendTopicText.Text = string.IsNullOrWhiteSpace(message.SendTopic)
-                ? "未记录发送 Topic"
+                ? EngineLocalization.Get("未记录发送 Topic")
                 : message.SendTopic;
             RecvTopicText.Text = string.IsNullOrWhiteSpace(message.RecvTopic)
-                ? "尚未收到响应或未记录接收 Topic"
+                ? EngineLocalization.Get("尚未收到响应或未记录接收 Topic")
                 : message.RecvTopic;
             SendPayloadTextBox.Text = FormatJsonSafe(message.SendPayload);
             RecvPayloadTextBox.Text = FormatJsonSafe(message.RecvPayload);
             if (message.Id <= 0)
                 return;
-            SendPayloadTextBox.Text = "正在加载 Payload…";
-            RecvPayloadTextBox.Text = "正在加载 Payload…";
+            SendPayloadTextBox.Text = EngineLocalization.Get("正在加载 Payload…");
+            RecvPayloadTextBox.Text = EngineLocalization.Get("正在加载 Payload…");
 
             try
             {
@@ -348,7 +348,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 if (!ReferenceEquals(MessageListView.SelectedItem, message))
                     return;
 
-                string error = $"Payload 读取失败：{ex.Message}";
+                string error = EngineLocalization.Format($"Payload 读取失败：{ex.Message}");
                 SendPayloadTextBox.Text = error;
                 RecvPayloadTextBox.Text = error;
             }
@@ -356,8 +356,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private void ClearMessageDetails()
         {
-            SendTopicText.Text = "选择一条消息查看 Topic 与 Payload";
-            RecvTopicText.Text = "选择一条消息查看 Topic 与 Payload";
+            SendTopicText.Text = EngineLocalization.Get("选择一条消息查看 Topic 与 Payload");
+            RecvTopicText.Text = EngineLocalization.Get("选择一条消息查看 Topic 与 Payload");
             SendPayloadTextBox.Text = string.Empty;
             RecvPayloadTextBox.Text = string.Empty;
         }

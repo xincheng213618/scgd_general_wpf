@@ -119,8 +119,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 if (!selection.BatchId.HasValue)
                 {
                     ShowEmptyPage(
-                        "还没有流程执行记录",
-                        "执行一次流程后，这里会显示节点耗时、执行时序和消息追踪。");
+                        EngineLocalization.Get("还没有流程执行记录"),
+                        EngineLocalization.Get("执行一次流程后，这里会显示节点耗时、执行时序和消息追踪。"));
                     return;
                 }
 
@@ -298,10 +298,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 if (_session.Records.Count == 0)
                 {
                     ShowEmptyPage(
-                        $"Batch {batchId} 没有节点记录",
+                        EngineLocalization.Format($"Batch {batchId} 没有节点记录"),
                         result.Flushed
-                            ? "该批次可能来自旧版本，或没有执行到可记录节点。"
-                            : "节点记录仍在写入，请稍后点击刷新。");
+                            ? EngineLocalization.Get("该批次可能来自旧版本，或没有执行到可记录节点。")
+                            : EngineLocalization.Get("节点记录仍在写入，请稍后点击刷新。"));
                     return;
                 }
 
@@ -465,7 +465,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 MessageBox.Show(
                     this,
-                    $"切换到该次执行失败：{ex.Message}",
+                    EngineLocalization.Format($"切换到该次执行失败：{ex.Message}"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -508,7 +508,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 MessageBox.Show(
                     this,
-                    "当前流程图中没有找到这个节点。历史记录可能来自另一个流程模板。",
+                    EngineLocalization.Get("当前流程图中没有找到这个节点。历史记录可能来自另一个流程模板。"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -547,7 +547,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 MessageBox.Show(
                     this,
-                    $"切换相同流程执行记录失败：{ex.Message}",
+                    EngineLocalization.Format($"切换相同流程执行记录失败：{ex.Message}"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -586,7 +586,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 MessageBox.Show(
                     this,
-                    $"切换流程执行记录失败：{ex.Message}",
+                    EngineLocalization.Format($"切换流程执行记录失败：{ex.Message}"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -632,7 +632,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 MessageBox.Show(
                     this,
-                    "当前流程没有可识别的节点标识，未执行清理。",
+                    EngineLocalization.Get("当前流程没有可识别的节点标识，未执行清理。"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -641,9 +641,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             MessageBoxResult confirmation = MessageBox.Show(
                 this,
-                $"将清空当前流程中 {nodeIds.Length} 个节点的全部本地分析历史和消息记录。\n\n"
-                    + "该操作不会删除测量结果或流程配置，但分析记录无法恢复。是否继续？",
-                "确认清理当前流程分析记录",
+                EngineLocalization.Format($"将清空当前流程中 {nodeIds.Length} 个节点的全部本地分析历史和消息记录。\n\n该操作不会删除测量结果或流程配置，但分析记录无法恢复。是否继续？"),
+                EngineLocalization.Get("确认清理当前流程分析记录"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning,
                 MessageBoxResult.No);
@@ -654,7 +653,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             string serialNumber = _session.SerialNumber;
             await ExecuteClearAsync(
                 () => FlowNodeRecordDataBaseHelper.DeleteAnalysisForNodeIds(nodeIds),
-                "当前流程",
+                EngineLocalization.Get("当前流程"),
                 async () => await LoadRunAsync(batchId, serialNumber, null));
         }
 
@@ -666,7 +665,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 MessageBox.Show(
                     this,
-                    "当前记录没有节点标识，为避免误删其他同名节点，未执行清理。",
+                    EngineLocalization.Get("当前记录没有节点标识，为避免误删其他同名节点，未执行清理。"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -678,9 +677,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 : record.NodeName;
             MessageBoxResult confirmation = MessageBox.Show(
                 this,
-                $"将清空节点“{nodeName}”的全部本地分析历史和消息记录。\n\n"
-                    + "该操作不会删除测量结果或流程配置，但分析记录无法恢复。是否继续？",
-                "确认清理当前节点分析记录",
+                EngineLocalization.Format($"将清空节点“{nodeName}”的全部本地分析历史和消息记录。\n\n该操作不会删除测量结果或流程配置，但分析记录无法恢复。是否继续？"),
+                EngineLocalization.Get("确认清理当前节点分析记录"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning,
                 MessageBoxResult.No);
@@ -692,7 +690,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             string nodeId = record.NodeId;
             await ExecuteClearAsync(
                 () => FlowNodeRecordDataBaseHelper.DeleteAnalysisForNodeId(nodeId),
-                $"节点“{nodeName}”",
+                EngineLocalization.Format($"节点“{nodeName}”"),
                 async () => await LoadRunAsync(batchId, serialNumber, null));
         }
 
@@ -703,9 +701,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             MessageBoxResult confirmation = MessageBox.Show(
                 this,
-                "将清空本机流程分析数据库中的全部节点记录和消息记录，包含所有流程。\n\n"
-                    + "该操作不会删除测量结果或流程配置，但分析记录无法恢复。是否继续？",
-                "确认清空全部流程分析记录",
+                EngineLocalization.Get("将清空本机流程分析数据库中的全部节点记录和消息记录，包含所有流程。\n\n该操作不会删除测量结果或流程配置，但分析记录无法恢复。是否继续？"),
+                EngineLocalization.Get("确认清空全部流程分析记录"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning,
                 MessageBoxResult.No);
@@ -714,12 +711,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             await ExecuteClearAsync(
                 FlowNodeRecordDataBaseHelper.DeleteAllAnalysis,
-                "全部流程",
+                EngineLocalization.Get("全部流程"),
                 () =>
                 {
                     ShowEmptyPage(
-                        "流程分析记录已清空",
-                        "执行新的流程后，这里会重新开始记录节点耗时与消息。");
+                        EngineLocalization.Get("流程分析记录已清空"),
+                        EngineLocalization.Get("执行新的流程后，这里会重新开始记录节点耗时与消息。"));
                     return Task.CompletedTask;
                 });
         }
@@ -738,7 +735,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 await refreshAction();
                 MessageBox.Show(
                     this,
-                    $"{scopeName}分析记录已清理：节点记录 {result.RecordCount} 条，消息记录 {result.MessageCount} 条。",
+                    EngineLocalization.Format($"{scopeName}分析记录已清理：节点记录 {result.RecordCount} 条，消息记录 {result.MessageCount} 条。"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -747,7 +744,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 MessageBox.Show(
                     this,
-                    $"清理分析记录失败：{ex.Message}",
+                    EngineLocalization.Format($"清理分析记录失败：{ex.Message}"),
                     "ColorVision",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -775,7 +772,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             using var dialog = new System.Windows.Forms.SaveFileDialog
             {
                 Filter = "CSV files (*.csv)|*.csv",
-                FileName = $"流程执行分析_Batch{_session.BatchId}_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}",
+                FileName = EngineLocalization.Format($"流程执行分析_Batch{_session.BatchId}_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}"),
                 RestoreDirectory = true
             };
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
@@ -897,11 +894,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             PreviousRunButton.IsEnabled = canNavigateAllRuns && _currentAllRunIndex > 0;
             NextRunButton.IsEnabled = canNavigateAllRuns && _currentAllRunIndex + 1 < _allRuns.Count;
             PreviousRunButton.ToolTip = PreviousRunButton.IsEnabled
-                ? $"上一次流程执行：{FormatRunLabel(_allRuns[_currentAllRunIndex - 1])}"
-                : "没有上一次流程执行";
+                ? EngineLocalization.Format($"上一次流程执行：{FormatRunLabel(_allRuns[_currentAllRunIndex - 1])}")
+                : EngineLocalization.Get("没有上一次流程执行");
             NextRunButton.ToolTip = NextRunButton.IsEnabled
-                ? $"下一次流程执行：{FormatRunLabel(_allRuns[_currentAllRunIndex + 1])}"
-                : "没有下一次流程执行";
+                ? EngineLocalization.Format($"下一次流程执行：{FormatRunLabel(_allRuns[_currentAllRunIndex + 1])}")
+                : EngineLocalization.Get("没有下一次流程执行");
 
             bool canNavigateSameFlow =
                 !_isLoading && _session != null && _currentSameFlowRunIndex >= 0;
@@ -910,11 +907,11 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             NextSameFlowRunButton.IsEnabled =
                 canNavigateSameFlow && _currentSameFlowRunIndex + 1 < _sameFlowRuns.Count;
             PreviousSameFlowRunButton.ToolTip = PreviousSameFlowRunButton.IsEnabled
-                ? $"上次相同流程执行：{FormatRunLabel(_sameFlowRuns[_currentSameFlowRunIndex - 1])}"
-                : "没有上次相同流程执行";
+                ? EngineLocalization.Format($"上次相同流程执行：{FormatRunLabel(_sameFlowRuns[_currentSameFlowRunIndex - 1])}")
+                : EngineLocalization.Get("没有上次相同流程执行");
             NextSameFlowRunButton.ToolTip = NextSameFlowRunButton.IsEnabled
-                ? $"下次相同流程执行：{FormatRunLabel(_sameFlowRuns[_currentSameFlowRunIndex + 1])}"
-                : "没有下次相同流程执行";
+                ? EngineLocalization.Format($"下次相同流程执行：{FormatRunLabel(_sameFlowRuns[_currentSameFlowRunIndex + 1])}")
+                : EngineLocalization.Get("没有下次相同流程执行");
         }
 
         private static IReadOnlyList<FlowRunNavigationItem> LoadFlowRunOrder(
@@ -1028,7 +1025,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private static string FormatRunLabel(string serialNumber)
         {
-            return string.IsNullOrWhiteSpace(serialNumber) ? "无 SN 流程" : serialNumber;
+            return string.IsNullOrWhiteSpace(serialNumber) ? EngineLocalization.Get("无 SN 流程") : serialNumber;
         }
 
         private static string FormatRunLabel(FlowRunNavigationItem run)
@@ -1043,8 +1040,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
         private void UpdateHeader(string title, string breadcrumb, string subtitle)
         {
-            HeaderTitleText.Text = title;
-            BreadcrumbText.Text = breadcrumb;
+            HeaderTitleText.Text = EngineLocalization.Get(title);
+            BreadcrumbText.Text = EngineLocalization.Get(breadcrumb);
             HeaderSubtitleText.Text = subtitle;
         }
 
@@ -1053,7 +1050,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             string serialText = string.IsNullOrWhiteSpace(session.SerialNumber)
                 ? string.Empty
                 : $" · SN {session.SerialNumber}";
-            return $"Batch {session.BatchId} · {session.Records.Count} 次节点执行{serialText}";
+            return EngineLocalization.Format($"Batch {session.BatchId} · {session.Records.Count} 次节点执行{serialText}");
         }
 
         private static string CsvEscape(string value)

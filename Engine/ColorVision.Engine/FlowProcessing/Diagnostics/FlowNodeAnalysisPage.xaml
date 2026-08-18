@@ -2,6 +2,7 @@
       x:ClassModifier="internal"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:engine="clr-namespace:ColorVision.Engine"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       mc:Ignorable="d"
@@ -88,17 +89,17 @@
 
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <Button Content="执行概览"
+                    <Button Content="{engine:EngineLang Key='执行概览'}"
                             Style="{StaticResource BreadcrumbButtonStyle}"
                             Click="ShowOverviewButton_Click"/>
                     <TextBlock Text="  /  " Foreground="{DynamicResource SecondaryTextBrush}"/>
-                    <TextBlock Text="节点分析" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <TextBlock Text="{engine:EngineLang Key='节点分析'}" Foreground="{DynamicResource SecondaryTextBrush}"/>
                 </StackPanel>
                 <TextBlock x:Name="NodeTitleText"
                            Margin="0,7,0,0"
                            FontSize="22"
                            FontWeight="SemiBold"
-                           Text="节点"/>
+                           Text="{engine:EngineLang Key='节点'}"/>
                 <TextBlock x:Name="NodeSubtitleText"
                            Margin="0,3,0,0"
                            FontSize="12"
@@ -110,26 +111,26 @@
                         Orientation="Horizontal"
                         VerticalAlignment="Center">
                 <Button x:Name="PreviousNodeButton"
-                        Content="上一个节点"
+                        Content="{engine:EngineLang Key='上一个节点'}"
                         Padding="10,5"
                         Margin="0,0,6,0"
                         Click="PreviousNodeButton_Click"/>
                 <Button x:Name="NextNodeButton"
-                        Content="下一个节点"
+                        Content="{engine:EngineLang Key='下一个节点'}"
                         Padding="10,5"
                         Margin="0,0,12,0"
                         Click="NextNodeButton_Click"/>
                 <Button x:Name="LocateFlowNodeButton"
-                        Content="定位到流程图"
+                        Content="{engine:EngineLang Key='定位到流程图'}"
                         Padding="10,5"
                         Margin="0,0,6,0"
                         Click="LocateFlowNodeButton_Click"/>
-                <Button Content="清理当前节点"
-                        ToolTip="清空该节点的全部本地分析历史与消息"
+                <Button Content="{engine:EngineLang Key='清理当前节点'}"
+                        ToolTip="{engine:EngineLang Key='清空该节点的全部本地分析历史与消息'}"
                         Padding="10,5"
                         Margin="0,0,6,0"
                         Click="ClearCurrentNodeButton_Click"/>
-                <Button Content="返回执行概览"
+                <Button Content="{engine:EngineLang Key='返回执行概览'}"
                         Style="{StaticResource PrimaryActionButtonStyle}"
                         Click="ShowOverviewButton_Click"/>
             </StackPanel>
@@ -138,21 +139,21 @@
         <UniformGrid Grid.Row="1" Columns="5" Margin="0,14,0,12">
             <Border Style="{StaticResource AnalysisCardStyle}" Margin="0,0,8,0">
                 <StackPanel>
-                    <TextBlock Text="本次耗时" Style="{StaticResource MetricLabelStyle}"/>
+                    <TextBlock Text="{engine:EngineLang Key='本次耗时'}" Style="{StaticResource MetricLabelStyle}"/>
                     <TextBlock x:Name="NodeElapsedText" Text="—" Style="{StaticResource MetricValueStyle}"/>
                 </StackPanel>
             </Border>
             <Border Style="{StaticResource AnalysisCardStyle}" Margin="0,0,8,0">
                 <StackPanel>
-                    <TextBlock Text="节点工作量占比" Style="{StaticResource MetricLabelStyle}"/>
+                    <TextBlock Text="{engine:EngineLang Key='节点工作量占比'}" Style="{StaticResource MetricLabelStyle}"/>
                     <TextBlock x:Name="NodeShareText" Text="—" Style="{StaticResource MetricValueStyle}"/>
                 </StackPanel>
             </Border>
             <Border Style="{StaticResource AnalysisCardStyle}" Margin="0,0,8,0">
                 <StackPanel>
-                    <TextBlock Text="成功平均耗时" Style="{StaticResource MetricLabelStyle}"/>
+                    <TextBlock Text="{engine:EngineLang Key='成功平均耗时'}" Style="{StaticResource MetricLabelStyle}"/>
                     <TextBlock x:Name="NodeHistorySuccessAverageText"
-                               Text="加载中…"
+                               Text="{engine:EngineLang Key='加载中…'}"
                                Foreground="{StaticResource AnalysisSuccessBrush}"
                                Style="{StaticResource MetricValueStyle}"/>
                     <TextBlock x:Name="NodeHistorySuccessP95Text"
@@ -162,9 +163,9 @@
             </Border>
             <Border Style="{StaticResource AnalysisCardStyle}" Margin="0,0,8,0">
                 <StackPanel>
-                    <TextBlock Text="失败平均耗时" Style="{StaticResource MetricLabelStyle}"/>
+                    <TextBlock Text="{engine:EngineLang Key='失败平均耗时'}" Style="{StaticResource MetricLabelStyle}"/>
                     <TextBlock x:Name="NodeHistoryFailureAverageText"
-                               Text="加载中…"
+                               Text="{engine:EngineLang Key='加载中…'}"
                                Foreground="{StaticResource AnalysisFailureBrush}"
                                Style="{StaticResource MetricValueStyle}"/>
                     <TextBlock x:Name="NodeHistoryFailureP95Text"
@@ -174,15 +175,15 @@
             </Border>
             <Border Style="{StaticResource AnalysisCardStyle}">
                 <StackPanel>
-                    <TextBlock Text="最近执行结果" Style="{StaticResource MetricLabelStyle}"/>
+                    <TextBlock Text="{engine:EngineLang Key='最近执行结果'}" Style="{StaticResource MetricLabelStyle}"/>
                     <WrapPanel Margin="0,6,0,0">
-                        <TextBlock Text="成功 " Style="{StaticResource MetricLabelStyle}"/>
+                        <TextBlock Text="{engine:EngineLang Key='成功 '}" Style="{StaticResource MetricLabelStyle}"/>
                         <TextBlock x:Name="NodeHistorySuccessCountText"
                                    Text="0"
                                    FontSize="19"
                                    FontWeight="SemiBold"
                                    Foreground="{StaticResource AnalysisSuccessBrush}"/>
-                        <TextBlock Text="   失败 " Style="{StaticResource MetricLabelStyle}"/>
+                        <TextBlock Text="{engine:EngineLang Key='   失败 '}" Style="{StaticResource MetricLabelStyle}"/>
                         <TextBlock x:Name="NodeHistoryFailureCountText"
                                    Text="0"
                                    FontSize="19"
@@ -190,7 +191,7 @@
                                    Foreground="{StaticResource AnalysisFailureBrush}"/>
                     </WrapPanel>
                     <TextBlock x:Name="NodeHistoryOtherCountText"
-                               Text="其中超时 0 · 未判定 0"
+                               Text="{engine:EngineLang Key='其中超时 0 · 未判定 0'}"
                                Style="{StaticResource MetricDetailStyle}"/>
                 </StackPanel>
             </Border>
@@ -218,13 +219,13 @@
                         </Grid.ColumnDefinitions>
 
                         <WrapPanel VerticalAlignment="Center">
-                            <TextBlock Text="批次" Style="{StaticResource CompactInfoLabelStyle}"/>
+                            <TextBlock Text="{engine:EngineLang Key='批次'}" Style="{StaticResource CompactInfoLabelStyle}"/>
                             <TextBlock x:Name="NodeBatchText" Margin="0,0,18,0"/>
-                            <TextBlock Text="类型" Style="{StaticResource CompactInfoLabelStyle}"/>
+                            <TextBlock Text="{engine:EngineLang Key='类型'}" Style="{StaticResource CompactInfoLabelStyle}"/>
                             <TextBlock x:Name="NodeTypeText" Margin="0,0,18,0"/>
-                            <TextBlock Text="开始" Style="{StaticResource CompactInfoLabelStyle}"/>
+                            <TextBlock Text="{engine:EngineLang Key='开始'}" Style="{StaticResource CompactInfoLabelStyle}"/>
                             <TextBlock x:Name="NodeStartTimeText" Margin="0,0,18,0"/>
-                            <TextBlock Text="结束" Style="{StaticResource CompactInfoLabelStyle}"/>
+                            <TextBlock Text="{engine:EngineLang Key='结束'}" Style="{StaticResource CompactInfoLabelStyle}"/>
                             <TextBlock x:Name="NodeEndTimeText" Margin="0,0,18,0"/>
                             <TextBlock Text="SN" Style="{StaticResource CompactInfoLabelStyle}"/>
                             <TextBlock x:Name="NodeSerialNumberText"
@@ -235,7 +236,7 @@
                         <StackPanel Grid.Column="1"
                                     Orientation="Horizontal"
                                     Margin="16,0,0,0">
-                            <TextBlock Text="状态" Style="{StaticResource CompactInfoLabelStyle}"/>
+                            <TextBlock Text="{engine:EngineLang Key='状态'}" Style="{StaticResource CompactInfoLabelStyle}"/>
                             <TextBlock x:Name="NodeStateText" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Grid>
@@ -257,15 +258,15 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock Text="本次节点消息" Style="{StaticResource SectionTitleStyle}"/>
+                                <TextBlock Text="{engine:EngineLang Key='本次节点消息'}" Style="{StaticResource SectionTitleStyle}"/>
                                 <TextBlock x:Name="MessageSummaryText"
                                            Margin="0,3,0,0"
                                            FontSize="12"
                                            Foreground="{DynamicResource SecondaryTextBrush}"
-                                           Text="0 条消息"/>
+                                           Text="{engine:EngineLang Key='0 条消息'}"/>
                             </StackPanel>
                             <Button Grid.Column="1"
-                                    Content="进入完整消息页"
+                                    Content="{engine:EngineLang Key='进入完整消息页'}"
                                     Padding="12,5"
                                     VerticalAlignment="Center"
                                     Click="OpenMessagesButton_Click"/>
@@ -280,7 +281,7 @@
                                    TextAlignment="Center"
                                    TextWrapping="Wrap"
                                    Foreground="{DynamicResource SecondaryTextBrush}"
-                                   Text="本次执行没有记录消息。&#x0a;本地节点可能直接在进程内执行，不经过 MQTT；也可能尚未产生可追踪消息。"
+                                   Text="{engine:EngineLang Key='本次执行没有记录消息。&#x0a;本地节点可能直接在进程内执行，不经过 MQTT；也可能尚未产生可追踪消息。'}"
                                    Visibility="Collapsed"/>
 
                         <ListView x:Name="MessageListView"
@@ -299,21 +300,21 @@
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="EventName" Width="140" DisplayMemberBinding="{Binding EventName}"/>
-                                    <GridViewColumn Header="发送时间" Width="130">
+                                    <GridViewColumn Header="{engine:EngineLang Key='发送时间'}" Width="130">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding SendTime, StringFormat=HH:mm:ss.fff}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="接收时间" Width="130">
+                                    <GridViewColumn Header="{engine:EngineLang Key='接收时间'}" Width="130">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding RecvTime, StringFormat=HH:mm:ss.fff}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="耗时(ms)" Width="90">
+                                    <GridViewColumn Header="{engine:EngineLang Key='耗时(ms)'}" Width="90">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock>
@@ -337,7 +338,7 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="状态" Width="90">
+                                    <GridViewColumn Header="{engine:EngineLang Key='状态'}" Width="90">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock>
@@ -380,7 +381,7 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="状态消息" Width="220" DisplayMemberBinding="{Binding StatusMessage}"/>
+                                    <GridViewColumn Header="{engine:EngineLang Key='状态消息'}" Width="220" DisplayMemberBinding="{Binding StatusMessage}"/>
                                 </GridView>
                             </ListView.View>
                         </ListView>
@@ -402,14 +403,14 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
-                                    <TextBlock Text="发送 Payload" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{engine:EngineLang Key='发送 Payload'}" FontWeight="SemiBold"/>
                                     <TextBlock x:Name="SendTopicText"
                                                Grid.Row="1"
                                                Margin="0,4,0,7"
                                                FontSize="11"
                                                Foreground="{DynamicResource SecondaryTextBrush}"
                                                TextTrimming="CharacterEllipsis"
-                                               Text="选择一条消息查看 Topic 与 Payload"/>
+                                               Text="{engine:EngineLang Key='选择一条消息查看 Topic 与 Payload'}"/>
                                     <TextBox x:Name="SendPayloadTextBox"
                                              Grid.Row="2"
                                              IsReadOnly="True"
@@ -435,14 +436,14 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
-                                    <TextBlock Text="接收 Payload" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{engine:EngineLang Key='接收 Payload'}" FontWeight="SemiBold"/>
                                     <TextBlock x:Name="RecvTopicText"
                                                Grid.Row="1"
                                                Margin="0,4,0,7"
                                                FontSize="11"
                                                Foreground="{DynamicResource SecondaryTextBrush}"
                                                TextTrimming="CharacterEllipsis"
-                                               Text="选择一条消息查看 Topic 与 Payload"/>
+                                               Text="{engine:EngineLang Key='选择一条消息查看 Topic 与 Payload'}"/>
                                     <TextBox x:Name="RecvPayloadTextBox"
                                              Grid.Row="2"
                                              IsReadOnly="True"
@@ -470,20 +471,20 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="最近执行历史" Style="{StaticResource SectionTitleStyle}"/>
+                    <TextBlock Text="{engine:EngineLang Key='最近执行历史'}" Style="{StaticResource SectionTitleStyle}"/>
                     <TextBlock x:Name="NodeHistoryHintText"
                                Grid.Row="1"
                                Margin="0,4,0,10"
                                FontSize="12"
                                Foreground="{DynamicResource SecondaryTextBrush}"
-                               Text="正在加载该节点最近的执行记录…"
+                               Text="{engine:EngineLang Key='正在加载该节点最近的执行记录…'}"
                                TextWrapping="Wrap"/>
 
                     <ListView x:Name="NodeHistoryListView"
                               Grid.Row="2"
                               Background="Transparent"
                               BorderThickness="0"
-                              ToolTip="单击切换到该次节点执行"
+                              ToolTip="{engine:EngineLang Key='单击切换到该次节点执行'}"
                               SelectionChanged="NodeHistoryListView_SelectionChanged">
                         <ListView.ItemContainerStyle>
                             <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
@@ -493,21 +494,21 @@
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="Batch" Width="50" DisplayMemberBinding="{Binding BatchId}"/>
-                                <GridViewColumn Header="开始时间" Width="124">
+                                <GridViewColumn Header="{engine:EngineLang Key='开始时间'}" Width="124">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding StartTime, StringFormat=MM/dd HH:mm:ss.fff}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="耗时" Width="72">
+                                <GridViewColumn Header="{engine:EngineLang Key='耗时'}" Width="72">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding ElapsedText}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="结果" Width="62">
+                                <GridViewColumn Header="{engine:EngineLang Key='结果'}" Width="62">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold">
