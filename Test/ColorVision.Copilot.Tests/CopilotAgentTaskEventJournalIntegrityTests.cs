@@ -10,6 +10,77 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotAgentTaskEventJournalIntegrityTests
 {
     [Fact]
+    public void StructurallyValidEventIdMustMatchItsIdentityFields()
+    {
+        var runId = CopilotAgentTaskEventIds.CreateRunId();
+        var occurredAtUtc = DateTimeOffset.UtcNow;
+        var mismatched = new CopilotAgentTaskEvent
+        {
+            Sequence = 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                1,
+                runId,
+                CopilotAgentTaskEventType.RunStarted,
+                occurredAtUtc),
+            Type = CopilotAgentTaskEventType.RunStopped,
+            OccurredAtUtc = occurredAtUtc,
+            RunId = runId,
+            SubjectId = runId,
+            State = CopilotAgentStopReason.Completed.ToString(),
+        };
+
+        Assert.False(mismatched.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [mismatched],
+        }.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void JournalEquivalenceIncludesTheCompletePersistedEventPayload()
+    {
+        var runId = CopilotAgentTaskEventIds.CreateRunId();
+        var occurredAtUtc = DateTimeOffset.UtcNow;
+        var originalEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                1,
+                runId,
+                CopilotAgentTaskEventType.ToolCompleted,
+                occurredAtUtc),
+            Type = CopilotAgentTaskEventType.ToolCompleted,
+            OccurredAtUtc = occurredAtUtc,
+            RunId = runId,
+            SubjectId = CopilotAgentTaskEventIds.ForCall("same-call"),
+            RelatedIds = [CopilotAgentTaskEventIds.ForApproval("same-action")],
+            ToolName = "IntegrityTool",
+            State = CopilotToolExecutionState.Completed.ToString(),
+            Summary = "Original evidence.",
+        };
+        var rewrittenEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = originalEvent.Sequence,
+            Id = originalEvent.Id,
+            Type = originalEvent.Type,
+            OccurredAtUtc = originalEvent.OccurredAtUtc,
+            RunId = originalEvent.RunId,
+            SubjectId = originalEvent.SubjectId,
+            RelatedIds = originalEvent.RelatedIds,
+            ToolName = originalEvent.ToolName,
+            State = originalEvent.State,
+            Summary = "Rewritten evidence.",
+        };
+        var original = new CopilotAgentTaskEventJournalSnapshot { Events = [originalEvent] };
+        var rewritten = new CopilotAgentTaskEventJournalSnapshot { Events = [rewrittenEvent] };
+
+        Assert.True(original.IsStructurallyValid());
+        Assert.True(rewritten.IsStructurallyValid());
+        Assert.False(CopilotAgentTaskEventJournal.AreEquivalent(original, rewritten));
+        Assert.False(CopilotAgentTaskEventJournal.IsStrictlyNewerEvidence(rewritten, original));
+    }
+
+    [Fact]
     public void SessionResetRecoveryRetainsTheLatestStateOfEveryAttemptedToolCall()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();

@@ -187,6 +187,24 @@ namespace ColorVision.Copilot
             return false;
         }
 
+        public static bool IsExplicitlyAllowedPath(string? path, IEnumerable<string>? allowedPaths)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path))
+                return false;
+
+            try
+            {
+                var fullPath = Path.GetFullPath(path);
+                return (allowedPaths ?? Array.Empty<string>()).Any(allowedPath =>
+                    !string.IsNullOrWhiteSpace(allowedPath)
+                    && string.Equals(Path.GetFullPath(allowedPath), fullPath, StringComparison.OrdinalIgnoreCase));
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public static bool HasReparsePointInPath(string? path)
         {
             if (string.IsNullOrWhiteSpace(path))

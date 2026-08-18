@@ -276,9 +276,9 @@ namespace ColorVision.Copilot
         private static bool IsFailedSearchExecutionBlock(string[] lines)
         {
             var mentionsSearchTool = lines.Any(line =>
-                line.Contains("SearchFiles", StringComparison.OrdinalIgnoreCase)
-                || line.Contains("GrepText", StringComparison.OrdinalIgnoreCase)
-                || line.Contains("SearchDocs", StringComparison.OrdinalIgnoreCase)
+                line.Contains(CopilotSharedAgentToolNames.SearchFiles, StringComparison.OrdinalIgnoreCase)
+                || line.Contains(CopilotSharedAgentToolNames.GrepText, StringComparison.OrdinalIgnoreCase)
+                || line.Contains(CopilotSharedAgentToolNames.SearchDocs, StringComparison.OrdinalIgnoreCase)
                 || line.Contains("WebSearch", StringComparison.OrdinalIgnoreCase));
             if (!mentionsSearchTool)
                 return false;
@@ -419,4 +419,3 @@ namespace ColorVision.Copilot
         }
     }
 }
-

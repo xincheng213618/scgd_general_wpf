@@ -67,6 +67,10 @@ namespace ColorVision.Copilot
                 && Enum.IsDefined(Type)
                 && OccurredAtUtc != default
                 && CopilotAgentTaskEventIds.IsKey(RunId, "run", 32)
+                && string.Equals(
+                    Id,
+                    CopilotAgentTaskEventIds.CreateEventId(Sequence, RunId, Type, OccurredAtUtc),
+                    StringComparison.Ordinal)
                 && IsIdentifier(SubjectId)
                 && (RelatedIds?.Count ?? 0) <= CopilotAgentTaskEventJournal.MaxRelatedIds
                 && (RelatedIds?.All(IsIdentifier) ?? true)
@@ -234,10 +238,103 @@ namespace ColorVision.Copilot
             if (left.SchemaVersion != right.SchemaVersion || left.Events.Count != right.Events.Count)
                 return false;
 
-            return left.Events.Zip(right.Events, (leftEvent, rightEvent) =>
-                    leftEvent.Sequence == rightEvent.Sequence
-                    && string.Equals(leftEvent.Id, rightEvent.Id, StringComparison.Ordinal))
+            return left.Events.Zip(right.Events, AreEventsEquivalent)
                 .All(equivalent => equivalent);
+        }
+
+        private static bool AreEventsEquivalent(
+            CopilotAgentTaskEvent left,
+            CopilotAgentTaskEvent right)
+        {
+            return left.Sequence == right.Sequence
+                && string.Equals(left.Id, right.Id, StringComparison.Ordinal)
+                && left.Type == right.Type
+                && left.OccurredAtUtc == right.OccurredAtUtc
+                && string.Equals(left.RunId, right.RunId, StringComparison.Ordinal)
+                && string.Equals(left.SubjectId, right.SubjectId, StringComparison.Ordinal)
+                && (left.RelatedIds ?? Array.Empty<string>()).SequenceEqual(
+                    right.RelatedIds ?? Array.Empty<string>(),
+                    StringComparer.Ordinal)
+                && string.Equals(left.ToolName, right.ToolName, StringComparison.Ordinal)
+                && string.Equals(left.State, right.State, StringComparison.Ordinal)
+                && string.Equals(left.FailureCode, right.FailureCode, StringComparison.Ordinal)
+                && left.ExitCode == right.ExitCode
+                && string.Equals(left.Summary, right.Summary, StringComparison.Ordinal);
+        }
+
+        internal static bool IsStrictlyNewerEvidence(
+            CopilotAgentTaskEventJournalSnapshot? candidate,
+            CopilotAgentTaskEventJournalSnapshot? baseline)
+        {
+            if (candidate?.IsStructurallyValid() != true
+                || candidate.Events.Count == 0)
+                return false;
+            if (baseline?.IsStructurallyValid() != true
+                || baseline.Events.Count == 0)
+                return true;
+            if (AreEquivalent(candidate, baseline))
+                return false;
+
+            var commonPrefixLength = 0;
+            var comparableLength = Math.Min(candidate.Events.Count, baseline.Events.Count);
+            while (commonPrefixLength < comparableLength
+                && candidate.Events[commonPrefixLength].Sequence == baseline.Events[commonPrefixLength].Sequence
+                && string.Equals(
+                    candidate.Events[commonPrefixLength].Id,
+                    baseline.Events[commonPrefixLength].Id,
+                    StringComparison.Ordinal))
+            {
+                commonPrefixLength++;
+            }
+
+            if (commonPrefixLength == baseline.Events.Count)
+                return candidate.Events.Count > baseline.Events.Count;
+            if (commonPrefixLength == candidate.Events.Count)
+                return false;
+
+            var candidateLatestOccurrence = candidate.Events.Max(item => item.OccurredAtUtc);
+            var baselineLatestOccurrence = baseline.Events.Max(item => item.OccurredAtUtc);
+            return candidateLatestOccurrence > baselineLatestOccurrence;
+        }
+
+        internal static CopilotAgentTaskEventJournalSnapshot? CloseLatestOpenRun(
+            CopilotAgentTaskEventJournalSnapshot? snapshot,
+            CopilotAgentStopReason stopReason,
+            CopilotAgentControlIntent controlIntent = CopilotAgentControlIntent.None)
+        {
+            if (snapshot?.IsStructurallyValid() != true
+                || !Enum.IsDefined(stopReason)
+                || stopReason == CopilotAgentStopReason.None)
+            {
+                return null;
+            }
+
+            var latestOpenRun = snapshot.Events
+                .Where(item => item.Type == CopilotAgentTaskEventType.RunStarted)
+                .LastOrDefault(start => !snapshot.Events.Any(item =>
+                    item.Type == CopilotAgentTaskEventType.RunStopped
+                    && item.Sequence > start.Sequence
+                    && string.Equals(item.RunId, start.RunId, StringComparison.Ordinal)));
+            if (latestOpenRun == null)
+                return null;
+
+            var builder = new CopilotAgentTaskEventJournalBuilder(snapshot, latestOpenRun.RunId);
+            var controlEventType = controlIntent switch
+            {
+                CopilotAgentControlIntent.Pause => CopilotAgentTaskEventType.PauseRequested,
+                CopilotAgentControlIntent.Cancel => CopilotAgentTaskEventType.CancelRequested,
+                _ => (CopilotAgentTaskEventType?)null,
+            };
+            if (controlEventType.HasValue
+                && !snapshot.Events.Any(item =>
+                    item.Type == controlEventType.Value
+                    && item.Sequence > latestOpenRun.Sequence
+                    && string.Equals(item.RunId, latestOpenRun.RunId, StringComparison.Ordinal)))
+            {
+                builder.RecordControl(controlIntent);
+            }
+            builder.RecordStop(stopReason);
+            return builder.Snapshot();
         }
 
         internal static string BuildAttemptedToolRecoveryPrompt(

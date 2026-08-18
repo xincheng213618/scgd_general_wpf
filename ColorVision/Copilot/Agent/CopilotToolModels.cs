@@ -37,6 +37,99 @@ namespace ColorVision.Copilot
         }
     }
 
+    internal static class CopilotAgentToolInputArguments
+    {
+        public static string GetStringArgument(
+            this CopilotAgentToolInput? input,
+            params string[] names)
+        {
+            if (input == null)
+                return string.Empty;
+
+            foreach (var name in names ?? Array.Empty<string>())
+            {
+                if (!TryGetValue(input.Arguments, name, out var value))
+                    continue;
+                if (value is string text)
+                    return text.Trim();
+                if (value is JsonElement { ValueKind: JsonValueKind.String } element)
+                    return element.GetString()?.Trim() ?? string.Empty;
+            }
+            return string.Empty;
+        }
+
+        public static int? GetInt32Argument(
+            this CopilotAgentToolInput? input,
+            params string[] names)
+        {
+            if (input == null)
+                return null;
+
+            foreach (var name in names ?? Array.Empty<string>())
+            {
+                if (!TryGetValue(input.Arguments, name, out var value))
+                    continue;
+                if (value is int integer)
+                    return integer;
+                if (value is long longInteger
+                    && longInteger is >= int.MinValue and <= int.MaxValue)
+                {
+                    return (int)longInteger;
+                }
+                if (value is JsonElement { ValueKind: JsonValueKind.Number } element
+                    && element.TryGetInt32(out var jsonInteger))
+                {
+                    return jsonInteger;
+                }
+            }
+            return null;
+        }
+
+        public static bool TryGetJsonElementArgument(
+            this CopilotAgentToolInput? input,
+            string name,
+            out JsonElement value)
+        {
+            value = default;
+            if (input == null || !TryGetValue(input.Arguments, name, out var argument) || argument == null)
+                return false;
+
+            if (argument is JsonElement element)
+            {
+                value = element.Clone();
+                return element.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined);
+            }
+
+            try
+            {
+                value = JsonSerializer.SerializeToElement(argument);
+                return value.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined);
+            }
+            catch (Exception ex) when (ex is NotSupportedException or JsonException)
+            {
+                value = default;
+                return false;
+            }
+        }
+
+        private static bool TryGetValue(
+            IReadOnlyDictionary<string, object?> arguments,
+            string name,
+            out object? value)
+        {
+            foreach (var pair in arguments)
+            {
+                if (string.Equals(pair.Key, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = pair.Value;
+                    return true;
+                }
+            }
+            value = null;
+            return false;
+        }
+    }
+
     public sealed class CopilotAgentRequest
     {
         public string ConversationId { get; init; } = string.Empty;

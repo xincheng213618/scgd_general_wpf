@@ -34,7 +34,7 @@ namespace ColorVision.Copilot.Mcp
             return CreateConfirmableActionResult(
                 "Confirm Flow graph change",
                 DescribeFlowPatch(request),
-                "apply_flow_patch",
+                CopilotSharedCapabilityCatalog.ApplyFlowPatch.McpToolName,
                 normalizedArguments,
                 preview.Text + Environment.NewLine + "Does not save or run the flow.",
                 token => _environment.ApplyFlowPatchHandler(request, token),

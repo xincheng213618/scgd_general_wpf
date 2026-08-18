@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -17,12 +16,12 @@ namespace ColorVision.Copilot.Mcp
             CancellationToken cancellationToken)
         {
             var query = GetString(arguments, "query");
-            var maxLines = Math.Clamp(GetInt(arguments, "max_lines") ?? MaxLogLines, 1, 1000);
+            var maxLines = CopilotRecentLogSupport.NormalizeToolMaxLines(GetInt(arguments, "max_lines"));
             var result = await _environment.RecentLogProvider(
                 query,
                 CopilotRecentLogMode.RecentLines,
                 maxLines,
-                MaxLogChars,
+                CopilotRecentLogSupport.DefaultMaxLogChars,
                 cancellationToken);
             return ToMcpResult(result, "log_unavailable");
         }
@@ -51,7 +50,7 @@ namespace ColorVision.Copilot.Mcp
             var path = GetString(arguments, "path");
             if (!string.IsNullOrWhiteSpace(path))
             {
-                if (!TryResolveAllowedPath(path, requireExisting: false, out var fullPath, out var pathError))
+                if (!TryResolveAllowedPath(path, out var fullPath, out var pathError))
                     return CopilotMcpToolCallResult.Fail("path_not_allowed", pathError);
                 if (!Directory.Exists(fullPath))
                     return CopilotMcpToolCallResult.Fail("directory_not_found", $"The search directory does not exist: {fullPath}");
@@ -67,26 +66,7 @@ namespace ColorVision.Copilot.Mcp
                 allowPlainSearchTerms: true,
                 cursor,
                 cancellationToken);
-
-            var builder = new StringBuilder();
-            builder.AppendLine("ColorVision file search results");
-            builder.AppendLine($"Query: {query}");
-            builder.AppendLine($"Allowed roots: {roots.Count}");
-            builder.AppendLine($"Scanned files: {result.ScannedFileCount}");
-            builder.AppendLine($"Matched files: {result.MatchedFileCount}");
-            builder.AppendLine($"Matches shown: {result.Matches.Count}");
-            builder.AppendLine($"Scan complete: {result.ScanComplete.ToString().ToLowerInvariant()}");
-            builder.AppendLine($"Results complete: {result.ResultsComplete.ToString().ToLowerInvariant()}");
-            if (!string.IsNullOrWhiteSpace(result.NextCursor))
-                builder.AppendLine($"Next cursor: {result.NextCursor}");
-            builder.AppendLine();
-
-            foreach (var match in result.Matches.Take(MaxSearchResults))
-                builder.AppendLine($"- {match.DisplayPath}");
-
-            return result.Success
-                ? CopilotMcpToolCallResult.Ok(builder.ToString().TrimEnd())
-                : CopilotMcpToolCallResult.Fail("file_search_failed", string.IsNullOrWhiteSpace(result.ErrorMessage) ? result.Summary : result.ErrorMessage);
+            return ToMcpResult(result.ToCapabilityResult(), "file_search_failed");
         }
 
         private CopilotMcpToolCallResult GrepText(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
@@ -103,7 +83,7 @@ namespace ColorVision.Copilot.Mcp
             var path = GetString(arguments, "path");
             if (!string.IsNullOrWhiteSpace(path))
             {
-                if (!TryResolveAllowedPath(path, requireExisting: false, out var fullPath, out var pathError))
+                if (!TryResolveAllowedPath(path, out var fullPath, out var pathError))
                     return CopilotMcpToolCallResult.Fail("path_not_allowed", pathError);
                 if (!Directory.Exists(fullPath) && !File.Exists(fullPath))
                     return CopilotMcpToolCallResult.Fail("path_not_found", $"The search file or directory does not exist: {fullPath}");
@@ -112,24 +92,7 @@ namespace ColorVision.Copilot.Mcp
 
             var cursor = GetString(arguments, "cursor");
             var result = CopilotGrepTextCapability.SearchWithinScope(searchRoots, roots, query, null, cursor, cancellationToken);
-
-            var builder = new StringBuilder();
-            builder.AppendLine("ColorVision text search results");
-            builder.AppendLine($"Query: {query}");
-            builder.AppendLine($"Allowed roots: {roots.Count}");
-            builder.AppendLine($"Scanned text files: {result.ScannedTextFileCount}");
-            builder.AppendLine($"Matches shown: {result.Matches.Count}");
-            builder.AppendLine($"Scan complete: {result.ScanComplete.ToString().ToLowerInvariant()}");
-            builder.AppendLine($"Results complete: {result.ResultsComplete.ToString().ToLowerInvariant()}");
-            if (!string.IsNullOrWhiteSpace(result.NextCursor))
-                builder.AppendLine($"Next cursor: {result.NextCursor}");
-            builder.AppendLine();
-            foreach (var match in result.Matches.Take(MaxGrepMatches))
-                builder.AppendLine($"- {match.DisplayPath}:{match.LineNumber}: {CopilotWorkspaceSearchSupport.TruncateLine(match.LineText, 220)}");
-
-            return result.Success
-                ? CopilotMcpToolCallResult.Ok(builder.ToString().TrimEnd())
-                : CopilotMcpToolCallResult.Fail("grep_failed", string.IsNullOrWhiteSpace(result.ErrorMessage) ? result.Summary : result.ErrorMessage);
+            return ToMcpResult(result.ToCapabilityResult(), "grep_failed");
         }
 
         private async Task<CopilotMcpToolCallResult> ReadAllowedFileAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
@@ -138,7 +101,7 @@ namespace ColorVision.Copilot.Mcp
             if (string.IsNullOrWhiteSpace(path))
                 return CopilotMcpToolCallResult.Fail("missing_path", "The read_allowed_file tool requires a non-empty path argument.");
 
-            if (!TryResolveAllowedPath(path, requireExisting: false, out var fullPath, out var error))
+            if (!TryResolveAllowedPath(path, out var fullPath, out var error))
                 return CopilotMcpToolCallResult.Fail("path_not_allowed", error);
 
             if (!File.Exists(fullPath))
@@ -177,7 +140,7 @@ namespace ColorVision.Copilot.Mcp
                 return CopilotMcpToolCallResult.Ok(rootBuilder.ToString().TrimEnd());
             }
 
-            if (!TryResolveAllowedPath(path, requireExisting: false, out var fullPath, out var error))
+            if (!TryResolveAllowedPath(path, out var fullPath, out var error))
                 return CopilotMcpToolCallResult.Fail("path_not_allowed", error);
 
             if (!Directory.Exists(fullPath))
@@ -197,7 +160,7 @@ namespace ColorVision.Copilot.Mcp
             return CopilotWorkspaceSearchSupport.NormalizeSearchRoots(GetWorkspaceSnapshot().SearchRootPaths);
         }
 
-        private bool TryResolveAllowedPath(string path, bool requireExisting, out string fullPath, out string error)
+        private bool TryResolveAllowedPath(string path, out string fullPath, out string error)
         {
             fullPath = string.Empty;
             error = string.Empty;
@@ -221,37 +184,20 @@ namespace ColorVision.Copilot.Mcp
                 return false;
             }
 
-            if (requireExisting && !File.Exists(fullPath) && !Directory.Exists(fullPath))
-            {
-                error = $"The path does not exist: {fullPath}";
-                return false;
-            }
-
             var resolvedFullPath = fullPath;
-            if (!roots.Any(root => IsPathInsideRoot(resolvedFullPath, root)))
+            if (!CopilotWorkspaceSearchSupport.IsPathWithinRoots(resolvedFullPath, roots))
             {
+                if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(resolvedFullPath))
+                {
+                    error = $"The path crosses a file-system reparse point and is not allowed: {fullPath}";
+                    return false;
+                }
+
                 error = $"The path is outside the allowed ColorVision workspace roots: {fullPath}";
                 return false;
             }
 
-            if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(resolvedFullPath))
-            {
-                error = $"The path crosses a file-system reparse point and is not allowed: {fullPath}";
-                return false;
-            }
-
             return true;
-        }
-
-        private static bool IsPathInsideRoot(string path, string root)
-        {
-            if (string.Equals(path.TrimEnd(Path.DirectorySeparatorChar), root.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            var rootWithSeparator = root.EndsWith(Path.DirectorySeparatorChar)
-                ? root
-                : root + Path.DirectorySeparatorChar;
-            return path.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

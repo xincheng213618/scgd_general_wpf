@@ -240,9 +240,19 @@ namespace ColorVision.Copilot
         [JsonIgnore]
         public bool HasAdditionalReadRoots => AdditionalReadRootPaths?.Count > 0;
 
-        public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint { get; set; }
+        /// <summary>
+        /// Resumable Agent Framework state. Its task journal is recovery payload, not a
+        /// second independently writable conversation journal.
+        /// </summary>
+        [JsonProperty]
+        public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint { get; internal set; }
 
-        public CopilotAgentTaskEventJournalSnapshot? LatestAgentTaskEventJournal { get; set; }
+        /// <summary>
+        /// Latest terminal or checkpoint journal evidence retained independently only
+        /// when it is newer than, or must outlive, the resumable checkpoint.
+        /// </summary>
+        [JsonProperty]
+        public CopilotAgentTaskEventJournalSnapshot? LatestAgentTaskEventJournal { get; internal set; }
 
         [JsonIgnore]
         [System.Text.Json.Serialization.JsonIgnore]

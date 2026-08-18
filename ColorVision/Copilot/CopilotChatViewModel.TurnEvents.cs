@@ -317,7 +317,13 @@ namespace ColorVision.Copilot
                             continue;
                         }
 
-                        conversation.SetAgentSessionCheckpoint(agentEvent.SessionCheckpoint);
+                        if (!conversation.TrySetAgentSessionCheckpoint(
+                                agentEvent.SessionCheckpoint,
+                                out var checkpointChanged))
+                        {
+                            continue;
+                        }
+
                         var deliveredBatch = hostedRun.GetDeliveredSteeringAwaitingCheckpoint();
                         if (deliveredBatch.Messages.Count > 0
                             && CopilotSteeringRecovery.AreNewMessagesIncludedInCheckpoint(
@@ -329,12 +335,12 @@ namespace ColorVision.Copilot
                             // update as the checkpoint so a process exit cannot lose or
                             // replay an instruction.
                             var committedBatch = hostedRun.TakeDeliveredSteeringAwaitingCheckpoint();
-                            CopilotSteeringRecovery.RemovePending(
+                            checkpointChanged |= CopilotSteeringRecovery.RemovePending(
                                 conversation,
                                 committedBatch.Messages);
                         }
-                        persistState = true;
-                        persistImmediately = true;
+                        persistState |= checkpointChanged;
+                        persistImmediately |= checkpointChanged;
                         continue;
                     }
 
@@ -437,6 +443,25 @@ namespace ColorVision.Copilot
             RefreshCompactHistoryConversations();
             if (HasConversationSearchQuery)
                 RefreshFilteredConversations();
+        }
+
+        private bool CommitAgentRunStateAndResolveSteering(
+            CopilotHostedAgentRun hostedRun,
+            CopilotConversationRecord conversation,
+            CopilotAgentTaskEventJournalSnapshot? journal,
+            CopilotAgentSessionCheckpoint? checkpoint,
+            CopilotAgentStopReason stopReason)
+        {
+            var accepted = conversation.TryCommitAgentRunState(
+                journal,
+                checkpoint,
+                out _);
+            ResolveDeliveredSteeringAtTerminal(
+                hostedRun,
+                conversation,
+                accepted ? checkpoint : null,
+                discard: stopReason == CopilotAgentStopReason.Cancelled);
+            return accepted;
         }
 
         private async Task<CopilotGoalPostTurnResult> ProcessGoalAfterTurnAsync(

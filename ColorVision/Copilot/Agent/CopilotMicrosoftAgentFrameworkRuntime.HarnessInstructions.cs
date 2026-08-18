@@ -45,13 +45,15 @@ namespace ColorVision.Copilot
                 .Select(tool => tool.Name.Trim())
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             var hasAnyTools = toolNames.Count > 0;
-            var hasSearchTools = toolNames.Contains("SearchFiles") || toolNames.Contains("GrepText");
-            var hasFileReadTools = toolNames.Contains("ReadLocalFile") || toolNames.Contains("ReadAttachedFile");
+            var hasSearchTools = toolNames.Contains(CopilotSharedAgentToolNames.SearchFiles)
+                || toolNames.Contains(CopilotSharedAgentToolNames.GrepText);
+            var hasFileReadTools = toolNames.Contains(CopilotSharedAgentToolNames.ReadLocalFile)
+                || toolNames.Contains("ReadAttachedFile");
             var hasWorkspacePathTools = hasSearchTools
                 || hasFileReadTools
                 || toolNames.Overlaps(
                 [
-                    "ListDirectory",
+                    CopilotSharedAgentToolNames.ListDirectory,
                     "InspectGitWorkingTree",
                     "InspectGitDiff",
                     "PreviewWorkspacePatchEnvelope",
@@ -187,7 +189,7 @@ namespace ColorVision.Copilot
             }
             if (toolNames.Contains("ReadAttachedFile"))
                 builder.AppendLine("ReadAttachedFile reads at most three attachments when path is omitted. When attachment_set_complete is false and every attachment matters, call it again for each omitted_attachment_path that is relevant; do not repeat attachments already read. If omitted_attachment_list_complete is false, select the next unread attachment from the original attachment metadata. Supply path whenever using a line or column range.");
-            if (toolNames.Contains("ListDirectory"))
+            if (toolNames.Contains(CopilotSharedAgentToolNames.ListDirectory))
                 builder.AppendLine("ListDirectory returns one stable bounded page. When entries_complete is false and next_cursor is present, call it again for the same path with that exact cursor if later entries matter. Never invent or alter the cursor. When scan_complete is false and no next_cursor remains, narrow the directory path before concluding that an entry does not exist.");
             if (hasWriteTools)
                 builder.AppendLine("Write-capable tools may be used only for the change explicitly requested by the user. ColorVision owns any additional preview or approval step; never bypass it.");

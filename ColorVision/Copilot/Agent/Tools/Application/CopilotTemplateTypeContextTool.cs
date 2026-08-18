@@ -14,8 +14,6 @@ namespace ColorVision.Copilot
             : base(
                 CopilotSharedCapabilityCatalog.TemplateTypeContext.AgentToolName,
                 CopilotSharedCapabilityCatalog.TemplateTypeContext.McpToolName,
-                "Inspect the template type attached with @ as bounded read-only metadata: identity, loaded saved names, and browsable parameter field schema without values. Use its exact template_code. This never queries the database, reads template values, modifies, or saves a template.",
-                CopilotSharedCapabilityCatalog.TemplateTypeContext.SharedInputSchema!,
                 capabilityInvoker)
         {
         }

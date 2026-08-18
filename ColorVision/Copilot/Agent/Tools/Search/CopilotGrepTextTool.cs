@@ -8,9 +8,12 @@ namespace ColorVision.Copilot
     {
         public string Name => CopilotSharedCapabilityCatalog.GrepText.AgentToolName;
 
-        public string Description => "Search one stable bounded page of workspace text matches, optionally limited to one workspace file or directory, with an opaque continuation cursor when more matches remain. A completed empty search is successful evidence, not a tool failure; inspect scan_complete before concluding that text is absent.";
+        public string Description => CopilotSharedCapabilityCatalog.GrepText.AgentDescription;
 
-        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.GrepText.SharedInputSchema!;
+        public CopilotToolCapabilityDescriptor Capability =>
+            CopilotSharedCapabilityCatalog.GrepText.AgentCapability;
+
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.GrepText.AgentInputSchema;
 
         public bool IsAvailable(CopilotAgentRequest request)
         {

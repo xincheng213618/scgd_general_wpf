@@ -590,7 +590,7 @@ namespace ColorVision.Copilot
 
             var toolName = toolCall.ToolName ?? string.Empty;
             var toolInput = toolCall.ToolInput ?? CopilotAgentToolInput.Empty;
-            if ((string.Equals(toolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
+            if ((string.Equals(toolName, CopilotSharedAgentToolNames.ReadLocalFile, StringComparison.OrdinalIgnoreCase)
                     || string.Equals(toolName, "ReadAttachedFile", StringComparison.OrdinalIgnoreCase))
                 && !string.IsNullOrWhiteSpace(toolInput.Path))
             {
@@ -609,7 +609,7 @@ namespace ColorVision.Copilot
                 return builder.ToString();
             }
 
-            if (string.Equals(toolName, "ListDirectory", StringComparison.OrdinalIgnoreCase)
+            if (string.Equals(toolName, CopilotSharedAgentToolNames.ListDirectory, StringComparison.OrdinalIgnoreCase)
                 && !string.IsNullOrWhiteSpace(toolInput.Path))
             {
                 var directoryName = System.IO.Path.GetFileName(toolInput.Path);
@@ -628,7 +628,7 @@ namespace ColorVision.Copilot
                 return $" (target page: {url})";
             }
 
-            if (string.Equals(toolName, "SearchDocs", StringComparison.OrdinalIgnoreCase)
+            if (string.Equals(toolName, CopilotSharedAgentToolNames.SearchDocs, StringComparison.OrdinalIgnoreCase)
                 && !string.IsNullOrWhiteSpace(toolInput.Query))
             {
                 return $" (docs query: {toolInput.Query})";
@@ -640,13 +640,13 @@ namespace ColorVision.Copilot
                 return $" (web query: {toolInput.Query})";
             }
 
-            if (string.Equals(toolName, "ExecuteMenu", StringComparison.OrdinalIgnoreCase)
+            if (string.Equals(toolName, CopilotSharedAgentToolNames.ExecuteMenu, StringComparison.OrdinalIgnoreCase)
                 && !string.IsNullOrWhiteSpace(toolInput.Query))
             {
                 return $" (target menu: {toolInput.Query})";
             }
 
-            if (string.Equals(toolName, "CreateFlow", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(toolName, CopilotSharedAgentToolNames.CreateFlow, StringComparison.OrdinalIgnoreCase))
             {
                 return string.IsNullOrWhiteSpace(toolInput.Query)
                     ? " (generated flow name)"

@@ -56,16 +56,19 @@ namespace ColorVision.Copilot
 
         private string BuildActivityLabel()
         {
-            var (running, completed) = ToolName switch
+            var hasSharedPresentation = CopilotSharedCapabilityCatalog.TryResolveAgentTool(
+                ToolName,
+                out var sharedCapability);
+            var (running, completed) = hasSharedPresentation
+                ? (sharedCapability.Presentation.RunningLabel, sharedCapability.Presentation.CompletedLabel)
+                : ToolName switch
             {
                 "FetchUrl" => ("正在读取网页", "读取了网页"),
                 "WebSearch" => ("正在搜索网页", "搜索了网页"),
-                "ReadLocalFile" or "ReadAttachedFile" => ("正在读取文件", "读取了文件"),
-                "ListDirectory" or "SearchFiles" or "GrepText" or "SearchDocs" => ("正在搜索文件", "搜索了文件"),
+                "ReadAttachedFile" => ("正在读取文件", "读取了文件"),
                 "DelegateExplore" => ("正在委派代码探索", "委派了代码探索"),
                 "DelegateScout" => ("正在查阅外部资料", "查阅了外部资料"),
                 _ when ToolName.StartsWith("Delegate", StringComparison.Ordinal) => ("正在委派子任务", "委派了子任务"),
-                "GetRecentLog" => ("正在读取日志", "读取了日志"),
                 "QueryFlowExecutionStats" or "QueryDatabaseSql" => ("正在查询数据库", "查询了数据库"),
                 "ExecuteDatabaseSql" => ("正在执行数据库 SQL", "执行了数据库 SQL"),
                 "InspectWindowsSystem" => ("正在检查系统", "检查了系统"),
@@ -88,10 +91,6 @@ namespace ColorVision.Copilot
                 "PreviewWorkspacePatchEnvelope" => ("正在准备修改", "准备了修改"),
                 "ApplyWorkspacePatchEnvelope" => ("正在修改文件", "修改了文件"),
                 "RollbackWorkspacePatchEnvelope" => ("正在回滚修改", "回滚了修改"),
-                "CreateFlow" => ("正在创建流程", "创建了流程"),
-                "ApplyTemplatePatch" or "TemplatePatch" => ("正在修改模板", "修改了模板"),
-                "ExecuteMenu" => ("正在执行应用操作", "执行了应用操作"),
-                "SetLanguage" or "SetTheme" => ("正在修改应用设置", "修改了应用设置"),
                 _ => ($"正在运行 {ToolName}", $"运行了 {ToolName}"),
             };
 
@@ -128,9 +127,8 @@ namespace ColorVision.Copilot
             if (!IsFailure)
                 return false;
 
-            return string.Equals(ToolName, "SearchFiles", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(ToolName, "GrepText", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(ToolName, "SearchDocs", StringComparison.OrdinalIgnoreCase)
+            return (CopilotSharedCapabilityCatalog.TryResolveAgentTool(ToolName, out var capability)
+                    && capability.Presentation.IsSearch)
                 || string.Equals(ToolName, "WebSearch", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -151,17 +149,17 @@ namespace ColorVision.Copilot
         {
             if (State is CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running)
                 return ResultSummary;
+            if (CopilotSharedCapabilityCatalog.TryResolveAgentTool(ToolName, out var capability))
+                return capability.Presentation.SuccessSummary;
 
             return ToolName switch
             {
                 "FetchUrl" => "已读取网页正文。",
                 "WebSearch" => "已获得网页搜索结果。",
-                "ReadLocalFile" or "ReadAttachedFile" => "已读取文件内容。",
-                "ListDirectory" or "SearchFiles" or "GrepText" or "SearchDocs" => "已完成文件搜索。",
+                "ReadAttachedFile" => "已读取文件内容。",
                 "DelegateExplore" => "只读 Explore 子 Agent 已返回结果。",
                 "DelegateScout" => "只读 Scout 子 Agent 已返回外部资料。",
                 _ when ToolName.StartsWith("Delegate", StringComparison.Ordinal) => ResultSummary,
-                "GetRecentLog" => "已读取最近日志。",
                 "QueryFlowExecutionStats" or "QueryDatabaseSql" => "已获得数据库查询结果。",
                 "ExecuteDatabaseSql" => "数据库 SQL 已执行。",
                 "InspectWindowsSystem" => "Windows 系统信息检查完成。",
@@ -187,10 +185,6 @@ namespace ColorVision.Copilot
                         ? $"已完成 {WorkspaceChangedFiles.Count} 个文件的修改，可逐个打开核对。"
                         : "文件修改已完成。",
                 "RollbackWorkspacePatchEnvelope" => "文件修改已回滚。",
-                "CreateFlow" => "流程已创建。",
-                "ApplyTemplatePatch" or "TemplatePatch" => "模板修改已完成。",
-                "ExecuteMenu" => "应用操作已执行。",
-                "SetLanguage" or "SetTheme" => "应用设置已更新。",
                 _ => ResultSummary,
             };
         }

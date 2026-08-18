@@ -804,12 +804,12 @@ namespace ColorVision.Copilot
             }
 
             if (role.ReadCapabilities.HasFlag(CopilotSubagentReadCapabilities.ReadLocalFile))
-                return ["ReadLocalFile"];
+                return [CopilotSharedAgentToolNames.ReadLocalFile];
             if (role.ReadCapabilities.HasFlag(CopilotSubagentReadCapabilities.GrepText))
-                return ["GrepText"];
+                return [CopilotSharedAgentToolNames.GrepText];
             if (role.ReadCapabilities.HasFlag(CopilotSubagentReadCapabilities.SearchFiles))
-                return ["SearchFiles"];
-            return ["ListDirectory"];
+                return [CopilotSharedAgentToolNames.SearchFiles];
+            return [CopilotSharedAgentToolNames.ListDirectory];
         }
 
         internal static bool HasSuccessfulRequiredEvidence(

@@ -206,6 +206,181 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     }
 
     [Fact]
+    public void RejectedCheckpointCannotCommitDeliveredSteeringRecovery()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "rejected-steering-checkpoint-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        conversation.Messages.Add(assistantMessage);
+        var steeringMessage = new CopilotSteeringMessageSnapshot(
+            "steering:rejected-checkpoint",
+            "retain this instruction until durable");
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var regressingJournal = journal.Snapshot();
+        journal.RecordStop(CopilotAgentStopReason.Paused);
+        var currentCheckpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "profile-a|model-a",
+            SerializedSessionJson = "{}",
+            TaskEventJournal = journal.Snapshot(),
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        };
+        Assert.True(conversation.SetAgentSessionCheckpoint(currentCheckpoint));
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(
+            conversation,
+            config,
+            new GatedFailingTurnRuntime(),
+            new CopilotAgentTaskHost());
+        using var hostedRun = new CopilotHostedAgentRun(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            "run:rejected-checkpoint");
+        try
+        {
+            Assert.True(CopilotSteeringRecovery.TrackPending(
+                conversation,
+                hostedRun.Id,
+                steeringMessage,
+                DateTimeOffset.UtcNow));
+            ApplyAgentEvents(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                CopilotAgentEvent.SteeringDelivered([steeringMessage]));
+
+            var rejectedCheckpoint = new CopilotAgentSessionCheckpoint
+            {
+                ProfileKey = "profile-a|model-a",
+                SerializedSessionJson = "{}",
+                ConversationMemory =
+                [
+                    new CopilotRequestMessage("user", steeringMessage.Text)
+                    {
+                        IsSteering = true,
+                    },
+                ],
+                TaskEventJournal = regressingJournal,
+                UpdatedAtUtc = currentCheckpoint.UpdatedAtUtc.AddSeconds(1),
+            };
+            ApplyAgentEvents(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                CopilotAgentEvent.CheckpointUpdated(
+                    rejectedCheckpoint,
+                    new CopilotAgentTaskLedgerSnapshot
+                    {
+                        Mode = "execute",
+                        Items =
+                        [
+                            new CopilotAgentTaskItem
+                            {
+                                Id = 1,
+                                Title = "Retain steering",
+                                Description = "Do not commit recovery through rejected evidence.",
+                            },
+                        ],
+                    }));
+
+            Assert.Same(currentCheckpoint, conversation.AgentSessionCheckpoint);
+            Assert.Single(conversation.PendingSteeringRecoveries);
+        }
+        finally
+        {
+            hostedRun.Complete(error: null);
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public void RejectedTerminalCheckpointRestoresDeliveredSteeringToDraft()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "rejected-terminal-checkpoint-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        conversation.Messages.Add(assistantMessage);
+        var steeringMessage = new CopilotSteeringMessageSnapshot(
+            "steering:rejected-terminal-checkpoint",
+            "restore this terminal instruction");
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var rejectedJournal = journal.Snapshot();
+        journal.RecordStop(CopilotAgentStopReason.Paused);
+        var currentCheckpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "profile-a|model-a",
+            SerializedSessionJson = "{}",
+            TaskEventJournal = journal.Snapshot(),
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        };
+        conversation.SetAgentSessionCheckpoint(currentCheckpoint);
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(
+            conversation,
+            config,
+            new GatedFailingTurnRuntime(),
+            new CopilotAgentTaskHost());
+        using var hostedRun = new CopilotHostedAgentRun(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            "run:rejected-terminal-checkpoint");
+        try
+        {
+            Assert.True(CopilotSteeringRecovery.TrackPending(
+                conversation,
+                hostedRun.Id,
+                steeringMessage,
+                DateTimeOffset.UtcNow));
+            ApplyAgentEvents(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                CopilotAgentEvent.SteeringDelivered([steeringMessage]));
+            var rejectedCheckpoint = new CopilotAgentSessionCheckpoint
+            {
+                ProfileKey = "profile-a|model-a",
+                SerializedSessionJson = "{}",
+                ConversationMemory =
+                [
+                    new CopilotRequestMessage("user", steeringMessage.Text)
+                    {
+                        IsSteering = true,
+                    },
+                ],
+                TaskEventJournal = rejectedJournal,
+                UpdatedAtUtc = currentCheckpoint.UpdatedAtUtc.AddSeconds(1),
+            };
+
+            var accepted = CommitAgentRunStateAndResolveSteering(
+                viewModel,
+                hostedRun,
+                conversation,
+                rejectedJournal,
+                rejectedCheckpoint,
+                CopilotAgentStopReason.Paused);
+
+            Assert.False(accepted);
+            Assert.Same(currentCheckpoint, conversation.AgentSessionCheckpoint);
+            Assert.Empty(conversation.PendingSteeringRecoveries);
+            Assert.Contains(steeringMessage.Text, conversation.DraftText, StringComparison.Ordinal);
+        }
+        finally
+        {
+            hostedRun.Complete(error: null);
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
     public async Task PausedBoundGoalStillAccountsTheCompletedTurn()
     {
         var profile = CreateProfile("profile-a", "Profile A", "model-a");
@@ -1442,6 +1617,23 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         method.Invoke(
             viewModel,
             [hostedRun, conversation, assistantMessage, agentEvents]);
+    }
+
+    private static bool CommitAgentRunStateAndResolveSteering(
+        CopilotChatViewModel viewModel,
+        CopilotHostedAgentRun hostedRun,
+        CopilotConversationRecord conversation,
+        CopilotAgentTaskEventJournalSnapshot journal,
+        CopilotAgentSessionCheckpoint checkpoint,
+        CopilotAgentStopReason stopReason)
+    {
+        var method = typeof(CopilotChatViewModel).GetMethod(
+            "CommitAgentRunStateAndResolveSteering",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("CommitAgentRunStateAndResolveSteering was not found.");
+        return Assert.IsType<bool>(method.Invoke(
+            viewModel,
+            [hostedRun, conversation, journal, checkpoint, stopReason]));
     }
 
     private static async Task ProcessGoalAfterTurnAsync(

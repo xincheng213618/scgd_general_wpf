@@ -32,7 +32,8 @@ namespace ColorVision.Copilot.Mcp
             CopilotMcpClientSessionStore? sessionStore = null)
         {
             _settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
-            _toolDispatcher = toolDispatcher ?? new CopilotMcpToolDispatcher();
+            _toolDispatcher = toolDispatcher
+                ?? CopilotApplicationCapabilityInvokerFactory.GetDefaultDispatcher();
             _sessionStore = sessionStore ?? new CopilotMcpClientSessionStore();
         }
 

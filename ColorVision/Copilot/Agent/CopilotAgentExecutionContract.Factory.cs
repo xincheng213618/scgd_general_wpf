@@ -37,7 +37,7 @@ namespace ColorVision.Copilot
                 .ToArray();
             var localFileReadTools = requiredLocalFilePaths.Length > 0
                 ? availableTools
-                    .Where(tool => string.Equals(tool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase))
+                    .Where(tool => string.Equals(tool.Name, CopilotSharedAgentToolNames.ReadLocalFile, StringComparison.OrdinalIgnoreCase))
                     .Select(tool => tool.Name)
                     .ToArray()
                 : Array.Empty<string>();

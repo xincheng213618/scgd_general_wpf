@@ -426,6 +426,9 @@ namespace ColorVision.Copilot
                     $"Approve {tool.Name}",
                     $"Microsoft Agent Framework wants to run the protected ColorVision tool {tool.Name} with {argumentsSummary}."),
             };
+            presentation = CopilotSharedCapabilityCatalog.ApplyApprovalMetadata(
+                tool.Name,
+                presentation);
             ConfirmableAction? action = null;
             EventHandler<ConfirmableActionChangedEventArgs>? statusChanged = null;
             statusChanged = (_, eventArgs) =>

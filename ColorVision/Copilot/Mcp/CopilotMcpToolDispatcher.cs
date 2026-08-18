@@ -24,10 +24,6 @@ namespace ColorVision.Copilot.Mcp
         ICopilotScopedApplicationCapabilityInvoker,
         ICopilotApprovedApplicationCapabilityInvoker
     {
-        private const int MaxSearchResults = 30;
-        private const int MaxGrepMatches = 40;
-        private const int MaxLogLines = 300;
-        private const int MaxLogChars = 20000;
         private const int MaxAuditEntries = 80;
         private const int DefaultDiagnosticBundleChars = 12000;
         private const int MaxDiagnosticBundleChars = 60000;

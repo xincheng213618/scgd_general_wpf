@@ -43,7 +43,10 @@ namespace ColorVision.Copilot
                 return false;
 
             if (MatchesCurrentOrContinuation(activeRequest, FlowGraphMarkers,
-                "InspectFlowGraph", "SearchFlowNodeCatalog", "PreviewFlowPatch", "ApplyFlowPatch"))
+                CopilotSharedAgentToolNames.InspectFlowGraph,
+                CopilotSharedAgentToolNames.SearchFlowNodeCatalog,
+                CopilotSharedAgentToolNames.PreviewFlowPatch,
+                CopilotSharedAgentToolNames.ApplyFlowPatch))
             {
                 return true;
             }
@@ -64,7 +67,7 @@ namespace ColorVision.Copilot
                     || MatchesCurrentOrContinuation(
                         request!,
                         SavedTemplateContextMarkers,
-                        "InspectSavedTemplate"));
+                        CopilotSharedAgentToolNames.InspectSavedTemplate));
         }
 
         public static bool NeedsTemplateTypeContext(CopilotAgentRequest? request)
@@ -74,7 +77,7 @@ namespace ColorVision.Copilot
                     || MatchesCurrentOrContinuation(
                         request!,
                         TemplateTypeContextMarkers,
-                        "InspectTemplateType"));
+                        CopilotSharedAgentToolNames.InspectTemplateType));
         }
 
         public static bool NeedsFlowMutation(CopilotAgentRequest? request)
@@ -111,7 +114,10 @@ namespace ColorVision.Copilot
         {
             return IsAgentRequest(request)
                 && (request!.Mode == CopilotAgentMode.Diagnose
-                    || MatchesCurrentOrContinuation(request, RecentLogMarkers, "GetRecentLog"));
+                    || MatchesCurrentOrContinuation(
+                        request,
+                        RecentLogMarkers,
+                        CopilotSharedAgentToolNames.GetRecentLog));
         }
 
         public static bool NeedsWindowsSystemInspection(CopilotAgentRequest? request)

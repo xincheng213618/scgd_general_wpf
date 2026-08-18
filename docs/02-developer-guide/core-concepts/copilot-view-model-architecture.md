@@ -25,7 +25,9 @@
 
 `CopilotChatState` 仍是持久化 aggregate，但不是业务 God object；各 owner 只管理自己的字段，持久化 coordinator 只负责快照和保存。
 
-`CopilotTurnEvent` 是单次运行的瞬时协议，不是第二份会话状态；事件由 `CopilotTurnEventReducer` 回放成执行结果。Agent checkpoint 内的 task journal 用于安全恢复，conversation 的 `LatestAgentTaskEventJournal` 只负责在 checkpoint 退役后保留诊断证据。业务代码通过 `SetAgentSessionCheckpoint` / `CommitAgentRunState` 更新这组状态，并从 `CurrentAgentTaskEventJournal` 读取派生值；相同 journal 已包含在 checkpoint 时不会重复序列化。
+`CopilotTurnEvent` 是单次运行的瞬时协议，不是第二份会话状态；事件由 `CopilotTurnEventReducer` 回放成执行结果。Agent checkpoint 内的 task journal 用于安全恢复，conversation 的 `LatestAgentTaskEventJournal` 只负责保留比 checkpoint 更新的终态证据，或在 checkpoint 退役后接管其最后的诊断证据。两个持久字段只开放程序集内 setter，业务代码通过 `SetAgentSessionCheckpoint` / `CommitAgentRunState` 更新这组状态，并从 `CurrentAgentTaskEventJournal` 读取派生值；活动 checkpoint 和独立 journal 不保留内存中的等价副本，旧快照加载时也会折叠为 checkpoint 单一所有者。终态提交以 `CopilotAgentRunResult.TaskEventJournal` 为本轮权威事件证据，checkpoint 可以有意落后一段，甚至在取消/恢复边界上属于上一 run，但不能反向覆盖本轮终态 journal。取消、暂停或异常未能返回正式 run result 时，由 conversation 的 `CompleteOpenAgentRun` 在同一次状态转换中补齐缺失的控制事件、悬空工具终态和 `RunStopped`，再决定保留还是退休 checkpoint；展示层只设置消息终态，普通 Chat 不通过这条路径改写 Agent 状态。
+
+checkpoint 增量到达时，聚合根只把完整事件前缀扩展视为同源单调前进；候选是现有 journal 的前缀时明确判旧，两个快照从共同前缀分叉或完全跨谱系时再比较最新事件时间。事件等价性比较完整持久载荷，而不只比较 sequence 与 ID，因此相同 ID 下被改写的类型、时间、run、subject、关联 ID、工具名、状态、失败码、退出码或摘要不能替换现有证据；加载时还会从 sequence、run、type 与时间重新计算事件 ID，阻止借用另一事件的合法 ID。checkpoint 本身与独立终态证据都经过这条单调准入：只有等价或确实更新的 checkpoint 才能替换恢复点或撤下独立终态证据，整个 run 的迟到提交也会被拒绝。`TrySetAgentSessionCheckpoint` 进一步把“候选被接受”与“聚合值实际改变”分开返回；UI 只有在 checkpoint 被接受后，才会把已送达 steering 从恢复记录中删除，并把 checkpoint 与恢复记录清理作为同一次持久化转换。这样倒退 checkpoint 即使声称包含新 steering，也不能造成指令丢失；等价 checkpoint 则仍可确认该 steering 已耐久化而无需重复替换对象。迟到但 sequence 更大的分叉 checkpoint、取消或失败回调因此不能让恢复 session 倒退、在取消后复活，或把已经完成的 run 改写成旧运行的终态；新一轮 checkpoint 确实更新时才重新成为 journal 的单一所有者。
 
 ## 核心流程
 

@@ -316,13 +316,13 @@ namespace ColorVision.Copilot
         {
             var values = new List<string>();
             if (capabilities.HasFlag(CopilotSubagentReadCapabilities.SearchFiles))
-                values.Add("SearchFiles");
+                values.Add(CopilotSharedAgentToolNames.SearchFiles);
             if (capabilities.HasFlag(CopilotSubagentReadCapabilities.GrepText))
-                values.Add("GrepText");
+                values.Add(CopilotSharedAgentToolNames.GrepText);
             if (capabilities.HasFlag(CopilotSubagentReadCapabilities.ReadLocalFile))
-                values.Add("ReadLocalFile");
+                values.Add(CopilotSharedAgentToolNames.ReadLocalFile);
             if (capabilities.HasFlag(CopilotSubagentReadCapabilities.ListDirectory))
-                values.Add("ListDirectory");
+                values.Add(CopilotSharedAgentToolNames.ListDirectory);
             if (capabilities.HasFlag(CopilotSubagentReadCapabilities.WebSearch))
                 values.Add("WebSearch");
             if (capabilities.HasFlag(CopilotSubagentReadCapabilities.FetchUrl))

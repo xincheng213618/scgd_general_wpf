@@ -8,7 +8,7 @@ using System.Windows;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotExecuteMenuTool : ICopilotFrameworkApprovedTool
+    public sealed class CopilotExecuteMenuTool : ICopilotFrameworkApprovedTool, ICopilotApplicationCapabilityClient
     {
         private static readonly string[] ContextLineSeparators = { "\r\n", "\n" };
         private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
@@ -25,17 +25,22 @@ namespace ColorVision.Copilot
 
         public string Name => CopilotSharedCapabilityCatalog.ExecuteMenu.AgentToolName;
 
-        public string Description => "Execute a generic main-menu command by exact menu selector, name, or path after explicit approval. For an attached @ menu reference, copy its ExecuteMenu query value exactly into input.query. Prefer dedicated tools such as SetTheme, ConvertBatchImages, or OpenBatchImageProcessing when available; never use this generic fallback for batch image conversion or processing.";
+        public ICopilotApplicationCapabilityInvoker ApplicationCapabilityInvoker => _capabilityInvoker;
 
-        public CopilotToolAccess Access => CopilotToolAccess.Write;
+        public string Description => CopilotSharedCapabilityCatalog.ExecuteMenu.AgentDescription;
 
-        public CopilotToolRiskLevel RiskLevel => CopilotToolRiskLevel.High;
+        public CopilotToolCapabilityDescriptor Capability =>
+            CopilotSharedCapabilityCatalog.ExecuteMenu.AgentCapability;
 
-        public CopilotToolApprovalMode ApprovalMode => CopilotToolApprovalMode.Always;
+        public CopilotToolAccess Access => Capability.Access;
 
-        public CopilotToolIdempotency Idempotency => CopilotToolIdempotency.Unknown;
+        public CopilotToolRiskLevel RiskLevel => Capability.RiskLevel;
 
-        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("Exact menu name or menu path requested by the user.", required: true);
+        public CopilotToolApprovalMode ApprovalMode => Capability.ApprovalMode;
+
+        public CopilotToolIdempotency Idempotency => Capability.Idempotency;
+
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.ExecuteMenu.AgentInputSchema;
 
         public bool CanHandle(CopilotAgentRequest request)
         {
@@ -110,20 +115,12 @@ namespace ColorVision.Copilot
                 request,
                 frameworkApprovalGranted,
                 cancellationToken);
-            var isWaitingForApproval = result.IsApprovalRequired;
-            return new CopilotToolResult
-            {
-                ToolName = Name,
-                Success = result.Success || isWaitingForApproval,
-                Summary = isWaitingForApproval
-                    ? "Menu command is waiting for explicit ColorVision approval."
-                    : result.Success ? "Menu command request accepted by ColorVision." : "Menu command execution failed.",
-                Content = result.Content,
-                ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Content,
-                FailureKind = result.FailureKind,
-                FailureCode = result.Success || isWaitingForApproval ? string.Empty : CopilotToolFailureCode.Normalize(result.ErrorCode),
-                Approval = result.Approval,
-            };
+            return CopilotApplicationCapabilityInvocation.ToToolResult(
+                result,
+                Name,
+                "Menu command request accepted by ColorVision.",
+                "Menu command execution failed.",
+                "Menu command is waiting for explicit ColorVision approval.");
         }
 
         internal static bool HasReferencedMenu(CopilotAgentRequest request)

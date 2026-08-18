@@ -1,25 +1,44 @@
 using System;
+using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotSetThemeTool : ICopilotTool
+    public sealed class CopilotSetThemeTool : ICopilotTool, ICopilotApplicationCapabilityClient
     {
+        private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
+
+        public CopilotSetThemeTool()
+            : this(CopilotApplicationCapabilityInvokerFactory.CreateDefault())
+        {
+        }
+
+        public CopilotSetThemeTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
+        {
+            _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
+        }
+
         public string Name => CopilotSharedCapabilityCatalog.SetTheme.AgentToolName;
 
-        public string Description => "Switch the application theme requested by the user. input.query can contain a target theme such as default, dark, light, pink, or cyan.";
+        public ICopilotApplicationCapabilityInvoker ApplicationCapabilityInvoker => _capabilityInvoker;
 
-        public CopilotToolAccess Access => CopilotToolAccess.Write;
+        public string Description => CopilotSharedCapabilityCatalog.SetTheme.AgentDescription;
 
-        public CopilotToolRiskLevel RiskLevel => CopilotToolRiskLevel.Low;
+        public CopilotToolCapabilityDescriptor Capability =>
+            CopilotSharedCapabilityCatalog.SetTheme.AgentCapability;
 
-        public CopilotToolApprovalMode ApprovalMode => CopilotToolApprovalMode.Never;
+        public CopilotToolAccess Access => Capability.Access;
 
-        public CopilotToolIdempotency Idempotency => CopilotToolIdempotency.Idempotent;
+        public CopilotToolRiskLevel RiskLevel => Capability.RiskLevel;
 
-        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("Requested theme name: default, dark, light, pink, or cyan.", required: true);
+        public CopilotToolApprovalMode ApprovalMode => Capability.ApprovalMode;
+
+        public CopilotToolIdempotency Idempotency => Capability.Idempotency;
+
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.SetTheme.AgentInputSchema;
 
         public bool CanHandle(CopilotAgentRequest request)
         {
@@ -36,12 +55,30 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var sourceText = string.IsNullOrWhiteSpace(toolInput?.Query)
-                ? request.UserText
-                : toolInput.Query;
+            var sourceText = toolInput.GetStringArgument("theme");
+            if (string.IsNullOrWhiteSpace(sourceText))
+            {
+                sourceText = string.IsNullOrWhiteSpace(toolInput?.Query)
+                    ? request.UserText
+                    : toolInput.Query;
+            }
 
-            var result = await CopilotApplicationCapability.SetThemeAsync(sourceText, cancellationToken);
-            return result.ToToolResult(Name);
+            var arguments = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["theme"] = JsonSerializer.SerializeToElement(sourceText),
+            };
+            var result = await CopilotApplicationCapabilityInvocation.InvokeAsync(
+                _capabilityInvoker,
+                CopilotSharedCapabilityCatalog.SetTheme.McpToolName,
+                arguments,
+                request,
+                frameworkApprovalGranted: false,
+                cancellationToken);
+            return CopilotApplicationCapabilityInvocation.ToToolResult(
+                result,
+                Name,
+                "Theme change completed.",
+                "Theme change failed.");
         }
     }
 }

@@ -14,8 +14,6 @@ namespace ColorVision.Copilot
             : base(
                 CopilotSharedCapabilityCatalog.SavedTemplateContext.AgentToolName,
                 CopilotSharedCapabilityCatalog.SavedTemplateContext.McpToolName,
-                "Read the exact saved template attached with @ as a bounded, redacted, read-only in-memory snapshot. Use the template_code and template_name from that reference before describing its values. This never queries the database, modifies, or saves a template.",
-                CopilotSharedCapabilityCatalog.SavedTemplateContext.SharedInputSchema!,
                 capabilityInvoker)
         {
         }

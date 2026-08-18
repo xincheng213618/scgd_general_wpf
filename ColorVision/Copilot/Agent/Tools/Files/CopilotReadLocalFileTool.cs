@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,9 +28,12 @@ namespace ColorVision.Copilot
 
         public string Name => CopilotSharedCapabilityCatalog.ReadAllowedFile.AgentToolName;
 
-        public string Description => "Read bounded local text allowed for the current round, prefix every returned source line with its authoritative one-based L<number>: coordinate, and report a safe line-and-column continuation cursor when content is truncated. When multiple exact files are preselected, omit path and line range to batch-read one task-focused evidence window from every file in one call. Otherwise, for known files or symbols, use GrepText on each exact file first and request focused line ranges; an unbounded read intentionally returns only the first bounded segment.";
+        public string Description => CopilotSharedCapabilityCatalog.ReadAllowedFile.AgentDescription;
 
-        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.FileRead();
+        public CopilotToolCapabilityDescriptor Capability =>
+            CopilotSharedCapabilityCatalog.ReadAllowedFile.AgentCapability;
+
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.ReadAllowedFile.AgentInputSchema;
 
         internal int MaximumReadCharacters => _maximumReadCharacters;
 
@@ -55,7 +57,7 @@ namespace ColorVision.Copilot
             var allowedFiles = new List<string>(request.ReadableLocalFilePaths);
             var selectedPath = toolInput?.Path;
             if (!string.IsNullOrWhiteSpace(selectedPath)
-                && !IsExplicitlyAllowed(selectedPath, allowedFiles))
+                && !CopilotWorkspaceSearchSupport.IsExplicitlyAllowedPath(selectedPath, allowedFiles))
             {
                 if (!CopilotWorkspaceSearchSupport.TryResolveExistingFileWithinRoots(
                     selectedPath,
@@ -100,22 +102,6 @@ namespace ColorVision.Copilot
                     _maximumReadCharacters,
                     cancellationToken);
             return result.ToToolResult(Name);
-        }
-
-        private static bool IsExplicitlyAllowed(string path, IEnumerable<string> allowedPaths)
-        {
-            if (!Path.IsPathFullyQualified(path))
-                return false;
-
-            try
-            {
-                var fullPath = Path.GetFullPath(path);
-                return allowedPaths.Any(allowedPath => string.Equals(Path.GetFullPath(allowedPath), fullPath, StringComparison.OrdinalIgnoreCase));
-            }
-            catch
-            {
-                return false;
-            }
         }
     }
 }

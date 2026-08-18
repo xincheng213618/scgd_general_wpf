@@ -8,9 +8,12 @@ namespace ColorVision.Copilot
     {
         public string Name => CopilotSharedCapabilityCatalog.SearchFiles.AgentToolName;
 
-        public string Description => "Find one stable bounded page of candidate files by file name or path fragment, optionally limited to one workspace directory, with a continuation cursor when more matches remain. A completed empty search is successful evidence, not a tool failure; inspect scan_complete before concluding that a file is absent.";
+        public string Description => CopilotSharedCapabilityCatalog.SearchFiles.AgentDescription;
 
-        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.SearchFiles.SharedInputSchema!;
+        public CopilotToolCapabilityDescriptor Capability =>
+            CopilotSharedCapabilityCatalog.SearchFiles.AgentCapability;
+
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.SearchFiles.AgentInputSchema;
 
         public bool IsAvailable(CopilotAgentRequest request)
         {

@@ -7,7 +7,7 @@ using System.Windows;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotSetLanguageTool : ICopilotFrameworkApprovedTool
+    public sealed class CopilotSetLanguageTool : ICopilotFrameworkApprovedTool, ICopilotApplicationCapabilityClient
     {
         private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
 
@@ -23,17 +23,22 @@ namespace ColorVision.Copilot
 
         public string Name => CopilotSharedCapabilityCatalog.SetLanguage.AgentToolName;
 
-        public string Description => "Switch the UI language requested by the user. input.query can contain a language or culture name such as English, Chinese, en-US, or zh-Hans. The change may ask for confirmation and restart the application.";
+        public ICopilotApplicationCapabilityInvoker ApplicationCapabilityInvoker => _capabilityInvoker;
 
-        public CopilotToolAccess Access => CopilotToolAccess.Write;
+        public string Description => CopilotSharedCapabilityCatalog.SetLanguage.AgentDescription;
 
-        public CopilotToolRiskLevel RiskLevel => CopilotToolRiskLevel.High;
+        public CopilotToolCapabilityDescriptor Capability =>
+            CopilotSharedCapabilityCatalog.SetLanguage.AgentCapability;
 
-        public CopilotToolApprovalMode ApprovalMode => CopilotToolApprovalMode.Always;
+        public CopilotToolAccess Access => Capability.Access;
 
-        public CopilotToolIdempotency Idempotency => CopilotToolIdempotency.Idempotent;
+        public CopilotToolRiskLevel RiskLevel => Capability.RiskLevel;
 
-        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("Requested language or culture name, such as English, Chinese, en-US, or zh-Hans.", required: true);
+        public CopilotToolApprovalMode ApprovalMode => Capability.ApprovalMode;
+
+        public CopilotToolIdempotency Idempotency => Capability.Idempotency;
+
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.SetLanguage.AgentInputSchema;
 
         public bool CanHandle(CopilotAgentRequest request)
         {
@@ -67,9 +72,13 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var sourceText = string.IsNullOrWhiteSpace(toolInput?.Query)
-                ? request.UserText
-                : toolInput.Query;
+            var sourceText = toolInput.GetStringArgument("language");
+            if (string.IsNullOrWhiteSpace(sourceText))
+            {
+                sourceText = string.IsNullOrWhiteSpace(toolInput?.Query)
+                    ? request.UserText
+                    : toolInput.Query;
+            }
 
             var arguments = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase)
             {
@@ -82,18 +91,12 @@ namespace ColorVision.Copilot
                 request,
                 frameworkApprovalGranted,
                 cancellationToken);
-            var isWaitingForApproval = result.IsApprovalRequired;
-            return new CopilotToolResult
-            {
-                ToolName = Name,
-                Success = result.Success || isWaitingForApproval,
-                Summary = isWaitingForApproval ? "Language change is waiting for explicit ColorVision approval." : result.Success ? "Language change completed." : "Language change failed.",
-                Content = result.Content,
-                ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Content,
-                FailureKind = result.FailureKind,
-                FailureCode = result.Success || isWaitingForApproval ? string.Empty : CopilotToolFailureCode.Normalize(result.ErrorCode),
-                Approval = result.Approval,
-            };
+            return CopilotApplicationCapabilityInvocation.ToToolResult(
+                result,
+                Name,
+                "Language change completed.",
+                "Language change failed.",
+                "Language change is waiting for explicit ColorVision approval.");
         }
     }
 }

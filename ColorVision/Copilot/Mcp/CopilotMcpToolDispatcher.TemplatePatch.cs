@@ -165,7 +165,7 @@ namespace ColorVision.Copilot.Mcp
             return CreateConfirmableActionResult(
                 "Confirm template patch",
                 $"Apply previewed JSON changes to active template editor: {preview.TemplateIdentifier}",
-                "apply_template_patch",
+                CopilotSharedCapabilityCatalog.ApplyTemplatePatch.McpToolName,
                 arguments,
                 BuildTemplatePatchConfirmationPreview(preview),
                 token => ExecuteTemplatePatchPreviewAsync(preview.PreviewId, token),

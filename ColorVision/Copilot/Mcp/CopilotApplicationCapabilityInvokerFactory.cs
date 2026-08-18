@@ -2,6 +2,10 @@ namespace ColorVision.Copilot
 {
     internal static class CopilotApplicationCapabilityInvokerFactory
     {
-        public static ICopilotApplicationCapabilityInvoker CreateDefault() => new Mcp.CopilotMcpToolDispatcher();
+        private static readonly Mcp.CopilotMcpToolDispatcher DefaultDispatcher = new();
+
+        public static ICopilotApplicationCapabilityInvoker CreateDefault() => DefaultDispatcher;
+
+        internal static Mcp.CopilotMcpToolDispatcher GetDefaultDispatcher() => DefaultDispatcher;
     }
 }

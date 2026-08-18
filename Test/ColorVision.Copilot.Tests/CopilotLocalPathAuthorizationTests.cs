@@ -9,6 +9,20 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotLocalPathAuthorizationTests
 {
     [Fact]
+    public void ExplicitAllowListRequiresAnExactFullyQualifiedPath()
+    {
+        var allowedPath = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "copilot-explicit-path", "sample.cs"));
+
+        Assert.True(CopilotWorkspaceSearchSupport.IsExplicitlyAllowedPath(
+            allowedPath.ToUpperInvariant(),
+            [allowedPath]));
+        Assert.False(CopilotWorkspaceSearchSupport.IsExplicitlyAllowedPath("sample.cs", [allowedPath]));
+        Assert.False(CopilotWorkspaceSearchSupport.IsExplicitlyAllowedPath(
+            Path.Combine(Path.GetDirectoryName(allowedPath)!, "sibling.cs"),
+            [allowedPath]));
+    }
+
+    [Fact]
     public async Task BareDirectoryBeforeChinesePunctuationRemainsAuthorizedAsync()
     {
         var root = Path.Combine(Path.GetTempPath(), $"copilot-local-path-{Guid.NewGuid():N}");

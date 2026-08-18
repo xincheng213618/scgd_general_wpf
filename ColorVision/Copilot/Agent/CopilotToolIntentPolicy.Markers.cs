@@ -183,7 +183,10 @@ namespace ColorVision.Copilot
 
         private static readonly HashSet<string> DirectWorkspaceEvidenceToolNames = new(StringComparer.OrdinalIgnoreCase)
         {
-            "SearchFiles", "GrepText", "ReadLocalFile", "ListDirectory",
+            CopilotSharedAgentToolNames.SearchFiles,
+            CopilotSharedAgentToolNames.GrepText,
+            CopilotSharedAgentToolNames.ReadLocalFile,
+            CopilotSharedAgentToolNames.ListDirectory,
             "search_files", "find_files", "grep_text", "search_code",
             "read_file", "read_local_file", "list_directory", "list_files",
         };

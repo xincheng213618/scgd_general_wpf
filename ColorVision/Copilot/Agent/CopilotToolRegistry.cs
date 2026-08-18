@@ -160,7 +160,7 @@ namespace ColorVision.Copilot
                 new CopilotConvertBatchImagesTool(),
                 new CopilotOpenBatchImageProcessingTool(),
                 new CopilotExecuteMenuTool(applicationCapabilities),
-                new CopilotSetThemeTool(),
+                new CopilotSetThemeTool(applicationCapabilities),
                 new CopilotSetLanguageTool(applicationCapabilities),
                 new CopilotInspectSavedTemplateTool(applicationCapabilities),
                 new CopilotInspectTemplateTypeTool(applicationCapabilities),
@@ -205,7 +205,43 @@ namespace ColorVision.Copilot
                 new CopilotWorkspaceValidationTool(),
             };
             CopilotSharedCapabilityCatalog.ValidateAgentSurface(tools);
+            ValidateApplicationCapabilityRuntime(tools, applicationCapabilities);
             return tools;
+        }
+
+        private static void ValidateApplicationCapabilityRuntime(
+            IEnumerable<ICopilotTool> tools,
+            ICopilotApplicationCapabilityInvoker expectedInvoker)
+        {
+            var toolArray = (tools ?? Array.Empty<ICopilotTool>()).ToArray();
+            var toolsByName = toolArray.ToDictionary(
+                tool => tool.Name,
+                StringComparer.OrdinalIgnoreCase);
+            var routeMismatches = CopilotSharedCapabilityCatalog.All
+                .Where(definition => toolsByName.TryGetValue(definition.AgentToolName, out var tool)
+                    && (tool is ICopilotApplicationCapabilityClient)
+                        != (definition.ExecutionRoute
+                            == CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime))
+                .Select(definition => definition.AgentToolName)
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (routeMismatches.Length > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Application capability route bindings do not match the shared catalog: {string.Join(", ", routeMismatches)}.");
+            }
+
+            var mismatched = toolArray
+                .Where(tool => tool is ICopilotApplicationCapabilityClient client
+                    && !ReferenceEquals(client.ApplicationCapabilityInvoker, expectedInvoker))
+                .Select(tool => tool.Name)
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (mismatched.Length == 0)
+                return;
+
+            throw new InvalidOperationException(
+                $"Application capability tools must share the composition-root runtime: {string.Join(", ", mismatched)}.");
         }
 
         private ICopilotTool[] GetCurrentTools(bool includeExtensionTools = true)

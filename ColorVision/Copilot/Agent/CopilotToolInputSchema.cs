@@ -35,9 +35,10 @@ namespace ColorVision.Copilot
         public CopilotToolInputSchema(IEnumerable<CopilotToolParameter> parameters)
         {
             ArgumentNullException.ThrowIfNull(parameters);
-            Parameters = parameters.ToArray();
-            ValidateParameters(Parameters);
-            JsonSchema = BuildJsonSchema(Parameters);
+            var parameterArray = parameters.ToArray();
+            ValidateParameters(parameterArray);
+            Parameters = Array.AsReadOnly(parameterArray);
+            JsonSchema = BuildJsonSchema(parameterArray);
         }
 
         private CopilotToolInputSchema(JsonElement jsonSchema)
@@ -45,7 +46,7 @@ namespace ColorVision.Copilot
             if (jsonSchema.ValueKind != JsonValueKind.Object)
                 throw new ArgumentException("A tool input schema must be a JSON object.", nameof(jsonSchema));
 
-            Parameters = Array.Empty<CopilotToolParameter>();
+            Parameters = Array.AsReadOnly(Array.Empty<CopilotToolParameter>());
             JsonSchema = jsonSchema.Clone();
             UsesArbitraryArguments = true;
         }
@@ -218,15 +219,31 @@ namespace ColorVision.Copilot
                 }
             }
 
+            var startLine = TryReadCompatibleInt(copiedArguments, "start_line", "startLine");
+            var startColumn = TryReadCompatibleInt(copiedArguments, "start_column", "startColumn");
+            var endLine = TryReadCompatibleInt(copiedArguments, "end_line", "endLine");
+            if (startLine.HasValue && endLine.HasValue && endLine < startLine)
+            {
+                input = CopilotAgentToolInput.Empty;
+                error = "Argument 'end_line' must be greater than or equal to 'start_line'.";
+                return false;
+            }
+            if (startColumn.HasValue && !startLine.HasValue)
+            {
+                input = CopilotAgentToolInput.Empty;
+                error = "Argument 'start_column' requires 'start_line'.";
+                return false;
+            }
+
             input = new CopilotAgentToolInput
             {
                 Arguments = copiedArguments,
                 Query = TryReadCompatibleString(copiedArguments, "query"),
                 Path = TryReadCompatibleString(copiedArguments, "path"),
                 Cursor = TryReadCompatibleString(copiedArguments, "cursor"),
-                StartLine = TryReadCompatibleInt(copiedArguments, "startLine"),
-                StartColumn = TryReadCompatibleInt(copiedArguments, "startColumn"),
-                EndLine = TryReadCompatibleInt(copiedArguments, "endLine"),
+                StartLine = startLine,
+                StartColumn = startColumn,
+                EndLine = endLine,
             };
             error = string.Empty;
             return true;
@@ -536,14 +553,28 @@ namespace ColorVision.Copilot
             return string.Empty;
         }
 
-        private static int? TryReadCompatibleInt(IReadOnlyDictionary<string, object?> arguments, string name)
+        private static int? TryReadCompatibleInt(
+            IReadOnlyDictionary<string, object?> arguments,
+            params string[] names)
         {
-            if (!TryGetValue(arguments, name, out var value) || value == null)
-                return null;
-            if (value is int integer)
-                return integer;
-            if (value is JsonElement element && element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var jsonInteger))
-                return jsonInteger;
+            foreach (var name in names)
+            {
+                if (!TryGetValue(arguments, name, out var value) || value == null)
+                    continue;
+                if (value is int integer)
+                    return integer;
+                if (value is long longInteger
+                    && longInteger is >= int.MinValue and <= int.MaxValue)
+                {
+                    return (int)longInteger;
+                }
+                if (value is JsonElement element
+                    && element.ValueKind == JsonValueKind.Number
+                    && element.TryGetInt32(out var jsonInteger))
+                {
+                    return jsonInteger;
+                }
+            }
             return null;
         }
     }

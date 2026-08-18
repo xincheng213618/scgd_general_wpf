@@ -16,7 +16,7 @@ namespace ColorVision.Copilot
         }
 
         public CopilotInspectFlowGraphTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
-            : base(CopilotSharedCapabilityCatalog.FlowGraph.AgentToolName, CopilotSharedCapabilityCatalog.FlowGraph.McpToolName, "Inspect the active ColorVision flow as a structured graph with a revision, stable node ids, exact runtime type keys, ports, and edges. Use this instead of reading the binary .stn file.", CopilotSharedCapabilityCatalog.FlowGraph.SharedInputSchema!, capabilityInvoker)
+            : base(CopilotSharedCapabilityCatalog.FlowGraph.AgentToolName, CopilotSharedCapabilityCatalog.FlowGraph.McpToolName, capabilityInvoker)
         {
         }
     }
@@ -29,7 +29,7 @@ namespace ColorVision.Copilot
         }
 
         public CopilotSearchFlowNodeCatalogTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
-            : base(CopilotSharedCapabilityCatalog.FlowNodeCatalog.AgentToolName, CopilotSharedCapabilityCatalog.FlowNodeCatalog.McpToolName, "Search the node types loaded by the active Flow editor. Returns exact type keys and writable property schemas. Search first and never guess which camera node the user means.", CopilotSharedCapabilityCatalog.FlowNodeCatalog.SharedInputSchema!, capabilityInvoker)
+            : base(CopilotSharedCapabilityCatalog.FlowNodeCatalog.AgentToolName, CopilotSharedCapabilityCatalog.FlowNodeCatalog.McpToolName, capabilityInvoker)
         {
         }
     }
@@ -42,14 +42,14 @@ namespace ColorVision.Copilot
         }
 
         public CopilotPreviewFlowPatchTool(ICopilotApplicationCapabilityInvoker capabilityInvoker)
-            : base(CopilotSharedCapabilityCatalog.PreviewFlowPatch.AgentToolName, CopilotSharedCapabilityCatalog.PreviewFlowPatch.McpToolName, "Validate exactly one add_node, set_property, or connect operation against the active Flow graph revision. Use exact ids, port ids, and type keys from the read tools. This never edits, saves, or runs the flow.", CopilotSharedCapabilityCatalog.PreviewFlowPatch.SharedInputSchema!, capabilityInvoker)
+            : base(CopilotSharedCapabilityCatalog.PreviewFlowPatch.AgentToolName, CopilotSharedCapabilityCatalog.PreviewFlowPatch.McpToolName, capabilityInvoker)
         {
         }
 
         public override bool IsAvailable(CopilotAgentRequest request) => CopilotToolIntentPolicy.NeedsFlowMutation(request);
     }
 
-    public sealed class CopilotApplyFlowPatchTool : ICopilotFrameworkApprovedTool, ICopilotAgentDrivenTool, ICopilotFrameworkApprovalPresentation
+    public sealed class CopilotApplyFlowPatchTool : ICopilotFrameworkApprovedTool, ICopilotAgentDrivenTool, ICopilotFrameworkApprovalPresentation, ICopilotApplicationCapabilityClient
     {
         private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
 
@@ -65,22 +65,14 @@ namespace ColorVision.Copilot
 
         public string Name => CopilotSharedCapabilityCatalog.ApplyFlowPatch.AgentToolName;
 
-        public string Description => "Apply one previously previewed add_node, set_property, or connect operation to the active Flow editor. Rechecks the revision, requires explicit approval, and never saves or runs the flow.";
+        public ICopilotApplicationCapabilityInvoker ApplicationCapabilityInvoker => _capabilityInvoker;
 
-        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.ApplyFlowPatch.SharedInputSchema!;
+        public string Description => CopilotSharedCapabilityCatalog.ApplyFlowPatch.AgentDescription;
 
-        public CopilotToolCapabilityDescriptor Capability { get; } = new()
-        {
-            Access = CopilotToolAccess.Write,
-            RiskLevel = CopilotToolRiskLevel.High,
-            ApprovalMode = CopilotToolApprovalMode.Always,
-            Idempotency = CopilotToolIdempotency.NonIdempotent,
-            ConcurrencyMode = CopilotToolConcurrencyMode.Exclusive,
-            ExecutionTimeout = TimeSpan.FromSeconds(30),
-            AuditArgumentMode = CopilotToolAuditArgumentMode.NamesOnly,
-            EvidenceMode = CopilotToolEvidenceMode.None,
-            AllowsTemporaryFullAccess = false,
-        };
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.ApplyFlowPatch.AgentInputSchema;
+
+        public CopilotToolCapabilityDescriptor Capability =>
+            CopilotSharedCapabilityCatalog.ApplyFlowPatch.AgentCapability;
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
 
@@ -121,18 +113,12 @@ namespace ColorVision.Copilot
                 request,
                 frameworkApprovalGranted,
                 cancellationToken);
-            var waitingForApproval = result.IsApprovalRequired;
-            return new CopilotToolResult
-            {
-                ToolName = Name,
-                Success = result.Success || waitingForApproval,
-                Summary = waitingForApproval ? "Flow patch is waiting for explicit approval." : result.Success ? "Flow patch applied." : "Flow patch failed.",
-                Content = result.Content,
-                ErrorMessage = result.Success || waitingForApproval ? string.Empty : result.Content,
-                FailureKind = result.FailureKind,
-                FailureCode = result.Success || waitingForApproval ? string.Empty : CopilotToolFailureCode.Normalize(result.ErrorCode),
-                Approval = result.Approval,
-            };
+            return CopilotApplicationCapabilityInvocation.ToToolResult(
+                result,
+                Name,
+                "Flow patch applied.",
+                "Flow patch failed.",
+                "Flow patch is waiting for explicit approval.");
         }
 
         private static object? GetArgument(IReadOnlyDictionary<string, object?> arguments, string name)
@@ -141,26 +127,7 @@ namespace ColorVision.Copilot
         }
     }
 
-    internal static class CopilotFlowPatchSchema
-    {
-        public static CopilotToolInputSchema Value { get; } = CopilotFlowReadToolBase.CreateSchema(new Dictionary<string, object?>
-        {
-            ["operation"] = new { type = "string", @enum = new[] { "add_node", "set_property", "connect" }, description = "Exactly one bounded Flow graph operation." },
-            ["expected_revision"] = new { type = "string", description = "Current graph revision from InspectFlowGraph." },
-            ["type_key"] = new { type = "string", description = "add_node: exact type key from SearchFlowNodeCatalog." },
-            ["left"] = new { type = "integer", minimum = -100000, maximum = 100000, description = "add_node: canvas X coordinate." },
-            ["top"] = new { type = "integer", minimum = -100000, maximum = 100000, description = "add_node: canvas Y coordinate." },
-            ["node_id"] = new { type = "string", description = "set_property: stable node instance id." },
-            ["property_name"] = new { type = "string", description = "set_property: exact writable propertyName from the node catalog." },
-            ["value"] = new { type = "string", description = "set_property: new value accepted by the existing STNodeProperty descriptor; an empty string is valid." },
-            ["source_node_id"] = new { type = "string", description = "connect: stable source node instance id." },
-            ["source_port_id"] = new { type = "string", description = "connect: source output port id such as out:0." },
-            ["target_node_id"] = new { type = "string", description = "connect: stable target node instance id." },
-            ["target_port_id"] = new { type = "string", description = "connect: target input port id such as in:0." },
-        }, "operation", "expected_revision");
-    }
-
-    public abstract class CopilotFlowReadToolBase : ICopilotAgentDrivenTool
+    public abstract class CopilotFlowReadToolBase : ICopilotAgentDrivenTool, ICopilotApplicationCapabilityClient
     {
         private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
         private readonly string _mcpToolName;
@@ -168,28 +135,26 @@ namespace ColorVision.Copilot
         protected CopilotFlowReadToolBase(
             string name,
             string mcpToolName,
-            string description,
-            CopilotToolInputSchema inputSchema,
             ICopilotApplicationCapabilityInvoker capabilityInvoker)
         {
+            var definition = CopilotSharedCapabilityCatalog.ResolveBinding(name, mcpToolName);
             Name = name;
             _mcpToolName = mcpToolName;
-            CopilotSharedCapabilityCatalog.ValidateBinding(name, mcpToolName);
-            Description = description;
-            InputSchema = inputSchema;
+            Capability = definition.AgentCapability;
+            Description = definition.AgentDescription;
+            InputSchema = definition.AgentInputSchema;
             _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
         public string Name { get; }
 
+        public ICopilotApplicationCapabilityInvoker ApplicationCapabilityInvoker => _capabilityInvoker;
+
         public string Description { get; }
 
         public CopilotToolInputSchema InputSchema { get; }
 
-        public CopilotToolCapabilityDescriptor Capability { get; } = CopilotToolCapabilityDescriptor.ReadOnly(
-            executionTimeout: TimeSpan.FromSeconds(15),
-            auditArgumentMode: CopilotToolAuditArgumentMode.NamesOnly,
-            evidenceMode: CopilotToolEvidenceMode.Summary);
+        public CopilotToolCapabilityDescriptor Capability { get; }
 
         public bool CanHandle(CopilotAgentRequest request) => IsAvailable(request);
 
@@ -205,27 +170,11 @@ namespace ColorVision.Copilot
                 request,
                 frameworkApprovalGranted: false,
                 cancellationToken);
-            return new CopilotToolResult
-            {
-                ToolName = Name,
-                Success = result.Success,
-                Summary = result.Success ? $"{Name} completed." : $"{Name} failed.",
-                Content = result.Content,
-                ErrorMessage = result.Success ? string.Empty : result.Content,
-                FailureKind = result.FailureKind,
-                FailureCode = result.Success ? string.Empty : CopilotToolFailureCode.Normalize(result.ErrorCode),
-            };
-        }
-
-        public static CopilotToolInputSchema CreateSchema(IReadOnlyDictionary<string, object?> properties, params string[] required)
-        {
-            return CopilotToolInputSchema.FromJsonSchema(JsonSerializer.SerializeToElement(new Dictionary<string, object?>
-            {
-                ["type"] = "object",
-                ["properties"] = properties,
-                ["required"] = required,
-                ["additionalProperties"] = false,
-            }));
+            return CopilotApplicationCapabilityInvocation.ToToolResult(
+                result,
+                Name,
+                $"{Name} completed.",
+                $"{Name} failed.");
         }
 
         public static Dictionary<string, JsonElement> ToJsonArguments(CopilotAgentToolInput? toolInput)

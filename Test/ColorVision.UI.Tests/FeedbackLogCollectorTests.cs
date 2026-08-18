@@ -1,3 +1,4 @@
+using ColorVision.Engine.Services;
 using ColorVision.UI.LogImp;
 using System.IO;
 
@@ -35,6 +36,62 @@ namespace ColorVision.UI.Tests
 
                 FileInfo file = Assert.Single(files);
                 Assert.Equal(recentPath, file.FullName, ignoreCase: true);
+            }
+            finally
+            {
+                if (Directory.Exists(fullTempDirectory)
+                    && fullTempDirectory.StartsWith(Path.GetFullPath(Path.GetTempPath()), StringComparison.OrdinalIgnoreCase))
+                {
+                    Directory.Delete(fullTempDirectory, true);
+                }
+            }
+        }
+
+        [Fact]
+        public void ServiceLogCollectorDefaultsToSevenDays()
+        {
+            var collector = new ServiceLogCollector();
+
+            Assert.IsAssignableFrom<IFeedbackLogTimeRangeCollector>(collector);
+            Assert.Equal(7, collector.RecentDays);
+        }
+
+        [Fact]
+        public void ServiceLogCollectorIncludesAllRecentModuleLogs()
+        {
+            string tempDirectory = Path.Combine(Path.GetTempPath(), $"ColorVision_ServiceLogCollectorTests_{Guid.NewGuid():N}");
+            string fullTempDirectory = Path.GetFullPath(tempDirectory);
+            Directory.CreateDirectory(fullTempDirectory);
+
+            try
+            {
+                DateTime utcNow = new(2026, 8, 18, 12, 0, 0, DateTimeKind.Utc);
+                string[] moduleNames = ["camera", "Algorithm", "CVOLED", "Spectrum", "Sensor", "CustomModule"];
+                foreach (string moduleName in moduleNames)
+                {
+                    string moduleDirectory = Path.Combine(fullTempDirectory, moduleName);
+                    Directory.CreateDirectory(moduleDirectory);
+                    for (int index = 0; index < 2; index++)
+                    {
+                        string path = Path.Combine(moduleDirectory, $"{moduleName}_{index}.log");
+                        File.WriteAllText(path, moduleName);
+                        File.SetLastWriteTimeUtc(path, utcNow.AddDays(-6));
+                    }
+                }
+
+                string nonLogExtensionPath = Path.Combine(fullTempDirectory, "CustomModule.trace");
+                File.WriteAllText(nonLogExtensionPath, "custom");
+                File.SetLastWriteTimeUtc(nonLogExtensionPath, utcNow.AddDays(-1));
+
+                string oldPath = Path.Combine(fullTempDirectory, "old.log");
+                File.WriteAllText(oldPath, "old");
+                File.SetLastWriteTimeUtc(oldPath, utcNow.AddDays(-8));
+
+                IReadOnlyList<FileInfo> files = ServiceLogCollector.GetRecentLogFiles(fullTempDirectory, 7, utcNow);
+
+                Assert.Equal(13, files.Count);
+                Assert.Contains(files, file => string.Equals(file.FullName, nonLogExtensionPath, StringComparison.OrdinalIgnoreCase));
+                Assert.DoesNotContain(files, file => string.Equals(file.FullName, oldPath, StringComparison.OrdinalIgnoreCase));
             }
             finally
             {

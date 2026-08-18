@@ -526,7 +526,59 @@ public sealed class CopilotAgentSessionCheckpointTests
         var serialized = JsonConvert.SerializeObject(conversation);
         var document = JObject.Parse(serialized);
         Assert.Same(checkpoint.TaskEventJournal, conversation.CurrentAgentTaskEventJournal);
+        Assert.Null(conversation.LatestAgentTaskEventJournal);
         Assert.Null(document[nameof(CopilotConversationRecord.LatestAgentTaskEventJournal)]);
+    }
+
+    [Fact]
+    public void CheckpointWithRewrittenEventPayloadCannotReplaceCurrentEvidence()
+    {
+        var runId = CopilotAgentTaskEventIds.CreateRunId();
+        var occurredAtUtc = DateTimeOffset.UtcNow;
+        var originalEvent = CreateEvent(1, runId, occurredAtUtc);
+        var rewrittenEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = originalEvent.Sequence,
+            Id = originalEvent.Id,
+            Type = originalEvent.Type,
+            OccurredAtUtc = originalEvent.OccurredAtUtc,
+            RunId = originalEvent.RunId,
+            SubjectId = originalEvent.SubjectId,
+            Summary = "Rewritten persisted evidence.",
+        };
+        var originalCheckpoint = CreateCheckpoint(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [originalEvent],
+        });
+        var rewrittenCheckpoint = CreateCheckpoint(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [rewrittenEvent],
+        });
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.SetAgentSessionCheckpoint(originalCheckpoint);
+
+        Assert.False(conversation.SetAgentSessionCheckpoint(rewrittenCheckpoint));
+
+        Assert.Same(originalCheckpoint, conversation.AgentSessionCheckpoint);
+        Assert.Same(originalCheckpoint.TaskEventJournal, conversation.CurrentAgentTaskEventJournal);
+    }
+
+    [Fact]
+    public void TrySetCheckpointDistinguishesEquivalentAcceptanceFromRegressionRejection()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var regressingCheckpoint = CreateCheckpoint(journal.Snapshot());
+        journal.RecordStop(CopilotAgentStopReason.Paused);
+        var currentCheckpoint = CreateCheckpoint(journal.Snapshot());
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.SetAgentSessionCheckpoint(currentCheckpoint);
+
+        Assert.True(conversation.TrySetAgentSessionCheckpoint(currentCheckpoint, out var equivalentChanged));
+        Assert.False(equivalentChanged);
+        Assert.False(conversation.TrySetAgentSessionCheckpoint(regressingCheckpoint, out var rejectedChanged));
+        Assert.False(rejectedChanged);
+        Assert.Same(currentCheckpoint, conversation.AgentSessionCheckpoint);
     }
 
     [Fact]
@@ -542,8 +594,26 @@ public sealed class CopilotAgentSessionCheckpointTests
         var serialized = JsonConvert.SerializeObject(conversation);
         var document = JObject.Parse(serialized);
         Assert.Null(conversation.AgentSessionCheckpoint);
-        Assert.NotNull(conversation.CurrentAgentTaskEventJournal);
+        Assert.Same(
+            conversation.LatestAgentTaskEventJournal,
+            conversation.CurrentAgentTaskEventJournal);
         Assert.NotNull(document[nameof(CopilotConversationRecord.LatestAgentTaskEventJournal)]);
+    }
+
+    [Fact]
+    public void ValidationCollapsesLegacyDuplicateCheckpointJournal()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var snapshot = journal.Snapshot();
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.AgentSessionCheckpoint = CreateCheckpoint(snapshot);
+        conversation.LatestAgentTaskEventJournal = snapshot;
+
+        Assert.True(conversation.EnsureValid());
+
+        Assert.Null(conversation.LatestAgentTaskEventJournal);
+        Assert.Same(snapshot, conversation.CurrentAgentTaskEventJournal);
     }
 
     [Fact]
@@ -562,6 +632,255 @@ public sealed class CopilotAgentSessionCheckpointTests
         Assert.Same(checkpoint, conversation.AgentSessionCheckpoint);
         Assert.Same(finalJournal, conversation.CurrentAgentTaskEventJournal);
         Assert.True(conversation.ShouldSerializeLatestAgentTaskEventJournal());
+    }
+
+    [Fact]
+    public void CommitAgentRunStateKeepsTerminalJournalWhenCheckpointBelongsToDifferentRun()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var checkpointRunId = CopilotAgentTaskEventIds.CreateRunId();
+        var terminalRunId = CopilotAgentTaskEventIds.CreateRunId();
+        var checkpointJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [CreateEvent(1, checkpointRunId, now.AddMinutes(-1))],
+        };
+        var terminalJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [CreateEvent(1, terminalRunId, now)],
+        };
+        var checkpoint = CreateCheckpoint(checkpointJournal);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+
+        Assert.True(conversation.CommitAgentRunState(terminalJournal, checkpoint));
+
+        Assert.Same(checkpoint, conversation.AgentSessionCheckpoint);
+        Assert.Same(terminalJournal, conversation.CurrentAgentTaskEventJournal);
+        Assert.True(conversation.ShouldSerializeLatestAgentTaskEventJournal());
+
+        var restored = JsonConvert.DeserializeObject<CopilotConversationRecord>(
+            JsonConvert.SerializeObject(conversation));
+        Assert.NotNull(restored);
+        Assert.Same(
+            restored.LatestAgentTaskEventJournal,
+            restored.CurrentAgentTaskEventJournal);
+        Assert.Equal(
+            terminalRunId,
+            Assert.Single(restored.CurrentAgentTaskEventJournal!.Events).RunId);
+    }
+
+    [Fact]
+    public void ClearingLaggingCheckpointDoesNotReplaceTerminalJournalEvidence()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var checkpointJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [CreateEvent(1, CopilotAgentTaskEventIds.CreateRunId(), now.AddMinutes(-1))],
+        };
+        var terminalJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [CreateEvent(1, CopilotAgentTaskEventIds.CreateRunId(), now)],
+        };
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.CommitAgentRunState(
+            terminalJournal,
+            CreateCheckpoint(checkpointJournal));
+
+        Assert.True(conversation.SetAgentSessionCheckpoint(null));
+
+        Assert.Null(conversation.AgentSessionCheckpoint);
+        Assert.Same(terminalJournal, conversation.LatestAgentTaskEventJournal);
+        Assert.Same(terminalJournal, conversation.CurrentAgentTaskEventJournal);
+    }
+
+    [Fact]
+    public void SettingLaggingCheckpointDoesNotDiscardNewerIndependentEvidence()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var laggingJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [CreateEvent(1, CopilotAgentTaskEventIds.CreateRunId(), now.AddMinutes(-1))],
+        };
+        var newerJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [CreateEvent(1, CopilotAgentTaskEventIds.CreateRunId(), now)],
+        };
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.CommitAgentRunState(newerJournal, CreateCheckpoint(laggingJournal));
+
+        Assert.True(conversation.SetAgentSessionCheckpoint(CreateCheckpoint(laggingJournal)));
+
+        Assert.Same(newerJournal, conversation.LatestAgentTaskEventJournal);
+        Assert.Same(newerJournal, conversation.CurrentAgentTaskEventJournal);
+    }
+
+    [Fact]
+    public void HigherSequenceDivergentCheckpointDoesNotReplaceLaterTerminalEvidence()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var runId = CopilotAgentTaskEventIds.CreateRunId();
+        var sharedEvent = CreateEvent(1, runId, now.AddMinutes(-3));
+        var checkpointJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [sharedEvent],
+        };
+        var terminalJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events =
+            [
+                sharedEvent,
+                CreateEvent(2, runId, now),
+            ],
+        };
+        var lateDivergentJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events =
+            [
+                sharedEvent,
+                CreateEvent(2, runId, now.AddMinutes(-2)),
+                CreateEvent(3, runId, now.AddMinutes(-1)),
+            ],
+        };
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.CommitAgentRunState(terminalJournal, CreateCheckpoint(checkpointJournal));
+
+        Assert.True(conversation.SetAgentSessionCheckpoint(CreateCheckpoint(lateDivergentJournal)));
+
+        Assert.Same(terminalJournal, conversation.LatestAgentTaskEventJournal);
+        Assert.Same(terminalJournal, conversation.CurrentAgentTaskEventJournal);
+    }
+
+    [Fact]
+    public void SettingOlderCheckpointDoesNotRegressResumeState()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var olderCheckpoint = CreateCheckpoint(journal.Snapshot());
+        journal.RecordStop(CopilotAgentStopReason.Paused);
+        var newerCheckpoint = CreateCheckpoint(journal.Snapshot());
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.SetAgentSessionCheckpoint(newerCheckpoint);
+
+        Assert.False(conversation.SetAgentSessionCheckpoint(olderCheckpoint));
+
+        Assert.Same(newerCheckpoint, conversation.AgentSessionCheckpoint);
+        Assert.Same(newerCheckpoint.TaskEventJournal, conversation.CurrentAgentTaskEventJournal);
+    }
+
+    [Fact]
+    public void CancelledConversationDoesNotResurrectLaggingCheckpoint()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var laggingCheckpoint = CreateCheckpoint(journal.Snapshot());
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.SetAgentSessionCheckpoint(laggingCheckpoint);
+        conversation.CompleteOpenAgentRun(
+            CopilotAgentStopReason.Cancelled,
+            CopilotAgentControlIntent.Cancel);
+
+        Assert.False(conversation.SetAgentSessionCheckpoint(laggingCheckpoint));
+
+        Assert.Null(conversation.AgentSessionCheckpoint);
+        Assert.NotNull(conversation.LatestAgentTaskEventJournal);
+        Assert.Contains(
+            conversation.LatestAgentTaskEventJournal!.Events,
+            item => item.Type == CopilotAgentTaskEventType.RunStopped);
+    }
+
+    [Fact]
+    public void LateOlderRunCommitDoesNotReplaceCurrentResumeState()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var olderRunId = CopilotAgentTaskEventIds.CreateRunId();
+        var newerRunId = CopilotAgentTaskEventIds.CreateRunId();
+        var olderJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [CreateEvent(1, olderRunId, now.AddMinutes(-1))],
+        };
+        var newerJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [CreateEvent(1, newerRunId, now)],
+        };
+        var newerCheckpoint = CreateCheckpoint(newerJournal);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.CommitAgentRunState(newerJournal, newerCheckpoint);
+
+        Assert.False(conversation.CommitAgentRunState(
+            olderJournal,
+            CreateCheckpoint(olderJournal)));
+
+        Assert.Same(newerCheckpoint, conversation.AgentSessionCheckpoint);
+        Assert.Same(newerJournal, conversation.CurrentAgentTaskEventJournal);
+    }
+
+    [Fact]
+    public void TryCommitRunStateDistinguishesEquivalentAcceptanceFromStaleRejection()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var staleJournal = journal.Snapshot();
+        journal.RecordStop(CopilotAgentStopReason.Paused);
+        var currentJournal = journal.Snapshot();
+        var currentCheckpoint = CreateCheckpoint(currentJournal);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.CommitAgentRunState(currentJournal, currentCheckpoint);
+
+        Assert.True(conversation.TryCommitAgentRunState(
+            currentJournal,
+            currentCheckpoint,
+            out var equivalentChanged));
+        Assert.False(equivalentChanged);
+        Assert.False(conversation.TryCommitAgentRunState(
+            staleJournal,
+            CreateCheckpoint(staleJournal),
+            out var rejectedChanged));
+        Assert.False(rejectedChanged);
+        Assert.Same(currentCheckpoint, conversation.AgentSessionCheckpoint);
+    }
+
+    [Fact]
+    public void SettingNewerCheckpointRetiresOlderIndependentEvidence()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var oldCheckpointJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [CreateEvent(1, CopilotAgentTaskEventIds.CreateRunId(), now.AddMinutes(-2))],
+        };
+        var independentJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [CreateEvent(1, CopilotAgentTaskEventIds.CreateRunId(), now.AddMinutes(-1))],
+        };
+        var newerCheckpointJournal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [CreateEvent(1, CopilotAgentTaskEventIds.CreateRunId(), now)],
+        };
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.CommitAgentRunState(
+            independentJournal,
+            CreateCheckpoint(oldCheckpointJournal));
+        var newerCheckpoint = CreateCheckpoint(newerCheckpointJournal);
+
+        Assert.True(conversation.SetAgentSessionCheckpoint(newerCheckpoint));
+
+        Assert.Same(newerCheckpoint, conversation.AgentSessionCheckpoint);
+        Assert.Null(conversation.LatestAgentTaskEventJournal);
+        Assert.Same(newerCheckpointJournal, conversation.CurrentAgentTaskEventJournal);
+    }
+
+    [Fact]
+    public void EquivalentTerminalJournalRemainsOwnedByCheckpointOnly()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var snapshot = journal.Snapshot();
+        var checkpoint = CreateCheckpoint(snapshot);
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+
+        Assert.True(conversation.CommitAgentRunState(snapshot, checkpoint));
+
+        Assert.Same(checkpoint, conversation.AgentSessionCheckpoint);
+        Assert.Null(conversation.LatestAgentTaskEventJournal);
+        Assert.Same(snapshot, conversation.CurrentAgentTaskEventJournal);
     }
 
     private static CopilotAgentSessionCheckpoint CreateCheckpoint(

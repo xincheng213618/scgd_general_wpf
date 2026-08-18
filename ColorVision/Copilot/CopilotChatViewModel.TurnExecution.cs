@@ -702,12 +702,12 @@ namespace ColorVision.Copilot
             assistantMessage.AgentStopReason = agentResult.StopReason;
             assistantMessage.AgentRunBudget = agentResult.Budget;
             assistantMessage.AgentBlockers = agentResult.Blockers;
-            conversation.CommitAgentRunState(agentResult.TaskEventJournal, agentResult.SessionCheckpoint);
-            ResolveDeliveredSteeringAtTerminal(
+            CommitAgentRunStateAndResolveSteering(
                 hostedRun,
                 conversation,
+                agentResult.TaskEventJournal,
                 agentResult.SessionCheckpoint,
-                discard: agentResult.StopReason == CopilotAgentStopReason.Cancelled);
+                agentResult.StopReason);
             if (string.IsNullOrWhiteSpace(assistantMessage.Content))
             {
                 CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, agentResult.StopReason switch

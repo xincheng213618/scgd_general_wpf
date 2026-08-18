@@ -45,7 +45,7 @@ namespace ColorVision.Copilot
                 return serialized;
 
             var observation = step.EffectiveModelObservation;
-            if (!string.Equals(step.ToolCall?.ToolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
+            if (!string.Equals(step.ToolCall?.ToolName, CopilotSharedAgentToolNames.ReadLocalFile, StringComparison.OrdinalIgnoreCase)
                 || observation.AttemptedLocalFilePaths.Count < 2
                 || !TrySplitLocalFileObservation(
                     content,

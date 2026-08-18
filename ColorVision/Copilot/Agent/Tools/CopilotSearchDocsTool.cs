@@ -8,11 +8,14 @@ namespace ColorVision.Copilot
     {
         public string Name => CopilotSharedCapabilityCatalog.SearchDocs.AgentToolName;
 
-        public string Description => "Search the ColorVision online documentation index and return the most relevant snippets by section, page, and heading. Useful for software usage, menus, devices, plugins, developer guides, and architecture questions.";
+        public string Description => CopilotSharedCapabilityCatalog.SearchDocs.AgentDescription;
 
-        public CopilotToolEvidenceMode EvidenceMode => CopilotToolEvidenceMode.RedactedExcerpt;
+        public CopilotToolCapabilityDescriptor Capability =>
+            CopilotSharedCapabilityCatalog.SearchDocs.AgentCapability;
 
-        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.SearchDocs.SharedInputSchema!;
+        public CopilotToolEvidenceMode EvidenceMode => Capability.EvidenceMode;
+
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.SearchDocs.AgentInputSchema;
 
         public bool CanHandle(CopilotAgentRequest request)
         {

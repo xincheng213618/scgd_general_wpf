@@ -7,7 +7,7 @@ using System.Windows;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotCreateFlowTool : ICopilotFrameworkApprovedTool
+    public sealed class CopilotCreateFlowTool : ICopilotFrameworkApprovedTool, ICopilotApplicationCapabilityClient
     {
         private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
 
@@ -23,17 +23,22 @@ namespace ColorVision.Copilot
 
         public string Name => CopilotSharedCapabilityCatalog.CreateFlow.AgentToolName;
 
-        public string Description => "Create a new empty ColorVision flow after explicit user approval. Put only the requested flow name in input.query, or leave it empty to generate a timestamped name. This tool stages the action and never opens the flow-template manager.";
+        public ICopilotApplicationCapabilityInvoker ApplicationCapabilityInvoker => _capabilityInvoker;
 
-        public CopilotToolAccess Access => CopilotToolAccess.Write;
+        public string Description => CopilotSharedCapabilityCatalog.CreateFlow.AgentDescription;
 
-        public CopilotToolRiskLevel RiskLevel => CopilotToolRiskLevel.High;
+        public CopilotToolCapabilityDescriptor Capability =>
+            CopilotSharedCapabilityCatalog.CreateFlow.AgentCapability;
 
-        public CopilotToolApprovalMode ApprovalMode => CopilotToolApprovalMode.Always;
+        public CopilotToolAccess Access => Capability.Access;
 
-        public CopilotToolIdempotency Idempotency => CopilotToolIdempotency.NonIdempotent;
+        public CopilotToolRiskLevel RiskLevel => Capability.RiskLevel;
 
-        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("Optional name for the new flow. Omit to generate a timestamped name.");
+        public CopilotToolApprovalMode ApprovalMode => Capability.ApprovalMode;
+
+        public CopilotToolIdempotency Idempotency => Capability.Idempotency;
+
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.CreateFlow.AgentInputSchema;
 
         public bool CanHandle(CopilotAgentRequest request)
         {
@@ -67,7 +72,10 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var flowName = CopilotFlowCreationSupport.ResolveFlowName(request.UserText, toolInput?.Query);
+            var requestedName = toolInput.GetStringArgument("name");
+            if (string.IsNullOrWhiteSpace(requestedName))
+                requestedName = toolInput?.Query;
+            var flowName = CopilotFlowCreationSupport.ResolveFlowName(request.UserText, requestedName);
             var arguments = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase)
             {
                 ["name"] = JsonSerializer.SerializeToElement(flowName),
@@ -79,21 +87,12 @@ namespace ColorVision.Copilot
                 request,
                 frameworkApprovalGranted,
                 cancellationToken);
-            var isWaitingForApproval = result.IsApprovalRequired;
-
-            return new CopilotToolResult
-            {
-                ToolName = Name,
-                Success = result.Success || isWaitingForApproval,
-                Summary = isWaitingForApproval
-                    ? $"Flow {flowName} is waiting for explicit ColorVision approval."
-                    : result.Success ? $"Created flow {flowName}." : "Flow creation failed.",
-                Content = result.Content,
-                ErrorMessage = result.Success || isWaitingForApproval ? string.Empty : result.Content,
-                FailureKind = result.FailureKind,
-                FailureCode = result.Success || isWaitingForApproval ? string.Empty : CopilotToolFailureCode.Normalize(result.ErrorCode),
-                Approval = result.Approval,
-            };
+            return CopilotApplicationCapabilityInvocation.ToToolResult(
+                result,
+                Name,
+                $"Created flow {flowName}.",
+                "Flow creation failed.",
+                $"Flow {flowName} is waiting for explicit ColorVision approval.");
         }
     }
 }

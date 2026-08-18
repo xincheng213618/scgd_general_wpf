@@ -101,7 +101,7 @@ namespace ColorVision.Copilot.Mcp
                     return CreateConfirmableActionResult(
                         "Confirm menu command",
                         $"Execute ColorVision menu command: {query}",
-                        "execute_menu",
+                        CopilotSharedCapabilityCatalog.ExecuteMenu.McpToolName,
                         arguments,
                         handlerPreview.Text,
                         token => _environment.ExecuteMenuHandler(query, false, token),
@@ -119,7 +119,7 @@ namespace ColorVision.Copilot.Mcp
                 return CreateConfirmableActionResult(
                     "Confirm menu command",
                     $"Execute ColorVision menu command: {query}",
-                    "execute_menu",
+                    CopilotSharedCapabilityCatalog.ExecuteMenu.McpToolName,
                     arguments,
                     string.Join(Environment.NewLine, new[] { applicationPreview.Summary, applicationPreview.Content }.Where(value => !string.IsNullOrWhiteSpace(value))),
                     async token => ToMcpResult(await CopilotApplicationCapability.ExecuteMenuAsync(query, dryRun: false, allowConfirmationRequired: true, token), "menu_execution_failed"),
@@ -138,7 +138,7 @@ namespace ColorVision.Copilot.Mcp
                     return CreateConfirmableActionResult(
                         "Confirm menu command",
                         $"Execute ColorVision menu command: {query}",
-                        "execute_menu",
+                        CopilotSharedCapabilityCatalog.ExecuteMenu.McpToolName,
                         arguments,
                         handlerResult.Text,
                         token => _environment.ExecuteMenuHandler(query, false, token),
@@ -158,7 +158,7 @@ namespace ColorVision.Copilot.Mcp
                 return CreateConfirmableActionResult(
                     "Confirm menu command",
                     $"Execute ColorVision menu command: {query}",
-                    "execute_menu",
+                    CopilotSharedCapabilityCatalog.ExecuteMenu.McpToolName,
                     arguments,
                     string.Join(Environment.NewLine, new[] { result.Summary, result.Content, result.ErrorMessage }.Where(value => !string.IsNullOrWhiteSpace(value))),
                     async token => ToMcpResult(await CopilotApplicationCapability.ExecuteMenuAsync(query, dryRun: false, allowConfirmationRequired: true, token), "menu_execution_failed"),

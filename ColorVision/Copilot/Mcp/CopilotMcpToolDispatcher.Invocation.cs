@@ -58,6 +58,28 @@ namespace ColorVision.Copilot.Mcp
 
             try
             {
+                var definition = _toolDefinitions.FirstOrDefault(candidate => string.Equals(
+                    candidate.Descriptor.Name,
+                    normalizedToolName,
+                    StringComparison.OrdinalIgnoreCase));
+                if (definition != null
+                    && !CopilotMcpInputContractValidator.TryValidate(
+                        definition.Descriptor.InputSchema,
+                        arguments,
+                        out var argumentError))
+                {
+                    var invalidResult = CopilotMcpToolCallResult.Fail(
+                        "invalid_arguments",
+                        argumentError,
+                        CopilotToolFailureKind.Validation);
+                    CopilotMcpAuditLogger.ToolCallCompleted(
+                        normalizedToolName,
+                        false,
+                        stopwatch.Elapsed,
+                        invalidResult.ErrorCode);
+                    return invalidResult;
+                }
+
                 var result = await _router.DispatchAsync(normalizedToolName, arguments, executionScope, cancellationToken);
 
                 CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, result.Success, stopwatch.Elapsed, result.Success ? "OK" : FirstNonEmpty(result.ErrorCode, "tool_call_failed"));
