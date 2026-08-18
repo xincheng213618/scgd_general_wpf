@@ -72,4 +72,30 @@ public class EngineUiLocalizationTests
             CultureInfo.CurrentUICulture = originalUiCulture;
         }
     }
+
+    [Fact]
+    public void EnglishPropertyGridMetadataUsesExistingResourceLookup()
+    {
+        CultureInfo originalUiCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+
+            Assert.Equal(
+                "Radius",
+                ColorVision.UI.PropertyEditorHelper.GetLocalizedString(ColorVision.Engine.Properties.Resources.ResourceManager, "半径"));
+            Assert.Equal(
+                "Use Three-channel Exposure",
+                ColorVision.UI.PropertyEditorHelper.GetLocalizedString(ColorVision.Engine.Properties.Resources.ResourceManager, "使用三通道曝光"));
+            Assert.Equal(
+                "Configure separate R, G, and B exposure values. When disabled, a single exposure value is used.",
+                ColorVision.UI.PropertyEditorHelper.GetLocalizedString(
+                    ColorVision.Engine.Properties.Resources.ResourceManager,
+                    "分别配置 R、G、B 三个曝光值；关闭时只使用一个曝光值。"));
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = originalUiCulture;
+        }
+    }
 }

@@ -4911,4 +4911,38 @@ Please close camera or other programs using this serial port, or check device co
   <data name="第 {0} 行波长必须严格递增，不能重复或倒序。" xml:space="preserve"><value>Wavelengths must strictly increase on line {0}; duplicates and descending order are not allowed.</value></data>
   <data name="至少需要两行有效光谱数据。" xml:space="preserve"><value>At least two valid rows of spectrum data are required.</value></data>
   <data name="第 {0} 行的{1}不是有效数字: {2}" xml:space="preserve"><value>The {1} on line {0} is not a valid number: {2}</value></data>
+  <data name="半径" xml:space="preserve"><value>Radius</value></data>
+  <data name="布点类型" xml:space="preserve"><value>Point Layout Type</value></data>
+  <data name="布局类型" xml:space="preserve"><value>Layout Type</value></data>
+  <data name="常规布局" xml:space="preserve"><value>Standard Layout</value></data>
+  <data name="串口" xml:space="preserve"><value>Serial Port</value></data>
+  <data name="存储类型" xml:space="preserve"><value>Storage Type</value></data>
+  <data name="点1" xml:space="preserve"><value>Point 1</value></data>
+  <data name="点2" xml:space="preserve"><value>Point 2</value></data>
+  <data name="点3" xml:space="preserve"><value>Point 3</value></data>
+  <data name="点4" xml:space="preserve"><value>Point 4</value></data>
+  <data name="端口地址" xml:space="preserve"><value>Endpoint Address</value></data>
+  <data name="分别配置 R、G、B 三个曝光值；关闭时只使用一个曝光值。" xml:space="preserve"><value>Configure separate R, G, and B exposure values. When disabled, a single exposure value is used.</value></data>
+  <data name="高度" xml:space="preserve"><value>Height</value></data>
+  <data name="高级设置" xml:space="preserve"><value>Advanced Settings</value></data>
+  <data name="缓存大小" xml:space="preserve"><value>Cache Size</value></data>
+  <data name="计算色温波长" xml:space="preserve"><value>CCT Wavelength</value></data>
+  <data name="矩形" xml:space="preserve"><value>Rectangle</value></data>
+  <data name="宽度" xml:space="preserve"><value>Width</value></data>
+  <data name="使用本地校正" xml:space="preserve"><value>Use Local Correction</value></data>
+  <data name="使用服务测量结果进行完整光谱或单独亮度校正" xml:space="preserve"><value>Use service measurement results for full spectral or brightness-only correction</value></data>
+  <data name="使用进程内优化校正；关闭后通过 MQTT 校正服务执行。" xml:space="preserve"><value>Use optimized in-process correction. When disabled, correction runs through the MQTT correction service.</value></data>
+  <data name="使用三通道曝光" xml:space="preserve"><value>Use Three-channel Exposure</value></data>
+  <data name="四边形" xml:space="preserve"><value>Quadrilateral</value></data>
+  <data name="形状椭圆控制" xml:space="preserve"><value>Ellipse Shape Control</value></data>
+  <data name="形状圆控制" xml:space="preserve"><value>Circle Shape Control</value></data>
+  <data name="亚像素" xml:space="preserve"><value>Subpixel</value></data>
+  <data name="圆形" xml:space="preserve"><value>Circle</value></data>
+  <data name="中心X" xml:space="preserve"><value>Center X</value></data>
+  <data name="中心Y" xml:space="preserve"><value>Center Y</value></data>
+  <data name="主机" xml:space="preserve"><value>Host</value></data>
+  <data name="CAD文件" xml:space="preserve"><value>CAD File</value></data>
+  <data name="CAD映射" xml:space="preserve"><value>CAD Mapping</value></data>
+  <data name="CIE文件" xml:space="preserve"><value>CIE File</value></data>
+  <data name="POI文件" xml:space="preserve"><value>POI File</value></data>
 </root>
