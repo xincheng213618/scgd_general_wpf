@@ -139,6 +139,7 @@ final class DeviceHealthBottomSheet {
         content.addView(scope, topMargin(dp(activity, 12)));
 
         boolean singleColumnActions = AppResponsiveLayout.usesSingleColumn(
+                activity.getResources().getConfiguration().screenWidthDp,
                 activity.getResources().getConfiguration().fontScale);
         LinearLayout actions = new LinearLayout(activity);
         actions.setOrientation(singleColumnActions

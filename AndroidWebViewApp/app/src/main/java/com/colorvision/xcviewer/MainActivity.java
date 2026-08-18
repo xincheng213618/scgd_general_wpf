@@ -459,6 +459,7 @@ public class MainActivity extends AppCompatActivity {
             View.OnClickListener listener,
             boolean showDivider) {
         boolean supportingTextLayout = AppResponsiveLayout.usesSingleColumn(
+                getResources().getConfiguration().screenWidthDp,
                 getResources().getConfiguration().fontScale);
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);

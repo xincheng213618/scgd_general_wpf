@@ -54,6 +54,7 @@ final class OperationsTriageContent {
                 topMargin(dp(activity, 8)));
 
         boolean singleColumn = AppResponsiveLayout.usesSingleColumn(
+                activity.getResources().getConfiguration().screenWidthDp,
                 activity.getResources().getConfiguration().fontScale);
         LinearLayout navigation = new LinearLayout(activity);
         navigation.setOrientation(singleColumn

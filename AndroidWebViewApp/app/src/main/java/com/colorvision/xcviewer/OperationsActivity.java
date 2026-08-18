@@ -216,6 +216,7 @@ public class OperationsActivity extends AppCompatActivity {
 
         LinearLayout header = new LinearLayout(this);
         boolean singleColumn = AppResponsiveLayout.usesSingleColumn(
+                getResources().getConfiguration().screenWidthDp,
                 getResources().getConfiguration().fontScale);
         header.setOrientation(singleColumn ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
         header.setGravity(singleColumn ? Gravity.START : Gravity.CENTER_VERTICAL);
@@ -3112,6 +3113,7 @@ public class OperationsActivity extends AppCompatActivity {
     private LinearLayout createDashboardActionRow(Button left, Button right) {
         LinearLayout row = new LinearLayout(this);
         boolean singleColumn = AppResponsiveLayout.usesSingleColumn(
+                getResources().getConfiguration().screenWidthDp,
                 getResources().getConfiguration().fontScale);
         row.setOrientation(singleColumn ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
 

@@ -7,20 +7,26 @@ import org.junit.Test;
 
 public class AppResponsiveLayoutTest {
     @Test
-    public void standardFontKeepsCompactLayouts() {
-        assertFalse(AppResponsiveLayout.usesSingleColumn(1.0f));
-        assertFalse(AppResponsiveLayout.usesSingleColumn(1.19f));
+    public void compactWindowUsesSingleColumnAtStandardFontScale() {
+        assertTrue(AppResponsiveLayout.usesSingleColumn(360, 1.0f));
+        assertTrue(AppResponsiveLayout.usesSingleColumn(599, 1.0f));
+    }
+
+    @Test
+    public void expandedWindowKeepsMultiColumnAtStandardFontScale() {
+        assertFalse(AppResponsiveLayout.usesSingleColumn(600, 1.0f));
+        assertFalse(AppResponsiveLayout.usesSingleColumn(840, 1.19f));
     }
 
     @Test
     public void largeFontUsesSingleColumnLayoutsAcrossTheApp() {
-        assertTrue(AppResponsiveLayout.usesSingleColumn(1.2f));
-        assertTrue(AppResponsiveLayout.usesSingleColumn(1.3f));
+        assertTrue(AppResponsiveLayout.usesSingleColumn(600, 1.2f));
+        assertTrue(AppResponsiveLayout.usesSingleColumn(840, 1.3f));
     }
 
     @Test
-    public void invalidFontScaleDoesNotForceExpandedLayouts() {
-        assertFalse(AppResponsiveLayout.usesSingleColumn(Float.NaN));
-        assertFalse(AppResponsiveLayout.usesSingleColumn(Float.POSITIVE_INFINITY));
+    public void undefinedWidthAndInvalidFontScaleDoNotForceSingleColumn() {
+        assertFalse(AppResponsiveLayout.usesSingleColumn(0, Float.NaN));
+        assertFalse(AppResponsiveLayout.usesSingleColumn(-1, Float.POSITIVE_INFINITY));
     }
 }
