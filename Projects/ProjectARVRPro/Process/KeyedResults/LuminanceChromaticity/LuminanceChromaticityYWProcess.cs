@@ -1,8 +1,8 @@
 #pragma warning disable CS8601,CS8602
 using ColorVision.Database;
 using ColorVision.Engine;
-using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
@@ -223,29 +223,41 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
                 return;
 
             foreach (PoiResultCIExyuvData poi in testResult.ViewPoixyuvDatas12X7)
-                PoiOverlayRenderer.Add(ctx.ImageView, poi.Point, CVRawOpen.FormatMessage("Y:@Y:F2", poi));
+                PoiOverlayRenderer.Add(ctx.ImageView, CreateLuminanceDisplayPoint(poi));
+        }
+
+        internal static PoiPoint CreateLuminanceDisplayPoint(PoiResultCIExyuvData poi)
+        {
+            ArgumentNullException.ThrowIfNull(poi);
+            PoiPoint source = poi.Point;
+            return new PoiPoint(source.Id, source.Pid, $"Y:{poi.Y:F2}", source.PointType, source.PixelX, source.PixelY, source.Width, source.Height);
         }
 
         public override void GenText(IProcessExecutionContext ctx, Paragraph paragraph, Brush foreground, double fontSize)
         {
-            var output = new StringBuilder().AppendLine($"YW亮色度测试 ({Config.GetOutputKey()})");
+            LuminanceChromaticityYWViewTestResult? result = null;
             if (!string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson))
-            {
-                var result = JsonConvert.DeserializeObject<LuminanceChromaticityYWViewTestResult>(ctx.Result.ViewResultJson);
-                if (result != null)
-                {
-                    AppendGroup(output, "12X7", result.ViewPoixyuvDatas12X7);
-                    AppendResult(output, result.AverageLuminance12X7);
-                    AppendResult(output, result.LuminanceUniformity12X7);
-                    AppendResult(output, result.ColorUniformity12X7);
-                    AppendGroup(output, "8X7", result.ViewPoixyuvDatas8X7);
-                    AppendResult(output, result.AverageLuminance8X7);
-                    AppendResult(output, result.LuminanceUniformity8X7);
-                    AppendResult(output, result.ColorUniformity8X7);
-                }
-            }
+                result = JsonConvert.DeserializeObject<LuminanceChromaticityYWViewTestResult>(ctx.Result.ViewResultJson);
 
-            AppendPlainText(paragraph, output.ToString(), foreground, fontSize);
+            AppendPlainText(paragraph, BuildResultText(Config.GetOutputKey(), result), foreground, fontSize);
+        }
+
+        internal static string BuildResultText(string outputKey, LuminanceChromaticityYWViewTestResult? result)
+        {
+            var output = new StringBuilder().AppendLine($"YW亮色度测试 ({outputKey})");
+            if (result == null)
+                return output.ToString();
+
+            output.AppendLine("[汇总]");
+            AppendResult(output, result.AverageLuminance12X7);
+            AppendResult(output, result.LuminanceUniformity12X7);
+            AppendResult(output, result.ColorUniformity12X7);
+            AppendResult(output, result.AverageLuminance8X7);
+            AppendResult(output, result.LuminanceUniformity8X7);
+            AppendResult(output, result.ColorUniformity8X7);
+            AppendGroup(output, "12X7 POI", result.ViewPoixyuvDatas12X7);
+            AppendGroup(output, "8X7 POI", result.ViewPoixyuvDatas8X7);
+            return output.ToString();
         }
 
         private static void AppendGroup(StringBuilder output, string groupName, IEnumerable<PoiResultCIExyuvData> points)

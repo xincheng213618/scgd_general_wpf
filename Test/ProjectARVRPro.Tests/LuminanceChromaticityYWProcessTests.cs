@@ -1,3 +1,4 @@
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using Newtonsoft.Json;
 using ProjectARVRPro.Process.KeyedResults;
@@ -57,6 +58,41 @@ public sealed class LuminanceChromaticityYWProcessTests
 
         Assert.False(LuminanceChromaticityYWProcess.TryPopulateCalculatedResults(result, new(), out string errorMessage));
         Assert.Contains("12X7 POI数量应为84", errorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LuminanceDisplayPointCentersYWithoutChangingTheSavedPointName()
+    {
+        var poi = new PoiResultCIExyuvData
+        {
+            Y = 123.456,
+            Point = new PoiPoint(7, 8, "P_7", PoiShape.Circle, 100, 200, 32, 32)
+        };
+
+        PoiPoint displayPoint = LuminanceChromaticityYWProcess.CreateLuminanceDisplayPoint(poi);
+
+        Assert.Equal("Y:123.46", displayPoint.Name);
+        Assert.Equal("P_7", poi.Point.Name);
+        Assert.Equal(poi.Point.PixelX, displayPoint.PixelX);
+        Assert.Equal(poi.Point.PixelY, displayPoint.PixelY);
+        Assert.Equal(poi.Point.Width, displayPoint.Width);
+        Assert.Equal(poi.Point.Height, displayPoint.Height);
+    }
+
+    [Fact]
+    public void ResultTextShowsSummaryBeforePoiDetails()
+    {
+        var result = new LuminanceChromaticityYWViewTestResult
+        {
+            AverageLuminance12X7 = new() { Name = "AverageLuminance_12X7", TestValue = "100" },
+            LuminanceUniformity12X7 = new() { Name = "LuminanceUniformity_12X7", TestValue = "90" },
+            ViewPoixyuvDatas12X7 = [new() { Name = "P_1", Y = 100 }]
+        };
+
+        string text = LuminanceChromaticityYWProcess.BuildResultText("White_E1", result);
+
+        Assert.True(text.IndexOf("[汇总]", StringComparison.Ordinal) < text.IndexOf("[12X7 POI]", StringComparison.Ordinal));
+        Assert.True(text.IndexOf("AverageLuminance_12X7", StringComparison.Ordinal) < text.IndexOf("P_1 X:", StringComparison.Ordinal));
     }
 
     [Fact]
