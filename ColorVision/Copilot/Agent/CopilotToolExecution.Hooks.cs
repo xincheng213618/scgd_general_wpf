@@ -370,12 +370,9 @@ namespace ColorVision.Copilot
             if (toolWasExecuted)
                 AddChangedPathProjectInstructions(outcome);
             outcome.HookRuns = hookRuns.ToArray();
-            if (string.Equals(outcome.Execution.ToolName, "InspectGitDiff", StringComparison.OrdinalIgnoreCase))
-            {
-                outcome.FormattedModelResult = CopilotFrameworkToolResultFormatter.Format(
-                    outcome,
-                    outcome.Invocation.AgentRequest.ToolOutputTokenLimitOverride);
-            }
+            outcome.FormattedModelResult = CopilotToolOutputArchivePolicy.Format(
+                outcome,
+                outcome.Invocation.AgentRequest.ToolOutputTokenLimitOverride);
             RecordReviewEvidence(outcome);
             CopilotToolExecutionAuditLogger.Record(outcome);
             onEvent(CopilotAgentEvent.FromToolResult(

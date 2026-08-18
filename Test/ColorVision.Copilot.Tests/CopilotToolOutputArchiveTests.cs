@@ -142,6 +142,55 @@ public sealed class CopilotToolOutputArchiveTests
     }
 
     [Fact]
+    public async Task ExecutorPublishesTheExactArchivedModelResult()
+    {
+        var conversationId = "runtime-archive-" + Guid.NewGuid().ToString("N");
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = conversationId,
+            TaskId = "runtime-archive-task",
+            ToolOutputTokenLimitOverride = SmallTokenLimit,
+        };
+        var tool = new LargeOutputTool(new string('x', 30_000));
+        var events = new List<CopilotAgentEvent>();
+        try
+        {
+            var outcome = await new CopilotToolExecutor([]).ExecuteAsync(
+                new CopilotToolInvocation
+                {
+                    CallId = "call:runtime-archive",
+                    Round = 1,
+                    Attempt = 1,
+                    MaxAttempts = 1,
+                    RuntimeName = "test",
+                    Tool = tool,
+                    AgentRequest = request,
+                    ToolInput = CopilotAgentToolInput.Empty,
+                },
+                events.Add,
+                CancellationToken.None);
+
+            var toolResultEvent = Assert.Single(
+                events,
+                item => item.Type == CopilotAgentEventType.ToolResult);
+            Assert.NotNull(outcome.ToolOutputArchive);
+            Assert.NotNull(outcome.FormattedModelResult);
+            Assert.Equal(outcome.FormattedModelResult, toolResultEvent.ModelToolResult);
+            using var document = JsonDocument.Parse(toolResultEvent.ModelToolResult);
+            Assert.Equal(
+                outcome.ToolOutputArchive!.Id,
+                document.RootElement
+                    .GetProperty("content_archive")
+                    .GetProperty("archive_id")
+                    .GetString());
+        }
+        finally
+        {
+            CopilotToolOutputArchiveRegistry.Shared.ClearConversation(conversationId);
+        }
+    }
+
+    [Fact]
     public void ArchiveRetentionEvictsAndDisposesTheOldestEntry()
     {
         using var registry = new CopilotToolOutputArchiveRegistry();
@@ -260,4 +309,29 @@ public sealed class CopilotToolOutputArchiveTests
                 ["maximumCharacters"] = CopilotOutputArchiveLimits.MaximumReadCharacters,
             },
         };
+
+    private sealed class LargeOutputTool(string content) : ICopilotTool
+    {
+        public string Name => "LargeOutput";
+
+        public string Description => "Returns a large result for runtime archive tests.";
+
+        public CopilotToolCapabilityDescriptor Capability { get; } =
+            CopilotToolCapabilityDescriptor.ReadOnly();
+
+        public CopilotToolInputSchema InputSchema => CopilotToolInputSchema.Empty;
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken) => Task.FromResult(new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = true,
+                Summary = "Produced a large text result.",
+                Content = content,
+            });
+    }
 }
