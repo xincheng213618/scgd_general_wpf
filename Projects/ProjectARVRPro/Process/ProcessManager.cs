@@ -140,6 +140,7 @@ namespace ProjectARVRPro.Process
         public ProcessMeta? SelectedConfigurationMeta => SelectedResultParserMeta ?? SelectedProcessMeta;
 
         public RelayCommand AddMetaCommand { get; set; }
+        public RelayCommand DuplicateMetaCommand { get; set; }
         public RelayCommand RemoveMetaCommand { get; set; }
         public RelayCommand EditMetaNameCommand { get; set; }
         public RelayCommand SaveMetaNameCommand { get; set; }
@@ -203,6 +204,7 @@ namespace ProjectARVRPro.Process
             LoadProcesses();
             EditCommand = new RelayCommand(a => Edit());
             AddMetaCommand = new RelayCommand(a => AddMeta(), a => ActiveGroup != null);
+            DuplicateMetaCommand = new RelayCommand(a => DuplicateMeta(), a => SelectedProcessMeta != null);
             RemoveMetaCommand = new RelayCommand(a => RemoveMeta(), a => SelectedProcessMeta != null);
             EditMetaNameCommand = new RelayCommand(
                 a => BeginEditMetaName(a as ProcessMeta),
@@ -306,22 +308,7 @@ namespace ProjectARVRPro.Process
             var newGroup = new ProcessGroup { Name = newName };
             foreach (var meta in ActiveGroup.ProcessMetas)
             {
-                string configJson = GetProcessConfigJson(meta);
-                var newProc = meta.Process?.CreateInstance();
-                if (newProc != null && !string.IsNullOrEmpty(configJson))
-                {
-                    newProc.SetProcessConfig(configJson);
-                }
-                var newMeta = new ProcessMeta
-                {
-                    Name = meta.Name,
-                    FlowTemplate = meta.FlowTemplate,
-                    Process = newProc,
-                    IsEnabled = meta.IsEnabled,
-                    ConfigJson = configJson,
-                    PictureSwitchConfig = meta.PictureSwitchConfig.Clone()
-                };
-                newGroup.ProcessMetas.Add(newMeta);
+                newGroup.ProcessMetas.Add(CloneProcessMeta(meta, meta.Name));
             }
             ProcessGroups.Add(newGroup);
             ActiveGroupIndex = ProcessGroups.Count - 1;
@@ -765,6 +752,50 @@ namespace ProjectARVRPro.Process
             SelectedProcessMeta = newMeta;
         }
 
+        private void DuplicateMeta()
+        {
+            ProcessMeta? source = SelectedProcessMeta;
+            if (source == null)
+                return;
+
+            string copyName = GetUniqueMetaCopyName(ProcessMetas, source.Name);
+            ProcessMeta copy = CloneProcessMeta(source, copyName);
+            int sourceIndex = ProcessMetas.IndexOf(source);
+            ProcessMetas.Insert(sourceIndex + 1, copy);
+            SelectedProcessMeta = copy;
+        }
+
+        private static ProcessMeta CloneProcessMeta(ProcessMeta source, string name)
+        {
+            string configJson = GetProcessConfigJson(source);
+            IProcess? process = source.Process?.CreateInstance();
+            if (process != null && !string.IsNullOrEmpty(configJson))
+                process.SetProcessConfig(configJson);
+
+            return new ProcessMeta
+            {
+                Name = name,
+                FlowTemplate = source.FlowTemplate,
+                Process = process,
+                IsEnabled = source.IsEnabled,
+                ConfigJson = configJson,
+                PictureSwitchConfig = source.PictureSwitchConfig.Clone()
+            };
+        }
+
+        internal static string GetUniqueMetaCopyName(IEnumerable<ProcessMeta> processMetas, string sourceName)
+        {
+            string normalizedSourceName = string.IsNullOrWhiteSpace(sourceName) ? "Process" : sourceName.Trim();
+            string baseName = $"{normalizedSourceName}_Copy";
+            string name = baseName;
+            int counter = 1;
+
+            while (processMetas.Any(meta => meta.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                name = $"{baseName}_{counter++}";
+
+            return name;
+        }
+
         private void RemoveMeta()
         {
             if (SelectedProcessMeta != null)
@@ -1027,7 +1058,7 @@ namespace ProjectARVRPro.Process
             var selectedMeta = SelectedProcessMeta;
             if (selectedMeta == null) return;
             int index = ProcessMetas.IndexOf(selectedMeta);
-            ProcessMetas.Move(index, index - 1);
+            MoveMetaToIndex(selectedMeta, index - 1);
         }
 
         private bool CanMoveDown()
@@ -1042,7 +1073,23 @@ namespace ProjectARVRPro.Process
             var selectedMeta = SelectedProcessMeta;
             if (selectedMeta == null) return;
             int index = ProcessMetas.IndexOf(selectedMeta);
-            ProcessMetas.Move(index, index + 1);
+            MoveMetaToIndex(selectedMeta, index + 1);
+        }
+
+        internal bool MoveMetaToIndex(ProcessMeta meta, int destinationIndex)
+        {
+            int sourceIndex = ProcessMetas.IndexOf(meta);
+            if (sourceIndex < 0 || ProcessMetas.Count == 0)
+                return false;
+
+            destinationIndex = Math.Clamp(destinationIndex, 0, ProcessMetas.Count - 1);
+            if (sourceIndex == destinationIndex)
+                return false;
+
+            ProcessMetas.Move(sourceIndex, destinationIndex);
+            SelectedProcessMeta = meta;
+            CommandManager.InvalidateRequerySuggested();
+            return true;
         }
 
         #region Persistence

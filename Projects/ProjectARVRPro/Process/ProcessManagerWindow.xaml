@@ -22,6 +22,19 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
+
+        <Style x:Key="CopyableTextBoxStyle" TargetType="{x:Type TextBox}">
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="IsReadOnlyCaretVisible" Value="True"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Cursor" Value="IBeam"/>
+            <Setter Property="ToolTip" Value="可选中复制，双击全选"/>
+            <EventSetter Event="PreviewMouseDoubleClick" Handler="CopyableTextBox_PreviewMouseDoubleClick"/>
+        </Style>
     </Window.Resources>
 
     <TabControl x:Name="MainTabControl" Margin="8" SelectionChanged="MainTabControl_SelectionChanged">
@@ -75,6 +88,7 @@
                                 <TextBlock Text="一键执行顺序" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
                                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
                                     <Button Content="新增" Padding="10 4" Margin="4 0 0 0" Command="{Binding AddMetaCommand}"/>
+                                    <Button Content="复制" Padding="10 4" Margin="4 0 0 0" Command="{Binding DuplicateMetaCommand}"/>
                                     <Button Content="删除" Padding="10 4" Margin="4 0 0 0" Command="{Binding RemoveMetaCommand}"/>
                                     <Button Content="上移" Padding="10 4" Margin="4 0 0 0" Command="{Binding MoveUpCommand}"/>
                                     <Button Content="下移" Padding="10 4" Margin="4 0 0 0" Command="{Binding MoveDownCommand}"/>
@@ -83,7 +97,12 @@
 
                             <ListView Grid.Row="1" ItemsSource="{Binding ProcessMetas}"
                                       SelectedItem="{Binding SelectedProcessMeta}" x:Name="lvMetas"
-                                      SelectionChanged="ListView_SelectionChanged">
+                                      SelectionChanged="ListView_SelectionChanged"
+                                      PreviewMouseLeftButtonDown="ProcessList_PreviewMouseLeftButtonDown"
+                                      PreviewMouseMove="ProcessList_PreviewMouseMove"
+                                      AllowDrop="True"
+                                      DragOver="ProcessList_DragOver"
+                                      Drop="ProcessList_Drop">
                                 <ListView.ItemContainerStyle>
                                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
                                 </ListView.ItemContainerStyle>
@@ -146,8 +165,9 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding SelectedProcessMeta.Name, TargetNullValue=未选择流程}"
-                                                   FontWeight="Bold" FontSize="16" VerticalAlignment="Center"/>
+                                        <TextBox Text="{Binding SelectedProcessMeta.Name, Mode=OneWay, TargetNullValue=未选择流程}"
+                                                 Style="{StaticResource CopyableTextBoxStyle}"
+                                                 FontWeight="Bold" FontSize="16"/>
                                         <Button Grid.Column="1" Style="{StaticResource SideEditButtonStyle}" ToolTip="修改名称"
                                                 Command="{Binding EditMetaNameCommand}"
                                                 CommandParameter="{Binding SelectedProcessMeta}">
@@ -191,8 +211,9 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="流程模板：" Foreground="{DynamicResource SecondaryTextBrush}"
                                                VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding SelectedProcessMeta.FlowTemplate, TargetNullValue=—}"
-                                               VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding SelectedProcessMeta.FlowTemplate, Mode=OneWay, TargetNullValue=—}"
+                                             Style="{StaticResource CopyableTextBoxStyle}"/>
                                     <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="编辑当前流程模板"
                                             Command="{Binding OpenFlowTemplateEditorCommand}"
                                             CommandParameter="{Binding SelectedProcessMeta}">
@@ -213,9 +234,9 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="处理类型：" Foreground="{DynamicResource SecondaryTextBrush}"
                                                VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="1"
-                                               Text="{Binding SelectedProcessMeta.ProcessTypeName, Mode=OneWay, TargetNullValue=—}"
-                                               VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding SelectedProcessMeta.ProcessTypeName, Mode=OneWay, TargetNullValue=—}"
+                                             Style="{StaticResource CopyableTextBoxStyle}"/>
                                     <Button Grid.Column="2" Style="{StaticResource SideEditButtonStyle}" ToolTip="修改处理类型"
                                             Command="{Binding EditMetaProcessCommand}"
                                             CommandParameter="{Binding SelectedProcessMeta}">

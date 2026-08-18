@@ -7,8 +7,10 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ProjectARVRPro.Process
 {
@@ -17,9 +19,13 @@ namespace ProjectARVRPro.Process
     /// </summary>
     public partial class ProcessManagerWindow : Window
     {
+        private const string ProcessMetaDragFormat = "ProjectARVRPro.Process.ProcessMeta";
         private ProcessMeta _currentSelectedMeta;
         private ProcessManager? _recipeImportManager;
         private readonly List<(INotifyPropertyChanged obj, PropertyChangedEventHandler handler)> _configSubscriptions = new();
+        private Point _processDragStartPoint;
+        private ProcessMeta? _draggedProcessMeta;
+        private ScrollViewer? _processListScrollViewer;
 
         public ProcessManagerWindow()
         {
@@ -92,6 +98,16 @@ namespace ProjectARVRPro.Process
             }));
         }
 
+        private void CopyableTextBox_PreviewMouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is not TextBox textBox)
+                return;
+
+            textBox.Focus();
+            textBox.SelectAll();
+            e.Handled = true;
+        }
+
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (DataContext is ProcessManager manager && lvMetas.SelectedItem is ProcessMeta selectedMeta)
@@ -101,6 +117,127 @@ namespace ProjectARVRPro.Process
                 lvResultParsers.SelectedItem = null;
             }
             RefreshConfigPanels();
+        }
+
+        private void ProcessList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _draggedProcessMeta = null;
+            if (IsDragBlockedElement(e.OriginalSource as DependencyObject))
+                return;
+
+            _processDragStartPoint = e.GetPosition(lvMetas);
+            _draggedProcessMeta = FindVisualParent<ListViewItem>(e.OriginalSource as DependencyObject)?.Content as ProcessMeta;
+        }
+
+        private void ProcessList_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton != MouseButtonState.Pressed || _draggedProcessMeta == null)
+                return;
+
+            Point currentPosition = e.GetPosition(lvMetas);
+            Vector difference = _processDragStartPoint - currentPosition;
+            if (Math.Abs(difference.X) <= SystemParameters.MinimumHorizontalDragDistance
+                && Math.Abs(difference.Y) <= SystemParameters.MinimumVerticalDragDistance)
+            {
+                return;
+            }
+
+            ProcessMeta draggedMeta = _draggedProcessMeta;
+            _draggedProcessMeta = null;
+            DragDrop.DoDragDrop(lvMetas, new DataObject(ProcessMetaDragFormat, draggedMeta), DragDropEffects.Move);
+        }
+
+        private void ProcessList_DragOver(object sender, DragEventArgs e)
+        {
+            ProcessMeta? draggedMeta = e.Data.GetData(ProcessMetaDragFormat) as ProcessMeta;
+            ProcessMeta? targetMeta = FindVisualParent<ListViewItem>(e.OriginalSource as DependencyObject)?.Content as ProcessMeta;
+            e.Effects = draggedMeta != null && targetMeta != null && !ReferenceEquals(draggedMeta, targetMeta)
+                ? DragDropEffects.Move
+                : DragDropEffects.None;
+            if (draggedMeta != null)
+                AutoScrollProcessList(e.GetPosition(lvMetas));
+            e.Handled = true;
+        }
+
+        private void ProcessList_Drop(object sender, DragEventArgs e)
+        {
+            if (DataContext is not ProcessManager manager)
+                return;
+
+            ProcessMeta? draggedMeta = e.Data.GetData(ProcessMetaDragFormat) as ProcessMeta;
+            ListViewItem? targetItem = FindVisualParent<ListViewItem>(e.OriginalSource as DependencyObject);
+            if (draggedMeta == null || targetItem?.Content is not ProcessMeta targetMeta || ReferenceEquals(draggedMeta, targetMeta))
+                return;
+
+            int sourceIndex = manager.ProcessMetas.IndexOf(draggedMeta);
+            int targetIndex = manager.ProcessMetas.IndexOf(targetMeta);
+            if (sourceIndex < 0 || targetIndex < 0)
+                return;
+
+            bool dropAfterTarget = e.GetPosition(targetItem).Y > targetItem.ActualHeight / 2;
+            int destinationIndex = targetIndex;
+            if (dropAfterTarget && sourceIndex > targetIndex)
+                destinationIndex++;
+            else if (!dropAfterTarget && sourceIndex < targetIndex)
+                destinationIndex--;
+
+            if (manager.MoveMetaToIndex(draggedMeta, destinationIndex))
+            {
+                lvMetas.SelectedItem = draggedMeta;
+                lvMetas.ScrollIntoView(draggedMeta);
+            }
+
+            e.Handled = true;
+        }
+
+        private void AutoScrollProcessList(Point position)
+        {
+            _processListScrollViewer ??= FindVisualChild<ScrollViewer>(lvMetas);
+            if (_processListScrollViewer == null)
+                return;
+
+            const double scrollEdge = 24;
+            if (position.Y < scrollEdge)
+                _processListScrollViewer.LineUp();
+            else if (position.Y > lvMetas.ActualHeight - scrollEdge)
+                _processListScrollViewer.LineDown();
+        }
+
+        private static T? FindVisualParent<T>(DependencyObject? element) where T : DependencyObject
+        {
+            while (element != null)
+            {
+                if (element is T parent)
+                    return parent;
+                element = VisualTreeHelper.GetParent(element);
+            }
+            return null;
+        }
+
+        private static T? FindVisualChild<T>(DependencyObject element) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(element); i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(element, i);
+                if (child is T result)
+                    return result;
+
+                T? descendant = FindVisualChild<T>(child);
+                if (descendant != null)
+                    return descendant;
+            }
+            return null;
+        }
+
+        private static bool IsDragBlockedElement(DependencyObject? element)
+        {
+            while (element != null && element is not ListViewItem)
+            {
+                if (element is ButtonBase or TextBox)
+                    return true;
+                element = VisualTreeHelper.GetParent(element);
+            }
+            return false;
         }
 
         private void GroupComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

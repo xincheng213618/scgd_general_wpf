@@ -52,7 +52,6 @@ namespace ProjectARVRPro
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
         private const string FlowStartRejectedMessage = "FlowStartRejected";
-        private const double StepBarItemWidth = 48;
 
         public static ProjectARVRProConfig ProjectConfig => ProjectARVRProConfig.Instance;
 
@@ -872,7 +871,6 @@ namespace ProjectARVRPro
         private void RefreshStepBar()
         {
             ProcessManager.GenStepBar(stepBar);
-            stepBar.Width = stepBar.Items.Count * StepBarItemWidth;
 
             foreach (object item in stepBar.Items)
             {
