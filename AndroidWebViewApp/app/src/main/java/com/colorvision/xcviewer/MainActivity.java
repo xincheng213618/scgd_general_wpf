@@ -680,7 +680,37 @@ public class MainActivity extends AppCompatActivity {
             showNotificationPermissionExplanation();
             return;
         }
+        if (action == NotificationPermissionPolicy.ACTION_MANAGE) {
+            showNotificationManagementDialog();
+            return;
+        }
         openNotificationSettings();
+    }
+
+    private void showNotificationManagementDialog() {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.operations_reminder_manage_title)
+                .setMessage(R.string.operations_reminder_manage_message)
+                .setNegativeButton(R.string.operations_reminder_system_settings_action,
+                        (dialog, which) -> openNotificationSettings())
+                .setPositiveButton(R.string.operations_reminder_test_action,
+                        (dialog, which) -> sendReminderTest())
+                .show();
+    }
+
+    private void sendReminderTest() {
+        boolean posted = OperationsWatchService.postReminderTest(this);
+        if (!posted) {
+            lastNotificationPermissionStatus = notificationPermissionStatus();
+            if (root != null && currentTab == TAB_SETTINGS) {
+                showProfileView();
+            }
+        }
+        showOperationsWatchFeedback(
+                getString(posted
+                        ? R.string.operations_reminder_test_sent
+                        : R.string.operations_reminder_test_unavailable),
+                !posted);
     }
 
     private void showNotificationPermissionExplanation() {

@@ -29,7 +29,7 @@ public class NotificationPermissionPolicyTest {
     public void grantedPermissionStillSurfacesDisabledAttentionChannel() {
         assertEquals(NotificationPermissionPolicy.ACTION_MANAGE,
                 NotificationPermissionPolicy.action(35, true, true, true, true, false));
-        assertEquals("已开启",
+        assertEquals("已开启 · 可测试",
                 NotificationPermissionPolicy.status(35, true, true, true, true, false));
         assertEquals(NotificationPermissionPolicy.ACTION_OPEN_SETTINGS,
                 NotificationPermissionPolicy.action(35, true, true, false, true, false));

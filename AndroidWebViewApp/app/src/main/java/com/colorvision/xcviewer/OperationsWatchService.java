@@ -38,6 +38,7 @@ public final class OperationsWatchService extends Service {
     static final String ATTENTION_CHANNEL_ID = "operations_attention";
     private static final int NOTIFICATION_ID = 22023;
     private static final int ATTENTION_NOTIFICATION_ID = 22024;
+    private static final int REMINDER_TEST_NOTIFICATION_ID = 22025;
     private static final String LOG_TAG = "CVOperationsWatch";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -88,6 +89,55 @@ public final class OperationsWatchService extends Service {
         }
     }
 
+    static boolean postReminderTest(Context context) {
+        if (!NotificationPermissionPolicy.canPostAttention(
+                Build.VERSION.SDK_INT,
+                NotificationPermissionState.hasRuntimePermission(context),
+                NotificationPermissionState.appNotificationsEnabled(context),
+                NotificationPermissionState.attentionChannelEnabled(context))) {
+            return false;
+        }
+        createNotificationChannels(context);
+        if (!NotificationPermissionState.attentionChannelEnabled(context)) {
+            return false;
+        }
+        Context applicationContext = context.getApplicationContext();
+        Intent openIntent = new Intent(applicationContext, MainActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(MainActivity.EXTRA_START_TAB, MainActivity.TAB_SETTINGS);
+        PendingIntent contentIntent = PendingIntent.getActivity(
+                applicationContext,
+                2,
+                openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        Notification notification = new NotificationCompat.Builder(
+                applicationContext, ATTENTION_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_devices_24)
+                .setContentTitle(applicationContext.getString(
+                        R.string.operations_reminder_test_notification_title))
+                .setContentText(applicationContext.getString(
+                        R.string.operations_reminder_test_notification_body))
+                .setContentIntent(contentIntent)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(false)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .build();
+        NotificationManager manager = applicationContext.getSystemService(
+                NotificationManager.class);
+        if (manager == null) {
+            return false;
+        }
+        try {
+            manager.notify(REMINDER_TEST_NOTIFICATION_ID, notification);
+            return true;
+        } catch (SecurityException ex) {
+            Log.w(LOG_TAG, "operations_reminder_test_denied", ex);
+            return false;
+        }
+    }
+
     static void refreshConnectionPreference(Context context) {
         AppPreferences preferences = new AppPreferences(context);
         if (!OperationsWatchPreferencePolicy.shouldRun(
@@ -113,7 +163,7 @@ public final class OperationsWatchService extends Service {
         hasCompletedCheck = !persistedState.isEmpty();
         offlineConfirmed = OperationsWatchHistory.STATE_OFFLINE.equals(persistedState);
         lastAttentionKey = OperationsWatchHistory.attentionKey(persistedState);
-        createNotificationChannels();
+        createNotificationChannels(this);
         registerNetworkCallback();
     }
 
@@ -683,7 +733,7 @@ public final class OperationsWatchService extends Service {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
-    private void createNotificationChannels() {
+    private static void createNotificationChannels(Context context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return;
         }
@@ -699,7 +749,7 @@ public final class OperationsWatchService extends Service {
                 NotificationManager.IMPORTANCE_DEFAULT);
         attentionChannel.setDescription("仅在已配对主机进入新的异常状态时提醒一次");
         attentionChannel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
-        NotificationManager manager = getSystemService(NotificationManager.class);
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
         if (manager != null) {
             manager.createNotificationChannel(watchChannel);
             manager.createNotificationChannel(attentionChannel);

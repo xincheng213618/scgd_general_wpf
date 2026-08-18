@@ -42,7 +42,7 @@ final class NotificationPermissionPolicy {
                 runtimeRequestBlocked,
                 shouldShowRationale);
         if (action == ACTION_MANAGE) {
-            return "已开启";
+            return "已开启 · 可测试";
         }
         boolean runtimeGranted = androidSdk < 33 || runtimePermissionGranted;
         if (runtimeGranted && appNotificationsEnabled && !attentionChannelEnabled) {
