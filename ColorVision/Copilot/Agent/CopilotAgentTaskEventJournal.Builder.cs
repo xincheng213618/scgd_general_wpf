@@ -37,15 +37,28 @@ namespace ColorVision.Copilot
             var relatedIds = CreateActiveBackgroundCommandRelatedIds(
                 activeBackgroundCommands,
                 nameof(activeBackgroundCommands));
+            lock (_syncRoot)
+            {
+                var existingStart = _events.LastOrDefault(item =>
+                    item.Type == CopilotAgentTaskEventType.RunStarted
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal));
+                if (existingStart != null)
+                {
+                    if (existingStart.RelatedIds.SequenceEqual(relatedIds, StringComparer.Ordinal))
+                        return;
+                    throw new InvalidOperationException(
+                        $"Agent run {RunId} already started with different background command evidence.");
+                }
 
-            Append(
-                CopilotAgentTaskEventType.RunStarted,
-                RunId,
-                "running",
-                relatedIds.Length == 0
-                    ? "Agent run started."
-                    : $"Agent run started with {relatedIds.Length} active application-managed background command(s).",
-                relatedIds: relatedIds);
+                Append(
+                    CopilotAgentTaskEventType.RunStarted,
+                    RunId,
+                    "running",
+                    relatedIds.Length == 0
+                        ? "Agent run started."
+                        : $"Agent run started with {relatedIds.Length} active application-managed background command(s).",
+                    relatedIds: relatedIds);
+            }
         }
 
         internal void RecordValidationBackgroundCommandSnapshot(
@@ -523,6 +536,15 @@ namespace ColorVision.Copilot
         {
             lock (_syncRoot)
             {
+                if (type != CopilotAgentTaskEventType.RunStopped
+                    && _events.Any(item =>
+                        item.Type == CopilotAgentTaskEventType.RunStopped
+                        && string.Equals(item.RunId, RunId, StringComparison.Ordinal)))
+                {
+                    throw new InvalidOperationException(
+                        $"Agent run {RunId} is already stopped and cannot accept more events.");
+                }
+
                 var timestamp = occurredAtUtc ?? DateTimeOffset.UtcNow;
                 var sequence = _nextSequence++;
                 var item = new CopilotAgentTaskEvent

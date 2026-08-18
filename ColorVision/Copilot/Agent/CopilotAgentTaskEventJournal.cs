@@ -126,10 +126,23 @@ namespace ColorVision.Copilot
                     .GroupBy(item => item.RunId, StringComparer.Ordinal)
                     .Any(group => group.Count() > 1)
                 || Events
+                    .Where(item => item.Type == CopilotAgentTaskEventType.RunStarted)
+                    .GroupBy(item => item.RunId, StringComparer.Ordinal)
+                    .Any(group => group.Count() > 1)
+                || Events
                     .Where(item => item.Type == CopilotAgentTaskEventType.RunStopped)
                     .Any(item => !Enum.TryParse<CopilotAgentStopReason>(item.State, out var reason)
                         || reason == CopilotAgentStopReason.None
-                        || !string.Equals(item.State, reason.ToString(), StringComparison.Ordinal)))
+                        || !string.Equals(item.State, reason.ToString(), StringComparison.Ordinal))
+                || Events
+                    .GroupBy(item => item.RunId, StringComparer.Ordinal)
+                    .Any(group =>
+                    {
+                        var stopped = group.SingleOrDefault(item =>
+                            item.Type == CopilotAgentTaskEventType.RunStopped);
+                        return stopped != null
+                            && group.Any(item => item.Sequence > stopped.Sequence);
+                    }))
             {
                 return false;
             }

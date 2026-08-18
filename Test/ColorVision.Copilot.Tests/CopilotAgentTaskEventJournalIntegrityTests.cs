@@ -929,6 +929,70 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void RunStartIsIdempotentAndStopIsTerminal()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordRunStarted();
+        var startedSnapshot = journal.Snapshot();
+        var started = Assert.Single(
+            startedSnapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.RunStarted);
+
+        var duplicateTimestamp = started.OccurredAtUtc.AddTicks(1);
+        var duplicateStart = new CopilotAgentTaskEvent
+        {
+            Sequence = started.Sequence + 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                started.Sequence + 1,
+                started.RunId,
+                CopilotAgentTaskEventType.RunStarted,
+                duplicateTimestamp),
+            Type = CopilotAgentTaskEventType.RunStarted,
+            OccurredAtUtc = duplicateTimestamp,
+            RunId = started.RunId,
+            SubjectId = started.SubjectId,
+            RelatedIds = started.RelatedIds,
+            State = started.State,
+            Summary = started.Summary,
+        };
+        Assert.True(duplicateStart.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = startedSnapshot.Events.Append(duplicateStart).ToArray(),
+        }.IsStructurallyValid());
+
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var terminalSnapshot = journal.Snapshot();
+        var stopped = Assert.Single(
+            terminalSnapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.RunStopped);
+        Assert.Throws<InvalidOperationException>(journal.RecordSessionResumed);
+
+        var lateTimestamp = stopped.OccurredAtUtc.AddTicks(1);
+        var lateEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = stopped.Sequence + 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                stopped.Sequence + 1,
+                stopped.RunId,
+                CopilotAgentTaskEventType.SessionResumed,
+                lateTimestamp),
+            Type = CopilotAgentTaskEventType.SessionResumed,
+            OccurredAtUtc = lateTimestamp,
+            RunId = stopped.RunId,
+            SubjectId = stopped.RunId,
+            State = "resumed",
+            Summary = "Late event.",
+        };
+        Assert.True(lateEvent.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = terminalSnapshot.Events.Append(lateEvent).ToArray(),
+        }.IsStructurallyValid());
+    }
+
+    [Fact]
     public void InterruptedRunRecoveryRepairsCheckpointJournalBeforeRunStop()
     {
         var profile = CreateProfile();

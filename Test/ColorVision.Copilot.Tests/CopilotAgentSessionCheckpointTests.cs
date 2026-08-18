@@ -960,12 +960,13 @@ public sealed class CopilotAgentSessionCheckpointTests
             Id = CopilotAgentTaskEventIds.CreateEventId(
                 sequence,
                 runId,
-                CopilotAgentTaskEventType.RunStarted,
+                CopilotAgentTaskEventType.TaskLedgerCaptured,
                 occurredAtUtc),
-            Type = CopilotAgentTaskEventType.RunStarted,
+            Type = CopilotAgentTaskEventType.TaskLedgerCaptured,
             OccurredAtUtc = occurredAtUtc,
             RunId = runId,
             SubjectId = runId,
+            State = "test",
         };
     }
 
