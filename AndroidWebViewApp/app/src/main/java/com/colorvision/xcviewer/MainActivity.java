@@ -48,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
     static final String EXTRA_START_TAB = "start_tab";
     static final String EXTRA_FROM_OPERATIONS = "from_operations";
     private static final int REQUEST_QR_SCAN = 1001;
-    private static final int REQUEST_AUDIO_PICK = 1003;
     private static final int REQUEST_INSTALL_PERMISSION = 1004;
     private static final int NAV_OPERATIONS = 2001;
     private static final int NAV_SETTINGS = 2002;
@@ -61,7 +60,6 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private AppPreferences appPreferences;
     private ThemeManager themeManager;
-    private MusicPlayerController musicController;
     private TextView headerTitle;
     private TextView headerSubtitle;
     private BottomNavigationView bottomNavigation;
@@ -91,7 +89,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         themeManager = new ThemeManager(this, appPreferences);
-        musicController = new MusicPlayerController(this, appPreferences, this::chooseAudioFile);
         themeManager.applySystemBars(this);
 
         root = new FrameLayout(this);
@@ -339,7 +336,7 @@ public class MainActivity extends AppCompatActivity {
         content.addView(operationsCard, fullWidthCardParams());
         operationsCard.addView(makeTitle("连接运维电脑", 22), matchWidthWrapParams());
 
-        TextView status = makeBodyText("扫描电脑端“选项 > 局域网控制”中的短时安全配对码。完成一次配对后，运维伴侣会成为首屏并持续守护安全连接。 ");
+        TextView status = makeBodyText("扫描电脑端“设置 > 局域网控制”中的短时安全配对码。完成一次配对后，运维伴侣会成为首屏并持续守护安全连接。 ");
         status.setPadding(0, dp(8), 0, dp(4));
         operationsCard.addView(status, matchWidthWrapParams());
 
@@ -385,30 +382,29 @@ public class MainActivity extends AppCompatActivity {
         content.addView(connectionSection, settingsSectionParams());
         boolean paired = appPreferences.hasOperationsProfile();
         int pairedComputerCount = appPreferences.getOperationsProfileCount();
-        addSettingsRow(connectionSection, "现场运维",
+        addSettingsRow(connectionSection, SettingsInformationArchitecture.OPERATIONS,
                 paired ? "当前 " + appPreferences.getActiveOperationsProfileLabel()
                         + " · 共 " + pairedComputerCount + " 台" : "尚未配对",
                 v -> openOperations());
-        addSettingsRow(connectionSection, "安全通道",
+        addSettingsRow(connectionSection, SettingsInformationArchitecture.SECURE_CHANNEL,
                 paired ? "设备密钥 + TLS 证书固定" : "等待安全配对",
                 null);
-        addSettingsRow(connectionSection, paired ? "添加电脑" : "连接电脑", "扫描二维码", v -> startQrScan());
+        addSettingsRow(connectionSection,
+                paired ? SettingsInformationArchitecture.ADD_COMPUTER
+                        : SettingsInformationArchitecture.CONNECT_COMPUTER,
+                "扫描二维码", v -> startQrScan());
 
         LinearLayout permissionSection = makeSettingsSection();
         content.addView(permissionSection, settingsSectionParams());
-        addSettingsRow(permissionSection, "相机权限", cameraPermissionStatus(), v -> startQrScan());
-        addSettingsRow(permissionSection, "网络权限", "已配置", null);
-        addSettingsRow(permissionSection, "音乐权限", "选择单曲授权", v -> chooseAudioFile());
+        addSettingsRow(permissionSection, SettingsInformationArchitecture.CAMERA_PERMISSION,
+                cameraPermissionStatus(), v -> startQrScan());
 
         LinearLayout appSection = makeSettingsSection();
         content.addView(appSection, settingsSectionParams());
-        addSettingsRow(appSection, "音乐播放", musicController.getSavedAudioTitle(), v -> chooseAudioFile());
-        addSettingsRow(appSection, "主题模式", getThemeModeLabel(), v -> showThemeDialog());
-        addSettingsRow(appSection, "应用更新", "当前 " + getAppVersionName() + " · 签名校验", v -> checkForAppUpdate());
-
-        LinearLayout actionSection = makeSettingsSection();
-        content.addView(actionSection, settingsSectionParams());
-        addSettingsRow(actionSection, "打开现场运维", "", v -> openOperations());
+        addSettingsRow(appSection, SettingsInformationArchitecture.THEME_MODE,
+                getThemeModeLabel(), v -> showThemeDialog());
+        addSettingsRow(appSection, SettingsInformationArchitecture.APP_UPDATE,
+                "当前 " + getAppVersionName() + " · 签名校验", v -> checkForAppUpdate());
 
         return scrollView;
     }
@@ -519,37 +515,6 @@ public class MainActivity extends AppCompatActivity {
         return params;
     }
 
-    private void chooseAudioFile() {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("audio/*");
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-        try {
-            startActivityForResult(intent, REQUEST_AUDIO_PICK);
-        } catch (Exception ex) {
-            Toast.makeText(this, "没有可用的音乐选择器", Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private void handlePickedAudio(Intent data) {
-        Uri uri = data.getData();
-        if (uri == null) {
-            Toast.makeText(this, "没有读取到音乐文件", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        int readFlags = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
-        if (readFlags != 0) {
-            try {
-                getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            } catch (SecurityException ignored) {
-            }
-        }
-
-        String title = AudioFiles.getDisplayName(this, uri);
-        musicController.setAudio(uri, title, true);
-    }
-
     private void startQrScan() {
         if (hasCameraPermission()
                 || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
@@ -610,15 +575,6 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             Toast.makeText(this, "已取消运维配对扫码", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (requestCode == REQUEST_AUDIO_PICK) {
-            if (resultCode == RESULT_OK && data != null && data.getData() != null) {
-                handlePickedAudio(data);
-                return;
-            }
-            Toast.makeText(this, "已取消选择音乐", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -952,9 +908,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         appUpdateExecutor.shutdownNow();
-        if (musicController != null) {
-            musicController.release();
-        }
         super.onDestroy();
     }
 }

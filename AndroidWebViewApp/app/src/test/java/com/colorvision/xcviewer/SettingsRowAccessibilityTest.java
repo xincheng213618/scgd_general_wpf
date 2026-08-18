@@ -12,14 +12,14 @@ public class SettingsRowAccessibilityTest {
     }
 
     @Test
-    public void actionWithoutValueKeepsItsVisibleLabel() {
-        assertEquals("打开现场运维",
-                SettingsRowAccessibility.contentDescription("打开现场运维", ""));
+    public void emptyValueKeepsItsVisibleLabel() {
+        assertEquals("相机权限",
+                SettingsRowAccessibility.contentDescription("相机权限", ""));
     }
 
     @Test
     public void nullValuesDoNotLeakIntoAccessibilityText() {
-        assertEquals("相机权限",
-                SettingsRowAccessibility.contentDescription("相机权限", null));
+        assertEquals("安全通道",
+                SettingsRowAccessibility.contentDescription("安全通道", null));
     }
 }

@@ -1,0 +1,27 @@
+package com.colorvision.xcviewer;
+
+import java.util.Arrays;
+import java.util.List;
+
+final class SettingsInformationArchitecture {
+    static final String OPERATIONS = "现场运维";
+    static final String SECURE_CHANNEL = "安全通道";
+    static final String ADD_COMPUTER = "添加电脑";
+    static final String CONNECT_COMPUTER = "连接电脑";
+    static final String CAMERA_PERMISSION = "相机权限";
+    static final String THEME_MODE = "主题模式";
+    static final String APP_UPDATE = "应用更新";
+
+    private SettingsInformationArchitecture() {
+    }
+
+    static List<String> visibleRows(boolean paired) {
+        return Arrays.asList(
+                OPERATIONS,
+                SECURE_CHANNEL,
+                paired ? ADD_COMPUTER : CONNECT_COMPUTER,
+                CAMERA_PERMISSION,
+                THEME_MODE,
+                APP_UPDATE);
+    }
+}

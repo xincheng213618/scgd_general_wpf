@@ -1,6 +1,7 @@
 package com.colorvision.xcviewer;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 
@@ -15,8 +16,8 @@ final class AppPreferences {
     private static final String KEY_LEGACY_LAN_URL = "lan_url";
     private static final String KEY_THEME_MODE = "theme_mode";
     private static final String KEY_START_TAB = "start_tab";
-    private static final String KEY_AUDIO_URI = "audio_uri";
-    private static final String KEY_AUDIO_TITLE = "audio_title";
+    private static final String KEY_LEGACY_AUDIO_URI = "audio_uri";
+    private static final String KEY_LEGACY_AUDIO_TITLE = "audio_title";
     private static final String KEY_CAMERA_PERMISSION_BLOCKED = "camera_permission_blocked";
     private static final String KEY_DEVICE_ID = "operations_device_id";
     private static final String KEY_OPERATIONS_PROFILES = "operations_profiles_v1";
@@ -39,6 +40,7 @@ final class AppPreferences {
     AppPreferences(Context context) {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         migrateOperationsProfiles();
+        clearLegacyAudioAccess(context);
         if (preferences.contains(KEY_LEGACY_LAN_URL)
                 || preferences.contains(KEY_LEGACY_OPERATIONS_WATCH_ENABLED)
                 || preferences.contains(KEY_LEGACY_OPERATIONS_WATCH_STATE)) {
@@ -78,36 +80,30 @@ final class AppPreferences {
         return startTab;
     }
 
-    void saveAudio(Uri uri, String title) {
-        preferences.edit()
-                .putString(KEY_AUDIO_URI, uri.toString())
-                .putString(KEY_AUDIO_TITLE, title)
-                .apply();
-    }
-
-    Uri getAudioUri() {
-        String value = preferences.getString(KEY_AUDIO_URI, "");
-        if (value == null || value.isEmpty()) {
-            return null;
-        }
-
-        try {
-            return Uri.parse(value);
-        } catch (Exception ex) {
-            return null;
-        }
-    }
-
-    String getAudioTitle() {
-        return getAudioUri() == null ? "未选择音乐" : preferences.getString(KEY_AUDIO_TITLE, "已选择音乐");
-    }
-
     boolean isCameraPermissionBlocked() {
         return preferences.getBoolean(KEY_CAMERA_PERMISSION_BLOCKED, false);
     }
 
     void saveCameraPermissionBlocked(boolean blocked) {
         preferences.edit().putBoolean(KEY_CAMERA_PERMISSION_BLOCKED, blocked).apply();
+    }
+
+    private void clearLegacyAudioAccess(Context context) {
+        String value = preferences.getString(KEY_LEGACY_AUDIO_URI, "");
+        if (value != null && !value.isEmpty()) {
+            try {
+                context.getContentResolver().releasePersistableUriPermission(
+                        Uri.parse(value), Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            } catch (Exception ignored) {
+            }
+        }
+        if (preferences.contains(KEY_LEGACY_AUDIO_URI)
+                || preferences.contains(KEY_LEGACY_AUDIO_TITLE)) {
+            preferences.edit()
+                    .remove(KEY_LEGACY_AUDIO_URI)
+                    .remove(KEY_LEGACY_AUDIO_TITLE)
+                    .apply();
+        }
     }
 
     String getOrCreateDeviceId() {
