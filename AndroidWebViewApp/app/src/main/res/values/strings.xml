@@ -5,6 +5,8 @@
     <string name="app_update_downloading">正在下载并校验 %1$s…</string>
     <string name="qr_scan_back">返回</string>
     <string name="qr_scan_prompt">将电脑端二维码放入取景框</string>
+    <string name="qr_scan_help">配对码在哪里？</string>
+    <string name="qr_scan_help_continue">继续扫描</string>
     <string name="qr_scan_torch_on">开启补光灯</string>
     <string name="qr_scan_torch_off">关闭补光灯</string>
     <string name="operations_profile_current_summary">%1$s\n%2$s</string>

@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.camera.core.Camera;
@@ -51,6 +52,7 @@ public class QrScanActivity extends AppCompatActivity {
     });
     private final QrFrameDecoder frameDecoder = new QrFrameDecoder();
     private final AtomicBoolean completed = new AtomicBoolean();
+    private final AtomicBoolean pairingHelpVisible = new AtomicBoolean();
 
     private FrameLayout root;
     private PreviewView previewView;
@@ -115,13 +117,37 @@ public class QrScanActivity extends AppCompatActivity {
         statusCard.setCardBackgroundColor(Color.argb(184, 0, 0, 0));
         statusCard.setCardElevation(0);
         statusCard.setRadius(dp(16));
+
+        LinearLayout statusContent = new LinearLayout(this);
+        statusContent.setOrientation(LinearLayout.VERTICAL);
+        statusContent.setGravity(Gravity.CENTER_HORIZONTAL);
+        statusContent.setPadding(dp(10), dp(6), dp(10), dp(6));
+
         TextView statusText = new TextView(this);
         statusText.setText(R.string.qr_scan_prompt);
         statusText.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyLarge);
         statusText.setTextColor(Color.WHITE);
         statusText.setGravity(Gravity.CENTER);
-        statusText.setPadding(dp(18), dp(12), dp(18), dp(12));
-        statusCard.addView(statusText, new FrameLayout.LayoutParams(
+        statusText.setPadding(dp(8), dp(8), dp(8), 0);
+        statusContent.addView(statusText, new LinearLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT));
+
+        MaterialButton helpButton = new MaterialButton(
+                this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        helpButton.setText(R.string.qr_scan_help);
+        helpButton.setTextColor(Color.WHITE);
+        helpButton.setStrokeColor(ColorStateList.valueOf(Color.WHITE));
+        helpButton.setStrokeWidth(dp(1));
+        helpButton.setMinimumHeight(dp(48));
+        helpButton.setInsetTop(0);
+        helpButton.setInsetBottom(0);
+        helpButton.setOnClickListener(view -> showPairingHelp());
+        statusContent.addView(helpButton, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                dp(48)));
+
+        statusCard.addView(statusContent, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT));
         FrameLayout.LayoutParams statusParams = new FrameLayout.LayoutParams(
@@ -252,7 +278,8 @@ public class QrScanActivity extends AppCompatActivity {
 
     private void analyzeFrame(ImageProxy image) {
         try {
-            if (completed.get() || image.getPlanes().length == 0) {
+            if (!QrScanFramePolicy.shouldAnalyze(
+                    completed.get(), pairingHelpVisible.get(), image.getPlanes().length)) {
                 return;
             }
             ImageProxy.PlaneProxy lumaPlane = image.getPlanes()[0];
@@ -268,7 +295,7 @@ public class QrScanActivity extends AppCompatActivity {
                     image.getWidth(),
                     image.getHeight(),
                     image.getImageInfo().getRotationDegrees());
-            if (text != null && !text.isEmpty()) {
+            if (!pairingHelpVisible.get() && text != null && !text.isEmpty()) {
                 finishWithQrResult(text);
             }
         } catch (RuntimeException ignored) {
@@ -314,6 +341,14 @@ public class QrScanActivity extends AppCompatActivity {
                 torchButton.setEnabled(true);
             }
         }, ContextCompat.getMainExecutor(this));
+    }
+
+    private void showPairingHelp() {
+        if (!pairingHelpVisible.compareAndSet(false, true)) {
+            return;
+        }
+        PairingHelpDialog.showDuringScan(
+                this, () -> pairingHelpVisible.set(false));
     }
 
     private void updateTorchButton() {
