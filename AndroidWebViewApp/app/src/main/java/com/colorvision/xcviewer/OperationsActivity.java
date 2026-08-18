@@ -170,6 +170,7 @@ public class OperationsActivity extends AppCompatActivity {
     private String pendingOperationsDestination = "";
     private String currentDestination = OperationsDestinationState.OVERVIEW;
     private String pendingRestoredDestination = "";
+    private String problemBadgeState = "";
     private boolean returnToTriageOnBack;
     private boolean returnToToolboxOnBack;
     private boolean returnToSettingsOnBack;
@@ -408,6 +409,8 @@ public class OperationsActivity extends AppCompatActivity {
                 .setIcon(R.drawable.ic_report_problem_24);
         navigation.getMenu().add(0, NAV_TOOLS, 2, "工具").setIcon(R.drawable.ic_build_24);
         navigation.getMenu().add(0, NAV_SETTINGS, 3, "设置").setIcon(R.drawable.ic_settings_24);
+        renderProblemNavigationBadge(
+                navigation, preferences.getOperationsWatchState());
         navigation.setSelectedItemId(NAV_OPERATIONS);
         navigation.setOnItemSelectedListener(item -> {
             if (updatingBottomNavigation) {
@@ -474,6 +477,22 @@ public class OperationsActivity extends AppCompatActivity {
             }
         });
         return navigation;
+    }
+
+    private void renderProblemNavigationBadge(
+            BottomNavigationView navigation, String watchState) {
+        OperationsProblemBadgeRenderer.render(
+                navigation,
+                NAV_PROBLEMS,
+                OperationsProblemBadgePresentation.create(
+                        preferences.getOperationsProfileCount() > 0, watchState));
+    }
+
+    private void refreshProblemNavigationBadge() {
+        renderProblemNavigationBadge(
+                bottomNavigation,
+                problemBadgeState.isEmpty()
+                        ? preferences.getOperationsWatchState() : problemBadgeState);
     }
 
     private void installInPageBackNavigation() {
@@ -1521,8 +1540,10 @@ public class OperationsActivity extends AppCompatActivity {
         cachedAlertPrimarySource = "";
         cachedAlertSignature = "";
         lastSuccessfulDashboardUpdateLabel = "";
+        problemBadgeState = "";
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         clearDashboardLiveStatusReferences();
+        refreshProblemNavigationBadge();
     }
 
     private void setCurrentDestination(String destination) {
@@ -3596,6 +3617,14 @@ public class OperationsActivity extends AppCompatActivity {
         }
         enrichMonitorAlertSource(snapshot, false);
         dashboardSummaryLoaded = true;
+        problemBadgeState = remoteDashboard && !dashboardRemoteHostFresh
+                ? OperationsWatchHistory.STATE_REMOTE_WAITING
+                : OperationsMonitorClassifier.watchState(
+                        snapshot,
+                        remoteDashboard
+                                ? OperationsWatchHistory.STATE_REMOTE_ONLINE
+                                : OperationsWatchHistory.STATE_ONLINE);
+        refreshProblemNavigationBadge();
         JSONObject flow = snapshot.optJSONObject("flow");
         JSONObject devices = snapshot.optJSONObject("devices");
         JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
@@ -6723,6 +6752,7 @@ public class OperationsActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         syncBottomNavigation();
+        refreshProblemNavigationBadge();
         activityResumed = true;
         refreshOperationsTargetPresentation();
         if (preferences != null && preferences.hasOperationsProfile()) {

@@ -244,6 +244,7 @@ public class MainActivity extends AppCompatActivity {
                 .setIcon(R.drawable.ic_report_problem_24);
         nav.getMenu().add(0, NAV_TOOLS, 2, "工具").setIcon(R.drawable.ic_build_24);
         nav.getMenu().add(0, NAV_SETTINGS, 3, "设置").setIcon(R.drawable.ic_settings_24);
+        renderProblemNavigationBadge(nav);
         nav.setOnItemSelectedListener(item -> {
             if (updatingBottomNavigation) {
                 return true;
@@ -271,6 +272,15 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
         return nav;
+    }
+
+    private void renderProblemNavigationBadge(BottomNavigationView navigation) {
+        OperationsProblemBadgeRenderer.render(
+                navigation,
+                NAV_PROBLEMS,
+                OperationsProblemBadgePresentation.create(
+                        appPreferences.getOperationsProfileCount() > 0,
+                        appPreferences.getOperationsWatchState()));
     }
 
     private void selectTab(int tab) {
@@ -923,6 +933,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        renderProblemNavigationBadge(bottomNavigation);
         boolean granted = hasCameraPermission();
         String notificationStatus = appPreferences == null
                 ? "" : notificationPermissionStatus();
