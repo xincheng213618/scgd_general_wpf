@@ -41,7 +41,7 @@ public class OperationsTriagePresentationTest {
         OperationsTriagePresentation.ViewModel model =
                 OperationsTriagePresentation.from(report, value -> "格式化 " + value);
 
-        assertEquals("发现需要关注的状态", model.stateLabel);
+        assertEquals("需要关注 · 1 项待复核", model.stateLabel);
         assertEquals(OperationsTriagePresentation.TONE_ATTENTION, model.tone);
         assertEquals(4, model.metrics.size());
         assertEquals("triage.events.view", model.metrics.get(0).actionId);
@@ -54,6 +54,7 @@ public class OperationsTriagePresentationTest {
         assertEquals("检测设备，需关注 2 / 共 6，就绪 2，已关闭 2，离线 2，点按查看详情",
                 model.metrics.get(3).accessibilityLabel());
         assertEquals(1, model.findings.size());
+        assertEquals("优先处理", model.prioritySectionLabel());
         OperationsTriagePresentation.Finding finding = model.findings.get(0);
         assertEquals("警告 · 检测设备 · 2 条证据", finding.evidenceLabel());
         assertEquals("格式化 2026-08-18T08:32:00Z", finding.latestAt);
@@ -66,9 +67,11 @@ public class OperationsTriagePresentationTest {
     @Test
     public void criticalReportUsesErrorTone() throws Exception {
         OperationsTriagePresentation.ViewModel model = OperationsTriagePresentation.from(
-                new JSONObject("{\"state\":\"critical\",\"criticalCount\":2}"), value -> value);
+                new JSONObject("{\"state\":\"critical\",\"criticalCount\":2,"
+                        + "\"findings\":[{},{}]}"), value -> value);
 
-        assertEquals("发现严重事件 · 请优先复核", model.stateLabel);
+        assertEquals("严重事件 · 2 项待复核", model.stateLabel);
+        assertEquals("优先处理 · 2", model.prioritySectionLabel());
         assertEquals(OperationsTriagePresentation.TONE_ERROR, model.tone);
         assertEquals(OperationsTriagePresentation.TONE_ERROR, model.metrics.get(0).tone);
     }
@@ -102,5 +105,16 @@ public class OperationsTriagePresentationTest {
         assertEquals("批准作业（需电脑共签）", action.buttonLabel());
         assertTrue(OperationsTriagePresentation.isSupportedAction("triage.jobs.review"));
         assertFalse(OperationsTriagePresentation.isSupportedAction("triage.unknown"));
+    }
+
+    @Test
+    public void failedRefreshLabelsAVisiblePreviousReportAsReferenceOnly() {
+        assertEquals("电脑端暂不可达。",
+                OperationsTriagePresentation.failureDetails(
+                        "电脑端暂不可达。", false));
+        assertEquals("电脑端暂不可达。\n\n"
+                        + "下方保留上次成功的排障摘要，仅供参考；恢复连接后请重新刷新。",
+                OperationsTriagePresentation.failureDetails(
+                        "电脑端暂不可达。", true));
     }
 }

@@ -119,6 +119,7 @@ public class OperationsActivity extends AppCompatActivity {
     private TextView state;
     private TextView dashboardFreshness;
     private TextView details;
+    private MaterialCardView detailsCard;
     private LinearProgressIndicator progress;
     private SwipeRefreshLayout dashboardRefresh;
     private ScrollView dashboardScroll;
@@ -324,7 +325,7 @@ public class OperationsActivity extends AppCompatActivity {
         details.setLineSpacing(0, 1.08f);
         details.setPadding(dp(16), dp(12), dp(16), dp(12));
         details.setTextIsSelectable(true);
-        MaterialCardView detailsCard = new MaterialCardView(this);
+        detailsCard = new MaterialCardView(this);
         detailsCard.addView(details, new MaterialCardView.LayoutParams(
                 MaterialCardView.LayoutParams.MATCH_PARENT,
                 MaterialCardView.LayoutParams.WRAP_CONTENT));
@@ -1289,6 +1290,10 @@ public class OperationsActivity extends AppCompatActivity {
                 currentDestination, normalized, returnToTriageOnBack);
         AppScreenMotion.beginContentTransition(dashboardContent, direction);
         currentDestination = normalized;
+        if (detailsCard != null) {
+            detailsCard.setVisibility(OperationsDestinationState.TRIAGE.equals(normalized)
+                    ? View.GONE : View.VISIBLE);
+        }
         refreshOperationsHeaderNavigation();
     }
 
@@ -3654,9 +3659,19 @@ public class OperationsActivity extends AppCompatActivity {
                 }
                 runOnUiThread(() -> renderTriageCenter(report));
             } catch (Exception ex) {
-                runOnUiThread(() -> showTransientError(ex));
+                runOnUiThread(() -> showTriageError(ex));
             }
         });
+    }
+
+    private void showTriageError(Exception ex) {
+        progress.setVisibility(View.GONE);
+        state.setText("排障建议未更新");
+        details.setText(OperationsTriagePresentation.failureDetails(
+                OperationsErrorPresentation.readable(ex),
+                actions.getChildCount() > 0));
+        detailsCard.setVisibility(View.VISIBLE);
+        scrollDashboardToTop();
     }
 
     private void renderTriageCenter(JSONObject report) {
@@ -3666,7 +3681,6 @@ public class OperationsActivity extends AppCompatActivity {
         progress.setVisibility(View.GONE);
         title.setTitle("远程排障中心");
         state.setText(model.stateLabel);
-        details.setText(model.summary);
         actions.removeAllViews();
         actions.addView(OperationsTriageContent.create(
                         this,
@@ -5005,6 +5019,9 @@ public class OperationsActivity extends AppCompatActivity {
         progress.setVisibility(View.GONE);
         state.setText("操作失败");
         details.setText(OperationsErrorPresentation.readable(ex));
+        if (detailsCard != null) {
+            detailsCard.setVisibility(View.VISIBLE);
+        }
     }
 
     private void addAction(String label, String path) {

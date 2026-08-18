@@ -96,7 +96,7 @@ final class OperationsTriagePresentation {
         String summary = report.optString("summary", findings.isEmpty()
                 ? "当前有界证据中没有需要处理的项目。" : "排障建议已生成。");
         return new ViewModel(
-                stateLabel(state),
+                stateLabel(state, findings.size()),
                 summary,
                 stateTone(state),
                 Collections.unmodifiableList(metrics),
@@ -119,6 +119,17 @@ final class OperationsTriagePresentation {
             default:
                 return false;
         }
+    }
+
+    static String failureDetails(String readableError, boolean previousReportVisible) {
+        String detail = readableError == null || readableError.trim().isEmpty()
+                ? "电脑端安全通道当前不可达。"
+                : readableError.trim();
+        if (!previousReportVisible) {
+            return detail;
+        }
+        return detail + "\n\n下方保留上次成功的排障摘要，仅供参考；"
+                + "恢复连接后请重新刷新。";
     }
 
     private static String deviceSummary(JSONObject report) {
@@ -196,12 +207,16 @@ final class OperationsTriagePresentation {
         }
     }
 
-    private static String stateLabel(String value) {
+    private static String stateLabel(String value, int findingCount) {
         if ("critical".equalsIgnoreCase(value)) {
-            return "发现严重事件 · 请优先复核";
+            return findingCount > 0
+                    ? "严重事件 · " + findingCount + " 项待复核"
+                    : "发现严重事件 · 请优先复核";
         }
         if ("attention".equalsIgnoreCase(value)) {
-            return "发现需要关注的状态";
+            return findingCount > 0
+                    ? "需要关注 · " + findingCount + " 项待复核"
+                    : "发现需要关注的状态";
         }
         return "当前有界证据正常";
     }
@@ -264,6 +279,12 @@ final class OperationsTriagePresentation {
             this.metrics = metrics;
             this.findings = findings;
             this.safetyNotice = safetyNotice;
+        }
+
+        String prioritySectionLabel() {
+            return findings.size() == 1
+                    ? "优先处理"
+                    : "优先处理 · " + findings.size();
         }
     }
 

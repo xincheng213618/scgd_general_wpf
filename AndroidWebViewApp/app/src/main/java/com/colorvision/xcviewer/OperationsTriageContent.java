@@ -31,16 +31,9 @@ final class OperationsTriageContent {
         LinearLayout root = new LinearLayout(activity);
         root.setOrientation(LinearLayout.VERTICAL);
 
-        root.addView(sectionTitle(activity, themeManager, "运行概览"), matchWidth());
-        root.addView(metricsCard(activity, themeManager, model, actionHandler),
-                topMargin(dp(activity, 8)));
-
-        String findingsTitle = model.findings.isEmpty()
-                ? "发现项" : "发现项 · " + model.findings.size();
-        root.addView(sectionTitle(activity, themeManager, findingsTitle), topMargin(dp(activity, 20)));
-        if (model.findings.isEmpty()) {
-            root.addView(emptyCard(activity, themeManager), topMargin(dp(activity, 8)));
-        } else {
+        if (!model.findings.isEmpty()) {
+            root.addView(sectionTitle(
+                    activity, themeManager, model.prioritySectionLabel()), matchWidth());
             Set<String> renderedActions = new HashSet<>();
             for (OperationsTriagePresentation.Finding finding : model.findings) {
                 root.addView(findingCard(
@@ -52,6 +45,11 @@ final class OperationsTriageContent {
                         topMargin(dp(activity, 8)));
             }
         }
+
+        root.addView(sectionTitle(activity, themeManager, "运行概览"),
+                model.findings.isEmpty() ? matchWidth() : topMargin(dp(activity, 20)));
+        root.addView(metricsCard(activity, themeManager, model, actionHandler),
+                topMargin(dp(activity, 8)));
 
         root.addView(sectionTitle(activity, themeManager, "操作边界"), topMargin(dp(activity, 20)));
         root.addView(safetyCard(activity, themeManager, model.safetyNotice),
@@ -214,17 +212,6 @@ final class OperationsTriageContent {
                     activity, null, com.google.android.material.R.attr.materialButtonTonalStyle);
         }
         return new MaterialButton(activity);
-    }
-
-    private static MaterialCardView emptyCard(Activity activity, ThemeManager themeManager) {
-        TextView message = text(activity, "当前有界证据未发现需要处理的项目。",
-                com.google.android.material.R.style.TextAppearance_Material3_BodyLarge,
-                themeManager.onPrimaryContainerColor());
-        message.setPadding(dp(activity, 16), dp(activity, 16), dp(activity, 16), dp(activity, 16));
-        MaterialCardView card = new MaterialCardView(activity);
-        card.setCardBackgroundColor(themeManager.primaryContainerColor());
-        card.addView(message, matchCardWidth());
-        return card;
     }
 
     private static MaterialCardView safetyCard(
