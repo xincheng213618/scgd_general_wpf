@@ -43,10 +43,10 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
     [STNode("Flow_CustomNodes", "本地相机取图")]
     [FlowNodeDocumentation(
-        "从本机物理相机采集一帧 RAW 图像，并按需在本地完成校正、图像翻转和文件保存。",
-        Usage = "1. 选择设备代码，直接配置曝光时间、增益和平均次数。\n2. 需要校正时选择校正模板；不选择时只输出 RAW。\n3. 按需要开启自动连接、自动曝光、保存文件和图像翻转。\n4. 将 OUT 连接到后续本地校正、POI 或其他算法节点。",
-        Processing = "相机采集 RAW → 空间/普通校正 → 色度校正并生成 CIE（模板包含时）→ 图像翻转 → 保存文件。下游 POI 始终使用最终方向的图像坐标。",
-        Notes = "X 表示上下翻转，Y 表示左右镜像，XY 表示旋转 180°；不支持 90°/270°旋转。未选择校正模板时不会提前翻转 RAW，方向配置会保留到下游本地校正完成后再应用。")]
+        "Flow_LocalCamera_Summary",
+        Usage = "Flow_LocalCamera_Usage",
+        Processing = "Flow_LocalCamera_Processing",
+        Notes = "Flow_LocalCamera_Notes")]
     [FlowNodePropertyEditorAttribute(nameof(CalibTempName), typeof(FlowCalibrationTemplateEditor))]
     public sealed class LocalCameraNode : LocalFlowNodeBase
     {

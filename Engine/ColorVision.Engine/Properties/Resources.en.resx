@@ -4259,4 +4259,74 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CloneCalibrationTemplatesFailure" xml:space="preserve">
     <value>Failed to clone calibration templates: {0}</value>
   </data>
+  <data name="Flow_NodeInspector_Configuration" xml:space="preserve"><value>Configuration</value></data>
+  <data name="Flow_NodeInspector_Documentation" xml:space="preserve"><value>Documentation</value></data>
+  <data name="Flow_NodeInspector_NoDocumentation" xml:space="preserve"><value>No usage documentation is available for this node.</value></data>
+  <data name="Flow_NodeInspector_Purpose" xml:space="preserve"><value>Purpose</value></data>
+  <data name="Flow_NodeInspector_HowToUse" xml:space="preserve"><value>How to use</value></data>
+  <data name="Flow_NodeInspector_ProcessingOrder" xml:space="preserve"><value>Processing order</value></data>
+  <data name="Flow_NodeInspector_Notes" xml:space="preserve"><value>Notes</value></data>
+  <data name="Flow_NodeInspector_Ports" xml:space="preserve"><value>Ports</value></data>
+  <data name="Flow_NodeInspector_Input" xml:space="preserve"><value>Input</value></data>
+  <data name="Flow_NodeInspector_Output" xml:space="preserve"><value>Output</value></data>
+  <data name="Flow_NodeInspector_PropertyDescriptions" xml:space="preserve"><value>Property descriptions</value></data>
+  <data name="Flow_LocalCamera_Summary" xml:space="preserve"><value>Captures one RAW frame from a local physical camera and optionally performs local calibration, image flipping, and file saving.</value></data>
+  <data name="Flow_LocalCamera_Usage" xml:space="preserve"><value>1. Select the device code and configure the exposure time, gain, and average count.&#xA;2. Select a calibration template when calibration is required; leave it empty to output RAW only.&#xA;3. Enable auto connect, auto exposure, file saving, and image flipping as needed.&#xA;4. Connect OUT to a downstream local calibration, POI, or other algorithm node.</value></data>
+  <data name="Flow_LocalCamera_Processing" xml:space="preserve"><value>Camera RAW capture → spatial/general calibration → color calibration and CIE generation (when included in the template) → image flip → file save. Downstream POI nodes always use coordinates in the final image orientation.</value></data>
+  <data name="Flow_LocalCamera_Notes" xml:space="preserve"><value>X flips vertically, Y mirrors horizontally, and XY rotates 180°. Rotations of 90° and 270° are not supported. When no calibration template is selected, RAW is not flipped early; the orientation setting is preserved until downstream local calibration finishes.</value></data>
+
+  <data name="本地关注点布点(Re)" xml:space="preserve"><value>Local POI Layout (Remap)</value></data>
+  <data name="本地关注点布点(参数)" xml:space="preserve"><value>Local POI Layout (Parameters)</value></data>
+  <data name="本地校正" xml:space="preserve"><value>Local Calibration</value></data>
+  <data name="本地校正+实时 POI" xml:space="preserve"><value>Local Calibration + Real-time POI</value></data>
+  <data name="本地相机取图" xml:space="preserve"><value>Local Camera Capture</value></data>
+  <data name="本地相机" xml:space="preserve"><value>Local Camera</value></data>
+  <data name="本地 POI" xml:space="preserve"><value>Local POI</value></data>
+  <data name="实时 POI" xml:space="preserve"><value>Real-time POI</value></data>
+  <data name="备用图像文件" xml:space="preserve"><value>Fallback Image File</value></data>
+  <data name="POI 模板" xml:space="preserve"><value>POI Template</value></data>
+  <data name="POI 类型" xml:space="preserve"><value>POI Type</value></data>
+  <data name="POI 宽度" xml:space="preserve"><value>POI Width</value></data>
+  <data name="POI 高度" xml:space="preserve"><value>POI Height</value></data>
+  <data name="校正模板" xml:space="preserve"><value>Calibration Template</value></data>
+  <data name="保存校正文件" xml:space="preserve"><value>Save Calibrated File</value></data>
+  <data name="布点 ROI" xml:space="preserve"><value>Layout ROI</value></data>
+  <data name="POI 模板(Re)" xml:space="preserve"><value>POI Template (Re)</value></data>
+  <data name="名称前缀" xml:space="preserve"><value>Name Prefix</value></data>
+  <data name="参数模板" xml:space="preserve"><value>Parameter Template</value></data>
+  <data name="曝光时间(ms)" xml:space="preserve"><value>Exposure Time (ms)</value></data>
+  <data name="增益" xml:space="preserve"><value>Gain</value></data>
+  <data name="平均次数" xml:space="preserve"><value>Average Count</value></data>
+  <data name="自动连接" xml:space="preserve"><value>Auto Connect</value></data>
+  <data name="自动曝光" xml:space="preserve"><value>Auto Exposure</value></data>
+  <data name="保存文件" xml:space="preserve"><value>Save Files</value></data>
+  <data name="图像翻转" xml:space="preserve"><value>Image Flip</value></data>
+  <data name="相机管理" xml:space="preserve"><value>Camera Management</value></data>
+  <data name="校正缓存" xml:space="preserve"><value>Calibration Cache</value></data>
+  <data name="本地校正缓存管理" xml:space="preserve"><value>Local Calibration Cache Management</value></data>
+
+  <data name="上游没有本地内存帧时读取此文件；有上游帧时忽略" xml:space="preserve"><value>Read this file when no local in-memory frame is available upstream; ignored when an upstream frame exists.</value></data>
+  <data name="校正后直接在 CIE 内存上计算的 POI 模板" xml:space="preserve"><value>POI template calculated directly from the calibrated CIE frame in memory.</value></data>
+  <data name="IN_POI 没有布点结果时使用的备用 POI 模板" xml:space="preserve"><value>Fallback POI template used when IN_POI has no layout result.</value></data>
+  <data name="与服务实时关注点算法一致；None 使用上游布点结果中的类型" xml:space="preserve"><value>Matches the service real-time POI algorithm; None uses the type from the upstream layout result.</value></data>
+  <data name="POI 类型为圆或矩形时覆盖上游布点宽度" xml:space="preserve"><value>Overrides the upstream layout width when the POI type is Circle or Rectangle.</value></data>
+  <data name="POI 类型为圆或矩形时覆盖上游布点高度" xml:space="preserve"><value>Overrides the upstream layout height when the POI type is Circle or Rectangle.</value></data>
+  <data name="要计算的 POI 模板" xml:space="preserve"><value>POI template to calculate.</value></data>
+  <data name="对 RAW 指针执行的相机校正模板；CVCIE 输入会直接透传" xml:space="preserve"><value>Camera calibration template applied to the RAW pointer; CVCIE input passes through unchanged.</value></data>
+  <data name="默认关闭；基础校正保存 CVRAW，包含亮度/颜色校正时保存 CVCIE" xml:space="preserve"><value>Off by default. Basic calibration saves CVRAW; calibration containing luminance or color correction saves CVCIE.</value></data>
+  <data name="包含目标四角点的 POI 模板，例如 POI_W_AUTO" xml:space="preserve"><value>POI template containing the four target corner points, such as POI_W_AUTO.</value></data>
+  <data name="包含画布四角参考点、用于 ReMapping 的 POI 模板" xml:space="preserve"><value>POI template containing the four canvas reference corners for remapping.</value></data>
+  <data name="添加到映射后每个关注点名称之前的前缀" xml:space="preserve"><value>Prefix added to each mapped POI name.</value></data>
+  <data name="使用行列、边距、点类型和点尺寸生成关注点" xml:space="preserve"><value>Generates POIs from rows, columns, margins, point type, and point size.</value></data>
+  <data name="提供布点区域的 POI 模板，例如 POI_W_AUTO" xml:space="preserve"><value>POI template that defines the layout area, such as POI_W_AUTO.</value></data>
+  <data name="本次取图使用的曝光时间；三通道相机的 R/G/B 使用相同值" xml:space="preserve"><value>Exposure time for this capture; R, G, and B use the same value on a three-channel camera.</value></data>
+  <data name="本次取图使用的相机增益" xml:space="preserve"><value>Camera gain for this capture.</value></data>
+  <data name="单次流程执行中用于平均的采集次数，最小为 1" xml:space="preserve"><value>Number of captures averaged in one flow execution; minimum 1.</value></data>
+  <data name="取图时使用的校正模板；为空时只输出 CVRAW" xml:space="preserve"><value>Calibration template used during capture; leave empty to output CVRAW only.</value></data>
+  <data name="执行取图前，相机未连接时按设备当前配置自动尝试连接" xml:space="preserve"><value>Attempts to connect using the current device configuration when the camera is disconnected before capture.</value></data>
+  <data name="启用相机本地自动曝光" xml:space="preserve"><value>Enables local camera auto exposure.</value></data>
+  <data name="按本地相机规则保存 CVRAW，并在有校正数据时保存 CVCIE" xml:space="preserve"><value>Saves CVRAW according to local camera rules and saves CVCIE when calibrated data is available.</value></data>
+  <data name="X=上下翻转，Y=左右镜像，XY=180°（不支持 90°/270°旋转）。空间/普通校正始终先执行；有色度校正时翻转最终 CIE，否则翻转校正后的 RAW。未选择校正模板时保留方向配置，等待下游本地校正后应用；POI 使用最终方向的坐标。" xml:space="preserve"><value>X flips vertically, Y mirrors horizontally, and XY rotates 180° (90°/270° rotations are unsupported). Spatial/general calibration always runs first. With color calibration, the final CIE is flipped; otherwise the calibrated RAW is flipped. Without a calibration template, the orientation is retained for downstream local calibration. POI uses coordinates in the final orientation.</value></data>
+  <data name="打开本地相机管理窗口，并与当前节点同步取图参数" xml:space="preserve"><value>Opens local camera management and synchronizes capture parameters with the current node.</value></data>
+  <data name="查看已缓存的校正文件、内存占用，并可释放本机校正缓存" xml:space="preserve"><value>Shows cached calibration files and memory usage, and allows the local calibration cache to be released.</value></data>
 </root>

@@ -20,10 +20,15 @@ namespace System.ComponentModel
 
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             var enumType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-            var values = Enum.GetValues(enumType).Cast<object>().ToList();
+            var values = Enum.GetValues(enumType)
+                .Cast<object>()
+                .Select(value => new KeyValuePair<object?, string>(
+                    value,
+                    PropertyEditorHelper.GetLocalizedString(rm, value.ToString())))
+                .ToList();
             if (Nullable.GetUnderlyingType(property.PropertyType) != null)
             {
-                values.Insert(0, null!);
+                values.Insert(0, new KeyValuePair<object?, string>(null, string.Empty));
             }
 
             var comboBox = new ComboBox
@@ -31,11 +36,13 @@ namespace System.ComponentModel
                 Margin = new Thickness(5, 0, 0, 0),
                 MinWidth = PropertyEditorHelper.ControlMinWidth,
                 Style = PropertyEditorHelper.ComboBoxSmallStyle,
-                ItemsSource = values
+                ItemsSource = values,
+                DisplayMemberPath = nameof(KeyValuePair<object?, string>.Value),
+                SelectedValuePath = nameof(KeyValuePair<object?, string>.Key)
             };
 
             var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
-            comboBox.SetBinding(Selector.SelectedItemProperty, binding);
+            comboBox.SetBinding(Selector.SelectedValueProperty, binding);
 
             dockPanel.Children.Add(textBlock);
             dockPanel.Children.Add(comboBox);

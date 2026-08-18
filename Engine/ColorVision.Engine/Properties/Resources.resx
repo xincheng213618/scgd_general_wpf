@@ -1035,4 +1035,19 @@
   <data name="CloneCalibrationTemplatesFailure" xml:space="preserve">
     <value>克隆校正模板失败：{0}</value>
   </data>
+  <data name="Flow_NodeInspector_Configuration" xml:space="preserve"><value>配置</value></data>
+  <data name="Flow_NodeInspector_Documentation" xml:space="preserve"><value>说明</value></data>
+  <data name="Flow_NodeInspector_NoDocumentation" xml:space="preserve"><value>该节点尚未提供用途说明。</value></data>
+  <data name="Flow_NodeInspector_Purpose" xml:space="preserve"><value>用途</value></data>
+  <data name="Flow_NodeInspector_HowToUse" xml:space="preserve"><value>如何使用</value></data>
+  <data name="Flow_NodeInspector_ProcessingOrder" xml:space="preserve"><value>处理顺序</value></data>
+  <data name="Flow_NodeInspector_Notes" xml:space="preserve"><value>注意事项</value></data>
+  <data name="Flow_NodeInspector_Ports" xml:space="preserve"><value>端口</value></data>
+  <data name="Flow_NodeInspector_Input" xml:space="preserve"><value>输入</value></data>
+  <data name="Flow_NodeInspector_Output" xml:space="preserve"><value>输出</value></data>
+  <data name="Flow_NodeInspector_PropertyDescriptions" xml:space="preserve"><value>参数说明</value></data>
+  <data name="Flow_LocalCamera_Summary" xml:space="preserve"><value>从本机物理相机采集一帧 RAW 图像，并按需在本地完成校正、图像翻转和文件保存。</value></data>
+  <data name="Flow_LocalCamera_Usage" xml:space="preserve"><value>1. 选择设备代码，直接配置曝光时间、增益和平均次数。&#xA;2. 需要校正时选择校正模板；不选择时只输出 RAW。&#xA;3. 按需要开启自动连接、自动曝光、保存文件和图像翻转。&#xA;4. 将 OUT 连接到后续本地校正、POI 或其他算法节点。</value></data>
+  <data name="Flow_LocalCamera_Processing" xml:space="preserve"><value>相机采集 RAW → 空间/普通校正 → 色度校正并生成 CIE（模板包含时）→ 图像翻转 → 保存文件。下游 POI 始终使用最终方向的图像坐标。</value></data>
+  <data name="Flow_LocalCamera_Notes" xml:space="preserve"><value>X 表示上下翻转，Y 表示左右镜像，XY 表示旋转 180°；不支持 90°/270°旋转。未选择校正模板时不会提前翻转 RAW，方向配置会保留到下游本地校正完成后再应用。</value></data>
 </root>
