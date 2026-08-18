@@ -11,8 +11,10 @@ public class OperationsDashboardStatusFormatterTest {
     public void attentionStatesCarrySemanticTone() {
         assertStatus("检测", "运行中", OperationsDashboardStatusFormatter.TONE_ACTIVE,
                 OperationsDashboardStatusFormatter.flow(true, true, "running"));
-        assertStatus("设备", "需关注 2", OperationsDashboardStatusFormatter.TONE_ATTENTION,
-                OperationsDashboardStatusFormatter.devices(true, true, 3, 1, 2, 6));
+        assertStatus("设备", "相机、光谱 · 离线 2",
+                OperationsDashboardStatusFormatter.TONE_ATTENTION,
+                OperationsDashboardStatusFormatter.devices(
+                        true, true, 3, 1, 2, 6, "相机、光谱 · 离线 2"));
         assertStatus("消息", "订阅 3 / 5", OperationsDashboardStatusFormatter.TONE_ATTENTION,
                 OperationsDashboardStatusFormatter.messageChannel(true, true, false, 3, 5));
         assertStatus("告警", "严重 1", OperationsDashboardStatusFormatter.TONE_ATTENTION,
@@ -33,7 +35,7 @@ public class OperationsDashboardStatusFormatterTest {
         assertStatus("检测", "空闲", OperationsDashboardStatusFormatter.TONE_DEFAULT,
                 OperationsDashboardStatusFormatter.flow(true, false, "idle"));
         assertStatus("设备", "就绪 4 / 4", OperationsDashboardStatusFormatter.TONE_DEFAULT,
-                OperationsDashboardStatusFormatter.devices(true, true, 4, 0, 0, 4));
+                OperationsDashboardStatusFormatter.devices(true, true, 4, 0, 0, 4, ""));
         assertStatus("消息", "已连接", OperationsDashboardStatusFormatter.TONE_DEFAULT,
                 OperationsDashboardStatusFormatter.messageChannel(true, true, true, 5, 5));
         assertStatus("告警", "暂无异常", OperationsDashboardStatusFormatter.TONE_DEFAULT,
@@ -71,8 +73,9 @@ public class OperationsDashboardStatusFormatterTest {
                 .contains("刚刚签名返回"));
         assertTrue(OperationsDashboardStatusFormatter.sectionCaption(true, false)
                 .contains("已过期，仅供参考"));
-        assertEquals("设备，需关注 2，查看详情",
-                OperationsDashboardStatusFormatter.devices(true, true, 3, 1, 2, 6)
+        assertEquals("设备，相机、光谱 · 离线 2，查看详情",
+                OperationsDashboardStatusFormatter.devices(
+                        true, true, 3, 1, 2, 6, "相机、光谱 · 离线 2")
                         .accessibilityLabel());
     }
 

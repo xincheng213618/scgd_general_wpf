@@ -51,6 +51,25 @@ public class OperationsDashboardAdvisorTest {
     }
 
     @Test
+    public void deviceRecommendationNamesAffectedTypesAndReason() throws Exception {
+        JSONObject monitor = monitor("ready", false, 0, 0, 2, false, 0);
+        monitor.put("devices", new JSONObject("{"
+                + "\"available\":true,"
+                + "\"hasConfiguredDevices\":true,"
+                + "\"totalCount\":6,"
+                + "\"attentionCount\":2,"
+                + "\"unavailableCount\":2,"
+                + "\"offlineCount\":2,"
+                + "\"categories\":["
+                + "{\"category\":\"camera\",\"totalCount\":1,\"unavailableCount\":1},"
+                + "{\"category\":\"spectrum\",\"totalCount\":1,\"unavailableCount\":1}"
+                + "]}"));
+
+        assertRecommendation(monitor, "相机、光谱 · 离线 2 · 查看设备",
+                OperationsDashboardAdvisor.ACTION_DEVICES);
+    }
+
+    @Test
     public void untrustedCountsAreBoundedBeforeTheyReachTheUi() throws Exception {
         JSONObject monitor = monitor("ready", false, 5_000, 0, 0, false, 0);
         assertRecommendation(monitor, "严重告警 999 个 · 查看告警",

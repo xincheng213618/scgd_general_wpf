@@ -50,6 +50,8 @@ final class OperationsDashboardAdvisor {
         int errorCount = count(alerts, "errorCount");
         int warningCount = count(alerts, "warningCount");
         int deviceAttentionCount = count(devices, "attentionCount");
+        DeviceHealthPresentation.ViewModel deviceHealth =
+                DeviceHealthPresentation.from(devices);
         boolean messageAttention = messageChannel != null
                 && messageChannel.optBoolean("available", false)
                 && messageChannel.optBoolean("attentionRequired", false);
@@ -65,7 +67,8 @@ final class OperationsDashboardAdvisor {
                 return new Recommendation("消息通道需处置 · 查看消息", ACTION_MESSAGE);
             case OperationsWatchPolicy.ATTENTION_DEVICES:
                 return new Recommendation(
-                        "设备需关注 " + deviceAttentionCount + " 个 · 查看设备", ACTION_DEVICES);
+                        deviceHealth.compactAttentionActionSummary() + " · 查看设备",
+                        ACTION_DEVICES);
             case OperationsWatchPolicy.ATTENTION_ERRORS:
                 return new Recommendation("错误事件 " + errorCount + " 个 · 查看告警", ACTION_ALERTS);
             default:

@@ -44,13 +44,16 @@ final class OperationsLiveMonitorPresentation {
                 flow == null ? "unavailable" : flow.optString("phase", "unavailable")));
 
         JSONObject devices = child(snapshot, "devices");
+        DeviceHealthPresentation.ViewModel deviceHealth =
+                DeviceHealthPresentation.from(devices);
         statuses.add(OperationsDashboardStatusFormatter.devices(
                 devices != null && devices.optBoolean("available", false),
                 devices != null && devices.optBoolean("hasConfiguredDevices", false),
                 count(devices, "readyCount"),
                 count(devices, "busyCount"),
                 count(devices, "attentionCount"),
-                count(devices, "totalCount")));
+                count(devices, "totalCount"),
+                deviceHealth.compactAttentionSummary()));
 
         JSONObject message = child(snapshot, "messageChannel");
         statuses.add(OperationsDashboardStatusFormatter.messageChannel(

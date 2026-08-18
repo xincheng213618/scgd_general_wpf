@@ -104,7 +104,8 @@ final class OperationsDashboardStatusFormatter {
         return available && active && cancelAvailable && !inFlight;
     }
 
-    static Item devices(boolean available, boolean configured, int ready, int busy, int attention, int total) {
+    static Item devices(boolean available, boolean configured, int ready, int busy, int attention,
+            int total, String attentionSummary) {
         if (!available) {
             return unavailable("设备");
         }
@@ -112,7 +113,9 @@ final class OperationsDashboardStatusFormatter {
             return new Item("设备", "未加载", TONE_MUTED);
         }
         if (attention > 0) {
-            return new Item("设备", "需关注 " + attention, TONE_ATTENTION);
+            String summary = attentionSummary == null ? "" : attentionSummary.trim();
+            return new Item("设备", summary.isEmpty() ? "需关注 " + attention : summary,
+                    TONE_ATTENTION);
         }
         if (busy > 0) {
             return new Item("设备", "忙碌 " + busy + " / " + total, TONE_ACTIVE);

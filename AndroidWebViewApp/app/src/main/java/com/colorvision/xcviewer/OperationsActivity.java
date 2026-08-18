@@ -3457,6 +3457,8 @@ public class OperationsActivity extends AppCompatActivity {
         JSONObject performance = snapshot.optJSONObject("performance");
         JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
         JSONObject recovery = snapshot.optJSONObject("applicationRecovery");
+        DeviceHealthPresentation.ViewModel deviceHealth =
+                DeviceHealthPresentation.from(devices);
 
         dashboardFlowAvailable = flow != null && flow.optBoolean("available", false);
         dashboardFlowActive = flow != null && flow.optBoolean("isActive", false);
@@ -3475,7 +3477,8 @@ public class OperationsActivity extends AppCompatActivity {
                 devices == null ? 0 : devices.optInt("readyCount", 0),
                 devices == null ? 0 : devices.optInt("busyCount", 0),
                 devices == null ? 0 : devices.optInt("attentionCount", 0),
-                devices == null ? 0 : devices.optInt("totalCount", 0)));
+                devices == null ? 0 : devices.optInt("totalCount", 0),
+                deviceHealth.compactAttentionSummary()));
         updateDashboardStatus(dashboardMessageStatus, OperationsDashboardStatusFormatter.messageChannel(
                 messageChannel != null && messageChannel.optBoolean("available", false),
                 messageChannel != null && messageChannel.optBoolean("connected", false),
@@ -3513,7 +3516,7 @@ public class OperationsActivity extends AppCompatActivity {
         updateDashboardStatus(dashboardFlowStatus,
                 OperationsDashboardStatusFormatter.flow(false, false, "idle"));
         updateDashboardStatus(dashboardDeviceStatus,
-                OperationsDashboardStatusFormatter.devices(false, false, 0, 0, 0, 0));
+                OperationsDashboardStatusFormatter.devices(false, false, 0, 0, 0, 0, ""));
         updateDashboardStatus(dashboardMessageStatus,
                 OperationsDashboardStatusFormatter.messageChannel(false, false, false, 0, 0));
         updateDashboardStatus(dashboardAlertStatus,

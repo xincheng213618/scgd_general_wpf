@@ -40,6 +40,7 @@ public class DeviceHealthPresentationTest {
         assertEquals(2, model.attentionCategories().size());
         assertEquals(1, model.otherCategories().size());
         assertEquals("相机类、光谱类", model.attentionCategorySummary());
+        assertEquals("相机、光谱 · 离线 2", model.compactAttentionSummary());
         assertTrue(model.categories.get(0).attentionRequired);
         assertEquals("相机类，共 1 台，就绪 0，不可用 1",
                 model.categories.get(0).accessibilityLabel());
@@ -62,7 +63,28 @@ public class DeviceHealthPresentationTest {
 
         assertFalse(model.attentionRequired);
         assertEquals("2 台设备已关闭", model.headline);
+        assertEquals("", model.compactAttentionSummary());
         assertTrue(model.guidance.contains("不等同故障"));
+    }
+
+    @Test
+    public void compactAttentionSummaryCapsDenseCategoryAndReasonLists() throws Exception {
+        DeviceHealthPresentation.ViewModel model = DeviceHealthPresentation.from(
+                new JSONObject("{"
+                        + "\"available\":true,"
+                        + "\"hasConfiguredDevices\":true,"
+                        + "\"attentionCount\":3,"
+                        + "\"offlineCount\":1,"
+                        + "\"uninitializedCount\":1,"
+                        + "\"unauthorizedCount\":1,"
+                        + "\"categories\":["
+                        + "{\"category\":\"camera\",\"unavailableCount\":1},"
+                        + "{\"category\":\"spectrum\",\"unavailableCount\":1},"
+                        + "{\"category\":\"motion\",\"unavailableCount\":1}"
+                        + "]}"));
+
+        assertEquals("相机、光谱等 3 类 · 离线 1、未初始化 1等",
+                model.compactAttentionSummary());
     }
 
     @Test

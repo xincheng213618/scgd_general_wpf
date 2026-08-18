@@ -27,6 +27,7 @@ final class DeviceHealthPresentation {
                     "请在电脑端检查设备注册表后再刷新。",
                     "",
                     0,
+                    0,
                     Collections.emptyList());
         }
 
@@ -100,6 +101,7 @@ final class DeviceHealthPresentation {
                 unavailableReasonSummary(payload),
                 guidance,
                 payload.optString("observedAt", ""),
+                attentionCount,
                 attentionCategoryCount,
                 Collections.unmodifiableList(orderedCategories));
     }
@@ -159,6 +161,7 @@ final class DeviceHealthPresentation {
         final String unavailableReasons;
         final String guidance;
         final String observedAt;
+        final int attentionCount;
         final int attentionCategoryCount;
         final List<Category> categories;
 
@@ -171,6 +174,7 @@ final class DeviceHealthPresentation {
                 String unavailableReasons,
                 String guidance,
                 String observedAt,
+                int attentionCount,
                 int attentionCategoryCount,
                 List<Category> categories) {
             this.available = available;
@@ -181,6 +185,7 @@ final class DeviceHealthPresentation {
             this.unavailableReasons = unavailableReasons;
             this.guidance = guidance;
             this.observedAt = observedAt;
+            this.attentionCount = Math.max(0, attentionCount);
             this.attentionCategoryCount = Math.max(
                     0, Math.min(attentionCategoryCount, categories.size()));
             this.categories = categories;
@@ -196,6 +201,52 @@ final class DeviceHealthPresentation {
 
         String attentionCategorySummary() {
             return categoryLabels(categories, attentionCategoryCount);
+        }
+
+        String compactAttentionSummary() {
+            if (!attentionRequired) {
+                return "";
+            }
+            String categorySummary = compactAttentionCategorySummary();
+            if (categorySummary.isEmpty()) {
+                return attentionCount > 0
+                        ? "需关注 " + attentionCount : headline;
+            }
+            String reasonSummary = compactUnavailableReasonSummary();
+            if (reasonSummary.isEmpty()) {
+                reasonSummary = "状态未知 " + Math.max(1, attentionCount);
+            }
+            return categorySummary + " · " + reasonSummary;
+        }
+
+        String compactAttentionActionSummary() {
+            return attentionCategoryCount > 0
+                    ? compactAttentionSummary()
+                    : attentionCount > 0 ? "设备需关注 " + attentionCount + " 个" : headline;
+        }
+
+        private String compactAttentionCategorySummary() {
+            List<String> labels = new ArrayList<>();
+            int visibleCount = Math.min(2, attentionCategoryCount);
+            for (int index = 0; index < visibleCount; index++) {
+                String label = categories.get(index).label;
+                labels.add(label.endsWith("类")
+                        ? label.substring(0, label.length() - 1) : label);
+            }
+            String result = String.join("、", labels);
+            return attentionCategoryCount > visibleCount
+                    ? result + "等 " + attentionCategoryCount + " 类" : result;
+        }
+
+        private String compactUnavailableReasonSummary() {
+            if (unavailableReasons.isEmpty()) {
+                return "";
+            }
+            String[] reasons = unavailableReasons.split(" · ");
+            if (reasons.length == 1) {
+                return reasons[0];
+            }
+            return reasons[0] + "、" + reasons[1] + (reasons.length > 2 ? "等" : "");
         }
 
         String accessibilitySummary() {
