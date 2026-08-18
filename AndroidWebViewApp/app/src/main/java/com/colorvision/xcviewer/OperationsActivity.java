@@ -56,10 +56,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -3324,167 +3322,55 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void renderTriageCenter(JSONObject report) {
+        OperationsTriagePresentation.ViewModel model =
+                OperationsTriagePresentation.from(report, this::shortTime);
+        scrollDashboardToTop();
         progress.setVisibility(View.GONE);
         title.setText("远程排障中心");
-        state.setText(triageStateLabel(report.optString("state", "attention")));
-        details.setText(formatTriageReport(report));
+        state.setText(model.stateLabel);
+        details.setText(model.summary);
         actions.removeAllViews();
-
-        Button refresh = new MaterialButton(this);
-        refresh.setText("刷新排障建议");
-        refresh.setOnClickListener(v -> showTriageCenter());
-        actions.addView(refresh, actionParams());
-
-        addTriageActions(report.optJSONArray("findings"));
-
-        Button back = new MaterialButton(this);
-        back.setText("返回现场运维概览");
-        back.setOnClickListener(v -> showDashboard());
-        actions.addView(back, actionParams());
+        actions.addView(OperationsTriageContent.create(
+                        this,
+                        themeManager,
+                        model,
+                        this::runTriageAction,
+                        this::showTriageCenter,
+                        this::showDashboard),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
-    private void addTriageActions(JSONArray findings) {
-        if (findings == null) {
-            return;
-        }
-        Set<String> added = new HashSet<>();
-        for (int findingIndex = 0; findingIndex < findings.length(); findingIndex++) {
-            JSONObject finding = findings.optJSONObject(findingIndex);
-            JSONArray recommendations = finding == null ? null : finding.optJSONArray("actions");
-            if (recommendations == null) {
-                continue;
-            }
-            for (int actionIndex = 0; actionIndex < recommendations.length(); actionIndex++) {
-                JSONObject recommendation = recommendations.optJSONObject(actionIndex);
-                String actionId = recommendation == null ? "" : recommendation.optString("actionId", "");
-                if (!added.add(actionId)) {
-                    continue;
-                }
-                Button button = createTriageActionButton(actionId);
-                if (button != null) {
-                    actions.addView(button, actionParams());
-                }
-            }
-        }
-    }
-
-    private Button createTriageActionButton(String actionId) {
-        Button button = new MaterialButton(this);
+    private void runTriageAction(String actionId) {
         switch (actionId) {
             case "triage.events.view":
-                button.setText("查看近期脱敏事件");
-                button.setOnClickListener(v -> loadCapability("/ops/v1/diagnostics/recent-events"));
-                return button;
+                loadCapability("/ops/v1/diagnostics/recent-events");
+                return;
             case "triage.window.show":
-                button.setText("显示电脑主窗口（低风险）");
-                button.setOnClickListener(v -> runWindowAction("show", "主窗口已显示"));
-                return button;
+                runWindowAction("show", "主窗口已显示");
+                return;
             case "triage.jobs.review":
-                button.setText("查看作业与审批");
-                button.setOnClickListener(v -> showJobs());
-                return button;
+                showJobs();
+                return;
             case "triage.mqtt.restart.request":
-                button.setText("重启 MQTT（需手机确认）");
-                button.setOnClickListener(v -> confirmRestartMqtt());
-                return button;
+                confirmRestartMqtt();
+                return;
             case "triage.devices.view":
-                button.setText("查看检测设备状态概览");
-                button.setOnClickListener(v -> showDeviceHealthOverview());
-                return button;
+                showDeviceHealthOverview();
+                return;
             case "triage.messaging.view":
-                button.setText("查看消息通道健康");
-                button.setOnClickListener(v -> loadCapability("/ops/v1/messaging/health"));
-                return button;
+                loadCapability("/ops/v1/messaging/health");
+                return;
             case "triage.messaging.reconnect.request":
-                button.setText("恢复消息通道（需手机确认）");
-                button.setOnClickListener(v -> confirmRecoverMessageChannel());
-                return button;
+                confirmRecoverMessageChannel();
+                return;
             case "triage.failures.view":
-                button.setText("查看崩溃与卡死线索");
-                button.setOnClickListener(v -> loadCapability("/ops/v1/diagnostics/failures"));
-                return button;
+                loadCapability("/ops/v1/diagnostics/failures");
+                return;
             default:
-                return null;
+                return;
         }
-    }
-
-    private String formatTriageReport(JSONObject report) {
-        JSONArray findings = report.optJSONArray("findings");
-        StringBuilder text = new StringBuilder();
-        text.append(report.optString("summary", "排障建议已生成"))
-                .append("\n事件：严重 ").append(report.optInt("criticalCount", 0))
-                .append(" · 错误 ").append(report.optInt("errorCount", 0))
-                .append(" · 警告 ").append(report.optInt("warningCount", 0))
-                .append("\n待处理作业：").append(report.optInt("pendingJobCount", 0))
-                .append("\n消息通道：").append(messageChannelStateLabel(
-                        report.optString("messageChannelState", "unavailable")))
-                .append(" · 订阅 ").append(report.optInt("messageChannelActiveSubscriptionCount", 0))
-                .append('/').append(report.optInt("messageChannelRegisteredSubscriptionCount", 0))
-                .append("\n检测设备：就绪 ").append(report.optInt("deviceReadyCount", 0))
-                .append(" · 忙碌 ").append(report.optInt("deviceBusyCount", 0))
-                .append(" · 已关闭 ").append(report.optInt("deviceClosedCount", 0))
-                .append(" · 需关注 ").append(report.optInt("deviceAttentionCount", 0))
-                .append(" / 共 ").append(report.optInt("deviceTotalCount", 0));
-        appendDeviceUnavailableReasonValues(text,
-                report.optInt("deviceOfflineCount", 0),
-                report.optInt("deviceUninitializedCount", 0),
-                report.optInt("deviceUnauthorizedCount", 0),
-                report.optInt("deviceUnclassifiedUnavailableCount", 0));
-        if (findings == null || findings.length() == 0) {
-            text.append("\n\n当前有界证据未发现需要处理的项目。");
-        } else {
-            for (int index = 0; index < findings.length(); index++) {
-                JSONObject finding = findings.optJSONObject(index);
-                if (finding == null) {
-                    continue;
-                }
-                text.append("\n\n").append(index + 1).append(". ")
-                        .append(severityLabel(finding.optString("severity", "info")))
-                        .append(" · ").append(finding.optString("title", "需要关注"))
-                        .append("\n").append(finding.optString("summary", ""));
-                String latestAt = shortTime(finding.optString("latestAt", ""));
-                if (!latestAt.isEmpty()) {
-                    text.append("\n最近证据：").append(latestAt);
-                }
-                appendRecommendationSummary(text, finding.optJSONArray("actions"));
-            }
-        }
-        text.append("\n\n").append(report.optString("safetyNotice",
-                "固定 MQTT 恢复、脱敏诊断包和单次主窗口快照需手机确认；支持会话仍需电脑端本机同意。"));
-        return text.toString();
-    }
-
-    private void appendRecommendationSummary(StringBuilder text, JSONArray recommendations) {
-        if (recommendations == null || recommendations.length() == 0) {
-            text.append("\n建议：请在电脑端复核");
-            return;
-        }
-        text.append("\n建议：");
-        for (int index = 0; index < recommendations.length(); index++) {
-            JSONObject recommendation = recommendations.optJSONObject(index);
-            if (recommendation == null) {
-                continue;
-            }
-            if (index > 0) {
-                text.append("；");
-            }
-            text.append(recommendation.optString("title", "查看详情"));
-            if (recommendation.optBoolean("requiresLocalCoSign", false)) {
-                text.append("（需电脑共签）");
-            } else if (recommendation.optBoolean("requiresConfirmation", false)) {
-                text.append("（需确认）");
-            }
-        }
-    }
-
-    private String triageStateLabel(String value) {
-        if ("critical".equalsIgnoreCase(value)) {
-            return "发现严重事件 · 请优先复核";
-        }
-        if ("attention".equalsIgnoreCase(value)) {
-            return "发现需要关注的状态";
-        }
-        return "当前有界证据正常";
     }
 
     private void showJobs() {

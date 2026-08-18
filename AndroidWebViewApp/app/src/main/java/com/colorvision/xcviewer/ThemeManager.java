@@ -89,6 +89,22 @@ final class ThemeManager {
         return color(com.google.android.material.R.attr.colorOnPrimaryContainer, primaryTextColor());
     }
 
+    int secondaryContainerColor() {
+        return color(com.google.android.material.R.attr.colorSecondaryContainer, cardBackgroundColor());
+    }
+
+    int onSecondaryContainerColor() {
+        return color(com.google.android.material.R.attr.colorOnSecondaryContainer, primaryTextColor());
+    }
+
+    int tertiaryContainerColor() {
+        return color(com.google.android.material.R.attr.colorTertiaryContainer, cardBackgroundColor());
+    }
+
+    int onTertiaryContainerColor() {
+        return color(com.google.android.material.R.attr.colorOnTertiaryContainer, primaryTextColor());
+    }
+
     int shellBackgroundColor() {
         return color(com.google.android.material.R.attr.colorSurfaceContainer, pageBackgroundColor());
     }
