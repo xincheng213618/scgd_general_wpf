@@ -22,6 +22,12 @@ using ProjectARVRPro.Recipe;
 using System.IO;
 using System.Reflection;
 using Xunit;
+using DynamicMTFH07Process = ProjectARVRPro.Process.MTF.MTF07.MTFH.MTFH07Process;
+using DynamicMTFH07ProcessConfig = ProjectARVRPro.Process.MTF.MTF07.MTFH.MTFH07ProcessConfig;
+using DynamicMTFH07RecipeConfig = ProjectARVRPro.Process.MTF.MTF07.MTFH.MTFH07RecipeConfig;
+using DynamicMTFV07Process = ProjectARVRPro.Process.MTF.MTF07.MTFV.MTFV07Process;
+using DynamicMTFV07ProcessConfig = ProjectARVRPro.Process.MTF.MTF07.MTFV.MTFV07ProcessConfig;
+using DynamicMTFV07RecipeConfig = ProjectARVRPro.Process.MTF.MTF07.MTFV.MTFV07RecipeConfig;
 
 namespace ProjectARVRPro.Tests;
 
@@ -43,7 +49,9 @@ public sealed class EmbeddedRecipeConfigTests
         { typeof(MTFHVProcess), typeof(MTFHVProcessConfig), typeof(MTFHVRecipeConfig) },
         { typeof(MTFHV048Process), typeof(MTFHV048ProcessConfig), typeof(MTFHV048RecipeConfig) },
         { typeof(MTFHV058Process), typeof(MTFHV058ProcessConfig), typeof(MTFHV058RecipeConfig) },
-        { typeof(MTFVProcess), typeof(MTFVProcessConfig), typeof(MTFVRecipeConfig) }
+        { typeof(MTFVProcess), typeof(MTFVProcessConfig), typeof(MTFVRecipeConfig) },
+        { typeof(DynamicMTFH07Process), typeof(DynamicMTFH07ProcessConfig), typeof(DynamicMTFH07RecipeConfig) },
+        { typeof(DynamicMTFV07Process), typeof(DynamicMTFV07ProcessConfig), typeof(DynamicMTFV07RecipeConfig) }
     };
 
     public static TheoryData<Type, Type> ImportableRecipeProcesses => new()
@@ -65,6 +73,8 @@ public sealed class EmbeddedRecipeConfigTests
         { typeof(MTFHV058Process), typeof(MTFHV058RecipeConfig) },
         { typeof(MTFHVDynamicProcess), typeof(MTFHVDynamicRecipeConfig) },
         { typeof(MTFVProcess), typeof(MTFVRecipeConfig) },
+        { typeof(DynamicMTFH07Process), typeof(DynamicMTFH07RecipeConfig) },
+        { typeof(DynamicMTFV07Process), typeof(DynamicMTFV07RecipeConfig) },
         { typeof(AOIProcess), typeof(AoiRecipeConfig) },
         { typeof(LuminanceChromaticityProcess), typeof(LuminanceChromaticityRecipeConfig) },
         { typeof(FieldOfViewProcess), typeof(FieldOfViewRecipeConfig) }

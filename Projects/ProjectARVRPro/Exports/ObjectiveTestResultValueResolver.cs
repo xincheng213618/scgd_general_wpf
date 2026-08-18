@@ -26,6 +26,8 @@ namespace ProjectARVRPro.Exports
                 FindKeyedResult(_result.FieldOfViewTestResults, testScreenName, itemName) ??
                 FindKeyedResult(_result.LuminanceChromaticityTestResults, testScreenName, itemName) ??
                 FindKeyedResult(_result.ChessboardTestResults, testScreenName, itemName) ??
+                FindKeyedResult(_result.MTFH07TestResults, testScreenName, itemName) ??
+                FindKeyedResult(_result.MTFV07TestResults, testScreenName, itemName) ??
                 FindKeyedResult(_result.DynamicMTFHV058TestResults, testScreenName, itemName);
             if (keyedItem != null)
                 return keyedItem;
@@ -74,6 +76,8 @@ namespace ProjectARVRPro.Exports
                     property.Name == nameof(ObjectiveTestResult.DynamicPoixyuvDatas) ||
                     property.Name == nameof(ObjectiveTestResult.DynamicScreenDefectResults) ||
                     property.Name == nameof(ObjectiveTestResult.DynamicMTFHV058TestResults) ||
+                    property.Name == nameof(ObjectiveTestResult.MTFH07TestResults) ||
+                    property.Name == nameof(ObjectiveTestResult.MTFV07TestResults) ||
                     property.Name == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults) ||
                     property.Name == nameof(ObjectiveTestResult.FieldOfViewTestResults) ||
                     property.Name == nameof(ObjectiveTestResult.ChessboardTestResults))

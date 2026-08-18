@@ -109,6 +109,8 @@ namespace ProjectARVRPro
                     prop.Name == nameof(ObjectiveTestResult.DynamicPoixyuvDatas) ||
                     prop.Name == nameof(ObjectiveTestResult.DynamicScreenDefectResults) ||
                     prop.Name == nameof(ObjectiveTestResult.DynamicMTFHV058TestResults) ||
+                    prop.Name == nameof(ObjectiveTestResult.MTFH07TestResults) ||
+                    prop.Name == nameof(ObjectiveTestResult.MTFV07TestResults) ||
                     prop.Name == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults) ||
                     prop.Name == nameof(ObjectiveTestResult.FieldOfViewTestResults) ||
                     prop.Name == nameof(ObjectiveTestResult.ChessboardTestResults))
@@ -167,6 +169,8 @@ namespace ProjectARVRPro
             }
 
             CollectRowsFromKeyedResults(results.DynamicMTFHV058TestResults, rows);
+            CollectRowsFromKeyedResults(results.MTFH07TestResults, rows);
+            CollectRowsFromKeyedResults(results.MTFV07TestResults, rows);
             CollectRowsFromKeyedResults(results.LuminanceChromaticityTestResults, rows);
             CollectRowsFromKeyedResults(results.FieldOfViewTestResults, rows);
             CollectRowsFromKeyedResults(results.ChessboardTestResults, rows);

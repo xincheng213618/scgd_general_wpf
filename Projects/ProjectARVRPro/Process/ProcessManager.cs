@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
@@ -94,6 +95,7 @@ namespace ProjectARVRPro.Process
         /// 组切换事件
         /// </summary>
         public event EventHandler ActiveGroupChanged;
+        public event EventHandler? ActiveProcessMetasChanged;
         public event EventHandler? RecipeConfigImported;
 
         public ObservableCollection<TemplateModel<FlowParam>> templateModels { get; set; } = TemplateFlow.Params;
@@ -143,6 +145,7 @@ namespace ProjectARVRPro.Process
         public RelayCommand SaveMetaNameCommand { get; set; }
         public RelayCommand CancelMetaNameCommand { get; set; }
         public RelayCommand EditMetaTemplateCommand { get; set; }
+        public RelayCommand OpenFlowTemplateEditorCommand { get; set; }
         public RelayCommand EditMetaProcessCommand { get; set; }
         public RelayCommand MoveUpCommand { get; set; }
         public RelayCommand MoveDownCommand { get; set; }
@@ -212,6 +215,9 @@ namespace ProjectARVRPro.Process
                 a => IsEditingMetaName);
             EditMetaTemplateCommand = new RelayCommand(
                 a => UpdateMeta(a as ProcessMeta, ProcessMetaEditTarget.Template),
+                a => a is ProcessMeta);
+            OpenFlowTemplateEditorCommand = new RelayCommand(
+                a => OpenFlowTemplateEditor(a as ProcessMeta),
                 a => a is ProcessMeta);
             EditMetaProcessCommand = new RelayCommand(
                 a => UpdateMeta(a as ProcessMeta, ProcessMetaEditTarget.Process),
@@ -674,6 +680,7 @@ namespace ProjectARVRPro.Process
         private void ProcessMetas_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             ProcessMetaCollectionChanged(e);
+            ActiveProcessMetasChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void ResultParserMetas_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -703,6 +710,15 @@ namespace ProjectARVRPro.Process
         private void Meta_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             SavePersistedGroups();
+
+            if (sender is ProcessMeta meta
+                && ProcessMetas.Contains(meta)
+                && (string.IsNullOrEmpty(e.PropertyName)
+                    || e.PropertyName == nameof(ProcessMeta.IsEnabled)
+                    || e.PropertyName == nameof(ProcessMeta.Name)))
+            {
+                ActiveProcessMetasChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         public void Edit()
@@ -843,6 +859,31 @@ namespace ProjectARVRPro.Process
             meta.IsEnabled = dialog.IsMetaEnabled;
             meta.ConfigJson = configJson;
             meta.Process = newProcessInstance;
+        }
+
+        private void OpenFlowTemplateEditor(ProcessMeta? meta)
+        {
+            if (meta == null)
+                return;
+
+            TemplateModel<FlowParam>? template = templateModels.FirstOrDefault(item =>
+                string.Equals(item.Key, meta.FlowTemplate, StringComparison.OrdinalIgnoreCase));
+            if (template == null)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"未找到流程模板 \"{meta.FlowTemplate}\"。",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            new FlowEngineToolWindow(template.Value)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.Show();
         }
 
         private void AddResultParser()
@@ -1506,11 +1547,26 @@ namespace ProjectARVRPro.Process
         public void GenStepBar(HandyControl.Controls.StepBar stepBar)
         {
             stepBar.Items.Clear();
-            foreach (var item in ProcessMetas)
+            foreach (var item in ProcessMetas.Where(meta => meta.IsEnabled))
             {
                 HandyControl.Controls.StepBarItem stepBarItem = new HandyControl.Controls.StepBarItem() { Content = item.Name };
                 stepBar.Items.Add(stepBarItem);
             }
+        }
+
+        internal static int GetEnabledStepIndex(IReadOnlyList<ProcessMeta> processMetas, int processIndex)
+        {
+            if (processIndex < 0 || processIndex >= processMetas.Count || !processMetas[processIndex].IsEnabled)
+                return -1;
+
+            int enabledStepIndex = 0;
+            for (int i = 0; i < processIndex; i++)
+            {
+                if (processMetas[i].IsEnabled)
+                    enabledStepIndex++;
+            }
+
+            return enabledStepIndex;
         }
 
     }

@@ -65,6 +65,8 @@ namespace ProjectARVRPro
 
             CollectDynamicItems(result.DynamicTestResults, metrics, keys);
             CollectKeyedObjects(result.DynamicMTFHV058TestResults, metrics, keys);
+            CollectKeyedObjects(result.MTFH07TestResults, metrics, keys);
+            CollectKeyedObjects(result.MTFV07TestResults, metrics, keys);
             CollectKeyedObjects(result.LuminanceChromaticityTestResults, metrics, keys);
             CollectKeyedObjects(result.FieldOfViewTestResults, metrics, keys);
             CollectKeyedObjects(result.ChessboardTestResults, metrics, keys);
@@ -79,6 +81,8 @@ namespace ProjectARVRPro
                    propertyName == nameof(ObjectiveTestResult.DynamicPoixyuvDatas) ||
                    propertyName == nameof(ObjectiveTestResult.DynamicScreenDefectResults) ||
                    propertyName == nameof(ObjectiveTestResult.DynamicMTFHV058TestResults) ||
+                   propertyName == nameof(ObjectiveTestResult.MTFH07TestResults) ||
+                   propertyName == nameof(ObjectiveTestResult.MTFV07TestResults) ||
                    propertyName == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults) ||
                    propertyName == nameof(ObjectiveTestResult.FieldOfViewTestResults) ||
                    propertyName == nameof(ObjectiveTestResult.ChessboardTestResults);

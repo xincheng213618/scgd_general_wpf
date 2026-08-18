@@ -5,7 +5,6 @@ using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using ProjectARVRPro.Recipe;
-using System.Collections.ObjectModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
@@ -17,18 +16,36 @@ namespace ProjectARVRPro.Process.MTF.MTF07
         string ShowConfig { get; }
         string Unit { get; }
         string GetOutputKey();
+        bool TryGetItemName(string? sourceName, out string itemName);
     }
 
     public interface IMTF07DynamicRecipeConfig
     {
-        RecipeBase UnifiedRecipe { get; }
+        bool TryGetRecipe(string itemName, out RecipeBase recipe);
     }
 
-    public abstract class MTF07DynamicProcess<TConfig, TRecipe> : ProcessWithRecipeBase<TConfig, TRecipe>
+    public interface IMTF07TestResult
+    {
+        IReadOnlyList<ObjectiveTestItem> Items { get; }
+        bool TryGetItem(string itemName, out ObjectiveTestItem item);
+    }
+
+    public interface IMTF07ViewTestResult : IMTF07TestResult
+    {
+        MTFDetailViewReslut? MTFDetailViewReslut { get; set; }
+    }
+
+    /// <summary>
+    /// MTF07条纹图案共享解析基类。H横条纹、V竖条纹均读取MTFResult.result[].mtfValue；
+    /// 中心0F和四角0.7F分别配置解析Key与Recipe，HV特殊图案读取resultChild，不属于此流程。
+    /// </summary>
+    public abstract class MTF07DynamicProcess<TConfig, TRecipe, TViewResult, TTestResult> : ProcessWithRecipeBase<TConfig, TRecipe>
         where TConfig : ProcessConfigBase<TRecipe>, IMTF07DynamicProcessConfig, new()
         where TRecipe : class, IRecipeConfig, IMTF07DynamicRecipeConfig, new()
+        where TTestResult : class, IMTF07TestResult
+        where TViewResult : TTestResult, IMTF07ViewTestResult, new()
     {
-        protected abstract string Axis { get; }
+        protected abstract void WriteObjectiveResult(ObjectiveTestResult destination, string key, TTestResult result);
 
         public override Task<bool> Execute(IProcessExecutionContext ctx)
         {
@@ -37,8 +54,7 @@ namespace ProjectARVRPro.Process.MTF.MTF07
 
             try
             {
-                var testResult = new MTF07DynamicViewTestResult();
-                var items = new Dictionary<string, ObjectiveTestItem>(StringComparer.OrdinalIgnoreCase);
+                var testResult = new TViewResult();
                 var images = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (images.Count > 0)
                     ctx.Result.FileName = images[0].FileUrl;
@@ -57,24 +73,24 @@ namespace ProjectARVRPro.Process.MTF.MTF07
 
                     foreach (var mtf in detail.MTFResult.result)
                     {
-                        ObjectiveTestItem? item = MTF07DynamicResultBuilder.CreateItem(
-                            Axis,
-                            mtf,
-                            Config.RecipeConfig.UnifiedRecipe,
-                            Config.ShowConfig,
-                            Config.Unit);
-                        if (item != null)
-                            items[item.Name] = item;
+                        if (!Config.TryGetItemName(mtf.name, out string itemName) ||
+                            !Config.RecipeConfig.TryGetRecipe(itemName, out RecipeBase recipe) ||
+                            !testResult.TryGetItem(itemName, out ObjectiveTestItem item))
+                        {
+                            continue;
+                        }
+
+                        MTF07DynamicResultBuilder.PopulateItem(item, mtf, recipe, Config.ShowConfig, Config.Unit);
+                        ctx.Result.Result &= item.TestResult;
                     }
                 }
 
-                testResult.Items = new ObservableCollection<ObjectiveTestItem>(items.Values);
-                foreach (ObjectiveTestItem item in testResult.Items)
-                    ctx.Result.Result &= item.TestResult;
-
-                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
-                ctx.ObjectiveTestResult.DynamicTestResults ??= new();
-                ctx.ObjectiveTestResult.DynamicTestResults[Config.GetOutputKey()] = testResult.Items;
+                string viewResultJson = JsonConvert.SerializeObject(testResult);
+                ctx.Result.ViewResultJson = viewResultJson;
+                TTestResult objectiveResult = JsonConvert.DeserializeObject<TTestResult>(viewResultJson)
+                    ?? throw new JsonSerializationException($"无法创建{typeof(TTestResult).Name}。");
+                string outputKey = Config.GetOutputKey();
+                WriteObjectiveResult(ctx.ObjectiveTestResult, outputKey, objectiveResult);
                 return Task.FromResult(true);
             }
             catch (Exception ex)
@@ -89,14 +105,14 @@ namespace ProjectARVRPro.Process.MTF.MTF07
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson))
                 return;
 
-            var testResult = JsonConvert.DeserializeObject<MTF07DynamicViewTestResult>(ctx.Result.ViewResultJson);
+            var testResult = JsonConvert.DeserializeObject<TViewResult>(ctx.Result.ViewResultJson);
             if (testResult?.MTFDetailViewReslut?.MTFResult?.result == null)
                 return;
 
             int id = 0;
             foreach (var item in testResult.MTFDetailViewReslut.MTFResult.result)
             {
-                if (!MTF07DynamicResultBuilder.MatchesAxis(Axis, item.name))
+                if (!Config.TryGetItemName(item.name, out _))
                     continue;
 
                 DVRectangleText rectangle = new();
@@ -119,7 +135,7 @@ namespace ProjectARVRPro.Process.MTF.MTF07
                 return;
             }
 
-            var testResult = JsonConvert.DeserializeObject<MTF07DynamicTestResult>(ctx.Result.ViewResultJson);
+            var testResult = JsonConvert.DeserializeObject<TTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null)
             {
                 AppendPlainText(paragraph, output.ToString(), foreground, fontSize);

@@ -37,6 +37,10 @@ namespace ProjectARVRPro
     public class ProjectARVRProConfig: ViewModelBase, IConfig
     {
         public static ProjectARVRProConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRProConfig>();
+        public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
+        public static ProcessManager ProcessManager => ProcessManager.GetInstance();
+        public static ThunderbirdSerialManager ThunderbirdSerialManager => ThunderbirdSerialManager.GetInstance();
+        public static SocketRelayManager SocketRelayManager => ProjectARVRPro.Services.SocketRelayManager.GetInstance();
 
         [Browsable(false)]
         [JsonIgnore]

@@ -1,6 +1,8 @@
 using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.KeyedResults.FieldOfView;
 using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
+using ProjectARVRPro.Process.MTF.MTF07.MTFH;
+using ProjectARVRPro.Process.MTF.MTF07.MTFV;
 
 namespace ProjectARVRPro.Process.KeyedResults
 {
@@ -37,6 +39,22 @@ namespace ProjectARVRPro.Process.KeyedResults
             string outputKey = Write(destination.ChessboardTestResults, key, result, "Chessboard");
             if (KeyedTestResultDictionary.IsKey(outputKey, "Chessboard"))
                 destination.ChessboardTestResult = result;
+        }
+
+        public static void Write(ObjectiveTestResult destination, string? key, MTFH07TestResult result)
+        {
+            ArgumentNullException.ThrowIfNull(destination);
+            ArgumentNullException.ThrowIfNull(result);
+            destination.MTFH07TestResults ??= new();
+            Write(destination.MTFH07TestResults, key, result, "MTFH07");
+        }
+
+        public static void Write(ObjectiveTestResult destination, string? key, MTFV07TestResult result)
+        {
+            ArgumentNullException.ThrowIfNull(destination);
+            ArgumentNullException.ThrowIfNull(result);
+            destination.MTFV07TestResults ??= new();
+            Write(destination.MTFV07TestResults, key, result, "MTFV07");
         }
 
         public static string Write<T>(IDictionary<string, T> results, string? key, T result, string defaultKey = "White") where T : class

@@ -24,11 +24,14 @@ AR/VR 显示设备光学性能专业测试系统 — 基于 ColorVision 平台�
 | 视场角测试 | `FieldOfViewProcess` | 按可配置 Key 输出水平、垂直和对角视场角；Key 为 White 时同时写入 W51 兼容结果 |
 | Chessboard | `ChessboardProcess` | 像素缺陷检测、棋盘格对比度 |
 | Distortion | `DistortionProcess` | SMIA TV 光学畸变 |
-| MTF H/V | `MTFHVProcess` | 调制传递函数 0F/0.3F/0.6F/0.8F |
-| MTF H/V 048 | `MTFHV048Process` | 048 产品 MTF 0F/0.5F/0.8F |
-| MTF H/V 058 | `MTFHV058Process` | 058 产品 MTF 0F/0.5F/0.8F |
-| MTF H | `MTFHProcess` | 水平方向 MTF |
-| MTF V | `MTFVProcess` | 垂直方向 MTF |
+| MTF HV 0368 | `MTFHVProcess` | HV特殊图案，0368测试点位方案（0F/0.3F/0.6F/0.8F） |
+| MTF HV 048 | `MTFHV048Process` | HV特殊图案，048测试点位方案（0F/0.5F/0.8F） |
+| MTF HV 058 | `MTFHV058Process` | HV特殊图案，058测试点位方案（0F/0.5F/0.8F） |
+| MTF 058-H | `MTFHProcess` | 横条纹，058测试点位方案 |
+| MTF 058-V | `MTFVProcess` | 竖条纹，058测试点位方案 |
+| MTFH07 | `MTFH07Process` | 横条纹，07测试点位方案，5个固定点位、逐点Recipe与独立输出Key |
+| MTFV07 | `MTFV07Process` | 竖条纹，07测试点位方案，5个固定点位、逐点Recipe与独立输出Key |
+| 动态 MTF-HV | `MTFHVDynamicProcess` | HV特殊图案，动态区域；不是H/V条纹流程的合并 |
 | Optical Center | `OpticCenterProcess` | 光轴中心对准 |
 | OLED AOI | `OLEDAOIProcess` | OLED 自动光学检测 |
 
@@ -185,6 +188,10 @@ SqlSugar、Newtonsoft.Json、log4net、HandyControl、AvalonDock、CsvHelper、M
 | `ProjectARVRPro.db` | `%APPDATA%/ColorVision/Config/` | SQLite 数据库 — 测试结果持久化 |
 
 ## ProcessConfig 可配置 Key
+
+MTF07条纹流程按 5 个测试点分别配置：中心 `0F`，以及左上、右上、左下、右下 `0.7F`。H表示横条纹，V表示竖条纹；每个点都有独立解析Key和独立Recipe。流程结果按画面Key分别写入 `MTFH07TestResults` 或 `MTFV07TestResults` 强类型字典。
+
+HV是独立的特殊图案，不是H与V条纹流程的合并。`0368`、`048`、`058` 表示不同的测试点位方案。
 
 MTFHVProcess / MTFHV048Process / MTFHV058Process 支持用户自定义解析 Key：
 

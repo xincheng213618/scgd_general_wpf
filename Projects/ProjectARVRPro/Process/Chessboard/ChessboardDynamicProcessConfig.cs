@@ -54,6 +54,16 @@ namespace ProjectARVRPro.Process.Chessboard
         public string Key { get => _Key; set { _Key = value; OnPropertyChanged(); } }
         private string _Key = "Chessboard";
 
+        [JsonProperty("Name")]
+        private string? LegacyName
+        {
+            set
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                    Key = value;
+            }
+        }
+
         [Category("导出配置")]
         [DisplayName("单位")]
         [Description("棋盘格结果单位")]

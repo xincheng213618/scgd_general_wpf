@@ -271,11 +271,14 @@ namespace ProjectARVRPro
         private LogOutput? logOutput;
         private bool _isDisposed;
         private EventHandler? _activeGroupChangedHandler;
+        private EventHandler? _activeProcessMetasChangedHandler;
         private void Window_Initialized(object sender, EventArgs e)
         {
             RefreshStepBar();
             _activeGroupChangedHandler = ProcessManager_ActiveGroupChanged;
             ProcessManager.ActiveGroupChanged += _activeGroupChangedHandler;
+            _activeProcessMetasChangedHandler = ProcessManager_ActiveProcessMetasChanged;
+            ProcessManager.ActiveProcessMetasChanged += _activeProcessMetasChangedHandler;
             this.DataContext = ProjectARVRProConfig.Instance;
             ProjectConfig.PropertyChanged += ProjectConfig_PropertyChanged;
             ApplyResultOverlayConfig();
@@ -325,6 +328,15 @@ namespace ProjectARVRPro
         }
 
         private void ProcessManager_ActiveGroupChanged(object? sender, EventArgs e)
+        {
+            if (!_isDisposed)
+            {
+                RefreshStepBar();
+                ResetStepProgress();
+            }
+        }
+
+        private void ProcessManager_ActiveProcessMetasChanged(object? sender, EventArgs e)
         {
             if (!_isDisposed)
             {
@@ -874,7 +886,10 @@ namespace ProjectARVRPro
             if (stepBar == null || stepBar.Items.Count == 0 || stepIndex < 0)
                 return;
 
-            int normalizedStepIndex = Math.Min(stepIndex, stepBar.Items.Count - 1);
+            int normalizedStepIndex = ProcessManager.GetEnabledStepIndex(ProcessMetas, stepIndex);
+            if (normalizedStepIndex < 0 || normalizedStepIndex >= stepBar.Items.Count)
+                return;
+
             ProjectConfig.StepIndex = normalizedStepIndex;
 
             for (int i = 0; i < stepBar.Items.Count; i++)
@@ -2628,6 +2643,11 @@ namespace ProjectARVRPro
             {
                 ProcessManager.ActiveGroupChanged -= _activeGroupChangedHandler;
                 _activeGroupChangedHandler = null;
+            }
+            if (_activeProcessMetasChangedHandler != null)
+            {
+                ProcessManager.ActiveProcessMetasChanged -= _activeProcessMetasChangedHandler;
+                _activeProcessMetasChangedHandler = null;
             }
             listView1.SelectionChanged -= listView1_SelectionChanged;
             listView1.ItemsSource = null;
