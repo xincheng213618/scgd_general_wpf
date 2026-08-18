@@ -4404,7 +4404,7 @@ public class OperationsActivity extends AppCompatActivity {
                             && flow.optBoolean("isActive", false)
                             && flow.optBoolean("cancelAvailable", false);
                     state.setText(liveMonitorState(snapshot));
-                    details.setText(formatLiveMonitorSnapshot(snapshot));
+                    details.setText(liveMonitorPresentation().overview);
                     renderLiveMonitorActions();
                     scheduleLiveMonitorRefresh();
                 });
@@ -4434,51 +4434,76 @@ public class OperationsActivity extends AppCompatActivity {
     private void renderLiveMonitorActions() {
         actions.removeAllViews();
 
-        Button refresh = new MaterialButton(this);
-        refresh.setText("立即刷新");
+        Button refresh = dashboardTonalButton("立即刷新", v -> loadLiveMonitor(true));
         refresh.setEnabled(!liveMonitorRefreshInFlight && !liveMonitorCancelInFlight);
-        refresh.setOnClickListener(v -> loadLiveMonitor(true));
-        actions.addView(refresh, actionParams());
 
-        Button toggle = new MaterialButton(this);
-        toggle.setText(liveMonitorAutoRefresh ? "暂停自动观察" : "恢复每 10 秒观察");
+        Button toggle = dashboardButton(
+                liveMonitorAutoRefresh ? "暂停自动观察" : "恢复每 10 秒观察",
+                null);
         toggle.setEnabled(!liveMonitorCancelInFlight);
         toggle.setOnClickListener(v -> {
             liveMonitorAutoRefresh = !liveMonitorAutoRefresh;
             liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
             if (liveMonitorAutoRefresh) {
                 state.setText("自动观察已恢复 · 正在刷新");
+                details.setText(liveMonitorPresentation().overview);
                 renderLiveMonitorActions();
                 loadLiveMonitor(true);
             } else {
                 state.setText("自动观察已暂停 · 当前快照保留");
+                details.setText(liveMonitorPresentation().overview);
                 renderLiveMonitorActions();
             }
         });
-        actions.addView(toggle, actionParams());
+        addDashboardTaskGroup(
+                "观察控制",
+                liveMonitorAutoRefresh
+                        ? "前台每 10 秒更新；切到后台时停止页面刷新。"
+                        : "自动观察已暂停，当前快照与本次内存样本仍保留。",
+                refresh,
+                toggle);
 
-        Button cancelFlow = new MaterialButton(this);
-        cancelFlow.setText(liveMonitorCancelAvailable
-                ? "取消当前检测"
-                : "当前没有可取消的主检测");
-        cancelFlow.setEnabled(liveMonitorCancelAvailable
-                && !liveMonitorRefreshInFlight
-                && !liveMonitorCancelInFlight);
-        cancelFlow.setOnClickListener(v -> confirmCancelCurrentFlow());
-        actions.addView(cancelFlow, actionParams());
+        if (liveMonitorLatestSnapshot != null) {
+            addDashboardSection("实时状态");
+            actions.addView(
+                    OperationsLiveMonitorContent.create(
+                            this, themeManager, liveMonitorPresentation()),
+                    new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT));
+        } else {
+            addDashboardInfoCard("正在读取第一份脱敏聚合快照；观察控制已经可用。");
+        }
 
-        Button share = new MaterialButton(this);
-        share.setText(liveMonitorTrend.size() < 2
-                ? "分享本次趋势（至少需要 2 个样本）"
-                : "分享本次脱敏趋势");
+        if (liveMonitorCancelAvailable || liveMonitorCancelInFlight) {
+            addDashboardSection("检测控制");
+            Button cancelFlow = dashboardDestructiveButton(
+                    liveMonitorCancelInFlight ? "正在取消检测…" : "取消当前检测",
+                    v -> confirmCancelCurrentFlow());
+            cancelFlow.setEnabled(!liveMonitorRefreshInFlight && !liveMonitorCancelInFlight);
+            addDashboardWideAction(cancelFlow);
+        }
+
+        Button share = dashboardTonalButton("分享脱敏趋势", v -> shareLiveMonitorTrend());
         share.setEnabled(liveMonitorTrend.size() >= 2);
-        share.setOnClickListener(v -> shareLiveMonitorTrend());
-        actions.addView(share, actionParams());
+        Button back = dashboardButton("返回现场运维概览", v -> showDashboard());
+        addDashboardTaskGroup(
+                "记录与离开",
+                liveMonitorTrend.size() < 2
+                        ? "至少采集 2 个样本后可分享；离开本页会清空本次内存趋势。"
+                        : "只分享本次手机内存中的脱敏聚合趋势；离开本页即清空。",
+                share,
+                back);
+    }
 
-        Button back = new MaterialButton(this);
-        back.setText("返回现场运维概览");
-        back.setOnClickListener(v -> showDashboard());
-        actions.addView(back, actionParams());
+    private OperationsLiveMonitorPresentation.ViewModel liveMonitorPresentation() {
+        String capturedAt = liveMonitorLatestSnapshot == null
+                ? "" : shortTime(liveMonitorLatestSnapshot.optString("capturedAt", ""));
+        return OperationsLiveMonitorPresentation.from(
+                liveMonitorLatestSnapshot,
+                liveMonitorTrend.summarize(),
+                liveMonitorAutoRefresh,
+                capturedAt);
     }
 
     private void scheduleLiveMonitorRefresh() {
@@ -4646,102 +4671,7 @@ public class OperationsActivity extends AppCompatActivity {
         } else {
             prefix = "当前聚合状态稳定";
         }
-        return prefix + " · 本次内存样本 " + liveMonitorTrend.size()
-                + "/" + OperationsLiveMonitorTrend.MAX_SAMPLES;
-    }
-
-    private String formatLiveMonitorSnapshot(JSONObject snapshot) {
-        JSONObject flow = snapshot.optJSONObject("flow");
-        JSONObject performance = snapshot.optJSONObject("performance");
-        JSONObject devices = snapshot.optJSONObject("devices");
-        JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
-        JSONObject applicationRecovery = snapshot.optJSONObject("applicationRecovery");
-        JSONObject alerts = snapshot.optJSONObject("alerts");
-        StringBuilder text = new StringBuilder();
-        if (flow == null || !flow.optBoolean("available", false)) {
-            text.append("检测：流程运行时暂不可用");
-        } else {
-            text.append("检测：").append(flowPhaseLabel(flow.optString("phase", "idle")));
-            if (flow.optBoolean("progressAvailable", false)
-                    && flow.has("progressPercent") && !flow.isNull("progressPercent")) {
-                text.append(" · ").append(roundOne(flow.optDouble("progressPercent", 0))).append('%');
-            }
-            if (flow.has("elapsedMilliseconds") && !flow.isNull("elapsedMilliseconds")) {
-                text.append(" · 已用时 ")
-                        .append(formatElapsedMilliseconds(flow.optLong("elapsedMilliseconds", 0)));
-            }
-            String lastStatus = flow.optString("lastRunStatus", "none");
-            if (!"none".equals(lastStatus)) {
-                text.append("\n最近结果：").append(flowOutcomeLabel(lastStatus));
-            }
-        }
-
-        text.append("\n\n消息通道：");
-        if (messageChannel == null) {
-            text.append("状态暂不可用");
-        } else {
-            text.append(formatMessageChannelHealth(messageChannel, false));
-        }
-
-        if (devices == null || !devices.optBoolean("available", false)) {
-            text.append("\n\n检测设备：运行状态汇总暂不可用");
-        } else if (!devices.optBoolean("hasConfiguredDevices", false)) {
-            text.append("\n\n检测设备：当前未发现已加载设备");
-        } else {
-            text.append("\n\n检测设备：共 ").append(devices.optInt("totalCount", 0)).append(" 台 · ");
-            appendDeviceStateCounts(text, devices);
-            appendDeviceUnavailableReasons(text, devices);
-        }
-
-        if (performance == null) {
-            text.append("\n\n性能：暂不可用");
-        } else {
-            text.append("\n\n性能：CPU ")
-                    .append(roundOne(performance.optDouble("cpuPercent", 0))).append('%')
-                    .append(" · 工作集 ")
-                    .append(roundOne(performance.optDouble("workingSetMb", 0))).append(" MB");
-            JSONObject mainUi = performance.optJSONObject("mainUi");
-            text.append("\n主界面：")
-                    .append(mainUi == null ? "不可用"
-                            : uiResponsivenessLabel(mainUi.optString("state", "unavailable")));
-            if (mainUi != null && mainUi.has("latencyMilliseconds")
-                    && !mainUi.isNull("latencyMilliseconds")) {
-                text.append(" · ").append(mainUi.optLong("latencyMilliseconds", 0)).append(" ms");
-            }
-        }
-
-        text.append("\n\n应用异常恢复：");
-        if (applicationRecovery == null || !applicationRecovery.optBoolean("supported", false)) {
-            text.append("当前系统不支持");
-        } else if (!applicationRecovery.optBoolean("registered", false)) {
-            text.append("未就绪");
-        } else if (applicationRecovery.optBoolean("restartedAfterFailure", false)) {
-            text.append("已恢复 · 本次启动由固定目标看门狗或 Windows 异常恢复接管");
-        } else if (applicationRecovery.optBoolean("automaticWatchdogActive", false)) {
-            text.append("已就绪 · 本机看门狗只会自动恢复同目录 ColorVision");
-        } else {
-            text.append("已登记 · Windows 可在当前 ColorVision 异常退出或卡死后提供恢复");
-        }
-
-        int alertCount = alerts == null ? 0 : alerts.optInt("count", 0);
-        text.append("\n\n近期告警：").append(alertCount).append(" 条");
-        if (alerts != null && alertCount > 0) {
-            text.append(" · 警告 ").append(alerts.optInt("warningCount", 0))
-                    .append(" · 错误 ").append(alerts.optInt("errorCount", 0))
-                    .append(" · 严重 ").append(alerts.optInt("criticalCount", 0));
-            String latestAt = shortTime(alerts.optString("latestOccurredAt", ""));
-            if (!latestAt.isEmpty()) {
-                text.append("\n最近告警：").append(latestAt);
-            }
-        }
-
-        text.append("\n\n采集时间：").append(shortTime(snapshot.optString("capturedAt", "")))
-                .append("\n页面刷新：前台每 ")
-                .append(snapshot.optInt("suggestedRefreshSeconds", 10)).append(" 秒")
-                .append(" · 后台守护每 60 秒，断线自动退避")
-                .append(formatLiveMonitorTrend(liveMonitorTrend.summarize()))
-                .append("\n\n服务器不保存采样历史；手机仅在内存保留最近 30 个样本，离开本页即清空。快照不含流程、模板、批次、节点、参数、结果、进程身份、主机、用户、端点、设备身份、Topic、消息载荷、配置、凭据、原始设备状态、日志正文或检测数据。 ");
-        return text.toString();
+        return prefix;
     }
 
     private String formatLiveMonitorTrend(OperationsLiveMonitorTrend.Summary summary) {

@@ -28,7 +28,7 @@
     <string name="operations_support_request">申请 15 分钟引导支持</string>
     <string name="operations_live_monitor_title">远程持续观察</string>
     <string name="operations_live_monitor_loading">正在采集第一份有界运行快照…</string>
-    <string name="operations_live_monitor_details">本页前台每 10 秒刷新详细快照；离开页面后，运维守护仍会每 60 秒检查已配对主机，并在断线时自动退避重试。服务器不保存采样历史。只有主检测活动时才会提供有界取消动作。</string>
+    <string name="operations_live_monitor_details">前台每 10 秒读取一份脱敏聚合快照；后台守护仍按 60 秒检查。样本只保留在手机内存，离开本页即清空。</string>
     <string name="operations_live_monitor_retrying">本轮观察失败 · 10 秒后自动重试</string>
     <string name="operations_live_monitor_failed">本轮观察失败</string>
     <string name="operations_live_monitor_failure_details">%1$s\n\n持续观察本身不会删除配对资料或修改检测流程；只有你明确确认取消动作后才会介入当前检测。</string>
