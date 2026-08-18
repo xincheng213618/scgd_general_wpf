@@ -265,9 +265,16 @@ public class OperationsActivity extends AppCompatActivity {
     private void openMainTab(int tab) {
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra(MainActivity.EXTRA_START_TAB, tab);
+        intent.putExtra(MainActivity.EXTRA_FROM_OPERATIONS, true);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
-        finish();
+        if (AppScreenMotion.directionBetween(
+                MainActivity.TAB_OPERATIONS,
+                tab,
+                MainActivity.TAB_OPERATIONS,
+                MainActivity.TAB_SETTINGS) == AppScreenMotion.DIRECTION_FORWARD) {
+            AppScreenMotion.applyForward(this);
+        }
     }
 
     private void beginPairing(String rawPairing) {

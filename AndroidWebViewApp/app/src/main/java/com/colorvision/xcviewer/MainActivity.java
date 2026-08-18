@@ -42,6 +42,7 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     static final String EXTRA_START_TAB = "start_tab";
+    static final String EXTRA_FROM_OPERATIONS = "from_operations";
     private static final int REQUEST_QR_SCAN = 1001;
     private static final int REQUEST_AUDIO_PICK = 1003;
     private static final int REQUEST_INSTALL_PERMISSION = 1004;
@@ -61,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView headerSubtitle;
     private BottomNavigationView bottomNavigation;
     private boolean updatingBottomNavigation;
+    private boolean openedFromOperations;
     private int currentTab = TAB_OPERATIONS;
     private final ExecutorService appUpdateExecutor = Executors.newSingleThreadExecutor();
     private boolean appUpdateInFlight;
@@ -72,6 +74,10 @@ public class MainActivity extends AppCompatActivity {
 
         appPreferences = new AppPreferences(this);
         int startTab = consumeStartTab(getIntent());
+        openedFromOperations = getIntent().getBooleanExtra(EXTRA_FROM_OPERATIONS, false);
+        if (openedFromOperations && startTab == TAB_SETTINGS) {
+            AppScreenMotion.configureSettingsActivity(this);
+        }
         if (AppNavigationPolicy.shouldOpenOperationsDirectly(
                 appPreferences.hasOperationsProfile(), startTab == TAB_OPERATIONS)) {
             openOperationsDirectly();
@@ -268,6 +274,10 @@ public class MainActivity extends AppCompatActivity {
         super.onNewIntent(intent);
         setIntent(intent);
         int startTab = consumeStartTab(intent);
+        openedFromOperations = intent.getBooleanExtra(EXTRA_FROM_OPERATIONS, false);
+        if (openedFromOperations && startTab == TAB_SETTINGS) {
+            AppScreenMotion.configureSettingsActivity(this);
+        }
         if (AppNavigationPolicy.shouldOpenOperationsDirectly(
                 appPreferences.hasOperationsProfile(), startTab == TAB_OPERATIONS)) {
             openOperationsDirectly();
@@ -278,6 +288,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void showOperationsLanding() {
         if (appPreferences.hasOperationsProfile()) {
+            if (openedFromOperations
+                    && AppScreenMotion.directionBetween(
+                    currentTab,
+                    TAB_OPERATIONS,
+                    TAB_OPERATIONS,
+                    TAB_SETTINGS) == AppScreenMotion.DIRECTION_BACKWARD) {
+                finish();
+                return;
+            }
             openOperations();
             return;
         }
@@ -721,6 +740,20 @@ public class MainActivity extends AppCompatActivity {
         startActivity(new Intent(this, OperationsActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
         finish();
+    }
+
+    @Override
+    public void finish() {
+        boolean animateBackToOperations = openedFromOperations
+                && AppScreenMotion.directionBetween(
+                currentTab,
+                TAB_OPERATIONS,
+                TAB_OPERATIONS,
+                TAB_SETTINGS) == AppScreenMotion.DIRECTION_BACKWARD;
+        super.finish();
+        if (animateBackToOperations) {
+            AppScreenMotion.applyBackward(this);
+        }
     }
 
     private void saveAndOpen(String rawContent) {
