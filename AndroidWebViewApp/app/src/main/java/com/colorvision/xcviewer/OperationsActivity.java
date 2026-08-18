@@ -378,6 +378,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void openExistingProfile() {
+        scrollDashboardToTop();
         refreshOperationsTargetPresentation();
         String requestHostId = preferences.getOperationsHostId();
         int requestGeneration = ++connectionRequestGeneration;
@@ -960,6 +961,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showDashboard() {
+        scrollDashboardToTop();
         refreshOperationsTargetPresentation();
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -979,7 +981,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardRestartCapabilityAvailable = true;
         dashboardRemoteHostFresh = true;
 
-        addDashboardSection("当前重点");
+        addDashboardSection("建议操作");
         dashboardPriorityAction = dashboardPrimaryButton("正在分析运行状态…", null);
         dashboardPriorityAction.setEnabled(false);
         addDashboardWideAction(dashboardPriorityAction);
@@ -1049,6 +1051,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showRemoteDashboard(JSONObject response) {
+        scrollDashboardToTop();
         refreshOperationsTargetPresentation();
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -1083,7 +1086,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardRemoteHostFresh = host != null && OperationsRelayPolicy.isHostFresh(
                 host.optLong("signedAt", 0L), System.currentTimeMillis());
 
-        addDashboardSection("当前重点");
+        addDashboardSection("建议操作");
         dashboardPriorityAction = dashboardPrimaryButton("正在分析运行状态…", null);
         addDashboardWideAction(dashboardPriorityAction);
         updateDashboardPriority(dashboardRemoteHostFresh
@@ -1112,13 +1115,15 @@ public class OperationsActivity extends AppCompatActivity {
         messageActions.setEnabled(monitor != null
                 && (canRecoverMessageChannel || canRestartMqtt));
         addDashboardActionRow(diagnostics, messageActions);
-        dashboardCancelFlowButton = dashboardButton(
-                "取消检测（读取中）", v -> confirmCancelCurrentFlow());
-        dashboardCancelFlowButton.setEnabled(false);
-        dashboardRestartApplicationButton = dashboardButton(
-                "重启 ColorVision", v -> confirmRestartApplication());
-        dashboardRestartApplicationButton.setEnabled(false);
-        addDashboardActionRow(dashboardCancelFlowButton, dashboardRestartApplicationButton);
+        if (dashboardRemoteHostFresh) {
+            dashboardCancelFlowButton = dashboardButton(
+                    "取消检测（读取中）", v -> confirmCancelCurrentFlow());
+            dashboardCancelFlowButton.setEnabled(false);
+            dashboardRestartApplicationButton = dashboardButton(
+                    "重启 ColorVision", v -> confirmRestartApplication());
+            dashboardRestartApplicationButton.setEnabled(false);
+            addDashboardActionRow(dashboardCancelFlowButton, dashboardRestartApplicationButton);
+        }
 
         if (monitor != null) {
             dashboardStatusHeading = addDashboardSection(dashboardRemoteHostFresh
@@ -1170,7 +1175,6 @@ public class OperationsActivity extends AppCompatActivity {
         JSONObject snapshot = host.optJSONObject("snapshot");
         JSONObject monitor = snapshot == null ? null : snapshot.optJSONObject("monitor");
         JSONObject window = snapshot == null ? null : snapshot.optJSONObject("mainWindow");
-        JSONObject secure = snapshot == null ? null : snapshot.optJSONObject("secureOperations");
         boolean running = snapshot != null && snapshot.optBoolean("isRunning", false);
         boolean windowExists = window != null && window.optBoolean("exists", false);
         boolean windowVisible = window != null && window.optBoolean("isVisible", false);
@@ -1181,31 +1185,8 @@ public class OperationsActivity extends AppCompatActivity {
                     ? "电脑签名状态"
                     : "上次电脑签名状态（已过期）");
         }
-        StringBuilder text = new StringBuilder();
-        text.append("连接方式：固定站点设备签名中继")
-                .append("\n电脑状态：").append(fresh ? "在线" : "暂未上线")
-                .append(fresh ? "\nColorVision：" : "\n上次快照 · ColorVision：")
-                .append(running ? "运行中" : "暂未确认")
-                .append(fresh ? "\n主窗口：" : "\n上次快照 · 主窗口：");
-        if (!windowExists) {
-            text.append("暂未确认");
-        } else if (windowVisible) {
-            text.append("当前可见");
-        } else {
-            text.append("当前隐藏或最小化");
-        }
-        if (secure != null) {
-            text.append(fresh ? "\n电脑中继：" : "\n上次快照 · 电脑中继：")
-                    .append(secure.optBoolean("relayRunning", false) ? "运行中" : "等待恢复");
-        }
         long signedAt = host.optLong("signedAt", 0L);
-        if (signedAt > 0L) {
-            text.append("\n最近更新：").append(new SimpleDateFormat(
-                    "MM-dd HH:mm:ss", Locale.getDefault()).format(new Date(signedAt * 1_000L)))
-                    .append(fresh ? "" : "（已过期）");
-        }
         if (monitor == null) {
-            text.append("\n远程状态摘要：等待电脑端更新");
             markDashboardLiveStatusUnavailable();
         } else if (dashboardFlowStatus != null) {
             updateDashboardLiveStatus(monitor);
@@ -1214,8 +1195,14 @@ public class OperationsActivity extends AppCompatActivity {
                 ? OperationsDashboardAdvisor.fromMonitor(monitor)
                 : OperationsDashboardAdvisor.staleRemoteSnapshot());
         updateDashboardRestartApplicationAction();
-        text.append("\n\n控制请求由本机密钥签名，并由电脑再次核验；固定站点不持有设备私钥，也不接收命令文本。");
-        details.setText(text.toString());
+        details.setText(OperationsDashboardOverview.remoteSummary(
+                fresh,
+                running,
+                windowExists,
+                windowVisible,
+                monitor != null,
+                signedAt,
+                System.currentTimeMillis()));
     }
 
     private void showRemoteMonitorDetail(String section, JSONObject monitor) {
@@ -2237,20 +2224,16 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private String directConnectionState() {
-        return OperationsConnectionPreference.prefersRelay(
-                preferences.getOperationsConnectionPreference())
-                ? "● 现场直连（临时） · 固定中继恢复后切回"
-                : "● 现场直连 · 自动保持";
+        return OperationsDashboardOverview.directConnectionState(
+                OperationsConnectionPreference.prefersRelay(
+                        preferences.getOperationsConnectionPreference()));
     }
 
     private String remoteConnectionState(boolean hostFresh) {
-        if (!hostFresh) {
-            return "○ 固定中继在线 · 等待电脑上线";
-        }
-        return OperationsConnectionPreference.prefersRelay(
-                preferences.getOperationsConnectionPreference())
-                ? "● 固定中继 · 自动保持"
-                : "● 固定中继（临时） · 现场直连恢复后切回";
+        return OperationsDashboardOverview.remoteConnectionState(
+                hostFresh,
+                OperationsConnectionPreference.prefersRelay(
+                        preferences.getOperationsConnectionPreference()));
     }
 
     private TextView addDashboardSection(String label) {
@@ -2311,11 +2294,11 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void runDashboardPriorityAction(String action) {
         switch (action) {
-            case OperationsDashboardAdvisor.ACTION_REFRESH_REMOTE:
-                refreshRemoteDashboard();
-                return;
             case OperationsDashboardAdvisor.ACTION_CONNECTION_CHECK:
                 runConnectionSelfCheck();
+                return;
+            case OperationsDashboardAdvisor.ACTION_CONNECTION_CENTER:
+                showConnectionPreference();
                 return;
             case OperationsDashboardAdvisor.ACTION_FLOW:
                 if (remoteDashboard) {
@@ -2601,6 +2584,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showExistingProfileFailure(Exception localException, Exception relayException) {
+        scrollDashboardToTop();
         leaveSupportCenter();
         remoteDashboard = false;
         dashboardVisible = false;

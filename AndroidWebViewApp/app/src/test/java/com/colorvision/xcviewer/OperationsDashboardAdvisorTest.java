@@ -11,8 +11,8 @@ public class OperationsDashboardAdvisorTest {
         OperationsDashboardAdvisor.Recommendation recommendation =
                 OperationsDashboardAdvisor.staleRemoteSnapshot();
 
-        assertEquals("电脑暂未上线 · 刷新远程状态", recommendation.label);
-        assertEquals(OperationsDashboardAdvisor.ACTION_REFRESH_REMOTE, recommendation.action);
+        assertEquals("排查电脑连接", recommendation.label);
+        assertEquals(OperationsDashboardAdvisor.ACTION_CONNECTION_CENTER, recommendation.action);
     }
 
     @Test

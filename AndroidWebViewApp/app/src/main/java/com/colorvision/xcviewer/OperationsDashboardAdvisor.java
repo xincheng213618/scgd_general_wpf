@@ -4,8 +4,8 @@ import org.json.JSONObject;
 
 final class OperationsDashboardAdvisor {
     static final String ACTION_NONE = "none";
-    static final String ACTION_REFRESH_REMOTE = "refresh_remote";
     static final String ACTION_CONNECTION_CHECK = "connection_check";
+    static final String ACTION_CONNECTION_CENTER = "connection_center";
     static final String ACTION_FLOW = "flow";
     static final String ACTION_DEVICES = "devices";
     static final String ACTION_MESSAGE = "message";
@@ -21,7 +21,7 @@ final class OperationsDashboardAdvisor {
     }
 
     static Recommendation staleRemoteSnapshot() {
-        return new Recommendation("电脑暂未上线 · 刷新远程状态", ACTION_REFRESH_REMOTE);
+        return new Recommendation("排查电脑连接", ACTION_CONNECTION_CENTER);
     }
 
     static Recommendation unavailable() {
