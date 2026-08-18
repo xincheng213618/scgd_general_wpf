@@ -1,4 +1,5 @@
 using ColorVision.Engine.Services.Devices.Spectrum.Correction;
+using ColorVision.Engine;
 using System.Globalization;
 
 namespace Spectrum.Tests;
@@ -52,6 +53,30 @@ public class SpectrumTextParserTests
         finally
         {
             CultureInfo.CurrentCulture = originalCulture;
+        }
+    }
+
+    [Fact]
+    public void Parse_UsesEnglishErrorsWithoutChangingValidSpectrumData()
+    {
+        CultureInfo originalCulture = CultureInfo.CurrentCulture;
+        CultureInfo originalUiCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+
+            SpectrumSeries series = SpectrumTextParser.Parse("380,1\n381,2");
+            Assert.Equal([380d, 381d], series.Wavelengths);
+            Assert.Equal([1d, 2d], series.Values);
+
+            FormatException exception = Assert.Throws<FormatException>(() => SpectrumTextParser.Parse("380,-1\n381,2"));
+            Assert.Equal("The spectrum value on line 1 cannot be negative.", exception.Message);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+            CultureInfo.CurrentUICulture = originalUiCulture;
         }
     }
 }

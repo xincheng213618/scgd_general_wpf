@@ -4832,4 +4832,83 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SQLite 完整性检查: {0}" xml:space="preserve"><value>SQLite integrity check: {0}</value></data>
   <data name="已创建 Socket 消息完整备份（{0}）。" xml:space="preserve"><value>Created a full Socket messages backup ({0}).</value></data>
   <data name="Socket 消息 SQLite 数据库文件不存在。" xml:space="preserve"><value>The Socket messages SQLite database file does not exist.</value></data>
+  <data name="光谱校正" xml:space="preserve"><value>Spectral Correction</value></data>
+  <data name="设备" xml:space="preserve"><value>Device</value></data>
+  <data name="采集后显示" xml:space="preserve"><value>Shown after capture</value></data>
+  <data name="标定组" xml:space="preserve"><value>Calibration Group</value></data>
+  <data name="采集实测" xml:space="preserve"><value>Capture Measurement</value></data>
+  <data name="当前 DAT" xml:space="preserve"><value>Current DAT</value></data>
+  <data name="采集后自动读取当前标定组" xml:space="preserve"><value>Current calibration group will be read automatically after capture</value></data>
+  <data name="单独亮度校正" xml:space="preserve"><value>Brightness-only Correction</value></data>
+  <data name="目标亮度/光度值" xml:space="preserve"><value>Target Brightness/Photometric Value</value></data>
+  <data name="本次服务实测值" xml:space="preserve"><value>Current Service Measurement</value></data>
+  <data name="校正比例" xml:space="preserve"><value>Correction Factor</value></data>
+  <data name="整体亮度校正" xml:space="preserve"><value>Overall Brightness Correction</value></data>
+  <data name="输入目标值，预览后导出 DAT；相对光谱形状不变。" xml:space="preserve"><value>Enter the target value, preview, then export the DAT. The relative spectral shape remains unchanged.</value></data>
+  <data name="应用会重启服务；恢复后请重新采集验证。" xml:space="preserve"><value>Applying will restart the service. Capture again to verify after recovery.</value></data>
+  <data name="完整光谱校正" xml:space="preserve"><value>Full Spectral Correction</value></data>
+  <data name="从 CSV/TXT 导入" xml:space="preserve"><value>Import from CSV/TXT</value></data>
+  <data name="清空标准值" xml:space="preserve"><value>Clear Standard Values</value></data>
+  <data name="导入覆盖当前波段的两列标准谱；可编辑或按 Ctrl+V 粘贴。" xml:space="preserve"><value>Import a two-column standard spectrum covering the current wavelength range. Values can also be edited or pasted with Ctrl+V.</value></data>
+  <data name="标准绝对光谱（可编辑）" xml:space="preserve"><value>Standard Absolute Spectrum (Editable)</value></data>
+  <data name="波长 (nm)" xml:space="preserve"><value>Wavelength (nm)</value></data>
+  <data name="标准值" xml:space="preserve"><value>Standard Value</value></data>
+  <data name="服务实测绝对光谱（只读）" xml:space="preserve"><value>Service-measured Absolute Spectrum (Read-only)</value></data>
+  <data name="请先采集服务实测数据。" xml:space="preserve"><value>Capture service measurement data first.</value></data>
+  <data name="预览" xml:space="preserve"><value>Preview</value></data>
+  <data name="导出 DAT" xml:space="preserve"><value>Export DAT</value></data>
+  <data name="应用并重启服务" xml:space="preserve"><value>Apply and Restart Service</value></data>
+  <data name="标准光谱 / 实测光谱 / 校正预测" xml:space="preserve"><value>Standard Spectrum / Measured Spectrum / Correction Prediction</value></data>
+  <data name="光谱校正预览" xml:space="preserve"><value>Spectral Correction Preview</value></data>
+  <data name="绝对光谱值" xml:space="preserve"><value>Absolute Spectral Value</value></data>
+  <data name="正在通过服务采集实测光谱……" xml:space="preserve"><value>Capturing the measured spectrum through the service...</value></data>
+  <data name="当前标定组没有幅值标定文件路径。" xml:space="preserve"><value>The current calibration group has no magnitude calibration file path.</value></data>
+  <data name="找不到服务本次测量使用的幅值标定文件。" xml:space="preserve"><value>The magnitude calibration file used for this service measurement could not be found.</value></data>
+  <data name="当前 DAT 已在采集后发生变化。请重新采集，确保实测数据和旧系数来自同一份文件。" xml:space="preserve"><value>The current DAT changed after capture. Capture again to ensure the measured data and original coefficients come from the same file.</value></data>
+  <data name="采集完成：{0} 点，{1:G6}–{2:G6} nm，间隔 {3:G6} nm。" xml:space="preserve"><value>Capture complete: {0} points, {1:G6}–{2:G6} nm, interval {3:G6} nm.</value></data>
+  <data name="采集已取消。" xml:space="preserve"><value>Capture canceled.</value></data>
+  <data name="采集实测数据失败" xml:space="preserve"><value>Failed to Capture Measurement Data</value></data>
+  <data name="导入标准绝对光谱" xml:space="preserve"><value>Import Standard Absolute Spectrum</value></data>
+  <data name="光谱数据 (*.csv;*.txt;*.dat)|*.csv;*.txt;*.dat|所有文件 (*.*)|*.*" xml:space="preserve"><value>Spectrum data (*.csv;*.txt;*.dat)|*.csv;*.txt;*.dat|All files (*.*)|*.*</value></data>
+  <data name="已导入 {0} 个标准谱点：{1}" xml:space="preserve"><value>Imported {0} standard spectrum point(s): {1}</value></data>
+  <data name="导入标准光谱失败" xml:space="preserve"><value>Failed to Import Standard Spectrum</value></data>
+  <data name="剪贴板中没有文本数据。" xml:space="preserve"><value>The clipboard contains no text data.</value></data>
+  <data name="已从剪贴板粘贴 {0} 个标准谱点。" xml:space="preserve"><value>Pasted {0} standard spectrum point(s) from the clipboard.</value></data>
+  <data name="粘贴标准光谱失败" xml:space="preserve"><value>Failed to Paste Standard Spectrum</value></data>
+  <data name="标准光谱已清空。" xml:space="preserve"><value>The standard spectrum has been cleared.</value></data>
+  <data name="无法计算校正预览" xml:space="preserve"><value>Unable to Calculate Correction Preview</value></data>
+  <data name="保存新幅值标定文件" xml:space="preserve"><value>Save New Magnitude Calibration File</value></data>
+  <data name="幅值标定文件 (*.dat)|*.dat" xml:space="preserve"><value>Magnitude calibration file (*.dat)|*.dat</value></data>
+  <data name="已生成：{0}" xml:space="preserve"><value>Generated: {0}</value></data>
+  <data name="新 DAT 已生成，原文件未修改。" xml:space="preserve"><value>The new DAT was generated. The original file was not modified.</value></data>
+  <data name="生成新 DAT 失败" xml:space="preserve"><value>Failed to Generate New DAT</value></data>
+  <data name="正在应用新 DAT……" xml:space="preserve"><value>Applying the new DAT...</value></data>
+  <data name="服务未能应用新 DAT。" xml:space="preserve"><value>The service could not apply the new DAT.</value></data>
+  <data name="已应用，服务正在重启。" xml:space="preserve"><value>Applied. The service is restarting.</value></data>
+  <data name="已应用。" xml:space="preserve"><value>Applied.</value></data>
+  <data name="当前 DAT：{0}" xml:space="preserve"><value>Current DAT: {0}</value></data>
+  <data name="服务恢复后请重新采集验证。" xml:space="preserve"><value>Capture again to verify after the service recovers.</value></data>
+  <data name="新 DAT 已应用。" xml:space="preserve"><value>The new DAT has been applied.</value></data>
+  <data name="应用已取消。" xml:space="preserve"><value>Apply canceled.</value></data>
+  <data name="应用新 DAT 失败" xml:space="preserve"><value>Failed to Apply New DAT</value></data>
+  <data name="请先点击“采集实测”，获取本次服务结果和当前 DAT。" xml:space="preserve"><value>Click “Capture Measurement” first to obtain the current service result and DAT.</value></data>
+  <data name="请先点击“采集实测”。" xml:space="preserve"><value>Click “Capture Measurement” first.</value></data>
+  <data name="请导入、粘贴或编辑至少两个标准绝对光谱点。" xml:space="preserve"><value>Import, paste, or edit at least two standard absolute spectrum points.</value></data>
+  <data name="服务实测" xml:space="preserve"><value>Service Measurement</value></data>
+  <data name="校正预测" xml:space="preserve"><value>Correction Prediction</value></data>
+  <data name="标准光谱" xml:space="preserve"><value>Standard Spectrum</value></data>
+  <data name="亮度校正比例：{0:G8}。点击“导出 DAT”后写入文件。" xml:space="preserve"><value>Brightness correction factor: {0:G8}. Click “Export DAT” to write it to a file.</value></data>
+  <data name="完整光谱校正预览完成，共 {0} 点。" xml:space="preserve"><value>Full spectral correction preview complete: {0} points.</value></data>
+  <data name="注意：{0} 个低/零实测点未参与除法，校正比例由相邻有效点插值或延伸。" xml:space="preserve"><value>Note: {0} low/zero measured point(s) were excluded from division. Correction factors were interpolated or extended from adjacent valid points.</value></data>
+  <data name="{0}：{1}" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="{0}必须是有限正数。" xml:space="preserve"><value>{0} must be a finite positive number.</value></data>
+  <data name="当前操作完成前不能关闭窗口。" xml:space="preserve"><value>The window cannot be closed until the current operation finishes.</value></data>
+  <data name="光谱文本为空。" xml:space="preserve"><value>The spectrum text is empty.</value></data>
+  <data name="第 {0} 行必须只有波长和数值两列。" xml:space="preserve"><value>Line {0} must contain exactly two columns: wavelength and value.</value></data>
+  <data name="波长" xml:space="preserve"><value>wavelength</value></data>
+  <data name="光谱值" xml:space="preserve"><value>spectrum value</value></data>
+  <data name="第 {0} 行的光谱值不能为负数。" xml:space="preserve"><value>The spectrum value on line {0} cannot be negative.</value></data>
+  <data name="第 {0} 行波长必须严格递增，不能重复或倒序。" xml:space="preserve"><value>Wavelengths must strictly increase on line {0}; duplicates and descending order are not allowed.</value></data>
+  <data name="至少需要两行有效光谱数据。" xml:space="preserve"><value>At least two valid rows of spectrum data are required.</value></data>
+  <data name="第 {0} 行的{1}不是有效数字: {2}" xml:space="preserve"><value>The {1} on line {0} is not a valid number: {2}</value></data>
 </root>

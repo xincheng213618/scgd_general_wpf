@@ -4,8 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        xmlns:engine="clr-namespace:ColorVision.Engine"
         mc:Ignorable="d"
-        Title="光谱校正" Width="1220" Height="820" MinWidth="1050" MinHeight="720"
+        Title="{engine:EngineLang Key='光谱校正'}" Width="1220" Height="820" MinWidth="1050" MinHeight="720"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource GlobalBackground}"
         Foreground="{DynamicResource GlobalTextBrush}">
@@ -62,25 +63,25 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,6,0" Text="设备" Foreground="{DynamicResource SecondaryTextBrush}" />
-                <TextBlock x:Name="DeviceText" Grid.Row="0" Grid.Column="1" Text="采集后显示" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,6,0" Text="{engine:EngineLang Key='设备'}" Foreground="{DynamicResource SecondaryTextBrush}" />
+                <TextBlock x:Name="DeviceText" Grid.Row="0" Grid.Column="1" Text="{engine:EngineLang Key='采集后显示'}" TextTrimming="CharacterEllipsis" />
                 <TextBlock Grid.Row="0" Grid.Column="2" Margin="12,0,6,0" Text="SN" Foreground="{DynamicResource SecondaryTextBrush}" />
                 <TextBlock x:Name="SerialNumberText" Grid.Row="0" Grid.Column="3" Text="—" TextTrimming="CharacterEllipsis" />
-                <TextBlock Grid.Row="0" Grid.Column="4" Margin="12,0,6,0" Text="标定组" Foreground="{DynamicResource SecondaryTextBrush}" />
+                <TextBlock Grid.Row="0" Grid.Column="4" Margin="12,0,6,0" Text="{engine:EngineLang Key='标定组'}" Foreground="{DynamicResource SecondaryTextBrush}" />
                 <TextBlock x:Name="CalibrationGroupText" Grid.Row="0" Grid.Column="5" Text="—" TextTrimming="CharacterEllipsis" />
-                <TextBlock Grid.Row="0" Grid.Column="6" Margin="12,0,6,0" Text="结果" Foreground="{DynamicResource SecondaryTextBrush}" />
+                <TextBlock Grid.Row="0" Grid.Column="6" Margin="12,0,6,0" Text="{engine:EngineLang Key='结果'}" Foreground="{DynamicResource SecondaryTextBrush}" />
                 <TextBlock x:Name="ResultText" Grid.Row="0" Grid.Column="7" Text="—" TextTrimming="CharacterEllipsis" />
                 <Button x:Name="CaptureButton" Grid.Row="0" Grid.RowSpan="2" Grid.Column="8" Margin="14,0,0,0"
-                        MinWidth="110" Content="采集实测" Click="CaptureButton_Click" />
+                        MinWidth="110" Content="{engine:EngineLang Key='采集实测'}" Click="CaptureButton_Click" />
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,8,6,0" Text="当前 DAT" Foreground="{DynamicResource SecondaryTextBrush}" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,8,6,0" Text="{engine:EngineLang Key='当前 DAT'}" Foreground="{DynamicResource SecondaryTextBrush}" />
                 <TextBlock x:Name="MagnitudeFileText" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="7" Margin="0,8,0,0"
-                           Text="采集后自动读取当前标定组" TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}" />
+                           Text="{engine:EngineLang Key='采集后自动读取当前标定组'}" TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}" />
             </Grid>
         </Border>
 
         <TabControl x:Name="CorrectionTabs" Grid.Row="1" Margin="0,0,0,8" SelectedIndex="1" SelectionChanged="CorrectionTabs_SelectionChanged">
-            <TabItem Header="单独亮度校正">
+            <TabItem Header="{engine:EngineLang Key='单独亮度校正'}">
                 <Grid Margin="14">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -94,27 +95,27 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,12,10" Text="目标亮度/光度值" />
+                    <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,12,10" Text="{engine:EngineLang Key='目标亮度/光度值'}" />
                     <TextBox x:Name="TargetBrightnessTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" TextChanged="CorrectionInput_Changed" />
-                    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,12,10" Text="本次服务实测值" />
+                    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,12,10" Text="{engine:EngineLang Key='本次服务实测值'}" />
                     <TextBox x:Name="MeasuredBrightnessTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" IsReadOnly="True" />
-                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,12,10" Text="校正比例" />
+                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,12,10" Text="{engine:EngineLang Key='校正比例'}" />
                     <TextBox x:Name="BrightnessRatioTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,10" IsReadOnly="True" />
 
                     <Border Grid.Row="0" Grid.RowSpan="3" Grid.Column="2" Margin="28,0,0,0" Padding="14" CornerRadius="4"
                             Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1">
                         <StackPanel>
-                            <TextBlock FontSize="15" FontWeight="SemiBold" Text="整体亮度校正" />
+                            <TextBlock FontSize="15" FontWeight="SemiBold" Text="{engine:EngineLang Key='整体亮度校正'}" />
                             <TextBlock Margin="0,10,0,0" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"
-                                       Text="输入目标值，预览后导出 DAT；相对光谱形状不变。" />
+                                       Text="{engine:EngineLang Key='输入目标值，预览后导出 DAT；相对光谱形状不变。'}" />
                             <TextBlock Margin="0,10,0,0" Foreground="{StaticResource SpectrumCorrectionWarningBrush}" TextWrapping="Wrap"
-                                       Text="应用会重启服务；恢复后请重新采集验证。" />
+                                       Text="{engine:EngineLang Key='应用会重启服务；恢复后请重新采集验证。'}" />
                         </StackPanel>
                     </Border>
                 </Grid>
             </TabItem>
 
-            <TabItem Header="完整光谱校正">
+            <TabItem Header="{engine:EngineLang Key='完整光谱校正'}">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -122,11 +123,11 @@
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,7">
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <Button Margin="0,0,6,0" Content="从 CSV/TXT 导入" Click="ImportStandardButton_Click" />
-                            <Button Content="清空标准值" Click="ClearStandardButton_Click" />
+                            <Button Margin="0,0,6,0" Content="{engine:EngineLang Key='从 CSV/TXT 导入'}" Click="ImportStandardButton_Click" />
+                            <Button Content="{engine:EngineLang Key='清空标准值'}" Click="ClearStandardButton_Click" />
                         </StackPanel>
                         <TextBlock Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"
-                                   Text="导入覆盖当前波段的两列标准谱；可编辑或按 Ctrl+V 粘贴。" />
+                                   Text="{engine:EngineLang Key='导入覆盖当前波段的两列标准谱；可编辑或按 Ctrl+V 粘贴。'}" />
                     </DockPanel>
 
                     <Grid Grid.Row="1">
@@ -135,20 +136,20 @@
                             <ColumnDefinition Width="10" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <GroupBox Grid.Column="0" Header="标准绝对光谱（可编辑）" Padding="5">
+                        <GroupBox Grid.Column="0" Header="{engine:EngineLang Key='标准绝对光谱（可编辑）'}" Padding="5">
                             <DataGrid x:Name="StandardDataGrid" ItemsSource="{Binding StandardRows}" AutoGenerateColumns="False"
                                       CanUserAddRows="True" CanUserDeleteRows="True" PreviewKeyDown="StandardDataGrid_PreviewKeyDown">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="波长 (nm)" Width="*" Binding="{Binding Wavelength, UpdateSourceTrigger=LostFocus, StringFormat=G10}" />
-                                    <DataGridTextColumn Header="标准值" Width="*" Binding="{Binding Value, UpdateSourceTrigger=LostFocus, StringFormat=G10}" />
+                                    <DataGridTextColumn Header="{engine:EngineLang Key='波长 (nm)'}" Width="*" Binding="{Binding Wavelength, UpdateSourceTrigger=LostFocus, StringFormat=G10}" />
+                                    <DataGridTextColumn Header="{engine:EngineLang Key='标准值'}" Width="*" Binding="{Binding Value, UpdateSourceTrigger=LostFocus, StringFormat=G10}" />
                                 </DataGrid.Columns>
                             </DataGrid>
                         </GroupBox>
-                        <GroupBox Grid.Column="2" Header="服务实测绝对光谱（只读）" Padding="5">
+                        <GroupBox Grid.Column="2" Header="{engine:EngineLang Key='服务实测绝对光谱（只读）'}" Padding="5">
                             <DataGrid x:Name="MeasuredDataGrid" ItemsSource="{Binding MeasuredRows}" AutoGenerateColumns="False"
                                       IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="波长 (nm)" Width="*" Binding="{Binding Wavelength, StringFormat=F1}" />
+                                    <DataGridTextColumn Header="{engine:EngineLang Key='波长 (nm)'}" Width="*" Binding="{Binding Wavelength, StringFormat=F1}" />
                                     <DataGridTextColumn Header="fPL × fPlambda" Width="*" Binding="{Binding Value, StringFormat=G10}" />
                                 </DataGrid.Columns>
                             </DataGrid>
@@ -169,14 +170,14 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                <TextBlock x:Name="StatusText" Foreground="{DynamicResource SecondaryTextBrush}" Text="请先采集服务实测数据。" TextWrapping="Wrap" />
+                <TextBlock x:Name="StatusText" Foreground="{DynamicResource SecondaryTextBrush}" Text="{engine:EngineLang Key='请先采集服务实测数据。'}" TextWrapping="Wrap" />
                 <TextBlock x:Name="GeneratedFileText" Margin="0,3,12,0" Foreground="{DynamicResource SecondaryTextBrush}"
                            TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="PreviewButton" Margin="0,0,8,0" MinWidth="95" Content="预览" Click="PreviewButton_Click" />
-                <Button x:Name="GenerateButton" Margin="0,0,8,0" MinWidth="120" Content="导出 DAT" Click="GenerateButton_Click" />
-                <Button x:Name="ApplyButton" MinWidth="140" Content="应用并重启服务" IsEnabled="False" Click="ApplyButton_Click" />
+                <Button x:Name="PreviewButton" Margin="0,0,8,0" MinWidth="95" Content="{engine:EngineLang Key='预览'}" Click="PreviewButton_Click" />
+                <Button x:Name="GenerateButton" Margin="0,0,8,0" MinWidth="120" Content="{engine:EngineLang Key='导出 DAT'}" Click="GenerateButton_Click" />
+                <Button x:Name="ApplyButton" MinWidth="140" Content="{engine:EngineLang Key='应用并重启服务'}" IsEnabled="False" Click="ApplyButton_Click" />
             </StackPanel>
         </Grid>
     </Grid>

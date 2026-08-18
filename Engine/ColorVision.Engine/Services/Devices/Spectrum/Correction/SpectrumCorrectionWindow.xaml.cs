@@ -44,10 +44,10 @@ public partial class SpectrumCorrectionWindow : Window
 
     private void InitializePlot()
     {
-        string fontName = Fonts.Detect("标准光谱 / 实测光谱 / 校正预测");
-        PreviewPlot.Plot.Title("光谱校正预览");
-        PreviewPlot.Plot.XLabel("波长 (nm)");
-        PreviewPlot.Plot.YLabel("绝对光谱值");
+        string fontName = Fonts.Detect(EngineLocalization.Get("标准光谱 / 实测光谱 / 校正预测"));
+        PreviewPlot.Plot.Title(EngineLocalization.Get("光谱校正预览"));
+        PreviewPlot.Plot.XLabel(EngineLocalization.Get("波长 (nm)"));
+        PreviewPlot.Plot.YLabel(EngineLocalization.Get("绝对光谱值"));
         PreviewPlot.Plot.Axes.Title.Label.FontName = fontName;
         PreviewPlot.Plot.Axes.Left.Label.FontName = fontName;
         PreviewPlot.Plot.Axes.Bottom.Label.FontName = fontName;
@@ -63,7 +63,7 @@ public partial class SpectrumCorrectionWindow : Window
         try
         {
             ClearCapturedMeasurement();
-            SetBusy(true, "正在通过服务采集实测光谱……");
+            SetBusy(true, EngineLocalization.Get("正在通过服务采集实测光谱……"));
             SpectrumMeasurementSnapshot snapshot = await _host.CaptureAsync(_lifetimeCts.Token);
             _lifetimeCts.Token.ThrowIfCancellationRequested();
 
@@ -75,16 +75,16 @@ public partial class SpectrumCorrectionWindow : Window
                 snapshot.AbsoluteScale);
 
             if (string.IsNullOrWhiteSpace(snapshot.MagnitudeFilePath))
-                throw new InvalidOperationException("当前标定组没有幅值标定文件路径。");
+                throw new InvalidOperationException(EngineLocalization.Get("当前标定组没有幅值标定文件路径。"));
             if (!File.Exists(snapshot.MagnitudeFilePath))
-                throw new FileNotFoundException("找不到服务本次测量使用的幅值标定文件。", snapshot.MagnitudeFilePath);
+                throw new FileNotFoundException(EngineLocalization.Get("找不到服务本次测量使用的幅值标定文件。"), snapshot.MagnitudeFilePath);
 
             MagnitudeCalibrationFile currentFile = MagnitudeCalibrationFile.Load(snapshot.MagnitudeFilePath);
             string actualHash = ComputeSha256(snapshot.MagnitudeFilePath);
             if (!string.IsNullOrWhiteSpace(snapshot.MagnitudeFileSha256)
                 && !string.Equals(actualHash, snapshot.MagnitudeFileSha256, StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("当前 DAT 已在采集后发生变化。请重新采集，确保实测数据和旧系数来自同一份文件。");
+                throw new InvalidOperationException(EngineLocalization.Get("当前 DAT 已在采集后发生变化。请重新采集，确保实测数据和旧系数来自同一份文件。"));
             }
 
             _snapshot = snapshot;
@@ -105,11 +105,11 @@ public partial class SpectrumCorrectionWindow : Window
             PopulateMeasuredRows(measurement.ToAbsoluteSpectrum());
             PlotMeasurementOnly();
 
-            StatusText.Text = $"采集完成：{measurement.Count} 点，{snapshot.StartWavelength:G6}–{snapshot.EndWavelength:G6} nm，间隔 {snapshot.Interval:G6} nm。";
+            StatusText.Text = EngineLocalization.Format($"采集完成：{measurement.Count} 点，{snapshot.StartWavelength:G6}–{snapshot.EndWavelength:G6} nm，间隔 {snapshot.Interval:G6} nm。");
         }
         catch (OperationCanceledException) when (_lifetimeCts.IsCancellationRequested)
         {
-            StatusText.Text = "采集已取消。";
+            StatusText.Text = EngineLocalization.Get("采集已取消。");
         }
         catch (Exception ex)
         {
@@ -132,8 +132,8 @@ public partial class SpectrumCorrectionWindow : Window
     {
         var dialog = new OpenFileDialog
         {
-            Title = "导入标准绝对光谱",
-            Filter = "光谱数据 (*.csv;*.txt;*.dat)|*.csv;*.txt;*.dat|所有文件 (*.*)|*.*",
+            Title = EngineLocalization.Get("导入标准绝对光谱"),
+            Filter = EngineLocalization.Get("光谱数据 (*.csv;*.txt;*.dat)|*.csv;*.txt;*.dat|所有文件 (*.*)|*.*"),
             CheckFileExists = true,
             Multiselect = false,
         };
@@ -143,7 +143,7 @@ public partial class SpectrumCorrectionWindow : Window
         try
         {
             SetStandardSpectrum(SpectrumTextParser.Parse(File.ReadAllText(dialog.FileName)));
-            StatusText.Text = $"已导入 {StandardRows.Count} 个标准谱点：{dialog.FileName}";
+            StatusText.Text = EngineLocalization.Format($"已导入 {StandardRows.Count} 个标准谱点：{dialog.FileName}");
         }
         catch (Exception ex)
         {
@@ -160,9 +160,9 @@ public partial class SpectrumCorrectionWindow : Window
         try
         {
             if (!Clipboard.ContainsText())
-                throw new FormatException("剪贴板中没有文本数据。");
+                throw new FormatException(EngineLocalization.Get("剪贴板中没有文本数据。"));
             SetStandardSpectrum(SpectrumTextParser.Parse(Clipboard.GetText()));
-            StatusText.Text = $"已从剪贴板粘贴 {StandardRows.Count} 个标准谱点。";
+            StatusText.Text = EngineLocalization.Format($"已从剪贴板粘贴 {StandardRows.Count} 个标准谱点。");
         }
         catch (Exception ex)
         {
@@ -200,7 +200,7 @@ public partial class SpectrumCorrectionWindow : Window
     {
         StandardRows.Clear();
         InvalidateCorrectionOutput();
-        StatusText.Text = "标准光谱已清空。";
+        StatusText.Text = EngineLocalization.Get("标准光谱已清空。");
     }
 
     private void PreviewButton_Click(object sender, RoutedEventArgs e)
@@ -232,8 +232,8 @@ public partial class SpectrumCorrectionWindow : Window
             string suffix = result.Mode == SpectrumCorrectionMode.BrightnessOnly ? "brightness" : "spectrum";
             var dialog = new SaveFileDialog
             {
-                Title = "保存新幅值标定文件",
-                Filter = "幅值标定文件 (*.dat)|*.dat",
+                Title = EngineLocalization.Get("保存新幅值标定文件"),
+                Filter = EngineLocalization.Get("幅值标定文件 (*.dat)|*.dat"),
                 InitialDirectory = sourceDirectory,
                 FileName = $"{sourceName}_{suffix}_{DateTime.Now:yyyyMMdd_HHmmss}.dat",
                 AddExtension = true,
@@ -245,9 +245,9 @@ public partial class SpectrumCorrectionWindow : Window
 
             string savedPath = result.CorrectedFile.SaveNew(dialog.FileName);
             _generatedFilePath = savedPath;
-            GeneratedFileText.Text = $"已生成：{savedPath}";
+            GeneratedFileText.Text = EngineLocalization.Format($"已生成：{savedPath}");
             ApplyButton.IsEnabled = true;
-            StatusText.Text = $"新 DAT 已生成，原文件未修改。{BuildFilledPointWarning(result)}";
+            StatusText.Text = EngineLocalization.Get("新 DAT 已生成，原文件未修改。") + BuildFilledPointWarning(result);
         }
         catch (Exception ex)
         {
@@ -262,7 +262,7 @@ public partial class SpectrumCorrectionWindow : Window
 
         try
         {
-            SetBusy(true, "正在应用新 DAT……");
+            SetBusy(true, EngineLocalization.Get("正在应用新 DAT……"));
             SpectrumCorrectionApplyResult result = await _host.ApplyMagnitudeFileAsync(
                 new SpectrumCorrectionApplyRequest(
                     _generatedFilePath,
@@ -271,24 +271,24 @@ public partial class SpectrumCorrectionWindow : Window
                 _lifetimeCts.Token);
 
             if (!result.IsAccepted)
-                throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Message) ? "服务未能应用新 DAT。" : result.Message);
+                throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Message) ? EngineLocalization.Get("服务未能应用新 DAT。") : result.Message);
 
             bool restartRequested = result.Status == SpectrumCorrectionApplyStatus.RestartRequested;
             ClearCapturedMeasurement();
             GeneratedFileText.Text = string.IsNullOrWhiteSpace(result.AppliedMagnitudeFilePath)
-                ? restartRequested ? "已应用，服务正在重启。" : "已应用。"
-                : $"当前 DAT：{result.AppliedMagnitudeFilePath}";
+                ? restartRequested ? EngineLocalization.Get("已应用，服务正在重启。") : EngineLocalization.Get("已应用。")
+                : EngineLocalization.Format($"当前 DAT：{result.AppliedMagnitudeFilePath}");
             StatusText.Text = string.IsNullOrWhiteSpace(result.Message)
                 ? restartRequested
-                    ? "服务恢复后请重新采集验证。"
-                    : "新 DAT 已应用。"
+                    ? EngineLocalization.Get("服务恢复后请重新采集验证。")
+                    : EngineLocalization.Get("新 DAT 已应用。")
                 : result.Message;
             if (!string.IsNullOrWhiteSpace(result.AppliedMagnitudeFilePath))
                 MagnitudeFileText.Text = result.AppliedMagnitudeFilePath;
         }
         catch (OperationCanceledException) when (_lifetimeCts.IsCancellationRequested)
         {
-            StatusText.Text = "应用已取消。";
+            StatusText.Text = EngineLocalization.Get("应用已取消。");
         }
         catch (Exception ex)
         {
@@ -304,19 +304,19 @@ public partial class SpectrumCorrectionWindow : Window
     {
         CommitStandardGridEdits();
         MagnitudeCalibrationFile currentFile = _currentFile
-            ?? throw new InvalidOperationException("请先点击“采集实测”，获取本次服务结果和当前 DAT。");
+            ?? throw new InvalidOperationException(EngineLocalization.Get("请先点击“采集实测”，获取本次服务结果和当前 DAT。"));
         ServiceSpectrumMeasurement measurement = _measurement
-            ?? throw new InvalidOperationException("请先点击“采集实测”。");
+            ?? throw new InvalidOperationException(EngineLocalization.Get("请先点击“采集实测”。"));
 
         if (CorrectionTabs.SelectedIndex == 0)
         {
-            double target = ParsePositiveNumber(TargetBrightnessTextBox.Text, "目标亮度/光度值");
+            double target = ParsePositiveNumber(TargetBrightnessTextBox.Text, EngineLocalization.Get("目标亮度/光度值"));
             double measured = _snapshot?.PhotometricValue ?? 0;
             return SpectrumMagnitudeCorrector.CorrectBrightness(currentFile, target, measured);
         }
 
         if (StandardRows.Count < 2)
-            throw new InvalidOperationException("请导入、粘贴或编辑至少两个标准绝对光谱点。");
+            throw new InvalidOperationException(EngineLocalization.Get("请导入、粘贴或编辑至少两个标准绝对光谱点。"));
 
         SpectrumSeries standard = new(
             StandardRows.Select(row => row.Wavelength).ToArray(),
@@ -337,7 +337,7 @@ public partial class SpectrumCorrectionWindow : Window
 
         SpectrumSeries measured = _measurement.ToAbsoluteSpectrum();
         PreviewPlot.Plot.Clear();
-        AddLine(measured.Wavelengths, measured.Values, "服务实测", System.Drawing.Color.DodgerBlue);
+        AddLine(measured.Wavelengths, measured.Values, EngineLocalization.Get("服务实测"), System.Drawing.Color.DodgerBlue);
         FinishPlot();
     }
 
@@ -354,8 +354,8 @@ public partial class SpectrumCorrectionWindow : Window
             SpectrumSeries measured = _measurement.ToAbsoluteSpectrum();
             double factor = result.UniformCorrectionFactor!.Value;
             double[] predicted = measured.Values.Select(value => value * factor).ToArray();
-            AddLine(measured.Wavelengths, measured.Values, "服务实测", System.Drawing.Color.DodgerBlue);
-            AddLine(measured.Wavelengths, predicted, "校正预测", System.Drawing.Color.OrangeRed);
+            AddLine(measured.Wavelengths, measured.Values, EngineLocalization.Get("服务实测"), System.Drawing.Color.DodgerBlue);
+            AddLine(measured.Wavelengths, predicted, EngineLocalization.Get("校正预测"), System.Drawing.Color.OrangeRed);
         }
         else
         {
@@ -363,9 +363,9 @@ public partial class SpectrumCorrectionWindow : Window
             for (int index = 0; index < predicted.Length; index++)
                 predicted[index] = result.MeasuredValues[index] * result.CorrectionFactors[index];
 
-            AddLine(wavelengths, result.MeasuredValues, "服务实测", System.Drawing.Color.DodgerBlue);
-            AddLine(wavelengths, result.StandardValues, "标准光谱", System.Drawing.Color.ForestGreen);
-            AddLine(wavelengths, predicted, "校正预测", System.Drawing.Color.OrangeRed);
+            AddLine(wavelengths, result.MeasuredValues, EngineLocalization.Get("服务实测"), System.Drawing.Color.DodgerBlue);
+            AddLine(wavelengths, result.StandardValues, EngineLocalization.Get("标准光谱"), System.Drawing.Color.ForestGreen);
+            AddLine(wavelengths, predicted, EngineLocalization.Get("校正预测"), System.Drawing.Color.OrangeRed);
         }
 
         FinishPlot();
@@ -390,14 +390,14 @@ public partial class SpectrumCorrectionWindow : Window
     private static string BuildPreviewStatus(SpectrumCorrectionResult result)
     {
         if (result.Mode == SpectrumCorrectionMode.BrightnessOnly)
-            return $"亮度校正比例：{result.UniformCorrectionFactor:G8}。点击“导出 DAT”后写入文件。";
-        return $"完整光谱校正预览完成，共 {result.CorrectionFactors.Count} 点。{BuildFilledPointWarning(result)}";
+            return EngineLocalization.Format($"亮度校正比例：{result.UniformCorrectionFactor:G8}。点击“导出 DAT”后写入文件。");
+        return EngineLocalization.Format($"完整光谱校正预览完成，共 {result.CorrectionFactors.Count} 点。") + BuildFilledPointWarning(result);
     }
 
     private static string BuildFilledPointWarning(SpectrumCorrectionResult result) =>
         result.FilledFactorCount == 0
             ? string.Empty
-            : $"注意：{result.FilledFactorCount} 个低/零实测点未参与除法，校正比例由相邻有效点插值或延伸。";
+            : EngineLocalization.Format($"注意：{result.FilledFactorCount} 个低/零实测点未参与除法，校正比例由相邻有效点插值或延伸。");
 
     private void CorrectionTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -448,11 +448,11 @@ public partial class SpectrumCorrectionWindow : Window
         MeasuredRows.Clear();
         MeasuredBrightnessTextBox.Text = string.Empty;
         BrightnessRatioTextBox.Text = string.Empty;
-        DeviceText.Text = "采集后显示";
+        DeviceText.Text = EngineLocalization.Get("采集后显示");
         SerialNumberText.Text = "—";
         CalibrationGroupText.Text = "—";
         ResultText.Text = "—";
-        MagnitudeFileText.Text = "采集后自动读取当前标定组";
+        MagnitudeFileText.Text = EngineLocalization.Get("采集后自动读取当前标定组");
         PreviewPlot.Plot.Clear();
         FinishPlot();
     }
@@ -471,9 +471,10 @@ public partial class SpectrumCorrectionWindow : Window
 
     private void ShowError(string title, Exception exception)
     {
+        string localizedTitle = EngineLocalization.Get(title);
         string message = exception.GetBaseException().Message;
-        StatusText.Text = $"{title}：{message}";
-        MessageBox.Show(this, message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
+        StatusText.Text = EngineLocalization.Format($"{localizedTitle}：{message}");
+        MessageBox.Show(this, message, localizedTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 
     private static string ComputeSha256(string filePath)
@@ -485,7 +486,7 @@ public partial class SpectrumCorrectionWindow : Window
     private static double ParsePositiveNumber(string text, string fieldName)
     {
         if (!TryParseNumber(text, out double value) || !double.IsFinite(value) || value <= 0)
-            throw new FormatException($"{fieldName}必须是有限正数。");
+            throw new FormatException(EngineLocalization.Format($"{fieldName}必须是有限正数。"));
         return value;
     }
 
@@ -500,7 +501,7 @@ public partial class SpectrumCorrectionWindow : Window
         if (_operationInProgress)
         {
             e.Cancel = true;
-            StatusText.Text = "当前操作完成前不能关闭窗口。";
+            StatusText.Text = EngineLocalization.Get("当前操作完成前不能关闭窗口。");
             return;
         }
 

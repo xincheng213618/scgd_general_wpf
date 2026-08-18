@@ -49,4 +49,27 @@ public class EngineUiLocalizationTests
             CultureInfo.CurrentUICulture = originalUiCulture;
         }
     }
+
+    [Fact]
+    public void EnglishSpectrumCorrectionUiUsesLocalizedStaticAndFormattedText()
+    {
+        CultureInfo originalCulture = CultureInfo.CurrentCulture;
+        CultureInfo originalUiCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+
+            Assert.Equal("Spectral Correction", new EngineLangExtension("光谱校正").ProvideValue(null!));
+            Assert.Equal(
+                "Capture complete: 401 points, 380–780 nm, interval 1 nm.",
+                EngineLocalization.Format($"采集完成：{401} 点，{380d:G6}–{780d:G6} nm，间隔 {1d:G6} nm。"));
+            Assert.Equal("Standard Spectrum", EngineLocalization.Get("标准光谱"));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+            CultureInfo.CurrentUICulture = originalUiCulture;
+        }
+    }
 }
