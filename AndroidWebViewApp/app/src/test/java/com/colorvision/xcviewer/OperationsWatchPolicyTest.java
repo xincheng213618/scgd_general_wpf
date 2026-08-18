@@ -19,6 +19,22 @@ public class OperationsWatchPolicyTest {
     }
 
     @Test
+    public void offlineRequiresRepeatedFailuresAcrossTheConfirmationWindow() {
+        long firstFailureAt = 1_000_000L;
+
+        assertFalse(OperationsWatchPolicy.shouldConfirmOffline(
+                1, firstFailureAt, firstFailureAt + 120_000L));
+        assertFalse(OperationsWatchPolicy.shouldConfirmOffline(
+                2, firstFailureAt, firstFailureAt + 120_000L));
+        assertFalse(OperationsWatchPolicy.shouldConfirmOffline(
+                3, firstFailureAt, firstFailureAt + 59_999L));
+        assertTrue(OperationsWatchPolicy.shouldConfirmOffline(
+                3, firstFailureAt, firstFailureAt + 60_000L));
+        assertFalse(OperationsWatchPolicy.shouldConfirmOffline(
+                3, firstFailureAt, firstFailureAt - 1L));
+    }
+
+    @Test
     public void healthyStatusPrioritizesActionableEvidence() {
         assertEquals("在线 · 主界面响应超时",
                 OperationsWatchPolicy.healthyStatus("unresponsive", true, 2, 3, 4, true));
@@ -71,7 +87,7 @@ public class OperationsWatchPolicyTest {
 
     @Test
     public void offlineAlertRequiresARealOnlineToOfflineTransition() {
-        assertFalse(OperationsWatchPolicy.shouldPostOffline(false, false, ""));
+        assertFalse(OperationsWatchPolicy.shouldPostOffline(false, true, ""));
         assertFalse(OperationsWatchPolicy.shouldPostOffline(true, false, ""));
         assertTrue(OperationsWatchPolicy.shouldPostOffline(true, true, ""));
         assertFalse(OperationsWatchPolicy.shouldPostOffline(

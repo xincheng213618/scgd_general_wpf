@@ -124,7 +124,8 @@ public class OperationsFleetTimelineTest {
         for (int index = 0; index < count; index++) {
             String state = index % 2 == 0
                     ? OperationsWatchHistory.STATE_ONLINE
-                    : OperationsWatchHistory.STATE_OFFLINE;
+                    : OperationsWatchHistory.attentionState(
+                            OperationsWatchPolicy.ATTENTION_DEVICES);
             history = append(history, state, firstTimestamp + index);
         }
         return history;

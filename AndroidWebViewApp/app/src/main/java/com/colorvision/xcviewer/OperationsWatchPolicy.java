@@ -12,6 +12,8 @@ final class OperationsWatchPolicy {
     static final long HEALTHY_CHECK_MILLISECONDS = 60_000L;
     static final long FIRST_RETRY_MILLISECONDS = 30_000L;
     static final long MAXIMUM_RETRY_MILLISECONDS = 5 * 60_000L;
+    static final int OFFLINE_CONFIRMATION_FAILURES = 3;
+    static final long OFFLINE_CONFIRMATION_MILLISECONDS = 60_000L;
 
     private OperationsWatchPolicy() {
     }
@@ -20,6 +22,17 @@ final class OperationsWatchPolicy {
         int boundedFailures = Math.max(1, Math.min(consecutiveFailures, 5));
         long delay = FIRST_RETRY_MILLISECONDS << (boundedFailures - 1);
         return Math.min(delay, MAXIMUM_RETRY_MILLISECONDS);
+    }
+
+    static boolean shouldConfirmOffline(
+            int consecutiveFailures,
+            long firstFailureAtElapsedMilliseconds,
+            long nowElapsedMilliseconds) {
+        return consecutiveFailures >= OFFLINE_CONFIRMATION_FAILURES
+                && firstFailureAtElapsedMilliseconds > 0L
+                && nowElapsedMilliseconds >= firstFailureAtElapsedMilliseconds
+                && nowElapsedMilliseconds - firstFailureAtElapsedMilliseconds
+                >= OFFLINE_CONFIRMATION_MILLISECONDS;
     }
 
     static String healthyStatus(
@@ -127,9 +140,13 @@ final class OperationsWatchPolicy {
         return !currentAttentionKey.isEmpty() && !currentAttentionKey.equals(lastAttentionKey);
     }
 
-    static boolean shouldPostOffline(boolean hasCompletedCheck, boolean lastCheckOnline,
+    static boolean shouldPostOffline(
+            boolean previousStateOnline,
+            boolean offlineJustConfirmed,
             String lastAttentionKey) {
-        return hasCompletedCheck && lastCheckOnline && !ATTENTION_OFFLINE.equals(lastAttentionKey);
+        return previousStateOnline
+                && offlineJustConfirmed
+                && !ATTENTION_OFFLINE.equals(lastAttentionKey);
     }
 
     static boolean isCurrentProfileCheck(

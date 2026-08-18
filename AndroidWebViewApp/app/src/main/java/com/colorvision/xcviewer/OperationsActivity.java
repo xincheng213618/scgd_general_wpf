@@ -1902,7 +1902,7 @@ public class OperationsActivity extends AppCompatActivity {
                 System.currentTimeMillis(),
                 issuesOnly);
         state.setText(timeline.summary);
-        details.setText("合并手机已有的近七天固定状态变化，不发起网络刷新。电脑名称只由本机档案补充，不写入状态记录，也不会发送给电脑或固定中继；本页不提供批量分享。");
+        details.setText("合并手机已有的近七天固定状态变化，不发起网络刷新。两分钟内恢复的短时连接波动会自动折叠，持续故障仍会保留。电脑名称只由本机档案补充，不写入状态记录，也不会发送给电脑或固定中继；本页不提供批量分享。");
         actions.removeAllViews();
 
         String issueFilterLabel = "只看需关注"
@@ -1965,7 +1965,7 @@ public class OperationsActivity extends AppCompatActivity {
         }
         SimpleDateFormat formatter = new SimpleDateFormat("MM-dd HH:mm:ss", Locale.getDefault());
         StringBuilder text = new StringBuilder();
-        text.append("近 7 天状态变更 · 本机最多 40 条");
+        text.append("近 7 天状态变更 · 短时连接波动已合并 · 本机最多 40 条");
         for (int index = entries.size() - 1; index >= 0; index--) {
             OperationsWatchHistory.Entry entry = entries.get(index);
             text.append("\n")

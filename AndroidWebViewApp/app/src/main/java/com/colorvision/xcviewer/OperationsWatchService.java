@@ -16,6 +16,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -52,7 +53,8 @@ public final class OperationsWatchService extends Service {
     private boolean checkAgainAfterCurrent;
     private int checkGeneration;
     private int consecutiveFailures;
-    private boolean lastCheckOnline;
+    private long firstFailureAtElapsedMilliseconds;
+    private boolean offlineConfirmed;
     private boolean hasCompletedCheck;
     private String lastAttentionKey = "";
     private ConnectivityManager connectivityManager;
@@ -97,7 +99,7 @@ public final class OperationsWatchService extends Service {
         preferences = new AppPreferences(this);
         String persistedState = preferences.getOperationsWatchState();
         hasCompletedCheck = !persistedState.isEmpty();
-        lastCheckOnline = OperationsWatchHistory.isOnlineState(persistedState);
+        offlineConfirmed = OperationsWatchHistory.STATE_OFFLINE.equals(persistedState);
         lastAttentionKey = OperationsWatchHistory.attentionKey(persistedState);
         createNotificationChannels();
         registerNetworkCallback();
@@ -388,13 +390,17 @@ public final class OperationsWatchService extends Service {
             return;
         }
         checkInFlight = false;
-        boolean reconnected = hasCompletedCheck && !lastCheckOnline;
+        boolean reconnected = offlineConfirmed;
+        boolean firstOrRecoveredCheck = !hasCompletedCheck
+                || consecutiveFailures > 0
+                || offlineConfirmed;
         hasCompletedCheck = true;
         consecutiveFailures = 0;
-        if (!lastCheckOnline) {
+        firstFailureAtElapsedMilliseconds = 0L;
+        offlineConfirmed = false;
+        if (firstOrRecoveredCheck) {
             Log.i(LOG_TAG, "operations_watch_online");
         }
-        lastCheckOnline = true;
         preferences.recordOperationsProfileWatchState(
                 preferences.getOperationsHostId(),
                 attentionKey.isEmpty()
@@ -416,10 +422,11 @@ public final class OperationsWatchService extends Service {
             return;
         }
         checkInFlight = false;
-        boolean reconnected = hasCompletedCheck && !lastCheckOnline;
+        boolean reconnected = offlineConfirmed;
         hasCompletedCheck = true;
         consecutiveFailures = 0;
-        lastCheckOnline = true;
+        firstFailureAtElapsedMilliseconds = 0L;
+        offlineConfirmed = false;
         String attentionKey = check.hostFresh ? check.attentionKey : "";
         String relayState = !attentionKey.isEmpty()
                 ? OperationsWatchHistory.attentionState(attentionKey)
@@ -451,6 +458,8 @@ public final class OperationsWatchService extends Service {
             return;
         }
         checkInFlight = false;
+        long nowMilliseconds = System.currentTimeMillis();
+        long nowElapsedMilliseconds = SystemClock.elapsedRealtime();
         hasCompletedCheck = true;
         if (code.contains("unknown_or_revoked_device")) {
             String revokedHostId = preferences.getOperationsHostId();
@@ -458,7 +467,7 @@ public final class OperationsWatchService extends Service {
             clearRemoteWindowSnapshotSecrets();
             preferences.recordOperationsProfileWatchState(
                     revokedHostId, OperationsWatchHistory.STATE_REVOKED,
-                    System.currentTimeMillis());
+                    nowMilliseconds);
             preferences.markOperationsProfileRevoked(revokedHostId);
             Log.w(LOG_TAG, "operations_watch_pairing_revoked");
             clearAttentionNotification();
@@ -472,18 +481,32 @@ public final class OperationsWatchService extends Service {
             return;
         }
 
-        boolean notifyOffline = OperationsWatchPolicy.shouldPostOffline(
-                hasCompletedCheck, lastCheckOnline, lastAttentionKey);
+        if (consecutiveFailures == 0) {
+            firstFailureAtElapsedMilliseconds = nowElapsedMilliseconds;
+        }
         consecutiveFailures++;
         long retryDelay = OperationsWatchPolicy.retryDelayMilliseconds(consecutiveFailures);
-        if (lastCheckOnline || consecutiveFailures == 1) {
+        boolean confirmOffline = offlineConfirmed
+                || OperationsWatchPolicy.shouldConfirmOffline(
+                consecutiveFailures,
+                firstFailureAtElapsedMilliseconds,
+                nowElapsedMilliseconds);
+        boolean offlineJustConfirmed = confirmOffline && !offlineConfirmed;
+        boolean previousStateOnline = OperationsWatchHistory.isOnlineState(
+                preferences.getOperationsWatchState());
+        boolean notifyOffline = OperationsWatchPolicy.shouldPostOffline(
+                previousStateOnline, offlineJustConfirmed, lastAttentionKey);
+        if (consecutiveFailures == 1 || offlineJustConfirmed) {
             Log.w(LOG_TAG, "operations_watch_offline retry_seconds=" + (retryDelay / 1000L));
         }
-        lastCheckOnline = false;
-        preferences.recordOperationsProfileWatchState(
-                preferences.getOperationsHostId(), OperationsWatchHistory.STATE_OFFLINE,
-                System.currentTimeMillis());
-        updateNotification("连接暂断 · " + (retryDelay / 1000L) + " 秒后重试", true);
+        if (confirmOffline) {
+            preferences.recordOperationsProfileWatchState(
+                    preferences.getOperationsHostId(), OperationsWatchHistory.STATE_OFFLINE,
+                    nowMilliseconds);
+            offlineConfirmed = true;
+        }
+        updateNotification((confirmOffline ? "连接中断" : "连接波动 · 正在确认")
+                + " · " + (retryDelay / 1000L) + " 秒后重试", true);
         if (notifyOffline) {
             postAttentionNotification(OperationsWatchPolicy.ATTENTION_OFFLINE);
             lastAttentionKey = OperationsWatchPolicy.ATTENTION_OFFLINE;
@@ -589,9 +612,10 @@ public final class OperationsWatchService extends Service {
         relayClient = null;
         relayClientProfileKey = "";
         consecutiveFailures = 0;
+        firstFailureAtElapsedMilliseconds = 0L;
         String persistedState = preferences.getOperationsWatchState();
         hasCompletedCheck = !persistedState.isEmpty();
-        lastCheckOnline = OperationsWatchHistory.isOnlineState(persistedState);
+        offlineConfirmed = OperationsWatchHistory.STATE_OFFLINE.equals(persistedState);
         lastAttentionKey = OperationsWatchHistory.attentionKey(persistedState);
         updateNotification("上一台电脑授权失效 · 正在连接当前电脑", true);
         handler.removeCallbacks(scheduledCheck);

@@ -11,6 +11,7 @@ final class OperationsWatchHistory {
     static final String STATE_REVOKED = "revoked";
     static final int MAX_ENTRIES = 40;
     static final long RETENTION_MILLISECONDS = 7L * 24L * 60L * 60L * 1000L;
+    static final long TRANSIENT_OFFLINE_WINDOW_MILLISECONDS = 2L * 60L * 1000L;
     private static final String ATTENTION_PREFIX = "attention:";
 
     private OperationsWatchHistory() {
@@ -51,6 +52,7 @@ final class OperationsWatchHistory {
         boolean changed = !currentState.isEmpty() && !currentState.equals(normalizedPrevious);
         if (changed) {
             entries.add(new Entry(nowMilliseconds, currentState));
+            entries = compactTransientOfflineFlaps(entries);
             while (entries.size() > MAX_ENTRIES) {
                 entries.remove(0);
             }
@@ -80,10 +82,33 @@ final class OperationsWatchHistory {
             } catch (NumberFormatException ignored) {
             }
         }
+        entries = compactTransientOfflineFlaps(entries);
         if (entries.size() > MAX_ENTRIES) {
             entries = new ArrayList<>(entries.subList(entries.size() - MAX_ENTRIES, entries.size()));
         }
         return entries;
+    }
+
+    private static List<Entry> compactTransientOfflineFlaps(List<Entry> entries) {
+        List<Entry> compacted = new ArrayList<>();
+        for (Entry entry : entries) {
+            if (isOnlineState(entry.state) && !compacted.isEmpty()) {
+                Entry possibleOffline = compacted.get(compacted.size() - 1);
+                long offlineDuration = entry.timestampMilliseconds
+                        - possibleOffline.timestampMilliseconds;
+                if (STATE_OFFLINE.equals(possibleOffline.state)
+                        && offlineDuration >= 0L
+                        && offlineDuration < TRANSIENT_OFFLINE_WINDOW_MILLISECONDS) {
+                    compacted.remove(compacted.size() - 1);
+                    if (!compacted.isEmpty()
+                            && compacted.get(compacted.size() - 1).state.equals(entry.state)) {
+                        continue;
+                    }
+                }
+            }
+            compacted.add(entry);
+        }
+        return compacted;
     }
 
     static String label(String state) {

@@ -47,7 +47,8 @@ public class OperationsWatchHistoryTest {
         for (int index = 0; index < OperationsWatchHistory.MAX_ENTRIES + 5; index++) {
             String nextState = index % 2 == 0
                     ? OperationsWatchHistory.STATE_ONLINE
-                    : OperationsWatchHistory.STATE_OFFLINE;
+                    : OperationsWatchHistory.attentionState(
+                            OperationsWatchPolicy.ATTENTION_DEVICES);
             OperationsWatchHistory.Transition transition = OperationsWatchHistory.transition(
                     history, nextState, NOW + index);
             history = transition.serializedHistory;
@@ -84,5 +85,48 @@ public class OperationsWatchHistoryTest {
                 OperationsWatchHistory.STATE_REMOTE_ONLINE));
         assertTrue(OperationsWatchHistory.isOnlineState(
                 OperationsWatchHistory.STATE_REMOTE_WAITING));
+    }
+
+    @Test
+    public void shortOfflineFlapsAreCompactedWithoutHidingPersistentOutages() {
+        OperationsWatchHistory.Transition waiting = OperationsWatchHistory.transition(
+                "", OperationsWatchHistory.STATE_REMOTE_WAITING, NOW);
+        OperationsWatchHistory.Transition shortOffline = OperationsWatchHistory.transition(
+                waiting.serializedHistory, OperationsWatchHistory.STATE_OFFLINE,
+                NOW + 30_000L);
+        OperationsWatchHistory.Transition recovered = OperationsWatchHistory.transition(
+                shortOffline.serializedHistory, OperationsWatchHistory.STATE_REMOTE_WAITING,
+                NOW + 90_000L);
+
+        List<OperationsWatchHistory.Entry> compacted = OperationsWatchHistory.parse(
+                recovered.serializedHistory, NOW + 90_000L);
+        assertEquals(1, compacted.size());
+        assertEquals(OperationsWatchHistory.STATE_REMOTE_WAITING, compacted.get(0).state);
+
+        OperationsWatchHistory.Transition persistentOffline = OperationsWatchHistory.transition(
+                waiting.serializedHistory, OperationsWatchHistory.STATE_OFFLINE,
+                NOW + 30_000L);
+        OperationsWatchHistory.Transition lateRecovery = OperationsWatchHistory.transition(
+                persistentOffline.serializedHistory, OperationsWatchHistory.STATE_REMOTE_WAITING,
+                NOW + 30_000L + OperationsWatchHistory.TRANSIENT_OFFLINE_WINDOW_MILLISECONDS);
+        assertEquals(3, OperationsWatchHistory.parse(
+                lateRecovery.serializedHistory,
+                NOW + 30_000L + OperationsWatchHistory.TRANSIENT_OFFLINE_WINDOW_MILLISECONDS).size());
+    }
+
+    @Test
+    public void legacyAlternatingRelayHistoryIsCompactedOnRead() {
+        String legacyHistory = NOW + "|remote-waiting\n"
+                + (NOW + 30_000L) + "|offline\n"
+                + (NOW + 60_000L) + "|remote-waiting\n"
+                + (NOW + 90_000L) + "|offline\n"
+                + (NOW + 120_000L) + "|remote-waiting";
+
+        List<OperationsWatchHistory.Entry> compacted = OperationsWatchHistory.parse(
+                legacyHistory, NOW + 120_000L);
+
+        assertEquals(1, compacted.size());
+        assertEquals(OperationsWatchHistory.STATE_REMOTE_WAITING, compacted.get(0).state);
+        assertEquals(NOW, compacted.get(0).timestampMilliseconds);
     }
 }
