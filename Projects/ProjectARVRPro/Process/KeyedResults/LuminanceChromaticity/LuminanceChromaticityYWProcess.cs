@@ -9,6 +9,7 @@ using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using ProjectARVRPro.Process.Uniformity;
 using ProjectARVRPro.Recipe;
+using System.IO;
 using System.Text;
 using System.Windows.Documents;
 using System.Windows.Media;
@@ -36,7 +37,16 @@ namespace ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity
                 bool found8X7 = false;
                 var images = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (images.Count > 0)
-                    ctx.Result.FileName = images[0].FileUrl;
+                {
+                    foreach (var image in images)
+                    {
+                        if (File.Exists(image.FileUrl))
+                        {
+                            ctx.Result.FileName = image.FileUrl;
+                            break;
+                        }
+                    }
+                }
 
                 List<AlgResultMasterModel> masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 List<PoiCandidate> candidates = new();
