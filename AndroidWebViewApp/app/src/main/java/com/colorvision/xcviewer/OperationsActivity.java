@@ -130,6 +130,7 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean showingDashboardSummary;
     private boolean connectionHeartbeatInFlight;
     private int connectionRequestGeneration;
+    private int connectionCheckGeneration;
     private int remoteTaskGeneration;
     private int fleetCheckGeneration;
     private boolean fleetCheckInFlight;
@@ -281,6 +282,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void openMainTab(int tab) {
+        connectionCheckGeneration++;
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra(MainActivity.EXTRA_START_TAB, tab);
         intent.putExtra(MainActivity.EXTRA_FROM_OPERATIONS, true);
@@ -378,6 +380,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void openExistingProfile() {
+        connectionCheckGeneration++;
         scrollDashboardToTop();
         refreshOperationsTargetPresentation();
         String requestHostId = preferences.getOperationsHostId();
@@ -498,6 +501,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showConnectionPreference() {
+        connectionCheckGeneration++;
         scrollDashboardToTop();
         refreshOperationsTargetPresentation();
         showingDashboardSummary = false;
@@ -2550,7 +2554,7 @@ public class OperationsActivity extends AppCompatActivity {
         return button;
     }
 
-    private void addDashboardInfoCard(String value) {
+    private TextView addDashboardInfoCard(String value) {
         TextView note = new TextView(this);
         note.setText(value);
         TextViewCompat.setTextAppearance(note,
@@ -2567,6 +2571,7 @@ public class OperationsActivity extends AppCompatActivity {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         params.setMargins(0, 0, 0, dp(8));
         actions.addView(card, params);
+        return note;
     }
 
     private void addOperationsProfileWideAction(View button) {
@@ -2598,9 +2603,20 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void runConnectionSelfCheck() {
+        int checkGeneration = ++connectionCheckGeneration;
         showingDashboardSummary = false;
+        scrollDashboardToTop();
+        refreshOperationsTargetPresentation();
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        dashboardVisible = false;
         progress.setVisibility(View.VISIBLE);
-        state.setText("正在检查网络、端口、证书和设备签名…");
+        title.setText("连接自检");
+        state.setText("正在检查安全连接…");
+        details.setText(OperationsConnectionCheckPresentation.runningDescription());
+        actions.removeAllViews();
+        addDashboardSection("检查说明");
+        addDashboardInfoCard("本次检查只读取连接状态，不会修改电脑、网络设置或配对资料。");
         executor.execute(() -> {
             OperationsConnectionCheck.Result result;
             try {
@@ -2615,22 +2631,51 @@ public class OperationsActivity extends AppCompatActivity {
                 result = OperationsConnectionCheck.run(
                         getApplicationContext(), preferences.getOperationsEndpoint(), client);
             } catch (Exception ex) {
-                result = new OperationsConnectionCheck.Result(false, "无法启动连接自检",
-                        readableError(ex) + "\n\n配对资料已保留；不要仅因临时断线重新配对。");
+                result = new OperationsConnectionCheck.Result(
+                        false,
+                        "无法启动连接自检",
+                        "请稍后重试；若持续失败，请返回连接方式确认当前电脑和配对资料。",
+                        "启动自检：" + readableError(ex));
             }
             OperationsConnectionCheck.Result finalResult = result;
             runOnUiThread(() -> {
+                if (checkGeneration != connectionCheckGeneration
+                        || isFinishing() || isDestroyed()) {
+                    return;
+                }
                 progress.setVisibility(View.GONE);
-                if (!dashboardVisible) {
-                    title.setText("连接自检");
-                }
-                state.setText(finalResult.heading);
-                details.setText(finalResult.details);
-                if (!dashboardVisible) {
-                    showConnectionRecoveryActions(finalResult.success);
-                }
+                showConnectionCheckResult(finalResult, false);
             });
         });
+    }
+
+    private void showConnectionCheckResult(
+            OperationsConnectionCheck.Result result, boolean detailsExpanded) {
+        title.setText("连接自检");
+        state.setText(OperationsConnectionCheckPresentation.status(result.success, result.heading));
+        details.setText(result.recommendation);
+        actions.removeAllViews();
+
+        addDashboardSection("下一步");
+        addDashboardWideAction(dashboardPrimaryButton(
+                result.success ? "进入现场运维" : "再次运行连接自检",
+                result.success ? v -> openExistingProfile() : v -> runConnectionSelfCheck()));
+        addDashboardActionRow(
+                dashboardButton(result.success ? "再次运行连接自检" : "重新连接电脑",
+                        result.success ? v -> runConnectionSelfCheck() : v -> openExistingProfile()),
+                dashboardButton("返回连接方式", v -> showConnectionPreference()));
+
+        addDashboardSection("诊断详情");
+        addDashboardInfoCard(OperationsConnectionCheckPresentation.diagnosticSummary(
+                result.completedCheckCount));
+        addDashboardWideAction(dashboardButton(
+                OperationsConnectionCheckPresentation.detailsAction(
+                        result.completedCheckCount, detailsExpanded),
+                v -> showConnectionCheckResult(result, !detailsExpanded)));
+        if (detailsExpanded) {
+            TextView technicalDetails = addDashboardInfoCard(result.technicalDetails);
+            technicalDetails.setTextIsSelectable(true);
+        }
     }
 
     private void showConnectionRecoveryActions(boolean channelReady) {

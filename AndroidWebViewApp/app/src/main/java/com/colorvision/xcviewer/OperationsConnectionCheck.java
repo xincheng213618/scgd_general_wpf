@@ -21,12 +21,16 @@ final class OperationsConnectionCheck {
     static final class Result {
         final boolean success;
         final String heading;
-        final String details;
+        final String recommendation;
+        final String technicalDetails;
+        final int completedCheckCount;
 
-        Result(boolean success, String heading, String details) {
+        Result(boolean success, String heading, String recommendation, String technicalDetails) {
             this.success = success;
             this.heading = heading;
-            this.details = details;
+            this.recommendation = recommendation;
+            this.technicalDetails = technicalDetails;
+            this.completedCheckCount = countCompletedChecks(technicalDetails);
         }
     }
 
@@ -151,9 +155,11 @@ final class OperationsConnectionCheck {
         report.append("10. 运维概况：可用能力 ").append(data.optInt("availableCapabilityCount", 0))
                 .append("，告警 ").append(data.optInt("alertCount", 0))
                 .append("，待处理作业 ").append(data.optInt("pendingJobCount", 0)).append('\n');
-        report.append('\n').append("结论：局域网、TLS 证书固定和设备签名均通过。\n")
-                .append("摘要不包含设备密钥、证书指纹、设备 ID、用户名或机器名。");
-        return new Result(true, "连接自检通过", report.toString());
+        return new Result(
+                true,
+                "连接自检通过",
+                "电脑安全连接正常，可以进入现场运维。",
+                report.toString().trim());
     }
 
     private static NetworkStatus readNetworkStatus(Context context) {
@@ -179,9 +185,20 @@ final class OperationsConnectionCheck {
     }
 
     private static Result failure(String heading, StringBuilder report, String suggestion) {
-        report.append('\n').append("建议：").append(suggestion).append('\n')
-                .append("配对资料已保留；不要仅因临时断线重新配对。");
-        return new Result(false, heading, report.toString());
+        return new Result(false, heading, suggestion, report.toString().trim());
+    }
+
+    private static int countCompletedChecks(String technicalDetails) {
+        if (technicalDetails == null || technicalDetails.isEmpty()) {
+            return 0;
+        }
+        int count = 0;
+        for (String line : technicalDetails.split("\\R")) {
+            if (line.matches("\\d+\\.\\s.*")) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private static long elapsedMilliseconds(long started) {
