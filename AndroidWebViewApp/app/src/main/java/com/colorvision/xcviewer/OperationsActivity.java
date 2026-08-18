@@ -36,10 +36,12 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.TextViewCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.chip.Chip;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
@@ -108,13 +110,14 @@ public class OperationsActivity extends AppCompatActivity {
     private OperationsRelayApiClient relayClient;
     private String operationsClientHostId = "";
     private JSONObject lastRelaySnapshotResponse;
-    private TextView title;
-    private TextView profileTarget;
+    private MaterialToolbar title;
+    private Chip profileTarget;
     private TextView state;
     private TextView details;
     private LinearProgressIndicator progress;
     private SwipeRefreshLayout dashboardRefresh;
     private ScrollView dashboardScroll;
+    private LinearLayout dashboardContent;
     private LinearLayout actions;
     private DashboardStatusRow dashboardFlowStatus;
     private DashboardStatusRow dashboardDeviceStatus;
@@ -212,6 +215,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardScroll = scroll;
         scroll.setFillViewport(true);
         LinearLayout root = new LinearLayout(this);
+        dashboardContent = root;
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(16), dp(8), dp(16), dp(24));
         root.setBackgroundColor(themeManager.pageBackgroundColor());
@@ -219,45 +223,38 @@ public class OperationsActivity extends AppCompatActivity {
                 ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
 
         LinearLayout header = new LinearLayout(this);
-        boolean singleColumn = AppResponsiveLayout.usesSingleColumn(
-                getResources().getConfiguration().screenWidthDp,
-                getResources().getConfiguration().fontScale);
-        header.setOrientation(singleColumn ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
-        header.setGravity(singleColumn ? Gravity.START : Gravity.CENTER_VERTICAL);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
         header.setMinimumHeight(dp(64));
-        root.addView(header, new LinearLayout.LayoutParams(
+        header.setBackgroundColor(themeManager.pageBackgroundColor());
+
+        title = new MaterialToolbar(this);
+        title.setTitle("运维伴侣");
+        title.setTitleTextColor(themeManager.primaryTextColor());
+        title.setNavigationIconTint(themeManager.primaryTextColor());
+        title.setNavigationOnClickListener(v -> navigateUpWithinOperations());
+        title.setMinimumHeight(dp(64));
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        header.addView(title, titleParams);
+        shell.addView(header, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        title = new TextView(this);
-        title.setText("运维伴侣");
-        TextViewCompat.setTextAppearance(title, com.google.android.material.R.style.TextAppearance_Material3_TitleLarge);
-        title.setTextColor(themeManager.primaryTextColor());
-        title.setMaxLines(2);
-        title.setEllipsize(TextUtils.TruncateAt.END);
-        LinearLayout.LayoutParams titleParams = singleColumn
-                ? new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT)
-                : new LinearLayout.LayoutParams(
-                        0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        titleParams.setMargins(0, 0, singleColumn ? 0 : dp(8), singleColumn ? dp(4) : 0);
-        header.addView(title, titleParams);
-
-        profileTarget = new MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        profileTarget = new Chip(this);
         profileTarget.setTextSize(12);
         profileTarget.setSingleLine(true);
         profileTarget.setEllipsize(TextUtils.TruncateAt.END);
-        profileTarget.setGravity(Gravity.CENTER);
-        profileTarget.setPadding(dp(10), dp(6), dp(10), dp(6));
-        profileTarget.setMinHeight(dp(48));
-        profileTarget.setMaxWidth(singleColumn ? Integer.MAX_VALUE : dp(180));
+        profileTarget.setChipIconResource(R.drawable.ic_devices_24);
+        profileTarget.setChipIconTint(ColorStateList.valueOf(themeManager.primaryColor()));
+        profileTarget.setEnsureMinTouchTargetSize(true);
+        profileTarget.setMaxWidth(getResources().getDisplayMetrics().widthPixels - dp(32));
         profileTarget.setOnClickListener(v -> showConnectionPreference());
-        header.addView(profileTarget, new LinearLayout.LayoutParams(
-                singleColumn
-                        ? LinearLayout.LayoutParams.MATCH_PARENT
-                        : LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams profileParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        profileParams.setMargins(0, 0, 0, dp(8));
+        root.addView(profileTarget, profileParams);
 
         state = new TextView(this);
         TextViewCompat.setTextAppearance(state, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
@@ -365,7 +362,7 @@ public class OperationsActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                if (returnToTriageCenter() || returnToOperationsOverview()) {
+                if (navigateUpWithinOperations()) {
                     return;
                 }
                 setEnabled(false);
@@ -383,9 +380,39 @@ public class OperationsActivity extends AppCompatActivity {
                 returnToTriageOnBack)) {
             return false;
         }
-        returnToTriageOnBack = false;
         showTriageCenter();
         return true;
+    }
+
+    private boolean navigateUpWithinOperations() {
+        if (!OperationsInPageNavigationPolicy.showsNavigateUp(
+                preferences != null && preferences.hasOperationsProfile(),
+                dashboardVisible,
+                currentDestination,
+                returnToTriageOnBack,
+                showingDashboardSummary,
+                connectionRecoveryVisible)) {
+            return false;
+        }
+        String parent = OperationsInPageNavigationPolicy.activeParentDestination(
+                currentDestination,
+                returnToTriageOnBack,
+                showingDashboardSummary,
+                connectionRecoveryVisible);
+        if (OperationsDestinationState.CONNECTIONS.equals(parent)) {
+            showConnectionPreference();
+            return true;
+        }
+        if (OperationsDestinationState.TRIAGE.equals(parent)) {
+            showTriageCenter();
+            return true;
+        }
+        if (OperationsDestinationState.OVERVIEW.equals(parent)) {
+            returnToTriageOnBack = false;
+            showCurrentDashboard();
+            return true;
+        }
+        return false;
     }
 
     private boolean returnToOperationsOverview() {
@@ -412,11 +439,11 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void beginPairing(String rawPairing) {
-        currentDestination = OperationsDestinationState.PAIRING;
+        setCurrentDestination(OperationsDestinationState.PAIRING);
         pendingRestoredDestination = "";
         int claimGeneration = ++pairingRequestGeneration;
         setBusy("第 1 步（共 2 步） · 正在验证配对码并创建设备身份…");
-        title.setText("安全配对");
+        title.setTitle("安全配对");
         executor.execute(() -> {
             try {
                 OperationsPairingPayload payload = OperationsPairingPayload.parse(rawPairing);
@@ -442,17 +469,17 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showInterruptedPairing(String rawPairing) {
-        currentDestination = OperationsDestinationState.PAIRING;
+        setCurrentDestination(OperationsDestinationState.PAIRING);
         pendingRestoredDestination = "";
         pairingApprovalWaiting = false;
         pairingApprovalHandler.removeCallbacks(pairingApprovalTick);
         leaveSupportCenter();
         leaveLiveMonitor();
-        dashboardVisible = false;
-        showingDashboardSummary = false;
-        connectionRecoveryVisible = false;
+        setDashboardVisible(false);
+        setShowingDashboardSummary(false);
+        setConnectionRecoveryVisible(false);
         progress.setVisibility(View.GONE);
-        title.setText("安全配对");
+        title.setTitle("安全配对");
         state.setText("页面已由系统重新创建");
         details.setText("为避免重复提交同一份配对申请，应用没有自动重放扫码结果。你可以明确继续验证；若配对码已经超过两分钟，请返回电脑端刷新二维码。");
         actions.removeAllViews();
@@ -576,10 +603,10 @@ public class OperationsActivity extends AppCompatActivity {
         stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
-        dashboardVisible = false;
+        setDashboardVisible(false);
         pairingApprovalWaiting = true;
         pairingApprovalDeadlineMilliseconds = deadlineMilliseconds;
-        title.setText("批准这台手机");
+        title.setTitle("批准这台手机");
         details.setText(PairingApprovalPresentation.waitingDetails(deviceName));
         actions.removeAllViews();
         progress.setVisibility(View.GONE);
@@ -621,7 +648,7 @@ public class OperationsActivity extends AppCompatActivity {
             OperationsApiClient pairingClient,
             String deviceName) {
         stopPairingApprovalWait();
-        title.setText("电脑端尚未确认");
+        title.setTitle("电脑端尚未确认");
         state.setText("已暂停自动检查，待批准记录仍保留");
         details.setText(PairingApprovalPresentation.timeoutDetails(deviceName));
         actions.removeAllViews();
@@ -767,17 +794,17 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showConnectionPreference() {
-        currentDestination = OperationsDestinationState.CONNECTIONS;
+        setCurrentDestination(OperationsDestinationState.CONNECTIONS);
         connectionCheckGeneration++;
         scrollDashboardToTop();
         refreshOperationsTargetPresentation();
-        showingDashboardSummary = false;
-        connectionRecoveryVisible = false;
+        setShowingDashboardSummary(false);
+        setConnectionRecoveryVisible(false);
         leaveSupportCenter();
         leaveLiveMonitor();
-        dashboardVisible = true;
+        setDashboardVisible(true);
         progress.setVisibility(View.GONE);
-        title.setText("电脑与连接");
+        title.setTitle("电脑与连接");
         boolean relayPreferred = OperationsConnectionPreference.prefersRelay(
                 preferences.getOperationsConnectionPreference());
         List<OperationsProfileRegistry.Profile> profiles = preferences.getOperationsProfiles();
@@ -802,6 +829,7 @@ public class OperationsActivity extends AppCompatActivity {
         state.setText(OperationsConnectionOverview.pageStatus(
                 profileCount, activeProfileState, fleet.summary));
         details.setText(OperationsConnectionOverview.summary(
+                preferences.getActiveOperationsProfileLabel(),
                 relayPreferred ? "固定中继" : "现场直连",
                 remoteDashboard ? "固定中继" : "现场直连",
                 profileCount,
@@ -950,7 +978,7 @@ public class OperationsActivity extends AppCompatActivity {
         int total = targets.size();
         AtomicInteger completed = new AtomicInteger();
         setBusy("正在巡检 0 / " + total + " 台电脑…");
-        title.setText("巡检电脑总览");
+        title.setTitle("巡检电脑总览");
         details.setText("只读取每台电脑的脱敏聚合状态；最多并行检查 3 台，使用各自的设备密钥、证书固定和连接偏好。巡检不会切换当前操作目标，也不会执行远程动作。");
 
         for (OperationsProfileRegistry.Profile profile : targets) {
@@ -1212,6 +1240,60 @@ public class OperationsActivity extends AppCompatActivity {
         clearDashboardLiveStatusReferences();
     }
 
+    private void setCurrentDestination(String destination) {
+        String normalized = OperationsDestinationState.normalize(destination);
+        int direction = OperationsInPageNavigationPolicy.motionDirection(
+                currentDestination, normalized, returnToTriageOnBack);
+        AppScreenMotion.beginContentTransition(dashboardContent, direction);
+        currentDestination = normalized;
+        refreshOperationsHeaderNavigation();
+    }
+
+    private void setDashboardVisible(boolean visible) {
+        dashboardVisible = visible;
+        refreshOperationsHeaderNavigation();
+    }
+
+    private void setShowingDashboardSummary(boolean showing) {
+        showingDashboardSummary = showing;
+        refreshOperationsHeaderNavigation();
+    }
+
+    private void setConnectionRecoveryVisible(boolean visible) {
+        connectionRecoveryVisible = visible;
+        refreshOperationsHeaderNavigation();
+    }
+
+    private void refreshOperationsHeaderNavigation() {
+        if (title == null || profileTarget == null || preferences == null) {
+            return;
+        }
+        boolean paired = preferences.hasOperationsProfile();
+        boolean showNavigateUp = OperationsInPageNavigationPolicy.showsNavigateUp(
+                paired,
+                dashboardVisible,
+                currentDestination,
+                returnToTriageOnBack,
+                showingDashboardSummary,
+                connectionRecoveryVisible);
+        if (showNavigateUp) {
+            title.setNavigationIcon(R.drawable.ic_arrow_back_24);
+            title.setNavigationContentDescription(
+                    OperationsInPageNavigationPolicy.navigateUpLabel(
+                            currentDestination,
+                            returnToTriageOnBack,
+                            showingDashboardSummary,
+                            connectionRecoveryVisible));
+        } else {
+            title.setNavigationIcon(null);
+            title.setNavigationContentDescription(null);
+        }
+        boolean showProfileTarget = paired
+                && dashboardVisible
+                && !OperationsDestinationState.CONNECTIONS.equals(currentDestination);
+        profileTarget.setVisibility(showProfileTarget ? View.VISIBLE : View.GONE);
+    }
+
     private void refreshOperationsTargetPresentation() {
         if (profileTarget == null || preferences == null) {
             return;
@@ -1224,6 +1306,7 @@ public class OperationsActivity extends AppCompatActivity {
                 : getString(R.string.operations_target_unpaired_content_description));
         profileTarget.setEnabled(paired);
         profileTarget.setAlpha(paired ? 1f : 0.55f);
+        refreshOperationsHeaderNavigation();
     }
 
     private void showTargetedConfirmation(
@@ -1292,17 +1375,17 @@ public class OperationsActivity extends AppCompatActivity {
         leaveSupportCenter();
         leaveLiveMonitor();
         remoteDashboard = false;
-        connectionRecoveryVisible = false;
+        setConnectionRecoveryVisible(false);
         lastRelaySnapshotResponse = null;
         if (restorePendingDestination(true)) {
             return;
         }
-        currentDestination = OperationsDestinationState.OVERVIEW;
+        setCurrentDestination(OperationsDestinationState.OVERVIEW);
         returnToTriageOnBack = false;
-        dashboardVisible = true;
-        showingDashboardSummary = true;
+        setDashboardVisible(true);
+        setShowingDashboardSummary(true);
         progress.setVisibility(View.GONE);
-        title.setText("运维伴侣");
+        title.setTitle("运维伴侣");
         state.setText(directConnectionState());
         details.setText(R.string.operations_dashboard_loading_summary);
         actions.removeAllViews();
@@ -1440,17 +1523,17 @@ public class OperationsActivity extends AppCompatActivity {
         leaveSupportCenter();
         leaveLiveMonitor();
         remoteDashboard = true;
-        connectionRecoveryVisible = false;
+        setConnectionRecoveryVisible(false);
         lastRelaySnapshotResponse = response;
         if (restorePendingDestination(false)) {
             return;
         }
-        currentDestination = OperationsDestinationState.OVERVIEW;
+        setCurrentDestination(OperationsDestinationState.OVERVIEW);
         returnToTriageOnBack = false;
-        dashboardVisible = true;
-        showingDashboardSummary = true;
+        setDashboardVisible(true);
+        setShowingDashboardSummary(true);
         progress.setVisibility(View.GONE);
-        title.setText("运维伴侣");
+        title.setTitle("运维伴侣");
         actions.removeAllViews();
         clearDashboardLiveStatusReferences();
         updateRemoteDashboardStatus(response);
@@ -1627,10 +1710,10 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showRemoteMonitorDetail(String section, JSONObject monitor) {
-        showingDashboardSummary = false;
+        setShowingDashboardSummary(false);
         remoteRestartMqttButton = null;
         progress.setVisibility(View.GONE);
-        title.setText(remoteMonitorTitle(section));
+        title.setTitle(remoteMonitorTitle(section));
         state.setText("电脑签名远程状态");
         details.setText(getString(
                 R.string.operations_remote_monitor_signed_summary,
@@ -1907,7 +1990,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (!ensureOperationsClientTargetIsCurrent()) {
             return;
         }
-        showingDashboardSummary = false;
+        setShowingDashboardSummary(false);
         progress.setVisibility(View.VISIBLE);
         state.setText("正在签名并提交远程请求…");
         int generation = ++remoteTaskGeneration;
@@ -1930,7 +2013,7 @@ public class OperationsActivity extends AppCompatActivity {
                     Toast.LENGTH_LONG).show();
             return;
         }
-        showingDashboardSummary = false;
+        setShowingDashboardSummary(false);
         progress.setVisibility(View.VISIBLE);
         state.setText("正在生成端到端加密身份并提交快照请求…");
         int generation = ++remoteTaskGeneration;
@@ -1976,7 +2059,7 @@ public class OperationsActivity extends AppCompatActivity {
             Toast.makeText(this, "还没有远程请求记录", Toast.LENGTH_SHORT).show();
             return;
         }
-        showingDashboardSummary = false;
+        setShowingDashboardSummary(false);
         progress.setVisibility(View.VISIBLE);
         state.setText("正在读取最近远程请求…");
         int generation = ++remoteTaskGeneration;
@@ -2244,7 +2327,7 @@ public class OperationsActivity extends AppCompatActivity {
                 && !directConnectionAvailable) {
             return false;
         }
-        dashboardVisible = true;
+        setDashboardVisible(true);
         switch (destination) {
             case OperationsDestinationState.CONNECTIONS:
                 showConnectionPreference();
@@ -2308,14 +2391,14 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showOperationsWatchHistory() {
-        currentDestination = OperationsDestinationState.HISTORY;
+        setCurrentDestination(OperationsDestinationState.HISTORY);
         scrollDashboardToTop();
-        showingDashboardSummary = false;
+        setShowingDashboardSummary(false);
         leaveSupportCenter();
         leaveLiveMonitor();
-        dashboardVisible = true;
+        setDashboardVisible(true);
         progress.setVisibility(View.GONE);
-        title.setText("运维时间线");
+        title.setTitle("运维时间线");
         List<OperationsWatchHistory.Entry> entries = preferences.getOperationsWatchHistory(
                 System.currentTimeMillis());
         state.setText(entries.isEmpty()
@@ -2345,16 +2428,16 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showFleetTimeline(boolean issuesOnly) {
-        currentDestination = issuesOnly
+        setCurrentDestination(issuesOnly
                 ? OperationsDestinationState.FLEET_ISSUES
-                : OperationsDestinationState.FLEET_ALL;
+                : OperationsDestinationState.FLEET_ALL);
         scrollDashboardToTop();
-        showingDashboardSummary = false;
+        setShowingDashboardSummary(false);
         leaveSupportCenter();
         leaveLiveMonitor();
-        dashboardVisible = true;
+        setDashboardVisible(true);
         progress.setVisibility(View.GONE);
-        title.setText("全部电脑动态");
+        title.setTitle("全部电脑动态");
         OperationsFleetTimeline.Timeline timeline = OperationsFleetTimeline.build(
                 preferences.getOperationsProfiles(),
                 preferences.getOperationsHostId(),
@@ -3275,12 +3358,12 @@ public class OperationsActivity extends AppCompatActivity {
         if (restorePendingDestination(false)) {
             return;
         }
-        currentDestination = OperationsDestinationState.OVERVIEW;
-        dashboardVisible = true;
-        showingDashboardSummary = false;
-        connectionRecoveryVisible = true;
+        setCurrentDestination(OperationsDestinationState.OVERVIEW);
+        setDashboardVisible(true);
+        setShowingDashboardSummary(false);
+        setConnectionRecoveryVisible(true);
         progress.setVisibility(View.GONE);
-        title.setText("连接恢复");
+        title.setTitle("连接恢复");
         state.setText(OperationsRecoveryOverview.waitingStatus());
         details.setText(OperationsRecoveryOverview.failureSummary(
                 OperationsErrorPresentation.readable(localException),
@@ -3290,17 +3373,17 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void runConnectionSelfCheck() {
-        currentDestination = OperationsDestinationState.CONNECTION_CHECK;
+        setCurrentDestination(OperationsDestinationState.CONNECTION_CHECK);
         int checkGeneration = ++connectionCheckGeneration;
-        showingDashboardSummary = false;
-        connectionRecoveryVisible = false;
+        setShowingDashboardSummary(false);
+        setConnectionRecoveryVisible(false);
         scrollDashboardToTop();
         refreshOperationsTargetPresentation();
         leaveSupportCenter();
         leaveLiveMonitor();
-        dashboardVisible = true;
+        setDashboardVisible(true);
         progress.setVisibility(View.VISIBLE);
-        title.setText("连接自检");
+        title.setTitle("连接自检");
         state.setText("正在检查安全连接…");
         details.setText(OperationsConnectionCheckPresentation.runningDescription());
         actions.removeAllViews();
@@ -3340,8 +3423,8 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void showConnectionCheckResult(
             OperationsConnectionCheck.Result result, boolean detailsExpanded) {
-        currentDestination = OperationsDestinationState.CONNECTION_CHECK;
-        title.setText("连接自检");
+        setCurrentDestination(OperationsDestinationState.CONNECTION_CHECK);
+        title.setTitle("连接自检");
         state.setText(OperationsConnectionCheckPresentation.status(result.success, result.heading));
         details.setText(result.recommendation);
         actions.removeAllViews();
@@ -3414,7 +3497,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (!ensureOperationsClientTargetIsCurrent()) {
             return;
         }
-        showingDashboardSummary = false;
+        setShowingDashboardSummary(false);
         progress.setVisibility(View.VISIBLE);
         state.setText("正在执行安全桌面操作…");
         executor.execute(() -> {
@@ -3435,12 +3518,12 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showTriageCenter() {
-        currentDestination = OperationsDestinationState.TRIAGE;
+        setCurrentDestination(OperationsDestinationState.TRIAGE);
         returnToTriageOnBack = false;
-        showingDashboardSummary = false;
+        setShowingDashboardSummary(false);
         leaveSupportCenter();
         leaveLiveMonitor();
-        dashboardVisible = true;
+        setDashboardVisible(true);
         progress.setVisibility(View.VISIBLE);
         state.setText("正在汇总有界证据与可用处置动作…");
         executor.execute(() -> {
@@ -3462,7 +3545,7 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsTriagePresentation.from(report, this::shortTime);
         scrollDashboardToTop();
         progress.setVisibility(View.GONE);
-        title.setText("远程排障中心");
+        title.setTitle("远程排障中心");
         state.setText(model.stateLabel);
         details.setText(model.summary);
         actions.removeAllViews();
@@ -3514,8 +3597,8 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showJobs() {
-        currentDestination = OperationsDestinationState.JOBS;
-        showingDashboardSummary = false;
+        setCurrentDestination(OperationsDestinationState.JOBS);
+        setShowingDashboardSummary(false);
         leaveSupportCenter();
         leaveLiveMonitor();
         progress.setVisibility(View.VISIBLE);
@@ -3570,7 +3653,7 @@ public class OperationsActivity extends AppCompatActivity {
     private void renderJobs(JSONObject data, JSONObject waiting,
                             JSONObject downloadableDiagnostic, JSONObject downloadableWindowSnapshot) {
         progress.setVisibility(View.GONE);
-        title.setText("作业与审批");
+        title.setTitle("作业与审批");
         state.setText(waiting != null ? "发现待移动审批作业"
                 : downloadableWindowSnapshot != null ? "主窗口安全快照可读取一次"
                 : downloadableDiagnostic != null ? "安全诊断包可下载" : "当前没有待移动审批作业");
@@ -3841,7 +3924,7 @@ public class OperationsActivity extends AppCompatActivity {
             boolean remote,
             boolean consumeConfirmed) {
         progress.setVisibility(View.GONE);
-        title.setText("主窗口安全快照");
+        title.setTitle("主窗口安全快照");
         state.setText(remote
                 ? "端到端加密快照已校验并预览"
                 : "一次性证据已校验并从电脑端销毁");
@@ -3998,7 +4081,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void restartApplication() {
         progress.setVisibility(View.VISIBLE);
-        title.setText(R.string.operations_restart_title);
+        title.setTitle(R.string.operations_restart_title);
         state.setText(R.string.operations_restart_checking);
         details.setText(R.string.operations_restart_disconnect_note);
         executor.execute(() -> {
@@ -4098,8 +4181,8 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void showApplicationRestartFailure(Exception ex) {
         progress.setVisibility(View.GONE);
-        dashboardVisible = false;
-        title.setText(R.string.operations_restart_failed_title);
+        setDashboardVisible(false);
+        title.setTitle(R.string.operations_restart_failed_title);
         state.setText(OperationsErrorPresentation.readable(ex));
         details.setText(R.string.operations_restart_failed_details);
         actions.removeAllViews();
@@ -4148,8 +4231,8 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showSupportCenter() {
-        currentDestination = OperationsDestinationState.SUPPORT;
-        showingDashboardSummary = false;
+        setCurrentDestination(OperationsDestinationState.SUPPORT);
+        setShowingDashboardSummary(false);
         leaveLiveMonitor();
         supportCenterVisible = true;
         supportAutoRefresh = false;
@@ -4225,7 +4308,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void renderSupportCenter(JSONObject sessionsData, JSONObject selected, JSONObject messagesData) {
         progress.setVisibility(View.GONE);
-        title.setText("引导支持会话");
+        title.setTitle("引导支持会话");
         actions.removeAllViews();
 
         JSONObject session = messagesData == null ? selected : messagesData.optJSONObject("session");
@@ -4349,18 +4432,18 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showLiveMonitor() {
-        currentDestination = OperationsDestinationState.LIVE_MONITOR;
-        showingDashboardSummary = false;
+        setCurrentDestination(OperationsDestinationState.LIVE_MONITOR);
+        setShowingDashboardSummary(false);
         leaveSupportCenter();
         leaveLiveMonitor();
-        dashboardVisible = true;
+        setDashboardVisible(true);
         liveMonitorVisible = true;
         liveMonitorAutoRefresh = true;
         liveMonitorCancelAvailable = false;
         liveMonitorCancelInFlight = false;
         liveMonitorLatestSnapshot = null;
         liveMonitorTrend.reset();
-        title.setText(R.string.operations_live_monitor_title);
+        title.setTitle(R.string.operations_live_monitor_title);
         state.setText(R.string.operations_live_monitor_loading);
         details.setText(R.string.operations_live_monitor_details);
         renderLiveMonitorActions();
@@ -4813,7 +4896,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void loadCapability(String path) {
-        showingDashboardSummary = "/ops/v1/snapshot".equals(path);
+        setShowingDashboardSummary("/ops/v1/snapshot".equals(path));
         leaveSupportCenter();
         leaveLiveMonitor();
         progress.setVisibility(View.VISIBLE);
@@ -4838,7 +4921,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void showDeviceHealthOverview() {
         boolean offerTriageAction = !OperationsDestinationState.isTriage(currentDestination);
-        showingDashboardSummary = false;
+        setShowingDashboardSummary(false);
         leaveSupportCenter();
         leaveLiveMonitor();
         progress.setVisibility(View.VISIBLE);
@@ -5755,7 +5838,7 @@ public class OperationsActivity extends AppCompatActivity {
         leaveLiveMonitor();
         OperationsWatchService.stopForProfileRemoval(this);
         resetOperationsClientsForProfileChange();
-        dashboardVisible = false;
+        setDashboardVisible(false);
         clearRemoteWindowSnapshotSecrets(hostId);
         try {
             if (!hostId.isEmpty()) {
@@ -5778,11 +5861,11 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void setBusy(String message) {
         cancelDashboardRefresh();
-        connectionRecoveryVisible = false;
+        setConnectionRecoveryVisible(false);
         stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
-        dashboardVisible = false;
+        setDashboardVisible(false);
         state.setText(message);
         details.setText(R.string.operations_keystore_busy_details);
         progress.setIndeterminate(true);
@@ -5792,13 +5875,13 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void showError(String heading, String message, Runnable recovery) {
         cancelDashboardRefresh();
-        connectionRecoveryVisible = false;
+        setConnectionRecoveryVisible(false);
         stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
-        dashboardVisible = false;
+        setDashboardVisible(false);
         progress.setVisibility(View.GONE);
-        title.setText(heading);
+        title.setTitle(heading);
         state.setText(message);
         details.setText("请确认手机与电脑位于同一可信局域网，并重新扫描电脑端短时配对码。\n不会回退到 URL token。 ");
         actions.removeAllViews();
@@ -5854,13 +5937,13 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void showPairingFailure(String reason) {
         cancelDashboardRefresh();
-        connectionRecoveryVisible = false;
+        setConnectionRecoveryVisible(false);
         stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
-        dashboardVisible = false;
+        setDashboardVisible(false);
         progress.setVisibility(View.GONE);
-        title.setText(PairingFailurePresentation.title(reason));
+        title.setTitle(PairingFailurePresentation.title(reason));
         state.setText(PairingFailurePresentation.message(reason));
         boolean hasExistingProfile = preferences.hasOperationsProfile();
         details.setText(PairingFailurePresentation.preservationNote(hasExistingProfile));

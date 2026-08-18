@@ -11,11 +11,13 @@ final class OperationsConnectionOverview {
     }
 
     static String summary(
+            String activeProfileLabel,
             String preferredChannel,
             String activeChannel,
             int profileCount,
             int maximumProfiles) {
-        return "当前使用 " + safe(activeChannel, "正在确认")
+        return "当前电脑 " + safe(activeProfileLabel, "未命名电脑")
+                + "\n当前使用 " + safe(activeChannel, "正在确认")
                 + " · 首选 " + safe(preferredChannel, "正在确认")
                 + "\n已配对电脑 " + Math.max(0, profileCount)
                 + " / " + Math.max(0, maximumProfiles);

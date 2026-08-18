@@ -24,18 +24,20 @@ public class OperationsConnectionOverviewTest {
     @Test
     public void summaryKeepsActiveAndPreferredChannelsCompact() {
         assertEquals(
-                "当前使用 固定中继 · 首选 现场直连\n"
+                "当前电脑 实验室电脑\n"
+                        + "当前使用 固定中继 · 首选 现场直连\n"
                         + "已配对电脑 2 / 6",
                 OperationsConnectionOverview.summary(
-                        " 现场直连 ", "固定中继", 2, 6));
+                        " 实验室电脑 ", " 现场直连 ", "固定中继", 2, 6));
     }
 
     @Test
     public void summaryUsesSafeFallbacksAndBoundedCounts() {
         assertEquals(
-                "当前使用 正在确认 · 首选 正在确认\n"
+                "当前电脑 未命名电脑\n"
+                        + "当前使用 正在确认 · 首选 正在确认\n"
                         + "已配对电脑 0 / 0",
-                OperationsConnectionOverview.summary(null, " ", -1, -2));
+                OperationsConnectionOverview.summary(null, null, " ", -1, -2));
         assertEquals("尚未检查",
                 OperationsConnectionOverview.pageStatus(1, "", null));
     }
