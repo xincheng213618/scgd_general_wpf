@@ -7,7 +7,7 @@ $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
 
 Push-Location $projectRoot
 try {
-    & (Join-Path $projectRoot ".tools\gradle-8.9\bin\gradle.bat") --no-daemon assembleDebug
+    & (Join-Path $projectRoot "gradlew.bat") --no-daemon assembleDebug
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }
