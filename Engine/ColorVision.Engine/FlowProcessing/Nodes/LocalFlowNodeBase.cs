@@ -1,20 +1,25 @@
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices;
 using FlowEngineLib;
-using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using FlowEngineLib.PropertyEditor;
+using log4net;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace ColorVision.Engine.FlowProcessing.Nodes
 {
-    public abstract class LocalFlowNodeBase : CVBaseServerNode
+    public abstract class LocalFlowNodeBase : CVCommonNode
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(LocalFlowNodeBase));
+
         private sealed class LocalFlowInputSnapshot
         {
             public required CVStartCFC Action { get; init; }
@@ -62,21 +67,36 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         private readonly Dictionary<string, LocalFlowInputSnapshot?[]> pendingInputSets = new(StringComparer.Ordinal);
         private readonly ConcurrentDictionary<string, LocalFlowInputSnapshot[]> activeInputSets = new(StringComparer.Ordinal);
         private STNodeOption[] flowInputOptions = Array.Empty<STNodeOption>();
+        private STNodeOption flowOutputOption = null!;
+        protected string OperatorCode { get; }
 
-        protected LocalFlowNodeBase(string title, string nodeType, string operatorName, int timeoutMs = 60000, params string[] inputNames)
+        [Display(Order = -200)]
+        [PropertyEditorType(typeof(FlowDeviceNameEditor))]
+        [STNodeProperty("设备代码", "设备代码", false, false)]
+        public new string DeviceCode
+        {
+            get => base.DeviceCode;
+            set
+            {
+                base.DeviceCode = value;
+                OnPropertyChanged();
+            }
+        }
+
+        protected LocalFlowNodeBase(string title, string nodeType, string operatorName, params string[] inputNames)
             : base(title, nodeType, $"LOCAL.{nodeType}", $"LOCAL.{nodeType}")
         {
-            operatorCode = operatorName;
-            _MaxTime = timeoutMs;
+            OperatorCode = operatorName;
             this.inputNames = inputNames.Length == 0 ? new[] { "IN" } : inputNames.ToArray();
             if (this.inputNames.Any(string.IsNullOrWhiteSpace)) throw new ArgumentException("本地节点输入端口名称不能为空。", nameof(inputNames));
             if (this.inputNames.Distinct(StringComparer.Ordinal).Count() != this.inputNames.Length) throw new ArgumentException("本地节点输入端口名称不能重复。", nameof(inputNames));
-            m_in_text = this.inputNames[0];
+            AutoSize = false;
+            Width = StandardNodeWidth;
+            Height = 85;
             if (this.inputNames.Length > 1)
             {
                 int offset = 15 * (this.inputNames.Length - 1);
                 Height += offset;
-                m_custom_item.Y += offset;
             }
         }
 
@@ -84,22 +104,35 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         {
             base.OnCreate();
             flowInputOptions = new STNodeOption[inputNames.Length];
-            flowInputOptions[0] = m_in_start;
-            for (int index = 1; index < inputNames.Length; index++)
+            for (int index = 0; index < inputNames.Length; index++)
             {
                 STNodeOption input = InputOptions.Add(inputNames[index], typeof(CVStartCFC), bSingle: true);
-                input.Connected += m_in_op_Connected;
                 input.DataTransfer += m_in_start_DataTransfer;
                 flowInputOptions[index] = input;
             }
+            flowOutputOption = OutputOptions.Add("OUT", typeof(CVStartCFC), bSingle: false);
         }
 
         protected void SelectFirstAvailableDevice<TDevice>() where TDevice : DeviceService
         {
-            DeviceCode = ServiceManager.Current?.DeviceServices.OfType<TDevice>().FirstOrDefault()?.Code ?? string.Empty;
+            DeviceCode = GetFirstAvailableDeviceCode<TDevice>();
         }
 
-        protected override void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
+        protected static string GetFirstAvailableDeviceCode<TDevice>() where TDevice : DeviceService
+        {
+            return ServiceManager.Current?.DeviceServices.OfType<TDevice>().FirstOrDefault()?.Code ?? string.Empty;
+        }
+
+        protected string ResolveAvailableDeviceCode<TDevice>() where TDevice : DeviceService
+        {
+            TDevice[] devices = ServiceManager.Current?.DeviceServices.OfType<TDevice>().ToArray() ?? Array.Empty<TDevice>();
+            if (devices.Length == 0) return DeviceCode;
+            return devices.Any(device => string.Equals(device.Code, DeviceCode, StringComparison.Ordinal))
+                ? DeviceCode
+                : devices[0].Code;
+        }
+
+        private void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
         {
             if (inputNames.Length > 1)
             {
@@ -108,23 +141,23 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
             if (e.Status != ConnectionStatus.Connected || !HasData(e))
             {
-                m_op_end.TransferData(e.TargetOption.Data);
+                flowOutputOption.TransferData(e.TargetOption.Data);
                 return;
             }
             if (e.TargetOption.Data is not CVStartCFC start)
             {
-                m_op_end.TransferData(e.TargetOption.Data);
+                flowOutputOption.TransferData(e.TargetOption.Data);
                 return;
             }
 
             start.NormalizeStopStatus();
             if (!start.IsRunning)
             {
-                m_op_end.TransferData(start);
+                flowOutputOption.TransferData(start);
                 return;
             }
 
-            BeginExecution(start, new[] { CaptureInput(start, 0) });
+            BeginExecution(start, new[] { CaptureInput(start) });
         }
 
         protected bool TryGetInputMasterResult(CVStartCFC action, int inputIndex, out int masterId, out int masterResultType, out string? masterValue)
@@ -152,7 +185,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             if (!HasData(e))
             {
                 ClearPendingInputs();
-                m_op_end.TransferData(null);
+                flowOutputOption.TransferData(null);
                 return;
             }
             if (e.TargetOption.Data is not CVStartCFC start) return;
@@ -161,7 +194,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             if (!start.IsRunning)
             {
                 ClearPendingInputs(start.SerialNumber);
-                m_op_end.TransferData(start);
+                flowOutputOption.TransferData(start);
                 return;
             }
 
@@ -175,7 +208,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     inputs = new LocalFlowInputSnapshot?[inputNames.Length];
                     pendingInputSets.Add(start.SerialNumber, inputs);
                 }
-                inputs[inputIndex] = CaptureInput(start, inputIndex);
+                inputs[inputIndex] = CaptureInput(start);
                 if (inputs.All(input => input != null))
                 {
                     readyInputs = inputs.Select(input => input!).ToArray();
@@ -189,34 +222,21 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        private LocalFlowInputSnapshot CaptureInput(CVStartCFC start, int inputIndex)
+        private static LocalFlowInputSnapshot CaptureInput(CVStartCFC start)
         {
-            LocalFlowInputSnapshot snapshot = LocalFlowInputSnapshot.Create(start);
-            AlgorithmPreStepParam upstream = new();
-            if (!getPreStepParam(inputIndex, upstream) || upstream.MasterId <= 0)
-            {
-                return snapshot;
-            }
-            return new LocalFlowInputSnapshot
-            {
-                Action = snapshot.Action,
-                MasterId = upstream.MasterId,
-                MasterResultType = upstream.MasterResultType,
-                MasterValue = upstream.MasterValue
-            };
+            return LocalFlowInputSnapshot.Create(start);
         }
 
         private void BeginExecution(CVStartCFC start, LocalFlowInputSnapshot[] inputs)
         {
             CVTransAction transaction = new(start);
-            m_trans_action.AddOrUpdate(start.SerialNumber, transaction, (_, _) => transaction);
             activeInputSets.AddOrUpdate(start.SerialNumber, inputs, (_, _) => inputs);
-            nodeRunEvent?.Invoke(this, new FlowEngineNodeRunEventArgs
+            PublishNodeRun(new FlowEngineNodeRunEventArgs
             {
                 SerialNumber = start.SerialNumber,
                 SendTopic = LocalTopic,
                 SendMsgId = start.SerialNumber,
-                SendEventName = operatorCode,
+                SendEventName = OperatorCode,
                 SendPayload = BuildRunPayload(start)
             });
 
@@ -242,7 +262,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected virtual string BuildRunPayload(CVStartCFC action)
         {
-            return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = operatorCode, action.SerialNumber });
+            return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = OperatorCode, action.SerialNumber });
         }
 
         private void ExecuteCore(CVTransAction transaction)
@@ -250,8 +270,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             try
             {
                 LocalNodeExecutionResult result = ExecuteLocal(transaction.trans_action);
-                CVServerResponse response = new(transaction.trans_action.SerialNumber, ActionStatusEnum.Finish, result.Message, operatorCode, result.Data);
-                svrRecvResp = response;
+                CVServerResponse response = new(transaction.trans_action.SerialNumber, ActionStatusEnum.Finish, result.Message, OperatorCode, result.Data);
                 transaction.trans_action.AddResult(GetLocalNodeName(), response, transaction.startTime);
                 TransferEnd(transaction, response, 0);
             }
@@ -259,20 +278,18 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 CVStartCFC action = transaction.trans_action;
                 action.Failed(ex.Message, GetLocalNodeName(), transaction.startTime, NodeID);
-                CVServerResponse response = new(action.SerialNumber, ActionStatusEnum.Failed, ex.Message, operatorCode, null);
-                svrRecvResp = response;
+                CVServerResponse response = new(action.SerialNumber, ActionStatusEnum.Failed, ex.Message, OperatorCode, null);
                 TransferEnd(transaction, response, -1);
             }
             finally
             {
-                m_trans_action.TryRemove(transaction.trans_action.SerialNumber, out _);
                 activeInputSets.TryRemove(transaction.trans_action.SerialNumber, out _);
             }
         }
 
         private void TransferEnd(CVTransAction transaction, CVServerResponse response, int statusCode)
         {
-            nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs
+            PublishNodeEnd(new FlowEngineNodeEndEventArgs
             {
                 SerialNumber = transaction.trans_action.SerialNumber,
                 RecvTopic = LocalTopic,
@@ -282,7 +299,37 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 RecvStatusMessage = response.Message,
                 RecvPayload = response.Data == null ? null : JsonConvert.SerializeObject(response.Data)
             });
-            m_op_end.TransferData(transaction.trans_action);
+            flowOutputOption.TransferData(transaction.trans_action);
+        }
+
+        private void PublishNodeRun(FlowEngineNodeRunEventArgs args)
+        {
+            foreach (FlowEngineNodeRunEvent handler in nodeRunEvent?.GetInvocationList().Cast<FlowEngineNodeRunEvent>() ?? Enumerable.Empty<FlowEngineNodeRunEvent>())
+            {
+                try
+                {
+                    handler(this, args);
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"[{ToShortString()}] local node-run subscriber failed", ex);
+                }
+            }
+        }
+
+        private void PublishNodeEnd(FlowEngineNodeEndEventArgs args)
+        {
+            foreach (FlowEngineNodeEndEvent handler in nodeEndEvent?.GetInvocationList().Cast<FlowEngineNodeEndEvent>() ?? Enumerable.Empty<FlowEngineNodeEndEvent>())
+            {
+                try
+                {
+                    handler(this, args);
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"[{ToShortString()}] local node-end subscriber failed", ex);
+                }
+            }
         }
 
         private string GetLocalNodeName() => $"{base.Title}.{NodeName}";

@@ -5,6 +5,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Results;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
@@ -35,6 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         private bool _isInitialized;
         private bool _isDisposed;
         private bool _messageSubscribed;
+        private IDisposable? _localResultSubscription;
 
         public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
@@ -65,6 +67,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             }
             DeviceService.MsgReturnReceived += DeviceService_OnMessageRecved;
             _messageSubscribed = true;
+            _localResultSubscription ??= ResultMessageBus.Default.Subscribe(LocalResultPublished);
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
@@ -93,28 +96,40 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             {
                 case MQTTCalibrationEventEnum.Event_GetData:
                     if (arg.Data == null) return;
-                    int masterId = Convert.ToInt32(arg.Data.MasterId);
-                    log.Debug($"masterId:{masterId}");
-                    if (masterId > 0)
-                    {
-                        MeasureResultImgModel model = MeasureImgResultDao.Instance.GetById(masterId);
-                        if (model != null)
-                        {
-                            log.Debug($"FileUrl：{model.FileUrl}");
-                            Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                if (!_isDisposed)
-                                    ShowResult(model);
-                            });
-                        }
-                        else
-                        {
-                            log.Debug($"GetImgResult By Id is null: {masterId}");
-                        }
-                    }
+                    ShowPersistedResult(Convert.ToInt32(arg.Data.MasterId));
                     break;
             }
 
+        }
+
+        private void LocalResultPublished(ResultMessage message)
+        {
+            if (_isDisposed
+                || message.Route != ResultRoutes.Calibration
+                || message.ResultKind != ResultKinds.Image
+                || !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal))
+                return;
+
+            ShowPersistedResult(message.Data.MasterId);
+        }
+
+        private void ShowPersistedResult(int masterId)
+        {
+            if (_isDisposed || masterId <= 0) return;
+            log.Debug($"masterId:{masterId}");
+            MeasureResultImgModel? model = MeasureImgResultDao.Instance.GetById(masterId);
+            if (model == null)
+            {
+                log.Debug($"GetImgResult By Id is null: {masterId}");
+                return;
+            }
+
+            log.Debug($"FileUrl：{model.FileUrl}");
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                if (!_isDisposed)
+                    ShowResult(model);
+            });
         }
 
 
@@ -166,7 +181,10 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 return;
             }
 
-            ImageView.OpenImage(data.FileUrl);
+            if (string.IsNullOrWhiteSpace(data.FileUrl))
+                ImageView.Clear();
+            else
+                ImageView.OpenImage(data.FileUrl);
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -237,6 +255,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 DeviceService.MsgReturnReceived -= DeviceService_OnMessageRecved;
                 _messageSubscribed = false;
             }
+            _localResultSubscription?.Dispose();
+            _localResultSubscription = null;
 
             listView1.SelectionChanged -= listView1_SelectionChanged;
             listView1.PreviewKeyDown -= listView1_PreviewKeyDown;

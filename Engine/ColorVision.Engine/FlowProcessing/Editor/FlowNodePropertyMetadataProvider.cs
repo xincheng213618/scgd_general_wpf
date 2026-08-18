@@ -24,7 +24,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             nameof(FlowEngineLib.Base.CVBaseServerNode.ContinueOnFail),
         };
 
-        public static PropertyEditorAdvancedOptions AdvancedOptions { get; } = new(propertyInfo => DefaultHiddenProperties.Contains(propertyInfo.Name))
+        public static PropertyEditorAdvancedOptions AdvancedOptions { get; } = new(IsAdvancedProperty)
         {
             ToolTip = Properties.Resources.Flow_ShowAdvancedPropertiesTooltip,
             ShowFirstCategoryHeader = false,
@@ -80,6 +80,24 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         public string? GetCategory(PropertyInfo propertyInfo)
         {
             return Localize(propertyInfo.GetCustomAttribute<CategoryAttribute>()?.Category);
+        }
+
+        private static bool IsAdvancedProperty(PropertyInfo propertyInfo)
+        {
+            if (DefaultHiddenProperties.Contains(propertyInfo.Name))
+            {
+                return true;
+            }
+
+            Type? nodeType = propertyInfo.ReflectedType ?? propertyInfo.DeclaringType;
+            return propertyInfo.Name == nameof(FlowEngineLib.Base.CVCommonNode.ZIndex)
+                && IsLocalNodeType(nodeType);
+        }
+
+        private static bool IsLocalNodeType(Type? nodeType)
+        {
+            return nodeType != null
+                && typeof(LocalFlowNodeBase).IsAssignableFrom(nodeType);
         }
 
         private static string? Localize(string? resourceKey)

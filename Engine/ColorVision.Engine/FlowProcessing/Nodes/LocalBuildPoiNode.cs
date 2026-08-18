@@ -1,5 +1,7 @@
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.BuildPoi;
@@ -72,8 +74,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        public LocalBuildPoiNode() : base("本地关注点布点(Re)", "LocalBuildPOI", "BuildPOI", 60000)
+        public LocalBuildPoiNode() : base("本地关注点布点(Re)", "LocalBuildPOI", "BuildPOI")
         {
+            SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
@@ -86,13 +89,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             List<LocalPoiRemappedPoint> points = LocalPoiRemappingCalculator.Remap(template, layout, PrefixName);
             stopwatch.Stop();
             int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
+            string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
             int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
                 action,
                 ViewResultAlgType.BuildPOI,
                 template.Id,
                 template.Name,
                 null,
-                null,
+                algorithmDeviceCode,
                 ZIndex,
                 totalTime,
                 new
@@ -113,6 +117,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.Data["LocalBuildPoiCount"] = points.Count;
                 action.Data["LocalBuildPoiSourceMasterId"] = sourceMasterId;
                 action.MasterValue(null, masterId, (int)ViewResultAlgType.BuildPOI);
+                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Algorithm, ResultKinds.Algorithm, algorithmDeviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.BuildPOI);
                 return new LocalNodeExecutionResult
                 {
                     Data = new LocalBuildPoiNodeResultData
@@ -140,7 +145,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return JsonConvert.SerializeObject(new
             {
                 ServiceName = NodeName,
-                EventName = operatorCode,
+                EventName = OperatorCode,
                 action.SerialNumber,
                 BuildType = "ReMapping",
                 LayoutROITemplateName,
@@ -226,8 +231,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        public LocalBuildPoiByTemplateNode() : base("本地关注点布点(参数)", "LocalBuildPOICommon", "BuildPOI", 60000)
+        public LocalBuildPoiByTemplateNode() : base("本地关注点布点(参数)", "LocalBuildPOICommon", "BuildPOI")
         {
+            SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
@@ -239,13 +245,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             List<LocalPoiRemappedPoint> points = LocalPoiLayoutCalculator.Build(parameter, layoutTemplate);
             stopwatch.Stop();
             int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
+            string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
             int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
                 action,
                 ViewResultAlgType.BuildPOI,
                 parameter.Id,
                 parameter.Name,
                 null,
-                null,
+                algorithmDeviceCode,
                 ZIndex,
                 totalTime,
                 new
@@ -263,6 +270,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 LocalPoiRemappingCalculator.SaveDetails(masterId, points);
                 action.Data["LocalBuildPoiCount"] = points.Count;
                 action.MasterValue(null, masterId, (int)ViewResultAlgType.BuildPOI);
+                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Algorithm, ResultKinds.Algorithm, algorithmDeviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.BuildPOI);
                 return new LocalNodeExecutionResult
                 {
                     Data = new LocalBuildPoiNodeResultData
@@ -288,7 +296,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             return JsonConvert.SerializeObject(new
             {
                 ServiceName = NodeName,
-                EventName = operatorCode,
+                EventName = OperatorCode,
                 action.SerialNumber,
                 BuildType = "Common",
                 ParameterTemplateName,

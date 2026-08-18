@@ -1,5 +1,7 @@
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.POI.BuildPoi;
@@ -223,8 +225,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        public LocalRealPoiNode() : base("实时 POI", "LocalRealPOI", "Real_POI", 60000, InputPortNames)
+        public LocalRealPoiNode() : base("实时 POI", "LocalRealPOI", "Real_POI", InputPortNames)
         {
+            SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
@@ -252,6 +255,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             stopwatch.Stop();
             int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
             ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(currentFrame.Metadata.Channels);
+            string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
             int masterId = -1;
             try
             {
@@ -261,7 +265,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     parameters.Poi.Id,
                     parameters.Poi.Name,
                     currentFrame.CvCieFilePath,
-                    string.IsNullOrWhiteSpace(DeviceCode) ? currentFrame.Metadata.DeviceCode : DeviceCode,
+                    algorithmDeviceCode,
                     ZIndex,
                     totalTime,
                     new
@@ -281,6 +285,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.Data["LocalPoiCount"] = result.Points.Count;
                 action.Data["LocalPoiSourceMasterId"] = parameters.SourceMasterId;
                 action.MasterValue(null, masterId, (int)resultType);
+                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Algorithm, ResultKinds.Algorithm, algorithmDeviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)resultType);
                 return new LocalNodeExecutionResult
                 {
                     Data = new LocalRealPoiNodeResultData
@@ -311,7 +316,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 ServiceName = NodeName,
                 DeviceCode,
-                EventName = operatorCode,
+                EventName = OperatorCode,
                 action.SerialNumber,
                 POITempName,
                 POIType,

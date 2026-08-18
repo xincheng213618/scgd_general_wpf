@@ -3,6 +3,7 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services.Results;
 using ColorVision.Database;
 using ColorVision.Themes.Controls;
 using FlowEngineLib.Base;
@@ -98,8 +99,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Description("查看已缓存的校正文件、内存占用，并可释放本机校正缓存")]
         public RelayCommand OpenLocalCalibrationCacheManagerCommand { get; }
 
-        protected LocalCalibrationNodeBase(string title, string nodeType, string operatorName, int timeoutMs, params string[] inputNames)
-            : base(title, nodeType, operatorName, timeoutMs, inputNames)
+        protected LocalCalibrationNodeBase(string title, string nodeType, string operatorName, params string[] inputNames)
+            : base(title, nodeType, operatorName, inputNames)
         {
             OpenLocalCalibrationCacheManagerCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
             SelectFirstAvailableDevice<DeviceCamera>();
@@ -203,7 +204,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        private protected int SaveCalibrationResult(CVStartCFC action, LocalCalibrationExecution execution)
+        private protected MeasureResultImgModel SaveCalibrationResult(CVStartCFC action, LocalCalibrationExecution execution)
         {
             LocalFlowFrame frame = execution.Frame;
             MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
@@ -263,7 +264,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             };
             int masterId = MeasureImgResultDao.Instance.SaveAndReturnId(model);
             if (masterId <= 0) throw new InvalidOperationException("保存本地校正图像结果失败。");
-            return masterId;
+            model.Id = masterId;
+            return model;
         }
 
         protected override string BuildRunPayload(CVStartCFC action)
@@ -272,7 +274,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 ServiceName = NodeName,
                 DeviceCode,
-                EventName = operatorCode,
+                EventName = OperatorCode,
                 action.SerialNumber,
                 CalibTempName,
                 SaveFiles,
@@ -300,6 +302,16 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         private string ResolveDeviceCode(string frameDeviceCode)
             => string.IsNullOrWhiteSpace(DeviceCode) ? frameDeviceCode : DeviceCode;
+
+        private protected (string Route, string DeviceCode) ResolveCalibrationResultTarget(string cameraDeviceCode)
+        {
+            DeviceCamera? camera = ServiceManager.Current?.DeviceServices.OfType<DeviceCamera>()
+                .FirstOrDefault(item => string.Equals(item.Code, cameraDeviceCode, StringComparison.Ordinal));
+            string? calibrationDeviceCode = camera?.PhyCamera?.DeviceCalibration?.Code;
+            return string.IsNullOrWhiteSpace(calibrationDeviceCode)
+                ? (ResultRoutes.Camera, cameraDeviceCode)
+                : (ResultRoutes.Calibration, calibrationDeviceCode);
+        }
 
         private string ResolveSourceFilePath(CVStartCFC action, string imageFilePath)
         {
@@ -337,17 +349,20 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
     [FlowNodePropertyEditorAttribute(nameof(CalibTempName), typeof(FlowCalibrationTemplateEditor))]
     public sealed class LocalCalibrationNode : LocalCalibrationNodeBase
     {
-        public LocalCalibrationNode() : base("本地校正", "LocalCalibration", "Calibration", 120000)
+        public LocalCalibrationNode() : base("本地校正", "LocalCalibration", "Calibration")
         {
         }
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
         {
             using LocalCalibrationExecution execution = ExecuteCalibration(action);
-            int masterId = SaveCalibrationResult(action, execution);
+            MeasureResultImgModel persistedResult = SaveCalibrationResult(action, execution);
+            int masterId = persistedResult.Id;
             execution.Frame.MasterId = masterId;
             action.MasterValue(null, masterId, (int)ViewResultAlgType.Calibration);
             execution.TransferFrameTo(action);
+            (string route, string deviceCode) = ResolveCalibrationResultTarget(persistedResult.DeviceCode ?? string.Empty);
+            ResultMessageBus.Default.PublishPersisted(route, ResultKinds.Image, deviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)ViewResultAlgType.Calibration);
             return new LocalNodeExecutionResult
             {
                 Data = new LocalCalibrationNodeResultData

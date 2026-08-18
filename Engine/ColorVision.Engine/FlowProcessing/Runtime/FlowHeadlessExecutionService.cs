@@ -272,7 +272,7 @@ public sealed class FlowHeadlessExecutionService : IFlowExecutionRunner
         try
         {
             await using var host = new FlowRuntimeHost();
-            CVBaseServerNode[] observedNodes = [];
+            CVCommonNode[] observedNodes = [];
             MQTTServiceInfo[] services =
                 request.CreateServices();
             try
@@ -301,9 +301,9 @@ public sealed class FlowHeadlessExecutionService : IFlowExecutionRunner
                 if (observer != null)
                 {
                     observedNodes = host.Nodes
-                        .OfType<CVBaseServerNode>()
+                        .OfType<CVCommonNode>()
                         .ToArray();
-                    foreach (CVBaseServerNode node in observedNodes)
+                    foreach (CVCommonNode node in observedNodes)
                     {
                         node.nodeRunEvent += observer.OnNodeRun;
                         node.nodeEndEvent += observer.OnNodeEnd;
@@ -333,7 +333,7 @@ public sealed class FlowHeadlessExecutionService : IFlowExecutionRunner
             }
             finally
             {
-                foreach (CVBaseServerNode node in observedNodes)
+                foreach (CVCommonNode node in observedNodes)
                 {
                     node.nodeRunEvent -= observer!.OnNodeRun;
                     node.nodeEndEvent -= observer.OnNodeEnd;

@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using cvColorVision;
@@ -102,7 +103,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Description("查看已缓存的校正文件、内存占用，并可释放本机校正缓存")]
         public RelayCommand OpenLocalCalibrationCacheManagerCommand { get; }
 
-        public LocalCameraNode() : base("本地相机取图", "Camera", "GetData", 60000)
+        public LocalCameraNode() : base("本地相机取图", "Camera", "GetData")
         {
             OpenLocalCameraManagerCommand = new RelayCommand(_ => OpenLocalCameraManager());
             OpenLocalCalibrationCacheManagerCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
@@ -144,12 +145,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             LocalFlowFrame frame = capture.Frame;
             try
             {
-                int masterId = SaveMasterResult(action, frame, capture, cameraParameters, calibration);
+                MeasureResultImgModel persistedResult = SaveMasterResult(action, frame, capture, cameraParameters, calibration);
+                int masterId = persistedResult.Id;
                 frame.MasterId = masterId;
                 action.MasterValue(null, masterId, CameraMasterResultType);
                 action.SetCurrentFrame(frame);
                 LocalFlowFrame currentFrame = frame;
                 frame = null!;
+                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Camera, ResultKinds.Image, persistedResult.DeviceCode ?? string.Empty, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, CameraMasterResultType);
                 LocalCameraNodeResultData result = new()
                 {
                     FrameId = currentFrame.FrameId.ToString("N"),
@@ -177,7 +180,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
 
         protected override string BuildRunPayload(CVStartCFC action)
         {
-            return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = operatorCode, action.SerialNumber, ExpTime, Gain, AvgCount, CalibTempName, FlipMode, AutoConnect, IsAutoExp, SaveFiles });
+            return JsonConvert.SerializeObject(new { ServiceName = NodeName, DeviceCode, EventName = OperatorCode, action.SerialNumber, ExpTime, Gain, AvgCount, CalibTempName, FlipMode, AutoConnect, IsAutoExp, SaveFiles });
         }
 
         private static void EnsureCameraConnected(DeviceCamera device)
@@ -237,7 +240,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 ?? throw new InvalidOperationException($"找不到校正模板：{CalibTempName}");
         }
 
-        private int SaveMasterResult(CVStartCFC action, LocalFlowFrame frame, LocalCameraCaptureResult capture, CameraRunParam? cameraParameters, CalibrationParam? calibration)
+        private MeasureResultImgModel SaveMasterResult(CVStartCFC action, LocalFlowFrame frame, LocalCameraCaptureResult capture, CameraRunParam? cameraParameters, CalibrationParam? calibration)
         {
             MeasureBatchModel batch = BatchResultMasterDao.Instance.GetByNameOrCode(action.SerialNumber)
                 ?? throw new InvalidOperationException($"找不到流程批次：{action.SerialNumber}");
@@ -279,7 +282,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             };
             int masterId = MeasureImgResultDao.Instance.SaveAndReturnId(model);
             if (masterId <= 0) throw new InvalidOperationException("保存本地相机结果记录失败。");
-            return masterId;
+            model.Id = masterId;
+            return model;
         }
 
         private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;

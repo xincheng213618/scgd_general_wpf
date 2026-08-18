@@ -1,6 +1,8 @@
-﻿#pragma warning disable CA1822,CS8604,CS8622,CS8625
+﻿#pragma warning disable CA1822,CS8601,CS8604,CS8622,CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Results;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
@@ -28,7 +30,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private static readonly ILog log = LogManager.GetLogger(typeof(AlgorithmView));
         private bool _isInitialized;
         private bool _isDisposed;
+        private bool _messageSubscribed;
+        private IDisposable? _localResultSubscription;
         private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
+
+        private DeviceAlgorithm? Device { get; }
 
         public ImageView ImageView { get; set; }
 
@@ -36,8 +42,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public TextBox SideTextBox { get; set; }
 
-        public AlgorithmView()
+        public AlgorithmView() : this(null)
         {
+        }
+
+        public AlgorithmView(DeviceAlgorithm? device)
+        {
+            Device = device;
             InitializeComponent();
         }
 
@@ -51,6 +62,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
 
             _isInitialized = true;
+            if (Device != null)
+            {
+                Device.DService.MsgReturnReceived += DeviceService_OnMessageRecved;
+                _messageSubscribed = true;
+                _localResultSubscription = ResultMessageBus.Default.Subscribe(LocalResultPublished);
+            }
             this.DataContext = Config;
             ImageView = new ImageView();
             ListView = listViewSide;
@@ -166,6 +183,52 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 if (Config.AutoSaveSideData)
                     SideSave(ViewResultAlg, Config.SaveSideDataDirPath);
             }
+        }
+
+        private void DeviceService_OnMessageRecved(MsgReturn message)
+        {
+            object? masterIdValue = message.Data?.MasterId;
+            if (_isDisposed
+                || Device == null
+                || Device.IsDisposed
+                || !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal)
+                || masterIdValue == null)
+                return;
+
+            int masterId = Convert.ToInt32(masterIdValue);
+            if (masterId > 0)
+                ShowPersistedResult(masterId);
+        }
+
+        private void LocalResultPublished(ResultMessage message)
+        {
+            if (_isDisposed
+                || Device == null
+                || Device.IsDisposed
+                || message.Route != ResultRoutes.Algorithm
+                || message.ResultKind != ResultKinds.Algorithm
+                || !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal))
+                return;
+
+            ShowPersistedResult(message.Data.MasterId);
+        }
+
+        private void ShowPersistedResult(int masterId)
+        {
+            if (_isDisposed || Device == null || Device.IsDisposed || masterId <= 0) return;
+            AlgResultMasterModel? model = AlgResultMasterDao.Instance.GetById(masterId);
+            if (model == null)
+            {
+                log.Debug($"GetAlgResult By Id is null: {masterId}");
+                return;
+            }
+
+            log.Debug($"FileUrl：{model.ImgFile}");
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                if (!_isDisposed && !Device.IsDisposed)
+                    AddAlgResultMasterModel(model);
+            });
         }
 
         public void RefreshResultListView()
@@ -352,6 +415,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
 
             _isDisposed = true;
+
+            if (_messageSubscribed && Device != null)
+            {
+                Device.DService.MsgReturnReceived -= DeviceService_OnMessageRecved;
+                _messageSubscribed = false;
+            }
+            _localResultSubscription?.Dispose();
+            _localResultSubscription = null;
 
             listView1.SelectionChanged -= listView1_SelectionChanged;
             listView1.PreviewKeyDown -= listView1_PreviewKeyDown;

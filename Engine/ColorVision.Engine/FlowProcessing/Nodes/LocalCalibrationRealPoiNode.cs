@@ -1,4 +1,6 @@
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.POI;
 using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;
@@ -94,7 +96,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             }
         }
 
-        public LocalCalibrationRealPoiNode() : base("本地校正+实时 POI", "LocalCalibrationRealPOI", "Real_POI", 120000, InputPortNames)
+        public LocalCalibrationRealPoiNode() : base("本地校正+实时 POI", "LocalCalibrationRealPOI", "Real_POI", InputPortNames)
         {
         }
 
@@ -120,7 +122,8 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             int poiMasterId = -1;
             try
             {
-                calibrationMasterId = SaveCalibrationResult(action, execution);
+                MeasureResultImgModel persistedCalibration = SaveCalibrationResult(action, execution);
+                calibrationMasterId = persistedCalibration.Id;
                 execution.Frame.MasterId = calibrationMasterId;
 
                 Stopwatch stopwatch = Stopwatch.StartNew();
@@ -132,13 +135,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 stopwatch.Stop();
                 int poiTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(execution.Frame.Metadata.Channels);
+                string algorithmDeviceCode = GetFirstAvailableDeviceCode<DeviceAlgorithm>();
                 poiMasterId = LocalFlowResultPersistence.SaveAlgorithmResult(
                     action,
                     resultType,
                     parameters.Poi.Id,
                     parameters.Poi.Name,
                     execution.Frame.CvCieFilePath,
-                    string.IsNullOrWhiteSpace(DeviceCode) ? execution.Frame.Metadata.DeviceCode : DeviceCode,
+                    algorithmDeviceCode,
                     ZIndex,
                     poiTime,
                     new
@@ -156,6 +160,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 action.Data["LocalCalibrationMasterId"] = calibrationMasterId;
                 action.MasterValue(null, poiMasterId, (int)resultType);
                 execution.TransferFrameTo(action);
+                (string calibrationRoute, string calibrationDeviceCode) = ResolveCalibrationResultTarget(persistedCalibration.DeviceCode ?? string.Empty);
+                ResultMessageBus.Default.PublishPersisted(calibrationRoute, ResultKinds.Image, calibrationDeviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, calibrationMasterId, (int)ViewResultAlgType.Calibration);
+                ResultMessageBus.Default.PublishPersisted(ResultRoutes.Algorithm, ResultKinds.Algorithm, algorithmDeviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, poiMasterId, (int)resultType);
                 return new LocalNodeExecutionResult
                 {
                     Data = new LocalCalibrationRealPoiNodeResultData
@@ -195,7 +202,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
             {
                 ServiceName = NodeName,
                 DeviceCode,
-                EventName = operatorCode,
+                EventName = OperatorCode,
                 action.SerialNumber,
                 ImageFilePath,
                 CalibTempName,

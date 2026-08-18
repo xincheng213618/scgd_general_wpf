@@ -1,68 +1,10 @@
-﻿#pragma warning disable CS8602
-using ColorVision.Database;
-using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using MQTTMessageLib.FileServer;
-using System;
-using System.Windows;
-
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
-
     public class MQTTAlgorithm : MQTTDeviceService<ConfigAlgorithm>
     {
-        private bool _isDisposed;
-
-        public DeviceAlgorithm Device { get; set; }
-
-
-        public MQTTAlgorithm(DeviceAlgorithm device, ConfigAlgorithm Config) : base(Config)
+        public MQTTAlgorithm(ConfigAlgorithm config) : base(config)
         {
-            Device = device;
-            MsgReturnReceived += MQTTAlgorithm_MsgReturnReceived;   
             DeviceStatus = DeviceStatusType.Unknown;
-        }
-
-
-        private void MQTTAlgorithm_MsgReturnReceived(MsgReturn msg)
-        {
-            if (_isDisposed || Device.IsDisposed || msg.DeviceCode != Config.Code) return;
-            switch (msg.EventName)
-            {
-                default:
-                    // 判断 msg.Data 不为 null 并且包含 MasterId 属性
-                    if (msg.Data != null && msg.Data.MasterId != null && msg.Data.MasterId > 0)
-                    {
-                        int masterId = msg.Data.MasterId;
-                        AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(masterId);
-                        if (model != null)
-                        {
-                            log.Debug($"FileUrl：{model.ImgFile}");
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                if (!_isDisposed && !Device.IsDisposed)
-                                    Device.View.AddAlgResultMasterModel(model);
-                            });
-                        }
-                        else
-                        {
-                            log.Debug($"GetImgResult By Id is null: {masterId}");
-                        }
-                    }
-
-
-                    break;
-            }
-        }
-        public override void Dispose()
-        {
-            if (_isDisposed)
-                return;
-
-            _isDisposed = true;
-            MsgReturnReceived = null!;
-            base.Dispose();
-            GC.SuppressFinalize(this);
         }
     }
 }

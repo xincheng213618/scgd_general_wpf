@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Results;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
@@ -11,7 +12,6 @@ using log4net;
 using MQTTMessageLib.Camera;
 using SqlSugar;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -33,6 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
         private int _disposeState;
         private bool _messageSubscribed;
+        private IDisposable? _localResultSubscription;
 
         private bool IsDisposed => Volatile.Read(ref _disposeState) != 0;
 
@@ -71,6 +72,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 Device.DService.MsgReturnReceived += DeviceService_OnMessageRecved;
                 _messageSubscribed = true;
             }
+            _localResultSubscription ??= ResultMessageBus.Default.Subscribe(LocalResultPublished);
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
@@ -126,26 +128,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             {
                 case MQTTCameraEventEnum.Event_GetData:
                     if (arg.Data == null) return;
-                    int masterId = Convert.ToInt32(arg.Data.MasterId);
-                    List<MeasureResultImgModel> resultMaster = null;
-                    if (masterId > 0)
-                    {
-                        resultMaster = new List<MeasureResultImgModel>();
-                        MeasureResultImgModel model = MeasureImgResultDao.Instance.GetById(masterId);
-                        if (model != null)
-                            resultMaster.Add(model);
-                    }
-                    if (resultMaster != null)
-                    {
-                        foreach (MeasureResultImgModel result in resultMaster)
-                        {
-                            Application.Current?.Dispatcher.BeginInvoke(() =>
-                            {
-                                if (IsDisposed) return;
-                                ShowResult(result);
-                            });
-                        }
-                    }
+                    ShowPersistedResult(Convert.ToInt32(arg.Data.MasterId));
                     break;
             }
         }
@@ -188,6 +171,29 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 OpenImage(result.FileUrl);
             else
                 ImageView.Clear();
+        }
+
+        private void LocalResultPublished(ResultMessage message)
+        {
+            if (IsDisposed
+                || message.Route != ResultRoutes.Camera
+                || message.ResultKind != ResultKinds.Image
+                || !string.Equals(message.DeviceCode, Device.Config.Code, StringComparison.Ordinal))
+                return;
+
+            ShowPersistedResult(message.Data.MasterId);
+        }
+
+        private void ShowPersistedResult(int masterId)
+        {
+            if (IsDisposed || masterId <= 0) return;
+            MeasureResultImgModel? model = MeasureImgResultDao.Instance.GetById(masterId);
+            if (model == null) return;
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                if (!IsDisposed)
+                    ShowResult(model);
+            });
         }
 
         private void OpenImage(string? filePath)
@@ -296,6 +302,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 Device.DService.MsgReturnReceived -= DeviceService_OnMessageRecved;
                 _messageSubscribed = false;
             }
+            _localResultSubscription?.Dispose();
+            _localResultSubscription = null;
 
             DetachResultListView(listView1, listView1_SelectionChanged, listView1_PreviewKeyDown);
             ImageView.Dispose();
