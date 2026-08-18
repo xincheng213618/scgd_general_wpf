@@ -991,19 +991,28 @@ public class OperationsActivity extends AppCompatActivity {
         addDashboardWideAction(dashboardPriorityAction);
 
         addDashboardSection("远程操作");
-        addDashboardActionRow(
-                dashboardButton("远程排障", v -> showTriageCenter()),
+        addDashboardInfoCard(OperationsRemoteActionPresentation.scopeNote(false, true));
+        addDashboardTaskGroup(
+                "分析与监控",
+                OperationsRemoteActionPresentation.diagnosticsDescription(false),
+                dashboardTonalButton("远程排障", v -> showTriageCenter()),
                 dashboardButton("持续监控", v -> showLiveMonitor()));
-        addDashboardActionRow(
-                dashboardButton("显示主窗口", v -> runWindowAction("show", "主窗口已显示")),
+        addDashboardTaskGroup(
+                "窗口控制",
+                OperationsRemoteActionPresentation.windowDescription(false),
+                dashboardTonalButton("显示主窗口", v -> runWindowAction("show", "主窗口已显示")),
                 dashboardButton("最小化窗口", v -> confirmMinimizeWindow()));
-        addDashboardActionRow(
-                dashboardButton("恢复消息通道", v -> confirmRecoverMessageChannel()),
-                dashboardRestartApplicationButton = dashboardButton(
+        addDashboardTaskGroup(
+                "恢复与控制",
+                OperationsRemoteActionPresentation.recoveryDescription(false),
+                dashboardTonalButton("恢复消息通道", v -> confirmRecoverMessageChannel()),
+                dashboardRestartApplicationButton = dashboardDestructiveButton(
                         "重启 ColorVision", v -> confirmRestartApplication()));
         dashboardCancelFlowButton = dashboardButton("取消检测（读取中）", v -> confirmCancelCurrentFlow());
         dashboardCancelFlowButton.setEnabled(false);
-        addDashboardActionRow(
+        addDashboardTaskGroup(
+                "检测与连接",
+                "中断当前检测，或调整这台电脑的首选连接方式。",
                 dashboardCancelFlowButton,
                 dashboardButton("连接方式", v -> showConnectionPreference()));
 
@@ -1098,14 +1107,20 @@ public class OperationsActivity extends AppCompatActivity {
                 : OperationsDashboardAdvisor.staleRemoteSnapshot());
 
         addDashboardSection("远程操作");
-        Button showWindow = dashboardButton("显示电脑主窗口", v -> runRemoteTask(
+        addDashboardInfoCard(OperationsRemoteActionPresentation.scopeNote(
+                true, dashboardRemoteHostFresh));
+        Button showWindow = dashboardTonalButton("显示主窗口", v -> runRemoteTask(
                 OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW, new JSONObject()));
         showWindow.setEnabled(canShowWindow);
-        Button minimizeWindow = dashboardButton("最小化电脑主窗口",
+        Button minimizeWindow = dashboardButton("最小化主窗口",
                 v -> confirmRemoteMinimizeWindow());
         minimizeWindow.setEnabled(canMinimizeWindow);
-        addDashboardActionRow(showWindow, minimizeWindow);
-        Button diagnostics = dashboardButton("请求远程诊断", v -> {
+        addDashboardTaskGroup(
+                "窗口控制",
+                OperationsRemoteActionPresentation.windowDescription(true),
+                showWindow,
+                minimizeWindow);
+        Button diagnostics = dashboardTonalButton("请求远程诊断", v -> {
             JSONObject payload = new JSONObject();
             try {
                 payload.put("reason", "Android 运维伴侣远程调试请求");
@@ -1114,19 +1129,27 @@ public class OperationsActivity extends AppCompatActivity {
             runRemoteTask(OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS, payload);
         });
         diagnostics.setEnabled(canRequestDiagnostics);
-        Button messageActions = dashboardButton("消息处置",
+        Button messageActions = dashboardButton("检查消息通道",
                 v -> showLatestRemoteMonitorDetail("message"));
         messageActions.setEnabled(monitor != null
                 && (canRecoverMessageChannel || canRestartMqtt));
-        addDashboardActionRow(diagnostics, messageActions);
+        addDashboardTaskGroup(
+                "诊断与恢复",
+                OperationsRemoteActionPresentation.diagnosticsDescription(true),
+                diagnostics,
+                messageActions);
         if (dashboardRemoteHostFresh) {
             dashboardCancelFlowButton = dashboardButton(
                     "取消检测（读取中）", v -> confirmCancelCurrentFlow());
             dashboardCancelFlowButton.setEnabled(false);
-            dashboardRestartApplicationButton = dashboardButton(
+            dashboardRestartApplicationButton = dashboardDestructiveButton(
                     "重启 ColorVision", v -> confirmRestartApplication());
             dashboardRestartApplicationButton.setEnabled(false);
-            addDashboardActionRow(dashboardCancelFlowButton, dashboardRestartApplicationButton);
+            addDashboardTaskGroup(
+                    "受控恢复",
+                    OperationsRemoteActionPresentation.recoveryDescription(true),
+                    dashboardCancelFlowButton,
+                    dashboardRestartApplicationButton);
         }
 
         if (monitor != null) {
@@ -2269,6 +2292,16 @@ public class OperationsActivity extends AppCompatActivity {
         return button;
     }
 
+    private Button dashboardTonalButton(String label, View.OnClickListener listener) {
+        Button button = new MaterialButton(
+                this, null, com.google.android.material.R.attr.materialButtonTonalStyle);
+        button.setText(label);
+        button.setTextSize(13);
+        button.setAllCaps(false);
+        button.setOnClickListener(listener);
+        return button;
+    }
+
     private Button dashboardDestructiveButton(String label, View.OnClickListener listener) {
         MaterialButton button = (MaterialButton) dashboardButton(label, listener);
         int error = themeManager.errorColor();
@@ -2490,6 +2523,11 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void addDashboardActionRow(Button left, Button right) {
+        actions.addView(createDashboardActionRow(left, right), new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private LinearLayout createDashboardActionRow(Button left, Button right) {
         LinearLayout row = new LinearLayout(this);
         boolean singleColumn = OperationsResponsiveLayout.usesSingleColumn(
                 getResources().getConfiguration().fontScale);
@@ -2508,8 +2546,45 @@ public class OperationsActivity extends AppCompatActivity {
                 : new LinearLayout.LayoutParams(0, dp(48), 1);
         rightParams.setMargins(singleColumn ? 0 : dp(4), 0, 0, dp(4));
         row.addView(right, rightParams);
-        actions.addView(row, new LinearLayout.LayoutParams(
+        return row;
+    }
+
+    private void addDashboardTaskGroup(
+            String heading, String supportingText, Button primaryAction, Button secondaryAction) {
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(16), dp(12), dp(16), dp(8));
+
+        TextView headingView = new TextView(this);
+        headingView.setText(heading);
+        TextViewCompat.setTextAppearance(headingView,
+                com.google.android.material.R.style.TextAppearance_Material3_TitleSmall);
+        headingView.setTextColor(themeManager.primaryTextColor());
+        content.addView(headingView, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        TextView supportingView = new TextView(this);
+        supportingView.setText(supportingText);
+        TextViewCompat.setTextAppearance(supportingView,
+                com.google.android.material.R.style.TextAppearance_Material3_BodySmall);
+        supportingView.setTextColor(themeManager.secondaryTextColor());
+        supportingView.setPadding(0, dp(2), 0, dp(8));
+        content.addView(supportingView, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        content.addView(createDashboardActionRow(primaryAction, secondaryAction),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        MaterialCardView card = new MaterialCardView(this);
+        card.setCardBackgroundColor(themeManager.cardBackgroundColor());
+        card.addView(content, new MaterialCardView.LayoutParams(
+                MaterialCardView.LayoutParams.MATCH_PARENT,
+                MaterialCardView.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, 0, dp(8));
+        actions.addView(card, params);
     }
 
     private void addDashboardSegmentedChoices(
