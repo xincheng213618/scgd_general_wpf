@@ -34,6 +34,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.materialswitch.MaterialSwitch;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.io.File;
 import java.net.ConnectException;
@@ -70,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private int currentTab = TAB_OPERATIONS;
     private boolean cameraPermissionGranted;
     private String lastNotificationPermissionStatus = "";
+    private Snackbar watchPreferenceSnackbar;
     private final RuntimePermissionDialogState notificationPermissionDialogState =
             new RuntimePermissionDialogState();
     private final ExecutorService appUpdateExecutor = Executors.newSingleThreadExecutor();
@@ -558,8 +560,10 @@ public class MainActivity extends AppCompatActivity {
         text.addView(label, matchWidthWrapParams());
 
         boolean enabled = appPreferences.isOperationsWatchUserEnabled();
+        boolean remindersAvailable = operationsRemindersAvailable();
         TextView value = new TextView(this);
-        value.setText(OperationsWatchPreferencePolicy.status(paired, enabled));
+        value.setText(OperationsWatchPreferencePolicy.status(
+                paired, enabled, remindersAvailable));
         TextViewCompat.setTextAppearance(
                 value, com.google.android.material.R.style.TextAppearance_Material3_BodySmall);
         value.setTextColor(mutedTextColor());
@@ -571,9 +575,11 @@ public class MainActivity extends AppCompatActivity {
         toggle.setChecked(enabled);
         toggle.setContentDescription(SettingsRowAccessibility.contentDescription(
                 SettingsInformationArchitecture.OPERATIONS_WATCH,
-                OperationsWatchPreferencePolicy.status(paired, enabled)));
+                OperationsWatchPreferencePolicy.status(
+                        paired, enabled, remindersAvailable)));
         toggle.setOnCheckedChangeListener((button, checked) -> {
-            String status = OperationsWatchPreferencePolicy.status(paired, checked);
+            String status = OperationsWatchPreferencePolicy.status(
+                    paired, checked, operationsRemindersAvailable());
             value.setText(status);
             button.setContentDescription(SettingsRowAccessibility.contentDescription(
                     SettingsInformationArchitecture.OPERATIONS_WATCH, status));
@@ -599,14 +605,31 @@ public class MainActivity extends AppCompatActivity {
         appPreferences.saveOperationsWatchUserEnabled(enabled);
         if (enabled) {
             OperationsWatchService.start(this);
-            Toast.makeText(this, appPreferences.hasOperationsProfile()
-                    ? "持续守护已开启" : "配对电脑后将自动开启持续守护",
-                    Toast.LENGTH_SHORT).show();
+            boolean hasOperationsProfile = appPreferences.hasOperationsProfile();
+            boolean remindersAvailable = operationsRemindersAvailable();
+            showOperationsWatchFeedback(
+                    OperationsWatchPreferencePolicy.enabledFeedback(
+                            hasOperationsProfile, remindersAvailable),
+                    OperationsWatchPreferencePolicy.shouldOfferReminderAction(
+                            hasOperationsProfile, remindersAvailable));
         } else {
             OperationsWatchService.stopForUserPreference(this);
-            Toast.makeText(this, "持续守护已关闭；前台运维仍可使用",
-                    Toast.LENGTH_LONG).show();
+            showOperationsWatchFeedback("持续守护已关闭；前台运维仍可使用", false);
         }
+    }
+
+    private void showOperationsWatchFeedback(String message, boolean offerReminderAction) {
+        if (watchPreferenceSnackbar != null) {
+            watchPreferenceSnackbar.dismiss();
+        }
+        watchPreferenceSnackbar = Snackbar.make(root, message, Snackbar.LENGTH_LONG);
+        if (bottomNavigation != null) {
+            watchPreferenceSnackbar.setAnchorView(bottomNavigation);
+        }
+        if (offerReminderAction) {
+            watchPreferenceSnackbar.setAction("开启提醒", view -> manageNotificationPermission());
+        }
+        watchPreferenceSnackbar.show();
     }
 
     private String cameraPermissionStatus() {
@@ -630,6 +653,14 @@ public class MainActivity extends AppCompatActivity {
                 NotificationPermissionState.attentionChannelEnabled(this),
                 appPreferences.isNotificationPermissionBlocked(),
                 shouldShowNotificationPermissionRationale());
+    }
+
+    private boolean operationsRemindersAvailable() {
+        return NotificationPermissionPolicy.canPostAttention(
+                Build.VERSION.SDK_INT,
+                NotificationPermissionState.hasRuntimePermission(this),
+                NotificationPermissionState.appNotificationsEnabled(this),
+                NotificationPermissionState.attentionChannelEnabled(this));
     }
 
     private boolean shouldShowNotificationPermissionRationale() {

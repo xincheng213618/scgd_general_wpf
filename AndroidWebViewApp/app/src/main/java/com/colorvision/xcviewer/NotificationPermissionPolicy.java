@@ -42,14 +42,14 @@ final class NotificationPermissionPolicy {
                 runtimeRequestBlocked,
                 shouldShowRationale);
         if (action == ACTION_MANAGE) {
-            return "已授权";
+            return "已开启";
         }
         boolean runtimeGranted = androidSdk < 33 || runtimePermissionGranted;
         if (runtimeGranted && appNotificationsEnabled && !attentionChannelEnabled) {
-            return "提醒已关闭";
+            return "提醒渠道已关闭";
         }
         if (action == ACTION_REQUEST) {
-            return "未授权";
+            return "尚未开启";
         }
         return "需在系统设置开启";
     }

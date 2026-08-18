@@ -11,7 +11,7 @@ public class NotificationPermissionPolicyTest {
     public void firstOrDismissedAndroid13RequestStaysUserInitiated() {
         assertEquals(NotificationPermissionPolicy.ACTION_REQUEST,
                 NotificationPermissionPolicy.action(33, false, false, true, false, false));
-        assertEquals("未授权",
+        assertEquals("尚未开启",
                 NotificationPermissionPolicy.status(33, false, false, true, false, false));
     }
 
@@ -29,11 +29,11 @@ public class NotificationPermissionPolicyTest {
     public void grantedPermissionStillSurfacesDisabledAttentionChannel() {
         assertEquals(NotificationPermissionPolicy.ACTION_MANAGE,
                 NotificationPermissionPolicy.action(35, true, true, true, true, false));
-        assertEquals("已授权",
+        assertEquals("已开启",
                 NotificationPermissionPolicy.status(35, true, true, true, true, false));
         assertEquals(NotificationPermissionPolicy.ACTION_OPEN_SETTINGS,
                 NotificationPermissionPolicy.action(35, true, true, false, true, false));
-        assertEquals("提醒已关闭",
+        assertEquals("提醒渠道已关闭",
                 NotificationPermissionPolicy.status(35, true, true, false, true, false));
     }
 
