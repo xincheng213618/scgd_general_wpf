@@ -47,6 +47,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.SSLHandshakeException;
 
@@ -56,6 +57,8 @@ public class OperationsActivity extends Activity {
     private static final int REQUEST_QR_SCAN = 2406;
     private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
     private static final long CONNECTION_HEARTBEAT_MILLISECONDS = 30_000L;
+    private static final int FLEET_CONNECT_TIMEOUT_MILLISECONDS = 3_500;
+    private static final int FLEET_READ_TIMEOUT_MILLISECONDS = 5_000;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -69,6 +72,7 @@ public class OperationsActivity extends Activity {
     private int liveMonitorGeneration;
     private final OperationsLiveMonitorTrend liveMonitorTrend = new OperationsLiveMonitorTrend();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService fleetExecutor = Executors.newFixedThreadPool(3);
     private final Handler supportRefreshHandler = new Handler(Looper.getMainLooper());
     private final Runnable supportRefresh = () -> {
         if (activityResumed && supportCenterVisible && supportAutoRefresh) {
@@ -117,6 +121,8 @@ public class OperationsActivity extends Activity {
     private boolean connectionHeartbeatInFlight;
     private int connectionRequestGeneration;
     private int remoteTaskGeneration;
+    private int fleetCheckGeneration;
+    private boolean fleetCheckInFlight;
     private String pendingOperationsDestination = "";
 
     @Override
@@ -495,6 +501,8 @@ public class OperationsActivity extends Activity {
         addDashboardActionRow(
                 dashboardButton("运行现场连接自检", v -> runConnectionSelfCheck()),
                 dashboardButton("移除配对资料", v -> confirmClearProfile()));
+        addDashboardWideAction(dashboardButton(
+                "巡检全部电脑（只读）", v -> refreshAllOperationsProfiles()));
         addDashboardSection("电脑总览");
         List<OperationsProfileRegistry.Profile> profiles = preferences.getOperationsProfiles();
         long nowMilliseconds = System.currentTimeMillis();
@@ -535,6 +543,179 @@ public class OperationsActivity extends Activity {
                 + summary);
         button.setEnabled(profile.revoked || !current);
         return button;
+    }
+
+    private void refreshAllOperationsProfiles() {
+        if (fleetCheckInFlight) {
+            Toast.makeText(this, "电脑巡检正在进行", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        List<OperationsProfileRegistry.Profile> targets = new ArrayList<>();
+        for (OperationsProfileRegistry.Profile profile : preferences.getOperationsProfiles()) {
+            if (!profile.revoked) {
+                targets.add(profile);
+            }
+        }
+        if (targets.isEmpty()) {
+            Toast.makeText(this, "没有可巡检的配对电脑", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        fleetCheckInFlight = true;
+        int generation = ++fleetCheckGeneration;
+        String activeHostBefore = preferences.getOperationsHostId();
+        int total = targets.size();
+        AtomicInteger completed = new AtomicInteger();
+        AtomicInteger reachable = new AtomicInteger();
+        AtomicInteger offline = new AtomicInteger();
+        AtomicInteger revoked = new AtomicInteger();
+        setBusy("正在巡检 0 / " + total + " 台电脑…");
+        title.setText("巡检电脑总览");
+        details.setText("只读取每台电脑的脱敏聚合状态；最多并行检查 3 台，使用各自的设备密钥、证书固定和连接偏好。巡检不会切换当前操作目标，也不会执行远程动作。");
+
+        for (OperationsProfileRegistry.Profile profile : targets) {
+            fleetExecutor.execute(() -> {
+                FleetCheckResult result = checkOperationsProfile(profile);
+                long checkedAt = System.currentTimeMillis();
+                preferences.recordOperationsProfileWatchState(
+                        profile.hostId, result.state, checkedAt);
+                if (result.revoked) {
+                    clearRemoteWindowSnapshotSecrets(profile.hostId);
+                    preferences.markOperationsProfileRevoked(profile.hostId);
+                    revoked.incrementAndGet();
+                } else if (result.reachable) {
+                    reachable.incrementAndGet();
+                } else {
+                    offline.incrementAndGet();
+                }
+                completed.incrementAndGet();
+                runOnUiThread(() -> completeFleetCheckProgress(
+                        generation, activeHostBefore, completed.get(), total,
+                        reachable.get(), offline.get(), revoked.get()));
+            });
+        }
+    }
+
+    private FleetCheckResult checkOperationsProfile(
+            OperationsProfileRegistry.Profile profile) {
+        boolean relayFirst = OperationsConnectionPreference.prefersRelay(
+                profile.connectionPreference);
+        try {
+            return relayFirst ? checkRelayOperationsProfile(profile)
+                    : checkLocalOperationsProfile(profile);
+        } catch (Exception firstException) {
+            if (isRevokedException(firstException)) {
+                return FleetCheckResult.revoked();
+            }
+        }
+        try {
+            return relayFirst ? checkLocalOperationsProfile(profile)
+                    : checkRelayOperationsProfile(profile);
+        } catch (Exception secondException) {
+            return isRevokedException(secondException)
+                    ? FleetCheckResult.revoked() : FleetCheckResult.offline();
+        }
+    }
+
+    private FleetCheckResult checkLocalOperationsProfile(
+            OperationsProfileRegistry.Profile profile) throws Exception {
+        OperationsApiClient profileClient = new OperationsApiClient(
+                profile.endpoint,
+                profile.certificatePin,
+                preferences.getOrCreateDeviceId(),
+                new OperationsDeviceIdentity(profile.hostId),
+                FLEET_CONNECT_TIMEOUT_MILLISECONDS,
+                FLEET_READ_TIMEOUT_MILLISECONDS);
+        JSONObject response = profileClient.get("/ops/v1/monitor");
+        JSONObject monitor = response.optJSONObject("data");
+        if (monitor == null) {
+            throw new IllegalStateException("incomplete_live_monitor_response");
+        }
+        return FleetCheckResult.reachable(OperationsMonitorClassifier.watchState(
+                monitor, OperationsWatchHistory.STATE_ONLINE));
+    }
+
+    private FleetCheckResult checkRelayOperationsProfile(
+            OperationsProfileRegistry.Profile profile) throws Exception {
+        OperationsRelayApiClient profileClient = new OperationsRelayApiClient(
+                profile.hostId,
+                preferences.getOrCreateDeviceId(),
+                profile.certificatePin,
+                new OperationsDeviceIdentity(profile.hostId),
+                FLEET_CONNECT_TIMEOUT_MILLISECONDS,
+                FLEET_READ_TIMEOUT_MILLISECONDS);
+        JSONObject response = profileClient.getSnapshot();
+        JSONObject host = response.optJSONObject("host");
+        if (host == null) {
+            throw new IllegalStateException("incomplete_relay_snapshot");
+        }
+        boolean fresh = OperationsRelayPolicy.isHostFresh(
+                host.optLong("signedAt", 0L), System.currentTimeMillis());
+        if (!fresh) {
+            return FleetCheckResult.reachable(
+                    OperationsWatchHistory.STATE_REMOTE_WAITING);
+        }
+        JSONObject snapshot = host.optJSONObject("snapshot");
+        JSONObject monitor = snapshot == null ? null : snapshot.optJSONObject("monitor");
+        return FleetCheckResult.reachable(monitor == null
+                ? OperationsWatchHistory.STATE_REMOTE_ONLINE
+                : OperationsMonitorClassifier.watchState(
+                        monitor, OperationsWatchHistory.STATE_REMOTE_ONLINE));
+    }
+
+    private void completeFleetCheckProgress(
+            int generation,
+            String activeHostBefore,
+            int completed,
+            int total,
+            int reachable,
+            int offline,
+            int revoked) {
+        if (generation != fleetCheckGeneration || isFinishing() || isDestroyed()) {
+            return;
+        }
+        if (!fleetCheckInFlight) {
+            return;
+        }
+        state.setText("正在巡检 " + completed + " / " + total + " 台电脑…");
+        if (completed < total) {
+            return;
+        }
+        fleetCheckInFlight = false;
+        boolean activeChanged = !activeHostBefore.equals(preferences.getOperationsHostId());
+        if (activeChanged) {
+            resetOperationsClientsForProfileChange();
+            OperationsWatchService.restartForProfileChange(this);
+        }
+        showConnectionPreference();
+        Toast.makeText(this,
+                "巡检完成：已确认 " + reachable + " 台 · 暂不可达 " + offline
+                        + " 台 · 授权失效 " + revoked + " 台",
+                Toast.LENGTH_LONG).show();
+    }
+
+    private static final class FleetCheckResult {
+        final String state;
+        final boolean reachable;
+        final boolean revoked;
+
+        FleetCheckResult(String state, boolean reachable, boolean revoked) {
+            this.state = state;
+            this.reachable = reachable;
+            this.revoked = revoked;
+        }
+
+        static FleetCheckResult reachable(String state) {
+            return new FleetCheckResult(state, true, false);
+        }
+
+        static FleetCheckResult offline() {
+            return new FleetCheckResult(OperationsWatchHistory.STATE_OFFLINE, false, false);
+        }
+
+        static FleetCheckResult revoked() {
+            return new FleetCheckResult(OperationsWatchHistory.STATE_REVOKED, false, true);
+        }
     }
 
     private String operationsProfileLabel(
@@ -1880,7 +2061,7 @@ public class OperationsActivity extends Activity {
         connectionRequestGeneration++;
         String revokedHostId = preferences.getOperationsHostId();
         clearRemoteWindowSnapshotSecrets(revokedHostId);
-        preferences.markOperationsProfileRevoked();
+        preferences.markOperationsProfileRevoked(revokedHostId);
         refreshOperationsTargetPresentation();
         OperationsWatchService.stopForProfileRemoval(this);
         showError("配对授权已失效", "这台电脑已撤销设备授权；其他已配对电脑不会受影响。",
@@ -4998,10 +5179,12 @@ public class OperationsActivity extends Activity {
     protected void onDestroy() {
         connectionRequestGeneration++;
         remoteTaskGeneration++;
+        fleetCheckGeneration++;
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         leaveSupportCenter();
         leaveLiveMonitor();
         executor.shutdownNow();
+        fleetExecutor.shutdownNow();
         super.onDestroy();
     }
 }

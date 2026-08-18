@@ -23,18 +23,37 @@ import java.util.UUID;
 
 final class OperationsRelayApiClient {
     private static final int MAXIMUM_RESPONSE_CHARACTERS = 128 * 1024;
+    private static final int DEFAULT_CONNECT_TIMEOUT_MILLISECONDS = 7_000;
+    private static final int DEFAULT_READ_TIMEOUT_MILLISECONDS = 12_000;
 
     private final String endpoint;
     private final String hostId;
     private final String deviceId;
     private final String certificatePin;
     private final OperationsDeviceIdentity identity;
+    private final int connectTimeoutMilliseconds;
+    private final int readTimeoutMilliseconds;
 
     OperationsRelayApiClient(
             String hostId,
             String deviceId,
             String certificatePin,
             OperationsDeviceIdentity identity) throws Exception {
+        this(hostId, deviceId, certificatePin, identity,
+                DEFAULT_CONNECT_TIMEOUT_MILLISECONDS, DEFAULT_READ_TIMEOUT_MILLISECONDS);
+    }
+
+    OperationsRelayApiClient(
+            String hostId,
+            String deviceId,
+            String certificatePin,
+            OperationsDeviceIdentity identity,
+            int connectTimeoutMilliseconds,
+            int readTimeoutMilliseconds) throws Exception {
+        if (connectTimeoutMilliseconds < 1_000 || connectTimeoutMilliseconds > 30_000
+                || readTimeoutMilliseconds < 1_000 || readTimeoutMilliseconds > 30_000) {
+            throw new IllegalArgumentException("invalid_relay_timeout");
+        }
         if (!OperationsRelayPolicy.isSafeIdentifier(hostId)
                 || !OperationsRelayPolicy.isSafeIdentifier(deviceId)) {
             throw new SecurityException("invalid_relay_identity");
@@ -48,6 +67,8 @@ final class OperationsRelayApiClient {
             throw new SecurityException("invalid_host_certificate_pin");
         }
         this.identity = identity;
+        this.connectTimeoutMilliseconds = connectTimeoutMilliseconds;
+        this.readTimeoutMilliseconds = readTimeoutMilliseconds;
     }
 
     JSONObject getSnapshot() throws Exception {
@@ -304,8 +325,8 @@ final class OperationsRelayApiClient {
         try {
             connection.setInstanceFollowRedirects(false);
             connection.setRequestMethod("POST");
-            connection.setConnectTimeout(7_000);
-            connection.setReadTimeout(12_000);
+            connection.setConnectTimeout(connectTimeoutMilliseconds);
+            connection.setReadTimeout(readTimeoutMilliseconds);
             connection.setUseCaches(false);
             connection.setDoOutput(true);
             connection.setRequestProperty("Accept", "application/json");

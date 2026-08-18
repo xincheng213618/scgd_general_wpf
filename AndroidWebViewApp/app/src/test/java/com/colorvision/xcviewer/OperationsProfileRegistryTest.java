@@ -44,11 +44,11 @@ public class OperationsProfileRegistryTest {
         OperationsProfileRegistry.State state = OperationsProfileRegistry.empty()
                 .upsert("https://192.168.1.21:5800", PIN, "host_1")
                 .updateConnectionPreference(OperationsConnectionPreference.RELAY)
-                .updateWatchHistory("history_1", 101L)
+                .updateWatchHistory("host_1", "history_1", 101L)
                 .updateRelayTask("task_1", OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW,
                         "idem_1")
                 .upsert("https://192.168.1.22:5800", "b".repeat(64), "host_2")
-                .updateWatchHistory("history_2", 202L);
+                .updateWatchHistory("host_2", "history_2", 202L);
         state = OperationsProfileRegistry.parse(OperationsProfileRegistry.serialize(state));
 
         assertEquals("host_2", state.active().hostId);
@@ -71,7 +71,7 @@ public class OperationsProfileRegistryTest {
         OperationsProfileRegistry.State state = OperationsProfileRegistry.empty()
                 .upsert("https://192.168.1.21:5800", PIN, "host_1")
                 .upsert("https://192.168.1.22:5800", "b".repeat(64), "host_2")
-                .updateWatchHistory("history_2", 303L);
+                .updateWatchHistory("host_2", "history_2", 303L);
 
         OperationsProfileRegistry.State revoked = state.revoke("host_2");
         assertEquals("host_1", revoked.activeHostId);
@@ -84,6 +84,22 @@ public class OperationsProfileRegistryTest {
         assertEquals("host_1", removed.activeHostId);
         assertEquals(1, removed.profiles.size());
         assertTrue(removed.remove("host_1").profiles.isEmpty());
+    }
+
+    @Test
+    public void fleetChecksUpdateInactiveComputerWithoutChangingTheTarget() {
+        OperationsProfileRegistry.State state = OperationsProfileRegistry.empty()
+                .upsert("https://192.168.1.21:5800", PIN, "host_1")
+                .upsert("https://192.168.1.22:5800", "b".repeat(64), "host_2")
+                .updateWatchHistory("host_1", "history_1", 404L);
+
+        assertEquals("host_2", state.activeHostId);
+        assertEquals(404L, state.select("host_1").active().watchCheckedAt);
+        assertEquals(0L, state.active().watchCheckedAt);
+
+        OperationsProfileRegistry.State revokedInactive = state.revoke("host_1");
+        assertEquals("host_2", revokedInactive.activeHostId);
+        assertTrue(revokedInactive.profiles.get(0).revoked);
     }
 
     @Test

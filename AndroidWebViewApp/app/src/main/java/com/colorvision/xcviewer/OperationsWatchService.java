@@ -299,7 +299,9 @@ public final class OperationsWatchService extends Service {
         if (snapshot == null) {
             throw new IllegalStateException("incomplete_live_monitor_response");
         }
-        return new LocalCheck(notificationStatus(snapshot), notificationAttentionKey(snapshot));
+        return new LocalCheck(
+                OperationsMonitorClassifier.status(snapshot),
+                OperationsMonitorClassifier.attentionKey(snapshot));
     }
 
     private RelayCheck readRelayCheck() throws Exception {
@@ -318,8 +320,8 @@ public final class OperationsWatchService extends Service {
         }
         return new RelayCheck(
                 true,
-                notificationStatus(monitor),
-                notificationAttentionKey(monitor));
+                OperationsMonitorClassifier.status(monitor),
+                OperationsMonitorClassifier.attentionKey(monitor));
     }
 
     private static boolean isRevoked(String code) {
@@ -393,7 +395,8 @@ public final class OperationsWatchService extends Service {
             Log.i(LOG_TAG, "operations_watch_online");
         }
         lastCheckOnline = true;
-        preferences.recordOperationsWatchState(
+        preferences.recordOperationsProfileWatchState(
+                preferences.getOperationsHostId(),
                 attentionKey.isEmpty()
                         ? OperationsWatchHistory.STATE_ONLINE
                         : OperationsWatchHistory.attentionState(attentionKey),
@@ -423,7 +426,8 @@ public final class OperationsWatchService extends Service {
                 : check.hostFresh
                         ? OperationsWatchHistory.STATE_REMOTE_ONLINE
                         : OperationsWatchHistory.STATE_REMOTE_WAITING;
-        preferences.recordOperationsWatchState(relayState, System.currentTimeMillis());
+        preferences.recordOperationsProfileWatchState(
+                preferences.getOperationsHostId(), relayState, System.currentTimeMillis());
         String status = check.hostFresh
                 ? check.status.isEmpty()
                         ? "固定中继在线 · 电脑已连接"
@@ -449,11 +453,13 @@ public final class OperationsWatchService extends Service {
         checkInFlight = false;
         hasCompletedCheck = true;
         if (code.contains("unknown_or_revoked_device")) {
+            String revokedHostId = preferences.getOperationsHostId();
             String revokedLabel = preferences.getActiveOperationsProfileLabel();
             clearRemoteWindowSnapshotSecrets();
-            preferences.recordOperationsWatchState(
-                    OperationsWatchHistory.STATE_REVOKED, System.currentTimeMillis());
-            preferences.markOperationsProfileRevoked();
+            preferences.recordOperationsProfileWatchState(
+                    revokedHostId, OperationsWatchHistory.STATE_REVOKED,
+                    System.currentTimeMillis());
+            preferences.markOperationsProfileRevoked(revokedHostId);
             Log.w(LOG_TAG, "operations_watch_pairing_revoked");
             clearAttentionNotification();
             if (preferences.hasOperationsProfile()) {
@@ -474,8 +480,9 @@ public final class OperationsWatchService extends Service {
             Log.w(LOG_TAG, "operations_watch_offline retry_seconds=" + (retryDelay / 1000L));
         }
         lastCheckOnline = false;
-        preferences.recordOperationsWatchState(
-                OperationsWatchHistory.STATE_OFFLINE, System.currentTimeMillis());
+        preferences.recordOperationsProfileWatchState(
+                preferences.getOperationsHostId(), OperationsWatchHistory.STATE_OFFLINE,
+                System.currentTimeMillis());
         updateNotification("连接暂断 · " + (retryDelay / 1000L) + " 秒后重试", true);
         if (notifyOffline) {
             postAttentionNotification(OperationsWatchPolicy.ATTENTION_OFFLINE);
@@ -509,42 +516,6 @@ public final class OperationsWatchService extends Service {
 
     private static String errorCode(Exception exception) {
         return exception.getMessage() == null ? "" : exception.getMessage();
-    }
-
-    private String notificationStatus(JSONObject snapshot) {
-        JSONObject flow = snapshot.optJSONObject("flow");
-        JSONObject performance = snapshot.optJSONObject("performance");
-        JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
-        JSONObject alerts = snapshot.optJSONObject("alerts");
-        JSONObject devices = snapshot.optJSONObject("devices");
-        JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
-        return OperationsWatchPolicy.healthyStatus(
-                mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable"),
-                flow != null && flow.optBoolean("isActive", false),
-                alerts == null ? 0 : alerts.optInt("criticalCount", 0),
-                alerts == null ? 0 : alerts.optInt("errorCount", 0),
-                devices == null || !devices.optBoolean("available", false)
-                        ? 0 : devices.optInt("attentionCount", 0),
-                messageChannel != null
-                        && messageChannel.optBoolean("available", false)
-                        && messageChannel.optBoolean("attentionRequired", false));
-    }
-
-    private String notificationAttentionKey(JSONObject snapshot) {
-        JSONObject performance = snapshot.optJSONObject("performance");
-        JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
-        JSONObject alerts = snapshot.optJSONObject("alerts");
-        JSONObject devices = snapshot.optJSONObject("devices");
-        JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
-        return OperationsWatchPolicy.attentionKey(
-                mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable"),
-                alerts == null ? 0 : alerts.optInt("criticalCount", 0),
-                alerts == null ? 0 : alerts.optInt("errorCount", 0),
-                devices == null || !devices.optBoolean("available", false)
-                        ? 0 : devices.optInt("attentionCount", 0),
-                messageChannel != null
-                        && messageChannel.optBoolean("available", false)
-                        && messageChannel.optBoolean("attentionRequired", false));
     }
 
     private void scheduleNext(long delayMilliseconds) {

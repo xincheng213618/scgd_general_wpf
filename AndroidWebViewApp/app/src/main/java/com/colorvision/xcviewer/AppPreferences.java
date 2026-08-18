@@ -199,10 +199,9 @@ final class AppPreferences {
         }
     }
 
-    void markOperationsProfileRevoked() {
+    void markOperationsProfileRevoked(String hostId) {
         synchronized (OPERATIONS_PROFILE_LOCK) {
-            OperationsProfileRegistry.State state = readOperationsProfiles();
-            writeOperationsProfiles(state.revoke(state.activeHostId));
+            writeOperationsProfiles(readOperationsProfiles().revoke(hostId));
         }
     }
 
@@ -218,22 +217,29 @@ final class AppPreferences {
                 profile == null ? "" : profile.watchHistory, nowMilliseconds);
     }
 
-    boolean recordOperationsWatchState(String state, long nowMilliseconds) {
+    boolean recordOperationsProfileWatchState(
+            String hostId, String state, long nowMilliseconds) {
         synchronized (OPERATIONS_PROFILE_LOCK) {
             OperationsProfileRegistry.State profiles = readOperationsProfiles();
-            OperationsProfileRegistry.Profile active = profiles.active();
-            if (active == null) {
+            OperationsProfileRegistry.Profile profile = null;
+            for (OperationsProfileRegistry.Profile candidate : profiles.profiles) {
+                if (candidate.hostId.equals(hostId)) {
+                    profile = candidate;
+                    break;
+                }
+            }
+            if (profile == null) {
                 return false;
             }
-            String previousHistory = active.watchHistory;
+            String previousHistory = profile.watchHistory;
             OperationsWatchHistory.Transition transition = OperationsWatchHistory.transition(
                     previousHistory, state, nowMilliseconds);
             if (!transition.currentState.isEmpty()
                     && (transition.changed
                     || !transition.serializedHistory.equals(previousHistory)
-                    || active.watchCheckedAt != nowMilliseconds)) {
+                    || profile.watchCheckedAt != nowMilliseconds)) {
                 writeOperationsProfiles(profiles.updateWatchHistory(
-                        transition.serializedHistory, nowMilliseconds));
+                        hostId, transition.serializedHistory, nowMilliseconds));
             }
             return transition.changed;
         }

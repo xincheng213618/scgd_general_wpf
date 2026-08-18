@@ -220,9 +220,9 @@ final class OperationsProfileRegistry {
             return profile == null ? this : replace(profile.withLabel(label));
         }
 
-        State updateWatchHistory(String value, long checkedAt) {
-            Profile active = active();
-            return active == null ? this : replace(active.withWatchHistory(value, checkedAt));
+        State updateWatchHistory(String hostId, String value, long checkedAt) {
+            Profile profile = find(profiles, hostId);
+            return profile == null ? this : replace(profile.withWatchHistory(value, checkedAt));
         }
 
         State updateRelayTask(String taskId, String capabilityId, String idempotencyKey) {

@@ -22,17 +22,39 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 final class OperationsApiClient {
+    private static final int DEFAULT_CONNECT_TIMEOUT_MILLISECONDS = 7_000;
+    private static final int DEFAULT_READ_TIMEOUT_MILLISECONDS = 10_000;
+
     private final String endpoint;
     private final String certificatePin;
     private final String deviceId;
     private final OperationsDeviceIdentity identity;
     private final SSLContext sslContext;
+    private final int connectTimeoutMilliseconds;
+    private final int readTimeoutMilliseconds;
 
     OperationsApiClient(String endpoint, String certificatePin, String deviceId, OperationsDeviceIdentity identity) throws Exception {
+        this(endpoint, certificatePin, deviceId, identity,
+                DEFAULT_CONNECT_TIMEOUT_MILLISECONDS, DEFAULT_READ_TIMEOUT_MILLISECONDS);
+    }
+
+    OperationsApiClient(
+            String endpoint,
+            String certificatePin,
+            String deviceId,
+            OperationsDeviceIdentity identity,
+            int connectTimeoutMilliseconds,
+            int readTimeoutMilliseconds) throws Exception {
+        if (connectTimeoutMilliseconds < 1_000 || connectTimeoutMilliseconds > 30_000
+                || readTimeoutMilliseconds < 1_000 || readTimeoutMilliseconds > 30_000) {
+            throw new IllegalArgumentException("invalid_operations_timeout");
+        }
         this.endpoint = endpoint.replaceAll("/+$", "");
         this.certificatePin = certificatePin.toLowerCase(Locale.ROOT);
         this.deviceId = deviceId;
         this.identity = identity;
+        this.connectTimeoutMilliseconds = connectTimeoutMilliseconds;
+        this.readTimeoutMilliseconds = readTimeoutMilliseconds;
         sslContext = SSLContext.getInstance("TLS");
         sslContext.init(null, new TrustManager[]{new PinnedTrustManager(this.certificatePin)}, new SecureRandom());
     }
@@ -116,8 +138,8 @@ final class OperationsApiClient {
         connection.setSSLSocketFactory(sslContext.getSocketFactory());
         connection.setHostnameVerifier((hostname, session) -> hostname.equalsIgnoreCase(url.getHost()));
         connection.setRequestMethod(method);
-        connection.setConnectTimeout(7000);
-        connection.setReadTimeout(10000);
+        connection.setConnectTimeout(connectTimeoutMilliseconds);
+        connection.setReadTimeout(readTimeoutMilliseconds);
         connection.setUseCaches(false);
         connection.setRequestProperty("Accept", "application/json");
         connection.setRequestProperty("X-Correlation-Id", java.util.UUID.randomUUID().toString());
