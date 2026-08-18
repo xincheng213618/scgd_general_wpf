@@ -11,7 +11,7 @@ import static org.junit.Assert.assertFalse;
 public class SettingsInformationArchitectureTest {
     @Test
     public void sectionsFollowTheMaterialSettingsHierarchy() {
-        assertEquals(Arrays.asList("电脑连接", "权限", "应用"),
+        assertEquals(Arrays.asList("电脑连接", "后台运行", "权限", "应用"),
                 SettingsInformationArchitecture.sectionHeadings());
     }
 
@@ -21,6 +21,7 @@ public class SettingsInformationArchitectureTest {
                         "现场运维",
                         "安全通道",
                         "添加电脑",
+                        "持续守护",
                         "通知权限",
                         "相机权限",
                         "主题模式",
@@ -33,7 +34,8 @@ public class SettingsInformationArchitectureTest {
         List<String> rows = SettingsInformationArchitecture.visibleRows(false);
 
         assertEquals("连接电脑", rows.get(2));
-        assertEquals("通知权限", rows.get(3));
+        assertEquals("持续守护", rows.get(3));
+        assertEquals("通知权限", rows.get(4));
         assertFalse(rows.stream().anyMatch(label -> label.contains("音乐")));
         assertFalse(rows.stream().anyMatch(label -> label.contains("下载站")));
         assertFalse(rows.stream().anyMatch(label -> label.contains("网络权限")));

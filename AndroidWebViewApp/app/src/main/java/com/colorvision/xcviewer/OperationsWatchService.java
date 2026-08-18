@@ -63,7 +63,9 @@ public final class OperationsWatchService extends Service {
 
     static void start(Context context) {
         AppPreferences preferences = new AppPreferences(context);
-        if (!preferences.hasOperationsProfile()) {
+        if (!OperationsWatchPreferencePolicy.shouldRun(
+                preferences.hasOperationsProfile(),
+                preferences.isOperationsWatchUserEnabled())) {
             return;
         }
         Intent intent = new Intent(context, OperationsWatchService.class).setAction(ACTION_START);
@@ -71,6 +73,14 @@ public final class OperationsWatchService extends Service {
     }
 
     static void stopForProfileRemoval(Context context) {
+        stopAndClearNotifications(context);
+    }
+
+    static void stopForUserPreference(Context context) {
+        stopAndClearNotifications(context);
+    }
+
+    private static void stopAndClearNotifications(Context context) {
         context.stopService(new Intent(context, OperationsWatchService.class));
         NotificationManager manager = context.getSystemService(NotificationManager.class);
         if (manager != null) {
@@ -80,7 +90,9 @@ public final class OperationsWatchService extends Service {
 
     static void refreshConnectionPreference(Context context) {
         AppPreferences preferences = new AppPreferences(context);
-        if (!preferences.hasOperationsProfile()) {
+        if (!OperationsWatchPreferencePolicy.shouldRun(
+                preferences.hasOperationsProfile(),
+                preferences.isOperationsWatchUserEnabled())) {
             return;
         }
         Intent intent = new Intent(context, OperationsWatchService.class)
@@ -107,7 +119,9 @@ public final class OperationsWatchService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (!preferences.hasOperationsProfile()) {
+        if (!OperationsWatchPreferencePolicy.shouldRun(
+                preferences.hasOperationsProfile(),
+                preferences.isOperationsWatchUserEnabled())) {
             stopMonitoring(true);
             return START_NOT_STICKY;
         }

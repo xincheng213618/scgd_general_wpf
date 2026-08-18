@@ -36,6 +36,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
+import com.google.android.material.materialswitch.MaterialSwitch;
 
 import java.io.File;
 import java.net.ConnectException;
@@ -85,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         appPreferences = new AppPreferences(this);
+        OperationsWatchService.start(this);
         cameraPermissionGranted = hasCameraPermission();
         lastNotificationPermissionStatus = notificationPermissionStatus();
         int startTab = consumeStartTab(getIntent());
@@ -223,7 +225,7 @@ public class MainActivity extends AppCompatActivity {
         nav.setBackgroundColor(bottomNavBackgroundColor());
         nav.setLabelVisibilityMode(BottomNavigationView.LABEL_VISIBILITY_LABELED);
         nav.getMenu().add(0, NAV_OPERATIONS, 0, "运维").setIcon(R.drawable.ic_devices_24);
-        nav.getMenu().add(0, NAV_SETTINGS, 1, "设置").setIcon(R.drawable.ic_person_24);
+        nav.getMenu().add(0, NAV_SETTINGS, 1, "设置").setIcon(R.drawable.ic_settings_24);
         nav.setOnItemSelectedListener(item -> {
             if (updatingBottomNavigation) {
                 return true;
@@ -388,11 +390,17 @@ public class MainActivity extends AppCompatActivity {
                         : SettingsInformationArchitecture.CONNECT_COMPUTER,
                 "扫描二维码", v -> startQrScan(), false);
 
+        LinearLayout backgroundSection = makeSettingsSection();
+        addSettingsSection(content, SettingsInformationArchitecture.BACKGROUND_SECTION,
+                backgroundSection);
+        addOperationsWatchSwitchRow(backgroundSection, paired, true);
+        addSettingsRow(backgroundSection,
+                SettingsInformationArchitecture.NOTIFICATION_PERMISSION,
+                notificationPermissionStatus(), v -> manageNotificationPermission(), false);
+
         LinearLayout permissionSection = makeSettingsSection();
         addSettingsSection(content, SettingsInformationArchitecture.PERMISSION_SECTION,
                 permissionSection);
-        addSettingsRow(permissionSection, SettingsInformationArchitecture.NOTIFICATION_PERMISSION,
-                notificationPermissionStatus(), v -> manageNotificationPermission(), true);
         addSettingsRow(permissionSection, SettingsInformationArchitecture.CAMERA_PERMISSION,
                 cameraPermissionStatus(), v -> startQrScan(), false);
 
@@ -497,6 +505,77 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         startActivityForResult(new Intent(this, QrScanActivity.class), REQUEST_QR_SCAN);
+    }
+
+    private void addOperationsWatchSwitchRow(
+            LinearLayout parent, boolean paired, boolean showDivider) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(22), 0, dp(18), 0);
+        row.setMinimumHeight(dp(64));
+        row.setBackgroundColor(cardBackgroundColor());
+
+        LinearLayout text = new LinearLayout(this);
+        text.setOrientation(LinearLayout.VERTICAL);
+        text.setGravity(Gravity.CENTER_VERTICAL);
+        TextView label = new TextView(this);
+        label.setText(SettingsInformationArchitecture.OPERATIONS_WATCH);
+        TextViewCompat.setTextAppearance(
+                label, com.google.android.material.R.style.TextAppearance_Material3_BodyLarge);
+        label.setTextColor(primaryTextColor());
+        text.addView(label, matchWidthWrapParams());
+
+        boolean enabled = appPreferences.isOperationsWatchUserEnabled();
+        TextView value = new TextView(this);
+        value.setText(OperationsWatchPreferencePolicy.status(paired, enabled));
+        TextViewCompat.setTextAppearance(
+                value, com.google.android.material.R.style.TextAppearance_Material3_BodySmall);
+        value.setTextColor(mutedTextColor());
+        text.addView(value, matchWidthWrapParams());
+        row.addView(text, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+        MaterialSwitch toggle = new MaterialSwitch(this);
+        toggle.setChecked(enabled);
+        toggle.setContentDescription(SettingsRowAccessibility.contentDescription(
+                SettingsInformationArchitecture.OPERATIONS_WATCH,
+                OperationsWatchPreferencePolicy.status(paired, enabled)));
+        toggle.setOnCheckedChangeListener((button, checked) -> {
+            String status = OperationsWatchPreferencePolicy.status(paired, checked);
+            value.setText(status);
+            button.setContentDescription(SettingsRowAccessibility.contentDescription(
+                    SettingsInformationArchitecture.OPERATIONS_WATCH, status));
+            setOperationsWatchEnabled(checked);
+        });
+        row.addView(toggle, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+        row.setOnClickListener(view -> toggle.performClick());
+        parent.addView(row, matchWidthWrapParams());
+
+        if (showDivider) {
+            View divider = new View(this);
+            divider.setBackgroundColor(dividerColor());
+            LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, 1);
+            dividerParams.setMargins(dp(22), 0, 0, 0);
+            parent.addView(divider, dividerParams);
+        }
+    }
+
+    private void setOperationsWatchEnabled(boolean enabled) {
+        appPreferences.saveOperationsWatchUserEnabled(enabled);
+        if (enabled) {
+            OperationsWatchService.start(this);
+            Toast.makeText(this, appPreferences.hasOperationsProfile()
+                    ? "持续守护已开启" : "配对电脑后将自动开启持续守护",
+                    Toast.LENGTH_SHORT).show();
+        } else {
+            OperationsWatchService.stopForUserPreference(this);
+            Toast.makeText(this, "持续守护已关闭；前台运维仍可使用",
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     private String cameraPermissionStatus() {

@@ -29,6 +29,8 @@ final class AppPreferences {
     private static final String KEY_OPERATIONS_CONNECTION_PREFERENCE =
             "operations_connection_preference";
     private static final String KEY_OPERATIONS_PROFILE_REVOKED = "operations_profile_revoked";
+    private static final String KEY_OPERATIONS_WATCH_USER_ENABLED =
+            "operations_watch_user_enabled_v2";
     private static final String KEY_LEGACY_OPERATIONS_WATCH_ENABLED = "operations_watch_enabled";
     private static final String KEY_LEGACY_OPERATIONS_WATCH_STATE = "operations_watch_state";
     private static final String KEY_OPERATIONS_WATCH_HISTORY = "operations_watch_history";
@@ -96,6 +98,14 @@ final class AppPreferences {
 
     void saveNotificationPermissionBlocked() {
         preferences.edit().putBoolean(KEY_NOTIFICATION_PERMISSION_BLOCKED, true).apply();
+    }
+
+    boolean isOperationsWatchUserEnabled() {
+        return preferences.getBoolean(KEY_OPERATIONS_WATCH_USER_ENABLED, true);
+    }
+
+    void saveOperationsWatchUserEnabled(boolean enabled) {
+        preferences.edit().putBoolean(KEY_OPERATIONS_WATCH_USER_ENABLED, enabled).apply();
     }
 
     private void clearLegacyAudioAccess(Context context) {

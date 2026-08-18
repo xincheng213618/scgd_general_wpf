@@ -326,7 +326,7 @@ public class OperationsActivity extends AppCompatActivity {
         navigation.setBackgroundColor(themeManager.bottomNavBackgroundColor());
         navigation.setLabelVisibilityMode(BottomNavigationView.LABEL_VISIBILITY_LABELED);
         navigation.getMenu().add(0, NAV_OPERATIONS, 0, "运维").setIcon(R.drawable.ic_devices_24);
-        navigation.getMenu().add(0, NAV_SETTINGS, 1, "设置").setIcon(R.drawable.ic_person_24);
+        navigation.getMenu().add(0, NAV_SETTINGS, 1, "设置").setIcon(R.drawable.ic_settings_24);
         navigation.setOnItemSelectedListener(item -> {
             if (item.getItemId() == NAV_OPERATIONS) {
                 return true;
