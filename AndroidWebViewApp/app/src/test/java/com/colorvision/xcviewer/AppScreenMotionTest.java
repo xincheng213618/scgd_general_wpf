@@ -8,33 +8,51 @@ import static org.junit.Assert.assertTrue;
 
 public class AppScreenMotionTest {
     private static final int OPERATIONS = 0;
+    private static final int TOOLS = 1;
     private static final int SETTINGS = 2;
 
     @Test
     public void settingsUsesForwardMotionFromOperations() {
         assertEquals(
                 AppScreenMotion.DIRECTION_FORWARD,
-                AppScreenMotion.directionBetween(OPERATIONS, SETTINGS, OPERATIONS, SETTINGS));
+                AppScreenMotion.directionBetween(
+                        OPERATIONS, SETTINGS, OPERATIONS, TOOLS, SETTINGS));
     }
 
     @Test
     public void operationsUsesBackwardMotionFromSettings() {
         assertEquals(
                 AppScreenMotion.DIRECTION_BACKWARD,
-                AppScreenMotion.directionBetween(SETTINGS, OPERATIONS, OPERATIONS, SETTINGS));
+                AppScreenMotion.directionBetween(
+                        SETTINGS, OPERATIONS, OPERATIONS, TOOLS, SETTINGS));
+    }
+
+    @Test
+    public void toolsUsesItsPositionBetweenOperationsAndSettings() {
+        assertEquals(
+                AppScreenMotion.DIRECTION_FORWARD,
+                AppScreenMotion.directionBetween(
+                        OPERATIONS, TOOLS, OPERATIONS, TOOLS, SETTINGS));
+        assertEquals(
+                AppScreenMotion.DIRECTION_BACKWARD,
+                AppScreenMotion.directionBetween(
+                        SETTINGS, TOOLS, OPERATIONS, TOOLS, SETTINGS));
     }
 
     @Test
     public void reselectingOrUnknownDestinationsDoNotAnimate() {
         assertEquals(
                 AppScreenMotion.DIRECTION_NONE,
-                AppScreenMotion.directionBetween(OPERATIONS, OPERATIONS, OPERATIONS, SETTINGS));
+                AppScreenMotion.directionBetween(
+                        OPERATIONS, OPERATIONS, OPERATIONS, TOOLS, SETTINGS));
         assertEquals(
                 AppScreenMotion.DIRECTION_NONE,
-                AppScreenMotion.directionBetween(SETTINGS, SETTINGS, OPERATIONS, SETTINGS));
+                AppScreenMotion.directionBetween(
+                        SETTINGS, SETTINGS, OPERATIONS, TOOLS, SETTINGS));
         assertEquals(
                 AppScreenMotion.DIRECTION_NONE,
-                AppScreenMotion.directionBetween(OPERATIONS, 1, OPERATIONS, SETTINGS));
+                AppScreenMotion.directionBetween(
+                        OPERATIONS, 9, OPERATIONS, TOOLS, SETTINGS));
     }
 
     @Test

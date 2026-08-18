@@ -69,14 +69,16 @@ public class OperationsActivity extends AppCompatActivity {
     static final String EXTRA_OPEN_DESTINATION = "operations_open_destination";
     private static final String STATE_DESTINATION = "operations_destination";
     private static final String STATE_RETURN_TO_TRIAGE = "operations_return_to_triage";
+    private static final String STATE_RETURN_TO_TOOLBOX = "operations_return_to_toolbox";
     private static final int REQUEST_QR_SCAN = 2406;
     private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
     private static final long CONNECTION_HEARTBEAT_MILLISECONDS = 30_000L;
     private static final int FLEET_CONNECT_TIMEOUT_MILLISECONDS = 3_500;
     private static final int FLEET_READ_TIMEOUT_MILLISECONDS = 5_000;
     private static final int NAV_OPERATIONS = 2001;
-    private static final int NAV_SETTINGS = 2002;
-    private static final int MENU_REFRESH_DASHBOARD = 2003;
+    private static final int NAV_TOOLS = 2002;
+    private static final int NAV_SETTINGS = 2003;
+    private static final int MENU_REFRESH_DASHBOARD = 2004;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -161,6 +163,8 @@ public class OperationsActivity extends AppCompatActivity {
     private String currentDestination = OperationsDestinationState.OVERVIEW;
     private String pendingRestoredDestination = "";
     private boolean returnToTriageOnBack;
+    private boolean returnToToolboxOnBack;
+    private boolean updatingBottomNavigation;
     private boolean pairingApprovalWaiting;
     private long pairingApprovalDeadlineMilliseconds;
     private volatile int pairingRequestGeneration;
@@ -191,6 +195,8 @@ public class OperationsActivity extends AppCompatActivity {
         currentDestination = restoredDestination;
         returnToTriageOnBack = restoring
                 && savedInstanceState.getBoolean(STATE_RETURN_TO_TRIAGE, false);
+        returnToToolboxOnBack = restoring
+                && savedInstanceState.getBoolean(STATE_RETURN_TO_TOOLBOX, false);
         if (OperationsDestinationState.shouldRestore(restoredDestination)) {
             pendingRestoredDestination = restoredDestination;
         }
@@ -380,9 +386,28 @@ public class OperationsActivity extends AppCompatActivity {
         navigation.setBackgroundColor(themeManager.bottomNavBackgroundColor());
         navigation.setLabelVisibilityMode(BottomNavigationView.LABEL_VISIBILITY_LABELED);
         navigation.getMenu().add(0, NAV_OPERATIONS, 0, "运维").setIcon(R.drawable.ic_devices_24);
-        navigation.getMenu().add(0, NAV_SETTINGS, 1, "设置").setIcon(R.drawable.ic_settings_24);
+        navigation.getMenu().add(0, NAV_TOOLS, 1, "工具").setIcon(R.drawable.ic_build_24);
+        navigation.getMenu().add(0, NAV_SETTINGS, 2, "设置").setIcon(R.drawable.ic_settings_24);
+        navigation.setSelectedItemId(NAV_OPERATIONS);
         navigation.setOnItemSelectedListener(item -> {
+            if (updatingBottomNavigation) {
+                return true;
+            }
             if (item.getItemId() == NAV_OPERATIONS) {
+                showCurrentDashboard();
+                return true;
+            }
+            if (item.getItemId() == NAV_TOOLS) {
+                if (preferences == null || !preferences.hasOperationsProfile()) {
+                    return false;
+                }
+                if (remoteDashboard) {
+                    Snackbar.make(dashboardContent,
+                            "运维工具需要与电脑现场安全直连",
+                            Snackbar.LENGTH_LONG).show();
+                    return false;
+                }
+                showOperationsToolboxPage();
                 return true;
             }
             if (item.getItemId() == NAV_SETTINGS) {
@@ -394,9 +419,14 @@ public class OperationsActivity extends AppCompatActivity {
         navigation.setOnItemReselectedListener(item -> {
             if (item.getItemId() == NAV_OPERATIONS) {
                 returnToOperationsOverview();
+            } else if (item.getItemId() == NAV_TOOLS) {
+                if (OperationsDestinationState.TOOLS.equals(currentDestination)) {
+                    scrollDashboardToTop();
+                } else {
+                    showOperationsToolboxPage();
+                }
             }
         });
-        navigation.setSelectedItemId(NAV_OPERATIONS);
         return navigation;
     }
 
@@ -426,12 +456,34 @@ public class OperationsActivity extends AppCompatActivity {
         return true;
     }
 
+    private String operationsDetailBackLabel() {
+        if (returnToTriageOnBack) {
+            return "返回远程排障中心";
+        }
+        if (returnToToolboxOnBack) {
+            return "返回运维工具";
+        }
+        return "返回现场运维概览";
+    }
+
+    private void returnFromOperationsDetail() {
+        if (returnToTriageCenter()) {
+            return;
+        }
+        if (returnToToolboxOnBack) {
+            showOperationsToolboxPage();
+            return;
+        }
+        showCurrentDashboard();
+    }
+
     private boolean navigateUpWithinOperations() {
         if (!OperationsInPageNavigationPolicy.showsNavigateUp(
                 preferences != null && preferences.hasOperationsProfile(),
                 dashboardVisible,
                 currentDestination,
                 returnToTriageOnBack,
+                returnToToolboxOnBack,
                 showingDashboardSummary,
                 connectionRecoveryVisible)) {
             return false;
@@ -439,6 +491,7 @@ public class OperationsActivity extends AppCompatActivity {
         String parent = OperationsInPageNavigationPolicy.activeParentDestination(
                 currentDestination,
                 returnToTriageOnBack,
+                returnToToolboxOnBack,
                 showingDashboardSummary,
                 connectionRecoveryVisible);
         if (OperationsDestinationState.CONNECTIONS.equals(parent)) {
@@ -449,8 +502,13 @@ public class OperationsActivity extends AppCompatActivity {
             showTriageCenter();
             return true;
         }
+        if (OperationsDestinationState.TOOLS.equals(parent)) {
+            showOperationsToolboxPage();
+            return true;
+        }
         if (OperationsDestinationState.OVERVIEW.equals(parent)) {
             returnToTriageOnBack = false;
+            returnToToolboxOnBack = false;
             showCurrentDashboard();
             return true;
         }
@@ -467,6 +525,7 @@ public class OperationsActivity extends AppCompatActivity {
         }
         connectionCheckGeneration++;
         returnToTriageOnBack = false;
+        returnToToolboxOnBack = false;
         showCurrentDashboard();
         return true;
     }
@@ -1386,13 +1445,17 @@ public class OperationsActivity extends AppCompatActivity {
     private void setCurrentDestination(String destination) {
         String normalized = OperationsDestinationState.normalize(destination);
         int direction = OperationsInPageNavigationPolicy.motionDirection(
-                currentDestination, normalized, returnToTriageOnBack);
+                currentDestination,
+                normalized,
+                returnToTriageOnBack,
+                returnToToolboxOnBack);
         AppScreenMotion.beginContentTransition(dashboardContent, direction);
         currentDestination = normalized;
         if (detailsCard != null) {
             detailsCard.setVisibility(OperationsDestinationState.TRIAGE.equals(normalized)
                     ? View.GONE : View.VISIBLE);
         }
+        syncBottomNavigation();
         refreshOperationsHeaderNavigation();
     }
 
@@ -1421,6 +1484,7 @@ public class OperationsActivity extends AppCompatActivity {
                 dashboardVisible,
                 currentDestination,
                 returnToTriageOnBack,
+                returnToToolboxOnBack,
                 showingDashboardSummary,
                 connectionRecoveryVisible);
         if (showNavigateUp) {
@@ -1429,6 +1493,7 @@ public class OperationsActivity extends AppCompatActivity {
                     OperationsInPageNavigationPolicy.navigateUpLabel(
                             currentDestination,
                             returnToTriageOnBack,
+                            returnToToolboxOnBack,
                             showingDashboardSummary,
                             connectionRecoveryVisible));
         } else {
@@ -1544,8 +1609,9 @@ public class OperationsActivity extends AppCompatActivity {
         if (restorePendingDestination(true)) {
             return;
         }
-        setCurrentDestination(OperationsDestinationState.OVERVIEW);
         returnToTriageOnBack = false;
+        returnToToolboxOnBack = false;
+        setCurrentDestination(OperationsDestinationState.OVERVIEW);
         setDashboardVisible(true);
         setShowingDashboardSummary(true);
         progress.setVisibility(View.GONE);
@@ -1650,26 +1716,47 @@ public class OperationsActivity extends AppCompatActivity {
             case OperationsDashboardShortcutPresentation.ACTION_MONITOR:
                 showLiveMonitor();
                 return;
+            case OperationsDashboardShortcutPresentation.ACTION_CONNECTION_CHECK:
+                runConnectionSelfCheck();
+                return;
             case OperationsDashboardShortcutPresentation.ACTION_CONNECTIONS:
                 showConnectionPreference();
-                return;
-            case OperationsDashboardShortcutPresentation.ACTION_TOOLBOX:
-                showOperationsToolbox();
                 return;
             default:
                 return;
         }
     }
 
-    private void showOperationsToolbox() {
-        OperationsToolboxBottomSheet.show(
+    private void showOperationsToolboxPage() {
+        scrollDashboardToTop();
+        refreshOperationsTargetPresentation();
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        returnToTriageOnBack = false;
+        returnToToolboxOnBack = false;
+        setConnectionRecoveryVisible(false);
+        setCurrentDestination(OperationsDestinationState.TOOLS);
+        setDashboardVisible(true);
+        setShowingDashboardSummary(false);
+        progress.setVisibility(View.GONE);
+        title.setTitle("运维工具");
+        OperationsToolboxPresentation.ViewModel toolbox =
+                OperationsToolboxPresentation.create();
+        state.setText(getString(R.string.operations_toolbox_count, toolbox.actionCount()));
+        details.setText("按任务分组。只读项目可直接打开；恢复、取证和支持动作仍会在执行前确认。");
+        actions.removeAllViews();
+        OperationsToolboxContent.addTo(
                 this,
                 themeManager,
-                OperationsToolboxPresentation.create(),
+                actions,
+                toolbox,
                 this::runOperationsToolboxAction);
+        scheduleConnectionHeartbeat();
     }
 
     private void runOperationsToolboxAction(String actionId) {
+        returnToTriageOnBack = false;
+        returnToToolboxOnBack = true;
         switch (actionId) {
             case OperationsToolboxPresentation.ACTION_SERVICES_HEALTH:
                 loadCapability("/ops/v1/services/health");
@@ -1723,8 +1810,9 @@ public class OperationsActivity extends AppCompatActivity {
         if (restorePendingDestination(false)) {
             return;
         }
-        setCurrentDestination(OperationsDestinationState.OVERVIEW);
         returnToTriageOnBack = false;
+        returnToToolboxOnBack = false;
+        setCurrentDestination(OperationsDestinationState.OVERVIEW);
         setDashboardVisible(true);
         setShowingDashboardSummary(true);
         progress.setVisibility(View.GONE);
@@ -2531,6 +2619,9 @@ public class OperationsActivity extends AppCompatActivity {
             case OperationsDestinationState.CONNECTIONS:
                 showConnectionPreference();
                 return true;
+            case OperationsDestinationState.TOOLS:
+                showOperationsToolboxPage();
+                return true;
             case OperationsDestinationState.CONNECTION_CHECK:
                 runConnectionSelfCheck();
                 return true;
@@ -2577,13 +2668,32 @@ public class OperationsActivity extends AppCompatActivity {
         if (destination.isEmpty() || client == null) {
             return false;
         }
+        if (remoteDashboard
+                && !OperationsDestinationState.OVERVIEW.equals(destination)
+                && !OperationsDestinationState.TOOLS.equals(destination)) {
+            return false;
+        }
         pendingOperationsDestination = "";
+        if (OperationsDestinationState.OVERVIEW.equals(destination)) {
+            showCurrentDashboard();
+            return true;
+        }
         if (OperationsWatchPolicy.DESTINATION_TRIAGE.equals(destination)) {
             showTriageCenter();
             return true;
         }
         if (OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK.equals(destination)) {
             runConnectionSelfCheck();
+            return true;
+        }
+        if (OperationsDestinationState.TOOLS.equals(destination)) {
+            if (remoteDashboard) {
+                Snackbar.make(dashboardContent,
+                        "运维工具需要与电脑现场安全直连",
+                        Snackbar.LENGTH_LONG).show();
+                return false;
+            }
+            showOperationsToolboxPage();
             return true;
         }
         return false;
@@ -2621,8 +2731,8 @@ public class OperationsActivity extends AppCompatActivity {
         actions.addView(share, actionParams());
 
         Button back = new MaterialButton(this);
-        back.setText("返回现场运维概览");
-        back.setOnClickListener(v -> showCurrentDashboard());
+        back.setText(operationsDetailBackLabel());
+        back.setOnClickListener(v -> returnFromOperationsDetail());
         actions.addView(back, actionParams());
     }
 
@@ -2823,7 +2933,7 @@ public class OperationsActivity extends AppCompatActivity {
         super.onNewIntent(intent);
         setIntent(intent);
         acceptOperationsDestination(intent);
-        if (!remoteDashboard && client != null && preferences.hasOperationsProfile()) {
+        if (client != null && preferences.hasOperationsProfile()) {
             openPendingOperationsDestination();
         }
     }
@@ -2832,8 +2942,11 @@ public class OperationsActivity extends AppCompatActivity {
         if (intent == null) {
             return;
         }
-        String destination = OperationsWatchPolicy.normalizeDestination(
-                intent.getStringExtra(EXTRA_OPEN_DESTINATION));
+        String requestedDestination = intent.getStringExtra(EXTRA_OPEN_DESTINATION);
+        String destination = OperationsDestinationState.TOOLS.equals(requestedDestination)
+                || OperationsDestinationState.OVERVIEW.equals(requestedDestination)
+                ? requestedDestination
+                : OperationsWatchPolicy.normalizeDestination(requestedDestination);
         intent.removeExtra(EXTRA_OPEN_DESTINATION);
         if (!destination.isEmpty()) {
             pendingOperationsDestination = destination;
@@ -3944,12 +4057,8 @@ public class OperationsActivity extends AppCompatActivity {
         actions.addView(refresh, actionParams());
 
         Button back = new MaterialButton(this);
-        back.setText(returnToTriageOnBack ? "返回远程排障中心" : "返回现场运维概览");
-        back.setOnClickListener(v -> {
-            if (!returnToTriageCenter()) {
-                showDashboard();
-            }
-        });
+        back.setText(operationsDetailBackLabel());
+        back.setOnClickListener(v -> returnFromOperationsDetail());
         actions.addView(back, actionParams());
     }
 
@@ -4597,8 +4706,8 @@ public class OperationsActivity extends AppCompatActivity {
         actions.addView(refresh, actionParams());
 
         Button back = new MaterialButton(this);
-        back.setText("返回现场运维概览");
-        back.setOnClickListener(v -> showDashboard());
+        back.setText(operationsDetailBackLabel());
+        back.setOnClickListener(v -> returnFromOperationsDetail());
         actions.addView(back, actionParams());
         scheduleSupportRefresh();
     }
@@ -6190,12 +6299,19 @@ public class OperationsActivity extends AppCompatActivity {
     @Override
     protected void onRestart() {
         super.onRestart();
-        selectOperationsTab();
+        syncBottomNavigation();
     }
 
-    private void selectOperationsTab() {
-        if (bottomNavigation != null) {
-            bottomNavigation.setSelectedItemId(NAV_OPERATIONS);
+    private void syncBottomNavigation() {
+        if (bottomNavigation == null) {
+            return;
+        }
+        int destination = OperationsDestinationState.TOOLS.equals(currentDestination)
+                || returnToToolboxOnBack ? NAV_TOOLS : NAV_OPERATIONS;
+        if (bottomNavigation.getSelectedItemId() != destination) {
+            updatingBottomNavigation = true;
+            bottomNavigation.setSelectedItemId(destination);
+            updatingBottomNavigation = false;
         }
     }
 
@@ -6242,13 +6358,14 @@ public class OperationsActivity extends AppCompatActivity {
         outState.putString(STATE_DESTINATION,
                 OperationsDestinationState.normalize(currentDestination));
         outState.putBoolean(STATE_RETURN_TO_TRIAGE, returnToTriageOnBack);
+        outState.putBoolean(STATE_RETURN_TO_TOOLBOX, returnToToolboxOnBack);
         super.onSaveInstanceState(outState);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        selectOperationsTab();
+        syncBottomNavigation();
         activityResumed = true;
         refreshOperationsTargetPresentation();
         if (preferences != null && preferences.hasOperationsProfile()) {

@@ -50,8 +50,10 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_INSTALL_PERMISSION = 1004;
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1005;
     private static final int NAV_OPERATIONS = 2001;
-    private static final int NAV_SETTINGS = 2002;
+    private static final int NAV_TOOLS = 2002;
+    private static final int NAV_SETTINGS = 2003;
     static final int TAB_OPERATIONS = 0;
+    static final int TAB_TOOLS = 1;
     static final int TAB_SETTINGS = 2;
 
     private FrameLayout root;
@@ -89,7 +91,12 @@ public class MainActivity extends AppCompatActivity {
         int restoredTab = restoring
                 ? savedInstanceState.getInt(STATE_CURRENT_TAB, -1) : -1;
         int startTab = AppNavigationPolicy.resolveCreationTab(
-                restoring, restoredTab, requestedTab, TAB_OPERATIONS, TAB_SETTINGS);
+                restoring,
+                restoredTab,
+                requestedTab,
+                TAB_OPERATIONS,
+                TAB_TOOLS,
+                TAB_SETTINGS);
         openedFromOperations = restoring
                 ? savedInstanceState.getBoolean(
                         STATE_OPENED_FROM_OPERATIONS,
@@ -99,8 +106,11 @@ public class MainActivity extends AppCompatActivity {
             AppScreenMotion.configureSettingsActivity(this);
         }
         if (AppNavigationPolicy.shouldOpenOperationsDirectly(
-                appPreferences.hasOperationsProfile(), startTab == TAB_OPERATIONS)) {
-            openOperationsDirectly();
+                appPreferences.hasOperationsProfile(),
+                startTab == TAB_OPERATIONS || startTab == TAB_TOOLS)) {
+            openOperationsDirectly(startTab == TAB_TOOLS
+                    ? OperationsDestinationState.TOOLS
+                    : OperationsDestinationState.OVERVIEW);
             return;
         }
         themeManager = new ThemeManager(this, appPreferences);
@@ -229,13 +239,18 @@ public class MainActivity extends AppCompatActivity {
         nav.setBackgroundColor(bottomNavBackgroundColor());
         nav.setLabelVisibilityMode(BottomNavigationView.LABEL_VISIBILITY_LABELED);
         nav.getMenu().add(0, NAV_OPERATIONS, 0, "运维").setIcon(R.drawable.ic_devices_24);
-        nav.getMenu().add(0, NAV_SETTINGS, 1, "设置").setIcon(R.drawable.ic_settings_24);
+        nav.getMenu().add(0, NAV_TOOLS, 1, "工具").setIcon(R.drawable.ic_build_24);
+        nav.getMenu().add(0, NAV_SETTINGS, 2, "设置").setIcon(R.drawable.ic_settings_24);
         nav.setOnItemSelectedListener(item -> {
             if (updatingBottomNavigation) {
                 return true;
             }
             if (item.getItemId() == NAV_OPERATIONS) {
                 showOperationsLanding();
+                return true;
+            }
+            if (item.getItemId() == NAV_TOOLS) {
+                showToolsLanding();
                 return true;
             }
             if (item.getItemId() == NAV_SETTINGS) {
@@ -252,7 +267,8 @@ public class MainActivity extends AppCompatActivity {
         if (bottomNavigation == null) {
             return;
         }
-        int itemId = tab == TAB_SETTINGS ? NAV_SETTINGS : NAV_OPERATIONS;
+        int itemId = tab == TAB_SETTINGS
+                ? NAV_SETTINGS : tab == TAB_TOOLS ? NAV_TOOLS : NAV_OPERATIONS;
         if (bottomNavigation.getSelectedItemId() != itemId) {
             updatingBottomNavigation = true;
             bottomNavigation.setSelectedItemId(itemId);
@@ -267,12 +283,17 @@ public class MainActivity extends AppCompatActivity {
                 requestedTab,
                 appPreferences.consumeStartTab(TAB_OPERATIONS),
                 TAB_OPERATIONS,
+                TAB_TOOLS,
                 TAB_SETTINGS);
     }
 
     private void showInitialTab(int startTab) {
         if (startTab == TAB_SETTINGS) {
             showProfileView();
+            return;
+        }
+        if (startTab == TAB_TOOLS) {
+            showToolsLanding();
             return;
         }
         showOperationsLanding();
@@ -288,8 +309,11 @@ public class MainActivity extends AppCompatActivity {
             AppScreenMotion.configureSettingsActivity(this);
         }
         if (AppNavigationPolicy.shouldOpenOperationsDirectly(
-                appPreferences.hasOperationsProfile(), startTab == TAB_OPERATIONS)) {
-            openOperationsDirectly();
+                appPreferences.hasOperationsProfile(),
+                startTab == TAB_OPERATIONS || startTab == TAB_TOOLS)) {
+            openOperationsDirectly(startTab == TAB_TOOLS
+                    ? OperationsDestinationState.TOOLS
+                    : OperationsDestinationState.OVERVIEW);
             return;
         }
         showInitialTab(startTab);
@@ -300,11 +324,12 @@ public class MainActivity extends AppCompatActivity {
                 currentTab,
                 TAB_OPERATIONS,
                 TAB_OPERATIONS,
+                TAB_TOOLS,
                 TAB_SETTINGS);
         if (appPreferences.hasOperationsProfile()) {
             if (openedFromOperations
                     && direction == AppScreenMotion.DIRECTION_BACKWARD) {
-                AppScreenMotion.finishBackward(this);
+                openOperationsDirectly(OperationsDestinationState.OVERVIEW);
                 return;
             }
             openOperations();
@@ -322,6 +347,37 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private ScrollView createOperationsLandingContent() {
+        return createPairingLandingContent(
+                "连接运维电脑",
+                "扫描电脑端“设置 > 局域网控制”中的短时安全配对码。完成一次配对后，运维伴侣会成为首屏并持续守护安全连接。");
+    }
+
+    private void showToolsLanding() {
+        int direction = AppScreenMotion.directionBetween(
+                currentTab,
+                TAB_TOOLS,
+                TAB_OPERATIONS,
+                TAB_TOOLS,
+                TAB_SETTINGS);
+        if (appPreferences.hasOperationsProfile()) {
+            openOperationsDirectly(OperationsDestinationState.TOOLS);
+            return;
+        }
+        AppScreenMotion.beginContentTransition(setupContainer, direction);
+        selectTab(TAB_TOOLS);
+        headerTitle.setText("运维工具");
+        headerSubtitle.setText("连接电脑后使用");
+        setupContainer.removeAllViews();
+        setupContainer.addView(createPairingLandingContent(
+                "先连接运维电脑",
+                "完成安全配对后，可使用诊断、恢复、取证、审批与支持工具。所有高风险动作仍需明确确认。"),
+                matchParentParams());
+        setupContainer.setVisibility(View.VISIBLE);
+        appShell.setVisibility(View.VISIBLE);
+        progressBar.setVisibility(View.GONE);
+    }
+
+    private ScrollView createPairingLandingContent(String title, String description) {
         ScrollView scrollView = new ScrollView(this);
         scrollView.setFillViewport(true);
         scrollView.setBackgroundColor(pageBackgroundColor());
@@ -335,9 +391,9 @@ public class MainActivity extends AppCompatActivity {
 
         LinearLayout operationsCard = makeCard();
         content.addView(operationsCard, fullWidthCardParams());
-        operationsCard.addView(makeTitle("连接运维电脑", 22), matchWidthWrapParams());
+        operationsCard.addView(makeTitle(title, 22), matchWidthWrapParams());
 
-        TextView status = makeBodyText("扫描电脑端“设置 > 局域网控制”中的短时安全配对码。完成一次配对后，运维伴侣会成为首屏并持续守护安全连接。");
+        TextView status = makeBodyText(description);
         status.setPadding(0, dp(8), 0, dp(4));
         operationsCard.addView(status, matchWidthWrapParams());
 
@@ -357,6 +413,7 @@ public class MainActivity extends AppCompatActivity {
                 currentTab,
                 TAB_SETTINGS,
                 TAB_OPERATIONS,
+                TAB_TOOLS,
                 TAB_SETTINGS);
         AppScreenMotion.beginContentTransition(setupContainer, direction);
         selectTab(TAB_SETTINGS);
@@ -1025,10 +1082,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openOperationsDirectly() {
+        openOperationsDirectly(OperationsDestinationState.OVERVIEW);
+    }
+
+    private void openOperationsDirectly(String destination) {
         OperationsWatchService.start(this);
-        startActivity(new Intent(this, OperationsActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
-        finish();
+        Intent intent = new Intent(this, OperationsActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.putExtra(OperationsActivity.EXTRA_OPEN_DESTINATION, destination);
+        startActivity(intent);
+        if (openedFromOperations) {
+            AppScreenMotion.finishBackward(this);
+        } else {
+            finish();
+        }
     }
 
     private void saveAndOpen(String rawContent) {
@@ -1041,6 +1108,11 @@ public class MainActivity extends AppCompatActivity {
             OperationsPairingPayload.parse(text);
             Intent operations = new Intent(this, OperationsActivity.class);
             operations.putExtra(OperationsActivity.EXTRA_PAIRING_PAYLOAD, text);
+            if (currentTab == TAB_TOOLS) {
+                operations.putExtra(
+                        OperationsActivity.EXTRA_OPEN_DESTINATION,
+                        OperationsDestinationState.TOOLS);
+            }
             startActivity(operations);
             finish();
         } catch (Exception ex) {

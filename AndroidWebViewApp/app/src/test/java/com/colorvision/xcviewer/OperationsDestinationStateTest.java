@@ -11,6 +11,8 @@ public class OperationsDestinationStateTest {
     public void knownDestinationsSurviveSystemStateRoundTrip() {
         assertEquals(OperationsDestinationState.CONNECTIONS,
                 OperationsDestinationState.normalize("connections"));
+        assertEquals(OperationsDestinationState.TOOLS,
+                OperationsDestinationState.normalize("tools"));
         assertEquals(OperationsDestinationState.CONNECTION_CHECK,
                 OperationsDestinationState.normalize("connection_check"));
         assertEquals(OperationsDestinationState.FLEET_ISSUES,
@@ -38,6 +40,8 @@ public class OperationsDestinationStateTest {
         assertTrue(OperationsDestinationState.shouldRestore(
                 OperationsDestinationState.CONNECTION_CHECK));
         assertTrue(OperationsDestinationState.shouldRestore(
+                OperationsDestinationState.TOOLS));
+        assertTrue(OperationsDestinationState.shouldRestore(
                 OperationsDestinationState.HISTORY));
     }
 
@@ -45,6 +49,8 @@ public class OperationsDestinationStateTest {
     public void activeRemoteToolsRestoreOnlyAfterDirectConnectionReturns() {
         assertTrue(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.TRIAGE));
+        assertTrue(OperationsDestinationState.requiresDirectConnection(
+                OperationsDestinationState.TOOLS));
         assertTrue(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.JOBS));
         assertTrue(OperationsDestinationState.requiresDirectConnection(

@@ -10,26 +10,29 @@ public class OperationsInPageNavigationPolicyTest {
     @Test
     public void topAppBarUsesTheNearestMeaningfulParent() {
         assertEquals(OperationsDestinationState.OVERVIEW,
-                OperationsInPageNavigationPolicy.parentDestination(
-                        OperationsDestinationState.CONNECTIONS, false));
+                parent(OperationsDestinationState.CONNECTIONS, false, false));
         assertEquals(OperationsDestinationState.CONNECTIONS,
-                OperationsInPageNavigationPolicy.parentDestination(
-                        OperationsDestinationState.CONNECTION_CHECK, false));
+                parent(OperationsDestinationState.CONNECTION_CHECK, false, false));
         assertEquals(OperationsDestinationState.CONNECTIONS,
-                OperationsInPageNavigationPolicy.parentDestination(
-                        OperationsDestinationState.FLEET_ISSUES, false));
+                parent(OperationsDestinationState.FLEET_ISSUES, false, false));
         assertEquals(OperationsDestinationState.TRIAGE,
-                OperationsInPageNavigationPolicy.parentDestination(
-                        OperationsDestinationState.JOBS, true));
+                parent(OperationsDestinationState.JOBS, true, false));
         assertEquals(OperationsDestinationState.TRIAGE,
-                OperationsInPageNavigationPolicy.parentDestination(
-                        OperationsDestinationState.TRIAGE, true));
+                parent(OperationsDestinationState.TRIAGE, true, false));
         assertEquals(OperationsDestinationState.OVERVIEW,
-                OperationsInPageNavigationPolicy.parentDestination(
-                        OperationsDestinationState.JOBS, false));
-        assertEquals("",
-                OperationsInPageNavigationPolicy.parentDestination(
-                        OperationsDestinationState.OVERVIEW, false));
+                parent(OperationsDestinationState.JOBS, false, false));
+        assertEquals("", parent(OperationsDestinationState.OVERVIEW, false, false));
+    }
+
+    @Test
+    public void toolboxDetailsReturnToTheToolsDestination() {
+        assertEquals(OperationsDestinationState.TOOLS,
+                parent(OperationsDestinationState.JOBS, false, true));
+        assertEquals(OperationsDestinationState.TOOLS,
+                parent(OperationsDestinationState.SUPPORT, false, true));
+        assertEquals(OperationsDestinationState.TOOLS,
+                parent(OperationsDestinationState.HISTORY, false, true));
+        assertEquals("", parent(OperationsDestinationState.TOOLS, false, false));
     }
 
     @Test
@@ -37,70 +40,73 @@ public class OperationsInPageNavigationPolicyTest {
         assertEquals("返回电脑与连接",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.CONNECTION_CHECK,
-                        false, false, false));
+                        false, false, false, false));
         assertEquals("返回远程排障中心",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.JOBS,
-                        true, false, false));
+                        true, false, false, false));
+        assertEquals("返回运维工具",
+                OperationsInPageNavigationPolicy.navigateUpLabel(
+                        OperationsDestinationState.JOBS,
+                        false, true, false, false));
         assertEquals("返回现场运维概览",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.LIVE_MONITOR,
-                        false, false, false));
+                        false, false, false, false));
         assertEquals("返回现场运维概览",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.OVERVIEW,
-                        false, false, false));
+                        false, false, false, false));
     }
 
     @Test
     public void topAppBarOnlyShowsNavigateUpForConnectedDetailPages() {
-        assertTrue(OperationsInPageNavigationPolicy.showsNavigateUp(
+        assertTrue(showsNavigateUp(
                 true, true, OperationsDestinationState.CONNECTIONS,
-                false, false, false));
-        assertTrue(OperationsInPageNavigationPolicy.showsNavigateUp(
+                false, false, false, false));
+        assertTrue(showsNavigateUp(
                 true, true, OperationsDestinationState.OVERVIEW,
-                false, false, false));
-        assertFalse(OperationsInPageNavigationPolicy.showsNavigateUp(
+                false, false, false, false));
+        assertFalse(showsNavigateUp(
                 true, true, OperationsDestinationState.OVERVIEW,
-                false, true, false));
-        assertFalse(OperationsInPageNavigationPolicy.showsNavigateUp(
+                false, false, true, false));
+        assertFalse(showsNavigateUp(
                 false, true, OperationsDestinationState.CONNECTIONS,
-                false, false, false));
-        assertFalse(OperationsInPageNavigationPolicy.showsNavigateUp(
+                false, false, false, false));
+        assertFalse(showsNavigateUp(
                 true, false, OperationsDestinationState.CONNECTIONS,
-                false, false, false));
-        assertFalse(OperationsInPageNavigationPolicy.showsNavigateUp(
+                false, false, false, false));
+        assertFalse(showsNavigateUp(
                 true, true, OperationsDestinationState.OVERVIEW,
-                false, false, true));
+                false, false, false, true));
+        assertFalse(showsNavigateUp(
+                true, true, OperationsDestinationState.TOOLS,
+                false, false, false, false));
     }
 
     @Test
     public void hierarchicalNavigationUsesMaterialSharedAxisDirection() {
         assertEquals(AppScreenMotion.DIRECTION_FORWARD,
-                OperationsInPageNavigationPolicy.motionDirection(
-                        OperationsDestinationState.OVERVIEW,
-                        OperationsDestinationState.CONNECTIONS,
-                        false));
+                motion(OperationsDestinationState.OVERVIEW,
+                        OperationsDestinationState.CONNECTIONS, false, false));
         assertEquals(AppScreenMotion.DIRECTION_FORWARD,
-                OperationsInPageNavigationPolicy.motionDirection(
-                        OperationsDestinationState.CONNECTIONS,
-                        OperationsDestinationState.CONNECTION_CHECK,
-                        false));
+                motion(OperationsDestinationState.CONNECTIONS,
+                        OperationsDestinationState.CONNECTION_CHECK, false, false));
         assertEquals(AppScreenMotion.DIRECTION_BACKWARD,
-                OperationsInPageNavigationPolicy.motionDirection(
-                        OperationsDestinationState.CONNECTION_CHECK,
-                        OperationsDestinationState.CONNECTIONS,
-                        false));
+                motion(OperationsDestinationState.CONNECTION_CHECK,
+                        OperationsDestinationState.CONNECTIONS, false, false));
         assertEquals(AppScreenMotion.DIRECTION_BACKWARD,
-                OperationsInPageNavigationPolicy.motionDirection(
-                        OperationsDestinationState.JOBS,
-                        OperationsDestinationState.TRIAGE,
-                        true));
+                motion(OperationsDestinationState.JOBS,
+                        OperationsDestinationState.TRIAGE, true, false));
+        assertEquals(AppScreenMotion.DIRECTION_FORWARD,
+                motion(OperationsDestinationState.TOOLS,
+                        OperationsDestinationState.JOBS, false, true));
+        assertEquals(AppScreenMotion.DIRECTION_BACKWARD,
+                motion(OperationsDestinationState.JOBS,
+                        OperationsDestinationState.TOOLS, false, true));
         assertEquals(AppScreenMotion.DIRECTION_NONE,
-                OperationsInPageNavigationPolicy.motionDirection(
-                        OperationsDestinationState.FLEET_ALL,
-                        OperationsDestinationState.FLEET_ISSUES,
-                        false));
+                motion(OperationsDestinationState.FLEET_ALL,
+                        OperationsDestinationState.FLEET_ISSUES, false, false));
     }
 
     @Test
@@ -137,5 +143,35 @@ public class OperationsInPageNavigationPolicyTest {
                 true, true, false, true, true));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
                 false, true, false, false, true));
+    }
+
+    private static String parent(
+            String destination, boolean fromTriage, boolean fromToolbox) {
+        return OperationsInPageNavigationPolicy.parentDestination(
+                destination, fromTriage, fromToolbox);
+    }
+
+    private static boolean showsNavigateUp(
+            boolean paired,
+            boolean dashboardVisible,
+            String destination,
+            boolean fromTriage,
+            boolean fromToolbox,
+            boolean summaryVisible,
+            boolean recoveryVisible) {
+        return OperationsInPageNavigationPolicy.showsNavigateUp(
+                paired,
+                dashboardVisible,
+                destination,
+                fromTriage,
+                fromToolbox,
+                summaryVisible,
+                recoveryVisible);
+    }
+
+    private static int motion(
+            String from, String to, boolean fromTriage, boolean fromToolbox) {
+        return OperationsInPageNavigationPolicy.motionDirection(
+                from, to, fromTriage, fromToolbox);
     }
 }

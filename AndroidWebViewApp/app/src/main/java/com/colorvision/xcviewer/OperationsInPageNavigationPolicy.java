@@ -6,10 +6,19 @@ final class OperationsInPageNavigationPolicy {
     private OperationsInPageNavigationPolicy() {
     }
 
-    static String parentDestination(String destination, boolean detailOpenedFromTriage) {
+    static String parentDestination(
+            String destination,
+            boolean detailOpenedFromTriage,
+            boolean detailOpenedFromToolbox) {
         String normalized = OperationsDestinationState.normalize(destination);
         if (OperationsDestinationState.TRIAGE.equals(normalized) && detailOpenedFromTriage) {
             return OperationsDestinationState.TRIAGE;
+        }
+        if (detailOpenedFromToolbox
+                && !OperationsDestinationState.TOOLS.equals(normalized)
+                && !OperationsDestinationState.OVERVIEW.equals(normalized)
+                && !OperationsDestinationState.PAIRING.equals(normalized)) {
+            return OperationsDestinationState.TOOLS;
         }
         if (OperationsDestinationState.CONNECTION_CHECK.equals(normalized)
                 || OperationsDestinationState.FLEET_ALL.equals(normalized)
@@ -33,11 +42,17 @@ final class OperationsInPageNavigationPolicy {
     static String activeParentDestination(
             String destination,
             boolean detailOpenedFromTriage,
+            boolean detailOpenedFromToolbox,
             boolean showingDashboardSummary,
             boolean connectionRecoveryVisible) {
-        String parent = parentDestination(destination, detailOpenedFromTriage);
+        String parent = parentDestination(
+                destination, detailOpenedFromTriage, detailOpenedFromToolbox);
         if (!parent.isEmpty()) {
             return parent;
+        }
+        if (OperationsDestinationState.TOOLS.equals(
+                OperationsDestinationState.normalize(destination))) {
+            return NO_PARENT;
         }
         return !showingDashboardSummary && !connectionRecoveryVisible
                 ? OperationsDestinationState.OVERVIEW
@@ -49,6 +64,7 @@ final class OperationsInPageNavigationPolicy {
             boolean dashboardVisible,
             String destination,
             boolean detailOpenedFromTriage,
+            boolean detailOpenedFromToolbox,
             boolean showingDashboardSummary,
             boolean connectionRecoveryVisible) {
         return hasOperationsProfile
@@ -56,6 +72,7 @@ final class OperationsInPageNavigationPolicy {
                 && !activeParentDestination(
                         destination,
                         detailOpenedFromTriage,
+                        detailOpenedFromToolbox,
                         showingDashboardSummary,
                         connectionRecoveryVisible).isEmpty();
     }
@@ -63,11 +80,13 @@ final class OperationsInPageNavigationPolicy {
     static String navigateUpLabel(
             String destination,
             boolean detailOpenedFromTriage,
+            boolean detailOpenedFromToolbox,
             boolean showingDashboardSummary,
             boolean connectionRecoveryVisible) {
         String parent = activeParentDestination(
                 destination,
                 detailOpenedFromTriage,
+                detailOpenedFromToolbox,
                 showingDashboardSummary,
                 connectionRecoveryVisible);
         if (OperationsDestinationState.CONNECTIONS.equals(parent)) {
@@ -75,6 +94,9 @@ final class OperationsInPageNavigationPolicy {
         }
         if (OperationsDestinationState.TRIAGE.equals(parent)) {
             return "返回远程排障中心";
+        }
+        if (OperationsDestinationState.TOOLS.equals(parent)) {
+            return "返回运维工具";
         }
         if (OperationsDestinationState.OVERVIEW.equals(parent)) {
             return "返回现场运维概览";
@@ -85,16 +107,19 @@ final class OperationsInPageNavigationPolicy {
     static int motionDirection(
             String fromDestination,
             String toDestination,
-            boolean detailOpenedFromTriage) {
+            boolean detailOpenedFromTriage,
+            boolean detailOpenedFromToolbox) {
         String from = OperationsDestinationState.normalize(fromDestination);
         String to = OperationsDestinationState.normalize(toDestination);
         if (from.equals(to)) {
             return AppScreenMotion.DIRECTION_NONE;
         }
-        if (to.equals(parentDestination(from, detailOpenedFromTriage))) {
+        if (to.equals(parentDestination(
+                from, detailOpenedFromTriage, detailOpenedFromToolbox))) {
             return AppScreenMotion.DIRECTION_BACKWARD;
         }
-        if (from.equals(parentDestination(to, detailOpenedFromTriage))) {
+        if (from.equals(parentDestination(
+                to, detailOpenedFromTriage, detailOpenedFromToolbox))) {
             return AppScreenMotion.DIRECTION_FORWARD;
         }
         if (OperationsDestinationState.OVERVIEW.equals(to)) {

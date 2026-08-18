@@ -18,14 +18,28 @@ final class AppScreenMotion {
     private AppScreenMotion() {
     }
 
-    static int directionBetween(int fromTab, int toTab, int operationsTab, int settingsTab) {
-        if (fromTab == operationsTab && toTab == settingsTab) {
-            return DIRECTION_FORWARD;
+    static int directionBetween(
+            int fromTab,
+            int toTab,
+            int operationsTab,
+            int toolsTab,
+            int settingsTab) {
+        int fromIndex = tabIndex(fromTab, operationsTab, toolsTab, settingsTab);
+        int toIndex = tabIndex(toTab, operationsTab, toolsTab, settingsTab);
+        if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) {
+            return DIRECTION_NONE;
         }
-        if (fromTab == settingsTab && toTab == operationsTab) {
-            return DIRECTION_BACKWARD;
+        return fromIndex < toIndex ? DIRECTION_FORWARD : DIRECTION_BACKWARD;
+    }
+
+    private static int tabIndex(int tab, int operationsTab, int toolsTab, int settingsTab) {
+        if (tab == operationsTab) {
+            return 0;
         }
-        return DIRECTION_NONE;
+        if (tab == toolsTab) {
+            return 1;
+        }
+        return tab == settingsTab ? 2 : -1;
     }
 
     static boolean usesSharedAxis(int direction) {

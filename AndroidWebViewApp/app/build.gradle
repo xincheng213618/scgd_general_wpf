@@ -22,8 +22,8 @@ android {
         applicationId "com.colorvision.xcviewer"
         minSdk 23
         targetSdk 36
-        versionCode 119
-        versionName "3.08"
+        versionCode 120
+        versionName "3.09"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 

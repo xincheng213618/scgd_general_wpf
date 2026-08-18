@@ -6,6 +6,7 @@ import java.util.Set;
 
 final class OperationsDestinationState {
     static final String OVERVIEW = "overview";
+    static final String TOOLS = "tools";
     static final String PAIRING = "pairing";
     static final String CONNECTIONS = "connections";
     static final String CONNECTION_CHECK = "connection_check";
@@ -19,6 +20,7 @@ final class OperationsDestinationState {
 
     private static final Set<String> KNOWN_DESTINATIONS = new HashSet<>(Arrays.asList(
             OVERVIEW,
+            TOOLS,
             PAIRING,
             CONNECTIONS,
             CONNECTION_CHECK,
@@ -46,6 +48,7 @@ final class OperationsDestinationState {
     static boolean requiresDirectConnection(String destination) {
         String normalized = normalize(destination);
         return TRIAGE.equals(normalized)
+                || TOOLS.equals(normalized)
                 || JOBS.equals(normalized)
                 || SUPPORT.equals(normalized)
                 || LIVE_MONITOR.equals(normalized);

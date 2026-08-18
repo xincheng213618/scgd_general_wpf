@@ -17,7 +17,9 @@ public class OperationsDashboardShortcutPresentationTest {
         assertTrue(OperationsDashboardShortcutPresentation.hasUniqueActionIds(shortcuts));
         assertEquals(OperationsDashboardShortcutPresentation.ACTION_TRIAGE,
                 shortcuts.get(0).actionId);
-        assertEquals(OperationsDashboardShortcutPresentation.ACTION_TOOLBOX,
+        assertEquals(OperationsDashboardShortcutPresentation.ACTION_CONNECTION_CHECK,
+                shortcuts.get(2).actionId);
+        assertEquals(OperationsDashboardShortcutPresentation.ACTION_CONNECTIONS,
                 shortcuts.get(3).actionId);
     }
 

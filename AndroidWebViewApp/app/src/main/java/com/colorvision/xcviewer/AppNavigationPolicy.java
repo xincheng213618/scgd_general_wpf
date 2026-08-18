@@ -10,11 +10,21 @@ final class AppNavigationPolicy {
         return hasOperationsProfile && operationsRequested;
     }
 
-    static int normalizeStartTab(int requestedTab, int persistedTab, int operationsTab, int settingsTab) {
-        if (requestedTab == operationsTab || requestedTab == settingsTab) {
+    static int normalizeStartTab(
+            int requestedTab,
+            int persistedTab,
+            int operationsTab,
+            int toolsTab,
+            int settingsTab) {
+        if (requestedTab == operationsTab
+                || requestedTab == toolsTab
+                || requestedTab == settingsTab) {
             return requestedTab;
         }
-        return persistedTab == settingsTab ? settingsTab : operationsTab;
+        if (persistedTab == toolsTab || persistedTab == settingsTab) {
+            return persistedTab;
+        }
+        return operationsTab;
     }
 
     static int resolveCreationTab(
@@ -22,11 +32,13 @@ final class AppNavigationPolicy {
             int restoredTab,
             int requestedTab,
             int operationsTab,
+            int toolsTab,
             int settingsTab) {
         return normalizeStartTab(
                 restoring ? restoredTab : requestedTab,
                 requestedTab,
                 operationsTab,
+                toolsTab,
                 settingsTab);
     }
 }
