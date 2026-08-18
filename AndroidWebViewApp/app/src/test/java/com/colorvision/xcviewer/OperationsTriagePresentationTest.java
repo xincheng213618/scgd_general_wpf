@@ -44,9 +44,15 @@ public class OperationsTriagePresentationTest {
         assertEquals("发现需要关注的状态", model.stateLabel);
         assertEquals(OperationsTriagePresentation.TONE_ATTENTION, model.tone);
         assertEquals(4, model.metrics.size());
+        assertEquals("triage.events.view", model.metrics.get(0).actionId);
+        assertEquals("triage.jobs.review", model.metrics.get(1).actionId);
+        assertEquals("triage.messaging.view", model.metrics.get(2).actionId);
+        assertEquals("triage.devices.view", model.metrics.get(3).actionId);
         assertEquals("已连接 · 订阅就绪 · 订阅 8/8", model.metrics.get(2).summary);
-        assertEquals("需关注 2 / 共 6 · 就绪 2 · 已关闭 2 · 离线 2",
+        assertEquals("需关注\u00a02/6 · 就绪\u00a02 · 关闭\u00a02 · 离线\u00a02",
                 model.metrics.get(3).summary);
+        assertEquals("检测设备，需关注 2 / 共 6，就绪 2，已关闭 2，离线 2，点按查看详情",
+                model.metrics.get(3).accessibilityLabel());
         assertEquals(1, model.findings.size());
         OperationsTriagePresentation.Finding finding = model.findings.get(0);
         assertEquals("警告 · 检测设备 · 2 条证据", finding.evidenceLabel());

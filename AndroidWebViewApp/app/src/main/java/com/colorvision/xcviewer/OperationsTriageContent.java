@@ -1,8 +1,11 @@
 package com.colorvision.xcviewer;
 
 import android.app.Activity;
+import android.content.res.ColorStateList;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -29,7 +32,8 @@ final class OperationsTriageContent {
         root.setOrientation(LinearLayout.VERTICAL);
 
         root.addView(sectionTitle(activity, themeManager, "运行概览"), matchWidth());
-        root.addView(metricsCard(activity, themeManager, model), topMargin(dp(activity, 8)));
+        root.addView(metricsCard(activity, themeManager, model, actionHandler),
+                topMargin(dp(activity, 8)));
 
         String findingsTitle = model.findings.isEmpty()
                 ? "发现项" : "发现项 · " + model.findings.size();
@@ -83,26 +87,46 @@ final class OperationsTriageContent {
     private static MaterialCardView metricsCard(
             Activity activity,
             ThemeManager themeManager,
-            OperationsTriagePresentation.ViewModel model) {
+            OperationsTriagePresentation.ViewModel model,
+            ActionHandler actionHandler) {
         LinearLayout rows = new LinearLayout(activity);
         rows.setOrientation(LinearLayout.VERTICAL);
         for (int index = 0; index < model.metrics.size(); index++) {
             OperationsTriagePresentation.Metric metric = model.metrics.get(index);
             LinearLayout row = new LinearLayout(activity);
-            row.setOrientation(LinearLayout.VERTICAL);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
             row.setMinimumHeight(dp(activity, 64));
             row.setPadding(dp(activity, 16), dp(activity, 10), dp(activity, 16), dp(activity, 10));
+
+            LinearLayout copy = new LinearLayout(activity);
+            copy.setOrientation(LinearLayout.VERTICAL);
             TextView label = text(activity, metric.label,
                     com.google.android.material.R.style.TextAppearance_Material3_BodyLarge,
                     themeManager.primaryTextColor());
             TextView summary = text(activity, metric.summary,
                     com.google.android.material.R.style.TextAppearance_Material3_BodyMedium,
                     metricTextColor(themeManager, metric.tone));
-            row.addView(label, matchWidth());
-            row.addView(summary, topMargin(dp(activity, 2)));
+            copy.addView(label, matchWidth());
+            copy.addView(summary, topMargin(dp(activity, 2)));
+            row.addView(copy, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+            ImageView chevron = new ImageView(activity);
+            chevron.setImageResource(R.drawable.ic_chevron_right_24);
+            chevron.setImageTintList(ColorStateList.valueOf(themeManager.secondaryTextColor()));
+            chevron.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
+                    dp(activity, 24), dp(activity, 24));
+            iconParams.setMargins(dp(activity, 12), 0, 0, 0);
+            row.addView(chevron, iconParams);
+
             row.setContentDescription(metric.accessibilityLabel());
+            row.setClickable(true);
             row.setFocusable(true);
             row.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+            applySelectableBackground(activity, row);
+            row.setOnClickListener(view -> actionHandler.onAction(metric.actionId));
             label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             summary.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             rows.addView(row, matchWidth());
@@ -114,6 +138,15 @@ final class OperationsTriageContent {
         card.setCardBackgroundColor(themeManager.cardBackgroundColor());
         card.addView(rows, matchCardWidth());
         return card;
+    }
+
+    private static void applySelectableBackground(Activity activity, View view) {
+        TypedValue selectable = new TypedValue();
+        if (activity.getTheme().resolveAttribute(
+                android.R.attr.selectableItemBackground, selectable, true)
+                && selectable.resourceId != 0) {
+            view.setBackgroundResource(selectable.resourceId);
+        }
     }
 
     private static MaterialCardView findingCard(

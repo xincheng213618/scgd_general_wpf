@@ -64,6 +64,7 @@ public class OperationsActivity extends AppCompatActivity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
     static final String EXTRA_OPEN_DESTINATION = "operations_open_destination";
     private static final String STATE_DESTINATION = "operations_destination";
+    private static final String STATE_RETURN_TO_TRIAGE = "operations_return_to_triage";
     private static final int REQUEST_QR_SCAN = 2406;
     private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
     private static final long CONNECTION_HEARTBEAT_MILLISECONDS = 30_000L;
@@ -148,6 +149,7 @@ public class OperationsActivity extends AppCompatActivity {
     private String pendingOperationsDestination = "";
     private String currentDestination = OperationsDestinationState.OVERVIEW;
     private String pendingRestoredDestination = "";
+    private boolean returnToTriageOnBack;
     private boolean pairingApprovalWaiting;
     private long pairingApprovalDeadlineMilliseconds;
     private volatile int pairingRequestGeneration;
@@ -176,6 +178,8 @@ public class OperationsActivity extends AppCompatActivity {
         String restoredDestination = OperationsDestinationState.normalize(
                 restoring ? savedInstanceState.getString(STATE_DESTINATION) : null);
         currentDestination = restoredDestination;
+        returnToTriageOnBack = restoring
+                && savedInstanceState.getBoolean(STATE_RETURN_TO_TRIAGE, false);
         if (OperationsDestinationState.shouldRestore(restoredDestination)) {
             pendingRestoredDestination = restoredDestination;
         }
@@ -361,13 +365,27 @@ public class OperationsActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                if (returnToOperationsOverview()) {
+                if (returnToTriageCenter() || returnToOperationsOverview()) {
                     return;
                 }
                 setEnabled(false);
                 getOnBackPressedDispatcher().onBackPressed();
             }
         });
+    }
+
+    private boolean returnToTriageCenter() {
+        if (!OperationsInPageNavigationPolicy.shouldReturnToTriage(
+                preferences != null && preferences.hasOperationsProfile(),
+                dashboardVisible,
+                showingDashboardSummary,
+                connectionRecoveryVisible,
+                returnToTriageOnBack)) {
+            return false;
+        }
+        returnToTriageOnBack = false;
+        showTriageCenter();
+        return true;
     }
 
     private boolean returnToOperationsOverview() {
@@ -379,6 +397,7 @@ public class OperationsActivity extends AppCompatActivity {
             return false;
         }
         connectionCheckGeneration++;
+        returnToTriageOnBack = false;
         showCurrentDashboard();
         return true;
     }
@@ -1279,6 +1298,7 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         currentDestination = OperationsDestinationState.OVERVIEW;
+        returnToTriageOnBack = false;
         dashboardVisible = true;
         showingDashboardSummary = true;
         progress.setVisibility(View.GONE);
@@ -1426,6 +1446,7 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         currentDestination = OperationsDestinationState.OVERVIEW;
+        returnToTriageOnBack = false;
         dashboardVisible = true;
         showingDashboardSummary = true;
         progress.setVisibility(View.GONE);
@@ -3415,6 +3436,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void showTriageCenter() {
         currentDestination = OperationsDestinationState.TRIAGE;
+        returnToTriageOnBack = false;
         showingDashboardSummary = false;
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -3459,12 +3481,14 @@ public class OperationsActivity extends AppCompatActivity {
     private void runTriageAction(String actionId) {
         switch (actionId) {
             case "triage.events.view":
+                returnToTriageOnBack = true;
                 loadCapability("/ops/v1/diagnostics/recent-events");
                 return;
             case "triage.window.show":
                 runWindowAction("show", "主窗口已显示");
                 return;
             case "triage.jobs.review":
+                returnToTriageOnBack = true;
                 showJobs();
                 return;
             case "triage.mqtt.restart.request":
@@ -3474,12 +3498,14 @@ public class OperationsActivity extends AppCompatActivity {
                 showDeviceHealthOverview();
                 return;
             case "triage.messaging.view":
+                returnToTriageOnBack = true;
                 loadCapability("/ops/v1/messaging/health");
                 return;
             case "triage.messaging.reconnect.request":
                 confirmRecoverMessageChannel();
                 return;
             case "triage.failures.view":
+                returnToTriageOnBack = true;
                 loadCapability("/ops/v1/diagnostics/failures");
                 return;
             default:
@@ -3574,8 +3600,12 @@ public class OperationsActivity extends AppCompatActivity {
         actions.addView(refresh, actionParams());
 
         Button back = new MaterialButton(this);
-        back.setText("返回现场运维概览");
-        back.setOnClickListener(v -> showDashboard());
+        back.setText(returnToTriageOnBack ? "返回远程排障中心" : "返回现场运维概览");
+        back.setOnClickListener(v -> {
+            if (!returnToTriageCenter()) {
+                showDashboard();
+            }
+        });
         actions.addView(back, actionParams());
     }
 
@@ -5926,6 +5956,7 @@ public class OperationsActivity extends AppCompatActivity {
     protected void onSaveInstanceState(Bundle outState) {
         outState.putString(STATE_DESTINATION,
                 OperationsDestinationState.normalize(currentDestination));
+        outState.putBoolean(STATE_RETURN_TO_TRIAGE, returnToTriageOnBack);
         super.onSaveInstanceState(outState);
     }
 

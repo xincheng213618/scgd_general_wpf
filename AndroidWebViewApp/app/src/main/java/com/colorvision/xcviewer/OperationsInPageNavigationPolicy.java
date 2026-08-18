@@ -14,4 +14,17 @@ final class OperationsInPageNavigationPolicy {
                 && !showingDashboardSummary
                 && !connectionRecoveryVisible;
     }
+
+    static boolean shouldReturnToTriage(
+            boolean hasOperationsProfile,
+            boolean dashboardVisible,
+            boolean showingDashboardSummary,
+            boolean connectionRecoveryVisible,
+            boolean detailOpenedFromTriage) {
+        return detailOpenedFromTriage && shouldReturnToOverview(
+                hasOperationsProfile,
+                dashboardVisible,
+                showingDashboardSummary,
+                connectionRecoveryVisible);
+    }
 }

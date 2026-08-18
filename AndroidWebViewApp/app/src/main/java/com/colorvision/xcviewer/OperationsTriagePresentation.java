@@ -33,21 +33,26 @@ final class OperationsTriagePresentation {
                 "近期事件",
                 "严重 " + criticalCount + " · 错误 " + errorCount + " · 警告 " + warningCount,
                 criticalCount > 0 || errorCount > 0
-                        ? TONE_ERROR : warningCount > 0 ? TONE_ATTENTION : TONE_NORMAL));
+                        ? TONE_ERROR : warningCount > 0 ? TONE_ATTENTION : TONE_NORMAL,
+                "triage.events.view"));
         metrics.add(new Metric(
                 "待处理作业",
                 pendingJobCount == 0 ? "当前没有待处理作业" : pendingJobCount + " 个等待处理",
-                pendingJobCount > 0 ? TONE_ATTENTION : TONE_NORMAL));
+                pendingJobCount > 0 ? TONE_ATTENTION : TONE_NORMAL,
+                "triage.jobs.review"));
         metrics.add(new Metric(
                 "消息通道",
                 messageChannelLabel(messageState)
                         + " · 订阅 " + activeSubscriptions + '/' + registeredSubscriptions,
-                messageTone(messageState, activeSubscriptions, registeredSubscriptions)));
+                messageTone(messageState, activeSubscriptions, registeredSubscriptions),
+                "triage.messaging.view"));
         metrics.add(new Metric(
                 "检测设备",
+                compactDeviceSummary(report),
                 deviceSummary(report),
                 deviceAttentionCount > 0 ? TONE_ATTENTION
-                        : deviceTotalCount == 0 ? TONE_MUTED : TONE_NORMAL));
+                        : deviceTotalCount == 0 ? TONE_MUTED : TONE_NORMAL,
+                "triage.devices.view"));
 
         List<Finding> findings = new ArrayList<>();
         JSONArray sourceFindings = report.optJSONArray("findings");
@@ -138,9 +143,35 @@ final class OperationsTriagePresentation {
         return String.join(" · ", values);
     }
 
+    private static String compactDeviceSummary(JSONObject report) {
+        int total = report.optInt("deviceTotalCount", 0);
+        if (total <= 0) {
+            return "当前没有可汇总的检测设备";
+        }
+        List<String> values = new ArrayList<>();
+        int attention = report.optInt("deviceAttentionCount", 0);
+        values.add(attention > 0
+                ? "需关注\u00a0" + attention + '/' + total
+                : "共\u00a0" + total);
+        addCompactCount(values, "就绪", report.optInt("deviceReadyCount", 0));
+        addCompactCount(values, "忙碌", report.optInt("deviceBusyCount", 0));
+        addCompactCount(values, "关闭", report.optInt("deviceClosedCount", 0));
+        addCompactCount(values, "离线", report.optInt("deviceOfflineCount", 0));
+        addCompactCount(values, "未初始化", report.optInt("deviceUninitializedCount", 0));
+        addCompactCount(values, "未授权", report.optInt("deviceUnauthorizedCount", 0));
+        addCompactCount(values, "未归类", report.optInt("deviceUnclassifiedUnavailableCount", 0));
+        return String.join(" · ", values);
+    }
+
     private static void addCount(List<String> values, String label, int count) {
         if (count > 0) {
             values.add(label + " " + count);
+        }
+    }
+
+    private static void addCompactCount(List<String> values, String label, int count) {
+        if (count > 0) {
+            values.add(label + '\u00a0' + count);
         }
     }
 
@@ -239,16 +270,30 @@ final class OperationsTriagePresentation {
     static final class Metric {
         final String label;
         final String summary;
+        final String spokenSummary;
         final int tone;
+        final String actionId;
 
-        Metric(String label, String summary, int tone) {
+        Metric(String label, String summary, int tone, String actionId) {
+            this(label, summary, summary, tone, actionId);
+        }
+
+        Metric(
+                String label,
+                String summary,
+                String spokenSummary,
+                int tone,
+                String actionId) {
             this.label = label;
             this.summary = summary;
+            this.spokenSummary = spokenSummary;
             this.tone = tone;
+            this.actionId = actionId;
         }
 
         String accessibilityLabel() {
-            return label + "，" + summary.replace(" · ", "，");
+            return label + "，" + spokenSummary.replace(" · ", "，")
+                    + "，点按查看详情";
         }
     }
 

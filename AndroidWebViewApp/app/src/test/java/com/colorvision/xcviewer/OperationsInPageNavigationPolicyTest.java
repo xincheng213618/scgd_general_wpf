@@ -23,4 +23,22 @@ public class OperationsInPageNavigationPolicyTest {
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToOverview(
                 true, false, false, false));
     }
+
+    @Test
+    public void triageDetailsReturnToTheirParentBeforeTheOverview() {
+        assertTrue(OperationsInPageNavigationPolicy.shouldReturnToTriage(
+                true, true, false, false, true));
+        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
+                true, true, false, false, false));
+    }
+
+    @Test
+    public void triageParentReturnKeepsRootAndRecoveryBoundaries() {
+        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
+                true, true, true, false, true));
+        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
+                true, true, false, true, true));
+        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
+                false, true, false, false, true));
+    }
 }
