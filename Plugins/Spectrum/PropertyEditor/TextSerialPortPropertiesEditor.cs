@@ -56,7 +56,7 @@ namespace Spectrum.PropertyEditor
                 IsEditable = true
             };
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
-            combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
+            combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property));
             System.Windows.Controls.TextSearch.SetTextPath(combo, "Name");
 
             // UI 布局：水平 StackPanel
@@ -93,7 +93,7 @@ namespace Spectrum.PropertyEditor
 
             dockPanel.Children.Add(combo);
 
-            void RefreshPorts()
+            void RefreshPorts(bool probeAvailability)
             {
                 // 使用我们编写好的底层 API 获取详细的设备列表
                 List<Win32DeviceMgmt.DeviceInfo> devices = new List<Win32DeviceMgmt.DeviceInfo>();
@@ -115,12 +115,15 @@ namespace Spectrum.PropertyEditor
                     Name = d.name,
                     // 优先显示 BusDescription，如果没有则显示 Description
                     BusDescription = !string.IsNullOrWhiteSpace(d.bus_description) ? d.bus_description : d.description,
-                    Status = "检测中...",
+                    Status = probeAvailability ? "检测中..." : string.Empty,
                     Color = Brushes.Gray,
-                    ErrorDetail = "正在检测端口状态..."
+                    ErrorDetail = probeAvailability ? "正在检测端口状态..." : string.Empty
                 }).ToList();
 
                 combo.ItemsSource = initialModels;
+
+                if (!probeAvailability)
+                    return;
 
                 Task.Run(() =>
                 {
@@ -131,8 +134,8 @@ namespace Spectrum.PropertyEditor
                 });
             }
 
-            btnRefresh.Click += (s, e) => RefreshPorts();
-            RefreshPorts();
+            btnRefresh.Click += (s, e) => RefreshPorts(probeAvailability: true);
+            RefreshPorts(probeAvailability: false);
 
             return dockPanel;
         }

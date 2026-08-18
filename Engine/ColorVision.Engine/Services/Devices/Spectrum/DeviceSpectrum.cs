@@ -175,7 +175,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 PropertyEditorWindow window = new PropertyEditorWindow(Config);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.Submited +=(s,e)=>
+                window.Submitted +=(s,e)=>
                 {
                     //2026.01.21 增加逻辑，如果切换了ND模式，则清空对应的绑定信息
                     if (Config.NDConfig.IsBingNDDevice)

@@ -8,10 +8,6 @@ namespace System.ComponentModel
 {
     public class FontStretchPropertiesEditor : IPropertyEditor
     {
-        static FontStretchPropertiesEditor()
-        {
-            PropertyEditorHelper.RegisterEditor<FontStretchPropertiesEditor>(typeof(FontStretch));
-        }
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);
@@ -29,7 +25,7 @@ namespace System.ComponentModel
                     .Select(p => new KeyValuePair<FontStretch, string>((FontStretch)p.GetValue(null), p.Name)).ToList()
             };
 
-            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
+            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property);
             comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
             DockPanel.SetDock(comboBox, Dock.Right);
 

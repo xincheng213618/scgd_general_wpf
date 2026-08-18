@@ -172,7 +172,7 @@
                 <Button Content="{x:Static properties:Resources.PropEditor_ResetToDefault}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="ResetToFactory_Click" ToolTip="{x:Static properties:Resources.PropEditor_ResetTooltip}" Margin="5,0,0,0"/>
                 <StackPanel  Orientation="Horizontal" HorizontalAlignment="Right" >
                     <Button Content="{x:Static properties:Resources.OK}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="OK_Click" Margin="5,0,0,0"/>
-                    <Button Content="{x:Static properties:Resources.Cancel}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Cancel_Click" Margin="5,0,0,0"/>
+                    <Button x:Name="CancelButton" Content="{x:Static properties:Resources.Cancel}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Cancel_Click" Margin="5,0,0,0"/>
                 </StackPanel>
             </DockPanel>
 

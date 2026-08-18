@@ -244,7 +244,7 @@ namespace ColorVision.FloatingBall
                 Owner = owner ?? Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
-            window.Submited += (_, _) =>
+            window.Submitted += (_, _) =>
             {
                 ConfigHandler.GetInstance().Save<DesktopPetConfig>();
                 ReloadSelectedAsset();

@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1707,CA1852,CS8601
 using ColorVision.Themes;
 using ColorVision.UI.Extension;
+using log4net;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -33,6 +34,9 @@ namespace ColorVision.UI
 
     public static class PropertyEditorHelper
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(PropertyEditorHelper));
+        private static readonly PropertyEditorRegistry EditorRegistry = new(Log);
+
         // Constants
         public const double LabelMinWidth = 120;
         public const double ControlMinWidth = 150;
@@ -40,77 +44,58 @@ namespace ColorVision.UI
         // Cache for resources and reflection results
         public static ConcurrentDictionary<Type, Lazy<ResourceManager?>> ResourceManagerCache { get; set; } = new();
         private static readonly ConcurrentDictionary<(ResourceManager ResourceManager, string CultureName, string Key), string> ResourceStringCache = new();
-        public static ConcurrentDictionary<Type, IPropertyEditor> CustomEditorCache { get; } = new();
-        private static readonly Dictionary<Type, Type> EditorTypeRegistry = new();
-        private static readonly List<(Func<Type, bool> Predicate, Type EditorType)> TypePredicateRegistry = new();
+        public static ConcurrentDictionary<Type, IPropertyEditor> CustomEditorCache => EditorRegistry.Instances;
         private static readonly AsyncLocal<IPropertyEditorMetadataProvider?> MetadataProviderContext = new();
 
         static PropertyEditorHelper()
         {
-            var editorTypes = AssemblyHandler.Instance.GetAssemblies().SelectMany(a => a.GetTypes()) .Where(t => typeof(IPropertyEditor).IsAssignableFrom(t) && !t.IsAbstract && t.IsClass);
-            foreach (var type in editorTypes)
+            PropertyEditorBuiltIns.Register(EditorRegistry);
+            try
             {
-                // 触发静态构造函数
-                RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+                var editorTypes = AssemblyHandler.Instance.GetAssemblies()
+                    .Where(assembly => assembly != typeof(PropertyEditorHelper).Assembly)
+                    .SelectMany(assembly => AssemblyHandler.Instance.GetTypes(assembly))
+                    .Where(type => typeof(IPropertyEditor).IsAssignableFrom(type) && !type.IsAbstract && type.IsClass);
+                foreach (Type type in editorTypes)
+                {
+                    try
+                    {
+                        RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"Failed to initialize property editor '{type.FullName}'.", ex);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Failed to initialize property editors.", ex);
             }
         }
 
         public static void RegisterEditor<TEditor>(Type targetType) where TEditor : IPropertyEditor, new()
         {
-            EditorTypeRegistry[targetType] = typeof(TEditor);
+            EditorRegistry.Register<TEditor>(targetType);
         }
+
         public static void RegisterEditor<TEditor>(Func<Type, bool> typePredicate) where TEditor : IPropertyEditor, new()
         {
-            TypePredicateRegistry.Add((typePredicate, typeof(TEditor)));
+            EditorRegistry.Register<TEditor>(typePredicate);
         }
 
         public static IPropertyEditor GetOrCreateEditor(Type editorType)
         {
-            if (CustomEditorCache.TryGetValue(editorType, out var cachedEditor))
-            {
-                return cachedEditor;
-            }
-
-            if (Activator.CreateInstance(editorType) is IPropertyEditor newEditor)
-            {
-                CustomEditorCache[editorType] = newEditor;
-                return newEditor;
-            }
-
-            throw new InvalidOperationException($"Could not create editor of type {editorType.Name}");
+            return EditorRegistry.GetOrCreate(editorType);
         }
         public static Type? GetEditorTypeForPropertyType(Type propertyType)
         {
-            // Direct type match
-            if (EditorTypeRegistry.TryGetValue(propertyType, out var editorType))
-                return editorType;
-
-            // Predicate match (first matching predicate wins)
-            foreach (var (predicate, predicateEditorType) in TypePredicateRegistry)
-            {
-                if (predicate(propertyType))
-                    return predicateEditorType;
-            }
-
-            return null;
+            return EditorRegistry.Find(propertyType);
         }
 
         public static List<Type> GetAllEditorTypesForPropertyType(Type propertyType)
         {
-            var editorTypes = new List<Type>();
-
-            // Direct type match
-            if (EditorTypeRegistry.TryGetValue(propertyType, out var editorType))
-                editorTypes.Add(editorType);
-
-            // Predicate matches (all matching predicates)
-            foreach (var (predicate, predicateEditorType) in TypePredicateRegistry)
-            {
-                if (predicate(propertyType))
-                    editorTypes.Add(predicateEditorType);
-            }
-
-            return editorTypes;
+            return EditorRegistry.FindAll(propertyType);
         }
 
         internal static bool HasEditorForProperty(PropertyInfo property)
@@ -119,17 +104,25 @@ namespace ColorVision.UI
             return editorAttr?.EditorType != null || GetEditorTypeForPropertyType(property.PropertyType) != null;
         }
 
+        public static PropertyInfo[] GetEditableProperties(Type type)
+        {
+            ArgumentNullException.ThrowIfNull(type);
+            return type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(property => property.CanRead && property.CanWrite)
+                .Where(property => property.GetIndexParameters().Length == 0)
+                .Where(property => property.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true)
+                .ToArray();
+        }
+
+        public static bool CanEditProperty(PropertyInfo property)
+        {
+            ArgumentNullException.ThrowIfNull(property);
+            return HasEditorForProperty(property) || CanGenerateNestedEditor(property.PropertyType);
+        }
+
         public static T GetOrCreateEditor<T>() where T : IPropertyEditor, new()
         {
-            var type = typeof(T);
-            if (CustomEditorCache.TryGetValue(type, out var cachedEditor))
-            {
-                return (T)cachedEditor;
-            }
-
-            var newEditor = new T();
-            CustomEditorCache[type] = newEditor;
-            return newEditor;
+            return (T)EditorRegistry.GetOrCreate(typeof(T));
         }
 
         private static readonly Lazy<ResourceCache> Resources = new(() => new ResourceCache());
@@ -333,7 +326,7 @@ namespace ColorVision.UI
                 ItemsSource = Enum.GetValues(property.PropertyType)
             };
 
-            var binding = CreateTwoWayBinding(obj, property.Name);
+            var binding = CreateTwoWayBinding(obj, property);
             comboBox.SetBinding(Selector.SelectedItemProperty, binding);
             return comboBox;
         }
@@ -386,48 +379,19 @@ namespace ColorVision.UI
                 DockPanel? createdPanel = null;
                 var metadataEditorType = MetadataProviderContext.Value?.GetEditorType(property);
                 if (metadataEditorType != null)
-                {
-                    try
-                    {
-                        var editor = GetOrCreateEditor(metadataEditorType);
-                        createdPanel = editor.GenProperties(property, obj);
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
+                    createdPanel = TryGenerateEditor(metadataEditorType, property, obj);
 
                 var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
                 if (createdPanel == null && editorAttr?.EditorType != null)
-                {
-                    try
-                    {
-                        var editor = GetOrCreateEditor(editorAttr.EditorType);
-                        createdPanel = editor.GenProperties(property, obj);
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
+                    createdPanel = TryGenerateEditor(editorAttr.EditorType, property, obj);
 
                 if (createdPanel == null)
                 {
                     var editorType = GetEditorTypeForPropertyType(property.PropertyType);
                     if (editorType != null)
-                    {
-                        try
-                        {
-                            var editor = GetOrCreateEditor(editorType);
-                            createdPanel = editor.GenProperties(property, obj);
-                        }
-                        catch (Exception)
-                        {
-                        }
-                    }
+                        createdPanel = TryGenerateEditor(editorType, property, obj);
                     else
-                    {
                         TryCreateNestedDockPanel(property, obj, visited, out createdPanel);
-                    }
                 }
 
                 if (createdPanel == null)
@@ -437,13 +401,29 @@ namespace ColorVision.UI
 
                 createdPanel.Margin = new Thickness(0, 0, 0, 5);
                 createdPanel.Tag = property;
+                if (property.GetCustomAttribute<ReadOnlyAttribute>()?.IsReadOnly == true)
+                    createdPanel.IsEnabled = false;
                 ApplyVisibilityBinding(createdPanel, property, obj);
                 dockPanel = createdPanel;
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Error($"Failed to create property editor for '{obj.GetType().FullName}.{property.Name}'.", ex);
                 return false;
+            }
+        }
+
+        private static DockPanel? TryGenerateEditor(Type editorType, PropertyInfo property, object obj)
+        {
+            try
+            {
+                return GetOrCreateEditor(editorType).GenProperties(property, obj);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Property editor '{editorType.FullName}' failed for '{obj.GetType().FullName}.{property.Name}'.", ex);
+                return null;
             }
         }
 
@@ -722,9 +702,7 @@ namespace ColorVision.UI
                     var metadataProvider = MetadataProviderContext.Value;
 
                     // 1. 获取属性
-                    var allProps = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                    .Where(p => p.CanRead && p.CanWrite && p.GetIndexParameters().Length == 0)
-                                    .ToList();
+                    var allProps = GetEditableProperties(type).ToList();
 
                     if (metadataProvider != null)
                     {
@@ -740,10 +718,6 @@ namespace ColorVision.UI
 
                     foreach (var prop in sortedProps)
                     {
-                        var browsableAttr = prop.GetCustomAttribute<BrowsableAttribute>();
-                        if (!(browsableAttr?.Browsable ?? true))
-                            continue;
-
                         var categoryAttr = prop.GetCustomAttribute<CategoryAttribute>();
                         string category = metadataProvider?.IsPropertyManaged(prop) == true
                             ? metadataProvider.GetCategory(prop) ?? categoryAttr?.Category ?? type.Name
@@ -1012,8 +986,22 @@ namespace ColorVision.UI
             {
                 Source = source,
                 Mode = BindingMode.TwoWay,
-                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
+                ValidatesOnExceptions = true,
+                ValidatesOnDataErrors = true,
+                NotifyOnValidationError = true
             };
+        }
+
+        public static Binding CreateTwoWayBinding(object source, PropertyInfo property, UpdateSourceTrigger defaultUpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged)
+        {
+            ArgumentNullException.ThrowIfNull(property);
+            Binding binding = CreateTwoWayBinding(source, property.Name);
+            if (!property.CanWrite || property.GetCustomAttribute<ReadOnlyAttribute>()?.IsReadOnly == true)
+                binding.Mode = BindingMode.OneWay;
+            binding.UpdateSourceTrigger = property.GetCustomAttribute<PropertyEditorTypeAttribute>()?.UpdateSourceTrigger
+                ?? defaultUpdateSourceTrigger;
+            return binding;
         }
 
         public static TextBox CreateSmallTextBox(Binding binding)

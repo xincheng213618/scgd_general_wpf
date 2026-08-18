@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.IO.Ports;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -60,7 +61,7 @@ namespace ColorVision.Engine.PropertyEditor
                 IsEditable = true
             };
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
-            combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
+            combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property));
             System.Windows.Controls.TextSearch.SetTextPath(combo, "Name");
 
             // UI 布局：水平 StackPanel
@@ -97,8 +98,15 @@ namespace ColorVision.Engine.PropertyEditor
 
             dockPanel.Children.Add(combo);
 
-            void RefreshPorts()
+            CancellationTokenSource? refreshCancellation = null;
+
+            void RefreshPorts(bool probeAvailability)
             {
+                refreshCancellation?.Cancel();
+                refreshCancellation?.Dispose();
+                refreshCancellation = new CancellationTokenSource();
+                CancellationToken cancellationToken = refreshCancellation.Token;
+
                 // 使用我们编写好的底层 API 获取详细的设备列表
                 List<Win32DeviceMgmt.DeviceInfo> devices = new List<Win32DeviceMgmt.DeviceInfo>();
                 try
@@ -119,24 +127,43 @@ namespace ColorVision.Engine.PropertyEditor
                     Name = d.name,
                     // 优先显示 BusDescription，如果没有则显示 Description
                     BusDescription = !string.IsNullOrWhiteSpace(d.bus_description) ? d.bus_description : d.description,
-                    Status = GetResourceText("SerialPortChecking"),
+                    Status = probeAvailability ? GetResourceText("SerialPortChecking") : string.Empty,
                     Color = Brushes.Gray,
-                    ErrorDetail = GetResourceText("SerialPortCheckingDetail")
+                    ErrorDetail = probeAvailability ? GetResourceText("SerialPortCheckingDetail") : string.Empty
                 }).ToList();
 
                 combo.ItemsSource = initialModels;
 
-                Task.Run(() =>
+                if (!probeAvailability)
+                    return;
+
+                _ = Task.Run(() =>
                 {
                     foreach (var model in initialModels)
                     {
-                        CheckPortStatus(model);
+                        if (cancellationToken.IsCancellationRequested)
+                            return;
+
+                        SerialPortProbeResult result = ProbePort(model.Name);
+                        if (cancellationToken.IsCancellationRequested)
+                            return;
+
+                        dockPanel.Dispatcher.BeginInvoke(() =>
+                        {
+                            if (cancellationToken.IsCancellationRequested || !ReferenceEquals(combo.ItemsSource, initialModels))
+                                return;
+
+                            model.Status = result.Status;
+                            model.Color = result.Color;
+                            model.ErrorDetail = result.ErrorDetail;
+                        });
                     }
-                });
+                }, cancellationToken);
             }
 
-            btnRefresh.Click += (s, e) => RefreshPorts();
-            RefreshPorts();
+            btnRefresh.Click += (_, _) => RefreshPorts(probeAvailability: true);
+            dockPanel.Unloaded += (_, _) => refreshCancellation?.Cancel();
+            RefreshPorts(probeAvailability: false);
 
             return dockPanel;
         }
@@ -146,39 +173,35 @@ namespace ColorVision.Engine.PropertyEditor
             return ColorVision.Engine.Properties.Resources.ResourceManager.GetString(key) ?? key;
         }
 
-        private static void CheckPortStatus(SerialPortModel model)
+        private static SerialPortProbeResult ProbePort(string portName)
         {
             try
             {
-                using (SerialPort serialPort = new SerialPort(model.Name))
+                using (SerialPort serialPort = new SerialPort(portName))
                 {
                     serialPort.Open();
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        model.Status = GetResourceText("SerialPortAvailable");
-                        model.Color = Brushes.Green;
-                        model.ErrorDetail = GetResourceText("SerialPortAvailableDetail");
-                    });
+                    return new SerialPortProbeResult(
+                        GetResourceText("SerialPortAvailable"),
+                        Brushes.Green,
+                        GetResourceText("SerialPortAvailableDetail"));
                 }
             }
             catch (UnauthorizedAccessException)
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    model.Status = GetResourceText("SerialPortOccupiedShort");
-                    model.Color = Brushes.Red;
-                    model.ErrorDetail = GetResourceText("SerialPortOccupiedDetail");
-                });
+                return new SerialPortProbeResult(
+                    GetResourceText("SerialPortOccupiedShort"),
+                    Brushes.Red,
+                    GetResourceText("SerialPortOccupiedDetail"));
             }
             catch (Exception ex)
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    model.Status = GetResourceText("SerialPortErrorShort");
-                    model.Color = Brushes.Orange;
-                    model.ErrorDetail = string.Format(GetResourceText("SerialPortOpenFailedDetail"), ex.Message);
-                });
+                return new SerialPortProbeResult(
+                    GetResourceText("SerialPortErrorShort"),
+                    Brushes.Orange,
+                    string.Format(GetResourceText("SerialPortOpenFailedDetail"), ex.Message));
             }
         }
+
+        private sealed record SerialPortProbeResult(string Status, Brush Color, string ErrorDetail);
     }
 }

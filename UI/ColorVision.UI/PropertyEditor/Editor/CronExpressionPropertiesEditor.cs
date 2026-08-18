@@ -19,7 +19,7 @@ namespace System.ComponentModel
             cronBtn.Click += (_, __) => PlatformHelper.Open("https://cron.qqe2.com/");
             DockPanel.SetDock(cronBtn, Dock.Right);
 
-            var cronTextBox = PropertyEditorHelper.CreateSmallTextBox(PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
+            var cronTextBox = PropertyEditorHelper.CreateSmallTextBox(PropertyEditorHelper.CreateTwoWayBinding(obj, property));
             dockPanel.Children.Add(cronBtn);
             dockPanel.Children.Add(cronTextBox);
             return dockPanel;

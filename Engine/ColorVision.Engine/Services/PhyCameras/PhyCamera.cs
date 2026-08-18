@@ -180,7 +180,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
-            propertyEditorWindow.Submited += (s, e) =>
+            propertyEditorWindow.Submitted += (s, e) =>
             {
                 editConfig.CFW.NormalizeChannelCfgsForSave();
                 editConfig.CopyTo(Config);

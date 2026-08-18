@@ -227,7 +227,7 @@ namespace ColorVision.Engine.Services
             {
                 var oldvalue = fileServerCfg.FileServerCfg.Clone();
 
-                var window = new PropertyEditorWindow(fileServerCfg.FileServerCfg, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                var window = new PropertyEditorWindow(fileServerCfg.FileServerCfg, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Closed += (s, e) =>
                 {
                     if (!fileServerCfg.FileServerCfg.EqualMax(oldvalue))

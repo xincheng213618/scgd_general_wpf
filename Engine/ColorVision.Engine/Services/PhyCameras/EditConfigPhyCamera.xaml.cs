@@ -286,12 +286,12 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private void OpenPropertyEditor_Click(object sender, RoutedEventArgs e)
         {
-            var propertyEditorWindow = new PropertyEditorWindow(EditConfig, isEdit: false)
+            var propertyEditorWindow = new PropertyEditorWindow(EditConfig, PropertyEditorEditMode.Transactional)
             {
                 Owner = this,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
-            propertyEditorWindow.Submited += (s, e) =>
+            propertyEditorWindow.Submitted += (s, e) =>
             {
                 _isInitializing = true;
                 EditConfig.CFW.EnsureChannelCfgsForEdit();

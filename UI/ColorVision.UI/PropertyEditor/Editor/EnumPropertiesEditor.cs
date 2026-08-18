@@ -8,11 +8,6 @@ namespace System.ComponentModel
 {
     public class EnumPropertiesEditor : IPropertyEditor
     {
-        static EnumPropertiesEditor()
-        {
-            PropertyEditorHelper.RegisterEditor<EnumPropertiesEditor>(t => (Nullable.GetUnderlyingType(t) ?? t).IsEnum);
-        }
-
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);
@@ -41,7 +36,7 @@ namespace System.ComponentModel
                 SelectedValuePath = nameof(KeyValuePair<object?, string>.Key)
             };
 
-            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
+            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property);
             comboBox.SetBinding(Selector.SelectedValueProperty, binding);
 
             dockPanel.Children.Add(textBlock);

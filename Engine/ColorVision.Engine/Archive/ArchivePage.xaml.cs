@@ -173,8 +173,8 @@ namespace ColorVision.Engine.Archive.Dao
             if (globleCfgdModel == null)
                 return;
 
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(globleCfgdModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            propertyEditorWindow.Submited += (s, e) => { GlobleCfgdDao.Instance.Save(globleCfgdModel); };
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(globleCfgdModel, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            propertyEditorWindow.Submitted += (s, e) => { GlobleCfgdDao.Instance.Save(globleCfgdModel); };
             propertyEditorWindow.ShowDialog();
         }
 
@@ -210,8 +210,8 @@ namespace ColorVision.Engine.Archive.Dao
                 return;
             }
 
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configArchivedModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            propertyEditorWindow.Submited += (s, e) => { ConfigArchivedDao.Instance.Save(configArchivedModel); };
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configArchivedModel, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            propertyEditorWindow.Submitted += (s, e) => { ConfigArchivedDao.Instance.Save(configArchivedModel); };
             propertyEditorWindow.ShowDialog();
         }
 
@@ -237,8 +237,8 @@ namespace ColorVision.Engine.Archive.Dao
                 MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(ColorVision.Engine.Properties.Resources.Engine_Msg_RCConfigInfoNotFound, RCSetting.Instance.Config.RCName), "ColorVision");
                 return;
             }
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(sysConfigRcModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            propertyEditorWindow.Submited += (s, e) => { SysConfigRcDao.Instance.Save(sysConfigRcModel); };
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(sysConfigRcModel, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            propertyEditorWindow.Submitted += (s, e) => { SysConfigRcDao.Instance.Save(sysConfigRcModel); };
             propertyEditorWindow.ShowDialog();
         }
 

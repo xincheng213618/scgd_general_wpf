@@ -259,49 +259,13 @@ namespace ColorVision.UI.Desktop.Settings
         private static List<PropertyInfo> GetEditableProperties(object source)
         {
             var type = source.GetType();
-            return type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(property => property.CanRead && property.CanWrite)
-                .Where(property => property.GetIndexParameters().Length == 0)
-                .Where(property => property.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true)
-                .Where(property => CanCreateEditor(property))
+            return PropertyEditorHelper.GetEditableProperties(type)
+                .Where(PropertyEditorHelper.CanEditProperty)
                 .OrderBy(property => GetInheritanceDepth(property.DeclaringType ?? type))
                 .ThenBy(property => property.GetCustomAttribute<ConfigSettingAttribute>()?.Order ?? int.MaxValue)
                 .ThenBy(property => property.GetCustomAttribute<DisplayAttribute>()?.GetOrder() ?? int.MaxValue)
                 .ThenBy(property => property.MetadataToken)
                 .ToList();
-        }
-
-        private static bool CanCreateEditor(PropertyInfo property)
-        {
-            var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
-            if (editorAttr?.EditorType != null) return true;
-            if (PropertyEditorHelper.GetEditorTypeForPropertyType(property.PropertyType) != null) return true;
-
-            return CanGenerateNestedEditor(property.PropertyType);
-        }
-
-        private static bool CanGenerateNestedEditor(Type type)
-        {
-            type = Nullable.GetUnderlyingType(type) ?? type;
-            if (!type.IsClass || type == typeof(string)) return false;
-            if (typeof(Delegate).IsAssignableFrom(type) || typeof(Type).IsAssignableFrom(type) || typeof(System.Resources.ResourceManager).IsAssignableFrom(type)) return false;
-            if (typeof(DependencyObject).IsAssignableFrom(type) || typeof(System.Collections.IEnumerable).IsAssignableFrom(type)) return false;
-            if (IsFrameworkType(type) && !typeof(INotifyPropertyChanged).IsAssignableFrom(type)) return false;
-
-            return type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Any(property => property.CanRead
-                    && property.CanWrite
-                    && property.GetIndexParameters().Length == 0
-                    && (property.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true));
-        }
-
-        private static bool IsFrameworkType(Type type)
-        {
-            string namespaceName = type.Namespace ?? string.Empty;
-            return namespaceName == "System"
-                || namespaceName.StartsWith("System.", StringComparison.Ordinal)
-                || namespaceName.StartsWith("Microsoft.", StringComparison.Ordinal)
-                || namespaceName.StartsWith("MS.", StringComparison.Ordinal);
         }
 
         private static int GetInheritanceDepth(Type type)

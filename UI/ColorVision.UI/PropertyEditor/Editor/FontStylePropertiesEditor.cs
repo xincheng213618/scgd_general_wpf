@@ -9,11 +9,6 @@ namespace System.ComponentModel
 
     public class FontStylePropertiesEditor : IPropertyEditor
     {
-        static FontStylePropertiesEditor()
-        {
-            PropertyEditorHelper.RegisterEditor<FontStylePropertiesEditor>(typeof(FontStyle));
-        }
-
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);
@@ -31,7 +26,7 @@ namespace System.ComponentModel
                     .Select(p => new KeyValuePair<FontStyle, string>((FontStyle)p.GetValue(null), p.Name)).ToList()
             };
 
-            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
+            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property);
             comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
             DockPanel.SetDock(comboBox, Dock.Right);
 

@@ -152,11 +152,6 @@ namespace System.ComponentModel
     {
         private static readonly string[] Fields = new[] { "X", "Y" };
 
-        static PointPropertiesEditor()
-        {
-            PropertyEditorHelper.RegisterEditor<PointPropertiesEditor>(t => (Nullable.GetUnderlyingType(t) ?? t) == typeof(Point));
-        }
-
         protected override string[] FieldToolTips => Fields;
 
         protected override string GetFieldText(Point value, int index)
@@ -185,11 +180,6 @@ namespace System.ComponentModel
     public class RectPropertiesEditor : NumericStructPropertiesEditor<Rect>
     {
         private static readonly string[] Fields = new[] { "X", "Y", "Width", "Height" };
-
-        static RectPropertiesEditor()
-        {
-            PropertyEditorHelper.RegisterEditor<RectPropertiesEditor>(t => (Nullable.GetUnderlyingType(t) ?? t) == typeof(Rect));
-        }
 
         protected override string[] FieldToolTips => Fields;
 
@@ -227,11 +217,6 @@ namespace System.ComponentModel
     {
         private static readonly string[] Fields = new[] { "X", "Y", "Width", "Height" };
 
-        static Int32RectPropertiesEditor()
-        {
-            PropertyEditorHelper.RegisterEditor<Int32RectPropertiesEditor>(t => (Nullable.GetUnderlyingType(t) ?? t) == typeof(Int32Rect));
-        }
-
         protected override string[] FieldToolTips => Fields;
 
         protected override string GetFieldText(Int32Rect value, int index)
@@ -268,11 +253,6 @@ namespace System.ComponentModel
     {
         private static readonly string[] Fields = new[] { "Width", "Height" };
 
-        static SizePropertiesEditor()
-        {
-            PropertyEditorHelper.RegisterEditor<SizePropertiesEditor>(t => (Nullable.GetUnderlyingType(t) ?? t) == typeof(Size));
-        }
-
         protected override string[] FieldToolTips => Fields;
 
         protected override string GetFieldText(Size value, int index)
@@ -304,11 +284,6 @@ namespace System.ComponentModel
     public class ThicknessPropertiesEditor : NumericStructPropertiesEditor<Thickness>
     {
         private static readonly string[] Fields = new[] { "Left", "Top", "Right", "Bottom" };
-
-        static ThicknessPropertiesEditor()
-        {
-            PropertyEditorHelper.RegisterEditor<ThicknessPropertiesEditor>(t => (Nullable.GetUnderlyingType(t) ?? t) == typeof(Thickness));
-        }
 
         protected override string[] FieldToolTips => Fields;
 

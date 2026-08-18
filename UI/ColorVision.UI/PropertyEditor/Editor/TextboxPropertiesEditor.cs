@@ -25,13 +25,10 @@ namespace System.ComponentModel
             typeof(string)
         };
 
-        static TextboxPropertiesEditor()
+        internal static bool IsSupportedType(Type type)
         {
-            PropertyEditorHelper.RegisterEditor<TextboxPropertiesEditor>(t =>
-            {
-                t = Nullable.GetUnderlyingType(t) ?? t;
-                return TextEditableTypes.Contains(t);
-            });
+            type = Nullable.GetUnderlyingType(type) ?? type;
+            return TextEditableTypes.Contains(type);
         }
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
@@ -40,8 +37,7 @@ namespace System.ComponentModel
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             dockPanel.Children.Add(textBlock);
 
-            Binding binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
-            binding.UpdateSourceTrigger = UpdateSourceTrigger.Default;
+            Binding binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property, UpdateSourceTrigger.Default);
 
             var t = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
             if (t == typeof(float) || t == typeof(double))

@@ -12,15 +12,12 @@ namespace System.ComponentModel
 {
     public class CollectionJsonEditor : IPropertyEditor
     {
-        static CollectionJsonEditor()
+        internal static bool IsSupportedType(Type type)
         {
-            PropertyEditorHelper.RegisterEditor<CollectionJsonEditor>(t =>
-            {
-                t = Nullable.GetUnderlyingType(t) ?? t;
-                return CollectionTypeHelper.IsSupportedCollectionType(t) &&
-                       CollectionTypeHelper.TryGetElementType(t, out var elementType) &&
-                       CollectionTypeHelper.IsSupportedElementType(elementType);
-            });
+            type = Nullable.GetUnderlyingType(type) ?? type;
+            return CollectionTypeHelper.IsSupportedCollectionType(type) &&
+                   CollectionTypeHelper.TryGetElementType(type, out Type elementType) &&
+                   CollectionTypeHelper.IsSupportedElementType(elementType);
         }
 
         public DockPanel GenProperties(PropertyInfo property, object obj)

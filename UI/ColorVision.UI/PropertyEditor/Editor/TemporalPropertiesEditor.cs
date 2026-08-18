@@ -14,11 +14,6 @@ namespace System.ComponentModel
         private const string TimeOnlyFormat = "HH:mm:ss";
         private static readonly string[] TimeOnlyFormats = new[] { "HH:mm", "HH:mm:ss", "HH:mm:ss.fff" };
 
-        static TemporalPropertiesEditor()
-        {
-            PropertyEditorHelper.RegisterEditor<TemporalPropertiesEditor>(IsSupportedType);
-        }
-
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);
@@ -36,7 +31,7 @@ namespace System.ComponentModel
             return dockPanel;
         }
 
-        private static bool IsSupportedType(Type type)
+        internal static bool IsSupportedType(Type type)
         {
             var propertyType = Nullable.GetUnderlyingType(type) ?? type;
             return propertyType == typeof(DateTime) ||
