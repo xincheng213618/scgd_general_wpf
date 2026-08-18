@@ -1067,6 +1067,55 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void RunControlIsSingularAndMustMatchTheStopReason()
+    {
+        var paused = new CopilotAgentTaskEventJournalBuilder();
+        paused.RecordRunStarted();
+        paused.RecordControl(CopilotAgentControlIntent.Pause);
+        paused.RecordControl(CopilotAgentControlIntent.Pause);
+        Assert.Throws<InvalidOperationException>(() =>
+            paused.RecordControl(CopilotAgentControlIntent.Cancel));
+        Assert.Throws<InvalidOperationException>(() =>
+            paused.RecordStop(CopilotAgentStopReason.Completed));
+        paused.RecordStop(CopilotAgentStopReason.Paused);
+
+        var snapshot = paused.Snapshot();
+        var control = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.PauseRequested);
+        Assert.True(snapshot.IsStructurallyValid());
+
+        var stopped = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.RunStopped);
+        var contradictoryStop = new CopilotAgentTaskEvent
+        {
+            Sequence = stopped.Sequence,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                stopped.Sequence,
+                stopped.RunId,
+                stopped.Type,
+                stopped.OccurredAtUtc),
+            Type = stopped.Type,
+            OccurredAtUtc = stopped.OccurredAtUtc,
+            RunId = stopped.RunId,
+            SubjectId = stopped.SubjectId,
+            State = CopilotAgentStopReason.Cancelled.ToString(),
+            Summary = stopped.Summary,
+        };
+        Assert.True(contradictoryStop.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = snapshot.Events
+                .Where(item => !ReferenceEquals(item, stopped))
+                .Append(contradictoryStop)
+                .OrderBy(item => item.Sequence)
+                .ToArray(),
+        }.IsStructurallyValid());
+        Assert.Equal(CopilotAgentControlIntent.Pause.ToString(), control.State);
+    }
+
+    [Fact]
     public void InterruptedRunRecoveryRepairsCheckpointJournalBeforeRunStop()
     {
         var profile = CreateProfile();

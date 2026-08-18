@@ -271,6 +271,21 @@ namespace ColorVision.Copilot
                     throw new InvalidOperationException(
                         $"Agent run {RunId} already stopped with reason {existingStop.State}.");
                 }
+                var control = _events.LastOrDefault(item =>
+                    (item.Type is CopilotAgentTaskEventType.PauseRequested
+                        or CopilotAgentTaskEventType.CancelRequested)
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal));
+                var expectedReason = control?.Type switch
+                {
+                    CopilotAgentTaskEventType.PauseRequested => CopilotAgentStopReason.Paused,
+                    CopilotAgentTaskEventType.CancelRequested => CopilotAgentStopReason.Cancelled,
+                    _ => (CopilotAgentStopReason?)null,
+                };
+                if (expectedReason.HasValue && reason != expectedReason.Value)
+                {
+                    throw new InvalidOperationException(
+                        $"Agent run {RunId} control event {control!.Type} requires stop reason {expectedReason.Value}, not {reason}.");
+                }
                 CloseDanglingToolExecutions(reason);
                 CloseDanglingUserQuestions(reason);
                 Append(CopilotAgentTaskEventType.RunStopped, RunId, reason.ToString(), $"Agent run stopped with reason {reason}.");
@@ -295,13 +310,18 @@ namespace ColorVision.Copilot
         {
             if (intent is not (CopilotAgentControlIntent.Pause or CopilotAgentControlIntent.Cancel))
                 throw new ArgumentOutOfRangeException(nameof(intent));
-            Append(
+            AppendUnique(
                 intent == CopilotAgentControlIntent.Pause ? CopilotAgentTaskEventType.PauseRequested : CopilotAgentTaskEventType.CancelRequested,
                 RunId,
                 intent.ToString(),
                 intent == CopilotAgentControlIntent.Pause
                     ? "The user paused the active Agent run at a cancellation boundary."
-                    : "The user cancelled the active Agent run and discarded its new checkpoint.");
+                    : "The user cancelled the active Agent run and discarded its new checkpoint.",
+                uniqueTypes:
+                [
+                    CopilotAgentTaskEventType.PauseRequested,
+                    CopilotAgentTaskEventType.CancelRequested,
+                ]);
         }
 
         public void Observe(CopilotAgentEvent agentEvent)

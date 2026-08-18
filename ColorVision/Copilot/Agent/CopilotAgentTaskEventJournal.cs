@@ -130,6 +130,7 @@ namespace ColorVision.Copilot
                     .GroupBy(item => item.RunId, StringComparer.Ordinal)
                     .Any(group => group.Count() > 1)
                 || HasDuplicateLifecycleEvents(Events)
+                || HasInvalidControlLifecycle(Events)
                 || Events
                     .Where(item => item.Type == CopilotAgentTaskEventType.RunStopped)
                     .Any(item => !Enum.TryParse<CopilotAgentStopReason>(item.State, out var reason)
@@ -172,6 +173,38 @@ namespace ColorVision.Copilot
                     or CopilotAgentTaskEventType.ApprovalDenied)
                 .GroupBy(item => (item.RunId, item.SubjectId))
                 .Any(group => group.Count() > 1);
+        }
+
+        private static bool HasInvalidControlLifecycle(
+            IReadOnlyList<CopilotAgentTaskEvent> events)
+        {
+            foreach (var group in events.GroupBy(item => item.RunId, StringComparer.Ordinal))
+            {
+                var controls = group
+                    .Where(item => item.Type is CopilotAgentTaskEventType.PauseRequested
+                        or CopilotAgentTaskEventType.CancelRequested)
+                    .ToArray();
+                if (controls.Length > 1)
+                    return true;
+
+                var stopped = group.SingleOrDefault(item =>
+                    item.Type == CopilotAgentTaskEventType.RunStopped);
+                if (controls.Length == 0 || stopped == null)
+                    continue;
+
+                var expectedReason = controls[0].Type == CopilotAgentTaskEventType.PauseRequested
+                    ? CopilotAgentStopReason.Paused
+                    : CopilotAgentStopReason.Cancelled;
+                if (!string.Equals(
+                    stopped.State,
+                    expectedReason.ToString(),
+                    StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 
