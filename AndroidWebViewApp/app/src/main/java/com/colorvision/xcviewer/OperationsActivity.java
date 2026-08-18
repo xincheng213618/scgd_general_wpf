@@ -480,17 +480,23 @@ public class OperationsActivity extends Activity {
         title.setText("连接方式");
         boolean relayPreferred = OperationsConnectionPreference.prefersRelay(
                 preferences.getOperationsConnectionPreference());
-        state.setText(relayPreferred ? "固定中继优先" : "现场直连优先");
-        int profileCount = preferences.getOperationsProfileCount();
+        List<OperationsProfileRegistry.Profile> profiles = preferences.getOperationsProfiles();
+        long nowMilliseconds = System.currentTimeMillis();
+        OperationsFleetOverview.Assessment fleet = OperationsFleetOverview.assess(
+                profiles, nowMilliseconds);
+        state.setText((relayPreferred ? "固定中继优先" : "现场直连优先")
+                + " · " + fleet.summary);
+        int profileCount = profiles.size();
         details.setText("当前电脑：" + operationsProfileLabel(
-                        preferences.getOperationsProfiles(), preferences.getOperationsHostId())
+                        profiles, preferences.getOperationsHostId())
                 + "\n已配对电脑：" + profileCount + " / "
                 + OperationsProfileRegistry.MAX_PROFILES
                 + "\n当前通道：" + (remoteDashboard ? "固定中继" : "现场直连")
                 + "\n首选方式会保存在本机，应用重启后继续使用。"
                 + "\n首选通道临时不可用时会安全回退；恢复后自动切回。"
                 + "\n固定中继地址由应用内置，不能填写或选择网址。"
-                + "\n电脑总览来自各电脑最后一次本机守护检查；非当前电脑不会在后台刷新。");
+                + "\n电脑总览来自各电脑最后一次本机守护检查；非当前电脑不会在后台刷新。"
+                + "\n队列摘要只采用最近 10 分钟内的检查；更早记录会标记为待巡检。");
         actions.removeAllViews();
 
         addDashboardActionRow(
@@ -504,8 +510,10 @@ public class OperationsActivity extends Activity {
         addDashboardWideAction(dashboardButton(
                 "巡检全部电脑（只读）", v -> refreshAllOperationsProfiles()));
         addDashboardSection("电脑总览");
-        List<OperationsProfileRegistry.Profile> profiles = preferences.getOperationsProfiles();
-        long nowMilliseconds = System.currentTimeMillis();
+        if (fleet.hasPriorityAction()) {
+            addDashboardWideAction(dashboardButton(
+                    fleet.priorityButtonLabel, v -> openFleetPriority(fleet)));
+        }
         for (OperationsProfileRegistry.Profile profile : profiles) {
             addOperationsProfileWideAction(operationsProfileButton(
                     profile, profiles, nowMilliseconds));
@@ -545,6 +553,30 @@ public class OperationsActivity extends Activity {
         return button;
     }
 
+    private void openFleetPriority(OperationsFleetOverview.Assessment fleet) {
+        OperationsFleetOverview.Assessment current = OperationsFleetOverview.assess(
+                preferences.getOperationsProfiles(), System.currentTimeMillis());
+        if (!fleet.priorityHostId.equals(current.priorityHostId)
+                || !fleet.priorityAction.equals(current.priorityAction)) {
+            showConnectionPreference();
+            Toast.makeText(this, "电脑队列已更新，请确认新的首要电脑",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (OperationsFleetOverview.ACTION_REMOVE.equals(current.priorityAction)) {
+            confirmRemoveOperationsProfile(current.priorityHostId, current.priorityLabel);
+            return;
+        }
+        if (!OperationsFleetOverview.ACTION_OPEN.equals(current.priorityAction)) {
+            return;
+        }
+        if (current.priorityHostId.equals(preferences.getOperationsHostId())) {
+            openExistingProfile();
+        } else {
+            switchOperationsProfile(current.priorityHostId);
+        }
+    }
+
     private void refreshAllOperationsProfiles() {
         if (fleetCheckInFlight) {
             Toast.makeText(this, "电脑巡检正在进行", Toast.LENGTH_SHORT).show();
@@ -566,9 +598,6 @@ public class OperationsActivity extends Activity {
         String activeHostBefore = preferences.getOperationsHostId();
         int total = targets.size();
         AtomicInteger completed = new AtomicInteger();
-        AtomicInteger reachable = new AtomicInteger();
-        AtomicInteger offline = new AtomicInteger();
-        AtomicInteger revoked = new AtomicInteger();
         setBusy("正在巡检 0 / " + total + " 台电脑…");
         title.setText("巡检电脑总览");
         details.setText("只读取每台电脑的脱敏聚合状态；最多并行检查 3 台，使用各自的设备密钥、证书固定和连接偏好。巡检不会切换当前操作目标，也不会执行远程动作。");
@@ -582,16 +611,10 @@ public class OperationsActivity extends Activity {
                 if (result.revoked) {
                     clearRemoteWindowSnapshotSecrets(profile.hostId);
                     preferences.markOperationsProfileRevoked(profile.hostId);
-                    revoked.incrementAndGet();
-                } else if (result.reachable) {
-                    reachable.incrementAndGet();
-                } else {
-                    offline.incrementAndGet();
                 }
                 completed.incrementAndGet();
                 runOnUiThread(() -> completeFleetCheckProgress(
-                        generation, activeHostBefore, completed.get(), total,
-                        reachable.get(), offline.get(), revoked.get()));
+                        generation, activeHostBefore, completed.get(), total));
             });
         }
     }
@@ -667,10 +690,7 @@ public class OperationsActivity extends Activity {
             int generation,
             String activeHostBefore,
             int completed,
-            int total,
-            int reachable,
-            int offline,
-            int revoked) {
+            int total) {
         if (generation != fleetCheckGeneration || isFinishing() || isDestroyed()) {
             return;
         }
@@ -688,33 +708,32 @@ public class OperationsActivity extends Activity {
             OperationsWatchService.restartForProfileChange(this);
         }
         showConnectionPreference();
+        OperationsFleetOverview.Assessment fleet = OperationsFleetOverview.assess(
+                preferences.getOperationsProfiles(), System.currentTimeMillis());
         Toast.makeText(this,
-                "巡检完成：已确认 " + reachable + " 台 · 暂不可达 " + offline
-                        + " 台 · 授权失效 " + revoked + " 台",
+                "巡检完成：" + fleet.summary,
                 Toast.LENGTH_LONG).show();
     }
 
     private static final class FleetCheckResult {
         final String state;
-        final boolean reachable;
         final boolean revoked;
 
-        FleetCheckResult(String state, boolean reachable, boolean revoked) {
+        FleetCheckResult(String state, boolean revoked) {
             this.state = state;
-            this.reachable = reachable;
             this.revoked = revoked;
         }
 
         static FleetCheckResult reachable(String state) {
-            return new FleetCheckResult(state, true, false);
+            return new FleetCheckResult(state, false);
         }
 
         static FleetCheckResult offline() {
-            return new FleetCheckResult(OperationsWatchHistory.STATE_OFFLINE, false, false);
+            return new FleetCheckResult(OperationsWatchHistory.STATE_OFFLINE, false);
         }
 
         static FleetCheckResult revoked() {
-            return new FleetCheckResult(OperationsWatchHistory.STATE_REVOKED, false, true);
+            return new FleetCheckResult(OperationsWatchHistory.STATE_REVOKED, true);
         }
     }
 
