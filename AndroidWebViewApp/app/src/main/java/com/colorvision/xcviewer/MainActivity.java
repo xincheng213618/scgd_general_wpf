@@ -5,7 +5,6 @@ import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
@@ -15,7 +14,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -161,10 +159,6 @@ public class MainActivity extends AppCompatActivity {
         return themeManager.dividerColor();
     }
 
-    private int borderColor() {
-        return themeManager.borderColor();
-    }
-
     private LinearLayout createAppShell() {
         LinearLayout shell = new LinearLayout(this);
         shell.setOrientation(LinearLayout.VERTICAL);
@@ -247,16 +241,6 @@ public class MainActivity extends AppCompatActivity {
             bottomNavigation.setSelectedItemId(itemId);
             updatingBottomNavigation = false;
         }
-    }
-
-    private ImageButton makeTopIconButton(int iconRes) {
-        ImageButton button = new ImageButton(this);
-        button.setImageResource(iconRes);
-        button.setColorFilter(primaryTextColor());
-        button.setBackground(oval(cardBackgroundColor(), borderColor(), 1));
-        button.setPadding(dp(10), dp(10), dp(10), dp(10));
-        button.setScaleType(ImageView.ScaleType.CENTER);
-        return button;
     }
 
     private int consumeStartTab(Intent intent) {
@@ -371,79 +355,43 @@ public class MainActivity extends AppCompatActivity {
 
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(0, dp(10), 0, dp(28));
+        content.setPadding(0, dp(4), 0, dp(28));
         scrollView.addView(content, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT,
                 ScrollView.LayoutParams.WRAP_CONTENT));
 
-        content.addView(createProfileHeader(), matchWidthWrapParams());
-
         LinearLayout connectionSection = makeSettingsSection();
-        content.addView(connectionSection, settingsSectionParams());
+        addSettingsSection(content, SettingsInformationArchitecture.CONNECTION_SECTION,
+                connectionSection);
         boolean paired = appPreferences.hasOperationsProfile();
         int pairedComputerCount = appPreferences.getOperationsProfileCount();
         addSettingsRow(connectionSection, SettingsInformationArchitecture.OPERATIONS,
                 paired ? "当前 " + appPreferences.getActiveOperationsProfileLabel()
                         + " · 共 " + pairedComputerCount + " 台" : "尚未配对",
-                v -> openOperations());
+                v -> openOperations(), true);
         addSettingsRow(connectionSection, SettingsInformationArchitecture.SECURE_CHANNEL,
                 paired ? "设备密钥 + TLS 证书固定" : "等待安全配对",
-                null);
+                null, true);
         addSettingsRow(connectionSection,
                 paired ? SettingsInformationArchitecture.ADD_COMPUTER
                         : SettingsInformationArchitecture.CONNECT_COMPUTER,
-                "扫描二维码", v -> startQrScan());
+                "扫描二维码", v -> startQrScan(), false);
 
         LinearLayout permissionSection = makeSettingsSection();
-        content.addView(permissionSection, settingsSectionParams());
+        addSettingsSection(content, SettingsInformationArchitecture.PERMISSION_SECTION,
+                permissionSection);
         addSettingsRow(permissionSection, SettingsInformationArchitecture.CAMERA_PERMISSION,
-                cameraPermissionStatus(), v -> startQrScan());
+                cameraPermissionStatus(), v -> startQrScan(), false);
 
         LinearLayout appSection = makeSettingsSection();
-        content.addView(appSection, settingsSectionParams());
+        addSettingsSection(content, SettingsInformationArchitecture.APPLICATION_SECTION,
+                appSection);
         addSettingsRow(appSection, SettingsInformationArchitecture.THEME_MODE,
-                getThemeModeLabel(), v -> showThemeDialog());
+                getThemeModeLabel(), v -> showThemeDialog(), true);
         addSettingsRow(appSection, SettingsInformationArchitecture.APP_UPDATE,
-                "当前 " + getAppVersionName() + " · 签名校验", v -> checkForAppUpdate());
+                "当前 " + getAppVersionName() + " · 签名校验", v -> checkForAppUpdate(), false);
 
         return scrollView;
-    }
-
-    private LinearLayout createProfileHeader() {
-        LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(dp(22), dp(22), dp(22), dp(22));
-        header.setBackgroundColor(cardBackgroundColor());
-
-        TextView avatar = new TextView(this);
-        avatar.setText("CV");
-        avatar.setTextColor(themeManager.onPrimaryColor());
-        avatar.setTextSize(18);
-        avatar.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        avatar.setGravity(Gravity.CENTER);
-        avatar.setBackground(oval(themeManager.primaryColor(), Color.TRANSPARENT, 0));
-        header.addView(avatar, new LinearLayout.LayoutParams(dp(56), dp(56)));
-
-        LinearLayout textBlock = new LinearLayout(this);
-        textBlock.setOrientation(LinearLayout.VERTICAL);
-        textBlock.setPadding(dp(14), 0, dp(8), 0);
-        header.addView(textBlock, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-
-        TextView title = makeTitle("ColorVision 移动端", 22);
-        textBlock.addView(title, matchWidthWrapParams());
-
-        TextView subtitle = makeBodyText(appPreferences.hasOperationsProfile()
-                ? "现场运维已配对，启动时自动连接"
-                : "尚未连接现场运维电脑");
-        subtitle.setPadding(0, dp(4), 0, 0);
-        textBlock.addView(subtitle, matchWidthWrapParams());
-
-        ImageButton scanButton = makeTopIconButton(R.drawable.ic_qr_code_scanner_24);
-        scanButton.setContentDescription("扫描二维码");
-        scanButton.setOnClickListener(v -> startQrScan());
-        header.addView(scanButton, new LinearLayout.LayoutParams(dp(44), dp(44)));
-        return header;
     }
 
     private String getAppVersionName() {
@@ -461,7 +409,25 @@ public class MainActivity extends AppCompatActivity {
         return section;
     }
 
-    private void addSettingsRow(LinearLayout parent, String label, String value, View.OnClickListener listener) {
+    private void addSettingsSection(LinearLayout content, String heading, LinearLayout section) {
+        TextView headingView = new TextView(this);
+        headingView.setText(heading);
+        TextViewCompat.setTextAppearance(
+                headingView,
+                com.google.android.material.R.style.TextAppearance_Material3_LabelLarge);
+        headingView.setTextColor(themeManager.primaryColor());
+        headingView.setPadding(dp(22), dp(18), dp(22), dp(8));
+        ViewCompat.setAccessibilityHeading(headingView, true);
+        content.addView(headingView, matchWidthWrapParams());
+        content.addView(section, matchWidthWrapParams());
+    }
+
+    private void addSettingsRow(
+            LinearLayout parent,
+            String label,
+            String value,
+            View.OnClickListener listener,
+            boolean showDivider) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
@@ -498,21 +464,15 @@ public class MainActivity extends AppCompatActivity {
 
         parent.addView(row, matchWidthWrapParams());
 
-        View divider = new View(this);
-        divider.setBackgroundColor(dividerColor());
-        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                1);
-        dividerParams.setMargins(dp(22), 0, 0, 0);
-        parent.addView(divider, dividerParams);
-    }
-
-    private LinearLayout.LayoutParams settingsSectionParams() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, dp(10), 0, 0);
-        return params;
+        if (showDivider) {
+            View divider = new View(this);
+            divider.setBackgroundColor(dividerColor());
+            LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    1);
+            dividerParams.setMargins(dp(22), 0, 0, 0);
+            parent.addView(divider, dividerParams);
+        }
     }
 
     private void startQrScan() {
@@ -843,22 +803,6 @@ public class MainActivity extends AppCompatActivity {
             drawable.setStroke(strokeWidth, strokeColor);
         }
         return drawable;
-    }
-
-    private GradientDrawable oval(int fillColor, int strokeColor, int strokeWidth) {
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setShape(GradientDrawable.OVAL);
-        drawable.setColor(fillColor);
-        if (strokeWidth > 0) {
-            drawable.setStroke(strokeWidth, strokeColor);
-        }
-        return drawable;
-    }
-
-    private LinearLayout.LayoutParams topIconParams() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(46), dp(46));
-        params.setMargins(dp(8), 0, 0, 0);
-        return params;
     }
 
     private FrameLayout.LayoutParams matchParentParams() {

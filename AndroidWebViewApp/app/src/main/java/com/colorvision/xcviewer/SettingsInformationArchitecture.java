@@ -4,6 +4,9 @@ import java.util.Arrays;
 import java.util.List;
 
 final class SettingsInformationArchitecture {
+    static final String CONNECTION_SECTION = "电脑连接";
+    static final String PERMISSION_SECTION = "权限";
+    static final String APPLICATION_SECTION = "应用";
     static final String OPERATIONS = "现场运维";
     static final String SECURE_CHANNEL = "安全通道";
     static final String ADD_COMPUTER = "添加电脑";
@@ -13,6 +16,10 @@ final class SettingsInformationArchitecture {
     static final String APP_UPDATE = "应用更新";
 
     private SettingsInformationArchitecture() {
+    }
+
+    static List<String> sectionHeadings() {
+        return Arrays.asList(CONNECTION_SECTION, PERMISSION_SECTION, APPLICATION_SECTION);
     }
 
     static List<String> visibleRows(boolean paired) {

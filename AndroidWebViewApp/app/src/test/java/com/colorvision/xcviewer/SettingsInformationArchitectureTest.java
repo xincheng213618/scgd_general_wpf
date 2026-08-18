@@ -10,6 +10,12 @@ import static org.junit.Assert.assertFalse;
 
 public class SettingsInformationArchitectureTest {
     @Test
+    public void sectionsFollowTheMaterialSettingsHierarchy() {
+        assertEquals(Arrays.asList("电脑连接", "权限", "应用"),
+                SettingsInformationArchitecture.sectionHeadings());
+    }
+
+    @Test
     public void pairedSettingsStayFocusedOnOperationsAndAppMaintenance() {
         assertEquals(Arrays.asList(
                         "现场运维",
