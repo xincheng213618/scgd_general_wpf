@@ -298,19 +298,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showOperationsLanding() {
+        int direction = AppScreenMotion.directionBetween(
+                currentTab,
+                TAB_OPERATIONS,
+                TAB_OPERATIONS,
+                TAB_SETTINGS);
         if (appPreferences.hasOperationsProfile()) {
             if (openedFromOperations
-                    && AppScreenMotion.directionBetween(
-                    currentTab,
-                    TAB_OPERATIONS,
-                    TAB_OPERATIONS,
-                    TAB_SETTINGS) == AppScreenMotion.DIRECTION_BACKWARD) {
-                finish();
+                    && direction == AppScreenMotion.DIRECTION_BACKWARD) {
+                finishAfterTransition();
                 return;
             }
             openOperations();
             return;
         }
+        AppScreenMotion.beginContentTransition(setupContainer, direction);
         selectTab(TAB_OPERATIONS);
         headerTitle.setText("现场运维");
         headerSubtitle.setText("扫描电脑端安全配对码");
@@ -349,6 +351,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showProfileView() {
+        int direction = AppScreenMotion.directionBetween(
+                currentTab,
+                TAB_SETTINGS,
+                TAB_OPERATIONS,
+                TAB_SETTINGS);
+        AppScreenMotion.beginContentTransition(setupContainer, direction);
         selectTab(TAB_SETTINGS);
         headerTitle.setText("设置");
         headerSubtitle.setText("安全配对与应用信息");
@@ -802,20 +810,6 @@ public class MainActivity extends AppCompatActivity {
         startActivity(new Intent(this, OperationsActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
         finish();
-    }
-
-    @Override
-    public void finish() {
-        boolean animateBackToOperations = openedFromOperations
-                && AppScreenMotion.directionBetween(
-                currentTab,
-                TAB_OPERATIONS,
-                TAB_OPERATIONS,
-                TAB_SETTINGS) == AppScreenMotion.DIRECTION_BACKWARD;
-        super.finish();
-        if (animateBackToOperations) {
-            AppScreenMotion.applyBackward(this);
-        }
     }
 
     private void saveAndOpen(String rawContent) {

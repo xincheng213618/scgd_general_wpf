@@ -3,6 +3,8 @@ package com.colorvision.xcviewer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class AppScreenMotionTest {
     private static final int OPERATIONS = 0;
@@ -33,5 +35,12 @@ public class AppScreenMotionTest {
         assertEquals(
                 AppScreenMotion.DIRECTION_NONE,
                 AppScreenMotion.directionBetween(OPERATIONS, 1, OPERATIONS, SETTINGS));
+    }
+
+    @Test
+    public void onlyDirectionalMovesUseSharedAxis() {
+        assertTrue(AppScreenMotion.usesSharedAxis(AppScreenMotion.DIRECTION_FORWARD));
+        assertTrue(AppScreenMotion.usesSharedAxis(AppScreenMotion.DIRECTION_BACKWARD));
+        assertFalse(AppScreenMotion.usesSharedAxis(AppScreenMotion.DIRECTION_NONE));
     }
 }

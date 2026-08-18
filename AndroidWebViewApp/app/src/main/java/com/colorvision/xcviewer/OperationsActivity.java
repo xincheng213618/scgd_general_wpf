@@ -141,6 +141,7 @@ public class OperationsActivity extends AppCompatActivity {
     private int connectionCheckGeneration;
     private int remoteTaskGeneration;
     private int fleetCheckGeneration;
+    private BottomNavigationView bottomNavigation;
     private boolean fleetCheckInFlight;
     private String pendingOperationsDestination = "";
 
@@ -159,6 +160,7 @@ public class OperationsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        AppScreenMotion.configureOperationsActivity(this);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         preferences = new AppPreferences(this);
         themeManager = new ThemeManager(this, preferences);
@@ -276,7 +278,8 @@ public class OperationsActivity extends AppCompatActivity {
 
         shell.addView(scroll, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
-        shell.addView(createBottomNavigation(), new LinearLayout.LayoutParams(
+        bottomNavigation = createBottomNavigation();
+        shell.addView(bottomNavigation, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         applyTopSystemBarInset(shell);
         setContentView(shell);
@@ -322,14 +325,7 @@ public class OperationsActivity extends AppCompatActivity {
         intent.putExtra(MainActivity.EXTRA_START_TAB, tab);
         intent.putExtra(MainActivity.EXTRA_FROM_OPERATIONS, true);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(intent);
-        if (AppScreenMotion.directionBetween(
-                MainActivity.TAB_OPERATIONS,
-                tab,
-                MainActivity.TAB_OPERATIONS,
-                MainActivity.TAB_SETTINGS) == AppScreenMotion.DIRECTION_FORWARD) {
-            AppScreenMotion.applyForward(this);
-        }
+        AppScreenMotion.startForward(this, intent);
     }
 
     private void beginPairing(String rawPairing) {
@@ -5693,8 +5689,21 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onRestart() {
+        super.onRestart();
+        selectOperationsTab();
+    }
+
+    private void selectOperationsTab() {
+        if (bottomNavigation != null) {
+            bottomNavigation.setSelectedItemId(NAV_OPERATIONS);
+        }
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
+        selectOperationsTab();
         activityResumed = true;
         refreshOperationsTargetPresentation();
         if (preferences != null && preferences.hasOperationsProfile()) {

@@ -1,7 +1,13 @@
 package com.colorvision.xcviewer;
 
 import android.app.Activity;
-import android.os.Build;
+import android.app.ActivityOptions;
+import android.content.Intent;
+import android.view.ViewGroup;
+
+import androidx.transition.TransitionManager;
+
+import com.google.android.material.transition.MaterialSharedAxis;
 
 final class AppScreenMotion {
     static final int DIRECTION_NONE = 0;
@@ -21,34 +27,38 @@ final class AppScreenMotion {
         return DIRECTION_NONE;
     }
 
+    static boolean usesSharedAxis(int direction) {
+        return direction == DIRECTION_FORWARD || direction == DIRECTION_BACKWARD;
+    }
+
+    static void configureOperationsActivity(Activity activity) {
+        activity.getWindow().setExitTransition(sharedAxisPlatform(true));
+        activity.getWindow().setReenterTransition(sharedAxisPlatform(false));
+    }
+
     static void configureSettingsActivity(Activity activity) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            activity.overrideActivityTransition(
-                    Activity.OVERRIDE_TRANSITION_OPEN,
-                    R.anim.screen_enter_from_right,
-                    R.anim.screen_exit_to_left);
-            activity.overrideActivityTransition(
-                    Activity.OVERRIDE_TRANSITION_CLOSE,
-                    R.anim.screen_enter_from_left,
-                    R.anim.screen_exit_to_right);
-        }
+        activity.getWindow().setEnterTransition(sharedAxisPlatform(true));
+        activity.getWindow().setReturnTransition(sharedAxisPlatform(false));
     }
 
-    @SuppressWarnings("deprecation")
-    static void applyForward(Activity activity) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            activity.overridePendingTransition(
-                    R.anim.screen_enter_from_right,
-                    R.anim.screen_exit_to_left);
-        }
+    static void startForward(Activity activity, Intent intent) {
+        activity.startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(activity).toBundle());
     }
 
-    @SuppressWarnings("deprecation")
-    static void applyBackward(Activity activity) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            activity.overridePendingTransition(
-                    R.anim.screen_enter_from_left,
-                    R.anim.screen_exit_to_right);
+    static void beginContentTransition(ViewGroup container, int direction) {
+        if (!usesSharedAxis(direction) || container.getChildCount() == 0) {
+            return;
         }
+        MaterialSharedAxis transition = new MaterialSharedAxis(
+                MaterialSharedAxis.X,
+                direction == DIRECTION_FORWARD);
+        TransitionManager.beginDelayedTransition(container, transition);
+    }
+
+    private static com.google.android.material.transition.platform.MaterialSharedAxis sharedAxisPlatform(
+            boolean forward) {
+        return new com.google.android.material.transition.platform.MaterialSharedAxis(
+                com.google.android.material.transition.platform.MaterialSharedAxis.X,
+                forward);
     }
 }
