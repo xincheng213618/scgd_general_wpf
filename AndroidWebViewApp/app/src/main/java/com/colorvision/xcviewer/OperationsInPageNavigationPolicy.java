@@ -50,6 +50,7 @@ final class OperationsInPageNavigationPolicy {
         }
         String normalized = OperationsDestinationState.normalize(destination);
         if (OperationsDestinationState.TOOLS.equals(normalized)
+                || OperationsDestinationState.SETTINGS.equals(normalized)
                 || OperationsDestinationState.TRIAGE.equals(normalized)) {
             return NO_PARENT;
         }
@@ -107,11 +108,22 @@ final class OperationsInPageNavigationPolicy {
             String fromDestination,
             String toDestination,
             boolean detailOpenedFromTriage,
-            boolean detailOpenedFromToolbox) {
+            boolean detailOpenedFromToolbox,
+            boolean detailOpenedFromSettings) {
         String from = OperationsDestinationState.normalize(fromDestination);
         String to = OperationsDestinationState.normalize(toDestination);
         if (from.equals(to)) {
             return AppScreenMotion.DIRECTION_NONE;
+        }
+        if (detailOpenedFromSettings
+                && OperationsDestinationState.SETTINGS.equals(to)) {
+            return AppScreenMotion.DIRECTION_BACKWARD;
+        }
+        if (OperationsDestinationState.SETTINGS.equals(to)) {
+            return AppScreenMotion.DIRECTION_FORWARD;
+        }
+        if (OperationsDestinationState.SETTINGS.equals(from)) {
+            return AppScreenMotion.DIRECTION_BACKWARD;
         }
         if (to.equals(parentDestination(
                 from, detailOpenedFromTriage, detailOpenedFromToolbox))) {
@@ -162,7 +174,8 @@ final class OperationsInPageNavigationPolicy {
         return (OperationsDestinationState.TRIAGE.equals(normalized)
                         && !detailOpenedFromTriage)
                 || (OperationsDestinationState.TOOLS.equals(normalized)
-                        && !detailOpenedFromToolbox);
+                        && !detailOpenedFromToolbox)
+                || OperationsDestinationState.SETTINGS.equals(normalized);
     }
 
     static boolean shouldReturnToSettings(

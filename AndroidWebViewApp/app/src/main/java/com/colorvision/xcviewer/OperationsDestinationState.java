@@ -7,6 +7,7 @@ import java.util.Set;
 final class OperationsDestinationState {
     static final String OVERVIEW = "overview";
     static final String TOOLS = "tools";
+    static final String SETTINGS = "settings";
     static final String PAIRING = "pairing";
     static final String CONNECTIONS = "connections";
     static final String CONNECTION_CHECK = "connection_check";
@@ -22,6 +23,7 @@ final class OperationsDestinationState {
     private static final Set<String> KNOWN_DESTINATIONS = new HashSet<>(Arrays.asList(
             OVERVIEW,
             TOOLS,
+            SETTINGS,
             PAIRING,
             CONNECTIONS,
             CONNECTION_CHECK,

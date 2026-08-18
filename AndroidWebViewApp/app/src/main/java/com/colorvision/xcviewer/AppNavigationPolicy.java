@@ -6,8 +6,24 @@ final class AppNavigationPolicy {
     private AppNavigationPolicy() {
     }
 
-    static boolean shouldOpenOperationsDirectly(boolean hasOperationsProfile, boolean operationsRequested) {
-        return hasOperationsProfile && operationsRequested;
+    static boolean shouldOpenPairedWorkspace(
+            boolean hasOperationsProfile,
+            boolean topLevelDestinationRequested) {
+        return hasOperationsProfile && topLevelDestinationRequested;
+    }
+
+    static String pairedDestinationForTab(
+            int tab,
+            int operationsTab,
+            int toolsTab,
+            int settingsTab) {
+        if (tab == toolsTab) {
+            return OperationsDestinationState.TOOLS;
+        }
+        if (tab == settingsTab) {
+            return OperationsDestinationState.SETTINGS;
+        }
+        return OperationsDestinationState.OVERVIEW;
     }
 
     static int normalizeStartTab(

@@ -22,6 +22,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -128,7 +129,10 @@ public class OperationsActivity extends AppCompatActivity {
     private MaterialCardView detailsCard;
     private LinearProgressIndicator progress;
     private SwipeRefreshLayout dashboardRefresh;
+    private FrameLayout contentHost;
     private ScrollView dashboardScroll;
+    private ScrollView settingsScroll;
+    private LinearProgressIndicator settingsProgress;
     private LinearLayout dashboardContent;
     private LinearLayout actions;
     private DashboardStatusRow dashboardApplicationStatus;
@@ -174,6 +178,11 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean returnToToolboxOnBack;
     private boolean returnToSettingsOnBack;
     private boolean updatingBottomNavigation;
+    private boolean settingsConnectionInFlight;
+    private NotificationSettingsController notificationSettingsController;
+    private AndroidUpdateController androidUpdateController;
+    private Snackbar settingsFeedbackSnackbar;
+    private boolean cameraPermissionGranted;
     private boolean pairingApprovalWaiting;
     private long pairingApprovalDeadlineMilliseconds;
     private volatile int pairingRequestGeneration;
@@ -219,6 +228,8 @@ public class OperationsActivity extends AppCompatActivity {
             pendingRestoredDestination = restoredDestination;
         }
         createView();
+        initializeSettingsControllers();
+        cameraPermissionGranted = hasCameraPermission();
         installInPageBackNavigation();
 
         String rawPairing = getIntent().getStringExtra(EXTRA_PAIRING_PAYLOAD);
@@ -229,6 +240,20 @@ public class OperationsActivity extends AppCompatActivity {
         } else if (hasPairingPayload
                 && OperationsDestinationState.PAIRING.equals(restoredDestination)) {
             showInterruptedPairing(rawPairing);
+        } else if (preferences.hasOperationsProfile()
+                && (OperationsDestinationState.SETTINGS.equals(
+                            pendingOperationsDestination)
+                        || OperationsDestinationState.SETTINGS.equals(
+                            pendingRestoredDestination))) {
+            pendingOperationsDestination = "";
+            pendingRestoredDestination = "";
+            try {
+                ensureOperationsClients();
+            } catch (Exception ignored) {
+                client = null;
+                relayClient = null;
+            }
+            showSettingsPage();
         } else if (preferences.hasOperationsProfile()) {
             openExistingProfile();
         } else if (hasPairingPayload) {
@@ -376,7 +401,19 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardRefresh.addView(scroll, new SwipeRefreshLayout.LayoutParams(
                 SwipeRefreshLayout.LayoutParams.MATCH_PARENT,
                 SwipeRefreshLayout.LayoutParams.MATCH_PARENT));
-        shell.addView(dashboardRefresh, new LinearLayout.LayoutParams(
+
+        contentHost = new FrameLayout(this);
+        contentHost.addView(dashboardRefresh, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        settingsProgress = new LinearProgressIndicator(this);
+        settingsProgress.setVisibility(View.GONE);
+        FrameLayout.LayoutParams settingsProgressParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                dp(4));
+        settingsProgressParams.gravity = Gravity.TOP;
+        contentHost.addView(settingsProgress, settingsProgressParams);
+        shell.addView(contentHost, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
         bottomNavigation = createBottomNavigation();
         shell.addView(bottomNavigation, new LinearLayout.LayoutParams(
@@ -417,6 +454,9 @@ public class OperationsActivity extends AppCompatActivity {
             }
             if (item.getItemId() == NAV_OPERATIONS) {
                 returnToSettingsOnBack = false;
+                if (connectFromSettings(OperationsDestinationState.OVERVIEW)) {
+                    return true;
+                }
                 showCurrentDashboard();
                 return true;
             }
@@ -425,6 +465,9 @@ public class OperationsActivity extends AppCompatActivity {
                     return false;
                 }
                 returnToSettingsOnBack = false;
+                if (connectFromSettings(OperationsDestinationState.TRIAGE)) {
+                    return true;
+                }
                 showProblemCenter();
                 return true;
             }
@@ -433,12 +476,15 @@ public class OperationsActivity extends AppCompatActivity {
                     return false;
                 }
                 returnToSettingsOnBack = false;
+                if (connectFromSettings(OperationsDestinationState.TOOLS)) {
+                    return true;
+                }
                 showOperationsToolboxPage();
                 return true;
             }
             if (item.getItemId() == NAV_SETTINGS) {
                 returnToSettingsOnBack = false;
-                openMainTab(MainActivity.TAB_SETTINGS);
+                showSettingsPage();
                 return true;
             }
             return false;
@@ -459,8 +505,16 @@ public class OperationsActivity extends AppCompatActivity {
                 } else {
                     showOperationsToolboxPage();
                 }
-            } else if (item.getItemId() == NAV_SETTINGS && returnToSettingsOnBack) {
-                returnToSettings();
+            } else if (item.getItemId() == NAV_SETTINGS) {
+                if (OperationsDestinationState.SETTINGS.equals(currentDestination)) {
+                    if (settingsScroll != null) {
+                        settingsScroll.smoothScrollTo(0, 0);
+                    }
+                } else if (returnToSettingsOnBack) {
+                    returnToSettings();
+                } else {
+                    showSettingsPage();
+                }
             }
         });
         return navigation;
@@ -614,15 +668,222 @@ public class OperationsActivity extends AppCompatActivity {
         AppScreenMotion.startForward(this, intent);
     }
 
+    private boolean connectFromSettings(String destination) {
+        if (!OperationsDestinationState.SETTINGS.equals(currentDestination)
+                || settingsConnectionInFlight) {
+            return settingsConnectionInFlight;
+        }
+        pendingOperationsDestination = destination;
+        settingsConnectionInFlight = true;
+        settingsProgress.setIndeterminate(true);
+        settingsProgress.setVisibility(View.VISIBLE);
+        title.setSubtitle("正在连接已配对电脑…");
+        openExistingProfile();
+        return true;
+    }
+
     private void returnToSettings() {
         connectionCheckGeneration++;
         returnToSettingsOnBack = false;
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.putExtra(MainActivity.EXTRA_START_TAB, MainActivity.TAB_SETTINGS);
-        intent.putExtra(MainActivity.EXTRA_FROM_OPERATIONS, true);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        AppScreenMotion.startBackward(this, intent);
-        finish();
+        showSettingsPage();
+    }
+
+    private void initializeSettingsControllers() {
+        notificationSettingsController = new NotificationSettingsController(
+                this,
+                preferences,
+                new NotificationSettingsController.Host() {
+                    @Override
+                    public void onSettingsChanged() {
+                        if (OperationsDestinationState.SETTINGS.equals(currentDestination)) {
+                            refreshSettingsPage();
+                        }
+                    }
+
+                    @Override
+                    public void showFeedback(String message, boolean offerReminderAction) {
+                        showSettingsFeedback(message, offerReminderAction);
+                    }
+                });
+        androidUpdateController = new AndroidUpdateController(
+                this,
+                new AndroidUpdateController.Host() {
+                    @Override
+                    public void onWorkStarted(String status, boolean determinate) {
+                        settingsProgress.setIndeterminate(!determinate);
+                        if (determinate) {
+                            settingsProgress.setMax(100);
+                            settingsProgress.setProgressCompat(0, false);
+                        }
+                        settingsProgress.setVisibility(View.VISIBLE);
+                        title.setSubtitle(status);
+                    }
+
+                    @Override
+                    public void onProgress(int percent) {
+                        settingsProgress.setProgressCompat(percent, true);
+                    }
+
+                    @Override
+                    public void onWorkFinished() {
+                        settingsProgress.setVisibility(View.GONE);
+                        title.setSubtitle(null);
+                    }
+                });
+    }
+
+    private void showSettingsPage() {
+        connectionCheckGeneration++;
+        cancelDashboardRefresh();
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        returnToTriageOnBack = false;
+        returnToToolboxOnBack = false;
+        setConnectionRecoveryVisible(false);
+        rebuildSettingsPage(false);
+        setCurrentDestination(OperationsDestinationState.SETTINGS);
+        returnToSettingsOnBack = false;
+        syncBottomNavigation();
+        setDashboardVisible(true);
+        setShowingDashboardSummary(false);
+        title.setTitle("设置");
+        title.setSubtitle(null);
+        progress.setVisibility(View.GONE);
+        scheduleConnectionHeartbeat();
+    }
+
+    private void refreshSettingsPage() {
+        if (settingsScroll == null) {
+            return;
+        }
+        rebuildSettingsPage(true);
+    }
+
+    private void rebuildSettingsPage(boolean preserveScroll) {
+        int scrollY = preserveScroll && settingsScroll != null
+                ? settingsScroll.getScrollY() : 0;
+        if (settingsScroll != null) {
+            contentHost.removeView(settingsScroll);
+        }
+        settingsScroll = SettingsPageContent.create(
+                this,
+                themeManager,
+                settingsViewModel(),
+                new SettingsPageContent.Handler() {
+                    @Override
+                    public void onComputerConnections() {
+                        returnToSettingsOnBack = true;
+                        showConnectionPreference();
+                    }
+
+                    @Override
+                    public void onAddComputer() {
+                        startOperationsPairingScan();
+                    }
+
+                    @Override
+                    public String onWatchChanged(boolean enabled) {
+                        setSettingsWatchEnabled(enabled);
+                        return OperationsWatchPreferencePolicy.status(
+                                preferences.hasOperationsProfile(),
+                                enabled,
+                                notificationSettingsController.remindersAvailable());
+                    }
+
+                    @Override
+                    public void onNotificationPermission() {
+                        notificationSettingsController.manage();
+                    }
+
+                    @Override
+                    public void onThemeMode() {
+                        themeManager.showThemeDialog(
+                                OperationsActivity.this,
+                                MainActivity.TAB_SETTINGS);
+                    }
+
+                    @Override
+                    public void onAppUpdate() {
+                        androidUpdateController.checkForUpdate();
+                    }
+
+                    @Override
+                    public void onCameraPermission() {
+                        startOperationsPairingScan();
+                    }
+                });
+        settingsScroll.setVisibility(
+                OperationsDestinationState.SETTINGS.equals(currentDestination)
+                        ? View.VISIBLE : View.GONE);
+        contentHost.addView(settingsScroll, 1, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        if (scrollY > 0) {
+            settingsScroll.post(() -> settingsScroll.scrollTo(0, scrollY));
+        }
+    }
+
+    private SettingsPageContent.ViewModel settingsViewModel() {
+        boolean paired = preferences.hasOperationsProfile();
+        boolean watchEnabled = preferences.isOperationsWatchUserEnabled();
+        return new SettingsPageContent.ViewModel(
+                paired,
+                paired
+                        ? preferences.getActiveOperationsProfileLabel()
+                                + " · 共 " + preferences.getOperationsProfileCount() + " 台"
+                        : "",
+                watchEnabled,
+                OperationsWatchPreferencePolicy.status(
+                        paired,
+                        watchEnabled,
+                        notificationSettingsController.remindersAvailable()),
+                notificationSettingsController.status(),
+                themeManager.getThemeModeLabel(),
+                "当前 " + androidUpdateController.currentVersionName() + " · 签名校验",
+                cameraPermissionStatus());
+    }
+
+    private void setSettingsWatchEnabled(boolean enabled) {
+        preferences.saveOperationsWatchUserEnabled(enabled);
+        if (enabled) {
+            OperationsWatchService.start(this);
+            boolean remindersAvailable = notificationSettingsController.remindersAvailable();
+            showSettingsFeedback(
+                    OperationsWatchPreferencePolicy.enabledFeedback(true, remindersAvailable),
+                    OperationsWatchPreferencePolicy.shouldOfferReminderAction(
+                            true, remindersAvailable));
+        } else {
+            OperationsWatchService.stopForUserPreference(this);
+            showSettingsFeedback("持续守护已关闭；前台运维仍可使用", false);
+        }
+        if (settingsScroll != null) {
+            settingsScroll.post(this::refreshSettingsPage);
+        }
+    }
+
+    private void showSettingsFeedback(String message, boolean offerReminderAction) {
+        if (settingsFeedbackSnackbar != null) {
+            settingsFeedbackSnackbar.dismiss();
+        }
+        settingsFeedbackSnackbar = Snackbar.make(
+                contentHost,
+                message,
+                Snackbar.LENGTH_LONG);
+        settingsFeedbackSnackbar.setAnchorView(bottomNavigation);
+        if (offerReminderAction) {
+            settingsFeedbackSnackbar.setAction(
+                    "开启提醒",
+                    view -> notificationSettingsController.manage());
+        }
+        settingsFeedbackSnackbar.show();
+    }
+
+    private String cameraPermissionStatus() {
+        if (hasCameraPermission()) {
+            return "已授权";
+        }
+        return cameraPermissionNeedsSystemSettings()
+                ? "需在系统设置开启" : "需要时申请";
     }
 
     private void beginPairing(String rawPairing) {
@@ -953,6 +1214,11 @@ public class OperationsActivity extends AppCompatActivity {
                         requestHostId, preferences.getOperationsHostId())) {
                     reconnectAfterOperationsTargetChange();
                     return;
+                }
+                if (settingsConnectionInFlight) {
+                    settingsConnectionInFlight = false;
+                    settingsProgress.setVisibility(View.GONE);
+                    title.setSubtitle(null);
                 }
                 connectionHeartbeatInFlight = false;
                 if (isRevokedException(finalLocalFailure)
@@ -1409,6 +1675,9 @@ public class OperationsActivity extends AppCompatActivity {
     private void showQrScanFailure(String reason) {
         preferences.saveCameraPermissionBlocked(
                 QrScanFailurePresentation.CAMERA_PERMISSION_BLOCKED.equals(reason));
+        if (OperationsDestinationState.SETTINGS.equals(currentDestination)) {
+            refreshSettingsPage();
+        }
         QrScanRecoveryDialog.show(this, reason, this::startOperationsPairingScan);
     }
 
@@ -1464,6 +1733,10 @@ public class OperationsActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (androidUpdateController != null
+                && androidUpdateController.handleActivityResult(requestCode)) {
+            return;
+        }
         if (requestCode == REQUEST_QR_SCAN) {
             if (resultCode == RESULT_OK && data != null) {
                 preferences.saveCameraPermissionBlocked(false);
@@ -1481,6 +1754,19 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] grantResults) {
+        if (notificationSettingsController != null
+                && notificationSettingsController.handlePermissionResult(
+                        requestCode, permissions, grantResults)) {
+            return;
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     private void handleScannedPairing(String rawPairing) {
@@ -1539,9 +1825,19 @@ public class OperationsActivity extends AppCompatActivity {
                 currentDestination,
                 normalized,
                 returnToTriageOnBack,
-                returnToToolboxOnBack);
-        AppScreenMotion.beginContentTransition(dashboardContent, direction);
+                returnToToolboxOnBack,
+                returnToSettingsOnBack);
+        AppScreenMotion.beginContentTransition(
+                contentHost == null ? dashboardContent : contentHost,
+                direction);
         currentDestination = normalized;
+        boolean settingsVisible = OperationsDestinationState.SETTINGS.equals(normalized);
+        if (dashboardRefresh != null) {
+            dashboardRefresh.setVisibility(settingsVisible ? View.GONE : View.VISIBLE);
+        }
+        if (settingsScroll != null) {
+            settingsScroll.setVisibility(settingsVisible ? View.VISIBLE : View.GONE);
+        }
         refreshDetailsCardVisibility();
         syncBottomNavigation();
         refreshOperationsHeaderNavigation();
@@ -2811,6 +3107,9 @@ public class OperationsActivity extends AppCompatActivity {
             case OperationsDestinationState.TOOLS:
                 showOperationsToolboxPage();
                 return true;
+            case OperationsDestinationState.SETTINGS:
+                showSettingsPage();
+                return true;
             case OperationsDestinationState.CONNECTION_CHECK:
                 runConnectionSelfCheck();
                 return true;
@@ -2861,6 +3160,7 @@ public class OperationsActivity extends AppCompatActivity {
                 && !OperationsDestinationState.OVERVIEW.equals(destination)
                 && !OperationsDestinationState.TRIAGE.equals(destination)
                 && !OperationsDestinationState.TOOLS.equals(destination)
+                && !OperationsDestinationState.SETTINGS.equals(destination)
                 && !OperationsDestinationState.CONNECTIONS.equals(destination)) {
             return false;
         }
@@ -2883,6 +3183,10 @@ public class OperationsActivity extends AppCompatActivity {
         }
         if (OperationsDestinationState.TOOLS.equals(destination)) {
             showOperationsToolboxPage();
+            return true;
+        }
+        if (OperationsDestinationState.SETTINGS.equals(destination)) {
+            showSettingsPage();
             return true;
         }
         return false;
@@ -3137,6 +3441,7 @@ public class OperationsActivity extends AppCompatActivity {
         String requestedDestination = intent.getStringExtra(EXTRA_OPEN_DESTINATION);
         String destination = OperationsDestinationState.TOOLS.equals(requestedDestination)
                 || OperationsDestinationState.OVERVIEW.equals(requestedDestination)
+                || OperationsDestinationState.SETTINGS.equals(requestedDestination)
                 || OperationsDestinationState.CONNECTIONS.equals(requestedDestination)
                 ? requestedDestination
                 : OperationsWatchPolicy.normalizeDestination(requestedDestination);
@@ -6822,7 +7127,8 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         int destination;
-        if (returnToSettingsOnBack) {
+        if (OperationsDestinationState.SETTINGS.equals(currentDestination)
+                || returnToSettingsOnBack) {
             destination = NAV_SETTINGS;
         } else if (OperationsDestinationState.TOOLS.equals(currentDestination)
                 || returnToToolboxOnBack) {
@@ -6891,6 +7197,17 @@ public class OperationsActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        boolean notificationChanged = notificationSettingsController != null
+                && notificationSettingsController.refreshOnResume();
+        boolean cameraGranted = hasCameraPermission();
+        if (cameraGranted || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
+            preferences.saveCameraPermissionBlocked(false);
+        }
+        if (OperationsDestinationState.SETTINGS.equals(currentDestination)
+                && (notificationChanged || cameraGranted != cameraPermissionGranted)) {
+            refreshSettingsPage();
+        }
+        cameraPermissionGranted = cameraGranted;
         syncBottomNavigation();
         refreshProblemNavigationBadge();
         activityResumed = true;
@@ -6927,6 +7244,9 @@ public class OperationsActivity extends AppCompatActivity {
         leaveLiveMonitor();
         executor.shutdownNow();
         fleetExecutor.shutdownNow();
+        if (androidUpdateController != null) {
+            androidUpdateController.shutdown();
+        }
         super.onDestroy();
     }
 }

@@ -13,6 +13,8 @@ public class OperationsDestinationStateTest {
                 OperationsDestinationState.normalize("connections"));
         assertEquals(OperationsDestinationState.TOOLS,
                 OperationsDestinationState.normalize("tools"));
+        assertEquals(OperationsDestinationState.SETTINGS,
+                OperationsDestinationState.normalize("settings"));
         assertEquals(OperationsDestinationState.CONNECTION_CHECK,
                 OperationsDestinationState.normalize("connection_check"));
         assertEquals(OperationsDestinationState.FLEET_ISSUES,
@@ -46,6 +48,8 @@ public class OperationsDestinationStateTest {
         assertTrue(OperationsDestinationState.shouldRestore(
                 OperationsDestinationState.TOOLS));
         assertTrue(OperationsDestinationState.shouldRestore(
+                OperationsDestinationState.SETTINGS));
+        assertTrue(OperationsDestinationState.shouldRestore(
                 OperationsDestinationState.HISTORY));
     }
 
@@ -55,6 +59,8 @@ public class OperationsDestinationStateTest {
                 OperationsDestinationState.TRIAGE));
         assertFalse(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.TOOLS));
+        assertFalse(OperationsDestinationState.requiresDirectConnection(
+                OperationsDestinationState.SETTINGS));
         assertTrue(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.JOBS));
         assertTrue(OperationsDestinationState.requiresDirectConnection(

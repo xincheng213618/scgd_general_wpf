@@ -88,6 +88,9 @@ public class OperationsInPageNavigationPolicyTest {
         assertFalse(showsNavigateUp(
                 true, true, OperationsDestinationState.TRIAGE,
                 false, false, false, false));
+        assertFalse(showsNavigateUp(
+                true, true, OperationsDestinationState.SETTINGS,
+                false, false, false, false));
         assertTrue(showsNavigateUp(
                 true, true, OperationsDestinationState.TRIAGE,
                 true, false, false, false));
@@ -125,6 +128,19 @@ public class OperationsInPageNavigationPolicyTest {
         assertEquals(AppScreenMotion.DIRECTION_BACKWARD,
                 motion(OperationsDestinationState.JOBS,
                         OperationsDestinationState.TOOLS, false, true));
+        assertEquals(AppScreenMotion.DIRECTION_FORWARD,
+                motion(OperationsDestinationState.TOOLS,
+                        OperationsDestinationState.SETTINGS, false, false));
+        assertEquals(AppScreenMotion.DIRECTION_BACKWARD,
+                motion(OperationsDestinationState.SETTINGS,
+                        OperationsDestinationState.TRIAGE, false, false));
+        assertEquals(AppScreenMotion.DIRECTION_BACKWARD,
+                OperationsInPageNavigationPolicy.motionDirection(
+                        OperationsDestinationState.CONNECTIONS,
+                        OperationsDestinationState.SETTINGS,
+                        false,
+                        false,
+                        true));
         assertEquals(AppScreenMotion.DIRECTION_NONE,
                 motion(OperationsDestinationState.FLEET_ALL,
                         OperationsDestinationState.FLEET_ISSUES, false, false));
@@ -172,6 +188,8 @@ public class OperationsInPageNavigationPolicyTest {
                 OperationsDestinationState.TRIAGE, false, false));
         assertTrue(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
                 OperationsDestinationState.TOOLS, false, false));
+        assertTrue(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
+                OperationsDestinationState.SETTINGS, false, false));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
                 OperationsDestinationState.LIVE_MONITOR, true, false));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
@@ -217,6 +235,6 @@ public class OperationsInPageNavigationPolicyTest {
     private static int motion(
             String from, String to, boolean fromTriage, boolean fromToolbox) {
         return OperationsInPageNavigationPolicy.motionDirection(
-                from, to, fromTriage, fromToolbox);
+                from, to, fromTriage, fromToolbox, false);
     }
 }

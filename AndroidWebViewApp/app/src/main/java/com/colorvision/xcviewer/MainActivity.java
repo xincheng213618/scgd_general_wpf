@@ -14,7 +14,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
@@ -33,7 +32,6 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
-import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.io.File;
@@ -106,12 +104,13 @@ public class MainActivity extends AppCompatActivity {
         if (openedFromOperations && startTab == TAB_SETTINGS) {
             AppScreenMotion.configureSettingsActivity(this);
         }
-        if (AppNavigationPolicy.shouldOpenOperationsDirectly(
+        if (AppNavigationPolicy.shouldOpenPairedWorkspace(
                 appPreferences.hasOperationsProfile(),
-                startTab == TAB_OPERATIONS || startTab == TAB_TOOLS)) {
-            openOperationsDirectly(startTab == TAB_TOOLS
-                    ? OperationsDestinationState.TOOLS
-                    : OperationsDestinationState.OVERVIEW);
+                startTab == TAB_OPERATIONS
+                        || startTab == TAB_TOOLS
+                        || startTab == TAB_SETTINGS)) {
+            openOperationsDirectly(AppNavigationPolicy.pairedDestinationForTab(
+                    startTab, TAB_OPERATIONS, TAB_TOOLS, TAB_SETTINGS));
             return;
         }
         themeManager = new ThemeManager(this, appPreferences);
@@ -329,12 +328,13 @@ public class MainActivity extends AppCompatActivity {
         if (openedFromOperations && startTab == TAB_SETTINGS) {
             AppScreenMotion.configureSettingsActivity(this);
         }
-        if (AppNavigationPolicy.shouldOpenOperationsDirectly(
+        if (AppNavigationPolicy.shouldOpenPairedWorkspace(
                 appPreferences.hasOperationsProfile(),
-                startTab == TAB_OPERATIONS || startTab == TAB_TOOLS)) {
-            openOperationsDirectly(startTab == TAB_TOOLS
-                    ? OperationsDestinationState.TOOLS
-                    : OperationsDestinationState.OVERVIEW);
+                startTab == TAB_OPERATIONS
+                        || startTab == TAB_TOOLS
+                        || startTab == TAB_SETTINGS)) {
+            openOperationsDirectly(AppNavigationPolicy.pairedDestinationForTab(
+                    startTab, TAB_OPERATIONS, TAB_TOOLS, TAB_SETTINGS));
             return;
         }
         showInitialTab(startTab);
@@ -448,62 +448,67 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private ScrollView createProfileContent() {
-        ScrollView scrollView = new ScrollView(this);
-        scrollView.setFillViewport(false);
-        scrollView.setBackgroundColor(settingsBackgroundColor());
-
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(0, dp(4), 0, dp(28));
-        scrollView.addView(content, new ScrollView.LayoutParams(
-                ScrollView.LayoutParams.MATCH_PARENT,
-                ScrollView.LayoutParams.WRAP_CONTENT));
-
-        LinearLayout connectionSection = makeSettingsSection();
-        addSettingsSection(content, SettingsInformationArchitecture.CONNECTION_SECTION,
-                connectionSection);
         boolean paired = appPreferences.hasOperationsProfile();
         int pairedComputerCount = appPreferences.getOperationsProfileCount();
-        if (paired) {
-            addSettingsRow(connectionSection,
-                    SettingsInformationArchitecture.COMPUTER_CONNECTIONS,
-                    appPreferences.getActiveOperationsProfileLabel()
-                            + " · 共 " + pairedComputerCount + " 台",
-                    v -> openOperationsConnectionsFromSettings(), true);
-            addSettingsRow(connectionSection, SettingsInformationArchitecture.SECURE_CHANNEL,
-                    "设备密钥 + TLS 证书固定", null, true);
-            addSettingsRow(connectionSection, SettingsInformationArchitecture.ADD_COMPUTER,
-                    "扫描二维码", v -> startQrScan(), false);
-        } else {
-            addSettingsRow(connectionSection, SettingsInformationArchitecture.CONNECT_COMPUTER,
-                    "扫描电脑端安全配对码", v -> startQrScan(), true);
-            addSettingsRow(connectionSection, SettingsInformationArchitecture.SECURE_CHANNEL,
-                    "等待安全配对", null, false);
-        }
+        SettingsPageContent.ViewModel model = new SettingsPageContent.ViewModel(
+                paired,
+                paired
+                        ? appPreferences.getActiveOperationsProfileLabel()
+                                + " · 共 " + pairedComputerCount + " 台"
+                        : "",
+                appPreferences.isOperationsWatchUserEnabled(),
+                OperationsWatchPreferencePolicy.status(
+                        paired,
+                        appPreferences.isOperationsWatchUserEnabled(),
+                        operationsRemindersAvailable()),
+                notificationPermissionStatus(),
+                getThemeModeLabel(),
+                "当前 " + getAppVersionName() + " · 签名校验",
+                cameraPermissionStatus());
+        return SettingsPageContent.create(
+                this,
+                themeManager,
+                model,
+                new SettingsPageContent.Handler() {
+                    @Override
+                    public void onComputerConnections() {
+                        openOperationsConnectionsFromSettings();
+                    }
 
-        LinearLayout backgroundSection = makeSettingsSection();
-        addSettingsSection(content, SettingsInformationArchitecture.BACKGROUND_SECTION,
-                backgroundSection);
-        addOperationsWatchSwitchRow(backgroundSection, paired, true);
-        addSettingsRow(backgroundSection,
-                SettingsInformationArchitecture.NOTIFICATION_PERMISSION,
-                notificationPermissionStatus(), v -> manageNotificationPermission(), false);
+                    @Override
+                    public void onAddComputer() {
+                        startQrScan();
+                    }
 
-        LinearLayout appSection = makeSettingsSection();
-        addSettingsSection(content, SettingsInformationArchitecture.APPLICATION_SECTION,
-                appSection);
-        addSettingsRow(appSection, SettingsInformationArchitecture.THEME_MODE,
-                getThemeModeLabel(), v -> showThemeDialog(), true);
-        addSettingsRow(appSection, SettingsInformationArchitecture.APP_UPDATE,
-                "当前 " + getAppVersionName() + " · 签名校验", v -> checkForAppUpdate(), false);
+                    @Override
+                    public String onWatchChanged(boolean enabled) {
+                        setOperationsWatchEnabled(enabled);
+                        return OperationsWatchPreferencePolicy.status(
+                                appPreferences.hasOperationsProfile(),
+                                enabled,
+                                operationsRemindersAvailable());
+                    }
 
-        LinearLayout permissionSection = makeSettingsSection();
-        addSettingsSection(content, SettingsInformationArchitecture.PERMISSION_SECTION,
-                permissionSection);
-        addSettingsRow(permissionSection, SettingsInformationArchitecture.CAMERA_PERMISSION,
-                cameraPermissionStatus(), v -> startQrScan(), false);
+                    @Override
+                    public void onNotificationPermission() {
+                        manageNotificationPermission();
+                    }
 
-        return scrollView;
+                    @Override
+                    public void onThemeMode() {
+                        showThemeDialog();
+                    }
+
+                    @Override
+                    public void onAppUpdate() {
+                        checkForAppUpdate();
+                    }
+
+                    @Override
+                    public void onCameraPermission() {
+                        startQrScan();
+                    }
+                });
     }
 
     private String getAppVersionName() {
@@ -511,101 +516,6 @@ public class MainActivity extends AppCompatActivity {
             return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception ex) {
             return "--";
-        }
-    }
-
-    private LinearLayout makeSettingsSection() {
-        LinearLayout section = new LinearLayout(this);
-        section.setOrientation(LinearLayout.VERTICAL);
-        section.setBackgroundColor(cardBackgroundColor());
-        return section;
-    }
-
-    private void addSettingsSection(LinearLayout content, String heading, LinearLayout section) {
-        TextView headingView = new TextView(this);
-        headingView.setText(heading);
-        TextViewCompat.setTextAppearance(
-                headingView,
-                com.google.android.material.R.style.TextAppearance_Material3_LabelLarge);
-        headingView.setTextColor(themeManager.primaryColor());
-        headingView.setPadding(dp(22), dp(18), dp(22), dp(8));
-        ViewCompat.setAccessibilityHeading(headingView, true);
-        content.addView(headingView, matchWidthWrapParams());
-        content.addView(section, matchWidthWrapParams());
-    }
-
-    private void addSettingsRow(
-            LinearLayout parent,
-            String label,
-            String value,
-            View.OnClickListener listener,
-            boolean showDivider) {
-        boolean supportingTextLayout = AppResponsiveLayout.usesSingleColumn(
-                getResources().getConfiguration().screenWidthDp,
-                getResources().getConfiguration().fontScale);
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(22), supportingTextLayout ? dp(10) : 0,
-                dp(18), supportingTextLayout ? dp(10) : 0);
-        row.setMinimumHeight(dp(supportingTextLayout ? 72 : 58));
-        row.setBackgroundColor(cardBackgroundColor());
-        if (listener != null) {
-            row.setOnClickListener(listener);
-            row.setFocusable(true);
-            row.setContentDescription(SettingsRowAccessibility.contentDescription(label, value));
-        }
-
-        TextView labelView = new TextView(this);
-        labelView.setText(label);
-        TextViewCompat.setTextAppearance(labelView, com.google.android.material.R.style.TextAppearance_Material3_BodyLarge);
-        labelView.setTextColor(primaryTextColor());
-
-        TextView valueView = new TextView(this);
-        valueView.setText(value == null ? "" : value);
-        TextViewCompat.setTextAppearance(valueView, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
-        valueView.setTextColor(mutedTextColor());
-        valueView.setGravity(supportingTextLayout ? Gravity.START : Gravity.END);
-        valueView.setSingleLine(false);
-        if (listener != null) {
-            labelView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            valueView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        }
-
-        if (supportingTextLayout) {
-            LinearLayout text = new LinearLayout(this);
-            text.setOrientation(LinearLayout.VERTICAL);
-            text.addView(labelView, matchWidthWrapParams());
-            LinearLayout.LayoutParams valueParams = matchWidthWrapParams();
-            valueParams.setMargins(0, dp(2), 0, 0);
-            text.addView(valueView, valueParams);
-            row.addView(text, new LinearLayout.LayoutParams(
-                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        } else {
-            row.addView(labelView, new LinearLayout.LayoutParams(
-                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-            row.addView(valueView, new LinearLayout.LayoutParams(
-                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.35f));
-        }
-
-        if (listener != null) {
-            ImageView arrow = new ImageView(this);
-            arrow.setImageResource(R.drawable.ic_chevron_right_24);
-            arrow.setColorFilter(inactiveTabColor());
-            arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            row.addView(arrow, new LinearLayout.LayoutParams(dp(24), dp(24)));
-        }
-
-        parent.addView(row, matchWidthWrapParams());
-
-        if (showDivider) {
-            View divider = new View(this);
-            divider.setBackgroundColor(dividerColor());
-            LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    1);
-            dividerParams.setMargins(dp(22), 0, 0, 0);
-            parent.addView(divider, dividerParams);
         }
     }
 
@@ -618,67 +528,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         startActivityForResult(new Intent(this, QrScanActivity.class), REQUEST_QR_SCAN);
-    }
-
-    private void addOperationsWatchSwitchRow(
-            LinearLayout parent, boolean paired, boolean showDivider) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(22), 0, dp(18), 0);
-        row.setMinimumHeight(dp(64));
-        row.setBackgroundColor(cardBackgroundColor());
-
-        LinearLayout text = new LinearLayout(this);
-        text.setOrientation(LinearLayout.VERTICAL);
-        text.setGravity(Gravity.CENTER_VERTICAL);
-        TextView label = new TextView(this);
-        label.setText(SettingsInformationArchitecture.OPERATIONS_WATCH);
-        TextViewCompat.setTextAppearance(
-                label, com.google.android.material.R.style.TextAppearance_Material3_BodyLarge);
-        label.setTextColor(primaryTextColor());
-        text.addView(label, matchWidthWrapParams());
-
-        boolean enabled = appPreferences.isOperationsWatchUserEnabled();
-        boolean remindersAvailable = operationsRemindersAvailable();
-        TextView value = new TextView(this);
-        value.setText(OperationsWatchPreferencePolicy.status(
-                paired, enabled, remindersAvailable));
-        TextViewCompat.setTextAppearance(
-                value, com.google.android.material.R.style.TextAppearance_Material3_BodySmall);
-        value.setTextColor(mutedTextColor());
-        text.addView(value, matchWidthWrapParams());
-        row.addView(text, new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-
-        MaterialSwitch toggle = new MaterialSwitch(this);
-        toggle.setChecked(enabled);
-        toggle.setContentDescription(SettingsRowAccessibility.contentDescription(
-                SettingsInformationArchitecture.OPERATIONS_WATCH,
-                OperationsWatchPreferencePolicy.status(
-                        paired, enabled, remindersAvailable)));
-        toggle.setOnCheckedChangeListener((button, checked) -> {
-            String status = OperationsWatchPreferencePolicy.status(
-                    paired, checked, operationsRemindersAvailable());
-            value.setText(status);
-            button.setContentDescription(SettingsRowAccessibility.contentDescription(
-                    SettingsInformationArchitecture.OPERATIONS_WATCH, status));
-            setOperationsWatchEnabled(checked);
-        });
-        row.addView(toggle, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-        row.setOnClickListener(view -> toggle.performClick());
-        parent.addView(row, matchWidthWrapParams());
-
-        if (showDivider) {
-            View divider = new View(this);
-            divider.setBackgroundColor(dividerColor());
-            LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, 1);
-            dividerParams.setMargins(dp(22), 0, 0, 0);
-            parent.addView(divider, dividerParams);
-        }
     }
 
     private void setOperationsWatchEnabled(boolean enabled) {
