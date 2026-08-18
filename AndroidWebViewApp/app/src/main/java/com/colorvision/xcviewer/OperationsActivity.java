@@ -2589,10 +2589,11 @@ public class OperationsActivity extends AppCompatActivity {
         remoteDashboard = false;
         dashboardVisible = false;
         progress.setVisibility(View.GONE);
-        title.setText("连接正在自动恢复");
-        state.setText(readableError(localException));
-        details.setText("现场安全通道和固定远程中继当前都未能确认电脑在线。已保留本机设备密钥和配对资料，后台会继续重试；无需重新配对。\n\n远程中继："
-                + readableError(relayException));
+        title.setText("连接恢复");
+        state.setText("电脑暂时不可达 · 配对资料已保留");
+        details.setText(OperationsRecoveryOverview.failureSummary(
+                readableError(localException),
+                readableError(relayException)));
         showConnectionRecoveryActions(false);
     }
 
@@ -2635,20 +2636,21 @@ public class OperationsActivity extends AppCompatActivity {
     private void showConnectionRecoveryActions(boolean channelReady) {
         actions.removeAllViews();
 
-        Button check = new MaterialButton(this);
-        check.setText("重新运行连接自检");
-        check.setOnClickListener(v -> runConnectionSelfCheck());
-        actions.addView(check, actionParams());
+        addDashboardSection(channelReady ? "下一步" : "恢复连接");
+        addDashboardWideAction(dashboardPrimaryButton(
+                channelReady ? "进入现场运维" : "重新连接电脑",
+                v -> openExistingProfile()));
 
-        Button reconnect = new MaterialButton(this);
-        reconnect.setText(channelReady ? "进入现场运维" : "重新连接电脑");
-        reconnect.setOnClickListener(v -> openExistingProfile());
-        actions.addView(reconnect, actionParams());
+        addDashboardSection("诊断与设置");
+        addDashboardActionRow(
+                dashboardButton(channelReady ? "再次运行连接自检" : "运行连接自检",
+                        v -> runConnectionSelfCheck()),
+                dashboardButton("管理连接方式", v -> showConnectionPreference()));
 
-        Button remove = new MaterialButton(this);
-        remove.setText("移除本机配对资料");
-        remove.setOnClickListener(v -> confirmClearProfile());
-        actions.addView(remove, actionParams());
+        addDashboardSection("配对资料");
+        addDashboardInfoCard(OperationsRecoveryOverview.pairingRemovalNote());
+        addDashboardWideAction(dashboardDestructiveButton(
+                "移除当前电脑配对", v -> confirmClearProfile()));
     }
 
     private void confirmClearProfile() {
