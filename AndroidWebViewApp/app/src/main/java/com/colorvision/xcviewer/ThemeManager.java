@@ -137,6 +137,14 @@ final class ThemeManager {
         return color(R.attr.colorError, Color.RED);
     }
 
+    int errorContainerColor() {
+        return color(com.google.android.material.R.attr.colorErrorContainer, cardBackgroundColor());
+    }
+
+    int onErrorContainerColor() {
+        return color(com.google.android.material.R.attr.colorOnErrorContainer, primaryTextColor());
+    }
+
     private int color(int attribute, int fallback) {
         return MaterialColors.getColor(context, attribute, fallback);
     }

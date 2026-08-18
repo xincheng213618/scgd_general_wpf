@@ -1281,7 +1281,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardFlowStatus = dashboardStatusRow("检测",
                 v -> loadCapability("/ops/v1/flow/runtime"));
         dashboardDeviceStatus = dashboardStatusRow("设备",
-                v -> loadCapability("/ops/v1/devices/health"));
+                v -> showDeviceHealthOverview());
         dashboardMessageStatus = dashboardStatusRow("消息",
                 v -> loadCapability("/ops/v1/messaging/health"));
         dashboardAlertStatus = dashboardStatusRow("告警",
@@ -2840,6 +2840,8 @@ public class OperationsActivity extends AppCompatActivity {
     private void openDashboardMonitorDetail(String remoteSection, String directPath) {
         if (remoteDashboard) {
             showLatestRemoteMonitorDetail(remoteSection);
+        } else if ("/ops/v1/devices/health".equals(directPath)) {
+            showDeviceHealthOverview();
         } else {
             loadCapability(directPath);
         }
@@ -3387,7 +3389,7 @@ public class OperationsActivity extends AppCompatActivity {
                 return button;
             case "triage.devices.view":
                 button.setText("查看检测设备状态概览");
-                button.setOnClickListener(v -> loadCapability("/ops/v1/devices/health"));
+                button.setOnClickListener(v -> showDeviceHealthOverview());
                 return button;
             case "triage.messaging.view":
                 button.setText("查看消息通道健康");
@@ -4864,6 +4866,35 @@ public class OperationsActivity extends AppCompatActivity {
                     state.setText("读取失败");
                     details.setText(readableError(ex));
                 });
+            }
+        });
+    }
+
+    private void showDeviceHealthOverview() {
+        showingDashboardSummary = false;
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        progress.setVisibility(View.VISIBLE);
+        executor.execute(() -> {
+            try {
+                JSONObject response = client.get("/ops/v1/devices/health");
+                JSONObject data = response.optJSONObject("data");
+                JSONObject payload = data == null ? response : data;
+                DeviceHealthPresentation.ViewModel model =
+                        DeviceHealthPresentation.from(payload);
+                String observedAt = shortTime(model.observedAt);
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    DeviceHealthBottomSheet.show(
+                            this,
+                            themeManager,
+                            model,
+                            observedAt,
+                            this::showDeviceHealthOverview,
+                            this::showTriageCenter);
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> showTransientError(ex));
             }
         });
     }
