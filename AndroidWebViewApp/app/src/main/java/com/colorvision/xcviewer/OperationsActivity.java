@@ -56,6 +56,7 @@ import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -141,6 +142,7 @@ public class OperationsActivity extends AppCompatActivity {
     private Button remoteRestartMqttButton;
     private TextView dashboardStatusHeading;
     private TextView dashboardStatusCaption;
+    private LinearLayout dashboardStatusContent;
     private boolean dashboardFlowAvailable;
     private boolean dashboardFlowActive;
     private boolean dashboardFlowCancelAvailable;
@@ -177,11 +179,17 @@ public class OperationsActivity extends AppCompatActivity {
         final LinearLayout container;
         final TextView title;
         final TextView summary;
+        OperationsDashboardStatusFormatter.Item item;
 
-        DashboardStatusRow(LinearLayout container, TextView title, TextView summary) {
+        DashboardStatusRow(
+                LinearLayout container,
+                TextView title,
+                TextView summary,
+                OperationsDashboardStatusFormatter.Item item) {
             this.container = container;
             this.title = title;
             this.summary = summary;
+            this.item = item;
         }
     }
 
@@ -3324,8 +3332,11 @@ public class OperationsActivity extends AppCompatActivity {
         arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         row.addView(arrow, new LinearLayout.LayoutParams(dp(24), dp(24)));
 
-        DashboardStatusRow result = new DashboardStatusRow(row, titleView, summaryView);
-        updateDashboardStatus(result, OperationsDashboardStatusFormatter.loading(title));
+        OperationsDashboardStatusFormatter.Item loading =
+                OperationsDashboardStatusFormatter.loading(title);
+        DashboardStatusRow result = new DashboardStatusRow(
+                row, titleView, summaryView, loading);
+        updateDashboardStatus(result, loading);
         return result;
     }
 
@@ -3333,6 +3344,7 @@ public class OperationsActivity extends AppCompatActivity {
             String caption, DashboardStatusRow... statusRows) {
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
+        dashboardStatusContent = content;
 
         TextView captionView = new TextView(this);
         captionView.setText(caption);
@@ -3343,19 +3355,7 @@ public class OperationsActivity extends AppCompatActivity {
         content.addView(captionView, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        for (int index = 0; index < statusRows.length; index++) {
-            content.addView(statusRows[index].container, new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT));
-            if (index < statusRows.length - 1) {
-                View divider = new View(this);
-                divider.setBackgroundColor(themeManager.dividerColor());
-                LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, 1);
-                dividerParams.setMargins(dp(16), 0, 0, 0);
-                content.addView(divider, dividerParams);
-            }
-        }
+        addDashboardStatusRows(content, Arrays.asList(statusRows));
 
         MaterialCardView card = new MaterialCardView(this);
         card.setCardBackgroundColor(themeManager.cardBackgroundColor());
@@ -3378,6 +3378,71 @@ public class OperationsActivity extends AppCompatActivity {
         row.summary.setText(item.summary);
         row.summary.setTextColor(dashboardStatusColor(item.tone));
         row.container.setContentDescription(item.accessibilityLabel());
+        row.item = item;
+    }
+
+    private void refreshDashboardStatusOrder() {
+        if (dashboardStatusContent == null) {
+            return;
+        }
+        List<DashboardStatusRow> rows = dashboardStatusRows();
+        Collections.sort(rows, (left, right) ->
+                OperationsDashboardStatusOrder.compare(left.item, right.item));
+        int childCount = dashboardStatusContent.getChildCount();
+        if (childCount > 1) {
+            dashboardStatusContent.removeViews(1, childCount - 1);
+        }
+        addDashboardStatusRows(dashboardStatusContent, rows);
+
+        List<OperationsDashboardStatusFormatter.Item> items = new ArrayList<>();
+        for (DashboardStatusRow row : rows) {
+            items.add(row.item);
+        }
+        int attentionCount = OperationsDashboardStatusOrder.attentionCount(items);
+        if (dashboardStatusHeading != null) {
+            dashboardStatusHeading.setText(OperationsDashboardStatusOrder.sectionTitle(
+                    remoteDashboard, dashboardRemoteHostFresh, attentionCount));
+        }
+        if (dashboardStatusCaption != null) {
+            dashboardStatusCaption.setText(OperationsDashboardStatusOrder.sectionCaption(
+                    remoteDashboard, dashboardRemoteHostFresh, attentionCount));
+        }
+    }
+
+    private List<DashboardStatusRow> dashboardStatusRows() {
+        List<DashboardStatusRow> rows = new ArrayList<>();
+        addDashboardStatusRow(rows, dashboardApplicationStatus);
+        addDashboardStatusRow(rows, dashboardFlowStatus);
+        addDashboardStatusRow(rows, dashboardDeviceStatus);
+        addDashboardStatusRow(rows, dashboardMessageStatus);
+        addDashboardStatusRow(rows, dashboardAlertStatus);
+        addDashboardStatusRow(rows, dashboardPerformanceStatus);
+        addDashboardStatusRow(rows, dashboardRecoveryStatus);
+        return rows;
+    }
+
+    private static void addDashboardStatusRow(
+            List<DashboardStatusRow> rows, DashboardStatusRow row) {
+        if (row != null && row.item != null) {
+            rows.add(row);
+        }
+    }
+
+    private void addDashboardStatusRows(
+            LinearLayout content, List<DashboardStatusRow> statusRows) {
+        for (int index = 0; index < statusRows.size(); index++) {
+            content.addView(statusRows.get(index).container, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+            if (index < statusRows.size() - 1) {
+                View divider = new View(this);
+                divider.setBackgroundColor(themeManager.dividerColor());
+                LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, 1);
+                dividerParams.setMargins(dp(16), 0, 0, 0);
+                content.addView(divider, dividerParams);
+            }
+        }
     }
 
     private int dashboardStatusColor(int tone) {
@@ -3532,6 +3597,7 @@ public class OperationsActivity extends AppCompatActivity {
                 recovery != null && recovery.optBoolean("supported", false),
                 recovery != null && recovery.optBoolean("registered", false),
                 recovery != null && recovery.optBoolean("automaticWatchdogActive", false)));
+        refreshDashboardStatusOrder();
         updateDashboardPriority(remoteDashboard && !dashboardRemoteHostFresh
                 ? OperationsDashboardAdvisor.staleRemoteSnapshot()
                 : OperationsDashboardAdvisor.fromMonitor(
@@ -3558,6 +3624,7 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsDashboardStatusFormatter.performance(false, 0, "unavailable"));
         updateDashboardStatus(dashboardRecoveryStatus,
                 OperationsDashboardStatusFormatter.unavailable("恢复"));
+        refreshDashboardStatusOrder();
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
@@ -3583,6 +3650,7 @@ public class OperationsActivity extends AppCompatActivity {
         remoteRestartMqttButton = null;
         dashboardStatusHeading = null;
         dashboardStatusCaption = null;
+        dashboardStatusContent = null;
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
@@ -5455,6 +5523,7 @@ public class OperationsActivity extends AppCompatActivity {
                     if (dashboardSnapshot) {
                         updateDashboardStatus(dashboardApplicationStatus,
                                 OperationsDashboardStatusFormatter.unavailable("应用"));
+                        refreshDashboardStatusOrder();
                     }
                     state.setText(dashboardSnapshot ? directConnectionState() : "读取失败");
                     details.setText(OperationsErrorPresentation.readable(ex));
@@ -5479,6 +5548,7 @@ public class OperationsActivity extends AppCompatActivity {
                         window != null && window.optBoolean("isVisible"),
                         window == null ? "" : window.optString("state", ""),
                         process == null ? 0 : process.optDouble("memoryMb", 0)));
+        refreshDashboardStatusOrder();
     }
 
     private void showDeviceHealthOverview() {
