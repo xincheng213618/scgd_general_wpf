@@ -10,6 +10,24 @@ final class OperationsDashboardRefreshPolicy {
     private OperationsDashboardRefreshPolicy() {
     }
 
+    static boolean showsToolbarAction(
+            boolean hasOperationsProfile,
+            boolean dashboardVisible,
+            boolean showingDashboardSummary,
+            boolean connectionRecoveryVisible,
+            boolean hasOperationsClient) {
+        return hasOperationsProfile
+                && dashboardVisible
+                && showingDashboardSummary
+                && !connectionRecoveryVisible
+                && hasOperationsClient;
+    }
+
+    static boolean toolbarActionEnabled(
+            boolean toolbarActionVisible, boolean manualRefreshInFlight) {
+        return toolbarActionVisible && !manualRefreshInFlight;
+    }
+
     static Decision decide(
             boolean activityResumed,
             boolean dashboardVisible,

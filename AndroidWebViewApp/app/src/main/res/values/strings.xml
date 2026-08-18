@@ -41,4 +41,5 @@
     <string name="operations_reminder_test_unavailable">测试提醒未发送，请检查系统通知设置</string>
     <string name="operations_reminder_test_notification_title">ColorVision 运维提醒测试</string>
     <string name="operations_reminder_test_notification_body">提醒通道工作正常；异常状态出现时会通过此通道提醒。</string>
+    <string name="operations_refresh_dashboard">刷新运维状态</string>
 </resources>

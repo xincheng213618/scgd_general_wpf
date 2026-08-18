@@ -8,6 +8,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,6 +18,7 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -74,6 +76,7 @@ public class OperationsActivity extends AppCompatActivity {
     private static final int FLEET_READ_TIMEOUT_MILLISECONDS = 5_000;
     private static final int NAV_OPERATIONS = 2001;
     private static final int NAV_SETTINGS = 2002;
+    private static final int MENU_REFRESH_DASHBOARD = 2003;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -111,6 +114,7 @@ public class OperationsActivity extends AppCompatActivity {
     private String operationsClientHostId = "";
     private JSONObject lastRelaySnapshotResponse;
     private MaterialToolbar title;
+    private MenuItem dashboardRefreshMenuItem;
     private Chip profileTarget;
     private TextView state;
     private TextView details;
@@ -234,6 +238,27 @@ public class OperationsActivity extends AppCompatActivity {
         title.setNavigationIconTint(themeManager.primaryTextColor());
         title.setNavigationOnClickListener(v -> navigateUpWithinOperations());
         title.setMinimumHeight(dp(64));
+        dashboardRefreshMenuItem = title.getMenu().add(
+                0,
+                MENU_REFRESH_DASHBOARD,
+                0,
+                R.string.operations_refresh_dashboard);
+        dashboardRefreshMenuItem.setIcon(R.drawable.ic_refresh_24);
+        Drawable refreshIcon = dashboardRefreshMenuItem.getIcon();
+        if (refreshIcon != null) {
+            refreshIcon = refreshIcon.mutate();
+            refreshIcon.setTint(themeManager.primaryTextColor());
+            dashboardRefreshMenuItem.setIcon(refreshIcon);
+        }
+        dashboardRefreshMenuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        dashboardRefreshMenuItem.setVisible(false);
+        title.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() != MENU_REFRESH_DASHBOARD) {
+                return false;
+            }
+            requestDashboardRefresh();
+            return true;
+        });
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         header.addView(title, titleParams);
@@ -1287,6 +1312,18 @@ public class OperationsActivity extends AppCompatActivity {
         } else {
             title.setNavigationIcon(null);
             title.setNavigationContentDescription(null);
+        }
+        if (dashboardRefreshMenuItem != null) {
+            boolean showRefresh = OperationsDashboardRefreshPolicy.showsToolbarAction(
+                    paired,
+                    dashboardVisible,
+                    showingDashboardSummary,
+                    connectionRecoveryVisible,
+                    client != null || relayClient != null);
+            dashboardRefreshMenuItem.setVisible(showRefresh);
+            dashboardRefreshMenuItem.setEnabled(
+                    OperationsDashboardRefreshPolicy.toolbarActionEnabled(
+                            showRefresh, manualDashboardRefresh));
         }
         boolean showProfileTarget = paired
                 && dashboardVisible
@@ -2540,6 +2577,7 @@ public class OperationsActivity extends AppCompatActivity {
         manualDashboardRefresh = true;
         dashboardRefresh.setRefreshing(true);
         dashboardRefresh.announceForAccessibility("正在刷新运维状态");
+        refreshOperationsHeaderNavigation();
         if (decision == OperationsDashboardRefreshPolicy.Decision.START) {
             connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
             runConnectionHeartbeat();
@@ -2550,6 +2588,7 @@ public class OperationsActivity extends AppCompatActivity {
     private void finishDashboardRefresh(String message) {
         boolean showResult = manualDashboardRefresh;
         manualDashboardRefresh = false;
+        refreshOperationsHeaderNavigation();
         if (dashboardRefresh != null) {
             dashboardRefresh.setRefreshing(false);
         }
@@ -2565,6 +2604,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void cancelDashboardRefresh() {
         manualDashboardRefresh = false;
+        refreshOperationsHeaderNavigation();
         if (dashboardRefresh != null) {
             dashboardRefresh.setRefreshing(false);
         }

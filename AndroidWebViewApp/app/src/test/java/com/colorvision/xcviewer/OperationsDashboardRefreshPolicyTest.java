@@ -1,10 +1,33 @@
 package com.colorvision.xcviewer;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
 public class OperationsDashboardRefreshPolicyTest {
+    @Test
+    public void toolbarRefreshOnlyAppearsOnARefreshableOverview() {
+        assertTrue(OperationsDashboardRefreshPolicy.showsToolbarAction(
+                true, true, true, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsToolbarAction(
+                true, true, false, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsToolbarAction(
+                true, true, true, true, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsToolbarAction(
+                false, true, true, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsToolbarAction(
+                true, true, true, false, false));
+    }
+
+    @Test
+    public void toolbarRefreshDisablesWhileItsManualRequestIsInFlight() {
+        assertTrue(OperationsDashboardRefreshPolicy.toolbarActionEnabled(true, false));
+        assertFalse(OperationsDashboardRefreshPolicy.toolbarActionEnabled(true, true));
+        assertFalse(OperationsDashboardRefreshPolicy.toolbarActionEnabled(false, false));
+    }
+
     @Test
     public void visibleDashboardStartsANewRefresh() {
         assertEquals(
