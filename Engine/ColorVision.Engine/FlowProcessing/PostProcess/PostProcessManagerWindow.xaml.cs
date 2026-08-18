@@ -136,7 +136,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 // Show placeholder text
                 PropertyPanel.Children.Add(new TextBlock 
                 { 
-                    Text = "请选择一个处理项查看配置", 
+                    Text = EngineLocalization.Get("请选择一个处理项查看配置"),
                     Foreground = System.Windows.Media.Brushes.Gray,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Margin = new Thickness(0, 20, 0, 0)
@@ -193,26 +193,26 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             // Header
             stack.Children.Add(new TextBlock 
             { 
-                Text = "基本信息", 
+                Text = EngineLocalization.Get("基本信息"),
                 FontWeight = FontWeights.Bold, 
                 Margin = new Thickness(0, 0, 0, 8) 
             });
 
             // Name
-            AddLabeledTextBox(stack, "名称:", meta.Name, text => meta.Name = text);
+            AddLabeledTextBox(stack, EngineLocalization.Get("名称:"), meta.Name, text => meta.Name = text);
 
             // Template Name (read-only)
-            AddLabeledText(stack, "流程模板:", meta.TemplateName);
+            AddLabeledText(stack, EngineLocalization.Get("流程模板:"), meta.TemplateName);
 
             // Process Type (read-only)
-            AddLabeledText(stack, "处理类:", meta.ProcessDisplayName);
+            AddLabeledText(stack, EngineLocalization.Get("处理类:"), meta.ProcessDisplayName);
 
             // Tag (editable)
-            AddLabeledTextBox(stack, "标签:", meta.Tag ?? "", text => meta.Tag = text);
+            AddLabeledTextBox(stack, EngineLocalization.Get("标签:"), meta.Tag ?? "", text => meta.Tag = text);
 
             AddLabeledComboBox(
                 stack,
-                "失败策略:",
+                EngineLocalization.Get("失败策略:"),
                 Enum.GetValues<PostProcessFailurePolicy>(),
                 meta.FailurePolicy,
                 value => meta.FailurePolicy = value);
@@ -220,7 +220,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             // Description (read-only)
             if (!string.IsNullOrEmpty(meta.ProcessDescription))
             {
-                AddLabeledText(stack, "描述:", meta.ProcessDescription);
+                AddLabeledText(stack, EngineLocalization.Get("描述:"), meta.ProcessDescription);
             }
 
             PropertyPanel.Children.Add(border);
@@ -243,7 +243,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             // Header
             stack.Children.Add(new TextBlock 
             { 
-                Text = "处理配置", 
+                Text = EngineLocalization.Get("处理配置"),
                 FontWeight = FontWeights.Bold, 
                 Margin = new Thickness(0, 0, 0, 8) 
             });

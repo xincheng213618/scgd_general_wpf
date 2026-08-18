@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.FlowProcessing.PostProcess"
+        xmlns:engine="clr-namespace:ColorVision.Engine"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PostProcessManager}"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
@@ -33,8 +34,8 @@
                     <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets"
                                FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
                 </Button>
-                <Button Content="新增" Padding="12 4" Command="{Binding AddMetaCommand}"/>
-                <Button Content="编辑" Padding="12 4" Margin="8 0 0 0" Command="{Binding UpdateMetaCommand}"/>
+                <Button Content="{engine:EngineLang 新增}" Padding="12 4" Command="{Binding AddMetaCommand}"/>
+                <Button Content="{engine:EngineLang 编辑}" Padding="12 4" Margin="8 0 0 0" Command="{Binding UpdateMetaCommand}"/>
                 <Button Content="{x:Static properties:Resources.DeleteSelected}" Padding="12 4" Margin="8 0 0 0"
                         Command="{Binding RemoveMetaCommand}"/>
                 <Button Content="{x:Static properties:Resources.MoveUp}" Padding="12 4" Margin="8 0 0 0" Command="{Binding MoveUpCommand}"/>
@@ -58,7 +59,7 @@
                         <GridViewColumn Header="{x:Static properties:Resources.FlowTemplate}" Width="120" DisplayMemberBinding="{Binding TemplateName}"/>
                         <GridViewColumn Header="{x:Static properties:Resources.ProcessClass}" Width="140" DisplayMemberBinding="{Binding ProcessDisplayName}"/>
                         <GridViewColumn Header="{x:Static properties:Resources.Tag_Column}" Width="80" DisplayMemberBinding="{Binding Tag}"/>
-                        <GridViewColumn Header="失败策略" Width="80" DisplayMemberBinding="{Binding FailurePolicy}"/>
+                        <GridViewColumn Header="{engine:EngineLang 失败策略}" Width="80" DisplayMemberBinding="{Binding FailurePolicy}"/>
                         <GridViewColumn Header="{x:Static properties:Resources.Description}" Width="150" DisplayMemberBinding="{Binding ProcessDescription}"/>
                     </GridView>
                 </ListView.View>

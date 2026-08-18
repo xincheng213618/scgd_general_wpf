@@ -4,10 +4,11 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:hc="https://handyorg.github.io/handycontrol"
     xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
+    xmlns:engine="clr-namespace:ColorVision.Engine"
     xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-    mc:Ignorable="d" Title="本地相机管理" Width="1220" Height="780" MinWidth="960" MinHeight="620" Background="{DynamicResource GlobalBackground}" Closing="Window_Closing"
+    mc:Ignorable="d" Title="{engine:EngineLang 本地相机管理}" Width="1220" Height="780" MinWidth="960" MinHeight="620" Background="{DynamicResource GlobalBackground}" Closing="Window_Closing"
     Loaded="Window_Loaded" WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -27,8 +28,8 @@
                 <StackPanel Margin="14,10">
                     <DockPanel Margin="0,0,0,10">
                         <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right" Orientation="Horizontal">
-                            <TextBlock x:Name="NodeContextHint" Margin="8,0,8,0" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}" Text="同步本地取图节点参数" Visibility="Collapsed" />
-                            <Button Command="{Binding ReleaseLocalCalibrationCacheCommand}" Content="校正缓存" Style="{DynamicResource ButtonDefault.Small}" ToolTip="查看已缓存的校正文件和内存占用" />
+            <TextBlock x:Name="NodeContextHint" Margin="8,0,8,0" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}" Text="{engine:EngineLang 同步本地取图节点参数}" Visibility="Collapsed" />
+            <Button Command="{Binding ReleaseLocalCalibrationCacheCommand}" Content="{engine:EngineLang 校正缓存}" Style="{DynamicResource ButtonDefault.Small}" ToolTip="{engine:EngineLang 查看已缓存的校正文件和内存占用}" />
                         </StackPanel>
                         <TextBlock FontSize="18" FontWeight="SemiBold" Text="{x:Static properties:Resources.LocalCamera}" />
                     </DockPanel>
@@ -117,7 +118,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="{x:Static properties:Resources.AverageTimes}" />
                         <hc:NumericUpDown Grid.Column="1" Minimum="1" Maximum="10000" Value="{Binding DisplayConfig.AvgCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <CheckBox Grid.Column="3" VerticalAlignment="Center" Content="{x:Static properties:Resources.SaveFile}" IsChecked="{Binding Config.UsingFileCaching, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="与本地相机取图节点一致：保存 CVRAW，有校正结果时同时保存 CVCIE" />
+                                <CheckBox Grid.Column="3" VerticalAlignment="Center" Content="{x:Static properties:Resources.SaveFile}" IsChecked="{Binding Config.UsingFileCaching, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="{engine:EngineLang Key='与本地相机取图节点一致：保存 CVRAW，有校正结果时同时保存 CVCIE'}" />
                     </Grid>
 
                     <DockPanel Margin="0,3">

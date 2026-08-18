@@ -384,7 +384,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (_isCapturing)
             {
                 e.Cancel = true;
-                CaptureStatusText.Text = "正在取图，完成后可以关闭窗口。";
+                CaptureStatusText.Text = EngineLocalization.Get("正在取图，完成后可以关闭窗口。");
                 return;
             }
 
@@ -874,7 +874,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             _isCapturing = true;
             UpdateConnectionState(_isConnected);
-            CaptureStatusText.Text = "正在取图…";
+            CaptureStatusText.Text = EngineLocalization.Get("正在取图…");
             try
             {
                 CameraRunParam cameraParameters = BuildLocalCameraParameters();
@@ -904,7 +904,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
                 FitFirstCaptureToWindow();
 
-                CaptureStatusText.Text = $"取图 {display.CaptureTimeMs} ms · 校正 {display.CalibrationTimeMs} ms · 保存 {display.SaveTimeMs} ms · 总计 {display.TotalTimeMs} ms";
+                CaptureStatusText.Text = EngineLocalization.Format($"取图 {display.CaptureTimeMs} ms · 校正 {display.CalibrationTimeMs} ms · 保存 {display.SaveTimeMs} ms · 总计 {display.TotalTimeMs} ms");
             }
             catch (Exception ex)
             {

@@ -42,7 +42,9 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
                 process,
                 tag,
                 failurePolicy,
-                string.IsNullOrWhiteSpace(metaName) ? "新增后处理项" : "编辑后处理项");
+                string.IsNullOrWhiteSpace(metaName)
+                    ? EngineLocalization.Get("新增后处理项")
+                    : EngineLocalization.Get("编辑后处理项"));
             DataContext = _viewModel;
         }
 
@@ -69,7 +71,9 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             {
                 DraftProcessConfigPanel.Children.Add(new TextBlock
                 {
-                    Text = SelectedProcess == null ? "选择处理类型后显示配置" : "此处理类型无需额外配置",
+                    Text = SelectedProcess == null
+                        ? EngineLocalization.Get("选择处理类型后显示配置")
+                        : EngineLocalization.Get("此处理类型无需额外配置"),
                     Foreground = System.Windows.Media.Brushes.Gray,
                     TextWrapping = TextWrapping.Wrap,
                     Margin = new Thickness(0, 10, 0, 0)
@@ -84,17 +88,17 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         {
             if (string.IsNullOrWhiteSpace(MetaName))
             {
-                MessageBox.Show(this, "名称不能为空", "ColorVision");
+                MessageBox.Show(this, EngineLocalization.Get("名称不能为空"), "ColorVision");
                 return;
             }
             if (SelectedTemplate == null)
             {
-                MessageBox.Show(this, "请选择流程模板", "ColorVision");
+                MessageBox.Show(this, EngineLocalization.Get("请选择流程模板"), "ColorVision");
                 return;
             }
             if (SelectedProcess == null)
             {
-                MessageBox.Show(this, "请选择处理类型", "ColorVision");
+                MessageBox.Show(this, EngineLocalization.Get("请选择处理类型"), "ColorVision");
                 return;
             }
 

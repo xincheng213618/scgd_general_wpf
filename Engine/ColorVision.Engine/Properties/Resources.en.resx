@@ -4329,4 +4329,146 @@ Please close camera or other programs using this serial port, or check device co
   <data name="X=上下翻转，Y=左右镜像，XY=180°（不支持 90°/270°旋转）。空间/普通校正始终先执行；有色度校正时翻转最终 CIE，否则翻转校正后的 RAW。未选择校正模板时保留方向配置，等待下游本地校正后应用；POI 使用最终方向的坐标。" xml:space="preserve"><value>X flips vertically, Y mirrors horizontally, and XY rotates 180° (90°/270° rotations are unsupported). Spatial/general calibration always runs first. With color calibration, the final CIE is flipped; otherwise the calibrated RAW is flipped. Without a calibration template, the orientation is retained for downstream local calibration. POI uses coordinates in the final orientation.</value></data>
   <data name="打开本地相机管理窗口，并与当前节点同步取图参数" xml:space="preserve"><value>Opens local camera management and synchronizes capture parameters with the current node.</value></data>
   <data name="查看已缓存的校正文件、内存占用，并可释放本机校正缓存" xml:space="preserve"><value>Shows cached calibration files and memory usage, and allows the local calibration cache to be released.</value></data>
+  <data name="查看 opencv_helper 在当前进程中复用的单校正文件缓存。" xml:space="preserve"><value>View the single-calibration file cache reused by opencv_helper in the current process.</value></data>
+  <data name="刷新" xml:space="preserve"><value>Refresh</value></data>
+  <data name="重新读取当前进程的缓存清单" xml:space="preserve"><value>Reload the cache list for the current process</value></data>
+  <data name="释放全部" xml:space="preserve"><value>Release All</value></data>
+  <data name="等待正在执行的校正结束，然后释放所有相机上下文与可释放的共享文件缓存" xml:space="preserve"><value>Wait for active calibrations to finish, then release all camera contexts and releasable shared file caches</value></data>
+  <data name="缓存文件：--" xml:space="preserve"><value>Cached Files: --</value></data>
+  <data name="驻留内存：--" xml:space="preserve"><value>Resident Memory: --</value></data>
+  <data name="缓存预算：--" xml:space="preserve"><value>Cache Budget: --</value></data>
+  <data name="命中：--" xml:space="preserve"><value>Hits: --</value></data>
+  <data name="内存为 native 估算的缓存驻留量" xml:space="preserve"><value>Memory is the native estimate of resident cache usage</value></data>
+  <data name="校正类型" xml:space="preserve"><value>Calibration Type</value></data>
+  <data name="文件路径" xml:space="preserve"><value>File Path</value></data>
+  <data name="驻留内存" xml:space="preserve"><value>Resident Memory</value></data>
+  <data name="命中次数" xml:space="preserve"><value>Hit Count</value></data>
+  <data name="使用状态" xml:space="preserve"><value>Usage Status</value></data>
+  <data name="正在读取缓存状态…" xml:space="preserve"><value>Reading cache status…</value></data>
+  <data name="尚未读取缓存状态。" xml:space="preserve"><value>Cache status has not been read.</value></data>
+  <data name="本地相机管理" xml:space="preserve"><value>Local Camera Management</value></data>
+  <data name="同步本地取图节点参数" xml:space="preserve"><value>Synchronize local capture node parameters</value></data>
+  <data name="查看已缓存的校正文件和内存占用" xml:space="preserve"><value>View cached calibration files and memory usage</value></data>
+  <data name="与本地相机取图节点一致：保存 CVRAW，有校正结果时同时保存 CVCIE" xml:space="preserve"><value>Same as the local camera capture node: save CVRAW and also save CVCIE when calibration results are available</value></data>
+  <data name="统一曝光 (ms)" xml:space="preserve"><value>Unified Exposure (ms)</value></data>
+  <data name="同步四路" xml:space="preserve"><value>Synchronize Four Channels</value></data>
+  <data name="新增" xml:space="preserve"><value>Add</value></data>
+  <data name="编辑" xml:space="preserve"><value>Edit</value></data>
+  <data name="失败策略" xml:space="preserve"><value>Failure Policy</value></data>
+  <data name="后处理项" xml:space="preserve"><value>Post-processing Item</value></data>
+  <data name="填写基本信息，按分类选择后处理类型，并在右侧确认配置。" xml:space="preserve"><value>Enter the basic information, select a post-processing type by category, and confirm its configuration on the right.</value></data>
+  <data name="名称" xml:space="preserve"><value>Name</value></data>
+  <data name="标签" xml:space="preserve"><value>Tag</value></data>
+  <data name="流程模板" xml:space="preserve"><value>Flow Template</value></data>
+  <data name="输入模板名称筛选" xml:space="preserve"><value>Enter a template name to filter</value></data>
+  <data name="处理配置" xml:space="preserve"><value>Processing Configuration</value></data>
+  <data name="未选择处理类型" xml:space="preserve"><value>No processing type selected</value></data>
+  <data name="保存" xml:space="preserve"><value>Save</value></data>
+  <data name="取消" xml:space="preserve"><value>Cancel</value></data>
+  <data name="流程版本历史" xml:space="preserve"><value>Flow Version History</value></data>
+  <data name="流程 Incident 管理" xml:space="preserve"><value>Flow Incident Management</value></data>
+  <data name="适应全部节点" xml:space="preserve"><value>Fit All Nodes</value></data>
+  <data name="执行分析" xml:space="preserve"><value>Execution Analysis</value></data>
+  <data name="本机流程版本历史" xml:space="preserve"><value>Local Flow Version History</value></data>
+  <data name="版本" xml:space="preserve"><value>Version</value></data>
+  <data name="来源" xml:space="preserve"><value>Source</value></data>
+  <data name="已发布" xml:space="preserve"><value>Published</value></data>
+  <data name="时间 (UTC)" xml:space="preserve"><value>Time (UTC)</value></data>
+  <data name="作者" xml:space="preserve"><value>Author</value></data>
+  <data name="内容哈希" xml:space="preserve"><value>Content Hash</value></data>
+  <data name="说明" xml:space="preserve"><value>Description</value></data>
+  <data name="对比所选两版" xml:space="preserve"><value>Compare Selected Versions</value></data>
+  <data name="恢复到所选版本" xml:space="preserve"><value>Restore Selected Version</value></data>
+  <data name="关闭" xml:space="preserve"><value>Close</value></data>
+  <data name="缓存操作正在进行，请等待操作完成后再关闭窗口。" xml:space="preserve"><value>A cache operation is in progress. Wait for it to finish before closing the window.</value></data>
+  <data name="读取缓存状态失败：{0}" xml:space="preserve"><value>Failed to read cache status: {0}</value></data>
+  <data name="读取本地校正缓存失败：{0}" xml:space="preserve"><value>Failed to read the local calibration cache: {0}</value></data>
+  <data name="将释放所有相机的本地校正上下文，并清理 opencv_helper 可释放的共享校正文件缓存。&#xA;&#xA;正在执行的校正会先完成；仍被其他活动上下文使用的内存不会被强制释放。是否继续？" xml:space="preserve"><value>This releases the local calibration contexts for all cameras and clears releasable shared calibration file caches in opencv_helper.&#xA;&#xA;Active calibrations will finish first. Memory still used by other active contexts will not be forcibly released. Continue?</value></data>
+  <data name="正在等待校正执行结束并释放缓存…" xml:space="preserve"><value>Waiting for calibrations to finish and releasing caches…</value></data>
+  <data name="释放缓存失败：{0}" xml:space="preserve"><value>Failed to release cache: {0}</value></data>
+  <data name="释放本地校正缓存失败：{0}" xml:space="preserve"><value>Failed to release the local calibration cache: {0}</value></data>
+  <data name="缓存文件：{0:N0}" xml:space="preserve"><value>Cached Files: {0:N0}</value></data>
+  <data name="驻留内存：{0}" xml:space="preserve"><value>Resident Memory: {0}</value></data>
+  <data name="缓存预算：未限制" xml:space="preserve"><value>Cache Budget: Unlimited</value></data>
+  <data name="缓存预算：{0}" xml:space="preserve"><value>Cache Budget: {0}</value></data>
+  <data name="命中：{0:N0} / 未命中：{1:N0}" xml:space="preserve"><value>Hits: {0:N0} / Misses: {1:N0}</value></data>
+  <data name="最后刷新：{0:HH:mm:ss}。当前没有缓存被活动上下文占用。" xml:space="preserve"><value>Last refreshed: {0:HH:mm:ss}. No caches are currently held by active contexts.</value></data>
+  <data name="最后刷新：{0:HH:mm:ss}。{1} 个缓存文件仍有 {2} 个活动引用。" xml:space="preserve"><value>Last refreshed: {0:HH:mm:ss}. {1} cached file(s) still have {2} active reference(s).</value></data>
+  <data name="已检查 {0} 台相机，释放 {1} 个本地校正上下文缓存项。" xml:space="preserve"><value>Checked {0} camera(s) and released {1} local calibration context cache item(s).</value></data>
+  <data name="共享文件缓存已移除 {0} 项，涉及驻留内存约 {1}。" xml:space="preserve"><value>Removed {0} shared file cache item(s), representing approximately {1} of resident memory.</value></data>
+  <data name="其中仍有 {0} 项被 {1} 个活动引用使用，约 {2} 暂未物理释放。完成相关执行后可再次释放。" xml:space="preserve"><value>{0} item(s) are still used by {1} active reference(s); approximately {2} has not yet been physically released. Release again after the related executions finish.</value></data>
+  <data name="没有共享文件缓存仍被活动上下文占用。" xml:space="preserve"><value>No shared file caches are still held by active contexts.</value></data>
+  <data name="opencv_helper 共享文件缓存未能执行释放。" xml:space="preserve"><value>The opencv_helper shared file cache could not be released.</value></data>
+  <data name="释放错误：" xml:space="preserve"><value>Release errors: </value></data>
+  <data name="；" xml:space="preserve"><value>; </value></data>
+  <data name="释放后刷新失败：{0}" xml:space="preserve"><value>Refresh after release failed: {0}</value></data>
+  <data name="未知 ({0})" xml:space="preserve"><value>Unknown ({0})</value></data>
+  <data name="正在加载" xml:space="preserve"><value>Loading</value></data>
+  <data name="仍被使用（{0} 个引用）" xml:space="preserve"><value>In use ({0} reference(s))</value></data>
+  <data name="已缓存（可释放）" xml:space="preserve"><value>Cached (releasable)</value></data>
+  <data name="等待加载" xml:space="preserve"><value>Waiting to load</value></data>
+  <data name="正在取图，完成后可以关闭窗口。" xml:space="preserve"><value>Capturing an image. The window can be closed when capture finishes.</value></data>
+  <data name="正在取图…" xml:space="preserve"><value>Capturing…</value></data>
+  <data name="取图 {0} ms · 校正 {1} ms · 保存 {2} ms · 总计 {3} ms" xml:space="preserve"><value>Capture {0} ms · Calibration {1} ms · Save {2} ms · Total {3} ms</value></data>
+
+  <data name="类别" xml:space="preserve"><value>Category</value></data>
+  <data name="类型" xml:space="preserve"><value>Type</value></data>
+  <data name="数据导出" xml:space="preserve"><value>Data Export</value></data>
+  <data name="设备控制" xml:space="preserve"><value>Device Control</value></data>
+  <data name="系统维护" xml:space="preserve"><value>System Maintenance</value></data>
+  <data name="项目插件" xml:space="preserve"><value>Project Plugins</value></data>
+  <data name="通用" xml:space="preserve"><value>General</value></data>
+  <data name="流程完成后执行 {0}。" xml:space="preserve"><value>Runs {0} after the flow completes.</value></data>
+  <data name="无需额外配置" xml:space="preserve"><value>No additional configuration</value></data>
+  <data name="支持处理配置" xml:space="preserve"><value>Configurable</value></data>
+  <data name="新增后处理项" xml:space="preserve"><value>Add Post-processing Item</value></data>
+  <data name="编辑后处理项" xml:space="preserve"><value>Edit Post-processing Item</value></data>
+  <data name="选择处理类型后显示配置" xml:space="preserve"><value>Select a processing type to show its configuration</value></data>
+  <data name="此处理类型无需额外配置" xml:space="preserve"><value>This processing type requires no additional configuration</value></data>
+  <data name="名称不能为空" xml:space="preserve"><value>Name cannot be empty.</value></data>
+  <data name="请选择流程模板" xml:space="preserve"><value>Select a flow template.</value></data>
+  <data name="请选择处理类型" xml:space="preserve"><value>Select a processing type.</value></data>
+  <data name="请选择一个处理项查看配置" xml:space="preserve"><value>Select a processing item to view its configuration</value></data>
+  <data name="基本信息" xml:space="preserve"><value>Basic Information</value></data>
+  <data name="名称:" xml:space="preserve"><value>Name:</value></data>
+  <data name="流程模板:" xml:space="preserve"><value>Flow Template:</value></data>
+  <data name="处理类:" xml:space="preserve"><value>Processor:</value></data>
+  <data name="标签:" xml:space="preserve"><value>Tag:</value></data>
+  <data name="失败策略:" xml:space="preserve"><value>Failure Policy:</value></data>
+  <data name="描述:" xml:space="preserve"><value>Description:</value></data>
+  <data name="文件清理" xml:space="preserve"><value>File Cleanup</value></data>
+  <data name="删除流程中产生的临时文件或指定文件" xml:space="preserve"><value>Delete temporary or specified files generated by the flow.</value></data>
+  <data name="IVL完整处理" xml:space="preserve"><value>Full IVL Processing</value></data>
+  <data name="处理IVL批次数据，包含Camera和Spectrum数据的导出" xml:space="preserve"><value>Process IVL batch data, including Camera and Spectrum data export.</value></data>
+  <data name="POI处理" xml:space="preserve"><value>POI Processing</value></data>
+  <data name="处理POI批次数据并导出CIE数据" xml:space="preserve"><value>Process POI batch data and export CIE data.</value></data>
+  <data name="源表关闭" xml:space="preserve"><value>Close Source Meter</value></data>
+  <data name="关闭源表" xml:space="preserve"><value>Close the source meter.</value></data>
+
+  <data name="{0} · 本机版本历史" xml:space="preserve"><value>{0} · Local Version History</value></data>
+  <data name="当前流程还没有稳定 FlowKey。" xml:space="preserve"><value>The current flow does not yet have a stable FlowKey.</value></data>
+  <data name="本机尚未产生版本；保存一次后会建立版本 1。" xml:space="preserve"><value>No local version exists yet. Saving once will create version 1.</value></data>
+  <data name="本机共 {0} 个不可变版本，当前画布对应版本 {1}。" xml:space="preserve"><value>There are {0} immutable local version(s). The current canvas corresponds to version {1}.</value></data>
+  <data name="未知" xml:space="preserve"><value>Unknown</value></data>
+  <data name="读取版本目录失败：{0}" xml:space="preserve"><value>Failed to read the version catalog: {0}</value></data>
+  <data name="请选择恰好两个版本进行对比。" xml:space="preserve"><value>Select exactly two versions to compare.</value></data>
+  <data name="流程版本" xml:space="preserve"><value>Flow Version</value></data>
+  <data name="版本对比失败：{0}" xml:space="preserve"><value>Version comparison failed: {0}</value></data>
+  <data name="，视口已变化" xml:space="preserve"><value>; viewport changed</value></data>
+  <data name="仅布局变化" xml:space="preserve"><value>Layout-only changes</value></data>
+  <data name="语义变化" xml:space="preserve"><value>Semantic changes</value></data>
+  <data name="无变化" xml:space="preserve"><value>No changes</value></data>
+  <data name="版本 {0} → {1}&#xA;&#xA;节点：+{2} -{3} 类型变化 {4}&#xA;属性变化：{5}&#xA;普通连接：+{6} -{7}&#xA;布局变化：{8}{9}&#xA;&#xA;分类：{10}" xml:space="preserve"><value>Version {0} → {1}&#xA;&#xA;Nodes: +{2} -{3}; type changes: {4}&#xA;Property changes: {5}&#xA;Standard connections: +{6} -{7}&#xA;Layout changes: {8}{9}&#xA;&#xA;Classification: {10}</value></data>
+  <data name="流程版本对比" xml:space="preserve"><value>Flow Version Comparison</value></data>
+  <data name="流程正在运行，请在运行结束后恢复版本。" xml:space="preserve"><value>The flow is running. Restore a version after execution finishes.</value></data>
+  <data name="请选择一个要恢复的版本。" xml:space="preserve"><value>Select a version to restore.</value></data>
+  <data name="当前画布已经是这个版本。" xml:space="preserve"><value>The current canvas is already at this version.</value></data>
+  <data name="恢复版本 {0}？&#xA;现有历史不会被覆盖，恢复内容会保存为一个新的版本。&#xA;当前画布尚未保存的修改会被替换。" xml:space="preserve"><value>Restore version {0}?&#xA;Existing history will not be overwritten; the restored content will be saved as a new version.&#xA;Unsaved changes on the current canvas will be replaced.</value></data>
+  <data name="恢复流程版本" xml:space="preserve"><value>Restore Flow Version</value></data>
+  <data name="恢复版本失败：{0}" xml:space="preserve"><value>Failed to restore the version: {0}</value></data>
+  <data name="流程内容已恢复，但本地版本目录更新失败。&#xA;请查看日志并重新保存。" xml:space="preserve"><value>The flow content was restored, but the local version catalog could not be updated.&#xA;Check the log and save again.</value></data>
+  <data name="流程已恢复" xml:space="preserve"><value>Flow Restored</value></data>
+  <data name="版本已经恢复，但刷新编辑器失败：{0}" xml:space="preserve"><value>The version was restored, but the editor could not be refreshed: {0}</value></data>
+  <data name="流程正在运行，请在运行结束后查看或恢复版本。" xml:space="preserve"><value>The flow is running. View or restore versions after execution finishes.</value></data>
+  <data name="当前文档还没有可用的流程版本。" xml:space="preserve"><value>The current document has no available flow versions.</value></data>
 </root>

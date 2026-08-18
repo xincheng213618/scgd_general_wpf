@@ -1,7 +1,8 @@
 <Window x:Class="ColorVision.Engine.FlowProcessing.PostProcess.PostProcessMetaEditWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="后处理项" Height="660" Width="1180" MinHeight="580" MinWidth="980"
+        xmlns:engine="clr-namespace:ColorVision.Engine"
+        Title="{engine:EngineLang 后处理项}" Height="660" Width="1180" MinHeight="580" MinWidth="980"
         Background="{DynamicResource GlobalBackground}" Loaded="Window_Loaded">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -103,7 +104,7 @@
 
         <StackPanel Grid.Row="0" Margin="2 0 2 14">
             <TextBlock Text="{Binding PageTitle}" FontWeight="SemiBold" FontSize="18"/>
-            <TextBlock Text="填写基本信息，按分类选择后处理类型，并在右侧确认配置。"
+            <TextBlock Text="{engine:EngineLang Key='填写基本信息，按分类选择后处理类型，并在右侧确认配置。'}"
                        Foreground="{DynamicResource SecondaryTextBrush}" Margin="0 5 0 0"/>
         </StackPanel>
 
@@ -129,14 +130,14 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="名称" Style="{StaticResource PanelTitleStyle}" Margin="0 0 0 8"/>
+                    <TextBlock Text="{engine:EngineLang 名称}" Style="{StaticResource PanelTitleStyle}" Margin="0 0 0 8"/>
                     <TextBox x:Name="NameTextBox" Grid.Row="1"
                              Text="{Binding MetaName, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <TextBlock Grid.Row="2" Text="标签" Style="{StaticResource PanelTitleStyle}" Margin="0 16 0 8"/>
+                    <TextBlock Grid.Row="2" Text="{engine:EngineLang 标签}" Style="{StaticResource PanelTitleStyle}" Margin="0 16 0 8"/>
                     <TextBox Grid.Row="3" Text="{Binding Tag, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <TextBlock Grid.Row="4" Text="失败策略" Style="{StaticResource PanelTitleStyle}" Margin="0 16 0 8"/>
+                    <TextBlock Grid.Row="4" Text="{engine:EngineLang 失败策略}" Style="{StaticResource PanelTitleStyle}" Margin="0 16 0 8"/>
                     <ComboBox Grid.Row="5" ItemsSource="{Binding FailurePolicies}"
                               SelectedItem="{Binding FailurePolicy}"/>
 
@@ -146,9 +147,9 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Text="流程模板" Style="{StaticResource PanelTitleStyle}" Margin="0 0 0 8"/>
+                        <TextBlock Text="{engine:EngineLang 流程模板}" Style="{StaticResource PanelTitleStyle}" Margin="0 0 0 8"/>
                         <TextBox Grid.Row="1" Text="{Binding TemplateSearchText, UpdateSourceTrigger=PropertyChanged}"
-                                 ToolTip="输入模板名称筛选" Margin="0 0 0 8"/>
+                                 ToolTip="{engine:EngineLang 输入模板名称筛选}" Margin="0 0 0 8"/>
                         <ListBox Grid.Row="2" ItemsSource="{Binding VisibleTemplates}"
                                  SelectedItem="{Binding SelectedTemplate}" BorderThickness="1"
                                  BorderBrush="{DynamicResource BorderBrush}" Background="Transparent"
@@ -214,9 +215,9 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Text="处理配置" Style="{StaticResource PanelTitleStyle}"/>
+                    <TextBlock Text="{engine:EngineLang 处理配置}" Style="{StaticResource PanelTitleStyle}"/>
                     <StackPanel Grid.Row="1" Margin="0 10 0 12">
-                        <TextBlock Text="{Binding SelectedOption.DisplayName, TargetNullValue=未选择处理类型}"
+                        <TextBlock Text="{Binding SelectedOption.DisplayName, TargetNullValue={engine:EngineLang 未选择处理类型}}"
                                    FontWeight="SemiBold" FontSize="14"/>
                         <TextBlock Text="{Binding SelectedOption.Description}"
                                    Foreground="{DynamicResource SecondaryTextBrush}"
@@ -231,8 +232,8 @@
         </Border>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 13 0 0">
-            <Button Content="保存" Padding="22 6" Click="Save_Click" IsDefault="True"/>
-            <Button Content="取消" Padding="22 6" Margin="8 0 0 0" IsCancel="True"/>
+            <Button Content="{engine:EngineLang 保存}" Padding="22 6" Click="Save_Click" IsDefault="True"/>
+            <Button Content="{engine:EngineLang 取消}" Padding="22 6" Margin="8 0 0 0" IsCancel="True"/>
         </StackPanel>
     </Grid>
 </Window>
