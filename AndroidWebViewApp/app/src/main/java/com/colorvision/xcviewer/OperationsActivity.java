@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -21,7 +22,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -102,6 +102,8 @@ public class OperationsActivity extends AppCompatActivity {
     };
     private final Handler connectionHeartbeatHandler = new Handler(Looper.getMainLooper());
     private final Runnable connectionHeartbeat = this::runConnectionHeartbeat;
+    private final Handler pairingApprovalHandler = new Handler(Looper.getMainLooper());
+    private final Runnable pairingApprovalTick = this::refreshPairingApprovalCountdown;
     private AppPreferences preferences;
     private ThemeManager themeManager;
     private OperationsApiClient client;
@@ -112,7 +114,7 @@ public class OperationsActivity extends AppCompatActivity {
     private TextView profileTarget;
     private TextView state;
     private TextView details;
-    private ProgressBar progress;
+    private LinearProgressIndicator progress;
     private ScrollView dashboardScroll;
     private LinearLayout actions;
     private DashboardStatusRow dashboardFlowStatus;
@@ -144,6 +146,9 @@ public class OperationsActivity extends AppCompatActivity {
     private BottomNavigationView bottomNavigation;
     private boolean fleetCheckInFlight;
     private String pendingOperationsDestination = "";
+    private boolean pairingApprovalWaiting;
+    private long pairingApprovalDeadlineMilliseconds;
+    private volatile int pairingRequestGeneration;
 
     private static final class DashboardStatusRow {
         final LinearLayout container;
@@ -329,7 +334,9 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void beginPairing(String rawPairing) {
-        setBusy("正在验证配对码并创建设备身份…");
+        int claimGeneration = ++pairingRequestGeneration;
+        setBusy("第 1 步（共 2 步） · 正在验证配对码并创建设备身份…");
+        title.setText("安全配对");
         executor.execute(() -> {
             try {
                 OperationsPairingPayload payload = OperationsPairingPayload.parse(rawPairing);
@@ -340,22 +347,60 @@ public class OperationsActivity extends AppCompatActivity {
                         payload.endpoint, payload.certificateSha256, deviceId, identity);
                 pairingClient.submitClaim(payload, deviceName.trim());
                 runOnUiThread(() -> {
-                    state.setText("已提交安全证明，请在电脑端批准这台设备");
-                    details.setText("设备：" + deviceName + "\n权限：状态、告警、崩溃与卡死线索、消息通道与设备运行状态汇总、受控消息恢复、诊断摘要、主窗口控制、受控窗口取证与当前检测取消\n配对码：一次性，短时有效");
+                    if (claimGeneration == pairingRequestGeneration && !isFinishing()) {
+                        startPairingApprovalChecks(payload, pairingClient, deviceName.trim());
+                    }
                 });
-                pollPairingApproval(payload, pairingClient);
             } catch (Exception ex) {
-                runOnUiThread(() -> showPairingFailure(PairingFailurePresentation.reasonFor(ex)));
+                runOnUiThread(() -> {
+                    if (claimGeneration == pairingRequestGeneration && !isFinishing()) {
+                        showPairingFailure(PairingFailurePresentation.reasonFor(ex));
+                    }
+                });
             }
         });
     }
 
-    private void pollPairingApproval(OperationsPairingPayload payload, OperationsApiClient pairingClient) throws Exception {
-        for (int attempt = 0; attempt < 60; attempt++) {
-            if (isFinishing()) {
-                return;
+    private void startPairingApprovalChecks(
+            OperationsPairingPayload payload,
+            OperationsApiClient pairingClient,
+            String deviceName) {
+        int requestGeneration = ++pairingRequestGeneration;
+        long deadlineMilliseconds = PairingApprovalWaitPolicy.deadlineFrom(
+                SystemClock.elapsedRealtime());
+        showPairingApprovalWait(deviceName, deadlineMilliseconds);
+        executor.execute(() -> {
+            try {
+                pollPairingApproval(
+                        payload, pairingClient, deviceName, deadlineMilliseconds, requestGeneration);
+            } catch (Exception ex) {
+                runOnUiThread(() -> {
+                    if (requestGeneration == pairingRequestGeneration && !isFinishing()) {
+                        showPairingFailure(PairingFailurePresentation.reasonFor(ex));
+                    }
+                });
+            }
+        });
+    }
+
+    private void pollPairingApproval(
+            OperationsPairingPayload payload,
+            OperationsApiClient pairingClient,
+            String deviceName,
+            long deadlineMilliseconds,
+            int requestGeneration) throws Exception {
+        boolean checkedAtLeastOnce = false;
+        while (requestGeneration == pairingRequestGeneration && !isFinishing() && !isDestroyed()) {
+            long nowMilliseconds = SystemClock.elapsedRealtime();
+            if (checkedAtLeastOnce && !PairingApprovalWaitPolicy.shouldContinue(
+                    deadlineMilliseconds, nowMilliseconds)) {
+                break;
             }
             JSONObject response = pairingClient.pairingStatus(payload.pairingId);
+            if (requestGeneration != pairingRequestGeneration || isFinishing() || isDestroyed()) {
+                return;
+            }
+            checkedAtLeastOnce = true;
             JSONObject data = response.optJSONObject("data");
             String status = data == null ? "" : data.optString("status", "");
             if ("approved".equals(status)) {
@@ -365,11 +410,15 @@ public class OperationsActivity extends AppCompatActivity {
                         new OperationsDeviceIdentity(payload.hostId).delete();
                     } catch (Exception ignored) {
                     }
-                    runOnUiThread(() -> showError(
-                            "已配对电脑数量已满",
-                            "手机最多保留 " + OperationsProfileRegistry.MAX_PROFILES
-                                    + " 台电脑。请先在连接方式中移除不再使用的电脑。",
-                            null));
+                    runOnUiThread(() -> {
+                        if (requestGeneration == pairingRequestGeneration) {
+                            showError(
+                                    "已配对电脑数量已满",
+                                    "手机最多保留 " + OperationsProfileRegistry.MAX_PROFILES
+                                            + " 台电脑。请先在连接方式中移除不再使用的电脑。",
+                                    null);
+                        }
+                    });
                     return;
                 }
                 OperationsWatchService.restartForProfileChange(this);
@@ -380,34 +429,111 @@ public class OperationsActivity extends AppCompatActivity {
                         payload.certificateSha256,
                         new OperationsDeviceIdentity(payload.hostId));
                 operationsClientHostId = payload.hostId;
-                runOnUiThread(this::showDashboard);
+                runOnUiThread(() -> {
+                    if (requestGeneration == pairingRequestGeneration) {
+                        stopPairingApprovalWait();
+                        showDashboard();
+                    }
+                });
                 return;
             }
             if ("rejected".equals(status)) {
-                runOnUiThread(() -> showPairingFailure(PairingFailurePresentation.APPROVAL_REJECTED));
+                runOnUiThread(() -> {
+                    if (requestGeneration == pairingRequestGeneration) {
+                        showPairingFailure(PairingFailurePresentation.APPROVAL_REJECTED);
+                    }
+                });
                 return;
             }
-            Thread.sleep(2000);
+            long remainingMilliseconds = PairingApprovalWaitPolicy.remainingMilliseconds(
+                    deadlineMilliseconds, SystemClock.elapsedRealtime());
+            if (remainingMilliseconds <= 0L) {
+                break;
+            }
+            Thread.sleep(Math.min(
+                    PairingApprovalWaitPolicy.POLL_INTERVAL_MILLISECONDS,
+                    remainingMilliseconds));
         }
-        runOnUiThread(() -> showPairingTimeout(payload, pairingClient));
-    }
-
-    private void showPairingTimeout(OperationsPairingPayload payload, OperationsApiClient pairingClient) {
-        showError("等待批准超时", "电脑端可能尚未批准，也可能刚刚完成批准。", null);
-        details.setText("本次桌面会话仍保留已提交的设备证明。批准完成后，可直接重新检查，无需刷新二维码或重新创建设备密钥。");
-        Button retry = new MaterialButton(this);
-        retry.setText("重新检查批准状态");
-        retry.setOnClickListener(v -> {
-            setBusy("正在重新检查电脑端批准状态…");
-            executor.execute(() -> {
-                try {
-                    pollPairingApproval(payload, pairingClient);
-                } catch (Exception ex) {
-                    runOnUiThread(() -> showPairingFailure(PairingFailurePresentation.reasonFor(ex)));
+        if (requestGeneration == pairingRequestGeneration && !isFinishing() && !isDestroyed()) {
+            runOnUiThread(() -> {
+                if (requestGeneration == pairingRequestGeneration) {
+                    showPairingTimeout(payload, pairingClient, deviceName);
                 }
             });
-        });
+        }
+    }
+
+    private void showPairingApprovalWait(String deviceName, long deadlineMilliseconds) {
+        stopPairingApprovalWait();
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        dashboardVisible = false;
+        pairingApprovalWaiting = true;
+        pairingApprovalDeadlineMilliseconds = deadlineMilliseconds;
+        title.setText("批准这台手机");
+        details.setText(PairingApprovalPresentation.waitingDetails(deviceName));
+        actions.removeAllViews();
+        progress.setVisibility(View.GONE);
+        progress.setIndeterminate(false);
+        progress.setMax(PairingApprovalWaitPolicy.PROGRESS_MAXIMUM);
+        progress.setProgress(0);
+        progress.setVisibility(View.VISIBLE);
+        refreshPairingApprovalCountdown();
+    }
+
+    private void refreshPairingApprovalCountdown() {
+        pairingApprovalHandler.removeCallbacks(pairingApprovalTick);
+        if (!pairingApprovalWaiting) {
+            return;
+        }
+        long nowMilliseconds = SystemClock.elapsedRealtime();
+        int remainingSeconds = PairingApprovalWaitPolicy.remainingSeconds(
+                pairingApprovalDeadlineMilliseconds, nowMilliseconds);
+        state.setText(PairingApprovalPresentation.waitingState(remainingSeconds));
+        progress.setProgress(PairingApprovalWaitPolicy.elapsedProgress(
+                pairingApprovalDeadlineMilliseconds, nowMilliseconds));
+        if (activityResumed && remainingSeconds > 0) {
+            pairingApprovalHandler.postDelayed(pairingApprovalTick, 1_000L);
+        }
+    }
+
+    private void stopPairingApprovalWait() {
+        pairingApprovalWaiting = false;
+        pairingApprovalHandler.removeCallbacks(pairingApprovalTick);
+        if (progress != null) {
+            progress.setVisibility(View.GONE);
+            progress.setIndeterminate(true);
+            progress.setProgress(0);
+        }
+    }
+
+    private void showPairingTimeout(
+            OperationsPairingPayload payload,
+            OperationsApiClient pairingClient,
+            String deviceName) {
+        stopPairingApprovalWait();
+        title.setText("电脑端尚未确认");
+        state.setText("已暂停自动检查，待批准记录仍保留");
+        details.setText(PairingApprovalPresentation.timeoutDetails(deviceName));
+        actions.removeAllViews();
+
+        Button retry = new MaterialButton(this);
+        retry.setText("继续自动检查");
+        retry.setOnClickListener(v -> startPairingApprovalChecks(payload, pairingClient, deviceName));
         actions.addView(retry, actionParams());
+
+        boolean hasExistingProfile = preferences.hasOperationsProfile();
+        Button secondary = new MaterialButton(
+                this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        secondary.setText(PairingFailurePresentation.secondaryAction(hasExistingProfile));
+        secondary.setOnClickListener(v -> {
+            if (hasExistingProfile) {
+                openExistingProfile();
+            } else {
+                openMainTab(MainActivity.TAB_SETTINGS);
+            }
+        });
+        actions.addView(secondary, actionParams());
     }
 
     private void openExistingProfile() {
@@ -5500,16 +5626,19 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void setBusy(String message) {
+        stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
         dashboardVisible = false;
         state.setText(message);
         details.setText("设备私钥只保存在 Android Keystore，不会写入二维码、网址或应用配置。 ");
+        progress.setIndeterminate(true);
         progress.setVisibility(View.VISIBLE);
         actions.removeAllViews();
     }
 
     private void showError(String heading, String message, Runnable recovery) {
+        stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
         dashboardVisible = false;
@@ -5694,6 +5823,7 @@ public class OperationsActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         activityResumed = false;
+        pairingApprovalHandler.removeCallbacks(pairingApprovalTick);
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         supportRefreshHandler.removeCallbacks(supportRefresh);
         liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
@@ -5713,6 +5843,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showPairingFailure(String reason) {
+        stopPairingApprovalWait();
         leaveSupportCenter();
         leaveLiveMonitor();
         dashboardVisible = false;
@@ -5756,15 +5887,20 @@ public class OperationsActivity extends AppCompatActivity {
         if (liveMonitorVisible && liveMonitorAutoRefresh) {
             liveMonitorRefreshHandler.post(liveMonitorRefresh);
         }
+        if (pairingApprovalWaiting) {
+            pairingApprovalHandler.post(pairingApprovalTick);
+        }
         scheduleConnectionHeartbeat();
     }
 
     @Override
     protected void onDestroy() {
+        pairingRequestGeneration++;
         connectionRequestGeneration++;
         remoteTaskGeneration++;
         fleetCheckGeneration++;
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
+        pairingApprovalHandler.removeCallbacks(pairingApprovalTick);
         leaveSupportCenter();
         leaveLiveMonitor();
         executor.shutdownNow();
