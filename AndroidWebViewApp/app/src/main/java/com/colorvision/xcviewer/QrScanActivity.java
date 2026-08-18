@@ -12,6 +12,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -67,11 +68,10 @@ public class QrScanActivity extends Activity implements SurfaceHolder.Callback, 
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
 
-        TextView backButton = new TextView(this);
-        backButton.setText("←");
-        backButton.setTextColor(Color.WHITE);
-        backButton.setTextSize(34);
-        backButton.setGravity(Gravity.CENTER);
+        ImageButton backButton = new ImageButton(this);
+        backButton.setImageResource(R.drawable.ic_arrow_back_24);
+        backButton.setColorFilter(Color.WHITE);
+        backButton.setContentDescription("返回");
         backButton.setBackgroundColor(Color.argb(96, 0, 0, 0));
         backButton.setOnClickListener(v -> finish());
         FrameLayout.LayoutParams backParams = new FrameLayout.LayoutParams(dp(58), dp(58), Gravity.TOP | Gravity.LEFT);

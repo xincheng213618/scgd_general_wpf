@@ -15,7 +15,14 @@ public class AppNavigationPolicyTest {
     }
 
     @Test
-    public void downloadStationHasOneApplicationOwnedAddress() {
-        assertEquals("http://xc213618.ddns.me:9998/", AppNavigationPolicy.FIXED_DOWNLOAD_URL);
+    public void updateAndRelayUseOneApplicationOwnedServiceOrigin() {
+        assertEquals("http://xc213618.ddns.me:9998/", AppNavigationPolicy.FIXED_SERVICE_ORIGIN);
+    }
+
+    @Test
+    public void removedDownloadTabFallsBackToOperations() {
+        assertEquals(0, AppNavigationPolicy.normalizeStartTab(1, 1, 0, 2));
+        assertEquals(2, AppNavigationPolicy.normalizeStartTab(2, 0, 0, 2));
+        assertEquals(2, AppNavigationPolicy.normalizeStartTab(-1, 2, 0, 2));
     }
 }

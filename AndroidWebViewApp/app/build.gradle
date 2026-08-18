@@ -22,8 +22,8 @@ android {
         applicationId "com.colorvision.xcviewer"
         minSdk 23
         targetSdk 35
-        versionCode 62
-        versionName "2.51"
+        versionCode 63
+        versionName "2.52"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -54,6 +54,8 @@ android {
 dependencies {
     implementation "com.google.zxing:core:3.5.3"
     implementation "androidx.core:core:1.15.0"
+    implementation "androidx.appcompat:appcompat:1.7.0"
+    implementation "com.google.android.material:material:1.13.0"
     implementation "androidx.media3:media3-exoplayer:1.7.1"
     testImplementation "junit:junit:4.13.2"
     testImplementation "org.json:json:20250517"

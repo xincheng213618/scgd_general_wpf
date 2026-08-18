@@ -1,14 +1,10 @@
 package com.colorvision.xcviewer;
 
-import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -26,7 +22,15 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
+import androidx.core.widget.TextViewCompat;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -51,7 +55,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.SSLHandshakeException;
 
-public class OperationsActivity extends Activity {
+public class OperationsActivity extends AppCompatActivity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
     static final String EXTRA_OPEN_DESTINATION = "operations_open_destination";
     private static final int REQUEST_QR_SCAN = 2406;
@@ -59,6 +63,8 @@ public class OperationsActivity extends Activity {
     private static final long CONNECTION_HEARTBEAT_MILLISECONDS = 30_000L;
     private static final int FLEET_CONNECT_TIMEOUT_MILLISECONDS = 3_500;
     private static final int FLEET_READ_TIMEOUT_MILLISECONDS = 5_000;
+    private static final int NAV_OPERATIONS = 2001;
+    private static final int NAV_SETTINGS = 2002;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -88,6 +94,7 @@ public class OperationsActivity extends Activity {
     private final Handler connectionHeartbeatHandler = new Handler(Looper.getMainLooper());
     private final Runnable connectionHeartbeat = this::runConnectionHeartbeat;
     private AppPreferences preferences;
+    private ThemeManager themeManager;
     private OperationsApiClient client;
     private OperationsRelayApiClient relayClient;
     private String operationsClientHostId = "";
@@ -129,6 +136,8 @@ public class OperationsActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         preferences = new AppPreferences(this);
+        themeManager = new ThemeManager(this, preferences);
+        themeManager.applySystemBars(this);
         acceptOperationsDestination(getIntent());
         createView();
 
@@ -145,14 +154,14 @@ public class OperationsActivity extends Activity {
     private void createView() {
         LinearLayout shell = new LinearLayout(this);
         shell.setOrientation(LinearLayout.VERTICAL);
-        shell.setBackgroundColor(Color.rgb(245, 247, 250));
+        shell.setBackgroundColor(themeManager.pageBackgroundColor());
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(14), getStatusBarHeight() + dp(4), dp(14), dp(20));
-        root.setBackgroundColor(Color.rgb(245, 247, 250));
+        root.setPadding(dp(16), getStatusBarHeight() + dp(8), dp(16), dp(24));
+        root.setBackgroundColor(themeManager.pageBackgroundColor());
         scroll.addView(root, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
 
@@ -164,56 +173,59 @@ public class OperationsActivity extends Activity {
 
         title = new TextView(this);
         title.setText("运维伴侣");
-        title.setTextSize(22);
-        title.setTextColor(Color.rgb(24, 35, 49));
-        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        TextViewCompat.setTextAppearance(title, com.google.android.material.R.style.TextAppearance_Material3_TitleLarge);
+        title.setTextColor(themeManager.primaryTextColor());
         title.setSingleLine(true);
         header.addView(title, new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
-        profileTarget = new TextView(this);
+        profileTarget = new MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
         profileTarget.setTextSize(12);
-        profileTarget.setTextColor(Color.rgb(36, 76, 120));
         profileTarget.setSingleLine(true);
         profileTarget.setEllipsize(TextUtils.TruncateAt.END);
         profileTarget.setGravity(Gravity.CENTER);
         profileTarget.setPadding(dp(10), dp(6), dp(10), dp(6));
         profileTarget.setMaxWidth(dp(190));
-        profileTarget.setBackground(compactPanel(
-                Color.rgb(232, 242, 255), Color.rgb(168, 204, 247)));
         profileTarget.setOnClickListener(v -> showConnectionPreference());
         header.addView(profileTarget, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
         state = new TextView(this);
-        state.setTextSize(14);
-        state.setTextColor(Color.rgb(58, 75, 92));
-        state.setPadding(dp(12), dp(7), dp(12), dp(7));
-        state.setBackground(compactPanel(Color.rgb(232, 242, 255), Color.rgb(168, 204, 247)));
+        TextViewCompat.setTextAppearance(state, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
+        state.setTextColor(themeManager.onPrimaryContainerColor());
+        state.setPadding(dp(16), dp(12), dp(16), dp(12));
+        MaterialCardView stateCard = new MaterialCardView(this);
+        stateCard.setCardBackgroundColor(themeManager.primaryContainerColor());
+        stateCard.addView(state, new MaterialCardView.LayoutParams(
+                MaterialCardView.LayoutParams.MATCH_PARENT,
+                MaterialCardView.LayoutParams.WRAP_CONTENT));
         LinearLayout.LayoutParams stateParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         stateParams.setMargins(0, dp(8), 0, 0);
-        root.addView(state, stateParams);
+        root.addView(stateCard, stateParams);
 
-        progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progress = new LinearProgressIndicator(this);
         progress.setIndeterminate(true);
         LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(3));
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(4));
         progressParams.setMargins(0, dp(4), 0, 0);
         root.addView(progress, progressParams);
 
         details = new TextView(this);
-        details.setTextSize(13);
-        details.setTextColor(Color.rgb(41, 53, 66));
+        TextViewCompat.setTextAppearance(details, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
+        details.setTextColor(themeManager.primaryTextColor());
         details.setLineSpacing(0, 1.08f);
-        details.setPadding(dp(12), dp(8), dp(12), dp(8));
-        details.setBackground(compactPanel(Color.WHITE, Color.rgb(224, 229, 235)));
+        details.setPadding(dp(16), dp(12), dp(16), dp(12));
         details.setTextIsSelectable(true);
+        MaterialCardView detailsCard = new MaterialCardView(this);
+        detailsCard.addView(details, new MaterialCardView.LayoutParams(
+                MaterialCardView.LayoutParams.MATCH_PARENT,
+                MaterialCardView.LayoutParams.WRAP_CONTENT));
         LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         detailsParams.setMargins(0, dp(8), 0, 0);
-        root.addView(details, detailsParams);
+        root.addView(detailsCard, detailsParams);
 
         actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.VERTICAL);
@@ -225,40 +237,29 @@ public class OperationsActivity extends Activity {
         shell.addView(scroll, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
         shell.addView(createBottomNavigation(), new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(54)));
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         setContentView(shell);
         refreshOperationsTargetPresentation();
     }
 
-    private LinearLayout createBottomNavigation() {
-        LinearLayout navigation = new LinearLayout(this);
-        navigation.setOrientation(LinearLayout.HORIZONTAL);
-        navigation.setGravity(Gravity.CENTER);
-        navigation.setPadding(dp(12), dp(2), dp(12), dp(2));
-        navigation.setBackgroundColor(Color.WHITE);
-        navigation.setElevation(dp(8));
-        navigation.addView(createBottomNavigationItem("运维", true, null),
-                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
-        navigation.addView(createBottomNavigationItem("下载站", false,
-                        v -> openMainTab(MainActivity.TAB_DOWNLOADS)),
-                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
-        navigation.addView(createBottomNavigationItem("设置", false,
-                        v -> openMainTab(MainActivity.TAB_SETTINGS)),
-                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+    private BottomNavigationView createBottomNavigation() {
+        BottomNavigationView navigation = new BottomNavigationView(this);
+        navigation.setBackgroundColor(themeManager.bottomNavBackgroundColor());
+        navigation.setLabelVisibilityMode(BottomNavigationView.LABEL_VISIBILITY_LABELED);
+        navigation.getMenu().add(0, NAV_OPERATIONS, 0, "运维").setIcon(R.drawable.ic_devices_24);
+        navigation.getMenu().add(0, NAV_SETTINGS, 1, "设置").setIcon(R.drawable.ic_person_24);
+        navigation.setOnItemSelectedListener(item -> {
+            if (item.getItemId() == NAV_OPERATIONS) {
+                return true;
+            }
+            if (item.getItemId() == NAV_SETTINGS) {
+                openMainTab(MainActivity.TAB_SETTINGS);
+                return true;
+            }
+            return false;
+        });
+        navigation.setSelectedItemId(NAV_OPERATIONS);
         return navigation;
-    }
-
-    private TextView createBottomNavigationItem(String label, boolean selected, View.OnClickListener listener) {
-        TextView item = new TextView(this);
-        item.setText(label);
-        item.setTextSize(13);
-        item.setGravity(Gravity.CENTER);
-        item.setTextColor(selected ? Color.rgb(31, 111, 235) : Color.rgb(91, 105, 119));
-        item.setTypeface(Typeface.DEFAULT, selected ? Typeface.BOLD : Typeface.NORMAL);
-        item.setClickable(listener != null);
-        item.setFocusable(listener != null);
-        item.setOnClickListener(listener);
-        return item;
     }
 
     private void openMainTab(int tab) {
@@ -336,7 +337,7 @@ public class OperationsActivity extends Activity {
     private void showPairingTimeout(OperationsPairingPayload payload, OperationsApiClient pairingClient) {
         showError("等待批准超时", "电脑端可能尚未批准，也可能刚刚完成批准。", null);
         details.setText("本次桌面会话仍保留已提交的设备证明。批准完成后，可直接重新检查，无需刷新二维码或重新创建设备密钥。");
-        Button retry = new Button(this);
+        Button retry = new MaterialButton(this);
         retry.setText("重新检查批准状态");
         retry.setOnClickListener(v -> {
             setBusy("正在重新检查电脑端批准状态…");
@@ -763,7 +764,7 @@ public class OperationsActivity extends Activity {
         input.setMaxLines(1);
         input.setText(currentLabel.startsWith("电脑 ") ? "" : currentLabel);
         input.setHint("例如：一号线 AOI");
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle("命名当前电脑")
                 .setMessage("名称只保存在这台手机，不会发送给电脑或固定中继。最多 20 个字符。")
                 .setView(input)
@@ -849,7 +850,7 @@ public class OperationsActivity extends Activity {
             return;
         }
         String targetLabel = preferences.getOperationsProfileLabel(expectedHostId);
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle(dialogTitle)
                 .setMessage(OperationsTargetPolicy.confirmationMessage(targetLabel, body))
                 .setNegativeButton(negativeLabel, null)
@@ -916,7 +917,7 @@ public class OperationsActivity extends Activity {
         dashboardRemoteHostFresh = true;
 
         addDashboardSection("当前重点");
-        dashboardPriorityAction = dashboardButton("正在分析运行状态…", null);
+        dashboardPriorityAction = dashboardPrimaryButton("正在分析运行状态…", null);
         dashboardPriorityAction.setEnabled(false);
         addDashboardWideAction(dashboardPriorityAction);
 
@@ -1020,7 +1021,7 @@ public class OperationsActivity extends Activity {
                 host.optLong("signedAt", 0L), System.currentTimeMillis());
 
         addDashboardSection("当前重点");
-        dashboardPriorityAction = dashboardButton("正在分析运行状态…", null);
+        dashboardPriorityAction = dashboardPrimaryButton("正在分析运行状态…", null);
         addDashboardWideAction(dashboardPriorityAction);
         updateDashboardPriority(dashboardRemoteHostFresh
                 ? OperationsDashboardAdvisor.fromMonitor(monitor)
@@ -1862,12 +1863,12 @@ public class OperationsActivity extends Activity {
         details.setText(timeline);
         actions.removeAllViews();
 
-        Button refresh = new Button(this);
+        Button refresh = new MaterialButton(this);
         refresh.setText("刷新本机时间线");
         refresh.setOnClickListener(v -> showOperationsWatchHistory());
         actions.addView(refresh, actionParams());
 
-        Button share = new Button(this);
+        Button share = new MaterialButton(this);
         share.setText("分享脱敏时间线");
         share.setEnabled(!entries.isEmpty());
         share.setOnClickListener(v -> shareSafeText(
@@ -1875,7 +1876,7 @@ public class OperationsActivity extends Activity {
                 "ColorVision 运维时间线\n\n" + timeline));
         actions.addView(share, actionParams());
 
-        Button back = new Button(this);
+        Button back = new MaterialButton(this);
         back.setText("返回现场运维概览");
         back.setOnClickListener(v -> showCurrentDashboard());
         actions.addView(back, actionParams());
@@ -1910,16 +1911,19 @@ public class OperationsActivity extends Activity {
         addDashboardSection("状态变化");
         TextView timelineBody = new TextView(this);
         timelineBody.setText(formatFleetTimeline(timeline));
-        timelineBody.setTextSize(13);
-        timelineBody.setTextColor(Color.rgb(41, 53, 66));
+        TextViewCompat.setTextAppearance(timelineBody, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
+        timelineBody.setTextColor(themeManager.primaryTextColor());
         timelineBody.setLineSpacing(0, 1.08f);
-        timelineBody.setPadding(dp(12), dp(10), dp(12), dp(10));
+        timelineBody.setPadding(dp(16), dp(12), dp(16), dp(12));
         timelineBody.setTextIsSelectable(true);
-        timelineBody.setBackground(compactPanel(Color.WHITE, Color.rgb(224, 229, 235)));
+        MaterialCardView timelineCard = new MaterialCardView(this);
+        timelineCard.addView(timelineBody, new MaterialCardView.LayoutParams(
+                MaterialCardView.LayoutParams.MATCH_PARENT,
+                MaterialCardView.LayoutParams.WRAP_CONTENT));
         LinearLayout.LayoutParams timelineParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         timelineParams.setMargins(0, 0, 0, dp(8));
-        actions.addView(timelineBody, timelineParams);
+        actions.addView(timelineCard, timelineParams);
     }
 
     private String formatFleetTimeline(OperationsFleetTimeline.Timeline timeline) {
@@ -2185,17 +2189,25 @@ public class OperationsActivity extends Activity {
     private TextView addDashboardSection(String label) {
         TextView heading = new TextView(this);
         heading.setText(label);
-        heading.setTextSize(15);
-        heading.setTextColor(Color.rgb(24, 35, 49));
-        heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        heading.setPadding(dp(2), dp(8), 0, dp(5));
+        TextViewCompat.setTextAppearance(heading, com.google.android.material.R.style.TextAppearance_Material3_TitleMedium);
+        heading.setTextColor(themeManager.primaryTextColor());
+        heading.setPadding(dp(4), dp(12), 0, dp(8));
         actions.addView(heading, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         return heading;
     }
 
     private Button dashboardButton(String label, View.OnClickListener listener) {
-        Button button = new Button(this);
+        Button button = new MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        button.setText(label);
+        button.setTextSize(13);
+        button.setAllCaps(false);
+        button.setOnClickListener(listener);
+        return button;
+    }
+
+    private Button dashboardPrimaryButton(String label, View.OnClickListener listener) {
+        Button button = new MaterialButton(this);
         button.setText(label);
         button.setTextSize(13);
         button.setAllCaps(false);
@@ -2489,17 +2501,17 @@ public class OperationsActivity extends Activity {
     private void showConnectionRecoveryActions(boolean channelReady) {
         actions.removeAllViews();
 
-        Button check = new Button(this);
+        Button check = new MaterialButton(this);
         check.setText("重新运行连接自检");
         check.setOnClickListener(v -> runConnectionSelfCheck());
         actions.addView(check, actionParams());
 
-        Button reconnect = new Button(this);
+        Button reconnect = new MaterialButton(this);
         reconnect.setText(channelReady ? "进入现场运维" : "重新连接电脑");
         reconnect.setOnClickListener(v -> openExistingProfile());
         actions.addView(reconnect, actionParams());
 
-        Button remove = new Button(this);
+        Button remove = new MaterialButton(this);
         remove.setText("移除本机配对资料");
         remove.setOnClickListener(v -> confirmClearProfile());
         actions.addView(remove, actionParams());
@@ -2507,7 +2519,7 @@ public class OperationsActivity extends Activity {
 
     private void confirmClearProfile() {
         String hostId = preferences.getOperationsHostId();
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle("移除本机配对资料")
                 .setMessage("仅删除当前电脑在手机中的设备密钥、证书指纹和端点记录。其他已配对电脑不受影响；电脑端的设备授权仍需单独撤销。")
                 .setNegativeButton("取消", null)
@@ -2516,7 +2528,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void confirmRemoveOperationsProfile(String hostId, String label) {
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle("移除" + label)
                 .setMessage("将删除这台电脑在手机中的独立密钥、证书指纹、时间线和最近任务。其他电脑不受影响。")
                 .setNegativeButton("取消", null)
@@ -2583,14 +2595,14 @@ public class OperationsActivity extends Activity {
         details.setText(formatTriageReport(report));
         actions.removeAllViews();
 
-        Button refresh = new Button(this);
+        Button refresh = new MaterialButton(this);
         refresh.setText("刷新排障建议");
         refresh.setOnClickListener(v -> showTriageCenter());
         actions.addView(refresh, actionParams());
 
         addTriageActions(report.optJSONArray("findings"));
 
-        Button back = new Button(this);
+        Button back = new MaterialButton(this);
         back.setText("返回现场运维概览");
         back.setOnClickListener(v -> showDashboard());
         actions.addView(back, actionParams());
@@ -2622,7 +2634,7 @@ public class OperationsActivity extends Activity {
     }
 
     private Button createTriageActionButton(String actionId) {
-        Button button = new Button(this);
+        Button button = new MaterialButton(this);
         switch (actionId) {
             case "triage.events.view":
                 button.setText("查看近期脱敏事件");
@@ -2807,38 +2819,38 @@ public class OperationsActivity extends Activity {
             addApprovalActions(waiting);
         }
         if (downloadableDiagnostic != null) {
-            Button download = new Button(this);
+            Button download = new MaterialButton(this);
             download.setText("下载并分享安全诊断包");
             String jobId = downloadableDiagnostic.optString("jobId", "");
             download.setOnClickListener(v -> confirmDiagnosticBundleDownload(jobId));
             actions.addView(download, actionParams());
         }
         if (downloadableWindowSnapshot != null) {
-            Button preview = new Button(this);
+            Button preview = new MaterialButton(this);
             preview.setText("下载并预览主窗口快照（单次）");
             String jobId = downloadableWindowSnapshot.optString("jobId", "");
             preview.setOnClickListener(v -> confirmWindowSnapshotDownload(jobId));
             actions.addView(preview, actionParams());
         }
-        Button refresh = new Button(this);
+        Button refresh = new MaterialButton(this);
         refresh.setText("刷新作业状态");
         refresh.setOnClickListener(v -> showJobs());
         actions.addView(refresh, actionParams());
 
-        Button back = new Button(this);
+        Button back = new MaterialButton(this);
         back.setText("返回现场运维概览");
         back.setOnClickListener(v -> showDashboard());
         actions.addView(back, actionParams());
     }
 
     private void addApprovalActions(JSONObject job) {
-        Button approve = new Button(this);
+        Button approve = new MaterialButton(this);
         approve.setText("approved_mobile".equals(job.optString("status"))
                 ? "继续执行已批准作业" : "确认并批准此作业");
         approve.setOnClickListener(v -> confirmJobApproval(job));
         actions.addView(approve, actionParams());
         if (!"approved_mobile".equals(job.optString("status"))) {
-            Button reject = new Button(this);
+            Button reject = new MaterialButton(this);
             reject.setText("拒绝此作业");
             reject.setOnClickListener(v -> confirmJobRejection(
                     job.optString("jobId", ""), job.optString("title", "现场运维作业")));
@@ -3090,12 +3102,12 @@ public class OperationsActivity extends Activity {
         previewParams.setMargins(0, 0, 0, dp(14));
         actions.addView(preview, previewParams);
 
-        Button share = new Button(this);
+        Button share = new MaterialButton(this);
         share.setText("分享这张主窗口快照");
         share.setOnClickListener(v -> shareWindowSnapshot(uri));
         actions.addView(share, actionParams());
 
-        Button back = new Button(this);
+        Button back = new MaterialButton(this);
         back.setText(remote ? "返回远程告警" : "返回作业与审批");
         back.setOnClickListener(v -> {
             if (remote) {
@@ -3325,17 +3337,17 @@ public class OperationsActivity extends Activity {
         details.setText("本机设备密钥、证书指纹和配对资料均已保留。可以返回运维主页重试连接，或查看作业时间线确认电脑端结果。");
         actions.removeAllViews();
 
-        Button reconnect = new Button(this);
+        Button reconnect = new MaterialButton(this);
         reconnect.setText("重新连接运维通道");
         reconnect.setOnClickListener(v -> openExistingProfile());
         actions.addView(reconnect, actionParams());
 
-        Button jobs = new Button(this);
+        Button jobs = new MaterialButton(this);
         jobs.setText("查看作业时间线");
         jobs.setOnClickListener(v -> showJobs());
         actions.addView(jobs, actionParams());
 
-        Button selfCheck = new Button(this);
+        Button selfCheck = new MaterialButton(this);
         selfCheck.setText("运行连接自检");
         selfCheck.setOnClickListener(v -> runConnectionSelfCheck());
         actions.addView(selfCheck, actionParams());
@@ -3466,12 +3478,12 @@ public class OperationsActivity extends Activity {
             }
         }
 
-        Button refresh = new Button(this);
+        Button refresh = new MaterialButton(this);
         refresh.setText("立即刷新会话");
         refresh.setOnClickListener(v -> loadSupportCenter(true));
         actions.addView(refresh, actionParams());
 
-        Button back = new Button(this);
+        Button back = new MaterialButton(this);
         back.setText("返回现场运维概览");
         back.setOnClickListener(v -> showDashboard());
         actions.addView(back, actionParams());
@@ -3479,7 +3491,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void addSupportRequestButton() {
-        Button request = new Button(this);
+        Button request = new MaterialButton(this);
         request.setText("申请 15 分钟引导支持");
         request.setOnClickListener(v -> confirmSupportRequest());
         actions.addView(request, actionParams());
@@ -3495,7 +3507,7 @@ public class OperationsActivity extends Activity {
         inputParams.setMargins(0, 0, 0, dp(10));
         actions.addView(input, inputParams);
 
-        Button send = new Button(this);
+        Button send = new MaterialButton(this);
         send.setText("发送到已同意的支持会话");
         send.setOnClickListener(v -> sendSupportMessage(sessionId, input.getText().toString()));
         actions.addView(send, actionParams());
@@ -3651,13 +3663,13 @@ public class OperationsActivity extends Activity {
     private void renderLiveMonitorActions() {
         actions.removeAllViews();
 
-        Button refresh = new Button(this);
+        Button refresh = new MaterialButton(this);
         refresh.setText("立即刷新");
         refresh.setEnabled(!liveMonitorRefreshInFlight && !liveMonitorCancelInFlight);
         refresh.setOnClickListener(v -> loadLiveMonitor(true));
         actions.addView(refresh, actionParams());
 
-        Button toggle = new Button(this);
+        Button toggle = new MaterialButton(this);
         toggle.setText(liveMonitorAutoRefresh ? "暂停自动观察" : "恢复每 10 秒观察");
         toggle.setEnabled(!liveMonitorCancelInFlight);
         toggle.setOnClickListener(v -> {
@@ -3674,7 +3686,7 @@ public class OperationsActivity extends Activity {
         });
         actions.addView(toggle, actionParams());
 
-        Button cancelFlow = new Button(this);
+        Button cancelFlow = new MaterialButton(this);
         cancelFlow.setText(liveMonitorCancelAvailable
                 ? "取消当前检测"
                 : "当前没有可取消的主检测");
@@ -3684,7 +3696,7 @@ public class OperationsActivity extends Activity {
         cancelFlow.setOnClickListener(v -> confirmCancelCurrentFlow());
         actions.addView(cancelFlow, actionParams());
 
-        Button share = new Button(this);
+        Button share = new MaterialButton(this);
         share.setText(liveMonitorTrend.size() < 2
                 ? "分享本次趋势（至少需要 2 个样本）"
                 : "分享本次脱敏趋势");
@@ -3692,7 +3704,7 @@ public class OperationsActivity extends Activity {
         share.setOnClickListener(v -> shareLiveMonitorTrend());
         actions.addView(share, actionParams());
 
-        Button back = new Button(this);
+        Button back = new MaterialButton(this);
         back.setText("返回现场运维概览");
         back.setOnClickListener(v -> showDashboard());
         actions.addView(back, actionParams());
@@ -4093,7 +4105,7 @@ public class OperationsActivity extends Activity {
     }
 
     private void addAction(String label, String path) {
-        Button button = new Button(this);
+        Button button = new MaterialButton(this);
         button.setText(label);
         button.setOnClickListener(v -> loadCapability(path));
         actions.addView(button, actionParams());
@@ -5052,7 +5064,7 @@ public class OperationsActivity extends Activity {
         details.setText("请确认手机与电脑位于同一可信局域网，并重新扫描电脑端短时配对码。\n不会回退到 URL token。 ");
         actions.removeAllViews();
         if (recovery != null) {
-            Button button = new Button(this);
+            Button button = new MaterialButton(this);
             button.setText("移除失效配对资料");
             button.setOnClickListener(v -> recovery.run());
             actions.addView(button, actionParams());
@@ -5218,14 +5230,6 @@ public class OperationsActivity extends Activity {
         } catch (Exception ignored) {
             return value.toString();
         }
-    }
-
-    private GradientDrawable compactPanel(int fillColor, int strokeColor) {
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(fillColor);
-        background.setCornerRadius(dp(10));
-        background.setStroke(dp(1), strokeColor);
-        return background;
     }
 
     private int dp(int value) {

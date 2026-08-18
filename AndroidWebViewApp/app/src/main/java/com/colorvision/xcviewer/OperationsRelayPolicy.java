@@ -20,7 +20,7 @@ final class OperationsRelayPolicy {
     }
 
     static URL fixedBaseUrl() throws Exception {
-        URL url = new URL(AppNavigationPolicy.FIXED_DOWNLOAD_URL);
+        URL url = new URL(AppNavigationPolicy.FIXED_SERVICE_ORIGIN);
         if (!"http".equalsIgnoreCase(url.getProtocol())
                 || !"xc213618.ddns.me".equalsIgnoreCase(url.getHost())
                 || effectivePort(url) != 9998

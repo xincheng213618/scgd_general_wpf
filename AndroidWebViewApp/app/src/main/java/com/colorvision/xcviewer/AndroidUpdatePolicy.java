@@ -13,11 +13,11 @@ final class AndroidUpdatePolicy {
     }
 
     static URL manifestUrl() throws MalformedURLException {
-        return new URL(new URL(AppNavigationPolicy.FIXED_DOWNLOAD_URL), MANIFEST_PATH);
+        return new URL(new URL(AppNavigationPolicy.FIXED_SERVICE_ORIGIN), MANIFEST_PATH);
     }
 
     static URL validatedDownloadUrl(String downloadPath) throws MalformedURLException {
-        URL base = new URL(AppNavigationPolicy.FIXED_DOWNLOAD_URL);
+        URL base = new URL(AppNavigationPolicy.FIXED_SERVICE_ORIGIN);
         URL resolved = new URL(base, downloadPath);
         if (!sameOrigin(base, resolved)) {
             throw new MalformedURLException("android_update_download_origin_rejected");
