@@ -26,6 +26,10 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.TextViewCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -153,6 +157,7 @@ public class OperationsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         preferences = new AppPreferences(this);
         themeManager = new ThemeManager(this, preferences);
         themeManager.applySystemBars(this);
@@ -179,7 +184,7 @@ public class OperationsActivity extends AppCompatActivity {
         scroll.setFillViewport(true);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(16), getStatusBarHeight() + dp(8), dp(16), dp(24));
+        root.setPadding(dp(16), dp(8), dp(16), dp(24));
         root.setBackgroundColor(themeManager.pageBackgroundColor());
         scroll.addView(root, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
@@ -271,8 +276,22 @@ public class OperationsActivity extends AppCompatActivity {
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
         shell.addView(createBottomNavigation(), new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        applyTopSystemBarInset(shell);
         setContentView(shell);
+        ViewCompat.requestApplyInsets(shell);
         refreshOperationsTargetPresentation();
+    }
+
+    private void applyTopSystemBarInset(View insetHost) {
+        ViewCompat.setOnApplyWindowInsetsListener(insetHost, (view, windowInsets) -> {
+            Insets statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars());
+            Insets displayCutout = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout());
+            int topInset = OperationsWindowInsetsPolicy.topContentInset(
+                    statusBars.top, displayCutout.top);
+            view.setPadding(view.getPaddingLeft(), topInset,
+                    view.getPaddingRight(), view.getPaddingBottom());
+            return windowInsets;
+        });
     }
 
     private BottomNavigationView createBottomNavigation() {
@@ -5630,11 +5649,6 @@ public class OperationsActivity extends AppCompatActivity {
 
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
-    }
-
-    private int getStatusBarHeight() {
-        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        return resourceId > 0 ? getResources().getDimensionPixelSize(resourceId) : dp(24);
     }
 
     @Override
