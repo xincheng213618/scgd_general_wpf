@@ -814,15 +814,23 @@ public class MainActivity extends AppCompatActivity {
 
     private void saveAndOpen(String rawContent) {
         String text = rawContent == null ? "" : rawContent.trim();
-        if (OperationsPairingPayload.isPairingInput(text)) {
+        if (!OperationsPairingPayload.isPairingInput(text)) {
+            showPairingScanFailure(PairingFailurePresentation.INVALID_QR);
+            return;
+        }
+        try {
+            OperationsPairingPayload.parse(text);
             Intent operations = new Intent(this, OperationsActivity.class);
             operations.putExtra(OperationsActivity.EXTRA_PAIRING_PAYLOAD, text);
             startActivity(operations);
             finish();
-            return;
+        } catch (Exception ex) {
+            showPairingScanFailure(PairingFailurePresentation.reasonFor(ex));
         }
+    }
 
-        Toast.makeText(this, "请扫描电脑端的安全运维配对码", Toast.LENGTH_LONG).show();
+    private void showPairingScanFailure(String reason) {
+        PairingScanRecoveryDialog.show(this, reason, this::startQrScan);
     }
 
     private LinearLayout makeCard() {

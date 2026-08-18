@@ -345,7 +345,7 @@ public class OperationsActivity extends AppCompatActivity {
                 });
                 pollPairingApproval(payload, pairingClient);
             } catch (Exception ex) {
-                runOnUiThread(() -> showError("安全配对失败", readableError(ex), null));
+                runOnUiThread(() -> showPairingFailure(PairingFailurePresentation.reasonFor(ex)));
             }
         });
     }
@@ -384,7 +384,7 @@ public class OperationsActivity extends AppCompatActivity {
                 return;
             }
             if ("rejected".equals(status)) {
-                runOnUiThread(() -> showError("配对被拒绝", "电脑端拒绝了这台设备。", null));
+                runOnUiThread(() -> showPairingFailure(PairingFailurePresentation.APPROVAL_REJECTED));
                 return;
             }
             Thread.sleep(2000);
@@ -403,7 +403,7 @@ public class OperationsActivity extends AppCompatActivity {
                 try {
                     pollPairingApproval(payload, pairingClient);
                 } catch (Exception ex) {
-                    runOnUiThread(() -> showError("检查批准状态失败", readableError(ex), null));
+                    runOnUiThread(() -> showPairingFailure(PairingFailurePresentation.reasonFor(ex)));
                 }
             });
         });
@@ -904,12 +904,7 @@ public class OperationsActivity extends AppCompatActivity {
             if (resultCode == RESULT_OK && data != null) {
                 preferences.saveCameraPermissionBlocked(false);
                 String result = data.getStringExtra(QrScanActivity.EXTRA_QR_RESULT);
-                if (OperationsPairingPayload.isPairingInput(result)) {
-                    beginPairing(result);
-                } else {
-                    Toast.makeText(this, "请扫描电脑端的安全运维配对码",
-                            Toast.LENGTH_LONG).show();
-                }
+                handleScannedPairing(result);
                 return;
             }
             String failureReason = data == null
@@ -922,6 +917,23 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void handleScannedPairing(String rawPairing) {
+        if (!OperationsPairingPayload.isPairingInput(rawPairing)) {
+            showPairingScanFailure(PairingFailurePresentation.INVALID_QR);
+            return;
+        }
+        try {
+            OperationsPairingPayload.parse(rawPairing);
+            beginPairing(rawPairing);
+        } catch (Exception ex) {
+            showPairingScanFailure(PairingFailurePresentation.reasonFor(ex));
+        }
+    }
+
+    private void showPairingScanFailure(String reason) {
+        PairingScanRecoveryDialog.show(this, reason, this::startOperationsPairingScan);
     }
 
     private void switchOperationsProfile(String hostId) {
@@ -5698,6 +5710,35 @@ public class OperationsActivity extends AppCompatActivity {
         if (bottomNavigation != null) {
             bottomNavigation.setSelectedItemId(NAV_OPERATIONS);
         }
+    }
+
+    private void showPairingFailure(String reason) {
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        dashboardVisible = false;
+        progress.setVisibility(View.GONE);
+        title.setText(PairingFailurePresentation.title(reason));
+        state.setText(PairingFailurePresentation.message(reason));
+        boolean hasExistingProfile = preferences.hasOperationsProfile();
+        details.setText(PairingFailurePresentation.preservationNote(hasExistingProfile));
+        actions.removeAllViews();
+
+        Button retry = new MaterialButton(this);
+        retry.setText("重新扫描");
+        retry.setOnClickListener(v -> startOperationsPairingScan());
+        actions.addView(retry, actionParams());
+
+        Button secondary = new MaterialButton(
+                this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        secondary.setText(PairingFailurePresentation.secondaryAction(hasExistingProfile));
+        secondary.setOnClickListener(v -> {
+            if (hasExistingProfile) {
+                openExistingProfile();
+            } else {
+                openMainTab(MainActivity.TAB_SETTINGS);
+            }
+        });
+        actions.addView(secondary, actionParams());
     }
 
     @Override

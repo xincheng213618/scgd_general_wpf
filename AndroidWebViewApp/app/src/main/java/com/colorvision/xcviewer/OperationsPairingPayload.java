@@ -8,6 +8,10 @@ import org.json.JSONObject;
 import java.nio.charset.StandardCharsets;
 
 final class OperationsPairingPayload {
+    private static final String ERROR_INVALID = "pairing_qr_invalid";
+    private static final String ERROR_UNSUPPORTED = "pairing_qr_unsupported";
+    private static final String ERROR_SECURITY_INVALID = "pairing_qr_security_invalid";
+    private static final int MAXIMUM_QR_CHARACTERS = 8_192;
     final String pairingId;
     final String nonce;
     final String hostId;
@@ -32,49 +36,69 @@ final class OperationsPairingPayload {
 
     static boolean isPairingInput(String raw) {
         String text = raw == null ? "" : raw.trim();
-        return text.startsWith("colorvision://pair") || text.matches("[A-Za-z0-9_-]{100,}");
+        return text.length() <= MAXIMUM_QR_CHARACTERS
+                && (text.startsWith("colorvision://pair")
+                || text.matches("[A-Za-z0-9_-]{100,}"));
     }
 
     static OperationsPairingPayload parse(String raw) throws Exception {
-        String text = raw == null ? "" : raw.trim();
-        String encoded = text;
-        if (!text.matches("[A-Za-z0-9_-]{100,}")) {
-            Uri uri = Uri.parse(text);
-            if (!"colorvision".equalsIgnoreCase(uri.getScheme()) || !"pair".equalsIgnoreCase(uri.getHost())) {
-                throw new IllegalArgumentException("不是 ColorVision 安全配对码");
+        try {
+            String text = raw == null ? "" : raw.trim();
+            if (text.isEmpty() || text.length() > MAXIMUM_QR_CHARACTERS) {
+                throw invalid(ERROR_INVALID);
             }
-            encoded = uri.getQueryParameter("payload");
-            if (encoded == null || encoded.isEmpty()) {
-                throw new IllegalArgumentException("配对码缺少安全载荷");
+            String encoded = text;
+            if (!text.matches("[A-Za-z0-9_-]{100,}")) {
+                Uri uri = Uri.parse(text);
+                if (!"colorvision".equalsIgnoreCase(uri.getScheme())
+                        || !"pair".equalsIgnoreCase(uri.getHost())) {
+                    throw invalid(ERROR_INVALID);
+                }
+                encoded = uri.getQueryParameter("payload");
+                if (encoded == null || encoded.isEmpty()) {
+                    throw invalid(ERROR_INVALID);
+                }
             }
-        }
 
-        byte[] bytes = Base64.decode(encoded, Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
-        JSONObject json = new JSONObject(new String(bytes, StandardCharsets.UTF_8));
-        if (json.optInt("version", 0) != 1) {
-            throw new IllegalArgumentException("不支持的配对协议版本");
+            byte[] bytes = Base64.decode(encoded, Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
+            JSONObject json = new JSONObject(new String(bytes, StandardCharsets.UTF_8));
+            if (json.optInt("version", 0) != 1) {
+                throw invalid(ERROR_UNSUPPORTED);
+            }
+            String endpoint = required(json, "endpoint");
+            Uri endpointUri = Uri.parse(endpoint);
+            if (!"https".equalsIgnoreCase(endpointUri.getScheme()) || endpointUri.getHost() == null) {
+                throw invalid(ERROR_SECURITY_INVALID);
+            }
+            String pin = required(json, "certificateSha256").toLowerCase();
+            if (!pin.matches("[0-9a-f]{64}")) {
+                throw invalid(ERROR_SECURITY_INVALID);
+            }
+            String pairingId = required(json, "pairingId");
+            String nonce = required(json, "nonce");
+            String hostId = required(json, "hostId");
+            if (!pairingId.matches("(?i)[0-9a-f]{32}")
+                    || !nonce.matches("[A-Za-z0-9_-]{43}")
+                    || !OperationsRelayPolicy.isSafeIdentifier(hostId)) {
+                throw invalid(ERROR_SECURITY_INVALID);
+            }
+            String expiresAt = required(json, "expiresAt");
+            PairingQrExpiryPolicy.validate(expiresAt, System.currentTimeMillis());
+            return new OperationsPairingPayload(
+                    pairingId,
+                    nonce,
+                    hostId,
+                    endpoint,
+                    pin,
+                    expiresAt);
+        } catch (IllegalArgumentException ex) {
+            if (ex.getMessage() != null && ex.getMessage().startsWith("pairing_qr_")) {
+                throw ex;
+            }
+            throw invalid(ERROR_INVALID, ex);
+        } catch (Exception ex) {
+            throw invalid(ERROR_INVALID, ex);
         }
-        String endpoint = required(json, "endpoint");
-        Uri endpointUri = Uri.parse(endpoint);
-        if (!"https".equalsIgnoreCase(endpointUri.getScheme()) || endpointUri.getHost() == null) {
-            throw new IllegalArgumentException("配对地址必须使用 HTTPS");
-        }
-        String pin = required(json, "certificateSha256").toLowerCase();
-        if (!pin.matches("[0-9a-f]{64}")) {
-            throw new IllegalArgumentException("证书指纹格式无效");
-        }
-        String hostId = required(json, "hostId");
-        if (!OperationsRelayPolicy.isSafeIdentifier(hostId)) {
-            throw new IllegalArgumentException("主机身份格式无效");
-        }
-        String expiresAt = required(json, "expiresAt");
-        return new OperationsPairingPayload(
-                required(json, "pairingId"),
-                required(json, "nonce"),
-                hostId,
-                endpoint,
-                pin,
-                expiresAt);
     }
 
     String canonical(String deviceId, String deviceName) {
@@ -85,8 +109,16 @@ final class OperationsPairingPayload {
     private static String required(JSONObject json, String name) {
         String value = json.optString(name, "").trim();
         if (value.isEmpty()) {
-            throw new IllegalArgumentException("配对码缺少 " + name);
+            throw invalid(ERROR_INVALID);
         }
         return value;
+    }
+
+    private static IllegalArgumentException invalid(String code) {
+        return new IllegalArgumentException(code);
+    }
+
+    private static IllegalArgumentException invalid(String code, Exception cause) {
+        return new IllegalArgumentException(code, cause);
     }
 }
