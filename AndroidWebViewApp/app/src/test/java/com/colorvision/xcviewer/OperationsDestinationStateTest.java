@@ -19,6 +19,8 @@ public class OperationsDestinationStateTest {
                 OperationsDestinationState.normalize("fleet_issues"));
         assertEquals(OperationsDestinationState.LIVE_MONITOR,
                 OperationsDestinationState.normalize("live_monitor"));
+        assertEquals(OperationsDestinationState.CAPABILITY_DETAIL,
+                OperationsDestinationState.normalize("capability_detail"));
     }
 
     @Test
@@ -32,11 +34,13 @@ public class OperationsDestinationStateTest {
     }
 
     @Test
-    public void overviewAndPairingAreNeverAutomaticallyReplayed() {
+    public void transientOverviewPairingAndCapabilityDetailsAreNeverAutomaticallyReplayed() {
         assertFalse(OperationsDestinationState.shouldRestore(
                 OperationsDestinationState.OVERVIEW));
         assertFalse(OperationsDestinationState.shouldRestore(
                 OperationsDestinationState.PAIRING));
+        assertFalse(OperationsDestinationState.shouldRestore(
+                OperationsDestinationState.CAPABILITY_DETAIL));
         assertTrue(OperationsDestinationState.shouldRestore(
                 OperationsDestinationState.CONNECTION_CHECK));
         assertTrue(OperationsDestinationState.shouldRestore(
@@ -57,6 +61,8 @@ public class OperationsDestinationStateTest {
                 OperationsDestinationState.SUPPORT));
         assertTrue(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.LIVE_MONITOR));
+        assertTrue(OperationsDestinationState.requiresDirectConnection(
+                OperationsDestinationState.CAPABILITY_DETAIL));
         assertFalse(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.CONNECTION_CHECK));
         assertFalse(OperationsDestinationState.requiresDirectConnection(

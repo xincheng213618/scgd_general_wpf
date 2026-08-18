@@ -50,8 +50,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_INSTALL_PERMISSION = 1004;
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1005;
     private static final int NAV_OPERATIONS = 2001;
-    private static final int NAV_TOOLS = 2002;
-    private static final int NAV_SETTINGS = 2003;
+    private static final int NAV_PROBLEMS = 2002;
+    private static final int NAV_TOOLS = 2003;
+    private static final int NAV_SETTINGS = 2004;
     static final int TAB_OPERATIONS = 0;
     static final int TAB_TOOLS = 1;
     static final int TAB_SETTINGS = 2;
@@ -238,15 +239,25 @@ public class MainActivity extends AppCompatActivity {
         BottomNavigationView nav = new BottomNavigationView(this);
         nav.setBackgroundColor(bottomNavBackgroundColor());
         nav.setLabelVisibilityMode(BottomNavigationView.LABEL_VISIBILITY_LABELED);
-        nav.getMenu().add(0, NAV_OPERATIONS, 0, "运维").setIcon(R.drawable.ic_devices_24);
-        nav.getMenu().add(0, NAV_TOOLS, 1, "工具").setIcon(R.drawable.ic_build_24);
-        nav.getMenu().add(0, NAV_SETTINGS, 2, "设置").setIcon(R.drawable.ic_settings_24);
+        nav.getMenu().add(0, NAV_OPERATIONS, 0, "概览").setIcon(R.drawable.ic_devices_24);
+        nav.getMenu().add(0, NAV_PROBLEMS, 1, "问题")
+                .setIcon(R.drawable.ic_report_problem_24);
+        nav.getMenu().add(0, NAV_TOOLS, 2, "工具").setIcon(R.drawable.ic_build_24);
+        nav.getMenu().add(0, NAV_SETTINGS, 3, "设置").setIcon(R.drawable.ic_settings_24);
         nav.setOnItemSelectedListener(item -> {
             if (updatingBottomNavigation) {
                 return true;
             }
             if (item.getItemId() == NAV_OPERATIONS) {
                 showOperationsLanding();
+                return true;
+            }
+            if (item.getItemId() == NAV_PROBLEMS) {
+                if (appPreferences.hasOperationsProfile()) {
+                    openOperationsDirectly(OperationsDestinationState.TRIAGE);
+                } else {
+                    showOperationsLanding();
+                }
                 return true;
             }
             if (item.getItemId() == NAV_TOOLS) {

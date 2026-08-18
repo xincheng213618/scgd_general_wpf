@@ -19,6 +19,7 @@ public class OperationsInPageNavigationPolicyTest {
                 parent(OperationsDestinationState.JOBS, true, false));
         assertEquals(OperationsDestinationState.TRIAGE,
                 parent(OperationsDestinationState.TRIAGE, true, false));
+        assertEquals("", parent(OperationsDestinationState.TRIAGE, false, false));
         assertEquals(OperationsDestinationState.OVERVIEW,
                 parent(OperationsDestinationState.JOBS, false, false));
         assertEquals("", parent(OperationsDestinationState.OVERVIEW, false, false));
@@ -41,7 +42,7 @@ public class OperationsInPageNavigationPolicyTest {
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.CONNECTION_CHECK,
                         false, false, false, false));
-        assertEquals("返回远程排障中心",
+        assertEquals("返回问题中心",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.JOBS,
                         true, false, false, false));
@@ -82,6 +83,12 @@ public class OperationsInPageNavigationPolicyTest {
         assertFalse(showsNavigateUp(
                 true, true, OperationsDestinationState.TOOLS,
                 false, false, false, false));
+        assertFalse(showsNavigateUp(
+                true, true, OperationsDestinationState.TRIAGE,
+                false, false, false, false));
+        assertTrue(showsNavigateUp(
+                true, true, OperationsDestinationState.TRIAGE,
+                true, false, false, false));
     }
 
     @Test
@@ -97,6 +104,12 @@ public class OperationsInPageNavigationPolicyTest {
                         OperationsDestinationState.CONNECTIONS, false, false));
         assertEquals(AppScreenMotion.DIRECTION_BACKWARD,
                 motion(OperationsDestinationState.JOBS,
+                        OperationsDestinationState.TRIAGE, true, false));
+        assertEquals(AppScreenMotion.DIRECTION_FORWARD,
+                motion(OperationsDestinationState.TRIAGE,
+                        OperationsDestinationState.LIVE_MONITOR, true, false));
+        assertEquals(AppScreenMotion.DIRECTION_BACKWARD,
+                motion(OperationsDestinationState.LIVE_MONITOR,
                         OperationsDestinationState.TRIAGE, true, false));
         assertEquals(AppScreenMotion.DIRECTION_FORWARD,
                 motion(OperationsDestinationState.TOOLS,
@@ -143,6 +156,18 @@ public class OperationsInPageNavigationPolicyTest {
                 true, true, false, true, true));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
                 false, true, false, false, true));
+    }
+
+    @Test
+    public void systemBackReturnsBottomDestinationsToTheOverview() {
+        assertTrue(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
+                OperationsDestinationState.TRIAGE, false, false));
+        assertTrue(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
+                OperationsDestinationState.TOOLS, false, false));
+        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
+                OperationsDestinationState.LIVE_MONITOR, true, false));
+        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
+                OperationsDestinationState.JOBS, false, true));
     }
 
     private static String parent(

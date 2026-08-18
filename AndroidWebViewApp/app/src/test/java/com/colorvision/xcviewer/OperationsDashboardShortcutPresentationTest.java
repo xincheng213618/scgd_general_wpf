@@ -9,18 +9,17 @@ import static org.junit.Assert.assertTrue;
 
 public class OperationsDashboardShortcutPresentationTest {
     @Test
-    public void directDashboardPromotesFourDistinctTopLevelDestinations() {
+    public void directDashboardKeepsOnlyConnectionShortcutsOutsideBottomNavigation() {
         List<OperationsDashboardShortcutPresentation.Shortcut> shortcuts =
                 OperationsDashboardShortcutPresentation.direct();
 
-        assertEquals(4, shortcuts.size());
+        assertEquals(2, shortcuts.size());
         assertTrue(OperationsDashboardShortcutPresentation.hasUniqueActionIds(shortcuts));
-        assertEquals(OperationsDashboardShortcutPresentation.ACTION_TRIAGE,
-                shortcuts.get(0).actionId);
         assertEquals(OperationsDashboardShortcutPresentation.ACTION_CONNECTION_CHECK,
-                shortcuts.get(2).actionId);
+                shortcuts.get(0).actionId);
         assertEquals(OperationsDashboardShortcutPresentation.ACTION_CONNECTIONS,
-                shortcuts.get(3).actionId);
+                shortcuts.get(1).actionId);
+        assertTrue(shortcuts.get(0).tonal);
     }
 
     @Test

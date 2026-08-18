@@ -27,6 +27,12 @@ final class OperationsDashboardDetailPresentation {
         if ("/ops/v1/diagnostics/performance".equals(path)) {
             return new Item("性能状态", "刷新性能状态");
         }
+        if ("/ops/v1/diagnostics/recent-events".equals(path)) {
+            return new Item("近期事件", "刷新近期事件");
+        }
+        if ("/ops/v1/diagnostics/failures".equals(path)) {
+            return new Item("崩溃与卡死", "刷新崩溃与卡死");
+        }
         return new Item("运维详情", "刷新详情");
     }
 }

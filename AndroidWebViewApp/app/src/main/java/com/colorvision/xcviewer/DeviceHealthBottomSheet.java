@@ -175,7 +175,7 @@ final class DeviceHealthBottomSheet {
 
         if (offerTriageAction) {
             MaterialButton triageButton = new MaterialButton(activity);
-            triageButton.setText("打开远程排障");
+            triageButton.setText("打开问题中心");
             triageButton.setMinHeight(dp(activity, 48));
             triageButton.setOnClickListener(view -> {
                 dialog.dismiss();

@@ -76,9 +76,10 @@ public class OperationsActivity extends AppCompatActivity {
     private static final int FLEET_CONNECT_TIMEOUT_MILLISECONDS = 3_500;
     private static final int FLEET_READ_TIMEOUT_MILLISECONDS = 5_000;
     private static final int NAV_OPERATIONS = 2001;
-    private static final int NAV_TOOLS = 2002;
-    private static final int NAV_SETTINGS = 2003;
-    private static final int MENU_REFRESH_DASHBOARD = 2004;
+    private static final int NAV_PROBLEMS = 2002;
+    private static final int NAV_TOOLS = 2003;
+    private static final int NAV_SETTINGS = 2004;
+    private static final int MENU_REFRESH_DASHBOARD = 2005;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -388,9 +389,11 @@ public class OperationsActivity extends AppCompatActivity {
         BottomNavigationView navigation = new BottomNavigationView(this);
         navigation.setBackgroundColor(themeManager.bottomNavBackgroundColor());
         navigation.setLabelVisibilityMode(BottomNavigationView.LABEL_VISIBILITY_LABELED);
-        navigation.getMenu().add(0, NAV_OPERATIONS, 0, "运维").setIcon(R.drawable.ic_devices_24);
-        navigation.getMenu().add(0, NAV_TOOLS, 1, "工具").setIcon(R.drawable.ic_build_24);
-        navigation.getMenu().add(0, NAV_SETTINGS, 2, "设置").setIcon(R.drawable.ic_settings_24);
+        navigation.getMenu().add(0, NAV_OPERATIONS, 0, "概览").setIcon(R.drawable.ic_devices_24);
+        navigation.getMenu().add(0, NAV_PROBLEMS, 1, "问题")
+                .setIcon(R.drawable.ic_report_problem_24);
+        navigation.getMenu().add(0, NAV_TOOLS, 2, "工具").setIcon(R.drawable.ic_build_24);
+        navigation.getMenu().add(0, NAV_SETTINGS, 3, "设置").setIcon(R.drawable.ic_settings_24);
         navigation.setSelectedItemId(NAV_OPERATIONS);
         navigation.setOnItemSelectedListener(item -> {
             if (updatingBottomNavigation) {
@@ -398,6 +401,19 @@ public class OperationsActivity extends AppCompatActivity {
             }
             if (item.getItemId() == NAV_OPERATIONS) {
                 showCurrentDashboard();
+                return true;
+            }
+            if (item.getItemId() == NAV_PROBLEMS) {
+                if (preferences == null || !preferences.hasOperationsProfile()) {
+                    return false;
+                }
+                if (remoteDashboard) {
+                    Snackbar.make(dashboardContent,
+                            "问题中心需要与电脑现场安全直连",
+                            Snackbar.LENGTH_LONG).show();
+                    return false;
+                }
+                showTriageCenter();
                 return true;
             }
             if (item.getItemId() == NAV_TOOLS) {
@@ -422,6 +438,13 @@ public class OperationsActivity extends AppCompatActivity {
         navigation.setOnItemReselectedListener(item -> {
             if (item.getItemId() == NAV_OPERATIONS) {
                 returnToOperationsOverview();
+            } else if (item.getItemId() == NAV_PROBLEMS) {
+                if (OperationsDestinationState.TRIAGE.equals(currentDestination)
+                        && !returnToTriageOnBack) {
+                    scrollDashboardToTop();
+                } else {
+                    showTriageCenter();
+                }
             } else if (item.getItemId() == NAV_TOOLS) {
                 if (OperationsDestinationState.TOOLS.equals(currentDestination)) {
                     scrollDashboardToTop();
@@ -437,6 +460,13 @@ public class OperationsActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
+                if (OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
+                        currentDestination,
+                        returnToTriageOnBack,
+                        returnToToolboxOnBack)) {
+                    showCurrentDashboard();
+                    return;
+                }
                 if (navigateUpWithinOperations()) {
                     return;
                 }
@@ -461,7 +491,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private String operationsDetailBackLabel() {
         if (returnToTriageOnBack) {
-            return "返回远程排障中心";
+            return "返回问题中心";
         }
         if (returnToToolboxOnBack) {
             return "返回运维工具";
@@ -1693,7 +1723,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardCancelFlowButton.setEnabled(false);
         addDashboardTaskGroup(
                 "检测控制",
-                "仅在检测正在运行时开放取消；电脑与连接已提升到上方常用入口。",
+                "仅在检测正在运行时开放取消；电脑与连接已提升到上方连接入口。",
                 dashboardCancelFlowButton,
                 dashboardButton("电脑与连接", v -> showConnectionPreference()));
         scheduleConnectionHeartbeat();
@@ -1708,7 +1738,7 @@ public class OperationsActivity extends AppCompatActivity {
     private void addDashboardShortcuts() {
         List<OperationsDashboardShortcutPresentation.Shortcut> shortcuts =
                 OperationsDashboardShortcutPresentation.direct();
-        addDashboardSection("常用入口");
+        addDashboardSection("连接");
         for (int index = 0; index < shortcuts.size(); index += 2) {
             addDashboardShortcutRow(
                     dashboardShortcutButton(shortcuts.get(index)),
@@ -1729,12 +1759,6 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void runDashboardShortcut(String actionId) {
         switch (actionId) {
-            case OperationsDashboardShortcutPresentation.ACTION_TRIAGE:
-                showTriageCenter();
-                return;
-            case OperationsDashboardShortcutPresentation.ACTION_MONITOR:
-                showLiveMonitor();
-                return;
             case OperationsDashboardShortcutPresentation.ACTION_CONNECTION_CHECK:
                 runConnectionSelfCheck();
                 return;
@@ -3929,14 +3953,23 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showTriageCenter() {
+        boolean preservePreviousReport = OperationsDestinationState.TRIAGE.equals(
+                currentDestination) && actions.getChildCount() > 0;
+        returnToToolboxOnBack = false;
         setCurrentDestination(OperationsDestinationState.TRIAGE);
         returnToTriageOnBack = false;
+        refreshOperationsHeaderNavigation();
         setShowingDashboardSummary(false);
         leaveSupportCenter();
         leaveLiveMonitor();
         setDashboardVisible(true);
+        scrollDashboardToTop();
+        title.setTitle("问题中心");
+        if (!preservePreviousReport) {
+            actions.removeAllViews();
+        }
         progress.setVisibility(View.VISIBLE);
-        state.setText("正在汇总有界证据与可用处置动作…");
+        state.setText("正在汇总问题证据与可用处置动作…");
         executor.execute(() -> {
             try {
                 JSONObject response = client.get("/ops/v1/triage");
@@ -3966,7 +3999,7 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsTriagePresentation.from(report, this::shortTime);
         scrollDashboardToTop();
         progress.setVisibility(View.GONE);
-        title.setTitle("远程排障中心");
+        title.setTitle("问题中心");
         state.setText(model.stateLabel);
         actions.removeAllViews();
         actions.addView(OperationsTriageContent.create(
@@ -3974,18 +4007,23 @@ public class OperationsActivity extends AppCompatActivity {
                         themeManager,
                         model,
                         this::runTriageAction,
-                        this::showTriageCenter,
-                        this::showDashboard),
+                        this::showLiveMonitorFromTriage,
+                        this::showTriageCenter),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void showLiveMonitorFromTriage() {
+        returnToTriageOnBack = true;
+        showLiveMonitor();
     }
 
     private void runTriageAction(String actionId) {
         switch (actionId) {
             case "triage.events.view":
                 returnToTriageOnBack = true;
-                loadCapability("/ops/v1/diagnostics/recent-events");
+                showDashboardCapabilityDetails("/ops/v1/diagnostics/recent-events");
                 return;
             case "triage.window.show":
                 runWindowAction("show", "主窗口已显示");
@@ -4002,14 +4040,14 @@ public class OperationsActivity extends AppCompatActivity {
                 return;
             case "triage.messaging.view":
                 returnToTriageOnBack = true;
-                loadCapability("/ops/v1/messaging/health");
+                showDashboardCapabilityDetails("/ops/v1/messaging/health");
                 return;
             case "triage.messaging.reconnect.request":
                 confirmRecoverMessageChannel();
                 return;
             case "triage.failures.view":
                 returnToTriageOnBack = true;
-                loadCapability("/ops/v1/diagnostics/failures");
+                showDashboardCapabilityDetails("/ops/v1/diagnostics/failures");
                 return;
             default:
                 return;
@@ -5367,8 +5405,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showDashboardApplicationDetails() {
-        AppScreenMotion.beginContentTransition(
-                dashboardContent, AppScreenMotion.DIRECTION_FORWARD);
+        setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         scrollDashboardToTop();
         title.setTitle("应用概况");
         actions.removeAllViews();
@@ -5380,8 +5417,7 @@ public class OperationsActivity extends AppCompatActivity {
     private void showDashboardCapabilityDetails(String path) {
         OperationsDashboardDetailPresentation.Item presentation =
                 OperationsDashboardDetailPresentation.forPath(path);
-        AppScreenMotion.beginContentTransition(
-                dashboardContent, AppScreenMotion.DIRECTION_FORWARD);
+        setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         scrollDashboardToTop();
         title.setTitle(presentation.title);
         actions.removeAllViews();
@@ -6459,8 +6495,16 @@ public class OperationsActivity extends AppCompatActivity {
         if (bottomNavigation == null) {
             return;
         }
-        int destination = OperationsDestinationState.TOOLS.equals(currentDestination)
-                || returnToToolboxOnBack ? NAV_TOOLS : NAV_OPERATIONS;
+        int destination;
+        if (OperationsDestinationState.TOOLS.equals(currentDestination)
+                || returnToToolboxOnBack) {
+            destination = NAV_TOOLS;
+        } else if (OperationsDestinationState.TRIAGE.equals(currentDestination)
+                || returnToTriageOnBack) {
+            destination = NAV_PROBLEMS;
+        } else {
+            destination = NAV_OPERATIONS;
+        }
         if (bottomNavigation.getSelectedItemId() != destination) {
             updatingBottomNavigation = true;
             bottomNavigation.setSelectedItemId(destination);

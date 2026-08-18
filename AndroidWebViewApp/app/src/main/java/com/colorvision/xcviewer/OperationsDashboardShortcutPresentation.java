@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Set;
 
 final class OperationsDashboardShortcutPresentation {
-    static final String ACTION_TRIAGE = "dashboard.triage";
-    static final String ACTION_MONITOR = "dashboard.monitor";
     static final String ACTION_CONNECTION_CHECK = "dashboard.connection_check";
     static final String ACTION_CONNECTIONS = "dashboard.connections";
 
@@ -17,9 +15,7 @@ final class OperationsDashboardShortcutPresentation {
 
     static List<Shortcut> direct() {
         return Collections.unmodifiableList(Arrays.asList(
-                shortcut(ACTION_TRIAGE, "远程排障", "查看异常与脱敏证据", true),
-                shortcut(ACTION_MONITOR, "持续监控", "连续观察关键运行状态", false),
-                shortcut(ACTION_CONNECTION_CHECK, "连接自检", "检查网络、证书与设备签名", false),
+                shortcut(ACTION_CONNECTION_CHECK, "连接自检", "检查网络、证书与设备签名", true),
                 shortcut(ACTION_CONNECTIONS, "电脑与连接", "管理、切换电脑与连接方式", false)));
     }
 

@@ -11,7 +11,9 @@ final class OperationsInPageNavigationPolicy {
             boolean detailOpenedFromTriage,
             boolean detailOpenedFromToolbox) {
         String normalized = OperationsDestinationState.normalize(destination);
-        if (OperationsDestinationState.TRIAGE.equals(normalized) && detailOpenedFromTriage) {
+        if (detailOpenedFromTriage
+                && !OperationsDestinationState.OVERVIEW.equals(normalized)
+                && !OperationsDestinationState.PAIRING.equals(normalized)) {
             return OperationsDestinationState.TRIAGE;
         }
         if (detailOpenedFromToolbox
@@ -25,12 +27,8 @@ final class OperationsInPageNavigationPolicy {
                 || OperationsDestinationState.FLEET_ISSUES.equals(normalized)) {
             return OperationsDestinationState.CONNECTIONS;
         }
-        if (OperationsDestinationState.JOBS.equals(normalized) && detailOpenedFromTriage) {
-            return OperationsDestinationState.TRIAGE;
-        }
         if (OperationsDestinationState.CONNECTIONS.equals(normalized)
                 || OperationsDestinationState.HISTORY.equals(normalized)
-                || OperationsDestinationState.TRIAGE.equals(normalized)
                 || OperationsDestinationState.JOBS.equals(normalized)
                 || OperationsDestinationState.SUPPORT.equals(normalized)
                 || OperationsDestinationState.LIVE_MONITOR.equals(normalized)) {
@@ -50,8 +48,9 @@ final class OperationsInPageNavigationPolicy {
         if (!parent.isEmpty()) {
             return parent;
         }
-        if (OperationsDestinationState.TOOLS.equals(
-                OperationsDestinationState.normalize(destination))) {
+        String normalized = OperationsDestinationState.normalize(destination);
+        if (OperationsDestinationState.TOOLS.equals(normalized)
+                || OperationsDestinationState.TRIAGE.equals(normalized)) {
             return NO_PARENT;
         }
         return !showingDashboardSummary && !connectionRecoveryVisible
@@ -93,7 +92,7 @@ final class OperationsInPageNavigationPolicy {
             return "返回电脑与连接";
         }
         if (OperationsDestinationState.TRIAGE.equals(parent)) {
-            return "返回远程排障中心";
+            return "返回问题中心";
         }
         if (OperationsDestinationState.TOOLS.equals(parent)) {
             return "返回运维工具";
@@ -153,5 +152,16 @@ final class OperationsInPageNavigationPolicy {
                 dashboardVisible,
                 showingDashboardSummary,
                 connectionRecoveryVisible);
+    }
+
+    static boolean shouldReturnToStartDestination(
+            String destination,
+            boolean detailOpenedFromTriage,
+            boolean detailOpenedFromToolbox) {
+        String normalized = OperationsDestinationState.normalize(destination);
+        return (OperationsDestinationState.TRIAGE.equals(normalized)
+                        && !detailOpenedFromTriage)
+                || (OperationsDestinationState.TOOLS.equals(normalized)
+                        && !detailOpenedFromToolbox);
     }
 }

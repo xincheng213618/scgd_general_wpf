@@ -97,7 +97,7 @@ final class OperationsWatchPolicy {
     static String attentionMessage(String attentionKey) {
         switch (attentionKey) {
             case ATTENTION_UI_UNRESPONSIVE:
-                return "主界面响应超时 · 点击进入远程排障";
+                return "主界面响应超时 · 点击进入问题中心";
             case ATTENTION_CRITICAL:
                 return "发现严重告警 · 点击查看脱敏证据";
             case ATTENTION_MESSAGE_CHANNEL:
@@ -105,7 +105,7 @@ final class OperationsWatchPolicy {
             case ATTENTION_DEVICES:
                 return "检测设备状态需要关注 · 点击查看汇总";
             case ATTENTION_ERRORS:
-                return "发现错误事件 · 点击进入远程排障";
+                return "发现错误事件 · 点击进入问题中心";
             case ATTENTION_OFFLINE:
                 return "已配对主机连接中断 · 后台正在自动重试";
             default:

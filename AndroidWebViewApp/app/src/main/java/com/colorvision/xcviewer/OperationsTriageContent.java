@@ -26,14 +26,24 @@ final class OperationsTriageContent {
             ThemeManager themeManager,
             OperationsTriagePresentation.ViewModel model,
             ActionHandler actionHandler,
-            Runnable refresh,
-            Runnable back) {
+            Runnable observe,
+            Runnable refresh) {
         LinearLayout root = new LinearLayout(activity);
         root.setOrientation(LinearLayout.VERTICAL);
 
+        MaterialButton observeButton = new MaterialButton(
+                activity, null, com.google.android.material.R.attr.materialButtonTonalStyle);
+        observeButton.setText(R.string.operations_triage_observe_action);
+        observeButton.setMinHeight(dp(activity, 48));
+        observeButton.setContentDescription(
+                activity.getString(R.string.operations_triage_observe_content_description));
+        observeButton.setOnClickListener(view -> observe.run());
+        root.addView(observeButton, matchWidth());
+
         if (!model.findings.isEmpty()) {
             root.addView(sectionTitle(
-                    activity, themeManager, model.prioritySectionLabel()), matchWidth());
+                    activity, themeManager, model.prioritySectionLabel()),
+                    topMargin(dp(activity, 20)));
             Set<String> renderedActions = new HashSet<>();
             for (OperationsTriagePresentation.Finding finding : model.findings) {
                 root.addView(findingCard(
@@ -47,7 +57,7 @@ final class OperationsTriageContent {
         }
 
         root.addView(sectionTitle(activity, themeManager, "运行概览"),
-                model.findings.isEmpty() ? matchWidth() : topMargin(dp(activity, 20)));
+                topMargin(dp(activity, 20)));
         root.addView(metricsCard(activity, themeManager, model, actionHandler),
                 topMargin(dp(activity, 8)));
 
@@ -55,30 +65,12 @@ final class OperationsTriageContent {
         root.addView(safetyCard(activity, themeManager, model.safetyNotice),
                 topMargin(dp(activity, 8)));
 
-        boolean singleColumn = AppResponsiveLayout.usesSingleColumn(
-                activity.getResources().getConfiguration().screenWidthDp,
-                activity.getResources().getConfiguration().fontScale);
-        LinearLayout navigation = new LinearLayout(activity);
-        navigation.setOrientation(singleColumn
-                ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
-        MaterialButton backButton = new MaterialButton(
+        MaterialButton refreshButton = new MaterialButton(
                 activity, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
-        backButton.setText("返回运维概览");
-        backButton.setMinHeight(dp(activity, 48));
-        backButton.setOnClickListener(view -> back.run());
-        navigation.addView(backButton, singleColumn ? matchWidth() : weightedButton());
-
-        MaterialButton refreshButton = new MaterialButton(activity);
-        refreshButton.setText("刷新排障建议");
+        refreshButton.setText("刷新问题摘要");
         refreshButton.setMinHeight(dp(activity, 48));
         refreshButton.setOnClickListener(view -> refresh.run());
-        LinearLayout.LayoutParams refreshParams = singleColumn
-                ? topMargin(dp(activity, 8)) : weightedButton();
-        if (!singleColumn) {
-            refreshParams.setMargins(dp(activity, 8), 0, 0, 0);
-        }
-        navigation.addView(refreshButton, refreshParams);
-        root.addView(navigation, topMargin(dp(activity, 16)));
+        root.addView(refreshButton, topMargin(dp(activity, 16)));
         return root;
     }
 
@@ -302,11 +294,6 @@ final class OperationsTriageContent {
         LinearLayout.LayoutParams params = matchWidth();
         params.setMargins(0, margin, 0, 0);
         return params;
-    }
-
-    private static LinearLayout.LayoutParams weightedButton() {
-        return new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
     }
 
     private static MaterialCardView.LayoutParams matchCardWidth() {
