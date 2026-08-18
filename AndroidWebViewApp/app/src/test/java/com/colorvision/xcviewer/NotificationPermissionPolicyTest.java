@@ -8,6 +8,16 @@ import static org.junit.Assert.assertTrue;
 
 public class NotificationPermissionPolicyTest {
     @Test
+    public void onlyAnExplicitDeniedResultIsRecordedAsBlocked() {
+        assertTrue(NotificationPermissionPolicy.shouldRecordDeniedRequest(
+                false, 1, 1));
+        assertFalse(NotificationPermissionPolicy.shouldRecordDeniedRequest(
+                true, 1, 1));
+        assertFalse(NotificationPermissionPolicy.shouldRecordDeniedRequest(
+                false, 0, 0));
+    }
+
+    @Test
     public void firstOrDismissedAndroid13RequestStaysUserInitiated() {
         assertEquals(NotificationPermissionPolicy.ACTION_REQUEST,
                 NotificationPermissionPolicy.action(33, false, false, true, false, false));

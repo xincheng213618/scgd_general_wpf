@@ -35,6 +35,11 @@
     <string name="operations_keystore_busy_details">设备私钥只保存在 Android Keystore，不会写入二维码、网址或应用配置。</string>
     <string name="operations_reminder_manage_title">运维提醒</string>
     <string name="operations_reminder_manage_message">异常状态首次出现时提醒一次；通知不显示端点、设备身份、日志或检测数据。可以发送一条测试提醒，确认当前系统通道能够正常送达。</string>
+    <string name="operations_reminder_permission_title">开启运维提醒</string>
+    <string name="operations_reminder_permission_message">仅在电脑离线、严重告警、错误事件、消息通道异常或设备需关注等新状态出现时提醒。通知不显示端点、设备身份、日志或检测数据。</string>
+    <string name="operations_reminder_permission_later">暂不开启</string>
+    <string name="operations_reminder_permission_action">允许提醒</string>
+    <string name="operations_reminder_permission_denied">运维提醒未开启；可再次点按调整</string>
     <string name="operations_reminder_system_settings_action">系统设置</string>
     <string name="operations_reminder_test_action">发送测试提醒</string>
     <string name="operations_reminder_test_sent">测试提醒已发送，请检查系统通知栏</string>

@@ -8,6 +8,13 @@ final class NotificationPermissionPolicy {
     private NotificationPermissionPolicy() {
     }
 
+    static boolean shouldRecordDeniedRequest(
+            boolean permissionGranted,
+            int permissionCount,
+            int resultCount) {
+        return !permissionGranted && permissionCount > 0 && resultCount > 0;
+    }
+
     static int action(
             int androidSdk,
             boolean runtimePermissionGranted,

@@ -96,8 +96,8 @@ final class AppPreferences {
         return preferences.getBoolean(KEY_NOTIFICATION_PERMISSION_BLOCKED, false);
     }
 
-    void saveNotificationPermissionBlocked() {
-        preferences.edit().putBoolean(KEY_NOTIFICATION_PERMISSION_BLOCKED, true).apply();
+    void saveNotificationPermissionBlocked(boolean blocked) {
+        preferences.edit().putBoolean(KEY_NOTIFICATION_PERMISSION_BLOCKED, blocked).apply();
     }
 
     boolean isOperationsWatchUserEnabled() {

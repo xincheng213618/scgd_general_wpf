@@ -715,10 +715,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void showNotificationPermissionExplanation() {
         new MaterialAlertDialogBuilder(this)
-                .setTitle("开启运维提醒")
-                .setMessage("仅在电脑离线、严重告警、错误事件、消息通道异常或设备需关注等新状态出现时提醒。通知不显示端点、设备身份、日志或检测数据。")
-                .setNegativeButton("暂不开启", null)
-                .setPositiveButton("继续", (dialog, which) -> requestNotificationPermission())
+                .setTitle(R.string.operations_reminder_permission_title)
+                .setMessage(R.string.operations_reminder_permission_message)
+                .setNegativeButton(R.string.operations_reminder_permission_later, null)
+                .setPositiveButton(R.string.operations_reminder_permission_action,
+                        (dialog, which) -> requestNotificationPermission())
                 .show();
     }
 
@@ -751,7 +752,7 @@ public class MainActivity extends AppCompatActivity {
                 hasWindowFocus())) {
             return;
         }
-        appPreferences.saveNotificationPermissionBlocked();
+        appPreferences.saveNotificationPermissionBlocked(true);
         lastNotificationPermissionStatus = notificationPermissionStatus();
         if (root != null && currentTab == TAB_SETTINGS) {
             showProfileView();
@@ -827,6 +828,12 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
             boolean granted = NotificationPermissionState.hasRuntimePermission(this);
             notificationPermissionDialogState.completeFromSystemResult(granted);
+            if (NotificationPermissionPolicy.shouldRecordDeniedRequest(
+                    granted, permissions.length, grantResults.length)) {
+                appPreferences.saveNotificationPermissionBlocked(true);
+            } else if (granted) {
+                appPreferences.saveNotificationPermissionBlocked(false);
+            }
             lastNotificationPermissionStatus = notificationPermissionStatus();
             if (root != null && currentTab == TAB_SETTINGS) {
                 showProfileView();
@@ -834,6 +841,9 @@ public class MainActivity extends AppCompatActivity {
             if (granted) {
                 OperationsWatchService.start(this);
                 Toast.makeText(this, "运维提醒已开启", Toast.LENGTH_SHORT).show();
+            } else if (root != null && currentTab == TAB_SETTINGS) {
+                showOperationsWatchFeedback(
+                        getString(R.string.operations_reminder_permission_denied), false);
             }
             return;
         }
@@ -851,6 +861,11 @@ public class MainActivity extends AppCompatActivity {
         if (appPreferences != null && (granted
                 || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA))) {
             appPreferences.saveCameraPermissionBlocked(false);
+        }
+        if (appPreferences != null
+                && (NotificationPermissionState.hasRuntimePermission(this)
+                || shouldShowNotificationPermissionRationale())) {
+            appPreferences.saveNotificationPermissionBlocked(false);
         }
         if (root != null && currentTab == TAB_SETTINGS
                 && (granted != cameraPermissionGranted || notificationStatusChanged)) {
