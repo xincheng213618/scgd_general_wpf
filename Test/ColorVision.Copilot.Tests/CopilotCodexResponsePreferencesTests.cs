@@ -242,24 +242,14 @@ public sealed class CopilotCodexResponsePreferencesTests
             HasCodexModelVerbosityOverride = true,
             CodexModelVerbositySourceLabel = options.ModelVerbositySourceLabel,
         });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                CodexConfigOptions = options,
-            });
 
         Assert.Contains("Codex service_tier：fast → 请求 priority", memoryReport, StringComparison.Ordinal);
         Assert.Contains("Codex model_verbosity：high", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.ServiceTierSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("服务等级：fast → 请求 priority", contextReport, StringComparison.Ordinal);
         Assert.Contains("回答详细度：high", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex service_tier：fast → 请求 priority", debugReport, StringComparison.Ordinal);
-        Assert.Contains("Codex model_verbosity：high", debugReport, StringComparison.Ordinal);
         Assert.Contains("仅 Agent 官方 OpenAI Responses 生效", memoryReport, StringComparison.Ordinal);
         Assert.Contains("仅 Agent 官方 OpenAI Responses 生效", contextReport, StringComparison.Ordinal);
-        Assert.Contains("仅 Agent 官方 OpenAI Responses 生效", debugReport, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -291,20 +281,11 @@ public sealed class CopilotCodexResponsePreferencesTests
             HasCodexServiceTierOverride = true,
             CodexServiceTierSourceLabel = options.ServiceTierSourceLabel,
         });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                CodexConfigOptions = options,
-            });
 
         Assert.Contains("Codex features.fast_mode：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains("Codex service_tier：fast → 不发送", memoryReport, StringComparison.Ordinal);
         Assert.Contains("快速服务等级总闸门：关闭", contextReport, StringComparison.Ordinal);
         Assert.Contains("服务等级：fast → 不发送", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex features.fast_mode：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains("Codex service_tier：fast → 不发送", debugReport, StringComparison.Ordinal);
     }
 
     private static CopilotProfileConfig CreateOfficialOpenAiProfile()

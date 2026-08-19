@@ -346,21 +346,11 @@ public sealed class CopilotCodexInterruptMessageTests
             HasCodexInterruptMessageOverride = true,
             CodexInterruptMessageSourceLabel = options.InterruptMessageSourceLabel,
         });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
 
         Assert.Contains("Codex agents.interrupt_message：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.InterruptMessageSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("模型工具输出为空", memoryReport, StringComparison.Ordinal);
         Assert.Contains("子代理中断消息：仅保留本地审计", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex agents.interrupt_message：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains("UI、事件与审计仍保留", debugReport, StringComparison.Ordinal);
     }
 
     [Fact]

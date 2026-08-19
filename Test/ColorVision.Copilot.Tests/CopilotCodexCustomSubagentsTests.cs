@@ -749,26 +749,15 @@ public sealed class CopilotCodexCustomSubagentsTests
                 options,
                 Array.Empty<CopilotProjectInstructionDocument>()),
             hasActiveAgentRun: false);
-        var debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
 
-        foreach (var report in new[] { memoryReport, debugReport })
-        {
-            Assert.Contains("Codex custom agents：1", report, StringComparison.Ordinal);
-            Assert.Contains("reviewer · Review bounded workspace evidence.", report, StringComparison.Ordinal);
-            Assert.Contains("来源 受信项目", report, StringComparison.Ordinal);
-            Assert.Contains("model review-model · context 131072 · tool_output 1024 · sandbox workspace-write→read-only · reasoning max", report, StringComparison.Ordinal);
-            Assert.Contains("summary detailed · summary_support false · verbosity high · service_tier fast", report, StringComparison.Ordinal);
-            Assert.Contains("未支持设置已忽略", report, StringComparison.Ordinal);
-            Assert.DoesNotContain("PRIVATE-INSTRUCTION-BODY", report, StringComparison.Ordinal);
-            Assert.DoesNotContain(privatePath, report, StringComparison.OrdinalIgnoreCase);
-        }
+        Assert.Contains("Codex custom agents：1", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("reviewer · Review bounded workspace evidence.", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("来源 受信项目", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("model review-model · context 131072 · tool_output 1024 · sandbox workspace-write→read-only · reasoning max", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("summary detailed · summary_support false · verbosity high · service_tier fast", memoryReport, StringComparison.Ordinal);
+        Assert.Contains("未支持设置已忽略", memoryReport, StringComparison.Ordinal);
+        Assert.DoesNotContain("PRIVATE-INSTRUCTION-BODY", memoryReport, StringComparison.Ordinal);
+        Assert.DoesNotContain(privatePath, memoryReport, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -887,26 +876,15 @@ public sealed class CopilotCodexCustomSubagentsTests
                     options,
                     Array.Empty<CopilotProjectInstructionDocument>()),
                 hasActiveAgentRun: false);
-            var debugReport = CopilotEffectiveConfigDiagnostics.Format(
-                new CopilotEffectiveConfigDiagnosticContext
-                {
-                    Config = new CopilotConfig(),
-                    State = new CopilotChatState(),
-                    ComposerMode = CopilotAgentMode.Code,
-                    CodexConfigOptions = options,
-                });
 
-            foreach (var report in new[] { memoryReport, debugReport })
-            {
-                Assert.Contains("Codex custom agent 发现问题：3", report, StringComparison.Ordinal);
-                Assert.Contains("02-reviewer.toml", report, StringComparison.Ordinal);
-                Assert.Contains("broken.toml", report, StringComparison.Ordinal);
-                Assert.Contains("oversized.toml", report, StringComparison.Ordinal);
-                Assert.Contains("仅本地诊断；不会注入模型提示", report, StringComparison.Ordinal);
-                Assert.DoesNotContain(globalRoot, report, StringComparison.OrdinalIgnoreCase);
-                Assert.DoesNotContain("FIRST-PRIVATE-INSTRUCTION", report, StringComparison.Ordinal);
-                Assert.DoesNotContain("SECOND-PRIVATE-INSTRUCTION", report, StringComparison.Ordinal);
-            }
+            Assert.Contains("Codex custom agent 发现问题：3", memoryReport, StringComparison.Ordinal);
+            Assert.Contains("02-reviewer.toml", memoryReport, StringComparison.Ordinal);
+            Assert.Contains("broken.toml", memoryReport, StringComparison.Ordinal);
+            Assert.Contains("oversized.toml", memoryReport, StringComparison.Ordinal);
+            Assert.Contains("仅本地诊断；不会注入模型提示", memoryReport, StringComparison.Ordinal);
+            Assert.DoesNotContain(globalRoot, memoryReport, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("FIRST-PRIVATE-INSTRUCTION", memoryReport, StringComparison.Ordinal);
+            Assert.DoesNotContain("SECOND-PRIVATE-INSTRUCTION", memoryReport, StringComparison.Ordinal);
 
             var parentPrompt = new CopilotAgentContextBuilder().BuildPreparedUserMessageContent(
                 CreateParentRequest(reviewer),

@@ -206,21 +206,11 @@ public sealed class CopilotCodexMentionsV2FeatureTests
             HasCodexMentionsV2EnabledOverride = true,
             CodexMentionsV2EnabledSourceLabel = options.MentionsV2EnabledSourceLabel,
         });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
 
         Assert.Contains("Codex features.mentions_v2：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains("回退为旧版文件候选", memoryReport, StringComparison.Ordinal);
         Assert.Contains("features.mentions_v2=false", contextReport, StringComparison.Ordinal);
         Assert.Contains("已有附件与上下文不受影响", contextReport, StringComparison.Ordinal);
-        Assert.Contains("features.mentions_v2：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains(options.MentionsV2EnabledSourceLabel, debugReport, StringComparison.Ordinal);
     }
 
     private static string CreateTemporaryDirectory()

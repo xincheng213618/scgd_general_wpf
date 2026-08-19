@@ -174,22 +174,12 @@ public sealed class CopilotCodexSkillInstructionsTests
             HasCodexIncludeSkillInstructionsOverride = true,
             CodexIncludeSkillInstructionsSourceLabel = options.IncludeSkillInstructionsSourceLabel,
         });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
 
         Assert.Contains("Codex skills.include_instructions：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.IncludeSkillInstructionsSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("显式 $name 或 /name", memoryReport, StringComparison.Ordinal);
         Assert.Contains("自动 Skill 说明：省略", contextReport, StringComparison.Ordinal);
         Assert.Contains("仅显式 $name 或 /name", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex skills.include_instructions：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains("显式 $name 或 /name", debugReport, StringComparison.Ordinal);
     }
 
     private static string CreateTemporaryDirectory()

@@ -263,14 +263,6 @@ public sealed class CopilotCodexHooksFeatureTests
             HasCodexHooksEnabledOverride = true,
             CodexHooksEnabledSourceLabel = options.HooksEnabledSourceLabel,
         });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
         string hooksReport = CopilotHookDiagnostics.Format(new CopilotHookDiagnosticSnapshot
         {
             HookSurface = enabledSurface,
@@ -289,8 +281,6 @@ public sealed class CopilotCodexHooksFeatureTests
         Assert.Contains(options.HooksEnabledSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("内置写入安全策略仍保留", memoryReport, StringComparison.Ordinal);
         Assert.Contains("模块扩展 Hook：关闭", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex features.hooks：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains("checkpoint 按有效 Hook 面校验", debugReport, StringComparison.Ordinal);
         Assert.Contains("mode sync", hooksReport, StringComparison.Ordinal);
     }
 

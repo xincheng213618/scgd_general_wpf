@@ -217,19 +217,11 @@ public sealed class CopilotCodexAutoCompactionTests
             AutoCompactCarriedPrefixEstimatedTokens = 50_000,
             AutoCompactBodyAfterPrefixEstimatedTokens = 20_000,
         });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-        {
-            Config = new CopilotConfig(),
-            State = new CopilotChatState(),
-            CodexConfigOptions = options,
-        });
 
         Assert.Contains("model_auto_compact_token_limit：64,000 Token", memoryReport, StringComparison.Ordinal);
         Assert.Contains("model_auto_compact_token_limit_scope：body_after_prefix", memoryReport, StringComparison.Ordinal);
         Assert.Contains("body_after_prefix 计量 20,000/64,000 Token", contextReport, StringComparison.Ordinal);
         Assert.Contains("carried prefix 50,000 Token", contextReport, StringComparison.Ordinal);
-        Assert.Contains("64,000 tokens @ body_after_prefix", debugReport, StringComparison.Ordinal);
-        Assert.Contains(options.ModelAutoCompactTokenLimitScopeSourceLabel, debugReport, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -1527,14 +1527,6 @@ public sealed class CopilotAgentProjectInstructionsTests
             Assert.Contains("终态完整性后缀仍由宿主强制保留", contextReport, StringComparison.Ordinal);
             Assert.DoesNotContain("Preserve the nearest compact contract.", contextReport, StringComparison.Ordinal);
 
-            var debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                CodexConfigOptions = options,
-            });
-            Assert.Contains("受信项目 .codex/config.toml compact_prompt", debugReport, StringComparison.Ordinal);
-            Assert.DoesNotContain("Preserve the nearest compact contract.", debugReport, StringComparison.Ordinal);
         }
         finally
         {
@@ -3270,21 +3262,12 @@ public sealed class CopilotAgentProjectInstructionsTests
                 ConfiguredModelInstructionsUsesFile = options.ModelInstructionsUsesFile,
                 ConfiguredModelInstructionsApplied = true,
             });
-            string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                CodexConfigOptions = options,
-            });
 
             Assert.Contains("Codex model_instructions_file：", memoryReport, StringComparison.Ordinal);
             Assert.Contains(instructionsPath, memoryReport, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("宿主安全规则", contextReport, StringComparison.Ordinal);
-            Assert.Contains(options.ModelInstructionsSourceLabel, debugReport, StringComparison.Ordinal);
-            Assert.Contains(instructionsPath, debugReport, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain(secretBody, memoryReport, StringComparison.Ordinal);
             Assert.DoesNotContain(secretBody, contextReport, StringComparison.Ordinal);
-            Assert.DoesNotContain(secretBody, debugReport, StringComparison.Ordinal);
         }
         finally
         {
@@ -3320,21 +3303,12 @@ public sealed class CopilotAgentProjectInstructionsTests
                 ConfiguredModelInstructionsUsesFile = options.ModelInstructionsUsesFile,
                 ConfiguredModelInstructionsApplied = true,
             });
-            string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                CodexConfigOptions = options,
-            });
 
             Assert.Contains("Codex instructions：", memoryReport, StringComparison.Ordinal);
             Assert.Contains("Codex instructions：", contextReport, StringComparison.Ordinal);
-            Assert.Contains("Codex instructions：", debugReport, StringComparison.Ordinal);
-            Assert.Contains(options.ModelInstructionsSourceLabel, debugReport, StringComparison.Ordinal);
             Assert.Contains("宿主安全规则", contextReport, StringComparison.Ordinal);
             Assert.DoesNotContain(secretBody, memoryReport, StringComparison.Ordinal);
             Assert.DoesNotContain(secretBody, contextReport, StringComparison.Ordinal);
-            Assert.DoesNotContain(secretBody, debugReport, StringComparison.Ordinal);
         }
         finally
         {
@@ -3599,20 +3573,10 @@ public sealed class CopilotAgentProjectInstructionsTests
             ResponsePersonality = CopilotResponsePersonality.None,
             ResponsePersonalitySourceLabel = "会话覆盖",
         });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-        {
-            Config = new CopilotConfig(),
-            State = new CopilotChatState(),
-            Conversation = conversation,
-            CodexConfigOptions = options,
-        });
 
         Assert.Contains("Codex personality：友好（friendly）", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.PersonalitySourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("回答风格：无（none） · 来源 会话覆盖", contextReport, StringComparison.Ordinal);
-        Assert.Contains("回答风格：无 · 来源 会话覆盖", debugReport, StringComparison.Ordinal);
-        Assert.Contains("Codex personality 默认：友好", debugReport, StringComparison.Ordinal);
-        Assert.Contains("会话覆盖优先", debugReport, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -3647,21 +3611,12 @@ public sealed class CopilotAgentProjectInstructionsTests
             HasCodexPersonalityEnabledOverride = true,
             CodexPersonalityEnabledSourceLabel = options.PersonalityEnabledSourceLabel,
         });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-        {
-            Config = new CopilotConfig(),
-            State = new CopilotChatState(),
-            Conversation = conversation,
-            CodexConfigOptions = options,
-        });
 
         Assert.Equal(CopilotResponsePersonality.None, resolution.Personality);
         Assert.Contains("Codex features.personality：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains("被 features.personality=false 阻断", memoryReport, StringComparison.Ordinal);
         Assert.Contains("回答风格：无（none）", contextReport, StringComparison.Ordinal);
         Assert.Contains("Personality 功能：关闭", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex features.personality：false", debugReport, StringComparison.Ordinal);
-        Assert.Contains("回答风格：无", debugReport, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -3884,21 +3839,13 @@ public sealed class CopilotAgentProjectInstructionsTests
             CodexWebSearchModeSourceLabel = options.WebSearchModeSourceLabel,
             HasCodexWebSearchModeOverride = true,
         });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-        {
-            Config = new CopilotConfig(),
-            State = new CopilotChatState(),
-            CodexConfigOptions = options,
-        });
 
         Assert.Contains("Codex web_search：cached", memoryReport, StringComparison.Ordinal);
         Assert.Contains("不支持 cached 后端", memoryReport, StringComparison.Ordinal);
         Assert.Contains("不支持 cached 后端", contextReport, StringComparison.Ordinal);
         Assert.Contains(options.WebSearchModeSourceLabel, contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex web_search：cached", debugReport, StringComparison.Ordinal);
         Assert.DoesNotContain("已允许按请求意图实时公网检索", memoryReport, StringComparison.Ordinal);
         Assert.DoesNotContain("已允许按请求意图实时公网检索", contextReport, StringComparison.Ordinal);
-        Assert.DoesNotContain("已允许按请求意图实时公网检索", debugReport, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -4088,25 +4035,11 @@ public sealed class CopilotAgentProjectInstructionsTests
             HasModelContextWindowOverride = true,
             ModelContextWindowSourceLabel = options.ModelContextWindowSourceLabel,
         });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
-        {
-            Config = new CopilotConfig
-            {
-                AgentDefaults = new CopilotAgentDefaultsConfig
-                {
-                    ContextWindowTokens = 524_288,
-                },
-            },
-            State = new CopilotChatState(),
-            CodexConfigOptions = options,
-        });
 
         Assert.Contains("Codex model_context_window：131,072 Token", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.ModelContextWindowSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("Codex model_context_window：131,072 Token", contextReport, StringComparison.Ordinal);
         Assert.Contains("同时约束聊天历史、发送校验、自动压缩和 Agent 上下文", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex model_context_window：131,072 tokens", debugReport, StringComparison.Ordinal);
-        Assert.Contains("请求快照覆盖应用默认值", debugReport, StringComparison.Ordinal);
     }
 
     private static string CreateTemporaryDirectory()

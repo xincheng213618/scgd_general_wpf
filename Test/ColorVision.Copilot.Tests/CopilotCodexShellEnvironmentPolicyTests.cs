@@ -314,21 +314,11 @@ public sealed class CopilotCodexShellEnvironmentPolicyTests
             HasCodexShellEnvironmentPolicyOverride = true,
             CodexShellEnvironmentPolicySourceLabel = options.ShellEnvironmentPolicySourceLabel,
         });
-        string effectiveReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
 
         Assert.Contains("set=1", projectReport, StringComparison.Ordinal);
         Assert.Contains("set=1", contextReport, StringComparison.Ordinal);
-        Assert.Contains("set=1", effectiveReport, StringComparison.Ordinal);
         Assert.DoesNotContain(secretValue, projectReport, StringComparison.Ordinal);
         Assert.DoesNotContain(secretValue, contextReport, StringComparison.Ordinal);
-        Assert.DoesNotContain(secretValue, effectiveReport, StringComparison.Ordinal);
     }
 
     [Fact]

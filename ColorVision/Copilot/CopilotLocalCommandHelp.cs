@@ -14,7 +14,6 @@ namespace ColorVision.Copilot
             ("状态与诊断",
             [
                 CopilotLocalCommandKind.Status,
-                CopilotLocalCommandKind.EffectiveConfig,
                 CopilotLocalCommandKind.Doctor,
                 CopilotLocalCommandKind.Tasks,
                 CopilotLocalCommandKind.BackgroundCommands,

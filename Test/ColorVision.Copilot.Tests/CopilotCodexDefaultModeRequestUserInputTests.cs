@@ -151,22 +151,12 @@ public sealed class CopilotCodexDefaultModeRequestUserInputTests
             HasCodexDefaultModeRequestUserInputEnabledOverride = true,
             CodexDefaultModeRequestUserInputEnabledSourceLabel = options.DefaultModeRequestUserInputEnabledSourceLabel,
         });
-        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
-            new CopilotEffectiveConfigDiagnosticContext
-            {
-                Config = new CopilotConfig(),
-                State = new CopilotChatState(),
-                ComposerMode = CopilotAgentMode.Code,
-                CodexConfigOptions = options,
-            });
 
         Assert.Contains("Codex features.default_mode_request_user_input：true", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.DefaultModeRequestUserInputEnabledSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("总开关约束", memoryReport, StringComparison.Ordinal);
         Assert.Contains("Default 模式结构化提问：开放", contextReport, StringComparison.Ordinal);
         Assert.Contains("全局工具开关", contextReport, StringComparison.Ordinal);
-        Assert.Contains("Codex features.default_mode_request_user_input：true", debugReport, StringComparison.Ordinal);
-        Assert.Contains("tools.experimental_request_user_input.enabled", debugReport, StringComparison.Ordinal);
     }
 
     private static CopilotAgentRequest CreateRequest(

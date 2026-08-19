@@ -56,9 +56,6 @@ namespace ColorVision.Copilot
                 case CopilotLocalCommandKind.Status:
                     ShowLocalCommandResult(command, BuildStatusDiagnosticsReport());
                     break;
-                case CopilotLocalCommandKind.EffectiveConfig:
-                    ShowLocalCommandResult(command, BuildEffectiveConfigDiagnosticsReport());
-                    break;
                 case CopilotLocalCommandKind.Doctor:
                     ShowLocalCommandResult(command, BuildDoctorDiagnosticsReport());
                     break;
