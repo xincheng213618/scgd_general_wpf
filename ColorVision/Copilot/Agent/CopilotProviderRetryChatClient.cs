@@ -1,6 +1,7 @@
 using Microsoft.Extensions.AI;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -13,6 +14,24 @@ using System.ClientModel;
 
 namespace ColorVision.Copilot
 {
+    internal static class CopilotProviderRecoveryObserver
+    {
+        public static void Notify<T>(Action<T>? observer, T value, string notificationKind)
+        {
+            try
+            {
+                observer?.Invoke(value);
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning(
+                    "Copilot provider {0} observer failed: {1}",
+                    notificationKind,
+                    ex.GetType().Name);
+            }
+        }
+    }
+
     internal sealed record CopilotProviderRetryInfo(
         int FailedAttempt,
         int NextAttempt,
@@ -81,7 +100,7 @@ namespace ColorVision.Copilot
                 }
                 catch (Exception ex) when (TryCreateRetry(ex, attempt, out var retry, cancellationToken))
                 {
-                    _onRetry?.Invoke(retry);
+                    CopilotProviderRecoveryObserver.Notify(_onRetry, retry, "retry");
                     await _delayAsync(retry.Delay, cancellationToken);
                 }
             }
@@ -108,7 +127,7 @@ namespace ColorVision.Copilot
                 }
                 catch (Exception ex) when (TryCreateRetry(ex, attempt, out var retry, cancellationToken))
                 {
-                    _onRetry?.Invoke(retry);
+                    CopilotProviderRecoveryObserver.Notify(_onRetry, retry, "retry");
                     await _delayAsync(retry.Delay, cancellationToken);
                     continue;
                 }

@@ -1,5 +1,6 @@
 using ColorVision.Copilot;
 using Microsoft.Extensions.AI;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 
@@ -211,6 +212,88 @@ public sealed class CopilotProviderConnectionRecoveryTests
         Assert.True(client.Snapshot.BudgetExhausted);
     }
 
+    [Fact]
+    public async Task ConnectionRecoveryObserverFailureCannotReplaceRecovery()
+    {
+        var provider = new RecoveringChatClient(connectionFailuresBeforeSuccess: 1);
+        var notifications = 0;
+        using var client = new CopilotProviderConnectionRecoveryChatClient(
+            provider,
+            _ =>
+            {
+                notifications++;
+                throw new InvalidOperationException("observer failed");
+            },
+            (_, _) => Task.CompletedTask);
+
+        var response = await client.GetResponseAsync(
+            [new ChatMessage(ChatRole.User, "recover")],
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal("recovered", response.Text);
+        Assert.Equal(1, notifications);
+        Assert.Equal(2, provider.CallCount);
+    }
+
+    [Fact]
+    public async Task OrdinaryRetryObserverFailureCannotReplaceRetry()
+    {
+        var provider = new FailOnceChatClient(new HttpRequestException(
+            "rate limited",
+            inner: null,
+            HttpStatusCode.TooManyRequests));
+        var notifications = 0;
+        using var client = new CopilotProviderRetryChatClient(
+            provider,
+            _ =>
+            {
+                notifications++;
+                throw new InvalidOperationException("observer failed");
+            },
+            maximumAttempts: 2,
+            delayFactory: _ => TimeSpan.Zero,
+            delayAsync: (_, _) => Task.CompletedTask);
+
+        var response = await client.GetResponseAsync(
+            [new ChatMessage(ChatRole.User, "retry")],
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal("recovered", response.Text);
+        Assert.Equal(1, notifications);
+        Assert.Equal(2, provider.CallCount);
+    }
+
+    [Fact]
+    public async Task ContextRecoveryObserverFailureCannotReplaceCompactionRetry()
+    {
+        var provider = new FailOnceChatClient(new HttpRequestException(
+            "maximum context length exceeded",
+            inner: null,
+            HttpStatusCode.BadRequest));
+        var notifications = 0;
+        using var client = new CopilotContextWindowRecoveryChatClient(
+            provider,
+            inputBudgetTokens: 256,
+            _ =>
+            {
+                notifications++;
+                throw new InvalidOperationException("observer failed");
+            });
+        var messages = Enumerable.Range(0, 10)
+            .Select(index => new ChatMessage(
+                index % 2 == 0 ? ChatRole.User : ChatRole.Assistant,
+                new string((char)('a' + index), 2_000)))
+            .ToArray();
+
+        var response = await client.GetResponseAsync(
+            messages,
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal("recovered", response.Text);
+        Assert.Equal(1, notifications);
+        Assert.Equal(2, provider.CallCount);
+    }
+
     private static CopilotAgentTokenBudget CreateBudget() => new()
     {
         ContextWindowTokens = CopilotAgentTokenBudget.MinimumContextWindowTokens,
@@ -260,6 +343,41 @@ public sealed class CopilotProviderConnectionRecoveryTests
             yield return new ChatResponseUpdate(ChatRole.Assistant, "partial");
             if (failAfterStreamingContent)
                 throw new HttpRequestException("connection dropped after content");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
+    }
+
+    private sealed class FailOnceChatClient(Exception firstFailure) : IChatClient
+    {
+        public int CallCount { get; private set; }
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            CallCount++;
+            return CallCount == 1
+                ? Task.FromException<ChatResponse>(firstFailure)
+                : Task.FromResult(new ChatResponse(
+                    new ChatMessage(ChatRole.Assistant, "recovered"))
+                {
+                    FinishReason = ChatFinishReason.Stop,
+                });
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var response = await GetResponseAsync(messages, options, cancellationToken);
+            yield return new ChatResponseUpdate(ChatRole.Assistant, response.Text);
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

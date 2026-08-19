@@ -165,7 +165,10 @@ namespace ColorVision.Copilot
                     cancellationToken,
                     out var recovery))
                 {
-                    _onRecovery?.Invoke(recovery);
+                    CopilotProviderRecoveryObserver.Notify(
+                        _onRecovery,
+                        recovery,
+                        "connection recovery");
                     await WaitForRecoveryDelayAsync(recovery.Delay, cancellationToken).ConfigureAwait(false);
                 }
             }
@@ -197,7 +200,10 @@ namespace ColorVision.Copilot
                     cancellationToken,
                     out var recovery))
                 {
-                    _onRecovery?.Invoke(recovery);
+                    CopilotProviderRecoveryObserver.Notify(
+                        _onRecovery,
+                        recovery,
+                        "connection recovery");
                     await WaitForRecoveryDelayAsync(recovery.Delay, cancellationToken).ConfigureAwait(false);
                     continue;
                 }
