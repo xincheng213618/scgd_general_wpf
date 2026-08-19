@@ -38,5 +38,12 @@ namespace ColorVision.Copilot
 
             return builder.ToString().TrimEnd('_');
         }
+
+        internal static bool HasApprovalProvenance(string? value)
+        {
+            var normalized = Normalize(value);
+            return normalized.Contains("approval", StringComparison.Ordinal)
+                || normalized.StartsWith("automatic_review_", StringComparison.Ordinal);
+        }
     }
 }

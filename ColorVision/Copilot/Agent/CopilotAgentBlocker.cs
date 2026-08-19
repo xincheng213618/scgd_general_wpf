@@ -86,7 +86,26 @@ namespace ColorVision.Copilot
 
             var denied = steps.LastOrDefault(step => step?.Execution.State == CopilotToolExecutionState.Denied);
             if (denied != null)
-                return [CreateToolBlocker(denied, CopilotAgentBlockerKind.Approval, "approval_denied", "A protected action was denied or expired.", true)];
+            {
+                var approvalDenial = CopilotToolFailureCode.HasApprovalProvenance(
+                    denied.Observation.FailureCode);
+                var policyCode = CopilotToolFailureCode.Normalize(
+                    denied.Observation.FailureCode);
+                return [CreateToolBlocker(
+                    denied,
+                    approvalDenial
+                        ? CopilotAgentBlockerKind.Approval
+                        : CopilotAgentBlockerKind.Policy,
+                    approvalDenial
+                        ? "approval_denied"
+                        : policyCode.Length > 0
+                            ? policyCode
+                            : "tool_policy_denied",
+                    approvalDenial
+                        ? "A protected action was denied or expired."
+                        : "A tool call was denied by the active execution policy.",
+                    true)];
+            }
 
             var permanentFailure = steps.LastOrDefault(step => step != null
                 && (step.Execution.State is CopilotToolExecutionState.Failed or CopilotToolExecutionState.TimedOut

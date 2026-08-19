@@ -99,4 +99,57 @@ public sealed class CopilotAgentBlockerTests
         Assert.False(blocker.RetryEligible);
         Assert.Contains("Verify the current state", blocker.Summary, StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData("approval_rejected", CopilotAgentStopReason.ApprovalDenied, CopilotAgentBlockerKind.Approval, "approval_denied")]
+    [InlineData("tool_hook_denied", CopilotAgentStopReason.Blocked, CopilotAgentBlockerKind.Policy, "tool_hook_denied")]
+    public void DeniedToolClassificationPreservesItsDecisionDomain(
+        string failureCode,
+        CopilotAgentStopReason expectedStopReason,
+        CopilotAgentBlockerKind expectedBlockerKind,
+        string expectedBlockerCode)
+    {
+        var ledger = new CopilotAgentTaskLedgerSnapshot
+        {
+            Mode = "execute",
+            Items =
+            [
+                new CopilotAgentTaskItem
+                {
+                    Id = 1,
+                    Title = "Complete protected work",
+                },
+            ],
+        };
+        var step = new CopilotAgentStepRecord
+        {
+            Observation = new CopilotToolObservation
+            {
+                Success = false,
+                FailureKind = CopilotToolFailureKind.Authorization,
+                FailureCode = failureCode,
+            },
+            Execution = new CopilotToolExecutionInfo
+            {
+                CallId = "denied-call",
+                ToolName = "ProtectedTool",
+                State = CopilotToolExecutionState.Denied,
+                FailureKind = CopilotToolFailureKind.Authorization,
+            },
+        };
+
+        var stopReason = CopilotMicrosoftAgentFrameworkRuntime.DetermineStopReason(
+            ledger,
+            new CopilotAgentBudgetSnapshot(),
+            [step],
+            hasModelFinalAnswer: false);
+        var blocker = Assert.Single(CopilotAgentBlockerDetector.Detect(
+            ledger,
+            [step],
+            stopReason));
+
+        Assert.Equal(expectedStopReason, stopReason);
+        Assert.Equal(expectedBlockerKind, blocker.Kind);
+        Assert.Equal(expectedBlockerCode, blocker.Code);
+    }
 }

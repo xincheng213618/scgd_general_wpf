@@ -232,6 +232,38 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void PreExecutionPolicyDenialRemainsAToolOutcome()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "ProtectedTool",
+                Success = false,
+                Summary = "Denied by a PreToolUse hook.",
+                FailureKind = CopilotToolFailureKind.Authorization,
+                FailureCode = "tool_hook_denied",
+            },
+            CreateExecution(
+                "hook-denied-call",
+                CopilotToolExecutionState.Denied,
+                completedAtUtc: DateTimeOffset.UtcNow)));
+
+        var snapshot = journal.Snapshot();
+        var completed = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        Assert.Equal(
+            CopilotAgentTaskEventIds.ForCall("hook-denied-call"),
+            completed.SubjectId);
+        Assert.Equal("tool_hook_denied", completed.FailureCode);
+        Assert.DoesNotContain(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ApprovalDenied);
+    }
+
+    [Fact]
     public void SessionResetRecoveryRetainsTheLatestStateOfEveryAttemptedToolCall()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();

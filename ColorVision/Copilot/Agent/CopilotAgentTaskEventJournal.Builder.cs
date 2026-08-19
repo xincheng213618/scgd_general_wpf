@@ -352,7 +352,10 @@ namespace ColorVision.Copilot
                 var type = execution.State switch
                 {
                     CopilotToolExecutionState.AwaitingApproval => CopilotAgentTaskEventType.ApprovalRequested,
-                    CopilotToolExecutionState.Denied => CopilotAgentTaskEventType.ApprovalDenied,
+                    CopilotToolExecutionState.Denied
+                        when CopilotToolFailureCode.HasApprovalProvenance(
+                            agentEvent.ToolResult?.FailureCode) =>
+                        CopilotAgentTaskEventType.ApprovalDenied,
                     CopilotToolExecutionState.Cancelled
                         when string.Equals(
                             CopilotToolFailureCode.Normalize(
