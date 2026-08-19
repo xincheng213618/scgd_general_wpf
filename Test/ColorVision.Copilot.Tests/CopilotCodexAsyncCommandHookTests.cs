@@ -266,6 +266,10 @@ public sealed class CopilotCodexAsyncCommandHookTests
             Assert.Equal(CopilotCodexAsyncHookCompletionState.TimedOut, result.State);
             Assert.Contains("exceeded", result.Warning, StringComparison.Ordinal);
             Assert.False(result.HasAdditionalContext);
+            Assert.Equal(1, scheduler
+                .GetActivitySnapshot("session-timeout")
+                .OutstandingCount);
+            releaseUncooperativeCallback.TrySetResult(true);
             await WaitUntilAsync(() => scheduler
                 .GetActivitySnapshot("session-timeout")
                 .OutstandingCount == 0);
