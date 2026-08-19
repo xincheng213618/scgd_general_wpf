@@ -7,8 +7,10 @@ final class OperationsWatchPolicy {
     static final String ATTENTION_DEVICES = "devices";
     static final String ATTENTION_ERRORS = "errors";
     static final String ATTENTION_OFFLINE = "offline";
+    static final String ATTENTION_REVOKED = "revoked";
     static final String DESTINATION_TRIAGE = "triage";
     static final String DESTINATION_CONNECTION_CHECK = "connection_check";
+    static final String DESTINATION_CONNECTIONS = "connections";
     static final long HEALTHY_CHECK_MILLISECONDS = 60_000L;
     static final long FIRST_RETRY_MILLISECONDS = 30_000L;
     static final long MAXIMUM_RETRY_MILLISECONDS = 5 * 60_000L;
@@ -108,6 +110,8 @@ final class OperationsWatchPolicy {
                 return "发现错误事件 · 点击进入问题中心";
             case ATTENTION_OFFLINE:
                 return "已配对主机连接中断 · 后台正在自动重试";
+            case ATTENTION_REVOKED:
+                return "配对授权已失效 · 点击管理已配对电脑";
             default:
                 return "";
         }
@@ -123,6 +127,8 @@ final class OperationsWatchPolicy {
                 return DESTINATION_TRIAGE;
             case ATTENTION_OFFLINE:
                 return DESTINATION_CONNECTION_CHECK;
+            case ATTENTION_REVOKED:
+                return DESTINATION_CONNECTIONS;
             default:
                 return "";
         }
@@ -130,7 +136,8 @@ final class OperationsWatchPolicy {
 
     static String normalizeDestination(String destination) {
         if (DESTINATION_TRIAGE.equals(destination)
-                || DESTINATION_CONNECTION_CHECK.equals(destination)) {
+                || DESTINATION_CONNECTION_CHECK.equals(destination)
+                || DESTINATION_CONNECTIONS.equals(destination)) {
             return destination;
         }
         return "";

@@ -73,6 +73,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class OperationsActivity extends AppCompatActivity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
     static final String EXTRA_OPEN_DESTINATION = "operations_open_destination";
+    static final String EXTRA_SELECT_HOST_ID = "operations_select_host_id";
     static final String EXTRA_RETURN_TO_SETTINGS = "operations_return_to_settings";
     private static final String STATE_DESTINATION = "operations_destination";
     private static final String STATE_DETAIL_PARENT = "operations_detail_parent";
@@ -927,7 +928,8 @@ public class OperationsActivity extends AppCompatActivity {
                         return OperationsWatchPreferencePolicy.status(
                                 preferences.hasOperationsProfile(),
                                 enabled,
-                                notificationSettingsController.remindersAvailable());
+                                notificationSettingsController.remindersAvailable(),
+                                preferences.getUsableOperationsProfileCount());
                     }
 
                     @Override
@@ -983,7 +985,8 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsWatchPreferencePolicy.status(
                         paired,
                         watchEnabled,
-                        notificationSettingsController.remindersAvailable()),
+                        notificationSettingsController.remindersAvailable(),
+                        preferences.getUsableOperationsProfileCount()),
                 watchRuntime.summary,
                 notificationSettingsController.status(),
                 themeManager.getThemeModeLabel(),
@@ -1001,9 +1004,12 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void showOperationsWatchStatus() {
         OperationsWatchStatusPresentation.Presentation presentation = watchRuntimeStatus();
+        String fleetScope = OperationsWatchPreferencePolicy.fleetScopeDetails(
+                preferences.getUsableOperationsProfileCount());
         MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle("守护状态")
-                .setMessage(presentation.details)
+                .setMessage(presentation.details
+                        + (fleetScope.isEmpty() ? "" : "\n\n" + fleetScope))
                 .setNegativeButton("查看时间线", (ignored, which) -> {
                     detailParentDestination = OperationsDestinationState.SETTINGS;
                     showOperationsWatchHistory();
@@ -1011,7 +1017,11 @@ public class OperationsActivity extends AppCompatActivity {
         if (preferences.isOperationsWatchUserEnabled()) {
             dialog.setPositiveButton("立即检查", (ignored, which) -> {
                     OperationsWatchService.refreshConnectionPreference(this);
-                    showSettingsFeedback("已请求立即检查；守护将在后台更新状态", false);
+                    showSettingsFeedback(
+                            preferences.getUsableOperationsProfileCount() > 1
+                                    ? "已请求检查当前电脑；其他电脑按后台轮巡更新"
+                                    : "已请求立即检查；守护将在后台更新状态",
+                            false);
                     if (settingsScroll != null) {
                         settingsScroll.postDelayed(this::refreshSettingsPage, 2_000L);
                     }
@@ -1029,7 +1039,10 @@ public class OperationsActivity extends AppCompatActivity {
             OperationsWatchService.start(this);
             boolean remindersAvailable = notificationSettingsController.remindersAvailable();
             showSettingsFeedback(
-                    OperationsWatchPreferencePolicy.enabledFeedback(true, remindersAvailable),
+                    OperationsWatchPreferencePolicy.enabledFeedback(
+                            true,
+                            remindersAvailable,
+                            preferences.getUsableOperationsProfileCount()),
                     OperationsWatchPreferencePolicy.shouldOfferReminderAction(
                             true, remindersAvailable));
         } else {
@@ -1720,7 +1733,13 @@ public class OperationsActivity extends AppCompatActivity {
 
         for (OperationsProfileRegistry.Profile profile : targets) {
             fleetExecutor.execute(() -> {
-                FleetCheckResult result = checkOperationsProfile(profile);
+                OperationsProfileMonitorProbe.Result result =
+                        OperationsProfileMonitorProbe.check(
+                                profile,
+                                preferences.getOrCreateDeviceId(),
+                                FLEET_CONNECT_TIMEOUT_MILLISECONDS,
+                                FLEET_READ_TIMEOUT_MILLISECONDS,
+                                System.currentTimeMillis());
                 long checkedAt = System.currentTimeMillis();
                 preferences.recordOperationsProfileWatchState(
                         profile.hostId, result.state, checkedAt);
@@ -1733,73 +1752,6 @@ public class OperationsActivity extends AppCompatActivity {
                         generation, activeHostBefore, completed.get(), total));
             });
         }
-    }
-
-    private FleetCheckResult checkOperationsProfile(
-            OperationsProfileRegistry.Profile profile) {
-        boolean relayFirst = OperationsConnectionPreference.prefersRelay(
-                profile.connectionPreference);
-        try {
-            return relayFirst ? checkRelayOperationsProfile(profile)
-                    : checkLocalOperationsProfile(profile);
-        } catch (Exception firstException) {
-            if (isRevokedException(firstException)) {
-                return FleetCheckResult.revoked();
-            }
-        }
-        try {
-            return relayFirst ? checkLocalOperationsProfile(profile)
-                    : checkRelayOperationsProfile(profile);
-        } catch (Exception secondException) {
-            return isRevokedException(secondException)
-                    ? FleetCheckResult.revoked() : FleetCheckResult.offline();
-        }
-    }
-
-    private FleetCheckResult checkLocalOperationsProfile(
-            OperationsProfileRegistry.Profile profile) throws Exception {
-        OperationsApiClient profileClient = new OperationsApiClient(
-                profile.endpoint,
-                profile.certificatePin,
-                preferences.getOrCreateDeviceId(),
-                new OperationsDeviceIdentity(profile.hostId),
-                FLEET_CONNECT_TIMEOUT_MILLISECONDS,
-                FLEET_READ_TIMEOUT_MILLISECONDS);
-        JSONObject response = profileClient.get("/ops/v1/monitor");
-        JSONObject monitor = response.optJSONObject("data");
-        if (monitor == null) {
-            throw new IllegalStateException("incomplete_live_monitor_response");
-        }
-        return FleetCheckResult.reachable(OperationsMonitorClassifier.watchState(
-                monitor, OperationsWatchHistory.STATE_ONLINE));
-    }
-
-    private FleetCheckResult checkRelayOperationsProfile(
-            OperationsProfileRegistry.Profile profile) throws Exception {
-        OperationsRelayApiClient profileClient = new OperationsRelayApiClient(
-                profile.hostId,
-                preferences.getOrCreateDeviceId(),
-                profile.certificatePin,
-                new OperationsDeviceIdentity(profile.hostId),
-                FLEET_CONNECT_TIMEOUT_MILLISECONDS,
-                FLEET_READ_TIMEOUT_MILLISECONDS);
-        JSONObject response = profileClient.getSnapshot();
-        JSONObject host = response.optJSONObject("host");
-        if (host == null) {
-            throw new IllegalStateException("incomplete_relay_snapshot");
-        }
-        boolean fresh = OperationsRelayPolicy.isHostFresh(
-                host.optLong("signedAt", 0L), System.currentTimeMillis());
-        if (!fresh) {
-            return FleetCheckResult.reachable(
-                    OperationsWatchHistory.STATE_REMOTE_WAITING);
-        }
-        JSONObject snapshot = host.optJSONObject("snapshot");
-        JSONObject monitor = snapshot == null ? null : snapshot.optJSONObject("monitor");
-        return FleetCheckResult.reachable(monitor == null
-                ? OperationsWatchHistory.STATE_REMOTE_ONLINE
-                : OperationsMonitorClassifier.watchState(
-                        monitor, OperationsWatchHistory.STATE_REMOTE_ONLINE));
     }
 
     private void completeFleetCheckProgress(
@@ -1829,28 +1781,6 @@ public class OperationsActivity extends AppCompatActivity {
         Toast.makeText(this,
                 "巡检完成：" + fleet.summary,
                 Toast.LENGTH_LONG).show();
-    }
-
-    private static final class FleetCheckResult {
-        final String state;
-        final boolean revoked;
-
-        FleetCheckResult(String state, boolean revoked) {
-            this.state = state;
-            this.revoked = revoked;
-        }
-
-        static FleetCheckResult reachable(String state) {
-            return new FleetCheckResult(state, false);
-        }
-
-        static FleetCheckResult offline() {
-            return new FleetCheckResult(OperationsWatchHistory.STATE_OFFLINE, false);
-        }
-
-        static FleetCheckResult revoked() {
-            return new FleetCheckResult(OperationsWatchHistory.STATE_REVOKED, true);
-        }
     }
 
     private String operationsProfileLabel(
@@ -3757,16 +3687,26 @@ public class OperationsActivity extends AppCompatActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        acceptOperationsDestination(intent);
+        boolean targetChanged = acceptOperationsDestination(intent);
+        if (targetChanged) {
+            resetOperationsClientsForProfileChange();
+            OperationsWatchService.restartForProfileChange(this);
+            openExistingProfile();
+            return;
+        }
         if (client != null && preferences.hasOperationsProfile()) {
             openPendingOperationsDestination();
         }
     }
 
-    private void acceptOperationsDestination(Intent intent) {
+    private boolean acceptOperationsDestination(Intent intent) {
         if (intent == null) {
-            return;
+            return false;
         }
+        String requestedHostId = intent.getStringExtra(EXTRA_SELECT_HOST_ID);
+        boolean targetChanged = OperationsRelayPolicy.isSafeIdentifier(requestedHostId)
+                && !requestedHostId.equals(preferences.getOperationsHostId())
+                && preferences.selectOperationsProfile(requestedHostId);
         String requestedDestination = intent.getStringExtra(EXTRA_OPEN_DESTINATION);
         String destination = OperationsDestinationState.TOOLS.equals(requestedDestination)
                 || OperationsDestinationState.OVERVIEW.equals(requestedDestination)
@@ -3777,6 +3717,7 @@ public class OperationsActivity extends AppCompatActivity {
         boolean requestedReturnToSettings = intent.getBooleanExtra(
                 EXTRA_RETURN_TO_SETTINGS, false);
         intent.removeExtra(EXTRA_OPEN_DESTINATION);
+        intent.removeExtra(EXTRA_SELECT_HOST_ID);
         intent.removeExtra(EXTRA_RETURN_TO_SETTINGS);
         if (!destination.isEmpty()) {
             pendingOperationsDestination = destination;
@@ -3785,6 +3726,7 @@ public class OperationsActivity extends AppCompatActivity {
                     ? OperationsDestinationState.SETTINGS
                     : OperationsDestinationState.OVERVIEW;
         }
+        return targetChanged;
     }
 
     private void runConnectionHeartbeat() {
@@ -3981,7 +3923,7 @@ public class OperationsActivity extends AppCompatActivity {
         clearRemoteWindowSnapshotSecrets(revokedHostId);
         preferences.markOperationsProfileRevoked(revokedHostId);
         refreshOperationsTargetPresentation();
-        OperationsWatchService.stopForProfileRemoval(this);
+        OperationsWatchService.stopForProfileRemoval(this, revokedHostId);
         showError("配对授权已失效", "这台电脑已撤销设备授权；其他已配对电脑不会受影响。",
                 () -> removeOperationsProfile(revokedHostId));
     }
@@ -7542,7 +7484,7 @@ public class OperationsActivity extends AppCompatActivity {
     private void removeOperationsProfile(String hostId) {
         leaveSupportCenter();
         leaveLiveMonitor();
-        OperationsWatchService.stopForProfileRemoval(this);
+        OperationsWatchService.stopForProfileRemoval(this, hostId);
         resetOperationsClientsForProfileChange();
         setDashboardVisible(false);
         clearRemoteWindowSnapshotSecrets(hostId);

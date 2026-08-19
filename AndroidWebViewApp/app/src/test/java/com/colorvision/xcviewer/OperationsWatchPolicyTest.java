@@ -108,12 +108,17 @@ public class OperationsWatchPolicyTest {
                 OperationsWatchPolicy.attentionDestination(OperationsWatchPolicy.ATTENTION_ERRORS));
         assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK,
                 OperationsWatchPolicy.attentionDestination(OperationsWatchPolicy.ATTENTION_OFFLINE));
+        assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTIONS,
+                OperationsWatchPolicy.attentionDestination(OperationsWatchPolicy.ATTENTION_REVOKED));
         assertEquals("", OperationsWatchPolicy.attentionDestination("unknown"));
 
         assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
                 OperationsWatchPolicy.normalizeDestination(OperationsWatchPolicy.DESTINATION_TRIAGE));
         assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK,
                 OperationsWatchPolicy.normalizeDestination(OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK));
+        assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTIONS,
+                OperationsWatchPolicy.normalizeDestination(
+                        OperationsWatchPolicy.DESTINATION_CONNECTIONS));
         assertEquals("", OperationsWatchPolicy.normalizeDestination("/ops/v1/audit"));
         assertEquals("", OperationsWatchPolicy.normalizeDestination(null));
     }

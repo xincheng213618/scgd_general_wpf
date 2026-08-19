@@ -192,6 +192,12 @@ final class AppPreferences {
         }
     }
 
+    int getUsableOperationsProfileCount() {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            return readOperationsProfiles().usableCount();
+        }
+    }
+
     List<OperationsProfileRegistry.Profile> getOperationsProfiles() {
         synchronized (OPERATIONS_PROFILE_LOCK) {
             return readOperationsProfiles().profiles;

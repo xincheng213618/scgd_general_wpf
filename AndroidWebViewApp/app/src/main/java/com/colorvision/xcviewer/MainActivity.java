@@ -531,7 +531,8 @@ public class MainActivity extends AppCompatActivity {
                 OperationsWatchPreferencePolicy.status(
                         paired,
                         appPreferences.isOperationsWatchUserEnabled(),
-                        operationsRemindersAvailable()),
+                        operationsRemindersAvailable(),
+                        appPreferences.getUsableOperationsProfileCount()),
                 "",
                 notificationPermissionStatus(),
                 getThemeModeLabel(),
@@ -557,7 +558,8 @@ public class MainActivity extends AppCompatActivity {
                         return OperationsWatchPreferencePolicy.status(
                                 appPreferences.hasOperationsProfile(),
                                 enabled,
-                                operationsRemindersAvailable());
+                                operationsRemindersAvailable(),
+                                appPreferences.getUsableOperationsProfileCount());
                     }
 
                     @Override
@@ -610,7 +612,9 @@ public class MainActivity extends AppCompatActivity {
             boolean remindersAvailable = operationsRemindersAvailable();
             showOperationsWatchFeedback(
                     OperationsWatchPreferencePolicy.enabledFeedback(
-                            hasOperationsProfile, remindersAvailable),
+                            hasOperationsProfile,
+                            remindersAvailable,
+                            appPreferences.getUsableOperationsProfileCount()),
                     OperationsWatchPreferencePolicy.shouldOfferReminderAction(
                             hasOperationsProfile, remindersAvailable));
         } else {

@@ -14,7 +14,10 @@ final class OperationsTargetPolicy {
         return "操作目标：" + displayLabel(label) + "\n\n" + body;
     }
 
-    static String watchNotificationTitle(String label) {
+    static String watchNotificationTitle(String label, int usableProfileCount) {
+        if (usableProfileCount > 1) {
+            return "ColorVision · 守护 " + usableProfileCount + " 台电脑";
+        }
         return "ColorVision · " + displayLabel(label);
     }
 
