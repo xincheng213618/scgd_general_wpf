@@ -119,6 +119,14 @@ final class OperationsInPageNavigationPolicy {
                 && OperationsDestinationState.SETTINGS.equals(to)) {
             return AppScreenMotion.DIRECTION_BACKWARD;
         }
+        if (detailOpenedFromSettings
+                && OperationsDestinationState.SETTINGS.equals(from)) {
+            return AppScreenMotion.DIRECTION_FORWARD;
+        }
+        int topLevelDirection = topLevelMotionDirection(from, to);
+        if (topLevelDirection != AppScreenMotion.DIRECTION_NONE) {
+            return topLevelDirection;
+        }
         if (OperationsDestinationState.SETTINGS.equals(to)) {
             return AppScreenMotion.DIRECTION_FORWARD;
         }
@@ -140,6 +148,30 @@ final class OperationsInPageNavigationPolicy {
             return AppScreenMotion.DIRECTION_FORWARD;
         }
         return AppScreenMotion.DIRECTION_NONE;
+    }
+
+    private static int topLevelMotionDirection(String from, String to) {
+        int fromIndex = topLevelIndex(from);
+        int toIndex = topLevelIndex(to);
+        if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) {
+            return AppScreenMotion.DIRECTION_NONE;
+        }
+        return fromIndex < toIndex
+                ? AppScreenMotion.DIRECTION_FORWARD
+                : AppScreenMotion.DIRECTION_BACKWARD;
+    }
+
+    private static int topLevelIndex(String destination) {
+        if (OperationsDestinationState.OVERVIEW.equals(destination)) {
+            return 0;
+        }
+        if (OperationsDestinationState.TRIAGE.equals(destination)) {
+            return 1;
+        }
+        if (OperationsDestinationState.TOOLS.equals(destination)) {
+            return 2;
+        }
+        return OperationsDestinationState.SETTINGS.equals(destination) ? 3 : -1;
     }
 
     static boolean shouldReturnToOverview(

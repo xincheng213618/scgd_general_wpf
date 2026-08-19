@@ -74,6 +74,10 @@ public class OperationsActivity extends AppCompatActivity {
     private static final String STATE_RETURN_TO_TRIAGE = "operations_return_to_triage";
     private static final String STATE_RETURN_TO_TOOLBOX = "operations_return_to_toolbox";
     private static final String STATE_RETURN_TO_SETTINGS = "operations_return_to_settings";
+    private static final String STATE_SCROLL_OVERVIEW = "operations_scroll_overview";
+    private static final String STATE_SCROLL_PROBLEMS = "operations_scroll_problems";
+    private static final String STATE_SCROLL_TOOLS = "operations_scroll_tools";
+    private static final String STATE_SCROLL_SETTINGS = "operations_scroll_settings";
     private static final int REQUEST_QR_SCAN = 2406;
     private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
     private static final long CONNECTION_HEARTBEAT_MILLISECONDS = 30_000L;
@@ -98,6 +102,7 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean activityResumed;
     private int liveMonitorGeneration;
     private final OperationsLiveMonitorTrend liveMonitorTrend = new OperationsLiveMonitorTrend();
+    private final OperationsTopLevelState topLevelState = new OperationsTopLevelState();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final ExecutorService fleetExecutor = Executors.newFixedThreadPool(3);
     private final Handler supportRefreshHandler = new Handler(Looper.getMainLooper());
@@ -185,6 +190,7 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean returnToToolboxOnBack;
     private boolean returnToSettingsOnBack;
     private boolean updatingBottomNavigation;
+    private boolean updatingTopLevelScroll;
     private boolean settingsConnectionInFlight;
     private NotificationSettingsController notificationSettingsController;
     private AndroidUpdateController androidUpdateController;
@@ -230,6 +236,16 @@ public class OperationsActivity extends AppCompatActivity {
         returnToSettingsOnBack = restoring
                 ? savedInstanceState.getBoolean(STATE_RETURN_TO_SETTINGS, false)
                 : returnToSettingsOnBack;
+        if (restoring) {
+            topLevelState.rememberScroll(OperationsDestinationState.OVERVIEW,
+                    savedInstanceState.getInt(STATE_SCROLL_OVERVIEW, 0));
+            topLevelState.rememberScroll(OperationsDestinationState.TRIAGE,
+                    savedInstanceState.getInt(STATE_SCROLL_PROBLEMS, 0));
+            topLevelState.rememberScroll(OperationsDestinationState.TOOLS,
+                    savedInstanceState.getInt(STATE_SCROLL_TOOLS, 0));
+            topLevelState.rememberScroll(OperationsDestinationState.SETTINGS,
+                    savedInstanceState.getInt(STATE_SCROLL_SETTINGS, 0));
+        }
         if (OperationsDestinationState.shouldRestore(restoredDestination)) {
             pendingRestoredDestination = restoredDestination;
         }
@@ -276,6 +292,11 @@ public class OperationsActivity extends AppCompatActivity {
         ScrollView scroll = new ScrollView(this);
         dashboardScroll = scroll;
         scroll.setFillViewport(true);
+        scroll.setOnScrollChangeListener((view, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            if (!updatingTopLevelScroll) {
+                topLevelState.rememberScroll(currentDestination, scrollY);
+            }
+        });
         LinearLayout root = new LinearLayout(this);
         dashboardContent = root;
         root.setOrientation(LinearLayout.VERTICAL);
@@ -508,8 +529,12 @@ public class OperationsActivity extends AppCompatActivity {
         });
         navigation.setOnItemReselectedListener(item -> {
             if (item.getItemId() == NAV_OPERATIONS) {
-                returnToOperationsOverview();
+                topLevelState.resetScroll(OperationsDestinationState.OVERVIEW);
+                if (!returnToOperationsOverview()) {
+                    scrollDashboardToTop();
+                }
             } else if (item.getItemId() == NAV_PROBLEMS) {
+                topLevelState.resetScroll(OperationsDestinationState.TRIAGE);
                 if (OperationsDestinationState.TRIAGE.equals(currentDestination)
                         && !returnToTriageOnBack) {
                     scrollDashboardToTop();
@@ -517,12 +542,14 @@ public class OperationsActivity extends AppCompatActivity {
                     showProblemCenter();
                 }
             } else if (item.getItemId() == NAV_TOOLS) {
+                topLevelState.resetScroll(OperationsDestinationState.TOOLS);
                 if (OperationsDestinationState.TOOLS.equals(currentDestination)) {
                     scrollDashboardToTop();
                 } else {
                     showOperationsToolboxPage();
                 }
             } else if (item.getItemId() == NAV_SETTINGS) {
+                topLevelState.resetScroll(OperationsDestinationState.SETTINGS);
                 if (OperationsDestinationState.SETTINGS.equals(currentDestination)) {
                     if (settingsScroll != null) {
                         settingsScroll.smoothScrollTo(0, 0);
@@ -800,7 +827,8 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void rebuildSettingsPage(boolean preserveScroll) {
         int scrollY = preserveScroll && settingsScroll != null
-                ? settingsScroll.getScrollY() : 0;
+                ? settingsScroll.getScrollY()
+                : topLevelState.scrollY(OperationsDestinationState.SETTINGS);
         if (settingsScroll != null) {
             contentHost.removeView(settingsScroll);
         }
@@ -847,15 +875,20 @@ public class OperationsActivity extends AppCompatActivity {
                     }
 
                 });
+        settingsScroll.setOnScrollChangeListener(
+                (view, scrollX, updatedScrollY, oldScrollX, oldScrollY) -> {
+                    if (!updatingTopLevelScroll) {
+                        topLevelState.rememberScroll(
+                                OperationsDestinationState.SETTINGS, updatedScrollY);
+                    }
+                });
         settingsScroll.setVisibility(
                 OperationsDestinationState.SETTINGS.equals(currentDestination)
                         ? View.VISIBLE : View.GONE);
         contentHost.addView(settingsScroll, 1, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
-        if (scrollY > 0) {
-            settingsScroll.post(() -> settingsScroll.scrollTo(0, scrollY));
-        }
+        restoreTopLevelScroll(OperationsDestinationState.SETTINGS, scrollY);
     }
 
     private SettingsPageContent.ViewModel settingsViewModel() {
@@ -1870,6 +1903,7 @@ public class OperationsActivity extends AppCompatActivity {
         refreshDetailsCardVisibility();
         syncBottomNavigation();
         refreshOperationsHeaderNavigation();
+        restoreTopLevelScroll(normalized);
     }
 
     private void setDashboardVisible(boolean visible) {
@@ -4252,7 +4286,56 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void scrollDashboardToTop() {
         if (dashboardScroll != null) {
-            dashboardScroll.post(() -> dashboardScroll.scrollTo(0, 0));
+            dashboardScroll.post(() -> scrollWithoutRemembering(dashboardScroll, 0));
+        }
+    }
+
+    private void restoreTopLevelScroll(String destination) {
+        restoreTopLevelScroll(destination, topLevelState.scrollY(destination));
+    }
+
+    private void restoreTopLevelScroll(String destination, int scrollY) {
+        String normalized = OperationsDestinationState.normalize(destination);
+        if (OperationsDestinationState.SETTINGS.equals(normalized)) {
+            if (settingsScroll != null) {
+                settingsScroll.post(() -> {
+                    if (OperationsDestinationState.SETTINGS.equals(currentDestination)) {
+                        scrollWithoutRemembering(settingsScroll, scrollY);
+                    }
+                });
+            }
+            return;
+        }
+        if (OperationsTopLevelState.isDashboardTopLevel(normalized)
+                && dashboardScroll != null) {
+            dashboardScroll.post(() -> {
+                if (normalized.equals(currentDestination)) {
+                    scrollWithoutRemembering(dashboardScroll, scrollY);
+                }
+            });
+        }
+    }
+
+    private void scrollWithoutRemembering(ScrollView scrollView, int scrollY) {
+        updatingTopLevelScroll = true;
+        try {
+            scrollView.scrollTo(0, Math.max(0, scrollY));
+        } finally {
+            updatingTopLevelScroll = false;
+        }
+    }
+
+    private void rememberVisibleTopLevelScroll() {
+        if (OperationsDestinationState.SETTINGS.equals(currentDestination)) {
+            if (settingsScroll != null) {
+                topLevelState.rememberScroll(
+                        OperationsDestinationState.SETTINGS, settingsScroll.getScrollY());
+            }
+            return;
+        }
+        if (OperationsTopLevelState.isDashboardTopLevel(currentDestination)
+                && dashboardScroll != null) {
+            topLevelState.rememberScroll(currentDestination, dashboardScroll.getScrollY());
         }
     }
 
@@ -4620,6 +4703,7 @@ public class OperationsActivity extends AppCompatActivity {
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
+        restoreTopLevelScroll(OperationsDestinationState.TRIAGE);
     }
 
     private void refreshRemoteProblemCenter() {
@@ -4725,6 +4809,7 @@ public class OperationsActivity extends AppCompatActivity {
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
+        restoreTopLevelScroll(OperationsDestinationState.TRIAGE);
     }
 
     private void showLiveMonitorFromTriage() {
@@ -7296,11 +7381,20 @@ public class OperationsActivity extends AppCompatActivity {
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
+        rememberVisibleTopLevelScroll();
         outState.putString(STATE_DESTINATION,
                 OperationsDestinationState.normalize(currentDestination));
         outState.putBoolean(STATE_RETURN_TO_TRIAGE, returnToTriageOnBack);
         outState.putBoolean(STATE_RETURN_TO_TOOLBOX, returnToToolboxOnBack);
         outState.putBoolean(STATE_RETURN_TO_SETTINGS, returnToSettingsOnBack);
+        outState.putInt(STATE_SCROLL_OVERVIEW,
+                topLevelState.scrollY(OperationsDestinationState.OVERVIEW));
+        outState.putInt(STATE_SCROLL_PROBLEMS,
+                topLevelState.scrollY(OperationsDestinationState.TRIAGE));
+        outState.putInt(STATE_SCROLL_TOOLS,
+                topLevelState.scrollY(OperationsDestinationState.TOOLS));
+        outState.putInt(STATE_SCROLL_SETTINGS,
+                topLevelState.scrollY(OperationsDestinationState.SETTINGS));
         super.onSaveInstanceState(outState);
     }
 

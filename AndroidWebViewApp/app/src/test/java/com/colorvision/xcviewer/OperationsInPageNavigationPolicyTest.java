@@ -131,6 +131,15 @@ public class OperationsInPageNavigationPolicyTest {
         assertEquals(AppScreenMotion.DIRECTION_FORWARD,
                 motion(OperationsDestinationState.TOOLS,
                         OperationsDestinationState.SETTINGS, false, false));
+        assertEquals(AppScreenMotion.DIRECTION_FORWARD,
+                motion(OperationsDestinationState.TRIAGE,
+                        OperationsDestinationState.TOOLS, false, false));
+        assertEquals(AppScreenMotion.DIRECTION_BACKWARD,
+                motion(OperationsDestinationState.TOOLS,
+                        OperationsDestinationState.TRIAGE, false, false));
+        assertEquals(AppScreenMotion.DIRECTION_FORWARD,
+                motion(OperationsDestinationState.OVERVIEW,
+                        OperationsDestinationState.SETTINGS, false, false));
         assertEquals(AppScreenMotion.DIRECTION_BACKWARD,
                 motion(OperationsDestinationState.SETTINGS,
                         OperationsDestinationState.TRIAGE, false, false));
@@ -138,6 +147,13 @@ public class OperationsInPageNavigationPolicyTest {
                 OperationsInPageNavigationPolicy.motionDirection(
                         OperationsDestinationState.CONNECTIONS,
                         OperationsDestinationState.SETTINGS,
+                        false,
+                        false,
+                        true));
+        assertEquals(AppScreenMotion.DIRECTION_FORWARD,
+                OperationsInPageNavigationPolicy.motionDirection(
+                        OperationsDestinationState.SETTINGS,
+                        OperationsDestinationState.CONNECTIONS,
                         false,
                         false,
                         true));
