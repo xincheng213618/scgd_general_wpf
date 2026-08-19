@@ -5,6 +5,34 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotWorkspaceReviewRequestTests
 {
     [Fact]
+    public void PersistedReviewTargetsAreDetachedFromCallers()
+    {
+        var source = new CopilotWorkspaceReviewTargetContext
+        {
+            Target = CopilotWorkspaceReviewTarget.BaseBranch,
+            Revision = "origin/develop",
+        };
+        var message = new CopilotChatMessage(CopilotChatRole.User, "Review the branch")
+        {
+            RequestMode = CopilotAgentMode.Review,
+            WorkspaceReviewTarget = source,
+        };
+        var conversation = CopilotConversationRecord.CreateEmpty(string.Empty, string.Empty);
+        conversation.DraftWorkspaceReviewTarget = source;
+
+        source.Revision = "changed-source";
+        var messageSnapshot = message.WorkspaceReviewTarget!;
+        var draftSnapshot = conversation.DraftWorkspaceReviewTarget!;
+        messageSnapshot.Revision = "changed-message-snapshot";
+        draftSnapshot.Revision = "changed-draft-snapshot";
+
+        Assert.Equal("origin/develop", message.WorkspaceReviewTarget?.Revision);
+        Assert.Equal("origin/develop", conversation.DraftWorkspaceReviewTarget?.Revision);
+        Assert.NotSame(messageSnapshot, message.WorkspaceReviewTarget);
+        Assert.NotSame(draftSnapshot, conversation.DraftWorkspaceReviewTarget);
+    }
+
+    [Fact]
     public void PlainFocusKeepsWorkingTreeReviewCompatibility()
     {
         Assert.True(CopilotWorkspaceReviewRequest.TryParse(

@@ -624,6 +624,41 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
+    public void PersistedSkillReferencesAreDetachedFromCallers()
+    {
+        var skillDirectory = CreateTemporaryDirectory();
+        try
+        {
+            var source = new CopilotAgentSkillReference
+            {
+                Name = "shared-skill",
+                SkillFilePath = Path.Combine(skillDirectory, "SKILL.md"),
+            };
+            var message = new CopilotChatMessage(CopilotChatRole.User, "$shared-skill inspect this")
+            {
+                AgentSkillReference = source,
+            };
+            var conversation = CopilotConversationRecord.CreateEmpty(string.Empty, string.Empty);
+            conversation.DraftAgentSkillReference = source;
+
+            source.Name = "changed-source";
+            var messageSnapshot = message.AgentSkillReference!;
+            var draftSnapshot = conversation.DraftAgentSkillReference!;
+            messageSnapshot.Name = "changed-message-snapshot";
+            draftSnapshot.Name = "changed-draft-snapshot";
+
+            Assert.Equal("shared-skill", message.AgentSkillReference?.Name);
+            Assert.Equal("shared-skill", conversation.DraftAgentSkillReference?.Name);
+            Assert.NotSame(messageSnapshot, message.AgentSkillReference);
+            Assert.NotSame(draftSnapshot, conversation.DraftAgentSkillReference);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(skillDirectory);
+        }
+    }
+
+    [Fact]
     public void RequestFactorySnapshotsOnlyAnExplicitlyInvokedSkillReference()
     {
         var skillDirectory = CreateTemporaryDirectory();

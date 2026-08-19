@@ -67,11 +67,21 @@ namespace ColorVision.Copilot
                 : string.Empty;
         }
 
-        public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; set; }
+        public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget
+        {
+            get => _workspaceReviewTarget?.CreateSnapshot();
+            set => _workspaceReviewTarget = value?.CreateSnapshot();
+        }
+        private CopilotWorkspaceReviewTargetContext? _workspaceReviewTarget;
 
         public bool ShouldSerializeWorkspaceReviewTarget() => WorkspaceReviewTarget != null;
 
-        public CopilotAgentSkillReference? AgentSkillReference { get; set; }
+        public CopilotAgentSkillReference? AgentSkillReference
+        {
+            get => _agentSkillReference?.CreateSnapshot();
+            set => _agentSkillReference = value?.CreateSnapshot();
+        }
+        private CopilotAgentSkillReference? _agentSkillReference;
 
         public bool ShouldSerializeAgentSkillReference() => AgentSkillReference != null;
 

@@ -100,8 +100,8 @@ namespace ColorVision.Copilot
 
         public CopilotWorkspaceReviewTargetContext? DraftWorkspaceReviewTarget
         {
-            get => _draftWorkspaceReviewTarget;
-            set => SetProperty(ref _draftWorkspaceReviewTarget, value);
+            get => _draftWorkspaceReviewTarget?.CreateSnapshot();
+            set => SetProperty(ref _draftWorkspaceReviewTarget, value?.CreateSnapshot());
         }
         private CopilotWorkspaceReviewTargetContext? _draftWorkspaceReviewTarget;
 
@@ -110,8 +110,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentSkillReference? DraftAgentSkillReference
         {
-            get => _draftAgentSkillReference;
-            set => SetProperty(ref _draftAgentSkillReference, value);
+            get => _draftAgentSkillReference?.CreateSnapshot();
+            set => SetProperty(ref _draftAgentSkillReference, value?.CreateSnapshot());
         }
         private CopilotAgentSkillReference? _draftAgentSkillReference;
 
