@@ -157,7 +157,12 @@ namespace ColorVision.Copilot
 
         public CopilotProfileConfig Profile { get; init; } = null!;
 
-        public IReadOnlyList<CopilotRequestMessage> History { get; init; } = Array.Empty<CopilotRequestMessage>();
+        public IReadOnlyList<CopilotRequestMessage> History
+        {
+            get => _history;
+            init => _history = FreezeList(value);
+        }
+        private readonly IReadOnlyList<CopilotRequestMessage> _history = Array.Empty<CopilotRequestMessage>();
 
         public IReadOnlyList<CopilotAttachmentItem> Attachments
         {
@@ -167,19 +172,24 @@ namespace ColorVision.Copilot
         private readonly IReadOnlyList<CopilotAttachmentItem> _attachments =
             Array.Empty<CopilotAttachmentItem>();
 
-        public IReadOnlyList<CopilotContextItem> ContextItems { get; init; } = Array.Empty<CopilotContextItem>();
+        public IReadOnlyList<CopilotContextItem> ContextItems
+        {
+            get => _contextItems;
+            init => _contextItems = FreezeList(value);
+        }
+        private readonly IReadOnlyList<CopilotContextItem> _contextItems = Array.Empty<CopilotContextItem>();
 
         public IReadOnlyList<string> SearchRootPaths
         {
             get => _searchRootPaths;
-            init => _searchRootPaths = FreezeStrings(value);
+            init => _searchRootPaths = FreezeList(value);
         }
         private readonly IReadOnlyList<string> _searchRootPaths = Array.Empty<string>();
 
         public IReadOnlyList<string> TrustedProjectRootPaths
         {
             get => _trustedProjectRootPaths;
-            init => _trustedProjectRootPaths = FreezeStrings(value);
+            init => _trustedProjectRootPaths = FreezeList(value);
         }
         private readonly IReadOnlyList<string> _trustedProjectRootPaths = Array.Empty<string>();
 
@@ -279,7 +289,13 @@ namespace ColorVision.Copilot
         internal CopilotCodexModelVerbosity CodexModelVerbosity { get; init; } =
             CopilotCodexModelVerbosity.Unspecified;
 
-        public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
+        public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions
+        {
+            get => _projectInstructions;
+            init => _projectInstructions = FreezeList(value);
+        }
+        private readonly IReadOnlyList<CopilotProjectInstructionDocument> _projectInstructions =
+            Array.Empty<CopilotProjectInstructionDocument>();
 
         internal CopilotReviewProjectInstructionContext? ReviewProjectInstructionContext { get; init; }
 
@@ -288,28 +304,28 @@ namespace ColorVision.Copilot
         public IReadOnlyList<string> ReadableLocalFilePaths
         {
             get => _readableLocalFilePaths;
-            init => _readableLocalFilePaths = FreezeStrings(value);
+            init => _readableLocalFilePaths = FreezeList(value);
         }
         private readonly IReadOnlyList<string> _readableLocalFilePaths = Array.Empty<string>();
 
         public IReadOnlyList<string> ReadableLocalDirectoryPaths
         {
             get => _readableLocalDirectoryPaths;
-            init => _readableLocalDirectoryPaths = FreezeStrings(value);
+            init => _readableLocalDirectoryPaths = FreezeList(value);
         }
         private readonly IReadOnlyList<string> _readableLocalDirectoryPaths = Array.Empty<string>();
 
         public IReadOnlyList<string> WritableLocalRootPaths
         {
             get => _writableLocalRootPaths;
-            init => _writableLocalRootPaths = FreezeStrings(value);
+            init => _writableLocalRootPaths = FreezeList(value);
         }
         private readonly IReadOnlyList<string> _writableLocalRootPaths = Array.Empty<string>();
 
         public IReadOnlyList<string> WritableLocalFilePaths
         {
             get => _writableLocalFilePaths;
-            init => _writableLocalFilePaths = FreezeStrings(value);
+            init => _writableLocalFilePaths = FreezeList(value);
         }
         private readonly IReadOnlyList<string> _writableLocalFilePaths = Array.Empty<string>();
 
@@ -376,16 +392,16 @@ namespace ColorVision.Copilot
         internal IReadOnlyList<string> RequiredSuccessfulToolNames
         {
             get => _requiredSuccessfulToolNames;
-            init => _requiredSuccessfulToolNames = FreezeStrings(value);
+            init => _requiredSuccessfulToolNames = FreezeList(value);
         }
         private readonly IReadOnlyList<string> _requiredSuccessfulToolNames = Array.Empty<string>();
 
         internal bool RequiresDelegatedWorkspaceEvidence { get; init; }
 
-        private static IReadOnlyList<string> FreezeStrings(IReadOnlyList<string>? source)
+        private static IReadOnlyList<T> FreezeList<T>(IReadOnlyList<T>? source)
         {
             if (source == null || source.Count == 0)
-                return Array.Empty<string>();
+                return Array.Empty<T>();
             return Array.AsReadOnly(source.ToArray());
         }
 
