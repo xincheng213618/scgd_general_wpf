@@ -16,8 +16,9 @@ public sealed class CopilotTurnCheckpointLifecycleTests
         sourceLedger.Mode = "plan";
         sourceLedger.Items[0].Title = "Rewritten source task";
         var agentEvent = publication.CreateEvent();
-        agentEvent.TaskLedger!.Mode = "plan";
-        agentEvent.TaskLedger.Items[0].Title = "Rewritten observer task";
+        Assert.Throws<InvalidOperationException>(() => agentEvent.TaskLedger!.Mode = "plan");
+        Assert.Throws<InvalidOperationException>(() =>
+            agentEvent.TaskLedger!.Items[0].Title = "Rewritten observer task");
 
         Assert.Equal("execute", publication.TaskLedger.Mode);
         Assert.Equal(

@@ -54,7 +54,8 @@ namespace ColorVision.Copilot
             get => _taskLedger;
             init => _taskLedger = CopilotAgentTaskLedgerSnapshot.CreateSnapshot(value, normalize: false);
         }
-        private CopilotAgentTaskLedgerSnapshot _taskLedger = new();
+        private CopilotAgentTaskLedgerSnapshot _taskLedger =
+            CopilotAgentTaskLedgerSnapshot.CreateSnapshot(source: null, normalize: false);
 
         public CopilotAgentStopReason StopReason { get; init; }
 
@@ -115,11 +116,40 @@ namespace ColorVision.Copilot
     {
         public const int MaxItems = 128;
 
-        public string Mode { get; set; } = string.Empty;
+        public string Mode
+        {
+            get => _mode;
+            set
+            {
+                ThrowIfDetached();
+                _mode = value;
+            }
+        }
+        private string _mode = string.Empty;
 
-        public bool ResumedFromCheckpoint { get; set; }
+        public bool ResumedFromCheckpoint
+        {
+            get => _resumedFromCheckpoint;
+            set
+            {
+                ThrowIfDetached();
+                _resumedFromCheckpoint = value;
+            }
+        }
+        private bool _resumedFromCheckpoint;
 
-        public IReadOnlyList<CopilotAgentTaskItem> Items { get; set; } = Array.Empty<CopilotAgentTaskItem>();
+        public IReadOnlyList<CopilotAgentTaskItem> Items
+        {
+            get => _items;
+            set
+            {
+                ThrowIfDetached();
+                _items = value;
+            }
+        }
+        private IReadOnlyList<CopilotAgentTaskItem> _items = Array.Empty<CopilotAgentTaskItem>();
+
+        private bool _isDetachedSnapshot;
 
         public int TotalCount => Items.Count;
 
@@ -152,6 +182,7 @@ namespace ColorVision.Copilot
                 };
                 if (normalize)
                     snapshot.EnsureValid();
+                snapshot.Detach();
                 return snapshot;
             }
             catch
@@ -159,6 +190,7 @@ namespace ColorVision.Copilot
                 var snapshot = new CopilotAgentTaskLedgerSnapshot();
                 if (normalize)
                     snapshot.EnsureValid();
+                snapshot.Detach();
                 return snapshot;
             }
         }
@@ -187,13 +219,16 @@ namespace ColorVision.Copilot
 
         public bool EnsureValid()
         {
-            var originalMode = Mode;
-            var originalItems = Items;
-            Mode = string.Equals(Mode, "plan", StringComparison.OrdinalIgnoreCase) ? "plan" : "execute";
-            var changed = !string.Equals(originalMode, Mode, StringComparison.Ordinal) || originalItems == null;
+            if (_isDetachedSnapshot)
+                return false;
+
+            var originalMode = _mode;
+            var originalItems = _items;
+            _mode = string.Equals(_mode, "plan", StringComparison.OrdinalIgnoreCase) ? "plan" : "execute";
+            var changed = !string.Equals(originalMode, _mode, StringComparison.Ordinal) || originalItems == null;
             var normalizedItems = new List<CopilotAgentTaskItem>();
             var observedIds = new HashSet<int>();
-            foreach (var item in Items ?? Array.Empty<CopilotAgentTaskItem>())
+            foreach (var item in _items ?? Array.Empty<CopilotAgentTaskItem>())
             {
                 if (normalizedItems.Count >= MaxItems)
                 {
@@ -215,8 +250,21 @@ namespace ColorVision.Copilot
                 normalizedItems.Add(item);
             }
 
-            Items = Array.AsReadOnly(normalizedItems.ToArray());
-            return changed || originalItems?.Count != Items.Count;
+            _items = Array.AsReadOnly(normalizedItems.ToArray());
+            return changed || originalItems?.Count != _items.Count;
+        }
+
+        private void Detach()
+        {
+            foreach (var item in _items)
+                item?.Detach();
+            _isDetachedSnapshot = true;
+        }
+
+        private void ThrowIfDetached()
+        {
+            if (_isDetachedSnapshot)
+                throw new InvalidOperationException("A detached Agent task ledger snapshot cannot be modified.");
         }
 
     }
@@ -226,25 +274,73 @@ namespace ColorVision.Copilot
         public const int MaxTitleLength = 256;
         public const int MaxDescriptionLength = 2_048;
 
-        public int Id { get; set; }
+        public int Id
+        {
+            get => _id;
+            set
+            {
+                ThrowIfDetached();
+                _id = value;
+            }
+        }
+        private int _id;
 
-        public string Title { get; set; } = string.Empty;
+        public string Title
+        {
+            get => _title;
+            set
+            {
+                ThrowIfDetached();
+                _title = value;
+            }
+        }
+        private string _title = string.Empty;
 
-        public string Description { get; set; } = string.Empty;
+        public string Description
+        {
+            get => _description;
+            set
+            {
+                ThrowIfDetached();
+                _description = value;
+            }
+        }
+        private string _description = string.Empty;
 
-        public bool IsComplete { get; set; }
+        public bool IsComplete
+        {
+            get => _isComplete;
+            set
+            {
+                ThrowIfDetached();
+                _isComplete = value;
+            }
+        }
+        private bool _isComplete;
+        private bool _isDetachedSnapshot;
 
         internal bool Normalize()
         {
-            var originalId = Id;
-            var originalTitle = Title;
-            var originalDescription = Description;
-            Id = Math.Max(0, Id);
-            Title = BoundText(Title, MaxTitleLength);
-            Description = BoundText(Description, MaxDescriptionLength);
-            return originalId != Id
-                || !string.Equals(originalTitle, Title, StringComparison.Ordinal)
-                || !string.Equals(originalDescription, Description, StringComparison.Ordinal);
+            var originalId = _id;
+            var originalTitle = _title;
+            var originalDescription = _description;
+            _id = Math.Max(0, _id);
+            _title = BoundText(_title, MaxTitleLength);
+            _description = BoundText(_description, MaxDescriptionLength);
+            return originalId != _id
+                || !string.Equals(originalTitle, _title, StringComparison.Ordinal)
+                || !string.Equals(originalDescription, _description, StringComparison.Ordinal);
+        }
+
+        internal void Detach()
+        {
+            _isDetachedSnapshot = true;
+        }
+
+        private void ThrowIfDetached()
+        {
+            if (_isDetachedSnapshot)
+                throw new InvalidOperationException("A detached Agent task item snapshot cannot be modified.");
         }
 
         private static string BoundText(string? value, int maximumLength)

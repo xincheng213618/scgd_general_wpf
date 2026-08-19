@@ -385,7 +385,8 @@ namespace ColorVision.Copilot
                     OnAgentTaskStateChanged();
             }
         }
-        private CopilotAgentTaskLedgerSnapshot _agentTaskLedger = new();
+        private CopilotAgentTaskLedgerSnapshot _agentTaskLedger =
+            CopilotAgentTaskLedgerSnapshot.CreateSnapshot(source: null, normalize: true);
 
         public bool ShouldSerializeAgentTaskLedger() => AgentTaskLedger?.TotalCount > 0;
 
