@@ -244,7 +244,7 @@ namespace ColorVision.Copilot
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName("arguments");
-                WriteCanonicalJsonElement(writer, arguments);
+                CopilotCanonicalJson.Write(writer, arguments);
                 writer.WriteString("cursor", input.Cursor ?? string.Empty);
                 WriteNullableInt(writer, "endLine", input.EndLine);
                 writer.WriteString("path", input.Path ?? string.Empty);
@@ -294,33 +294,6 @@ namespace ColorVision.Copilot
                 writer.WriteNullValue();
         }
 
-        private static void WriteCanonicalJsonElement(Utf8JsonWriter writer, JsonElement value)
-        {
-            switch (value.ValueKind)
-            {
-                case JsonValueKind.Object:
-                    writer.WriteStartObject();
-                    foreach (var property in value.EnumerateObject().OrderBy(item => item.Name, StringComparer.Ordinal))
-                    {
-                        writer.WritePropertyName(property.Name);
-                        WriteCanonicalJsonElement(writer, property.Value);
-                    }
-                    writer.WriteEndObject();
-                    return;
-                case JsonValueKind.Array:
-                    writer.WriteStartArray();
-                    foreach (var item in value.EnumerateArray())
-                        WriteCanonicalJsonElement(writer, item);
-                    writer.WriteEndArray();
-                    return;
-                case JsonValueKind.Undefined:
-                    writer.WriteNullValue();
-                    return;
-                default:
-                    value.WriteTo(writer);
-                    return;
-            }
-        }
     }
 
     internal static class CopilotAgentToolInputSnapshot

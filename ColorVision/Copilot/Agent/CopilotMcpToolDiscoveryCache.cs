@@ -200,37 +200,11 @@ namespace ColorVision.Copilot
                 writer.WritePropertyName("tools");
                 writer.WriteStartArray();
                 foreach (var tool in tools.OrderBy(tool => tool.Name, StringComparer.Ordinal))
-                    WriteCanonicalJson(writer, JsonSerializer.SerializeToElement(tool));
+                    CopilotCanonicalJson.Write(writer, JsonSerializer.SerializeToElement(tool));
                 writer.WriteEndArray();
                 writer.WriteEndObject();
             }
             return Convert.ToHexString(SHA256.HashData(buffer.WrittenSpan));
-        }
-
-        private static void WriteCanonicalJson(Utf8JsonWriter writer, JsonElement value)
-        {
-            switch (value.ValueKind)
-            {
-                case JsonValueKind.Object:
-                    writer.WriteStartObject();
-                    foreach (var property in value.EnumerateObject()
-                        .OrderBy(property => property.Name, StringComparer.Ordinal))
-                    {
-                        writer.WritePropertyName(property.Name);
-                        WriteCanonicalJson(writer, property.Value);
-                    }
-                    writer.WriteEndObject();
-                    break;
-                case JsonValueKind.Array:
-                    writer.WriteStartArray();
-                    foreach (var item in value.EnumerateArray())
-                        WriteCanonicalJson(writer, item);
-                    writer.WriteEndArray();
-                    break;
-                default:
-                    value.WriteTo(writer);
-                    break;
-            }
         }
 
         private static Tool[] CreateToolSnapshots(IEnumerable<Tool> tools)

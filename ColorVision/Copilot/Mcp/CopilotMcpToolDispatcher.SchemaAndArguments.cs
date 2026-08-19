@@ -210,41 +210,13 @@ namespace ColorVision.Copilot.Mcp
                     foreach (var pair in arguments.OrderBy(item => item.Key, StringComparer.Ordinal))
                     {
                         writer.WritePropertyName(pair.Key);
-                        WriteCanonicalJsonElement(writer, pair.Value);
+                        CopilotCanonicalJson.Write(writer, pair.Value);
                     }
                 }
                 writer.WriteEndObject();
             }
 
             return Encoding.UTF8.GetString(stream.ToArray());
-        }
-
-        private static void WriteCanonicalJsonElement(Utf8JsonWriter writer, JsonElement value)
-        {
-            switch (value.ValueKind)
-            {
-                case JsonValueKind.Object:
-                    writer.WriteStartObject();
-                    foreach (var property in value.EnumerateObject().OrderBy(item => item.Name, StringComparer.Ordinal))
-                    {
-                        writer.WritePropertyName(property.Name);
-                        WriteCanonicalJsonElement(writer, property.Value);
-                    }
-                    writer.WriteEndObject();
-                    return;
-                case JsonValueKind.Array:
-                    writer.WriteStartArray();
-                    foreach (var item in value.EnumerateArray())
-                        WriteCanonicalJsonElement(writer, item);
-                    writer.WriteEndArray();
-                    return;
-                case JsonValueKind.Undefined:
-                    writer.WriteNullValue();
-                    return;
-                default:
-                    value.WriteTo(writer);
-                    return;
-            }
         }
 
         private static string GetString(IReadOnlyDictionary<string, JsonElement>? arguments, params string[] names)
