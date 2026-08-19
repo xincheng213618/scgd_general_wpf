@@ -148,9 +148,16 @@ final class OperationsRemoteToolboxPresentation {
                         "查看本机保存的连接与后台守护状态变化",
                         true)));
 
+        List<OperationsToolboxPresentation.Section> immutableSections =
+                Collections.unmodifiableList(sections);
         OperationsToolboxPresentation.ViewModel toolbox =
                 new OperationsToolboxPresentation.ViewModel(
-                        Collections.unmodifiableList(sections));
+                        immutableSections,
+                        OperationsToolboxPresentation.enabledQuickActions(
+                                immutableSections,
+                                OperationsToolboxPresentation.ACTION_FAILURES,
+                                ACTION_RECENT_REMOTE_TASK,
+                                OperationsToolboxPresentation.ACTION_TIMELINE));
         String compactStateLabel = toolbox.enabledActionCount()
                 + " / " + toolbox.actionCount() + " 项可用 · "
                 + (hostFresh ? "电脑签名状态已核验" : "仅显示安全可用项");

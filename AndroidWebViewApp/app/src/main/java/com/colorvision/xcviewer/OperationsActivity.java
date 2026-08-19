@@ -2246,6 +2246,7 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsToolboxPresentation.create();
         state.setText(getString(
                 R.string.operations_toolbox_compact_state,
+                toolbox.quickActionCount(),
                 toolbox.actionCount()));
         details.setText("按任务分组。只读项目可直接打开；恢复、取证和支持动作仍会在执行前确认。");
         actions.removeAllViews();
@@ -2363,6 +2364,15 @@ public class OperationsActivity extends AppCompatActivity {
         returnToTriageOnBack = false;
         returnToToolboxOnBack = true;
         switch (actionId) {
+            case OperationsToolboxPresentation.ACTION_CONNECTION_CHECK:
+                runConnectionSelfCheck();
+                return;
+            case OperationsToolboxPresentation.ACTION_LIVE_MONITOR:
+                showLiveMonitor();
+                return;
+            case OperationsToolboxPresentation.ACTION_DEVICE_HEALTH:
+                showDeviceHealthOverview();
+                return;
             case OperationsToolboxPresentation.ACTION_SERVICES_HEALTH:
                 showToolboxCapabilityDetails(PATH_SERVICE_HEALTH);
                 return;
@@ -5844,7 +5854,8 @@ public class OperationsActivity extends AppCompatActivity {
 
         Button share = dashboardTonalButton("分享脱敏趋势", v -> shareLiveMonitorTrend());
         share.setEnabled(liveMonitorTrend.size() >= 2);
-        Button back = dashboardButton("返回现场运维概览", v -> showDashboard());
+        Button back = dashboardButton(
+                operationsDetailBackLabel(), v -> returnFromOperationsDetail());
         addDashboardTaskGroup(
                 "记录与离开",
                 liveMonitorTrend.size() < 2

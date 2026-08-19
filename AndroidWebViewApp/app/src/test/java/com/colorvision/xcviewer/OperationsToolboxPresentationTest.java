@@ -32,6 +32,15 @@ public class OperationsToolboxPresentationTest {
         }
         assertEquals(17, model.actionCount());
         assertEquals(17, model.enabledActionCount());
+        assertEquals(4, model.quickActionCount());
+        assertEquals(OperationsToolboxPresentation.ACTION_CONNECTION_CHECK,
+                model.quickActions.get(0).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_LIVE_MONITOR,
+                model.quickActions.get(1).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_DEVICE_HEALTH,
+                model.quickActions.get(2).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_RECENT_EVENTS,
+                model.quickActions.get(3).actionId);
         assertTrue(model.hasUniqueActionIds());
     }
 
@@ -69,6 +78,12 @@ public class OperationsToolboxPresentationTest {
 
     @Test
     public void unknownActionsAreNotAvailableToTheActivityDispatcher() {
+        assertTrue(OperationsToolboxPresentation.isSupportedAction(
+                OperationsToolboxPresentation.ACTION_CONNECTION_CHECK));
+        assertTrue(OperationsToolboxPresentation.isSupportedAction(
+                OperationsToolboxPresentation.ACTION_LIVE_MONITOR));
+        assertTrue(OperationsToolboxPresentation.isSupportedAction(
+                OperationsToolboxPresentation.ACTION_DEVICE_HEALTH));
         assertTrue(OperationsToolboxPresentation.isSupportedAction(
                 OperationsToolboxPresentation.ACTION_SERVICES_HEALTH));
         assertTrue(OperationsToolboxPresentation.isSupportedAction(

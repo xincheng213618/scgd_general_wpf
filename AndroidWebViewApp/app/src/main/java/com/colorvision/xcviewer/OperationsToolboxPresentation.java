@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Set;
 
 final class OperationsToolboxPresentation {
+    static final String ACTION_CONNECTION_CHECK = "toolbox.connection.check";
+    static final String ACTION_LIVE_MONITOR = "toolbox.live.monitor";
+    static final String ACTION_DEVICE_HEALTH = "toolbox.devices.health";
     static final String ACTION_SERVICES_HEALTH = "toolbox.services.health";
     static final String ACTION_SHOW_WINDOW = "toolbox.window.show";
     static final String ACTION_MINIMIZE_WINDOW = "toolbox.window.minimize";
@@ -69,11 +72,24 @@ final class OperationsToolboxPresentation {
                         "提交部署确认", "向电脑端提交本次部署结果"),
                 action(ACTION_TIMELINE,
                         "运维时间线", "查看连接与后台守护状态变化")));
-        return new ViewModel(Collections.unmodifiableList(sections));
+        List<Action> quickActions = new ArrayList<>();
+        quickActions.add(action(ACTION_CONNECTION_CHECK,
+                "连接自检", "只读检查网络、安全通道、证书固定与设备签名"));
+        quickActions.add(action(ACTION_LIVE_MONITOR,
+                "持续观察", "每 10 秒读取一次脱敏运行快照，本次最多保留 30 个样本"));
+        quickActions.add(action(ACTION_DEVICE_HEALTH,
+                "设备状态", "查看检测设备类型、可用性与异常原因汇总"));
+        quickActions.add(findAction(sections, ACTION_RECENT_EVENTS));
+        return new ViewModel(
+                Collections.unmodifiableList(sections),
+                Collections.unmodifiableList(quickActions));
     }
 
     static boolean isSupportedAction(String actionId) {
         switch (actionId) {
+            case ACTION_CONNECTION_CHECK:
+            case ACTION_LIVE_MONITOR:
+            case ACTION_DEVICE_HEALTH:
             case ACTION_SERVICES_HEALTH:
             case ACTION_SHOW_WINDOW:
             case ACTION_MINIMIZE_WINDOW:
@@ -107,11 +123,45 @@ final class OperationsToolboxPresentation {
         return new Action(actionId, title, summary);
     }
 
+    static List<Action> enabledQuickActions(
+            List<Section> sections,
+            String... actionIds) {
+        List<Action> quickActions = new ArrayList<>();
+        for (String actionId : actionIds) {
+            Action action = findAction(sections, actionId);
+            if (action != null && action.enabled) {
+                quickActions.add(action);
+            }
+        }
+        return Collections.unmodifiableList(quickActions);
+    }
+
+    private static Action findAction(List<Section> sections, String actionId) {
+        for (Section section : sections) {
+            for (Action action : section.actions) {
+                if (actionId.equals(action.actionId)) {
+                    return action;
+                }
+            }
+        }
+        return null;
+    }
+
     static final class ViewModel {
         final List<Section> sections;
+        final List<Action> quickActions;
 
         ViewModel(List<Section> sections) {
+            this(sections, Collections.emptyList());
+        }
+
+        ViewModel(List<Section> sections, List<Action> quickActions) {
             this.sections = sections;
+            this.quickActions = quickActions;
+        }
+
+        int quickActionCount() {
+            return quickActions.size();
         }
 
         int actionCount() {

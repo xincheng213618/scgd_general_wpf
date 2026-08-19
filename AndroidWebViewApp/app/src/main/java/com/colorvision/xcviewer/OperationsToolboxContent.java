@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -11,6 +12,7 @@ import android.widget.TextView;
 import androidx.core.view.ViewCompat;
 import androidx.core.widget.TextViewCompat;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -29,11 +31,17 @@ final class OperationsToolboxContent {
             OperationsToolboxPresentation.ViewModel model,
             ActionHandler actionHandler,
             SectionHandler sectionHandler) {
+        if (!model.quickActions.isEmpty()) {
+            target.addView(sectionTitle(activity, themeManager, "常用只读"), matchWidth());
+            target.addView(quickActionGrid(
+                    activity, model.quickActions, actionHandler), cardParams(activity));
+        }
+
+        target.addView(sectionTitle(activity, themeManager, "全部工具"), matchWidth());
         List<Chip> shortcutChips = new ArrayList<>();
         ChipGroup shortcutGroup = new ChipGroup(activity);
-        shortcutGroup.setSingleLine(false);
+        shortcutGroup.setSingleLine(true);
         shortcutGroup.setChipSpacingHorizontal(dp(activity, 8));
-        shortcutGroup.setChipSpacingVertical(dp(activity, 4));
         for (OperationsToolboxPresentation.Section section : model.sections) {
             Chip shortcut = new Chip(activity);
             shortcut.setText(section.shortcutLabel());
@@ -43,9 +51,16 @@ final class OperationsToolboxContent {
             shortcutGroup.addView(shortcut);
             shortcutChips.add(shortcut);
         }
+        HorizontalScrollView shortcutScroll = new HorizontalScrollView(activity);
+        shortcutScroll.setHorizontalScrollBarEnabled(false);
+        shortcutScroll.setFillViewport(false);
+        shortcutScroll.setContentDescription("工具分组快捷导航");
+        shortcutScroll.addView(shortcutGroup, new HorizontalScrollView.LayoutParams(
+                HorizontalScrollView.LayoutParams.WRAP_CONTENT,
+                HorizontalScrollView.LayoutParams.WRAP_CONTENT));
         LinearLayout.LayoutParams shortcutParams = matchWidth();
         shortcutParams.setMargins(0, dp(activity, 2), 0, dp(activity, 2));
-        target.addView(shortcutGroup, shortcutParams);
+        target.addView(shortcutScroll, shortcutParams);
 
         List<TextView> sectionHeadings = new ArrayList<>();
         for (OperationsToolboxPresentation.Section section : model.sections) {
@@ -60,6 +75,52 @@ final class OperationsToolboxContent {
             shortcutChips.get(index).setOnClickListener(
                     view -> sectionHandler.onSection(heading));
         }
+    }
+
+    private static View quickActionGrid(
+            Activity activity,
+            List<OperationsToolboxPresentation.Action> actions,
+            ActionHandler actionHandler) {
+        LinearLayout grid = new LinearLayout(activity);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        for (int index = 0; index < actions.size(); index += 2) {
+            LinearLayout row = new LinearLayout(activity);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.addView(quickActionButton(
+                    activity, actions.get(index), actionHandler), weightedButtonParams());
+            if (index + 1 < actions.size()) {
+                LinearLayout.LayoutParams secondParams = weightedButtonParams();
+                secondParams.setMargins(dp(activity, 8), 0, 0, 0);
+                row.addView(quickActionButton(
+                        activity, actions.get(index + 1), actionHandler), secondParams);
+            } else {
+                View spacer = new View(activity);
+                LinearLayout.LayoutParams spacerParams = weightedButtonParams();
+                spacerParams.setMargins(dp(activity, 8), 0, 0, 0);
+                row.addView(spacer, spacerParams);
+            }
+            LinearLayout.LayoutParams rowParams = matchWidth();
+            if (index > 0) {
+                rowParams.setMargins(0, dp(activity, 8), 0, 0);
+            }
+            grid.addView(row, rowParams);
+        }
+        return grid;
+    }
+
+    private static MaterialButton quickActionButton(
+            Activity activity,
+            OperationsToolboxPresentation.Action action,
+            ActionHandler actionHandler) {
+        MaterialButton button = new MaterialButton(
+                activity, null,
+                com.google.android.material.R.attr.materialButtonTonalStyle);
+        button.setText(action.title);
+        button.setMinHeight(dp(activity, 56));
+        button.setEnabled(action.enabled);
+        button.setContentDescription(action.accessibilityLabel());
+        button.setOnClickListener(view -> actionHandler.onAction(action.actionId));
+        return button;
     }
 
     private static TextView sectionTitle(
@@ -177,6 +238,11 @@ final class OperationsToolboxContent {
         LinearLayout.LayoutParams params = matchWidth();
         params.setMargins(0, 0, 0, dp(activity, 8));
         return params;
+    }
+
+    private static LinearLayout.LayoutParams weightedButtonParams() {
+        return new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
     }
 
     private static int dp(Activity activity, int value) {
