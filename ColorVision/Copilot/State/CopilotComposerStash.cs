@@ -64,6 +64,14 @@ namespace ColorVision.Copilot
             };
         }
 
+        internal CopilotComposerStash CreateSnapshot() => Capture(
+            Text,
+            CaretIndex,
+            RequestMode,
+            Attachments,
+            WorkspaceReviewTarget,
+            AgentSkillReference);
+
         internal bool EnsureValid()
         {
             var changed = false;

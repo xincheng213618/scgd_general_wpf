@@ -123,7 +123,7 @@ namespace ColorVision.Copilot
             get => _composerStash;
             set
             {
-                if (SetProperty(ref _composerStash, value))
+                if (SetProperty(ref _composerStash, value?.CreateSnapshot()))
                 {
                     OnPropertyChanged(nameof(HasComposerStash));
                     OnPropertyChanged(nameof(ConversationListPreviewText));
