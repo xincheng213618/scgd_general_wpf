@@ -83,6 +83,28 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void PublishedSnapshotCannotRewriteBuilderHistory()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordApprovalDecision(
+            "ProtectedTool",
+            "original-call",
+            "approval-action",
+            approved: true);
+        var published = journal.Snapshot();
+        var approval = Assert.Single(published.Events);
+
+        var relatedIds = Assert.IsAssignableFrom<IList<string>>(approval.RelatedIds);
+        Assert.Throws<NotSupportedException>(() =>
+            relatedIds[0] = CopilotAgentTaskEventIds.ForCall("rewritten-call"));
+
+        var next = journal.Snapshot();
+        Assert.True(CopilotAgentTaskEventJournal.AreEquivalent(published, next));
+        Assert.NotSame(published.Events[0], next.Events[0]);
+        Assert.NotSame(published.Events[0].RelatedIds, next.Events[0].RelatedIds);
+    }
+
+    [Fact]
     public void SessionResetRecoveryRetainsTheLatestStateOfEveryAttemptedToolCall()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();

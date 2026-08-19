@@ -60,6 +60,37 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
+    public void CreateFreezesPersistedTaskEventJournal()
+    {
+        var occurredAtUtc = DateTimeOffset.UtcNow;
+        var originalRunId = CopilotAgentTaskEventIds.CreateRunId();
+        var originalEvent = CreateEvent(1, originalRunId, occurredAtUtc);
+        var sourceEvents = new[] { originalEvent };
+        var source = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = sourceEvents,
+        };
+
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            CreateOpenAiProfile(CopilotVendorType.OpenAI, "https://example.test/v1"),
+            "{}",
+            CopilotCapabilityCatalog.Shared.GetSnapshot(),
+            taskEventJournal: source);
+
+        Assert.NotNull(checkpoint);
+        Assert.NotSame(source, checkpoint.TaskEventJournal);
+        Assert.NotSame(originalEvent, Assert.Single(checkpoint.TaskEventJournal.Events));
+        sourceEvents[0] = CreateEvent(
+            1,
+            CopilotAgentTaskEventIds.CreateRunId(),
+            occurredAtUtc.AddSeconds(1));
+        Assert.Equal(originalRunId, Assert.Single(checkpoint.TaskEventJournal.Events).RunId);
+        var persistedEvents = Assert.IsAssignableFrom<IList<CopilotAgentTaskEvent>>(
+            checkpoint.TaskEventJournal.Events);
+        Assert.Throws<NotSupportedException>(() => persistedEvents[0] = sourceEvents[0]);
+    }
+
+    [Fact]
     public void PersistedCheckpointWithInvalidEvidenceArtifactIsRejected()
     {
         var checkpoint = JsonConvert.DeserializeObject<CopilotAgentSessionCheckpoint>(

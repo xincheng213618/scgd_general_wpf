@@ -370,7 +370,9 @@ namespace ColorVision.Copilot
                 return null;
             }
             taskEventJournal ??= new CopilotAgentTaskEventJournalSnapshot();
-            if (!taskEventJournal.IsStructurallyValid())
+            if (!CopilotAgentTaskEventJournal.TryCreateSnapshot(
+                    taskEventJournal,
+                    out var persistedTaskEventJournal))
                 return null;
             var persistedToolNames = (availableToolNames ?? Array.Empty<string>())
                 .Where(name => !string.IsNullOrWhiteSpace(name))
@@ -425,7 +427,7 @@ namespace ColorVision.Copilot
                 EvidenceArtifacts = persistedEvidence,
                 ConversationMemory = persistedConversationMemory,
                 TaskIntentText = persistedTaskIntentText,
-                TaskEventJournal = taskEventJournal,
+                TaskEventJournal = persistedTaskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
             };
             return checkpoint.IsStructurallyValid() ? checkpoint : null;

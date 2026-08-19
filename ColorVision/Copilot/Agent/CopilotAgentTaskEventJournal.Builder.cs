@@ -16,8 +16,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentTaskEventJournalBuilder(CopilotAgentTaskEventJournalSnapshot? previous = null, string? runId = null)
         {
-            if (previous?.IsStructurallyValid() == true)
-                _events.AddRange(previous.Events.TakeLast(CopilotAgentTaskEventJournal.MaxEvents));
+            if (CopilotAgentTaskEventJournal.TryCreateSnapshot(previous, out var previousSnapshot))
+                _events.AddRange(previousSnapshot.Events.TakeLast(CopilotAgentTaskEventJournal.MaxEvents));
             _nextSequence = _events.Count == 0 ? 1 : _events.Max(item => item.Sequence) + 1;
             RunId = CopilotAgentTaskEventIds.IsKey(runId, "run", 32) ? runId! : CopilotAgentTaskEventIds.CreateRunId();
         }
@@ -412,10 +412,13 @@ namespace ColorVision.Copilot
         {
             lock (_syncRoot)
             {
-                return new CopilotAgentTaskEventJournalSnapshot
+                var candidate = new CopilotAgentTaskEventJournalSnapshot
                 {
                     Events = _events.ToArray(),
                 };
+                if (!CopilotAgentTaskEventJournal.TryCreateSnapshot(candidate, out var snapshot))
+                    throw new InvalidOperationException("Agent task event journal could not be frozen safely.");
+                return snapshot;
             }
         }
 

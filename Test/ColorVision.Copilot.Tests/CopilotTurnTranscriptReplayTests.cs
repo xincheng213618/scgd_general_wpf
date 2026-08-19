@@ -49,7 +49,7 @@ public sealed class CopilotTurnTranscriptReplayTests
     }
 
     [Fact]
-    public void TurnRequestPreservesJournalBaselineWithoutARecoveryCheckpoint()
+    public void TurnRequestFreezesJournalBaselineWithoutARecoveryCheckpoint()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
         journal.RecordRunStarted();
@@ -82,7 +82,10 @@ public sealed class CopilotTurnTranscriptReplayTests
             taskEventJournalBaseline: baseline);
 
         Assert.Null(request.SessionCheckpoint);
-        Assert.Same(baseline, request.TaskEventJournalBaseline);
+        Assert.NotSame(baseline, request.TaskEventJournalBaseline);
+        Assert.True(CopilotAgentTaskEventJournal.AreEquivalent(
+            baseline,
+            request.TaskEventJournalBaseline));
     }
 
     [Fact]
