@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ColorVision.Copilot
 {
@@ -12,7 +15,8 @@ namespace ColorVision.Copilot
         int NewSourceCharacters,
         int TotalSourceMessageCount,
         int TotalSourceCharacters,
-        long SourceEstimatedWeight)
+        long SourceEstimatedWeight,
+        string SourceRevision)
     {
         public void EnsureSummaryShrinks(string summary)
         {
@@ -22,6 +26,25 @@ namespace ColorVision.Copilot
             {
                 throw new InvalidOperationException(
                     $"模型返回的摘要没有缩小上下文（摘要估算 {summaryWeight:N0}，被替换内容估算 {SourceEstimatedWeight:N0}）；原有摘要和聊天记录均未改变。请缩小聚焦范围后重试。");
+            }
+        }
+
+        public void EnsureSourceStillCurrent(
+            CopilotConversationRecord conversation)
+        {
+            ArgumentNullException.ThrowIfNull(conversation);
+            var currentRevision =
+                CopilotConversationCompactionPlanner.CreateSourceRevision(
+                    conversation,
+                    BoundaryMessage.Id);
+            if (currentRevision.Length == 0
+                || !string.Equals(
+                    SourceRevision,
+                    currentRevision,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "压缩期间源对话或已有摘要已发生变化，旧摘要未应用；请重试 /compact。");
             }
         }
     }
@@ -122,7 +145,52 @@ namespace ColorVision.Copilot
                 SaturatingAdd(previousMessageCount, lastCompleteTurnCount),
                 SaturatingAdd(previousCharacters, lastCompleteTurnCharacters),
                 sourceMessages.Sum(message =>
-                    (long)CopilotTokenEstimator.EstimateTextWeight(message.Content)));
+                    (long)CopilotTokenEstimator.EstimateTextWeight(message.Content)),
+                CreateSourceRevision(conversation, boundaryMessage.Id));
+        }
+
+        internal static string CreateSourceRevision(
+            CopilotConversationRecord conversation,
+            string boundaryMessageId)
+        {
+            ArgumentNullException.ThrowIfNull(conversation);
+            if (string.IsNullOrWhiteSpace(boundaryMessageId))
+                return string.Empty;
+
+            using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            AppendRevisionField(hash, "copilot-compaction-source-v1");
+            var compaction = ResolveExistingCompaction(conversation, out _);
+            AppendRevisionField(hash, compaction == null ? "none" : "present");
+            if (compaction != null)
+            {
+                AppendRevisionField(hash, compaction.StrategyVersion.ToString(
+                    CultureInfo.InvariantCulture));
+                AppendRevisionField(hash, compaction.Summary);
+                AppendRevisionField(hash, compaction.ThroughMessageId);
+                AppendRevisionField(hash, compaction.CreatedAtUtc.ToString(
+                    "O",
+                    CultureInfo.InvariantCulture));
+                AppendRevisionField(hash, compaction.SourceMessageCount.ToString(
+                    CultureInfo.InvariantCulture));
+                AppendRevisionField(hash, compaction.SourceCharacters.ToString(
+                    CultureInfo.InvariantCulture));
+            }
+
+            foreach (var message in conversation.Messages)
+            {
+                AppendRevisionField(hash, message.Id);
+                AppendRevisionField(hash, message.IsUser ? "user" : "assistant");
+                AppendRevisionField(hash, message.ModelContent);
+                if (string.Equals(
+                        message.Id,
+                        boundaryMessageId,
+                        StringComparison.Ordinal))
+                {
+                    return Convert.ToHexString(hash.GetHashAndReset());
+                }
+            }
+
+            return string.Empty;
         }
 
         private static CopilotConversationCompaction? ResolveExistingCompaction(
@@ -148,5 +216,14 @@ namespace ColorVision.Copilot
 
         private static int SaturatingAdd(int left, int right) =>
             (int)Math.Min(int.MaxValue, (long)Math.Max(0, left) + Math.Max(0, right));
+
+        private static void AppendRevisionField(
+            IncrementalHash hash,
+            string? value)
+        {
+            var bytes = Encoding.UTF8.GetBytes(value ?? string.Empty);
+            hash.AppendData(BitConverter.GetBytes(bytes.Length));
+            hash.AppendData(bytes);
+        }
     }
 }

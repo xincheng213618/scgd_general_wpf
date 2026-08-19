@@ -167,6 +167,107 @@ public sealed class CopilotConversationCompactionIntegrityTests
     }
 
     [Fact]
+    public void CommitGuardRejectsAChangedSourcePrefix()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        var firstRequest = new CopilotChatMessage(
+            CopilotChatRole.User,
+            "Inspect the original source.");
+        conversation.Messages.Add(firstRequest);
+        conversation.Messages.Add(new CopilotChatMessage(
+            CopilotChatRole.Assistant,
+            "Original findings."));
+        conversation.Messages.Add(new CopilotChatMessage(
+            CopilotChatRole.User,
+            "Keep this recent request."));
+        conversation.Messages.Add(new CopilotChatMessage(
+            CopilotChatRole.Assistant,
+            "Keep this recent answer."));
+        var plan = CopilotConversationCompactionPlanner.Create(
+            conversation,
+            new CopilotConversationHistoryLimits(32, 64_000, 32_000),
+            CopilotConversationCompactionPrompt.BuildRequest(string.Empty));
+
+        firstRequest.Content = "The source changed while compaction was running.";
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            plan.EnsureSourceStillCurrent(conversation));
+        Assert.Contains("源对话", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CommitGuardAllowsMessagesAppendedAfterTheBoundary()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(new CopilotChatMessage(
+            CopilotChatRole.User,
+            "Inspect the original source."));
+        conversation.Messages.Add(new CopilotChatMessage(
+            CopilotChatRole.Assistant,
+            "Original findings."));
+        conversation.Messages.Add(new CopilotChatMessage(
+            CopilotChatRole.User,
+            "Keep this recent request."));
+        conversation.Messages.Add(new CopilotChatMessage(
+            CopilotChatRole.Assistant,
+            "Keep this recent answer."));
+        var plan = CopilotConversationCompactionPlanner.Create(
+            conversation,
+            new CopilotConversationHistoryLimits(32, 64_000, 32_000),
+            CopilotConversationCompactionPrompt.BuildRequest(string.Empty));
+
+        conversation.Messages.Add(new CopilotChatMessage(
+            CopilotChatRole.User,
+            "This arrived after the planned boundary."));
+
+        plan.EnsureSourceStillCurrent(conversation);
+    }
+
+    [Fact]
+    public void CommitGuardRejectsAChangedExistingSummary()
+    {
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.Messages.Add(new CopilotChatMessage(
+            CopilotChatRole.User,
+            "Earlier request."));
+        var earlierAnswer = new CopilotChatMessage(
+            CopilotChatRole.Assistant,
+            "Earlier answer.");
+        conversation.Messages.Add(earlierAnswer);
+        conversation.Compaction = new CopilotConversationCompaction
+        {
+            StrategyVersion = CopilotConversationCompaction.CurrentStrategyVersion,
+            Summary = "Original earlier summary.",
+            ThroughMessageId = earlierAnswer.Id,
+            CreatedAtUtc = DateTimeOffset.UtcNow,
+            SourceMessageCount = 2,
+            SourceCharacters = 32,
+        };
+        conversation.Messages.Add(new CopilotChatMessage(
+            CopilotChatRole.User,
+            "Next request."));
+        conversation.Messages.Add(new CopilotChatMessage(
+            CopilotChatRole.Assistant,
+            "Next answer."));
+        conversation.Messages.Add(new CopilotChatMessage(
+            CopilotChatRole.User,
+            "Keep this recent request."));
+        conversation.Messages.Add(new CopilotChatMessage(
+            CopilotChatRole.Assistant,
+            "Keep this recent answer."));
+        var plan = CopilotConversationCompactionPlanner.Create(
+            conversation,
+            new CopilotConversationHistoryLimits(32, 64_000, 32_000),
+            CopilotConversationCompactionPrompt.BuildRequest(string.Empty));
+
+        conversation.Compaction.Summary = "A different summary was committed concurrently.";
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            plan.EnsureSourceStillCurrent(conversation));
+        Assert.Contains("已有摘要", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void InterruptedAgentTurnPreservesBothTerminalMarkers()
     {
         var paused = new CopilotChatMessage(CopilotChatRole.Assistant, "Partial Agent answer.")
