@@ -67,6 +67,12 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void SyncManagedServiceConfigs()
         {
+            MySqlSetting.Instance.MySqlConfig.Host = MySqlServiceConfig.Instance.Host;
+            MySqlSetting.Instance.MySqlConfig.Port = MySqlServiceConfig.Instance.Port;
+            MySqlSetting.Instance.MySqlConfig.UserName = MySqlServiceConfig.Instance.AppUser;
+            MySqlSetting.Instance.MySqlConfig.UserPwd = MySqlServiceConfig.Instance.AppPassword;
+            MySqlSetting.Instance.MySqlConfig.Database = MySqlServiceConfig.Instance.Database;
+
             string baseLocation = ResolveManagedServiceInstallRoot() ?? Config.BaseLocation;
             if (string.IsNullOrWhiteSpace(baseLocation) || !Directory.Exists(baseLocation))
                 return;
@@ -140,38 +146,10 @@ namespace WindowsServicePlugin.ServiceManager
 
         private void UpdateMysqlCfgFile(string configPath)
         {
-            MySqlSetting.Instance.MySqlConfig.Host = MySqlServiceConfig.Instance.Host;
-            MySqlSetting.Instance.MySqlConfig.Port = MySqlServiceConfig.Instance.Port;
-            MySqlSetting.Instance.MySqlConfig.UserName = MySqlServiceConfig.Instance.AppUser;
-            MySqlSetting.Instance.MySqlConfig.UserPwd = MySqlServiceConfig.Instance.AppPassword;
-            MySqlSetting.Instance.MySqlConfig.Database = MySqlServiceConfig.Instance.Database;
-
             if (!File.Exists(configPath)) return;
             try
             {
-                var doc = XDocument.Load(configPath);
-                var settings = doc.Element("configuration")?.Element("appSettings")?.Elements("add");
-                if (settings == null)
-                    throw new InvalidDataException($"MySql.config 缺少 appSettings: {configPath}");
-
-                var mySqlConfig = MySqlSetting.Instance.MySqlConfig;
-                foreach (var setting in settings)
-                {
-                    var key = setting.Attribute("key")?.Value;
-                    if (key == null) continue;
-                    string? value = key switch
-                    {
-                        "Host" => mySqlConfig.Host,
-                        "Port" => mySqlConfig.Port.ToString(),
-                        "User" => mySqlConfig.UserName,
-                        "Password" => mySqlConfig.UserPwd,
-                        "Database" => mySqlConfig.Database,
-                        _ => null
-                    };
-                    if (value != null)
-                        setting.SetAttributeValue("value", value);
-                }
-                doc.Save(configPath);
+                MySqlDatabaseMaintenanceService.UpdateConfigFile(configPath, MySqlSetting.Instance.MySqlConfig);
                 log.Info($"更新 MySQL 配置: {configPath}");
             }
             catch (Exception ex)
