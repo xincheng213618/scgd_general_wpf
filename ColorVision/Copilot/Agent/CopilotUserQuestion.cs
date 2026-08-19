@@ -337,6 +337,11 @@ namespace ColorVision.Copilot
                 var resolved = snapshot.Resolve(CopilotUserQuestionResolution.Answered, answer);
                 terminalResolutionRecorded = true;
                 emit(CopilotAgentEvent.UserQuestionResolved(resolved));
+                if (!await publishCheckpoint(cancellationToken).ConfigureAwait(false))
+                {
+                    throw new InvalidOperationException(
+                        "The structured question answer could not be checkpointed before resuming the Agent.");
+                }
                 return resolved;
             }
             catch

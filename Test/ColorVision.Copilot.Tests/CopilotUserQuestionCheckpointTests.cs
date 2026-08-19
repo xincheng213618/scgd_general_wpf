@@ -72,6 +72,35 @@ public sealed class CopilotUserQuestionCheckpointTests
     }
 
     [Fact]
+    public async Task CoordinatorDoesNotReturnAnswerWhenResolvedCheckpointIsRejected()
+    {
+        var coordinator = new CopilotUserQuestionCoordinator();
+        var events = new List<CopilotAgentEvent>();
+        var checkpointCount = 0;
+        var askTask = coordinator.AskAsync(
+            CreateRequest(),
+            CreateInput(),
+            events.Add,
+            _ => ValueTask.FromResult(Interlocked.Increment(ref checkpointCount) == 1),
+            CancellationToken.None);
+        var requested = Assert.Single(events).UserQuestion!;
+
+        Assert.True(coordinator.TryAnswer(
+            requested.TaskId,
+            requested.RequestId,
+            "Keep the current scope"));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => askTask);
+
+        Assert.Contains("answer could not be checkpointed", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(2, checkpointCount);
+        Assert.False(coordinator.HasPendingQuestion);
+        Assert.Collection(
+            events,
+            item => Assert.Equal(CopilotAgentEventType.UserQuestionRequested, item.Type),
+            item => Assert.Equal(CopilotUserQuestionResolution.Answered, item.UserQuestion!.Resolution));
+    }
+
+    [Fact]
     public async Task AgentRuntimePublishesRequestedQuestionBeforeWaitingForAnswer()
     {
         var chatClient = new QuestionCallingChatClient();
@@ -86,8 +115,13 @@ public sealed class CopilotUserQuestionCheckpointTests
             TaskCreationOptions.RunContinuationsAsynchronously);
         var checkpointed = new TaskCompletionSource<CopilotAgentSessionCheckpoint>(
             TaskCreationOptions.RunContinuationsAsynchronously);
-        var statePersisted = new TaskCompletionSource(
+        var resolvedCheckpointed = new TaskCompletionSource<CopilotAgentSessionCheckpoint>(
             TaskCreationOptions.RunContinuationsAsynchronously);
+        var requestedStatePersisted = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var resolvedStatePersisted = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var checkpointStage = 0;
 
         void Observe(CopilotAgentEvent agentEvent)
         {
@@ -100,19 +134,36 @@ public sealed class CopilotUserQuestionCheckpointTests
             {
                 checkpointed.TrySetResult(agentEvent.SessionCheckpoint);
             }
+            if (agentEvent is { Type: CopilotAgentEventType.CheckpointUpdated, SessionCheckpoint: not null }
+                && agentEvent.SessionCheckpoint.TaskEventJournal.Events.Any(item =>
+                    item.Type == CopilotAgentTaskEventType.UserQuestionResolved
+                    && string.Equals(item.State, CopilotUserQuestionResolution.Answered.ToString(), StringComparison.Ordinal)))
+            {
+                Volatile.Write(ref checkpointStage, 2);
+                resolvedCheckpointed.TrySetResult(agentEvent.SessionCheckpoint);
+            }
+            else if (agentEvent is { Type: CopilotAgentEventType.CheckpointUpdated, SessionCheckpoint: not null }
+                && agentEvent.SessionCheckpoint.TaskEventJournal.Events.Any(item =>
+                    item.Type == CopilotAgentTaskEventType.UserQuestionRequested))
+            {
+                Interlocked.CompareExchange(ref checkpointStage, 1, 0);
+            }
         }
 
         var runTask = runtime.RunAsync(
             CreateRequest(_ =>
             {
-                statePersisted.TrySetResult();
+                if (Volatile.Read(ref checkpointStage) >= 2)
+                    resolvedStatePersisted.TrySetResult();
+                else if (Volatile.Read(ref checkpointStage) == 1)
+                    requestedStatePersisted.TrySetResult();
                 return Task.CompletedTask;
             }),
             Observe,
             CancellationToken.None);
         var pendingQuestion = await requested.Task.WaitAsync(TimeSpan.FromSeconds(10));
         var waitingCheckpoint = await checkpointed.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        await statePersisted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await requestedStatePersisted.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         Assert.False(runTask.IsCompleted);
         Assert.Contains(waitingCheckpoint.TaskEventJournal.Events, item =>
@@ -125,6 +176,8 @@ public sealed class CopilotUserQuestionCheckpointTests
             pendingQuestion.TaskId,
             pendingQuestion.RequestId,
             "Keep the current scope"));
+        var answeredCheckpoint = await resolvedCheckpointed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await resolvedStatePersisted.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         var result = await runTask.WaitAsync(TimeSpan.FromSeconds(10));
 
@@ -133,6 +186,9 @@ public sealed class CopilotUserQuestionCheckpointTests
         Assert.Contains(events, item =>
             item.Type == CopilotAgentEventType.UserQuestionResolved
             && item.UserQuestion?.Resolution == CopilotUserQuestionResolution.Answered);
+        Assert.Contains(answeredCheckpoint.TaskEventJournal.Events, item =>
+            item.Type == CopilotAgentTaskEventType.UserQuestionResolved
+            && string.Equals(item.State, CopilotUserQuestionResolution.Answered.ToString(), StringComparison.Ordinal));
         Assert.True(result.TaskEventJournal.IsStructurallyValid());
     }
 
