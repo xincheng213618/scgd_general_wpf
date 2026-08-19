@@ -214,6 +214,31 @@ namespace ColorVision.Copilot
             Action<CopilotAgentEvent> onEvent,
             bool toolWasExecuted = false)
         {
+            try
+            {
+                return await RunPostHooksAndPublishOutcomeAsync(
+                    outcome,
+                    hooks,
+                    hookRuns,
+                    onEvent,
+                    toolWasExecuted);
+            }
+            catch (CopilotToolExecutionHookEventDispatchException ex)
+            {
+                SealOutcome(outcome, hookRuns, toolWasExecuted);
+                throw new CopilotToolResultEventDispatchException(
+                    outcome,
+                    ex.InnerException ?? ex);
+            }
+        }
+
+        private async Task<CopilotToolExecutionOutcome> RunPostHooksAndPublishOutcomeAsync(
+            CopilotToolExecutionOutcome outcome,
+            IReadOnlyList<CopilotToolExecutionHookBinding> hooks,
+            List<CopilotToolExecutionHookRun> hookRuns,
+            Action<CopilotAgentEvent> onEvent,
+            bool toolWasExecuted)
+        {
             foreach (var context in outcome.Invocation.PreToolAdditionalContexts)
             {
                 outcome.AddModelAdditionalContext(
@@ -367,14 +392,7 @@ namespace ColorVision.Copilot
                 }
             }
 
-            if (toolWasExecuted)
-                AddChangedPathProjectInstructions(outcome);
-            outcome.HookRuns = hookRuns.ToArray();
-            outcome.FormattedModelResult = CopilotToolOutputArchivePolicy.Format(
-                outcome,
-                outcome.Invocation.AgentRequest.ToolOutputTokenLimitOverride);
-            RecordReviewEvidence(outcome);
-            CopilotToolExecutionAuditLogger.Record(outcome);
+            SealOutcome(outcome, hookRuns, toolWasExecuted);
             try
             {
                 onEvent(CopilotAgentEvent.FromToolResult(
@@ -388,6 +406,21 @@ namespace ColorVision.Copilot
                 throw new CopilotToolResultEventDispatchException(outcome, ex);
             }
             return outcome;
+        }
+
+        private static void SealOutcome(
+            CopilotToolExecutionOutcome outcome,
+            IReadOnlyList<CopilotToolExecutionHookRun> hookRuns,
+            bool toolWasExecuted)
+        {
+            if (toolWasExecuted)
+                AddChangedPathProjectInstructions(outcome);
+            outcome.HookRuns = hookRuns.ToArray();
+            outcome.FormattedModelResult = CopilotToolOutputArchivePolicy.Format(
+                outcome,
+                outcome.Invocation.AgentRequest.ToolOutputTokenLimitOverride);
+            RecordReviewEvidence(outcome);
+            CopilotToolExecutionAuditLogger.Record(outcome);
         }
 
         private static async Task<CopilotCodexAsyncHookOutput?> RunAsyncPostHookNotificationAsync(

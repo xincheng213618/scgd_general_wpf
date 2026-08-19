@@ -177,6 +177,83 @@ public sealed class CopilotToolExecutionHookIntegrityTests
     }
 
     [Fact]
+    public async Task PostHookLifecycleDispatchFailurePreservesTheCompletedToolOutcome()
+    {
+        var tool = new RecordingTool();
+        var hook = new RecordingHook((_, _) => Task.FromResult(
+            CopilotToolExecutionHookDecision.Proceed));
+
+        var exception = await Assert.ThrowsAsync<CopilotToolResultEventDispatchException>(() =>
+            new CopilotToolExecutor([hook]).ExecuteAsync(
+                CreateInvocation(tool, "post-hook-dispatch-failure"),
+                agentEvent =>
+                {
+                    if (agentEvent.Type == CopilotAgentEventType.HookStarted
+                        && agentEvent.ToolExecutionHook?.Phase
+                            == CopilotToolExecutionHookPhase.AfterExecute)
+                    {
+                        throw new InvalidOperationException(
+                            "The event consumer stopped during post-hook publication.");
+                    }
+                },
+                CancellationToken.None));
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(0, hook.AfterCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, exception.Outcome.Execution.State);
+        Assert.True(exception.Outcome.Result.Success);
+        Assert.NotNull(exception.Outcome.FormattedModelResult);
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task FrameworkBridgeRetainsTheCommittedOutcomeWhenPostHookLifecycleDispatchFails()
+    {
+        var tool = new RecordingTool();
+        var hook = new RecordingHook((_, _) => Task.FromResult(
+            CopilotToolExecutionHookDecision.Proceed));
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "post-hook-dispatch-conversation",
+            TaskId = "post-hook-dispatch-task",
+            Mode = CopilotAgentMode.Auto,
+            UserText = "Run the recording tool.",
+            TaskIntentText = "Run the recording tool.",
+        };
+        var bridge = new CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge(
+            request,
+            CopilotExecutionScope.ForAgentRun(request),
+            [tool],
+            maxToolCalls: 1,
+            new CopilotToolExecutor([hook]),
+            new CopilotFrameworkApprovalCoordinator(),
+            agentEvent =>
+            {
+                if (agentEvent.Type == CopilotAgentEventType.HookStarted
+                    && agentEvent.ToolExecutionHook?.Phase
+                        == CopilotToolExecutionHookPhase.AfterExecute)
+                {
+                    throw new InvalidOperationException(
+                        "The event consumer stopped during post-hook publication.");
+                }
+            },
+            capabilityRevisionProvider: () => 1);
+        var function = Assert.IsAssignableFrom<AIFunction>(Assert.Single(bridge.CreateFunctions()));
+
+        var exception = await Assert.ThrowsAsync<CopilotToolResultEventDispatchException>(() =>
+            function.InvokeAsync(
+                new AIFunctionArguments(),
+                CancellationToken.None).AsTask());
+
+        var step = Assert.Single(bridge.StepRecords);
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
+        Assert.Same(exception.Outcome.Execution, step.Execution);
+        Assert.Equal(exception.Outcome.Result.Success, step.Observation.Success);
+        Assert.Equal(exception.Outcome.Result.Summary, step.Observation.Summary);
+    }
+
+    [Fact]
     public async Task FrozenHookBindingsCannotReplaceTheMonotonicWriteGuard()
     {
         var spoofedGuard = new RecordingHook((_, _) =>
