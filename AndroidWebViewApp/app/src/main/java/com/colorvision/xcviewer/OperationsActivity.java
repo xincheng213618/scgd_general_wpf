@@ -5784,34 +5784,29 @@ public class OperationsActivity extends AppCompatActivity {
     private void renderLiveMonitorActions() {
         actions.removeAllViews();
 
-        Button refresh = dashboardTonalButton("立即刷新", v -> loadLiveMonitor(true));
-        refresh.setEnabled(!liveMonitorRefreshInFlight && !liveMonitorCancelInFlight);
+        addDashboardSection("观察控制");
+        OperationsLiveMonitorControlsPresentation.ViewModel controls =
+                OperationsLiveMonitorControlsPresentation.from(
+                        liveMonitorAutoRefresh,
+                        liveMonitorRefreshInFlight,
+                        liveMonitorCancelInFlight);
+        actions.addView(OperationsLiveMonitorControlsContent.create(
+                this,
+                themeManager,
+                controls,
+                new OperationsLiveMonitorControlsContent.Handler() {
+                    @Override
+                    public void onAutoRefreshChanged(boolean enabled) {
+                        setLiveMonitorAutoRefresh(enabled);
+                    }
 
-        Button toggle = dashboardButton(
-                liveMonitorAutoRefresh ? "暂停自动观察" : "恢复每 10 秒观察",
-                null);
-        toggle.setEnabled(!liveMonitorCancelInFlight);
-        toggle.setOnClickListener(v -> {
-            liveMonitorAutoRefresh = !liveMonitorAutoRefresh;
-            liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
-            if (liveMonitorAutoRefresh) {
-                state.setText("自动观察已恢复 · 正在刷新");
-                details.setText(liveMonitorPresentation().overview);
-                renderLiveMonitorActions();
-                loadLiveMonitor(true);
-            } else {
-                state.setText("自动观察已暂停 · 当前快照保留");
-                details.setText(liveMonitorPresentation().overview);
-                renderLiveMonitorActions();
-            }
-        });
-        addDashboardTaskGroup(
-                "观察控制",
-                liveMonitorAutoRefresh
-                        ? "前台每 10 秒更新；切到后台时停止页面刷新。"
-                        : "自动观察已暂停，当前快照与本次内存样本仍保留。",
-                refresh,
-                toggle);
+                    @Override
+                    public void onRefresh() {
+                        loadLiveMonitor(true);
+                    }
+                }), new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
 
         if (liveMonitorLatestSnapshot != null) {
             addDashboardSection("实时状态");
@@ -5845,6 +5840,24 @@ public class OperationsActivity extends AppCompatActivity {
                         : "只分享本次手机内存中的脱敏聚合趋势；离开本页即清空。",
                 share,
                 back);
+    }
+
+    private void setLiveMonitorAutoRefresh(boolean enabled) {
+        if (liveMonitorAutoRefresh == enabled || liveMonitorCancelInFlight) {
+            return;
+        }
+        liveMonitorAutoRefresh = enabled;
+        liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
+        if (enabled) {
+            state.setText("自动观察已恢复 · 正在刷新");
+            details.setText(liveMonitorPresentation().overview);
+            renderLiveMonitorActions();
+            loadLiveMonitor(true);
+            return;
+        }
+        state.setText("自动观察已暂停 · 当前快照保留");
+        details.setText(liveMonitorPresentation().overview);
+        renderLiveMonitorActions();
     }
 
     private OperationsLiveMonitorPresentation.ViewModel liveMonitorPresentation() {
