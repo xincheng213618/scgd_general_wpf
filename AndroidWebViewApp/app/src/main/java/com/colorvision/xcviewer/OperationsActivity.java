@@ -2328,7 +2328,9 @@ public class OperationsActivity extends AppCompatActivity {
         progress.setVisibility(View.GONE);
         title.setTitle("运维工具");
         OperationsToolboxPresentation.ViewModel toolbox =
-                OperationsToolboxPresentation.create();
+                OperationsToolboxPresentation.withRecentQuickActions(
+                        OperationsToolboxPresentation.create(),
+                        preferences.getRecentOperationsToolboxActions());
         state.setText(getString(
                 R.string.operations_toolbox_compact_state,
                 toolbox.quickActionCount(),
@@ -2373,11 +2375,15 @@ public class OperationsActivity extends AppCompatActivity {
         state.setText(model.compactStateLabel);
         details.setText(model.summary);
         actions.removeAllViews();
+        OperationsToolboxPresentation.ViewModel toolbox =
+                OperationsToolboxPresentation.withRecentQuickActions(
+                        model.toolbox,
+                        preferences.getRecentOperationsToolboxActions());
         OperationsToolboxContent.addTo(
                 this,
                 themeManager,
                 actions,
-                model.toolbox,
+                toolbox,
                 this::runRemoteOperationsToolboxAction,
                 this::scrollToToolboxSection);
     }
@@ -2446,6 +2452,10 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void runOperationsToolboxAction(String actionId) {
+        if (!OperationsToolboxPresentation.isSupportedAction(actionId)) {
+            return;
+        }
+        preferences.recordOperationsToolboxAction(actionId);
         returnToTriageOnBack = false;
         returnToToolboxOnBack = true;
         switch (actionId) {
@@ -2515,6 +2525,10 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void runRemoteOperationsToolboxAction(String actionId) {
+        if (!OperationsRemoteToolboxPresentation.isSupportedAction(actionId)) {
+            return;
+        }
+        preferences.recordOperationsToolboxAction(actionId);
         returnToTriageOnBack = false;
         returnToToolboxOnBack = true;
         switch (actionId) {

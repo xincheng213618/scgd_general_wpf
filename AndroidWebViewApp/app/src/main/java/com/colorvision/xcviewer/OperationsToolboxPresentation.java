@@ -8,7 +8,8 @@ import java.util.Locale;
 import java.util.Set;
 
 final class OperationsToolboxPresentation {
-    static final String QUICK_SECTION_TITLE = "常用只读";
+    static final String QUICK_SECTION_TITLE = "快捷工具";
+    private static final int QUICK_ACTION_LIMIT = 4;
     static final String ACTION_CONNECTION_CHECK = "toolbox.connection.check";
     static final String ACTION_LIVE_MONITOR = "toolbox.live.monitor";
     static final String ACTION_DEVICE_HEALTH = "toolbox.devices.health";
@@ -113,6 +114,49 @@ final class OperationsToolboxPresentation {
             default:
                 return false;
         }
+    }
+
+    static ViewModel withRecentQuickActions(ViewModel source, List<String> recentActionIds) {
+        if (recentActionIds == null || recentActionIds.isEmpty()) {
+            return source;
+        }
+        List<Action> quickActions = new ArrayList<>();
+        Set<String> includedActionIds = new HashSet<>();
+        for (String actionId : recentActionIds) {
+            addQuickAction(source, actionId, quickActions, includedActionIds);
+        }
+        for (Action fallback : source.quickActions) {
+            addQuickAction(source, fallback.actionId, quickActions, includedActionIds);
+        }
+        return new ViewModel(
+                source.sections,
+                Collections.unmodifiableList(quickActions));
+    }
+
+    private static void addQuickAction(
+            ViewModel source,
+            String actionId,
+            List<Action> quickActions,
+            Set<String> includedActionIds) {
+        if (actionId == null
+                || quickActions.size() == QUICK_ACTION_LIMIT
+                || includedActionIds.contains(actionId)) {
+            return;
+        }
+        Action action = findAction(source, actionId);
+        if (action != null && action.enabled) {
+            quickActions.add(action);
+            includedActionIds.add(actionId);
+        }
+    }
+
+    private static Action findAction(ViewModel source, String actionId) {
+        for (Action action : source.quickActions) {
+            if (actionId.equals(action.actionId)) {
+                return action;
+            }
+        }
+        return findAction(source.sections, actionId);
     }
 
     static ViewModel filter(ViewModel source, String query) {

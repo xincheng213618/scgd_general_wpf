@@ -12,7 +12,7 @@
     <string name="operations_profile_current_summary">%1$s\n%2$s</string>
     <string name="operations_fleet_progress">正在巡检 %1$d / %2$d 台电脑…</string>
     <string name="operations_dashboard_loading_summary">正在读取 ColorVision 运行摘要…</string>
-    <string name="operations_toolbox_compact_state">%1$d 个常用只读入口 · %2$d 项完整工具</string>
+    <string name="operations_toolbox_compact_state">%1$d 个快捷入口 · %2$d 项完整工具</string>
     <string name="operations_toolbox_search_hint">搜索工具</string>
     <string name="operations_remote_monitor_signed_summary">%1$s\n\n该摘要由电脑证书签名，手机按配对证书指纹核验后展示；固定站点无法修改或伪造。</string>
     <string name="operations_window_action_audit_details">%1$s\n该操作已记录设备身份、时间和结果。</string>

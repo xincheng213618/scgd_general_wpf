@@ -2,6 +2,7 @@ package com.colorvision.xcviewer;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -66,6 +67,47 @@ public class OperationsToolboxPresentationTest {
                 .summary.contains("仅截取 ColorVision 主窗口"));
         assertTrue(find(model, OperationsToolboxPresentation.ACTION_SUPPORT)
                 .summary.contains("电脑端同意"));
+    }
+
+    @Test
+    public void recentDeepToolsReplaceDefaultsWithoutGrowingTheQuickGrid() {
+        OperationsToolboxPresentation.ViewModel model =
+                OperationsToolboxPresentation.withRecentQuickActions(
+                        OperationsToolboxPresentation.create(),
+                        Arrays.asList(
+                                OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
+                                OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE));
+
+        assertEquals(4, model.quickActionCount());
+        assertEquals(OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
+                model.quickActions.get(0).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE,
+                model.quickActions.get(1).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_CONNECTION_CHECK,
+                model.quickActions.get(2).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_LIVE_MONITOR,
+                model.quickActions.get(3).actionId);
+    }
+
+    @Test
+    public void recentQuickToolsIgnoreUnknownDuplicatesAndDisabledActions() {
+        OperationsToolboxPresentation.Action enabled = new OperationsToolboxPresentation.Action(
+                "toolbox.enabled", "可用", "可用工具", true);
+        OperationsToolboxPresentation.Action disabled = new OperationsToolboxPresentation.Action(
+                "toolbox.disabled", "不可用", "不可用工具", false);
+        OperationsToolboxPresentation.ViewModel source = new OperationsToolboxPresentation.ViewModel(
+                Arrays.asList(new OperationsToolboxPresentation.Section(
+                        "测试", Arrays.asList(enabled, disabled))),
+                Arrays.asList(enabled));
+
+        OperationsToolboxPresentation.ViewModel model =
+                OperationsToolboxPresentation.withRecentQuickActions(
+                        source,
+                        Arrays.asList(null, "toolbox.unknown", "toolbox.disabled",
+                                "toolbox.enabled", "toolbox.enabled"));
+
+        assertEquals(1, model.quickActionCount());
+        assertEquals("toolbox.enabled", model.quickActions.get(0).actionId);
     }
 
     @Test

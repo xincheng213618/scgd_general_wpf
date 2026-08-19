@@ -31,6 +31,10 @@ final class AppResponsiveLayout {
                 && screenWidthDp / fontScale <= STACKED_CONTROL_EFFECTIVE_WIDTH_DP;
     }
 
+    static boolean usesStackedButtonGrid(float fontScale) {
+        return usesLargeFont(fontScale);
+    }
+
     private static boolean usesLargeFont(float fontScale) {
         return Float.isFinite(fontScale) && fontScale >= SINGLE_COLUMN_FONT_SCALE;
     }

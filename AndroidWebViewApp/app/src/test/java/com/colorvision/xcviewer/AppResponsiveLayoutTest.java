@@ -72,4 +72,13 @@ public class AppResponsiveLayoutTest {
         assertFalse(AppResponsiveLayout.usesStackedControlRow(360, Float.NaN));
         assertFalse(AppResponsiveLayout.usesStackedControlRow(360, 0f));
     }
+
+    @Test
+    public void largeFontStacksEqualWidthButtonGrids() {
+        assertFalse(AppResponsiveLayout.usesStackedButtonGrid(1f));
+        assertFalse(AppResponsiveLayout.usesStackedButtonGrid(1.19f));
+        assertTrue(AppResponsiveLayout.usesStackedButtonGrid(1.2f));
+        assertTrue(AppResponsiveLayout.usesStackedButtonGrid(1.5f));
+        assertFalse(AppResponsiveLayout.usesStackedButtonGrid(Float.NaN));
+    }
 }

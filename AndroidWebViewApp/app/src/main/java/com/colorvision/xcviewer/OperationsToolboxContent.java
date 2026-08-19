@@ -196,6 +196,18 @@ final class OperationsToolboxContent {
             ActionHandler actionHandler) {
         LinearLayout grid = new LinearLayout(activity);
         grid.setOrientation(LinearLayout.VERTICAL);
+        if (AppResponsiveLayout.usesStackedButtonGrid(
+                activity.getResources().getConfiguration().fontScale)) {
+            for (int index = 0; index < actions.size(); index++) {
+                LinearLayout.LayoutParams params = matchWidth();
+                if (index > 0) {
+                    params.setMargins(0, dp(activity, 8), 0, 0);
+                }
+                grid.addView(quickActionButton(
+                        activity, actions.get(index), actionHandler), params);
+            }
+            return grid;
+        }
         for (int index = 0; index < actions.size(); index += 2) {
             LinearLayout row = new LinearLayout(activity);
             row.setOrientation(LinearLayout.HORIZONTAL);
@@ -355,7 +367,7 @@ final class OperationsToolboxContent {
 
     private static LinearLayout.LayoutParams weightedButtonParams() {
         return new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+                0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
     }
 
     private static int dp(Activity activity, int value) {

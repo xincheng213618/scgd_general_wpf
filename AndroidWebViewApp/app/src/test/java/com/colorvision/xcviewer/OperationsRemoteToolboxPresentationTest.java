@@ -108,6 +108,17 @@ public class OperationsRemoteToolboxPresentationTest {
         assertFalse(find(model, OperationsToolboxPresentation.ACTION_CREATE_DIAGNOSTIC).enabled);
     }
 
+    @Test
+    public void remoteDispatcherOnlyAcceptsActionsRenderedByTheRemoteToolbox() {
+        assertTrue(OperationsRemoteToolboxPresentation.isSupportedAction(
+                OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT));
+        assertTrue(OperationsRemoteToolboxPresentation.isSupportedAction(
+                OperationsRemoteToolboxPresentation.ACTION_RECENT_REMOTE_TASK));
+        assertFalse(OperationsRemoteToolboxPresentation.isSupportedAction(
+                OperationsToolboxPresentation.ACTION_SUPPORT));
+        assertFalse(OperationsRemoteToolboxPresentation.isSupportedAction("toolbox.unknown"));
+    }
+
     private static JSONObject response(boolean flowActive, boolean cancelAvailable)
             throws Exception {
         JSONArray capabilities = new JSONArray()
