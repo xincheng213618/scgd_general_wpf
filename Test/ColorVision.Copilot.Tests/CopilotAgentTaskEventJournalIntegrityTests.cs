@@ -206,7 +206,8 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             "ProtectedTool",
             "original-call",
             "approval-action",
-            approved: true);
+            approved: true,
+            decisionSource: CopilotFrameworkApprovalDecisionSource.ExecutionPolicy.ToString());
         var published = journal.Snapshot();
         var approval = Assert.Single(published.Events);
 
@@ -218,6 +219,25 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
         Assert.True(CopilotAgentTaskEventJournal.AreEquivalent(published, next));
         Assert.NotSame(published.Events[0], next.Events[0]);
         Assert.NotSame(published.Events[0].RelatedIds, next.Events[0].RelatedIds);
+    }
+
+    [Fact]
+    public void ExplicitApprovalDecisionRequiresMatchingJournalRequest()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            journal.RecordApprovalDecision(
+                "ProtectedTool",
+                "orphan-call",
+                "orphan-action",
+                approved: true,
+                decisionSource: CopilotFrameworkApprovalDecisionSource.User.ToString()));
+
+        Assert.Contains("no matching request", exception.Message, StringComparison.Ordinal);
+        Assert.Empty(journal.Snapshot().Events);
+        journal.RecordRunStarted();
+        Assert.Equal(1, Assert.Single(journal.Snapshot().Events).Sequence);
     }
 
     [Fact]

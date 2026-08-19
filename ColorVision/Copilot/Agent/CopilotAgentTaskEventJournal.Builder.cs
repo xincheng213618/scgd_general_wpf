@@ -141,6 +141,12 @@ namespace ColorVision.Copilot
         public void RecordApprovalDecision(CopilotToolExecutionInfo execution, bool approved)
         {
             ArgumentNullException.ThrowIfNull(execution);
+            if (!CopilotToolExecutionInfoProtocol.IsStructurallyValid(execution))
+            {
+                throw new ArgumentException(
+                    "Tool execution metadata is not structurally valid.",
+                    nameof(execution));
+            }
             RecordApprovalDecision(execution.ToolName, execution.CallId, execution.ApprovalActionId, approved);
         }
 
@@ -151,32 +157,102 @@ namespace ColorVision.Copilot
             bool approved,
             string decisionSource = "")
         {
-            var approvalId = CopilotAgentTaskEventIds.ForApproval(
-                approvalActionId,
-                callId);
+            var normalizedToolName = (toolName ?? string.Empty).Trim();
+            var normalizedCallId = (callId ?? string.Empty).Trim();
+            var normalizedActionId = (approvalActionId ?? string.Empty).Trim();
             var source = (decisionSource ?? string.Empty).Trim();
-            AppendUnique(
-                approved ? CopilotAgentTaskEventType.ApprovalApproved : CopilotAgentTaskEventType.ApprovalDenied,
-                approvalId,
-                approved
-                    ? string.IsNullOrWhiteSpace(source) ? "approved" : "approved:" + source
-                    : "denied",
-                approved
-                    ? string.Equals(source, nameof(CopilotFrameworkApprovalDecisionSource.AutomaticReview), StringComparison.Ordinal)
-                        ? "Protected tool call was approved by automatic permission review."
-                        : string.Equals(source, nameof(CopilotFrameworkApprovalDecisionSource.TemporaryGrant), StringComparison.Ordinal)
-                            ? "Protected tool call was approved by the temporary task grant."
-                            : string.Equals(source, nameof(CopilotFrameworkApprovalDecisionSource.ExecutionPolicy), StringComparison.Ordinal)
-                                ? "Protected tool call was approved by the submitted turn's execution policy."
-                                : "Protected tool call was approved by the user."
-                    : "Protected tool call was denied or expired.",
-                toolName,
-                [CopilotAgentTaskEventIds.ForCall(callId)],
-                uniqueTypes:
-                [
-                    CopilotAgentTaskEventType.ApprovalApproved,
-                    CopilotAgentTaskEventType.ApprovalDenied,
-                ]);
+            if (normalizedToolName.Length == 0
+                || normalizedToolName.Length > CopilotAgentTaskEventJournal.MaxToolNameLength
+                || normalizedToolName.Any(char.IsControl))
+            {
+                throw new ArgumentException(
+                    "Approval tool name is not structurally valid.",
+                    nameof(toolName));
+            }
+            if (normalizedCallId.Length == 0
+                || normalizedCallId.Any(char.IsControl))
+            {
+                throw new ArgumentException(
+                    "Approval call ID is not structurally valid.",
+                    nameof(callId));
+            }
+            if (normalizedActionId.Any(char.IsControl))
+            {
+                throw new ArgumentException(
+                    "Approval action ID is not structurally valid.",
+                    nameof(approvalActionId));
+            }
+            var decisionSourceKind =
+                CopilotFrameworkApprovalDecisionSource.None;
+            if (source.Length > 0
+                && (!Enum.TryParse(
+                        source,
+                        ignoreCase: false,
+                        out decisionSourceKind)
+                    || !Enum.IsDefined(decisionSourceKind)))
+            {
+                throw new ArgumentException(
+                    "Approval decision source is not recognized.",
+                    nameof(decisionSource));
+            }
+
+            var implicitApproval = decisionSourceKind is
+                CopilotFrameworkApprovalDecisionSource.ExecutionPolicy
+                or CopilotFrameworkApprovalDecisionSource.TemporaryGrant;
+            if (implicitApproval && !approved)
+            {
+                throw new ArgumentException(
+                    "Implicit approval sources cannot record a denial.",
+                    nameof(approved));
+            }
+            if (!implicitApproval && normalizedActionId.Length == 0)
+            {
+                throw new ArgumentException(
+                    "Explicit approval decisions require an action ID.",
+                    nameof(approvalActionId));
+            }
+
+            var approvalId = CopilotAgentTaskEventIds.ForApproval(
+                normalizedActionId,
+                normalizedCallId);
+            var callSubjectId = CopilotAgentTaskEventIds.ForCall(normalizedCallId);
+            lock (_syncRoot)
+            {
+                if (!implicitApproval
+                    && !_events.Any(item =>
+                        item.Type == CopilotAgentTaskEventType.ApprovalRequested
+                        && string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                        && string.Equals(item.SubjectId, approvalId, StringComparison.Ordinal)
+                        && string.Equals(item.ToolName, normalizedToolName, StringComparison.Ordinal)
+                        && item.RelatedIds.Contains(callSubjectId, StringComparer.Ordinal)))
+                {
+                    throw new InvalidOperationException(
+                        "Explicit approval decision has no matching request in the Agent task journal.");
+                }
+
+                AppendUnique(
+                    approved ? CopilotAgentTaskEventType.ApprovalApproved : CopilotAgentTaskEventType.ApprovalDenied,
+                    approvalId,
+                    approved
+                        ? source.Length == 0 ? "approved" : "approved:" + source
+                        : "denied",
+                    approved
+                        ? decisionSourceKind == CopilotFrameworkApprovalDecisionSource.AutomaticReview
+                            ? "Protected tool call was approved by automatic permission review."
+                            : decisionSourceKind == CopilotFrameworkApprovalDecisionSource.TemporaryGrant
+                                ? "Protected tool call was approved by the temporary task grant."
+                                : decisionSourceKind == CopilotFrameworkApprovalDecisionSource.ExecutionPolicy
+                                    ? "Protected tool call was approved by the submitted turn's execution policy."
+                                    : "Protected tool call was approved by the user."
+                        : "Protected tool call was denied or expired.",
+                    normalizedToolName,
+                    [callSubjectId],
+                    uniqueTypes:
+                    [
+                        CopilotAgentTaskEventType.ApprovalApproved,
+                        CopilotAgentTaskEventType.ApprovalDenied,
+                    ]);
+            }
         }
 
         public void RecordSteering(string message)
