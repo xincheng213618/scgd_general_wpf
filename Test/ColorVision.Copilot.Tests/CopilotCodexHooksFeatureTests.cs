@@ -10,6 +10,23 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexHooksFeatureTests
 {
     [Fact]
+    public void HookSurfaceSnapshotCannotBeRewrittenAfterPublication()
+    {
+        var registry = new CopilotToolExecutionHookRegistry();
+        using var registration = registry.Register(
+            "extension:test:hook:frozen-snapshot",
+            new RecordingExtensionHook(),
+            "^HooksFeatureTool$");
+        var snapshot = registry.GetSnapshot();
+        var entries = Assert.IsAssignableFrom<System.Collections.Generic.IList<CopilotToolExecutionHookRegistryEntry>>(
+            snapshot.Entries);
+
+        Assert.True(entries.IsReadOnly);
+        Assert.Throws<NotSupportedException>(() => entries[0] = new CopilotToolExecutionHookRegistryEntry());
+        Assert.True(snapshot.IsStructurallyValid());
+    }
+
+    [Fact]
     public void ClosestTrustedValueIsFrozenIntoTheSubmittedTurn()
     {
         string globalRoot = CreateTemporaryDirectory();

@@ -257,7 +257,7 @@ namespace ColorVision.Copilot
                         .Select(entry => entry.SourceId)
                         .Distinct(StringComparer.OrdinalIgnoreCase)
                         .Count(),
-                    Capabilities = capabilities,
+                    Capabilities = Array.AsReadOnly(capabilities),
                 };
             }
         }
@@ -435,7 +435,7 @@ namespace ColorVision.Copilot
                 Revision = _revision,
                 UpdatedAtUtc = _updatedAtUtc,
                 SourceCount = _sources.Count,
-                Capabilities = entries,
+                Capabilities = Array.AsReadOnly(entries),
             };
         }
 

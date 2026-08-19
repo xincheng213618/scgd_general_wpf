@@ -11,6 +11,34 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexPluginsFeatureTests
 {
     [Fact]
+    public void CapabilitySnapshotsCannotBeRewrittenAfterPublication()
+    {
+        var catalog = new CopilotCapabilityCatalog();
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.BuiltIn,
+            "builtin:frozen-snapshot",
+            "Built-in tools",
+            [new RecordingTool("FrozenBuiltInTool")]);
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:frozen-snapshot",
+            "Plugin tools",
+            [new RecordingTool("FrozenPluginTool")]);
+
+        AssertReadOnly(catalog.GetSnapshot().Capabilities);
+        AssertReadOnly(catalog.GetSnapshot(includePluginCapabilities: false).Capabilities);
+
+        static void AssertReadOnly(IReadOnlyList<CopilotCapabilityCatalogEntry> capabilities)
+        {
+            var entries = Assert.IsAssignableFrom<System.Collections.Generic.IList<CopilotCapabilityCatalogEntry>>(
+                capabilities);
+            Assert.NotEmpty(entries);
+            Assert.True(entries.IsReadOnly);
+            Assert.Throws<NotSupportedException>(() => entries[0] = new CopilotCapabilityCatalogEntry());
+        }
+    }
+
+    [Fact]
     public void ClosestTrustedValueIsFrozenAcrossContextPlanAndRequest()
     {
         string globalRoot = CreateTemporaryDirectory();
