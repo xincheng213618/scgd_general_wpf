@@ -124,9 +124,76 @@ public sealed class CopilotToolConcurrencyContractTests
         Assert.Equal(["slow-call", "fast-call"], inner.ResultCallIds);
     }
 
+    [Fact]
+    public async Task ConcurrentFunctionFailureWaitsForStartedSibling()
+    {
+        var siblingStarted = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var failureStarted = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSibling = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<string> SlowAsync()
+        {
+            siblingStarted.TrySetResult();
+            await releaseSibling.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            return "slow-result";
+        }
+
+        async Task<string> FailAsync()
+        {
+            await siblingStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            failureStarted.TrySetResult();
+            throw new InvalidOperationException("expected tool failure");
+        }
+
+        using var inner = new ToolOrderingChatClient();
+        using var client = new FunctionInvokingChatClient(
+            inner,
+            loggerFactory: null,
+            functionInvocationServices: null)
+        {
+            AllowConcurrentInvocation = true,
+        };
+        var options = new ChatOptions
+        {
+            Tools =
+            [
+                AIFunctionFactory.Create(SlowAsync, "slow_tool"),
+                AIFunctionFactory.Create(FailAsync, "fast_tool"),
+            ],
+        };
+
+        var runTask = DrainAsync(client, options);
+        await failureStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await Task.Delay(50);
+
+        Assert.False(runTask.IsCompleted);
+        Assert.Equal(1, inner.CallCount);
+
+        releaseSibling.TrySetResult();
+        await runTask.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.Equal(["slow-call", "fast-call"], inner.ResultCallIds);
+    }
+
+    private static async Task DrainAsync(
+        FunctionInvokingChatClient client,
+        ChatOptions options)
+    {
+        await foreach (var _ in client.GetStreamingResponseAsync(
+            [new ChatMessage(ChatRole.User, "Run both tools.")],
+            options))
+        {
+        }
+    }
+
     private sealed class ToolOrderingChatClient : IChatClient
     {
         private int _callCount;
+
+        public int CallCount => Volatile.Read(ref _callCount);
 
         public IReadOnlyList<string> ResultCallIds { get; private set; } = [];
 
