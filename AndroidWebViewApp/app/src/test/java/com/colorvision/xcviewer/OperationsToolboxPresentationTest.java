@@ -70,7 +70,7 @@ public class OperationsToolboxPresentationTest {
     }
 
     @Test
-    public void recentDeepToolsReplaceDefaultsWithoutGrowingTheQuickGrid() {
+    public void recentStateChangingToolsDoNotEnterTheQuickGrid() {
         OperationsToolboxPresentation.ViewModel model =
                 OperationsToolboxPresentation.withRecentQuickActions(
                         OperationsToolboxPresentation.create(),
@@ -79,13 +79,13 @@ public class OperationsToolboxPresentationTest {
                                 OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE));
 
         assertEquals(4, model.quickActionCount());
-        assertEquals(OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
-                model.quickActions.get(0).actionId);
-        assertEquals(OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE,
-                model.quickActions.get(1).actionId);
         assertEquals(OperationsToolboxPresentation.ACTION_CONNECTION_CHECK,
-                model.quickActions.get(2).actionId);
+                model.quickActions.get(0).actionId);
         assertEquals(OperationsToolboxPresentation.ACTION_LIVE_MONITOR,
+                model.quickActions.get(1).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_DEVICE_HEALTH,
+                model.quickActions.get(2).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_RECENT_EVENTS,
                 model.quickActions.get(3).actionId);
     }
 
@@ -102,9 +102,9 @@ public class OperationsToolboxPresentationTest {
 
         assertEquals(4, model.quickActionCount());
         assertEquals(20, model.actionCount());
-        assertEquals(OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
-                model.quickActions.get(0).actionId);
         assertEquals(OperationsToolboxPresentation.ACTION_AUDIT,
+                model.quickActions.get(0).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_DEVICE_HEALTH,
                 model.quickActions.get(3).actionId);
         assertEquals("连接自检", find(model,
                 OperationsToolboxPresentation.ACTION_CONNECTION_CHECK).title);
@@ -113,6 +113,30 @@ public class OperationsToolboxPresentationTest {
         assertEquals("设备状态", find(model,
                 OperationsToolboxPresentation.ACTION_DEVICE_HEALTH).title);
         assertTrue(model.hasUniqueActionIds());
+    }
+
+    @Test
+    public void destructiveConsentAndExternalShareActionsAreNeverPromoted() {
+        OperationsToolboxPresentation.ViewModel model =
+                OperationsToolboxPresentation.withRecentQuickActions(
+                        OperationsToolboxPresentation.create(),
+                        Arrays.asList(
+                                OperationsToolboxPresentation.ACTION_MINIMIZE_WINDOW,
+                                OperationsToolboxPresentation.ACTION_CANCEL_FLOW,
+                                OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE,
+                                OperationsToolboxPresentation.ACTION_RESTART_MQTT,
+                                OperationsToolboxPresentation.ACTION_RESTART_APPLICATION,
+                                OperationsToolboxPresentation.ACTION_CREATE_DIAGNOSTIC,
+                                OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
+                                OperationsToolboxPresentation.ACTION_SHARE_SUMMARY,
+                                OperationsToolboxPresentation.ACTION_SUPPORT,
+                                OperationsToolboxPresentation.ACTION_DEPLOYMENT));
+
+        assertEquals(4, model.quickActionCount());
+        assertEquals(OperationsToolboxPresentation.ACTION_CONNECTION_CHECK,
+                model.quickActions.get(0).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_RECENT_EVENTS,
+                model.quickActions.get(3).actionId);
     }
 
     @Test

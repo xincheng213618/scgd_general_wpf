@@ -182,6 +182,7 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean connectionHeartbeatInFlight;
     private boolean manualDashboardRefresh;
     private boolean remoteToolboxRefreshInFlight;
+    private int directToolboxGeneration;
     private boolean problemCenterRefreshInFlight;
     private boolean dashboardDetailRefreshInFlight;
     private String dashboardDetailPath = "";
@@ -2334,15 +2335,44 @@ public class OperationsActivity extends AppCompatActivity {
         setShowingDashboardSummary(false);
         progress.setVisibility(View.GONE);
         title.setTitle("运维工具");
+        int requestGeneration = ++directToolboxGeneration;
+        renderOperationsToolboxPage(null, true);
+        scheduleConnectionHeartbeat();
+        executor.execute(() -> {
+            try {
+                JSONObject response = client.get("/ops/v1/monitor");
+                JSONObject data = response.optJSONObject("data");
+                JSONObject monitor = data == null ? response : data;
+                runOnUiThread(() -> {
+                    if (requestGeneration != directToolboxGeneration
+                            || remoteDashboard
+                            || !OperationsDestinationState.TOOLS.equals(currentDestination)) {
+                        return;
+                    }
+                    renderOperationsToolboxPage(monitor, false);
+                });
+            } catch (Exception ignored) {
+                runOnUiThread(() -> {
+                    if (requestGeneration != directToolboxGeneration
+                            || remoteDashboard
+                            || !OperationsDestinationState.TOOLS.equals(currentDestination)) {
+                        return;
+                    }
+                    renderOperationsToolboxPage(null, false);
+                });
+            }
+        });
+    }
+
+    private void renderOperationsToolboxPage(JSONObject monitor, boolean loading) {
+        OperationsDirectToolboxPresentation.ViewModel liveModel =
+                OperationsDirectToolboxPresentation.from(monitor, loading);
         OperationsToolboxPresentation.ViewModel toolbox =
                 OperationsToolboxPresentation.withRecentQuickActions(
-                        OperationsToolboxPresentation.create(),
+                        liveModel.toolbox,
                         preferences.getRecentOperationsToolboxActions());
-        state.setText(getString(
-                R.string.operations_toolbox_compact_state,
-                toolbox.quickActionCount(),
-                toolbox.actionCount()));
-        details.setText("按任务分组。只读项目可直接打开；恢复、取证和支持动作仍会在执行前确认。");
+        state.setText(liveModel.stateLabel);
+        details.setText(liveModel.summary);
         actions.removeAllViews();
         OperationsToolboxContent.addTo(
                 this,
@@ -2351,7 +2381,6 @@ public class OperationsActivity extends AppCompatActivity {
                 toolbox,
                 this::runOperationsToolboxAction,
                 this::scrollToToolboxSection);
-        scheduleConnectionHeartbeat();
     }
 
     private void showRemoteOperationsToolboxPage() {

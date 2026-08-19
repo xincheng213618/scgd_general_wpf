@@ -126,10 +126,10 @@ final class OperationsToolboxPresentation {
         List<Action> quickActions = new ArrayList<>();
         Set<String> includedActionIds = new HashSet<>();
         for (String actionId : recentActionIds) {
-            addQuickAction(source, actionId, quickActions, includedActionIds);
+            addQuickAction(source, actionId, quickActions, includedActionIds, true);
         }
         for (Action fallback : source.quickActions) {
-            addQuickAction(source, fallback.actionId, quickActions, includedActionIds);
+            addQuickAction(source, fallback.actionId, quickActions, includedActionIds, false);
         }
         return new ViewModel(
                 source.sections,
@@ -140,16 +140,35 @@ final class OperationsToolboxPresentation {
             ViewModel source,
             String actionId,
             List<Action> quickActions,
-            Set<String> includedActionIds) {
+            Set<String> includedActionIds,
+            boolean recentAction) {
         if (actionId == null
                 || quickActions.size() == QUICK_ACTION_LIMIT
-                || includedActionIds.contains(actionId)) {
+                || includedActionIds.contains(actionId)
+                || (recentAction && !isQuickActionEligible(actionId))) {
             return;
         }
         Action action = findAction(source, actionId);
         if (action != null && action.enabled) {
             quickActions.add(action);
             includedActionIds.add(actionId);
+        }
+    }
+
+    static boolean isQuickActionEligible(String actionId) {
+        switch (actionId) {
+            case ACTION_CONNECTION_CHECK:
+            case ACTION_LIVE_MONITOR:
+            case ACTION_DEVICE_HEALTH:
+            case ACTION_SERVICES_HEALTH:
+            case ACTION_RECENT_EVENTS:
+            case ACTION_FAILURES:
+            case ACTION_JOBS:
+            case ACTION_AUDIT:
+            case ACTION_TIMELINE:
+                return true;
+            default:
+                return false;
         }
     }
 
