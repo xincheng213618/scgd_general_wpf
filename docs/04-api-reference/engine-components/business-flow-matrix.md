@@ -13,8 +13,8 @@ Engine 的核心链路是：启动初始化 -> 资源与设备服务 -> MQTT/远
 | MQTT 与远程命令 | `MQTTControl`、`MQTTConfig`、`Services/Devices/*/MQTT*.cs`、`MQTTRCService` | 连接状态、topic、返回码/结果 ID、文件下载、服务端日志 |
 | 模板加载 | `TemplateControl.cs`、`TemplateModel.cs`、`Jsons/**/Template*.cs`、`TemplatePoi.cs` | 类是否扫描、无参构造、`Code`、`TemplateDicId`、模板参数 |
 | Flow 模板保存与导入 | `TemplateFlow`、`FlowPackageHelper`、`ModMasterModel`、`ModDetailModel`、`SysResourceModel` | `DataBase64`、关联模板、重名处理、资源 `ValueA/Value` |
-| Flow 执行 | `FlowEngineControl`、`BaseStartNode`、`CVEndNode`、`FlowControl` | Start 节点、节点状态、设备 token、`FlowCompleted` |
-| 节点业务绑定 | `Templates/Flow/Nodes/`、`NodeConfiguratorRegistry`、各类 `*NodeConfig.cs` | 配置器、设备/模板名、参数恢复、是否只改了 `FlowEngineLib` |
+| Flow 执行与最终化 | `FlowExecutionSession`、`FlowEngineControl`、`FlowRunFinalizer` | Start 节点、设备 token、`EngineExecutionCompleted` 与业务最终态 `RunFinalized` |
+| 节点业务绑定 | `FlowProcessing/Nodes/`、`FlowProcessing/Editor/NodeConfiguration/`、`NodeConfiguratorRegistry` | 配置器、设备/模板名、参数恢复、是否只改了 `FlowEngineLib` |
 | 算法结果展示 | `ViewResultAlg`、`IViewResult`、`IResultHandlers`、`ViewHandle*.cs` | handler 反射、`CanHandle`、结果 ID、图像路径和 overlay 坐标 |
 | 项目包业务 | `Projects/*/Process/`、`Recipe/`、`Fix/`、`ObjectiveTestResult.cs` | Engine 原始值、项目 key、Recipe/Fix、导出字段 |
 | 文件与图像 | `FileServer`、`Media/`、`ColorVision.FileIO`、`cvColorVision` | 文件路径、权限、格式读取器、native DLL、图像尺寸和坐标系 |
@@ -40,7 +40,7 @@ Engine 的核心链路是：启动初始化 -> 资源与设备服务 -> MQTT/远
 | 需求 | 优先修改位置 | 不建议放在哪里 | 同步文档 |
 | --- | --- | --- | --- |
 | 新增设备类型 | `TypeService`、`Services/Devices/`、`DeviceServiceFactoryRegistry` | 项目包窗口里手动 new 设备 | [设备服务链路](./device-service-chain.md)、使用手册设备页 |
-| 新增 Flow 节点 | `FlowEngineLib/`、`Templates/Flow/Nodes/`、`NodeConfigurator/` | 只改节点 UI，不补配置器 | [模板与 Flow 链路](./template-flow-chain.md)、[Flow 节点扩展](../extensions/flow-node.md) |
+| 新增 Flow 节点 | `FlowEngineLib/`、`FlowProcessing/Nodes/`、`FlowProcessing/Editor/NodeConfiguration/` | 公共节点放执行内核，Engine 本地节点放 `Nodes/`；需要专用选择 UI 时补配置器 | [模板与 Flow 链路](./template-flow-chain.md)、[Flow 节点扩展](../extensions/flow-node.md) |
 | 新增算法参数或模板 | `Templates/Jsons/`、`ARVR/`、`POI/` 或对应模板目录 | `Projects/*/Process/` 里拼临时 JSON | [算法与模板](../algorithms/README.md) |
 | 修改结果 overlay | `ViewHandle*.cs`、`IResultHandlers.cs`、`ImageEditor/Draw/` | 项目包导出器 | [结果展示链路](./result-handoff-chain.md)、UI 组件目录 |
 | 修改客户判定或字段 | `Projects/<Project>/Recipe/`、`Fix/`、`Process/`、导出器 | Engine 通用 result handler | [项目说明](../../00-projects/README.md)、对应项目页 |
@@ -53,7 +53,7 @@ Engine 的核心链路是：启动初始化 -> 资源与设备服务 -> MQTT/远
 | --- | --- |
 | 资源树没有设备分类 | `SysDictionaryModel`、`TypeService`、过滤类型值 |
 | 设备资源存在但运行时没有服务 | `SysResourceModel.Type`、`DeviceServiceFactoryRegistry.CreateService()` |
-| 流程能打开但节点参数丢失 | `TemplateFlow` 保存内容、`NodeConfiguratorRegistry` |
+| 流程能打开但节点参数丢失 | `TemplateFlow` 的 `DataBase64`、`FlowProcessing/Editor/NodeConfiguration/` |
 | `.cvflow` 导入后跑不起来 | 关联模板导入、重名模板、节点设备 Code |
 | 算法成功但没有 overlay | 结果 ID、`IDisplayAlgorithm`、`IResultHandleBase`、`ViewResultAlgType` |
 | 项目 CSV 字段为空 | Engine 原始结果、项目 `Process` key、`Recipe/Fix`、导出器字段 |
@@ -73,6 +73,6 @@ Engine 的核心链路是：启动初始化 -> 资源与设备服务 -> MQTT/远
 
 - `TypeService` 枚举存在不代表 UI 一定显示；资源字典、过滤条件和工厂注册都要满足。
 - 模板名和 `TemplateDicId` 冲突会影响 Flow 保存、导入和执行。
-- `FlowEngineLib` 是执行骨架，Engine 的 `TemplateFlow` 和 `NodeConfigurator` 才是业务绑定层。
+- `FlowEngineLib` 是执行骨架，`Templates/Flow` 负责模板持久化，`FlowProcessing/Nodes` 与 `Editor/NodeConfiguration` 负责 Engine 本地行为和配置 UI。
 - `IResultHandleBase` 适合通用显示和 overlay，不适合塞客户项目判定规则。
 - MySQL、MQTT、注册中心和文件服务器失败时，表面症状可能是“模板空、设备不见、流程无结果”。

@@ -38,16 +38,12 @@ npm run docs:build
 npm run docs:validate
 ```
 
-插件和项目包打包：
+发布命令会改变远端状态，普通插件/项目包、Spectrum 双通道和主程序分别使用：
 
 ```powershell
-Scripts\package_plugin.bat Spectrum
+Scripts\package_plugin.bat Conoscope
 Scripts\package_project.bat ProjectLUX
-```
-
-正式发布：
-
-```powershell
+Scripts\Spectrum.bat --release-notes "本次变更说明"
 Scripts\release.bat
 ```
 

@@ -10,9 +10,10 @@ flowchart LR
   Init --> Template["模板"]
   Service --> MQTT["MQTT/RC"]
   Template --> FlowTemplate["TemplateFlow"]
-  FlowTemplate --> Flow["FlowControl / FlowEngineControl"]
-  Flow --> Configurator["NodeConfiguratorRegistry"]
+  FlowTemplate --> Editor["ViewFlow / FlowEditorCanvas"]
+  Editor --> Configurator["NodeConfiguratorRegistry"]
   Configurator --> Service
+  Editor --> Flow["FlowExecutionSession / FlowEngineControl"]
   Flow --> Result["ViewResultAlg / Handler"]
   Result --> Project["Projects/*"]
 ```
@@ -30,7 +31,7 @@ flowchart LR
 | `DeviceServiceFactoryRegistry` | 设备创建 | 新设备类型是否注册到 `ServiceTypes` |
 | `TemplateInitializer`、`TemplateControl` | 模板 | `IITemplateLoad` 是否被扫描，`Code` 是否稳定 |
 | `TemplateFlow`、`FlowParam` | 流程模板 | `.cvflow`/STN 是否保存，模板名是否匹配 |
-| `FlowControl` | Engine 侧流程执行 | 批次、超时、完成事件 |
+| `FlowExecutionSession` / `FlowRunFinalizer` / `FlowControl` | 交互式流程编排 | 批次、超时、前后处理、引擎完成和 `RunFinalized` |
 | `FlowEngineControl` | FlowEngineLib 执行 | 起止节点、运行状态、节点错误 |
 | `NodeConfiguratorRegistry` | 节点配置 | 配置器是否扫描到，设备/模板是否写回节点 |
 | `ViewResultAlg` | 算法主结果 | 批次、算法结果主表、明细结果 |
@@ -59,9 +60,9 @@ flowchart LR
 | 修改 `Code` | 手动算法、Flow `operatorCode`、结果 handler |
 | 修改参数字段 | PropertyGrid、JSON 序列化、服务端算法参数 |
 | 修改 Flow 模板名 | 项目包模板关键字、Recipe 选择、CSV 字段 |
-| 新增 Flow 节点 | FlowEngineLib 节点、`NodeConfiguratorAttribute`、配置器写回 |
+| 新增 Flow 节点 | 执行类、属性编辑器标注/注册；只有类型级补充面板才检查 configurator |
 
-模板不显示先查 `TemplateInitializer` 和 `TemplateControl`。节点参数不恢复先查 `NodeConfiguratorRegistry` 和具体 `*NodeConfigurator`。
+模板不显示先查 `TemplateInitializer` 和 `TemplateControl`。节点参数不恢复先查 `FlowNodePropertyEditorAttribute` / `PropertyEditorTypeAttribute` 与 `FlowPropertyEditorRegistry`；只有补充面板再查 `NodeConfiguratorRegistry`。
 
 ## 结果链路
 
@@ -84,12 +85,11 @@ flowchart LR
 | 模板列表为空 | `TemplateInitializer`、`TemplateControl` | [模板与 Flow 链路](./template-flow-chain.md) |
 | Flow 保存或加载失败 | `TemplateFlow`、`FlowParam`、资源 `Value` | [模板与 Flow 链路](./template-flow-chain.md) |
 | 节点下拉没设备/模板 | `NodeConfiguratorRegistry`、具体配置器 | [模板与 Flow 链路](./template-flow-chain.md) |
-| Flow 完成但项目没结果 | `FlowControlData`、项目 `Process.Execute()` | [项目包总览](../projects/README.md) |
+| Flow 引擎结束但结果没回去 | 共享链查 `RunFinalized` / `FinalOutcome`；项目窗口查自己的 `FlowCompleted` 最终化或 `Processing` | [项目包总览](../projects/README.md) |
 | 结果列表有记录但 overlay 不显示 | `DisplayAlgorithmManager`、`IResultHandleBase` | [结果展示链路](./result-handoff-chain.md) |
 | CSV/MES 字段为空 | 项目 `ObjectiveTestResult`、Recipe、exporter | [项目说明](../../00-projects/README.md) |
 
 ## 维护规则
 
-- 新增运行时核心对象时，只在本页补“链路定位”，不要堆完整 API。
-- 新增设备、模板、Flow 节点或结果 handler 时，同步对应链路页。
+- 新增运行时核心对象时只补“链路定位”；新增设备、模板、Flow 节点或结果 handler 时同步对应链路页。
 - 客户项目规则写到项目文档，不写成 Engine 通用承诺。

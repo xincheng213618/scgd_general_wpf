@@ -33,11 +33,14 @@ ColorVision/bin/x64/<Config>/net10.0-windows/Plugins/<PluginName>/
   PackageIcon.png        # 可选
 ```
 
-## 打包
+## 发布
 
 ```powershell
-Scripts\package_plugin.bat Spectrum
+Scripts\package_plugin.bat Conoscope
+Scripts\Spectrum.bat --release-notes "Spectrum 本次变更说明"
 ```
+
+`package_plugin.bat` 用于普通 `.cvxp` 插件并默认上传；Spectrum 正式发布必须走专用脚本，同时维护独立 ZIP 与 `.cvxp` 两个更新源。两者都不是本地-only 打包入口。
 
 ## 维护要求
 

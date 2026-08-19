@@ -12,7 +12,7 @@
 | 字典 ID | `TemplateDicId = 22` |
 | Flow 节点 | `AlgDataLoadNode`、`AlgDataLoadNode2` |
 | Flow 事件码 | `operatorCode = "DataLoad"` |
-| 配置器 | `AlgDataLoadNodeConfigurator` |
+| 属性编辑器 | `FlowDataLoadTemplateEditor` |
 | 结果 handler | 当前没有单独的 `ViewHandleDataLoad` |
 
 ## 源码入口
@@ -24,7 +24,7 @@
 | `FlowEngineLib/Node/Algorithm/AlgDataLoadNode.cs` | 通过模板名构造 `DataLoadData { TemplateParam = BuildTemp() }`。 |
 | `FlowEngineLib/Node/Algorithm/AlgDataLoadNode2.cs` | 直接构造 `DataLoadData2(new DataLoadInput(...))`。 |
 | `FlowEngineLib/Node/Algorithm/DataLoadData*.cs` | 定义发给服务端的数据结构。 |
-| `Templates/Flow/NodeConfigurator/AlgorithmNodeConfigurators.cs` | 在流程编辑器里给 `AlgDataLoadNode` 绑定设备和 DataLoad 模板选择面板。 |
+| `Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs`、`Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs` | 注册 `FlowDataLoadTemplateEditor`，给 `AlgDataLoadNode` 提供 DataLoad 模板选择。 |
 
 ## 参数模型
 
@@ -43,7 +43,7 @@
 
 `AlgDataLoadNode` 更偏模板驱动：
 
-1. 节点配置器显示设备选择和 DataLoad 模板选择。
+1. 节点属性的 `FlowDataLoadTemplateEditor` 通过 Engine 注册表显示 DataLoad 模板选择。
 2. 用户选择 `TempName`。
 3. 节点执行时调用 `BuildTemp()`。
 4. 请求体是 `DataLoadData`，只包含 `TemplateParam`。

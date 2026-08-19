@@ -1,6 +1,6 @@
 # Flow 转换与校准节点
 
-当前没有 `Templates/FileConvert/`、`ImageTransform/`、`Calibration/` 这三个强类型模板目录。相关能力分散在 `FlowEngineLib` 节点、Engine Flow `NodeConfigurator/` 和校准设备服务里。
+当前没有 `Templates/FileConvert/`、`ImageTransform/`、`Calibration/` 这三个强类型模板目录。相关能力分散在 `FlowEngineLib` 节点、Engine 属性编辑器注册和校准设备服务里；`Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/` 只保留节点类型级补充面板，当前没有 `CalibrationNodeConfigurator`。
 
 ## 先查什么
 
@@ -46,15 +46,16 @@
 | 单输入校准 | 可写曝光模板、图像、`IsSaveCIE` 和可选 POI 模板 |
 | 双输入校准 | 不直接设置 `POIParam`，而是引用第二输入的 POI 结果 |
 | 校准 ROI | 只设置 ROI，不保存校准结果文件 |
-| 旧色差校正 | Engine 模板、调试 UI 和结果 handler 已移除；节点类型保留但不标记 `STNodeAttribute` |
+| 旧色差校正 | Engine 模板、调试 UI 和结果 handler 已移除；`AlgorithmCaliNode` 同时保留 `STNode` 和 `Obsolete`，由编辑器的 Obsolete 过滤隐藏但仍可反序列化旧画布 |
 
-## Engine 配置器
+## Engine 属性编辑器
 
-| 配置器 | 对应节点 | 补充内容 |
+| 编辑器 | 对应节点 | 补充内容 |
 | --- | --- | --- |
-| `CalibrationNodeConfigurator` | `CalibrationNode` | 设备选择、图像路径、按 `PhyCamera` 添加 `TemplateCalibrationParam` |
-| Camera node configurators | 多个相机节点 | 根据 `DeviceCamera.PhyCamera` 添加校准模板选择器 |
-Flow 节点类本身只定义属性和参数对象；真正让用户选设备、图像路径和模板的是 `NodeConfigurator/`。
+| `FlowCalibrationTemplateEditor` | `CalibrationNode`、`Calibration2InNode` 和相机节点 | 根据节点设备和 `PhyCamera` 提供 `TemplateCalibrationParam` 选择 |
+| `FlowAutoExposureTemplateEditor` / `TextSelectFilePropertiesEditor` | 校准节点 | 选择曝光模板和图像路径 |
+
+这些节点通过 `PropertyEditorTypeAttribute` 或 `FlowNodePropertyEditorAttribute` 声明编辑器，再由 `Engine/ColorVision.Engine/PropertyEditor/FlowNodePropertyEditorRegistration.cs` 注册具体 UI。
 
 ## 验收
 
@@ -70,6 +71,6 @@ Flow 节点类本身只定义属性和参数对象；真正让用户选设备、
 ## 维护要求
 
 - 新增转换类型时，同步枚举、算法服务解释、节点 UI、测试样例和本页矩阵。
-- 新增校准字段时，检查 `CalibrationData`、`CalibrationNode`、`Calibration2InNode`、`CalibrationNodeConfigurator`。
+- 新增校准字段时，检查 `CalibrationData`、`CalibrationNode`、`Calibration2InNode` 和属性编辑器注册。
 - 修改 `PhyCamera` 关系时，回归校准模板选择器。
 - 新需求走当前 JSON V2 或强类型模板规范，不恢复已移除的 Deprecated 链。

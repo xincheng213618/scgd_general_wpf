@@ -1,6 +1,6 @@
 # Conoscope
 
-版本：1.4.7.5
+当前源码版本：1.4.7.6。版本事实源是 `Conoscope.csproj` 编译出的 DLL `FileVersion`；发布脚本会同步 `manifest.json`。
 
 Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、关注点采样和综合色域/对比度计算的插件。当前代码按六个容易定位的职责组织：
 
@@ -11,13 +11,14 @@ Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、
 - Analysis 负责关注点快照、色域/对比度计算和结果窗口。
 - Settings / Integration 负责全局默认值、型号、参考图、宿主和相机边界。
 
-## 当前版本重点
+## 1.4.7.6 重点
 
-- 首页新增“当前视图”快捷区，可直接控制活动 View 的显示通道、参考模式和值输入。
-- 主页现在同时承接当前活动 View 的 3D、CIE、方位导出、极角导出和高级导出。
-- 图像上支持手动绘制关注点圆，并通过右键直接计算当前关注点数据。
-- 参考图形支持圆形和极角模式切换，并保留在视图中的拖拽调整能力。
-- 分析页支持从当前活动 View 批量记录 R/G/B、白/黑关注点数据，并弹出独立结果窗口。
+- 删除仅按方法类别拆分的 View/Window partial，主窗口和单文档 View 各保留一个可见的 WPF 组合点。
+- `ConoscopeDocument` 独占 X/Y/Z Mat、取消源和加载版本；Y 通道先形成首屏，X/Z 在后台顺序补齐，连续打开只允许最新请求提交。
+- 所有显示和导出入口共用通道 readiness：Contrast 只需要 Y 与同尺寸参考 Y，X/Z/CIE/色差需要完整 XYZ；衍生通道失败不会用 Y 静默冒充。
+- 保留轻量 `ConoscopeImageHost`，用 `ResetDocument` 明确清理新文档状态，用 `ReplaceDisplayedImage` 在同文档换通道时保留关注点和交互模式。
+- 预处理设置直接 TwoWay 绑定配置窗口 working copy；只有应用并保存才提交，避免手工控件镜像和重复刷新。
+- POI 数据库事务、分析会话和全局参考通知收回各自所有者，View 不再反向依赖静态窗口刷新。
 
 ## 快速开始
 
@@ -127,15 +128,16 @@ Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、
 - 图像上方工具条只保留 - / + / 圆适，避免把窗口级功能继续堆在 View 内。
 - 如果只是查看综合色域或黑白对比度，直接使用分析页记录数据并打开独立结果窗口。
 
-## 构建与输出
+## 构建、测试与发布
 
 在仓库根目录执行：
 
 ```powershell
-dotnet build Plugins/Conoscope/Conoscope.csproj -p:Platform=x64 -nologo
+dotnet build .\Plugins\Conoscope\Conoscope.csproj -p:Platform=x64 -nologo
+dotnet test .\Test\Conoscope.Tests\Conoscope.Tests.csproj -p:Platform=x64
 ```
 
-构建输出会同时复制以下文件到插件目录：
+直接构建项目时，产物留在项目 `bin` 输出；从 solution/MSBuild 构建且 `SolutionDir` 有效时，HostCopy target 才会把以下文件镜像到宿主插件目录：
 
 - Conoscope.dll
 - manifest.json
@@ -144,12 +146,21 @@ dotnet build Plugins/Conoscope/Conoscope.csproj -p:Platform=x64 -nologo
 
 README 和 CHANGELOG 作为插件元数据保留，供源码维护和插件信息页读取。
 
+正式发布 `.cvxp` 使用：
+
+```powershell
+.\Scripts\package_plugin.bat Conoscope
+```
+
+wrapper 会构建、校验、上传并在上传尝试结束后删除本地 `.cvxp`。构建成功不等于发布成功；必须以脚本退出码、远端版本元数据和可下载包为准。
+
 ## 运行依赖
 
 - 目标平台：Windows x64
 - 目标框架：net10.0-windows
 - 必需本地依赖：CVCommCore.dll、MQTTMessageLib.dll
 - UI 依赖：ColorVision.Solution、ColorVision.ImageEditor、ColorVision.Engine
+- 可选观察相机依赖：海康 MVS 驱动和 `MvCameraControl.dll`；普通 CVCIE 分析不要求相机硬件
 
 ## 维护约定
 

@@ -76,7 +76,7 @@ SysDictionaryModel
 | 服务 | 新增 `DeviceXxx : DeviceService<ConfigXxx>` |
 | 工厂 | 注册到 `DeviceServiceFactoryRegistry` |
 | UI | 需要显示页时实现 `GetDisplayControl()`，需要终端图标时设置 `terminalIconResourceKey` |
-| Flow | 需要进流程节点时补 `Templates/Flow/NodeConfigurator/` |
+| Flow | 常规设备/模板属性优先走 `FlowNodePropertyEditorAttribute`；需要节点级补充 UI 时改 `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/` |
 | 文档 | 更新本页和用户设备文档 |
 
 ## 排查和禁区

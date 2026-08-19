@@ -123,12 +123,20 @@ Scripts\release.bat
 
 不要为主安装包新增或使用本地-only 发布捷径。发布脚本链负责构建、打包、上传发布产物、更新远端发布元数据和生成更新包。
 
-本地打包插件或客户项目：
+发布普通插件或客户项目包：
 
 ```powershell
-Scripts\package_plugin.bat Spectrum
+Scripts\package_plugin.bat Conoscope
 Scripts\package_project.bat ProjectLUX
 ```
+
+Spectrum 同时维护独立 ZIP 和 `.cvxp` 两个更新源，正式发布使用：
+
+```powershell
+Scripts\Spectrum.bat --release-notes "本次变更说明"
+```
+
+这些 wrapper 默认会上传；普通插件/项目包的本地 `.cvxp` 会在上传尝试结束后删除。主程序仍只使用 `Scripts\release.bat`，不要混用三个发布入口。
 
 更多说明：
 

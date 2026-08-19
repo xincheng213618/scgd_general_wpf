@@ -9,7 +9,7 @@ POI 在当前系统里是一套共享点位原语，不是单个“检测算法�
 | 点位丢失 | `PoiMasterDao` / `PoiDetailDao` 是否有对应 `Pid`，`LoadPoiDetailFromDB` 是否回填 |
 | 位置或 overlay 偏移 | `PixX`、`PixY`、`PixWidth`、`PixHeight` 和当前图像坐标系是否一致 |
 | JSON 算法没有带点位 | 是否传入 `POITemplateParam`，模板是否选中 |
-| Flow 里没有模板选择 | `POINodeConfigurators.cs` 的节点配置是否覆盖当前节点类型 |
+| Flow 里没有模板选择 | 常规字段检查节点的 PropertyEditor 类型和 `FlowPropertyEditorRegistry`；BuildPOI 的多模板入口再查 `POINodeConfigurators.cs` |
 | Build POI 后没保存 | `SavePOITempName`、`LayoutROI`、`CADMapping` 和回写模板是否正确 |
 | 过滤/修正结果异常 | `TemplatePoiFilterParam`、`TemplatePoiReviseParam`、`TemplatePoiOutputParam` 是否被联动选中 |
 | 文件模式不生效 | `AlgorithmPoi` 的 `POIStorageModel.File` 路径和外部点文件是否有效 |
@@ -53,7 +53,7 @@ POI 有专门的主从表结构，不只是普通模板明细：
 - `AlgorithmSFRFindROI` 会附带 `POITemplateParam`
 - `AlgorithmOLEDAOI` 也会附带 `POITemplateParam`
 
-Flow 节点里，`POINodeConfigurators` 负责把 POI 相关模板接到节点参数：
+Flow 节点里的常规 POI 字段由节点属性指定 PropertyEditor，并通过 `FlowPropertyEditorRegistry` 生成模板选择器；`POINodeConfigurators.cs` 只给 `BuildPOINode.TemplateName` 补充 BuildPOI/AA 两类模板选择：
 
 - `POINode` 需要主模板、过滤、修正、输出模板
 - `BuildPOINode` 会同时接布点模板、回写 POI 模板和布局 ROI 模板
@@ -83,4 +83,4 @@ Flow 节点里，`POINodeConfigurators` 负责把 POI 相关模板接到节点�
 | `Engine/ColorVision.Engine/Templates/Jsons/PoiAnalysis/AlgorithmPoiAnalysis.cs` | JSON POI 分析 |
 | `Engine/ColorVision.Engine/Templates/Jsons/SFRFindROI/AlgorithmSFRFindROI.cs` | SFR ROI 查找 |
 | `Engine/ColorVision.Engine/Templates/Jsons/OLEDAOI/AlgorithmOLEDAOI.cs` | OLED AOI |
-| `Engine/ColorVision.Engine/Templates/Flow/NodeConfigurator/POINodeConfigurators.cs` | Flow 节点模板绑定 |
+| `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/POINodeConfigurators.cs` | `BuildPOINode` 的多模板补充面板 |

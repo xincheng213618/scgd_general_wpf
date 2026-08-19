@@ -50,7 +50,7 @@ SystemMonitor/
 
 ### 插件加载方式
 - **运行时 Assembly 扫描**: 通过 manifest.json 识别插件
-- **PostBuild 复制**: 编译后自动复制到主程序 Plugins 目录
+- **HostCopy**: 通过 solution/MSBuild 构建且 `SolutionDir` 有效时，PostBuild 才复制到主程序 Plugins 目录
 - **依赖注入**: 通过 ColorVision.UI 的配置服务系统注册
 
 ### 入口类型与初始化流程
@@ -152,26 +152,13 @@ public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
 ## 6. 安装与部署
 
 ### 自动部署
-插件编译后会自动通过 PostBuild 事件复制到主程序的 Plugins 目录：
+项目导入仓库根目录的共享 HostCopy 目标：
 
 ```xml
-<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="
-        set DebugPluginsDir=$(SolutionDir)ColorVision\bin\x64\Debug\net10.0-windows\Plugins\$(TargetName)
-        set ReleasePluginsDir=$(SolutionDir)ColorVision\bin\x64\Release\net10.0-windows\Plugins\$(TargetName)
-        
-        if not exist &quot;%DebugPluginsDir%&quot; (mkdir &quot;%DebugPluginsDir%&quot;)
-        if not exist &quot;%ReleasePluginsDir%&quot; (mkdir &quot;%ReleasePluginsDir%&quot;)
-        
-        copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%DebugPluginsDir%&quot;
-        copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%ReleasePluginsDir%&quot;
-        
-        if exist &quot;$(OutDir)manifest.json&quot; (
-            copy &quot;$(OutDir)manifest.json&quot; &quot;%DebugPluginsDir%&quot;
-            copy &quot;$(OutDir)manifest.json&quot; &quot;%ReleasePluginsDir%&quot;
-        )" />
-</Target>
+<Import Project="..\..\PluginProject.HostCopy.targets" />
 ```
+
+共享 `PostBuild` 只在 solution/MSBuild 提供非空、非 `*Undefined*` 的 `SolutionDir` 时运行，并把 DLL 与项目目录中的 manifest、README、CHANGELOG 同步到宿主 Debug/Release 插件目录。直接 `dotnet build SystemMonitor.csproj` 只保证项目自身输出，不保证 HostCopy。
 
 ### 手动部署
 将以下文件复制到 `ColorVision\bin\x64\Release\net10.0-windows\Plugins\SystemMonitor\` 目录：
@@ -195,7 +182,7 @@ dotnet build .\Plugins\SystemMonitor\SystemMonitor.csproj -c Release -p:Platform
 ### 构建输出
 编译成功后会在以下位置生成文件：
 - `Plugins\SystemMonitor\bin\x64\Release\net10.0-windows\SystemMonitor.dll`
-- 自动复制到主程序 Plugins 目录
+- 仅在 solution/MSBuild 且 `SolutionDir` 有效时，由 HostCopy 同步到主程序 Plugins 目录
 
 ## 8. 使用指南
 

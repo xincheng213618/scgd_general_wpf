@@ -50,7 +50,7 @@ ConoscopeDocument.OpenAsync
 
 ### Application：可测试工作流和外部边界
 
-- `Application/Capture/`：采集 Session/Workflow。
+- `Application/Capture/`：采集工作流和纯结果模型。
 - `Application/Analysis/`：测量快照、色域和对比度会话。
 - `Application/Preprocess/`：预处理选项和 Mat 替换规则。
 - `Application/FocusPoiTemplateRepository.cs`：POI 模板数据库事务；View 不创建 SqlSugar 连接。
@@ -105,7 +105,7 @@ ImageHost.ReplaceDisplayedImage
 
 1. 先确认状态和资源由谁拥有，再决定是否抽类型。
 2. 禁止新增 `ConoscopeView.*.cs` / `ConoscopeWindow.*.cs` 式机械 partial；抽出的类型必须能说清独立输入、输出和生命周期。
-3. 禁止在 Core/Application 中通过 `ConoscopeWindow.Instance` 或 MessageBox 反向驱动 UI。
+3. Application 和领域处理不得显示消息、创建窗口或拥有控件；`FocusPointMeasurementService` 暂以 `System.Windows.Point` 作为几何兼容输入，新领域 API 应优先使用纯数值几何。`ConoscopeModuleService` 是宿主 UI 集成边界，可以定位/打开窗口并反馈入口校验，但 View/领域服务不得借静态 Window 反向刷新 UI。
 4. 不为一个调用点新增 interface/factory/forwarding service。
 5. 大 Mat 不为“代码整洁”而 clone；任何改动都要审查峰值内存和异常路径 Dispose。
 6. 显示可以使用有界近似，测量、分析和导出必须读取原始数值。
@@ -117,4 +117,9 @@ dotnet build .\Plugins\Conoscope\Conoscope.csproj -p:Platform=x64
 dotnet test .\Test\Conoscope.Tests\Conoscope.Tests.csproj -p:Platform=x64
 ```
 
-真实大图回归可设置 `CONOSCOPE_REAL_SAMPLE` 后运行 `ReadsConfiguredRealWorldSampleOneChannelAtATime`，记录三个通道的尺寸、payload、耗时、采样 hash 和峰值工作集。
+真实大图回归可设置 `CONOSCOPE_REAL_SAMPLE` 后运行：
+
+- `ReadsConfiguredRealWorldSampleOneChannelAtATime`：记录三个通道的尺寸、payload、耗时、采样 hash 和峰值工作集。
+- `OpensConfiguredRealWorldSampleThroughStagedDocumentOwner`：验证 Y-ready、XYZ-ready、文档所有权和分阶段加载的峰值工作集。
+
+环境变量使用测试机自己的样本路径；不要把个人机器绝对路径写入仓库。

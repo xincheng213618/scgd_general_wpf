@@ -11,7 +11,7 @@ POI 是“点集模板体系”，不是单个检测算法。维护时先分清�
 | POI 运行没带过滤/修正/输出 | 请求里是否出现 `FilterTemplate`、`ReviseTemplate`、`OutputTemplate` |
 | 文件模式找不到点 | `POIStorageType` 和 `POIPointFileName` |
 | BuildPOI 和 POI 参数混用 | `Event_Build_POI` 与 `Event_POI_GetData` 是否分清 |
-| Flow 节点模板下拉不对 | `POINodeConfigurators.cs` 对应分支 |
+| Flow 节点模板下拉不对 | 常规字段检查 PropertyEditor 注册；BuildPOI 多模板选择再查 `POINodeConfigurators.cs` |
 | UI 展示和导出不一致 | `ViewResultAlgType` 命中了哪个 result handler |
 
 ## 模板族
@@ -45,7 +45,7 @@ POI 是“点集模板体系”，不是单个检测算法。维护时先分清�
 
 ## Flow 消费
 
-`POINodeConfigurators.cs` 是 Flow 里最重要的入口：
+Flow 中的常规 POI 模板字段由节点上的 PropertyEditor 类型和 `FlowPropertyEditorRegistry` 绑定；`POINodeConfigurators.cs` 只补充 `BuildPOINode.TemplateName` 的多模板选择：
 
 | 分支 | 会选择什么 |
 | --- | --- |
@@ -90,4 +90,4 @@ POI 也会被 `AlgorithmPoiAnalysis`、SFR ROI、OLED AOI、项目包等继续�
 | 运行取值 | `AlgorithmImp/AlgorithmPOI.cs` |
 | 生成点集 | `BuildPoi/AlgorithmBuildPoi.cs` |
 | 过滤/修正/输出/标定 | `POIFilters/`、`POIRevise/`、`POIOutput/`、`POIGenCali/` |
-| Flow 节点选择 | `Templates/Flow/NodeConfigurator/POINodeConfigurators.cs` |
+| Flow 节点选择 | `Engine/FlowEngineLib/PropertyEditor/FlowNodePropertyEditors.cs`、`Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/POINodeConfigurators.cs` |

@@ -54,12 +54,12 @@
 
 流程执行时的主链大致是：
 
-1. `DisplayFlow` 选择并刷新当前流程模板。
-2. `FlowControl` 启动或停止当前流程。
-3. `FlowEngineLib` 执行节点图。
-4. `MQTTRCService` 提供服务令牌和状态更新。
-5. 设备节点或算法节点返回结果。
-6. 执行状态、批次记录、日志文本和节点消息被更新回界面。
+1. `DisplayFlow` 注册宿主视图，`ViewFlow` 选择并刷新当前流程模板。
+2. `FlowExecutionSession` 取得稳定 snapshot，并建立批次、运行门禁和前处理上下文。
+3. `FlowControl` 调用 `FlowEngineLib` 执行节点图。
+4. `MQTTRCService` 提供服务令牌和状态更新，设备或算法节点返回结果。
+5. `EngineExecutionCompleted` 只表示图引擎结束。
+6. `FlowRunFinalizer` 完成后处理和持久化，再发布业务最终态 `RunFinalized`。
 
 这个链路说明一个常见事实：流程不是孤立模块，它天然依赖模板、设备服务和注册中心状态。
 
@@ -79,7 +79,7 @@
 | --- | --- |
 | 主窗口或用户入口 | 主程序入口 -> UI 菜单/面板 -> 对应引擎服务 |
 | 设备行为 | `ServiceManager` -> 具体 `DeviceService` -> MQTT 或运行时状态对象 |
-| 模板或流程 | `TemplateControl` -> 模板编辑器 -> `DisplayFlow` / `FlowControl` / `FlowEngineLib` |
+| 模板或流程 | `TemplateControl` -> `ViewFlow` / `FlowEditorCanvas` -> `FlowExecutionSession` -> `FlowEngineLib` -> `RunFinalized` |
 | 插件扩展 | `PluginLoader` -> 插件程序集 -> 菜单、服务、模板或视图接口 |
 
 ## 这页不再做什么
@@ -90,6 +90,4 @@
 - 大量未核实的事件名称和接口清单
 - 脱离实际代码目录的理论依赖图
 
-如果某个专题需要更深的设计分析，应放回对应专题页，而不是在这里铺开一张过度承诺的总表。
-
-本页只保留当前最重要的真实交互主链，不再继续维护旧矩阵。
+更深的设计分析放回对应专题页；本页只保留当前最重要的真实交互主链。

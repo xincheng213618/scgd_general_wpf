@@ -2,7 +2,7 @@
 
 Spectrum 是 ColorVision 的光谱仪测量插件，也可以作为独立 WPF 程序运行。它负责设备连接、光谱采集、校零、自动积分、结果保存、曲线显示、EQE 和校准文件管理。
 
-项目目标框架为 `net10.0-windows`。
+当前发布版本为 `2.3.3.12`，项目目标框架为 `net10.0-windows`。版本事实源是 `Spectrum.csproj` 编译出的 DLL `FileVersion`；发布脚本会同步 `manifest.json`。
 
 ## 先从哪里看
 
@@ -113,7 +113,7 @@ round((fSpect2 - fSpect1) / fInterval) + 1
 
 主测量的 `CM_*` API 与直连诊断的 `SA_*` API 共享同一原生驱动，因此两类连接具有全会话互斥关系；使用一方前必须先关闭另一方。
 
-## 构建
+## 构建、测试与发布
 
 在仓库根目录使用 PowerShell：
 
@@ -122,7 +122,15 @@ dotnet build .\Plugins\Spectrum\Spectrum.csproj -p:Platform=x64
 dotnet test .\Test\Spectrum.Tests\Spectrum.Tests.csproj -p:Platform=x64
 ```
 
-专项测试覆盖结果有效点数、实际波长范围、CSV 对齐、标定文件快照和旧数据兼容。原生设备 API 与窗口生命周期仍必须做真机检查。
+专项测试覆盖结果有效点数、实际波长范围、CSV 对齐、标定文件快照、旧数据兼容，以及 Manager 不得反向依赖 MessageBox、窗口、文件对话框或同步 Dispatcher 的架构边界。原生设备 API 与窗口生命周期仍必须做真机检查。
+
+正式发布同时维护独立 ZIP 和 ColorVision `.cvxp` 更新源：
+
+```powershell
+.\Scripts\Spectrum.bat --release-notes "本次变更说明"
+```
+
+不要改主程序 `Directory.Build.props`，也不要用主程序 `release.bat` 或通用 `package_plugin.bat Spectrum` 代替正式 Spectrum 发布。专用脚本会签名独立清单、提交两个更新源并完成远端版本、下载大小和 SHA-256 验收。
 
 结果列表中的“结果就绪耗时”统计到结果生成和 EQE 计算完成；`SpectrumMeasurementProfile.TotalDurationMs` 累计到结果行插入完成，不包含测量记录行插入、事务提交与异步 UI 投影。
 
@@ -145,4 +153,4 @@ dotnet test .\Test\Spectrum.Tests\Spectrum.Tests.csproj -p:Platform=x64
 - Shutter、FilterWheel、SMU 分别对应真实设备，保留独立控制器是合理边界。
 - `MainWindow` 保持一个 XAML code-behind 组合点，高频绘图和控件交互不强塞进命令；可测试的 CSV、设备状态和数据库事务留在各自真实边界中。
 
-详细插件文档见 [Spectrum API 文档](../../docs/04-api-reference/plugins/standard-plugins/spectrum.md)。
+详细插件文档见 [Spectrum API 文档](../../docs/04-api-reference/plugins/standard-plugins/spectrum.md)，Socket 协议见 [Socket/README.md](Socket/README.md)。

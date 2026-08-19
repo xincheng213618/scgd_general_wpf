@@ -90,5 +90,5 @@ Flow 请求还会统一带 `BufferLen`、颜色通道、上一步图像参数和
 | `Templates/ARVR/FOV/DisplayFOV.xaml.cs` | FOV 输入和显示 |
 | `Templates/ARVR/Distortion/ViewResultDistortion.cs` | Distortion 结果映射 |
 | `Templates/ARVR/Ghost/AlgorithmGhost.cs` | Ghost 请求 |
-| `Templates/Flow/NodeConfigurator/AlgorithmNodeConfigurators.cs` | Flow 属性面板 |
+| `Engine/ColorVision.Engine/FlowProcessing/Editor/NodeConfiguration/AlgorithmNodeConfigurators.cs` | Flow ARVR 补充属性面板 |
 | `Engine/FlowEngineLib/Algorithm/AlgorithmARVRNode.cs` | Flow `operatorCode` 和基础请求 |

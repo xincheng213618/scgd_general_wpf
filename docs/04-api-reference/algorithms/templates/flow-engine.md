@@ -13,7 +13,7 @@
 | 保存后重开没变化 | `ViewFlow.TrySave()` / `SaveStandaloneDocument()`、`FlowValidator.Validate(...)`、`DataBase64`、资源 `Type = 101` |
 | 节点属性没有设备/模板下拉 | `FlowEditorCanvas`、`NodeConfiguratorRegistry`、`FlowProcessing/Editor/NodeConfiguration/`、服务和模板列表 |
 | `.cvflow` 导入后模板名不对 | `manifest.json`、重名映射、`ReplaceTemplateNames(...)` |
-| 调度能触发但结果没回去 | `FlowJob`、`RunFlowAndWaitAsync()`、`FlowCompleted`、项目包 `Processing` |
+| 调度能触发但最终结果没回去 | `FlowJob` / `FlowExecutionCoordinator`、`RunFlowAndWaitForFinalizationAsync()`、`RunFinalized` |
 | 运行失败需要人工处置 | `FlowIncidentManagementWindow`、Run/Event/Attempt 关联记录 |
 
 ## 存储边界
@@ -55,6 +55,8 @@
 
 `EngineExecutionCompleted` 表示“流程图引擎已结束”，此时后处理可能仍在运行；原有 `FlowExecutionCompleted` 作为它的过时兼容别名保留，不能作为整次业务运行成功的依据。引擎结束后会执行配置的后处理；后处理分为 `Warning` 和 `Required`，其中必需后处理失败会把最终结果判为失败。外部调用、Quartz 调度和自动化应等待 `RunFinalized`，或直接调用 `RunFlowAndWaitForFinalizationAsync()` 取得 `FlowRunFinalizedData.FinalOutcome`。`DisplayFlow` 只负责主程序视图注册、选中状态和服务重启。
 
+部分现有 `Projects/*` 窗口仍直接创建 `FlowControl`、监听 `FlowCompleted`，再调用项目自己的最终化或 `Processing`；这些入口尚未接入共享 `RunFinalized`，维护时应按项目链单独核对。
+
 UI 手动运行始终执行当前画布加载的 STN，不再读取或校验 Artifact。独立调度按 FlowKey 取得当前已保存 STN，并在创建请求时复制二进制数据，后续编辑不会改变已经启动的这次执行。
 
 ## 工作区与运行对象
@@ -76,7 +78,7 @@ UI 手动运行始终执行当前画布加载的 STN，不再读取或校验 Art
 | 单流程导入 | 相同模板不重复创建；内容冲突时能重命名副本并更新节点及二级模板引用 |
 | 多流程导出 | zip 内是多个 `.stn`，不要误认为包含关联模板 |
 | 调度执行 | Quartz `FlowJob` 能启动流程、等待后处理完成，并在 `context.Result` 返回最终 `FlowJobResult` |
-| 项目维护 | `RunFinalized` 后批次状态、耗时、节点尝试、Incident、后处理和最终结果都能追踪 |
+| 共享链维护 | `RunFinalized` 后批次状态、耗时、节点尝试、Incident、后处理和最终结果都能追踪 |
 | 多窗口切换 | 快速 A→B 选择最终只显示 B；坏模板加载失败不清空当前画布；独立窗口不改变主界面选择 |
 | 裸执行器 | 两次并行执行各自拥有 RuntimeHost；取消、超时、加载失败和启动拒绝都有明确终止状态 |
 | Incident | 确认和关闭能记录操作人、备注和时间，Run/Event/Attempt 详情可回查 |
