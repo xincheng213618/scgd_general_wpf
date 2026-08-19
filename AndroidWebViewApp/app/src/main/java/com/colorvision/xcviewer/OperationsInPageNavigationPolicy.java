@@ -150,6 +150,12 @@ final class OperationsInPageNavigationPolicy {
         return AppScreenMotion.DIRECTION_NONE;
     }
 
+    static boolean isTopLevelTransition(String fromDestination, String toDestination) {
+        String from = OperationsDestinationState.normalize(fromDestination);
+        String to = OperationsDestinationState.normalize(toDestination);
+        return !from.equals(to) && topLevelIndex(from) >= 0 && topLevelIndex(to) >= 0;
+    }
+
     private static int topLevelMotionDirection(String from, String to) {
         int fromIndex = topLevelIndex(from);
         int toIndex = topLevelIndex(to);

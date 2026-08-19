@@ -169,6 +169,28 @@ public class OperationsInPageNavigationPolicyTest {
     }
 
     @Test
+    public void onlyBottomNavigationDestinationsUseFadeThrough() {
+        assertTrue(OperationsInPageNavigationPolicy.isTopLevelTransition(
+                OperationsDestinationState.OVERVIEW,
+                OperationsDestinationState.SETTINGS));
+        assertTrue(OperationsInPageNavigationPolicy.isTopLevelTransition(
+                OperationsDestinationState.SETTINGS,
+                OperationsDestinationState.TRIAGE));
+        assertTrue(OperationsInPageNavigationPolicy.isTopLevelTransition(
+                OperationsDestinationState.TRIAGE,
+                OperationsDestinationState.TOOLS));
+        assertFalse(OperationsInPageNavigationPolicy.isTopLevelTransition(
+                OperationsDestinationState.SETTINGS,
+                OperationsDestinationState.CONNECTIONS));
+        assertFalse(OperationsInPageNavigationPolicy.isTopLevelTransition(
+                OperationsDestinationState.CONNECTIONS,
+                OperationsDestinationState.SETTINGS));
+        assertFalse(OperationsInPageNavigationPolicy.isTopLevelTransition(
+                OperationsDestinationState.SETTINGS,
+                OperationsDestinationState.SETTINGS));
+    }
+
+    @Test
     public void connectedSubpagesReturnToTheOperationsOverview() {
         assertTrue(OperationsInPageNavigationPolicy.shouldReturnToOverview(
                 true, true, false, false));

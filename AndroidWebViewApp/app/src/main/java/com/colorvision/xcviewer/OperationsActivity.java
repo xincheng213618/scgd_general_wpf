@@ -1973,6 +1973,8 @@ public class OperationsActivity extends AppCompatActivity {
         String normalized = OperationsDestinationState.normalize(destination);
         dashboardDetailPath = "";
         dashboardDetailRefreshInFlight = false;
+        boolean topLevelTransition = OperationsInPageNavigationPolicy.isTopLevelTransition(
+                currentDestination, normalized);
         int direction = OperationsInPageNavigationPolicy.motionDirection(
                 currentDestination,
                 normalized,
@@ -1981,7 +1983,8 @@ public class OperationsActivity extends AppCompatActivity {
                 returnToSettingsOnBack);
         AppScreenMotion.beginContentTransition(
                 contentHost == null ? dashboardContent : contentHost,
-                direction);
+                direction,
+                topLevelTransition);
         currentDestination = normalized;
         boolean settingsVisible = OperationsDestinationState.SETTINGS.equals(normalized);
         if (dashboardRefresh != null) {

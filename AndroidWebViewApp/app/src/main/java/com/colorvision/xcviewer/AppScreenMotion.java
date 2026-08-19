@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 
 import androidx.transition.TransitionManager;
 
+import com.google.android.material.transition.MaterialFadeThrough;
 import com.google.android.material.transition.MaterialSharedAxis;
 
 final class AppScreenMotion {
@@ -42,7 +43,15 @@ final class AppScreenMotion {
         return tab == settingsTab ? 2 : -1;
     }
 
-    static boolean usesSharedAxis(int direction) {
+    static boolean usesFadeThrough(int direction, boolean topLevelTransition) {
+        return topLevelTransition && isDirectional(direction);
+    }
+
+    static boolean usesSharedAxis(int direction, boolean topLevelTransition) {
+        return !topLevelTransition && isDirectional(direction);
+    }
+
+    private static boolean isDirectional(int direction) {
         return direction == DIRECTION_FORWARD || direction == DIRECTION_BACKWARD;
     }
 
@@ -82,7 +91,16 @@ final class AppScreenMotion {
     }
 
     static void beginContentTransition(ViewGroup container, int direction) {
-        if (!usesSharedAxis(direction) || container.getChildCount() == 0) {
+        beginContentTransition(container, direction, false);
+    }
+
+    static void beginContentTransition(
+            ViewGroup container, int direction, boolean topLevelTransition) {
+        if (!isDirectional(direction) || container.getChildCount() == 0) {
+            return;
+        }
+        if (usesFadeThrough(direction, topLevelTransition)) {
+            TransitionManager.beginDelayedTransition(container, new MaterialFadeThrough());
             return;
         }
         MaterialSharedAxis transition = new MaterialSharedAxis(
