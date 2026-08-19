@@ -802,28 +802,11 @@ namespace ColorVision.Copilot
 
         public bool AllowsProjectCodexConfig => ProjectTrustLevel == CopilotCodexProjectTrustLevel.Trusted;
 
-        public string DeveloperInstructionsSourceLabel => DeveloperInstructionsSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml",
-            _ => string.Empty,
-        };
+        public string DeveloperInstructionsSourceLabel => FormatSourceLabel(DeveloperInstructionsSource);
 
-        public string PersonalitySourceLabel => PersonalitySource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml personality",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml personality",
-            _ => string.Empty,
-        };
+        public string PersonalitySourceLabel => FormatSourceLabel(PersonalitySource, "personality");
 
-        public string PersonalityEnabledSourceLabel => PersonalityEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome =>
-                "Codex Home config.toml features.personality",
-            CopilotProjectInstructionConfigSources.TrustedProject =>
-                "受信项目 .codex/config.toml features.personality",
-            _ => string.Empty,
-        };
+        public string PersonalityEnabledSourceLabel => FormatSourceLabel(PersonalityEnabledSource, "features.personality");
 
         public string WebSearchModeSourceLabel
         {
@@ -832,315 +815,97 @@ namespace ColorVision.Copilot
                 var configKey = CopilotCodexWebSearchModeSelection.GetConfigKey(WebSearchModeConfigKey);
                 if (configKey.Length == 0)
                     return string.Empty;
-                return WebSearchModeSource switch
-                {
-                    CopilotProjectInstructionConfigSources.CodexHome => $"Codex Home config.toml {configKey}",
-                    CopilotProjectInstructionConfigSources.TrustedProject => $"受信项目 .codex/config.toml {configKey}",
-                    _ => string.Empty,
-                };
+                return FormatSourceLabel(WebSearchModeSource, configKey);
             }
         }
 
-        public string SandboxModeSourceLabel => SandboxModeSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml sandbox_mode",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml sandbox_mode",
-            _ => string.Empty,
-        };
+        public string SandboxModeSourceLabel => FormatSourceLabel(SandboxModeSource, "sandbox_mode");
 
-        public string ApprovalPolicySourceLabel => ApprovalPolicySource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml approval_policy",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml approval_policy",
-            _ => string.Empty,
-        };
+        public string ApprovalPolicySourceLabel => FormatSourceLabel(ApprovalPolicySource, "approval_policy");
 
-        public string ShellEnvironmentPolicySourceLabel => ShellEnvironmentPolicySources switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome =>
-                "Codex Home config.toml shell_environment_policy",
-            CopilotProjectInstructionConfigSources.TrustedProject =>
-                "受信项目 .codex/config.toml shell_environment_policy",
-            CopilotProjectInstructionConfigSources.CodexHome
-                | CopilotProjectInstructionConfigSources.TrustedProject =>
-                "Codex Home + 受信项目 .codex/config.toml shell_environment_policy",
-            _ => string.Empty,
-        };
+        public string ShellEnvironmentPolicySourceLabel => FormatSourceLabel(
+            ShellEnvironmentPolicySources,
+            "shell_environment_policy",
+            allowCombined: true);
 
-        public string ApprovalsReviewerSourceLabel => ApprovalsReviewerSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml approvals_reviewer",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml approvals_reviewer",
-            _ => string.Empty,
-        };
+        public string ApprovalsReviewerSourceLabel => FormatSourceLabel(ApprovalsReviewerSource, "approvals_reviewer");
 
-        public string GuardianApprovalEnabledSourceLabel => GuardianApprovalEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.guardian_approval",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.guardian_approval",
-            _ => string.Empty,
-        };
+        public string GuardianApprovalEnabledSourceLabel => FormatSourceLabel(GuardianApprovalEnabledSource, "features.guardian_approval");
 
-        public string AutoReviewPolicySourceLabel => AutoReviewPolicySource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml auto_review.policy",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml auto_review.policy",
-            _ => string.Empty,
-        };
+        public string AutoReviewPolicySourceLabel => FormatSourceLabel(AutoReviewPolicySource, "auto_review.policy");
 
-        public string ModelSourceLabel => ModelSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model",
-            _ => string.Empty,
-        };
+        public string ModelSourceLabel => FormatSourceLabel(ModelSource, "model");
 
-        public string ReviewModelSourceLabel => ReviewModelSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml review_model",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml review_model",
-            _ => string.Empty,
-        };
+        public string ReviewModelSourceLabel => FormatSourceLabel(ReviewModelSource, "review_model");
 
-        public string PreventIdleSleepSourceLabel => PreventIdleSleepSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.prevent_idle_sleep",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.prevent_idle_sleep",
-            _ => string.Empty,
-        };
+        public string PreventIdleSleepSourceLabel => FormatSourceLabel(PreventIdleSleepSource, "features.prevent_idle_sleep");
 
-        public string ShellToolEnabledSourceLabel => ShellToolEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.shell_tool",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.shell_tool",
-            _ => string.Empty,
-        };
+        public string ShellToolEnabledSourceLabel => FormatSourceLabel(ShellToolEnabledSource, "features.shell_tool");
 
-        public string HooksEnabledSourceLabel => HooksEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.hooks",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.hooks",
-            _ => string.Empty,
-        };
+        public string HooksEnabledSourceLabel => FormatSourceLabel(HooksEnabledSource, "features.hooks");
 
-        public string PluginsEnabledSourceLabel => PluginsEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.plugins",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.plugins",
-            _ => string.Empty,
-        };
+        public string PluginsEnabledSourceLabel => FormatSourceLabel(PluginsEnabledSource, "features.plugins");
 
-        public string ErrorOnToolCollisionsSourceLabel => ErrorOnToolCollisionsSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome =>
-                "Codex Home config.toml features.tool_registry.error_on_tool_collisions",
-            CopilotProjectInstructionConfigSources.TrustedProject =>
-                "受信项目 .codex/config.toml features.tool_registry.error_on_tool_collisions",
-            _ => string.Empty,
-        };
+        public string ErrorOnToolCollisionsSourceLabel => FormatSourceLabel(ErrorOnToolCollisionsSource, "features.tool_registry.error_on_tool_collisions");
 
-        public string MentionsV2EnabledSourceLabel => MentionsV2EnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.mentions_v2",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.mentions_v2",
-            _ => string.Empty,
-        };
+        public string MentionsV2EnabledSourceLabel => FormatSourceLabel(MentionsV2EnabledSource, "features.mentions_v2");
 
-        public string SkillMcpDependencyInstallEnabledSourceLabel => SkillMcpDependencyInstallEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.skill_mcp_dependency_install",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.skill_mcp_dependency_install",
-            _ => string.Empty,
-        };
+        public string SkillMcpDependencyInstallEnabledSourceLabel => FormatSourceLabel(SkillMcpDependencyInstallEnabledSource, "features.skill_mcp_dependency_install");
 
-        public string GoalsEnabledSourceLabel => GoalsEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.goals",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.goals",
-            _ => string.Empty,
-        };
+        public string GoalsEnabledSourceLabel => FormatSourceLabel(GoalsEnabledSource, "features.goals");
 
-        public string DefaultModeRequestUserInputEnabledSourceLabel => DefaultModeRequestUserInputEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.default_mode_request_user_input",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.default_mode_request_user_input",
-            _ => string.Empty,
-        };
+        public string DefaultModeRequestUserInputEnabledSourceLabel => FormatSourceLabel(DefaultModeRequestUserInputEnabledSource, "features.default_mode_request_user_input");
 
-        public string ExperimentalRequestUserInputEnabledSourceLabel => ExperimentalRequestUserInputEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml tools.experimental_request_user_input.enabled",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml tools.experimental_request_user_input.enabled",
-            _ => string.Empty,
-        };
+        public string ExperimentalRequestUserInputEnabledSourceLabel => FormatSourceLabel(ExperimentalRequestUserInputEnabledSource, "tools.experimental_request_user_input.enabled");
 
-        public string UpdatePlanEnabledSourceLabel => UpdatePlanEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml tools.update_plan.enabled",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml tools.update_plan.enabled",
-            _ => string.Empty,
-        };
+        public string UpdatePlanEnabledSourceLabel => FormatSourceLabel(UpdatePlanEnabledSource, "tools.update_plan.enabled");
 
-        public string IncludePermissionsInstructionsSourceLabel => IncludePermissionsInstructionsSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml include_permissions_instructions",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml include_permissions_instructions",
-            _ => string.Empty,
-        };
+        public string IncludePermissionsInstructionsSourceLabel => FormatSourceLabel(IncludePermissionsInstructionsSource, "include_permissions_instructions");
 
-        public string IncludeCollaborationModeInstructionsSourceLabel => IncludeCollaborationModeInstructionsSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml include_collaboration_mode_instructions",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml include_collaboration_mode_instructions",
-            _ => string.Empty,
-        };
+        public string IncludeCollaborationModeInstructionsSourceLabel => FormatSourceLabel(IncludeCollaborationModeInstructionsSource, "include_collaboration_mode_instructions");
 
-        public string IncludeEnvironmentContextSourceLabel => IncludeEnvironmentContextSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml include_environment_context",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml include_environment_context",
-            _ => string.Empty,
-        };
+        public string IncludeEnvironmentContextSourceLabel => FormatSourceLabel(IncludeEnvironmentContextSource, "include_environment_context");
 
-        public string IncludeSkillInstructionsSourceLabel => IncludeSkillInstructionsSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml skills.include_instructions",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml skills.include_instructions",
-            _ => string.Empty,
-        };
+        public string IncludeSkillInstructionsSourceLabel => FormatSourceLabel(IncludeSkillInstructionsSource, "skills.include_instructions");
 
-        public string MultiAgentEnabledSourceLabel => MultiAgentEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome =>
-                "Codex Home config.toml features.multi_agent",
-            CopilotProjectInstructionConfigSources.TrustedProject =>
-                "受信项目 .codex/config.toml features.multi_agent",
-            _ => string.Empty,
-        };
+        public string MultiAgentEnabledSourceLabel => FormatSourceLabel(MultiAgentEnabledSource, "features.multi_agent");
 
         public bool EffectiveAgentsEnabled => ConfiguredMultiAgentEnabled
             && ConfiguredAgentsEnabled;
 
-        public string AgentsEnabledSourceLabel => AgentsEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.enabled",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents.enabled",
-            _ => string.Empty,
-        };
+        public string AgentsEnabledSourceLabel => FormatSourceLabel(AgentsEnabledSource, "agents.enabled");
 
-        public string InterruptMessageSourceLabel => InterruptMessageSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.interrupt_message",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents.interrupt_message",
-            _ => string.Empty,
-        };
+        public string InterruptMessageSourceLabel => FormatSourceLabel(InterruptMessageSource, "agents.interrupt_message");
 
-        public string MaximumConcurrentSubagentRunsSourceLabel => MaximumConcurrentSubagentRunsSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents concurrency",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents concurrency",
-            _ => string.Empty,
-        };
+        public string MaximumConcurrentSubagentRunsSourceLabel => FormatSourceLabel(MaximumConcurrentSubagentRunsSource, "agents concurrency");
 
-        public string DefaultSubagentModelSourceLabel => DefaultSubagentModelSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.default_subagent_model",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents.default_subagent_model",
-            _ => string.Empty,
-        };
+        public string DefaultSubagentModelSourceLabel => FormatSourceLabel(DefaultSubagentModelSource, "agents.default_subagent_model");
 
-        public string DefaultSubagentReasoningEffortSourceLabel => DefaultSubagentReasoningEffortSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.default_subagent_reasoning_effort",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents.default_subagent_reasoning_effort",
-            _ => string.Empty,
-        };
+        public string DefaultSubagentReasoningEffortSourceLabel => FormatSourceLabel(DefaultSubagentReasoningEffortSource, "agents.default_subagent_reasoning_effort");
 
-        public string ModelContextWindowSourceLabel => ModelContextWindowSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_context_window",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_context_window",
-            _ => string.Empty,
-        };
+        public string ModelContextWindowSourceLabel => FormatSourceLabel(ModelContextWindowSource, "model_context_window");
 
-        public string ToolOutputTokenLimitSourceLabel => ToolOutputTokenLimitSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml tool_output_token_limit",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml tool_output_token_limit",
-            _ => string.Empty,
-        };
+        public string ToolOutputTokenLimitSourceLabel => FormatSourceLabel(ToolOutputTokenLimitSource, "tool_output_token_limit");
 
-        public string ModelReasoningEffortSourceLabel => ModelReasoningEffortSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_reasoning_effort",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_reasoning_effort",
-            _ => string.Empty,
-        };
+        public string ModelReasoningEffortSourceLabel => FormatSourceLabel(ModelReasoningEffortSource, "model_reasoning_effort");
 
-        public string PlanModeReasoningEffortSourceLabel => PlanModeReasoningEffortSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml plan_mode_reasoning_effort",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml plan_mode_reasoning_effort",
-            _ => string.Empty,
-        };
+        public string PlanModeReasoningEffortSourceLabel => FormatSourceLabel(PlanModeReasoningEffortSource, "plan_mode_reasoning_effort");
 
-        public string ModelReasoningSummarySourceLabel => ModelReasoningSummarySource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_reasoning_summary",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_reasoning_summary",
-            _ => string.Empty,
-        };
+        public string ModelReasoningSummarySourceLabel => FormatSourceLabel(ModelReasoningSummarySource, "model_reasoning_summary");
 
-        public string ModelSupportsReasoningSummariesSourceLabel => ModelSupportsReasoningSummariesSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_supports_reasoning_summaries",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_supports_reasoning_summaries",
-            _ => string.Empty,
-        };
+        public string ModelSupportsReasoningSummariesSourceLabel => FormatSourceLabel(ModelSupportsReasoningSummariesSource, "model_supports_reasoning_summaries");
 
-        public string HideAgentReasoningSourceLabel => HideAgentReasoningSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml hide_agent_reasoning",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml hide_agent_reasoning",
-            _ => string.Empty,
-        };
+        public string HideAgentReasoningSourceLabel => FormatSourceLabel(HideAgentReasoningSource, "hide_agent_reasoning");
 
-        public string ServiceTierSourceLabel => ServiceTierSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml service_tier",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml service_tier",
-            _ => string.Empty,
-        };
+        public string ServiceTierSourceLabel => FormatSourceLabel(ServiceTierSource, "service_tier");
 
-        public string FastModeEnabledSourceLabel => FastModeEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome =>
-                "Codex Home config.toml features.fast_mode",
-            CopilotProjectInstructionConfigSources.TrustedProject =>
-                "受信项目 .codex/config.toml features.fast_mode",
-            _ => string.Empty,
-        };
+        public string FastModeEnabledSourceLabel => FormatSourceLabel(FastModeEnabledSource, "features.fast_mode");
 
-        public string ModelVerbositySourceLabel => ModelVerbositySource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_verbosity",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_verbosity",
-            _ => string.Empty,
-        };
+        public string ModelVerbositySourceLabel => FormatSourceLabel(ModelVerbositySource, "model_verbosity");
 
-        public string ModelAutoCompactTokenLimitSourceLabel => ModelAutoCompactTokenLimitSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_auto_compact_token_limit",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_auto_compact_token_limit",
-            _ => string.Empty,
-        };
+        public string ModelAutoCompactTokenLimitSourceLabel => FormatSourceLabel(ModelAutoCompactTokenLimitSource, "model_auto_compact_token_limit");
 
-        public string ModelAutoCompactTokenLimitScopeSourceLabel => ModelAutoCompactTokenLimitScopeSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_auto_compact_token_limit_scope",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_auto_compact_token_limit_scope",
-            _ => string.Empty,
-        };
+        public string ModelAutoCompactTokenLimitScopeSourceLabel => FormatSourceLabel(ModelAutoCompactTokenLimitScopeSource, "model_auto_compact_token_limit_scope");
 
         public string ModelInstructionsSourceLabel
         {
@@ -1187,6 +952,25 @@ namespace ColorVision.Copilot
                 "Codex Home trust_level 无效；已保守跳过项目 .codex/config.toml",
             _ => "项目目录信任未决定；已跳过项目 .codex/config.toml",
         };
+
+        private static string FormatSourceLabel(
+            CopilotProjectInstructionConfigSources source,
+            string configKey = "",
+            bool allowCombined = false)
+        {
+            var prefix = source switch
+            {
+                CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml",
+                CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml",
+                CopilotProjectInstructionConfigSources.CodexHome
+                    | CopilotProjectInstructionConfigSources.TrustedProject when allowCombined =>
+                    "Codex Home + 受信项目 .codex/config.toml",
+                _ => string.Empty,
+            };
+            return prefix.Length == 0 || configKey.Length == 0
+                ? prefix
+                : $"{prefix} {configKey}";
+        }
     }
 
     internal sealed record CopilotCodexHomeConfigSnapshot(
