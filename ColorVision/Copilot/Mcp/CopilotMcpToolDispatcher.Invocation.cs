@@ -87,7 +87,9 @@ namespace ColorVision.Copilot.Mcp
                     return invalidResult;
                 }
 
-                var result = await definition.Handler(arguments, executionScope, cancellationToken);
+                var result = CopilotMcpToolResultContract.Capture(
+                    normalizedToolName,
+                    await definition.Handler(arguments, executionScope, cancellationToken));
 
                 CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, result.Success, stopwatch.Elapsed, result.Success ? "OK" : FirstNonEmpty(result.ErrorCode, "tool_call_failed"));
                 return result;

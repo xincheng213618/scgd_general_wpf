@@ -305,6 +305,63 @@ public sealed class CopilotSharedCapabilityCatalogTests
     }
 
     [Fact]
+    public async Task McpRuntimeRejectsContradictoryHandlerOutcomeBeforePublication()
+    {
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            SetThemeHandler = (_, _) => Task.FromResult(new CopilotMcpToolCallResult
+            {
+                Success = true,
+                Text = "untrusted success payload",
+                ErrorCode = "theme_change_failed",
+                FailureKind = CopilotToolFailureKind.Internal,
+            }),
+        });
+
+        var result = await dispatcher.CallAsync(
+            "set_theme",
+            new Dictionary<string, JsonElement>
+            {
+                ["theme"] = JsonSerializer.SerializeToElement("Dark"),
+            },
+            CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.False(result.RequiresApproval);
+        Assert.Equal(CopilotMcpToolResultContract.InvalidOutputFailureCode, result.ErrorCode);
+        Assert.Equal(CopilotToolFailureKind.Internal, result.FailureKind);
+        Assert.DoesNotContain("untrusted success payload", result.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task McpRuntimeRejectsIncompleteApprovalOutcomeBeforePublication()
+    {
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            SetThemeHandler = (_, _) => Task.FromResult(new CopilotMcpToolCallResult
+            {
+                Text = "approval required",
+                ErrorCode = "confirmation_required",
+                RequiresApproval = true,
+                ApprovalActionId = "action:incomplete",
+            }),
+        });
+
+        var result = await dispatcher.CallAsync(
+            "set_theme",
+            new Dictionary<string, JsonElement>
+            {
+                ["theme"] = JsonSerializer.SerializeToElement("Dark"),
+            },
+            CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.False(result.RequiresApproval);
+        Assert.Equal(CopilotMcpToolResultContract.InvalidOutputFailureCode, result.ErrorCode);
+        Assert.Equal(CopilotToolFailureKind.Internal, result.FailureKind);
+    }
+
+    [Fact]
     public void SharedCatalogMapsEveryDeclaredCapabilityToBothSurfaces()
     {
         var agentTools = CopilotToolRegistry.CreateCoreDefaultTools();
