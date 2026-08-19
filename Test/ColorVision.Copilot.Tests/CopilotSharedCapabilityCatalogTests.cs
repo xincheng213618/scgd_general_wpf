@@ -8,6 +8,13 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotSharedCapabilityCatalogTests
 {
     [Fact]
+    public void McpRuntimeDoesNotExposeAnAlternateToolRouter()
+    {
+        Assert.Null(typeof(CopilotMcpToolDispatcher).Assembly.GetType(
+            "ColorVision.Copilot.Mcp.CopilotMcpToolRouter"));
+    }
+
+    [Fact]
     public void SharedCatalogAndInputParametersAreBackedByImmutableViews()
     {
         var catalog = Assert.IsAssignableFrom<IList<CopilotSharedCapabilityDefinition>>(

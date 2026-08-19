@@ -42,6 +42,11 @@ namespace ColorVision.Copilot.Mcp
         public object InputSchema { get; init; } = new { type = "object" };
     }
 
+    internal delegate Task<CopilotMcpToolCallResult> CopilotScopedMcpToolHandler(
+        IReadOnlyDictionary<string, JsonElement>? arguments,
+        CopilotExecutionScope executionScope,
+        CancellationToken cancellationToken);
+
     internal sealed record CopilotMcpToolDefinition(
         CopilotMcpToolDescriptor Descriptor,
         CopilotScopedMcpToolHandler Handler);
