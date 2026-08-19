@@ -41,6 +41,7 @@ final class OperationsTriageContent {
         quickActions.setChipSpacingVertical(dp(activity, 4));
         quickActions.addView(actionChip(
                 activity,
+                themeManager,
                 activity.getString(R.string.operations_triage_connection_check_action),
                 activity.getString(
                         R.string.operations_triage_connection_check_content_description),
@@ -48,6 +49,7 @@ final class OperationsTriageContent {
                 connectionCheck));
         quickActions.addView(actionChip(
                 activity,
+                themeManager,
                 activity.getString(R.string.operations_triage_observe_action),
                 activity.getString(R.string.operations_triage_observe_content_description),
                 R.drawable.ic_visibility_24,
@@ -77,6 +79,7 @@ final class OperationsTriageContent {
 
     private static Chip actionChip(
             Activity activity,
+            ThemeManager themeManager,
             String label,
             String contentDescription,
             int iconResource,
@@ -86,6 +89,7 @@ final class OperationsTriageContent {
         chip.setCheckable(false);
         chip.setEnsureMinTouchTargetSize(true);
         chip.setChipIconResource(iconResource);
+        chip.setChipIconTint(ColorStateList.valueOf(themeManager.primaryTextColor()));
         chip.setChipIconVisible(true);
         chip.setContentDescription(contentDescription);
         chip.setOnClickListener(view -> action.run());
