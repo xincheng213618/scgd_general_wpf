@@ -331,6 +331,16 @@ final class AppPreferences {
         }
     }
 
+    void recordOperationsManualFleetCheck(
+            String hostId,
+            OperationsProfileMonitorProbe.Result result,
+            long nowMilliseconds) {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            recordOperationsProfileWatchState(hostId, result.state, nowMilliseconds);
+            saveOperationsWatchEvidence(hostId, result.attentionKey, result.evidence);
+        }
+    }
+
     OperationsMonitorEvidenceRevision.Evidence getOperationsWatchEvidence(
             String hostId, String attentionKey) {
         synchronized (OPERATIONS_PROFILE_LOCK) {

@@ -1891,8 +1891,8 @@ public class OperationsActivity extends AppCompatActivity {
                                 FLEET_READ_TIMEOUT_MILLISECONDS,
                                 System.currentTimeMillis());
                 long checkedAt = System.currentTimeMillis();
-                preferences.recordOperationsProfileWatchState(
-                        profile.hostId, result.state, checkedAt);
+                preferences.recordOperationsManualFleetCheck(
+                        profile.hostId, result, checkedAt);
                 if (result.revoked) {
                     clearRemoteWindowSnapshotSecrets(profile.hostId);
                     preferences.markOperationsProfileRevoked(profile.hostId);

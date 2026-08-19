@@ -64,9 +64,6 @@ public final class OperationsWatchService extends Service {
     private long firstFailureAtElapsedMilliseconds;
     private boolean offlineConfirmed;
     private boolean hasCompletedCheck;
-    private String lastAttentionKey = "";
-    private OperationsMonitorEvidenceRevision.Evidence lastEvidence =
-            OperationsMonitorEvidenceRevision.Evidence.EMPTY;
     private final Map<String, SecondaryFailure> secondaryFailures = new HashMap<>();
     private ConnectivityManager connectivityManager;
     private ConnectivityManager.NetworkCallback networkCallback;
@@ -225,9 +222,6 @@ public final class OperationsWatchService extends Service {
         String persistedState = preferences.getOperationsWatchState();
         hasCompletedCheck = !persistedState.isEmpty();
         offlineConfirmed = OperationsWatchHistory.STATE_OFFLINE.equals(persistedState);
-        lastAttentionKey = OperationsWatchHistory.attentionKey(persistedState);
-        lastEvidence = preferences.getOperationsWatchEvidence(
-                preferences.getOperationsHostId(), lastAttentionKey);
         createNotificationChannels(this);
         registerNetworkCallback();
     }
@@ -699,6 +693,10 @@ public final class OperationsWatchService extends Service {
             Log.i(LOG_TAG, "operations_watch_online");
         }
         String hostId = preferences.getOperationsHostId();
+        String previousAttentionKey = OperationsWatchHistory.attentionKey(
+                preferences.getOperationsWatchState());
+        OperationsMonitorEvidenceRevision.Evidence previousEvidence =
+                preferences.getOperationsWatchEvidence(hostId, previousAttentionKey);
         preferences.recordOperationsProfileWatchState(
                 hostId,
                 attentionKey.isEmpty()
@@ -707,9 +705,9 @@ public final class OperationsWatchService extends Service {
                 System.currentTimeMillis());
         updateNotification(OperationsWatchPolicy.successfulCheckNotification(status, reconnected), true);
         boolean newEvidence = OperationsWatchPolicy.isEvidenceUpdate(
-                attentionKey, lastAttentionKey, evidence, lastEvidence);
+                attentionKey, previousAttentionKey, evidence, previousEvidence);
         if (OperationsWatchPolicy.shouldPostAttention(
-                attentionKey, lastAttentionKey, evidence, lastEvidence)) {
+                attentionKey, previousAttentionKey, evidence, previousEvidence)) {
             postAttentionNotification(
                     hostId,
                     preferences.getActiveOperationsProfileLabel(),
@@ -719,9 +717,6 @@ public final class OperationsWatchService extends Service {
             clearAttentionNotification(hostId);
         }
         preferences.saveOperationsWatchEvidence(hostId, attentionKey, evidence);
-        lastAttentionKey = attentionKey;
-        lastEvidence = attentionKey.isEmpty()
-                ? OperationsMonitorEvidenceRevision.Evidence.EMPTY : evidence;
         scheduleNext(OperationsWatchPolicy.HEALTHY_CHECK_MILLISECONDS);
     }
 
@@ -744,6 +739,10 @@ public final class OperationsWatchService extends Service {
                         ? OperationsWatchHistory.STATE_REMOTE_ONLINE
                         : OperationsWatchHistory.STATE_REMOTE_WAITING;
         String hostId = preferences.getOperationsHostId();
+        String previousAttentionKey = OperationsWatchHistory.attentionKey(
+                preferences.getOperationsWatchState());
+        OperationsMonitorEvidenceRevision.Evidence previousEvidence =
+                preferences.getOperationsWatchEvidence(hostId, previousAttentionKey);
         preferences.recordOperationsProfileWatchState(
                 hostId, relayState, System.currentTimeMillis());
         String status = check.hostFresh
@@ -753,9 +752,9 @@ public final class OperationsWatchService extends Service {
                 : "远程中继在线 · 等待电脑上线";
         updateNotification((reconnected ? "连接已恢复 · " : "") + status + " · 刚刚检查", true);
         boolean newEvidence = OperationsWatchPolicy.isEvidenceUpdate(
-                attentionKey, lastAttentionKey, evidence, lastEvidence);
+                attentionKey, previousAttentionKey, evidence, previousEvidence);
         if (OperationsWatchPolicy.shouldPostAttention(
-                attentionKey, lastAttentionKey, evidence, lastEvidence)) {
+                attentionKey, previousAttentionKey, evidence, previousEvidence)) {
             postAttentionNotification(
                     hostId,
                     preferences.getActiveOperationsProfileLabel(),
@@ -765,9 +764,6 @@ public final class OperationsWatchService extends Service {
             clearAttentionNotification(hostId);
         }
         preferences.saveOperationsWatchEvidence(hostId, attentionKey, evidence);
-        lastAttentionKey = attentionKey;
-        lastEvidence = attentionKey.isEmpty()
-                ? OperationsMonitorEvidenceRevision.Evidence.EMPTY : evidence;
         Log.i(LOG_TAG, check.hostFresh
                 ? "operations_watch_remote_online"
                 : "operations_watch_remote_waiting");
@@ -817,10 +813,12 @@ public final class OperationsWatchService extends Service {
                 firstFailureAtElapsedMilliseconds,
                 nowElapsedMilliseconds);
         boolean offlineJustConfirmed = confirmOffline && !offlineConfirmed;
-        boolean previousStateOnline = OperationsWatchHistory.isOnlineState(
-                preferences.getOperationsWatchState());
+        String previousState = preferences.getOperationsWatchState();
+        boolean previousStateOnline = OperationsWatchHistory.isOnlineState(previousState);
         boolean notifyOffline = OperationsWatchPolicy.shouldPostOffline(
-                previousStateOnline, offlineJustConfirmed, lastAttentionKey);
+                previousStateOnline,
+                offlineJustConfirmed,
+                OperationsWatchHistory.attentionKey(previousState));
         if (consecutiveFailures == 1 || offlineJustConfirmed) {
             Log.w(LOG_TAG, "operations_watch_offline retry_seconds=" + (retryDelay / 1000L));
         }
@@ -842,10 +840,6 @@ public final class OperationsWatchService extends Service {
                     preferences.getActiveOperationsProfileLabel(),
                     OperationsWatchPolicy.ATTENTION_OFFLINE,
                     false);
-        }
-        if (confirmOffline) {
-            lastAttentionKey = OperationsWatchPolicy.ATTENTION_OFFLINE;
-            lastEvidence = OperationsMonitorEvidenceRevision.Evidence.EMPTY;
         }
         client = null;
         clientProfileKey = "";
@@ -956,9 +950,6 @@ public final class OperationsWatchService extends Service {
         String persistedState = preferences.getOperationsWatchState();
         hasCompletedCheck = !persistedState.isEmpty();
         offlineConfirmed = OperationsWatchHistory.STATE_OFFLINE.equals(persistedState);
-        lastAttentionKey = OperationsWatchHistory.attentionKey(persistedState);
-        lastEvidence = preferences.getOperationsWatchEvidence(
-                preferences.getOperationsHostId(), lastAttentionKey);
         updateNotification("上一台电脑授权失效 · 正在连接当前电脑", true);
         handler.removeCallbacks(scheduledCheck);
         handler.post(scheduledCheck);

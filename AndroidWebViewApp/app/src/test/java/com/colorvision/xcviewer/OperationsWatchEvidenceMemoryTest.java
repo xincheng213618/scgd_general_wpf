@@ -48,6 +48,26 @@ public class OperationsWatchEvidenceMemoryTest {
     }
 
     @Test
+    public void manualCheckBaselineSuppressesTheSameEvidenceButNotLaterGrowth() {
+        String memory = OperationsWatchEvidenceMemory.update(
+                "", "host_1", OperationsWatchPolicy.ATTENTION_ERRORS, EVIDENCE_1);
+        OperationsMonitorEvidenceRevision.Evidence baseline =
+                OperationsWatchEvidenceMemory.evidence(
+                        memory, "host_1", OperationsWatchPolicy.ATTENTION_ERRORS);
+
+        assertFalse(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                EVIDENCE_1,
+                baseline));
+        assertTrue(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                EVIDENCE_2,
+                baseline));
+    }
+
+    @Test
     public void malformedOrUntrustedValuesAreDiscarded() {
         assertFalse(OperationsWatchEvidenceMemory.evidence(
                 "not-json", "host_1", OperationsWatchPolicy.ATTENTION_DEVICES).available());
