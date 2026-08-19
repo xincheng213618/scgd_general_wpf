@@ -6,7 +6,6 @@ import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -112,8 +111,11 @@ final class OperationsToolboxContent {
         target.addView(sectionTitle(activity, themeManager, "全部工具"), matchWidth());
         List<Chip> shortcutChips = new ArrayList<>();
         ChipGroup shortcutGroup = new ChipGroup(activity);
-        shortcutGroup.setSingleLine(true);
+        shortcutGroup.setSingleLine(false);
         shortcutGroup.setChipSpacingHorizontal(dp(activity, 8));
+        shortcutGroup.setChipSpacingVertical(dp(activity, 4));
+        shortcutGroup.setContentDescription(
+                "工具分组快捷导航，共 " + model.sections.size() + " 个分组");
         for (OperationsToolboxPresentation.Section section : model.sections) {
             Chip shortcut = new Chip(activity);
             shortcut.setText(section.shortcutLabel());
@@ -123,16 +125,9 @@ final class OperationsToolboxContent {
             shortcutGroup.addView(shortcut);
             shortcutChips.add(shortcut);
         }
-        HorizontalScrollView shortcutScroll = new HorizontalScrollView(activity);
-        shortcutScroll.setHorizontalScrollBarEnabled(false);
-        shortcutScroll.setFillViewport(false);
-        shortcutScroll.setContentDescription("工具分组快捷导航");
-        shortcutScroll.addView(shortcutGroup, new HorizontalScrollView.LayoutParams(
-                HorizontalScrollView.LayoutParams.WRAP_CONTENT,
-                HorizontalScrollView.LayoutParams.WRAP_CONTENT));
         LinearLayout.LayoutParams shortcutParams = matchWidth();
         shortcutParams.setMargins(0, dp(activity, 2), 0, dp(activity, 2));
-        target.addView(shortcutScroll, shortcutParams);
+        target.addView(shortcutGroup, shortcutParams);
 
         List<TextView> sectionHeadings = new ArrayList<>();
         for (OperationsToolboxPresentation.Section section : model.sections) {
