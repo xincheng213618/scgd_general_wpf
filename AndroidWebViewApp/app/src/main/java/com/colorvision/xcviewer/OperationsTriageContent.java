@@ -19,6 +19,7 @@ import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 final class OperationsTriageContent {
@@ -30,6 +31,7 @@ final class OperationsTriageContent {
             ThemeManager themeManager,
             OperationsTriagePresentation.ViewModel model,
             ActionHandler actionHandler,
+            ReviewHandler reviewHandler,
             Runnable connectionCheck,
             Runnable observe) {
         LinearLayout root = new LinearLayout(activity);
@@ -56,12 +58,28 @@ final class OperationsTriageContent {
                 observe));
         root.addView(quickActions, matchWidth());
 
-        if (!model.findings.isEmpty()) {
+        if (!model.pendingFindings.isEmpty()) {
             root.addView(sectionTitle(
                     activity, themeManager, model.prioritySectionLabel()),
                     topMargin(dp(activity, 20)));
             root.addView(findingsContent(
-                            activity, themeManager, model, actionHandler),
+                            activity,
+                            themeManager,
+                            model.pendingFindings,
+                            actionHandler,
+                            reviewHandler),
+                    topMargin(dp(activity, 8)));
+        }
+        if (!model.reviewedFindings.isEmpty()) {
+            root.addView(sectionTitle(
+                    activity, themeManager, model.reviewedSectionLabel()),
+                    topMargin(dp(activity, 20)));
+            root.addView(findingsContent(
+                            activity,
+                            themeManager,
+                            model.reviewedFindings,
+                            actionHandler,
+                            reviewHandler),
                     topMargin(dp(activity, 8)));
         }
 
@@ -164,33 +182,36 @@ final class OperationsTriageContent {
     private static View findingsContent(
             Activity activity,
             ThemeManager themeManager,
-            OperationsTriagePresentation.ViewModel model,
-            ActionHandler actionHandler) {
+            List<OperationsTriagePresentation.Finding> findings,
+            ActionHandler actionHandler,
+            ReviewHandler reviewHandler) {
         boolean twoColumns = AppResponsiveLayout.usesTwoColumnGrid(
                 activity.getResources().getConfiguration().screenWidthDp,
                 activity.getResources().getConfiguration().fontScale,
-                model.findings.size());
+                findings.size());
         return twoColumns
-                ? findingsGrid(activity, themeManager, model, actionHandler)
-                : findingsCard(activity, themeManager, model, actionHandler);
+                ? findingsGrid(activity, themeManager, findings, actionHandler, reviewHandler)
+                : findingsCard(activity, themeManager, findings, actionHandler, reviewHandler);
     }
 
     private static MaterialCardView findingsCard(
             Activity activity,
             ThemeManager themeManager,
-            OperationsTriagePresentation.ViewModel model,
-            ActionHandler actionHandler) {
+            List<OperationsTriagePresentation.Finding> findings,
+            ActionHandler actionHandler,
+            ReviewHandler reviewHandler) {
         LinearLayout rows = new LinearLayout(activity);
         rows.setOrientation(LinearLayout.VERTICAL);
         Set<String> renderedActions = new HashSet<>();
-        for (int index = 0; index < model.findings.size(); index++) {
+        for (int index = 0; index < findings.size(); index++) {
             rows.addView(findingRow(
                     activity,
                     themeManager,
-                    model.findings.get(index),
+                    findings.get(index),
                     renderedActions,
-                    actionHandler), matchWidth());
-            if (index < model.findings.size() - 1) {
+                    actionHandler,
+                    reviewHandler), matchWidth());
+            if (index < findings.size() - 1) {
                 rows.addView(divider(activity, themeManager), dividerParams(activity));
             }
         }
@@ -204,23 +225,29 @@ final class OperationsTriageContent {
     private static View findingsGrid(
             Activity activity,
             ThemeManager themeManager,
-            OperationsTriagePresentation.ViewModel model,
-            ActionHandler actionHandler) {
+            List<OperationsTriagePresentation.Finding> findings,
+            ActionHandler actionHandler,
+            ReviewHandler reviewHandler) {
         LinearLayout grid = new LinearLayout(activity);
         grid.setOrientation(LinearLayout.VERTICAL);
         Set<String> renderedActions = new HashSet<>();
         int spacing = dp(activity, 8);
-        for (int index = 0; index < model.findings.size(); index += 2) {
+        for (int index = 0; index < findings.size(); index += 2) {
             LinearLayout row = new LinearLayout(activity);
             row.setOrientation(LinearLayout.HORIZONTAL);
-            int itemsInRow = Math.min(2, model.findings.size() - index);
+            int itemsInRow = Math.min(2, findings.size() - index);
             for (int column = 0; column < itemsInRow; column++) {
                 OperationsTriagePresentation.Finding finding =
-                        model.findings.get(index + column);
+                        findings.get(index + column);
                 MaterialCardView card = new MaterialCardView(activity);
                 card.setCardBackgroundColor(themeManager.cardBackgroundColor());
                 card.addView(findingRow(
-                        activity, themeManager, finding, renderedActions, actionHandler),
+                        activity,
+                        themeManager,
+                        finding,
+                        renderedActions,
+                        actionHandler,
+                        reviewHandler),
                         matchCardWidth());
                 LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
                         0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
@@ -243,7 +270,8 @@ final class OperationsTriageContent {
             ThemeManager themeManager,
             OperationsTriagePresentation.Finding finding,
             Set<String> renderedActions,
-            ActionHandler actionHandler) {
+            ActionHandler actionHandler,
+            ReviewHandler reviewHandler) {
         OperationsTriagePresentation.Action primaryAction = finding.primaryCardAction();
         if (primaryAction != null && !renderedActions.add(primaryAction.actionId)) {
             primaryAction = null;
@@ -325,6 +353,23 @@ final class OperationsTriageContent {
                     dp(activity, 16), dp(activity, 4), dp(activity, 16), dp(activity, 12));
             content.addView(button, buttonParams);
         }
+        MaterialButton reviewButton = new MaterialButton(
+                activity,
+                null,
+                finding.acknowledged
+                        ? com.google.android.material.R.attr.materialButtonOutlinedStyle
+                        : com.google.android.material.R.attr.materialButtonTonalStyle);
+        reviewButton.setText(finding.acknowledged ? "撤销复核" : "标记已复核");
+        reviewButton.setMinHeight(dp(activity, 48));
+        reviewButton.setContentDescription(finding.acknowledged
+                ? "撤销本机复核，恢复为待复核"
+                : "标记为已在此手机复核；电脑状态不会改变，新证据会自动恢复为待复核");
+        reviewButton.setOnClickListener(view -> reviewHandler.onReview(
+                finding, !finding.acknowledged));
+        LinearLayout.LayoutParams reviewParams = topMargin(dp(activity, 4));
+        reviewParams.setMargins(
+                dp(activity, 16), dp(activity, 4), dp(activity, 16), dp(activity, 12));
+        content.addView(reviewButton, reviewParams);
         return content;
     }
 
@@ -436,5 +481,9 @@ final class OperationsTriageContent {
 
     interface ActionHandler {
         void onAction(String actionId);
+    }
+
+    interface ReviewHandler {
+        void onReview(OperationsTriagePresentation.Finding finding, boolean acknowledged);
     }
 }

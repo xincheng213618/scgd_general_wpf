@@ -61,8 +61,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -4972,13 +4974,28 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void renderTriageCenter(JSONObject report) {
-        OperationsTriagePresentation.ViewModel model =
+        OperationsTriagePresentation.ViewModel rawModel =
                 OperationsTriagePresentation.from(report, this::shortTime);
-        problemCenterRefreshInFlight = false;
-        problemBadgeCount = model.findings.size();
-        if (model.tone == OperationsTriagePresentation.TONE_NORMAL) {
-            problemBadgeState = OperationsWatchHistory.STATE_ONLINE;
+        String hostId = preferences.getOperationsHostId();
+        long nowMilliseconds = System.currentTimeMillis();
+        Map<String, String> currentRevisions = new HashMap<>();
+        for (OperationsTriagePresentation.Finding finding : rawModel.findings) {
+            currentRevisions.put(finding.findingId, finding.revision);
         }
+        preferences.reconcileOperationsTriageAcknowledgements(
+                hostId, currentRevisions, nowMilliseconds);
+        OperationsTriagePresentation.ViewModel model =
+                OperationsTriagePresentation.withAcknowledgements(
+                        rawModel,
+                        (findingId, revision) -> preferences
+                                .isOperationsTriageFindingAcknowledged(
+                                        hostId,
+                                        findingId,
+                                        revision,
+                                        nowMilliseconds));
+        problemCenterRefreshInFlight = false;
+        problemBadgeCount = model.pendingFindings.size();
+        problemBadgeState = model.watchState();
         refreshProblemNavigationBadge();
         refreshOperationsHeaderNavigation();
         scrollDashboardToTop();
@@ -4991,12 +5008,41 @@ public class OperationsActivity extends AppCompatActivity {
                         themeManager,
                         model,
                         this::runTriageAction,
+                        (finding, acknowledged) -> setTriageFindingAcknowledged(
+                                report, finding, acknowledged),
                         this::runConnectionSelfCheckFromTriage,
                         this::showLiveMonitorFromTriage),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
         restoreTopLevelScroll(OperationsDestinationState.TRIAGE);
+    }
+
+    private void setTriageFindingAcknowledged(
+            JSONObject report,
+            OperationsTriagePresentation.Finding finding,
+            boolean acknowledged) {
+        String hostId = preferences.getOperationsHostId();
+        if (hostId.isEmpty() || finding == null) {
+            return;
+        }
+        int scrollY = dashboardScroll == null ? 0 : dashboardScroll.getScrollY();
+        preferences.saveOperationsTriageFindingAcknowledged(
+                hostId,
+                finding.findingId,
+                finding.revision,
+                acknowledged,
+                System.currentTimeMillis());
+        renderTriageCenter(report);
+        if (dashboardScroll != null) {
+            dashboardScroll.post(() -> dashboardScroll.scrollTo(0, scrollY));
+        }
+        Snackbar.make(
+                snackbarHost,
+                acknowledged
+                        ? "已在此手机复核；电脑状态未改变，新证据会自动重新出现"
+                        : "已恢复为待复核",
+                Snackbar.LENGTH_LONG).show();
     }
 
     private void showLiveMonitorFromTriage() {

@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 
 import java.util.List;
+import java.util.Map;
 
 final class AppPreferences {
     static final String THEME_SYSTEM = "system";
@@ -39,6 +40,8 @@ final class AppPreferences {
     private static final String KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY = "operations_relay_task_idempotency";
     private static final String KEY_OPERATIONS_TOOLBOX_RECENTS =
             "operations_toolbox_recents_v1";
+    private static final String KEY_OPERATIONS_TRIAGE_ACKNOWLEDGEMENTS =
+            "operations_triage_acknowledgements_v1";
     private static final Object OPERATIONS_PROFILE_LOCK = new Object();
 
     private final SharedPreferences preferences;
@@ -311,10 +314,61 @@ final class AppPreferences {
                 OperationsToolboxRecents.record(current, actionId)).apply();
     }
 
+    void reconcileOperationsTriageAcknowledgements(
+            String hostId, Map<String, String> currentRevisions, long nowMilliseconds) {
+        saveOperationsTriageAcknowledgements(OperationsTriageAcknowledgements.reconcile(
+                getOperationsTriageAcknowledgements(),
+                hostId,
+                currentRevisions,
+                nowMilliseconds));
+    }
+
+    boolean isOperationsTriageFindingAcknowledged(
+            String hostId, String findingId, String revision, long nowMilliseconds) {
+        return OperationsTriageAcknowledgements.contains(
+                getOperationsTriageAcknowledgements(),
+                hostId,
+                findingId,
+                revision,
+                nowMilliseconds);
+    }
+
+    void saveOperationsTriageFindingAcknowledged(
+            String hostId,
+            String findingId,
+            String revision,
+            boolean acknowledged,
+            long nowMilliseconds) {
+        String current = getOperationsTriageAcknowledgements();
+        saveOperationsTriageAcknowledgements(acknowledged
+                ? OperationsTriageAcknowledgements.acknowledge(
+                        current, hostId, findingId, revision, nowMilliseconds)
+                : OperationsTriageAcknowledgements.remove(
+                        current, hostId, findingId, nowMilliseconds));
+    }
+
     void removeOperationsProfile(String hostId) {
         synchronized (OPERATIONS_PROFILE_LOCK) {
             writeOperationsProfiles(readOperationsProfiles().remove(hostId));
+            saveOperationsTriageAcknowledgements(OperationsTriageAcknowledgements.removeHost(
+                    getOperationsTriageAcknowledgements(),
+                    hostId,
+                    System.currentTimeMillis()));
         }
+    }
+
+    private String getOperationsTriageAcknowledgements() {
+        return preferences.getString(KEY_OPERATIONS_TRIAGE_ACKNOWLEDGEMENTS, "");
+    }
+
+    private void saveOperationsTriageAcknowledgements(String serialized) {
+        SharedPreferences.Editor editor = preferences.edit();
+        if (serialized == null || serialized.isEmpty()) {
+            editor.remove(KEY_OPERATIONS_TRIAGE_ACKNOWLEDGEMENTS);
+        } else {
+            editor.putString(KEY_OPERATIONS_TRIAGE_ACKNOWLEDGEMENTS, serialized);
+        }
+        editor.apply();
     }
 
     private OperationsProfileRegistry.Profile activeOperationsProfile() {

@@ -63,6 +63,21 @@ final class OperationsTriagePresentation {
                     continue;
                 }
                 String severity = source.optString("severity", "info");
+                String category = source.optString("category", "");
+                String title = source.optString("title", "需要关注");
+                String findingSummary = source.optString("summary", "");
+                int evidenceCount = Math.max(0, source.optInt("evidenceCount", 0));
+                String rawLatestAt = source.optString("latestAt", "");
+                String findingId = OperationsTriageFindingRevision.findingId(
+                        source.optString("findingId", ""), category, title);
+                String revision = OperationsTriageFindingRevision.revision(
+                        findingId,
+                        severity,
+                        category,
+                        title,
+                        findingSummary,
+                        evidenceCount,
+                        rawLatestAt);
                 List<Action> actions = new ArrayList<>();
                 JSONArray sourceActions = source.optJSONArray("actions");
                 if (sourceActions != null) {
@@ -80,14 +95,18 @@ final class OperationsTriagePresentation {
                                 action.optBoolean("requiresLocalCoSign", false)));
                     }
                 }
-                String latestAt = timeFormatter.format(source.optString("latestAt", ""));
+                String latestAt = timeFormatter.format(rawLatestAt);
                 findings.add(new Finding(
+                        findingId,
+                        revision,
+                        false,
                         severity,
                         severityLabel(severity),
-                        categoryLabel(source.optString("category", "")),
-                        source.optString("title", "需要关注"),
-                        source.optString("summary", ""),
-                        Math.max(0, source.optInt("evidenceCount", 0)),
+                        category,
+                        categoryLabel(category),
+                        title,
+                        findingSummary,
+                        evidenceCount,
                         latestAt,
                         Collections.unmodifiableList(actions)));
             }
@@ -96,13 +115,43 @@ final class OperationsTriagePresentation {
         String summary = report.optString("summary", findings.isEmpty()
                 ? "当前有界证据中没有需要处理的项目。" : "排障建议已生成。");
         return new ViewModel(
-                stateLabel(state, findings.size()),
+                state,
+                stateLabel(state, findings.size(), 0),
                 summary,
                 stateTone(state),
                 Collections.unmodifiableList(metrics),
                 Collections.unmodifiableList(findings),
+                Collections.unmodifiableList(findings),
+                Collections.emptyList(),
                 report.optString("safetyNotice",
                         "建议仅引用有界脱敏摘要；远程恢复或取证动作仍需明确确认。"));
+    }
+
+    static ViewModel withAcknowledgements(
+            ViewModel model, AcknowledgementLookup acknowledgementLookup) {
+        if (model == null || acknowledgementLookup == null) {
+            return model;
+        }
+        List<Finding> all = new ArrayList<>();
+        List<Finding> pending = new ArrayList<>();
+        List<Finding> reviewed = new ArrayList<>();
+        for (Finding source : model.findings) {
+            boolean acknowledged = acknowledgementLookup.isAcknowledged(
+                    source.findingId, source.revision);
+            Finding finding = source.withAcknowledged(acknowledged);
+            all.add(finding);
+            (acknowledged ? reviewed : pending).add(finding);
+        }
+        return new ViewModel(
+                model.reportState,
+                stateLabel(model.reportState, pending.size(), reviewed.size()),
+                model.summary,
+                model.tone,
+                model.metrics,
+                Collections.unmodifiableList(all),
+                Collections.unmodifiableList(pending),
+                Collections.unmodifiableList(reviewed),
+                model.safetyNotice);
     }
 
     static boolean isSupportedAction(String actionId) {
@@ -207,15 +256,18 @@ final class OperationsTriagePresentation {
         }
     }
 
-    private static String stateLabel(String value, int findingCount) {
+    private static String stateLabel(String value, int pendingCount, int reviewedCount) {
+        if (pendingCount == 0 && reviewedCount > 0) {
+            return reviewedCount + " 项已复核 · 状态仍存在";
+        }
         if ("critical".equalsIgnoreCase(value)) {
-            return findingCount > 0
-                    ? "严重事件 · " + findingCount + " 项待复核"
+            return pendingCount > 0
+                    ? "严重事件 · " + pendingCount + " 项待复核"
                     : "发现严重事件 · 请优先复核";
         }
         if ("attention".equalsIgnoreCase(value)) {
-            return findingCount > 0
-                    ? "需要关注 · " + findingCount + " 项待复核"
+            return pendingCount > 0
+                    ? "需要关注 · " + pendingCount + " 项待复核"
                     : "发现需要关注的状态";
         }
         return "当前有界证据正常";
@@ -258,33 +310,83 @@ final class OperationsTriagePresentation {
         String format(String value);
     }
 
+    interface AcknowledgementLookup {
+        boolean isAcknowledged(String findingId, String revision);
+    }
+
     static final class ViewModel {
+        final String reportState;
         final String stateLabel;
         final String summary;
         final int tone;
         final List<Metric> metrics;
         final List<Finding> findings;
+        final List<Finding> pendingFindings;
+        final List<Finding> reviewedFindings;
         final String safetyNotice;
 
         ViewModel(
+                String reportState,
                 String stateLabel,
                 String summary,
                 int tone,
                 List<Metric> metrics,
                 List<Finding> findings,
+                List<Finding> pendingFindings,
+                List<Finding> reviewedFindings,
                 String safetyNotice) {
+            this.reportState = reportState;
             this.stateLabel = stateLabel;
             this.summary = summary;
             this.tone = tone;
             this.metrics = metrics;
             this.findings = findings;
+            this.pendingFindings = pendingFindings;
+            this.reviewedFindings = reviewedFindings;
             this.safetyNotice = safetyNotice;
         }
 
         String prioritySectionLabel() {
-            return findings.size() == 1
+            return pendingFindings.size() == 1
                     ? "优先处理"
-                    : "优先处理 · " + findings.size();
+                    : "优先处理 · " + pendingFindings.size();
+        }
+
+        String reviewedSectionLabel() {
+            return reviewedFindings.size() == 1
+                    ? "已复核 · 状态仍存在"
+                    : "已复核 · " + reviewedFindings.size() + " 项状态仍存在";
+        }
+
+        String watchState() {
+            if (tone == TONE_NORMAL || findings.isEmpty()) {
+                return OperationsWatchHistory.STATE_ONLINE;
+            }
+            if ("critical".equalsIgnoreCase(reportState)) {
+                return OperationsWatchHistory.attentionState(
+                        OperationsWatchPolicy.ATTENTION_CRITICAL);
+            }
+            boolean devices = false;
+            boolean messaging = false;
+            for (Finding finding : findings) {
+                if ("desktop".equals(finding.category)) {
+                    return OperationsWatchHistory.attentionState(
+                            OperationsWatchPolicy.ATTENTION_UI_UNRESPONSIVE);
+                }
+                devices |= "devices".equals(finding.category);
+                messaging |= "message-channel".equals(finding.category)
+                        || "message-service".equals(finding.category);
+            }
+            if (messaging) {
+                return OperationsWatchHistory.attentionState(
+                        OperationsWatchPolicy.ATTENTION_MESSAGE_CHANNEL);
+            }
+            if (devices) {
+                return OperationsWatchHistory.attentionState(
+                        OperationsWatchPolicy.ATTENTION_DEVICES);
+            }
+            return OperationsWatchHistory.attentionState(
+                    OperationsWatchPolicy.ATTENTION_ERRORS);
         }
     }
 
@@ -319,8 +421,12 @@ final class OperationsTriagePresentation {
     }
 
     static final class Finding {
+        final String findingId;
+        final String revision;
+        final boolean acknowledged;
         final String severity;
         final String severityLabel;
+        final String category;
         final String categoryLabel;
         final String title;
         final String summary;
@@ -329,22 +435,49 @@ final class OperationsTriagePresentation {
         final List<Action> actions;
 
         Finding(
+                String findingId,
+                String revision,
+                boolean acknowledged,
                 String severity,
                 String severityLabel,
+                String category,
                 String categoryLabel,
                 String title,
                 String summary,
                 int evidenceCount,
                 String latestAt,
                 List<Action> actions) {
+            this.findingId = findingId;
+            this.revision = revision;
+            this.acknowledged = acknowledged;
             this.severity = severity;
             this.severityLabel = severityLabel;
+            this.category = category;
             this.categoryLabel = categoryLabel;
             this.title = title;
             this.summary = summary;
             this.evidenceCount = evidenceCount;
             this.latestAt = latestAt;
             this.actions = actions;
+        }
+
+        Finding withAcknowledged(boolean value) {
+            if (acknowledged == value) {
+                return this;
+            }
+            return new Finding(
+                    findingId,
+                    revision,
+                    value,
+                    severity,
+                    severityLabel,
+                    category,
+                    categoryLabel,
+                    title,
+                    summary,
+                    evidenceCount,
+                    latestAt,
+                    actions);
         }
 
         int tone() {
@@ -365,9 +498,10 @@ final class OperationsTriagePresentation {
         }
 
         String listMetaLabel() {
-            return latestAt.isEmpty()
+            String label = latestAt.isEmpty()
                     ? evidenceLabel()
                     : evidenceLabel() + " · " + latestAt;
+            return acknowledged ? "已复核 · " + label : label;
         }
 
         Action primaryCardAction() {
@@ -385,6 +519,7 @@ final class OperationsTriagePresentation {
             appendSentence(label, title);
             appendSentence(label, summary);
             appendSentence(label, latestAt.isEmpty() ? "" : "最近证据 " + latestAt);
+            appendSentence(label, acknowledged ? "已在此手机复核，电脑状态仍存在" : "");
             appendSentence(label, "点按" + action.buttonLabel());
             return label.toString();
         }

@@ -88,8 +88,12 @@ public class OperationsTriagePresentationTest {
     @Test
     public void findingWithoutTimestampKeepsItsMetadataCompact() {
         OperationsTriagePresentation.Finding finding = new OperationsTriagePresentation.Finding(
+                "diagnostics-warning",
+                "a".repeat(64),
+                false,
                 "warning",
                 "警告",
+                "diagnostics",
                 "诊断事件",
                 "近期存在警告事件",
                 "有界日志摘要需要复核。",
@@ -98,6 +102,45 @@ public class OperationsTriagePresentationTest {
                 java.util.Collections.emptyList());
 
         assertEquals("警告 · 诊断事件 · 3 条证据", finding.listMetaLabel());
+    }
+
+    @Test
+    public void localReviewSeparatesPendingEvidenceWithoutClaimingResolution() throws Exception {
+        JSONObject report = new JSONObject("{\"state\":\"attention\",\"findings\":["
+                + "{\"findingId\":\"devices\",\"severity\":\"warning\","
+                + "\"category\":\"devices\",\"title\":\"设备离线\","
+                + "\"summary\":\"离线 2 台\",\"evidenceCount\":2},"
+                + "{\"findingId\":\"diagnostics\",\"severity\":\"warning\","
+                + "\"category\":\"diagnostics\",\"title\":\"近期警告\","
+                + "\"summary\":\"警告 3 条\",\"evidenceCount\":3}]} ");
+        OperationsTriagePresentation.ViewModel raw =
+                OperationsTriagePresentation.from(report, value -> value);
+
+        OperationsTriagePresentation.ViewModel partiallyReviewed =
+                OperationsTriagePresentation.withAcknowledgements(
+                        raw, (findingId, revision) -> "devices".equals(findingId));
+
+        assertEquals("需要关注 · 1 项待复核", partiallyReviewed.stateLabel);
+        assertEquals(2, partiallyReviewed.findings.size());
+        assertEquals(1, partiallyReviewed.pendingFindings.size());
+        assertEquals(1, partiallyReviewed.reviewedFindings.size());
+        assertTrue(partiallyReviewed.reviewedFindings.get(0).listMetaLabel()
+                .startsWith("已复核 · "));
+        assertEquals("优先处理", partiallyReviewed.prioritySectionLabel());
+        assertEquals("已复核 · 状态仍存在", partiallyReviewed.reviewedSectionLabel());
+        assertEquals(OperationsWatchHistory.attentionState(
+                        OperationsWatchPolicy.ATTENTION_DEVICES),
+                partiallyReviewed.watchState());
+
+        OperationsTriagePresentation.ViewModel allReviewed =
+                OperationsTriagePresentation.withAcknowledgements(
+                        raw, (findingId, revision) -> true);
+        assertEquals("2 项已复核 · 状态仍存在", allReviewed.stateLabel);
+        assertTrue(allReviewed.pendingFindings.isEmpty());
+        assertEquals(2, allReviewed.reviewedFindings.size());
+        assertEquals(OperationsWatchHistory.attentionState(
+                        OperationsWatchPolicy.ATTENTION_DEVICES),
+                allReviewed.watchState());
     }
 
     @Test
