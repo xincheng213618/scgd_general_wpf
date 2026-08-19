@@ -189,14 +189,14 @@ public class OperationsRemoteProblemsPresentationTest {
                         "固定状态", "仅用于版本测试",
                         OperationsDashboardStatusFormatter.TONE_ATTENTION);
 
-        OperationsRemoteProblemRevision.Identity flow =
-                OperationsRemoteProblemRevision.capture("flow", monitor, status);
-        OperationsRemoteProblemRevision.Identity message =
-                OperationsRemoteProblemRevision.capture("message", monitor, status);
-        OperationsRemoteProblemRevision.Identity performance =
-                OperationsRemoteProblemRevision.capture("performance", monitor, status);
-        OperationsRemoteProblemRevision.Identity recovery =
-                OperationsRemoteProblemRevision.capture("recovery", monitor, status);
+        OperationsMonitorProblemRevision.Identity flow =
+                OperationsMonitorProblemRevision.capture("flow", monitor, status);
+        OperationsMonitorProblemRevision.Identity message =
+                OperationsMonitorProblemRevision.capture("message", monitor, status);
+        OperationsMonitorProblemRevision.Identity performance =
+                OperationsMonitorProblemRevision.capture("performance", monitor, status);
+        OperationsMonitorProblemRevision.Identity recovery =
+                OperationsMonitorProblemRevision.capture("recovery", monitor, status);
         assertEquals("relay-flow", flow.findingId);
         assertEquals("relay-message", message.findingId);
         assertEquals("relay-performance", performance.findingId);
@@ -206,24 +206,50 @@ public class OperationsRemoteProblemsPresentationTest {
         monitor.getJSONObject("messageChannel").put("observedAt", "2026-08-19T03:00:00Z");
         monitor.getJSONObject("performance").put("cpuPercent", 99.0);
         assertEquals(message.revision,
-                OperationsRemoteProblemRevision.capture("message", monitor, status).revision);
+                OperationsMonitorProblemRevision.capture("message", monitor, status).revision);
         assertEquals(performance.revision,
-                OperationsRemoteProblemRevision.capture("performance", monitor, status).revision);
+                OperationsMonitorProblemRevision.capture("performance", monitor, status).revision);
 
         monitor.getJSONObject("flow").put("isActive", false);
         monitor.getJSONObject("messageChannel").put("activeSubscriptionCount", 3);
         monitor.getJSONObject("performance").getJSONObject("mainUi").put("state", "slow");
         monitor.getJSONObject("applicationRecovery").put("automaticWatchdogActive", false);
         assertFalse(flow.revision.equals(
-                OperationsRemoteProblemRevision.capture("flow", monitor, status).revision));
+                OperationsMonitorProblemRevision.capture("flow", monitor, status).revision));
         assertFalse(message.revision.equals(
-                OperationsRemoteProblemRevision.capture("message", monitor, status).revision));
+                OperationsMonitorProblemRevision.capture("message", monitor, status).revision));
         assertFalse(performance.revision.equals(
-                OperationsRemoteProblemRevision.capture("performance", monitor, status).revision));
+                OperationsMonitorProblemRevision.capture("performance", monitor, status).revision));
         assertFalse(recovery.revision.equals(
-                OperationsRemoteProblemRevision.capture("recovery", monitor, status).revision));
-        assertFalse(OperationsRemoteProblemRevision.capture(
+                OperationsMonitorProblemRevision.capture("recovery", monitor, status).revision));
+        assertFalse(OperationsMonitorProblemRevision.capture(
                 "arbitrary", monitor, status).available());
+    }
+
+    @Test
+    public void combinedMonitorProblemRevisionIgnoresSamplingButTracksMaterialEvidence()
+            throws Exception {
+        JSONObject monitor = completeMonitor();
+        monitor.getJSONObject("alerts")
+                .put("count", 1)
+                .put("warningCount", 1)
+                .put("latestOccurredAt", "2026-08-19T01:00:00Z");
+        String first = OperationsMonitorProblemRevision.monitorRevision(monitor);
+        assertTrue(first.matches("[0-9a-f]{64}"));
+
+        monitor.put("capturedAt", "2026-08-19T02:00:00Z");
+        monitor.getJSONObject("devices").put("observedAt", "2026-08-19T02:00:00Z");
+        monitor.getJSONObject("messageChannel").put("observedAt", "2026-08-19T02:00:00Z");
+        monitor.getJSONObject("performance")
+                .put("cpuPercent", 99.0)
+                .getJSONObject("mainUi")
+                .put("latencyMilliseconds", 9_999);
+        assertEquals(first, OperationsMonitorProblemRevision.monitorRevision(monitor));
+
+        monitor.getJSONObject("alerts")
+                .put("latestOccurredAt", "2026-08-19T02:00:00Z");
+        assertFalse(first.equals(OperationsMonitorProblemRevision.monitorRevision(monitor)));
+        assertEquals("", OperationsMonitorProblemRevision.monitorRevision(null));
     }
 
     @Test

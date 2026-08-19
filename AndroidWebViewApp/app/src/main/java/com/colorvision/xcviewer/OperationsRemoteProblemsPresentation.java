@@ -179,8 +179,8 @@ final class OperationsRemoteProblemsPresentation {
             JSONObject monitor,
             OperationsDashboardStatusFormatter.Item status) {
         if (status.tone == OperationsDashboardStatusFormatter.TONE_ATTENTION) {
-            OperationsRemoteProblemRevision.Identity identity =
-                    OperationsRemoteProblemRevision.capture(section, monitor, status);
+            OperationsMonitorProblemRevision.Identity identity =
+                    OperationsMonitorProblemRevision.capture(section, monitor, status);
             if (identity.available()) {
                 issues.add(new Issue(
                         section,

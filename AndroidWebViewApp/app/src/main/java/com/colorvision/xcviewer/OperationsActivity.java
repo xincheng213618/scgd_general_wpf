@@ -206,6 +206,12 @@ public class OperationsActivity extends AppCompatActivity {
     private String activeTriageAttentionFocus = "";
     private String problemBadgeState = "";
     private int problemBadgeCount;
+    private boolean directProblemBadgeAuthoritative;
+    private boolean directProblemBadgeRefreshInFlight;
+    private int directProblemBadgeRefreshGeneration;
+    private long lastDirectProblemBadgeRefreshAttemptMilliseconds;
+    private String directProblemBadgeMonitorRevision = "";
+    private String latestDirectProblemMonitorRevision = "";
     private String detailParentDestination = OperationsDestinationState.OVERVIEW;
     private String connectionsParentDestination = OperationsDestinationState.OVERVIEW;
     private boolean updatingTopLevelNavigation;
@@ -669,16 +675,99 @@ public class OperationsActivity extends AppCompatActivity {
                             : OperationsWatchHistory.STATE_ONLINE);
             if (monitor == null) {
                 problemBadgeCount = 0;
+                if (!relay) {
+                    directProblemBadgeAuthoritative = false;
+                    latestDirectProblemMonitorRevision = "";
+                }
             } else {
                 OperationsRemoteProblemsPresentation.ViewModel rawModel =
                         OperationsRemoteProblemsPresentation.from(monitor, true);
-                problemBadgeCount = relay
-                        ? applyRemoteProblemAcknowledgements(rawModel, false)
-                                .pendingIssues.size()
-                        : rawModel.issues.size();
+                if (relay) {
+                    problemBadgeCount = applyRemoteProblemAcknowledgements(rawModel, false)
+                            .pendingIssues.size();
+                } else {
+                    latestDirectProblemMonitorRevision =
+                            OperationsMonitorProblemRevision.monitorRevision(monitor);
+                    if (directProblemBadgeAuthoritative
+                            && directProblemBadgeMonitorRevision.isEmpty()) {
+                        directProblemBadgeMonitorRevision =
+                                latestDirectProblemMonitorRevision;
+                    }
+                    if (!directProblemBadgeAuthoritative) {
+                        problemBadgeCount = rawModel.issues.size();
+                    }
+                    requestDirectProblemBadgeRefresh();
+                }
             }
         }
         refreshProblemNavigationBadge();
+    }
+
+    private void requestDirectProblemBadgeRefresh() {
+        long nowMilliseconds = System.currentTimeMillis();
+        if (!OperationsDirectProblemBadgeRefreshPolicy.shouldRefresh(
+                remoteDashboard,
+                directProblemBadgeRefreshInFlight,
+                problemCenterRefreshInFlight,
+                directProblemBadgeAuthoritative,
+                directProblemBadgeMonitorRevision,
+                latestDirectProblemMonitorRevision,
+                lastDirectProblemBadgeRefreshAttemptMilliseconds,
+                nowMilliseconds)) {
+            return;
+        }
+        OperationsApiClient requestClient = client;
+        String requestHostId = operationsClientHostId.isEmpty()
+                ? preferences.getOperationsHostId() : operationsClientHostId;
+        if (requestClient == null || !OperationsRelayPolicy.isSafeIdentifier(requestHostId)) {
+            return;
+        }
+        directProblemBadgeRefreshInFlight = true;
+        lastDirectProblemBadgeRefreshAttemptMilliseconds = nowMilliseconds;
+        int requestGeneration = connectionRequestGeneration;
+        int badgeGeneration = ++directProblemBadgeRefreshGeneration;
+        executor.execute(() -> {
+            try {
+                JSONObject response = requestClient.get("/ops/v1/triage");
+                JSONObject report = response.optJSONObject("data");
+                if (report == null) {
+                    throw new IllegalStateException("incomplete_triage_response");
+                }
+                runOnUiThread(() -> {
+                    if (!isCurrentDirectProblemBadgeRequest(
+                            requestGeneration, badgeGeneration, requestHostId)) {
+                        return;
+                    }
+                    OperationsTriagePresentation.ViewModel model =
+                            triageModel(report, false, System.currentTimeMillis());
+                    directProblemBadgeRefreshInFlight = false;
+                    directProblemBadgeAuthoritative = true;
+                    directProblemBadgeMonitorRevision =
+                            latestDirectProblemMonitorRevision;
+                    problemBadgeCount = model.pendingFindings.size();
+                    problemBadgeState = model.watchState();
+                    refreshProblemNavigationBadge();
+                });
+            } catch (Exception ignored) {
+                runOnUiThread(() -> {
+                    if (isCurrentDirectProblemBadgeRequest(
+                            requestGeneration, badgeGeneration, requestHostId)) {
+                        directProblemBadgeRefreshInFlight = false;
+                    }
+                });
+            }
+        });
+    }
+
+    private boolean isCurrentDirectProblemBadgeRequest(
+            int requestGeneration, int badgeGeneration, String requestHostId) {
+        return requestGeneration == connectionRequestGeneration
+                && badgeGeneration == directProblemBadgeRefreshGeneration
+                && !remoteDashboard
+                && OperationsTargetPolicy.isSameTarget(
+                        requestHostId, preferences.getOperationsHostId())
+                && !isFinishing()
+                && !isDestroyed();
     }
 
     private void installInPageBackNavigation() {
@@ -1966,12 +2055,28 @@ public class OperationsActivity extends AppCompatActivity {
         lastSuccessfulDashboardUpdateLabel = "";
         problemBadgeState = "";
         problemBadgeCount = 0;
+        cancelDirectProblemBadgeRefresh(true);
         problemCenterRefreshInFlight = false;
         dashboardDetailPath = "";
         dashboardDetailRefreshInFlight = false;
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         clearDashboardLiveStatusReferences();
         refreshProblemNavigationBadge();
+    }
+
+    private void cancelDirectProblemBadgeRefresh(boolean clearAuthoritativeCount) {
+        if (directProblemBadgeRefreshInFlight) {
+            lastDirectProblemBadgeRefreshAttemptMilliseconds = 0L;
+        }
+        directProblemBadgeRefreshGeneration++;
+        directProblemBadgeRefreshInFlight = false;
+        if (!clearAuthoritativeCount) {
+            return;
+        }
+        directProblemBadgeAuthoritative = false;
+        lastDirectProblemBadgeRefreshAttemptMilliseconds = 0L;
+        directProblemBadgeMonitorRevision = "";
+        latestDirectProblemMonitorRevision = "";
     }
 
     private void setCurrentDestination(String destination) {
@@ -2255,6 +2360,7 @@ public class OperationsActivity extends AppCompatActivity {
         refreshOperationsTargetPresentation();
         leaveSupportCenter();
         leaveLiveMonitor();
+        cancelDirectProblemBadgeRefresh(false);
         remoteDashboard = false;
         setConnectionRecoveryVisible(false);
         lastRelaySnapshotResponse = null;
@@ -2607,6 +2713,7 @@ public class OperationsActivity extends AppCompatActivity {
         refreshOperationsTargetPresentation();
         leaveSupportCenter();
         leaveLiveMonitor();
+        cancelDirectProblemBadgeRefresh(true);
         remoteDashboard = true;
         setConnectionRecoveryVisible(false);
         lastRelaySnapshotResponse = response;
@@ -4649,6 +4756,7 @@ public class OperationsActivity extends AppCompatActivity {
     private void showExistingProfileFailure(Exception localException, Exception relayException) {
         scrollDashboardToTop();
         leaveSupportCenter();
+        cancelDirectProblemBadgeRefresh(true);
         remoteDashboard = false;
         if (restorePendingDestination(false)) {
             return;
@@ -5002,31 +5110,20 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void renderTriageCenter(JSONObject report) {
-        OperationsTriagePresentation.ViewModel rawModel =
-                OperationsTriagePresentation.from(report, this::shortTime);
-        String hostId = preferences.getOperationsHostId();
         long nowMilliseconds = System.currentTimeMillis();
-        Map<String, String> currentRevisions = new HashMap<>();
-        for (OperationsTriagePresentation.Finding finding : rawModel.findings) {
-            currentRevisions.put(finding.findingId, finding.revision);
-        }
-        preferences.reconcileOperationsTriageAcknowledgements(
-                hostId, currentRevisions, nowMilliseconds);
         OperationsTriagePresentation.ViewModel model =
-                OperationsTriagePresentation.withAcknowledgements(
-                        rawModel,
-                        (findingId, revision) -> preferences
-                                .isOperationsTriageFindingAcknowledged(
-                                        hostId,
-                                        findingId,
-                                        revision,
-                                        nowMilliseconds));
+                triageModel(report, true, nowMilliseconds);
         OperationsTriagePresentation.FocusedViewModel focused =
                 OperationsTriagePresentation.focus(model, activeTriageAttentionFocus);
         model = focused.model;
         problemCenterRefreshInFlight = false;
         problemBadgeCount = model.pendingFindings.size();
         problemBadgeState = model.watchState();
+        directProblemBadgeRefreshGeneration++;
+        directProblemBadgeRefreshInFlight = false;
+        directProblemBadgeAuthoritative = true;
+        directProblemBadgeMonitorRevision = latestDirectProblemMonitorRevision;
+        lastDirectProblemBadgeRefreshAttemptMilliseconds = nowMilliseconds;
         refreshProblemNavigationBadge();
         refreshOperationsHeaderNavigation();
         scrollDashboardToTop();
@@ -5048,6 +5145,29 @@ public class OperationsActivity extends AppCompatActivity {
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
         restoreTopLevelScroll(OperationsDestinationState.TRIAGE);
+    }
+
+    private OperationsTriagePresentation.ViewModel triageModel(
+            JSONObject report, boolean reconcile, long nowMilliseconds) {
+        OperationsTriagePresentation.ViewModel rawModel =
+                OperationsTriagePresentation.from(report, this::shortTime);
+        String hostId = preferences.getOperationsHostId();
+        if (reconcile) {
+            Map<String, String> currentRevisions = new HashMap<>();
+            for (OperationsTriagePresentation.Finding finding : rawModel.findings) {
+                currentRevisions.put(finding.findingId, finding.revision);
+            }
+            preferences.reconcileOperationsTriageAcknowledgements(
+                    hostId, currentRevisions, nowMilliseconds);
+        }
+        return OperationsTriagePresentation.withAcknowledgements(
+                rawModel,
+                (findingId, revision) -> preferences
+                        .isOperationsTriageFindingAcknowledged(
+                                hostId,
+                                findingId,
+                                revision,
+                                nowMilliseconds));
     }
 
     private void setTriageFindingAcknowledged(

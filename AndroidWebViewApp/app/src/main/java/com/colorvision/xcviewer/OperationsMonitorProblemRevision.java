@@ -2,8 +2,31 @@ package com.colorvision.xcviewer;
 
 import org.json.JSONObject;
 
-final class OperationsRemoteProblemRevision {
-    private OperationsRemoteProblemRevision() {
+final class OperationsMonitorProblemRevision {
+    private static final String[] SECTIONS = {
+            "flow", "devices", "message", "alerts", "performance", "recovery"
+    };
+
+    private OperationsMonitorProblemRevision() {
+    }
+
+    static String monitorRevision(JSONObject monitor) {
+        if (monitor == null) {
+            return "";
+        }
+        StringBuilder revisions = new StringBuilder();
+        for (String section : SECTIONS) {
+            Identity identity = capture(section, monitor, null);
+            revisions.append(identity.revision);
+        }
+        return OperationsTriageFindingRevision.revision(
+                "monitor-problems",
+                "",
+                "monitor",
+                "",
+                revisions.toString(),
+                0,
+                "");
     }
 
     static Identity capture(
