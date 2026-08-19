@@ -377,6 +377,23 @@ namespace ColorVision.Copilot
             liveCheckpointPublisher = sessionPreparation.LiveCheckpointPublisher;
             bridge.AttachInteractionCheckpointPublisher(
                 token => liveCheckpointPublisher.TryPublishAsync(agent, session, token));
+            var statePersistenceBarrier = request.StatePersistenceBarrier;
+            if (statePersistenceBarrier != null)
+            {
+                bridge.AttachToolDispatchCheckpointPublisher(
+                    async token =>
+                    {
+                        if (!await liveCheckpointPublisher
+                                .PublishForToolDispatchAsync(agent, session, token)
+                                .ConfigureAwait(false))
+                        {
+                            return false;
+                        }
+
+                        await statePersistenceBarrier(token).ConfigureAwait(false);
+                        return true;
+                    });
+            }
             var recoveredTaskLedger = sessionPreparation.RecoveredTaskLedger;
             var promptMessages = sessionPreparation.PromptMessages;
             using var deferredBackgroundOutputDelivery =

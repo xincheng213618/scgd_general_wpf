@@ -50,6 +50,20 @@ namespace ColorVision.Copilot
             }
         }
 
+        private async Task FlushStatePersistenceBarrierAsync()
+        {
+            if (_stateStore is CopilotChatStateStore stateStore
+                && stateStore.IsStatePersistenceBlocked)
+            {
+                throw new InvalidOperationException(
+                    "Copilot state persistence is blocked by a newer state schema.");
+            }
+
+            PublishSelectedTaskEventJournal();
+            _statePersistenceCoordinator.RequestSave(immediate: true);
+            await _statePersistenceCoordinator.FlushAsync();
+        }
+
         private bool CanRetryStatePersistence() => HasStatePersistenceNotice
             && !_isRetryingStatePersistence
             && Volatile.Read(ref _disposeState) == 0;

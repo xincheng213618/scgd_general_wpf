@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using ColorVision.UI;
 
 namespace ColorVision.Copilot
@@ -284,6 +286,8 @@ namespace ColorVision.Copilot
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
 
         internal CopilotAgentTaskEventJournalSnapshot? TaskEventJournalBaseline { get; init; }
+
+        internal Func<CancellationToken, Task>? StatePersistenceBarrier { get; init; }
 
         public CopilotAgentRecoveryRequest? Recovery { get; init; }
 

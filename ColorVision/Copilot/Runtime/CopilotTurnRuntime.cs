@@ -446,6 +446,7 @@ namespace ColorVision.Copilot
                 AsyncHookAdditionalContexts = asyncHookAdditionalContexts,
                 SessionCheckpoint = request.SessionCheckpoint,
                 TaskEventJournalBaseline = request.TaskEventJournalBaseline,
+                StatePersistenceBarrier = eventSink.RequestStatePersistenceBarrierAsync,
                 Recovery = request.Recovery,
                 RunControl = request.RunControl,
                 AgentDefaults = request.AgentDefaults,

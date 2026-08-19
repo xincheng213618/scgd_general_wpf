@@ -565,6 +565,24 @@ namespace ColorVision.Copilot
                         {
                             case CopilotTurnStartedEvent:
                                 break;
+                            case CopilotTurnStatePersistenceBarrierEvent barrier:
+                                try
+                                {
+                                    if (eventBuffer == null)
+                                    {
+                                        throw new InvalidOperationException(
+                                            "Agent state persistence requires an active event buffer.");
+                                    }
+
+                                    await eventBuffer.FlushAsync();
+                                    await FlushStatePersistenceBarrierAsync();
+                                    barrier.TryCommit();
+                                }
+                                catch (Exception exception)
+                                {
+                                    barrier.TryReject(exception);
+                                }
+                                break;
                             case CopilotTurnErrorEvent:
                                 break;
                             case CopilotTurnRuntimeDiagnosticEvent diagnostic:

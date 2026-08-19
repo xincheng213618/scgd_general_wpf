@@ -54,6 +54,8 @@ namespace ColorVision.Copilot
         internal IReadOnlyList<CopilotToolExecutionHookBinding> InitialHookBindings { get; init; } =
             Array.Empty<CopilotToolExecutionHookBinding>();
 
+        internal Func<CancellationToken, ValueTask<bool>>? PreDispatchCheckpoint { get; init; }
+
         internal IReadOnlyList<CopilotToolAdditionalContext> PreToolAdditionalContexts
         {
             get

@@ -199,6 +199,7 @@ namespace ColorVision.Copilot
                         || !IsExtensionHookSource(binding.SourceId))
                     .Take(MaxInvocationHookBindings)
                     .ToArray(),
+                PreDispatchCheckpoint = invocation.PreDispatchCheckpoint,
             };
         }
 

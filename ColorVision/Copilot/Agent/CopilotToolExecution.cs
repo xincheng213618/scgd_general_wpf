@@ -376,6 +376,84 @@ namespace ColorVision.Copilot
             {
                 onEvent(CopilotAgentEvent.ToolStarted(CreateExecutionInfo(invocation, CopilotToolExecutionState.Running, startedAt, null, 0, timeout, queueDurationMs: queueDurationMs)));
 
+                if (invocation.Tool.Capability.Access == CopilotToolAccess.Write
+                    && invocation.PreDispatchCheckpoint != null)
+                {
+                    try
+                    {
+                        var checkpointSaved = await invocation
+                            .PreDispatchCheckpoint(cancellationToken)
+                            .ConfigureAwait(false);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (!checkpointSaved)
+                        {
+                            var failed = CreateOutcome(
+                                invocation,
+                                CopilotToolExecutionState.Failed,
+                                startedAt,
+                                timeout,
+                                stopwatch,
+                                Failure(
+                                    invocation.Tool.Name,
+                                    $"{invocation.Tool.Name} was not dispatched.",
+                                    "The pending write operation could not be saved to the Copilot recovery checkpoint.",
+                                    CopilotToolFailureKind.Transient,
+                                    "tool_dispatch_checkpoint_failed"),
+                                queueDurationMs);
+                            return await PublishOutcomeAsync(
+                                failed,
+                                hooks,
+                                hookRuns,
+                                onEvent);
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        var cancelled = CreateOutcome(
+                            invocation,
+                            CopilotToolExecutionState.Cancelled,
+                            startedAt,
+                            timeout,
+                            stopwatch,
+                            Failure(
+                                invocation.Tool.Name,
+                                $"{invocation.Tool.Name} was cancelled before dispatch.",
+                                "Tool execution was cancelled while saving its pending write operation.",
+                                CopilotToolFailureKind.Cancelled,
+                                "tool_dispatch_checkpoint_cancelled"),
+                            queueDurationMs);
+                        await PublishOutcomeAsync(
+                            cancelled,
+                            hooks,
+                            hookRuns,
+                            onEvent);
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warn(
+                            $"Copilot write tool dispatch checkpoint failed. Tool={invocation.Tool.Name} CallId={invocation.CallId} ErrorType={ex.GetType().FullName}");
+                        var failed = CreateOutcome(
+                            invocation,
+                            CopilotToolExecutionState.Failed,
+                            startedAt,
+                            timeout,
+                            stopwatch,
+                            Failure(
+                                invocation.Tool.Name,
+                                $"{invocation.Tool.Name} was not dispatched.",
+                                "The pending write operation could not be saved to the Copilot recovery checkpoint.",
+                                CopilotToolFailureKind.Transient,
+                                "tool_dispatch_checkpoint_failed"),
+                            queueDurationMs);
+                        return await PublishOutcomeAsync(
+                            failed,
+                            hooks,
+                            hookRuns,
+                            onEvent);
+                    }
+                }
+
                 using var executionCancellation = new CopilotNonBlockingCancellationSource();
                 Task<CopilotToolResult>? executionTask = null;
                 var executionProgress = new CopilotToolProgressContext();

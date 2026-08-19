@@ -228,6 +228,44 @@ public sealed class CopilotTurnEventReducerTests
     }
 
     [Fact]
+    public async Task StatePersistenceBarrierWaitsForConsumerCommit()
+    {
+        var emitted = new List<CopilotTurnEvent>();
+        var sink = new CopilotTurnEventSink(emitted.Add);
+
+        var waitTask = sink.RequestStatePersistenceBarrierAsync(
+            CancellationToken.None);
+
+        var barrier = Assert.IsType<CopilotTurnStatePersistenceBarrierEvent>(
+            Assert.Single(emitted));
+        Assert.False(waitTask.IsCompleted);
+        var state = CopilotTurnEventReducer.Reduce(
+            CopilotTurnEventReducer.Reduce(
+                CopilotTurnEventState.Create(CopilotAgentMode.Auto),
+                new CopilotTurnStartedEvent(CopilotAgentMode.Auto)),
+            barrier);
+        Assert.True(state.Started);
+
+        Assert.True(barrier.TryCommit());
+        await waitTask;
+    }
+
+    [Fact]
+    public void ChatTurnRejectsStatePersistenceBarrier()
+    {
+        var state = CopilotTurnEventReducer.Reduce(
+            CopilotTurnEventState.Create(CopilotAgentMode.Chat),
+            new CopilotTurnStartedEvent(CopilotAgentMode.Chat));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            CopilotTurnEventReducer.Reduce(
+                state,
+                new CopilotTurnStatePersistenceBarrierEvent()));
+
+        Assert.Contains("chat turn", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ReviewPresenterRecordsTargetAndDoesNotReopenCompletedExecution()
     {
         var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);

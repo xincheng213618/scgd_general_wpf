@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
@@ -354,6 +356,8 @@ namespace ColorVision.Copilot
 
         internal CopilotAgentTaskEventJournalSnapshot? TaskEventJournalBaseline { get; init; }
 
+        internal Func<CancellationToken, Task>? StatePersistenceBarrier { get; init; }
+
         public CopilotAgentRecoveryRequest? Recovery { get; init; }
 
         public CopilotAgentRunControl? RunControl { get; init; }
@@ -665,6 +669,7 @@ namespace ColorVision.Copilot
                 TaskEventJournalBaseline = input.TaskEventJournalBaseline?.IsStructurallyValid() == true
                     ? input.TaskEventJournalBaseline
                     : input.SessionCheckpoint?.TaskEventJournal,
+                StatePersistenceBarrier = input.StatePersistenceBarrier,
                 Recovery = input.SessionCheckpoint == null ? null : input.Recovery,
                 RunControl = input.RunControl,
                 RunBudgetDefaults = agentDefaults.CreateRunBudgetDefaults(),

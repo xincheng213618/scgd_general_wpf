@@ -132,6 +132,95 @@ public sealed class CopilotToolExecutionHookIntegrityTests
     }
 
     [Fact]
+    public async Task WriteToolWaitsForItsPreDispatchCheckpoint()
+    {
+        var checkpointEntered = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseCheckpoint = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var tool = new RecordingTool(writeCapable: true);
+        var events = new System.Collections.Concurrent.ConcurrentQueue<CopilotAgentEvent>();
+        var invocation = CopyWithPreDispatchCheckpoint(
+            CreateInvocation(tool, "write-dispatch-checkpoint"),
+            async cancellationToken =>
+            {
+                checkpointEntered.TrySetResult();
+                await releaseCheckpoint.Task.WaitAsync(cancellationToken);
+                return true;
+            });
+
+        var executionTask = new CopilotToolExecutor([]).ExecuteAsync(
+            invocation,
+            events.Enqueue,
+            CancellationToken.None);
+        await checkpointEntered.Task.WaitAsync(TestTimeout);
+
+        Assert.Equal(0, tool.ExecutionCount);
+        Assert.Contains(events, item =>
+            item.Type == CopilotAgentEventType.ToolStarted);
+        Assert.DoesNotContain(events, item =>
+            item.Type == CopilotAgentEventType.ToolResult);
+
+        releaseCheckpoint.TrySetResult();
+        var outcome = await executionTask.WaitAsync(TestTimeout);
+
+        Assert.True(outcome.Result.Success);
+        Assert.Equal(1, tool.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task FailedWriteDispatchCheckpointDoesNotEnterTheToolBody()
+    {
+        var tool = new RecordingTool(writeCapable: true);
+        var events = new List<CopilotAgentEvent>();
+        var invocation = CopyWithPreDispatchCheckpoint(
+            CreateInvocation(tool, "failed-write-dispatch-checkpoint"),
+            _ => ValueTask.FromResult(false));
+
+        var outcome = await new CopilotToolExecutor([]).ExecuteAsync(
+            invocation,
+            events.Add,
+            CancellationToken.None);
+
+        Assert.Equal(0, tool.ExecutionCount);
+        Assert.Equal(CopilotToolExecutionState.Failed, outcome.Execution.State);
+        Assert.Equal(CopilotToolFailureKind.Transient, outcome.Result.FailureKind);
+        Assert.Equal(
+            "tool_dispatch_checkpoint_failed",
+            outcome.Result.FailureCode);
+        Assert.Contains(events, item =>
+            item.Type == CopilotAgentEventType.ToolStarted);
+        Assert.Equal(
+            CopilotToolExecutionState.Failed,
+            Assert.Single(events, item =>
+                item.Type == CopilotAgentEventType.ToolResult)
+                .ToolExecution?.State);
+    }
+
+    [Fact]
+    public async Task ReadOnlyToolDoesNotRequireAWriteDispatchCheckpoint()
+    {
+        var checkpointCalls = 0;
+        var tool = new RecordingTool();
+        var invocation = CopyWithPreDispatchCheckpoint(
+            CreateInvocation(tool, "read-dispatch-checkpoint"),
+            _ =>
+            {
+                Interlocked.Increment(ref checkpointCalls);
+                return ValueTask.FromResult(false);
+            });
+
+        var outcome = await new CopilotToolExecutor([]).ExecuteAsync(
+            invocation,
+            _ => { },
+            CancellationToken.None);
+
+        Assert.True(outcome.Result.Success);
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(0, Volatile.Read(ref checkpointCalls));
+    }
+
+    [Fact]
     public async Task FrameworkBridgeRetainsTheCommittedOutcomeWhenTerminalDispatchFails()
     {
         var tool = new RecordingTool();
@@ -798,6 +887,25 @@ public sealed class CopilotToolExecutionHookIntegrityTests
             ToolInput = source.ToolInput,
             ToolCall = source.ToolCall,
             InitialHookBindings = hookBindings,
+        };
+    }
+
+    private static CopilotToolInvocation CopyWithPreDispatchCheckpoint(
+        CopilotToolInvocation source,
+        Func<CancellationToken, ValueTask<bool>> checkpoint)
+    {
+        return new CopilotToolInvocation
+        {
+            CallId = source.CallId,
+            Round = source.Round,
+            Attempt = source.Attempt,
+            MaxAttempts = source.MaxAttempts,
+            RuntimeName = source.RuntimeName,
+            Tool = source.Tool,
+            AgentRequest = source.AgentRequest,
+            ToolInput = source.ToolInput,
+            ToolCall = source.ToolCall,
+            PreDispatchCheckpoint = checkpoint,
         };
     }
 

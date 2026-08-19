@@ -51,6 +51,23 @@ namespace ColorVision.Copilot
 
     internal abstract record CopilotTurnEvent;
 
+    internal sealed record CopilotTurnStatePersistenceBarrierEvent : CopilotTurnEvent
+    {
+        private readonly TaskCompletionSource _completion = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        internal Task WaitAsync(CancellationToken cancellationToken) =>
+            _completion.Task.WaitAsync(cancellationToken);
+
+        internal bool TryCommit() => _completion.TrySetResult();
+
+        internal bool TryReject(Exception exception)
+        {
+            ArgumentNullException.ThrowIfNull(exception);
+            return _completion.TrySetException(exception);
+        }
+    }
+
     internal enum CopilotTurnStatus
     {
         InProgress,
@@ -402,6 +419,14 @@ namespace ColorVision.Copilot
 
         public void OnAgentEvent(CopilotAgentEvent agentEvent) =>
             _publish(new CopilotTurnAgentEvent(agentEvent));
+
+        public Task RequestStatePersistenceBarrierAsync(
+            CancellationToken cancellationToken)
+        {
+            var barrier = new CopilotTurnStatePersistenceBarrierEvent();
+            _publish(barrier);
+            return barrier.WaitAsync(cancellationToken);
+        }
 
         public void OnCodeReviewSnapshotUpdated(CopilotCodeReviewSnapshot snapshot)
         {

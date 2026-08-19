@@ -117,6 +117,8 @@ namespace ColorVision.Copilot
                         ToolCall = CreateToolCall(tool, toolInput),
                         PreviousObservationProgressSignature =
                             previousObservationProgressSignature,
+                        PreDispatchCheckpoint =
+                            TryPublishToolDispatchCheckpointAsync,
                     }
                     : CreateInvocation(approvalReservation, frameworkApprovalGranted: true);
                 if (approvalReservation != null
