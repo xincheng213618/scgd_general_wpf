@@ -341,6 +341,69 @@ public sealed class CopilotToolOutputArchiveTests
         }
     }
 
+    [Fact]
+    public void ArchiveStorageCannotBeModifiedOrRenamedWhileRetained()
+    {
+        using var archive = CopilotTemporaryRedactedOutputArchive.TryCreate(
+            "ToolOutput",
+            "content");
+        Assert.NotNull(archive);
+
+        archive!.Append(new string('a', 64));
+        archive.Complete();
+
+        Assert.Throws<IOException>(() =>
+        {
+            using var stream = new FileStream(
+                archive.StoragePath,
+                FileMode.Open,
+                FileAccess.Write,
+                FileShare.ReadWrite | FileShare.Delete);
+        });
+        Assert.Throws<IOException>(() => File.Move(
+            archive.StoragePath,
+            archive.StoragePath + ".moved"));
+
+        var page = archive.Read(
+            offsetCharacters: 0,
+            maximumCharacters: 64,
+            CancellationToken.None);
+        Assert.True(page.Available);
+        Assert.Equal(new string('a', 64), page.Content);
+    }
+
+    [Fact]
+    public void ReadingAndSearchingBeforeCompletionPreserveTheAppendPosition()
+    {
+        using var archive = CopilotTemporaryRedactedOutputArchive.TryCreate(
+            "ToolOutput",
+            "content");
+        Assert.NotNull(archive);
+        var first = "needle-" + new string('a', 64);
+        var second = new string('b', 64) + "-tail";
+
+        archive!.Append(first);
+        var pageBeforeCompletion = archive.Read(
+            offsetCharacters: 0,
+            maximumCharacters: 64,
+            CancellationToken.None);
+        var searchBeforeCompletion = archive.Search(
+            "needle",
+            offsetCharacters: 0,
+            CancellationToken.None);
+        archive.Append(second);
+        archive.Complete();
+
+        Assert.True(pageBeforeCompletion.Available);
+        Assert.True(searchBeforeCompletion.Available);
+        Assert.True(searchBeforeCompletion.Matched);
+        var completePage = archive.Read(
+            offsetCharacters: 0,
+            maximumCharacters: first.Length + second.Length,
+            CancellationToken.None);
+        Assert.Equal(first + second, completePage.Content);
+    }
+
     private static CopilotToolExecutionOutcome CreateOutcome(
         CopilotAgentRequest request,
         ICopilotTool tool,
