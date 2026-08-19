@@ -154,6 +154,35 @@ public sealed class CopilotAgentEventProtocolTests
     }
 
     [Fact]
+    public void RuntimeEmitterRejectsContradictoryToolResultBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.ToolResult,
+            Text = "Claimed success.",
+            ToolResult = new CopilotToolResult
+            {
+                ToolName = "ProtectedTool",
+                Success = true,
+                Summary = "Claimed success.",
+                ErrorMessage = "But also failed.",
+                FailureKind = CopilotToolFailureKind.Internal,
+                FailureCode = "contradiction",
+            },
+            ToolExecution = CreateExecution(),
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("violated its final contract", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
     public void ReducerRejectsUnnormalizedSteeringMessage()
     {
         var agentEvent = new CopilotAgentEvent

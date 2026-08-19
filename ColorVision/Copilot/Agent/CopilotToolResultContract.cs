@@ -44,7 +44,7 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static bool TryValidate(
+        internal static bool TryValidate(
             string expectedToolName,
             CopilotToolResult? result,
             out string violation)

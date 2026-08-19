@@ -214,6 +214,27 @@ namespace ColorVision.Copilot
                     "Copilot Agent tool result identity did not match its execution payload.");
             }
 
+            try
+            {
+                if (!CopilotToolResultContract.TryValidate(
+                        execution.ToolName,
+                        result,
+                        out var violation))
+                {
+                    throw new InvalidOperationException(
+                        $"Copilot Agent tool result violated its final contract: {violation}.");
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
+            catch
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent tool result could not be validated safely.");
+            }
+
             if (agentEvent.ToolExecutionHookRuns.Any(run =>
                     run?.IsStructurallyValid() != true))
             {
