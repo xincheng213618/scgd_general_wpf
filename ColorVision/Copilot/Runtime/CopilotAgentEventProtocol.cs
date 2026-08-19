@@ -205,6 +205,16 @@ namespace ColorVision.Copilot
                     RequireActiveToolExecution(
                         agentEvent,
                         allowPending: true);
+                    var requireCompletedHook =
+                        agentEvent.Type == CopilotAgentEventType.HookCompleted;
+                    if (!agentEvent.ToolExecutionHook.IsStructurallyValid(
+                            requireCompletedHook))
+                    {
+                        throw new InvalidOperationException(
+                            requireCompletedHook
+                                ? "Copilot Agent emitted an invalid tool hook completion."
+                                : "Copilot Agent emitted an invalid tool hook start.");
+                    }
                     break;
                 case CopilotAgentEventType.RuntimeDiagnostic when agentEvent.ProviderRetry != null:
                     CopilotProviderRetryProtocol.ValidateDiagnostic(
