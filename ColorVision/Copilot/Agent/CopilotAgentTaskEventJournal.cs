@@ -558,6 +558,7 @@ namespace ColorVision.Copilot
                         ?? string.Empty;
                     return new AttemptedToolCallRecoveryRecord(
                         latest.Sequence,
+                        group.Key.RunId,
                         group.Key.CallKey,
                         SanitizeRecoveryText(toolName),
                         latest.Type,
@@ -711,6 +712,7 @@ namespace ColorVision.Copilot
             return JsonSerializer.Serialize(new
             {
                 Type = "AttemptedToolCall",
+                item.RunId,
                 item.CallKey,
                 item.ToolName,
                 Event = item.EventType.ToString(),
@@ -735,6 +737,7 @@ namespace ColorVision.Copilot
 
         private sealed record AttemptedToolCallRecoveryRecord(
             long Sequence,
+            string RunId,
             string CallKey,
             string ToolName,
             CopilotAgentTaskEventType EventType,

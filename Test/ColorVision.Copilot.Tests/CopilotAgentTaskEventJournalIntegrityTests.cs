@@ -293,6 +293,12 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
         Assert.Equal(2, calls.Count);
         Assert.Contains("FirstRunTool", calls.Keys);
         Assert.Contains("SecondRunTool", calls.Keys);
+        Assert.Equal(
+            calls["FirstRunTool"].GetProperty("CallKey").GetString(),
+            calls["SecondRunTool"].GetProperty("CallKey").GetString());
+        Assert.NotEqual(
+            calls["FirstRunTool"].GetProperty("RunId").GetString(),
+            calls["SecondRunTool"].GetProperty("RunId").GetString());
     }
 
     [Fact]
