@@ -48,13 +48,26 @@ namespace ColorVision.Copilot
     {
         public CopilotAgentTaskHostChangedEventArgs(CopilotAgentTaskHostChangeKind kind, CopilotHostedAgentRun run)
         {
+            ArgumentNullException.ThrowIfNull(run);
             Kind = kind;
             Run = run;
+            RunState = run.State;
+            RunHadStarted = run.HasStarted;
+            RunIsAgent = run.IsAgent;
+            ControlIntent = run.RunControl?.Intent ?? CopilotAgentControlIntent.None;
         }
 
         public CopilotAgentTaskHostChangeKind Kind { get; }
 
         public CopilotHostedAgentRun Run { get; }
+
+        public CopilotHostedRunState RunState { get; }
+
+        public bool RunHadStarted { get; }
+
+        public bool RunIsAgent { get; }
+
+        public CopilotAgentControlIntent ControlIntent { get; }
     }
 
     internal sealed record CopilotHostedProviderRetrySnapshot(

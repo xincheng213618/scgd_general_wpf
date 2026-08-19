@@ -19,10 +19,10 @@ namespace ColorVision.Copilot
 
             IsBusy = _taskHost.IsActive;
             if (e.Kind == CopilotAgentTaskHostChangeKind.ControlRequested
-                && e.Run.HasStarted
-                && e.Run.IsAgent
-                && e.Run.State == CopilotHostedRunState.CancelRequested
-                && e.Run.RunControl?.Intent == CopilotAgentControlIntent.Cancel)
+                && e.RunHadStarted
+                && e.RunIsAgent
+                && e.RunState == CopilotHostedRunState.CancelRequested
+                && e.ControlIntent == CopilotAgentControlIntent.Cancel)
             {
                 var conversation = Conversations.FirstOrDefault(item => string.Equals(item.Id, e.Run.ConversationId, StringComparison.Ordinal));
                 if (conversation?.AgentSessionCheckpoint != null)
