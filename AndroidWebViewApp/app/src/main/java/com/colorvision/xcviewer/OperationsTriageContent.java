@@ -58,11 +58,16 @@ final class OperationsTriageContent {
                         R.string.operations_triage_connection_check_content_description),
                 R.drawable.ic_devices_24,
                 connectionCheck));
+        boolean trackDeviceRecovery = model.deviceRecoveryAttentionCount() > 0;
         quickActions.addView(actionChip(
                 activity,
                 themeManager,
-                activity.getString(R.string.operations_triage_observe_action),
-                activity.getString(R.string.operations_triage_observe_content_description),
+                activity.getString(trackDeviceRecovery
+                        ? R.string.operations_triage_track_device_recovery_action
+                        : R.string.operations_triage_observe_action),
+                activity.getString(trackDeviceRecovery
+                        ? R.string.operations_triage_track_device_recovery_content_description
+                        : R.string.operations_triage_observe_content_description),
                 R.drawable.ic_visibility_24,
                 observe));
         root.addView(quickActions, hasAttentionContext

@@ -25,7 +25,7 @@ final class OperationsTriagePresentation {
         int activeSubscriptions = report.optInt("messageChannelActiveSubscriptionCount", 0);
         int registeredSubscriptions = report.optInt("messageChannelRegisteredSubscriptionCount", 0);
         String messageState = report.optString("messageChannelState", "unavailable");
-        int deviceAttentionCount = report.optInt("deviceAttentionCount", 0);
+        int deviceAttentionCount = Math.max(0, report.optInt("deviceAttentionCount", 0));
         int deviceTotalCount = report.optInt("deviceTotalCount", 0);
 
         List<Metric> metrics = new ArrayList<>();
@@ -123,6 +123,7 @@ final class OperationsTriagePresentation {
                 Collections.unmodifiableList(findings),
                 Collections.unmodifiableList(findings),
                 Collections.emptyList(),
+                deviceAttentionCount,
                 report.optString("safetyNotice",
                         "建议仅引用有界脱敏摘要；远程恢复或取证动作仍需明确确认。"));
     }
@@ -151,6 +152,7 @@ final class OperationsTriagePresentation {
                 Collections.unmodifiableList(all),
                 Collections.unmodifiableList(pending),
                 Collections.unmodifiableList(reviewed),
+                model.deviceAttentionCount,
                 model.safetyNotice);
     }
 
@@ -174,6 +176,7 @@ final class OperationsTriagePresentation {
                         findings,
                         pending,
                         reviewed,
+                        model.deviceAttentionCount,
                         model.safetyNotice),
                 OperationsAttentionFocus.contextMessage(normalized, found, true));
     }
@@ -377,6 +380,7 @@ final class OperationsTriagePresentation {
         final List<Finding> findings;
         final List<Finding> pendingFindings;
         final List<Finding> reviewedFindings;
+        final int deviceAttentionCount;
         final String safetyNotice;
 
         ViewModel(
@@ -388,6 +392,7 @@ final class OperationsTriagePresentation {
                 List<Finding> findings,
                 List<Finding> pendingFindings,
                 List<Finding> reviewedFindings,
+                int deviceAttentionCount,
                 String safetyNotice) {
             this.reportState = reportState;
             this.stateLabel = stateLabel;
@@ -397,7 +402,12 @@ final class OperationsTriagePresentation {
             this.findings = findings;
             this.pendingFindings = pendingFindings;
             this.reviewedFindings = reviewedFindings;
+            this.deviceAttentionCount = Math.max(0, deviceAttentionCount);
             this.safetyNotice = safetyNotice;
+        }
+
+        int deviceRecoveryAttentionCount() {
+            return deviceAttentionCount;
         }
 
         String prioritySectionLabel() {

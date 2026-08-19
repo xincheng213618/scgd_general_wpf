@@ -55,6 +55,7 @@ public class OperationsTriagePresentationTest {
                 model.metrics.get(3).summary);
         assertEquals("检测设备，需关注 2 / 共 6，就绪 2，已关闭 2，离线 2，点按查看详情",
                 model.metrics.get(3).accessibilityLabel());
+        assertEquals(2, model.deviceRecoveryAttentionCount());
         assertEquals(1, model.findings.size());
         assertEquals("优先处理", model.prioritySectionLabel());
         OperationsTriagePresentation.Finding finding = model.findings.get(0);
@@ -106,7 +107,8 @@ public class OperationsTriagePresentationTest {
 
     @Test
     public void localReviewSeparatesPendingEvidenceWithoutClaimingResolution() throws Exception {
-        JSONObject report = new JSONObject("{\"state\":\"attention\",\"findings\":["
+        JSONObject report = new JSONObject("{\"state\":\"attention\","
+                + "\"deviceAttentionCount\":2,\"findings\":["
                 + "{\"findingId\":\"devices\",\"severity\":\"warning\","
                 + "\"category\":\"devices\",\"title\":\"设备离线\","
                 + "\"summary\":\"离线 2 台\",\"evidenceCount\":2},"
@@ -131,6 +133,7 @@ public class OperationsTriagePresentationTest {
         assertEquals(OperationsWatchHistory.attentionState(
                         OperationsWatchPolicy.ATTENTION_DEVICES),
                 partiallyReviewed.watchState());
+        assertEquals(2, partiallyReviewed.deviceRecoveryAttentionCount());
 
         OperationsTriagePresentation.ViewModel allReviewed =
                 OperationsTriagePresentation.withAcknowledgements(
@@ -154,6 +157,7 @@ public class OperationsTriagePresentationTest {
 
         assertEquals("当前有界证据正常", model.stateLabel);
         assertEquals(OperationsTriagePresentation.TONE_NORMAL, model.tone);
+        assertEquals(0, model.deviceRecoveryAttentionCount());
         assertTrue(model.findings.isEmpty());
         assertEquals("当前有界证据中没有需要处理的项目。", model.summary);
     }
@@ -161,7 +165,8 @@ public class OperationsTriagePresentationTest {
     @Test
     public void notificationFocusPrioritizesMatchingEvidenceWithoutHidingOtherFindings()
             throws Exception {
-        JSONObject report = new JSONObject("{\"state\":\"attention\",\"findings\":["
+        JSONObject report = new JSONObject("{\"state\":\"attention\","
+                + "\"deviceAttentionCount\":2,\"findings\":["
                 + "{\"findingId\":\"diagnostics\",\"severity\":\"error\","
                 + "\"category\":\"diagnostics\",\"title\":\"近期错误\"},"
                 + "{\"findingId\":\"devices\",\"severity\":\"warning\","
@@ -178,6 +183,7 @@ public class OperationsTriagePresentationTest {
         assertEquals(2, focused.model.findings.size());
         assertEquals("devices", focused.model.findings.get(0).findingId);
         assertEquals("devices", focused.model.pendingFindings.get(0).findingId);
+        assertEquals(2, focused.model.deviceRecoveryAttentionCount());
         assertEquals("diagnostics", focused.model.findings.get(1).findingId);
         assertEquals("来自后台提醒 · 已定位“检测设备”相关证据并优先显示。",
                 focused.contextMessage);

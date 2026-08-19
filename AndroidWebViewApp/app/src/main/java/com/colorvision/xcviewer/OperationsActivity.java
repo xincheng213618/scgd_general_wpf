@@ -5307,6 +5307,7 @@ public class OperationsActivity extends AppCompatActivity {
         progress.setVisibility(View.GONE);
         title.setTitle("问题中心");
         state.setText(model.stateLabel);
+        int deviceRecoveryAttentionCount = model.deviceRecoveryAttentionCount();
         actions.removeAllViews();
         addFleetProblemCenterOverview();
         actions.addView(OperationsTriageContent.create(
@@ -5323,7 +5324,13 @@ public class OperationsActivity extends AppCompatActivity {
                                 true,
                                 preferences.getOperationsHostId()),
                         this::runConnectionSelfCheckFromTriage,
-                        this::showLiveMonitorFromTriage),
+                        () -> {
+                            if (deviceRecoveryAttentionCount > 0) {
+                                showDeviceRecoveryMonitor(deviceRecoveryAttentionCount);
+                            } else {
+                                showLiveMonitorFromTriage();
+                            }
+                        }),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
