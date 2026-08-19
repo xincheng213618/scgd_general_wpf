@@ -218,6 +218,8 @@ public class OperationsActivity extends AppCompatActivity {
     private CharSequence messageChannelRecoveryPreviousState = "";
     private boolean mqttRestartInFlight;
     private CharSequence mqttRestartPreviousState = "";
+    private boolean windowActionInFlight;
+    private CharSequence windowActionPreviousState = "";
     private String lastSuccessfulDashboardUpdateLabel = "";
     private int connectionRequestGeneration;
     private int connectionCheckGeneration;
@@ -5066,27 +5068,115 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void runWindowAction(String action, String successText) {
+        if (windowActionInFlight) {
+            Snackbar.make(
+                    snackbarHost,
+                    "电脑主窗口操作正在进行，请等待本次结果",
+                    Snackbar.LENGTH_LONG).show();
+            return;
+        }
         if (!ensureOperationsClientTargetIsCurrent()) {
             return;
         }
+        OperationsApiClient requestClient = client;
+        String originHostId = preferences.getOperationsHostId();
+        int requestGeneration = connectionRequestGeneration;
+        String originDestination = currentDestination;
+        String originDetailPath = dashboardDetailPath;
+        windowActionInFlight = true;
+        windowActionPreviousState = state.getText();
         setShowingDashboardSummary(false);
         progress.setVisibility(View.VISIBLE);
         state.setText("正在执行安全桌面操作…");
         executor.execute(() -> {
             try {
-                JSONObject response = client.post("/ops/v1/actions/window/" + action, new JSONObject());
+                JSONObject response = requestClient.post(
+                        "/ops/v1/actions/window/" + action, new JSONObject());
                 JSONObject data = response.optJSONObject("data");
                 String message = data == null ? successText : data.optString("message", successText);
-                runOnUiThread(() -> {
-                    progress.setVisibility(View.GONE);
-                    state.setText(successText);
-                    details.setText(getString(
-                            R.string.operations_window_action_audit_details, message));
-                });
+                runOnUiThread(() -> finishWindowAction(
+                        requestGeneration,
+                        originHostId,
+                        originDestination,
+                        originDetailPath,
+                        successText,
+                        message));
             } catch (Exception ex) {
-                runOnUiThread(() -> showTransientError(ex));
+                runOnUiThread(() -> failWindowAction(
+                        requestGeneration,
+                        originHostId,
+                        originDestination,
+                        originDetailPath,
+                        ex));
             }
         });
+    }
+
+    private void finishWindowAction(
+            int requestGeneration,
+            String originHostId,
+            String originDestination,
+            String originDetailPath,
+            String successText,
+            String auditMessage) {
+        windowActionInFlight = false;
+        if (!isWindowActionOriginVisible(
+                requestGeneration, originHostId, originDestination, originDetailPath)) {
+            return;
+        }
+        if (OperationsDestinationState.TRIAGE.equals(originDestination)) {
+            showTriageCenter();
+            Snackbar.make(
+                    snackbarHost,
+                    successText + " · 正在刷新问题状态",
+                    Snackbar.LENGTH_LONG).show();
+            return;
+        }
+        if (OperationsDestinationState.TOOLS.equals(originDestination)) {
+            showOperationsToolboxPage();
+            Snackbar.make(snackbarHost, successText, Snackbar.LENGTH_LONG).show();
+            return;
+        }
+        progress.setVisibility(View.GONE);
+        state.setText(successText);
+        details.setText(getString(
+                R.string.operations_window_action_audit_details, auditMessage));
+    }
+
+    private void failWindowAction(
+            int requestGeneration,
+            String originHostId,
+            String originDestination,
+            String originDetailPath,
+            Exception exception) {
+        windowActionInFlight = false;
+        if (!isWindowActionOriginVisible(
+                requestGeneration, originHostId, originDestination, originDetailPath)) {
+            return;
+        }
+        progress.setVisibility(View.GONE);
+        state.setText(windowActionPreviousState);
+        Snackbar.make(
+                snackbarHost,
+                "电脑主窗口操作未完成 · " + OperationsErrorPresentation.readable(exception),
+                Snackbar.LENGTH_LONG).show();
+    }
+
+    private boolean isWindowActionOriginVisible(
+            int requestGeneration,
+            String originHostId,
+            String originDestination, String originDetailPath) {
+        return OperationsActionOriginPolicy.matchesRequest(
+                requestGeneration,
+                connectionRequestGeneration,
+                originHostId,
+                preferences.getOperationsHostId())
+                && OperationsActionOriginPolicy.isVisible(
+                        originDestination,
+                        originDetailPath,
+                        currentDestination,
+                        dashboardDetailPath,
+                        "");
     }
 
     private void showProblemCenter() {

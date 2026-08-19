@@ -42,6 +42,18 @@ public class OperationsActionOriginPolicyTest {
                 OperationsDestinationState.CAPABILITY_DETAIL, MESSAGE_PATH, SERVICE_PATH));
     }
 
+    @Test
+    public void requestResultRequiresTheSameConnectionGenerationAndHost() {
+        assertTrue(OperationsActionOriginPolicy.matchesRequest(
+                7, 7, "host-1", "host-1"));
+        assertFalse(OperationsActionOriginPolicy.matchesRequest(
+                7, 8, "host-1", "host-1"));
+        assertFalse(OperationsActionOriginPolicy.matchesRequest(
+                7, 7, "host-1", "host-2"));
+        assertFalse(OperationsActionOriginPolicy.matchesRequest(
+                7, 7, null, "host-1"));
+    }
+
     private static boolean isVisible(
             String originDestination,
             String originDetailPath,

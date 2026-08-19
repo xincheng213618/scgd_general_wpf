@@ -19,4 +19,14 @@ final class OperationsActionOriginPolicy {
         return expectedDetailPath.equals(originDetailPath)
                 && originDetailPath.equals(currentDetailPath);
     }
+
+    static boolean matchesRequest(
+            int requestGeneration,
+            int currentGeneration,
+            String originHostId,
+            String currentHostId) {
+        return requestGeneration == currentGeneration
+                && originHostId != null
+                && originHostId.equals(currentHostId);
+    }
 }
