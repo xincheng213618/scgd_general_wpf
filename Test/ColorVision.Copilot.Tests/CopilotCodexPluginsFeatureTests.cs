@@ -39,6 +39,46 @@ public sealed class CopilotCodexPluginsFeatureTests
     }
 
     [Fact]
+    public void PluginFilteredCapabilityRevisionTracksNonPluginCatalogChangesMonotonically()
+    {
+        var catalog = new CopilotCapabilityCatalog();
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.BuiltIn,
+            "builtin:filtered-revision",
+            "Built-in tools",
+            [new RecordingTool("FilteredRevisionBuiltInTool")]);
+        var builtInSnapshot = catalog.GetSnapshot(includePluginCapabilities: false);
+
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.ExternalMcp,
+            "mcp:filtered-revision",
+            "External MCP tools",
+            [new RecordingTool("FilteredRevisionMcpTool")]);
+        var withMcpSnapshot = catalog.GetSnapshot(includePluginCapabilities: false);
+
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:filtered-revision",
+            "Plugin tools",
+            [new RecordingTool("FilteredRevisionPluginTool")]);
+        var afterPluginSnapshot = catalog.GetSnapshot(includePluginCapabilities: false);
+
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.ExternalMcp,
+            "mcp:filtered-revision",
+            "External MCP tools",
+            []);
+        var afterMcpRemovalSnapshot = catalog.GetSnapshot(includePluginCapabilities: false);
+
+        Assert.True(withMcpSnapshot.Revision > builtInSnapshot.Revision);
+        Assert.Equal(withMcpSnapshot.Revision, afterPluginSnapshot.Revision);
+        Assert.True(afterMcpRemovalSnapshot.Revision > withMcpSnapshot.Revision);
+        Assert.Equal(
+            ["FilteredRevisionBuiltInTool"],
+            afterMcpRemovalSnapshot.Capabilities.Select(entry => entry.Name));
+    }
+
+    [Fact]
     public void ExtensionRegistryAndBridgeSnapshotsCannotBeRewrittenAfterPublication()
     {
         var registry = new CopilotAgentExtensionRegistry();

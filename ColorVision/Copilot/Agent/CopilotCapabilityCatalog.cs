@@ -105,7 +105,9 @@ namespace ColorVision.Copilot
         private readonly Func<DateTimeOffset> _utcNow;
         private readonly object _syncRoot = new();
         private long _revision;
+        private long _nonPluginRevision;
         private DateTimeOffset _updatedAtUtc;
+        private DateTimeOffset _nonPluginUpdatedAtUtc;
 
         public CopilotCapabilityCatalog(Func<DateTimeOffset>? utcNow = null)
         {
@@ -188,6 +190,14 @@ namespace ColorVision.Copilot
 
                 _revision++;
                 _updatedAtUtc = _utcNow();
+                if ((previousSource != null
+                        && previousSource.SourceKind != CopilotCapabilitySourceKind.Plugin)
+                    || (candidates.Length > 0
+                        && sourceKind != CopilotCapabilitySourceKind.Plugin))
+                {
+                    _nonPluginRevision++;
+                    _nonPluginUpdatedAtUtc = _updatedAtUtc;
+                }
                 snapshot = CreateSnapshotLocked();
                 change = new CopilotCapabilityCatalogChangedEventArgs
                 {
@@ -223,6 +233,11 @@ namespace ColorVision.Copilot
                 TrimKnownCapabilitiesLocked();
                 _revision++;
                 _updatedAtUtc = _utcNow();
+                if (sourceKind != CopilotCapabilitySourceKind.Plugin)
+                {
+                    _nonPluginRevision++;
+                    _nonPluginUpdatedAtUtc = _updatedAtUtc;
+                }
                 snapshot = CreateSnapshotLocked();
                 change = new CopilotCapabilityCatalogChangedEventArgs
                 {
@@ -249,10 +264,8 @@ namespace ColorVision.Copilot
                     .ToArray();
                 return new CopilotCapabilityCatalogSnapshot
                 {
-                    Revision = capabilities.Length == 0
-                        ? 0
-                        : capabilities.Max(entry => entry.Revision),
-                    UpdatedAtUtc = snapshot.UpdatedAtUtc,
+                    Revision = _nonPluginRevision,
+                    UpdatedAtUtc = _nonPluginUpdatedAtUtc,
                     SourceCount = capabilities
                         .Select(entry => entry.SourceId)
                         .Distinct(StringComparer.OrdinalIgnoreCase)
