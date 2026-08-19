@@ -384,6 +384,28 @@ public sealed class CopilotAgentEventProtocolTests
     }
 
     [Fact]
+    public void RuntimeEmitterRejectsInvalidTurnPlanBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.PlanUpdated,
+            TurnPlan = new CopilotTurnPlanSnapshot(
+                "invalid",
+                resumedFromCheckpoint: false,
+                Array.Empty<CopilotTurnPlanItemSnapshot>()),
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid turn plan snapshot", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
     public void ReducerRejectsUnnormalizedSteeringMessage()
     {
         var agentEvent = new CopilotAgentEvent

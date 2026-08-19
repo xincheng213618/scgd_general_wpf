@@ -234,6 +234,13 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.UserQuestionResolved:
                     ValidateUserQuestion(agentEvent);
                     break;
+                case CopilotAgentEventType.PlanUpdated:
+                    if (agentEvent.TurnPlan?.IsStructurallyValid() != true)
+                    {
+                        throw new InvalidOperationException(
+                            "Copilot Agent emitted an invalid turn plan snapshot.");
+                    }
+                    break;
             }
         }
 
