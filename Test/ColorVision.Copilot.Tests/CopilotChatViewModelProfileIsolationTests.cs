@@ -1285,6 +1285,82 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     }
 
     [Fact]
+    public async Task QueuedImageIsCommittedToManagedStorageBeforeItsTurnStarts()
+    {
+        var root = Path.Combine(
+            Path.GetTempPath(),
+            nameof(QueuedImageIsCommittedToManagedStorageBeforeItsTurnStarts),
+            Guid.NewGuid().ToString("N"));
+        var attachmentDirectoryPath = Path.Combine(root, "attachments");
+        var sourcePath = Path.Combine(root, "source.png");
+        Directory.CreateDirectory(root);
+        await File.WriteAllBytesAsync(
+            sourcePath,
+            Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="));
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        profile.SupportsImageInput = true;
+        var config = CreateConfig(profile, "queued-image-admission-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var runtime = new GatedFailingTurnRuntime();
+        var queuedFollowUp = new CopilotQueuedFollowUp(
+            "queued-image-admission-run",
+            conversation.Id,
+            conversation.Title,
+            "inspect the queued image",
+            CopilotAgentMode.Auto,
+            profile,
+            new CopilotAgentHostContextSnapshot(
+                "",
+                "",
+                [CopilotAttachmentItem.CreateImage(sourcePath, "Evidence")]));
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(
+            conversation,
+            config,
+            runtime,
+            new CopilotAgentTaskHost(),
+            attachmentDirectoryPath);
+        using var hostedRun = new CopilotHostedAgentRun(
+            conversation.Id,
+            CopilotAgentMode.Auto);
+        var executeMethod = typeof(CopilotChatViewModel).GetMethod(
+            "ExecuteQueuedFollowUpAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ExecuteQueuedFollowUpAsync was not found.");
+
+        try
+        {
+            var execution = Assert.IsAssignableFrom<Task>(executeMethod.Invoke(
+                viewModel,
+                [hostedRun, queuedFollowUp]));
+            var request = await runtime.Entered.WaitAsync(TestTimeout);
+            var admittedImage = Assert.Single(request.HostContext.Attachments);
+
+            Assert.StartsWith(
+                Path.Combine(attachmentDirectoryPath, "image-"),
+                admittedImage.Value,
+                StringComparison.OrdinalIgnoreCase);
+            Assert.True(File.Exists(admittedImage.Value));
+            Assert.Equal(
+                admittedImage.Value,
+                Assert.Single(conversation.Messages, message => message.IsUser)
+                    .Attachments.Single().Value);
+
+            File.Delete(sourcePath);
+            runtime.Release();
+            await execution.WaitAsync(TestTimeout);
+        }
+        finally
+        {
+            runtime.Release();
+            viewModel.Dispose();
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task QueuedSlashCommandRunsInItsOriginConversationAndRestoresLaterSelection()
     {
         var profileA = CreateProfile("profile-a", "Profile A", "model-a");
@@ -1676,7 +1752,8 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         CopilotConversationRecord conversation,
         CopilotConfig config,
         ICopilotTurnRuntime runtime,
-        CopilotAgentTaskHost taskHost)
+        CopilotAgentTaskHost taskHost,
+        string attachmentDirectoryPath = "")
     {
         var state = new CopilotChatState
         {
@@ -1686,7 +1763,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         };
         return new CopilotChatViewModel(
             new CopilotChatService(),
-            new InMemoryStateStore(state),
+            new InMemoryStateStore(state, attachmentDirectoryPath),
             config,
             runtime,
             taskHost);
@@ -1886,9 +1963,11 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             Task.FromException<CopilotWorkspaceRollbackActionResult>(new NotSupportedException());
     }
 
-    private sealed class InMemoryStateStore(CopilotChatState state) : ICopilotChatStateStore
+    private sealed class InMemoryStateStore(
+        CopilotChatState state,
+        string attachmentDirectoryPath = "") : ICopilotChatStateStore
     {
-        public string AttachmentDirectoryPath => string.Empty;
+        public string AttachmentDirectoryPath { get; } = attachmentDirectoryPath;
 
         public CopilotChatState Load() => state;
 

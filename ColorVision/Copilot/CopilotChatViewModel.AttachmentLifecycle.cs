@@ -148,13 +148,19 @@ namespace ColorVision.Copilot
             }
             catch (CopilotImageAttachmentAdmissionException ex)
             {
-                LocalCommandResultTitle = ex.FailureKind
-                    == CopilotImageAttachmentAdmissionFailureKind.RejectedInput
-                        ? "图片无法附加"
-                        : "图片保存失败";
-                LocalCommandResultText = ex.Message;
+                ReportImageAttachmentAdmissionFailure(ex);
                 return null;
             }
+        }
+
+        private void ReportImageAttachmentAdmissionFailure(
+            CopilotImageAttachmentAdmissionException exception)
+        {
+            LocalCommandResultTitle = exception.FailureKind
+                == CopilotImageAttachmentAdmissionFailureKind.RejectedInput
+                    ? "图片无法附加"
+                    : "图片保存失败";
+            LocalCommandResultText = exception.Message;
         }
 
         private void RemoveManagedAttachmentFiles(IEnumerable<CopilotAttachmentItem> attachments)
