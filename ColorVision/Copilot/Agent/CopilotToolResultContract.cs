@@ -1,3 +1,4 @@
+using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -185,9 +186,9 @@ namespace ColorVision.Copilot
             {
                 ToolName = expectedToolName,
                 Success = result.Success,
-                Summary = result.Summary ?? string.Empty,
+                Summary = CopilotMcpAuditLogger.RedactText(result.Summary),
                 Content = result.Content ?? string.Empty,
-                ErrorMessage = result.ErrorMessage ?? string.Empty,
+                ErrorMessage = CopilotMcpAuditLogger.RedactText(result.ErrorMessage),
                 FailureKind = result.FailureKind,
                 FailureCode = canonicalizeFailureCode
                     ? result.Success

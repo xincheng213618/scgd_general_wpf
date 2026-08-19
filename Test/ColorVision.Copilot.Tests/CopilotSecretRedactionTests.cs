@@ -46,6 +46,41 @@ public sealed class CopilotSecretRedactionTests
         Assert.DoesNotContain(credential, terminal.ToolResult?.ErrorMessage ?? string.Empty, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task ReturnedToolFailureDiagnosticsAreRedactedBeforePublication()
+    {
+        const string credential = "raw-returned-secret-1234567890";
+        var events = new List<CopilotAgentEvent>();
+        var outcome = await new CopilotToolExecutor().ExecuteAsync(
+            new CopilotToolInvocation
+            {
+                CallId = "secret-bearing-tool-result",
+                Round = 1,
+                Attempt = 1,
+                MaxAttempts = 1,
+                RuntimeName = "test",
+                Tool = new SecretBearingResultTool(credential),
+                AgentRequest = new CopilotAgentRequest
+                {
+                    Mode = CopilotAgentMode.Auto,
+                    UserText = "exercise result normalization",
+                },
+            },
+            events.Add,
+            CancellationToken.None);
+
+        Assert.False(outcome.Result.Success);
+        Assert.Equal("Remote token=<redacted>, request rejected.", outcome.Result.Summary);
+        Assert.Equal("Authorization token=<redacted>; access denied.", outcome.Result.ErrorMessage);
+        Assert.Equal("Diagnostic content remains available.", outcome.Result.Content);
+
+        var terminal = Assert.Single(events, item => item.Type == CopilotAgentEventType.ToolResult);
+        Assert.Equal(outcome.Result.Summary, terminal.Text);
+        Assert.Equal(outcome.Result.ErrorMessage, terminal.ToolResult?.ErrorMessage);
+        Assert.DoesNotContain(credential, terminal.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain(credential, terminal.ToolResult?.ErrorMessage ?? string.Empty, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(
         "rg sk-abcdefghijklmnopqrstuvwxyz123456",
@@ -263,6 +298,31 @@ public sealed class CopilotSecretRedactionTests
         {
             return Task.FromException<CopilotToolResult>(new InvalidOperationException(
                 $"Remote tool failed with token={credential}. {new string('x', 1_000)}"));
+        }
+    }
+
+    private sealed class SecretBearingResultTool(string credential) : ICopilotTool
+    {
+        public string Name => "SecretBearingResultTool";
+
+        public string Description => "Returns a test failure containing a credential.";
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new CopilotToolResult
+            {
+                ToolName = Name,
+                Success = false,
+                Summary = $"Remote token={credential}, request rejected.",
+                Content = "Diagnostic content remains available.",
+                ErrorMessage = $"Authorization token={credential}; access denied.",
+                FailureKind = CopilotToolFailureKind.Authorization,
+            });
         }
     }
 }
