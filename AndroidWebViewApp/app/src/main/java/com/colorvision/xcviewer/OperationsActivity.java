@@ -205,16 +205,19 @@ public class OperationsActivity extends AppCompatActivity {
         final LinearLayout container;
         final TextView title;
         final TextView summary;
+        final String actionLabel;
         OperationsDashboardStatusFormatter.Item item;
 
         DashboardStatusRow(
                 LinearLayout container,
                 TextView title,
                 TextView summary,
+                String actionLabel,
                 OperationsDashboardStatusFormatter.Item item) {
             this.container = container;
             this.title = title;
             this.summary = summary;
+            this.actionLabel = actionLabel;
             this.item = item;
         }
     }
@@ -2163,7 +2166,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardMessageStatus = dashboardStatusRow("消息",
                 v -> showDashboardCapabilityDetails("/ops/v1/messaging/health"));
         dashboardAlertStatus = dashboardStatusRow("告警",
-                v -> showDashboardCapabilityDetails("/ops/v1/alerts"));
+                v -> showProblemCenter(), "打开问题中心");
         dashboardPerformanceStatus = dashboardStatusRow("性能",
                 v -> showDashboardCapabilityDetails("/ops/v1/diagnostics/performance"));
         dashboardRecoveryStatus = dashboardStatusRow("恢复", v -> showLiveMonitor());
@@ -2504,7 +2507,7 @@ public class OperationsActivity extends AppCompatActivity {
             dashboardMessageStatus = dashboardStatusRow("消息",
                     v -> showLatestRemoteMonitorDetail("message"));
             dashboardAlertStatus = dashboardStatusRow("告警",
-                    v -> showLatestRemoteMonitorDetail("alerts"));
+                    v -> showProblemCenter(), "打开问题中心");
             dashboardPerformanceStatus = dashboardStatusRow("性能",
                     v -> showLatestRemoteMonitorDetail("performance"));
             dashboardRecoveryStatus = dashboardStatusRow("恢复",
@@ -3888,6 +3891,11 @@ public class OperationsActivity extends AppCompatActivity {
 
     private DashboardStatusRow dashboardStatusRow(
             String title, View.OnClickListener listener) {
+        return dashboardStatusRow(title, listener, "查看详情");
+    }
+
+    private DashboardStatusRow dashboardStatusRow(
+            String title, View.OnClickListener listener, String actionLabel) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
@@ -3931,7 +3939,7 @@ public class OperationsActivity extends AppCompatActivity {
         OperationsDashboardStatusFormatter.Item loading =
                 OperationsDashboardStatusFormatter.loading(title);
         DashboardStatusRow result = new DashboardStatusRow(
-                row, titleView, summaryView, loading);
+                row, titleView, summaryView, actionLabel, loading);
         updateDashboardStatus(result, loading);
         return result;
     }
@@ -3973,7 +3981,7 @@ public class OperationsActivity extends AppCompatActivity {
         row.title.setText(item.title);
         row.summary.setText(item.summary);
         row.summary.setTextColor(dashboardStatusColor(item.tone));
-        row.container.setContentDescription(item.accessibilityLabel());
+        row.container.setContentDescription(item.accessibilityLabel(row.actionLabel));
         row.item = item;
     }
 
@@ -4084,7 +4092,7 @@ public class OperationsActivity extends AppCompatActivity {
                 openDashboardMonitorDetail("message", "/ops/v1/messaging/health");
                 return;
             case OperationsDashboardAdvisor.ACTION_ALERTS:
-                openDashboardMonitorDetail("alerts", "/ops/v1/alerts");
+                showProblemCenter();
                 return;
             case OperationsDashboardAdvisor.ACTION_PERFORMANCE:
                 openDashboardMonitorDetail("performance", "/ops/v1/diagnostics/performance");

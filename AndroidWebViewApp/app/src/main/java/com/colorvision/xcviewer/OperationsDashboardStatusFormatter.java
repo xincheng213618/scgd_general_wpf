@@ -24,7 +24,14 @@ final class OperationsDashboardStatusFormatter {
         }
 
         String accessibilityLabel() {
-            return title + "，" + summary + "，查看详情";
+            return accessibilityLabel("查看详情");
+        }
+
+        String accessibilityLabel(String actionLabel) {
+            String action = actionLabel == null || actionLabel.trim().isEmpty()
+                    ? "查看详情"
+                    : actionLabel.trim();
+            return title + "，" + summary + "，" + action;
         }
     }
 

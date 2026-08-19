@@ -94,6 +94,10 @@ public class OperationsDashboardStatusFormatterTest {
                 OperationsDashboardStatusFormatter.devices(
                         true, true, 3, 1, 2, 6, "相机、光谱 · 离线 2")
                         .accessibilityLabel());
+        assertEquals("告警，安全运维 · 警告 2，打开问题中心",
+                OperationsDashboardStatusFormatter.alerts(
+                        true, 2, 0, 0, "安全运维")
+                        .accessibilityLabel("打开问题中心"));
     }
 
     @Test

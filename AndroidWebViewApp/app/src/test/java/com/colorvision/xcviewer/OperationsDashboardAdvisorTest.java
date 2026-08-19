@@ -22,7 +22,7 @@ public class OperationsDashboardAdvisorTest {
                 OperationsDashboardAdvisor.ACTION_PERFORMANCE);
 
         monitor = monitor("ready", true, 3, 4, 5, true, 2);
-        assertRecommendation(monitor, "严重告警 3 个 · 查看告警",
+        assertRecommendation(monitor, "严重告警 3 个 · 打开问题中心",
                 OperationsDashboardAdvisor.ACTION_ALERTS);
 
         monitor = monitor("ready", true, 0, 4, 5, true, 2);
@@ -34,7 +34,7 @@ public class OperationsDashboardAdvisorTest {
                 OperationsDashboardAdvisor.ACTION_DEVICES);
 
         monitor = monitor("ready", true, 0, 4, 0, false, 2);
-        assertRecommendation(monitor, "错误事件 4 个 · 查看告警",
+        assertRecommendation(monitor, "错误事件 4 个 · 打开问题中心",
                 OperationsDashboardAdvisor.ACTION_ALERTS);
     }
 
@@ -43,7 +43,7 @@ public class OperationsDashboardAdvisorTest {
         assertRecommendation(monitor("slow", false, 0, 0, 0, false, 0),
                 "主界面响应偏慢 · 查看性能", OperationsDashboardAdvisor.ACTION_PERFORMANCE);
         assertRecommendation(monitor("ready", false, 0, 0, 0, false, 2),
-                "警告 2 个 · 查看告警", OperationsDashboardAdvisor.ACTION_ALERTS);
+                "警告 2 个 · 打开问题中心", OperationsDashboardAdvisor.ACTION_ALERTS);
         assertRecommendation(monitor("ready", true, 0, 0, 0, false, 0),
                 "检测运行中 · 查看进度", OperationsDashboardAdvisor.ACTION_FLOW);
         assertRecommendation(monitor("ready", false, 0, 0, 0, false, 0),
@@ -55,7 +55,7 @@ public class OperationsDashboardAdvisorTest {
         JSONObject monitor = monitor("ready", false, 0, 0, 0, false, 2);
         monitor.getJSONObject("alerts").put("primarySource", "安全运维");
 
-        assertRecommendation(monitor, "安全运维 · 警告 2 · 查看告警",
+        assertRecommendation(monitor, "安全运维 · 警告 2 · 打开问题中心",
                 OperationsDashboardAdvisor.ACTION_ALERTS);
     }
 
@@ -81,7 +81,7 @@ public class OperationsDashboardAdvisorTest {
     @Test
     public void untrustedCountsAreBoundedBeforeTheyReachTheUi() throws Exception {
         JSONObject monitor = monitor("ready", false, 5_000, 0, 0, false, 0);
-        assertRecommendation(monitor, "严重告警 999 个 · 查看告警",
+        assertRecommendation(monitor, "严重告警 999 个 · 打开问题中心",
                 OperationsDashboardAdvisor.ACTION_ALERTS);
     }
 
@@ -116,7 +116,7 @@ public class OperationsDashboardAdvisorTest {
         JSONObject activeFlow = monitor("ready", true, 0, 0, 0, false, 0);
 
         assertRecommendationWithoutReminders(warning,
-                "警告 2 个 · 查看告警", OperationsDashboardAdvisor.ACTION_ALERTS);
+                "警告 2 个 · 打开问题中心", OperationsDashboardAdvisor.ACTION_ALERTS);
         assertRecommendationWithoutReminders(activeFlow,
                 "检测运行中 · 查看进度", OperationsDashboardAdvisor.ACTION_FLOW);
     }
