@@ -60,6 +60,8 @@ public class OperationsTriagePresentationTest {
         OperationsTriagePresentation.Finding finding = model.findings.get(0);
         assertEquals("警告 · 检测设备 · 2 条证据", finding.evidenceLabel());
         assertEquals("格式化 2026-08-18T08:32:00Z", finding.latestAt);
+        assertEquals("警告 · 检测设备 · 2 条证据 · 格式化 2026-08-18T08:32:00Z",
+                finding.listMetaLabel());
         assertEquals(1, finding.actions.size());
         assertTrue(finding.actions.get(0).readOnly());
         assertSame(finding.actions.get(0), finding.primaryCardAction());
@@ -81,6 +83,21 @@ public class OperationsTriagePresentationTest {
         assertEquals("优先处理 · 2", model.prioritySectionLabel());
         assertEquals(OperationsTriagePresentation.TONE_ERROR, model.tone);
         assertEquals(OperationsTriagePresentation.TONE_ERROR, model.metrics.get(0).tone);
+    }
+
+    @Test
+    public void findingWithoutTimestampKeepsItsMetadataCompact() {
+        OperationsTriagePresentation.Finding finding = new OperationsTriagePresentation.Finding(
+                "warning",
+                "警告",
+                "诊断事件",
+                "近期存在警告事件",
+                "有界日志摘要需要复核。",
+                3,
+                "",
+                java.util.Collections.emptyList());
+
+        assertEquals("警告 · 诊断事件 · 3 条证据", finding.listMetaLabel());
     }
 
     @Test

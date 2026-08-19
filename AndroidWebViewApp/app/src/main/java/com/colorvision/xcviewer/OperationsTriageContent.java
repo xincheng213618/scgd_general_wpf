@@ -193,12 +193,12 @@ final class OperationsTriageContent {
         LinearLayout summaryContent = new LinearLayout(activity);
         summaryContent.setOrientation(LinearLayout.VERTICAL);
 
-        TextView evidence = text(activity, finding.evidenceLabel(),
-                com.google.android.material.R.style.TextAppearance_Material3_LabelLarge,
+        TextView evidence = text(activity, finding.listMetaLabel(),
+                com.google.android.material.R.style.TextAppearance_Material3_LabelMedium,
                 accentColor);
         summaryContent.addView(evidence, matchWidth());
         TextView title = text(activity, finding.title,
-                com.google.android.material.R.style.TextAppearance_Material3_TitleMedium,
+                com.google.android.material.R.style.TextAppearance_Material3_BodyLarge,
                 themeManager.primaryTextColor());
         summaryContent.addView(title, topMargin(dp(activity, 4)));
         TextView summary = null;
@@ -210,37 +210,6 @@ final class OperationsTriageContent {
             summary.setMaxLines(2);
             summary.setEllipsize(TextUtils.TruncateAt.END);
             summaryContent.addView(summary, topMargin(dp(activity, 4)));
-        }
-
-        LinearLayout footer = new LinearLayout(activity);
-        footer.setOrientation(LinearLayout.HORIZONTAL);
-        footer.setGravity(Gravity.CENTER_VERTICAL);
-        TextView latest = null;
-        if (!finding.latestAt.isEmpty()) {
-            latest = text(activity, "最近证据 · " + finding.latestAt,
-                    com.google.android.material.R.style.TextAppearance_Material3_BodySmall,
-                    themeManager.secondaryTextColor());
-            footer.addView(latest, new LinearLayout.LayoutParams(
-                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        }
-
-        TextView actionHint = null;
-        if (primaryAction != null) {
-            actionHint = text(activity, primaryAction.buttonLabel(),
-                    com.google.android.material.R.style.TextAppearance_Material3_LabelLarge,
-                    themeManager.primaryColor());
-            actionHint.setMaxLines(1);
-            actionHint.setEllipsize(TextUtils.TruncateAt.END);
-            LinearLayout.LayoutParams hintParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            if (latest != null) {
-                hintParams.setMargins(dp(activity, 12), 0, 0, 0);
-            }
-            footer.addView(actionHint, hintParams);
-        }
-        if (footer.getChildCount() > 0) {
-            summaryContent.addView(footer, topMargin(dp(activity, 8)));
         }
 
         LinearLayout clickableSummary = new LinearLayout(activity);
@@ -273,10 +242,6 @@ final class OperationsTriageContent {
             if (summary != null) {
                 summary.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             }
-            if (latest != null) {
-                latest.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            }
-            actionHint.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         }
         content.addView(clickableSummary, matchWidth());
 

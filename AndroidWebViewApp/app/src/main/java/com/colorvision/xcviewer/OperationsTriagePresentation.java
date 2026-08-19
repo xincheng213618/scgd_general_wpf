@@ -364,6 +364,12 @@ final class OperationsTriagePresentation {
             return severityLabel + " · " + categoryLabel + " · " + evidenceCount + " 条证据";
         }
 
+        String listMetaLabel() {
+            return latestAt.isEmpty()
+                    ? evidenceLabel()
+                    : evidenceLabel() + " · " + latestAt;
+        }
+
         Action primaryCardAction() {
             for (Action action : actions) {
                 if (action.readOnly() && isSupportedAction(action.actionId)) {
