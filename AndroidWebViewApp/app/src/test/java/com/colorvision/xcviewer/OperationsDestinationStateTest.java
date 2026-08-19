@@ -76,6 +76,30 @@ public class OperationsDestinationStateTest {
     }
 
     @Test
+    public void connectionRecoveryDestinationsCanOpenAfterTheTargetConnectionFails() {
+        assertTrue(OperationsDestinationState.isConnectionRecoveryDestination(
+                OperationsDestinationState.CONNECTION_CHECK));
+        assertTrue(OperationsDestinationState.isConnectionRecoveryDestination(
+                OperationsDestinationState.CONNECTIONS));
+        assertFalse(OperationsDestinationState.isConnectionRecoveryDestination(
+                OperationsDestinationState.TRIAGE));
+        assertFalse(OperationsDestinationState.isConnectionRecoveryDestination(null));
+    }
+
+    @Test
+    public void remoteShellStillAllowsDirectConnectionDiagnostics() {
+        assertTrue(OperationsDestinationState.isRemoteShellDestination(
+                OperationsDestinationState.CONNECTION_CHECK));
+        assertTrue(OperationsDestinationState.isRemoteShellDestination(
+                OperationsDestinationState.CONNECTIONS));
+        assertTrue(OperationsDestinationState.isRemoteShellDestination(
+                OperationsDestinationState.TRIAGE));
+        assertFalse(OperationsDestinationState.isRemoteShellDestination(
+                OperationsDestinationState.JOBS));
+        assertFalse(OperationsDestinationState.isRemoteShellDestination(null));
+    }
+
+    @Test
     public void triageContextCanRemoveNavigationBackToItself() {
         assertTrue(OperationsDestinationState.isTriage(OperationsDestinationState.TRIAGE));
         assertFalse(OperationsDestinationState.isTriage(OperationsDestinationState.OVERVIEW));

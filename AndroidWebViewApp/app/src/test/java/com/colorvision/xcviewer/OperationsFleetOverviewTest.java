@@ -39,8 +39,14 @@ public class OperationsFleetOverviewTest {
         assertEquals("host_1", result.problems.get(0).hostId);
         assertEquals("在线 · 发现严重告警", result.problems.get(0).summary);
         assertEquals("host_4", result.problems.get(1).hostId);
+        assertEquals(OperationsDestinationState.CONNECTION_CHECK,
+                result.problems.get(1).destination());
         assertEquals("host_3", result.problems.get(2).hostId);
+        assertEquals(OperationsDestinationState.CONNECTIONS,
+                result.problems.get(2).destination());
         assertEquals("host_6", result.problems.get(3).hostId);
+        assertEquals(OperationsDestinationState.CONNECTIONS,
+                result.problems.get(3).destination());
         assertEquals(3, result.problemsExcluding("host_1").size());
         assertEquals("host_4", result.problemsExcluding("host_1").get(0).hostId);
         assertEquals("host_6", result.findProblem("host_6").hostId);
@@ -74,6 +80,8 @@ public class OperationsFleetOverviewTest {
 
         assertEquals("host_5", result.priorityHostId);
         assertEquals("处理首要电脑 · 电脑 5", result.priorityButtonLabel);
+        assertEquals(OperationsDestinationState.TRIAGE,
+                result.findProblem("host_5").destination());
     }
 
     @Test

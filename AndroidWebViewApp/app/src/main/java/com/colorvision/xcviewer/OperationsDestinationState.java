@@ -59,6 +59,20 @@ final class OperationsDestinationState {
                 || CAPABILITY_DETAIL.equals(normalized);
     }
 
+    static boolean isConnectionRecoveryDestination(String destination) {
+        String normalized = normalize(destination);
+        return CONNECTION_CHECK.equals(normalized) || CONNECTIONS.equals(normalized);
+    }
+
+    static boolean isRemoteShellDestination(String destination) {
+        return OVERVIEW.equals(destination)
+                || TRIAGE.equals(destination)
+                || TOOLS.equals(destination)
+                || SETTINGS.equals(destination)
+                || CONNECTIONS.equals(destination)
+                || CONNECTION_CHECK.equals(destination);
+    }
+
     static boolean isTriage(String destination) {
         return TRIAGE.equals(normalize(destination));
     }

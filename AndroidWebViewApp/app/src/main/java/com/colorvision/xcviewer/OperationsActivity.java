@@ -1850,11 +1850,13 @@ public class OperationsActivity extends AppCompatActivity {
         if (!OperationsFleetOverview.ACTION_OPEN.equals(current.priorityAction)) {
             return;
         }
-        if (current.priorityHostId.equals(preferences.getOperationsHostId())) {
-            openExistingProfile();
-        } else {
-            switchOperationsProfile(current.priorityHostId, "");
+        OperationsFleetOverview.Problem problem = current.findProblem(
+                current.priorityHostId);
+        if (problem == null) {
+            showConnectionPreference();
+            return;
         }
+        openFleetProblem(problem, OperationsDestinationState.CONNECTIONS);
     }
 
     private void refreshAllOperationsProfiles(String returnDestination) {
@@ -2094,9 +2096,21 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void switchOperationsProfile(String hostId, String destination) {
+        String safeDestination = OperationsWatchPolicy.normalizeDestination(destination);
         if (hostId.equals(preferences.getOperationsHostId())) {
-            if (OperationsDestinationState.TRIAGE.equals(destination)) {
-                showProblemCenter();
+            switch (safeDestination) {
+                case OperationsDestinationState.TRIAGE:
+                    pendingOperationsDestination = OperationsDestinationState.TRIAGE;
+                    openExistingProfile();
+                    break;
+                case OperationsDestinationState.CONNECTION_CHECK:
+                    runConnectionSelfCheck();
+                    break;
+                case OperationsDestinationState.CONNECTIONS:
+                    showConnectionPreference();
+                    break;
+                default:
+                    break;
             }
             return;
         }
@@ -2104,8 +2118,7 @@ public class OperationsActivity extends AppCompatActivity {
             Toast.makeText(this, "这台电脑的配对资料不可用", Toast.LENGTH_LONG).show();
             return;
         }
-        pendingOperationsDestination = OperationsDestinationState.TRIAGE.equals(destination)
-                ? OperationsDestinationState.TRIAGE : "";
+        pendingOperationsDestination = safeDestination;
         resetOperationsClientsForProfileChange();
         OperationsWatchService.restartForProfileChange(this);
         Toast.makeText(this, "已切换当前运维电脑", Toast.LENGTH_SHORT).show();
@@ -3634,11 +3647,7 @@ public class OperationsActivity extends AppCompatActivity {
             return false;
         }
         if (remoteDashboard
-                && !OperationsDestinationState.OVERVIEW.equals(destination)
-                && !OperationsDestinationState.TRIAGE.equals(destination)
-                && !OperationsDestinationState.TOOLS.equals(destination)
-                && !OperationsDestinationState.SETTINGS.equals(destination)
-                && !OperationsDestinationState.CONNECTIONS.equals(destination)) {
+                && !OperationsDestinationState.isRemoteShellDestination(destination)) {
             return false;
         }
         pendingOperationsDestination = "";
@@ -4850,6 +4859,9 @@ public class OperationsActivity extends AppCompatActivity {
         if (restorePendingDestination(false)) {
             return;
         }
+        if (openPendingConnectionRecoveryDestination()) {
+            return;
+        }
         setCurrentDestination(OperationsDestinationState.OVERVIEW);
         setDashboardVisible(true);
         setShowingDashboardSummary(false);
@@ -4862,6 +4874,20 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsErrorPresentation.readable(relayException)));
         showConnectionRecoveryActions();
         scheduleConnectionHeartbeat();
+    }
+
+    private boolean openPendingConnectionRecoveryDestination() {
+        String destination = pendingOperationsDestination;
+        if (!OperationsDestinationState.isConnectionRecoveryDestination(destination)) {
+            return false;
+        }
+        pendingOperationsDestination = "";
+        if (OperationsDestinationState.CONNECTION_CHECK.equals(destination)) {
+            runConnectionSelfCheck();
+        } else {
+            showConnectionPreference();
+        }
+        return true;
     }
 
     private void runConnectionSelfCheck() {
@@ -5338,7 +5364,7 @@ public class OperationsActivity extends AppCompatActivity {
             button.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
             button.setContentDescription(problem.profileLabel + "，" + problem.summary
                     + (OperationsFleetOverview.ACTION_REMOVE.equals(problem.action)
-                            ? "，点按移除失效配对" : "，点按切换并查看问题"));
+                            ? "，点按移除失效配对" : "，点按" + problem.actionDescription()));
             addDashboardWideAction(button);
         }
         addDashboardSection("当前电脑问题");
@@ -5358,9 +5384,20 @@ public class OperationsActivity extends AppCompatActivity {
             confirmRemoveOperationsProfile(problem.hostId, problem.profileLabel);
             return;
         }
+        openFleetProblem(problem, OperationsDestinationState.TRIAGE);
+    }
+
+    private void openFleetProblem(
+            OperationsFleetOverview.Problem problem, String parentDestination) {
+        String destination = problem.destination();
+        if (OperationsDestinationState.CONNECTION_CHECK.equals(destination)) {
+            detailParentDestination = parentDestination;
+        } else if (OperationsDestinationState.CONNECTIONS.equals(destination)) {
+            connectionsParentDestination = parentDestination;
+        }
         activeTriageAttentionFocus = OperationsAttentionFocus.fromWatchState(
                 problem.watchState);
-        switchOperationsProfile(problem.hostId, OperationsDestinationState.TRIAGE);
+        switchOperationsProfile(problem.hostId, destination);
     }
 
     private OperationsTriagePresentation.ViewModel triageModel(
