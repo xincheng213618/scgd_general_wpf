@@ -85,6 +85,7 @@ public class OperationsActivity extends AppCompatActivity {
     private static final int NAV_SETTINGS = 2004;
     private static final int MENU_REFRESH_DASHBOARD = 2005;
     private static final String PATH_RECENT_EVENTS = "/ops/v1/diagnostics/recent-events";
+    private static final String PATH_AUDIT = "/ops/v1/audit";
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -1889,7 +1890,9 @@ public class OperationsActivity extends AppCompatActivity {
         boolean hideForTriage = OperationsDestinationState.TRIAGE.equals(currentDestination);
         boolean hideForToolbox = OperationsDestinationState.TOOLS.equals(currentDestination);
         boolean hideForStructuredDetail = OperationsDestinationState.CAPABILITY_DETAIL.equals(
-                currentDestination) && PATH_RECENT_EVENTS.equals(dashboardDetailPath);
+                currentDestination)
+                && (PATH_RECENT_EVENTS.equals(dashboardDetailPath)
+                        || PATH_AUDIT.equals(dashboardDetailPath));
         boolean hideDirectDashboardSummary = OperationsDestinationState.OVERVIEW.equals(
                 currentDestination) && showingDashboardSummary && !remoteDashboard;
         detailsCard.setVisibility(hideForTriage
@@ -2348,7 +2351,7 @@ public class OperationsActivity extends AppCompatActivity {
                 showJobs();
                 return;
             case OperationsToolboxPresentation.ACTION_AUDIT:
-                showToolboxCapabilityDetails("/ops/v1/audit");
+                showToolboxCapabilityDetails(PATH_AUDIT);
                 return;
             case OperationsToolboxPresentation.ACTION_CREATE_DIAGNOSTIC:
                 confirmCreateDiagnosticJob();
@@ -6214,6 +6217,8 @@ public class OperationsActivity extends AppCompatActivity {
                     }
                     if (dashboardDetailRequest && PATH_RECENT_EVENTS.equals(path)) {
                         renderRecentEvents(response);
+                    } else if (dashboardDetailRequest && PATH_AUDIT.equals(path)) {
+                        renderAuditTimeline(response);
                     } else {
                         state.setText(dashboardSnapshot
                                 ? directConnectionState() : capabilityHeading(path));
@@ -6260,6 +6265,21 @@ public class OperationsActivity extends AppCompatActivity {
         detailsCard.setVisibility(View.GONE);
         actions.removeAllViews();
         actions.addView(OperationsRecentEventsContent.create(
+                        this, themeManager, model),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void renderAuditTimeline(JSONObject response) {
+        JSONObject data = response.optJSONObject("data");
+        JSONObject payload = data == null ? response : data;
+        OperationsAuditPresentation.ViewModel model =
+                OperationsAuditPresentation.from(payload, this::shortTime);
+        state.setText(model.stateLabel);
+        detailsCard.setVisibility(View.GONE);
+        actions.removeAllViews();
+        actions.addView(OperationsAuditContent.create(
                         this, themeManager, model),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
@@ -6346,8 +6366,9 @@ public class OperationsActivity extends AppCompatActivity {
         if ("/ops/v1/messaging/health".equals(path)) {
             return formatMessageChannelHealth(payload, true);
         }
-        if ("/ops/v1/audit".equals(path)) {
-            return formatAuditTimeline(payload);
+        if (PATH_AUDIT.equals(path)) {
+            return OperationsAuditPresentation.from(
+                    payload, this::shortTime).plainText();
         }
         if (!"/ops/v1/snapshot".equals(path)) {
             return pretty(payload);
@@ -6415,94 +6436,10 @@ public class OperationsActivity extends AppCompatActivity {
         if ("/ops/v1/messaging/health".equals(path)) {
             return "消息通道健康已刷新";
         }
-        if ("/ops/v1/audit".equals(path)) {
+        if (PATH_AUDIT.equals(path)) {
             return "近期远程操作记录已刷新";
         }
         return "读取成功 · " + path;
-    }
-
-    private String formatAuditTimeline(JSONObject payload) {
-        JSONArray entries = payload.optJSONArray("entries");
-        if (entries == null || entries.length() == 0) {
-            return "当前没有远程操作记录。\n\n记录只包含时间、角色类型、固定动作和结果，不包含设备、人员、目标或关联标识。";
-        }
-
-        StringBuilder text = new StringBuilder();
-        text.append("近期远程操作：").append(payload.optInt("count", entries.length())).append(" 条");
-        int maximum = Math.min(entries.length(), 30);
-        for (int index = 0; index < maximum; index++) {
-            JSONObject entry = entries.optJSONObject(index);
-            if (entry == null) {
-                continue;
-            }
-            text.append("\n\n").append(index + 1).append(". ")
-                    .append(auditActionLabel(entry.optString("action", "")))
-                    .append("\n结果：").append(auditOutcomeLabel(entry.optString("outcome", "")))
-                    .append(" · 发起方：").append(auditActorLabel(entry.optString("actorType", "")));
-            String timestamp = shortTime(entry.optString("timestamp", ""));
-            if (!timestamp.isEmpty()) {
-                text.append("\n时间：").append(timestamp);
-            }
-        }
-        text.append("\n\n只显示最近 30 条去标识记录；不返回设备 ID、人员名称、操作目标或内部关联 ID。内容不能用于识别具体人员。");
-        return text.toString();
-    }
-
-    private String auditActorLabel(String value) {
-        switch (value) {
-            case "device": return "已配对手机";
-            case "local-user": return "电脑本机人员";
-            case "system": return "运维系统";
-            case "support-relay": return "支持中继";
-            default: return "受控运维通道";
-        }
-    }
-
-    private String auditActionLabel(String value) {
-        switch (value) {
-            case "job.create": return "创建运维作业";
-            case "job.approve": return "手机批准作业";
-            case "job.reject": return "手机拒绝作业";
-            case "job.local_cosign": return "电脑端共签作业";
-            case "job.local_reject": return "电脑端拒绝作业";
-            case "job.execution.start": return "开始执行受控作业";
-            case "job.complete": return "作业执行完成";
-            case "job.evidence.consume": return "读取一次性作业证据";
-            case "desktop.action.execute": return "执行主窗口控制";
-            case "diagnostics.performance.read": return "读取进程性能快照";
-            case "diagnostics.failure-evidence.read": return "读取崩溃与卡死线索";
-            case "flow.runtime.read": return "读取当前检测状态";
-            case "monitor.read": return "持续观察运行状态";
-            case "messaging.health.read": return "读取消息通道健康";
-            case "diagnostic.bundle.download": return "下载安全诊断包";
-            case "window.snapshot.download": return "读取主窗口安全快照";
-            case "deployment.receipt.create": return "提交部署确认";
-            case "support.request": return "申请引导支持会话";
-            case "support.local_consent": return "电脑端同意支持会话";
-            case "support.local_reject": return "电脑端拒绝支持会话";
-            case "support.message.send": return "手机发送支持消息";
-            case "support.message.receive": return "接收支持中继消息";
-            default: return "受控运维活动";
-        }
-    }
-
-    private String auditOutcomeLabel(String value) {
-        switch (value) {
-            case "success":
-            case "completed":
-            case "accepted":
-            case "approved_local":
-            case "active":
-            case "consumed": return "成功";
-            case "rejected":
-            case "rejected_local": return "已拒绝";
-            case "failed": return "失败";
-            case "awaiting_mobile_approval": return "等待手机批准";
-            case "executing": return "执行中";
-            case "awaiting_local_cosign":
-            case "awaiting_local_consent": return "等待电脑确认";
-            default: return "已记录";
-        }
     }
 
     private String formatPerformanceSnapshot(JSONObject payload) {

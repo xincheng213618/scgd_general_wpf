@@ -35,6 +35,7 @@
     <plurals name="operations_problem_badge_count">
         <item quantity="other">%d 项待复核</item>
     </plurals>
+    <string name="operations_audit_section_count">%1$s · %2$d</string>
     <string name="operations_live_monitor_loading">正在采集第一份有界运行快照…</string>
     <string name="operations_live_monitor_details">前台每 10 秒读取一份脱敏聚合快照；后台守护仍按 60 秒检查。样本只保留在手机内存，离开本页即清空。</string>
     <string name="operations_live_monitor_retrying">本轮观察失败 · 10 秒后自动重试</string>
