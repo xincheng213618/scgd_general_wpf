@@ -41,7 +41,7 @@ namespace ColorVision.Copilot
         public IReadOnlyList<CopilotAgentStepRecord> StepRecords
         {
             get => _stepRecords;
-            init => _stepRecords = Freeze(value);
+            init => _stepRecords = FreezeStepRecords(value);
         }
         private IReadOnlyList<CopilotAgentStepRecord> _stepRecords = Array.Empty<CopilotAgentStepRecord>();
 
@@ -87,6 +87,71 @@ namespace ColorVision.Copilot
                     : null;
         }
         private CopilotAgentSessionCheckpoint? _sessionCheckpoint;
+
+        private static IReadOnlyList<CopilotAgentStepRecord> FreezeStepRecords(
+            IReadOnlyList<CopilotAgentStepRecord>? values)
+        {
+            if (values == null || values.Count == 0)
+                return Array.Empty<CopilotAgentStepRecord>();
+
+            return Array.AsReadOnly(values
+                .Select(CreateStepRecordSnapshot)
+                .ToArray());
+        }
+
+        private static CopilotAgentStepRecord CreateStepRecordSnapshot(CopilotAgentStepRecord? source)
+        {
+            source ??= new CopilotAgentStepRecord();
+            var sourceToolCall = source.ToolCall ?? new CopilotToolCall();
+            var toolInput = CopilotAgentToolInputSnapshot.TryCreate(
+                sourceToolCall.ToolInput,
+                out var toolInputSnapshot,
+                out _)
+                    ? toolInputSnapshot
+                    : CopilotAgentToolInput.Empty;
+            return new CopilotAgentStepRecord
+            {
+                Round = source.Round,
+                ToolCall = new CopilotToolCall
+                {
+                    ToolName = sourceToolCall.ToolName ?? string.Empty,
+                    ToolInput = toolInput,
+                    Reason = sourceToolCall.Reason ?? string.Empty,
+                    IsFallback = sourceToolCall.IsFallback,
+                },
+                Observation = CreateObservationSnapshot(source.Observation),
+                ModelObservation = source.ModelObservation == null
+                    ? null
+                    : CreateObservationSnapshot(source.ModelObservation),
+                ModelToolResult = source.ModelToolResult ?? string.Empty,
+                Execution = source.Execution ?? new CopilotToolExecutionInfo(),
+                SuppressModelOutput = source.SuppressModelOutput,
+            };
+        }
+
+        private static CopilotToolObservation CreateObservationSnapshot(CopilotToolObservation? source)
+        {
+            source ??= new CopilotToolObservation();
+            return new CopilotToolObservation
+            {
+                Success = source.Success,
+                Summary = source.Summary ?? string.Empty,
+                Content = source.Content ?? string.Empty,
+                ErrorMessage = source.ErrorMessage ?? string.Empty,
+                FailureKind = source.FailureKind,
+                FailureCode = source.FailureCode ?? string.Empty,
+                ProcessOperation = source.ProcessOperation ?? string.Empty,
+                ProcessExitCode = source.ProcessExitCode,
+                ProcessTimedOut = source.ProcessTimedOut,
+                Approval = source.Approval,
+                SuggestedReadableLocalFilePaths = Freeze(source.SuggestedReadableLocalFilePaths),
+                AttemptedLocalFilePaths = Freeze(source.AttemptedLocalFilePaths),
+                SuccessfullyReadLocalFilePaths = Freeze(source.SuccessfullyReadLocalFilePaths),
+                LocalFileReadScopes = Freeze(source.LocalFileReadScopes),
+                DelegatedRunUsage = source.DelegatedRunUsage,
+                DelegatedAnswer = source.DelegatedAnswer,
+            };
+        }
 
         private static IReadOnlyList<T> Freeze<T>(IReadOnlyList<T>? values)
         {

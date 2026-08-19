@@ -49,7 +49,25 @@ public sealed class CopilotToolResultContractTests
     [Fact]
     public void AgentRunResultOwnsStepAndBlockerCollections()
     {
-        var originalStep = new CopilotAgentStepRecord { Round = 1 };
+        var sourceArguments = new Dictionary<string, object?>
+        {
+            ["query"] = "original",
+        };
+        var sourcePaths = new List<string> { @"C:\workspace\original.cs" };
+        var originalStep = new CopilotAgentStepRecord
+        {
+            Round = 1,
+            ToolCall = new CopilotToolCall
+            {
+                ToolName = "SnapshotTool",
+                ToolInput = new CopilotAgentToolInput { Arguments = sourceArguments },
+            },
+            Observation = new CopilotToolObservation
+            {
+                Success = true,
+                SuggestedReadableLocalFilePaths = sourcePaths,
+            },
+        };
         var originalBlocker = new CopilotAgentBlockerSnapshot
         {
             Kind = CopilotAgentBlockerKind.Policy,
@@ -65,6 +83,8 @@ public sealed class CopilotToolResultContractTests
         };
 
         steps[0] = new CopilotAgentStepRecord { Round = 2 };
+        sourceArguments["query"] = "rewritten";
+        sourcePaths[0] = @"C:\workspace\rewritten.cs";
         blockers[0] = new CopilotAgentBlockerSnapshot
         {
             Kind = CopilotAgentBlockerKind.Policy,
@@ -72,7 +92,12 @@ public sealed class CopilotToolResultContractTests
             Summary = "Rewritten after completion.",
         };
 
-        Assert.Same(originalStep, Assert.Single(result.StepRecords));
+        var capturedStep = Assert.Single(result.StepRecords);
+        Assert.NotSame(originalStep, capturedStep);
+        Assert.Equal("original", capturedStep.ToolCall.ToolInput.Arguments["query"]);
+        Assert.Equal(
+            @"C:\workspace\original.cs",
+            Assert.Single(capturedStep.Observation.SuggestedReadableLocalFilePaths));
         Assert.Same(originalBlocker, Assert.Single(result.Blockers));
         var capturedSteps = Assert.IsAssignableFrom<IList<CopilotAgentStepRecord>>(result.StepRecords);
         var capturedBlockers = Assert.IsAssignableFrom<IList<CopilotAgentBlockerSnapshot>>(result.Blockers);
