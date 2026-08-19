@@ -466,6 +466,53 @@ public sealed class CopilotCodexHooksFeatureTests
         Assert.Equal(0, drained.TimedOutRetainedCount);
     }
 
+    [Fact]
+    public async Task AsyncHookSchedulerShutdownCancelsOutstandingWorkAndRejectsNewTasks()
+    {
+        var scheduler = new CopilotToolExecutionHookBackgroundScheduler();
+        var runningStarted = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var started = 0;
+        for (var index = 0;
+            index < CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency + 2;
+            index++)
+        {
+            Assert.True(scheduler.TrySchedule(
+                $"test:shutdown:{index}",
+                CopilotToolExecutionHookPhase.AfterExecute,
+                "HooksFeatureTool",
+                $"async-shutdown-{index}",
+                TimeSpan.FromSeconds(30),
+                async cancellationToken =>
+                {
+                    if (Interlocked.Increment(ref started)
+                        == CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency)
+                    {
+                        runningStarted.TrySetResult(true);
+                    }
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                }));
+        }
+
+        await runningStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var beforeShutdown = scheduler.GetActivitySnapshot();
+        Assert.Equal(
+            CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency,
+            beforeShutdown.RunningCount);
+        Assert.Equal(2, beforeShutdown.QueuedCount);
+
+        Assert.True(await scheduler.ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.Equal(0, scheduler.GetActivitySnapshot().OutstandingCount);
+        Assert.False(scheduler.TrySchedule(
+            "test:shutdown:late",
+            CopilotToolExecutionHookPhase.AfterExecute,
+            "HooksFeatureTool",
+            "async-shutdown-late",
+            TimeSpan.FromSeconds(1),
+            _ => Task.CompletedTask));
+        Assert.True(await scheduler.ShutdownAsync());
+    }
+
     private static async Task WaitForActivityToDrainAsync(
         CopilotToolExecutionHookBackgroundScheduler scheduler)
     {

@@ -96,6 +96,17 @@ namespace ColorVision.Copilot
                 System.Diagnostics.Trace.TraceError(
                     $"Copilot SessionEnd hook shutdown failed open: {CopilotAgentTraceEntry.Sanitize(exception.Message)}");
             }
+            try
+            {
+                CopilotToolExecutionHookBackgroundScheduler.Shared.ShutdownAsync()
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (Exception exception)
+            {
+                System.Diagnostics.Trace.TraceError(
+                    $"Copilot async tool hook shutdown failed: {CopilotAgentTraceEntry.Sanitize(exception.Message)}");
+            }
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted -= BackgroundShellCommandRegistry_CommandCompleted;
             CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent -= BackgroundShellCommandRegistry_OutputMonitorEvent;
             try
