@@ -124,6 +124,51 @@ public sealed class CopilotSharedCapabilityCatalogTests
             [openTool]));
     }
 
+    [Fact]
+    public void CapabilitySchemaIdentityIgnoresObjectOrderButTracksConstraintChanges()
+    {
+        var firstSchema = CopilotToolInputSchema.FromJsonSchema(
+            JsonSerializer.Deserialize<JsonElement>(
+                "{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"description\":\"Search text.\"},\"limit\":{\"type\":\"integer\",\"minimum\":1}},\"required\":[\"query\"],\"additionalProperties\":false}"));
+        var reorderedSchema = CopilotToolInputSchema.FromJsonSchema(
+            JsonSerializer.Deserialize<JsonElement>(
+                "{\"additionalProperties\":false,\"required\":[\"query\"],\"properties\":{\"limit\":{\"minimum\":1,\"type\":\"integer\"},\"query\":{\"description\":\"Search text.\",\"type\":\"string\"}},\"type\":\"object\"}"));
+        var changedSchema = CopilotToolInputSchema.FromJsonSchema(
+            JsonSerializer.Deserialize<JsonElement>(
+                "{\"additionalProperties\":false,\"required\":[\"query\"],\"properties\":{\"limit\":{\"minimum\":2,\"type\":\"integer\"},\"query\":{\"description\":\"Search text.\",\"type\":\"string\"}},\"type\":\"object\"}"));
+        var catalog = new CopilotCapabilityCatalog();
+
+        var first = catalog.PublishSource(
+            CopilotCapabilitySourceKind.ExternalMcp,
+            "external:stable-schema",
+            "Stable schema server",
+            [new SchemaOverrideTool("StableSchemaTool", firstSchema)]);
+        var reordered = catalog.PublishSource(
+            CopilotCapabilitySourceKind.ExternalMcp,
+            "external:stable-schema",
+            "Stable schema server",
+            [new SchemaOverrideTool("StableSchemaTool", reorderedSchema)]);
+
+        Assert.Equal(
+            Assert.Single(first.Capabilities).InputSchemaFingerprint,
+            Assert.Single(reordered.Capabilities).InputSchemaFingerprint);
+        Assert.Equal(first.Revision, reordered.Revision);
+        Assert.Equal(
+            Assert.Single(first.Capabilities).Fingerprint,
+            Assert.Single(reordered.Capabilities).Fingerprint);
+
+        var changed = catalog.PublishSource(
+            CopilotCapabilitySourceKind.ExternalMcp,
+            "external:stable-schema",
+            "Stable schema server",
+            [new SchemaOverrideTool("StableSchemaTool", changedSchema)]);
+
+        Assert.True(changed.Revision > reordered.Revision);
+        Assert.NotEqual(
+            Assert.Single(reordered.Capabilities).Fingerprint,
+            Assert.Single(changed.Capabilities).Fingerprint);
+    }
+
     [Theory]
     [InlineData("{\"config\":{\"name\":\"valid\",\"unexpected\":true}}", "config.unexpected", "not declared")]
     [InlineData("{\"config\":{}}", "config.name", "missing")]

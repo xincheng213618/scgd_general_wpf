@@ -1,8 +1,10 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 
 namespace ColorVision.Copilot
@@ -540,7 +542,7 @@ namespace ColorVision.Copilot
             string toolName,
             bool requireClosedObjects)
         {
-            string schema;
+            JsonElement schema;
             try
             {
                 var inputSchema = tool.InputSchema
@@ -553,7 +555,7 @@ namespace ColorVision.Copilot
                     throw new InvalidOperationException(
                         $"The tool input schema is not executable by the shared runtime: {schemaError}");
                 }
-                schema = inputSchema.JsonSchema.GetRawText();
+                schema = inputSchema.JsonSchema;
             }
             catch (Exception ex)
             {
@@ -562,13 +564,47 @@ namespace ColorVision.Copilot
                     nameof(tool),
                     ex);
             }
-            if (schema.Length > MaximumInputSchemaCharacters)
+            if (schema.GetRawText().Length > MaximumInputSchemaCharacters)
             {
                 throw new ArgumentException(
                     $"Catalog capability '{toolName}' has an input schema longer than {MaximumInputSchemaCharacters} characters.",
                     nameof(tool));
             }
-            return schema;
+            return CreateCanonicalJson(schema);
+        }
+
+        private static string CreateCanonicalJson(JsonElement value)
+        {
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(buffer))
+                WriteCanonicalJson(writer, value);
+            return Encoding.UTF8.GetString(buffer.WrittenSpan);
+        }
+
+        private static void WriteCanonicalJson(Utf8JsonWriter writer, JsonElement value)
+        {
+            switch (value.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    writer.WriteStartObject();
+                    foreach (var property in value.EnumerateObject()
+                        .OrderBy(property => property.Name, StringComparer.Ordinal))
+                    {
+                        writer.WritePropertyName(property.Name);
+                        WriteCanonicalJson(writer, property.Value);
+                    }
+                    writer.WriteEndObject();
+                    break;
+                case JsonValueKind.Array:
+                    writer.WriteStartArray();
+                    foreach (var item in value.EnumerateArray())
+                        WriteCanonicalJson(writer, item);
+                    writer.WriteEndArray();
+                    break;
+                default:
+                    value.WriteTo(writer);
+                    break;
+            }
         }
 
         private static string CreateHash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value ?? string.Empty)));
