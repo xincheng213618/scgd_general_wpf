@@ -23,6 +23,7 @@ namespace ColorVision.Copilot
         HookSurfaceDrift,
         ProjectInstructionSnapshotMissing,
         ProjectInstructionDrift,
+        UncertainToolOutcome,
     }
 
     public sealed class CopilotAgentCheckpointCapability
@@ -59,7 +60,8 @@ namespace ColorVision.Copilot
             or CopilotAgentCheckpointCompatibilityKind.HookSurfaceSnapshotMissing
             or CopilotAgentCheckpointCompatibilityKind.HookSurfaceDrift
             or CopilotAgentCheckpointCompatibilityKind.ProjectInstructionSnapshotMissing
-            or CopilotAgentCheckpointCompatibilityKind.ProjectInstructionDrift;
+            or CopilotAgentCheckpointCompatibilityKind.ProjectInstructionDrift
+            or CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome;
     }
 
     public sealed class CopilotAgentSessionCheckpoint
@@ -192,6 +194,8 @@ namespace ColorVision.Copilot
                 return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.Invalid, capabilitySnapshot);
             if (!string.Equals(ProfileKey, CreateProfileKey(profile), StringComparison.Ordinal))
                 return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.ProfileChanged, capabilitySnapshot);
+            if (LatestRunHasUncertainToolOutcome())
+                return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome, capabilitySnapshot);
             if (CapabilityCatalogRevision <= 0 || Capabilities == null || Capabilities.Count == 0)
                 return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.CapabilitySnapshotMissing, capabilitySnapshot);
 
@@ -275,6 +279,37 @@ namespace ColorVision.Copilot
             }
 
             return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.Compatible, capabilitySnapshot);
+        }
+
+        private bool LatestRunHasUncertainToolOutcome()
+        {
+            var latestRun = TaskEventJournal.Events.LastOrDefault(item =>
+                item.Type == CopilotAgentTaskEventType.RunStarted);
+            if (latestRun == null)
+                return false;
+
+            var runEvents = TaskEventJournal.Events
+                .Where(item => string.Equals(item.RunId, latestRun.RunId, StringComparison.Ordinal))
+                .ToArray();
+            if (runEvents.Any(item => item.Type == CopilotAgentTaskEventType.ToolCompleted
+                && string.Equals(
+                    CopilotToolFailureCode.Normalize(item.FailureCode),
+                    CopilotToolFailureCode.OutcomeUnknown,
+                    StringComparison.Ordinal)))
+            {
+                return true;
+            }
+
+            return runEvents
+                .Where(item => item.Type == CopilotAgentTaskEventType.ToolStarted)
+                .Any(start => !runEvents.Any(item =>
+                    item.Sequence > start.Sequence
+                    && ((item.Type == CopilotAgentTaskEventType.ToolCompleted
+                            && string.Equals(item.SubjectId, start.SubjectId, StringComparison.Ordinal))
+                        || ((item.Type is CopilotAgentTaskEventType.ApprovalRequested
+                                or CopilotAgentTaskEventType.ApprovalDenied)
+                            && (string.Equals(item.SubjectId, start.SubjectId, StringComparison.Ordinal)
+                                || item.RelatedIds.Contains(start.SubjectId, StringComparer.Ordinal))))));
         }
 
         public bool IsStructurallyValid()

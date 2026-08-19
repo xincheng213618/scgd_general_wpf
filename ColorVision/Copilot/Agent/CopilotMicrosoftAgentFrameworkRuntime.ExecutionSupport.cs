@@ -140,6 +140,8 @@ namespace ColorVision.Copilot
                 return "Persisted Agent session predates project-instruction tracking; its internal task state was discarded and Agent Framework will re-plan under the current personal and project instructions.";
             if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.ProjectInstructionDrift)
                 return "Personal or project instructions changed. Persisted internal task state was discarded and Agent Framework will re-plan under the current instruction documents.";
+            if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome)
+                return "The latest Agent run contains a started tool call without an authoritative terminal outcome. The persisted provider session was discarded so it cannot replay that call; Agent Framework will re-plan from bounded conversation and attempted-tool evidence.";
 
             var removed = compatibility.RemovedCapabilityIds.Count;
             var changed = compatibility.ChangedCapabilityIds.Count;

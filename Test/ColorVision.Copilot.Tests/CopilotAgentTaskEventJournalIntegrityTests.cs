@@ -791,6 +791,75 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void LatestRunWithUnknownToolOutcomeCannotResumeProviderSession()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("crashed-write")));
+        journal.RecordStop(CopilotAgentStopReason.Interrupted);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot());
+
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome, compatibility.Kind);
+        Assert.True(compatibility.RequiresReplan);
+        Assert.False(compatibility.CanResume);
+    }
+
+    [Fact]
+    public void ActiveRunWithDanglingToolCannotResumeProviderSession()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("unsettled-write")));
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot());
+
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome, compatibility.Kind);
+        Assert.False(compatibility.CanResume);
+    }
+
+    [Fact]
+    public void LaterSettledRunCanResumeAfterHistoricalUnknownToolOutcome()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var interruptedRun = new CopilotAgentTaskEventJournalBuilder();
+        interruptedRun.RecordRunStarted();
+        interruptedRun.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("historical-write")));
+        interruptedRun.RecordStop(CopilotAgentStopReason.Interrupted);
+        var settledRun = new CopilotAgentTaskEventJournalBuilder(interruptedRun.Snapshot());
+        settledRun.RecordRunStarted();
+        settledRun.RecordStop(CopilotAgentStopReason.Completed);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: settledRun.Snapshot());
+
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.Compatible, compatibility.Kind);
+        Assert.True(compatibility.CanResume);
+    }
+
+    [Fact]
     public void CancelledStopClosesDanglingToolAsCancelled()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
