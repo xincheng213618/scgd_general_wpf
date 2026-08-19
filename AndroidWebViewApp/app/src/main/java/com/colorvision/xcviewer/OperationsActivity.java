@@ -90,6 +90,7 @@ public class OperationsActivity extends AppCompatActivity {
     private static final int MENU_REFRESH_DASHBOARD = 2005;
     private static final String PATH_SERVICE_HEALTH = "/ops/v1/services/health";
     private static final String PATH_RECENT_EVENTS = "/ops/v1/diagnostics/recent-events";
+    private static final String PATH_FAILURE_EVIDENCE = "/ops/v1/diagnostics/failures";
     private static final String PATH_AUDIT = "/ops/v1/audit";
 
     private boolean supportCenterVisible;
@@ -1928,6 +1929,7 @@ public class OperationsActivity extends AppCompatActivity {
                 currentDestination)
                 && (PATH_SERVICE_HEALTH.equals(dashboardDetailPath)
                         || PATH_RECENT_EVENTS.equals(dashboardDetailPath)
+                        || PATH_FAILURE_EVIDENCE.equals(dashboardDetailPath)
                         || PATH_AUDIT.equals(dashboardDetailPath));
         boolean hideDirectDashboardSummary = OperationsDestinationState.OVERVIEW.equals(
                 currentDestination) && showingDashboardSummary && !remoteDashboard;
@@ -2381,7 +2383,7 @@ public class OperationsActivity extends AppCompatActivity {
                 showToolboxCapabilityDetails(PATH_RECENT_EVENTS);
                 return;
             case OperationsToolboxPresentation.ACTION_FAILURES:
-                showToolboxCapabilityDetails("/ops/v1/diagnostics/failures");
+                showToolboxCapabilityDetails(PATH_FAILURE_EVIDENCE);
                 return;
             case OperationsToolboxPresentation.ACTION_JOBS:
                 showJobs();
@@ -4847,7 +4849,7 @@ public class OperationsActivity extends AppCompatActivity {
                 return;
             case "triage.failures.view":
                 returnToTriageOnBack = true;
-                showDashboardCapabilityDetails("/ops/v1/diagnostics/failures");
+                showDashboardCapabilityDetails(PATH_FAILURE_EVIDENCE);
                 return;
             default:
                 return;
@@ -6302,7 +6304,9 @@ public class OperationsActivity extends AppCompatActivity {
                     if ("/ops/v1/snapshot".equals(path)) {
                         updateDashboardApplicationStatus(response);
                     }
-                    if (dashboardDetailRequest && PATH_SERVICE_HEALTH.equals(path)) {
+                    if (dashboardDetailRequest && PATH_FAILURE_EVIDENCE.equals(path)) {
+                        renderFailureEvidence(response);
+                    } else if (dashboardDetailRequest && PATH_SERVICE_HEALTH.equals(path)) {
                         renderServiceHealth(response);
                     } else if (dashboardDetailRequest && PATH_RECENT_EVENTS.equals(path)) {
                         renderRecentEvents(response);
@@ -6369,6 +6373,24 @@ public class OperationsActivity extends AppCompatActivity {
         detailsCard.setVisibility(View.GONE);
         actions.removeAllViews();
         actions.addView(OperationsServiceHealthContent.create(
+                        this, themeManager, model),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void renderFailureEvidence(JSONObject response) {
+        JSONObject data = response.optJSONObject("data");
+        JSONObject payload = data == null ? response : data;
+        OperationsFailureEvidence.Snapshot snapshot =
+                OperationsFailureEvidence.fromLocalPayload(payload);
+        OperationsFailureEvidencePresentation.ViewModel model =
+                OperationsFailureEvidencePresentation.from(
+                        snapshot, shortTime(snapshot.latestEvidenceAt));
+        state.setText(model.stateLabel);
+        detailsCard.setVisibility(View.GONE);
+        actions.removeAllViews();
+        actions.addView(OperationsFailureEvidenceContent.create(
                         this, themeManager, model),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
@@ -6452,7 +6474,7 @@ public class OperationsActivity extends AppCompatActivity {
         if ("/ops/v1/diagnostics/summary".equals(path)) {
             return formatDiagnosticSummary(payload);
         }
-        if ("/ops/v1/diagnostics/failures".equals(path)) {
+        if (PATH_FAILURE_EVIDENCE.equals(path)) {
             return formatFailureEvidence(payload);
         }
         if ("/ops/v1/diagnostics/performance".equals(path)) {
@@ -6522,7 +6544,7 @@ public class OperationsActivity extends AppCompatActivity {
         if ("/ops/v1/diagnostics/summary".equals(path)) {
             return "安全诊断摘要已刷新";
         }
-        if ("/ops/v1/diagnostics/failures".equals(path)) {
+        if (PATH_FAILURE_EVIDENCE.equals(path)) {
             return "崩溃与卡死线索已刷新";
         }
         if ("/ops/v1/diagnostics/performance".equals(path)) {
