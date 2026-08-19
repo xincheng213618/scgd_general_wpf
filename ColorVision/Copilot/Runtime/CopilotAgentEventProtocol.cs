@@ -182,6 +182,14 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.ToolStarted:
                     RequireMatchingText(agentEvent, agentEvent.ToolExecution!.ToolName, "tool start");
                     break;
+                case CopilotAgentEventType.ToolProgress:
+                    if (!CopilotToolProgressProtocol.IsStructurallyValid(
+                            agentEvent.Progress))
+                    {
+                        throw new InvalidOperationException(
+                            "Copilot Agent emitted an invalid tool progress payload.");
+                    }
+                    break;
                 case CopilotAgentEventType.ToolResult:
                     RequireMatchingText(agentEvent, agentEvent.ToolResult!.Summary, "tool result");
                     ValidateToolResult(agentEvent);

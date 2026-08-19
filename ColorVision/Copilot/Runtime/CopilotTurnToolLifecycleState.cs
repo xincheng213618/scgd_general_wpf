@@ -206,17 +206,9 @@ namespace ColorVision.Copilot
 
         private static void RequireProgressPayload(CopilotAgentEvent agentEvent)
         {
-            var progress = agentEvent.Progress;
             if (string.IsNullOrWhiteSpace(agentEvent.Text)
-                || progress?.Completed is < 0
-                || progress?.Total is < 0
-                || progress is { Completed: long completed, Total: long total }
-                    && completed > total
-                || progress?.DelegatedRun?.RequestTokenBudget < 0
-                || progress?.DelegatedRun?.QueueDurationMs < 0
-                || progress?.DelegatedRun?.ConsumedTokens < 0
-                || progress?.DelegatedRun?.ProviderCalls < 0
-                || progress?.DelegatedRun?.ToolCalls < 0)
+                || !CopilotToolProgressProtocol.IsStructurallyValid(
+                    agentEvent.Progress))
             {
                 throw new InvalidOperationException("Copilot Agent emitted an invalid tool progress payload.");
             }

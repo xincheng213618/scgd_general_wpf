@@ -259,6 +259,28 @@ public sealed class CopilotAgentEventProtocolTests
     }
 
     [Fact]
+    public void RuntimeEmitterRejectsInvalidToolProgressBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = CopilotAgentEvent.ToolProgress(
+            CreateExecution(),
+            "ProtectedTool is running.",
+            new CopilotToolProgressUpdate
+            {
+                Completed = 2,
+                Total = 1,
+            });
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid tool progress payload", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
     public void ReducerRejectsUnnormalizedSteeringMessage()
     {
         var agentEvent = new CopilotAgentEvent
