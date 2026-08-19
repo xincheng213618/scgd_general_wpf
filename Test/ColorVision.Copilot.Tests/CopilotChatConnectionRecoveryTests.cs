@@ -107,6 +107,99 @@ public sealed class CopilotChatConnectionRecoveryTests
         Assert.Equal("connection failure", retry.FailureKind);
     }
 
+    [Fact]
+    public async Task ConnectionRecoveryObserverFailureCannotReplaceRecovery()
+    {
+        using var handler = new SequentialHandler(call => call == 1
+            ? throw new HttpRequestException("provider connection unavailable")
+            : CreateCompletedResponse("Recovered."));
+        using var httpClient = new HttpClient(handler);
+        var service = CreateService(httpClient, maximumAttempts: 2, []);
+        var notifications = 0;
+        var deltas = new List<CopilotStreamDelta>();
+
+        var result = await service.StreamReplyAsync(
+            CreateProfile(),
+            [new CopilotRequestMessage("user", "Recover despite a broken observer.")],
+            deltas.Add,
+            onRetry: null,
+            _ =>
+            {
+                notifications++;
+                throw new InvalidOperationException("observer failed");
+            },
+            onUsageChanged: null,
+            CancellationToken.None);
+
+        Assert.Equal(2, handler.CallCount);
+        Assert.Equal(1, notifications);
+        Assert.Equal("Recovered.", string.Concat(deltas.Select(delta => delta.Content)));
+        Assert.Equal("stop", result.FinishReason);
+    }
+
+    [Fact]
+    public async Task RetryObserverFailureCannotReplaceRetry()
+    {
+        using var handler = new SequentialHandler(call => call == 1
+            ? new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+            {
+                Content = new StringContent("temporarily unavailable"),
+            }
+            : CreateCompletedResponse("Retried."));
+        using var httpClient = new HttpClient(handler);
+        var service = CreateService(httpClient, maximumAttempts: 2, []);
+        var notifications = 0;
+        var deltas = new List<CopilotStreamDelta>();
+
+        var result = await service.StreamReplyAsync(
+            CreateProfile(),
+            [new CopilotRequestMessage("user", "Retry despite a broken observer.")],
+            deltas.Add,
+            _ =>
+            {
+                notifications++;
+                throw new InvalidOperationException("observer failed");
+            },
+            CancellationToken.None);
+
+        Assert.Equal(2, handler.CallCount);
+        Assert.Equal(1, notifications);
+        Assert.Equal("Retried.", string.Concat(deltas.Select(delta => delta.Content)));
+        Assert.Equal("stop", result.FinishReason);
+    }
+
+    [Fact]
+    public async Task UsageObserverFailureCannotReplaceCompletedResponse()
+    {
+        using var handler = new SequentialHandler(_ => CreateStreamingResponse(new MemoryStream(
+            Encoding.UTF8.GetBytes(
+                "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":4,\"total_tokens\":14}}\n\n"
+                + "data: {\"choices\":[{\"delta\":{\"content\":\"Completed.\"},\"finish_reason\":\"stop\"}]}\n\n"
+                + "data: [DONE]\n\n"))));
+        using var httpClient = new HttpClient(handler);
+        var service = CreateService(httpClient, maximumAttempts: 2, []);
+        var notifications = 0;
+        var deltas = new List<CopilotStreamDelta>();
+
+        var result = await service.StreamReplyAsync(
+            CreateProfile(),
+            [new CopilotRequestMessage("user", "Complete despite a broken usage observer.")],
+            deltas.Add,
+            onRetry: null,
+            _ =>
+            {
+                notifications++;
+                throw new InvalidOperationException("observer failed");
+            },
+            CancellationToken.None);
+
+        Assert.Equal(1, handler.CallCount);
+        Assert.Equal(1, notifications);
+        Assert.Equal("Completed.", string.Concat(deltas.Select(delta => delta.Content)));
+        Assert.Equal(new CopilotTokenUsage(10, 4, 14), result.Usage);
+        Assert.Equal("stop", result.FinishReason);
+    }
+
     private static CopilotChatService CreateService(
         HttpClient httpClient,
         int maximumAttempts,

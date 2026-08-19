@@ -165,7 +165,7 @@ namespace ColorVision.Copilot
                     cancellationToken,
                     out var recovery))
                 {
-                    CopilotProviderRecoveryObserver.Notify(
+                    CopilotProviderNotificationObserver.Notify(
                         _onRecovery,
                         recovery,
                         "connection recovery");
@@ -200,7 +200,7 @@ namespace ColorVision.Copilot
                     cancellationToken,
                     out var recovery))
                 {
-                    CopilotProviderRecoveryObserver.Notify(
+                    CopilotProviderNotificationObserver.Notify(
                         _onRecovery,
                         recovery,
                         "connection recovery");

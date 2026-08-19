@@ -14,7 +14,7 @@ using System.ClientModel;
 
 namespace ColorVision.Copilot
 {
-    internal static class CopilotProviderRecoveryObserver
+    internal static class CopilotProviderNotificationObserver
     {
         public static void Notify<T>(Action<T>? observer, T value, string notificationKind)
         {
@@ -100,7 +100,7 @@ namespace ColorVision.Copilot
                 }
                 catch (Exception ex) when (TryCreateRetry(ex, attempt, out var retry, cancellationToken))
                 {
-                    CopilotProviderRecoveryObserver.Notify(_onRetry, retry, "retry");
+                    CopilotProviderNotificationObserver.Notify(_onRetry, retry, "retry");
                     await _delayAsync(retry.Delay, cancellationToken);
                 }
             }
@@ -127,7 +127,7 @@ namespace ColorVision.Copilot
                 }
                 catch (Exception ex) when (TryCreateRetry(ex, attempt, out var retry, cancellationToken))
                 {
-                    CopilotProviderRecoveryObserver.Notify(_onRetry, retry, "retry");
+                    CopilotProviderNotificationObserver.Notify(_onRetry, retry, "retry");
                     await _delayAsync(retry.Delay, cancellationToken);
                     continue;
                 }
