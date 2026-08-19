@@ -73,7 +73,11 @@ public sealed class CopilotCodexAsyncCommandHookTests
             var events = new List<CopilotTurnEvent>();
 
             await foreach (var turnEvent in runtime.RunAsync(request, CancellationToken.None))
+            {
                 events.Add(turnEvent);
+                if (turnEvent is CopilotTurnStatePersistenceBarrierEvent barrier)
+                    Assert.True(barrier.TryCommit());
+            }
 
             Assert.Equal(2, handler.Payloads.Count);
             Assert.DoesNotContain(

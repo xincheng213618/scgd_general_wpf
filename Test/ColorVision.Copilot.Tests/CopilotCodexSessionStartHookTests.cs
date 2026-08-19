@@ -376,7 +376,11 @@ public sealed class CopilotCodexSessionStartHookTests
                 async () =>
                 {
                     await foreach (var turnEvent in runtime.RunAsync(request, CancellationToken.None))
+                    {
                         events.Add(turnEvent);
+                        if (turnEvent is CopilotTurnStatePersistenceBarrierEvent barrier)
+                            Assert.True(barrier.TryCommit());
+                    }
                 });
 
             Assert.Equal("initialize later", exception.Message);
@@ -412,8 +416,11 @@ public sealed class CopilotCodexSessionStartHookTests
         }
     }
 
-    [Fact]
-    public async Task AgentRuntimeCommitsStartStateBeforeRunningSessionStartHook()
+    [Theory]
+    [InlineData(CopilotAgentMode.Chat)]
+    [InlineData(CopilotAgentMode.Auto)]
+    public async Task RuntimeCommitsStartStateBeforeRunningSessionStartHook(
+        CopilotAgentMode mode)
     {
         var workspace = CreateTemporaryDirectory();
         try
@@ -456,7 +463,7 @@ public sealed class CopilotCodexSessionStartHookTests
             profile.UseSystemPromptOverride("Answer the test request.");
             var request = new CopilotTurnRequest(
                 profile,
-                CopilotAgentMode.Auto,
+                mode,
                 "test prompt",
                 existingRequestContent: string.Empty,
                 chatAttachmentContextCaptured: false,
@@ -475,8 +482,8 @@ public sealed class CopilotCodexSessionStartHookTests
                 runControl: null,
                 new CopilotAgentDefaultsConfig(),
                 externalMcpServers: null,
-                conversationId: "session-runtime-agent",
-                taskId: "turn-runtime-agent");
+                conversationId: $"session-runtime-{mode}",
+                taskId: $"turn-runtime-{mode}");
             var events = new List<CopilotTurnEvent>();
             CopilotTurnStatePersistenceBarrierEvent? barrier = null;
 
@@ -569,8 +576,10 @@ public sealed class CopilotCodexSessionStartHookTests
                 conversationId: "session-context",
                 taskId: "turn-context");
 
-            await foreach (var _ in runtime.RunAsync(request, CancellationToken.None))
+            await foreach (var turnEvent in runtime.RunAsync(request, CancellationToken.None))
             {
+                if (turnEvent is CopilotTurnStatePersistenceBarrierEvent barrier)
+                    Assert.True(barrier.TryCommit());
             }
 
             var payload = Assert.Single(handler.Payloads);

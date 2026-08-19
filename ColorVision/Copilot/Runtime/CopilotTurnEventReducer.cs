@@ -264,11 +264,10 @@ namespace ColorVision.Copilot
             CopilotTurnEventState state,
             CopilotTurnStatePersistenceBarrierEvent barrier)
         {
-            RequireAgentMode(state, barrier);
             if (state.AgentCompleted)
             {
                 throw new InvalidOperationException(
-                    "Copilot Agent requested state persistence after its completed item.");
+                    "Copilot turn requested state persistence after its Agent completed item.");
             }
 
             return state;

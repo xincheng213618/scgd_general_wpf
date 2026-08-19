@@ -216,7 +216,11 @@ public sealed class CopilotTurnTranscriptReplayTests
         var transcript = new List<CopilotTurnEvent>();
 
         await foreach (var turnEvent in runtime.RunAsync(request, CancellationToken.None))
+        {
             transcript.Add(turnEvent);
+            if (turnEvent is CopilotTurnStatePersistenceBarrierEvent barrier)
+                Assert.True(barrier.TryCommit());
+        }
 
         var protocol = new CopilotTurnEventProtocol(request.Mode, request.TaskId);
         foreach (var turnEvent in transcript)
@@ -227,7 +231,7 @@ public sealed class CopilotTurnTranscriptReplayTests
         Assert.Same(emitted, replayed);
         Assert.Equal("test prompt", replayed.PreparedUserMessageContent);
         Assert.Equal(
-            ["started", "request-prepared", "chat-delta", "completed"],
+            ["started", "state-persistence-barrier", "request-prepared", "chat-delta", "completed"],
             transcript.Where(turnEvent => turnEvent is not CopilotTurnRuntimeDiagnosticEvent)
                 .Select(GetStableEventKind));
     }
@@ -235,6 +239,7 @@ public sealed class CopilotTurnTranscriptReplayTests
     private static string GetStableEventKind(CopilotTurnEvent turnEvent) => turnEvent switch
     {
         CopilotTurnStartedEvent => "started",
+        CopilotTurnStatePersistenceBarrierEvent => "state-persistence-barrier",
         CopilotTurnRequestPreparedEvent => "request-prepared",
         CopilotTurnChatDeltaEvent => "chat-delta",
         CopilotTurnTokenUsageUpdatedEvent => "token-usage",

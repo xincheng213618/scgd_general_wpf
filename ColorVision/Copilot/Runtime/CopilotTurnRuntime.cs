@@ -118,8 +118,7 @@ namespace ColorVision.Copilot
             CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
-            if (request.Mode != CopilotAgentMode.Chat)
-                await eventSink.RequestStatePersistenceBarrierAsync(cancellationToken).ConfigureAwait(false);
+            await eventSink.RequestStatePersistenceBarrierAsync(cancellationToken).ConfigureAwait(false);
 
             var bufferedAsyncHookResults = DrainAsyncHookResults(
                 request.ConversationId,

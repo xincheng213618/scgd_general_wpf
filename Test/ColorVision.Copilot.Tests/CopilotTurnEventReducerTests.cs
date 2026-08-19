@@ -251,18 +251,17 @@ public sealed class CopilotTurnEventReducerTests
     }
 
     [Fact]
-    public void ChatTurnRejectsStatePersistenceBarrier()
+    public void ChatTurnAcceptsStatePersistenceBarrier()
     {
         var state = CopilotTurnEventReducer.Reduce(
             CopilotTurnEventState.Create(CopilotAgentMode.Chat),
             new CopilotTurnStartedEvent(CopilotAgentMode.Chat));
 
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            CopilotTurnEventReducer.Reduce(
-                state,
-                new CopilotTurnStatePersistenceBarrierEvent()));
+        var reduced = CopilotTurnEventReducer.Reduce(
+            state,
+            new CopilotTurnStatePersistenceBarrierEvent());
 
-        Assert.Contains("chat turn", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(state, reduced);
     }
 
     [Fact]
