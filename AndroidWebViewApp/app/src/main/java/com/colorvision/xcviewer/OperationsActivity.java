@@ -1670,7 +1670,8 @@ public class OperationsActivity extends AppCompatActivity {
             addDashboardActionRow(
                     dashboardPrimaryButton(
                             "运行现场连接自检", v -> runConnectionSelfCheck()),
-                    dashboardButton("只读巡检全部电脑", v -> refreshAllOperationsProfiles()));
+                    dashboardButton("只读巡检全部电脑", v -> refreshAllOperationsProfiles(
+                            OperationsDestinationState.CONNECTIONS)));
         } else {
             addDashboardWideAction(dashboardPrimaryButton(
                     "运行现场连接自检", v -> runConnectionSelfCheck()));
@@ -1855,7 +1856,7 @@ public class OperationsActivity extends AppCompatActivity {
         }
     }
 
-    private void refreshAllOperationsProfiles() {
+    private void refreshAllOperationsProfiles(String returnDestination) {
         if (fleetCheckInFlight) {
             Toast.makeText(this, "电脑巡检正在进行", Toast.LENGTH_SHORT).show();
             return;
@@ -1898,7 +1899,11 @@ public class OperationsActivity extends AppCompatActivity {
                 }
                 completed.incrementAndGet();
                 runOnUiThread(() -> completeFleetCheckProgress(
-                        generation, activeHostBefore, completed.get(), total));
+                        generation,
+                        activeHostBefore,
+                        returnDestination,
+                        completed.get(),
+                        total));
             });
         }
     }
@@ -1906,6 +1911,7 @@ public class OperationsActivity extends AppCompatActivity {
     private void completeFleetCheckProgress(
             int generation,
             String activeHostBefore,
+            String returnDestination,
             int completed,
             int total) {
         if (generation != fleetCheckGeneration || isFinishing() || isDestroyed()) {
@@ -1919,17 +1925,31 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         fleetCheckInFlight = false;
-        boolean activeChanged = !activeHostBefore.equals(preferences.getOperationsHostId());
-        if (activeChanged) {
+        OperationsFleetCheckCompletionPolicy.Decision completion =
+                OperationsFleetCheckCompletionPolicy.decide(
+                        returnDestination,
+                        activeHostBefore,
+                        preferences.getOperationsHostId());
+        if (completion.activeTargetChanged) {
             resetOperationsClientsForProfileChange();
             OperationsWatchService.restartForProfileChange(this);
         }
-        showConnectionPreference();
         OperationsFleetOverview.Assessment fleet = OperationsFleetOverview.assess(
                 preferences.getOperationsProfiles(), System.currentTimeMillis());
         Toast.makeText(this,
                 "巡检完成：" + fleet.summary,
                 Toast.LENGTH_LONG).show();
+        if (completion.returnsToProblemCenter()) {
+            if (completion.activeTargetChanged) {
+                activeTriageAttentionFocus = "";
+                pendingOperationsDestination = OperationsDestinationState.TRIAGE;
+                openExistingProfile();
+            } else {
+                showProblemCenter();
+            }
+            return;
+        }
+        showConnectionPreference();
     }
 
     private String operationsProfileLabel(
@@ -5038,7 +5058,7 @@ public class OperationsActivity extends AppCompatActivity {
         refreshProblemNavigationBadge();
         state.setText(model.stateLabel);
         actions.removeAllViews();
-        addOtherComputerProblemQueue();
+        addFleetProblemCenterOverview();
         actions.addView(OperationsRemoteProblemsContent.create(
                         this,
                         themeManager,
@@ -5157,7 +5177,7 @@ public class OperationsActivity extends AppCompatActivity {
         title.setTitle("问题中心");
         if (!preservePreviousReport) {
             actions.removeAllViews();
-            addOtherComputerProblemQueue();
+            addFleetProblemCenterOverview();
             problemCenterCurrentContentRendered = false;
         }
         progress.setVisibility(View.VISIBLE);
@@ -5215,7 +5235,7 @@ public class OperationsActivity extends AppCompatActivity {
         title.setTitle("问题中心");
         state.setText(model.stateLabel);
         actions.removeAllViews();
-        addOtherComputerProblemQueue();
+        addFleetProblemCenterOverview();
         actions.addView(OperationsTriageContent.create(
                         this,
                         themeManager,
@@ -5233,16 +5253,31 @@ public class OperationsActivity extends AppCompatActivity {
         restoreTopLevelScroll(OperationsDestinationState.TRIAGE);
     }
 
-    private void addOtherComputerProblemQueue() {
-        List<OperationsFleetOverview.Problem> problems = OperationsFleetOverview.assess(
-                        preferences.getOperationsProfiles(), System.currentTimeMillis())
-                .problemsExcluding(preferences.getOperationsHostId());
-        if (problems.isEmpty()) {
+    private void addFleetProblemCenterOverview() {
+        List<OperationsProfileRegistry.Profile> profiles = preferences.getOperationsProfiles();
+        if (profiles.size() <= 1) {
             return;
         }
-        addDashboardSection("其他电脑需关注");
-        addDashboardInfoCard("后台守护已在其他电脑发现需要处理的状态。"
-                + "点按后才会切换当前操作电脑，并重新读取该电脑的问题证据。");
+        OperationsFleetOverview.Assessment fleet = OperationsFleetOverview.assess(
+                profiles, System.currentTimeMillis());
+        addDashboardSection("全部电脑状态");
+        addDashboardInfoCard(fleet.summary
+                + "\n这里汇总手机最近十分钟内已有的脱敏守护结果；待巡检表示记录尚未建立或已经过期。");
+        Button fleetCheck = dashboardPrimaryButton(
+                "只读巡检全部电脑",
+                v -> refreshAllOperationsProfiles(OperationsDestinationState.TRIAGE));
+        fleetCheck.setEnabled(!problemCenterRefreshInFlight && !fleetCheckInFlight);
+        fleetCheck.setContentDescription(fleetCheck.isEnabled()
+                ? "只读巡检全部电脑"
+                : "只读巡检全部电脑，当前电脑问题读取完成后可用");
+        addDashboardWideAction(fleetCheck);
+
+        List<OperationsFleetOverview.Problem> problems = fleet.problemsExcluding(
+                preferences.getOperationsHostId());
+        if (!problems.isEmpty()) {
+            addDashboardSection("其他电脑需关注");
+            addDashboardInfoCard("点按后才会切换当前操作电脑，并重新读取该电脑的问题证据。");
+        }
         for (OperationsFleetOverview.Problem problem : problems) {
             Button button = dashboardButton(
                     problem.profileLabel + "\n" + problem.summary,
