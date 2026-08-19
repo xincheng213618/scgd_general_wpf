@@ -125,7 +125,10 @@ namespace ColorVision.Copilot
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
                 case CopilotAgentEventType.ToolResult:
                     ApplyToolResult(assistantMessage, agentEvent);
-                    return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
+                    return CopilotAgentEventPresentationResult.Handled(
+                        agentEvent.ToolExecution?.Access == CopilotToolAccess.Write
+                            ? CopilotAgentEventPersistenceMode.Immediate
+                            : CopilotAgentEventPersistenceMode.Deferred);
                 case CopilotAgentEventType.ReasoningDelta:
                     ApplyStreamDelta(assistantMessage, new CopilotStreamDelta(agentEvent.Text, string.Empty));
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);

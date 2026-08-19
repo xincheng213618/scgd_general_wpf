@@ -251,6 +251,37 @@ public sealed class CopilotToolExecutionHookIntegrityTests
         Assert.Equal(1, secondTool.ExecutionCount);
     }
 
+    [Theory]
+    [InlineData(CopilotToolAccess.ReadOnly, CopilotAgentEventPersistenceMode.Deferred)]
+    [InlineData(CopilotToolAccess.Write, CopilotAgentEventPersistenceMode.Immediate)]
+    public void ToolResultPersistenceFollowsItsDurabilityRisk(
+        CopilotToolAccess access,
+        CopilotAgentEventPersistenceMode expected)
+    {
+        var assistant = new CopilotChatMessage(
+            CopilotChatRole.Assistant,
+            string.Empty);
+        var presentation = CopilotAssistantMessagePresenter.ApplyAgentEvent(
+            assistant,
+            CopilotAgentEvent.FromToolResult(
+                new CopilotToolResult
+                {
+                    ToolName = "PersistenceTool",
+                    Success = true,
+                    Summary = "Tool completed.",
+                },
+                new CopilotToolExecutionInfo
+                {
+                    CallId = "persistence-tool-call",
+                    ToolName = "PersistenceTool",
+                    Access = access,
+                    State = CopilotToolExecutionState.Completed,
+                }));
+
+        Assert.True(presentation.IsHandled);
+        Assert.Equal(expected, presentation.PersistenceMode);
+    }
+
     [Fact]
     public async Task FrameworkBridgeRetainsTheCommittedOutcomeWhenTerminalDispatchFails()
     {
