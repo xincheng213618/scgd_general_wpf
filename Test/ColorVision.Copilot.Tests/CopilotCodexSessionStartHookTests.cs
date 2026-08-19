@@ -413,6 +413,110 @@ public sealed class CopilotCodexSessionStartHookTests
     }
 
     [Fact]
+    public async Task AgentRuntimeCommitsStartStateBeforeRunningSessionStartHook()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(workspace, "config.toml"),
+                "[features]\nhooks = true");
+            File.WriteAllText(
+                Path.Combine(workspace, "hooks.json"),
+                """
+                {
+                  "hooks": {
+                    "SessionStart": [{
+                      "matcher": "^startup$",
+                      "hooks": [{
+                        "type": "command",
+                        "commandWindows": "inspect-session"
+                      }]
+                    }]
+                  }
+                }
+                """);
+            using var handler = new CountingHandler();
+            using var httpClient = new HttpClient(handler);
+            var runner = new RecordingRunner(_ => SuccessfulResult(
+                """{"continue":false,"stopReason":"initialize later"}"""));
+            var runtime = new CopilotTurnRuntime(
+                new CopilotChatService(httpClient),
+                new CopilotCodexSessionStartHookLifecycle(
+                    new CopilotCodexSessionStartHookExecutor(runner)));
+            var profile = new CopilotProfileConfig
+            {
+                VendorType = CopilotVendorType.Custom,
+                ProviderType = CopilotProviderType.OpenAICompatible,
+                ApiKey = "test-key",
+                BaseUrl = "https://example.test/v1",
+                Model = "test-model",
+                MaxTokens = 4_096,
+            };
+            profile.UseSystemPromptOverride("Answer the test request.");
+            var request = new CopilotTurnRequest(
+                profile,
+                CopilotAgentMode.Auto,
+                "test prompt",
+                existingRequestContent: string.Empty,
+                chatAttachmentContextCaptured: false,
+                refreshExternalContext: true,
+                new CopilotAgentHostContextSnapshot(
+                    activeDocumentPath: null,
+                    solutionDirectoryPath: workspace,
+                    attachments: null,
+                    liveContext: null,
+                    conversationHistory: null,
+                    additionalReadRootPaths: null,
+                    globalInstructionRootPath: workspace),
+                CopilotConversationHistoryWindow.ResolveLimits(32_000, 4_096),
+                sessionCheckpoint: null,
+                recovery: null,
+                runControl: null,
+                new CopilotAgentDefaultsConfig(),
+                externalMcpServers: null,
+                conversationId: "session-runtime-agent",
+                taskId: "turn-runtime-agent");
+            var events = new List<CopilotTurnEvent>();
+            CopilotTurnStatePersistenceBarrierEvent? barrier = null;
+
+            await using var enumerator = runtime
+                .RunAsync(request, CancellationToken.None)
+                .GetAsyncEnumerator();
+            while (await enumerator.MoveNextAsync())
+            {
+                events.Add(enumerator.Current);
+                if (enumerator.Current is CopilotTurnStatePersistenceBarrierEvent candidate)
+                {
+                    barrier = candidate;
+                    break;
+                }
+            }
+
+            Assert.NotNull(barrier);
+            Assert.Empty(runner.Calls);
+            Assert.Equal(0, handler.CallCount);
+            barrier.TryCommit();
+
+            var exception = await Assert.ThrowsAsync<CopilotSessionStartHookBlockedException>(
+                async () =>
+                {
+                    while (await enumerator.MoveNextAsync())
+                        events.Add(enumerator.Current);
+                });
+
+            Assert.Equal("initialize later", exception.Message);
+            Assert.Single(runner.Calls);
+            Assert.Equal(0, handler.CallCount);
+            Assert.Contains(events, item => item is CopilotTurnErrorEvent);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ChatRuntimeInjectsSessionContextIntoProviderRequest()
     {
         var workspace = CreateTemporaryDirectory();
