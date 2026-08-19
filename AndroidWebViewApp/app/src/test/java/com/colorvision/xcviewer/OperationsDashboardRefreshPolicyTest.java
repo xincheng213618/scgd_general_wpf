@@ -57,6 +57,20 @@ public class OperationsDashboardRefreshPolicyTest {
     }
 
     @Test
+    public void directDetailReusesTheToolbarRefreshAction() {
+        assertTrue(OperationsDashboardRefreshPolicy.showsDetailAction(
+                true, true, true, false, true, "/ops/v1/services/health"));
+        assertFalse(OperationsDashboardRefreshPolicy.showsDetailAction(
+                true, true, true, false, true, ""));
+        assertFalse(OperationsDashboardRefreshPolicy.showsDetailAction(
+                true, true, false, false, true, "/ops/v1/services/health"));
+        assertFalse(OperationsDashboardRefreshPolicy.showsDetailAction(
+                true, true, true, true, true, "/ops/v1/services/health"));
+        assertFalse(OperationsDashboardRefreshPolicy.showsDetailAction(
+                true, true, true, false, false, "/ops/v1/services/health"));
+    }
+
+    @Test
     public void visibleDashboardStartsANewRefresh() {
         assertEquals(
                 OperationsDashboardRefreshPolicy.Decision.START,

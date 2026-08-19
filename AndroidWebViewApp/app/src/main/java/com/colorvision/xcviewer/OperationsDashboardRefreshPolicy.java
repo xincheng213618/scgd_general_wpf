@@ -56,6 +56,22 @@ final class OperationsDashboardRefreshPolicy {
                 && hasOperationsClient;
     }
 
+    static boolean showsDetailAction(
+            boolean hasOperationsProfile,
+            boolean dashboardVisible,
+            boolean detailDestination,
+            boolean connectionRecoveryVisible,
+            boolean hasOperationsClient,
+            String detailPath) {
+        return hasOperationsProfile
+                && dashboardVisible
+                && detailDestination
+                && !connectionRecoveryVisible
+                && hasOperationsClient
+                && detailPath != null
+                && !detailPath.isEmpty();
+    }
+
     static Decision decide(
             boolean activityResumed,
             boolean dashboardVisible,

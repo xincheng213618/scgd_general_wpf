@@ -84,6 +84,7 @@ public class OperationsActivity extends AppCompatActivity {
     private static final int NAV_TOOLS = 2003;
     private static final int NAV_SETTINGS = 2004;
     private static final int MENU_REFRESH_DASHBOARD = 2005;
+    private static final String PATH_RECENT_EVENTS = "/ops/v1/diagnostics/recent-events";
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -165,6 +166,8 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean manualDashboardRefresh;
     private boolean remoteToolboxRefreshInFlight;
     private boolean problemCenterRefreshInFlight;
+    private boolean dashboardDetailRefreshInFlight;
+    private String dashboardDetailPath = "";
     private String lastSuccessfulDashboardUpdateLabel = "";
     private int connectionRequestGeneration;
     private int connectionCheckGeneration;
@@ -310,7 +313,9 @@ public class OperationsActivity extends AppCompatActivity {
             if (item.getItemId() != MENU_REFRESH_DASHBOARD) {
                 return false;
             }
-            if (isProblemCenterRefreshDestination()) {
+            if (isDashboardDetailRefreshDestination()) {
+                refreshDashboardDetail();
+            } else if (isProblemCenterRefreshDestination()) {
                 if (remoteDashboard) {
                     refreshRemoteProblemCenter();
                 } else {
@@ -1833,6 +1838,8 @@ public class OperationsActivity extends AppCompatActivity {
         problemBadgeState = "";
         problemBadgeCount = 0;
         problemCenterRefreshInFlight = false;
+        dashboardDetailPath = "";
+        dashboardDetailRefreshInFlight = false;
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         clearDashboardLiveStatusReferences();
         refreshProblemNavigationBadge();
@@ -1840,6 +1847,8 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void setCurrentDestination(String destination) {
         String normalized = OperationsDestinationState.normalize(destination);
+        dashboardDetailPath = "";
+        dashboardDetailRefreshInFlight = false;
         int direction = OperationsInPageNavigationPolicy.motionDirection(
                 currentDestination,
                 normalized,
@@ -1879,9 +1888,14 @@ public class OperationsActivity extends AppCompatActivity {
         }
         boolean hideForTriage = OperationsDestinationState.TRIAGE.equals(currentDestination);
         boolean hideForToolbox = OperationsDestinationState.TOOLS.equals(currentDestination);
+        boolean hideForStructuredDetail = OperationsDestinationState.CAPABILITY_DETAIL.equals(
+                currentDestination) && PATH_RECENT_EVENTS.equals(dashboardDetailPath);
         boolean hideDirectDashboardSummary = OperationsDestinationState.OVERVIEW.equals(
                 currentDestination) && showingDashboardSummary && !remoteDashboard;
-        detailsCard.setVisibility(hideForTriage || hideForToolbox || hideDirectDashboardSummary
+        detailsCard.setVisibility(hideForTriage
+                || hideForToolbox
+                || hideForStructuredDetail
+                || hideDirectDashboardSummary
                 ? View.GONE : View.VISIBLE);
     }
 
@@ -1941,24 +1955,38 @@ public class OperationsActivity extends AppCompatActivity {
                             OperationsDestinationState.TRIAGE.equals(currentDestination),
                             connectionRecoveryVisible,
                             remoteDashboard ? relayClient != null : client != null);
+            boolean showDetailRefresh = OperationsDashboardRefreshPolicy
+                    .showsDetailAction(
+                            paired,
+                            dashboardVisible,
+                            OperationsDestinationState.CAPABILITY_DETAIL.equals(
+                                    currentDestination),
+                            connectionRecoveryVisible,
+                            client != null,
+                            dashboardDetailPath);
             boolean showRefresh = showDashboardRefresh
                     || showToolboxRefresh
-                    || showProblemRefresh;
-            dashboardRefreshMenuItem.setTitle(showProblemRefresh
-                    ? remoteDashboard
-                            ? "刷新电脑签名状态" : "刷新问题摘要"
-                    : showToolboxRefresh
-                            ? "刷新工具可用性"
-                            : getString(R.string.operations_refresh_dashboard));
+                    || showProblemRefresh
+                    || showDetailRefresh;
+            String refreshTitle = getString(R.string.operations_refresh_dashboard);
+            boolean refreshInFlight = manualDashboardRefresh;
+            if (showDetailRefresh) {
+                refreshTitle = OperationsDashboardDetailPresentation.forPath(
+                        dashboardDetailPath).refreshLabel;
+                refreshInFlight = dashboardDetailRefreshInFlight;
+            } else if (showProblemRefresh) {
+                refreshTitle = remoteDashboard
+                        ? "刷新电脑签名状态" : "刷新问题摘要";
+                refreshInFlight = problemCenterRefreshInFlight;
+            } else if (showToolboxRefresh) {
+                refreshTitle = "刷新工具可用性";
+                refreshInFlight = remoteToolboxRefreshInFlight;
+            }
+            dashboardRefreshMenuItem.setTitle(refreshTitle);
             dashboardRefreshMenuItem.setVisible(showRefresh);
             dashboardRefreshMenuItem.setEnabled(
                     OperationsDashboardRefreshPolicy.toolbarActionEnabled(
-                            showRefresh,
-                            showProblemRefresh
-                                    ? problemCenterRefreshInFlight
-                                    : showToolboxRefresh
-                                            ? remoteToolboxRefreshInFlight
-                                            : manualDashboardRefresh));
+                            showRefresh, refreshInFlight));
         }
         if (dashboardFreshness != null) {
             dashboardFreshness.setVisibility(
@@ -2268,12 +2296,29 @@ public class OperationsActivity extends AppCompatActivity {
         return OperationsDestinationState.TRIAGE.equals(currentDestination);
     }
 
+    private boolean isDashboardDetailRefreshDestination() {
+        return OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
+                && !dashboardDetailPath.isEmpty();
+    }
+
+    private void refreshDashboardDetail() {
+        if (!isDashboardDetailRefreshDestination() || dashboardDetailRefreshInFlight) {
+            return;
+        }
+        loadCapability(dashboardDetailPath, true);
+    }
+
+    private void showToolboxCapabilityDetails(String path) {
+        returnToToolboxOnBack = true;
+        showDashboardCapabilityDetails(path);
+    }
+
     private void runOperationsToolboxAction(String actionId) {
         returnToTriageOnBack = false;
         returnToToolboxOnBack = true;
         switch (actionId) {
             case OperationsToolboxPresentation.ACTION_SERVICES_HEALTH:
-                loadCapability("/ops/v1/services/health");
+                showToolboxCapabilityDetails("/ops/v1/services/health");
                 return;
             case OperationsToolboxPresentation.ACTION_SHOW_WINDOW:
                 runWindowAction("show", "主窗口已显示");
@@ -2294,16 +2339,16 @@ public class OperationsActivity extends AppCompatActivity {
                 confirmRestartApplication();
                 return;
             case OperationsToolboxPresentation.ACTION_RECENT_EVENTS:
-                loadCapability("/ops/v1/diagnostics/recent-events");
+                showToolboxCapabilityDetails(PATH_RECENT_EVENTS);
                 return;
             case OperationsToolboxPresentation.ACTION_FAILURES:
-                loadCapability("/ops/v1/diagnostics/failures");
+                showToolboxCapabilityDetails("/ops/v1/diagnostics/failures");
                 return;
             case OperationsToolboxPresentation.ACTION_JOBS:
                 showJobs();
                 return;
             case OperationsToolboxPresentation.ACTION_AUDIT:
-                loadCapability("/ops/v1/audit");
+                showToolboxCapabilityDetails("/ops/v1/audit");
                 return;
             case OperationsToolboxPresentation.ACTION_CREATE_DIAGNOSTIC:
                 confirmCreateDiagnosticJob();
@@ -4688,7 +4733,7 @@ public class OperationsActivity extends AppCompatActivity {
         switch (actionId) {
             case "triage.events.view":
                 returnToTriageOnBack = true;
-                showDashboardCapabilityDetails("/ops/v1/diagnostics/recent-events");
+                showDashboardCapabilityDetails(PATH_RECENT_EVENTS);
                 return;
             case "triage.window.show":
                 runWindowAction("show", "主窗口已显示");
@@ -6109,11 +6154,12 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void showDashboardApplicationDetails() {
         setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
+        dashboardDetailPath = "/ops/v1/snapshot";
+        refreshDetailsCardVisibility();
+        refreshOperationsHeaderNavigation();
         scrollDashboardToTop();
         title.setTitle("应用概况");
         actions.removeAllViews();
-        addDashboardWideAction(dashboardTonalButton(
-                "刷新应用概况", v -> loadCapability("/ops/v1/snapshot", true)));
         loadCapability("/ops/v1/snapshot", true);
     }
 
@@ -6121,11 +6167,12 @@ public class OperationsActivity extends AppCompatActivity {
         OperationsDashboardDetailPresentation.Item presentation =
                 OperationsDashboardDetailPresentation.forPath(path);
         setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
+        dashboardDetailPath = path;
+        refreshDetailsCardVisibility();
+        refreshOperationsHeaderNavigation();
         scrollDashboardToTop();
         title.setTitle(presentation.title);
         actions.removeAllViews();
-        addDashboardWideAction(dashboardTonalButton(
-                presentation.refreshLabel, v -> loadCapability(path)));
         loadCapability(path);
     }
 
@@ -6135,6 +6182,13 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void loadCapability(String path, boolean showDetails) {
         boolean dashboardSnapshot = "/ops/v1/snapshot".equals(path) && !showDetails;
+        boolean dashboardDetailRequest = showDetails
+                && OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
+                && path.equals(dashboardDetailPath);
+        if (dashboardDetailRequest) {
+            dashboardDetailRefreshInFlight = true;
+            refreshOperationsHeaderNavigation();
+        }
         setShowingDashboardSummary(dashboardSnapshot);
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -6144,16 +6198,43 @@ public class OperationsActivity extends AppCompatActivity {
             try {
                 JSONObject response = client.get(path);
                 runOnUiThread(() -> {
+                    if (dashboardDetailRequest
+                            && (!OperationsDestinationState.CAPABILITY_DETAIL.equals(
+                                    currentDestination)
+                                    || !path.equals(dashboardDetailPath))) {
+                        return;
+                    }
+                    if (dashboardDetailRequest) {
+                        dashboardDetailRefreshInFlight = false;
+                        refreshOperationsHeaderNavigation();
+                    }
                     progress.setVisibility(View.GONE);
                     if ("/ops/v1/snapshot".equals(path)) {
                         updateDashboardApplicationStatus(response);
                     }
-                    state.setText(dashboardSnapshot
-                            ? directConnectionState() : capabilityHeading(path));
-                    details.setText(formatCapability(path, response));
+                    if (dashboardDetailRequest && PATH_RECENT_EVENTS.equals(path)) {
+                        renderRecentEvents(response);
+                    } else {
+                        state.setText(dashboardSnapshot
+                                ? directConnectionState() : capabilityHeading(path));
+                        details.setText(formatCapability(path, response));
+                        if (detailsCard != null) {
+                            detailsCard.setVisibility(View.VISIBLE);
+                        }
+                    }
                 });
             } catch (Exception ex) {
                 runOnUiThread(() -> {
+                    if (dashboardDetailRequest
+                            && (!OperationsDestinationState.CAPABILITY_DETAIL.equals(
+                                    currentDestination)
+                                    || !path.equals(dashboardDetailPath))) {
+                        return;
+                    }
+                    if (dashboardDetailRequest) {
+                        dashboardDetailRefreshInFlight = false;
+                        refreshOperationsHeaderNavigation();
+                    }
                     progress.setVisibility(View.GONE);
                     if (dashboardSnapshot) {
                         updateDashboardStatus(dashboardApplicationStatus,
@@ -6162,9 +6243,27 @@ public class OperationsActivity extends AppCompatActivity {
                     }
                     state.setText(dashboardSnapshot ? directConnectionState() : "读取失败");
                     details.setText(OperationsErrorPresentation.readable(ex));
+                    if (detailsCard != null) {
+                        detailsCard.setVisibility(View.VISIBLE);
+                    }
                 });
             }
         });
+    }
+
+    private void renderRecentEvents(JSONObject response) {
+        JSONObject data = response.optJSONObject("data");
+        JSONObject payload = data == null ? response : data;
+        OperationsRecentEventsPresentation.ViewModel model =
+                OperationsRecentEventsPresentation.from(payload, this::shortTime);
+        state.setText(model.stateLabel);
+        detailsCard.setVisibility(View.GONE);
+        actions.removeAllViews();
+        actions.addView(OperationsRecentEventsContent.create(
+                        this, themeManager, model),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
     private void updateDashboardApplicationStatus(JSONObject response) {
