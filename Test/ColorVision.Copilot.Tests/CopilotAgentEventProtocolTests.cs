@@ -108,7 +108,7 @@ public sealed class CopilotAgentEventProtocolTests
                 Success = true,
                 Summary = "Completed.",
             },
-            ToolExecution = CreateExecution(),
+            ToolExecution = CreateExecution(CopilotToolExecutionState.Completed),
         };
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
@@ -134,7 +134,7 @@ public sealed class CopilotAgentEventProtocolTests
                 Success = true,
                 Summary = "Completed.",
             },
-            ToolExecution = CreateExecution(),
+            ToolExecution = CreateExecution(CopilotToolExecutionState.Completed),
             ToolExecutionHookRuns =
             [
                 new CopilotToolExecutionHookRun
@@ -172,13 +172,39 @@ public sealed class CopilotAgentEventProtocolTests
                 FailureKind = CopilotToolFailureKind.Internal,
                 FailureCode = "contradiction",
             },
-            ToolExecution = CreateExecution(),
+            ToolExecution = CreateExecution(CopilotToolExecutionState.Completed),
         };
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
             emit(agentEvent));
 
         Assert.Contains("violated its final contract", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
+    public void RuntimeEmitterRejectsNonterminalSuccessfulToolResultBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.ToolResult,
+            Text = "Completed.",
+            ToolResult = new CopilotToolResult
+            {
+                ToolName = "ProtectedTool",
+                Success = true,
+                Summary = "Completed.",
+            },
+            ToolExecution = CreateExecution(CopilotToolExecutionState.Running),
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid state metadata", exception.Message, StringComparison.Ordinal);
         Assert.Equal(0, Volatile.Read(ref observed));
     }
 
@@ -319,7 +345,8 @@ public sealed class CopilotAgentEventProtocolTests
         return CopilotTurnEventReducer.Reduce(state, new CopilotTurnAgentEvent(agentEvent));
     }
 
-    private static CopilotToolExecutionInfo CreateExecution() => new()
+    private static CopilotToolExecutionInfo CreateExecution(
+        CopilotToolExecutionState state = CopilotToolExecutionState.Running) => new()
     {
         CallId = "provider-call-1",
         Round = 1,
@@ -334,7 +361,7 @@ public sealed class CopilotAgentEventProtocolTests
         ConcurrencyMode = CopilotToolConcurrencyMode.Exclusive,
         ConcurrencyKey = "resource:test",
         ArgumentSummary = "path=C:\\workspace\\file.txt",
-        State = CopilotToolExecutionState.Running,
+        State = state,
         StartedAtUtc = DateTimeOffset.UtcNow,
         TimeoutMs = 30_000,
     };
