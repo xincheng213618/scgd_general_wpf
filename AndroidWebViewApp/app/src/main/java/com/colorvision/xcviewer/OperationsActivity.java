@@ -91,6 +91,7 @@ public class OperationsActivity extends AppCompatActivity {
     private static final String PATH_SERVICE_HEALTH = "/ops/v1/services/health";
     private static final String PATH_RECENT_EVENTS = "/ops/v1/diagnostics/recent-events";
     private static final String PATH_FAILURE_EVIDENCE = "/ops/v1/diagnostics/failures";
+    private static final String PATH_PERFORMANCE = "/ops/v1/diagnostics/performance";
     private static final String PATH_AUDIT = "/ops/v1/audit";
 
     private boolean supportCenterVisible;
@@ -1933,6 +1934,7 @@ public class OperationsActivity extends AppCompatActivity {
                 && (PATH_SERVICE_HEALTH.equals(dashboardDetailPath)
                         || PATH_RECENT_EVENTS.equals(dashboardDetailPath)
                         || PATH_FAILURE_EVIDENCE.equals(dashboardDetailPath)
+                        || PATH_PERFORMANCE.equals(dashboardDetailPath)
                         || PATH_AUDIT.equals(dashboardDetailPath));
         boolean hideDirectDashboardSummary = OperationsDestinationState.OVERVIEW.equals(
                 currentDestination) && showingDashboardSummary && !remoteDashboard;
@@ -2168,7 +2170,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardAlertStatus = dashboardStatusRow("告警",
                 v -> showProblemCenter(), "打开问题中心");
         dashboardPerformanceStatus = dashboardStatusRow("性能",
-                v -> showDashboardCapabilityDetails("/ops/v1/diagnostics/performance"));
+                v -> showDashboardCapabilityDetails(PATH_PERFORMANCE));
         dashboardRecoveryStatus = dashboardStatusRow("恢复", v -> showLiveMonitor());
         dashboardStatusCaption = addDashboardStatusCard(
                 OperationsDashboardStatusFormatter.sectionCaption(false, true),
@@ -2592,6 +2594,14 @@ public class OperationsActivity extends AppCompatActivity {
         setShowingDashboardSummary(false);
         progress.setVisibility(View.GONE);
         title.setTitle(remoteMonitorTitle(section));
+        if ("performance".equals(section)) {
+            renderPerformanceSnapshot(monitor.optJSONObject("performance"), true, null);
+            addDashboardActionRow(
+                    dashboardButton("刷新远程状态", v -> refreshRemoteMonitorDetail(section)),
+                    dashboardButton(operationsDetailBackLabel(), v -> returnFromOperationsDetail()));
+            scheduleConnectionHeartbeat();
+            return;
+        }
         state.setText("电脑签名远程状态");
         details.setText(getString(
                 R.string.operations_remote_monitor_signed_summary,
@@ -4095,7 +4105,7 @@ public class OperationsActivity extends AppCompatActivity {
                 showProblemCenter();
                 return;
             case OperationsDashboardAdvisor.ACTION_PERFORMANCE:
-                openDashboardMonitorDetail("performance", "/ops/v1/diagnostics/performance");
+                openDashboardMonitorDetail("performance", PATH_PERFORMANCE);
                 return;
             case OperationsDashboardAdvisor.ACTION_MONITOR:
                 if (remoteDashboard) {
@@ -6312,7 +6322,10 @@ public class OperationsActivity extends AppCompatActivity {
                     if ("/ops/v1/snapshot".equals(path)) {
                         updateDashboardApplicationStatus(response);
                     }
-                    if (dashboardDetailRequest && PATH_FAILURE_EVIDENCE.equals(path)) {
+                    if (dashboardDetailRequest && PATH_PERFORMANCE.equals(path)) {
+                        renderPerformanceSnapshot(response, false,
+                                this::showPerformanceLiveMonitor);
+                    } else if (dashboardDetailRequest && PATH_FAILURE_EVIDENCE.equals(path)) {
                         renderFailureEvidence(response);
                     } else if (dashboardDetailRequest && PATH_SERVICE_HEALTH.equals(path)) {
                         renderServiceHealth(response);
@@ -6405,6 +6418,31 @@ public class OperationsActivity extends AppCompatActivity {
                         LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
+    private void renderPerformanceSnapshot(
+            JSONObject response,
+            boolean signedSnapshot,
+            Runnable openLiveMonitor) {
+        JSONObject data = response == null ? null : response.optJSONObject("data");
+        JSONObject payload = data == null ? response : data;
+        OperationsPerformancePresentation.ViewModel model =
+                OperationsPerformancePresentation.from(
+                        payload, this::shortTime, signedSnapshot);
+        state.setText(model.stateLabel);
+        detailsCard.setVisibility(View.GONE);
+        actions.removeAllViews();
+        actions.addView(OperationsPerformanceContent.create(
+                        this, themeManager, model, openLiveMonitor),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void showPerformanceLiveMonitor() {
+        returnToToolboxOnBack = false;
+        returnToTriageOnBack = true;
+        showLiveMonitor();
+    }
+
     private void renderAuditTimeline(JSONObject response) {
         JSONObject data = response.optJSONObject("data");
         JSONObject payload = data == null ? response : data;
@@ -6485,7 +6523,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (PATH_FAILURE_EVIDENCE.equals(path)) {
             return formatFailureEvidence(payload);
         }
-        if ("/ops/v1/diagnostics/performance".equals(path)) {
+        if (PATH_PERFORMANCE.equals(path)) {
             return formatPerformanceSnapshot(payload);
         }
         if ("/ops/v1/flow/runtime".equals(path)) {
@@ -6555,7 +6593,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (PATH_FAILURE_EVIDENCE.equals(path)) {
             return "崩溃与卡死线索已刷新";
         }
-        if ("/ops/v1/diagnostics/performance".equals(path)) {
+        if (PATH_PERFORMANCE.equals(path)) {
             return "进程性能快照已刷新";
         }
         if ("/ops/v1/flow/runtime".equals(path)) {
@@ -7137,7 +7175,7 @@ public class OperationsActivity extends AppCompatActivity {
                 JSONObject connection = client.get("/ops/v1/diagnostics/connection").optJSONObject("data");
                 JSONObject events = client.get("/ops/v1/diagnostics/recent-events").optJSONObject("data");
                 JSONObject services = client.get(PATH_SERVICE_HEALTH).optJSONObject("data");
-                JSONObject performance = client.get("/ops/v1/diagnostics/performance").optJSONObject("data");
+                JSONObject performance = client.get(PATH_PERFORMANCE).optJSONObject("data");
                 JSONObject flowRuntime = client.get("/ops/v1/flow/runtime").optJSONObject("data");
                 JSONObject devices = client.get("/ops/v1/devices/health").optJSONObject("data");
                 JSONObject messageChannel = client.get("/ops/v1/messaging/health").optJSONObject("data");
