@@ -247,6 +247,14 @@ public sealed class CopilotCodexExecPolicyTests
             ],
         };
 
+        string report = CopilotEffectiveConfigDiagnostics.Format(
+            new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                ComposerMode = CopilotAgentMode.Code,
+                CodexConfigOptions = options,
+            });
         string memoryReport = CopilotProjectInstructionDiagnostics.Format(
             new CopilotProjectInstructionSnapshot(
                 string.Empty,
@@ -256,6 +264,9 @@ public sealed class CopilotCodexExecPolicyTests
                 Array.Empty<CopilotProjectInstructionDocument>()),
             hasActiveAgentRun: false);
 
+        Assert.Contains("Codex exec policy：已加载规则 1 个 / 来源文件 1 个 / 配置问题 1 个", report, StringComparison.Ordinal);
+        Assert.Contains("提交时冻结", report, StringComparison.Ordinal);
+        Assert.Contains("forbidden > prompt > allow", report, StringComparison.Ordinal);
         Assert.Contains("Codex exec policy：已加载规则 1 个 / 来源文件 1 个 / 配置问题 1 个", memoryReport, StringComparison.Ordinal);
         Assert.Contains("最严格决策优先", memoryReport, StringComparison.Ordinal);
     }

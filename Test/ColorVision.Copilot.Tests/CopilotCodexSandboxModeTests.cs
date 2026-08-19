@@ -243,11 +243,21 @@ public sealed class CopilotCodexSandboxModeTests
             HasCodexSandboxModeOverride = true,
             CodexSandboxModeSourceLabel = options.SandboxModeSourceLabel,
         });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
+            new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                ComposerMode = CopilotAgentMode.Code,
+                CodexConfigOptions = options,
+            });
 
         Assert.Contains("Codex sandbox_mode：danger-full-access", memoryReport, StringComparison.Ordinal);
         Assert.Contains("不映射为提权", memoryReport, StringComparison.Ordinal);
         Assert.Contains("执行沙箱：danger-full-access", contextReport, StringComparison.Ordinal);
         Assert.Contains("原生访问与审批边界", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex sandbox_mode：danger-full-access", debugReport, StringComparison.Ordinal);
+        Assert.Contains("不映射为提权", debugReport, StringComparison.Ordinal);
     }
 
     private sealed class RecordingTool : ICopilotTool

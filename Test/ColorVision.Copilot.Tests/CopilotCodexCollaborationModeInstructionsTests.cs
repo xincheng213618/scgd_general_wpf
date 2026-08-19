@@ -139,12 +139,22 @@ public sealed class CopilotCodexCollaborationModeInstructionsTests
             HasCodexIncludeCollaborationModeInstructionsOverride = true,
             CodexIncludeCollaborationModeInstructionsSourceLabel = options.IncludeCollaborationModeInstructionsSourceLabel,
         });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
+            new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                ComposerMode = CopilotAgentMode.Plan,
+                CodexConfigOptions = options,
+            });
 
         Assert.Contains("Codex include_collaboration_mode_instructions：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.IncludeCollaborationModeInstructionsSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("当前模式、工具过滤、任务清单与完成循环保持不变", memoryReport, StringComparison.Ordinal);
         Assert.Contains("协作模式说明：省略", contextReport, StringComparison.Ordinal);
         Assert.Contains("当前模式、工具过滤、任务清单与完成循环保持不变", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex include_collaboration_mode_instructions：false", debugReport, StringComparison.Ordinal);
+        Assert.Contains("当前模式、工具过滤、任务清单与完成循环保持不变", debugReport, StringComparison.Ordinal);
     }
 
     private static CopilotAgentRequest CreatePlanRequest(bool includeCollaborationModeInstructions) => new()

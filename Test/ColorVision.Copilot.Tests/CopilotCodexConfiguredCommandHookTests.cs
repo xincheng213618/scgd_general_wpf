@@ -372,6 +372,14 @@ public sealed class CopilotCodexConfiguredCommandHookTests
                     options,
                     Array.Empty<CopilotProjectInstructionDocument>()),
                 hasActiveAgentRun: false);
+            var debugReport = CopilotEffectiveConfigDiagnostics.Format(
+                new CopilotEffectiveConfigDiagnosticContext
+                {
+                    Config = new CopilotConfig(),
+                    State = new CopilotChatState(),
+                    ComposerMode = CopilotAgentMode.Code,
+                    CodexConfigOptions = options,
+                });
 
             Assert.Equal(["json-hook", "inline-hook"], options.ConfiguredCommandHooks.Select(hook => hook.Command));
             Assert.Equal(
@@ -383,6 +391,7 @@ public sealed class CopilotCodexConfiguredCommandHookTests
                 issue => issue.SourceFilePath == configPath
                     && issue.Message.Contains("both hooks.json and config.toml", StringComparison.Ordinal));
             Assert.Contains("已加载命令 Hook 2 个（同步 1 / 异步 1）", memoryReport, StringComparison.Ordinal);
+            Assert.Contains("已加载命令 Hook 2 个（同步 1 / 异步 1）", debugReport, StringComparison.Ordinal);
         }
         finally
         {

@@ -139,12 +139,22 @@ public sealed class CopilotCodexPermissionsInstructionsTests
             HasCodexIncludePermissionsInstructionsOverride = true,
             CodexIncludePermissionsInstructionsSourceLabel = options.IncludePermissionsInstructionsSourceLabel,
         });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
+            new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                ComposerMode = CopilotAgentMode.Code,
+                CodexConfigOptions = options,
+            });
 
         Assert.Contains("Codex include_permissions_instructions：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.IncludePermissionsInstructionsSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("沙箱、审批、工具过滤与执行策略保持强制", memoryReport, StringComparison.Ordinal);
         Assert.Contains("权限说明：省略", contextReport, StringComparison.Ordinal);
         Assert.Contains("沙箱、审批、工具过滤与执行策略保持强制", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex include_permissions_instructions：false", debugReport, StringComparison.Ordinal);
+        Assert.Contains("沙箱、审批、工具过滤与执行策略保持强制", debugReport, StringComparison.Ordinal);
     }
 
     private static CopilotAgentRequest CreateRequest(bool includePermissionsInstructions) => new()

@@ -670,6 +670,14 @@ public sealed class CopilotCodexPluginsFeatureTests
             HasCodexPluginsEnabledOverride = true,
             CodexPluginsEnabledSourceLabel = options.PluginsEnabledSourceLabel,
         });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
+            new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                ComposerMode = CopilotAgentMode.Code,
+                CodexConfigOptions = options,
+            });
         string harness = CopilotMicrosoftAgentFrameworkRuntime.BuildHarnessInstructions(
             CreateAgentRequest(pluginsEnabled: false),
             [new RecordingTool("PluginFeatureHarnessTool")],
@@ -681,6 +689,8 @@ public sealed class CopilotCodexPluginsFeatureTests
         Assert.Contains("不卸载主程序业务插件", memoryReport, StringComparison.Ordinal);
         Assert.Contains("features.plugins=false", contextReport, StringComparison.Ordinal);
         Assert.Contains("内置工具、外部 MCP", contextReport, StringComparison.Ordinal);
+        Assert.Contains("features.plugins：false", debugReport, StringComparison.Ordinal);
+        Assert.Contains(options.PluginsEnabledSourceLabel, debugReport, StringComparison.Ordinal);
         Assert.Contains("features.plugins=false is frozen", harness, StringComparison.Ordinal);
         Assert.Contains("independently configured external MCP tools are unaffected", harness, StringComparison.Ordinal);
     }

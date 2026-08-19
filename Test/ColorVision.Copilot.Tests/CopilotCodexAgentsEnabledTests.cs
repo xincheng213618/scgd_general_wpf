@@ -373,6 +373,14 @@ public sealed class CopilotCodexAgentsEnabledTests
             HasCodexMaximumConcurrentSubagentRunsOverride = true,
             CodexMaximumConcurrentSubagentRunsSourceLabel = options.MaximumConcurrentSubagentRunsSourceLabel,
         });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
+            new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                ComposerMode = CopilotAgentMode.Code,
+                CodexConfigOptions = options,
+            });
 
         Assert.Contains("Codex features.multi_agent：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.MultiAgentEnabledSourceLabel, memoryReport, StringComparison.Ordinal);
@@ -386,6 +394,11 @@ public sealed class CopilotCodexAgentsEnabledTests
         Assert.Contains("子代理工具（有效）：关闭", contextReport, StringComparison.Ordinal);
         Assert.Contains("子代理并发槽位：1", contextReport, StringComparison.Ordinal);
         Assert.Contains("旧调用也会拒绝", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex features.multi_agent：false", debugReport, StringComparison.Ordinal);
+        Assert.Contains("Codex agents.enabled：true", debugReport, StringComparison.Ordinal);
+        Assert.Contains("子代理工具（有效）：关闭", debugReport, StringComparison.Ordinal);
+        Assert.Contains("Codex agents.max_concurrent_threads_per_session：1", debugReport, StringComparison.Ordinal);
+        Assert.Contains("注入调用", debugReport, StringComparison.Ordinal);
     }
 
     private sealed class RecordingSubagentRunner : ICopilotSubagentRunner

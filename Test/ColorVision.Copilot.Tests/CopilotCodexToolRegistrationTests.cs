@@ -259,11 +259,21 @@ public sealed class CopilotCodexToolRegistrationTests
             HasCodexUpdatePlanEnabledOverride = true,
             CodexUpdatePlanEnabledSourceLabel = options.UpdatePlanEnabledSourceLabel,
         });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
+            new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                ComposerMode = CopilotAgentMode.Code,
+                CodexConfigOptions = options,
+            });
 
         Assert.Contains("Codex tools.experimental_request_user_input.enabled：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains("Codex tools.update_plan.enabled：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains("结构化澄清工具：关闭", contextReport, StringComparison.Ordinal);
         Assert.Contains("任务清单工具：关闭", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex tools.experimental_request_user_input.enabled：false", debugReport, StringComparison.Ordinal);
+        Assert.Contains("Codex tools.update_plan.enabled：false", debugReport, StringComparison.Ordinal);
     }
 
     private static CopilotAgentRequest CreatePlanRequest(

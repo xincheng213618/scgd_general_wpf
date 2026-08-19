@@ -11,6 +11,7 @@ namespace ColorVision.Copilot
         Shortcuts,
         Recap,
         Status,
+        EffectiveConfig,
         Doctor,
         Feedback,
         Tasks,
@@ -113,6 +114,7 @@ namespace ColorVision.Copilot
             new("/shortcuts", "查看按焦点作用域整理的键盘快捷键", CopilotLocalCommandKind.Shortcuts, AvailableWhileAgentRuns: true, Usage: "/shortcuts"),
             new("/recap", "回顾当前会话的目标、最近一轮与待执行状态", CopilotLocalCommandKind.Recap, AvailableWhileAgentRuns: true, Usage: "/recap"),
             new("/status", "查看模型、Agent、工作区与连接状态", CopilotLocalCommandKind.Status, AvailableWhileAgentRuns: true, Usage: "/status") { Aliases = ["/session-info"] },
+            new("/debug-config", "查看 Copilot 配置来源链、会话覆盖与脱敏后的运行时有效值", CopilotLocalCommandKind.EffectiveConfig, AvailableWhileAgentRuns: true, Usage: "/debug-config"),
             new("/doctor", "检查模型、会话保存、任务、MCP、Hook 与 Skill 健康度", CopilotLocalCommandKind.Doctor, AvailableWhileAgentRuns: true, Usage: "/doctor"),
             new("/feedback", "反馈当前 Copilot 会话问题，可补充问题说明", CopilotLocalCommandKind.Feedback, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/feedback [问题说明]"),
             new("/tasks", "查看、停止、恢复或放弃指定的 Agent 任务恢复项", CopilotLocalCommandKind.Tasks, AcceptsArguments: true, AvailableWhileAgentRuns: true, Usage: "/tasks [stop N|resume N|dismiss N]", Arguments:

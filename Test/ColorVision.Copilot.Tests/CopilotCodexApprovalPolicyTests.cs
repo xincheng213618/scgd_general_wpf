@@ -272,11 +272,20 @@ public sealed class CopilotCodexApprovalPolicyTests
             HasCodexApprovalPolicyOverride = true,
             CodexApprovalPolicySourceLabel = options.ApprovalPolicySourceLabel,
         });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
+            new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                ComposerMode = CopilotAgentMode.Code,
+                CodexConfigOptions = options,
+            });
 
         Assert.Contains("Codex approval_policy：granular(sandbox_approval=true", memoryReport, StringComparison.Ordinal);
         Assert.Contains("交互类别：sandbox_approval, mcp_elicitations", memoryReport, StringComparison.Ordinal);
         Assert.Contains("自动拒绝：rules, request_permissions, skill_approval", memoryReport, StringComparison.Ordinal);
         Assert.Contains("审批策略：granular(sandbox_approval=true", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex approval_policy：granular(sandbox_approval=true", debugReport, StringComparison.Ordinal);
     }
 
     [Fact]

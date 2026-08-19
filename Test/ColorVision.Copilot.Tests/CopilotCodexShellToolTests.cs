@@ -204,12 +204,22 @@ public sealed class CopilotCodexShellToolTests
             HasCodexShellToolEnabledOverride = true,
             CodexShellToolEnabledSourceLabel = options.ShellToolEnabledSourceLabel,
         });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
+            new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                ComposerMode = CopilotAgentMode.Code,
+                CodexConfigOptions = options,
+            });
 
         Assert.Contains("Codex features.shell_tool：false", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.ShellToolEnabledSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("拒绝旧计划", memoryReport, StringComparison.Ordinal);
         Assert.Contains("命令工具：关闭", contextReport, StringComparison.Ordinal);
         Assert.Contains("旧调用也会拒绝", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex features.shell_tool：false", debugReport, StringComparison.Ordinal);
+        Assert.Contains("注入调用", debugReport, StringComparison.Ordinal);
     }
 
     private static string CreateTemporaryDirectory()

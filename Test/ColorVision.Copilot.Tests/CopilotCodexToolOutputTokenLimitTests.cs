@@ -256,11 +256,19 @@ public sealed class CopilotCodexToolOutputTokenLimitTests
             HasToolOutputTokenLimitOverride = true,
             ToolOutputTokenLimitSourceLabel = options.ToolOutputTokenLimitSourceLabel,
         });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
+        {
+            Config = new CopilotConfig { AgentDefaults = new CopilotAgentDefaultsConfig() },
+            State = new CopilotChatState(),
+            CodexConfigOptions = options,
+        });
 
         Assert.Contains("Codex tool_output_token_limit：12,000 Token", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.ToolOutputTokenLimitSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("工具结果历史预算：单次最多 12,000 Token", contextReport, StringComparison.Ordinal);
         Assert.Contains("完整工具结果、审批记录、证据路径与审计日志保持原样", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex tool_output_token_limit：12,000 tokens", debugReport, StringComparison.Ordinal);
+        Assert.Contains("本地审计与证据保持完整", debugReport, StringComparison.Ordinal);
     }
 
     private static CopilotToolExecutionOutcome CreateOutcome(

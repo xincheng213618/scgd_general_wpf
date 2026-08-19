@@ -124,6 +124,27 @@ namespace ColorVision.Copilot
             });
         }
 
+        private string BuildEffectiveConfigDiagnosticsReport()
+        {
+            var stateStore = _stateStore as CopilotChatStateStore;
+            var turnSnapshot = CaptureHostedTurnSnapshot(Attachments);
+            return CopilotEffectiveConfigDiagnostics.Format(new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = _config,
+                State = _state,
+                Conversation = SelectedConversation,
+                SelectedProfile = SelectedProfile,
+                ComposerMode = ResolveComposerRequestMode(),
+                ConfigFilePath = ConfigHandler.GetInstance().ConfigFilePath,
+                StateFilePath = stateStore?.StateFilePath ?? string.Empty,
+                StateLoadStatus = stateStore?.LastLoadStatus
+                    ?? new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.NotAttempted),
+                ConversationRunState = SelectedHostedRun?.State,
+                McpListenerRunning = CopilotMcpServer.Instance.IsRunning,
+                CodexConfigOptions = turnSnapshot.ProjectInstructionDiscoveryOptions,
+            });
+        }
+
         private string BuildDoctorDiagnosticsReport()
         {
             var profile = SelectedProfile;

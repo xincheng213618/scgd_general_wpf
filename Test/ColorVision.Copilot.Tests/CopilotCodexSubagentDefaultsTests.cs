@@ -193,6 +193,14 @@ public sealed class CopilotCodexSubagentDefaultsTests
             HasCodexDefaultSubagentReasoningEffortOverride = true,
             CodexDefaultSubagentReasoningEffortSourceLabel = options.DefaultSubagentReasoningEffortSourceLabel,
         });
+        string debugReport = CopilotEffectiveConfigDiagnostics.Format(
+            new CopilotEffectiveConfigDiagnosticContext
+            {
+                Config = new CopilotConfig(),
+                State = new CopilotChatState(),
+                ComposerMode = CopilotAgentMode.Code,
+                CodexConfigOptions = options,
+            });
 
         Assert.Contains("Codex agents.default_subagent_model：gpt-5.6-terra", memoryReport, StringComparison.Ordinal);
         Assert.Contains(options.DefaultSubagentModelSourceLabel, memoryReport, StringComparison.Ordinal);
@@ -200,6 +208,8 @@ public sealed class CopilotCodexSubagentDefaultsTests
         Assert.Contains(options.DefaultSubagentReasoningEffortSourceLabel, memoryReport, StringComparison.Ordinal);
         Assert.Contains("子代理默认模型：gpt-5.6-terra", contextReport, StringComparison.Ordinal);
         Assert.Contains("子代理默认推理强度：high", contextReport, StringComparison.Ordinal);
+        Assert.Contains("Codex agents.default_subagent_model：gpt-5.6-terra", debugReport, StringComparison.Ordinal);
+        Assert.Contains("Codex agents.default_subagent_reasoning_effort：high", debugReport, StringComparison.Ordinal);
     }
 
     private static string CreateTemporaryDirectory()
