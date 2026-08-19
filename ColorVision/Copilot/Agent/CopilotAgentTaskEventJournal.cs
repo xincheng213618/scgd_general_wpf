@@ -113,6 +113,10 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotAgentTaskEvent> Events { get; init; } = Array.Empty<CopilotAgentTaskEvent>();
 
+        [Newtonsoft.Json.JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        internal bool IsDetachedSnapshot { get; init; }
+
         public bool IsStructurallyValid()
         {
             if (SchemaVersion != CurrentSchemaVersion
@@ -438,6 +442,14 @@ namespace ColorVision.Copilot
             if (source == null)
                 return false;
 
+            if (source.IsDetachedSnapshot)
+            {
+                if (!source.IsStructurallyValid())
+                    return false;
+                snapshot = source;
+                return true;
+            }
+
             try
             {
                 var sourceEvents = (source.Events ?? Array.Empty<CopilotAgentTaskEvent>())
@@ -452,6 +464,7 @@ namespace ColorVision.Copilot
                 {
                     SchemaVersion = source.SchemaVersion,
                     Events = Array.AsReadOnly(events),
+                    IsDetachedSnapshot = true,
                 };
                 if (!candidate.IsStructurallyValid())
                     return false;

@@ -245,14 +245,30 @@ namespace ColorVision.Copilot
         /// second independently writable conversation journal.
         /// </summary>
         [JsonProperty]
-        public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint { get; internal set; }
+        public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint
+        {
+            get => _agentSessionCheckpoint;
+            internal set => _agentSessionCheckpoint = value != null
+                && CopilotAgentSessionCheckpoint.TryCreateSnapshot(value, out var snapshot)
+                    ? snapshot
+                    : value;
+        }
+        private CopilotAgentSessionCheckpoint? _agentSessionCheckpoint;
 
         /// <summary>
         /// Standalone journal owner used only when no resumable checkpoint survives.
         /// Legacy snapshots that contain both owners are collapsed during normalization.
         /// </summary>
         [JsonProperty]
-        public CopilotAgentTaskEventJournalSnapshot? LatestAgentTaskEventJournal { get; internal set; }
+        public CopilotAgentTaskEventJournalSnapshot? LatestAgentTaskEventJournal
+        {
+            get => _latestAgentTaskEventJournal;
+            internal set => _latestAgentTaskEventJournal = value != null
+                && CopilotAgentTaskEventJournal.TryCreateSnapshot(value, out var snapshot)
+                    ? snapshot
+                    : value;
+        }
+        private CopilotAgentTaskEventJournalSnapshot? _latestAgentTaskEventJournal;
 
         [JsonIgnore]
         [System.Text.Json.Serialization.JsonIgnore]
