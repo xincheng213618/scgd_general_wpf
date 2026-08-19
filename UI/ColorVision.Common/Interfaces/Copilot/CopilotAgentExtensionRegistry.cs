@@ -227,7 +227,9 @@ namespace ColorVision.UI
                 return new CopilotAgentExtensionRegistrySnapshot
                 {
                     Revision = _revision,
-                    Extensions = _extensions.Values.OrderBy(extension => extension.SourceId, StringComparer.OrdinalIgnoreCase).ToArray(),
+                    Extensions = Array.AsReadOnly(_extensions.Values
+                        .OrderBy(extension => extension.SourceId, StringComparer.OrdinalIgnoreCase)
+                        .ToArray()),
                 };
             }
         }
@@ -326,9 +328,9 @@ namespace ColorVision.UI
                 sourceId,
                 sourceName,
                 sourceVersion,
-                contextProviders,
-                tools,
-                toolExecutionHooks,
+                Array.AsReadOnly(contextProviders),
+                Array.AsReadOnly(tools),
+                Array.AsReadOnly(toolExecutionHooks),
                 Guid.NewGuid().ToString("N"));
         }
 

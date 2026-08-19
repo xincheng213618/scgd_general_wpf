@@ -287,32 +287,33 @@ namespace ColorVision.Copilot
                     }
                 }
 
+                var sources = registrySnapshot.Extensions.Select(extension => new CopilotAgentExtensionSourceSnapshot
+                {
+                    SourceId = extension.SourceId,
+                    SourceName = extension.SourceName,
+                    SourceVersion = extension.SourceVersion,
+                    ContextProviderCount = extension.ContextProviders.Count,
+                    DeclaredToolCount = extension.Tools.Count,
+                    ActiveToolCount = activeToolCounts.GetValueOrDefault(extension.SourceId),
+                    DeclaredHookCount = extension.ToolExecutionHooks.Count,
+                    ActiveHookCount = activeHookCounts.GetValueOrDefault(extension.SourceId),
+                    Hooks = Array.AsReadOnly(extension.ToolExecutionHooks.Select(hook => new CopilotAgentExtensionHookSnapshot
+                    {
+                        SourceId = BuildHookSourceId(extension.SourceId, hook.Name),
+                        Name = hook.Name.Trim(),
+                        ToolNamePattern = NormalizeHookPattern(hook.ToolNamePattern),
+                        Order = hook.Order,
+                        ExecutionMode = MapExecutionMode(hook.ExecutionMode),
+                        IsActive = activeHookCounts.ContainsKey(extension.SourceId),
+                    }).ToArray()),
+                }).ToArray();
                 _snapshot = new CopilotAgentExtensionBridgeSnapshot
                 {
                     Revision = registrySnapshot.Revision,
-                    Sources = registrySnapshot.Extensions.Select(extension => new CopilotAgentExtensionSourceSnapshot
-                    {
-                        SourceId = extension.SourceId,
-                        SourceName = extension.SourceName,
-                        SourceVersion = extension.SourceVersion,
-                        ContextProviderCount = extension.ContextProviders.Count,
-                        DeclaredToolCount = extension.Tools.Count,
-                        ActiveToolCount = activeToolCounts.GetValueOrDefault(extension.SourceId),
-                        DeclaredHookCount = extension.ToolExecutionHooks.Count,
-                        ActiveHookCount = activeHookCounts.GetValueOrDefault(extension.SourceId),
-                        Hooks = extension.ToolExecutionHooks.Select(hook => new CopilotAgentExtensionHookSnapshot
-                        {
-                            SourceId = BuildHookSourceId(extension.SourceId, hook.Name),
-                            Name = hook.Name.Trim(),
-                            ToolNamePattern = NormalizeHookPattern(hook.ToolNamePattern),
-                            Order = hook.Order,
-                            ExecutionMode = MapExecutionMode(hook.ExecutionMode),
-                            IsActive = activeHookCounts.ContainsKey(extension.SourceId),
-                        }).ToArray(),
-                    }).ToArray(),
-                    ContextProviders = contextProviders,
-                    Tools = activeTools,
-                    Issues = issues,
+                    Sources = Array.AsReadOnly(sources),
+                    ContextProviders = Array.AsReadOnly(contextProviders),
+                    Tools = Array.AsReadOnly(activeTools.ToArray()),
+                    Issues = Array.AsReadOnly(issues.ToArray()),
                 };
             }
         }

@@ -39,6 +39,48 @@ public sealed class CopilotCodexPluginsFeatureTests
     }
 
     [Fact]
+    public void ExtensionRegistryAndBridgeSnapshotsCannotBeRewrittenAfterPublication()
+    {
+        var registry = new CopilotAgentExtensionRegistry();
+        using var bridge = new CopilotAgentExtensionBridge(
+            registry,
+            new CopilotCapabilityCatalog(),
+            reservedToolNames: [],
+            new CopilotToolExecutionHookRegistry());
+        using var registration = registry.Register(new CopilotAgentExtensionRegistration
+        {
+            SourceId = "test.frozen-extension-snapshot",
+            SourceName = "Frozen extension snapshot",
+            SourceVersion = "1.0.0",
+            ContextProviders = [new RecordingContextProvider("frozen-provider")],
+            Tools = [new RecordingModuleTool()],
+            ToolExecutionHooks = [new AsyncModuleHook()],
+        });
+
+        var registrySnapshot = registry.GetSnapshot();
+        var descriptor = Assert.Single(registrySnapshot.Extensions);
+        AssertReadOnly(registrySnapshot.Extensions);
+        AssertReadOnly(descriptor.ContextProviders);
+        AssertReadOnly(descriptor.Tools);
+        AssertReadOnly(descriptor.ToolExecutionHooks);
+
+        var bridgeSnapshot = bridge.GetSnapshot();
+        var source = Assert.Single(bridgeSnapshot.Sources);
+        AssertReadOnly(bridgeSnapshot.Sources);
+        AssertReadOnly(source.Hooks);
+        AssertReadOnly(bridgeSnapshot.ContextProviders);
+        AssertReadOnly(bridgeSnapshot.Tools);
+
+        static void AssertReadOnly<T>(IReadOnlyList<T> values)
+        {
+            var items = Assert.IsAssignableFrom<System.Collections.Generic.IList<T>>(values);
+            Assert.NotEmpty(items);
+            Assert.True(items.IsReadOnly);
+            Assert.Throws<NotSupportedException>(() => items[0] = items[0]);
+        }
+    }
+
+    [Fact]
     public void ClosestTrustedValueIsFrozenAcrossContextPlanAndRequest()
     {
         string globalRoot = CreateTemporaryDirectory();
