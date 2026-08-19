@@ -32,8 +32,8 @@ public class OperationsToolboxPresentationTest {
             assertEquals("跳到" + section.title + "分组",
                     section.shortcutAccessibilityLabel());
         }
-        assertEquals(17, model.actionCount());
-        assertEquals(17, model.enabledActionCount());
+        assertEquals(20, model.actionCount());
+        assertEquals(20, model.enabledActionCount());
         assertEquals(4, model.quickActionCount());
         assertEquals(OperationsToolboxPresentation.ACTION_CONNECTION_CHECK,
                 model.quickActions.get(0).actionId);
@@ -87,6 +87,32 @@ public class OperationsToolboxPresentationTest {
                 model.quickActions.get(2).actionId);
         assertEquals(OperationsToolboxPresentation.ACTION_LIVE_MONITOR,
                 model.quickActions.get(3).actionId);
+    }
+
+    @Test
+    public void fullToolListKeepsEveryDefaultWhenRecentActionsFillTheQuickGrid() {
+        OperationsToolboxPresentation.ViewModel model =
+                OperationsToolboxPresentation.withRecentQuickActions(
+                        OperationsToolboxPresentation.create(),
+                        Arrays.asList(
+                                OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
+                                OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE,
+                                OperationsToolboxPresentation.ACTION_SUPPORT,
+                                OperationsToolboxPresentation.ACTION_AUDIT));
+
+        assertEquals(4, model.quickActionCount());
+        assertEquals(20, model.actionCount());
+        assertEquals(OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
+                model.quickActions.get(0).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_AUDIT,
+                model.quickActions.get(3).actionId);
+        assertEquals("连接自检", find(model,
+                OperationsToolboxPresentation.ACTION_CONNECTION_CHECK).title);
+        assertEquals("持续观察", find(model,
+                OperationsToolboxPresentation.ACTION_LIVE_MONITOR).title);
+        assertEquals("设备状态", find(model,
+                OperationsToolboxPresentation.ACTION_DEVICE_HEALTH).title);
+        assertTrue(model.hasUniqueActionIds());
     }
 
     @Test

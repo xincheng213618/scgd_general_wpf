@@ -44,6 +44,12 @@ final class OperationsToolboxPresentation {
                 action(ACTION_CANCEL_FLOW,
                         "取消当前检测", "仅在主检测运行且允许取消时开放 · 执行前确认")));
         sections.add(section("诊断",
+                action(ACTION_CONNECTION_CHECK,
+                        "连接自检", "只读检查网络、安全通道、证书固定与设备签名"),
+                action(ACTION_LIVE_MONITOR,
+                        "持续观察", "每 10 秒读取一次脱敏运行快照，本次最多保留 30 个样本"),
+                action(ACTION_DEVICE_HEALTH,
+                        "设备状态", "查看检测设备类型、可用性与异常原因汇总"),
                 action(ACTION_SERVICES_HEALTH,
                         "服务健康", "查看服务、依赖与运行状态"),
                 action(ACTION_RECENT_EVENTS,
@@ -76,12 +82,9 @@ final class OperationsToolboxPresentation {
                 action(ACTION_TIMELINE,
                         "运维时间线", "查看连接与后台守护状态变化")));
         List<Action> quickActions = new ArrayList<>();
-        quickActions.add(action(ACTION_CONNECTION_CHECK,
-                "连接自检", "只读检查网络、安全通道、证书固定与设备签名"));
-        quickActions.add(action(ACTION_LIVE_MONITOR,
-                "持续观察", "每 10 秒读取一次脱敏运行快照，本次最多保留 30 个样本"));
-        quickActions.add(action(ACTION_DEVICE_HEALTH,
-                "设备状态", "查看检测设备类型、可用性与异常原因汇总"));
+        quickActions.add(findAction(sections, ACTION_CONNECTION_CHECK));
+        quickActions.add(findAction(sections, ACTION_LIVE_MONITOR));
+        quickActions.add(findAction(sections, ACTION_DEVICE_HEALTH));
         quickActions.add(findAction(sections, ACTION_RECENT_EVENTS));
         return new ViewModel(
                 Collections.unmodifiableList(sections),
