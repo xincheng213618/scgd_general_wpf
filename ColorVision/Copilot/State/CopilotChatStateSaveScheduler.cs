@@ -76,7 +76,11 @@ namespace ColorVision.Copilot
             lock (_syncRoot)
             {
                 if (_isDisposed)
-                    return Task.CompletedTask;
+                {
+                    return Task.FromException(new ObjectDisposedException(
+                        nameof(CopilotChatStateSaveScheduler),
+                        "The scheduler stopped before the requested state save could start."));
+                }
 
                 if (_requestedVersion <= _processedVersion)
                 {

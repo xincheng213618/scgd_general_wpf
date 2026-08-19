@@ -7,6 +7,20 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotChatStateSaveSchedulerTests
 {
     [Fact]
+    public async Task FlushAfterDisposeDoesNotReportPersistenceSuccess()
+    {
+        var scheduler = new CopilotChatStateSaveScheduler(
+            _ => Task.CompletedTask,
+            debounceDelay: TimeSpan.Zero);
+        scheduler.Dispose();
+
+        var exception = await Assert.ThrowsAsync<ObjectDisposedException>(
+            () => scheduler.FlushAsync());
+
+        Assert.Equal(nameof(CopilotChatStateSaveScheduler), exception.ObjectName);
+    }
+
+    [Fact]
     public async Task DisposingWhileFlushIsPendingDoesNotReportPersistenceSuccess()
     {
         var saveStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
