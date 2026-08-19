@@ -139,7 +139,10 @@ public class OperationsActivity extends AppCompatActivity {
     private TextView state;
     private TextView dashboardFreshness;
     private TextView details;
+    private MaterialCardView stateCard;
     private MaterialCardView detailsCard;
+    private LinearLayout dashboardStateColumn;
+    private LinearLayout dashboardSummaryCards;
     private OperationsConnectionContent.SummaryView connectionSummaryView;
     private LinearProgressIndicator progress;
     private SwipeRefreshLayout dashboardRefresh;
@@ -407,22 +410,23 @@ public class OperationsActivity extends AppCompatActivity {
         stateContent.addView(dashboardFreshness, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
-        MaterialCardView stateCard = new MaterialCardView(this);
+        stateCard = new MaterialCardView(this);
         stateCard.setCardBackgroundColor(themeManager.primaryContainerColor());
         stateCard.addView(stateContent, new MaterialCardView.LayoutParams(
                 MaterialCardView.LayoutParams.MATCH_PARENT,
                 MaterialCardView.LayoutParams.WRAP_CONTENT));
-        LinearLayout.LayoutParams stateParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        stateParams.setMargins(0, dp(8), 0, 0);
-        root.addView(stateCard, stateParams);
 
         progress = new LinearProgressIndicator(this);
         progress.setIndeterminate(true);
+        dashboardStateColumn = new LinearLayout(this);
+        dashboardStateColumn.setOrientation(LinearLayout.VERTICAL);
+        dashboardStateColumn.addView(stateCard, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(4));
         progressParams.setMargins(0, dp(4), 0, 0);
-        root.addView(progress, progressParams);
+        dashboardStateColumn.addView(progress, progressParams);
 
         details = new TextView(this);
         TextViewCompat.setTextAppearance(details, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
@@ -434,10 +438,16 @@ public class OperationsActivity extends AppCompatActivity {
         detailsCard.addView(details, new MaterialCardView.LayoutParams(
                 MaterialCardView.LayoutParams.MATCH_PARENT,
                 MaterialCardView.LayoutParams.WRAP_CONTENT));
-        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(
+
+        dashboardSummaryCards = new LinearLayout(this);
+        dashboardSummaryCards.setOrientation(LinearLayout.VERTICAL);
+        dashboardSummaryCards.addView(dashboardStateColumn);
+        dashboardSummaryCards.addView(detailsCard);
+        LinearLayout.LayoutParams summaryParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        detailsParams.setMargins(0, dp(8), 0, 0);
-        root.addView(detailsCard, detailsParams);
+        summaryParams.setMargins(0, dp(8), 0, 0);
+        root.addView(dashboardSummaryCards, summaryParams);
+        refreshDashboardSummaryCardsLayout();
 
         actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.VERTICAL);
@@ -2020,6 +2030,40 @@ public class OperationsActivity extends AppCompatActivity {
                 || hideForStructuredDetail
                 || hideDirectDashboardSummary
                 ? View.GONE : View.VISIBLE);
+        refreshDashboardSummaryCardsLayout();
+    }
+
+    private void refreshDashboardSummaryCardsLayout() {
+        if (dashboardSummaryCards == null
+                || dashboardStateColumn == null
+                || detailsCard == null) {
+            return;
+        }
+        boolean twoColumns = showingDashboardSummary
+                && OperationsDestinationState.OVERVIEW.equals(currentDestination)
+                && AppResponsiveLayout.usesTwoColumnGrid(
+                        getResources().getConfiguration().screenWidthDp,
+                        getResources().getConfiguration().fontScale,
+                        2);
+        dashboardSummaryCards.setOrientation(
+                twoColumns ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
+        if (twoColumns) {
+            dashboardStateColumn.setLayoutParams(new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+            LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
+            detailsParams.setMargins(dp(8), 0, 0, 0);
+            detailsCard.setLayoutParams(detailsParams);
+        } else {
+            dashboardStateColumn.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+            LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            detailsParams.setMargins(0, dp(8), 0, 0);
+            detailsCard.setLayoutParams(detailsParams);
+        }
     }
 
     private void setConnectionRecoveryVisible(boolean visible) {

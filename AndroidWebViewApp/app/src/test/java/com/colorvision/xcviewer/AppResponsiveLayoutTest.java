@@ -36,6 +36,7 @@ public class AppResponsiveLayoutTest {
         assertTrue(AppResponsiveLayout.usesTwoColumnGrid(600, 1f, 2));
         assertTrue(AppResponsiveLayout.usesTwoColumnGrid(840, 1f, 3));
         assertTrue(AppResponsiveLayout.usesTwoColumnGrid(840, 1f, 6));
+        assertTrue(AppResponsiveLayout.usesTwoColumnGrid(840, 1.19f, 2));
         assertFalse(AppResponsiveLayout.usesTwoColumnGrid(840, 1f, 1));
     }
 
