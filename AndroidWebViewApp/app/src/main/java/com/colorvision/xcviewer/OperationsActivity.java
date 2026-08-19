@@ -112,6 +112,8 @@ public class OperationsActivity extends AppCompatActivity {
             OperationsTriageDetailReviewPresentation.SURFACE_MESSAGE_CHANNEL;
     private static final String TRIAGE_REVIEW_SERVICE_HEALTH =
             OperationsTriageDetailReviewPresentation.SURFACE_SERVICE_HEALTH;
+    private static final String TRIAGE_REVIEW_FAILURE_EVIDENCE =
+            OperationsTriageDetailReviewPresentation.SURFACE_FAILURE_EVIDENCE;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -5595,6 +5597,7 @@ public class OperationsActivity extends AppCompatActivity {
             case "triage.failures.view":
                 detailParentDestination = OperationsDestinationState.TRIAGE;
                 showDashboardCapabilityDetails(PATH_FAILURE_EVIDENCE);
+                prepareTriageDetailReview(sourceFinding);
                 return;
             default:
                 return;
@@ -5718,7 +5721,22 @@ public class OperationsActivity extends AppCompatActivity {
                                 && PATH_SERVICE_HEALTH.equals(dashboardDetailPath)))) {
             return "正在更新服务证据…";
         }
+        if (TRIAGE_REVIEW_FAILURE_EVIDENCE.equals(triageDetailReviewSurface)
+                && dashboardDetailRefreshInFlight
+                && PATH_FAILURE_EVIDENCE.equals(dashboardDetailPath)) {
+            return "正在更新故障证据…";
+        }
         return "";
+    }
+
+    private String triageDetailEvidenceName() {
+        if (TRIAGE_REVIEW_SERVICE_HEALTH.equals(triageDetailReviewSurface)) {
+            return "服务证据";
+        }
+        if (TRIAGE_REVIEW_FAILURE_EVIDENCE.equals(triageDetailReviewSurface)) {
+            return "故障证据";
+        }
+        return "消息证据";
     }
 
     private boolean triageFindingOffersAction(String actionId) {
@@ -5739,11 +5757,9 @@ public class OperationsActivity extends AppCompatActivity {
         }
         String updatingEvidenceLabel = triageDetailEvidenceUpdateLabel();
         if (!updatingEvidenceLabel.isEmpty()) {
-            String evidenceName = TRIAGE_REVIEW_SERVICE_HEALTH.equals(
-                    triageDetailReviewSurface) ? "服务证据" : "消息证据";
             showTriageDetailReviewFeedback(
                     triageDetailReviewSurface,
-                    evidenceName + "正在更新 · 完成后再复核",
+                    triageDetailEvidenceName() + "正在更新 · 完成后再复核",
                     "",
                     null);
             return;
@@ -5851,7 +5867,10 @@ public class OperationsActivity extends AppCompatActivity {
                                     ? "发现更新证据 · 请先刷新消息通道后再复核"
                                     : TRIAGE_REVIEW_SERVICE_HEALTH.equals(reviewSurface)
                                             ? "发现更新证据 · 请先刷新服务状态后再复核"
-                                            : "发现更新证据 · 请先刷新近期事件后再复核",
+                                            : TRIAGE_REVIEW_FAILURE_EVIDENCE.equals(
+                                                    reviewSurface)
+                                                    ? "发现更新证据 · 请先刷新故障证据后再复核"
+                                                    : "发现更新证据 · 请先刷新近期事件后再复核",
                     "刷新",
                     () -> refreshTriageDetailReviewEvidence(reviewSurface));
             return;
@@ -5937,9 +5956,13 @@ public class OperationsActivity extends AppCompatActivity {
         boolean serviceHealthVisible = TRIAGE_REVIEW_SERVICE_HEALTH.equals(reviewSurface)
                 && OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
                 && PATH_SERVICE_HEALTH.equals(dashboardDetailPath);
+        boolean failureEvidenceVisible = TRIAGE_REVIEW_FAILURE_EVIDENCE.equals(reviewSurface)
+                && OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
+                && PATH_FAILURE_EVIDENCE.equals(dashboardDetailPath);
         return requestGeneration == connectionRequestGeneration
                 && (recentEventsVisible || deviceHealthVisible
-                        || messageChannelVisible || serviceHealthVisible)
+                        || messageChannelVisible || serviceHealthVisible
+                        || failureEvidenceVisible)
                 && hostId.equals(preferences.getOperationsHostId())
                 && reviewSurface.equals(triageDetailReviewSurface)
                 && triageDetailReviewFinding != null
@@ -5954,7 +5977,8 @@ public class OperationsActivity extends AppCompatActivity {
             showDeviceHealthOverview();
         } else if (TRIAGE_REVIEW_RECENT_EVENTS.equals(reviewSurface)
                 || TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(reviewSurface)
-                || TRIAGE_REVIEW_SERVICE_HEALTH.equals(reviewSurface)) {
+                || TRIAGE_REVIEW_SERVICE_HEALTH.equals(reviewSurface)
+                || TRIAGE_REVIEW_FAILURE_EVIDENCE.equals(reviewSurface)) {
             refreshDashboardDetail();
         }
     }
@@ -7604,7 +7628,9 @@ public class OperationsActivity extends AppCompatActivity {
         if (dashboardDetailRequest) {
             dashboardDetailRefreshInFlight = true;
             refreshOperationsHeaderNavigation();
-            if (PATH_MESSAGE_CHANNEL.equals(path) || PATH_SERVICE_HEALTH.equals(path)) {
+            if (PATH_MESSAGE_CHANNEL.equals(path)
+                    || PATH_SERVICE_HEALTH.equals(path)
+                    || PATH_FAILURE_EVIDENCE.equals(path)) {
                 refreshTriageDetailReviewAction();
             }
         }
@@ -7670,7 +7696,8 @@ public class OperationsActivity extends AppCompatActivity {
                     }
                     if (dashboardDetailRequest
                             && (PATH_MESSAGE_CHANNEL.equals(path)
-                                    || PATH_SERVICE_HEALTH.equals(path))) {
+                                    || PATH_SERVICE_HEALTH.equals(path)
+                                    || PATH_FAILURE_EVIDENCE.equals(path))) {
                         refreshTriageDetailReviewAction();
                     }
                     progress.setVisibility(View.GONE);
@@ -7797,6 +7824,7 @@ public class OperationsActivity extends AppCompatActivity {
         state.setText(model.stateLabel);
         detailsCard.setVisibility(View.GONE);
         actions.removeAllViews();
+        addTriageDetailReviewAction();
         actions.addView(OperationsFailureEvidenceContent.create(
                         this, themeManager, model),
                 new LinearLayout.LayoutParams(

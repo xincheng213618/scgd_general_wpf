@@ -136,6 +136,17 @@ public class OperationsTriageDetailReviewPresentationTest {
                 OperationsTriageDetailReviewPresentation.surfaceFor(service));
     }
 
+    @Test
+    public void failureFindingUsesDedicatedEvidenceReviewSurface() throws Exception {
+        OperationsTriagePresentation.Finding failure = OperationsTriagePresentation.from(
+                new JSONObject("{\"findings\":[{\"findingId\":\"failure\","
+                        + "\"category\":\"failure-evidence\"}]}"), value -> value)
+                .findings.get(0);
+
+        assertEquals(OperationsTriageDetailReviewPresentation.SURFACE_FAILURE_EVIDENCE,
+                OperationsTriageDetailReviewPresentation.surfaceFor(failure));
+    }
+
     private static OperationsTriagePresentation.Finding finding(
             boolean acknowledged,
             String summary) throws Exception {

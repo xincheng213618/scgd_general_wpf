@@ -5,6 +5,7 @@ final class OperationsTriageDetailReviewPresentation {
     static final String SURFACE_DEVICE_HEALTH = "device-health";
     static final String SURFACE_MESSAGE_CHANNEL = "message-channel";
     static final String SURFACE_SERVICE_HEALTH = "service-health";
+    static final String SURFACE_FAILURE_EVIDENCE = "failure-evidence";
 
     private OperationsTriageDetailReviewPresentation() {
     }
@@ -73,6 +74,9 @@ final class OperationsTriageDetailReviewPresentation {
         }
         if ("services".equals(finding.category)) {
             return SURFACE_SERVICE_HEALTH;
+        }
+        if ("failure-evidence".equals(finding.category)) {
+            return SURFACE_FAILURE_EVIDENCE;
         }
         return "";
     }
