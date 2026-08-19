@@ -1609,7 +1609,6 @@ public class OperationsActivity extends AppCompatActivity {
                 switchOperationsProfile(profile.hostId);
             }
         });
-        button.setTextSize(12);
         button.setMaxLines(2);
         button.setEllipsize(TextUtils.TruncateAt.END);
         button.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
@@ -3960,8 +3959,6 @@ public class OperationsActivity extends AppCompatActivity {
     private Button dashboardButton(String label, View.OnClickListener listener) {
         Button button = new MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
         button.setText(label);
-        button.setTextSize(13);
-        button.setAllCaps(false);
         button.setOnClickListener(listener);
         return button;
     }
@@ -3969,8 +3966,6 @@ public class OperationsActivity extends AppCompatActivity {
     private Button dashboardPrimaryButton(String label, View.OnClickListener listener) {
         Button button = new MaterialButton(this);
         button.setText(label);
-        button.setTextSize(13);
-        button.setAllCaps(false);
         button.setOnClickListener(listener);
         return button;
     }
@@ -3979,8 +3974,6 @@ public class OperationsActivity extends AppCompatActivity {
         Button button = new MaterialButton(
                 this, null, com.google.android.material.R.attr.materialButtonTonalStyle);
         button.setText(label);
-        button.setTextSize(13);
-        button.setAllCaps(false);
         button.setOnClickListener(listener);
         return button;
     }
@@ -4461,29 +4454,32 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private LinearLayout createDashboardActionRow(Button left, Button right) {
-        boolean singleColumn = AppResponsiveLayout.usesSingleColumn(
-                getResources().getConfiguration().screenWidthDp,
+        boolean stackButtons = AppResponsiveLayout.usesStackedButtonGrid(
                 getResources().getConfiguration().fontScale);
-        return createDashboardActionRow(left, right, singleColumn);
+        return createDashboardActionRow(left, right, stackButtons);
     }
 
     private LinearLayout createDashboardActionRow(
-            Button left, Button right, boolean singleColumn) {
+            Button left, Button right, boolean stackButtons) {
         LinearLayout row = new LinearLayout(this);
-        row.setOrientation(singleColumn ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        row.setOrientation(stackButtons ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
 
-        LinearLayout.LayoutParams leftParams = singleColumn
+        LinearLayout.LayoutParams leftParams = stackButtons
                 ? new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, dp(48))
-                : new LinearLayout.LayoutParams(0, dp(48), 1);
-        leftParams.setMargins(0, 0, singleColumn ? 0 : dp(4), dp(4));
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT)
+                : new LinearLayout.LayoutParams(
+                        0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
+        leftParams.setMargins(0, 0, stackButtons ? 0 : dp(4), dp(4));
         row.addView(left, leftParams);
 
-        LinearLayout.LayoutParams rightParams = singleColumn
+        LinearLayout.LayoutParams rightParams = stackButtons
                 ? new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, dp(48))
-                : new LinearLayout.LayoutParams(0, dp(48), 1);
-        rightParams.setMargins(singleColumn ? 0 : dp(4), 0, 0, dp(4));
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT)
+                : new LinearLayout.LayoutParams(
+                        0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
+        rightParams.setMargins(stackButtons ? 0 : dp(4), 0, 0, dp(4));
         row.addView(right, rightParams);
         return row;
     }
@@ -4537,8 +4533,10 @@ public class OperationsActivity extends AppCompatActivity {
         group.setSelectionRequired(true);
         MaterialButton left = segmentedButton(leftLabel);
         MaterialButton right = segmentedButton(rightLabel);
-        group.addView(left, new LinearLayout.LayoutParams(0, dp(48), 1));
-        group.addView(right, new LinearLayout.LayoutParams(0, dp(48), 1));
+        group.addView(left, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        group.addView(right, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         group.check(rightSelected ? right.getId() : left.getId());
         group.addOnButtonCheckedListener((buttonGroup, checkedId, isChecked) -> {
             if (!isChecked) {
@@ -4561,8 +4559,6 @@ public class OperationsActivity extends AppCompatActivity {
                 this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
         button.setId(View.generateViewId());
         button.setText(label);
-        button.setTextSize(13);
-        button.setAllCaps(false);
         button.setMaxLines(1);
         button.setEllipsize(TextUtils.TruncateAt.END);
         return button;
@@ -4589,15 +4585,18 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void addOperationsProfileWideAction(View button) {
+        button.setMinimumHeight(dp(64));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(66));
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
         params.setMargins(0, 0, 0, dp(4));
         actions.addView(button, params);
     }
 
     private void addDashboardWideAction(Button button) {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
         params.setMargins(0, 0, 0, dp(4));
         actions.addView(button, params);
     }
