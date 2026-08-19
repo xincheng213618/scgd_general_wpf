@@ -779,7 +779,9 @@ namespace ColorVision.Copilot
                             || !HasBooleanAnnotation(
                                 tool,
                                 "openWorldHint",
-                                definition.McpMetadata.OpenWorldHint)))
+                                definition.McpMetadata.OpenWorldHint)
+                            || tool.EffectiveExecutionTimeout
+                                != definition.AgentCapability.EffectiveExecutionTimeout))
                     .Select(definition => definition.McpToolName));
         }
 

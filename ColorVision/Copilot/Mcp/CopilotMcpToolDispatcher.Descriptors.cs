@@ -122,7 +122,8 @@ namespace ColorVision.Copilot.Mcp
                     capability.McpMetadata.UsageHint,
                     capability.AgentCapability.Idempotency,
                     capability.McpMetadata.DestructiveHint,
-                    capability.McpMetadata.OpenWorldHint),
+                    capability.McpMetadata.OpenWorldHint,
+                    capability.AgentCapability.EffectiveExecutionTimeout),
                 capability.CreateMcpHandler(this));
     }
 }

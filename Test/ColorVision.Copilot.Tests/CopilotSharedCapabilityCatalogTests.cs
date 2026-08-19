@@ -406,6 +406,88 @@ public sealed class CopilotSharedCapabilityCatalogTests
     }
 
     [Fact]
+    public async Task McpRuntimeBoundsNonCooperativeHandlersWithStructuredTimeout()
+    {
+        var release = new TaskCompletionSource<CopilotMcpToolCallResult>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var handlerToken = new TaskCompletionSource<CancellationToken>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var dispatcher = new CopilotMcpToolDispatcher(
+            new CopilotMcpToolEnvironment
+            {
+                SetThemeHandler = (_, cancellationToken) =>
+                {
+                    handlerToken.TrySetResult(cancellationToken);
+                    return release.Task;
+                },
+            },
+            executionTimeoutLimit: TimeSpan.FromMilliseconds(200));
+
+        try
+        {
+            var call = dispatcher.CallAsync(
+                "set_theme",
+                new Dictionary<string, JsonElement>
+                {
+                    ["theme"] = JsonSerializer.SerializeToElement("Dark"),
+                },
+                CancellationToken.None);
+            var cancellationToken = await handlerToken.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+            var result = await call;
+
+            Assert.False(result.Success);
+            Assert.False(result.RequiresApproval);
+            Assert.Equal("tool_execution_timeout", result.ErrorCode);
+            Assert.Equal(CopilotToolFailureKind.Transient, result.FailureKind);
+            Assert.True(cancellationToken.IsCancellationRequested);
+        }
+        finally
+        {
+            release.TrySetResult(CopilotMcpToolCallResult.Ok("late completion"));
+        }
+    }
+
+    [Fact]
+    public async Task McpRuntimePropagatesCallerCancellationAcrossExecutionBoundary()
+    {
+        var release = new TaskCompletionSource<CopilotMcpToolCallResult>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var handlerToken = new TaskCompletionSource<CancellationToken>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+        {
+            SetThemeHandler = (_, cancellationToken) =>
+            {
+                handlerToken.TrySetResult(cancellationToken);
+                return release.Task;
+            },
+        });
+        using var callerCancellation = new CancellationTokenSource();
+
+        try
+        {
+            var call = dispatcher.CallAsync(
+                "set_theme",
+                new Dictionary<string, JsonElement>
+                {
+                    ["theme"] = JsonSerializer.SerializeToElement("Dark"),
+                },
+                callerCancellation.Token);
+            var cancellationToken = await handlerToken.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+            await callerCancellation.CancelAsync();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => call);
+            Assert.True(cancellationToken.IsCancellationRequested);
+        }
+        finally
+        {
+            release.TrySetResult(CopilotMcpToolCallResult.Ok("late completion"));
+        }
+    }
+
+    [Fact]
     public void SharedCatalogMapsEveryDeclaredCapabilityToBothSurfaces()
     {
         var agentTools = CopilotToolRegistry.CreateCoreDefaultTools();
@@ -530,6 +612,9 @@ public sealed class CopilotSharedCapabilityCatalogTests
             Assert.Equal(
                 definition.McpMetadata.OpenWorldHint,
                 Assert.IsType<bool>(mcpTools[definition.McpToolName].Annotations["openWorldHint"]));
+            Assert.Equal(
+                definition.AgentCapability.EffectiveExecutionTimeout,
+                mcpTools[definition.McpToolName].EffectiveExecutionTimeout);
         }
 
         Assert.Equal(

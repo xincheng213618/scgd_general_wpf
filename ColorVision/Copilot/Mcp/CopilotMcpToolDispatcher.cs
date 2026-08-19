@@ -55,6 +55,7 @@ namespace ColorVision.Copilot.Mcp
         };
 
         private readonly CopilotMcpToolEnvironment _environment;
+        private readonly TimeSpan _executionTimeoutLimit;
         private readonly IReadOnlyList<CopilotMcpToolDefinition> _toolDefinitions;
         private readonly IReadOnlyDictionary<string, CopilotMcpToolDefinition> _toolDefinitionsByName;
 
@@ -77,9 +78,21 @@ namespace ColorVision.Copilot.Mcp
             public bool IsApplyEligible => !string.IsNullOrWhiteSpace(SourceId);
         }
 
-        public CopilotMcpToolDispatcher(CopilotMcpToolEnvironment? environment = null)
+        public CopilotMcpToolDispatcher(
+            CopilotMcpToolEnvironment? environment = null,
+            TimeSpan? executionTimeoutLimit = null)
         {
+            if (executionTimeoutLimit is { } timeoutLimit
+                && (timeoutLimit <= TimeSpan.Zero || timeoutLimit == Timeout.InfiniteTimeSpan))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(executionTimeoutLimit),
+                    "The MCP execution timeout limit must be finite and positive.");
+            }
+
             _environment = environment ?? new CopilotMcpToolEnvironment();
+            _executionTimeoutLimit = executionTimeoutLimit
+                ?? CopilotToolCapabilityDescriptor.MaximumExecutionTimeout;
             _toolDefinitions = CreateToolDefinitions();
             ValidateInputSchemas(_toolDefinitions);
             _toolDefinitionsByName = _toolDefinitions.ToDictionary(

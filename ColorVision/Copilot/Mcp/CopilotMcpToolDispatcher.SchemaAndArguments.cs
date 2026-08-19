@@ -21,7 +21,8 @@ namespace ColorVision.Copilot.Mcp
             string usageExample,
             CopilotToolIdempotency? idempotency = null,
             bool? destructiveHint = null,
-            bool? openWorldHint = null) => new()
+            bool? openWorldHint = null,
+            TimeSpan? executionTimeout = null) => new()
         {
             Name = name,
             Description = description,
@@ -34,6 +35,8 @@ namespace ColorVision.Copilot.Mcp
                 idempotency,
                 destructiveHint,
                 openWorldHint),
+            ExecutionTimeout = executionTimeout
+                ?? CopilotToolCapabilityDescriptor.DefaultExecutionTimeout,
         };
 
         private static IReadOnlyDictionary<string, object> BuildToolAnnotations(

@@ -87,12 +87,32 @@ namespace ColorVision.Copilot.Mcp
                     return invalidResult;
                 }
 
+                var executionTimeout = definition.Descriptor.EffectiveExecutionTimeout
+                    < _executionTimeoutLimit
+                        ? definition.Descriptor.EffectiveExecutionTimeout
+                        : _executionTimeoutLimit;
                 var result = CopilotMcpToolResultContract.Capture(
                     normalizedToolName,
-                    await definition.Handler(arguments, executionScope, cancellationToken));
+                    await CopilotCancellationBoundary.RunTaskAsync(
+                        token => definition.Handler(arguments, executionScope, token),
+                        executionTimeout,
+                        cancellationToken));
 
                 CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, result.Success, stopwatch.Elapsed, result.Success ? "OK" : FirstNonEmpty(result.ErrorCode, "tool_call_failed"));
                 return result;
+            }
+            catch (TimeoutException)
+            {
+                var timeoutResult = CopilotMcpToolCallResult.Fail(
+                    "tool_execution_timeout",
+                    $"The MCP tool '{normalizedToolName}' exceeded its execution timeout. Its cancellation was requested, but a non-cooperative action may still finish; inspect application state before retrying.",
+                    CopilotToolFailureKind.Transient);
+                CopilotMcpAuditLogger.ToolCallCompleted(
+                    normalizedToolName,
+                    false,
+                    stopwatch.Elapsed,
+                    timeoutResult.ErrorCode);
+                return timeoutResult;
             }
             catch (OperationCanceledException)
             {
