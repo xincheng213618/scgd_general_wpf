@@ -37,6 +37,45 @@ public class OperationsProfileRegistryTest {
         assertEquals(OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW,
                 active.relayTaskCapability);
         assertEquals("idem_1", active.relayTaskIdempotency);
+        assertTrue(active.attentionNotificationsEnabled);
+    }
+
+    @Test
+    public void perComputerAttentionPreferenceDefaultsOnAndRoundTripsIndependently() {
+        OperationsProfileRegistry.State state = OperationsProfileRegistry.empty()
+                .upsert("https://192.168.1.21:5800", PIN, "host_1")
+                .updateWatchHistory("host_1", "history_1", 101L)
+                .upsert("https://192.168.1.22:5800", "b".repeat(64), "host_2")
+                .updateAttentionNotificationsEnabled("host_1", false);
+
+        assertEquals(2, state.usableCount());
+        assertEquals(1, state.attentionNotificationsEnabledCount());
+        OperationsProfileRegistry.State parsed = OperationsProfileRegistry.parse(
+                OperationsProfileRegistry.serialize(state));
+        assertFalse(profile(parsed, "host_1").attentionNotificationsEnabled);
+        assertTrue(profile(parsed, "host_2").attentionNotificationsEnabled);
+        assertEquals("history_1", profile(parsed, "host_1").watchHistory);
+        assertEquals(1, parsed.attentionNotificationsEnabledCount());
+
+        OperationsProfileRegistry.State revoked = parsed.revoke("host_2");
+        assertEquals(0, revoked.attentionNotificationsEnabledCount());
+        assertTrue(profile(revoked, "host_2").attentionNotificationsEnabled);
+
+        OperationsProfileRegistry.State mutedRevoked = parsed.revoke("host_1");
+        assertFalse(profile(mutedRevoked, "host_1").attentionNotificationsEnabled);
+    }
+
+    @Test
+    public void existingVersionOneRegistryWithoutReminderFieldMigratesEnabled() {
+        String serialized = "{\"version\":1,\"activeHostId\":\"host_1\","
+                + "\"profiles\":[{\"endpoint\":\"https://192.168.1.21:5800\","
+                + "\"certificatePin\":\"" + PIN + "\",\"hostId\":\"host_1\"}]}";
+
+        OperationsProfileRegistry.Profile profile =
+                OperationsProfileRegistry.parse(serialized).active();
+
+        assertNotNull(profile);
+        assertTrue(profile.attentionNotificationsEnabled);
     }
 
     @Test
@@ -189,5 +228,15 @@ public class OperationsProfileRegistryTest {
                 .put("relayTaskId", "")
                 .put("relayTaskCapability", "")
                 .put("relayTaskIdempotency", "");
+    }
+
+    private static OperationsProfileRegistry.Profile profile(
+            OperationsProfileRegistry.State state, String hostId) {
+        for (OperationsProfileRegistry.Profile profile : state.profiles) {
+            if (hostId.equals(profile.hostId)) {
+                return profile;
+            }
+        }
+        throw new AssertionError("Missing profile: " + hostId);
     }
 }

@@ -969,6 +969,10 @@ public final class OperationsWatchService extends Service {
             String targetLabel,
             String attentionKey,
             boolean newEvidence) {
+        if (!preferences.isOperationsProfileAttentionNotificationsEnabled(hostId)) {
+            clearAttentionNotification(hostId);
+            return;
+        }
         String message = OperationsWatchPolicy.attentionMessage(attentionKey, newEvidence);
         if (message.isEmpty()) {
             return;

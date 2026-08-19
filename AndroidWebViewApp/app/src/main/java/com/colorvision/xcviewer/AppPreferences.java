@@ -204,6 +204,12 @@ final class AppPreferences {
         }
     }
 
+    int getOperationsAttentionNotificationsEnabledCount() {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            return readOperationsProfiles().attentionNotificationsEnabledCount();
+        }
+    }
+
     List<OperationsProfileRegistry.Profile> getOperationsProfiles() {
         synchronized (OPERATIONS_PROFILE_LOCK) {
             return readOperationsProfiles().profiles;
@@ -243,6 +249,39 @@ final class AppPreferences {
     void renameOperationsProfile(String hostId, String label) {
         synchronized (OPERATIONS_PROFILE_LOCK) {
             writeOperationsProfiles(readOperationsProfiles().rename(hostId, label));
+        }
+    }
+
+    boolean isOperationsProfileAttentionNotificationsEnabled(String hostId) {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            for (OperationsProfileRegistry.Profile profile
+                    : readOperationsProfiles().profiles) {
+                if (profile.hostId.equals(hostId)) {
+                    return profile.attentionNotificationsEnabled;
+                }
+            }
+            return false;
+        }
+    }
+
+    boolean saveOperationsProfileAttentionNotificationsEnabled(
+            String hostId, boolean enabled) {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            OperationsProfileRegistry.State before = readOperationsProfiles();
+            OperationsProfileRegistry.Profile profile = null;
+            for (OperationsProfileRegistry.Profile candidate : before.profiles) {
+                if (candidate.hostId.equals(hostId)) {
+                    profile = candidate;
+                    break;
+                }
+            }
+            if (profile == null || profile.revoked
+                    || profile.attentionNotificationsEnabled == enabled) {
+                return false;
+            }
+            writeOperationsProfiles(
+                    before.updateAttentionNotificationsEnabled(hostId, enabled));
+            return true;
         }
     }
 

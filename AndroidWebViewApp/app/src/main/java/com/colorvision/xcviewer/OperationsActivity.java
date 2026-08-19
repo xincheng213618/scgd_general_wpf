@@ -1032,7 +1032,8 @@ public class OperationsActivity extends AppCompatActivity {
                                 preferences.hasOperationsProfile(),
                                 enabled,
                                 notificationSettingsController.remindersAvailable(),
-                                preferences.getUsableOperationsProfileCount());
+                                preferences.getUsableOperationsProfileCount(),
+                                preferences.getOperationsAttentionNotificationsEnabledCount());
                     }
 
                     @Override
@@ -1089,7 +1090,8 @@ public class OperationsActivity extends AppCompatActivity {
                         paired,
                         watchEnabled,
                         notificationSettingsController.remindersAvailable(),
-                        preferences.getUsableOperationsProfileCount()),
+                        preferences.getUsableOperationsProfileCount(),
+                        preferences.getOperationsAttentionNotificationsEnabledCount()),
                 watchRuntime.summary,
                 notificationSettingsController.status(),
                 themeManager.getThemeModeLabel(),
@@ -1108,7 +1110,8 @@ public class OperationsActivity extends AppCompatActivity {
     private void showOperationsWatchStatus() {
         OperationsWatchStatusPresentation.Presentation presentation = watchRuntimeStatus();
         String fleetScope = OperationsWatchPreferencePolicy.fleetScopeDetails(
-                preferences.getUsableOperationsProfileCount());
+                preferences.getUsableOperationsProfileCount(),
+                preferences.getOperationsAttentionNotificationsEnabledCount());
         MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle("守护状态")
                 .setMessage(presentation.details
@@ -1145,7 +1148,8 @@ public class OperationsActivity extends AppCompatActivity {
                     OperationsWatchPreferencePolicy.enabledFeedback(
                             true,
                             remindersAvailable,
-                            preferences.getUsableOperationsProfileCount()),
+                            preferences.getUsableOperationsProfileCount(),
+                            preferences.getOperationsAttentionNotificationsEnabledCount()),
                     OperationsWatchPreferencePolicy.shouldOfferReminderAction(
                             true, remindersAvailable));
         } else {
@@ -1641,6 +1645,19 @@ public class OperationsActivity extends AppCompatActivity {
                     "查看全部电脑动态", v -> showFleetTimeline(false)));
         }
 
+        addDashboardSection("异常提醒范围");
+        actions.addView(OperationsConnectionContent.createAttentionNotifications(
+                this,
+                themeManager,
+                profiles,
+                preferences.getOperationsHostId(),
+                this::setOperationsProfileAttentionNotificationsEnabled),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+        addDashboardInfoCard("这里只控制每台电脑的异常提醒范围。持续守护总开关与 Android "
+                + "通知权限仍在设置页；暂停后后台状态记录、手动巡检和问题中心继续可用。");
+
         addDashboardSection(OperationsConnectionOverview.showsFleetTools(profileCount)
                 ? "检查与巡检" : "检查连接");
         if (OperationsConnectionOverview.showsFleetTools(profileCount)) {
@@ -1668,6 +1685,29 @@ public class OperationsActivity extends AppCompatActivity {
         addDashboardWideAction(dashboardDestructiveButton(
                 "移除当前电脑配对", v -> confirmClearProfile()));
         probeConnectionPreference(overviewGeneration, relayPreferred);
+    }
+
+    private boolean setOperationsProfileAttentionNotificationsEnabled(
+            String hostId, boolean enabled) {
+        boolean changed = preferences.saveOperationsProfileAttentionNotificationsEnabled(
+                hostId, enabled);
+        boolean actual = preferences.isOperationsProfileAttentionNotificationsEnabled(hostId);
+        if (!changed) {
+            return actual;
+        }
+        String label = preferences.getOperationsProfileLabel(hostId);
+        if (!enabled) {
+            OperationsWatchService.dismissAttentionNotification(this, hostId);
+            Toast.makeText(this,
+                    "已暂停" + label + "的异常提醒；后台状态记录仍保留",
+                    Toast.LENGTH_LONG).show();
+        } else {
+            String message = attentionRemindersAvailable()
+                    ? "已恢复" + label + "的异常提醒；后续新证据会再次提醒"
+                    : "已允许" + label + "提醒；还需在设置中开启系统运维提醒";
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        }
+        return actual;
     }
 
     private void probeConnectionPreference(int overviewGeneration, boolean relayPreferred) {

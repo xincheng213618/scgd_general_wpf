@@ -72,6 +72,7 @@ public class OperationsBackgroundFleetPolicyTest {
                 hostId,
                 OperationsConnectionPreference.DIRECT,
                 revoked,
+                true,
                 "",
                 "",
                 watchCheckedAt,

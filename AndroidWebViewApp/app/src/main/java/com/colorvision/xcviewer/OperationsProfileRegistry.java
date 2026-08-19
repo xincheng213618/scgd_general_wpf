@@ -35,7 +35,8 @@ final class OperationsProfileRegistry {
             String relayTaskIdempotency) {
         Profile profile = createProfile(
                 endpoint, certificatePin, hostId, connectionPreference, revoked,
-                "", watchHistory, 0L, relayTaskId, relayTaskCapability, relayTaskIdempotency);
+                true, "", watchHistory, 0L,
+                relayTaskId, relayTaskCapability, relayTaskIdempotency);
         if (profile == null) {
             return empty();
         }
@@ -68,6 +69,7 @@ final class OperationsProfileRegistry {
                         value.optString("hostId", ""),
                         value.optString("connectionPreference", ""),
                         value.optBoolean("revoked", false),
+                        value.optBoolean("attentionNotificationsEnabled", true),
                         value.optString("label", ""),
                         value.optString("watchHistory", ""),
                         value.optLong("watchCheckedAt", 0L),
@@ -107,6 +109,8 @@ final class OperationsProfileRegistry {
                         .put("certificatePin", profile.certificatePin)
                         .put("connectionPreference", profile.connectionPreference)
                         .put("revoked", profile.revoked)
+                        .put("attentionNotificationsEnabled",
+                                profile.attentionNotificationsEnabled)
                         .put("label", profile.label)
                         .put("watchHistory", profile.watchHistory)
                         .put("watchCheckedAt", profile.watchCheckedAt)
@@ -144,6 +148,16 @@ final class OperationsProfileRegistry {
             return count;
         }
 
+        int attentionNotificationsEnabledCount() {
+            int count = 0;
+            for (Profile profile : profiles) {
+                if (!profile.revoked && profile.attentionNotificationsEnabled) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
         String activeDisplayLabel() {
             return displayLabel(activeHostId);
         }
@@ -162,7 +176,8 @@ final class OperationsProfileRegistry {
             Profile existing = find(profiles, hostId);
             Profile replacement = createProfile(
                     endpoint, certificatePin, hostId, OperationsConnectionPreference.DIRECT,
-                    false, existing == null ? "" : existing.label, "", 0L, "", "", "");
+                    false, true, existing == null ? "" : existing.label,
+                    "", 0L, "", "", "");
             if (replacement == null) {
                 throw new IllegalArgumentException("invalid_operations_profile");
             }
@@ -226,6 +241,12 @@ final class OperationsProfileRegistry {
             return profile == null ? this : replace(profile.withWatchHistory(value, checkedAt));
         }
 
+        State updateAttentionNotificationsEnabled(String hostId, boolean enabled) {
+            Profile profile = find(profiles, hostId);
+            return profile == null
+                    ? this : replace(profile.withAttentionNotificationsEnabled(enabled));
+        }
+
         State updateRelayTask(String taskId, String capabilityId, String idempotencyKey) {
             Profile active = active();
             return active == null ? this
@@ -263,6 +284,7 @@ final class OperationsProfileRegistry {
         final String hostId;
         final String connectionPreference;
         final boolean revoked;
+        final boolean attentionNotificationsEnabled;
         final String label;
         final String watchHistory;
         final long watchCheckedAt;
@@ -276,6 +298,7 @@ final class OperationsProfileRegistry {
                 String hostId,
                 String connectionPreference,
                 boolean revoked,
+                boolean attentionNotificationsEnabled,
                 String label,
                 String watchHistory,
                 long watchCheckedAt,
@@ -287,6 +310,7 @@ final class OperationsProfileRegistry {
             this.hostId = hostId;
             this.connectionPreference = OperationsConnectionPreference.normalize(connectionPreference);
             this.revoked = revoked;
+            this.attentionNotificationsEnabled = attentionNotificationsEnabled;
             this.label = normalizedLabel(label);
             this.watchHistory = watchHistory;
             this.watchCheckedAt = Math.max(0L, watchCheckedAt);
@@ -296,20 +320,27 @@ final class OperationsProfileRegistry {
         }
 
         private Profile withConnectionPreference(String value) {
-            return new Profile(endpoint, certificatePin, hostId, value, revoked, label, watchHistory,
-                    watchCheckedAt, relayTaskId, relayTaskCapability, relayTaskIdempotency);
+            return new Profile(endpoint, certificatePin, hostId, value, revoked,
+                    attentionNotificationsEnabled, label, watchHistory, watchCheckedAt,
+                    relayTaskId, relayTaskCapability, relayTaskIdempotency);
         }
 
         private Profile withLabel(String value) {
             return new Profile(endpoint, certificatePin, hostId, connectionPreference, revoked,
-                    value, watchHistory, watchCheckedAt, relayTaskId, relayTaskCapability,
-                    relayTaskIdempotency);
+                    attentionNotificationsEnabled, value, watchHistory, watchCheckedAt,
+                    relayTaskId, relayTaskCapability, relayTaskIdempotency);
         }
 
         private Profile withWatchHistory(String value, long checkedAt) {
             return new Profile(endpoint, certificatePin, hostId, connectionPreference, revoked,
-                    label, boundedHistory(value), checkedAt, relayTaskId, relayTaskCapability,
-                    relayTaskIdempotency);
+                    attentionNotificationsEnabled, label, boundedHistory(value), checkedAt,
+                    relayTaskId, relayTaskCapability, relayTaskIdempotency);
+        }
+
+        private Profile withAttentionNotificationsEnabled(boolean enabled) {
+            return new Profile(endpoint, certificatePin, hostId, connectionPreference, revoked,
+                    enabled, label, watchHistory, watchCheckedAt,
+                    relayTaskId, relayTaskCapability, relayTaskIdempotency);
         }
 
         private Profile withRelayTask(String taskId, String capabilityId, String idempotencyKey) {
@@ -318,14 +349,14 @@ final class OperationsProfileRegistry {
             String safeCapability = safeTaskId.isEmpty() ? "" : normalized(capabilityId);
             String safeIdempotency = safeTaskId.isEmpty() ? "" : normalized(idempotencyKey);
             return new Profile(endpoint, certificatePin, hostId, connectionPreference, revoked,
-                    label, watchHistory, watchCheckedAt, safeTaskId, safeCapability,
-                    safeIdempotency);
+                    attentionNotificationsEnabled, label, watchHistory, watchCheckedAt,
+                    safeTaskId, safeCapability, safeIdempotency);
         }
 
         private Profile withRevoked(boolean value) {
             return new Profile(endpoint, certificatePin, hostId, connectionPreference, value,
-                    label, watchHistory, watchCheckedAt, relayTaskId, relayTaskCapability,
-                    relayTaskIdempotency);
+                    attentionNotificationsEnabled, label, watchHistory, watchCheckedAt,
+                    relayTaskId, relayTaskCapability, relayTaskIdempotency);
         }
     }
 
@@ -335,6 +366,7 @@ final class OperationsProfileRegistry {
             String hostId,
             String connectionPreference,
             boolean revoked,
+            boolean attentionNotificationsEnabled,
             String label,
             String watchHistory,
             long watchCheckedAt,
@@ -356,6 +388,7 @@ final class OperationsProfileRegistry {
                 normalizedHostId,
                 connectionPreference,
                 revoked,
+                attentionNotificationsEnabled,
                 label,
                 boundedHistory(watchHistory),
                 Math.max(0L, watchCheckedAt),

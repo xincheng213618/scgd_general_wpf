@@ -5,13 +5,18 @@ import android.content.res.ColorStateList;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import androidx.core.widget.TextViewCompat;
 
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.materialswitch.MaterialSwitch;
+
+import java.util.List;
 
 final class OperationsConnectionContent {
     private OperationsConnectionContent() {
@@ -69,6 +74,151 @@ final class OperationsConnectionContent {
                 handler::onPairingHelp,
                 false);
         return card(activity, themeManager, rows);
+    }
+
+    static MaterialCardView createAttentionNotifications(
+            Activity activity,
+            ThemeManager themeManager,
+            List<OperationsProfileRegistry.Profile> profiles,
+            String activeHostId,
+            AttentionNotificationHandler handler) {
+        LinearLayout rows = new LinearLayout(activity);
+        rows.setOrientation(LinearLayout.VERTICAL);
+        int usableCount = 0;
+        for (OperationsProfileRegistry.Profile profile : profiles) {
+            usableCount += profile.revoked ? 0 : 1;
+        }
+        int usableIndex = 0;
+        for (int index = 0; index < profiles.size(); index++) {
+            OperationsProfileRegistry.Profile profile = profiles.get(index);
+            if (profile.revoked) {
+                continue;
+            }
+            usableIndex++;
+            String label = profile.label.isEmpty() ? "电脑 " + (index + 1) : profile.label;
+            if (profile.hostId.equals(activeHostId)) {
+                label += "（当前）";
+            }
+            addAttentionNotificationRow(
+                    activity,
+                    themeManager,
+                    rows,
+                    label,
+                    profile,
+                    handler,
+                    usableIndex < usableCount);
+        }
+        return card(activity, themeManager, rows);
+    }
+
+    private static void addAttentionNotificationRow(
+            Activity activity,
+            ThemeManager themeManager,
+            LinearLayout parent,
+            String label,
+            OperationsProfileRegistry.Profile profile,
+            AttentionNotificationHandler handler,
+            boolean showDivider) {
+        boolean stackSupportingText = AppResponsiveLayout.usesStackedControlRow(
+                activity.getResources().getConfiguration().screenWidthDp,
+                activity.getResources().getConfiguration().fontScale);
+        LinearLayout row = new LinearLayout(activity);
+        row.setOrientation(stackSupportingText
+                ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        row.setGravity(stackSupportingText ? Gravity.START : Gravity.CENTER_VERTICAL);
+        row.setMinimumHeight(dp(activity, 72));
+        row.setPadding(dp(activity, 16), dp(activity, 10), dp(activity, 12), dp(activity, 10));
+        applySelectableBackground(activity, row);
+
+        TextView title = text(
+                activity,
+                label,
+                com.google.android.material.R.style.TextAppearance_Material3_BodyLarge,
+                themeManager.primaryTextColor());
+        TextView supporting = text(
+                activity,
+                attentionNotificationSummary(profile.attentionNotificationsEnabled),
+                com.google.android.material.R.style.TextAppearance_Material3_BodyMedium,
+                themeManager.mutedTextColor());
+        title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        supporting.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+
+        MaterialSwitch toggle = new MaterialSwitch(activity);
+        toggle.setChecked(profile.attentionNotificationsEnabled);
+        toggle.setClickable(false);
+        toggle.setFocusable(false);
+        toggle.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        row.setClickable(true);
+        row.setFocusable(true);
+        row.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        updateAttentionNotificationAccessibility(
+                row, label, profile.attentionNotificationsEnabled);
+        row.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(
+                    View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.setClassName(Switch.class.getName());
+                info.setCheckable(true);
+                info.setChecked(toggle.isChecked());
+            }
+        });
+
+        if (stackSupportingText) {
+            LinearLayout headline = new LinearLayout(activity);
+            headline.setOrientation(LinearLayout.HORIZONTAL);
+            headline.setGravity(Gravity.CENTER_VERTICAL);
+            headline.addView(title, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            headline.addView(toggle, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+            row.addView(headline, matchWidth());
+            row.addView(supporting, topMargin(dp(activity, 2)));
+        } else {
+            LinearLayout labels = new LinearLayout(activity);
+            labels.setOrientation(LinearLayout.VERTICAL);
+            labels.addView(title, matchWidth());
+            labels.addView(supporting, topMargin(dp(activity, 2)));
+            row.addView(labels, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            row.addView(toggle, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
+
+        boolean[] binding = {false};
+        toggle.setOnCheckedChangeListener((button, requested) -> {
+            if (binding[0]) {
+                return;
+            }
+            boolean actual = handler.onAttentionNotificationChanged(
+                    profile.hostId, requested);
+            if (actual != requested) {
+                binding[0] = true;
+                toggle.setChecked(actual);
+                binding[0] = false;
+            }
+            supporting.setText(attentionNotificationSummary(actual));
+            updateAttentionNotificationAccessibility(row, label, actual);
+        });
+        row.setOnClickListener(view -> toggle.setChecked(!toggle.isChecked()));
+        parent.addView(row, matchWidth());
+        if (showDivider) {
+            addDivider(activity, themeManager, parent);
+        }
+    }
+
+    private static void updateAttentionNotificationAccessibility(
+            View row, String label, boolean enabled) {
+        row.setContentDescription(SettingsRowAccessibility.contentDescription(
+                label + "异常提醒", attentionNotificationSummary(enabled)));
+    }
+
+    private static String attentionNotificationSummary(boolean enabled) {
+        return enabled
+                ? "允许提醒 · 同类新证据出现时生效"
+                : "已暂停 · 状态记录与手动检查保留";
     }
 
     private static TextView addValueRow(
@@ -265,5 +415,9 @@ final class OperationsConnectionContent {
         void onAddComputer();
 
         void onPairingHelp();
+    }
+
+    interface AttentionNotificationHandler {
+        boolean onAttentionNotificationChanged(String hostId, boolean enabled);
     }
 }
