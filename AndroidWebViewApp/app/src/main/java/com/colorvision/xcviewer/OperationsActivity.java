@@ -193,6 +193,8 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean problemCenterCurrentContentRendered;
     private boolean dashboardDetailRefreshInFlight;
     private String dashboardDetailPath = "";
+    private OperationsRecentEventsRefreshPresentation.Snapshot recentEventsSnapshot;
+    private OperationsRecentEventsRefreshPresentation.Snapshot pendingRecentEventsRefreshBaseline;
     private String lastSuccessfulDashboardUpdateLabel = "";
     private int connectionRequestGeneration;
     private int connectionCheckGeneration;
@@ -2144,6 +2146,7 @@ public class OperationsActivity extends AppCompatActivity {
         problemCenterRefreshInFlight = false;
         dashboardDetailPath = "";
         dashboardDetailRefreshInFlight = false;
+        clearRecentEventsRefreshState();
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         clearDashboardLiveStatusReferences();
         refreshProblemNavigationBadge();
@@ -2174,6 +2177,9 @@ public class OperationsActivity extends AppCompatActivity {
         }
         dashboardDetailPath = "";
         dashboardDetailRefreshInFlight = false;
+        if (!OperationsDestinationState.CAPABILITY_DETAIL.equals(normalized)) {
+            clearRecentEventsRefreshState();
+        }
         boolean topLevelTransition = OperationsInPageNavigationPolicy.isTopLevelTransition(
                 currentDestination, normalized);
         int direction = OperationsInPageNavigationPolicy.motionDirection(
@@ -2684,7 +2690,14 @@ public class OperationsActivity extends AppCompatActivity {
         if (!isDashboardDetailRefreshDestination() || dashboardDetailRefreshInFlight) {
             return;
         }
+        pendingRecentEventsRefreshBaseline = PATH_RECENT_EVENTS.equals(dashboardDetailPath)
+                ? recentEventsSnapshot : null;
         loadCapability(dashboardDetailPath, true);
+    }
+
+    private void clearRecentEventsRefreshState() {
+        recentEventsSnapshot = null;
+        pendingRecentEventsRefreshBaseline = null;
     }
 
     private void showToolboxCapabilityDetails(String path) {
@@ -6964,6 +6977,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showDashboardApplicationDetails() {
+        clearRecentEventsRefreshState();
         setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         dashboardDetailPath = "/ops/v1/snapshot";
         refreshDetailsCardVisibility();
@@ -6977,6 +6991,7 @@ public class OperationsActivity extends AppCompatActivity {
     private void showDashboardCapabilityDetails(String path) {
         OperationsDashboardDetailPresentation.Item presentation =
                 OperationsDashboardDetailPresentation.forPath(path);
+        clearRecentEventsRefreshState();
         setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         dashboardDetailPath = path;
         refreshDetailsCardVisibility();
@@ -7055,6 +7070,9 @@ public class OperationsActivity extends AppCompatActivity {
                         dashboardDetailRefreshInFlight = false;
                         refreshOperationsHeaderNavigation();
                     }
+                    if (dashboardDetailRequest && PATH_RECENT_EVENTS.equals(path)) {
+                        pendingRecentEventsRefreshBaseline = null;
+                    }
                     progress.setVisibility(View.GONE);
                     if (dashboardSnapshot) {
                         updateDashboardStatus(dashboardApplicationStatus,
@@ -7074,6 +7092,12 @@ public class OperationsActivity extends AppCompatActivity {
     private void renderRecentEvents(JSONObject response) {
         JSONObject data = response.optJSONObject("data");
         JSONObject payload = data == null ? response : data;
+        OperationsRecentEventsRefreshPresentation.Snapshot previous =
+                pendingRecentEventsRefreshBaseline;
+        OperationsRecentEventsRefreshPresentation.Snapshot current =
+                OperationsRecentEventsRefreshPresentation.capture(payload);
+        pendingRecentEventsRefreshBaseline = null;
+        recentEventsSnapshot = current;
         OperationsRecentEventsPresentation.ViewModel model =
                 OperationsRecentEventsPresentation.from(payload, this::shortTime);
         state.setText(model.stateLabel);
@@ -7084,6 +7108,11 @@ public class OperationsActivity extends AppCompatActivity {
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
+        String refreshFeedback = OperationsRecentEventsRefreshPresentation.feedback(
+                previous, current);
+        if (!refreshFeedback.isEmpty()) {
+            Snackbar.make(snackbarHost, refreshFeedback, Snackbar.LENGTH_LONG).show();
+        }
     }
 
     private void runRecentEventAction(String actionId) {
