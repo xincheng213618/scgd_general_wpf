@@ -417,6 +417,59 @@ public sealed class CopilotCodexPluginsFeatureTests
     }
 
     [Fact]
+    public void ModuleHookMetadataIsFrozenAtRegistrationAcrossBridgeRefreshes()
+    {
+        const string sourceId = "test.frozen-module-hook-metadata";
+        var moduleHook = new MutableModuleHook();
+        var extensionRegistry = new CopilotAgentExtensionRegistry();
+        var hookRegistry = new CopilotToolExecutionHookRegistry();
+        using var bridge = new CopilotAgentExtensionBridge(
+            extensionRegistry,
+            new CopilotCapabilityCatalog(),
+            reservedToolNames: [],
+            hookRegistry);
+        using var registration = extensionRegistry.Register(new CopilotAgentExtensionRegistration
+        {
+            SourceId = sourceId,
+            SourceName = "Frozen module hook metadata",
+            SourceVersion = "1.0.0",
+            ToolExecutionHooks = [moduleHook],
+        });
+
+        moduleHook.Name = "Mutated_Module_Hook";
+        moduleHook.ToolNamePattern = "^MutatedTool$";
+        moduleHook.Order = -50;
+        moduleHook.ExecutionMode = CopilotModuleToolExecutionHookMode.Async;
+        using var refreshTrigger = extensionRegistry.Register(new CopilotAgentExtensionRegistration
+        {
+            SourceId = "test.frozen-module-hook-refresh",
+            SourceName = "Frozen module hook refresh trigger",
+            ContextProviders = [new RecordingContextProvider("hook-refresh")],
+        });
+
+        var registeredHook = Assert.Single(
+            Assert.Single(extensionRegistry.GetSnapshot().Extensions, extension => extension.SourceId == sourceId)
+                .ToolExecutionHooks);
+        Assert.Equal("Stable_Module_Hook", registeredHook.Name);
+        Assert.Equal("^StableTool$", registeredHook.ToolNamePattern);
+        Assert.Equal(25, registeredHook.Order);
+        Assert.Equal(CopilotModuleToolExecutionHookMode.Sync, registeredHook.ExecutionMode);
+
+        var declaredHook = Assert.Single(
+            Assert.Single(bridge.GetSnapshot().Sources, source => source.SourceId == sourceId).Hooks);
+        Assert.Equal("Stable_Module_Hook", declaredHook.Name);
+        Assert.Equal("^StableTool$", declaredHook.ToolNamePattern);
+        Assert.Equal(25, declaredHook.Order);
+        Assert.Equal(CopilotToolExecutionHookMode.Sync, declaredHook.ExecutionMode);
+
+        var runtimeHook = Assert.Single(hookRegistry.GetSnapshot().Entries);
+        Assert.Equal("extension:test.frozen-module-hook-metadata:hook:stable_module_hook", runtimeHook.SourceId);
+        Assert.Equal("^StableTool$", runtimeHook.ToolNamePattern);
+        Assert.Equal(25, runtimeHook.Order);
+        Assert.Equal(CopilotToolExecutionHookMode.Sync, runtimeHook.ExecutionMode);
+    }
+
+    [Fact]
     public void ExtensionActivationIssuesUseStableCodesWithoutRawExceptionText()
     {
         const string sourceId = "test.activation-issues";
@@ -776,6 +829,23 @@ public sealed class CopilotCodexPluginsFeatureTests
 
         public CopilotModuleToolExecutionHookMode ExecutionMode =>
             CopilotModuleToolExecutionHookMode.Async;
+
+        public Task<CopilotModuleToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotModuleToolExecutionHookContext context,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotModuleToolExecutionHookDecision.Proceed);
+    }
+
+    private sealed class MutableModuleHook : ICopilotModuleToolExecutionHook
+    {
+        public string Name { get; set; } = "Stable_Module_Hook";
+
+        public string ToolNamePattern { get; set; } = "^StableTool$";
+
+        public int Order { get; set; } = 25;
+
+        public CopilotModuleToolExecutionHookMode ExecutionMode { get; set; } =
+            CopilotModuleToolExecutionHookMode.Sync;
 
         public Task<CopilotModuleToolExecutionHookDecision> BeforeExecuteAsync(
             CopilotModuleToolExecutionHookContext context,
