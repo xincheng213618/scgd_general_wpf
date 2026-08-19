@@ -174,6 +174,52 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
     }
 
     [Fact]
+    public async Task FlushWaitsForASupersedingSnapshotToReachDurableStorage()
+    {
+        var store = new RecordingStateStore
+        {
+            BlockFirstSerialization = true,
+            BlockSecondSerialization = true,
+            SerializeActualSnapshots = true,
+        };
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = "before-flush",
+        };
+        using var coordinator = new CopilotChatStatePersistenceCoordinator(
+            store,
+            () => state,
+            () => null,
+            _ => { },
+            () => { });
+
+        try
+        {
+            coordinator.RequestSave(immediate: true);
+            var flush = coordinator.FlushAsync();
+            await store.FirstSerializationStarted.WaitAsync(TimeSpan.FromSeconds(5));
+            state.ActiveConversationId = "after-flush";
+            coordinator.RequestSave(immediate: true);
+            store.ReleaseBlockedSerialization();
+            await store.SecondSerializationStarted.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.False(flush.IsCompleted);
+            Assert.Equal(0, store.AsyncSaveCount);
+
+            store.ReleaseSecondBlockedSerialization();
+            await flush.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var persisted = JObject.Parse(store.SavedSerializedState);
+            Assert.Equal("after-flush", persisted[nameof(CopilotChatState.ActiveConversationId)]?.Value<string>());
+        }
+        finally
+        {
+            store.ReleaseBlockedSerialization();
+            store.ReleaseSecondBlockedSerialization();
+        }
+    }
+
+    [Fact]
     public async Task FailedFlushIsReportedAndTheNextRequestCanRetry()
     {
         var store = new RecordingStateStore
@@ -276,6 +322,10 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _firstSerializationStarted =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _continueSecondSerialization =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _secondSerializationStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _continueFirstAsyncSave =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _firstAsyncSaveStarted =
@@ -310,6 +360,8 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
 
         public bool BlockFirstSerialization { get; init; }
 
+        public bool BlockSecondSerialization { get; init; }
+
         public bool BlockFirstAsyncSave { get; init; }
 
         public int BeginSnapshotCount { get; private set; }
@@ -319,6 +371,8 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
         public Task FirstIncrementalSnapshotStarted => _firstIncrementalSnapshotStarted.Task;
 
         public Task FirstSerializationStarted => _firstSerializationStarted.Task;
+
+        public Task SecondSerializationStarted => _secondSerializationStarted.Task;
 
         public Task FirstAsyncSaveStarted => _firstAsyncSaveStarted.Task;
 
@@ -374,6 +428,12 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
                 if (!_continueFirstSerialization.Task.Wait(TimeSpan.FromSeconds(5)))
                     throw new TimeoutException("Timed out waiting to release the serialization test gate.");
             }
+            if (BlockSecondSerialization && SerializeCount == 2)
+            {
+                _secondSerializationStarted.TrySetResult();
+                if (!_continueSecondSerialization.Task.Wait(TimeSpan.FromSeconds(5)))
+                    throw new TimeoutException("Timed out waiting to release the second serialization test gate.");
+            }
 
             return SerializeActualSnapshots
                 ? snapshot.Document.ToString(Formatting.None)
@@ -405,6 +465,8 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
         public void ReleaseBlockedSnapshot() => _continueIncrementalSnapshot.TrySetResult();
 
         public void ReleaseBlockedSerialization() => _continueFirstSerialization.TrySetResult();
+
+        public void ReleaseSecondBlockedSerialization() => _continueSecondSerialization.TrySetResult();
 
         public void ReleaseBlockedAsyncSave() => _continueFirstAsyncSave.TrySetResult();
     }

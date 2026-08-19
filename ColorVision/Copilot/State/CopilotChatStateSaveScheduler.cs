@@ -11,7 +11,7 @@ namespace ColorVision.Copilot
         private static readonly TimeSpan DefaultDebounceDelay = TimeSpan.FromMilliseconds(300);
         private static readonly TimeSpan DefaultMaximumDebounceDelay = TimeSpan.FromSeconds(2);
         private static readonly TimeSpan SaveRetryDelay = TimeSpan.FromMilliseconds(50);
-        private readonly Func<CancellationToken, Task> _saveAsync;
+        private readonly Func<CancellationToken, Task<bool>> _saveAsync;
         private readonly Action<Exception> _onError;
         private readonly Action _onSaved;
         private readonly TimeSpan _debounceDelay;
@@ -33,6 +33,21 @@ namespace ColorVision.Copilot
             Action<Exception>? onError = null,
             Action? onSaved = null,
             TimeSpan? maximumDebounceDelay = null)
+            : this(
+                WrapSaveAsync(saveAsync),
+                debounceDelay,
+                onError,
+                onSaved,
+                maximumDebounceDelay)
+        {
+        }
+
+        private CopilotChatStateSaveScheduler(
+            Func<CancellationToken, Task<bool>> saveAsync,
+            TimeSpan? debounceDelay,
+            Action<Exception>? onError,
+            Action? onSaved,
+            TimeSpan? maximumDebounceDelay)
         {
             _saveAsync = saveAsync ?? throw new ArgumentNullException(nameof(saveAsync));
             _debounceDelay = debounceDelay ?? DefaultDebounceDelay;
@@ -46,6 +61,18 @@ namespace ColorVision.Copilot
             _onSaved = onSaved ?? (() => { });
             _worker = Task.Run(ProcessRequestsAsync);
         }
+
+        internal static CopilotChatStateSaveScheduler CreateOutcomeAware(
+            Func<CancellationToken, Task<bool>> saveAsync,
+            TimeSpan? debounceDelay = null,
+            Action<Exception>? onError = null,
+            Action? onSaved = null,
+            TimeSpan? maximumDebounceDelay = null) => new(
+                saveAsync,
+                debounceDelay,
+                onError,
+                onSaved,
+                maximumDebounceDelay);
 
         public void RequestSave(bool immediate = false)
         {
@@ -148,7 +175,10 @@ namespace ColorVision.Copilot
                         batch = TakePendingBatch();
                     }
 
-                    var error = await SaveWithRetryAsync().ConfigureAwait(false);
+                    var (persisted, error) = await SaveWithRetryAsync().ConfigureAwait(false);
+                    if (!persisted && error == null)
+                        continue;
+
                     MarkProcessed(batch.Version, error);
                 }
             }
@@ -157,16 +187,17 @@ namespace ColorVision.Copilot
             }
         }
 
-        private async Task<Exception?> SaveWithRetryAsync()
+        private async Task<(bool Persisted, Exception? Error)> SaveWithRetryAsync()
         {
             Exception? lastError = null;
             for (var attempt = 1; attempt <= MaximumSaveAttempts; attempt++)
             {
                 try
                 {
-                    await _saveAsync(_shutdown.Token).ConfigureAwait(false);
-                    ReportSaved();
-                    return null;
+                    var persisted = await _saveAsync(_shutdown.Token).ConfigureAwait(false);
+                    if (persisted)
+                        ReportSaved();
+                    return (persisted, null);
                 }
                 catch (OperationCanceledException) when (_shutdown.IsCancellationRequested)
                 {
@@ -181,7 +212,8 @@ namespace ColorVision.Copilot
                 }
             }
 
-            return lastError ?? new InvalidOperationException("Copilot state persistence failed without an error detail.");
+            return (false, lastError ?? new InvalidOperationException(
+                "Copilot state persistence failed without an error detail."));
         }
 
         private (long Version, bool Immediate) TakePendingBatch()
@@ -274,5 +306,16 @@ namespace ColorVision.Copilot
 
         private static TaskCompletionSource CreateCompletionSource() =>
             new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        private static Func<CancellationToken, Task<bool>> WrapSaveAsync(
+            Func<CancellationToken, Task> saveAsync)
+        {
+            ArgumentNullException.ThrowIfNull(saveAsync);
+            return async cancellationToken =>
+            {
+                await saveAsync(cancellationToken).ConfigureAwait(false);
+                return true;
+            };
+        }
     }
 }

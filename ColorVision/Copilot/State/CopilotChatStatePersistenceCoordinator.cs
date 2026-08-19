@@ -30,7 +30,7 @@ namespace ColorVision.Copilot
             _dispatcherProvider = dispatcherProvider ?? throw new ArgumentNullException(nameof(dispatcherProvider));
             _onError = onError ?? throw new ArgumentNullException(nameof(onError));
             ArgumentNullException.ThrowIfNull(onSaved);
-            _scheduler = new CopilotChatStateSaveScheduler(
+            _scheduler = CopilotChatStateSaveScheduler.CreateOutcomeAware(
                 SaveSnapshotAsync,
                 onError: onError,
                 onSaved: () =>
@@ -70,7 +70,7 @@ namespace ColorVision.Copilot
             GC.SuppressFinalize(this);
         }
 
-        private async Task SaveSnapshotAsync(CancellationToken cancellationToken)
+        private async Task<bool> SaveSnapshotAsync(CancellationToken cancellationToken)
         {
             Interlocked.Exchange(ref _lastSavePersisted, 0);
             var captureVersion = _scheduler.RequestedVersion;
@@ -103,23 +103,24 @@ namespace ColorVision.Copilot
             }
 
             if (_scheduler.RequestedVersion != captureVersion)
-                return;
+                return false;
 
             var serializedState = await Task.Run(
                 () => _stateStore.Serialize(snapshot),
                 cancellationToken).ConfigureAwait(false);
             if (_scheduler.RequestedVersion != captureVersion)
-                return;
+                return false;
 
             await _commitGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 if (_scheduler.RequestedVersion != captureVersion)
-                    return;
+                    return false;
 
                 await _stateStore.SaveSerializedAsync(serializedState, cancellationToken).ConfigureAwait(false);
                 if (_scheduler.RequestedVersion == captureVersion)
                     Interlocked.Exchange(ref _lastSavePersisted, 1);
+                return true;
             }
             finally
             {
