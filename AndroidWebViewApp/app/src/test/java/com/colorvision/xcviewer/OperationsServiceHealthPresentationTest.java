@@ -41,6 +41,7 @@ public class OperationsServiceHealthPresentationTest {
         assertEquals("正常 2 · 需关注 0", model.countLabel);
         assertEquals("白名单服务 · 2", model.servicesSectionLabel());
         assertEquals(0, model.attentionCount);
+        assertFalse(model.canRestartMqtt);
         assertEquals("只返回白名单状态。", model.privacyNotice);
 
         OperationsServiceHealthPresentation.Service service = model.services.get(0);
@@ -75,6 +76,7 @@ public class OperationsServiceHealthPresentationTest {
         assertEquals("有白名单服务需要关注", model.summaryLabel);
         assertEquals("需关注 1 · 正常 0", model.countLabel);
         assertEquals(OperationsServiceHealthPresentation.TONE_ATTENTION, model.tone);
+        assertTrue(model.canRestartMqtt);
         assertEquals("已停止 · 需关注", model.services.get(0).statusSummary());
         assertEquals("应用配置", model.services.get(0).observationSummary());
     }
@@ -108,6 +110,7 @@ public class OperationsServiceHealthPresentationTest {
                 OperationsServiceHealthPresentation.from(
                         new JSONObject("{\"available\":false}"), value -> value);
         assertFalse(unavailable.available);
+        assertFalse(unavailable.canRestartMqtt);
         assertEquals("服务状态不可用", unavailable.stateLabel);
         assertEquals(OperationsServiceHealthPresentation.TONE_UNAVAILABLE, unavailable.tone);
         assertTrue(unavailable.services.isEmpty());

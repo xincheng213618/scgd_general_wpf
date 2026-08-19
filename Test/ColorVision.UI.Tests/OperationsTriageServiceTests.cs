@@ -59,6 +59,7 @@ namespace ColorVision.UI.Tests
                 OperationsTriageActionIds.ViewRecentEvents,
                 OperationsTriageActionIds.ShowMainWindow,
                 OperationsTriageActionIds.ReviewJobs,
+                OperationsTriageActionIds.ViewServiceHealth,
                 OperationsTriageActionIds.RequestMqttRestart,
                 OperationsTriageActionIds.ViewDeviceHealth,
             ];
@@ -69,6 +70,29 @@ namespace ColorVision.UI.Tests
             Assert.True(restart.RequiresConfirmation);
             Assert.False(restart.RequiresLocalCoSign);
             Assert.Equal("approval-workflow", restart.Kind);
+            OperationsTriageFinding serviceFinding = Assert.Single(report.Findings,
+                item => item.FindingId == "service-health-mqtt-broker");
+            Assert.Equal(OperationsTriageActionIds.ViewServiceHealth,
+                serviceFinding.Actions[0].ActionId);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, serviceFinding.Actions[0].RiskLevel);
+        }
+
+        [Fact]
+        public void UnavailableServiceHealthStillOffersReadOnlyEvidenceRefresh()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                new OperationsServiceHealthReport { Available = false });
+
+            OperationsTriageFinding finding = Assert.Single(report.Findings,
+                item => item.FindingId == "service-health-unavailable");
+            OperationsTriageAction action = Assert.Single(finding.Actions);
+            Assert.Equal(OperationsTriageActionIds.ViewServiceHealth, action.ActionId);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, action.RiskLevel);
+            Assert.False(action.RequiresConfirmation);
+            Assert.False(action.RequiresLocalCoSign);
         }
 
         [Fact]

@@ -5,6 +5,7 @@ namespace ColorVision.UI.Desktop.Operations
         public const string ViewRecentEvents = "triage.events.view";
         public const string ShowMainWindow = "triage.window.show";
         public const string ReviewJobs = "triage.jobs.review";
+        public const string ViewServiceHealth = "triage.services.view";
         public const string RequestMqttRestart = "triage.mqtt.restart.request";
         public const string ViewDeviceHealth = "triage.devices.view";
         public const string ViewMessageChannelHealth = "triage.messaging.view";
@@ -331,13 +332,14 @@ namespace ColorVision.UI.Desktop.Operations
                     Category = "services",
                     Title = "白名单服务状态暂不可用",
                     Summary = "当前无法取得 Windows 服务控制管理器状态；不会仅凭日志自动建议维护动作。",
+                    Actions = [ViewServiceHealthAction()],
                 });
                 return;
             }
 
             foreach (OperationsServiceHealthItem service in serviceHealth.Services.Where(item => !item.Healthy))
             {
-                List<OperationsTriageAction> actions = [];
+                List<OperationsTriageAction> actions = [ViewServiceHealthAction()];
                 if (service.ServiceId == OperationsServiceIds.MqttBroker
                     && service.MaintenanceSupported
                     && service.Status is "stopped" or "paused")
@@ -510,6 +512,15 @@ namespace ColorVision.UI.Desktop.Operations
             Description = "仅通过 ServiceHost 重启固定 Mosquitto 服务；已配对手机确认后立即执行。",
             RequiresConfirmation = true,
             RequiresLocalCoSign = false,
+        };
+
+        private static OperationsTriageAction ViewServiceHealthAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.ViewServiceHealth,
+            Title = "查看白名单服务状态",
+            Kind = "client-navigation",
+            RiskLevel = OperationsRiskLevels.ReadOnly,
+            Description = "只查看固定 ColorVision 后台服务与 MQTT 服务的规范化状态、来源和观测时间，不执行维护。",
         };
 
         private static string ServiceHealthSummary(OperationsServiceHealthItem service) => service.Status switch

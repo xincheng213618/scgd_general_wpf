@@ -186,6 +186,7 @@ final class OperationsTriagePresentation {
             case "triage.events.view":
             case "triage.window.show":
             case "triage.jobs.review":
+            case "triage.services.view":
             case "triage.mqtt.restart.request":
             case "triage.devices.view":
             case "triage.messaging.view":

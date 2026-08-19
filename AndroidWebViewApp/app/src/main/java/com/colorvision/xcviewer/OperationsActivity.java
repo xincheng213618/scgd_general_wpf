@@ -110,6 +110,8 @@ public class OperationsActivity extends AppCompatActivity {
             OperationsTriageDetailReviewPresentation.SURFACE_DEVICE_HEALTH;
     private static final String TRIAGE_REVIEW_MESSAGE_CHANNEL =
             OperationsTriageDetailReviewPresentation.SURFACE_MESSAGE_CHANNEL;
+    private static final String TRIAGE_REVIEW_SERVICE_HEALTH =
+            OperationsTriageDetailReviewPresentation.SURFACE_SERVICE_HEALTH;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -209,8 +211,11 @@ public class OperationsActivity extends AppCompatActivity {
     private LinearLayout triageDetailReviewContainer;
     private DeviceHealthBottomSheet.ReviewHandle triageDeviceReviewHandle;
     private OperationsMessageChannelPresentation.ViewModel messageChannelDetailModel;
+    private OperationsServiceHealthPresentation.ViewModel serviceHealthDetailModel;
     private boolean messageChannelRecoveryInFlight;
     private CharSequence messageChannelRecoveryPreviousState = "";
+    private boolean mqttRestartInFlight;
+    private CharSequence mqttRestartPreviousState = "";
     private String lastSuccessfulDashboardUpdateLabel = "";
     private int connectionRequestGeneration;
     private int connectionCheckGeneration;
@@ -5567,6 +5572,11 @@ public class OperationsActivity extends AppCompatActivity {
                 detailParentDestination = OperationsDestinationState.TRIAGE;
                 showJobs();
                 return;
+            case "triage.services.view":
+                detailParentDestination = OperationsDestinationState.TRIAGE;
+                showDashboardCapabilityDetails(PATH_SERVICE_HEALTH);
+                prepareTriageDetailReview(sourceFinding);
+                return;
             case "triage.mqtt.restart.request":
                 confirmRestartMqtt();
                 return;
@@ -5627,48 +5637,113 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void refreshTriageDetailReviewAction() {
-        boolean messageEvidenceUpdateInFlight = TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(
-                triageDetailReviewSurface)
-                && (messageChannelRecoveryInFlight
-                        || (dashboardDetailRefreshInFlight
-                                && PATH_MESSAGE_CHANNEL.equals(dashboardDetailPath)));
+        String updatingEvidenceLabel = triageDetailEvidenceUpdateLabel();
         OperationsTriageDetailReviewPresentation.ViewModel presentation =
                 OperationsTriageDetailReviewPresentation.from(
                         triageDetailReviewFinding,
                         triageDetailReviewInFlight,
-                        messageEvidenceUpdateInFlight);
+                        updatingEvidenceLabel);
         if (triageDeviceReviewHandle != null) {
             triageDeviceReviewHandle.update(presentation);
         }
         if (triageDetailReviewContainer != null) {
             triageDetailReviewContainer.removeAllViews();
+            boolean offerMqttRestart = TRIAGE_REVIEW_SERVICE_HEALTH.equals(
+                    triageDetailReviewSurface)
+                    && triageFindingOffersAction("triage.mqtt.restart.request")
+                    && serviceHealthDetailModel != null
+                    && serviceHealthDetailModel.canRestartMqtt;
+            boolean singleColumn = AppResponsiveLayout.usesSingleColumn(
+                    getResources().getConfiguration().screenWidthDp,
+                    getResources().getConfiguration().fontScale);
+            triageDetailReviewContainer.setOrientation(
+                    offerMqttRestart && !singleColumn
+                            ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
             triageDetailReviewContainer.setVisibility(
                     presentation.visible ? View.VISIBLE : View.GONE);
             if (presentation.visible) {
-                Button button = triageDetailReviewFinding.acknowledged
+                if (offerMqttRestart) {
+                    Button maintenance = dashboardPrimaryButton(
+                            mqttRestartInFlight ? "正在重启 MQTT…" : "重启 MQTT 服务",
+                            view -> confirmRestartMqtt());
+                    maintenance.setEnabled(!mqttRestartInFlight
+                            && !triageDetailReviewInFlight
+                            && !dashboardDetailRefreshInFlight);
+                    maintenance.setContentDescription(mqttRestartInFlight
+                            ? "正在重启固定 MQTT 服务，完成前不能重复提交"
+                            : "重启固定 MQTT 服务，需要确认；不能选择其他服务、命令、路径或参数");
+                    triageDetailReviewContainer.addView(
+                            maintenance,
+                            triageDetailActionParams(singleColumn, false));
+                }
+                Button review = triageDetailReviewFinding.acknowledged
                         ? dashboardButton(presentation.label,
                                 view -> setTriageDetailFindingAcknowledged(false))
                         : dashboardTonalButton(presentation.label,
                                 view -> setTriageDetailFindingAcknowledged(true));
-                button.setEnabled(presentation.enabled);
-                button.setContentDescription(presentation.contentDescription);
-                triageDetailReviewContainer.addView(button,
-                        new LinearLayout.LayoutParams(
-                                LinearLayout.LayoutParams.MATCH_PARENT,
-                                LinearLayout.LayoutParams.WRAP_CONTENT));
+                review.setEnabled(presentation.enabled);
+                review.setContentDescription(presentation.contentDescription);
+                triageDetailReviewContainer.addView(
+                        review,
+                        triageDetailActionParams(
+                                singleColumn || !offerMqttRestart, offerMqttRestart));
             }
         }
+    }
+
+    private LinearLayout.LayoutParams triageDetailActionParams(
+            boolean singleColumn, boolean afterFirst) {
+        LinearLayout.LayoutParams params = singleColumn
+                ? new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT)
+                : new LinearLayout.LayoutParams(
+                        0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        if (afterFirst) {
+            params.setMargins(singleColumn ? 0 : dp(8), singleColumn ? dp(8) : 0, 0, 0);
+        }
+        return params;
+    }
+
+    private String triageDetailEvidenceUpdateLabel() {
+        if (TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(triageDetailReviewSurface)
+                && (messageChannelRecoveryInFlight
+                        || (dashboardDetailRefreshInFlight
+                                && PATH_MESSAGE_CHANNEL.equals(dashboardDetailPath)))) {
+            return "正在更新消息证据…";
+        }
+        if (TRIAGE_REVIEW_SERVICE_HEALTH.equals(triageDetailReviewSurface)
+                && (mqttRestartInFlight
+                        || (dashboardDetailRefreshInFlight
+                                && PATH_SERVICE_HEALTH.equals(dashboardDetailPath)))) {
+            return "正在更新服务证据…";
+        }
+        return "";
+    }
+
+    private boolean triageFindingOffersAction(String actionId) {
+        if (triageDetailReviewFinding == null || actionId == null || actionId.isEmpty()) {
+            return false;
+        }
+        for (OperationsTriagePresentation.Action action : triageDetailReviewFinding.actions) {
+            if (actionId.equals(action.actionId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void setTriageDetailFindingAcknowledged(boolean acknowledged) {
         if (triageDetailReviewInFlight || triageDetailReviewFinding == null) {
             return;
         }
-        if (TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(triageDetailReviewSurface)
-                && (messageChannelRecoveryInFlight || dashboardDetailRefreshInFlight)) {
+        String updatingEvidenceLabel = triageDetailEvidenceUpdateLabel();
+        if (!updatingEvidenceLabel.isEmpty()) {
+            String evidenceName = TRIAGE_REVIEW_SERVICE_HEALTH.equals(
+                    triageDetailReviewSurface) ? "服务证据" : "消息证据";
             showTriageDetailReviewFeedback(
                     triageDetailReviewSurface,
-                    "消息证据正在更新 · 完成后再复核",
+                    evidenceName + "正在更新 · 完成后再复核",
                     "",
                     null);
             return;
@@ -5774,7 +5849,9 @@ public class OperationsActivity extends AppCompatActivity {
                             ? "发现更新证据 · 请先刷新设备状态后再复核"
                             : TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(reviewSurface)
                                     ? "发现更新证据 · 请先刷新消息通道后再复核"
-                            : "发现更新证据 · 请先刷新近期事件后再复核",
+                                    : TRIAGE_REVIEW_SERVICE_HEALTH.equals(reviewSurface)
+                                            ? "发现更新证据 · 请先刷新服务状态后再复核"
+                                            : "发现更新证据 · 请先刷新近期事件后再复核",
                     "刷新",
                     () -> refreshTriageDetailReviewEvidence(reviewSurface));
             return;
@@ -5857,8 +5934,12 @@ public class OperationsActivity extends AppCompatActivity {
         boolean messageChannelVisible = TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(reviewSurface)
                 && OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
                 && PATH_MESSAGE_CHANNEL.equals(dashboardDetailPath);
+        boolean serviceHealthVisible = TRIAGE_REVIEW_SERVICE_HEALTH.equals(reviewSurface)
+                && OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
+                && PATH_SERVICE_HEALTH.equals(dashboardDetailPath);
         return requestGeneration == connectionRequestGeneration
-                && (recentEventsVisible || deviceHealthVisible || messageChannelVisible)
+                && (recentEventsVisible || deviceHealthVisible
+                        || messageChannelVisible || serviceHealthVisible)
                 && hostId.equals(preferences.getOperationsHostId())
                 && reviewSurface.equals(triageDetailReviewSurface)
                 && triageDetailReviewFinding != null
@@ -5872,7 +5953,8 @@ public class OperationsActivity extends AppCompatActivity {
             }
             showDeviceHealthOverview();
         } else if (TRIAGE_REVIEW_RECENT_EVENTS.equals(reviewSurface)
-                || TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(reviewSurface)) {
+                || TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(reviewSurface)
+                || TRIAGE_REVIEW_SERVICE_HEALTH.equals(reviewSurface)) {
             refreshDashboardDetail();
         }
     }
@@ -6316,15 +6398,31 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void confirmRestartMqtt() {
+        if (mqttRestartInFlight) {
+            Snackbar.make(
+                    snackbarHost,
+                    "MQTT 服务重启正在进行，请等待本次结果",
+                    Snackbar.LENGTH_LONG).show();
+            return;
+        }
+        String originDestination = currentDestination;
+        String originDetailPath = dashboardDetailPath;
         showTargetedConfirmation(
                 "确认重启 MQTT 服务",
                 "确认后将立即通过 ColorVisionServiceHost 重启固定白名单中的 Mosquitto 服务，消息与设备通信可能短暂中断后自动恢复。手机不能选择其他服务、命令、路径或参数。",
-                "取消", "确认重启", this::restartMqtt);
+                "取消", "确认重启",
+                () -> restartMqtt(originDestination, originDetailPath));
     }
 
-    private void restartMqtt() {
+    private void restartMqtt(String originDestination, String originDetailPath) {
+        if (mqttRestartInFlight) {
+            return;
+        }
+        mqttRestartInFlight = true;
+        mqttRestartPreviousState = state.getText();
         progress.setVisibility(View.VISIBLE);
         state.setText(R.string.operations_mqtt_restarting);
+        refreshTriageDetailReviewAction();
         executor.execute(() -> {
             try {
                 JSONObject input = new JSONObject();
@@ -6334,14 +6432,78 @@ public class OperationsActivity extends AppCompatActivity {
                         "mqtt_restart_job_missing", "已配对手机明确确认固定 MQTT 恢复");
                 String status = job.optString("status", "");
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "completed".equals(status)
-                            ? "MQTT 消息服务已重启" : "MQTT 重启未完成，请查看作业结果", Toast.LENGTH_LONG).show();
-                    showJobs();
+                    mqttRestartInFlight = false;
+                    finishMqttRestart(
+                            originDestination,
+                            originDetailPath,
+                            "completed".equals(status));
                 });
             } catch (Exception ex) {
-                runOnUiThread(() -> showTransientError(ex));
+                runOnUiThread(() -> failMqttRestart(
+                        originDestination, originDetailPath, ex));
             }
         });
+    }
+
+    private void finishMqttRestart(
+            String originDestination,
+            String originDetailPath,
+            boolean completed) {
+        refreshTriageDetailReviewAction();
+        Toast.makeText(
+                this,
+                completed ? "MQTT 消息服务已重启" : "MQTT 重启未完成，请查看作业结果",
+                Toast.LENGTH_LONG).show();
+        if (!isMqttRestartOriginVisible(originDestination, originDetailPath)) {
+            return;
+        }
+        if (!completed) {
+            progress.setVisibility(View.GONE);
+            state.setText(mqttRestartPreviousState);
+            Snackbar snackbar = Snackbar.make(
+                    snackbarHost,
+                    "MQTT 重启未完成 · 当前页面保持不变",
+                    Snackbar.LENGTH_LONG);
+            snackbar.setAction("查看作业", view -> showJobs());
+            snackbar.show();
+            return;
+        }
+        if (OperationsDestinationState.CAPABILITY_DETAIL.equals(originDestination)) {
+            loadCapability(PATH_SERVICE_HEALTH);
+        } else if (OperationsDestinationState.TRIAGE.equals(originDestination)) {
+            showTriageCenter();
+        } else if (OperationsDestinationState.TOOLS.equals(originDestination)) {
+            showOperationsToolboxPage();
+        } else {
+            showJobs();
+        }
+    }
+
+    private void failMqttRestart(
+            String originDestination,
+            String originDetailPath,
+            Exception exception) {
+        mqttRestartInFlight = false;
+        refreshTriageDetailReviewAction();
+        if (!isMqttRestartOriginVisible(originDestination, originDetailPath)) {
+            return;
+        }
+        progress.setVisibility(View.GONE);
+        state.setText(mqttRestartPreviousState);
+        Snackbar.make(
+                snackbarHost,
+                "MQTT 重启未完成 · " + OperationsErrorPresentation.readable(exception),
+                Snackbar.LENGTH_LONG).show();
+    }
+
+    private boolean isMqttRestartOriginVisible(
+            String originDestination, String originDetailPath) {
+        return OperationsActionOriginPolicy.isVisible(
+                originDestination,
+                originDetailPath,
+                currentDestination,
+                dashboardDetailPath,
+                PATH_SERVICE_HEALTH);
     }
 
     private void confirmRecoverMessageChannel() {
@@ -6431,7 +6593,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private boolean isMessageChannelRecoveryOriginVisible(
             String originDestination, String originDetailPath) {
-        return OperationsMessageChannelRecoveryPolicy.isOriginVisible(
+        return OperationsActionOriginPolicy.isVisible(
                 originDestination,
                 originDetailPath,
                 currentDestination,
@@ -7419,6 +7581,7 @@ public class OperationsActivity extends AppCompatActivity {
         clearRecentEventsRefreshState();
         clearTriageDetailReviewState();
         messageChannelDetailModel = null;
+        serviceHealthDetailModel = null;
         setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         dashboardDetailPath = path;
         refreshDetailsCardVisibility();
@@ -7441,7 +7604,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (dashboardDetailRequest) {
             dashboardDetailRefreshInFlight = true;
             refreshOperationsHeaderNavigation();
-            if (PATH_MESSAGE_CHANNEL.equals(path)) {
+            if (PATH_MESSAGE_CHANNEL.equals(path) || PATH_SERVICE_HEALTH.equals(path)) {
                 refreshTriageDetailReviewAction();
             }
         }
@@ -7505,7 +7668,9 @@ public class OperationsActivity extends AppCompatActivity {
                     if (dashboardDetailRequest && PATH_RECENT_EVENTS.equals(path)) {
                         pendingRecentEventsRefreshBaseline = null;
                     }
-                    if (dashboardDetailRequest && PATH_MESSAGE_CHANNEL.equals(path)) {
+                    if (dashboardDetailRequest
+                            && (PATH_MESSAGE_CHANNEL.equals(path)
+                                    || PATH_SERVICE_HEALTH.equals(path))) {
                         refreshTriageDetailReviewAction();
                     }
                     progress.setVisibility(View.GONE);
@@ -7609,9 +7774,11 @@ public class OperationsActivity extends AppCompatActivity {
         JSONObject payload = data == null ? response : data;
         OperationsServiceHealthPresentation.ViewModel model =
                 OperationsServiceHealthPresentation.from(payload, this::shortTime);
+        serviceHealthDetailModel = model;
         state.setText(model.stateLabel);
         detailsCard.setVisibility(View.GONE);
         actions.removeAllViews();
+        addTriageDetailReviewAction();
         actions.addView(OperationsServiceHealthContent.create(
                         this, themeManager, model),
                 new LinearLayout.LayoutParams(

@@ -1,22 +1,22 @@
 package com.colorvision.xcviewer;
 
-final class OperationsMessageChannelRecoveryPolicy {
-    private OperationsMessageChannelRecoveryPolicy() {
+final class OperationsActionOriginPolicy {
+    private OperationsActionOriginPolicy() {
     }
 
-    static boolean isOriginVisible(
+    static boolean isVisible(
             String originDestination,
             String originDetailPath,
             String currentDestination,
             String currentDetailPath,
-            String messageChannelPath) {
+            String expectedDetailPath) {
         if (originDestination == null || !originDestination.equals(currentDestination)) {
             return false;
         }
         if (!OperationsDestinationState.CAPABILITY_DETAIL.equals(originDestination)) {
             return true;
         }
-        return messageChannelPath.equals(originDetailPath)
+        return expectedDetailPath.equals(originDetailPath)
                 && originDetailPath.equals(currentDetailPath);
     }
 }

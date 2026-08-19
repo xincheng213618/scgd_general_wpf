@@ -50,7 +50,8 @@ public class OperationsTriageDetailReviewPresentationTest {
         OperationsTriagePresentation.Finding finding = finding(false, "订阅未恢复");
 
         OperationsTriageDetailReviewPresentation.ViewModel updating =
-                OperationsTriageDetailReviewPresentation.from(finding, false, true);
+                OperationsTriageDetailReviewPresentation.from(
+                        finding, false, "正在更新消息证据…");
 
         assertEquals("正在更新消息证据…", updating.label);
         assertFalse(updating.enabled);
@@ -121,6 +122,17 @@ public class OperationsTriageDetailReviewPresentationTest {
         assertEquals(OperationsTriageDetailReviewPresentation.SURFACE_MESSAGE_CHANNEL,
                 OperationsTriageDetailReviewPresentation.surfaceFor(channel));
         assertEquals(OperationsTriageDetailReviewPresentation.SURFACE_RECENT_EVENTS,
+                OperationsTriageDetailReviewPresentation.surfaceFor(service));
+    }
+
+    @Test
+    public void serviceFindingUsesServiceHealthReviewSurface() throws Exception {
+        OperationsTriagePresentation.Finding service = OperationsTriagePresentation.from(
+                new JSONObject("{\"findings\":[{\"findingId\":\"mqtt\","
+                        + "\"category\":\"services\"}]}"), value -> value)
+                .findings.get(0);
+
+        assertEquals(OperationsTriageDetailReviewPresentation.SURFACE_SERVICE_HEALTH,
                 OperationsTriageDetailReviewPresentation.surfaceFor(service));
     }
 

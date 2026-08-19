@@ -224,6 +224,29 @@ public class OperationsTriagePresentationTest {
     }
 
     @Test
+    public void serviceEvidenceNavigationStaysPrimaryBeforePrivilegedMaintenance()
+            throws Exception {
+        JSONObject report = new JSONObject("{\"findings\":[{"
+                + "\"findingId\":\"service-health-mqtt-broker\","
+                + "\"category\":\"services\",\"actions\":[{"
+                + "\"actionId\":\"triage.services.view\","
+                + "\"title\":\"查看白名单服务状态\","
+                + "\"riskLevel\":\"read-only\"},{"
+                + "\"actionId\":\"triage.mqtt.restart.request\","
+                + "\"title\":\"确认并重启 MQTT\","
+                + "\"riskLevel\":\"privileged\","
+                + "\"requiresConfirmation\":true}]}]}");
+
+        OperationsTriagePresentation.Finding finding = OperationsTriagePresentation
+                .from(report, value -> value).findings.get(0);
+
+        assertTrue(OperationsTriagePresentation.isSupportedAction("triage.services.view"));
+        assertSame(finding.actions.get(0), finding.primaryCardAction());
+        assertEquals("查看白名单服务状态", finding.primaryCardAction().buttonLabel());
+        assertFalse(finding.actions.get(1).readOnly());
+    }
+
+    @Test
     public void failedRefreshLabelsAVisiblePreviousReportAsReferenceOnly() {
         assertEquals("电脑端暂不可达。",
                 OperationsTriagePresentation.failureDetails(

@@ -30,11 +30,13 @@ final class OperationsServiceHealthPresentation {
                     "仅报告固定白名单服务的规范化状态；不返回服务账户、可执行路径、启动参数或机器标识。",
                     TONE_UNAVAILABLE,
                     0,
+                    false,
                     Collections.emptyList());
         }
 
         List<Service> services = new ArrayList<>();
         Set<String> serviceIds = new HashSet<>();
+        boolean canRestartMqtt = false;
         JSONArray sourceServices = payload.optJSONArray("services");
         if (sourceServices != null) {
             for (int index = 0;
@@ -50,11 +52,15 @@ final class OperationsServiceHealthPresentation {
                     continue;
                 }
                 boolean healthy = source.optBoolean("healthy", false);
+                String status = source.optString("status", "unknown");
                 boolean maintenanceSupported = MQTT_BROKER.equals(serviceId)
                         && source.optBoolean("maintenanceSupported", false);
+                canRestartMqtt |= maintenanceSupported
+                        && !healthy
+                        && ("stopped".equals(status) || "paused".equals(status));
                 services.add(new Service(
                         title,
-                        statusLabel(source.optString("status", "unknown")),
+                        statusLabel(status),
                         healthy ? "正常" : "需关注",
                         sourceLabel(source.optString("statusSource", "")),
                         timeFormatter.format(source.optString("observedAt", "")),
@@ -100,6 +106,7 @@ final class OperationsServiceHealthPresentation {
                         "仅报告固定白名单服务的规范化状态；不返回服务账户、可执行路径、启动参数或机器标识。"),
                 tone,
                 attentionCount,
+                canRestartMqtt,
                 Collections.unmodifiableList(services));
     }
 
@@ -150,6 +157,7 @@ final class OperationsServiceHealthPresentation {
         final String privacyNotice;
         final int tone;
         final int attentionCount;
+        final boolean canRestartMqtt;
         final List<Service> services;
 
         ViewModel(
@@ -160,6 +168,7 @@ final class OperationsServiceHealthPresentation {
                 String privacyNotice,
                 int tone,
                 int attentionCount,
+                boolean canRestartMqtt,
                 List<Service> services) {
             this.available = available;
             this.stateLabel = stateLabel;
@@ -168,6 +177,7 @@ final class OperationsServiceHealthPresentation {
             this.privacyNotice = privacyNotice;
             this.tone = tone;
             this.attentionCount = attentionCount;
+            this.canRestartMqtt = canRestartMqtt;
             this.services = services;
         }
 

@@ -4,6 +4,7 @@ final class OperationsTriageDetailReviewPresentation {
     static final String SURFACE_RECENT_EVENTS = "recent-events";
     static final String SURFACE_DEVICE_HEALTH = "device-health";
     static final String SURFACE_MESSAGE_CHANNEL = "message-channel";
+    static final String SURFACE_SERVICE_HEALTH = "service-health";
 
     private OperationsTriageDetailReviewPresentation() {
     }
@@ -11,21 +12,21 @@ final class OperationsTriageDetailReviewPresentation {
     static ViewModel from(
             OperationsTriagePresentation.Finding finding,
             boolean inFlight) {
-        return from(finding, inFlight, false);
+        return from(finding, inFlight, "");
     }
 
     static ViewModel from(
             OperationsTriagePresentation.Finding finding,
             boolean inFlight,
-            boolean evidenceUpdateInFlight) {
+            String updatingEvidenceLabel) {
         if (finding == null) {
             return new ViewModel(false, "", "", false, false);
         }
-        if (evidenceUpdateInFlight) {
+        if (updatingEvidenceLabel != null && !updatingEvidenceLabel.isEmpty()) {
             return new ViewModel(
                     true,
-                    "正在更新消息证据…",
-                    "正在恢复或刷新消息通道；完成前不能复核可能变化的证据",
+                    updatingEvidenceLabel,
+                    "正在执行受控维护或刷新状态；完成前不能复核可能变化的证据",
                     false,
                     finding.acknowledged);
         }
@@ -69,6 +70,9 @@ final class OperationsTriageDetailReviewPresentation {
         }
         if ("message-channel".equals(finding.category)) {
             return SURFACE_MESSAGE_CHANNEL;
+        }
+        if ("services".equals(finding.category)) {
+            return SURFACE_SERVICE_HEALTH;
         }
         return "";
     }
