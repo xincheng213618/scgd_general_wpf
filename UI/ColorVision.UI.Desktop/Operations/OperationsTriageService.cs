@@ -136,8 +136,37 @@ namespace ColorVision.UI.Desktop.Operations
             OperationsFailureEvidenceSnapshot failureEvidence,
             List<OperationsTriageFinding> findings)
         {
-            if (!failureEvidence.Available || !failureEvidence.HasEvidence)
+            if (!failureEvidence.Available)
+            {
+                findings.Add(new OperationsTriageFinding
+                {
+                    FindingId = "failure-evidence-unavailable",
+                    Severity = "info",
+                    Category = "failure-evidence",
+                    Title = "崩溃与卡死证据暂不可用",
+                    Summary = "当前无法读取 Windows 应用事件和本机转储；这表示证据来源不可用，不能据此判断近期没有故障。",
+                    Actions = [ViewFailureEvidenceAction()],
+                });
                 return;
+            }
+
+            string coverageSummary = FailureEvidenceCoverageSummary(failureEvidence);
+            if (!failureEvidence.HasEvidence)
+            {
+                if (coverageSummary.Length == 0)
+                    return;
+
+                findings.Add(new OperationsTriageFinding
+                {
+                    FindingId = "failure-evidence-coverage-limited",
+                    Severity = "info",
+                    Category = "failure-evidence",
+                    Title = "崩溃与卡死证据覆盖不完整",
+                    Summary = $"当前可读取来源中未发现近期故障线索。{coverageSummary}不能据此确认最近 {failureEvidence.WindowDays} 天没有故障。",
+                    Actions = [ViewFailureEvidenceAction()],
+                });
+                return;
+            }
 
             List<string> evidence = [];
             AddEvidence(evidence, "应用崩溃", failureEvidence.CrashCount);
@@ -151,21 +180,28 @@ namespace ColorVision.UI.Desktop.Operations
                 Severity = failureEvidence.CrashCount > 0 || failureEvidence.HangCount > 0 ? "error" : "warning",
                 Category = "failure-evidence",
                 Title = "最近存在崩溃或卡死线索",
-                Summary = $"最近 {failureEvidence.WindowDays} 天发现{string.Join("、", evidence)}。这些是聚合线索，可能包含同一次故障的重复记录；请结合发生时间在电脑端继续定位。",
+                Summary = $"最近 {failureEvidence.WindowDays} 天发现{string.Join("、", evidence)}。这些是聚合线索，可能包含同一次故障的重复记录；{coverageSummary}请结合发生时间在电脑端继续定位。",
                 EvidenceCount = Math.Min(999, failureEvidence.FailureEventCount + failureEvidence.DumpCount),
                 LatestAt = failureEvidence.LatestEvidenceAt,
-                Actions =
-                [
-                    new OperationsTriageAction
-                    {
-                        ActionId = OperationsTriageActionIds.ViewFailureEvidence,
-                        Title = "查看崩溃与卡死线索",
-                        Kind = "client-navigation",
-                        RiskLevel = OperationsRiskLevels.ReadOnly,
-                        Description = "只查看最近七天固定类别的计数与聚合时间，不返回事件正文、文件名、路径或转储内容。",
-                    },
-                ],
+                Actions = [ViewFailureEvidenceAction()],
             });
+        }
+
+        private static string FailureEvidenceCoverageSummary(
+            OperationsFailureEvidenceSnapshot failureEvidence)
+        {
+            List<string> limitations = [];
+            if (!failureEvidence.EventLogAvailable)
+                limitations.Add("Windows 应用事件不可读取");
+            else if (failureEvidence.EventScanLimited)
+                limitations.Add("Windows 应用事件仅扫描安全上限内条目");
+            if (!failureEvidence.DumpFolderAvailable)
+                limitations.Add("本机转储目录不可读取");
+            else if (failureEvidence.DumpScanLimited)
+                limitations.Add("本机转储仅扫描安全上限内文件");
+            return limitations.Count == 0
+                ? string.Empty
+                : $"证据覆盖有限：{string.Join("、", limitations)}。";
         }
 
         private static void AddEvidence(List<string> evidence, string title, int count, string unit = "条")
@@ -505,6 +541,15 @@ namespace ColorVision.UI.Desktop.Operations
             Kind = "client-navigation",
             RiskLevel = OperationsRiskLevels.ReadOnly,
             Description = "只查看脱敏连接状态、订阅计数和聚合活动时间，不执行重连、重启或任意目标操作。",
+        };
+
+        private static OperationsTriageAction ViewFailureEvidenceAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.ViewFailureEvidence,
+            Title = "查看崩溃与卡死线索",
+            Kind = "client-navigation",
+            RiskLevel = OperationsRiskLevels.ReadOnly,
+            Description = "只查看最近七天固定类别的计数与聚合时间，不返回事件正文、文件名、路径或转储内容。",
         };
 
         private static OperationsTriageAction RestartMqttAction() => new()

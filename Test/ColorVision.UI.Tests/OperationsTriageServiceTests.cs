@@ -160,6 +160,67 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void UnavailableFailureEvidenceCannotBeMisreportedAsHealthy()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                failureEvidence: OperationsFailureEvidenceSnapshot.CreateUnavailable());
+
+            Assert.Equal("attention", report.State);
+            AssertReadOnlyDetailAction(
+                report, "failure-evidence-unavailable", OperationsTriageActionIds.ViewFailureEvidence);
+            OperationsTriageFinding finding = Assert.Single(report.Findings);
+            Assert.Contains("不能据此判断近期没有故障", finding.Summary, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void PartialFailureEvidenceCoverageKeepsNoFindingConclusionQualified()
+        {
+            OperationsFailureEvidenceSnapshot evidence = OperationsFailureEvidenceSnapshotFactory.Create(
+                [], [], eventLogAvailable: true, dumpFolderAvailable: false);
+
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                failureEvidence: evidence);
+
+            OperationsTriageFinding finding = Assert.Single(report.Findings,
+                item => item.FindingId == "failure-evidence-coverage-limited");
+            Assert.Contains("本机转储目录不可读取", finding.Summary, StringComparison.Ordinal);
+            Assert.Contains("不能据此确认", finding.Summary, StringComparison.Ordinal);
+            AssertReadOnlyDetailAction(
+                report, finding.FindingId, OperationsTriageActionIds.ViewFailureEvidence);
+        }
+
+        [Fact]
+        public void LimitedFailureScanKeepsEvidenceAndCoverageInOneFinding()
+        {
+            OperationsFailureEvidenceSnapshot evidence = OperationsFailureEvidenceSnapshotFactory.Create(
+                [new OperationsFailureEventObservation(
+                    DateTimeOffset.UtcNow.AddMinutes(-5), OperationsFailureKinds.ApplicationCrash)],
+                [],
+                eventLogAvailable: true,
+                dumpFolderAvailable: true,
+                eventScanLimited: true);
+
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                failureEvidence: evidence);
+
+            OperationsTriageFinding finding = Assert.Single(report.Findings,
+                item => item.FindingId == "recent-failure-evidence");
+            Assert.Contains("Windows 应用事件仅扫描安全上限内条目", finding.Summary,
+                StringComparison.Ordinal);
+            Assert.DoesNotContain(report.Findings,
+                item => item.FindingId == "failure-evidence-coverage-limited");
+        }
+
+        [Fact]
         public void ClosedDeviceIsReportedWithoutBeingMisclassifiedAsAttention()
         {
             OperationsTriageReport report = OperationsTriageService.Build(

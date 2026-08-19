@@ -261,12 +261,16 @@ public class OperationsTriagePresentationTest {
                 + "{\"findingId\":\"application-log-unavailable\","
                 + "\"category\":\"diagnostics\",\"actions\":[{"
                 + "\"actionId\":\"triage.events.view\","
-                + "\"title\":\"查看近期脱敏事件\",\"riskLevel\":\"read-only\"}]}]}");
+                + "\"title\":\"查看近期脱敏事件\",\"riskLevel\":\"read-only\"}]},"
+                + "{\"findingId\":\"failure-evidence-unavailable\","
+                + "\"category\":\"failure-evidence\",\"actions\":[{"
+                + "\"actionId\":\"triage.failures.view\","
+                + "\"title\":\"查看崩溃与卡死线索\",\"riskLevel\":\"read-only\"}]}]}");
 
         OperationsTriagePresentation.ViewModel model =
                 OperationsTriagePresentation.from(report, value -> value);
 
-        assertEquals(3, model.findings.size());
+        assertEquals(4, model.findings.size());
         for (OperationsTriagePresentation.Finding finding : model.findings) {
             OperationsTriagePresentation.Action action = finding.primaryCardAction();
             assertSame(finding.actions.get(0), action);
