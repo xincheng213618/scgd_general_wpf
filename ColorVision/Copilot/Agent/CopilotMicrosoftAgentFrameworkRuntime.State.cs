@@ -39,9 +39,12 @@ namespace ColorVision.Copilot
             private readonly bool _sessionResumed;
             private readonly Func<string> _answerText;
             private readonly Func<IReadOnlyList<string>> _deliveredSteeringMessages;
-            private CopilotAgentSessionCheckpoint? _latestCheckpoint;
-            private CopilotAgentTaskLedgerSnapshot? _latestTaskLedger;
+            private CheckpointPublication? _latestPublication;
             private readonly SemaphoreSlim _publicationGate = new(1, 1);
+
+            private sealed record CheckpointPublication(
+                CopilotAgentSessionCheckpoint SessionCheckpoint,
+                CopilotAgentTaskLedgerSnapshot TaskLedger);
 
             public LiveCheckpointPublisher(
                 CopilotAgentRequest request,
@@ -77,9 +80,11 @@ namespace ColorVision.Copilot
                 _deliveredSteeringMessages = deliveredSteeringMessages;
             }
 
-            public CopilotAgentSessionCheckpoint? LatestCheckpoint => Volatile.Read(ref _latestCheckpoint);
+            public CopilotAgentSessionCheckpoint? LatestCheckpoint =>
+                Volatile.Read(ref _latestPublication)?.SessionCheckpoint;
 
-            public CopilotAgentTaskLedgerSnapshot? LatestTaskLedger => Volatile.Read(ref _latestTaskLedger);
+            public CopilotAgentTaskLedgerSnapshot? LatestTaskLedger =>
+                Volatile.Read(ref _latestPublication)?.TaskLedger;
 
             public async ValueTask<bool> TryPublishAsync(
                 AIAgent agent,
@@ -187,8 +192,10 @@ namespace ColorVision.Copilot
                     var checkpointEvent =
                         CopilotAgentEvent.CheckpointUpdated(checkpoint, taskLedger);
                     CopilotAgentEventProtocol.Validate(checkpointEvent);
-                    Volatile.Write(ref _latestTaskLedger, checkpointEvent.TaskLedger);
-                    Volatile.Write(ref _latestCheckpoint, checkpointEvent.SessionCheckpoint);
+                    var publication = new CheckpointPublication(
+                        checkpointEvent.SessionCheckpoint!,
+                        checkpointEvent.TaskLedger!);
+                    Volatile.Write(ref _latestPublication, publication);
                     _emit(checkpointEvent);
                     return true;
                 }
