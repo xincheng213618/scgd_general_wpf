@@ -298,6 +298,18 @@ public sealed class CopilotToolResultContractTests
     }
 
     [Fact]
+    public void CaptureRejectsInvalidDelegatedAccountingBeforeItReachesBudgetAggregation()
+    {
+        var negativeUsage = CaptureDelegatedResult(new CopilotTokenUsage(-1, 2, 2));
+        var impossibleCachedUsage = CaptureDelegatedResult(new CopilotTokenUsage(2, 1, 3, 3));
+        var negativeDuration = CaptureDelegatedResult(CopilotTokenUsage.Empty, queueDurationMs: -1);
+
+        AssertInvalid(negativeUsage, "DelegateTool");
+        AssertInvalid(impossibleCachedUsage, "DelegateTool");
+        AssertInvalid(negativeDuration, "DelegateTool");
+    }
+
+    [Fact]
     public async Task ExecutorContainsMismatchedToolIdentityBeforePublishingTheOutcome()
     {
         var events = new List<CopilotAgentEvent>();
@@ -342,6 +354,25 @@ public sealed class CopilotToolResultContractTests
         Assert.Equal(expectedToolName, result.ToolName);
         Assert.Equal(CopilotToolFailureKind.Internal, result.FailureKind);
         Assert.Equal(CopilotToolResultContract.InvalidOutputFailureCode, result.FailureCode);
+    }
+
+    private static CopilotToolResult CaptureDelegatedResult(
+        CopilotTokenUsage usage,
+        long queueDurationMs = 0)
+    {
+        return CopilotToolResultContract.Capture(
+            "DelegateTool",
+            new CopilotToolResult
+            {
+                ToolName = "DelegateTool",
+                Success = true,
+                DelegatedRunUsage = new CopilotDelegatedRunUsage
+                {
+                    StopReason = CopilotAgentStopReason.Completed,
+                    QueueDurationMs = queueDurationMs,
+                    Usage = usage,
+                },
+            });
     }
 
     private sealed class ResultTool(CopilotToolResult result) : ICopilotTool

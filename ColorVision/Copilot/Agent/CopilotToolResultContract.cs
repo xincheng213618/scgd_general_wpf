@@ -127,13 +127,7 @@ namespace ColorVision.Copilot
                 return Fail("the workspace mutation snapshot is invalid", out violation);
             }
             if (result.DelegatedRunUsage != null
-                && (result.DelegatedRunUsage.RoleId == null
-                    || result.DelegatedRunUsage.AgentName == null
-                    || result.DelegatedRunUsage.RunId == null
-                    || result.DelegatedRunUsage.ResumeFromRunId == null
-                    || result.DelegatedRunUsage.Model == null
-                    || result.DelegatedRunUsage.ReasoningEffort == null
-                    || !Enum.IsDefined(result.DelegatedRunUsage.StopReason)))
+                && !IsStructurallyValid(result.DelegatedRunUsage))
             {
                 return Fail("the delegated run metadata is invalid", out violation);
             }
@@ -146,6 +140,52 @@ namespace ColorVision.Copilot
 
             violation = string.Empty;
             return true;
+        }
+
+        private static bool IsStructurallyValid(CopilotDelegatedRunUsage delegated)
+        {
+            var usage = delegated.Usage;
+            return delegated.RoleId != null
+                && delegated.AgentName != null
+                && delegated.RunId != null
+                && delegated.ResumeFromRunId != null
+                && delegated.Model != null
+                && delegated.ReasoningEffort != null
+                && Enum.IsDefined(delegated.StopReason)
+                && delegated.RequestTokenBudget >= 0
+                && delegated.QueueDurationMs >= 0
+                && delegated.ToolCalls >= 0
+                && delegated.DeliveredSteeringCount >= 0
+                && delegated.UndeliveredSteeringCount >= 0
+                && delegated.PeakEstimatedInputTokens >= 0
+                && delegated.ProviderRetryCount >= 0
+                && delegated.ProviderRateLimitRetryCount >= 0
+                && delegated.ProviderRetryDelayMs >= 0
+                && delegated.ProviderFirstContentTimeoutCount >= 0
+                && delegated.ProviderStreamInactivityTimeoutCount >= 0
+                && delegated.ProviderResponseCount >= 0
+                && delegated.ProviderFirstResponseLatencyTotalMs >= 0
+                && delegated.ProviderFirstResponseLatencyMaxMs >= 0
+                && delegated.ProviderCallDurationTotalMs >= 0
+                && delegated.ProviderStreamChunkCount >= 0
+                && delegated.ProviderStreamInterChunkLatencyCount >= 0
+                && delegated.ProviderStreamInterChunkLatencyTotalMs >= 0
+                && delegated.ProviderStreamInterChunkLatencyMaxMs >= 0
+                && delegated.ContextRecoveryCount >= 0
+                && delegated.ContextRecoveryEstimatedInputTokensBefore >= 0
+                && delegated.ContextRecoveryEstimatedInputTokensAfter >= 0
+                && usage.InputTokens >= 0
+                && usage.OutputTokens >= 0
+                && usage.TotalTokens >= 0
+                && (!usage.CachedInputTokens.HasValue
+                    || (usage.CachedInputTokens.Value >= 0
+                        && usage.CachedInputTokens.Value <= usage.InputTokens))
+                && delegated.ConsumedTokens >= 0
+                && delegated.ProviderCalls >= 0
+                && delegated.RegisteredToolCount >= 0
+                && delegated.AvailableToolCount >= 0
+                && delegated.AvailableToolDefinitionCharacters >= 0
+                && delegated.HarnessInstructionCharacters >= 0;
         }
 
         private static bool TryValidateSnapshotPrerequisites(
