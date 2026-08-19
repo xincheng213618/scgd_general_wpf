@@ -15,6 +15,28 @@ public class CopilotChatStateSnapshotTests
     };
 
     [Fact]
+    public void SubmittedMessageAttachmentsAreDetachedFromTheRequestSnapshot()
+    {
+        var sourceAttachment = CopilotAttachmentItem.CreateContext("captured context");
+        var source = new ObservableCollection<CopilotAttachmentItem>
+        {
+            sourceAttachment,
+        };
+        var message = new CopilotChatMessage(CopilotChatRole.User, "Inspect the attachment")
+        {
+            Attachments = source,
+            AttachmentSnapshotCaptured = true,
+        };
+
+        sourceAttachment.Value = "changed request snapshot";
+        source.Add(CopilotAttachmentItem.CreateContext("late attachment"));
+
+        var persistedAttachment = Assert.Single(message.Attachments);
+        Assert.NotSame(sourceAttachment, persistedAttachment);
+        Assert.Equal("captured context", persistedAttachment.Value);
+    }
+
+    [Fact]
     public void IncrementalCaptureMatchesExistingStateContract()
     {
         var firstConversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");

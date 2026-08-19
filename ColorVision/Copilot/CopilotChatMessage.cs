@@ -307,7 +307,15 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeIsContentDisplayOnly() => IsContentDisplayOnly;
 
-        public ObservableCollection<CopilotAttachmentItem> Attachments { get; set; } = new();
+        public ObservableCollection<CopilotAttachmentItem> Attachments
+        {
+            get => _attachments;
+            set => _attachments = new ObservableCollection<CopilotAttachmentItem>(
+                (value ?? new ObservableCollection<CopilotAttachmentItem>())
+                    .Where(attachment => attachment != null)
+                    .Select(attachment => attachment.CreateSnapshot()));
+        }
+        private ObservableCollection<CopilotAttachmentItem> _attachments = new();
 
         public bool AttachmentSnapshotCaptured { get; set; }
 
