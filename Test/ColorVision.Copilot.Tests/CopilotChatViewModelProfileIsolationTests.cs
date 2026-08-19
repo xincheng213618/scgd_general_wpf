@@ -196,7 +196,11 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 CopilotAgentEvent.CheckpointUpdated(checkpoint, taskLedger));
 
             Assert.Empty(conversation.PendingSteeringRecoveries);
-            Assert.Same(checkpoint, conversation.AgentSessionCheckpoint);
+            var committedCheckpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(
+                conversation.AgentSessionCheckpoint);
+            Assert.NotSame(checkpoint, committedCheckpoint);
+            Assert.Equal(checkpoint.UpdatedAtUtc, committedCheckpoint.UpdatedAtUtc);
+            Assert.Equal(checkpoint.ConversationMemory, committedCheckpoint.ConversationMemory);
         }
         finally
         {

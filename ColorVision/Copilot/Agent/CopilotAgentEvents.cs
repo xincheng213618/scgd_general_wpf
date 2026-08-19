@@ -267,10 +267,18 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(sessionCheckpoint);
             ArgumentNullException.ThrowIfNull(taskLedger);
+            if (!CopilotAgentSessionCheckpoint.TryCreateSnapshot(
+                    sessionCheckpoint,
+                    out var checkpointSnapshot))
+            {
+                throw new ArgumentException(
+                    "The Agent session checkpoint is not structurally valid.",
+                    nameof(sessionCheckpoint));
+            }
             return new CopilotAgentEvent
             {
                 Type = CopilotAgentEventType.CheckpointUpdated,
-                SessionCheckpoint = sessionCheckpoint,
+                SessionCheckpoint = checkpointSnapshot,
                 TaskLedger = CopilotAgentTaskLedgerSnapshot.CreateSnapshot(
                     taskLedger,
                     normalize: false),

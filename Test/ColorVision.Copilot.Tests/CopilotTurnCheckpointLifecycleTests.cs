@@ -4,6 +4,34 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotTurnCheckpointLifecycleTests
 {
+    [Fact]
+    public void CheckpointEventOwnsTheSessionCheckpointCollections()
+    {
+        var toolNames = new List<string> { "FirstTool" };
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "test-profile",
+            SerializedSessionJson = "{}",
+            ToolSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentToolSurfaceVersion,
+            AvailableToolNames = toolNames,
+            TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
+        };
+
+        var agentEvent = CopilotAgentEvent.CheckpointUpdated(
+            checkpoint,
+            CreateTaskLedger());
+        toolNames[0] = "RewrittenTool";
+
+        var captured = Assert.IsType<CopilotAgentSessionCheckpoint>(
+            agentEvent.SessionCheckpoint);
+        Assert.NotSame(checkpoint, captured);
+        Assert.Equal("FirstTool", Assert.Single(captured.AvailableToolNames));
+        var capturedToolNames = Assert.IsAssignableFrom<IList<string>>(
+            captured.AvailableToolNames);
+        Assert.Throws<NotSupportedException>(() =>
+            capturedToolNames[0] = "RewrittenTool");
+    }
+
     private static readonly DateTimeOffset InitialUpdate =
         new(2026, 8, 8, 1, 0, 0, TimeSpan.Zero);
 
