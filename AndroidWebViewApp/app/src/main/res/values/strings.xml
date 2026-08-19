@@ -55,6 +55,8 @@
     <string name="operations_reminder_test_notification_title">ColorVision 运维提醒测试</string>
     <string name="operations_reminder_test_notification_body">提醒通道工作正常；异常状态出现时会通过此通道提醒。</string>
     <string name="operations_reminder_test_attention_notification_body">测试提醒 · 当前守护记录为%1$s需要关注；点按验证问题定位。</string>
+    <string name="operations_watch_check_now_action">立即检查</string>
+    <string name="operations_watch_checking_now">正在检查已配对电脑…</string>
     <string name="operations_refresh_dashboard">刷新运维状态</string>
     <string name="operations_cancel_flow_toolbox_available_details">已重新读取电脑当前主检测状态；只有你在下一步明确确认后，才会提交取消请求。</string>
     <string name="operations_cancel_flow_toolbox_unavailable_details">已重新读取电脑当前主检测状态；没有提交或执行任何取消操作。</string>

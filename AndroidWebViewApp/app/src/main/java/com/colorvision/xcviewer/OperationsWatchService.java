@@ -38,12 +38,15 @@ public final class OperationsWatchService extends Service {
             "com.colorvision.xcviewer.action.START_OPERATIONS_WATCH";
     private static final String ACTION_REFRESH_CONNECTION =
             "com.colorvision.xcviewer.action.REFRESH_OPERATIONS_CONNECTION";
+    private static final String ACTION_CHECK_NOW =
+            "com.colorvision.xcviewer.action.CHECK_OPERATIONS_NOW";
     private static final String NOTIFICATION_CHANNEL_ID = "operations_watch";
     static final String ATTENTION_CHANNEL_ID = "operations_attention";
     private static final int NOTIFICATION_ID = 22023;
     private static final int LEGACY_ATTENTION_NOTIFICATION_ID = 22024;
     static final int ATTENTION_NOTIFICATION_ID = 22024;
     private static final int REMINDER_TEST_NOTIFICATION_ID = 22025;
+    private static final int CHECK_NOW_REQUEST_CODE = 22026;
     private static final int FLEET_CONNECT_TIMEOUT_MILLISECONDS = 4_000;
     private static final int FLEET_READ_TIMEOUT_MILLISECONDS = 6_000;
     private static final String LOG_TAG = "CVOperationsWatch";
@@ -235,13 +238,22 @@ public final class OperationsWatchService extends Service {
             return START_NOT_STICKY;
         }
 
-        boolean refreshRequested = intent != null
-                && ACTION_REFRESH_CONNECTION.equals(intent.getAction());
+        String action = intent == null ? "" : intent.getAction();
+        boolean refreshRequested = ACTION_REFRESH_CONNECTION.equals(action);
+        boolean checkNowRequested = ACTION_CHECK_NOW.equals(action);
+        if (checkNowRequested) {
+            Log.i(LOG_TAG, "operations_watch_check_now_requested");
+        }
         if (!monitoring) {
             monitoring = true;
-            startInForeground("正在连接已配对主机…");
+            startInForeground(checkNowRequested
+                    ? getString(R.string.operations_watch_checking_now)
+                    : "正在连接已配对主机…");
             handler.post(scheduledCheck);
-        } else if (refreshRequested) {
+        } else if (refreshRequested || checkNowRequested) {
+            if (checkNowRequested) {
+                updateNotification(getString(R.string.operations_watch_checking_now), true);
+            }
             requestImmediateCheck();
         }
         return START_STICKY;
@@ -312,11 +324,13 @@ public final class OperationsWatchService extends Service {
     }
 
     private void requestImmediateCheck() {
-        if (!monitoring) {
+        OperationsWatchCheckRequestPolicy.Decision decision =
+                OperationsWatchCheckRequestPolicy.decide(monitoring, checkInFlight);
+        if (decision == OperationsWatchCheckRequestPolicy.Decision.IGNORE) {
             return;
         }
         handler.removeCallbacks(scheduledCheck);
-        if (checkInFlight) {
+        if (decision == OperationsWatchCheckRequestPolicy.Decision.RUN_AFTER_CURRENT) {
             checkAgainAfterCurrent = true;
             return;
         }
@@ -926,6 +940,7 @@ public final class OperationsWatchService extends Service {
                 .setContentTitle(OperationsTargetPolicy.watchNotificationTitle(
                         targetLabel, preferences.getUsableOperationsProfileCount()))
                 .setContentText(status)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(status))
                 .setContentIntent(createOperationsPendingIntent(0, ""))
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
@@ -934,6 +949,12 @@ public final class OperationsWatchService extends Service {
                 .setShowWhen(true)
                 .setWhen(System.currentTimeMillis())
                 .setPriority(NotificationCompat.PRIORITY_LOW);
+        if (ongoing) {
+            builder.addAction(
+                    R.drawable.ic_refresh_24,
+                    getString(R.string.operations_watch_check_now_action),
+                    createCheckNowPendingIntent());
+        }
 
         return builder.build();
     }
@@ -1037,6 +1058,16 @@ public final class OperationsWatchService extends Service {
                 this,
                 requestCode,
                 openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    private PendingIntent createCheckNowPendingIntent() {
+        Intent checkIntent = new Intent(this, OperationsWatchService.class)
+                .setAction(ACTION_CHECK_NOW);
+        return PendingIntent.getService(
+                this,
+                CHECK_NOW_REQUEST_CODE,
+                checkIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
