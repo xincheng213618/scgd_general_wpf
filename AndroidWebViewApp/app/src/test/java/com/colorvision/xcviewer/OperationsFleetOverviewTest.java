@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class OperationsFleetOverviewTest {
@@ -34,6 +35,16 @@ public class OperationsFleetOverviewTest {
         assertEquals("host_1", result.priorityHostId);
         assertEquals(OperationsFleetOverview.ACTION_OPEN, result.priorityAction);
         assertEquals("处理首要电脑 · 一号线", result.priorityButtonLabel);
+        assertEquals(4, result.problems.size());
+        assertEquals("host_1", result.problems.get(0).hostId);
+        assertEquals("在线 · 发现严重告警", result.problems.get(0).summary);
+        assertEquals("host_4", result.problems.get(1).hostId);
+        assertEquals("host_3", result.problems.get(2).hostId);
+        assertEquals("host_6", result.problems.get(3).hostId);
+        assertEquals(3, result.problemsExcluding("host_1").size());
+        assertEquals("host_4", result.problemsExcluding("host_1").get(0).hostId);
+        assertEquals("host_6", result.findProblem("host_6").hostId);
+        assertNull(result.findProblem("missing"));
     }
 
     @Test
@@ -113,6 +124,7 @@ public class OperationsFleetOverviewTest {
                 untrusted.profiles, NOW);
         assertEquals("待巡检 3", untrustedResult.summary);
         assertFalse(untrustedResult.hasPriorityAction());
+        assertTrue(untrustedResult.problems.isEmpty());
     }
 
     private static OperationsProfileRegistry.State profiles(int count) {

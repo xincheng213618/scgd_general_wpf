@@ -51,9 +51,38 @@ public class OperationsProblemBadgePresentationTest {
                 model.contentDescription);
     }
 
+    @Test
+    public void otherComputerProblemsUseAFleetDotWithoutChangingCurrentIssueCounts() {
+        OperationsProblemBadgePresentation.ViewModel otherOnly = model(
+                true, OperationsWatchHistory.STATE_ONLINE, 0, 2);
+        assertTrue(otherOnly.visible);
+        assertEquals(0, otherOnly.number);
+        assertEquals("其他 2 台电脑需关注", otherOnly.contentDescription);
+
+        OperationsProblemBadgePresentation.ViewModel mixed = model(
+                true, OperationsWatchHistory.STATE_ONLINE, 3, 1);
+        assertTrue(mixed.visible);
+        assertEquals(0, mixed.number);
+        assertEquals("当前电脑 3 项待复核；其他 1 台电脑需关注",
+                mixed.contentDescription);
+
+        OperationsProblemBadgePresentation.ViewModel mixedState = model(
+                true, OperationsWatchHistory.STATE_OFFLINE, 0, 1);
+        assertEquals("当前电脑有待关注状态，连接中断 · 后台自动重试；其他 1 台电脑需关注",
+                mixedState.contentDescription);
+    }
+
     private static OperationsProblemBadgePresentation.ViewModel model(
             boolean hasStoredProfile, String state, int issueCount) {
+        return model(hasStoredProfile, state, issueCount, 0);
+    }
+
+    private static OperationsProblemBadgePresentation.ViewModel model(
+            boolean hasStoredProfile,
+            String state,
+            int issueCount,
+            int otherComputerProblemCount) {
         return OperationsProblemBadgePresentation.create(
-                hasStoredProfile, state, issueCount);
+                hasStoredProfile, state, issueCount, otherComputerProblemCount);
     }
 }

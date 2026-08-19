@@ -189,6 +189,7 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean remoteToolboxRefreshInFlight;
     private int directToolboxGeneration;
     private boolean problemCenterRefreshInFlight;
+    private boolean problemCenterCurrentContentRendered;
     private boolean dashboardDetailRefreshInFlight;
     private String dashboardDetailPath = "";
     private String lastSuccessfulDashboardUpdateLabel = "";
@@ -651,7 +652,12 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsProblemBadgePresentation.create(
                         preferences.getOperationsProfileCount() > 0,
                         watchState,
-                        issueCount));
+                        issueCount,
+                        OperationsFleetOverview.assess(
+                                        preferences.getOperationsProfiles(),
+                                        System.currentTimeMillis())
+                                .problemsExcluding(preferences.getOperationsHostId())
+                                .size()));
     }
 
     private void refreshProblemNavigationBadge() {
@@ -1812,7 +1818,7 @@ public class OperationsActivity extends AppCompatActivity {
             if (profile.revoked) {
                 confirmRemoveOperationsProfile(profile.hostId, profileLabel);
             } else {
-                switchOperationsProfile(profile.hostId);
+                switchOperationsProfile(profile.hostId, "");
             }
         });
         button.setMaxLines(2);
@@ -1845,7 +1851,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (current.priorityHostId.equals(preferences.getOperationsHostId())) {
             openExistingProfile();
         } else {
-            switchOperationsProfile(current.priorityHostId);
+            switchOperationsProfile(current.priorityHostId, "");
         }
     }
 
@@ -2066,14 +2072,19 @@ public class OperationsActivity extends AppCompatActivity {
         PairingScanRecoveryDialog.show(this, reason, this::startOperationsPairingScan);
     }
 
-    private void switchOperationsProfile(String hostId) {
+    private void switchOperationsProfile(String hostId, String destination) {
         if (hostId.equals(preferences.getOperationsHostId())) {
+            if (OperationsDestinationState.TRIAGE.equals(destination)) {
+                showProblemCenter();
+            }
             return;
         }
         if (!preferences.selectOperationsProfile(hostId)) {
             Toast.makeText(this, "这台电脑的配对资料不可用", Toast.LENGTH_LONG).show();
             return;
         }
+        pendingOperationsDestination = OperationsDestinationState.TRIAGE.equals(destination)
+                ? OperationsDestinationState.TRIAGE : "";
         resetOperationsClientsForProfileChange();
         OperationsWatchService.restartForProfileChange(this);
         Toast.makeText(this, "已切换当前运维电脑", Toast.LENGTH_SHORT).show();
@@ -2117,6 +2128,7 @@ public class OperationsActivity extends AppCompatActivity {
         lastDirectProblemBadgeRefreshAttemptMilliseconds = 0L;
         directProblemBadgeMonitorRevision = "";
         latestDirectProblemMonitorRevision = "";
+        problemCenterCurrentContentRendered = false;
     }
 
     private void setCurrentDestination(String destination) {
@@ -5026,6 +5038,7 @@ public class OperationsActivity extends AppCompatActivity {
         refreshProblemNavigationBadge();
         state.setText(model.stateLabel);
         actions.removeAllViews();
+        addOtherComputerProblemQueue();
         actions.addView(OperationsRemoteProblemsContent.create(
                         this,
                         themeManager,
@@ -5036,6 +5049,7 @@ public class OperationsActivity extends AppCompatActivity {
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
+        problemCenterCurrentContentRendered = true;
         restoreTopLevelScroll(OperationsDestinationState.TRIAGE);
     }
 
@@ -5129,7 +5143,9 @@ public class OperationsActivity extends AppCompatActivity {
         }
         problemCenterRefreshInFlight = true;
         boolean preservePreviousReport = OperationsDestinationState.TRIAGE.equals(
-                currentDestination) && actions.getChildCount() > 0;
+                currentDestination)
+                && problemCenterCurrentContentRendered
+                && actions.getChildCount() > 0;
         detailParentDestination = OperationsDestinationState.OVERVIEW;
         setCurrentDestination(OperationsDestinationState.TRIAGE);
         refreshOperationsHeaderNavigation();
@@ -5141,6 +5157,8 @@ public class OperationsActivity extends AppCompatActivity {
         title.setTitle("问题中心");
         if (!preservePreviousReport) {
             actions.removeAllViews();
+            addOtherComputerProblemQueue();
+            problemCenterCurrentContentRendered = false;
         }
         progress.setVisibility(View.VISIBLE);
         state.setText("正在汇总问题证据与可用处置动作…");
@@ -5165,7 +5183,7 @@ public class OperationsActivity extends AppCompatActivity {
         state.setText("排障建议未更新");
         details.setText(OperationsTriagePresentation.failureDetails(
                 OperationsErrorPresentation.readable(ex),
-                actions.getChildCount() > 0));
+                problemCenterCurrentContentRendered));
         detailsCard.setVisibility(View.VISIBLE);
         scrollDashboardToTop();
     }
@@ -5197,6 +5215,7 @@ public class OperationsActivity extends AppCompatActivity {
         title.setTitle("问题中心");
         state.setText(model.stateLabel);
         actions.removeAllViews();
+        addOtherComputerProblemQueue();
         actions.addView(OperationsTriageContent.create(
                         this,
                         themeManager,
@@ -5210,7 +5229,51 @@ public class OperationsActivity extends AppCompatActivity {
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
+        problemCenterCurrentContentRendered = true;
         restoreTopLevelScroll(OperationsDestinationState.TRIAGE);
+    }
+
+    private void addOtherComputerProblemQueue() {
+        List<OperationsFleetOverview.Problem> problems = OperationsFleetOverview.assess(
+                        preferences.getOperationsProfiles(), System.currentTimeMillis())
+                .problemsExcluding(preferences.getOperationsHostId());
+        if (problems.isEmpty()) {
+            return;
+        }
+        addDashboardSection("其他电脑需关注");
+        addDashboardInfoCard("后台守护已在其他电脑发现需要处理的状态。"
+                + "点按后才会切换当前操作电脑，并重新读取该电脑的问题证据。");
+        for (OperationsFleetOverview.Problem problem : problems) {
+            Button button = dashboardButton(
+                    problem.profileLabel + "\n" + problem.summary,
+                    v -> openOtherComputerProblem(problem.hostId));
+            button.setMaxLines(2);
+            button.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+            button.setContentDescription(problem.profileLabel + "，" + problem.summary
+                    + (OperationsFleetOverview.ACTION_REMOVE.equals(problem.action)
+                            ? "，点按移除失效配对" : "，点按切换并查看问题"));
+            addDashboardWideAction(button);
+        }
+        addDashboardSection("当前电脑问题");
+    }
+
+    private void openOtherComputerProblem(String hostId) {
+        OperationsFleetOverview.Problem problem = OperationsFleetOverview.assess(
+                        preferences.getOperationsProfiles(), System.currentTimeMillis())
+                .findProblem(hostId);
+        if (problem == null || hostId.equals(preferences.getOperationsHostId())) {
+            Toast.makeText(this, "电脑状态已更新，正在刷新问题队列",
+                    Toast.LENGTH_LONG).show();
+            showProblemCenter();
+            return;
+        }
+        if (OperationsFleetOverview.ACTION_REMOVE.equals(problem.action)) {
+            confirmRemoveOperationsProfile(problem.hostId, problem.profileLabel);
+            return;
+        }
+        activeTriageAttentionFocus = OperationsAttentionFocus.fromWatchState(
+                problem.watchState);
+        switchOperationsProfile(problem.hostId, OperationsDestinationState.TRIAGE);
     }
 
     private OperationsTriagePresentation.ViewModel triageModel(

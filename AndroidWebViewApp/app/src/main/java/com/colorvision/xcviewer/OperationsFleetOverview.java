@@ -30,10 +30,13 @@ final class OperationsFleetOverview {
         String priorityLabel = "";
         String priorityAction = ACTION_NONE;
         String priorityButtonPrefix = "";
+        List<Problem> problems = new ArrayList<>();
 
         for (int index = 0; index < safeProfiles.size(); index++) {
             OperationsProfileRegistry.Profile profile = safeProfiles.get(index);
             ProfileState profileState = classify(profile, nowMilliseconds);
+            String profileLabel = profile.label.isEmpty()
+                    ? "电脑 " + (index + 1) : profile.label;
             switch (profileState.category) {
                 case CATEGORY_ATTENTION:
                     attention++;
@@ -54,11 +57,27 @@ final class OperationsFleetOverview {
             if (profileState.priorityRank > priorityRank) {
                 priorityRank = profileState.priorityRank;
                 priorityHostId = profile.hostId;
-                priorityLabel = profile.label.isEmpty() ? "电脑 " + (index + 1) : profile.label;
+                priorityLabel = profileLabel;
                 priorityAction = profileState.action;
                 priorityButtonPrefix = profileState.buttonPrefix;
             }
+            if (profileState.isProblem()) {
+                problems.add(new Problem(
+                        profile.hostId,
+                        profileLabel,
+                        profileState.state,
+                        OperationsWatchHistory.label(profileState.state),
+                        profileState.action,
+                        profileState.priorityRank,
+                        index));
+            }
         }
+        Collections.sort(problems, (left, right) -> {
+            int priorityComparison = Integer.compare(
+                    right.priorityRank, left.priorityRank);
+            return priorityComparison != 0
+                    ? priorityComparison : Integer.compare(left.profileIndex, right.profileIndex);
+        });
 
         List<String> summaryParts = new ArrayList<>();
         addSummaryPart(summaryParts, "需关注", attention);
@@ -71,14 +90,19 @@ final class OperationsFleetOverview {
         String priorityButtonLabel = priorityHostId.isEmpty()
                 ? "" : priorityButtonPrefix + " · " + priorityLabel;
         return new Assessment(summary, priorityHostId, priorityLabel,
-                priorityAction, priorityButtonLabel);
+                priorityAction, priorityButtonLabel, problems);
     }
 
     private static ProfileState classify(
             OperationsProfileRegistry.Profile profile,
             long nowMilliseconds) {
         if (profile.revoked) {
-            return new ProfileState(CATEGORY_REVOKED, 10, ACTION_REMOVE, "移除失效配对");
+            return new ProfileState(
+                    CATEGORY_REVOKED,
+                    OperationsWatchHistory.STATE_REVOKED,
+                    10,
+                    ACTION_REMOVE,
+                    "移除失效配对");
         }
         long checkedAt = profile.watchCheckedAt;
         if (checkedAt <= 0L
@@ -95,20 +119,20 @@ final class OperationsFleetOverview {
         String attentionKey = OperationsWatchHistory.attentionKey(state);
         int attentionRank = attentionRank(attentionKey);
         if (attentionRank > 0) {
-            return new ProfileState(CATEGORY_ATTENTION, attentionRank,
+            return new ProfileState(CATEGORY_ATTENTION, state, attentionRank,
                     ACTION_OPEN, "处理首要电脑");
         }
         if (OperationsWatchHistory.STATE_OFFLINE.equals(state)) {
-            return new ProfileState(CATEGORY_UNAVAILABLE, 70,
+            return new ProfileState(CATEGORY_UNAVAILABLE, state, 70,
                     ACTION_OPEN, "检查首要电脑");
         }
         if (OperationsWatchHistory.STATE_REMOTE_WAITING.equals(state)) {
-            return new ProfileState(CATEGORY_UNAVAILABLE, 60,
+            return new ProfileState(CATEGORY_UNAVAILABLE, state, 60,
                     ACTION_OPEN, "检查首要电脑");
         }
         if (OperationsWatchHistory.STATE_ONLINE.equals(state)
                 || OperationsWatchHistory.STATE_REMOTE_ONLINE.equals(state)) {
-            return new ProfileState(CATEGORY_STABLE, 0, ACTION_NONE, "");
+            return new ProfileState(CATEGORY_STABLE, state, 0, ACTION_NONE, "");
         }
         return ProfileState.unchecked();
     }
@@ -146,19 +170,59 @@ final class OperationsFleetOverview {
 
     private static final class ProfileState {
         final String category;
+        final String state;
         final int priorityRank;
         final String action;
         final String buttonPrefix;
 
-        ProfileState(String category, int priorityRank, String action, String buttonPrefix) {
+        ProfileState(
+                String category,
+                String state,
+                int priorityRank,
+                String action,
+                String buttonPrefix) {
             this.category = category;
+            this.state = state;
             this.priorityRank = priorityRank;
             this.action = action;
             this.buttonPrefix = buttonPrefix;
         }
 
         static ProfileState unchecked() {
-            return new ProfileState(CATEGORY_UNCHECKED, 0, ACTION_NONE, "");
+            return new ProfileState(CATEGORY_UNCHECKED, "", 0, ACTION_NONE, "");
+        }
+
+        boolean isProblem() {
+            return CATEGORY_ATTENTION.equals(category)
+                    || CATEGORY_UNAVAILABLE.equals(category)
+                    || CATEGORY_REVOKED.equals(category);
+        }
+    }
+
+    static final class Problem {
+        final String hostId;
+        final String profileLabel;
+        final String watchState;
+        final String summary;
+        final String action;
+        private final int priorityRank;
+        private final int profileIndex;
+
+        Problem(
+                String hostId,
+                String profileLabel,
+                String watchState,
+                String summary,
+                String action,
+                int priorityRank,
+                int profileIndex) {
+            this.hostId = hostId;
+            this.profileLabel = profileLabel;
+            this.watchState = watchState;
+            this.summary = summary;
+            this.action = action;
+            this.priorityRank = priorityRank;
+            this.profileIndex = profileIndex;
         }
     }
 
@@ -168,22 +232,44 @@ final class OperationsFleetOverview {
         final String priorityLabel;
         final String priorityAction;
         final String priorityButtonLabel;
+        final List<Problem> problems;
 
         Assessment(
                 String summary,
                 String priorityHostId,
                 String priorityLabel,
                 String priorityAction,
-                String priorityButtonLabel) {
+                String priorityButtonLabel,
+                List<Problem> problems) {
             this.summary = summary;
             this.priorityHostId = priorityHostId;
             this.priorityLabel = priorityLabel;
             this.priorityAction = priorityAction;
             this.priorityButtonLabel = priorityButtonLabel;
+            this.problems = Collections.unmodifiableList(new ArrayList<>(problems));
         }
 
         boolean hasPriorityAction() {
             return !ACTION_NONE.equals(priorityAction) && !priorityHostId.isEmpty();
+        }
+
+        List<Problem> problemsExcluding(String hostId) {
+            List<Problem> result = new ArrayList<>();
+            for (Problem problem : problems) {
+                if (!problem.hostId.equals(hostId)) {
+                    result.add(problem);
+                }
+            }
+            return Collections.unmodifiableList(result);
+        }
+
+        Problem findProblem(String hostId) {
+            for (Problem problem : problems) {
+                if (problem.hostId.equals(hostId)) {
+                    return problem;
+                }
+            }
+            return null;
         }
     }
 }

@@ -302,7 +302,12 @@ public class MainActivity extends AppCompatActivity {
                 OperationsProblemBadgePresentation.create(
                         appPreferences.getOperationsProfileCount() > 0,
                         appPreferences.getOperationsWatchState(),
-                        0));
+                        0,
+                        OperationsFleetOverview.assess(
+                                        appPreferences.getOperationsProfiles(),
+                                        System.currentTimeMillis())
+                                .problemsExcluding(appPreferences.getOperationsHostId())
+                                .size()));
     }
 
     private void selectTab(int tab) {
