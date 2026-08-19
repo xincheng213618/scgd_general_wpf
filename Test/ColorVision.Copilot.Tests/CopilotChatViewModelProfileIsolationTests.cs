@@ -824,8 +824,10 @@ public sealed class CopilotChatViewModelProfileIsolationTests
 
             Assert.Equal(string.Empty, viewModel.InputText);
             Assert.Equal("Keep the current scope", runtime.Answer);
-            Assert.Same(question, assistantMessage.UserQuestion);
-            Assert.True(assistantMessage.UserQuestion.IsPending);
+            var persistedQuestion = Assert.IsType<CopilotUserQuestionSnapshot>(assistantMessage.UserQuestion);
+            Assert.NotSame(question, persistedQuestion);
+            Assert.Equal(question.RequestId, persistedQuestion.RequestId);
+            Assert.True(persistedQuestion.IsPending);
 
             ApplyAgentEvents(
                 viewModel,

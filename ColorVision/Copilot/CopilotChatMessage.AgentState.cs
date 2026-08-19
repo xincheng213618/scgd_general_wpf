@@ -49,7 +49,11 @@ namespace ColorVision.Copilot
             get => _userQuestion;
             set
             {
-                var normalized = value?.IsStructurallyValid() == true ? value : null;
+                var normalized = CopilotUserQuestionSnapshot.TryCreateSnapshot(
+                    value,
+                    out var snapshot)
+                        ? snapshot
+                        : null;
                 if (SetProperty(ref _userQuestion, normalized))
                 {
                     OnPropertyChanged(nameof(HasUserQuestion));

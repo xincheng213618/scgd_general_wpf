@@ -163,7 +163,9 @@ namespace ColorVision.Copilot
                 Text = result?.Summary ?? string.Empty,
                 ToolResult = result,
                 ToolExecution = execution,
-                ToolExecutionHookRuns = hookRuns?.ToArray() ?? Array.Empty<CopilotToolExecutionHookRun>(),
+                ToolExecutionHookRuns = hookRuns == null || hookRuns.Count == 0
+                    ? Array.Empty<CopilotToolExecutionHookRun>()
+                    : Array.AsReadOnly(hookRuns.ToArray()),
                 ModelToolResult = modelToolResult ?? string.Empty,
             };
         }
@@ -319,24 +321,26 @@ namespace ColorVision.Copilot
         public static CopilotAgentEvent UserQuestionRequested(CopilotUserQuestionSnapshot question)
         {
             ArgumentNullException.ThrowIfNull(question);
-            if (!question.IsPending || !question.IsStructurallyValid())
+            if (!question.IsPending
+                || !CopilotUserQuestionSnapshot.TryCreateSnapshot(question, out var snapshot))
                 throw new ArgumentException("The user question request is not structurally valid.", nameof(question));
             return new CopilotAgentEvent
             {
                 Type = CopilotAgentEventType.UserQuestionRequested,
-                UserQuestion = question,
+                UserQuestion = snapshot,
             };
         }
 
         public static CopilotAgentEvent UserQuestionResolved(CopilotUserQuestionSnapshot question)
         {
             ArgumentNullException.ThrowIfNull(question);
-            if (question.IsPending || !question.IsStructurallyValid())
+            if (question.IsPending
+                || !CopilotUserQuestionSnapshot.TryCreateSnapshot(question, out var snapshot))
                 throw new ArgumentException("The resolved user question is not structurally valid.", nameof(question));
             return new CopilotAgentEvent
             {
                 Type = CopilotAgentEventType.UserQuestionResolved,
-                UserQuestion = question,
+                UserQuestion = snapshot,
             };
         }
     }
@@ -366,7 +370,9 @@ namespace ColorVision.Copilot
                 selected.Add(normalized);
                 characterCount += normalized.Length;
             }
-            return selected.ToArray();
+            return selected.Count == 0
+                ? Array.Empty<string>()
+                : Array.AsReadOnly(selected.ToArray());
         }
 
         internal static IReadOnlyList<CopilotSteeringMessageSnapshot> SelectForRecovery(
@@ -394,7 +400,9 @@ namespace ColorVision.Copilot
                 selected.Add(new CopilotSteeringMessageSnapshot(messageId, text));
                 characterCount += text.Length;
             }
-            return selected.ToArray();
+            return selected.Count == 0
+                ? Array.Empty<CopilotSteeringMessageSnapshot>()
+                : Array.AsReadOnly(selected.ToArray());
         }
     }
 

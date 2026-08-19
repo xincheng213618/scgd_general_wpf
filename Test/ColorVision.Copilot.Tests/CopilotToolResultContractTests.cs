@@ -81,6 +81,35 @@ public sealed class CopilotToolResultContractTests
     }
 
     [Fact]
+    public void ToolResultEventOwnsItsHookRunCollection()
+    {
+        var originalRun = CopilotToolExecutionHookRun.Create(
+            "test:hook",
+            CopilotToolExecutionHookPhase.AfterExecute,
+            CopilotToolExecutionHookState.Completed,
+            durationMs: 1);
+        var hookRuns = new List<CopilotToolExecutionHookRun> { originalRun };
+
+        var agentEvent = CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "SnapshotTool",
+                Success = true,
+            },
+            hookRuns: hookRuns);
+        hookRuns[0] = CopilotToolExecutionHookRun.Create(
+            "test:rewritten",
+            CopilotToolExecutionHookPhase.AfterExecute,
+            CopilotToolExecutionHookState.Completed,
+            durationMs: 2);
+
+        Assert.Same(originalRun, Assert.Single(agentEvent.ToolExecutionHookRuns));
+        var capturedRuns = Assert.IsAssignableFrom<IList<CopilotToolExecutionHookRun>>(
+            agentEvent.ToolExecutionHookRuns);
+        Assert.Throws<NotSupportedException>(() => capturedRuns[0] = hookRuns[0]);
+    }
+
+    [Fact]
     public void CaptureKeepsTheExistingSuccessfulAwaitingApprovalShape()
     {
         var approval = new CopilotToolApprovalInfo
