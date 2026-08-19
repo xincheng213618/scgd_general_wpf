@@ -235,8 +235,13 @@ namespace ColorVision.Copilot
             var contextRecoveryChatClient = providerPipeline.ContextRecoveryChatClient;
             var trackingChatClient = providerPipeline.TrackingChatClient;
             LiveCheckpointPublisher? liveCheckpointPublisher = null;
-            async ValueTask OnHistoryStoredAsync(AIAgent checkpointAgent, AgentSession checkpointSession, CancellationToken checkpointToken)
+            async ValueTask OnHistoryStoredAsync(
+                AIAgent checkpointAgent,
+                AgentSession checkpointSession,
+                CopilotProviderToolHistoryDelta toolHistoryDelta,
+                CancellationToken checkpointToken)
             {
+                taskEventJournalBuilder.RecordProviderToolHistory(toolHistoryDelta);
                 if (liveCheckpointPublisher != null)
                     await liveCheckpointPublisher.TryPublishAsync(checkpointAgent, checkpointSession, checkpointToken);
             }

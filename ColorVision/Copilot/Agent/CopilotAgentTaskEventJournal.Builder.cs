@@ -301,6 +301,42 @@ namespace ColorVision.Copilot
                 "A queued user steering instruction was delivered to the Agent provider.");
         }
 
+        internal void RecordProviderToolHistory(
+            CopilotProviderToolHistoryDelta delta)
+        {
+            ArgumentNullException.ThrowIfNull(delta);
+            lock (_syncRoot)
+            {
+                foreach (var entry in delta.Entries)
+                {
+                    var subjectId = CopilotAgentTaskEventIds.ForCall(entry.CallId);
+                    var toolName = entry.ToolName;
+                    if (entry.Kind == CopilotProviderToolHistoryEntryKind.Result)
+                    {
+                        toolName = _events
+                            .LastOrDefault(item =>
+                                item.Type == CopilotAgentTaskEventType.ProviderToolCallPersisted
+                                && string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                                && string.Equals(item.SubjectId, subjectId, StringComparison.Ordinal))
+                            ?.ToolName ?? string.Empty;
+                    }
+
+                    AppendUnique(
+                        entry.Kind == CopilotProviderToolHistoryEntryKind.Call
+                            ? CopilotAgentTaskEventType.ProviderToolCallPersisted
+                            : CopilotAgentTaskEventType.ProviderToolResultPersisted,
+                        subjectId,
+                        entry.Kind == CopilotProviderToolHistoryEntryKind.Call
+                            ? "pending"
+                            : "persisted",
+                        entry.Kind == CopilotProviderToolHistoryEntryKind.Call
+                            ? "The provider session durably recorded the model tool request."
+                            : "The provider session durably recorded the tool result.",
+                        toolName);
+                }
+            }
+        }
+
         internal void RecordBackgroundShellCommandCompletion(
             CopilotBackgroundShellCommandSnapshot snapshot)
         {
@@ -401,6 +437,7 @@ namespace ColorVision.Copilot
                         $"Agent run {RunId} control event {control!.Type} requires stop reason {expectedReason.Value}, not {reason}.");
                 }
                 CloseDanglingApprovals();
+                CloseUnstartedProviderToolCalls(reason);
                 CloseDanglingToolExecutions(reason);
                 CloseDanglingUserQuestions(reason);
                 Append(CopilotAgentTaskEventType.RunStopped, RunId, reason.ToString(), $"Agent run stopped with reason {reason}.");
@@ -604,6 +641,44 @@ namespace ColorVision.Copilot
                     summary,
                     start.ToolName,
                     failureCode: failureCode);
+            }
+        }
+
+        private void CloseUnstartedProviderToolCalls(
+            CopilotAgentStopReason stopReason)
+        {
+            var pendingCalls = _events
+                .Where(item =>
+                    item.Type == CopilotAgentTaskEventType.ProviderToolCallPersisted
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal))
+                .Where(call => !_events.Any(item =>
+                    string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                    && item.Sequence > call.Sequence
+                    && string.Equals(item.SubjectId, call.SubjectId, StringComparison.Ordinal)
+                    && item.Type is (CopilotAgentTaskEventType.ProviderToolResultPersisted
+                        or CopilotAgentTaskEventType.ToolStarted
+                        or CopilotAgentTaskEventType.ToolCompleted)))
+                .Where(call => !_events.Any(item =>
+                    string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                    && item.Sequence > call.Sequence
+                    && item.Type is (CopilotAgentTaskEventType.ApprovalRequested
+                        or CopilotAgentTaskEventType.ApprovalDenied)
+                    && (string.Equals(item.SubjectId, call.SubjectId, StringComparison.Ordinal)
+                        || item.RelatedIds.Contains(call.SubjectId, StringComparer.Ordinal))))
+                .OrderBy(item => item.Sequence)
+                .ToArray();
+            var cancelled = stopReason == CopilotAgentStopReason.Cancelled;
+            foreach (var call in pendingCalls)
+            {
+                Append(
+                    CopilotAgentTaskEventType.ToolCompleted,
+                    call.SubjectId,
+                    cancelled
+                        ? CopilotToolExecutionState.Cancelled.ToString()
+                        : CopilotToolExecutionState.Interrupted.ToString(),
+                    "The provider session recorded the tool request, but it never entered the ColorVision execution bridge; no operation started.",
+                    call.ToolName,
+                    failureCode: CopilotToolFailureCode.NotStarted);
             }
         }
 

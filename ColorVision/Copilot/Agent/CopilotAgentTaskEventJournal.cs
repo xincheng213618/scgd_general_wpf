@@ -32,6 +32,8 @@ namespace ColorVision.Copilot
         BackgroundCommandCompleted,
         BackgroundCommandOutputObserved,
         SteeringDelivered,
+        ProviderToolCallPersisted,
+        ProviderToolResultPersisted,
     }
 
     public sealed class CopilotAgentTaskEvent
@@ -192,6 +194,8 @@ namespace ColorVision.Copilot
             if (events
                 .Where(item => item.Type is CopilotAgentTaskEventType.ToolStarted
                     or CopilotAgentTaskEventType.ToolCompleted
+                    or CopilotAgentTaskEventType.ProviderToolCallPersisted
+                    or CopilotAgentTaskEventType.ProviderToolResultPersisted
                     or CopilotAgentTaskEventType.ApprovalRequested
                     or CopilotAgentTaskEventType.UserQuestionRequested
                     or CopilotAgentTaskEventType.UserQuestionResolved
@@ -674,7 +678,7 @@ namespace ColorVision.Copilot
                 return string.Empty;
 
             var calls = snapshot.Events
-                .Where(IsAttemptedToolEvent)
+                .Where(item => IsAttemptedToolEvent(snapshot.Events, item))
                 .Select(item => new
                 {
                     Event = item,
@@ -827,13 +831,41 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static bool IsAttemptedToolEvent(CopilotAgentTaskEvent item)
+        private static bool IsAttemptedToolEvent(
+            IReadOnlyList<CopilotAgentTaskEvent> events,
+            CopilotAgentTaskEvent item)
         {
-            return item.Type is CopilotAgentTaskEventType.ToolStarted
+            if (item.Type is CopilotAgentTaskEventType.ToolStarted
                 or CopilotAgentTaskEventType.ToolCompleted
                 or CopilotAgentTaskEventType.ApprovalRequested
                 or CopilotAgentTaskEventType.ApprovalApproved
-                or CopilotAgentTaskEventType.ApprovalDenied;
+                or CopilotAgentTaskEventType.ApprovalDenied)
+            {
+                return true;
+            }
+
+            if (item.Type != CopilotAgentTaskEventType.ProviderToolCallPersisted)
+                return false;
+
+            var resultPersisted = events.Any(candidate =>
+                candidate.Type == CopilotAgentTaskEventType.ProviderToolResultPersisted
+                && candidate.Sequence > item.Sequence
+                && string.Equals(candidate.RunId, item.RunId, StringComparison.Ordinal)
+                && string.Equals(candidate.SubjectId, item.SubjectId, StringComparison.Ordinal));
+            if (!resultPersisted)
+                return true;
+
+            return events.Any(candidate =>
+                candidate.Sequence > item.Sequence
+                && string.Equals(candidate.RunId, item.RunId, StringComparison.Ordinal)
+                && ((candidate.Type is CopilotAgentTaskEventType.ToolStarted
+                        or CopilotAgentTaskEventType.ToolCompleted)
+                    && string.Equals(candidate.SubjectId, item.SubjectId, StringComparison.Ordinal)
+                    || (candidate.Type is CopilotAgentTaskEventType.ApprovalRequested
+                            or CopilotAgentTaskEventType.ApprovalApproved
+                            or CopilotAgentTaskEventType.ApprovalDenied)
+                        && (string.Equals(candidate.SubjectId, item.SubjectId, StringComparison.Ordinal)
+                            || candidate.RelatedIds.Contains(item.SubjectId, StringComparer.Ordinal))));
         }
 
         private static string ResolveCallKey(CopilotAgentTaskEvent item)

@@ -824,6 +824,149 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void ProviderPersistedCallThatNeverEnteredBridgeIsRecordedAsNotStarted()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordProviderToolHistory(CreateProviderCallDelta("not-started-call"));
+
+        journal.RecordStop(CopilotAgentStopReason.Interrupted);
+
+        var snapshot = journal.Snapshot();
+        var terminal = Assert.Single(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        Assert.Equal(CopilotAgentTaskEventIds.ForCall("not-started-call"), terminal.SubjectId);
+        Assert.Equal(CopilotToolFailureCode.NotStarted, terminal.FailureCode);
+        Assert.Contains("never entered", terminal.Summary, StringComparison.Ordinal);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: snapshot);
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+        Assert.Equal(
+            CopilotAgentCheckpointCompatibilityKind.UnresolvedProviderToolCall,
+            compatibility.Kind);
+        Assert.Contains(
+            CopilotToolFailureCode.NotStarted,
+            CopilotAgentTaskEventJournal.BuildAttemptedToolRecoveryPrompt(snapshot),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CompletedToolWithoutProviderPersistedResultCannotResumeSession()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordProviderToolHistory(CreateProviderCallDelta("completed-call"));
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("completed-call")));
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = true,
+                Summary = "Tool completed.",
+            },
+            CreateExecution(
+                "completed-call",
+                CopilotToolExecutionState.Completed,
+                completedAtUtc: DateTimeOffset.UtcNow)));
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot());
+
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(
+            CopilotAgentCheckpointCompatibilityKind.UnresolvedProviderToolCall,
+            compatibility.Kind);
+    }
+
+    [Fact]
+    public void ProviderPersistedResultSettlesCompletedToolCallForResume()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordProviderToolHistory(CreateProviderCallDelta("settled-call"));
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("settled-call")));
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = true,
+                Summary = "Tool completed.",
+            },
+            CreateExecution(
+                "settled-call",
+                CopilotToolExecutionState.Completed,
+                completedAtUtc: DateTimeOffset.UtcNow)));
+        journal.RecordProviderToolHistory(CreateProviderResultDelta("settled-call"));
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot());
+
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.Compatible, compatibility.Kind);
+        Assert.True(compatibility.CanResume);
+    }
+
+    [Fact]
+    public void ProviderHandledToolCallIsSettledWithoutLocalAttemptEvidence()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordProviderToolHistory(CopilotProviderToolHistoryDelta.Capture(
+            requestMessages: null,
+            responseMessages:
+            [
+                new ChatMessage(
+                    ChatRole.Assistant,
+                    [
+                        new FunctionCallContent(
+                            "server-call",
+                            "ServerTool",
+                            new Dictionary<string, object?>()),
+                        new FunctionResultContent("server-call", "handled"),
+                    ]),
+            ]));
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var snapshot = journal.Snapshot();
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: snapshot);
+
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.Compatible, compatibility.Kind);
+        Assert.DoesNotContain(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        Assert.Equal(
+            string.Empty,
+            CopilotAgentTaskEventJournal.BuildAttemptedToolRecoveryPrompt(snapshot));
+    }
+
+    [Fact]
     public void ActiveRunWithDanglingToolCannotResumeProviderSession()
     {
         var profile = CreateProfile();
@@ -2030,6 +2173,37 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             StartedAtUtc = DateTimeOffset.UtcNow.AddSeconds(-1),
             CompletedAtUtc = completedAtUtc,
         };
+    }
+
+    private static CopilotProviderToolHistoryDelta CreateProviderCallDelta(
+        string callId)
+    {
+        return CopilotProviderToolHistoryDelta.Capture(
+            requestMessages: null,
+            responseMessages:
+            [
+                new ChatMessage(
+                    ChatRole.Assistant,
+                    [
+                        new FunctionCallContent(
+                            callId,
+                            "IntegrityTool",
+                            new Dictionary<string, object?>()),
+                    ]),
+            ]);
+    }
+
+    private static CopilotProviderToolHistoryDelta CreateProviderResultDelta(
+        string callId)
+    {
+        return CopilotProviderToolHistoryDelta.Capture(
+            requestMessages:
+            [
+                new ChatMessage(
+                    ChatRole.Tool,
+                    [new FunctionResultContent(callId, "done")]),
+            ],
+            responseMessages: null);
     }
 
     private sealed class ThrowOnSecondEnumerationTaskItems(

@@ -24,6 +24,7 @@ namespace ColorVision.Copilot
         ProjectInstructionSnapshotMissing,
         ProjectInstructionDrift,
         UncertainToolOutcome,
+        UnresolvedProviderToolCall,
     }
 
     public sealed class CopilotAgentCheckpointCapability
@@ -62,7 +63,8 @@ namespace ColorVision.Copilot
             or CopilotAgentCheckpointCompatibilityKind.HookSurfaceDrift
             or CopilotAgentCheckpointCompatibilityKind.ProjectInstructionSnapshotMissing
             or CopilotAgentCheckpointCompatibilityKind.ProjectInstructionDrift
-            or CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome;
+            or CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome
+            or CopilotAgentCheckpointCompatibilityKind.UnresolvedProviderToolCall;
     }
 
     public sealed class CopilotAgentSessionCheckpoint
@@ -197,6 +199,8 @@ namespace ColorVision.Copilot
                 return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.ProfileChanged, capabilitySnapshot);
             if (LatestRunHasUncertainToolOutcome())
                 return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome, capabilitySnapshot);
+            if (LatestRunHasUnresolvedProviderToolCall())
+                return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.UnresolvedProviderToolCall, capabilitySnapshot);
             if (CapabilityCatalogRevision <= 0 || Capabilities == null || Capabilities.Count == 0)
                 return CreateCompatibility(CopilotAgentCheckpointCompatibilityKind.CapabilitySnapshotMissing, capabilitySnapshot);
 
@@ -311,6 +315,24 @@ namespace ColorVision.Copilot
                                 or CopilotAgentTaskEventType.ApprovalDenied)
                             && (string.Equals(item.SubjectId, start.SubjectId, StringComparison.Ordinal)
                                 || item.RelatedIds.Contains(start.SubjectId, StringComparer.Ordinal))))));
+        }
+
+        private bool LatestRunHasUnresolvedProviderToolCall()
+        {
+            var latestRun = TaskEventJournal.Events.LastOrDefault(item =>
+                item.Type == CopilotAgentTaskEventType.RunStarted);
+            if (latestRun == null)
+                return false;
+
+            var runEvents = TaskEventJournal.Events
+                .Where(item => string.Equals(item.RunId, latestRun.RunId, StringComparison.Ordinal))
+                .ToArray();
+            return runEvents
+                .Where(item => item.Type == CopilotAgentTaskEventType.ProviderToolCallPersisted)
+                .Any(call => !runEvents.Any(item =>
+                    item.Type == CopilotAgentTaskEventType.ProviderToolResultPersisted
+                    && item.Sequence > call.Sequence
+                    && string.Equals(item.SubjectId, call.SubjectId, StringComparison.Ordinal)));
         }
 
         public bool IsStructurallyValid()
