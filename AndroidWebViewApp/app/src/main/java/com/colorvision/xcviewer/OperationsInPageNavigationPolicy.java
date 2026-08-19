@@ -67,6 +67,7 @@ final class OperationsInPageNavigationPolicy {
             boolean detailOpenedFromToolbox) {
         String normalized = OperationsDestinationState.normalize(destination);
         if (detailOpenedFromTriage
+                && !OperationsDestinationState.TRIAGE.equals(normalized)
                 && !OperationsDestinationState.OVERVIEW.equals(normalized)
                 && !OperationsDestinationState.PAIRING.equals(normalized)) {
             return OperationsDestinationState.TRIAGE;
@@ -260,15 +261,10 @@ final class OperationsInPageNavigationPolicy {
                 connectionRecoveryVisible);
     }
 
-    static boolean shouldReturnToStartDestination(
-            String destination,
-            boolean detailOpenedFromTriage,
-            boolean detailOpenedFromToolbox) {
+    static boolean shouldReturnToStartDestination(String destination) {
         String normalized = OperationsDestinationState.normalize(destination);
-        return (OperationsDestinationState.TRIAGE.equals(normalized)
-                        && !detailOpenedFromTriage)
-                || (OperationsDestinationState.TOOLS.equals(normalized)
-                        && !detailOpenedFromToolbox)
+        return OperationsDestinationState.TRIAGE.equals(normalized)
+                || OperationsDestinationState.TOOLS.equals(normalized)
                 || OperationsDestinationState.SETTINGS.equals(normalized);
     }
 

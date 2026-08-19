@@ -21,7 +21,7 @@ public class OperationsInPageNavigationPolicyTest {
                 parent(OperationsDestinationState.JOBS, true, false));
         assertEquals(OperationsDestinationState.TRIAGE,
                 parent(OperationsDestinationState.CAPABILITY_DETAIL, true, false));
-        assertEquals(OperationsDestinationState.TRIAGE,
+        assertEquals("",
                 parent(OperationsDestinationState.TRIAGE, true, false));
         assertEquals("", parent(OperationsDestinationState.TRIAGE, false, false));
         assertEquals(OperationsDestinationState.OVERVIEW,
@@ -38,6 +38,7 @@ public class OperationsInPageNavigationPolicyTest {
         assertEquals(OperationsDestinationState.TOOLS,
                 parent(OperationsDestinationState.HISTORY, false, true));
         assertEquals("", parent(OperationsDestinationState.TOOLS, false, false));
+        assertEquals("", parent(OperationsDestinationState.TOOLS, false, true));
     }
 
     @Test
@@ -97,7 +98,7 @@ public class OperationsInPageNavigationPolicyTest {
         assertFalse(showsNavigateUp(
                 true, true, OperationsDestinationState.SETTINGS,
                 false, false, false, false));
-        assertTrue(showsNavigateUp(
+        assertFalse(showsNavigateUp(
                 true, true, OperationsDestinationState.TRIAGE,
                 true, false, false, false));
     }
@@ -229,15 +230,15 @@ public class OperationsInPageNavigationPolicyTest {
     @Test
     public void systemBackReturnsBottomDestinationsToTheOverview() {
         assertTrue(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
-                OperationsDestinationState.TRIAGE, false, false));
+                OperationsDestinationState.TRIAGE));
         assertTrue(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
-                OperationsDestinationState.TOOLS, false, false));
+                OperationsDestinationState.TOOLS));
         assertTrue(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
-                OperationsDestinationState.SETTINGS, false, false));
+                OperationsDestinationState.SETTINGS));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
-                OperationsDestinationState.LIVE_MONITOR, true, false));
+                OperationsDestinationState.LIVE_MONITOR));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
-                OperationsDestinationState.JOBS, false, true));
+                OperationsDestinationState.JOBS));
     }
 
     @Test

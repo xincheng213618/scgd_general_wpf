@@ -666,9 +666,7 @@ public class OperationsActivity extends AppCompatActivity {
             @Override
             public void handleOnBackPressed() {
                 if (OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
-                        currentDestination,
-                        returnToTriageOnBack,
-                        returnToToolboxOnBack)) {
+                        currentDestination)) {
                     showCurrentDashboard();
                     return;
                 }
