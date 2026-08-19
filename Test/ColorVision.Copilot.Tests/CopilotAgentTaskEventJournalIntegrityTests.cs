@@ -10,6 +10,33 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotAgentTaskEventJournalIntegrityTests
 {
     [Fact]
+    public void FailedAppendDoesNotConsumeASequenceNumber()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        var hostileItems = new ThrowOnSecondEnumerationTaskItems(
+            new CopilotAgentTaskItem
+            {
+                Id = 1,
+                Title = "Inspect durable append behavior",
+            });
+
+        Assert.Throws<InvalidOperationException>(() =>
+            journal.RecordTaskLedger(
+                new CopilotAgentTaskLedgerSnapshot
+                {
+                    Mode = "execute",
+                    Items = hostileItems,
+                },
+                "checkpoint"));
+
+        journal.RecordRunStarted();
+
+        var started = Assert.Single(journal.Snapshot().Events);
+        Assert.Equal(1, started.Sequence);
+        Assert.Equal(CopilotAgentTaskEventType.RunStarted, started.Type);
+    }
+
+    [Fact]
     public void StructurallyValidEventIdMustMatchItsIdentityFields()
     {
         var runId = CopilotAgentTaskEventIds.CreateRunId();
@@ -1614,6 +1641,32 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             StartedAtUtc = DateTimeOffset.UtcNow.AddSeconds(-1),
             CompletedAtUtc = completedAtUtc,
         };
+    }
+
+    private sealed class ThrowOnSecondEnumerationTaskItems(
+        CopilotAgentTaskItem item) : IReadOnlyList<CopilotAgentTaskItem>
+    {
+        private int _enumerations;
+
+        public int Count => 1;
+
+        public CopilotAgentTaskItem this[int index] => index == 0
+            ? item
+            : throw new ArgumentOutOfRangeException(nameof(index));
+
+        public IEnumerator<CopilotAgentTaskItem> GetEnumerator()
+        {
+            if (Interlocked.Increment(ref _enumerations) > 1)
+            {
+                throw new InvalidOperationException(
+                    "The hostile task list rejected its second enumeration.");
+            }
+
+            yield return item;
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() =>
+            GetEnumerator();
     }
 
     private static Dictionary<string, JsonElement> ParseAttemptedToolCalls(string prompt)

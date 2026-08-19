@@ -610,7 +610,7 @@ namespace ColorVision.Copilot
                 }
 
                 var timestamp = occurredAtUtc ?? DateTimeOffset.UtcNow;
-                var sequence = _nextSequence++;
+                var sequence = _nextSequence;
                 var item = new CopilotAgentTaskEvent
                 {
                     Sequence = sequence,
@@ -634,6 +634,7 @@ namespace ColorVision.Copilot
                 if (!item.IsStructurallyValid())
                     throw new InvalidOperationException("Agent task event could not be normalized into a valid journal entry.");
                 _events.Add(item);
+                _nextSequence = sequence + 1;
                 TrimToCapacity();
             }
         }
