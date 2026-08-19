@@ -122,6 +122,21 @@ namespace ColorVision.Copilot
             int maximumCharacters =
                 CopilotOutputArchiveLimits.MaximumArchivedCharacters)
         {
+            return TryCreateUnderRoot(
+                Path.GetTempPath(),
+                archiveKind,
+                streamLabel,
+                maximumCharacters);
+        }
+
+        internal static CopilotTemporaryRedactedOutputArchive? TryCreateUnderRoot(
+            string temporaryRootPath,
+            string archiveKind,
+            string streamLabel,
+            int maximumCharacters =
+                CopilotOutputArchiveLimits.MaximumArchivedCharacters)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(temporaryRootPath);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
                 maximumCharacters);
 
@@ -140,11 +155,19 @@ namespace ColorVision.Copilot
                     _ => "stdout",
                 };
                 var directory = Path.Combine(
-                    Path.GetTempPath(),
+                    temporaryRootPath,
                     "ColorVision",
                     "Copilot",
                     safeArchiveKind);
                 Directory.CreateDirectory(directory);
+                if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(directory))
+                {
+                    Trace.TraceWarning(
+                        "Copilot output archive directory contains a reparse point; "
+                        + "temporary output archiving was disabled.");
+                    return null;
+                }
+
                 var path = Path.Combine(
                     directory,
                     $"{Guid.NewGuid():N}-{safeStreamLabel}.log");

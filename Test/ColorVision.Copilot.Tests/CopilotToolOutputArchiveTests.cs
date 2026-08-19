@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using System.IO;
 using System.Text.Json;
 
 namespace ColorVision.Copilot.Tests;
@@ -303,6 +304,41 @@ public sealed class CopilotToolOutputArchiveTests
         Assert.Equal(2, interiorOffset.OffsetCharacters);
         Assert.Empty(interiorOffset.Content);
         Assert.True(interiorOffset.EndOfAvailableOutput);
+    }
+
+    [Fact]
+    public void ArchiveIsNotCreatedThroughAReparsePointDirectory()
+    {
+        var root = Path.Combine(
+            Path.GetTempPath(),
+            $"copilot-output-archive-root-{Guid.NewGuid():N}");
+        var outside = Path.Combine(
+            Path.GetTempPath(),
+            $"copilot-output-archive-outside-{Guid.NewGuid():N}");
+        var linkedDirectory = Path.Combine(root, "ColorVision");
+        Directory.CreateDirectory(root);
+        Directory.CreateDirectory(outside);
+        Directory.CreateSymbolicLink(linkedDirectory, outside);
+
+        try
+        {
+            using var archive = CopilotTemporaryRedactedOutputArchive.TryCreateUnderRoot(
+                root,
+                "ToolOutput",
+                "content");
+
+            Assert.Null(archive);
+            Assert.Empty(Directory.EnumerateFiles(
+                outside,
+                "*.log",
+                SearchOption.AllDirectories));
+        }
+        finally
+        {
+            Directory.Delete(linkedDirectory, recursive: false);
+            Directory.Delete(root, recursive: true);
+            Directory.Delete(outside, recursive: true);
+        }
     }
 
     private static CopilotToolExecutionOutcome CreateOutcome(
