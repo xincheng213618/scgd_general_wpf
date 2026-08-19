@@ -390,6 +390,60 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void PersistedApprovalRemainsValidWhenBoundedPrefixEvictsRequest()
+    {
+        const string toolName = "ProtectedTool";
+        const string callId = "bounded-call";
+        const string actionId = "bounded-action";
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = toolName,
+                Success = true,
+                Summary = "Waiting for approval.",
+                Approval = new CopilotToolApprovalInfo
+                {
+                    ActionId = actionId,
+                    Title = "Protected action",
+                    RiskLevel = "high",
+                    ExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(1),
+                },
+            },
+            CreateExecution(
+                callId,
+                CopilotToolExecutionState.AwaitingApproval,
+                actionId,
+                toolName: toolName)));
+        journal.RecordApprovalDecision(
+            toolName,
+            callId,
+            actionId,
+            approved: true,
+            decisionSource: CopilotFrameworkApprovalDecisionSource.User.ToString());
+        for (var index = 0;
+            index < CopilotAgentTaskEventJournal.MaxEvents - 2;
+            index++)
+        {
+            journal.RecordTaskLedger(
+                new CopilotAgentTaskLedgerSnapshot
+                {
+                    Mode = "execute",
+                },
+                $"checkpoint-{index}");
+        }
+
+        var snapshot = journal.Snapshot();
+        Assert.Equal(CopilotAgentTaskEventJournal.MaxEvents, snapshot.Events.Count);
+        Assert.DoesNotContain(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.ApprovalRequested);
+        Assert.Contains(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.ApprovalApproved);
+        Assert.True(snapshot.IsStructurallyValid());
+    }
+
+    [Fact]
     public void PolicyApprovalsWithoutActionsRemainBoundToTheirExactCalls()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
@@ -1504,6 +1558,69 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
         var stopped = Assert.Single(snapshot.Events, item => item.Type == CopilotAgentTaskEventType.RunStopped);
         Assert.True(synthetic.Sequence < stopped.Sequence);
         Assert.True(snapshot.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void StructuredUserQuestionResolutionRequiresMatchingRequestAndRun()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        var pending = CreatePendingQuestion(
+            journal.RunId,
+            "question:33333333333333333333333333333333");
+
+        var orphan = Assert.Throws<InvalidOperationException>(() =>
+            journal.Observe(CopilotAgentEvent.UserQuestionResolved(
+                pending.Resolve(
+                    CopilotUserQuestionResolution.Answered,
+                    "Option A"))));
+        Assert.Contains("no matching request", orphan.Message, StringComparison.Ordinal);
+        Assert.Empty(journal.Snapshot().Events);
+
+        var otherRunQuestion = CreatePendingQuestion(
+            CopilotAgentTaskEventIds.CreateRunId(),
+            "question:44444444444444444444444444444444");
+        var wrongRun = Assert.Throws<InvalidOperationException>(() =>
+            journal.Observe(CopilotAgentEvent.UserQuestionRequested(
+                otherRunQuestion)));
+        Assert.Contains("different Agent run", wrongRun.Message, StringComparison.Ordinal);
+        Assert.Empty(journal.Snapshot().Events);
+    }
+
+    [Fact]
+    public void PersistedUserQuestionResolutionIsLossAware()
+    {
+        var runId = CopilotAgentTaskEventIds.CreateRunId();
+        var occurredAtUtc = DateTimeOffset.UtcNow;
+        var subjectId = CopilotAgentTaskEventIds.ForUserQuestion(
+            "question:55555555555555555555555555555555");
+
+        CopilotAgentTaskEvent CreateResolution(long sequence) => new()
+        {
+            Sequence = sequence,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                sequence,
+                runId,
+                CopilotAgentTaskEventType.UserQuestionResolved,
+                occurredAtUtc),
+            Type = CopilotAgentTaskEventType.UserQuestionResolved,
+            OccurredAtUtc = occurredAtUtc,
+            RunId = runId,
+            SubjectId = subjectId,
+            State = CopilotUserQuestionResolution.Answered.ToString(),
+            Summary = "The structured user clarification was answered.",
+        };
+
+        var provenOrphan = CreateResolution(1);
+        var truncatedPrefix = CreateResolution(2);
+        Assert.True(provenOrphan.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [provenOrphan],
+        }.IsStructurallyValid());
+        Assert.True(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [truncatedPrefix],
+        }.IsStructurallyValid());
     }
 
     [Fact]

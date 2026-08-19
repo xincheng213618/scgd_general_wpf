@@ -131,6 +131,7 @@ namespace ColorVision.Copilot
                     .Any(group => group.Count() > 1)
                 || HasInvalidSessionLifecycle(Events)
                 || HasInvalidApprovalLifecycle(Events)
+                || HasInvalidUserQuestionLifecycle(Events)
                 || HasDuplicateLifecycleEvents(Events)
                 || HasInvalidControlLifecycle(Events)
                 || Events
@@ -234,11 +235,61 @@ namespace ColorVision.Copilot
                     && item.RelatedIds.SequenceEqual(
                         approval.RelatedIds,
                         StringComparer.Ordinal));
-                if (!requested)
+                if (!requested
+                    && !HasMissingEarlierSequence(
+                        events,
+                        approval.Sequence))
                     return true;
             }
 
             return false;
+        }
+
+        private static bool HasInvalidUserQuestionLifecycle(
+            IReadOnlyList<CopilotAgentTaskEvent> events)
+        {
+            foreach (var item in events.Where(item =>
+                item.Type is CopilotAgentTaskEventType.UserQuestionRequested
+                    or CopilotAgentTaskEventType.UserQuestionResolved))
+            {
+                if (item.Type == CopilotAgentTaskEventType.UserQuestionRequested)
+                {
+                    if (!string.Equals(item.State, "pending", StringComparison.Ordinal))
+                        return true;
+                    continue;
+                }
+
+                if (item.State is not ("Answered" or "Cancelled"))
+                    return true;
+                var requested = events.Any(candidate =>
+                    candidate.Type == CopilotAgentTaskEventType.UserQuestionRequested
+                    && candidate.Sequence < item.Sequence
+                    && string.Equals(candidate.RunId, item.RunId, StringComparison.Ordinal)
+                    && string.Equals(candidate.SubjectId, item.SubjectId, StringComparison.Ordinal));
+                if (!requested
+                    && !HasMissingEarlierSequence(events, item.Sequence))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasMissingEarlierSequence(
+            IReadOnlyList<CopilotAgentTaskEvent> events,
+            long sequence)
+        {
+            var expectedSequence = 1L;
+            foreach (var item in events)
+            {
+                if (item.Sequence >= sequence)
+                    break;
+                if (item.Sequence > expectedSequence)
+                    return true;
+                expectedSequence = item.Sequence + 1;
+            }
+            return sequence > expectedSequence;
         }
 
         private static bool HasInvalidControlLifecycle(

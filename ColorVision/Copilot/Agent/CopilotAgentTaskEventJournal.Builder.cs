@@ -521,18 +521,38 @@ namespace ColorVision.Copilot
                 && agentEvent.UserQuestion?.IsStructurallyValid() == true)
             {
                 var question = agentEvent.UserQuestion;
+                if (!string.Equals(question.TaskId, RunId, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        "Structured user question belongs to a different Agent run.");
+                }
                 var requested = agentEvent.Type == CopilotAgentEventType.UserQuestionRequested;
-                AppendUnique(
-                    requested
-                        ? CopilotAgentTaskEventType.UserQuestionRequested
-                        : CopilotAgentTaskEventType.UserQuestionResolved,
-                    CopilotAgentTaskEventIds.ForUserQuestion(question.RequestId),
-                    requested ? "pending" : question.Resolution.ToString(),
-                    requested
-                        ? "The Agent requested one structured user clarification."
-                        : question.Resolution == CopilotUserQuestionResolution.Answered
-                            ? "The structured user clarification was answered."
-                            : "The structured user clarification was cancelled.");
+                var subjectId = CopilotAgentTaskEventIds.ForUserQuestion(
+                    question.RequestId);
+                lock (_syncRoot)
+                {
+                    if (!requested
+                        && !_events.Any(item =>
+                            item.Type == CopilotAgentTaskEventType.UserQuestionRequested
+                            && string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                            && string.Equals(item.SubjectId, subjectId, StringComparison.Ordinal)))
+                    {
+                        throw new InvalidOperationException(
+                            "Structured user question resolution has no matching request in the Agent task journal.");
+                    }
+
+                    AppendUnique(
+                        requested
+                            ? CopilotAgentTaskEventType.UserQuestionRequested
+                            : CopilotAgentTaskEventType.UserQuestionResolved,
+                        subjectId,
+                        requested ? "pending" : question.Resolution.ToString(),
+                        requested
+                            ? "The Agent requested one structured user clarification."
+                            : question.Resolution == CopilotUserQuestionResolution.Answered
+                                ? "The structured user clarification was answered."
+                                : "The structured user clarification was cancelled.");
+                }
             }
         }
 
