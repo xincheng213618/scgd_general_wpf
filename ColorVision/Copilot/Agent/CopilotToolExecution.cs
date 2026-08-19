@@ -474,6 +474,14 @@ namespace ColorVision.Copilot
                         outcome,
                         cancellationToken);
                 }
+                catch (CopilotToolExecutionHookEventDispatchException)
+                {
+                    throw;
+                }
+                catch (CopilotToolResultEventDispatchException)
+                {
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     var outcome = CreateOutcome(

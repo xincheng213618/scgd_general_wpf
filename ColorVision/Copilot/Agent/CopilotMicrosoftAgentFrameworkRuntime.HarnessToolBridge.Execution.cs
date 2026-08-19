@@ -144,6 +144,15 @@ namespace ColorVision.Copilot
                 {
                     outcome = await _toolExecutor.ExecuteAsync(invocation, _emit, cancellationToken);
                 }
+                catch (CopilotToolResultEventDispatchException ex)
+                {
+                    outcome = ex.Outcome;
+                    if (approvalReservation != null)
+                        _approvalCoordinator.Complete(approvalReservation.ApprovalActionId, outcome.Result);
+                    _ = FormatToolResult(outcome);
+                    RecordExecutionOutcome(signature, outcome);
+                    throw;
+                }
                 catch (CopilotToolExecutionCancellationException ex)
                 {
                     outcome = ex.Outcome;

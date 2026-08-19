@@ -375,11 +375,18 @@ namespace ColorVision.Copilot
                 outcome.Invocation.AgentRequest.ToolOutputTokenLimitOverride);
             RecordReviewEvidence(outcome);
             CopilotToolExecutionAuditLogger.Record(outcome);
-            onEvent(CopilotAgentEvent.FromToolResult(
-                outcome.Result,
-                outcome.Execution,
-                outcome.HookRuns,
-                outcome.FormattedModelResult));
+            try
+            {
+                onEvent(CopilotAgentEvent.FromToolResult(
+                    outcome.Result,
+                    outcome.Execution,
+                    outcome.HookRuns,
+                    outcome.FormattedModelResult));
+            }
+            catch (Exception ex)
+            {
+                throw new CopilotToolResultEventDispatchException(outcome, ex);
+            }
             return outcome;
         }
 

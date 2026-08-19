@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using Microsoft.Extensions.AI;
 using Newtonsoft.Json;
 
 namespace ColorVision.Copilot.Tests;
@@ -100,6 +101,79 @@ public sealed class CopilotToolExecutionHookIntegrityTests
             CopilotToolExecutionHookState.Denied,
             "repository_policy_denied");
         AssertTerminalEvent(events, CopilotToolExecutionState.Denied, "repository_policy_denied");
+    }
+
+    [Fact]
+    public async Task TerminalEventDispatchFailureDoesNotReclassifyTheCompletedTool()
+    {
+        var tool = new RecordingTool();
+        var terminalEvents = new List<CopilotAgentEvent>();
+
+        var exception = await Assert.ThrowsAsync<CopilotToolResultEventDispatchException>(() =>
+            new CopilotToolExecutor().ExecuteAsync(
+                CreateInvocation(tool, "terminal-dispatch-failure"),
+                agentEvent =>
+                {
+                    if (agentEvent.Type != CopilotAgentEventType.ToolResult)
+                        return;
+
+                    terminalEvents.Add(agentEvent);
+                    throw new InvalidOperationException("The event consumer stopped accepting results.");
+                },
+                CancellationToken.None));
+
+        var terminal = Assert.Single(terminalEvents);
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, terminal.ToolExecution?.State);
+        Assert.Same(exception.Outcome.Execution, terminal.ToolExecution);
+        Assert.Same(exception.Outcome.Result, terminal.ToolResult);
+        Assert.Equal(CopilotToolExecutionState.Completed, exception.Outcome.Execution.State);
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task FrameworkBridgeRetainsTheCommittedOutcomeWhenTerminalDispatchFails()
+    {
+        var tool = new RecordingTool();
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "dispatch-failure-conversation",
+            TaskId = "dispatch-failure-task",
+            Mode = CopilotAgentMode.Auto,
+            UserText = "Run the recording tool.",
+            TaskIntentText = "Run the recording tool.",
+        };
+        var terminalEvents = new List<CopilotAgentEvent>();
+        var bridge = new CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge(
+            request,
+            CopilotExecutionScope.ForAgentRun(request),
+            [tool],
+            maxToolCalls: 1,
+            new CopilotToolExecutor(),
+            new CopilotFrameworkApprovalCoordinator(),
+            agentEvent =>
+            {
+                if (agentEvent.Type != CopilotAgentEventType.ToolResult)
+                    return;
+
+                terminalEvents.Add(agentEvent);
+                throw new InvalidOperationException("The event consumer stopped accepting results.");
+            },
+            capabilityRevisionProvider: () => 1);
+        var function = Assert.IsAssignableFrom<AIFunction>(Assert.Single(bridge.CreateFunctions()));
+
+        var exception = await Assert.ThrowsAsync<CopilotToolResultEventDispatchException>(() =>
+            function.InvokeAsync(
+                new AIFunctionArguments(),
+                CancellationToken.None).AsTask());
+
+        var step = Assert.Single(bridge.StepRecords);
+        Assert.Single(terminalEvents);
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
+        Assert.Same(exception.Outcome.Execution, step.Execution);
+        Assert.Equal(exception.Outcome.Result.Success, step.Observation.Success);
+        Assert.Equal(exception.Outcome.Result.Summary, step.Observation.Summary);
     }
 
     [Fact]

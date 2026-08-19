@@ -315,6 +315,21 @@ namespace ColorVision.Copilot
         public CopilotToolExecutionOutcome Outcome { get; }
     }
 
+    internal sealed class CopilotToolResultEventDispatchException : Exception
+    {
+        public CopilotToolResultEventDispatchException(
+            CopilotToolExecutionOutcome outcome,
+            Exception innerException)
+            : base(
+                "The authoritative Copilot tool result could not be published.",
+                innerException)
+        {
+            Outcome = outcome ?? throw new ArgumentNullException(nameof(outcome));
+        }
+
+        public CopilotToolExecutionOutcome Outcome { get; }
+    }
+
     public sealed class CopilotToolExecutionHookContext
     {
         public CopilotToolInvocation Invocation { get; init; } = null!;
