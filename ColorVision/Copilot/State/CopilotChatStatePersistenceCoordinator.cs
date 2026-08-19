@@ -102,8 +102,12 @@ namespace ColorVision.Copilot
             var serializedState = await Task.Run(
                 () => _stateStore.Serialize(snapshot),
                 cancellationToken).ConfigureAwait(false);
+            if (_scheduler.RequestedVersion != captureVersion)
+                return;
+
             await _stateStore.SaveSerializedAsync(serializedState, cancellationToken).ConfigureAwait(false);
-            Interlocked.Exchange(ref _lastSavePersisted, 1);
+            if (_scheduler.RequestedVersion == captureVersion)
+                Interlocked.Exchange(ref _lastSavePersisted, 1);
         }
 
         private CopilotChatState GetState() =>
