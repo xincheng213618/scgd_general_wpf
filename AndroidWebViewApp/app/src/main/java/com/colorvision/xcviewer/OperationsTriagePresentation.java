@@ -193,6 +193,7 @@ final class OperationsTriagePresentation {
             case "triage.messaging.reconnect.request":
             case "triage.failures.view":
             case "triage.performance.view":
+            case "triage.application.view":
                 return true;
             default:
                 return false;

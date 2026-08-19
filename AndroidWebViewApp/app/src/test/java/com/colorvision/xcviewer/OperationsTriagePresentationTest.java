@@ -247,6 +247,29 @@ public class OperationsTriagePresentationTest {
     }
 
     @Test
+    public void desktopFindingOpensReadOnlyApplicationOverviewBeforeWindowAction()
+            throws Exception {
+        JSONObject report = new JSONObject("{\"state\":\"attention\",\"findings\":[{"
+                + "\"findingId\":\"desktop-window-hidden\","
+                + "\"severity\":\"info\",\"category\":\"desktop\","
+                + "\"title\":\"电脑主窗口当前未显示\",\"actions\":[{"
+                + "\"actionId\":\"triage.application.view\","
+                + "\"title\":\"查看应用概况\",\"riskLevel\":\"read-only\"},{"
+                + "\"actionId\":\"triage.window.show\","
+                + "\"title\":\"显示电脑主窗口\",\"riskLevel\":\"low-risk\"}]}]}");
+
+        OperationsTriagePresentation.Finding finding = OperationsTriagePresentation
+                .from(report, value -> value).findings.get(0);
+
+        assertEquals("triage.application.view", finding.primaryCardAction().actionId);
+        assertEquals(2, finding.actions.size());
+        assertTrue(OperationsTriagePresentation.isSupportedAction(
+                finding.primaryCardAction().actionId));
+        assertTrue(OperationsTriagePresentation.isSupportedAction(
+                finding.actions.get(1).actionId));
+    }
+
+    @Test
     public void serviceEvidenceNavigationStaysPrimaryBeforePrivilegedMaintenance()
             throws Exception {
         JSONObject report = new JSONObject("{\"findings\":[{"

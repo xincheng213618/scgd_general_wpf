@@ -158,6 +158,17 @@ public class OperationsTriageDetailReviewPresentationTest {
                 OperationsTriageDetailReviewPresentation.surfaceFor(performance));
     }
 
+    @Test
+    public void desktopFindingUsesApplicationOverviewReviewSurface() throws Exception {
+        OperationsTriagePresentation.Finding desktop = OperationsTriagePresentation.from(
+                new JSONObject("{\"findings\":[{\"findingId\":\"desktop-window-unavailable\","
+                        + "\"category\":\"desktop\"}]}"), value -> value)
+                .findings.get(0);
+
+        assertEquals(OperationsTriageDetailReviewPresentation.SURFACE_APPLICATION,
+                OperationsTriageDetailReviewPresentation.surfaceFor(desktop));
+    }
+
     private static OperationsTriagePresentation.Finding finding(
             boolean acknowledged,
             String summary) throws Exception {

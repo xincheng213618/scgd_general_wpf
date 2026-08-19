@@ -98,6 +98,7 @@ public class OperationsActivity extends AppCompatActivity {
     private static final int NAV_SETTINGS = 2004;
     private static final int MENU_REFRESH_DASHBOARD = 2005;
     private static final int MENU_TARGET = 2006;
+    private static final String PATH_APPLICATION = "/ops/v1/snapshot";
     private static final String PATH_SERVICE_HEALTH = "/ops/v1/services/health";
     private static final String PATH_MESSAGE_CHANNEL = "/ops/v1/messaging/health";
     private static final String PATH_RECENT_EVENTS = "/ops/v1/diagnostics/recent-events";
@@ -116,6 +117,8 @@ public class OperationsActivity extends AppCompatActivity {
             OperationsTriageDetailReviewPresentation.SURFACE_FAILURE_EVIDENCE;
     private static final String TRIAGE_REVIEW_PERFORMANCE =
             OperationsTriageDetailReviewPresentation.SURFACE_PERFORMANCE;
+    private static final String TRIAGE_REVIEW_APPLICATION =
+            OperationsTriageDetailReviewPresentation.SURFACE_APPLICATION;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -5696,6 +5699,11 @@ public class OperationsActivity extends AppCompatActivity {
                 showDashboardCapabilityDetails(PATH_PERFORMANCE);
                 prepareTriageDetailReview(sourceFinding);
                 return;
+            case "triage.application.view":
+                detailParentDestination = OperationsDestinationState.TRIAGE;
+                showDashboardCapabilityDetails(PATH_APPLICATION);
+                prepareTriageDetailReview(sourceFinding);
+                return;
             default:
                 return;
         }
@@ -5828,6 +5836,11 @@ public class OperationsActivity extends AppCompatActivity {
                 && PATH_PERFORMANCE.equals(dashboardDetailPath)) {
             return "正在更新响应证据…";
         }
+        if (TRIAGE_REVIEW_APPLICATION.equals(triageDetailReviewSurface)
+                && dashboardDetailRefreshInFlight
+                && PATH_APPLICATION.equals(dashboardDetailPath)) {
+            return "正在更新应用状态…";
+        }
         return "";
     }
 
@@ -5840,6 +5853,9 @@ public class OperationsActivity extends AppCompatActivity {
         }
         if (TRIAGE_REVIEW_PERFORMANCE.equals(triageDetailReviewSurface)) {
             return "响应证据";
+        }
+        if (TRIAGE_REVIEW_APPLICATION.equals(triageDetailReviewSurface)) {
+            return "应用状态";
         }
         return "消息证据";
     }
@@ -5966,19 +5982,7 @@ public class OperationsActivity extends AppCompatActivity {
             refreshTriageDetailReviewAction();
             showTriageDetailReviewFeedback(
                     reviewSurface,
-                    TRIAGE_REVIEW_DEVICE_HEALTH.equals(reviewSurface)
-                            ? "发现更新证据 · 请先刷新设备状态后再复核"
-                            : TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(reviewSurface)
-                                    ? "发现更新证据 · 请先刷新消息通道后再复核"
-                                    : TRIAGE_REVIEW_SERVICE_HEALTH.equals(reviewSurface)
-                                            ? "发现更新证据 · 请先刷新服务状态后再复核"
-                                            : TRIAGE_REVIEW_FAILURE_EVIDENCE.equals(
-                                                    reviewSurface)
-                                                    ? "发现更新证据 · 请先刷新故障证据后再复核"
-                                                    : TRIAGE_REVIEW_PERFORMANCE.equals(
-                                                            reviewSurface)
-                                                            ? "发现更新证据 · 请先刷新性能状态后再复核"
-                                                            : "发现更新证据 · 请先刷新近期事件后再复核",
+                    triageDetailRefreshPrompt(reviewSurface),
                     "刷新",
                     () -> refreshTriageDetailReviewEvidence(reviewSurface));
             return;
@@ -6070,10 +6074,14 @@ public class OperationsActivity extends AppCompatActivity {
         boolean performanceVisible = TRIAGE_REVIEW_PERFORMANCE.equals(reviewSurface)
                 && OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
                 && PATH_PERFORMANCE.equals(dashboardDetailPath);
+        boolean applicationVisible = TRIAGE_REVIEW_APPLICATION.equals(reviewSurface)
+                && OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
+                && PATH_APPLICATION.equals(dashboardDetailPath);
         return requestGeneration == connectionRequestGeneration
                 && (recentEventsVisible || deviceHealthVisible
                         || messageChannelVisible || serviceHealthVisible
-                        || failureEvidenceVisible || performanceVisible)
+                        || failureEvidenceVisible || performanceVisible
+                        || applicationVisible)
                 && hostId.equals(preferences.getOperationsHostId())
                 && reviewSurface.equals(triageDetailReviewSurface)
                 && triageDetailReviewFinding != null
@@ -6090,9 +6098,32 @@ public class OperationsActivity extends AppCompatActivity {
                 || TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(reviewSurface)
                 || TRIAGE_REVIEW_SERVICE_HEALTH.equals(reviewSurface)
                 || TRIAGE_REVIEW_FAILURE_EVIDENCE.equals(reviewSurface)
-                || TRIAGE_REVIEW_PERFORMANCE.equals(reviewSurface)) {
+                || TRIAGE_REVIEW_PERFORMANCE.equals(reviewSurface)
+                || TRIAGE_REVIEW_APPLICATION.equals(reviewSurface)) {
             refreshDashboardDetail();
         }
+    }
+
+    private String triageDetailRefreshPrompt(String reviewSurface) {
+        if (TRIAGE_REVIEW_DEVICE_HEALTH.equals(reviewSurface)) {
+            return "发现更新证据 · 请先刷新设备状态后再复核";
+        }
+        if (TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(reviewSurface)) {
+            return "发现更新证据 · 请先刷新消息通道后再复核";
+        }
+        if (TRIAGE_REVIEW_SERVICE_HEALTH.equals(reviewSurface)) {
+            return "发现更新证据 · 请先刷新服务状态后再复核";
+        }
+        if (TRIAGE_REVIEW_FAILURE_EVIDENCE.equals(reviewSurface)) {
+            return "发现更新证据 · 请先刷新故障证据后再复核";
+        }
+        if (TRIAGE_REVIEW_PERFORMANCE.equals(reviewSurface)) {
+            return "发现更新证据 · 请先刷新性能状态后再复核";
+        }
+        if (TRIAGE_REVIEW_APPLICATION.equals(reviewSurface)) {
+            return "发现更新证据 · 请先刷新应用概况后再复核";
+        }
+        return "发现更新证据 · 请先刷新近期事件后再复核";
     }
 
     private void showTriageDetailReviewFeedback(
@@ -7648,7 +7679,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void loadDashboardSnapshot() {
-        loadCapability("/ops/v1/snapshot", false);
+        loadCapability(PATH_APPLICATION, false);
     }
 
     private void enrichMonitorAlertSource(JSONObject snapshot, boolean allowDetailFallback) {
@@ -7699,16 +7730,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showDashboardApplicationDetails() {
-        clearRecentEventsRefreshState();
-        clearTriageDetailReviewState();
-        setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
-        dashboardDetailPath = "/ops/v1/snapshot";
-        refreshDetailsCardVisibility();
-        refreshOperationsHeaderNavigation();
-        scrollDashboardToTop();
-        title.setTitle("应用概况");
-        actions.removeAllViews();
-        loadCapability("/ops/v1/snapshot", true);
+        showDashboardCapabilityDetails(PATH_APPLICATION);
     }
 
     private void showDashboardCapabilityDetails(String path) {
@@ -7733,7 +7755,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void loadCapability(String path, boolean showDetails) {
-        boolean dashboardSnapshot = "/ops/v1/snapshot".equals(path) && !showDetails;
+        boolean dashboardSnapshot = PATH_APPLICATION.equals(path) && !showDetails;
         boolean dashboardDetailRequest = showDetails
                 && OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
                 && path.equals(dashboardDetailPath);
@@ -7743,7 +7765,8 @@ public class OperationsActivity extends AppCompatActivity {
             if (PATH_MESSAGE_CHANNEL.equals(path)
                     || PATH_SERVICE_HEALTH.equals(path)
                     || PATH_FAILURE_EVIDENCE.equals(path)
-                    || PATH_PERFORMANCE.equals(path)) {
+                    || PATH_PERFORMANCE.equals(path)
+                    || PATH_APPLICATION.equals(path)) {
                 refreshTriageDetailReviewAction();
             }
         }
@@ -7767,10 +7790,12 @@ public class OperationsActivity extends AppCompatActivity {
                         refreshOperationsHeaderNavigation();
                     }
                     progress.setVisibility(View.GONE);
-                    if ("/ops/v1/snapshot".equals(path)) {
+                    if (PATH_APPLICATION.equals(path)) {
                         updateDashboardApplicationStatus(response);
                     }
-                    if (dashboardDetailRequest && PATH_PERFORMANCE.equals(path)) {
+                    if (dashboardDetailRequest && PATH_APPLICATION.equals(path)) {
+                        renderApplicationSnapshot(response);
+                    } else if (dashboardDetailRequest && PATH_PERFORMANCE.equals(path)) {
                         renderPerformanceSnapshot(response, false,
                                 this::showPerformanceLiveMonitor);
                     } else if (dashboardDetailRequest && PATH_FAILURE_EVIDENCE.equals(path)) {
@@ -7811,7 +7836,8 @@ public class OperationsActivity extends AppCompatActivity {
                             && (PATH_MESSAGE_CHANNEL.equals(path)
                                     || PATH_SERVICE_HEALTH.equals(path)
                                     || PATH_FAILURE_EVIDENCE.equals(path)
-                                    || PATH_PERFORMANCE.equals(path))) {
+                                    || PATH_PERFORMANCE.equals(path)
+                                    || PATH_APPLICATION.equals(path))) {
                         refreshTriageDetailReviewAction();
                     }
                     progress.setVisibility(View.GONE);
@@ -8050,6 +8076,14 @@ public class OperationsActivity extends AppCompatActivity {
         });
     }
 
+    private void renderApplicationSnapshot(JSONObject response) {
+        state.setText(directConnectionState());
+        details.setText(formatCapability(PATH_APPLICATION, response));
+        detailsCard.setVisibility(View.VISIBLE);
+        actions.removeAllViews();
+        addTriageDetailReviewAction();
+    }
+
     private void showDeviceRecoveryMonitor(int attentionCount) {
         String parentCandidate = OperationsDestinationState.CAPABILITY_DETAIL.equals(
                 OperationsDestinationState.normalize(currentDestination))
@@ -8093,7 +8127,7 @@ public class OperationsActivity extends AppCompatActivity {
             return OperationsAuditPresentation.from(
                     payload, this::shortTime).plainText();
         }
-        if (!"/ops/v1/snapshot".equals(path)) {
+        if (!PATH_APPLICATION.equals(path)) {
             return pretty(payload);
         }
 
@@ -8129,7 +8163,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private String capabilityHeading(String path) {
-        if ("/ops/v1/snapshot".equals(path)) {
+        if (PATH_APPLICATION.equals(path)) {
             return directConnectionState();
         }
         if ("/ops/v1/alerts".equals(path)) {

@@ -62,6 +62,7 @@ namespace ColorVision.UI.Tests
                 OperationsTriageActionIds.ViewServiceHealth,
                 OperationsTriageActionIds.RequestMqttRestart,
                 OperationsTriageActionIds.ViewDeviceHealth,
+                OperationsTriageActionIds.ViewApplication,
             ];
             Assert.All(actions, action => Assert.Contains(action.ActionId, allowedActionIds));
             OperationsTriageAction restart = Assert.Single(actions,
@@ -75,6 +76,12 @@ namespace ColorVision.UI.Tests
             Assert.Equal(OperationsTriageActionIds.ViewServiceHealth,
                 serviceFinding.Actions[0].ActionId);
             Assert.Equal(OperationsRiskLevels.ReadOnly, serviceFinding.Actions[0].RiskLevel);
+            OperationsTriageFinding desktopFinding = Assert.Single(report.Findings,
+                item => item.FindingId == "desktop-window-hidden");
+            Assert.Equal(OperationsTriageActionIds.ViewApplication,
+                desktopFinding.Actions[0].ActionId);
+            Assert.Equal(OperationsTriageActionIds.ShowMainWindow,
+                desktopFinding.Actions[1].ActionId);
         }
 
         [Fact]
@@ -380,7 +387,10 @@ namespace ColorVision.UI.Tests
 
             OperationsTriageFinding finding = Assert.Single(report.Findings);
             Assert.Equal("desktop-window-unavailable", finding.FindingId);
-            Assert.Empty(finding.Actions);
+            AssertReadOnlyDetailAction(
+                report, finding.FindingId, OperationsTriageActionIds.ViewApplication);
+            Assert.DoesNotContain(finding.Actions,
+                action => action.ActionId == OperationsTriageActionIds.ShowMainWindow);
         }
 
         [Fact]

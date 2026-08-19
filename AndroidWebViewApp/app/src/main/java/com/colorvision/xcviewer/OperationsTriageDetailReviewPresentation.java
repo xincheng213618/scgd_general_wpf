@@ -7,6 +7,7 @@ final class OperationsTriageDetailReviewPresentation {
     static final String SURFACE_SERVICE_HEALTH = "service-health";
     static final String SURFACE_FAILURE_EVIDENCE = "failure-evidence";
     static final String SURFACE_PERFORMANCE = "performance";
+    static final String SURFACE_APPLICATION = "application";
 
     private OperationsTriageDetailReviewPresentation() {
     }
@@ -81,6 +82,9 @@ final class OperationsTriageDetailReviewPresentation {
         }
         if ("performance".equals(finding.category)) {
             return SURFACE_PERFORMANCE;
+        }
+        if ("desktop".equals(finding.category)) {
+            return SURFACE_APPLICATION;
         }
         return "";
     }

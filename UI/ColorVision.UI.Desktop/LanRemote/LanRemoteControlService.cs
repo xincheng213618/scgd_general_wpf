@@ -14,7 +14,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 
 namespace ColorVision.UI.Desktop.LanRemote
 {
@@ -641,17 +640,6 @@ refreshStatus();
                 .FirstOrDefault();
         }
 
-        private static T ExecuteOnUiThread<T>(Func<T> action)
-        {
-            var dispatcher = Application.Current?.Dispatcher;
-            if (dispatcher == null)
-                throw new InvalidOperationException("当前没有可用的 WPF 调度器。");
-
-            return dispatcher.CheckAccess()
-                ? action()
-                : dispatcher.Invoke(action);
-        }
-
         private static string ExecuteDesktopAction(string actionId)
         {
             OperationsActionResult result = OperationsDesktopActionService.Execute(actionId);
@@ -662,25 +650,12 @@ refreshStatus();
 
         private static MainWindowSnapshot GetMainWindowSnapshot()
         {
-            try
-            {
-                return ExecuteOnUiThread(() =>
-                {
-                    Window? window = Application.Current?.MainWindow;
-                    if (window == null)
-                        return new MainWindowSnapshot(false, string.Empty, "Unknown", false);
-
-                    return new MainWindowSnapshot(
-                        true,
-                        window.Title ?? string.Empty,
-                        window.WindowState.ToString(),
-                        window.IsVisible);
-                });
-            }
-            catch
-            {
-                return new MainWindowSnapshot(false, string.Empty, "Unknown", false);
-            }
+            OperationsDesktopState state = OperationsDesktopActionService.CaptureState();
+            return new MainWindowSnapshot(
+                state.Exists,
+                string.Empty,
+                state.WindowState,
+                state.IsVisible);
         }
 
         private static string GetProcessStartTime(Process process)

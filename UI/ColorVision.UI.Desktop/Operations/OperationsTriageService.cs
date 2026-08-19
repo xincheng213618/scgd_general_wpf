@@ -12,6 +12,7 @@ namespace ColorVision.UI.Desktop.Operations
         public const string RequestMessageChannelRecovery = "triage.messaging.reconnect.request";
         public const string ViewFailureEvidence = "triage.failures.view";
         public const string ViewPerformance = "triage.performance.view";
+        public const string ViewApplication = "triage.application.view";
     }
 
     public sealed class OperationsTriageAction
@@ -497,6 +498,7 @@ namespace ColorVision.UI.Desktop.Operations
                     Category = "desktop",
                     Title = "电脑主窗口不可用",
                     Summary = "当前无法取得 ColorVision 主窗口；请在电脑端确认应用启动状态。",
+                    Actions = [ViewApplicationAction()],
                 });
                 return;
             }
@@ -514,6 +516,7 @@ namespace ColorVision.UI.Desktop.Operations
                 EvidenceCount = 1,
                 Actions =
                 [
+                    ViewApplicationAction(),
                     new OperationsTriageAction
                     {
                         ActionId = OperationsTriageActionIds.ShowMainWindow,
@@ -596,6 +599,15 @@ namespace ColorVision.UI.Desktop.Operations
             Kind = "client-navigation",
             RiskLevel = OperationsRiskLevels.ReadOnly,
             Description = "只查看聚合进程计数和主界面响应状态，不返回进程身份、路径或窗口内容，也不执行维护。",
+        };
+
+        private static OperationsTriageAction ViewApplicationAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.ViewApplication,
+            Title = "查看应用概况",
+            Kind = "client-navigation",
+            RiskLevel = OperationsRiskLevels.ReadOnly,
+            Description = "只查看应用版本、运行时间、聚合内存、主窗口与安全通道状态，不返回窗口标题、进程身份或路径。",
         };
 
         private static OperationsTriageAction RestartMqttAction() => new()
