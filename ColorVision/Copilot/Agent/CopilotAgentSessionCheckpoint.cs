@@ -408,24 +408,24 @@ namespace ColorVision.Copilot
                 ProfileKey = CreateProfileKey(profile),
                 SerializedSessionJson = json,
                 CapabilityCatalogRevision = capabilitySnapshot.Revision,
-                Capabilities = capabilitySnapshot.Capabilities
+                Capabilities = Array.AsReadOnly(capabilitySnapshot.Capabilities
                     .Select(capability => new CopilotAgentCheckpointCapability
                     {
                         Id = capability.Id,
                         Revision = capability.Revision,
                         Fingerprint = capability.Fingerprint,
                     })
-                    .ToArray(),
+                    .ToArray()),
                 ToolSurfaceVersion = availableToolNames == null ? 0 : CurrentToolSurfaceVersion,
-                AvailableToolNames = persistedToolNames,
+                AvailableToolNames = Array.AsReadOnly(persistedToolNames),
                 EnvironmentVersion = environmentContext == null ? 0 : CurrentEnvironmentVersion,
                 EnvironmentFingerprint = environmentContext?.Fingerprint ?? string.Empty,
                 HookSurfaceVersion = hookSurfaceSnapshot == null ? 0 : CurrentHookSurfaceVersion,
                 HookSurfaceFingerprint = hookSurfaceSnapshot?.Fingerprint ?? string.Empty,
                 ProjectInstructionSurfaceVersion = projectInstructionSurfaceVersion,
                 ProjectInstructionSurfaceFingerprint = projectInstructionSurfaceFingerprint,
-                EvidenceArtifacts = persistedEvidence,
-                ConversationMemory = persistedConversationMemory,
+                EvidenceArtifacts = Array.AsReadOnly(persistedEvidence),
+                ConversationMemory = Array.AsReadOnly(persistedConversationMemory),
                 TaskIntentText = persistedTaskIntentText,
                 TaskEventJournal = persistedTaskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
@@ -465,17 +465,20 @@ namespace ColorVision.Copilot
             {
                 ProfileKey = ProfileKey,
                 CapabilityCatalogRevision = CapabilityCatalogRevision,
-                Capabilities = (Capabilities ?? Array.Empty<CopilotAgentCheckpointCapability>()).ToArray(),
+                Capabilities = Array.AsReadOnly(
+                    (Capabilities ?? Array.Empty<CopilotAgentCheckpointCapability>()).ToArray()),
                 ToolSurfaceVersion = ToolSurfaceVersion,
-                AvailableToolNames = (AvailableToolNames ?? Array.Empty<string>()).ToArray(),
+                AvailableToolNames = Array.AsReadOnly(
+                    (AvailableToolNames ?? Array.Empty<string>()).ToArray()),
                 EnvironmentVersion = EnvironmentVersion,
                 EnvironmentFingerprint = EnvironmentFingerprint,
                 HookSurfaceVersion = HookSurfaceVersion,
                 HookSurfaceFingerprint = HookSurfaceFingerprint,
                 ProjectInstructionSurfaceVersion = ProjectInstructionSurfaceVersion,
                 ProjectInstructionSurfaceFingerprint = ProjectInstructionSurfaceFingerprint,
-                EvidenceArtifacts = (EvidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()).ToArray(),
-                ConversationMemory = conversationMemory.ToArray(),
+                EvidenceArtifacts = Array.AsReadOnly(
+                    (EvidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()).ToArray()),
+                ConversationMemory = Array.AsReadOnly(conversationMemory.ToArray()),
                 TaskIntentText = TaskIntentText,
                 TaskEventJournal = taskEventJournal,
                 UpdatedAtUtc = updatedAtUtc,

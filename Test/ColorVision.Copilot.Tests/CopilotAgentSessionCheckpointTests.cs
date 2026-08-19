@@ -91,6 +91,28 @@ public sealed class CopilotAgentSessionCheckpointTests
     }
 
     [Fact]
+    public void CreateFreezesPersistedCheckpointCollections()
+    {
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            CreateOpenAiProfile(CopilotVendorType.OpenAI, "https://example.test/v1"),
+            "{}",
+            CopilotCapabilityCatalog.Shared.GetSnapshot(),
+            availableToolNames: ["ReadWorkspace"],
+            conversationMemory: [new CopilotRequestMessage("user", "Inspect the workspace")]);
+
+        Assert.NotNull(checkpoint);
+        var capabilities = Assert.IsAssignableFrom<IList<CopilotAgentCheckpointCapability>>(
+            checkpoint.Capabilities);
+        var toolNames = Assert.IsAssignableFrom<IList<string>>(checkpoint.AvailableToolNames);
+        var conversationMemory = Assert.IsAssignableFrom<IList<CopilotRequestMessage>>(
+            checkpoint.ConversationMemory);
+        Assert.Throws<NotSupportedException>(() => capabilities[0] = capabilities[0]);
+        Assert.Throws<NotSupportedException>(() => toolNames[0] = "RewriteWorkspace");
+        Assert.Throws<NotSupportedException>(() =>
+            conversationMemory[0] = new CopilotRequestMessage("assistant", "Rewritten history"));
+    }
+
+    [Fact]
     public void PersistedCheckpointWithInvalidEvidenceArtifactIsRejected()
     {
         var checkpoint = JsonConvert.DeserializeObject<CopilotAgentSessionCheckpoint>(
