@@ -76,7 +76,7 @@ namespace ColorVision.Copilot
                     .Select(attachment => attachment.CreateSnapshot())
                     .ToArray()
                     ?? Attachments.ToArray();
-            if (!TryValidateComposerAttachments(requestAttachments))
+            if (!TryValidateComposerAttachments(requestAttachments, selectedProfile))
                 return;
 
             var conversation = EnsureConversation();

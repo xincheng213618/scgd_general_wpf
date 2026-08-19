@@ -70,6 +70,8 @@ namespace ColorVision.Copilot
 
         public string Model { get; set; } = string.Empty;
 
+        public bool SupportsImageInput { get; set; }
+
         public string ApiKey { get; set; } = string.Empty;
 
         public bool AllowInsecureHttp { get; set; }
@@ -353,6 +355,7 @@ namespace ColorVision.Copilot
                 BaseUrl = item.BaseUrl,
                 AllowInsecureHttp = item.AllowInsecureHttp,
                 Model = item.Model,
+                SupportsImageInput = item.SupportsImageInput,
                 ReasoningMode = reasoningMode,
                 SyncSource = source,
                 SyncProfileId = remoteId,
@@ -373,6 +376,7 @@ namespace ColorVision.Copilot
             target.BaseUrl = source.BaseUrl;
             target.AllowInsecureHttp = source.AllowInsecureHttp;
             target.Model = source.Model;
+            target.SupportsImageInput = source.SupportsImageInput;
             target.ReasoningMode = source.ReasoningMode;
             target.SyncSource = source.SyncSource;
             target.SyncProfileId = source.SyncProfileId;

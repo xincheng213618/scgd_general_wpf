@@ -246,6 +246,11 @@ namespace ColorVision.Copilot
                 .ToArray();
             if (images.Length == 0)
                 return CopilotImageUnderstandingResult.Empty;
+            if (!profile.SupportsImageInput)
+            {
+                throw new InvalidOperationException(
+                    $"模型配置“{profile.DisplayLabel}”未声明支持图片输入。请在 Copilot 设置中确认模型能力后启用“支持图片输入”，或移除图片附件。");
+            }
 
             var analysisProfile = profile.Clone();
             analysisProfile.UseSystemPromptOverride(ImageAnalysisSystemPrompt);

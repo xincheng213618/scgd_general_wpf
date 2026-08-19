@@ -535,7 +535,7 @@ namespace ColorVision.Copilot
             {
                 return;
             }
-            if (!TryValidateComposerAttachments(turnSnapshot.Attachments))
+            if (!TryValidateComposerAttachments(turnSnapshot.Attachments, requestProfile))
                 return;
 
             conversation.ProfileId = requestProfile.Id;

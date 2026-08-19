@@ -94,7 +94,7 @@ namespace ColorVision.Copilot
                 activeRun.Mode,
                 submissionContext.ProjectInstructionDiscoveryOptions);
             if (!TryValidateComposerCharacterLimit(prompt)
-                || !TryValidateComposerAttachments(submissionContext.Attachments)
+                || !TryValidateComposerAttachments(submissionContext.Attachments, requestProfile)
                 || !isLocalCommand
                     && !TryValidatePromptBudget(
                         prompt,

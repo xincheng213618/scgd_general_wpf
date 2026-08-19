@@ -189,7 +189,9 @@ namespace ColorVision.Copilot
             return false;
         }
 
-        private bool TryValidateComposerAttachments(IEnumerable<CopilotAttachmentItem> attachments)
+        private bool TryValidateComposerAttachments(
+            IEnumerable<CopilotAttachmentItem> attachments,
+            CopilotProfileConfig? profile = null)
         {
             var validation = CopilotComposerAttachmentService.Validate(attachments);
             if (validation.Failure == CopilotAttachmentValidationFailure.AttachmentLimit)
@@ -203,6 +205,13 @@ namespace ColorVision.Copilot
             {
                 LocalCommandResultTitle = "图片过多";
                 LocalCommandResultText = $"当前请求包含 {validation.ImageCount:N0} 张图片，模型输入一次最多支持 {CopilotImagePayloadLoader.MaximumImages:N0} 张。请移除多余图片后重试。";
+                return false;
+            }
+
+            if (validation.ImageCount > 0 && profile != null && !profile.SupportsImageInput)
+            {
+                LocalCommandResultTitle = "当前模型不支持图片";
+                LocalCommandResultText = $"模型配置“{profile.DisplayLabel}”未声明支持图片输入。请在 Copilot 设置中确认模型能力后启用“支持图片输入”，或移除图片附件。请求尚未发送。";
                 return false;
             }
 
@@ -289,7 +298,7 @@ namespace ColorVision.Copilot
                     return new CopilotPromptQueueResult(false, false);
                 }
             }
-            if (sendNow && !TryValidateComposerAttachments(conversation.Attachments))
+            if (sendNow && !TryValidateComposerAttachments(conversation.Attachments, SelectedProfile))
                 return new CopilotPromptQueueResult(false, false);
 
             SetPendingRequestModeOverride(mode);

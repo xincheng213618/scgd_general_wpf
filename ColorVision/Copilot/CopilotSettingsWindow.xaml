@@ -280,13 +280,16 @@
                                 </Grid>
 
                                 <TextBlock Grid.Row="3" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotModel}" />
-                                <ComboBox Grid.Row="3"
-                                          Grid.Column="1"
-                                          Margin="0,0,0,10"
-                                          IsEditable="True"
-                                          IsTextSearchEnabled="False"
-                                          ItemsSource="{Binding AvailableModelPresets}"
-                                          Text="{Binding SelectedProfile.Model, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <StackPanel Grid.Row="3" Grid.Column="1" Margin="0,0,0,10">
+                                    <ComboBox IsEditable="True"
+                                              IsTextSearchEnabled="False"
+                                              ItemsSource="{Binding AvailableModelPresets}"
+                                              Text="{Binding SelectedProfile.Model, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <CheckBox Margin="0,8,0,0"
+                                              Content="Supports image input"
+                                              IsChecked="{Binding SelectedProfile.SupportsImageInput, UpdateSourceTrigger=PropertyChanged}"
+                                              ToolTip="Enable only when this exact model endpoint accepts image inputs. ColorVision cannot discover this capability automatically." />
+                                </StackPanel>
 
                                 <TextBlock Grid.Row="4" Style="{StaticResource SettingsFieldLabelStyle}" Text="{x:Static properties:Resources.CopilotProtocol}" />
                                 <ComboBox Grid.Row="4"

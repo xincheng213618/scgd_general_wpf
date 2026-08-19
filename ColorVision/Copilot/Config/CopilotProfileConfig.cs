@@ -65,6 +65,7 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _providerType, value))
                 {
+                    SupportsImageInput = false;
                     OnPropertyChanged(nameof(ProviderLabel));
                     OnPropertyChanged(nameof(SecondaryLabel));
                     OnConfigurationStateChanged();
@@ -114,6 +115,7 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _baseUrl, NormalizeText(value)))
                 {
+                    SupportsImageInput = false;
                     OnPropertyChanged(nameof(IsConfigured));
                     OnConfigurationStateChanged();
                 }
@@ -145,6 +147,7 @@ namespace ColorVision.Copilot
             {
                 if (SetProperty(ref _model, NormalizeText(value)))
                 {
+                    SupportsImageInput = false;
                     OnPropertyChanged(nameof(DisplayLabel));
                     OnPropertyChanged(nameof(IsConfigured));
                     OnPropertyChanged(nameof(SecondaryLabel));
@@ -153,6 +156,17 @@ namespace ColorVision.Copilot
             }
         }
         private string _model = "deepseek-v4-pro";
+
+        [DisplayName("Image input")]
+        [Description("Declare that this model endpoint accepts image inputs")]
+        public bool SupportsImageInput
+        {
+            get => _supportsImageInput;
+            set => SetProperty(ref _supportsImageInput, value);
+        }
+        private bool _supportsImageInput;
+
+        public bool ShouldSerializeSupportsImageInput() => SupportsImageInput;
 
         [JsonIgnore]
         [Browsable(false)]
@@ -406,6 +420,7 @@ namespace ColorVision.Copilot
                 BaseUrl = BaseUrl,
                 AllowInsecureHttp = AllowInsecureHttp,
                 Model = Model,
+                SupportsImageInput = SupportsImageInput,
                 MaxTokens = MaxTokens,
                 Temperature = Temperature,
                 FirstContentTimeoutSeconds = FirstContentTimeoutSeconds,
