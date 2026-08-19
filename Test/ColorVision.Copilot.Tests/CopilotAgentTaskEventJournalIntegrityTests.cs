@@ -61,6 +61,74 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void SessionResumeAndReplanFactsAreMutuallyExclusivePerRun()
+    {
+        var resumed = new CopilotAgentTaskEventJournalBuilder();
+        resumed.RecordSessionResumed();
+        resumed.RecordSessionResumed();
+
+        Assert.Throws<InvalidOperationException>(() =>
+            resumed.RecordReplanRequired(
+                CopilotAgentCheckpointCompatibilityKind.CapabilityDrift));
+        Assert.Single(resumed.Snapshot().Events);
+
+        var replanned = new CopilotAgentTaskEventJournalBuilder();
+        replanned.RecordReplanRequired(
+            CopilotAgentCheckpointCompatibilityKind.Invalid);
+        Assert.Throws<InvalidOperationException>(() =>
+            replanned.RecordSessionResumed());
+        Assert.Single(replanned.Snapshot().Events);
+    }
+
+    [Fact]
+    public void ReplanFactRejectsNonReplanCompatibilityReasons()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            journal.RecordReplanRequired(
+                CopilotAgentCheckpointCompatibilityKind.Compatible));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            journal.RecordReplanRequired(
+                CopilotAgentCheckpointCompatibilityKind.ProfileChanged));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            journal.RecordReplanRequired(
+                (CopilotAgentCheckpointCompatibilityKind)int.MaxValue));
+
+        Assert.Empty(journal.Snapshot().Events);
+    }
+
+    [Fact]
+    public void PersistedReplanFactRejectsNonReplanCompatibilityReason()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordReplanRequired(
+            CopilotAgentCheckpointCompatibilityKind.Invalid);
+        var replan = Assert.Single(journal.Snapshot().Events);
+        var rewritten = new CopilotAgentTaskEvent
+        {
+            Sequence = replan.Sequence,
+            Id = replan.Id,
+            Type = replan.Type,
+            OccurredAtUtc = replan.OccurredAtUtc,
+            RunId = replan.RunId,
+            SubjectId = replan.SubjectId,
+            RelatedIds = replan.RelatedIds,
+            ToolName = replan.ToolName,
+            State = CopilotAgentCheckpointCompatibilityKind.Compatible.ToString(),
+            FailureCode = replan.FailureCode,
+            ExitCode = replan.ExitCode,
+            Summary = replan.Summary,
+        };
+
+        Assert.True(rewritten.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [rewritten],
+        }.IsStructurallyValid());
+    }
+
+    [Fact]
     public void StructurallyValidEventIdMustMatchItsIdentityFields()
     {
         var runId = CopilotAgentTaskEventIds.CreateRunId();

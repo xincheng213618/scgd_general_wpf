@@ -129,6 +129,7 @@ namespace ColorVision.Copilot
                     .Where(item => item.Type == CopilotAgentTaskEventType.RunStarted)
                     .GroupBy(item => item.RunId, StringComparer.Ordinal)
                     .Any(group => group.Count() > 1)
+                || HasInvalidSessionLifecycle(Events)
                 || HasDuplicateLifecycleEvents(Events)
                 || HasInvalidControlLifecycle(Events)
                 || Events
@@ -152,9 +153,37 @@ namespace ColorVision.Copilot
             return Events.Zip(Events.Skip(1), (left, right) => left.Sequence < right.Sequence).All(value => value);
         }
 
+        private static bool HasInvalidSessionLifecycle(
+            IReadOnlyList<CopilotAgentTaskEvent> events)
+        {
+            return events.Any(item =>
+                item.Type == CopilotAgentTaskEventType.SessionResumed
+                    ? !string.Equals(item.SubjectId, item.RunId, StringComparison.Ordinal)
+                        || !string.Equals(item.State, "resumed", StringComparison.Ordinal)
+                    : item.Type == CopilotAgentTaskEventType.ReplanRequired
+                        && (!string.Equals(item.SubjectId, item.RunId, StringComparison.Ordinal)
+                            || !Enum.TryParse<CopilotAgentCheckpointCompatibilityKind>(
+                                item.State,
+                                out var reason)
+                            || !Enum.IsDefined(reason)
+                            || reason is CopilotAgentCheckpointCompatibilityKind.Compatible
+                                or CopilotAgentCheckpointCompatibilityKind.ProfileChanged
+                            || !string.Equals(item.State, reason.ToString(), StringComparison.Ordinal)));
+        }
+
         private static bool HasDuplicateLifecycleEvents(
             IReadOnlyList<CopilotAgentTaskEvent> events)
         {
+            if (events
+                .Where(item => item.Type is
+                    CopilotAgentTaskEventType.SessionResumed
+                    or CopilotAgentTaskEventType.ReplanRequired)
+                .GroupBy(item => item.RunId, StringComparer.Ordinal)
+                .Any(group => group.Count() > 1))
+            {
+                return true;
+            }
+
             if (events
                 .Where(item => item.Type is CopilotAgentTaskEventType.ToolStarted
                     or CopilotAgentTaskEventType.ToolCompleted

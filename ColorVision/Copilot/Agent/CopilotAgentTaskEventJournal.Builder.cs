@@ -106,12 +106,37 @@ namespace ColorVision.Copilot
 
         public void RecordSessionResumed()
         {
-            Append(CopilotAgentTaskEventType.SessionResumed, RunId, "resumed", "Agent session and task state resumed from checkpoint.");
+            AppendUnique(
+                CopilotAgentTaskEventType.SessionResumed,
+                RunId,
+                "resumed",
+                "Agent session and task state resumed from checkpoint.",
+                uniqueTypes:
+                [
+                    CopilotAgentTaskEventType.SessionResumed,
+                    CopilotAgentTaskEventType.ReplanRequired,
+                ]);
         }
 
         public void RecordReplanRequired(CopilotAgentCheckpointCompatibilityKind reason)
         {
-            Append(CopilotAgentTaskEventType.ReplanRequired, RunId, reason.ToString(), "Persisted task state was discarded and must be replanned.");
+            if (!Enum.IsDefined(reason)
+                || reason is CopilotAgentCheckpointCompatibilityKind.Compatible
+                    or CopilotAgentCheckpointCompatibilityKind.ProfileChanged)
+            {
+                throw new ArgumentOutOfRangeException(nameof(reason));
+            }
+
+            AppendUnique(
+                CopilotAgentTaskEventType.ReplanRequired,
+                RunId,
+                reason.ToString(),
+                "Persisted task state was discarded and must be replanned.",
+                uniqueTypes:
+                [
+                    CopilotAgentTaskEventType.SessionResumed,
+                    CopilotAgentTaskEventType.ReplanRequired,
+                ]);
         }
 
         public void RecordTaskLedger(CopilotAgentTaskLedgerSnapshot ledger, string phase)
