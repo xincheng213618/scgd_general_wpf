@@ -32,6 +32,20 @@ public class AppResponsiveLayoutTest {
     }
 
     @Test
+    public void wideWindowsUseTwoColumnGridForMultipleItems() {
+        assertTrue(AppResponsiveLayout.usesTwoColumnGrid(600, 1f, 2));
+        assertTrue(AppResponsiveLayout.usesTwoColumnGrid(840, 1f, 3));
+        assertFalse(AppResponsiveLayout.usesTwoColumnGrid(840, 1f, 1));
+    }
+
+    @Test
+    public void compactOrLargeTextLayoutsKeepSingleColumnGrid() {
+        assertFalse(AppResponsiveLayout.usesTwoColumnGrid(599, 1f, 2));
+        assertFalse(AppResponsiveLayout.usesTwoColumnGrid(840, 1.2f, 2));
+        assertFalse(AppResponsiveLayout.usesTwoColumnGrid(0, 1f, 2));
+    }
+
+    @Test
     public void largeFontUsesSingleColumnLayoutsAcrossTheApp() {
         assertTrue(AppResponsiveLayout.usesSingleColumn(600, 1.2f));
         assertTrue(AppResponsiveLayout.usesSingleColumn(840, 1.3f));

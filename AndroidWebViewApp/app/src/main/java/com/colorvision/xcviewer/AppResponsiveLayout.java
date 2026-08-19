@@ -18,6 +18,12 @@ final class AppResponsiveLayout {
         return screenWidthDp > COMPACT_WIDTH_MAX_DP;
     }
 
+    static boolean usesTwoColumnGrid(int screenWidthDp, float fontScale, int itemCount) {
+        return itemCount > 1
+                && usesNavigationRail(screenWidthDp)
+                && !usesSingleColumn(screenWidthDp, fontScale);
+    }
+
     static boolean usesStackedControlRow(int screenWidthDp, float fontScale) {
         return screenWidthDp > 0
                 && Float.isFinite(fontScale)

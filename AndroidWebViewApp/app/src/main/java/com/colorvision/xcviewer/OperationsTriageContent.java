@@ -60,7 +60,7 @@ final class OperationsTriageContent {
             root.addView(sectionTitle(
                     activity, themeManager, model.prioritySectionLabel()),
                     topMargin(dp(activity, 20)));
-            root.addView(findingsCard(
+            root.addView(findingsContent(
                             activity, themeManager, model, actionHandler),
                     topMargin(dp(activity, 8)));
         }
@@ -161,6 +161,20 @@ final class OperationsTriageContent {
         }
     }
 
+    private static View findingsContent(
+            Activity activity,
+            ThemeManager themeManager,
+            OperationsTriagePresentation.ViewModel model,
+            ActionHandler actionHandler) {
+        boolean twoColumns = AppResponsiveLayout.usesTwoColumnGrid(
+                activity.getResources().getConfiguration().screenWidthDp,
+                activity.getResources().getConfiguration().fontScale,
+                model.findings.size());
+        return twoColumns
+                ? findingsGrid(activity, themeManager, model, actionHandler)
+                : findingsCard(activity, themeManager, model, actionHandler);
+    }
+
     private static MaterialCardView findingsCard(
             Activity activity,
             ThemeManager themeManager,
@@ -185,6 +199,43 @@ final class OperationsTriageContent {
         card.setCardBackgroundColor(themeManager.cardBackgroundColor());
         card.addView(rows, matchCardWidth());
         return card;
+    }
+
+    private static View findingsGrid(
+            Activity activity,
+            ThemeManager themeManager,
+            OperationsTriagePresentation.ViewModel model,
+            ActionHandler actionHandler) {
+        LinearLayout grid = new LinearLayout(activity);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        Set<String> renderedActions = new HashSet<>();
+        int spacing = dp(activity, 8);
+        for (int index = 0; index < model.findings.size(); index += 2) {
+            LinearLayout row = new LinearLayout(activity);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            int itemsInRow = Math.min(2, model.findings.size() - index);
+            for (int column = 0; column < itemsInRow; column++) {
+                OperationsTriagePresentation.Finding finding =
+                        model.findings.get(index + column);
+                MaterialCardView card = new MaterialCardView(activity);
+                card.setCardBackgroundColor(themeManager.cardBackgroundColor());
+                card.addView(findingRow(
+                        activity, themeManager, finding, renderedActions, actionHandler),
+                        matchCardWidth());
+                LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
+                        0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
+                if (column > 0) {
+                    cardParams.setMargins(spacing, 0, 0, 0);
+                }
+                row.addView(card, cardParams);
+            }
+            LinearLayout.LayoutParams rowParams = matchWidth();
+            if (index > 0) {
+                rowParams.setMargins(0, spacing, 0, 0);
+            }
+            grid.addView(row, rowParams);
+        }
+        return grid;
     }
 
     private static View findingRow(
