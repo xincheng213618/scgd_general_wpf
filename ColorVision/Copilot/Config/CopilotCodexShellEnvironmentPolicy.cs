@@ -28,7 +28,7 @@ namespace ColorVision.Copilot
             "LOCALAPPDATA", "APPDATA", "TEMP", "TMP", "TMPDIR", "POWERSHELL", "PWSH",
         ];
         private static readonly string[] DefaultExcludePatterns =
-            ["*KEY*", "*SECRET*", "*TOKEN*"];
+            ["*KEY*", "*PASSWORD*", "*SECRET*", "*TOKEN*"];
         private static readonly string[] NonInheritableEnvironmentVariables =
             ["OPENAI_FEDERATION_RULE_ID", "OPENAI_IDENTITY_TOKEN_FILE"];
 
@@ -43,7 +43,7 @@ namespace ColorVision.Copilot
         public CopilotCodexShellEnvironmentInherit Inherit { get; init; } =
             CopilotCodexShellEnvironmentInherit.All;
 
-        public bool IgnoreDefaultExcludes { get; init; } = true;
+        public bool IgnoreDefaultExcludes { get; init; }
 
         public IReadOnlyList<string> Exclude { get; init; } = Array.Empty<string>();
 
