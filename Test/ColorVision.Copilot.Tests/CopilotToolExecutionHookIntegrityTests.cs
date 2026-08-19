@@ -328,6 +328,78 @@ public sealed class CopilotToolExecutionHookIntegrityTests
     }
 
     [Fact]
+    public async Task FrameworkBridgePublishesTheReturnedInvalidArgumentProjection()
+    {
+        var tool = new RecordingTool(
+            inputSchema: CopilotToolInputSchema.Query("Required query.", required: true));
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "invalid-arguments-projection-conversation",
+            TaskId = "invalid-arguments-projection-task",
+            Mode = CopilotAgentMode.Auto,
+            UserText = "Run the recording tool.",
+            TaskIntentText = "Run the recording tool.",
+        };
+        var events = new List<CopilotAgentEvent>();
+        var bridge = new CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge(
+            request,
+            CopilotExecutionScope.ForAgentRun(request),
+            [tool],
+            maxToolCalls: 1,
+            new CopilotToolExecutor(),
+            new CopilotFrameworkApprovalCoordinator(),
+            events.Add,
+            capabilityRevisionProvider: () => 1);
+        var function = Assert.IsAssignableFrom<AIFunction>(Assert.Single(bridge.CreateFunctions()));
+
+        var returned = Assert.IsType<string>(await function.InvokeAsync(
+            new AIFunctionArguments(),
+            CancellationToken.None));
+
+        Assert.Equal(returned, Assert.Single(bridge.StepRecords).ModelToolResult);
+        Assert.Equal(
+            returned,
+            Assert.Single(events, item => item.Type == CopilotAgentEventType.ToolResult).ModelToolResult);
+        Assert.Equal(0, tool.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task FrameworkBridgePublishesTheReturnedRepeatGuardProjection()
+    {
+        var tool = new RecordingTool();
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "repeat-guard-projection-conversation",
+            TaskId = "repeat-guard-projection-task",
+            Mode = CopilotAgentMode.Auto,
+            UserText = "Run the recording tool twice.",
+            TaskIntentText = "Run the recording tool twice.",
+        };
+        var events = new List<CopilotAgentEvent>();
+        var bridge = new CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge(
+            request,
+            CopilotExecutionScope.ForAgentRun(request),
+            [tool],
+            maxToolCalls: 3,
+            new CopilotToolExecutor(),
+            new CopilotFrameworkApprovalCoordinator(),
+            events.Add,
+            capabilityRevisionProvider: () => 1);
+        var function = Assert.IsAssignableFrom<AIFunction>(Assert.Single(bridge.CreateFunctions()));
+
+        await function.InvokeAsync(new AIFunctionArguments(), CancellationToken.None);
+        var returned = Assert.IsType<string>(await function.InvokeAsync(
+            new AIFunctionArguments(),
+            CancellationToken.None));
+
+        Assert.Equal(returned, bridge.StepRecords[1].ModelToolResult);
+        Assert.Equal(
+            returned,
+            events.Where(item => item.Type == CopilotAgentEventType.ToolResult).ElementAt(1).ModelToolResult);
+        Assert.Equal(1, tool.ExecutionCount);
+    }
+
+    [Fact]
     public async Task PostHookLifecycleDispatchFailurePreservesTheCompletedToolOutcome()
     {
         var tool = new RecordingTool();
