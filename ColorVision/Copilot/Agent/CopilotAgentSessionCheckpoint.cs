@@ -342,6 +342,68 @@ namespace ColorVision.Copilot
             }
         }
 
+        internal static bool TryCreateSnapshot(
+            CopilotAgentSessionCheckpoint? source,
+            out CopilotAgentSessionCheckpoint snapshot)
+        {
+            snapshot = null!;
+            if (source == null)
+                return false;
+
+            try
+            {
+                if (!CopilotAgentTaskEventJournal.TryCreateSnapshot(
+                        source.TaskEventJournal,
+                        out var taskEventJournal))
+                {
+                    return false;
+                }
+
+                var candidate = new CopilotAgentSessionCheckpoint(source)
+                {
+                    ProfileKey = source.ProfileKey,
+                    CapabilityCatalogRevision = source.CapabilityCatalogRevision,
+                    Capabilities = Array.AsReadOnly(source.Capabilities
+                        .Take(MaxCheckpointCapabilities + 1)
+                        .Select(capability => new CopilotAgentCheckpointCapability
+                        {
+                            Id = capability.Id,
+                            Revision = capability.Revision,
+                            Fingerprint = capability.Fingerprint,
+                        })
+                        .ToArray()),
+                    ToolSurfaceVersion = source.ToolSurfaceVersion,
+                    AvailableToolNames = Array.AsReadOnly(source.AvailableToolNames
+                        .Take(MaxAvailableToolNames + 1)
+                        .ToArray()),
+                    EnvironmentVersion = source.EnvironmentVersion,
+                    EnvironmentFingerprint = source.EnvironmentFingerprint,
+                    HookSurfaceVersion = source.HookSurfaceVersion,
+                    HookSurfaceFingerprint = source.HookSurfaceFingerprint,
+                    ProjectInstructionSurfaceVersion = source.ProjectInstructionSurfaceVersion,
+                    ProjectInstructionSurfaceFingerprint = source.ProjectInstructionSurfaceFingerprint,
+                    EvidenceArtifacts = Array.AsReadOnly(source.EvidenceArtifacts
+                        .Take(CopilotAgentEvidenceArtifact.MaxArtifacts + 1)
+                        .ToArray()),
+                    ConversationMemory = Array.AsReadOnly(source.ConversationMemory
+                        .Take(MaxConversationMemoryMessages + 1)
+                        .ToArray()),
+                    TaskIntentText = source.TaskIntentText,
+                    TaskEventJournal = taskEventJournal,
+                    UpdatedAtUtc = source.UpdatedAtUtc,
+                };
+                if (!candidate.IsStructurallyValid())
+                    return false;
+
+                snapshot = candidate;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public static CopilotAgentSessionCheckpoint? Create(
             CopilotProfileConfig profile,
             string serializedSessionJson,

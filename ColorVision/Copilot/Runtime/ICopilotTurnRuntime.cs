@@ -475,15 +475,29 @@ namespace ColorVision.Copilot
             RefreshExternalContext = refreshExternalContext;
             HostContext = hostContext ?? throw new ArgumentNullException(nameof(hostContext));
             HistoryLimits = historyLimits;
-            SessionCheckpoint = sessionCheckpoint;
-            var hasJournalSnapshot = CopilotAgentTaskEventJournal.TryCreateSnapshot(
-                taskEventJournalBaseline,
-                out var journalSnapshot);
-            if (!hasJournalSnapshot)
-                hasJournalSnapshot = CopilotAgentTaskEventJournal.TryCreateSnapshot(
+            SessionCheckpoint = CopilotAgentSessionCheckpoint.TryCreateSnapshot(
+                sessionCheckpoint,
+                out var sessionCheckpointSnapshot)
+                    ? sessionCheckpointSnapshot
+                    : null;
+            if (CopilotAgentTaskEventJournal.TryCreateSnapshot(
+                    taskEventJournalBaseline,
+                    out var journalSnapshot))
+            {
+                TaskEventJournalBaseline = journalSnapshot;
+            }
+            else if (SessionCheckpoint != null)
+            {
+                TaskEventJournalBaseline = SessionCheckpoint.TaskEventJournal;
+            }
+            else
+            {
+                TaskEventJournalBaseline = CopilotAgentTaskEventJournal.TryCreateSnapshot(
                     sessionCheckpoint?.TaskEventJournal,
-                    out journalSnapshot);
-            TaskEventJournalBaseline = hasJournalSnapshot ? journalSnapshot : null;
+                    out journalSnapshot)
+                        ? journalSnapshot
+                        : null;
+            }
             Recovery = recovery;
             RunControl = runControl;
             AgentDefaults = (agentDefaults ?? throw new ArgumentNullException(nameof(agentDefaults))).Clone();

@@ -89,6 +89,55 @@ public sealed class CopilotTurnTranscriptReplayTests
     }
 
     [Fact]
+    public void TurnRequestFreezesRecoveryCheckpointAndSharesItsJournalBaseline()
+    {
+        var sourceToolNames = new[] { "ReadWorkspace" };
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "persisted-profile",
+            SerializedSessionJson = "{}",
+            ToolSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentToolSurfaceVersion,
+            AvailableToolNames = sourceToolNames,
+            TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
+        };
+
+        var request = new CopilotTurnRequest(
+            new CopilotProfileConfig(),
+            CopilotAgentMode.Auto,
+            userText: "continue",
+            existingRequestContent: string.Empty,
+            chatAttachmentContextCaptured: false,
+            refreshExternalContext: true,
+            new CopilotAgentHostContextSnapshot(
+                activeDocumentPath: null,
+                solutionDirectoryPath: null,
+                attachments: null,
+                liveContext: null,
+                conversationHistory: null,
+                additionalReadRootPaths: null,
+                globalInstructionRootPath: null),
+            CopilotConversationHistoryWindow.ResolveLimits(32_000, 4_096),
+            sessionCheckpoint: checkpoint,
+            recovery: null,
+            runControl: null,
+            new CopilotAgentDefaultsConfig(),
+            externalMcpServers: null,
+            conversationId: "checkpoint-snapshot-conversation",
+            taskId: "checkpoint-snapshot-turn");
+
+        Assert.NotNull(request.SessionCheckpoint);
+        Assert.NotSame(checkpoint, request.SessionCheckpoint);
+        Assert.Same(
+            request.SessionCheckpoint.TaskEventJournal,
+            request.TaskEventJournalBaseline);
+        sourceToolNames[0] = "RewriteWorkspace";
+        Assert.Equal("ReadWorkspace", Assert.Single(request.SessionCheckpoint.AvailableToolNames));
+        var persistedToolNames = Assert.IsAssignableFrom<IList<string>>(
+            request.SessionCheckpoint.AvailableToolNames);
+        Assert.Throws<NotSupportedException>(() => persistedToolNames[0] = "RewriteWorkspace");
+    }
+
+    [Fact]
     public async Task CapturedChatRuntimeTranscriptReplaysToTheSameCompletion()
     {
         using var handler = new StaticChatHandler();
