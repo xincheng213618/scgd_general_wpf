@@ -65,9 +65,27 @@ namespace ColorVision.Copilot
         }
         private IReadOnlyList<CopilotAgentBlockerSnapshot> _blockers = Array.Empty<CopilotAgentBlockerSnapshot>();
 
-        public CopilotAgentTaskEventJournalSnapshot TaskEventJournal { get; init; } = new();
+        public CopilotAgentTaskEventJournalSnapshot TaskEventJournal
+        {
+            get => _taskEventJournal;
+            init => _taskEventJournal = CopilotAgentTaskEventJournal.TryCreateSnapshot(
+                value,
+                out var snapshot)
+                    ? snapshot
+                    : new CopilotAgentTaskEventJournalSnapshot();
+        }
+        private CopilotAgentTaskEventJournalSnapshot _taskEventJournal = new();
 
-        public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
+        public CopilotAgentSessionCheckpoint? SessionCheckpoint
+        {
+            get => _sessionCheckpoint;
+            init => _sessionCheckpoint = CopilotAgentSessionCheckpoint.TryCreateSnapshot(
+                value,
+                out var snapshot)
+                    ? snapshot
+                    : null;
+        }
+        private CopilotAgentSessionCheckpoint? _sessionCheckpoint;
 
         private static IReadOnlyList<T> Freeze<T>(IReadOnlyList<T>? values)
         {

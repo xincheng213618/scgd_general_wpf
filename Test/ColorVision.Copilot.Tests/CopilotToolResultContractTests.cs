@@ -81,6 +81,46 @@ public sealed class CopilotToolResultContractTests
     }
 
     [Fact]
+    public void AgentRunResultOwnsRecoveryStateSnapshots()
+    {
+        var journalBuilder = new CopilotAgentTaskEventJournalBuilder();
+        journalBuilder.RecordRunStarted();
+        var journalEvents = journalBuilder.Snapshot().Events.ToList();
+        var journal = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = journalEvents,
+        };
+        var availableToolNames = new List<string> { "ReadWorkspace" };
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "profile-key",
+            SerializedSessionJson = "{}",
+            ToolSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentToolSurfaceVersion,
+            AvailableToolNames = availableToolNames,
+            TaskEventJournal = journal,
+        };
+
+        var result = new CopilotAgentRunResult
+        {
+            TaskEventJournal = journal,
+            SessionCheckpoint = checkpoint,
+        };
+
+        journalEvents.Clear();
+        availableToolNames[0] = "RewriteWorkspace";
+
+        Assert.Single(result.TaskEventJournal.Events);
+        Assert.Equal(
+            "ReadWorkspace",
+            Assert.Single(Assert.IsType<CopilotAgentSessionCheckpoint>(result.SessionCheckpoint).AvailableToolNames));
+        Assert.Single(result.SessionCheckpoint.TaskEventJournal.Events);
+        Assert.Throws<NotSupportedException>(() =>
+            Assert.IsAssignableFrom<IList<CopilotAgentTaskEvent>>(result.TaskEventJournal.Events).Clear());
+        Assert.Throws<NotSupportedException>(() =>
+            Assert.IsAssignableFrom<IList<string>>(result.SessionCheckpoint.AvailableToolNames)[0] = "RewriteWorkspace");
+    }
+
+    [Fact]
     public void ToolResultEventOwnsItsHookRunCollection()
     {
         var paths = new List<string> { @"C:\workspace\first.cs" };
