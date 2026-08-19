@@ -188,6 +188,29 @@ public sealed class CopilotProviderConnectionRecoveryTests
         Assert.False(budgetedClient.Snapshot.UsedEstimatedUsage);
     }
 
+    [Fact]
+    public async Task BudgetExhaustionObserverFailureCannotReplaceBoundedStop()
+    {
+        var provider = new RecoveringChatClient(connectionFailuresBeforeSuccess: 0);
+        using var client = new CopilotTokenBudgetChatClient(
+            provider,
+            new CopilotAgentTokenBudget
+            {
+                ContextWindowTokens = CopilotAgentTokenBudget.MinimumContextWindowTokens,
+                MaxOutputTokens = 128,
+                RequestTokenBudget = 1,
+            },
+            onBudgetExhausted: static _ => throw new InvalidOperationException("observer failed"));
+
+        await Assert.ThrowsAsync<CopilotAgentTokenBudgetExceededException>(() =>
+            client.GetResponseAsync(
+                [new ChatMessage(ChatRole.User, "stay within the bounded budget")],
+                cancellationToken: CancellationToken.None));
+
+        Assert.Equal(0, provider.CallCount);
+        Assert.True(client.Snapshot.BudgetExhausted);
+    }
+
     private static CopilotAgentTokenBudget CreateBudget() => new()
     {
         ContextWindowTokens = CopilotAgentTokenBudget.MinimumContextWindowTokens,
