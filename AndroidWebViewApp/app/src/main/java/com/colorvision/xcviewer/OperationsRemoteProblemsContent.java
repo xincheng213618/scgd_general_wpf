@@ -12,7 +12,6 @@ import android.widget.TextView;
 import androidx.core.view.ViewCompat;
 import androidx.core.widget.TextViewCompat;
 
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 
 final class OperationsRemoteProblemsContent {
@@ -23,8 +22,7 @@ final class OperationsRemoteProblemsContent {
             Activity activity,
             ThemeManager themeManager,
             OperationsRemoteProblemsPresentation.ViewModel model,
-            SectionHandler sectionHandler,
-            Runnable refresh) {
+            SectionHandler sectionHandler) {
         LinearLayout root = new LinearLayout(activity);
         root.setOrientation(LinearLayout.VERTICAL);
 
@@ -45,12 +43,6 @@ final class OperationsRemoteProblemsContent {
                 OperationsRemoteProblemsPresentation.SAFETY_NOTICE),
                 topMargin(dp(activity, 8)));
 
-        MaterialButton refreshButton = new MaterialButton(
-                activity, null, com.google.android.material.R.attr.materialButtonTonalStyle);
-        refreshButton.setText("刷新电脑签名状态");
-        refreshButton.setMinHeight(dp(activity, 48));
-        refreshButton.setOnClickListener(view -> refresh.run());
-        root.addView(refreshButton, topMargin(dp(activity, 16)));
         return root;
     }
 

@@ -43,6 +43,20 @@ public class OperationsDashboardRefreshPolicyTest {
     }
 
     @Test
+    public void problemCenterReusesTheToolbarRefreshAction() {
+        assertTrue(OperationsDashboardRefreshPolicy.showsProblemCenterAction(
+                true, true, true, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsProblemCenterAction(
+                true, true, false, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsProblemCenterAction(
+                true, true, true, true, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsProblemCenterAction(
+                false, true, true, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsProblemCenterAction(
+                true, true, true, false, false));
+    }
+
+    @Test
     public void visibleDashboardStartsANewRefresh() {
         assertEquals(
                 OperationsDashboardRefreshPolicy.Decision.START,

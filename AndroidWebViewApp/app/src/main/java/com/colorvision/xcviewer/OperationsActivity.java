@@ -164,6 +164,7 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean connectionHeartbeatInFlight;
     private boolean manualDashboardRefresh;
     private boolean remoteToolboxRefreshInFlight;
+    private boolean problemCenterRefreshInFlight;
     private String lastSuccessfulDashboardUpdateLabel = "";
     private int connectionRequestGeneration;
     private int connectionCheckGeneration;
@@ -175,6 +176,7 @@ public class OperationsActivity extends AppCompatActivity {
     private String currentDestination = OperationsDestinationState.OVERVIEW;
     private String pendingRestoredDestination = "";
     private String problemBadgeState = "";
+    private int problemBadgeCount;
     private boolean returnToTriageOnBack;
     private boolean returnToToolboxOnBack;
     private boolean returnToSettingsOnBack;
@@ -308,7 +310,13 @@ public class OperationsActivity extends AppCompatActivity {
             if (item.getItemId() != MENU_REFRESH_DASHBOARD) {
                 return false;
             }
-            if (isRemoteToolboxRefreshDestination()) {
+            if (isProblemCenterRefreshDestination()) {
+                if (remoteDashboard) {
+                    refreshRemoteProblemCenter();
+                } else {
+                    showTriageCenter();
+                }
+            } else if (isRemoteToolboxRefreshDestination()) {
                 refreshRemoteOperationsToolbox();
             } else {
                 requestDashboardRefresh();
@@ -449,7 +457,7 @@ public class OperationsActivity extends AppCompatActivity {
         navigation.getMenu().add(0, NAV_TOOLS, 2, "工具").setIcon(R.drawable.ic_build_24);
         navigation.getMenu().add(0, NAV_SETTINGS, 3, "设置").setIcon(R.drawable.ic_settings_24);
         renderProblemNavigationBadge(
-                navigation, preferences.getOperationsWatchState());
+                navigation, preferences.getOperationsWatchState(), 0);
         navigation.setSelectedItemId(NAV_OPERATIONS);
         navigation.setOnItemSelectedListener(item -> {
             if (updatingBottomNavigation) {
@@ -524,19 +532,41 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void renderProblemNavigationBadge(
-            BottomNavigationView navigation, String watchState) {
+            BottomNavigationView navigation, String watchState, int issueCount) {
         OperationsProblemBadgeRenderer.render(
                 navigation,
                 NAV_PROBLEMS,
                 OperationsProblemBadgePresentation.create(
-                        preferences.getOperationsProfileCount() > 0, watchState));
+                        preferences.getOperationsProfileCount() > 0,
+                        watchState,
+                        issueCount));
     }
 
     private void refreshProblemNavigationBadge() {
         renderProblemNavigationBadge(
                 bottomNavigation,
                 problemBadgeState.isEmpty()
-                        ? preferences.getOperationsWatchState() : problemBadgeState);
+                        ? preferences.getOperationsWatchState() : problemBadgeState,
+                problemBadgeCount);
+    }
+
+    private void updateProblemNavigationFromMonitor(
+            JSONObject monitor, boolean relay, boolean hostFresh) {
+        if (relay && !hostFresh) {
+            problemBadgeState = OperationsWatchHistory.STATE_REMOTE_WAITING;
+            problemBadgeCount = 0;
+        } else {
+            problemBadgeState = OperationsMonitorClassifier.watchState(
+                    monitor,
+                    relay
+                            ? OperationsWatchHistory.STATE_REMOTE_ONLINE
+                            : OperationsWatchHistory.STATE_ONLINE);
+            problemBadgeCount = monitor == null
+                    ? 0
+                    : OperationsRemoteProblemsPresentation.from(
+                            monitor, true).issues.size();
+        }
+        refreshProblemNavigationBadge();
     }
 
     private void installInPageBackNavigation() {
@@ -1801,6 +1831,8 @@ public class OperationsActivity extends AppCompatActivity {
         cachedAlertSignature = "";
         lastSuccessfulDashboardUpdateLabel = "";
         problemBadgeState = "";
+        problemBadgeCount = 0;
+        problemCenterRefreshInFlight = false;
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         clearDashboardLiveStatusReferences();
         refreshProblemNavigationBadge();
@@ -1902,16 +1934,31 @@ public class OperationsActivity extends AppCompatActivity {
                             remoteDashboard,
                             connectionRecoveryVisible,
                             relayClient != null);
-            boolean showRefresh = showDashboardRefresh || showToolboxRefresh;
-            dashboardRefreshMenuItem.setTitle(showToolboxRefresh
-                    ? "刷新工具可用性"
-                    : getString(R.string.operations_refresh_dashboard));
+            boolean showProblemRefresh = OperationsDashboardRefreshPolicy
+                    .showsProblemCenterAction(
+                            paired,
+                            dashboardVisible,
+                            OperationsDestinationState.TRIAGE.equals(currentDestination),
+                            connectionRecoveryVisible,
+                            remoteDashboard ? relayClient != null : client != null);
+            boolean showRefresh = showDashboardRefresh
+                    || showToolboxRefresh
+                    || showProblemRefresh;
+            dashboardRefreshMenuItem.setTitle(showProblemRefresh
+                    ? remoteDashboard
+                            ? "刷新电脑签名状态" : "刷新问题摘要"
+                    : showToolboxRefresh
+                            ? "刷新工具可用性"
+                            : getString(R.string.operations_refresh_dashboard));
             dashboardRefreshMenuItem.setVisible(showRefresh);
             dashboardRefreshMenuItem.setEnabled(
                     OperationsDashboardRefreshPolicy.toolbarActionEnabled(
                             showRefresh,
-                            showToolboxRefresh
-                                    ? remoteToolboxRefreshInFlight : manualDashboardRefresh));
+                            showProblemRefresh
+                                    ? problemCenterRefreshInFlight
+                                    : showToolboxRefresh
+                                            ? remoteToolboxRefreshInFlight
+                                            : manualDashboardRefresh));
         }
         if (dashboardFreshness != null) {
             dashboardFreshness.setVisibility(
@@ -2198,12 +2245,8 @@ public class OperationsActivity extends AppCompatActivity {
                     JSONObject host = response.optJSONObject("host");
                     boolean fresh = host != null && OperationsRelayPolicy.isHostFresh(
                             host.optLong("signedAt", 0L), System.currentTimeMillis());
-                    problemBadgeState = !fresh
-                            ? OperationsWatchHistory.STATE_REMOTE_WAITING
-                            : OperationsMonitorClassifier.watchState(
-                                    remoteMonitor(response),
-                                    OperationsWatchHistory.STATE_REMOTE_ONLINE);
-                    refreshProblemNavigationBadge();
+                    updateProblemNavigationFromMonitor(
+                            remoteMonitor(response), true, fresh);
                     showRemoteOperationsToolboxPage();
                 });
             } catch (Exception ex) {
@@ -2219,6 +2262,10 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean isRemoteToolboxRefreshDestination() {
         return remoteDashboard
                 && OperationsDestinationState.TOOLS.equals(currentDestination);
+    }
+
+    private boolean isProblemCenterRefreshDestination() {
+        return OperationsDestinationState.TRIAGE.equals(currentDestination);
     }
 
     private void runOperationsToolboxAction(String actionId) {
@@ -4010,14 +4057,8 @@ public class OperationsActivity extends AppCompatActivity {
         }
         enrichMonitorAlertSource(snapshot, false);
         dashboardSummaryLoaded = true;
-        problemBadgeState = remoteDashboard && !dashboardRemoteHostFresh
-                ? OperationsWatchHistory.STATE_REMOTE_WAITING
-                : OperationsMonitorClassifier.watchState(
-                        snapshot,
-                        remoteDashboard
-                                ? OperationsWatchHistory.STATE_REMOTE_ONLINE
-                                : OperationsWatchHistory.STATE_ONLINE);
-        refreshProblemNavigationBadge();
+        updateProblemNavigationFromMonitor(
+                snapshot, remoteDashboard, dashboardRemoteHostFresh);
         JSONObject flow = snapshot.optJSONObject("flow");
         JSONObject devices = snapshot.optJSONObject("devices");
         JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
@@ -4519,20 +4560,26 @@ public class OperationsActivity extends AppCompatActivity {
         OperationsRemoteProblemsPresentation.ViewModel model =
                 OperationsRemoteProblemsPresentation.from(
                         remoteMonitor(lastRelaySnapshotResponse), fresh);
+        problemBadgeCount = model.snapshotAvailable ? model.issues.size() : 0;
+        refreshProblemNavigationBadge();
         state.setText(model.stateLabel);
         actions.removeAllViews();
         actions.addView(OperationsRemoteProblemsContent.create(
                         this,
                         themeManager,
                         model,
-                        this::showRemoteProblemDetail,
-                        this::refreshRemoteProblemCenter),
+                        this::showRemoteProblemDetail),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
     private void refreshRemoteProblemCenter() {
+        if (problemCenterRefreshInFlight) {
+            return;
+        }
+        problemCenterRefreshInFlight = true;
+        refreshOperationsHeaderNavigation();
         progress.setVisibility(View.VISIBLE);
         state.setText("正在读取电脑签名问题摘要…");
         executor.execute(() -> {
@@ -4544,20 +4591,25 @@ public class OperationsActivity extends AppCompatActivity {
                     boolean fresh = host != null && OperationsRelayPolicy.isHostFresh(
                             host.optLong("signedAt", 0L), System.currentTimeMillis());
                     JSONObject monitor = remoteMonitor(response);
-                    problemBadgeState = !fresh
-                            ? OperationsWatchHistory.STATE_REMOTE_WAITING
-                            : OperationsMonitorClassifier.watchState(
-                                    monitor, OperationsWatchHistory.STATE_REMOTE_ONLINE);
-                    refreshProblemNavigationBadge();
+                    problemCenterRefreshInFlight = false;
+                    updateProblemNavigationFromMonitor(monitor, true, fresh);
                     showRemoteProblemCenter();
                 });
             } catch (Exception ex) {
-                runOnUiThread(() -> showTransientError(ex));
+                runOnUiThread(() -> {
+                    problemCenterRefreshInFlight = false;
+                    refreshOperationsHeaderNavigation();
+                    showTransientError(ex);
+                });
             }
         });
     }
 
     private void showTriageCenter() {
+        if (problemCenterRefreshInFlight) {
+            return;
+        }
+        problemCenterRefreshInFlight = true;
         boolean preservePreviousReport = OperationsDestinationState.TRIAGE.equals(
                 currentDestination) && actions.getChildCount() > 0;
         returnToToolboxOnBack = false;
@@ -4590,6 +4642,8 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showTriageError(Exception ex) {
+        problemCenterRefreshInFlight = false;
+        refreshOperationsHeaderNavigation();
         progress.setVisibility(View.GONE);
         state.setText("排障建议未更新");
         details.setText(OperationsTriagePresentation.failureDetails(
@@ -4602,6 +4656,13 @@ public class OperationsActivity extends AppCompatActivity {
     private void renderTriageCenter(JSONObject report) {
         OperationsTriagePresentation.ViewModel model =
                 OperationsTriagePresentation.from(report, this::shortTime);
+        problemCenterRefreshInFlight = false;
+        problemBadgeCount = model.findings.size();
+        if (model.tone == OperationsTriagePresentation.TONE_NORMAL) {
+            problemBadgeState = OperationsWatchHistory.STATE_ONLINE;
+        }
+        refreshProblemNavigationBadge();
+        refreshOperationsHeaderNavigation();
         scrollDashboardToTop();
         progress.setVisibility(View.GONE);
         title.setTitle("问题中心");
@@ -4612,8 +4673,7 @@ public class OperationsActivity extends AppCompatActivity {
                         themeManager,
                         model,
                         this::runTriageAction,
-                        this::showLiveMonitorFromTriage,
-                        this::showProblemCenter),
+                        this::showLiveMonitorFromTriage),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));

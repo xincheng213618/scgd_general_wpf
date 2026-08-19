@@ -277,7 +277,8 @@ public class MainActivity extends AppCompatActivity {
                 NAV_PROBLEMS,
                 OperationsProblemBadgePresentation.create(
                         appPreferences.getOperationsProfileCount() > 0,
-                        appPreferences.getOperationsWatchState()));
+                        appPreferences.getOperationsWatchState(),
+                        0));
     }
 
     private void selectTab(int tab) {

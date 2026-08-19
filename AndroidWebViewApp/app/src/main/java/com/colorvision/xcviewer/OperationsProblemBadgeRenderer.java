@@ -19,8 +19,15 @@ final class OperationsProblemBadgeRenderer {
             return;
         }
         BadgeDrawable badge = navigation.getOrCreateBadge(itemId);
-        badge.clearNumber();
-        badge.setContentDescriptionNumberless(model.contentDescription);
+        if (model.number > 0) {
+            badge.setMaxCharacterCount(3);
+            badge.setNumber(model.number);
+            badge.setContentDescriptionQuantityStringsResource(
+                    R.plurals.operations_problem_badge_count);
+        } else {
+            badge.clearNumber();
+            badge.setContentDescriptionNumberless(model.contentDescription);
+        }
         badge.setVisible(true);
     }
 }

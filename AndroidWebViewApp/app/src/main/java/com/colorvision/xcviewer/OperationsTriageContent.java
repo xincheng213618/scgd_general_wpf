@@ -30,8 +30,7 @@ final class OperationsTriageContent {
             ThemeManager themeManager,
             OperationsTriagePresentation.ViewModel model,
             ActionHandler actionHandler,
-            Runnable observe,
-            Runnable refresh) {
+            Runnable observe) {
         LinearLayout root = new LinearLayout(activity);
         root.setOrientation(LinearLayout.VERTICAL);
 
@@ -45,12 +44,6 @@ final class OperationsTriageContent {
                 activity.getString(R.string.operations_triage_observe_content_description),
                 R.drawable.ic_visibility_24,
                 observe));
-        quickActions.addView(actionChip(
-                activity,
-                "刷新摘要",
-                "重新读取问题证据与可用处置动作",
-                R.drawable.ic_refresh_24,
-                refresh));
         root.addView(quickActions, matchWidth());
 
         if (!model.findings.isEmpty()) {

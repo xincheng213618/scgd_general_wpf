@@ -43,6 +43,19 @@ final class OperationsDashboardRefreshPolicy {
                 && hasRelayClient;
     }
 
+    static boolean showsProblemCenterAction(
+            boolean hasOperationsProfile,
+            boolean dashboardVisible,
+            boolean problemCenterDestination,
+            boolean connectionRecoveryVisible,
+            boolean hasOperationsClient) {
+        return hasOperationsProfile
+                && dashboardVisible
+                && problemCenterDestination
+                && !connectionRecoveryVisible
+                && hasOperationsClient;
+    }
+
     static Decision decide(
             boolean activityResumed,
             boolean dashboardVisible,
