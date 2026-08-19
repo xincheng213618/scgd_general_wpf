@@ -406,5 +406,20 @@ namespace ColorVision.Copilot
                 }
             }
         }
+
+        private sealed class SemaphoreReleaseLease : IDisposable
+        {
+            private SemaphoreSlim? _semaphore;
+
+            public SemaphoreReleaseLease(SemaphoreSlim semaphore)
+            {
+                _semaphore = semaphore ?? throw new ArgumentNullException(nameof(semaphore));
+            }
+
+            public void Dispose()
+            {
+                Interlocked.Exchange(ref _semaphore, null)?.Release();
+            }
+        }
     }
 }

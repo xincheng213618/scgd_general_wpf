@@ -15,8 +15,10 @@ namespace ColorVision.Copilot
             IReadOnlyList<CopilotToolExecutionHookBinding> hooks,
             List<CopilotToolExecutionHookRun> hookRuns,
             CopilotToolExecutionHookEventPublisher hookEvents,
+            DeferredExecutionLease preExecutionLease,
             CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(preExecutionLease);
             var phaseStopwatch = Stopwatch.StartNew();
             foreach (var binding in hooks)
             {
@@ -137,6 +139,7 @@ namespace ColorVision.Copilot
                 }
                 catch (TimeoutException)
                 {
+                    preExecutionLease.HoldUntilCompleted(hookTask);
                     CancelAndDisposeWithoutWaiting(ref hookCancellation);
                     CopilotCancellationBoundary.ObserveLateFault(hookTask);
                     RecordHookRun(
@@ -170,6 +173,7 @@ namespace ColorVision.Copilot
                 }
                 catch (OperationCanceledException)
                 {
+                    preExecutionLease.HoldUntilCompleted(hookTask);
                     CancelAndDisposeWithoutWaiting(ref hookCancellation);
                     CopilotCancellationBoundary.ObserveLateFault(hookTask);
                     RecordHookRun(

@@ -274,7 +274,8 @@ namespace ColorVision.Copilot
             try
             {
                 await _preExecutionGate.WaitAsync(cancellationToken);
-                try
+                using (var preExecutionLease = new DeferredExecutionLease(
+                    new SemaphoreReleaseLease(_preExecutionGate)))
                 {
                     var beforeHookEvents = new CopilotToolExecutionHookEventPublisher(
                         onEvent,
@@ -290,11 +291,8 @@ namespace ColorVision.Copilot
                         hooks,
                         hookRuns,
                         beforeHookEvents,
+                        preExecutionLease,
                         cancellationToken);
-                }
-                finally
-                {
-                    _preExecutionGate.Release();
                 }
             }
             catch (OperationCanceledException)

@@ -644,6 +644,38 @@ public sealed class CopilotToolExecutionHookIntegrityTests
     }
 
     [Fact]
+    public async Task TimedOutPreExecutionHookSettlesBeforeTheNextHookCallBegins()
+    {
+        var hook = new NonCooperativeOrderedBeforeHook();
+        var executor = new CopilotToolExecutor(
+            [hook],
+            hookPhaseTimeout: TimeSpan.FromMilliseconds(50));
+
+        var firstOutcome = await executor.ExecuteAsync(
+            CreateInvocation(new RecordingTool(), "timed-out-ordered-hook-first"),
+            _ => { },
+            CancellationToken.None).WaitAsync(TestTimeout);
+
+        AssertDeniedOutcome(
+            firstOutcome,
+            "tool_hook_timeout",
+            CopilotToolFailureKind.Internal);
+
+        var secondExecution = executor.ExecuteAsync(
+            CreateInvocation(new RecordingTool(), "timed-out-ordered-hook-second"),
+            _ => { },
+            CancellationToken.None);
+        await Task.Delay(100);
+
+        Assert.False(hook.SecondEntered.Task.IsCompleted);
+        hook.ReleaseFirst.TrySetResult();
+        await hook.SecondEntered.Task.WaitAsync(TestTimeout);
+
+        var secondOutcome = await secondExecution.WaitAsync(TestTimeout);
+        Assert.True(secondOutcome.Result.Success);
+    }
+
+    [Fact]
     public async Task CallerCancellationDuringHookPublishesCancelledTerminalBeforeRethrow()
     {
         var hookStarted = new TaskCompletionSource(
@@ -1120,6 +1152,33 @@ public sealed class CopilotToolExecutionHookIntegrityTests
             {
                 SecondEntered.TrySetResult();
             }
+
+            return CopilotToolExecutionHookDecision.Proceed;
+        }
+
+        public Task AfterExecuteAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class NonCooperativeOrderedBeforeHook : ICopilotToolExecutionHook
+    {
+        private int _beforeCount;
+
+        public TaskCompletionSource SecondEntered { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource ReleaseFirst { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref _beforeCount) == 1)
+                await ReleaseFirst.Task;
+            else
+                SecondEntered.TrySetResult();
 
             return CopilotToolExecutionHookDecision.Proceed;
         }
