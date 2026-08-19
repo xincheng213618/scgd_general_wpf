@@ -13,6 +13,39 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotSecretRedactionTests
 {
+    [Fact]
+    public async Task ToolExceptionIsRedactedBeforeTerminalResultIsPublished()
+    {
+        const string credential = "raw-mcp-secret-1234567890";
+        var events = new List<CopilotAgentEvent>();
+        var outcome = await new CopilotToolExecutor().ExecuteAsync(
+            new CopilotToolInvocation
+            {
+                CallId = "secret-bearing-tool-failure",
+                Round = 1,
+                Attempt = 1,
+                MaxAttempts = 1,
+                RuntimeName = "test",
+                Tool = new SecretBearingFailureTool(credential),
+                AgentRequest = new CopilotAgentRequest
+                {
+                    Mode = CopilotAgentMode.Auto,
+                    UserText = "exercise exception normalization",
+                },
+            },
+            events.Add,
+            CancellationToken.None);
+
+        Assert.False(outcome.Result.Success);
+        Assert.Contains("token=<redacted>", outcome.Result.ErrorMessage, StringComparison.Ordinal);
+        Assert.DoesNotContain(credential, outcome.Result.ErrorMessage, StringComparison.Ordinal);
+        Assert.True(outcome.Result.ErrorMessage.Length <= CopilotUserFacingErrorFormatter.MaximumMessageLength);
+
+        var terminal = Assert.Single(events, item => item.Type == CopilotAgentEventType.ToolResult);
+        Assert.Equal(outcome.Result.ErrorMessage, terminal.ToolResult?.ErrorMessage);
+        Assert.DoesNotContain(credential, terminal.ToolResult?.ErrorMessage ?? string.Empty, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(
         "rg sk-abcdefghijklmnopqrstuvwxyz123456",
@@ -212,6 +245,24 @@ public sealed class CopilotSecretRedactionTests
         finally
         {
             CopilotMcpAuditLogger.ClearForTests();
+        }
+    }
+
+    private sealed class SecretBearingFailureTool(string credential) : ICopilotTool
+    {
+        public string Name => "SecretBearingFailureTool";
+
+        public string Description => "Throws a test exception containing a credential.";
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromException<CopilotToolResult>(new InvalidOperationException(
+                $"Remote tool failed with token={credential}. {new string('x', 1_000)}"));
         }
     }
 }

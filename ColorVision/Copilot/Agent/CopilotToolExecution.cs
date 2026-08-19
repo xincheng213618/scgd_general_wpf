@@ -574,13 +574,14 @@ namespace ColorVision.Copilot
                 }
                 catch (Exception ex)
                 {
+                    var error = CopilotUserFacingErrorFormatter.Sanitize(ex.Message);
                     var outcome = CreateOutcome(
                         invocation,
                         CopilotToolExecutionState.Failed,
                         startedAt,
                         timeout,
                         stopwatch,
-                        Failure(invocation.Tool.Name, $"{invocation.Tool.Name} execution failed.", ex.Message, CopilotToolFailureClassifier.Classify(ex)),
+                        Failure(invocation.Tool.Name, $"{invocation.Tool.Name} execution failed.", error, CopilotToolFailureClassifier.Classify(ex)),
                         queueDurationMs);
                     return await PublishExecutionOutcomeAsync(outcome);
                 }
