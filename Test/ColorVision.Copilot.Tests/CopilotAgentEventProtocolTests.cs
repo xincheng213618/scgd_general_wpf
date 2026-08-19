@@ -38,6 +38,24 @@ public sealed class CopilotAgentEventProtocolTests
     }
 
     [Fact]
+    public void RuntimeEmitterRejectsInvalidEventBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var invalid = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.ToolResult,
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(invalid));
+
+        Assert.Contains("invalid payload shape", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
     public void ReducerRejectsMissingRequiredPayload()
     {
         var agentEvent = new CopilotAgentEvent
