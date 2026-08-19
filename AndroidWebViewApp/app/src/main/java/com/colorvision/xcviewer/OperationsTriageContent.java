@@ -30,6 +30,7 @@ final class OperationsTriageContent {
             ThemeManager themeManager,
             OperationsTriagePresentation.ViewModel model,
             ActionHandler actionHandler,
+            Runnable connectionCheck,
             Runnable observe) {
         LinearLayout root = new LinearLayout(activity);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -38,6 +39,13 @@ final class OperationsTriageContent {
         quickActions.setSingleLine(false);
         quickActions.setChipSpacingHorizontal(dp(activity, 8));
         quickActions.setChipSpacingVertical(dp(activity, 4));
+        quickActions.addView(actionChip(
+                activity,
+                activity.getString(R.string.operations_triage_connection_check_action),
+                activity.getString(
+                        R.string.operations_triage_connection_check_content_description),
+                R.drawable.ic_devices_24,
+                connectionCheck));
         quickActions.addView(actionChip(
                 activity,
                 activity.getString(R.string.operations_triage_observe_action),

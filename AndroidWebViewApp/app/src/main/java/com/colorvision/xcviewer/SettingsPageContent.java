@@ -3,9 +3,11 @@ package com.colorvision.xcviewer;
 import android.app.Activity;
 import android.view.Gravity;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import androidx.core.view.ViewCompat;
@@ -211,20 +213,32 @@ final class SettingsPageContent {
 
         MaterialSwitch toggle = new MaterialSwitch(activity);
         toggle.setChecked(model.watchEnabled);
-        toggle.setContentDescription(SettingsRowAccessibility.contentDescription(
-                SettingsInformationArchitecture.OPERATIONS_WATCH,
-                model.watchStatus));
+        toggle.setClickable(false);
+        toggle.setFocusable(false);
+        toggle.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        row.setFocusable(true);
+        row.setContentDescription(SettingsRowAccessibility.contentDescription(
+                SettingsInformationArchitecture.OPERATIONS_WATCH, model.watchStatus));
+        row.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(
+                    View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.setClassName(Switch.class.getName());
+                info.setCheckable(true);
+                info.setChecked(toggle.isChecked());
+            }
+        });
         toggle.setOnCheckedChangeListener((button, checked) -> {
             String updatedStatus = handler.onWatchChanged(checked);
             status.setText(updatedStatus);
-            button.setContentDescription(SettingsRowAccessibility.contentDescription(
-                    SettingsInformationArchitecture.OPERATIONS_WATCH,
-                    updatedStatus));
+            row.setContentDescription(SettingsRowAccessibility.contentDescription(
+                    SettingsInformationArchitecture.OPERATIONS_WATCH, updatedStatus));
         });
         row.addView(toggle, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
-        row.setOnClickListener(view -> toggle.performClick());
+        row.setOnClickListener(view -> toggle.setChecked(!toggle.isChecked()));
         parent.addView(row, matchWidth());
         if (showDivider) {
             addDivider(activity, themeManager, parent);

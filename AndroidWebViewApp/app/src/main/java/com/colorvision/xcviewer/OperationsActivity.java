@@ -4817,6 +4817,7 @@ public class OperationsActivity extends AppCompatActivity {
                         themeManager,
                         model,
                         this::runTriageAction,
+                        this::runConnectionSelfCheckFromTriage,
                         this::showLiveMonitorFromTriage),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
@@ -4827,6 +4828,11 @@ public class OperationsActivity extends AppCompatActivity {
     private void showLiveMonitorFromTriage() {
         returnToTriageOnBack = true;
         showLiveMonitor();
+    }
+
+    private void runConnectionSelfCheckFromTriage() {
+        returnToTriageOnBack = true;
+        runConnectionSelfCheck();
     }
 
     private void runTriageAction(String actionId) {

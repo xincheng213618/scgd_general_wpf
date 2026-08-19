@@ -13,6 +13,8 @@ public class OperationsInPageNavigationPolicyTest {
                 parent(OperationsDestinationState.CONNECTIONS, false, false));
         assertEquals(OperationsDestinationState.CONNECTIONS,
                 parent(OperationsDestinationState.CONNECTION_CHECK, false, false));
+        assertEquals(OperationsDestinationState.TRIAGE,
+                parent(OperationsDestinationState.CONNECTION_CHECK, true, false));
         assertEquals(OperationsDestinationState.CONNECTIONS,
                 parent(OperationsDestinationState.FLEET_ISSUES, false, false));
         assertEquals(OperationsDestinationState.TRIAGE,
@@ -47,6 +49,10 @@ public class OperationsInPageNavigationPolicyTest {
         assertEquals("返回问题中心",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.JOBS,
+                        true, false, false, false));
+        assertEquals("返回问题中心",
+                OperationsInPageNavigationPolicy.navigateUpLabel(
+                        OperationsDestinationState.CONNECTION_CHECK,
                         true, false, false, false));
         assertEquals("返回运维工具",
                 OperationsInPageNavigationPolicy.navigateUpLabel(

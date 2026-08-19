@@ -29,6 +29,8 @@
     <string name="operations_live_monitor_title">持续观察</string>
     <string name="operations_triage_observe_action">持续观察</string>
     <string name="operations_triage_observe_content_description">开始持续观察，每 10 秒更新关键状态并保留本次脱敏趋势</string>
+    <string name="operations_triage_connection_check_action">连接自检</string>
+    <string name="operations_triage_connection_check_content_description">运行只读连接自检，检查网络、安全通道、证书固定与设备签名</string>
     <plurals name="operations_problem_badge_count">
         <item quantity="other">%d 项待复核</item>
     </plurals>
