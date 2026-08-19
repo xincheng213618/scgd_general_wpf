@@ -40,9 +40,10 @@ public class DeviceHealthPresentationTest {
         assertEquals(2, model.attentionCategories().size());
         assertEquals(1, model.otherCategories().size());
         assertEquals("相机类、光谱类", model.attentionCategorySummary());
-        assertEquals("相机、光谱 · 离线 2", model.compactAttentionSummary());
+        assertEquals("相机 离线 1 · 光谱 离线 1", model.compactAttentionSummary());
         assertTrue(model.categories.get(0).attentionRequired);
-        assertEquals("相机类，共 1 台，就绪 0，不可用 1",
+        assertEquals("离线 1", model.categories.get(0).unavailableReasons);
+        assertEquals("相机类，共 1 台，就绪 0，不可用 1，原因，离线 1",
                 model.categories.get(0).accessibilityLabel());
         assertFalse(model.categories.get(2).attentionRequired);
         assertTrue(model.guidance.startsWith("优先检查 相机类、光谱类"));
@@ -86,6 +87,28 @@ public class DeviceHealthPresentationTest {
 
         assertEquals("相机、光谱等 3 类 · 离线 1、未初始化 1等",
                 model.compactAttentionSummary());
+    }
+
+    @Test
+    public void categoryReasonsUseExactServerAttributionWhenMultipleCausesExist() throws Exception {
+        DeviceHealthPresentation.ViewModel model = DeviceHealthPresentation.from(
+                new JSONObject("{"
+                        + "\"available\":true,"
+                        + "\"hasConfiguredDevices\":true,"
+                        + "\"attentionCount\":2,"
+                        + "\"unavailableCount\":2,"
+                        + "\"offlineCount\":1,"
+                        + "\"unauthorizedCount\":1,"
+                        + "\"categories\":["
+                        + "{\"category\":\"camera\",\"totalCount\":1,"
+                        + "\"unavailableCount\":1,\"offlineCount\":1},"
+                        + "{\"category\":\"spectrum\",\"totalCount\":1,"
+                        + "\"unavailableCount\":1,\"unauthorizedCount\":1}"
+                        + "]}"));
+
+        assertEquals("离线 1", model.categories.get(0).unavailableReasons);
+        assertEquals("未授权 1", model.categories.get(1).unavailableReasons);
+        assertEquals("相机 离线 1 · 光谱 未授权 1", model.compactAttentionSummary());
     }
 
     @Test

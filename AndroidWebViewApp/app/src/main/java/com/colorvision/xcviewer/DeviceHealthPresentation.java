@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.List;
 
 final class DeviceHealthPresentation {
-    static final String DATA_SCOPE = "状态来自设备实际 MQTT 运行状态的固定归类；"
+    static final String DATA_SCOPE = "状态来自设备实际 MQTT 运行状态；只显示固定粗分类下的状态与固定原因计数；"
             + "不返回设备名称、编号、标识、地址、Topic、配置、原始状态载荷、时间戳或测量数据，"
             + "也不会执行设备操作。";
 
@@ -68,7 +68,8 @@ final class DeviceHealthPresentation {
                         categoryLabel(category.optString("category", "other")),
                         stateSummary(category),
                         category.optInt("totalCount", 0),
-                        unavailable > 0 || unknown > 0));
+                        unavailable > 0 || unknown > 0,
+                        categoryUnavailableReasonSummary(category, payload)));
             }
         }
 
@@ -124,6 +125,46 @@ final class DeviceHealthPresentation {
         addCount(reasons, "未授权", source.optInt("unauthorizedCount", 0));
         addCount(reasons, "未归类", source.optInt("unclassifiedUnavailableCount", 0));
         return String.join(" · ", reasons);
+    }
+
+    private static String categoryUnavailableReasonSummary(
+            JSONObject category, JSONObject payload) {
+        String direct = unavailableReasonSummary(category);
+        if (!direct.isEmpty()) {
+            return direct;
+        }
+        int unavailableCount = category.optInt("unavailableCount", 0);
+        if (unavailableCount <= 0) {
+            return "";
+        }
+        String soleGlobalReason = soleGlobalUnavailableReason(payload);
+        return soleGlobalReason.isEmpty()
+                ? "" : soleGlobalReason + " " + unavailableCount;
+    }
+
+    private static String soleGlobalUnavailableReason(JSONObject source) {
+        int unavailableCount = source.optInt("unavailableCount", 0);
+        int[] counts = {
+                source.optInt("offlineCount", 0),
+                source.optInt("uninitializedCount", 0),
+                source.optInt("unauthorizedCount", 0),
+                source.optInt("unclassifiedUnavailableCount", 0)
+        };
+        String[] labels = {"离线", "未初始化", "未授权", "未归类"};
+        int reasonTotal = 0;
+        int presentReasonCount = 0;
+        String presentReason = "";
+        for (int index = 0; index < counts.length; index++) {
+            reasonTotal += counts[index];
+            if (counts[index] > 0) {
+                presentReasonCount++;
+                presentReason = labels[index];
+            }
+        }
+        return unavailableCount > 0
+                && reasonTotal == unavailableCount
+                && presentReasonCount == 1
+                ? presentReason : "";
     }
 
     private static void addCount(List<String> values, String label, int count) {
@@ -207,6 +248,10 @@ final class DeviceHealthPresentation {
             if (!attentionRequired) {
                 return "";
             }
+            String attributedSummary = compactAttributedAttentionSummary();
+            if (!attributedSummary.isEmpty()) {
+                return attributedSummary;
+            }
             String categorySummary = compactAttentionCategorySummary();
             if (categorySummary.isEmpty()) {
                 return attentionCount > 0
@@ -217,6 +262,25 @@ final class DeviceHealthPresentation {
                 reasonSummary = "状态未知 " + Math.max(1, attentionCount);
             }
             return categorySummary + " · " + reasonSummary;
+        }
+
+        private String compactAttributedAttentionSummary() {
+            if (attentionCategoryCount <= 0 || attentionCategoryCount > 2) {
+                return "";
+            }
+            List<String> attributed = new ArrayList<>();
+            for (int index = 0; index < attentionCategoryCount; index++) {
+                Category category = categories.get(index);
+                if (category.unavailableReasons.isEmpty()) {
+                    return "";
+                }
+                String label = category.label.endsWith("类")
+                        ? category.label.substring(0, category.label.length() - 1)
+                        : category.label;
+                attributed.add(label + " "
+                        + category.unavailableReasons.replace(" · ", "、"));
+            }
+            return String.join(" · ", attributed);
         }
 
         String compactAttentionActionSummary() {
@@ -267,16 +331,26 @@ final class DeviceHealthPresentation {
         final String summary;
         final int totalCount;
         final boolean attentionRequired;
+        final String unavailableReasons;
 
-        Category(String label, String summary, int totalCount, boolean attentionRequired) {
+        Category(
+                String label,
+                String summary,
+                int totalCount,
+                boolean attentionRequired,
+                String unavailableReasons) {
             this.label = label;
             this.summary = summary;
             this.totalCount = totalCount;
             this.attentionRequired = attentionRequired;
+            this.unavailableReasons = unavailableReasons;
         }
 
         String accessibilityLabel() {
-            return label + "，共 " + totalCount + " 台，" + summary.replace(" · ", "，");
+            String reasons = unavailableReasons.isEmpty()
+                    ? "" : "，原因，" + unavailableReasons.replace(" · ", "，");
+            return label + "，共 " + totalCount + " 台，"
+                    + summary.replace(" · ", "，") + reasons;
         }
     }
 }

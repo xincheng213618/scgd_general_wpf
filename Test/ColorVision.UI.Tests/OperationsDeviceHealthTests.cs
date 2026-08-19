@@ -35,7 +35,8 @@ namespace ColorVision.UI.Tests
             Assert.Equal(observedAt, snapshot.ObservedAt);
             Assert.Contains(snapshot.Categories, item =>
                 item.Category == OperationsDeviceCategories.Camera
-                && item.TotalCount == 2 && item.ReadyCount == 1 && item.UnavailableCount == 1);
+                && item.TotalCount == 2 && item.ReadyCount == 1 && item.UnavailableCount == 1
+                && item.UnclassifiedUnavailableCount == 1);
             Assert.Contains(snapshot.Categories, item =>
                 item.Category == OperationsDeviceCategories.Other
                 && item.TotalCount == 1 && item.UnknownCount == 1 && item.AttentionCount == 1);
@@ -49,7 +50,7 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
-        public void FactoryReturnsOnlyFixedAggregateUnavailableReasons()
+        public void FactoryReturnsOnlyFixedUnavailableReasonsByCoarseCategory()
         {
             OperationsDeviceHealthSnapshot snapshot = OperationsDeviceHealthSnapshotFactory.Create(
             [
@@ -85,8 +86,12 @@ namespace ColorVision.UI.Tests
             Assert.DoesNotContain("private-raw-reason", json, StringComparison.Ordinal);
             JsonElement category = Assert.Single(JsonDocument.Parse(json).RootElement
                 .GetProperty("Categories").EnumerateArray());
-            Assert.False(category.TryGetProperty("OfflineCount", out _));
-            Assert.False(category.TryGetProperty("UnauthorizedCount", out _));
+            Assert.Equal(1, category.GetProperty("OfflineCount").GetInt32());
+            Assert.Equal(1, category.GetProperty("UninitializedCount").GetInt32());
+            Assert.Equal(1, category.GetProperty("UnauthorizedCount").GetInt32());
+            Assert.Equal(1, category.GetProperty("UnclassifiedUnavailableCount").GetInt32());
+            Assert.DoesNotContain("private-raw-reason", category.GetRawText(),
+                StringComparison.Ordinal);
         }
 
         [Fact]

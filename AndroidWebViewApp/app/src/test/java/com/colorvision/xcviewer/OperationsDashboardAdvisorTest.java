@@ -74,7 +74,7 @@ public class OperationsDashboardAdvisorTest {
                 + "{\"category\":\"spectrum\",\"totalCount\":1,\"unavailableCount\":1}"
                 + "]}"));
 
-        assertRecommendation(monitor, "相机、光谱 · 离线 2 · 查看设备",
+        assertRecommendation(monitor, "相机 离线 1 · 光谱 离线 1 · 查看设备",
                 OperationsDashboardAdvisor.ACTION_DEVICES);
     }
 

@@ -163,8 +163,7 @@ final class DeviceHealthBottomSheet {
                 && reviewHandler != null;
         boolean singleColumnActions = AppResponsiveLayout.usesSingleColumn(
                 activity.getResources().getConfiguration().screenWidthDp,
-                activity.getResources().getConfiguration().fontScale)
-                || (offerTriageAction && trackableRecovery);
+                activity.getResources().getConfiguration().fontScale);
         LinearLayout actions = new LinearLayout(activity);
         actions.setOrientation(singleColumnActions
                 ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
@@ -350,6 +349,13 @@ final class DeviceHealthBottomSheet {
                             ? themeManager.errorColor() : themeManager.secondaryTextColor());
             status.setGravity(Gravity.START);
             row.addView(status, topMargin(dp(activity, 2)));
+            if (!category.unavailableReasons.isEmpty()) {
+                TextView reasons = text(activity, "原因 · " + category.unavailableReasons,
+                        com.google.android.material.R.style.TextAppearance_Material3_BodyMedium,
+                        themeManager.errorColor());
+                reasons.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+                row.addView(reasons, topMargin(dp(activity, 2)));
+            }
             row.setContentDescription(category.accessibilityLabel());
             row.setFocusable(true);
             row.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
