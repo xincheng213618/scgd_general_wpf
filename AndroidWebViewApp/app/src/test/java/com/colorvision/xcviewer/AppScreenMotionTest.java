@@ -10,13 +10,19 @@ public class AppScreenMotionTest {
     private static final int OPERATIONS = 0;
     private static final int TOOLS = 1;
     private static final int SETTINGS = 2;
+    private static final int PROBLEMS = 3;
 
     @Test
     public void settingsUsesForwardMotionFromOperations() {
         assertEquals(
                 AppScreenMotion.DIRECTION_FORWARD,
                 AppScreenMotion.directionBetween(
-                        OPERATIONS, SETTINGS, OPERATIONS, TOOLS, SETTINGS));
+                        OPERATIONS,
+                        SETTINGS,
+                        OPERATIONS,
+                        PROBLEMS,
+                        TOOLS,
+                        SETTINGS));
     }
 
     @Test
@@ -24,19 +30,43 @@ public class AppScreenMotionTest {
         assertEquals(
                 AppScreenMotion.DIRECTION_BACKWARD,
                 AppScreenMotion.directionBetween(
-                        SETTINGS, OPERATIONS, OPERATIONS, TOOLS, SETTINGS));
+                        SETTINGS,
+                        OPERATIONS,
+                        OPERATIONS,
+                        PROBLEMS,
+                        TOOLS,
+                        SETTINGS));
     }
 
     @Test
-    public void toolsUsesItsPositionBetweenOperationsAndSettings() {
+    public void problemsAndToolsFollowTheirBottomNavigationOrder() {
         assertEquals(
                 AppScreenMotion.DIRECTION_FORWARD,
                 AppScreenMotion.directionBetween(
-                        OPERATIONS, TOOLS, OPERATIONS, TOOLS, SETTINGS));
+                        OPERATIONS,
+                        PROBLEMS,
+                        OPERATIONS,
+                        PROBLEMS,
+                        TOOLS,
+                        SETTINGS));
+        assertEquals(
+                AppScreenMotion.DIRECTION_FORWARD,
+                AppScreenMotion.directionBetween(
+                        PROBLEMS,
+                        TOOLS,
+                        OPERATIONS,
+                        PROBLEMS,
+                        TOOLS,
+                        SETTINGS));
         assertEquals(
                 AppScreenMotion.DIRECTION_BACKWARD,
                 AppScreenMotion.directionBetween(
-                        SETTINGS, TOOLS, OPERATIONS, TOOLS, SETTINGS));
+                        SETTINGS,
+                        TOOLS,
+                        OPERATIONS,
+                        PROBLEMS,
+                        TOOLS,
+                        SETTINGS));
     }
 
     @Test
@@ -44,15 +74,30 @@ public class AppScreenMotionTest {
         assertEquals(
                 AppScreenMotion.DIRECTION_NONE,
                 AppScreenMotion.directionBetween(
-                        OPERATIONS, OPERATIONS, OPERATIONS, TOOLS, SETTINGS));
+                        OPERATIONS,
+                        OPERATIONS,
+                        OPERATIONS,
+                        PROBLEMS,
+                        TOOLS,
+                        SETTINGS));
         assertEquals(
                 AppScreenMotion.DIRECTION_NONE,
                 AppScreenMotion.directionBetween(
-                        SETTINGS, SETTINGS, OPERATIONS, TOOLS, SETTINGS));
+                        SETTINGS,
+                        SETTINGS,
+                        OPERATIONS,
+                        PROBLEMS,
+                        TOOLS,
+                        SETTINGS));
         assertEquals(
                 AppScreenMotion.DIRECTION_NONE,
                 AppScreenMotion.directionBetween(
-                        OPERATIONS, 9, OPERATIONS, TOOLS, SETTINGS));
+                        OPERATIONS,
+                        9,
+                        OPERATIONS,
+                        PROBLEMS,
+                        TOOLS,
+                        SETTINGS));
     }
 
     @Test

@@ -23,24 +23,35 @@ final class AppScreenMotion {
             int fromTab,
             int toTab,
             int operationsTab,
+            int problemsTab,
             int toolsTab,
             int settingsTab) {
-        int fromIndex = tabIndex(fromTab, operationsTab, toolsTab, settingsTab);
-        int toIndex = tabIndex(toTab, operationsTab, toolsTab, settingsTab);
+        int fromIndex = tabIndex(
+                fromTab, operationsTab, problemsTab, toolsTab, settingsTab);
+        int toIndex = tabIndex(
+                toTab, operationsTab, problemsTab, toolsTab, settingsTab);
         if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) {
             return DIRECTION_NONE;
         }
         return fromIndex < toIndex ? DIRECTION_FORWARD : DIRECTION_BACKWARD;
     }
 
-    private static int tabIndex(int tab, int operationsTab, int toolsTab, int settingsTab) {
+    private static int tabIndex(
+            int tab,
+            int operationsTab,
+            int problemsTab,
+            int toolsTab,
+            int settingsTab) {
         if (tab == operationsTab) {
             return 0;
         }
-        if (tab == toolsTab) {
+        if (tab == problemsTab) {
             return 1;
         }
-        return tab == settingsTab ? 2 : -1;
+        if (tab == toolsTab) {
+            return 2;
+        }
+        return tab == settingsTab ? 3 : -1;
     }
 
     static boolean usesFadeThrough(int direction, boolean topLevelTransition) {

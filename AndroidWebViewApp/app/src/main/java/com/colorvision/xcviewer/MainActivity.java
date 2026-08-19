@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     static final int TAB_OPERATIONS = 0;
     static final int TAB_TOOLS = 1;
     static final int TAB_SETTINGS = 2;
+    static final int TAB_PROBLEMS = 3;
 
     private FrameLayout root;
     private LinearLayout appShell;
@@ -97,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
                 restoredTab,
                 requestedTab,
                 TAB_OPERATIONS,
+                TAB_PROBLEMS,
                 TAB_TOOLS,
                 TAB_SETTINGS);
         openedFromOperations = restoring
@@ -109,11 +111,18 @@ public class MainActivity extends AppCompatActivity {
         }
         if (AppNavigationPolicy.shouldOpenPairedWorkspace(
                 appPreferences.hasOperationsProfile(),
-                startTab == TAB_OPERATIONS
-                        || startTab == TAB_TOOLS
-                        || startTab == TAB_SETTINGS)) {
+                AppNavigationPolicy.isTopLevelTab(
+                        startTab,
+                        TAB_OPERATIONS,
+                        TAB_PROBLEMS,
+                        TAB_TOOLS,
+                        TAB_SETTINGS))) {
             openOperationsDirectly(AppNavigationPolicy.pairedDestinationForTab(
-                    startTab, TAB_OPERATIONS, TAB_TOOLS, TAB_SETTINGS));
+                    startTab,
+                    TAB_OPERATIONS,
+                    TAB_PROBLEMS,
+                    TAB_TOOLS,
+                    TAB_SETTINGS));
             return;
         }
         themeManager = new ThemeManager(this, appPreferences);
@@ -283,7 +292,7 @@ public class MainActivity extends AppCompatActivity {
                 if (appPreferences.hasOperationsProfile()) {
                     openOperationsDirectly(OperationsDestinationState.TRIAGE);
                 } else {
-                    showOperationsLanding();
+                    showProblemsLanding();
                 }
                 return true;
             }
@@ -316,7 +325,10 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         int itemId = tab == TAB_SETTINGS
-                ? NAV_SETTINGS : tab == TAB_TOOLS ? NAV_TOOLS : NAV_OPERATIONS;
+                ? NAV_SETTINGS
+                : tab == TAB_TOOLS
+                        ? NAV_TOOLS
+                        : tab == TAB_PROBLEMS ? NAV_PROBLEMS : NAV_OPERATIONS;
         if (topLevelNavigation.getSelectedItemId() != itemId) {
             updatingTopLevelNavigation = true;
             topLevelNavigation.setSelectedItemId(itemId);
@@ -331,6 +343,7 @@ public class MainActivity extends AppCompatActivity {
                 requestedTab,
                 appPreferences.consumeStartTab(TAB_OPERATIONS),
                 TAB_OPERATIONS,
+                TAB_PROBLEMS,
                 TAB_TOOLS,
                 TAB_SETTINGS);
     }
@@ -338,6 +351,10 @@ public class MainActivity extends AppCompatActivity {
     private void showInitialTab(int startTab) {
         if (startTab == TAB_SETTINGS) {
             showProfileView();
+            return;
+        }
+        if (startTab == TAB_PROBLEMS) {
+            showProblemsLanding();
             return;
         }
         if (startTab == TAB_TOOLS) {
@@ -358,11 +375,18 @@ public class MainActivity extends AppCompatActivity {
         }
         if (AppNavigationPolicy.shouldOpenPairedWorkspace(
                 appPreferences.hasOperationsProfile(),
-                startTab == TAB_OPERATIONS
-                        || startTab == TAB_TOOLS
-                        || startTab == TAB_SETTINGS)) {
+                AppNavigationPolicy.isTopLevelTab(
+                        startTab,
+                        TAB_OPERATIONS,
+                        TAB_PROBLEMS,
+                        TAB_TOOLS,
+                        TAB_SETTINGS))) {
             openOperationsDirectly(AppNavigationPolicy.pairedDestinationForTab(
-                    startTab, TAB_OPERATIONS, TAB_TOOLS, TAB_SETTINGS));
+                    startTab,
+                    TAB_OPERATIONS,
+                    TAB_PROBLEMS,
+                    TAB_TOOLS,
+                    TAB_SETTINGS));
             return;
         }
         showInitialTab(startTab);
@@ -373,6 +397,7 @@ public class MainActivity extends AppCompatActivity {
                 currentTab,
                 TAB_OPERATIONS,
                 TAB_OPERATIONS,
+                TAB_PROBLEMS,
                 TAB_TOOLS,
                 TAB_SETTINGS);
         if (appPreferences.hasOperationsProfile()) {
@@ -401,11 +426,38 @@ public class MainActivity extends AppCompatActivity {
                 "扫描电脑端“设置 > 局域网控制”中的短时安全配对码。完成一次配对后，运维伴侣会成为首屏并持续守护安全连接。");
     }
 
+    private void showProblemsLanding() {
+        int direction = AppScreenMotion.directionBetween(
+                currentTab,
+                TAB_PROBLEMS,
+                TAB_OPERATIONS,
+                TAB_PROBLEMS,
+                TAB_TOOLS,
+                TAB_SETTINGS);
+        if (appPreferences.hasOperationsProfile()) {
+            openOperationsDirectly(OperationsDestinationState.TRIAGE);
+            return;
+        }
+        AppScreenMotion.beginContentTransition(setupContainer, direction);
+        selectTab(TAB_PROBLEMS);
+        headerTitle.setText("问题中心");
+        headerSubtitle.setText("连接电脑后开始复核");
+        setupContainer.removeAllViews();
+        setupContainer.addView(createPairingLandingContent(
+                "先连接运维电脑",
+                "完成安全配对后，问题中心会按优先级汇总设备离线、警告事件与待处理作业，并保留诊断证据。"),
+                matchParentParams());
+        setupContainer.setVisibility(View.VISIBLE);
+        appShell.setVisibility(View.VISIBLE);
+        progressBar.setVisibility(View.GONE);
+    }
+
     private void showToolsLanding() {
         int direction = AppScreenMotion.directionBetween(
                 currentTab,
                 TAB_TOOLS,
                 TAB_OPERATIONS,
+                TAB_PROBLEMS,
                 TAB_TOOLS,
                 TAB_SETTINGS);
         if (appPreferences.hasOperationsProfile()) {
@@ -462,6 +514,7 @@ public class MainActivity extends AppCompatActivity {
                 currentTab,
                 TAB_SETTINGS,
                 TAB_OPERATIONS,
+                TAB_PROBLEMS,
                 TAB_TOOLS,
                 TAB_SETTINGS);
         AppScreenMotion.beginContentTransition(setupContainer, direction);
@@ -1001,7 +1054,11 @@ public class MainActivity extends AppCompatActivity {
             OperationsPairingPayload.parse(text);
             Intent operations = new Intent(this, OperationsActivity.class);
             operations.putExtra(OperationsActivity.EXTRA_PAIRING_PAYLOAD, text);
-            if (currentTab == TAB_TOOLS) {
+            if (currentTab == TAB_PROBLEMS) {
+                operations.putExtra(
+                        OperationsActivity.EXTRA_OPEN_DESTINATION,
+                        OperationsDestinationState.TRIAGE);
+            } else if (currentTab == TAB_TOOLS) {
                 operations.putExtra(
                         OperationsActivity.EXTRA_OPEN_DESTINATION,
                         OperationsDestinationState.TOOLS);

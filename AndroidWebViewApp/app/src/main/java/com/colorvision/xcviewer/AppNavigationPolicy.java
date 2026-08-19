@@ -12,11 +12,27 @@ final class AppNavigationPolicy {
         return hasOperationsProfile && topLevelDestinationRequested;
     }
 
+    static boolean isTopLevelTab(
+            int tab,
+            int operationsTab,
+            int problemsTab,
+            int toolsTab,
+            int settingsTab) {
+        return tab == operationsTab
+                || tab == problemsTab
+                || tab == toolsTab
+                || tab == settingsTab;
+    }
+
     static String pairedDestinationForTab(
             int tab,
             int operationsTab,
+            int problemsTab,
             int toolsTab,
             int settingsTab) {
+        if (tab == problemsTab) {
+            return OperationsDestinationState.TRIAGE;
+        }
         if (tab == toolsTab) {
             return OperationsDestinationState.TOOLS;
         }
@@ -30,14 +46,16 @@ final class AppNavigationPolicy {
             int requestedTab,
             int persistedTab,
             int operationsTab,
+            int problemsTab,
             int toolsTab,
             int settingsTab) {
-        if (requestedTab == operationsTab
-                || requestedTab == toolsTab
-                || requestedTab == settingsTab) {
+        if (isTopLevelTab(
+                requestedTab, operationsTab, problemsTab, toolsTab, settingsTab)) {
             return requestedTab;
         }
-        if (persistedTab == toolsTab || persistedTab == settingsTab) {
+        if (persistedTab == problemsTab
+                || persistedTab == toolsTab
+                || persistedTab == settingsTab) {
             return persistedTab;
         }
         return operationsTab;
@@ -48,12 +66,14 @@ final class AppNavigationPolicy {
             int restoredTab,
             int requestedTab,
             int operationsTab,
+            int problemsTab,
             int toolsTab,
             int settingsTab) {
         return normalizeStartTab(
                 restoring ? restoredTab : requestedTab,
                 requestedTab,
                 operationsTab,
+                problemsTab,
                 toolsTab,
                 settingsTab);
     }
