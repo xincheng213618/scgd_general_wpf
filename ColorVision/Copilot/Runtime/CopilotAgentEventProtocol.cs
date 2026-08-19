@@ -230,6 +230,26 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.SteeringRecovery:
                     ValidateSteering(agentEvent);
                     break;
+                case CopilotAgentEventType.UserQuestionRequested:
+                case CopilotAgentEventType.UserQuestionResolved:
+                    ValidateUserQuestion(agentEvent);
+                    break;
+            }
+        }
+
+        private static void ValidateUserQuestion(CopilotAgentEvent agentEvent)
+        {
+            var requirePending =
+                agentEvent.Type == CopilotAgentEventType.UserQuestionRequested;
+            if (!CopilotUserQuestionSnapshot.TryCreateSnapshot(
+                    agentEvent.UserQuestion,
+                    out var snapshot)
+                || snapshot.IsPending != requirePending)
+            {
+                throw new InvalidOperationException(
+                    requirePending
+                        ? "Copilot Agent emitted an invalid user question request."
+                        : "Copilot Agent emitted an invalid user question resolution.");
             }
         }
 

@@ -354,6 +354,36 @@ public sealed class CopilotAgentEventProtocolTests
     }
 
     [Fact]
+    public void RuntimeEmitterRejectsMismatchedUserQuestionStateBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var pending = CreateUserQuestion();
+        var answered = pending.Resolve(
+            CopilotUserQuestionResolution.Answered,
+            "Option A");
+        CopilotAgentEvent[] invalidEvents =
+        [
+            new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.UserQuestionRequested,
+                UserQuestion = answered,
+            },
+            new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.UserQuestionResolved,
+                UserQuestion = pending,
+            },
+        ];
+
+        foreach (var agentEvent in invalidEvents)
+            Assert.Throws<InvalidOperationException>(() => emit(agentEvent));
+
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
     public void ReducerRejectsUnnormalizedSteeringMessage()
     {
         var agentEvent = new CopilotAgentEvent
@@ -518,4 +548,32 @@ public sealed class CopilotAgentEventProtocolTests
                 : null,
         TimeoutMs = 30_000,
     };
+
+    private static CopilotUserQuestionSnapshot CreateUserQuestion()
+    {
+        Assert.True(CopilotUserQuestionSnapshot.TryCreate(
+            "conversation:test",
+            "run:11111111111111111111111111111111",
+            new CopilotUserQuestionInput
+            {
+                Header = "Choice",
+                Question = "Choose a path?",
+                Options =
+                [
+                    new CopilotUserQuestionInputOption
+                    {
+                        Label = "Option A",
+                        Description = "Use the first path.",
+                    },
+                    new CopilotUserQuestionInputOption
+                    {
+                        Label = "Option B",
+                        Description = "Use the second path.",
+                    },
+                ],
+            },
+            out var question,
+            out var error), error);
+        return question;
+    }
 }
