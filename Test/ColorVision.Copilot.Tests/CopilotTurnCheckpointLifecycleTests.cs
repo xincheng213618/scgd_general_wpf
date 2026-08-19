@@ -32,6 +32,35 @@ public sealed class CopilotTurnCheckpointLifecycleTests
             capturedToolNames[0] = "RewrittenTool");
     }
 
+    [Fact]
+    public void ReducerOwnsRawCheckpointCollections()
+    {
+        var toolNames = new List<string> { "FirstTool" };
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "test-profile",
+            SerializedSessionJson = "{}",
+            ToolSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentToolSurfaceVersion,
+            AvailableToolNames = toolNames,
+            TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
+            UpdatedAtUtc = InitialUpdate,
+        };
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.CheckpointUpdated,
+            SessionCheckpoint = checkpoint,
+            TaskLedger = CreateTaskLedger(),
+        };
+
+        var state = Observe(CreateStartedState(), agentEvent);
+        toolNames[0] = "RewrittenTool";
+
+        var captured = Assert.IsType<CopilotAgentSessionCheckpoint>(
+            state.CheckpointLifecycle.LatestCheckpoint);
+        Assert.NotSame(checkpoint, captured);
+        Assert.Equal("FirstTool", Assert.Single(captured.AvailableToolNames));
+    }
+
     private static readonly DateTimeOffset InitialUpdate =
         new(2026, 8, 8, 1, 0, 0, TimeSpan.Zero);
 
