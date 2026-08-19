@@ -493,7 +493,11 @@ namespace ColorVision.Copilot
                     .Where(text => !string.IsNullOrWhiteSpace(text)));
             StateRecoveryNoticeToolTip = string.IsNullOrWhiteSpace(StateRecoveryNoticeText)
                 ? string.Empty
-                : $"{StateRecoveryNoticeText}{Environment.NewLine}{Environment.NewLine}状态目录：{stateStore.StateDirectoryPath}";
+                : $"{StateRecoveryNoticeText}{Environment.NewLine}{Environment.NewLine}"
+                    + (stateStore.LastLoadStatus.IsFutureVersion
+                        && !string.IsNullOrWhiteSpace(stateStore.LastLoadStatus.StateFilePath)
+                            ? $"受保护状态文件：{stateStore.LastLoadStatus.StateFilePath}"
+                            : $"状态目录：{stateStore.StateDirectoryPath}");
         }
 
         private void ReportStatePersistenceError(Exception exception)
@@ -503,7 +507,10 @@ namespace ColorVision.Copilot
             {
                 var futureVersionTooltip =
                     $"磁盘上的会话状态 Schema 为 {futureVersionException.SchemaVersion}，当前版本仅支持到 {futureVersionException.SupportedSchemaVersion}。"
-                    + $"{Environment.NewLine}{Environment.NewLine}为避免旧版本覆盖新版本历史记录，本进程已经停止写入会话状态。请更新应用并重新打开。";
+                    + $"{Environment.NewLine}{Environment.NewLine}为避免旧版本覆盖新版本历史记录，本进程已经停止写入会话状态。请更新应用并重新打开。"
+                    + (string.IsNullOrWhiteSpace(futureVersionException.StateFilePath)
+                        ? string.Empty
+                        : $"{Environment.NewLine}{Environment.NewLine}受保护状态文件：{futureVersionException.StateFilePath}");
                 UpdateStatePersistenceNotice("检测到更高版本的会话记录；已停止保存以保护历史记录。", futureVersionTooltip);
                 return;
             }

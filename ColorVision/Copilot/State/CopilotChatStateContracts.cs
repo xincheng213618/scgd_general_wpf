@@ -26,7 +26,10 @@ namespace ColorVision.Copilot
         Unrecoverable,
     }
 
-    public readonly record struct CopilotChatStateLoadStatus(CopilotChatStateLoadSource Source, int? SchemaVersion = null)
+    public readonly record struct CopilotChatStateLoadStatus(
+        CopilotChatStateLoadSource Source,
+        int? SchemaVersion = null,
+        string StateFilePath = "")
     {
         public bool IsRecovery => Source is CopilotChatStateLoadSource.Temporary
             or CopilotChatStateLoadSource.Backup
@@ -59,11 +62,35 @@ namespace ColorVision.Copilot
 
         public int SupportedSchemaVersion { get; }
 
+        public string StateFilePath { get; }
+
         public CopilotChatStateFutureVersionException(int schemaVersion, int supportedSchemaVersion)
-            : base($"Copilot state schema {schemaVersion} was created by a newer application version; this version supports schema {supportedSchemaVersion}.")
+            : this(schemaVersion, supportedSchemaVersion, string.Empty)
+        {
+        }
+
+        public CopilotChatStateFutureVersionException(
+            int schemaVersion,
+            int supportedSchemaVersion,
+            string? stateFilePath)
+            : base(CreateMessage(schemaVersion, supportedSchemaVersion, stateFilePath))
         {
             SchemaVersion = schemaVersion;
             SupportedSchemaVersion = supportedSchemaVersion;
+            StateFilePath = string.IsNullOrWhiteSpace(stateFilePath)
+                ? string.Empty
+                : Path.GetFullPath(stateFilePath);
+        }
+
+        private static string CreateMessage(
+            int schemaVersion,
+            int supportedSchemaVersion,
+            string? stateFilePath)
+        {
+            var location = string.IsNullOrWhiteSpace(stateFilePath)
+                ? string.Empty
+                : $" The protected state file is '{Path.GetFullPath(stateFilePath)}'.";
+            return $"Copilot state schema {schemaVersion} was created by a newer application version; this version supports schema {supportedSchemaVersion}.{location}";
         }
     }
 

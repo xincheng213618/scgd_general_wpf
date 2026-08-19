@@ -91,12 +91,12 @@ namespace ColorVision.Copilot
 
                 var temporaryStatus = ReadStateFile(TemporaryStateFilePath, out var temporaryState, out var temporarySchemaVersion);
                 if (temporaryStatus == StateFileReadStatus.FutureVersion)
-                    return BlockForFutureVersion(temporarySchemaVersion);
+                    return BlockForFutureVersion(temporarySchemaVersion, TemporaryStateFilePath);
                 if (temporaryStatus == StateFileReadStatus.Valid)
                 {
                     var primaryStatus = ReadStateFile(StateFilePath, out var primaryState, out var primarySchemaVersion);
                     if (primaryStatus == StateFileReadStatus.FutureVersion)
-                        return BlockForFutureVersion(primarySchemaVersion);
+                        return BlockForFutureVersion(primarySchemaVersion, StateFilePath);
                     if (primaryStatus == StateFileReadStatus.Valid
                         && File.GetLastWriteTimeUtc(TemporaryStateFilePath) <= File.GetLastWriteTimeUtc(StateFilePath))
                     {
@@ -112,7 +112,7 @@ namespace ColorVision.Copilot
                         }
                         catch (CopilotChatStateFutureVersionException ex)
                         {
-                            return BlockForFutureVersion(ex.SchemaVersion);
+                            return BlockForFutureVersion(ex.SchemaVersion, ex.StateFilePath);
                         }
                         catch
                         {
@@ -128,7 +128,7 @@ namespace ColorVision.Copilot
 
                 var primaryReadStatus = ReadStateFile(StateFilePath, out var state, out var stateSchemaVersion);
                 if (primaryReadStatus == StateFileReadStatus.FutureVersion)
-                    return BlockForFutureVersion(stateSchemaVersion);
+                    return BlockForFutureVersion(stateSchemaVersion, StateFilePath);
                 if (primaryReadStatus == StateFileReadStatus.Valid)
                 {
                     LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Primary);
@@ -137,7 +137,7 @@ namespace ColorVision.Copilot
 
                 var backupReadStatus = ReadStateFile(BackupStateFilePath, out state, out stateSchemaVersion);
                 if (backupReadStatus == StateFileReadStatus.FutureVersion)
-                    return BlockForFutureVersion(stateSchemaVersion);
+                    return BlockForFutureVersion(stateSchemaVersion, BackupStateFilePath);
                 if (backupReadStatus == StateFileReadStatus.Valid)
                 {
                     LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Backup);
@@ -149,7 +149,7 @@ namespace ColorVision.Copilot
                 {
                     var recoveryReadStatus = ReadStateFile(recoveryStateFile, out state, out stateSchemaVersion);
                     if (recoveryReadStatus == StateFileReadStatus.FutureVersion)
-                        return BlockForFutureVersion(stateSchemaVersion);
+                        return BlockForFutureVersion(stateSchemaVersion, recoveryStateFile);
                     if (recoveryReadStatus != StateFileReadStatus.Valid)
                         continue;
 
