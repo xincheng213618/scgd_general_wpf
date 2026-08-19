@@ -4683,10 +4683,17 @@ public class OperationsActivity extends AppCompatActivity {
         addDashboardWideAction(dashboardPrimaryButton(
                 result.success ? "进入现场运维" : "再次运行连接自检",
                 result.success ? v -> openExistingProfile() : v -> runConnectionSelfCheck()));
+        String returnLabel = OperationsInPageNavigationPolicy.navigateUpLabel(
+                OperationsDestinationState.CONNECTION_CHECK,
+                detailParentDestination,
+                false,
+                false);
         addDashboardActionRow(
                 dashboardButton(result.success ? "再次运行连接自检" : "重新连接电脑",
                         result.success ? v -> runConnectionSelfCheck() : v -> openExistingProfile()),
-                dashboardButton("返回连接方式", v -> showConnectionPreference()));
+                dashboardButton(
+                        returnLabel.isEmpty() ? "返回连接方式" : returnLabel,
+                        v -> navigateUpWithinOperations()));
 
         addDashboardSection("诊断详情");
         addDashboardInfoCard(OperationsConnectionCheckPresentation.diagnosticSummary(
@@ -6480,10 +6487,32 @@ public class OperationsActivity extends AppCompatActivity {
         detailsCard.setVisibility(View.GONE);
         actions.removeAllViews();
         actions.addView(OperationsRecentEventsContent.create(
-                        this, themeManager, model),
+                        this, themeManager, model, this::runRecentEventAction),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void runRecentEventAction(String actionId) {
+        switch (actionId) {
+            case OperationsRecentEventsPresentation.ACTION_CONNECTION_CHECK:
+                runConnectionSelfCheck();
+                return;
+            case OperationsRecentEventsPresentation.ACTION_MESSAGE_CHANNEL:
+                showDashboardCapabilityDetails("/ops/v1/messaging/health");
+                return;
+            case OperationsRecentEventsPresentation.ACTION_DEVICE_HEALTH:
+                showDeviceHealthOverview();
+                return;
+            case OperationsRecentEventsPresentation.ACTION_SERVICE_HEALTH:
+                showDashboardCapabilityDetails(PATH_SERVICE_HEALTH);
+                return;
+            case OperationsRecentEventsPresentation.ACTION_LIVE_MONITOR:
+                showLiveMonitor();
+                return;
+            default:
+                return;
+        }
     }
 
     private void renderServiceHealth(JSONObject response) {

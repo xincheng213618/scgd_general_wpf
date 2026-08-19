@@ -11,7 +11,13 @@ final class OperationsRecentEventsPresentation {
     static final int TONE_MUTED = 0;
     static final int TONE_ATTENTION = 1;
     static final int TONE_ERROR = 2;
+    static final String ACTION_CONNECTION_CHECK = "events.connection.check";
+    static final String ACTION_MESSAGE_CHANNEL = "events.message.channel";
+    static final String ACTION_DEVICE_HEALTH = "events.device.health";
+    static final String ACTION_SERVICE_HEALTH = "events.service.health";
+    static final String ACTION_LIVE_MONITOR = "events.live.monitor";
     private static final int MAXIMUM_EVENTS = 12;
+    private static final int MAXIMUM_RECOMMENDED_ACTIONS = 2;
 
     private OperationsRecentEventsPresentation() {
     }
@@ -28,6 +34,7 @@ final class OperationsRecentEventsPresentation {
                     "电脑端不会为此接口创建或搜索其他文件，也不会返回目录信息。",
                     TONE_MUTED,
                     0,
+                    Collections.emptyList(),
                     Collections.emptyList());
         }
 
@@ -38,6 +45,7 @@ final class OperationsRecentEventsPresentation {
         int attentionCount = warningCount + errorCount + criticalCount;
 
         List<Event> events = new ArrayList<>();
+        int sampledEventCount = 0;
         JSONArray sourceEvents = payload.optJSONArray("recentEvents");
         if (sourceEvents != null) {
             int count = Math.min(sourceEvents.length(), MAXIMUM_EVENTS);
@@ -46,15 +54,27 @@ final class OperationsRecentEventsPresentation {
                 if (source == null) {
                     continue;
                 }
+                sampledEventCount++;
                 String severity = source.optString("severity", "warning");
-                events.add(new Event(
+                Event event = new Event(
                         severityLabel(severity),
                         source.optString("source", "应用"),
                         timeFormatter.format(source.optString("occurredAt", "")),
                         source.optString("summary", "无摘要"),
-                        tone(severity)));
+                        tone(severity),
+                        1);
+                int existingIndex = matchingEventIndex(events, event);
+                if (existingIndex >= 0) {
+                    Event existing = events.get(existingIndex);
+                    events.set(existingIndex, existing.withOccurrenceCount(
+                            existing.occurrenceCount + 1));
+                } else {
+                    events.add(event);
+                }
             }
         }
+
+        List<Action> recommendedActions = recommendedActions(events);
 
         return new ViewModel(
                 true,
@@ -76,8 +96,77 @@ final class OperationsRecentEventsPresentation {
                 criticalCount > 0 || errorCount > 0
                         ? TONE_ERROR
                         : warningCount > 0 ? TONE_ATTENTION : TONE_MUTED,
-                Math.max(0, attentionCount - events.size()),
-                Collections.unmodifiableList(events));
+                Math.max(0, attentionCount - sampledEventCount),
+                Collections.unmodifiableList(events),
+                Collections.unmodifiableList(recommendedActions));
+    }
+
+    private static int matchingEventIndex(List<Event> events, Event candidate) {
+        for (int index = 0; index < events.size(); index++) {
+            if (events.get(index).matches(candidate)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private static List<Action> recommendedActions(List<Event> events) {
+        List<Action> actions = new ArrayList<>();
+        for (Event event : events) {
+            Action action = recommendationFor(event);
+            if (action == null || containsAction(actions, action.actionId)) {
+                continue;
+            }
+            actions.add(action);
+            if (actions.size() == MAXIMUM_RECOMMENDED_ACTIONS) {
+                break;
+            }
+        }
+        return actions;
+    }
+
+    private static Action recommendationFor(Event event) {
+        String evidence = event.source + ' ' + event.summary;
+        if (event.source.contains("安全运维") || evidence.contains("安全运维通道")) {
+            return new Action(
+                    ACTION_CONNECTION_CHECK,
+                    "运行连接自检",
+                    "核对手机网络、安全通道、证书固定与设备签名");
+        }
+        if (event.source.contains("消息") || evidence.contains("消息通道")) {
+            return new Action(
+                    ACTION_MESSAGE_CHANNEL,
+                    "查看消息通道",
+                    "检查连接、订阅和当前运行状态");
+        }
+        if (event.source.contains("设备") || event.source.contains("图像")) {
+            return new Action(
+                    ACTION_DEVICE_HEALTH,
+                    "查看设备状态",
+                    "定位不可用的设备类型和聚合原因");
+        }
+        if (event.source.contains("服务")) {
+            return new Action(
+                    ACTION_SERVICE_HEALTH,
+                    "查看服务健康",
+                    "检查服务、依赖和当前运行状态");
+        }
+        if (event.source.contains("流程")) {
+            return new Action(
+                    ACTION_LIVE_MONITOR,
+                    "开始持续观察",
+                    "每 10 秒采样关键状态，确认异常是否持续");
+        }
+        return null;
+    }
+
+    private static boolean containsAction(List<Action> actions, String actionId) {
+        for (Action action : actions) {
+            if (action.actionId.equals(actionId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String categorySummary(JSONArray categories) {
@@ -141,6 +230,7 @@ final class OperationsRecentEventsPresentation {
         final int tone;
         final int hiddenEventCount;
         final List<Event> events;
+        final List<Action> recommendedActions;
 
         ViewModel(
                 boolean available,
@@ -152,7 +242,8 @@ final class OperationsRecentEventsPresentation {
                 String privacyNotice,
                 int tone,
                 int hiddenEventCount,
-                List<Event> events) {
+                List<Event> events,
+                List<Action> recommendedActions) {
             this.available = available;
             this.stateLabel = stateLabel;
             this.sampleSummary = sampleSummary;
@@ -163,6 +254,7 @@ final class OperationsRecentEventsPresentation {
             this.tone = tone;
             this.hiddenEventCount = hiddenEventCount;
             this.events = events;
+            this.recommendedActions = recommendedActions;
         }
 
         String eventsSectionLabel() {
@@ -178,18 +270,21 @@ final class OperationsRecentEventsPresentation {
         final String occurredAt;
         final String summary;
         final int tone;
+        final int occurrenceCount;
 
         Event(
                 String severityLabel,
                 String source,
                 String occurredAt,
                 String summary,
-                int tone) {
+                int tone,
+                int occurrenceCount) {
             this.severityLabel = severityLabel;
             this.source = source;
             this.occurredAt = occurredAt;
             this.summary = summary;
             this.tone = tone;
+            this.occurrenceCount = occurrenceCount;
         }
 
         String metadataLabel() {
@@ -198,11 +293,42 @@ final class OperationsRecentEventsPresentation {
             if (!occurredAt.isEmpty()) {
                 label.append(" · ").append(occurredAt);
             }
+            if (occurrenceCount > 1) {
+                label.append(" · ").append(occurrenceCount).append(" 次");
+            }
             return label.toString();
         }
 
         String accessibilityLabel() {
             return metadataLabel().replace(" · ", "，") + "。" + summary;
+        }
+
+        boolean matches(Event other) {
+            return severityLabel.equals(other.severityLabel)
+                    && source.equals(other.source)
+                    && summary.equals(other.summary)
+                    && tone == other.tone;
+        }
+
+        Event withOccurrenceCount(int count) {
+            return new Event(
+                    severityLabel, source, occurredAt, summary, tone, count);
+        }
+    }
+
+    static final class Action {
+        final String actionId;
+        final String title;
+        final String summary;
+
+        Action(String actionId, String title, String summary) {
+            this.actionId = actionId;
+            this.title = title;
+            this.summary = summary;
+        }
+
+        String accessibilityLabel() {
+            return title + "。" + summary;
         }
     }
 }

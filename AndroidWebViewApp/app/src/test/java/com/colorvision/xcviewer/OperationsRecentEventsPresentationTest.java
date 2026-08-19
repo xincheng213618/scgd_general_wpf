@@ -53,6 +53,12 @@ public class OperationsRecentEventsPresentationTest {
                         + "安全运维通道处理请求失败。",
                 event.accessibilityLabel());
         assertEquals(OperationsRecentEventsPresentation.TONE_ATTENTION, event.tone);
+        assertEquals(1, event.occurrenceCount);
+        assertEquals(1, model.recommendedActions.size());
+        OperationsRecentEventsPresentation.Action action = model.recommendedActions.get(0);
+        assertEquals(OperationsRecentEventsPresentation.ACTION_CONNECTION_CHECK, action.actionId);
+        assertEquals("运行连接自检。核对手机网络、安全通道、证书固定与设备签名",
+                action.accessibilityLabel());
     }
 
     @Test
@@ -63,6 +69,7 @@ public class OperationsRecentEventsPresentationTest {
         assertFalse(unavailable.available);
         assertEquals("近期事件不可用", unavailable.stateLabel);
         assertTrue(unavailable.events.isEmpty());
+        assertTrue(unavailable.recommendedActions.isEmpty());
 
         OperationsRecentEventsPresentation.ViewModel healthy =
                 OperationsRecentEventsPresentation.from(
@@ -71,6 +78,7 @@ public class OperationsRecentEventsPresentationTest {
         assertEquals("近期没有异常事件", healthy.stateLabel);
         assertEquals("近期异常事件", healthy.eventsSectionLabel());
         assertTrue(healthy.events.isEmpty());
+        assertTrue(healthy.recommendedActions.isEmpty());
     }
 
     @Test
@@ -96,5 +104,45 @@ public class OperationsRecentEventsPresentationTest {
         assertEquals(OperationsRecentEventsPresentation.TONE_ERROR, model.tone);
         assertEquals(OperationsRecentEventsPresentation.TONE_ERROR,
                 model.events.get(0).tone);
+    }
+
+    @Test
+    public void duplicateEventsCollapseAndRecommendationsStayUniqueAndBounded()
+            throws Exception {
+        JSONArray events = new JSONArray()
+                .put(event("warning", "安全运维", "通道失败", "10:03"))
+                .put(event("warning", "安全运维", "通道失败", "10:02"))
+                .put(event("warning", "安全运维", "通道失败", "10:01"))
+                .put(event("error", "设备与图像", "相机离线", "10:00"))
+                .put(event("warning", "服务", "服务不可用", "09:59"));
+        JSONObject payload = new JSONObject()
+                .put("available", true)
+                .put("warningCount", 4)
+                .put("errorCount", 1)
+                .put("recentEvents", events);
+
+        OperationsRecentEventsPresentation.ViewModel model =
+                OperationsRecentEventsPresentation.from(payload, value -> value);
+
+        assertEquals(3, model.events.size());
+        assertEquals(0, model.hiddenEventCount);
+        assertEquals(3, model.events.get(0).occurrenceCount);
+        assertEquals("警告 · 安全运维 · 10:03 · 3 次",
+                model.events.get(0).metadataLabel());
+        assertEquals(2, model.recommendedActions.size());
+        assertEquals(OperationsRecentEventsPresentation.ACTION_CONNECTION_CHECK,
+                model.recommendedActions.get(0).actionId);
+        assertEquals(OperationsRecentEventsPresentation.ACTION_DEVICE_HEALTH,
+                model.recommendedActions.get(1).actionId);
+    }
+
+    private static JSONObject event(
+            String severity, String source, String summary, String occurredAt)
+            throws Exception {
+        return new JSONObject()
+                .put("severity", severity)
+                .put("source", source)
+                .put("summary", summary)
+                .put("occurredAt", occurredAt);
     }
 }

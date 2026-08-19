@@ -1,7 +1,10 @@
 package com.colorvision.xcviewer;
 
 import android.app.Activity;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -10,6 +13,8 @@ import androidx.core.widget.TextViewCompat;
 
 import com.google.android.material.card.MaterialCardView;
 
+import java.util.List;
+
 final class OperationsRecentEventsContent {
     private OperationsRecentEventsContent() {
     }
@@ -17,7 +22,8 @@ final class OperationsRecentEventsContent {
     static View create(
             Activity activity,
             ThemeManager themeManager,
-            OperationsRecentEventsPresentation.ViewModel model) {
+            OperationsRecentEventsPresentation.ViewModel model,
+            ActionHandler actionHandler) {
         LinearLayout root = new LinearLayout(activity);
         root.setOrientation(LinearLayout.VERTICAL);
 
@@ -34,6 +40,16 @@ final class OperationsRecentEventsContent {
                                         : "恢复安全直连后可重新读取近期脱敏事件。")
                         : eventListCard(activity, themeManager, model),
                 topMargin(dp(activity, 8)));
+        if (!model.recommendedActions.isEmpty()) {
+            root.addView(sectionTitle(activity, themeManager, "建议操作"),
+                    topMargin(dp(activity, 20)));
+            root.addView(actionCard(
+                            activity,
+                            themeManager,
+                            model.recommendedActions,
+                            actionHandler),
+                    topMargin(dp(activity, 8)));
+        }
         root.addView(sectionTitle(activity, themeManager, "数据边界"),
                 topMargin(dp(activity, 20)));
         root.addView(infoCard(activity, themeManager, model.privacyNotice),
@@ -90,6 +106,69 @@ final class OperationsRecentEventsContent {
         MaterialCardView card = new MaterialCardView(activity);
         card.setCardBackgroundColor(themeManager.cardBackgroundColor());
         card.addView(content, matchCardWidth());
+        return card;
+    }
+
+    private static MaterialCardView actionCard(
+            Activity activity,
+            ThemeManager themeManager,
+            List<OperationsRecentEventsPresentation.Action> actions,
+            ActionHandler actionHandler) {
+        LinearLayout rows = new LinearLayout(activity);
+        rows.setOrientation(LinearLayout.VERTICAL);
+        for (int index = 0; index < actions.size(); index++) {
+            OperationsRecentEventsPresentation.Action action = actions.get(index);
+            LinearLayout row = new LinearLayout(activity);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setMinimumHeight(dp(activity, 72));
+            row.setPadding(dp(activity, 16), dp(activity, 10), dp(activity, 12), dp(activity, 10));
+            TypedValue selectableBackground = new TypedValue();
+            if (activity.getTheme().resolveAttribute(
+                    android.R.attr.selectableItemBackground,
+                    selectableBackground,
+                    true)) {
+                row.setBackgroundResource(selectableBackground.resourceId);
+            }
+
+            LinearLayout labels = new LinearLayout(activity);
+            labels.setOrientation(LinearLayout.VERTICAL);
+            TextView title = text(
+                    activity,
+                    action.title,
+                    com.google.android.material.R.style.TextAppearance_Material3_BodyLarge,
+                    themeManager.primaryTextColor());
+            TextView summary = text(
+                    activity,
+                    action.summary,
+                    com.google.android.material.R.style.TextAppearance_Material3_BodyMedium,
+                    themeManager.secondaryTextColor());
+            labels.addView(title, matchWidth());
+            labels.addView(summary, topMargin(dp(activity, 2)));
+            row.addView(labels, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+            ImageView arrow = new ImageView(activity);
+            arrow.setImageResource(R.drawable.ic_chevron_right_24);
+            arrow.setColorFilter(themeManager.secondaryTextColor());
+            arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            row.addView(arrow, new LinearLayout.LayoutParams(
+                    dp(activity, 24), dp(activity, 24)));
+
+            row.setContentDescription(action.accessibilityLabel());
+            row.setFocusable(true);
+            row.setOnClickListener(view -> actionHandler.onAction(action.actionId));
+            title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            summary.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            rows.addView(row, matchWidth());
+            if (index < actions.size() - 1) {
+                rows.addView(divider(activity, themeManager), dividerParams(activity));
+            }
+        }
+
+        MaterialCardView card = new MaterialCardView(activity);
+        card.setCardBackgroundColor(themeManager.cardBackgroundColor());
+        card.addView(rows, matchCardWidth());
         return card;
     }
 
@@ -231,5 +310,9 @@ final class OperationsRecentEventsContent {
 
     private static int dp(Activity activity, int value) {
         return Math.round(value * activity.getResources().getDisplayMetrics().density);
+    }
+
+    interface ActionHandler {
+        void onAction(String actionId);
     }
 }
