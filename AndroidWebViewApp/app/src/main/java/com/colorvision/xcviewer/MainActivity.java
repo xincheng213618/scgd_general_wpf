@@ -67,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean updatingBottomNavigation;
     private boolean openedFromOperations;
     private int currentTab = TAB_OPERATIONS;
-    private boolean cameraPermissionGranted;
     private String lastNotificationPermissionStatus = "";
     private Snackbar watchPreferenceSnackbar;
     private final RuntimePermissionDialogState notificationPermissionDialogState =
@@ -83,7 +82,6 @@ public class MainActivity extends AppCompatActivity {
 
         appPreferences = new AppPreferences(this);
         OperationsWatchService.start(this);
-        cameraPermissionGranted = hasCameraPermission();
         lastNotificationPermissionStatus = notificationPermissionStatus();
         int requestedTab = consumeStartTab(getIntent());
         boolean restoring = savedInstanceState != null;
@@ -463,8 +461,7 @@ public class MainActivity extends AppCompatActivity {
                         operationsRemindersAvailable()),
                 notificationPermissionStatus(),
                 getThemeModeLabel(),
-                "当前 " + getAppVersionName() + " · 签名校验",
-                cameraPermissionStatus());
+                "当前 " + getAppVersionName() + " · 签名校验");
         return SettingsPageContent.create(
                 this,
                 themeManager,
@@ -504,10 +501,6 @@ public class MainActivity extends AppCompatActivity {
                         checkForAppUpdate();
                     }
 
-                    @Override
-                    public void onCameraPermission() {
-                        startQrScan();
-                    }
                 });
     }
 
@@ -559,13 +552,6 @@ public class MainActivity extends AppCompatActivity {
             watchPreferenceSnackbar.setAction("开启提醒", view -> manageNotificationPermission());
         }
         watchPreferenceSnackbar.show();
-    }
-
-    private String cameraPermissionStatus() {
-        if (hasCameraPermission()) {
-            return "已授权";
-        }
-        return cameraPermissionNeedsSystemSettings() ? "需在系统设置开启" : "需要时申请";
     }
 
     private boolean cameraPermissionNeedsSystemSettings() {
@@ -712,9 +698,6 @@ public class MainActivity extends AppCompatActivity {
     private void showQrScanFailure(String reason) {
         boolean blocked = QrScanFailurePresentation.CAMERA_PERMISSION_BLOCKED.equals(reason);
         appPreferences.saveCameraPermissionBlocked(blocked);
-        if (currentTab == TAB_SETTINGS) {
-            showProfileView();
-        }
         QrScanRecoveryDialog.show(this, reason, this::startQrScan);
     }
 
@@ -797,11 +780,9 @@ public class MainActivity extends AppCompatActivity {
                 || shouldShowNotificationPermissionRationale())) {
             appPreferences.saveNotificationPermissionBlocked(false);
         }
-        if (root != null && currentTab == TAB_SETTINGS
-                && (granted != cameraPermissionGranted || notificationStatusChanged)) {
+        if (root != null && currentTab == TAB_SETTINGS && notificationStatusChanged) {
             showProfileView();
         }
-        cameraPermissionGranted = granted;
         lastNotificationPermissionStatus = notificationStatus;
     }
 

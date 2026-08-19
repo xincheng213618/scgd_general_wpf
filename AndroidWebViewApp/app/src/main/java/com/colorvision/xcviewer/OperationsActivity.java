@@ -182,7 +182,6 @@ public class OperationsActivity extends AppCompatActivity {
     private NotificationSettingsController notificationSettingsController;
     private AndroidUpdateController androidUpdateController;
     private Snackbar settingsFeedbackSnackbar;
-    private boolean cameraPermissionGranted;
     private boolean pairingApprovalWaiting;
     private long pairingApprovalDeadlineMilliseconds;
     private volatile int pairingRequestGeneration;
@@ -229,7 +228,6 @@ public class OperationsActivity extends AppCompatActivity {
         }
         createView();
         initializeSettingsControllers();
-        cameraPermissionGranted = hasCameraPermission();
         installInPageBackNavigation();
 
         String rawPairing = getIntent().getStringExtra(EXTRA_PAIRING_PAYLOAD);
@@ -807,10 +805,6 @@ public class OperationsActivity extends AppCompatActivity {
                         androidUpdateController.checkForUpdate();
                     }
 
-                    @Override
-                    public void onCameraPermission() {
-                        startOperationsPairingScan();
-                    }
                 });
         settingsScroll.setVisibility(
                 OperationsDestinationState.SETTINGS.equals(currentDestination)
@@ -839,8 +833,7 @@ public class OperationsActivity extends AppCompatActivity {
                         notificationSettingsController.remindersAvailable()),
                 notificationSettingsController.status(),
                 themeManager.getThemeModeLabel(),
-                "当前 " + androidUpdateController.currentVersionName() + " · 签名校验",
-                cameraPermissionStatus());
+                "当前 " + androidUpdateController.currentVersionName() + " · 签名校验");
     }
 
     private void setSettingsWatchEnabled(boolean enabled) {
@@ -876,14 +869,6 @@ public class OperationsActivity extends AppCompatActivity {
                     view -> notificationSettingsController.manage());
         }
         settingsFeedbackSnackbar.show();
-    }
-
-    private String cameraPermissionStatus() {
-        if (hasCameraPermission()) {
-            return "已授权";
-        }
-        return cameraPermissionNeedsSystemSettings()
-                ? "需在系统设置开启" : "需要时申请";
     }
 
     private void beginPairing(String rawPairing) {
@@ -1675,9 +1660,6 @@ public class OperationsActivity extends AppCompatActivity {
     private void showQrScanFailure(String reason) {
         preferences.saveCameraPermissionBlocked(
                 QrScanFailurePresentation.CAMERA_PERMISSION_BLOCKED.equals(reason));
-        if (OperationsDestinationState.SETTINGS.equals(currentDestination)) {
-            refreshSettingsPage();
-        }
         QrScanRecoveryDialog.show(this, reason, this::startOperationsPairingScan);
     }
 
@@ -7204,10 +7186,9 @@ public class OperationsActivity extends AppCompatActivity {
             preferences.saveCameraPermissionBlocked(false);
         }
         if (OperationsDestinationState.SETTINGS.equals(currentDestination)
-                && (notificationChanged || cameraGranted != cameraPermissionGranted)) {
+                && notificationChanged) {
             refreshSettingsPage();
         }
-        cameraPermissionGranted = cameraGranted;
         syncBottomNavigation();
         refreshProblemNavigationBadge();
         activityResumed = true;

@@ -39,13 +39,9 @@ final class SettingsPageContent {
         if (model.paired) {
             addRow(activity, themeManager, connectionSection,
                     SettingsInformationArchitecture.COMPUTER_CONNECTIONS,
-                    model.computerSummary,
+                    SettingsInformationArchitecture.connectionSupportingText(
+                            true, model.computerSummary),
                     view -> handler.onComputerConnections(),
-                    true);
-            addRow(activity, themeManager, connectionSection,
-                    SettingsInformationArchitecture.SECURE_CHANNEL,
-                    "设备密钥 + TLS 证书固定",
-                    null,
                     true);
             addRow(activity, themeManager, connectionSection,
                     SettingsInformationArchitecture.ADD_COMPUTER,
@@ -55,13 +51,8 @@ final class SettingsPageContent {
         } else {
             addRow(activity, themeManager, connectionSection,
                     SettingsInformationArchitecture.CONNECT_COMPUTER,
-                    "扫描电脑端安全配对码",
+                    SettingsInformationArchitecture.connectionSupportingText(false, ""),
                     view -> handler.onAddComputer(),
-                    true);
-            addRow(activity, themeManager, connectionSection,
-                    SettingsInformationArchitecture.SECURE_CHANNEL,
-                    "等待安全配对",
-                    null,
                     false);
         }
 
@@ -89,14 +80,6 @@ final class SettingsPageContent {
                 view -> handler.onAppUpdate(),
                 false);
 
-        LinearLayout permissionSection = section(activity, themeManager);
-        addSection(activity, themeManager, content,
-                SettingsInformationArchitecture.PERMISSION_SECTION, permissionSection);
-        addRow(activity, themeManager, permissionSection,
-                SettingsInformationArchitecture.CAMERA_PERMISSION,
-                model.cameraPermissionStatus,
-                view -> handler.onCameraPermission(),
-                false);
         return scrollView;
     }
 
@@ -290,7 +273,6 @@ final class SettingsPageContent {
         final String notificationStatus;
         final String themeMode;
         final String appUpdateStatus;
-        final String cameraPermissionStatus;
 
         ViewModel(
                 boolean paired,
@@ -299,8 +281,7 @@ final class SettingsPageContent {
                 String watchStatus,
                 String notificationStatus,
                 String themeMode,
-                String appUpdateStatus,
-                String cameraPermissionStatus) {
+                String appUpdateStatus) {
             this.paired = paired;
             this.computerSummary = computerSummary;
             this.watchEnabled = watchEnabled;
@@ -308,7 +289,6 @@ final class SettingsPageContent {
             this.notificationStatus = notificationStatus;
             this.themeMode = themeMode;
             this.appUpdateStatus = appUpdateStatus;
-            this.cameraPermissionStatus = cameraPermissionStatus;
         }
     }
 
@@ -324,7 +304,5 @@ final class SettingsPageContent {
         void onThemeMode();
 
         void onAppUpdate();
-
-        void onCameraPermission();
     }
 }

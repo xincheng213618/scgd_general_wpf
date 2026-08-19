@@ -13,13 +13,13 @@ public class SettingsRowAccessibilityTest {
 
     @Test
     public void emptyValueKeepsItsVisibleLabel() {
-        assertEquals("相机权限",
-                SettingsRowAccessibility.contentDescription("相机权限", ""));
+        assertEquals("添加电脑",
+                SettingsRowAccessibility.contentDescription("添加电脑", ""));
     }
 
     @Test
     public void nullValuesDoNotLeakIntoAccessibilityText() {
-        assertEquals("安全通道",
-                SettingsRowAccessibility.contentDescription("安全通道", null));
+        assertEquals("电脑与连接",
+                SettingsRowAccessibility.contentDescription("电脑与连接", null));
     }
 }
