@@ -1,16 +1,21 @@
 package com.colorvision.xcviewer;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 final class OperationsDirectToolboxPresentation {
     private OperationsDirectToolboxPresentation() {
     }
 
-    static ViewModel from(JSONObject monitor, boolean loading) {
+    static ViewModel from(JSONObject monitor, JSONObject capabilityCatalog, boolean loading) {
+        Set<String> availableCapabilities = availableCapabilities(capabilityCatalog);
+        boolean capabilityCatalogAvailable = availableCapabilities != null;
         JSONObject flow = child(monitor, "flow");
         JSONObject messageChannel = child(monitor, "messageChannel");
         JSONObject mqttService = child(monitor, "mqttService");
@@ -39,15 +44,28 @@ final class OperationsDirectToolboxPresentation {
         for (OperationsToolboxPresentation.Section section : source.sections) {
             List<OperationsToolboxPresentation.Action> actions = new ArrayList<>();
             for (OperationsToolboxPresentation.Action action : section.actions) {
-                actions.add(withLiveAvailability(
-                        action,
-                        flowAvailable,
-                        flowActive,
-                        canCancelFlow,
-                        messageAvailable,
-                        canRecoverMessage,
-                        canRestartMqtt,
-                        canRestartApplication));
+                String[] requirements = capabilityRequirements(action.actionId);
+                if (requirements != null
+                        && !hasAllCapabilities(availableCapabilities, requirements)) {
+                    actions.add(action(
+                            action,
+                            capabilityCatalogAvailable
+                                    ? "当前电脑未开放此工具所需能力"
+                                    : loading
+                                            ? "正在确认电脑是否支持此工具"
+                                            : "未能从电脑确认此工具所需能力",
+                            false));
+                } else {
+                    actions.add(withLiveAvailability(
+                            action,
+                            flowAvailable,
+                            flowActive,
+                            canCancelFlow,
+                            messageAvailable,
+                            canRecoverMessage,
+                            canRestartMqtt,
+                            canRestartApplication));
+                }
             }
             sections.add(new OperationsToolboxPresentation.Section(
                     section.title, Collections.unmodifiableList(actions)));
@@ -64,17 +82,141 @@ final class OperationsDirectToolboxPresentation {
                                 OperationsToolboxPresentation.ACTION_LIVE_MONITOR,
                                 OperationsToolboxPresentation.ACTION_DEVICE_HEALTH,
                                 OperationsToolboxPresentation.ACTION_RECENT_EVENTS));
+        String verification;
+        if (!capabilityCatalogAvailable) {
+            verification = loading ? "正在核对电脑能力" : "电脑能力目录不可用";
+        } else if (monitor != null) {
+            verification = "电脑能力与运行状态已核对";
+        } else if (loading) {
+            verification = "电脑能力已核对，正在读取运行状态";
+        } else {
+            verification = "电脑能力已核对，运行状态不可用";
+        }
         String stateLabel = toolbox.enabledActionCount() + " / " + toolbox.actionCount()
-                + " 项可用 · " + (monitor != null
-                        ? "运行状态已核对"
-                        : loading ? "正在核对运行状态" : "仅显示安全可用项");
-        String summary = monitor != null
-                ? "可用性来自刚刚读取的主检测、消息通道和固定 MQTT 服务状态；"
-                        + "改变运行状态的操作仍会再次确认。"
-                : loading
-                        ? "正在读取实时状态；取消检测、恢复消息和重启操作暂不开放。"
-                        : "实时状态暂不可用；取消检测、恢复消息和重启操作保持关闭。";
+                + " 项可用 · " + verification;
+        String summary;
+        if (!capabilityCatalogAvailable) {
+            summary = loading
+                    ? "正在读取电脑发布的固定能力目录与实时状态；尚未确认的电脑端工具暂不开放。"
+                    : "未能读取电脑发布的固定能力目录；为避免出现必然失败的入口，"
+                            + "仅保留本机连接自检与运维时间线。";
+        } else if (monitor != null) {
+            summary = "工具必须同时由电脑固定能力目录明确开放，并满足刚刚读取的主检测、"
+                    + "消息通道和固定 MQTT 服务状态；改变运行状态的操作仍会再次确认。";
+        } else if (loading) {
+            summary = "电脑能力目录已核对；正在读取实时状态，取消检测、恢复消息和重启操作暂不开放。";
+        } else {
+            summary = "电脑能力目录已核对，但实时状态暂不可用；取消检测、恢复消息和重启操作保持关闭。";
+        }
         return new ViewModel(stateLabel, summary, toolbox);
+    }
+
+    private static Set<String> availableCapabilities(JSONObject capabilityCatalog) {
+        JSONArray capabilities = capabilityCatalog == null
+                ? null : capabilityCatalog.optJSONArray("capabilities");
+        if (capabilities == null) {
+            return null;
+        }
+        Set<String> available = new HashSet<>();
+        for (int index = 0; index < capabilities.length(); index++) {
+            JSONObject capability = capabilities.optJSONObject(index);
+            if (capability == null || !capability.optBoolean("available", false)
+                    || !discoverableOnAndroid(capability.optJSONArray("discoverableOn"))) {
+                continue;
+            }
+            String id = capability.optString("id", "").trim();
+            if (!id.isEmpty()) {
+                available.add(id);
+            }
+        }
+        return available;
+    }
+
+    private static boolean discoverableOnAndroid(JSONArray clients) {
+        if (clients == null) {
+            return false;
+        }
+        for (int index = 0; index < clients.length(); index++) {
+            if ("android".equals(clients.optString(index, ""))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasAllCapabilities(Set<String> available, String[] requirements) {
+        if (available == null) {
+            return false;
+        }
+        for (String requirement : requirements) {
+            if (!available.contains(requirement)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static String[] capabilityRequirements(String actionId) {
+        switch (actionId) {
+            case OperationsToolboxPresentation.ACTION_CONNECTION_CHECK:
+            case OperationsToolboxPresentation.ACTION_TIMELINE:
+                return null;
+            case OperationsToolboxPresentation.ACTION_LIVE_MONITOR:
+                return requirements("ops.monitor.read");
+            case OperationsToolboxPresentation.ACTION_DEVICE_HEALTH:
+                return requirements("ops.devices.health.read");
+            case OperationsToolboxPresentation.ACTION_SERVICES_HEALTH:
+                return requirements("ops.services.health.read");
+            case OperationsToolboxPresentation.ACTION_SHOW_WINDOW:
+                return requirements("ops.window.show");
+            case OperationsToolboxPresentation.ACTION_MINIMIZE_WINDOW:
+                return requirements("ops.window.minimize");
+            case OperationsToolboxPresentation.ACTION_CANCEL_FLOW:
+                return requirements("ops.flow.cancel");
+            case OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE:
+                return requirements("ops.messaging.reconnect");
+            case OperationsToolboxPresentation.ACTION_RESTART_MQTT:
+                return requirements("ops.service.restart");
+            case OperationsToolboxPresentation.ACTION_RESTART_APPLICATION:
+                return requirements("ops.application.restart");
+            case OperationsToolboxPresentation.ACTION_RECENT_EVENTS:
+                return requirements("ops.diagnostics.events.read");
+            case OperationsToolboxPresentation.ACTION_FAILURES:
+                return requirements("ops.diagnostics.failures.read");
+            case OperationsToolboxPresentation.ACTION_JOBS:
+                return requirements("ops.jobs.manage");
+            case OperationsToolboxPresentation.ACTION_AUDIT:
+                return requirements("ops.audit.read");
+            case OperationsToolboxPresentation.ACTION_CREATE_DIAGNOSTIC:
+                return requirements(
+                        "ops.diagnostics.bundle.create",
+                        "ops.diagnostics.bundle.download");
+            case OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT:
+                return requirements(
+                        "ops.window.snapshot.capture",
+                        "ops.window.snapshot.download");
+            case OperationsToolboxPresentation.ACTION_SHARE_SUMMARY:
+                return requirements(
+                        "ops.status.read",
+                        "ops.diagnostics.events.read",
+                        "ops.diagnostics.performance.read",
+                        "ops.flow.runtime.read",
+                        "ops.services.health.read",
+                        "ops.devices.health.read",
+                        "ops.messaging.health.read");
+            case OperationsToolboxPresentation.ACTION_SUPPORT:
+                return requirements(
+                        "ops.support.session.request",
+                        "ops.support.message.exchange");
+            case OperationsToolboxPresentation.ACTION_DEPLOYMENT:
+                return requirements("ops.deployment.receipt.create");
+            default:
+                return requirements("unsupported.toolbox.action");
+        }
+    }
+
+    private static String[] requirements(String... capabilityIds) {
+        return capabilityIds;
     }
 
     private static OperationsToolboxPresentation.Action withLiveAvailability(

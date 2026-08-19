@@ -2440,37 +2440,53 @@ public class OperationsActivity extends AppCompatActivity {
         progress.setVisibility(View.GONE);
         title.setTitle("运维工具");
         int requestGeneration = ++directToolboxGeneration;
-        renderOperationsToolboxPage(null, true);
+        renderOperationsToolboxPage(null, null, true);
         scheduleConnectionHeartbeat();
         executor.execute(() -> {
+            JSONObject capabilityCatalog = null;
+            try {
+                JSONObject response = client.get("/ops/v1/capabilities");
+                JSONObject data = response.optJSONObject("data");
+                capabilityCatalog = data == null ? response : data;
+            } catch (Exception ignored) {
+                // The final presentation keeps unconfirmed computer-side tools closed.
+            }
+            JSONObject verifiedCapabilityCatalog = capabilityCatalog;
+            runOnUiThread(() -> {
+                if (requestGeneration != directToolboxGeneration
+                        || remoteDashboard
+                        || !OperationsDestinationState.TOOLS.equals(currentDestination)) {
+                    return;
+                }
+                renderOperationsToolboxPage(null, verifiedCapabilityCatalog, true);
+            });
+
+            JSONObject monitor = null;
             try {
                 JSONObject response = client.get("/ops/v1/monitor");
                 JSONObject data = response.optJSONObject("data");
-                JSONObject monitor = data == null ? response : data;
-                runOnUiThread(() -> {
-                    if (requestGeneration != directToolboxGeneration
-                            || remoteDashboard
-                            || !OperationsDestinationState.TOOLS.equals(currentDestination)) {
-                        return;
-                    }
-                    renderOperationsToolboxPage(monitor, false);
-                });
+                monitor = data == null ? response : data;
             } catch (Exception ignored) {
-                runOnUiThread(() -> {
-                    if (requestGeneration != directToolboxGeneration
-                            || remoteDashboard
-                            || !OperationsDestinationState.TOOLS.equals(currentDestination)) {
-                        return;
-                    }
-                    renderOperationsToolboxPage(null, false);
-                });
+                // Capability availability is still useful when live state is unavailable.
             }
+            JSONObject verifiedMonitor = monitor;
+            runOnUiThread(() -> {
+                if (requestGeneration != directToolboxGeneration
+                        || remoteDashboard
+                        || !OperationsDestinationState.TOOLS.equals(currentDestination)) {
+                    return;
+                }
+                renderOperationsToolboxPage(
+                        verifiedMonitor, verifiedCapabilityCatalog, false);
+            });
         });
     }
 
-    private void renderOperationsToolboxPage(JSONObject monitor, boolean loading) {
+    private void renderOperationsToolboxPage(
+            JSONObject monitor, JSONObject capabilityCatalog, boolean loading) {
         OperationsDirectToolboxPresentation.ViewModel liveModel =
-                OperationsDirectToolboxPresentation.from(monitor, loading);
+                OperationsDirectToolboxPresentation.from(
+                        monitor, capabilityCatalog, loading);
         OperationsToolboxPresentation.ViewModel toolbox =
                 OperationsToolboxPresentation.withRecentQuickActions(
                         liveModel.toolbox,
