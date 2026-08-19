@@ -169,6 +169,14 @@ namespace ColorVision.Copilot
                     "Copilot Agent runtime diagnostic cannot describe both a bounded retry and connection recovery.");
             }
 
+            if (agentEvent.ToolExecution != null
+                && !CopilotToolExecutionInfoProtocol.IsStructurallyValid(
+                    agentEvent.ToolExecution))
+            {
+                throw new InvalidOperationException(
+                    $"Copilot Agent {agentEvent.Type} event has invalid execution metadata.");
+            }
+
             switch (agentEvent.Type)
             {
                 case CopilotAgentEventType.ToolStarted:
@@ -203,12 +211,6 @@ namespace ColorVision.Copilot
         {
             var result = agentEvent.ToolResult!;
             var execution = agentEvent.ToolExecution!;
-            if (!CopilotToolExecutionInfoProtocol.IsStructurallyValid(execution))
-            {
-                throw new InvalidOperationException(
-                    "Copilot Agent tool result has invalid execution metadata.");
-            }
-
             if (string.IsNullOrWhiteSpace(result.ToolName)
                 || !string.Equals(
                     result.ToolName,
