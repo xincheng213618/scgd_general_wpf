@@ -5,6 +5,8 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class OperationsTriagePresentationTest {
@@ -60,6 +62,11 @@ public class OperationsTriagePresentationTest {
         assertEquals("格式化 2026-08-18T08:32:00Z", finding.latestAt);
         assertEquals(1, finding.actions.size());
         assertTrue(finding.actions.get(0).readOnly());
+        assertSame(finding.actions.get(0), finding.primaryCardAction());
+        assertEquals("警告 · 检测设备 · 2 条证据。检测设备存在不可用状态。"
+                        + "相机类与光谱类需要复核。最近证据 格式化 2026-08-18T08:32:00Z。"
+                        + "点按查看设备状态概览",
+                finding.cardAccessibilityLabel(finding.actions.get(0)));
         assertTrue(OperationsTriagePresentation.isSupportedAction(
                 finding.actions.get(0).actionId));
     }
@@ -96,6 +103,7 @@ public class OperationsTriagePresentationTest {
         JSONObject report = new JSONObject("{\"findings\":[{\"actions\":[{"
                 + "\"actionId\":\"triage.jobs.review\","
                 + "\"title\":\"批准作业\","
+                + "\"riskLevel\":\"high-risk\","
                 + "\"requiresConfirmation\":true,"
                 + "\"requiresLocalCoSign\":true}]}]}");
 
@@ -103,6 +111,8 @@ public class OperationsTriagePresentationTest {
                 .from(report, value -> value).findings.get(0).actions.get(0);
 
         assertEquals("批准作业（需电脑共签）", action.buttonLabel());
+        assertNull(OperationsTriagePresentation
+                .from(report, value -> value).findings.get(0).primaryCardAction());
         assertTrue(OperationsTriagePresentation.isSupportedAction("triage.jobs.review"));
         assertFalse(OperationsTriagePresentation.isSupportedAction("triage.unknown"));
     }

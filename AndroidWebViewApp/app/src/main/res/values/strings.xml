@@ -30,7 +30,7 @@
     <string name="operations_support_empty_details">可申请 15 分钟引导支持。电脑端必须本机同意后，双方才能交换最多 500 字的有限文本；不开放远程桌面、命令、文件或凭据。\n\n%1$s</string>
     <string name="operations_support_request">申请 15 分钟引导支持</string>
     <string name="operations_live_monitor_title">持续观察</string>
-    <string name="operations_triage_observe_action">持续观察 · 每 10 秒</string>
+    <string name="operations_triage_observe_action">持续观察</string>
     <string name="operations_triage_observe_content_description">开始持续观察，每 10 秒更新关键状态并保留本次脱敏趋势</string>
     <string name="operations_live_monitor_loading">正在采集第一份有界运行快照…</string>
     <string name="operations_live_monitor_details">前台每 10 秒读取一份脱敏聚合快照；后台守护仍按 60 秒检查。样本只保留在手机内存，离开本页即清空。</string>

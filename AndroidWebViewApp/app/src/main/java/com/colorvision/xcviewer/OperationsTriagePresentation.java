@@ -363,6 +363,35 @@ final class OperationsTriagePresentation {
             }
             return severityLabel + " · " + categoryLabel + " · " + evidenceCount + " 条证据";
         }
+
+        Action primaryCardAction() {
+            for (Action action : actions) {
+                if (action.readOnly() && isSupportedAction(action.actionId)) {
+                    return action;
+                }
+            }
+            return null;
+        }
+
+        String cardAccessibilityLabel(Action action) {
+            StringBuilder label = new StringBuilder();
+            appendSentence(label, evidenceLabel());
+            appendSentence(label, title);
+            appendSentence(label, summary);
+            appendSentence(label, latestAt.isEmpty() ? "" : "最近证据 " + latestAt);
+            appendSentence(label, "点按" + action.buttonLabel());
+            return label.toString();
+        }
+
+        private static void appendSentence(StringBuilder target, String value) {
+            if (value == null || value.isEmpty()) {
+                return;
+            }
+            if (target.length() > 0 && target.charAt(target.length() - 1) != '。') {
+                target.append('。');
+            }
+            target.append(value);
+        }
     }
 
     static final class Action {
