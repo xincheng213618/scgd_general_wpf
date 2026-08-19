@@ -226,17 +226,8 @@ final class OperationsFleetOverview {
         }
 
         String destination() {
-            if (OperationsWatchHistory.STATE_OFFLINE.equals(watchState)) {
-                return OperationsDestinationState.CONNECTION_CHECK;
-            }
-            if (OperationsWatchHistory.STATE_REMOTE_WAITING.equals(watchState)
-                    || OperationsWatchHistory.STATE_REVOKED.equals(watchState)) {
-                return OperationsDestinationState.CONNECTIONS;
-            }
-            String attentionDestination = OperationsWatchPolicy.attentionDestination(
-                    OperationsWatchHistory.attentionKey(watchState));
-            return attentionDestination.isEmpty()
-                    ? OperationsDestinationState.OVERVIEW : attentionDestination;
+            String destination = OperationsWatchPolicy.watchStateDestination(watchState);
+            return destination.isEmpty() ? OperationsDestinationState.OVERVIEW : destination;
         }
 
         String actionDescription() {

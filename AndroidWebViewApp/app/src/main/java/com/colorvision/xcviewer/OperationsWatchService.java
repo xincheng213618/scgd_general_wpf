@@ -935,13 +935,22 @@ public final class OperationsWatchService extends Service {
 
     private Notification buildNotification(
             String status, boolean ongoing, String targetLabel) {
+        String watchState = preferences.getOperationsWatchState();
+        String destination = OperationsWatchPolicy.watchStateDestination(watchState);
+        PendingIntent contentIntent = destination.isEmpty()
+                ? createOperationsPendingIntent(0, "")
+                : createOperationsPendingIntent(
+                        0,
+                        destination,
+                        preferences.getOperationsHostId(),
+                        OperationsWatchHistory.attentionKey(watchState));
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_devices_24)
                 .setContentTitle(OperationsTargetPolicy.watchNotificationTitle(
                         targetLabel, preferences.getUsableOperationsProfileCount()))
                 .setContentText(status)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(status))
-                .setContentIntent(createOperationsPendingIntent(0, ""))
+                .setContentIntent(contentIntent)
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 .setOnlyAlertOnce(true)

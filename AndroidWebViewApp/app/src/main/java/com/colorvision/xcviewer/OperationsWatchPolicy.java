@@ -143,6 +143,17 @@ final class OperationsWatchPolicy {
         }
     }
 
+    static String watchStateDestination(String watchState) {
+        if (OperationsWatchHistory.STATE_OFFLINE.equals(watchState)) {
+            return DESTINATION_CONNECTION_CHECK;
+        }
+        if (OperationsWatchHistory.STATE_REMOTE_WAITING.equals(watchState)
+                || OperationsWatchHistory.STATE_REVOKED.equals(watchState)) {
+            return DESTINATION_CONNECTIONS;
+        }
+        return attentionDestination(OperationsWatchHistory.attentionKey(watchState));
+    }
+
     static String normalizeDestination(String destination) {
         if (DESTINATION_TRIAGE.equals(destination)
                 || DESTINATION_CONNECTION_CHECK.equals(destination)

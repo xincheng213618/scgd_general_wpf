@@ -167,6 +167,33 @@ public class OperationsWatchPolicyTest {
     }
 
     @Test
+    public void watchStatesRouteToTheirNearestSafeRecoveryScreen() {
+        assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
+                OperationsWatchPolicy.watchStateDestination(
+                        OperationsWatchHistory.attentionState(
+                                OperationsWatchPolicy.ATTENTION_DEVICES)));
+        assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
+                OperationsWatchPolicy.watchStateDestination(
+                        OperationsWatchHistory.attentionState(
+                                OperationsWatchPolicy.ATTENTION_UI_UNRESPONSIVE)));
+        assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK,
+                OperationsWatchPolicy.watchStateDestination(
+                        OperationsWatchHistory.STATE_OFFLINE));
+        assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTIONS,
+                OperationsWatchPolicy.watchStateDestination(
+                        OperationsWatchHistory.STATE_REMOTE_WAITING));
+        assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTIONS,
+                OperationsWatchPolicy.watchStateDestination(
+                        OperationsWatchHistory.STATE_REVOKED));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination(
+                OperationsWatchHistory.STATE_ONLINE));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination(
+                OperationsWatchHistory.STATE_REMOTE_ONLINE));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination("unknown"));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination(null));
+    }
+
+    @Test
     public void completedBackgroundCheckMustStillBelongToTheActiveComputer() {
         assertTrue(OperationsWatchPolicy.isCurrentProfileCheck(
                 "host_1", "host_1", 7, 7));
