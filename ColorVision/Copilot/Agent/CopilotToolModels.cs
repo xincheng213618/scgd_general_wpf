@@ -159,7 +159,13 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotRequestMessage> History { get; init; } = Array.Empty<CopilotRequestMessage>();
 
-        public IReadOnlyList<CopilotAttachmentItem> Attachments { get; init; } = Array.Empty<CopilotAttachmentItem>();
+        public IReadOnlyList<CopilotAttachmentItem> Attachments
+        {
+            get => CloneAttachments(_attachments);
+            init => _attachments = CloneAttachments(value);
+        }
+        private readonly IReadOnlyList<CopilotAttachmentItem> _attachments =
+            Array.Empty<CopilotAttachmentItem>();
 
         public IReadOnlyList<CopilotContextItem> ContextItems { get; init; } = Array.Empty<CopilotContextItem>();
 
@@ -403,6 +409,17 @@ namespace ColorVision.Copilot
             return Array.AsReadOnly(source
                 .Where(server => server != null)
                 .Select(server => server.Clone())
+                .ToArray());
+        }
+
+        private static IReadOnlyList<CopilotAttachmentItem> CloneAttachments(
+            IReadOnlyList<CopilotAttachmentItem>? source)
+        {
+            if (source == null || source.Count == 0)
+                return Array.Empty<CopilotAttachmentItem>();
+            return Array.AsReadOnly(source
+                .Where(attachment => attachment != null)
+                .Select(attachment => attachment.CreateSnapshot())
                 .ToArray());
         }
     }
