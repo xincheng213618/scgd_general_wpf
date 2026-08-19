@@ -33,6 +33,50 @@ public class ArchitectureSmokeTests
     }
 
     [Fact]
+    public void ViewAndWindowAreNotMechanicallySplitAcrossTopLevelPartialFiles()
+    {
+        string pluginDirectory = Path.Combine(RepoRoot, "Plugins", "Conoscope");
+        string[] allowedCodeBehindFiles = ["ConoscopeView.xaml.cs", "ConoscopeWindow.xaml.cs"];
+        string[] partialFragments = Directory
+            .GetFiles(pluginDirectory, "Conoscope*.cs", SearchOption.TopDirectoryOnly)
+            .Where(path =>
+            {
+                string fileName = Path.GetFileName(path);
+                bool isViewOrWindowFragment = fileName.StartsWith("ConoscopeView.", StringComparison.Ordinal)
+                    || fileName.StartsWith("ConoscopeWindow.", StringComparison.Ordinal);
+                return isViewOrWindowFragment && !allowedCodeBehindFiles.Contains(fileName, StringComparer.Ordinal);
+            })
+            .Select(Path.GetFileName)
+            .ToArray()!;
+
+        Assert.Empty(partialFragments);
+    }
+
+    [Fact]
+    public void DocumentOwnerHasNoWpfUiDependency()
+    {
+        string documentPath = Path.Combine(RepoRoot, "Plugins", "Conoscope", "ConoscopeDocument.cs");
+        string source = File.ReadAllText(documentPath);
+
+        Assert.DoesNotContain("System.Windows", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("MessageBox", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ViewDoesNotOwnPoiDatabaseOrLegacyImageViewControlAccess()
+    {
+        string pluginDirectory = Path.Combine(RepoRoot, "Plugins", "Conoscope");
+        string viewSource = File.ReadAllText(Path.Combine(pluginDirectory, "ConoscopeView.xaml.cs"));
+        string hostSource = File.ReadAllText(Path.Combine(pluginDirectory, "ConoscopeImageHost.xaml.cs"));
+
+        Assert.DoesNotContain("MySqlControl", viewSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("SqlSugar", viewSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("PoiMasterDao", viewSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("public DrawCanvas ImageShow", hostSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("public Zoombox Zoombox1", hostSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void DefaultGaussianKernelCanBeRaisedByUser()
     {
         ConoscopeConfig config = new();

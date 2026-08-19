@@ -1,10 +1,19 @@
 using ColorVision.FileIO;
+using System.Diagnostics;
 using System.IO;
+using Xunit.Abstractions;
 
 namespace Conoscope.Tests;
 
 public class CvcieChannelReaderTests
 {
+    private readonly ITestOutputHelper output;
+
+    public CvcieChannelReaderTests(ITestOutputHelper output)
+    {
+        this.output = output;
+    }
+
     [Theory]
     [InlineData(1u)]
     [InlineData(2u)]
@@ -93,10 +102,74 @@ public class CvcieChannelReaderTests
         }
     }
 
+    [Fact]
+    public void ReadsConfiguredRealWorldSampleOneChannelAtATime()
+    {
+        string? filePath = Environment.GetEnvironmentVariable("CONOSCOPE_REAL_SAMPLE");
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            return;
+        }
+
+        Assert.True(File.Exists(filePath), $"Configured CVCIE sample does not exist: {filePath}");
+        int expectedRows = 0;
+        int expectedColumns = 0;
+        Stopwatch total = Stopwatch.StartNew();
+
+        for (int channelIndex = 0; channelIndex < 3; channelIndex++)
+        {
+            Stopwatch channelTimer = Stopwatch.StartNew();
+            Assert.True(CVFileUtil.ReadCIEFileChannel(filePath, channelIndex, out CVCIEFile channel));
+            using (channel)
+            {
+                Assert.Equal(32, channel.Bpp);
+                Assert.True(channel.Channels >= 3);
+                Assert.Equal(checked(channel.Rows * channel.Cols * sizeof(float)), channel.Data.Length);
+
+                if (channelIndex == 0)
+                {
+                    expectedRows = channel.Rows;
+                    expectedColumns = channel.Cols;
+                }
+                else
+                {
+                    Assert.Equal(expectedRows, channel.Rows);
+                    Assert.Equal(expectedColumns, channel.Cols);
+                }
+
+                output.WriteLine(
+                    "Channel {0}: {1}x{2}, payload={3:N0} bytes, elapsed={4:F0} ms, sampleHash={5:X8}",
+                    channelIndex,
+                    channel.Cols,
+                    channel.Rows,
+                    channel.Data.Length,
+                    channelTimer.Elapsed.TotalMilliseconds,
+                    GetSampleHash(channel.Data));
+            }
+        }
+
+        output.WriteLine(
+            "Total={0:F0} ms, peak working set={1:N0} bytes",
+            total.Elapsed.TotalMilliseconds,
+            Process.GetCurrentProcess().PeakWorkingSet64);
+    }
+
     private static float[] ToFloats(byte[] bytes)
     {
         float[] values = new float[bytes.Length / sizeof(float)];
         Buffer.BlockCopy(bytes, 0, values, 0, bytes.Length);
         return values;
+    }
+
+    private static uint GetSampleHash(byte[] data)
+    {
+        uint hash = 2166136261;
+        int step = Math.Max(sizeof(float), data.Length / 64);
+        for (int offset = 0; offset < data.Length; offset += step)
+        {
+            hash = (hash ^ data[offset]) * 16777619;
+        }
+
+        return hash;
     }
 }
