@@ -259,6 +259,22 @@ public sealed class CopilotAgentEventProtocolTests
     }
 
     [Fact]
+    public void RuntimeEmitterRejectsTerminalStateOnToolStartBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = CopilotAgentEvent.ToolStarted(
+            CreateExecution(CopilotToolExecutionState.Completed));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid execution metadata", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
     public void RuntimeEmitterRejectsInvalidToolProgressBeforeItsObserverRuns()
     {
         var observed = 0;

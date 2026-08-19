@@ -781,6 +781,15 @@ namespace ColorVision.Copilot
                         or CopilotToolExecutionState.Cancelled
                         or CopilotToolExecutionState.Interrupted);
         }
+
+        internal static bool HasValidActiveState(
+            CopilotToolExecutionInfo? execution,
+            bool allowPending) =>
+            IsStructurallyValid(execution)
+            && execution!.CompletedAtUtc == null
+            && (execution.State == CopilotToolExecutionState.Running
+                || allowPending
+                    && execution.State == CopilotToolExecutionState.Pending);
     }
 
 }

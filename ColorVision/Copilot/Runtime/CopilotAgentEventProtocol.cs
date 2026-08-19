@@ -181,8 +181,14 @@ namespace ColorVision.Copilot
             {
                 case CopilotAgentEventType.ToolStarted:
                     RequireMatchingText(agentEvent, agentEvent.ToolExecution!.ToolName, "tool start");
+                    RequireActiveToolExecution(
+                        agentEvent,
+                        allowPending: false);
                     break;
                 case CopilotAgentEventType.ToolProgress:
+                    RequireActiveToolExecution(
+                        agentEvent,
+                        allowPending: true);
                     if (!CopilotToolProgressProtocol.IsStructurallyValid(
                             agentEvent.Progress))
                     {
@@ -197,6 +203,9 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.HookStarted:
                 case CopilotAgentEventType.HookCompleted:
                     RequireMatchingText(agentEvent, agentEvent.ToolExecutionHook!.SourceId, "tool hook");
+                    RequireActiveToolExecution(
+                        agentEvent,
+                        allowPending: true);
                     break;
                 case CopilotAgentEventType.RuntimeDiagnostic when agentEvent.ProviderRetry != null:
                     CopilotProviderRetryProtocol.ValidateDiagnostic(
@@ -212,6 +221,19 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.SteeringRecovery:
                     ValidateSteering(agentEvent);
                     break;
+            }
+        }
+
+        private static void RequireActiveToolExecution(
+            CopilotAgentEvent agentEvent,
+            bool allowPending)
+        {
+            if (!CopilotToolExecutionInfoProtocol.HasValidActiveState(
+                    agentEvent.ToolExecution,
+                    allowPending))
+            {
+                throw new InvalidOperationException(
+                    $"Copilot Agent {agentEvent.Type} event has invalid execution metadata.");
             }
         }
 

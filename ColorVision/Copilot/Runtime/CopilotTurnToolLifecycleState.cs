@@ -30,9 +30,8 @@ namespace ColorVision.Copilot
 
         private CopilotTurnToolLifecycleState ObserveStarted(CopilotAgentEvent agentEvent)
         {
-            var execution = RequireExecution(
+            var execution = RequireRunningExecution(
                 agentEvent,
-                CopilotToolExecutionState.Running,
                 "start");
             var callKey = BuildCallKey(execution);
             if (!_calls.TryGetValue(callKey, out var current))
@@ -149,15 +148,14 @@ namespace ColorVision.Copilot
             return new CopilotTurnToolLifecycleState(calls);
         }
 
-        private static CopilotToolExecutionInfo RequireExecution(
+        private static CopilotToolExecutionInfo RequireRunningExecution(
             CopilotAgentEvent agentEvent,
-            CopilotToolExecutionState expectedState,
             string lifecycleStage)
         {
             var execution = agentEvent.ToolExecution;
-            if (!HasValidExecution(execution)
-                || execution!.State != expectedState
-                || execution.CompletedAtUtc != null)
+            if (!CopilotToolExecutionInfoProtocol.HasValidActiveState(
+                    execution,
+                    allowPending: false))
             {
                 throw new InvalidOperationException(
                     $"Copilot Agent tool {lifecycleStage} has invalid execution metadata.");
@@ -169,9 +167,9 @@ namespace ColorVision.Copilot
         private static CopilotToolExecutionInfo RequireProgressExecution(CopilotAgentEvent agentEvent)
         {
             var execution = agentEvent.ToolExecution;
-            if (!HasValidExecution(execution)
-                || execution!.State is not (CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running)
-                || execution.CompletedAtUtc != null)
+            if (!CopilotToolExecutionInfoProtocol.HasValidActiveState(
+                    execution,
+                    allowPending: true))
             {
                 throw new InvalidOperationException("Copilot Agent tool progress has invalid execution metadata.");
             }

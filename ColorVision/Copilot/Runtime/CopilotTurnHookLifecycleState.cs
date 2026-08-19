@@ -143,8 +143,9 @@ namespace ColorVision.Copilot
             string lifecycleStage)
         {
             var execution = agentEvent.ToolExecution;
-            if (!CopilotToolExecutionInfoProtocol.IsStructurallyValid(execution)
-                || execution!.State is not (CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running))
+            if (!CopilotToolExecutionInfoProtocol.HasValidActiveState(
+                    execution,
+                    allowPending: true))
             {
                 throw new InvalidOperationException(
                     $"Copilot Agent tool hook {lifecycleStage} has invalid execution metadata.");
