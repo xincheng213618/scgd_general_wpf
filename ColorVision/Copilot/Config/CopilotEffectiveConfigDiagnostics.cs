@@ -1422,6 +1422,9 @@ namespace ColorVision.Copilot
         {
             return probe.State switch
             {
+                CopilotConfigFileProbeState.Loaded
+                    when probe.SchemaVersion > CopilotConfig.CurrentSchemaVersion =>
+                    $"更高版本阻止 CopilotConfig 写入 · file schema {probe.SchemaVersion.Value.ToString(CultureInfo.InvariantCulture)} · runtime read-only schema {runtimeSchemaVersion.ToString(CultureInfo.InvariantCulture)}",
                 CopilotConfigFileProbeState.Loaded =>
                     $"已加载 CopilotConfig · file schema {probe.SchemaVersion?.ToString(CultureInfo.InvariantCulture) ?? "未声明"} → runtime {runtimeSchemaVersion.ToString(CultureInfo.InvariantCulture)}",
                 CopilotConfigFileProbeState.FileMissing => "当前文件不存在 · 继续使用已加载运行时值",

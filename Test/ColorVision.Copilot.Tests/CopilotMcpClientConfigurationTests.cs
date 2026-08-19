@@ -9,6 +9,30 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotMcpClientConfigurationTests
 {
     [Fact]
+    public void FutureSchemaConfigurationRemainsReadOnlyBeforeSecretSerialization()
+    {
+        var config = new CopilotConfig
+        {
+            SchemaVersion = CopilotConfig.CurrentSchemaVersion + 1,
+            McpPort = 0,
+            McpBearerToken = "future-plain-token",
+            Profiles = [],
+        };
+
+        Assert.True(config.IsPersistenceBlocked);
+        Assert.False(config.EnsureInitialized());
+        Assert.Equal(0, config.McpPort);
+        Assert.Empty(config.Profiles);
+
+        var exception = Assert.Throws<CopilotConfigFutureVersionException>(
+            config.Encryption);
+
+        Assert.Equal(CopilotConfig.CurrentSchemaVersion + 1, exception.SchemaVersion);
+        Assert.Equal(CopilotConfig.CurrentSchemaVersion, exception.SupportedSchemaVersion);
+        Assert.Equal("future-plain-token", config.McpBearerToken);
+    }
+
+    [Fact]
     public void EnsureInitializedRemovesNullExternalMcpServersAndToolRules()
     {
         var config = JsonConvert.DeserializeObject<CopilotConfig>(

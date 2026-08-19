@@ -9,6 +9,22 @@ using System.Security.Cryptography;
 
 namespace ColorVision.Copilot
 {
+    public sealed class CopilotConfigFutureVersionException : InvalidOperationException
+    {
+        public int SchemaVersion { get; }
+
+        public int SupportedSchemaVersion { get; }
+
+        public CopilotConfigFutureVersionException(
+            int schemaVersion,
+            int supportedSchemaVersion)
+            : base($"Copilot configuration schema {schemaVersion} was created by a newer application version; this version supports schema {supportedSchemaVersion} and will not overwrite it.")
+        {
+            SchemaVersion = schemaVersion;
+            SupportedSchemaVersion = supportedSchemaVersion;
+        }
+    }
+
     public class CopilotConfig : ViewModelBase, IConfigSecure
     {
         public const string ConfigAESKey = "ColorVision";
@@ -42,6 +58,10 @@ namespace ColorVision.Copilot
 
         [Browsable(false)]
         public int SchemaVersion { get; set; }
+
+        [JsonIgnore]
+        [Browsable(false)]
+        public bool IsPersistenceBlocked => SchemaVersion > CurrentSchemaVersion;
 
         public const int DefaultMcpPort = 38473;
 
@@ -86,6 +106,9 @@ namespace ColorVision.Copilot
 
         public bool EnsureInitialized()
         {
+            if (IsPersistenceBlocked)
+                return false;
+
             var changed = false;
 
             Profiles ??= new ObservableCollection<CopilotProfileConfig>();
@@ -198,6 +221,7 @@ namespace ColorVision.Copilot
 
         public void Encryption()
         {
+            ThrowIfPersistenceBlocked();
             Profiles ??= new ObservableCollection<CopilotProfileConfig>();
             var profiles = Profiles
                 .Where(profile => profile != null)
@@ -210,6 +234,16 @@ namespace ColorVision.Copilot
             for (var index = 0; index < profiles.Length; index++)
                 profiles[index].ApiKey = protectedProfileKeys[index];
             McpBearerToken = protectedMcpBearerToken;
+        }
+
+        private void ThrowIfPersistenceBlocked()
+        {
+            if (IsPersistenceBlocked)
+            {
+                throw new CopilotConfigFutureVersionException(
+                    SchemaVersion,
+                    CurrentSchemaVersion);
+            }
         }
 
         public void Decrypt()
