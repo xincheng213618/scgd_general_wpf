@@ -29,4 +29,18 @@ public class AppResponsiveLayoutTest {
         assertFalse(AppResponsiveLayout.usesSingleColumn(0, Float.NaN));
         assertFalse(AppResponsiveLayout.usesSingleColumn(-1, Float.POSITIVE_INFINITY));
     }
+
+    @Test
+    public void extremeFontScaleStacksTrailingControlsOnlyWhenSpaceIsTight() {
+        assertFalse(AppResponsiveLayout.usesStackedControlRow(360, 1.5f));
+        assertTrue(AppResponsiveLayout.usesStackedControlRow(360, 2.0f));
+        assertFalse(AppResponsiveLayout.usesStackedControlRow(600, 2.0f));
+    }
+
+    @Test
+    public void invalidDimensionsDoNotStackTrailingControls() {
+        assertFalse(AppResponsiveLayout.usesStackedControlRow(0, 2.0f));
+        assertFalse(AppResponsiveLayout.usesStackedControlRow(360, Float.NaN));
+        assertFalse(AppResponsiveLayout.usesStackedControlRow(360, 0f));
+    }
 }

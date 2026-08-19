@@ -187,29 +187,30 @@ final class SettingsPageContent {
             ViewModel model,
             Handler handler,
             boolean showDivider) {
+        boolean stackSupportingText = AppResponsiveLayout.usesStackedControlRow(
+                activity.getResources().getConfiguration().screenWidthDp,
+                activity.getResources().getConfiguration().fontScale);
         LinearLayout row = new LinearLayout(activity);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(activity, 22), 0, dp(activity, 18), 0);
+        row.setOrientation(stackSupportingText
+                ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        row.setGravity(stackSupportingText ? Gravity.START : Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(activity, 22), stackSupportingText ? dp(activity, 10) : 0,
+                dp(activity, 18), stackSupportingText ? dp(activity, 10) : 0);
         row.setMinimumHeight(dp(activity, 64));
         row.setBackgroundColor(themeManager.cardBackgroundColor());
 
-        LinearLayout labels = new LinearLayout(activity);
-        labels.setOrientation(LinearLayout.VERTICAL);
-        labels.setGravity(Gravity.CENTER_VERTICAL);
-        labels.addView(text(
+        TextView title = text(
                 activity,
                 SettingsInformationArchitecture.OPERATIONS_WATCH,
                 com.google.android.material.R.style.TextAppearance_Material3_BodyLarge,
-                themeManager.primaryTextColor()), matchWidth());
+                themeManager.primaryTextColor());
         TextView status = text(
                 activity,
                 model.watchStatus,
                 com.google.android.material.R.style.TextAppearance_Material3_BodySmall,
                 themeManager.mutedTextColor());
-        labels.addView(status, matchWidth());
-        row.addView(labels, new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        status.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
 
         MaterialSwitch toggle = new MaterialSwitch(activity);
         toggle.setChecked(model.watchEnabled);
@@ -235,9 +236,31 @@ final class SettingsPageContent {
             row.setContentDescription(SettingsRowAccessibility.contentDescription(
                     SettingsInformationArchitecture.OPERATIONS_WATCH, updatedStatus));
         });
-        row.addView(toggle, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
+        if (stackSupportingText) {
+            LinearLayout headline = new LinearLayout(activity);
+            headline.setOrientation(LinearLayout.HORIZONTAL);
+            headline.setGravity(Gravity.CENTER_VERTICAL);
+            headline.addView(title, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+            headline.addView(toggle, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+            row.addView(headline, matchWidth());
+            LinearLayout.LayoutParams statusParams = matchWidth();
+            statusParams.setMargins(0, dp(activity, 2), 0, 0);
+            row.addView(status, statusParams);
+        } else {
+            LinearLayout labels = new LinearLayout(activity);
+            labels.setOrientation(LinearLayout.VERTICAL);
+            labels.setGravity(Gravity.CENTER_VERTICAL);
+            labels.addView(title, matchWidth());
+            labels.addView(status, matchWidth());
+            row.addView(labels, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+            row.addView(toggle, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
         row.setOnClickListener(view -> toggle.setChecked(!toggle.isChecked()));
         parent.addView(row, matchWidth());
         if (showDivider) {
