@@ -5,6 +5,28 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotTurnCheckpointLifecycleTests
 {
     [Fact]
+    public void CheckpointPublicationDoesNotShareMutableLedgerWithEventObservers()
+    {
+        var sourceLedger = CreateTaskLedger();
+        Assert.True(CopilotAgentCheckpointPublication.TryCreate(
+            CreateCheckpoint(InitialUpdate),
+            sourceLedger,
+            out var publication));
+
+        sourceLedger.Mode = "plan";
+        sourceLedger.Items[0].Title = "Rewritten source task";
+        var agentEvent = publication.CreateEvent();
+        agentEvent.TaskLedger!.Mode = "plan";
+        agentEvent.TaskLedger.Items[0].Title = "Rewritten observer task";
+
+        Assert.Equal("execute", publication.TaskLedger.Mode);
+        Assert.Equal(
+            "Persist resumable state",
+            Assert.Single(publication.TaskLedger.Items).Title);
+        Assert.NotSame(publication.TaskLedger, agentEvent.TaskLedger);
+    }
+
+    [Fact]
     public void CheckpointEventOwnsTheSessionCheckpointCollections()
     {
         var toolNames = new List<string> { "FirstTool" };

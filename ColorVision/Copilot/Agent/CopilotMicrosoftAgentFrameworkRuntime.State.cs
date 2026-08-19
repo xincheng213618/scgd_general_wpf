@@ -20,6 +20,50 @@ using AIChatFinishReason = Microsoft.Extensions.AI.ChatFinishReason;
 
 namespace ColorVision.Copilot
 {
+    internal sealed class CopilotAgentCheckpointPublication
+    {
+        private CopilotAgentCheckpointPublication(
+            CopilotAgentSessionCheckpoint sessionCheckpoint,
+            CopilotAgentTaskLedgerSnapshot taskLedger)
+        {
+            SessionCheckpoint = sessionCheckpoint;
+            TaskLedger = taskLedger;
+        }
+
+        public CopilotAgentSessionCheckpoint SessionCheckpoint { get; }
+
+        public CopilotAgentTaskLedgerSnapshot TaskLedger { get; }
+
+        public static bool TryCreate(
+            CopilotAgentSessionCheckpoint? sessionCheckpoint,
+            CopilotAgentTaskLedgerSnapshot? taskLedger,
+            out CopilotAgentCheckpointPublication publication)
+        {
+            publication = null!;
+            if (!CopilotAgentSessionCheckpoint.TryCreateSnapshot(
+                    sessionCheckpoint,
+                    out var checkpointSnapshot))
+            {
+                return false;
+            }
+
+            var taskLedgerSnapshot =
+                CopilotAgentTaskLedgerSnapshot.CreateSnapshot(
+                    taskLedger,
+                    normalize: false);
+            if (!taskLedgerSnapshot.IsStructurallyValid())
+                return false;
+
+            publication = new CopilotAgentCheckpointPublication(
+                checkpointSnapshot,
+                taskLedgerSnapshot);
+            return true;
+        }
+
+        public CopilotAgentEvent CreateEvent() =>
+            CopilotAgentEvent.CheckpointUpdated(SessionCheckpoint, TaskLedger);
+    }
+
     public sealed partial class CopilotMicrosoftAgentFrameworkRuntime
     {
         private sealed class LiveCheckpointPublisher
@@ -39,12 +83,8 @@ namespace ColorVision.Copilot
             private readonly bool _sessionResumed;
             private readonly Func<string> _answerText;
             private readonly Func<IReadOnlyList<string>> _deliveredSteeringMessages;
-            private CheckpointPublication? _latestPublication;
+            private CopilotAgentCheckpointPublication? _latestPublication;
             private readonly SemaphoreSlim _publicationGate = new(1, 1);
-
-            private sealed record CheckpointPublication(
-                CopilotAgentSessionCheckpoint SessionCheckpoint,
-                CopilotAgentTaskLedgerSnapshot TaskLedger);
 
             public LiveCheckpointPublisher(
                 CopilotAgentRequest request,
@@ -189,12 +229,18 @@ namespace ColorVision.Copilot
                         return false;
                     }
 
-                    var checkpointEvent =
-                        CopilotAgentEvent.CheckpointUpdated(checkpoint, taskLedger);
+                    if (!CopilotAgentCheckpointPublication.TryCreate(
+                            checkpoint,
+                            taskLedger,
+                            out var publication))
+                    {
+                        _emit(CopilotAgentEvent.RuntimeDiagnostic(
+                            "Incremental Agent checkpoint was rejected because its publication snapshot was invalid."));
+                        return false;
+                    }
+
+                    var checkpointEvent = publication.CreateEvent();
                     CopilotAgentEventProtocol.Validate(checkpointEvent);
-                    var publication = new CheckpointPublication(
-                        checkpointEvent.SessionCheckpoint!,
-                        checkpointEvent.TaskLedger!);
                     Volatile.Write(ref _latestPublication, publication);
                     _emit(checkpointEvent);
                     return true;
