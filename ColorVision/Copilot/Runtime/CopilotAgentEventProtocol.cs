@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace ColorVision.Copilot
 {
@@ -175,6 +176,7 @@ namespace ColorVision.Copilot
                     break;
                 case CopilotAgentEventType.ToolResult:
                     RequireMatchingText(agentEvent, agentEvent.ToolResult!.Summary, "tool result");
+                    ValidateToolResult(agentEvent);
                     break;
                 case CopilotAgentEventType.HookStarted:
                 case CopilotAgentEventType.HookCompleted:
@@ -194,6 +196,29 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.SteeringRecovery:
                     ValidateSteering(agentEvent);
                     break;
+            }
+        }
+
+        private static void ValidateToolResult(CopilotAgentEvent agentEvent)
+        {
+            var result = agentEvent.ToolResult!;
+            var execution = agentEvent.ToolExecution!;
+            if (string.IsNullOrWhiteSpace(result.ToolName)
+                || string.IsNullOrWhiteSpace(execution.ToolName)
+                || !string.Equals(
+                    result.ToolName,
+                    execution.ToolName,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent tool result identity did not match its execution payload.");
+            }
+
+            if (agentEvent.ToolExecutionHookRuns.Any(run =>
+                    run?.IsStructurallyValid() != true))
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent tool result contains an invalid hook audit entry.");
             }
         }
 

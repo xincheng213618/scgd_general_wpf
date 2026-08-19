@@ -93,6 +93,67 @@ public sealed class CopilotAgentEventProtocolTests
     }
 
     [Fact]
+    public void RuntimeEmitterRejectsMismatchedToolResultIdentityBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.ToolResult,
+            Text = "Completed.",
+            ToolResult = new CopilotToolResult
+            {
+                ToolName = "DifferentTool",
+                Success = true,
+                Summary = "Completed.",
+            },
+            ToolExecution = CreateExecution(),
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("identity did not match", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
+    public void RuntimeEmitterRejectsInvalidToolHookAuditBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.ToolResult,
+            Text = "Completed.",
+            ToolResult = new CopilotToolResult
+            {
+                ToolName = "ProtectedTool",
+                Success = true,
+                Summary = "Completed.",
+            },
+            ToolExecution = CreateExecution(),
+            ToolExecutionHookRuns =
+            [
+                new CopilotToolExecutionHookRun
+                {
+                    SourceId = "extension:test:invalid-hook",
+                    Phase = CopilotToolExecutionHookPhase.AfterExecute,
+                    State = CopilotToolExecutionHookState.Failed,
+                },
+            ],
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid hook audit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
     public void ReducerRejectsUnnormalizedSteeringMessage()
     {
         var agentEvent = new CopilotAgentEvent
