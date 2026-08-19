@@ -163,9 +163,19 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotContextItem> ContextItems { get; init; } = Array.Empty<CopilotContextItem>();
 
-        public IReadOnlyList<string> SearchRootPaths { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> SearchRootPaths
+        {
+            get => _searchRootPaths;
+            init => _searchRootPaths = FreezeStrings(value);
+        }
+        private readonly IReadOnlyList<string> _searchRootPaths = Array.Empty<string>();
 
-        public IReadOnlyList<string> TrustedProjectRootPaths { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> TrustedProjectRootPaths
+        {
+            get => _trustedProjectRootPaths;
+            init => _trustedProjectRootPaths = FreezeStrings(value);
+        }
+        private readonly IReadOnlyList<string> _trustedProjectRootPaths = Array.Empty<string>();
 
         public string ActiveDocumentPath { get; init; } = string.Empty;
 
@@ -269,13 +279,33 @@ namespace ColorVision.Copilot
 
         internal CopilotReviewEvidenceContext? ReviewEvidenceContext { get; init; }
 
-        public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> ReadableLocalFilePaths
+        {
+            get => _readableLocalFilePaths;
+            init => _readableLocalFilePaths = FreezeStrings(value);
+        }
+        private readonly IReadOnlyList<string> _readableLocalFilePaths = Array.Empty<string>();
 
-        public IReadOnlyList<string> ReadableLocalDirectoryPaths { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> ReadableLocalDirectoryPaths
+        {
+            get => _readableLocalDirectoryPaths;
+            init => _readableLocalDirectoryPaths = FreezeStrings(value);
+        }
+        private readonly IReadOnlyList<string> _readableLocalDirectoryPaths = Array.Empty<string>();
 
-        public IReadOnlyList<string> WritableLocalRootPaths { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> WritableLocalRootPaths
+        {
+            get => _writableLocalRootPaths;
+            init => _writableLocalRootPaths = FreezeStrings(value);
+        }
+        private readonly IReadOnlyList<string> _writableLocalRootPaths = Array.Empty<string>();
 
-        public IReadOnlyList<string> WritableLocalFilePaths { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> WritableLocalFilePaths
+        {
+            get => _writableLocalFilePaths;
+            init => _writableLocalFilePaths = FreezeStrings(value);
+        }
+        private readonly IReadOnlyList<string> _writableLocalFilePaths = Array.Empty<string>();
 
         public bool PreferBatchReadLocalFiles { get; init; }
 
@@ -317,9 +347,21 @@ namespace ColorVision.Copilot
 
         internal CopilotAgentRuntimePurpose RuntimePurpose { get; init; }
 
-        internal IReadOnlyList<string> RequiredSuccessfulToolNames { get; init; } = Array.Empty<string>();
+        internal IReadOnlyList<string> RequiredSuccessfulToolNames
+        {
+            get => _requiredSuccessfulToolNames;
+            init => _requiredSuccessfulToolNames = FreezeStrings(value);
+        }
+        private readonly IReadOnlyList<string> _requiredSuccessfulToolNames = Array.Empty<string>();
 
         internal bool RequiresDelegatedWorkspaceEvidence { get; init; }
+
+        private static IReadOnlyList<string> FreezeStrings(IReadOnlyList<string>? source)
+        {
+            if (source == null || source.Count == 0)
+                return Array.Empty<string>();
+            return Array.AsReadOnly(source.ToArray());
+        }
     }
 
     public sealed class CopilotDelegatedRunUsage
