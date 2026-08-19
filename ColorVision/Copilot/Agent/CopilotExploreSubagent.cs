@@ -660,7 +660,8 @@ namespace ColorVision.Copilot
                 CodexIncludeCollaborationModeInstructions = parentRequest.CodexIncludeCollaborationModeInstructions,
                 CodexIncludeEnvironmentContext = parentRequest.CodexIncludeEnvironmentContext,
                 CodexIncludeSkillInstructions = parentRequest.CodexIncludeSkillInstructions,
-                CodexApprovalPolicy = parentRequest.CodexApprovalPolicy,
+                CodexApprovalPolicy = CopilotCodexApprovalPolicy.CreateScalar(
+                    CopilotCodexApprovalPolicyMode.Never),
                 CodexApprovalsReviewer = parentRequest.CodexApprovalsReviewer,
                 CodexGuardianApprovalEnabled = parentRequest.CodexGuardianApprovalEnabled,
                 CodexAutoReviewPolicy = parentRequest.CodexAutoReviewPolicy,
