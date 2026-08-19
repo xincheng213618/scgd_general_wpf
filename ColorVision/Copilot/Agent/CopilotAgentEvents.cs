@@ -148,7 +148,12 @@ namespace ColorVision.Copilot
             CopilotToolExecutionInfo? execution = null,
             IReadOnlyList<CopilotToolExecutionHookRun>? hookRuns = null)
         {
-            return FromToolResult(result, execution, hookRuns, string.Empty);
+            ArgumentNullException.ThrowIfNull(result);
+            return FromToolResult(
+                CopilotToolResultContract.CreateSnapshot(result),
+                execution,
+                hookRuns,
+                string.Empty);
         }
 
         internal static CopilotAgentEvent FromToolResult(

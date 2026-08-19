@@ -83,6 +83,13 @@ public sealed class CopilotToolResultContractTests
     [Fact]
     public void ToolResultEventOwnsItsHookRunCollection()
     {
+        var paths = new List<string> { @"C:\workspace\first.cs" };
+        var result = new CopilotToolResult
+        {
+            ToolName = "SnapshotTool",
+            Success = true,
+            SuggestedReadableLocalFilePaths = paths,
+        };
         var originalRun = CopilotToolExecutionHookRun.Create(
             "test:hook",
             CopilotToolExecutionHookPhase.AfterExecute,
@@ -91,18 +98,22 @@ public sealed class CopilotToolResultContractTests
         var hookRuns = new List<CopilotToolExecutionHookRun> { originalRun };
 
         var agentEvent = CopilotAgentEvent.FromToolResult(
-            new CopilotToolResult
-            {
-                ToolName = "SnapshotTool",
-                Success = true,
-            },
+            result,
             hookRuns: hookRuns);
+        paths[0] = @"C:\workspace\rewritten.cs";
         hookRuns[0] = CopilotToolExecutionHookRun.Create(
             "test:rewritten",
             CopilotToolExecutionHookPhase.AfterExecute,
             CopilotToolExecutionHookState.Completed,
             durationMs: 2);
 
+        var capturedResult = Assert.IsType<CopilotToolResult>(agentEvent.ToolResult);
+        Assert.NotSame(result, capturedResult);
+        Assert.Equal(@"C:\workspace\first.cs", Assert.Single(capturedResult.SuggestedReadableLocalFilePaths));
+        var capturedPaths = Assert.IsAssignableFrom<IList<string>>(
+            capturedResult.SuggestedReadableLocalFilePaths);
+        Assert.Throws<NotSupportedException>(() =>
+            capturedPaths[0] = @"C:\workspace\rewritten.cs");
         Assert.Same(originalRun, Assert.Single(agentEvent.ToolExecutionHookRuns));
         var capturedRuns = Assert.IsAssignableFrom<IList<CopilotToolExecutionHookRun>>(
             agentEvent.ToolExecutionHookRuns);

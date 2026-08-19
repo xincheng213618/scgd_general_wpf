@@ -29,6 +29,21 @@ namespace ColorVision.Copilot
             }
         }
 
+        internal static CopilotToolResult CreateSnapshot(CopilotToolResult result)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+            try
+            {
+                return Snapshot(result.ToolName ?? string.Empty, result, canonicalizeFailureCode: false);
+            }
+            catch
+            {
+                // Event creation must detach hostile collection implementations,
+                // but it must not allow their enumeration failures to escape.
+                return Invalid(result.ToolName ?? string.Empty, "the result could not be snapshotted safely");
+            }
+        }
+
         private static bool TryValidate(
             string expectedToolName,
             CopilotToolResult? result,
@@ -139,20 +154,23 @@ namespace ColorVision.Copilot
 
         private static CopilotToolResult Snapshot(
             string expectedToolName,
-            CopilotToolResult result)
+            CopilotToolResult result,
+            bool canonicalizeFailureCode = true)
         {
             return new CopilotToolResult
             {
                 ToolName = expectedToolName,
                 Success = result.Success,
-                Summary = result.Summary,
-                Content = result.Content,
-                ErrorMessage = result.ErrorMessage,
+                Summary = result.Summary ?? string.Empty,
+                Content = result.Content ?? string.Empty,
+                ErrorMessage = result.ErrorMessage ?? string.Empty,
                 FailureKind = result.FailureKind,
-                FailureCode = result.Success
-                    ? string.Empty
-                    : CopilotToolFailureCode.Normalize(result.FailureCode),
-                ProcessOperation = result.ProcessOperation,
+                FailureCode = canonicalizeFailureCode
+                    ? result.Success
+                        ? string.Empty
+                        : CopilotToolFailureCode.Normalize(result.FailureCode)
+                    : result.FailureCode ?? string.Empty,
+                ProcessOperation = result.ProcessOperation ?? string.Empty,
                 ProcessExitCode = result.ProcessExitCode,
                 ProcessTimedOut = result.ProcessTimedOut,
                 Approval = Snapshot(result.Approval),
@@ -163,7 +181,7 @@ namespace ColorVision.Copilot
                 DelegatedRunUsage = result.DelegatedRunUsage,
                 DelegatedAnswer = result.DelegatedAnswer,
                 ObservationCanRepeat = result.ObservationCanRepeat,
-                ObservationProgressSignature = result.ObservationProgressSignature,
+                ObservationProgressSignature = result.ObservationProgressSignature ?? string.Empty,
                 WorkspaceMutation = Snapshot(result.WorkspaceMutation),
                 BackgroundShellCommands = Freeze(result.BackgroundShellCommands),
                 SuppressModelOutput = result.SuppressModelOutput,
@@ -193,9 +211,9 @@ namespace ColorVision.Copilot
                 : new CopilotWorkspaceMutationSnapshot(Freeze(mutation.Files));
         }
 
-        private static IReadOnlyList<T> Freeze<T>(IReadOnlyList<T> values)
+        private static IReadOnlyList<T> Freeze<T>(IReadOnlyList<T>? values)
         {
-            return values.Count == 0
+            return values == null || values.Count == 0
                 ? Array.Empty<T>()
                 : Array.AsReadOnly(values.ToArray());
         }
