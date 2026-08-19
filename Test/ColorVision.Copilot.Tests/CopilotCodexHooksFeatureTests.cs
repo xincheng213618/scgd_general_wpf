@@ -1,5 +1,6 @@
 using ColorVision.Copilot;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -9,6 +10,23 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotCodexHooksFeatureTests
 {
+    [Fact]
+    public void HookSurfaceSnapshotCannotBeRewrittenAfterPublication()
+    {
+        var registry = new CopilotToolExecutionHookRegistry();
+        using var registration = registry.Register(
+            "extension:test:hook:frozen-snapshot",
+            new RecordingExtensionHook(),
+            "^HooksFeatureTool$");
+        var snapshot = registry.GetSnapshot();
+        var entries = Assert.IsAssignableFrom<System.Collections.Generic.IList<CopilotToolExecutionHookRegistryEntry>>(
+            snapshot.Entries);
+
+        Assert.True(entries.IsReadOnly);
+        Assert.Throws<NotSupportedException>(() => entries[0] = new CopilotToolExecutionHookRegistryEntry());
+        Assert.True(snapshot.IsStructurallyValid());
+    }
+
     [Fact]
     public void ClosestTrustedValueIsFrozenIntoTheSubmittedTurn()
     {
@@ -362,6 +380,57 @@ public sealed class CopilotCodexHooksFeatureTests
     }
 
     [Fact]
+    public async Task AsyncPostHookEnumeratesADetachedHookRunSnapshot()
+    {
+        var registry = new CopilotToolExecutionHookRegistry();
+        var observer = new HookRunSnapshotObserver();
+        var blocker = new BlockingPostHook();
+        using var observerRegistration = registry.Register(
+            "extension:test:hook:snapshot-observer",
+            observer,
+            "^HooksFeatureTool$",
+            order: 0,
+            executionMode: CopilotToolExecutionHookMode.Async);
+        using var blockerRegistration = registry.Register(
+            "extension:test:hook:snapshot-blocker",
+            blocker,
+            "^HooksFeatureTool$",
+            order: 1);
+        var executor = new CopilotToolExecutor(registry);
+
+        var executionTask = executor.ExecuteAsync(
+            CreateInvocation(new RecordingTool(), "hooks-async-snapshot", codexHooksEnabled: true),
+            _ => { },
+            CancellationToken.None);
+        try
+        {
+            await Task.WhenAll(observer.EnumerationStarted, blocker.AfterStarted)
+                .WaitAsync(TimeSpan.FromSeconds(5));
+            blocker.Release();
+            var outcome = await executionTask.WaitAsync(TimeSpan.FromSeconds(5));
+            observer.Release();
+            var enumerationError = await observer.Completion.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Null(enumerationError);
+            var hookRuns = Assert.IsAssignableFrom<IList<CopilotToolExecutionHookRun>>(outcome.HookRuns);
+            Assert.True(hookRuns.IsReadOnly);
+            Assert.Throws<NotSupportedException>(() => hookRuns[0] = outcome.HookRuns[0]);
+        }
+        finally
+        {
+            blocker.Release();
+            observer.Release();
+            try
+            {
+                await executionTask.WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    [Fact]
     public async Task AsyncHookSchedulerRetainsTimedOutWorkAndRejectsPendingOverflow()
     {
         var scheduler = new CopilotToolExecutionHookBackgroundScheduler();
@@ -464,6 +533,53 @@ public sealed class CopilotCodexHooksFeatureTests
         Assert.True(drained.IsStructurallyValid());
         Assert.Equal(0, drained.OutstandingCount);
         Assert.Equal(0, drained.TimedOutRetainedCount);
+    }
+
+    [Fact]
+    public async Task AsyncHookSchedulerShutdownCancelsOutstandingWorkAndRejectsNewTasks()
+    {
+        var scheduler = new CopilotToolExecutionHookBackgroundScheduler();
+        var runningStarted = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var started = 0;
+        for (var index = 0;
+            index < CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency + 2;
+            index++)
+        {
+            Assert.True(scheduler.TrySchedule(
+                $"test:shutdown:{index}",
+                CopilotToolExecutionHookPhase.AfterExecute,
+                "HooksFeatureTool",
+                $"async-shutdown-{index}",
+                TimeSpan.FromSeconds(30),
+                async cancellationToken =>
+                {
+                    if (Interlocked.Increment(ref started)
+                        == CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency)
+                    {
+                        runningStarted.TrySetResult(true);
+                    }
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                }));
+        }
+
+        await runningStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var beforeShutdown = scheduler.GetActivitySnapshot();
+        Assert.Equal(
+            CopilotToolExecutionHookBackgroundScheduler.MaxConcurrency,
+            beforeShutdown.RunningCount);
+        Assert.Equal(2, beforeShutdown.QueuedCount);
+
+        Assert.True(await scheduler.ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.Equal(0, scheduler.GetActivitySnapshot().OutstandingCount);
+        Assert.False(scheduler.TrySchedule(
+            "test:shutdown:late",
+            CopilotToolExecutionHookPhase.AfterExecute,
+            "HooksFeatureTool",
+            "async-shutdown-late",
+            TimeSpan.FromSeconds(1),
+            _ => Task.CompletedTask));
+        Assert.True(await scheduler.ShutdownAsync());
     }
 
     private static async Task WaitForActivityToDrainAsync(
@@ -617,6 +733,73 @@ public sealed class CopilotCodexHooksFeatureTests
             _releaseBefore.TrySetResult(true);
             _releaseAfter.TrySetResult(true);
         }
+    }
+
+    private sealed class HookRunSnapshotObserver : ICopilotToolExecutionHook
+    {
+        private readonly TaskCompletionSource _enumerationStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _release =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<Exception?> _completion =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task EnumerationStarted => _enumerationStarted.Task;
+
+        public Task<Exception?> Completion => _completion.Task;
+
+        public Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
+
+        public async Task AfterExecuteAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                using var enumerator = outcome.HookRuns.GetEnumerator();
+                _ = enumerator.MoveNext();
+                _enumerationStarted.TrySetResult();
+                await _release.Task.WaitAsync(cancellationToken);
+                while (enumerator.MoveNext())
+                {
+                }
+                _completion.TrySetResult(null);
+            }
+            catch (Exception ex)
+            {
+                _completion.TrySetResult(ex);
+            }
+        }
+
+        public void Release() => _release.TrySetResult();
+    }
+
+    private sealed class BlockingPostHook : ICopilotToolExecutionHook
+    {
+        private readonly TaskCompletionSource _afterStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _release =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task AfterStarted => _afterStarted.Task;
+
+        public Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
+
+        public async Task AfterExecuteAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken)
+        {
+            _afterStarted.TrySetResult();
+            await _release.Task.WaitAsync(cancellationToken);
+        }
+
+        public void Release() => _release.TrySetResult();
     }
 
     private sealed class RecordingTool(bool writeCapable = false) : ICopilotTool

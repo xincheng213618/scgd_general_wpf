@@ -2,6 +2,7 @@ package com.colorvision.xcviewer;
 
 import android.app.Activity;
 import android.content.res.ColorStateList;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -9,10 +10,13 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.view.ViewCompat;
 import androidx.core.widget.TextViewCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -26,28 +30,43 @@ final class OperationsTriageContent {
             ThemeManager themeManager,
             OperationsTriagePresentation.ViewModel model,
             ActionHandler actionHandler,
-            Runnable refresh,
-            Runnable back) {
+            Runnable connectionCheck,
+            Runnable observe) {
         LinearLayout root = new LinearLayout(activity);
         root.setOrientation(LinearLayout.VERTICAL);
 
+        ChipGroup quickActions = new ChipGroup(activity);
+        quickActions.setSingleLine(false);
+        quickActions.setChipSpacingHorizontal(dp(activity, 8));
+        quickActions.setChipSpacingVertical(dp(activity, 4));
+        quickActions.addView(actionChip(
+                activity,
+                themeManager,
+                activity.getString(R.string.operations_triage_connection_check_action),
+                activity.getString(
+                        R.string.operations_triage_connection_check_content_description),
+                R.drawable.ic_devices_24,
+                connectionCheck));
+        quickActions.addView(actionChip(
+                activity,
+                themeManager,
+                activity.getString(R.string.operations_triage_observe_action),
+                activity.getString(R.string.operations_triage_observe_content_description),
+                R.drawable.ic_visibility_24,
+                observe));
+        root.addView(quickActions, matchWidth());
+
         if (!model.findings.isEmpty()) {
             root.addView(sectionTitle(
-                    activity, themeManager, model.prioritySectionLabel()), matchWidth());
-            Set<String> renderedActions = new HashSet<>();
-            for (OperationsTriagePresentation.Finding finding : model.findings) {
-                root.addView(findingCard(
-                        activity,
-                        themeManager,
-                        finding,
-                        renderedActions,
-                        actionHandler),
-                        topMargin(dp(activity, 8)));
-            }
+                    activity, themeManager, model.prioritySectionLabel()),
+                    topMargin(dp(activity, 20)));
+            root.addView(findingsCard(
+                            activity, themeManager, model, actionHandler),
+                    topMargin(dp(activity, 8)));
         }
 
         root.addView(sectionTitle(activity, themeManager, "运行概览"),
-                model.findings.isEmpty() ? matchWidth() : topMargin(dp(activity, 20)));
+                topMargin(dp(activity, 20)));
         root.addView(metricsCard(activity, themeManager, model, actionHandler),
                 topMargin(dp(activity, 8)));
 
@@ -55,31 +74,26 @@ final class OperationsTriageContent {
         root.addView(safetyCard(activity, themeManager, model.safetyNotice),
                 topMargin(dp(activity, 8)));
 
-        boolean singleColumn = AppResponsiveLayout.usesSingleColumn(
-                activity.getResources().getConfiguration().screenWidthDp,
-                activity.getResources().getConfiguration().fontScale);
-        LinearLayout navigation = new LinearLayout(activity);
-        navigation.setOrientation(singleColumn
-                ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
-        MaterialButton backButton = new MaterialButton(
-                activity, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
-        backButton.setText("返回运维概览");
-        backButton.setMinHeight(dp(activity, 48));
-        backButton.setOnClickListener(view -> back.run());
-        navigation.addView(backButton, singleColumn ? matchWidth() : weightedButton());
-
-        MaterialButton refreshButton = new MaterialButton(activity);
-        refreshButton.setText("刷新排障建议");
-        refreshButton.setMinHeight(dp(activity, 48));
-        refreshButton.setOnClickListener(view -> refresh.run());
-        LinearLayout.LayoutParams refreshParams = singleColumn
-                ? topMargin(dp(activity, 8)) : weightedButton();
-        if (!singleColumn) {
-            refreshParams.setMargins(dp(activity, 8), 0, 0, 0);
-        }
-        navigation.addView(refreshButton, refreshParams);
-        root.addView(navigation, topMargin(dp(activity, 16)));
         return root;
+    }
+
+    private static Chip actionChip(
+            Activity activity,
+            ThemeManager themeManager,
+            String label,
+            String contentDescription,
+            int iconResource,
+            Runnable action) {
+        Chip chip = new Chip(activity);
+        chip.setText(label);
+        chip.setCheckable(false);
+        chip.setEnsureMinTouchTargetSize(true);
+        chip.setChipIconResource(iconResource);
+        chip.setChipIconTint(ColorStateList.valueOf(themeManager.primaryTextColor()));
+        chip.setChipIconVisible(true);
+        chip.setContentDescription(contentDescription);
+        chip.setOnClickListener(view -> action.run());
+        return chip;
     }
 
     private static MaterialCardView metricsCard(
@@ -147,41 +161,105 @@ final class OperationsTriageContent {
         }
     }
 
-    private static MaterialCardView findingCard(
+    private static MaterialCardView findingsCard(
+            Activity activity,
+            ThemeManager themeManager,
+            OperationsTriagePresentation.ViewModel model,
+            ActionHandler actionHandler) {
+        LinearLayout rows = new LinearLayout(activity);
+        rows.setOrientation(LinearLayout.VERTICAL);
+        Set<String> renderedActions = new HashSet<>();
+        for (int index = 0; index < model.findings.size(); index++) {
+            rows.addView(findingRow(
+                    activity,
+                    themeManager,
+                    model.findings.get(index),
+                    renderedActions,
+                    actionHandler), matchWidth());
+            if (index < model.findings.size() - 1) {
+                rows.addView(divider(activity, themeManager), dividerParams(activity));
+            }
+        }
+
+        MaterialCardView card = new MaterialCardView(activity);
+        card.setCardBackgroundColor(themeManager.cardBackgroundColor());
+        card.addView(rows, matchCardWidth());
+        return card;
+    }
+
+    private static View findingRow(
             Activity activity,
             ThemeManager themeManager,
             OperationsTriagePresentation.Finding finding,
             Set<String> renderedActions,
             ActionHandler actionHandler) {
+        OperationsTriagePresentation.Action primaryAction = finding.primaryCardAction();
+        if (primaryAction != null && !renderedActions.add(primaryAction.actionId)) {
+            primaryAction = null;
+        }
+
         LinearLayout content = new LinearLayout(activity);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(activity, 16), dp(activity, 16), dp(activity, 16), dp(activity, 16));
-        int contentColor = findingContentColor(themeManager, finding.tone());
+        int accentColor = findingAccentColor(themeManager, finding.tone());
 
-        TextView evidence = text(activity, finding.evidenceLabel(),
-                com.google.android.material.R.style.TextAppearance_Material3_LabelLarge,
-                contentColor);
-        content.addView(evidence, matchWidth());
+        LinearLayout summaryContent = new LinearLayout(activity);
+        summaryContent.setOrientation(LinearLayout.VERTICAL);
+
+        TextView evidence = text(activity, finding.listMetaLabel(),
+                com.google.android.material.R.style.TextAppearance_Material3_LabelMedium,
+                accentColor);
+        summaryContent.addView(evidence, matchWidth());
         TextView title = text(activity, finding.title,
-                com.google.android.material.R.style.TextAppearance_Material3_TitleMedium,
-                contentColor);
-        content.addView(title, topMargin(dp(activity, 6)));
+                com.google.android.material.R.style.TextAppearance_Material3_BodyLarge,
+                themeManager.primaryTextColor());
+        summaryContent.addView(title, topMargin(dp(activity, 4)));
+        TextView summary = null;
         if (!finding.summary.isEmpty()) {
-            TextView summary = text(activity, finding.summary,
+            summary = text(activity, finding.summary,
                     com.google.android.material.R.style.TextAppearance_Material3_BodyMedium,
-                    contentColor);
+                    themeManager.secondaryTextColor());
             summary.setLineSpacing(0, 1.06f);
-            content.addView(summary, topMargin(dp(activity, 8)));
+            summary.setMaxLines(2);
+            summary.setEllipsize(TextUtils.TruncateAt.END);
+            summaryContent.addView(summary, topMargin(dp(activity, 4)));
         }
-        if (!finding.latestAt.isEmpty()) {
-            TextView latest = text(activity, "最近证据 · " + finding.latestAt,
-                    com.google.android.material.R.style.TextAppearance_Material3_BodySmall,
-                    contentColor);
-            content.addView(latest, topMargin(dp(activity, 8)));
+
+        LinearLayout clickableSummary = new LinearLayout(activity);
+        clickableSummary.setOrientation(LinearLayout.HORIZONTAL);
+        clickableSummary.setGravity(Gravity.CENTER_VERTICAL);
+        clickableSummary.setPadding(
+                dp(activity, 16), dp(activity, 12), dp(activity, 12), dp(activity, 12));
+        clickableSummary.addView(summaryContent, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        if (primaryAction != null) {
+            ImageView chevron = new ImageView(activity);
+            chevron.setImageResource(R.drawable.ic_chevron_right_24);
+            chevron.setImageTintList(ColorStateList.valueOf(themeManager.secondaryTextColor()));
+            chevron.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
+                    dp(activity, 24), dp(activity, 24));
+            iconParams.setMargins(dp(activity, 12), 0, 0, 0);
+            clickableSummary.addView(chevron, iconParams);
+
+            OperationsTriagePresentation.Action cardAction = primaryAction;
+            clickableSummary.setClickable(true);
+            clickableSummary.setFocusable(true);
+            clickableSummary.setContentDescription(finding.cardAccessibilityLabel(cardAction));
+            clickableSummary.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+            applySelectableBackground(activity, clickableSummary);
+            clickableSummary.setOnClickListener(
+                    view -> actionHandler.onAction(cardAction.actionId));
+            evidence.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            if (summary != null) {
+                summary.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            }
         }
+        content.addView(clickableSummary, matchWidth());
 
         for (OperationsTriagePresentation.Action action : finding.actions) {
-            if (!OperationsTriagePresentation.isSupportedAction(action.actionId)
+            if (action == primaryAction
+                    || !OperationsTriagePresentation.isSupportedAction(action.actionId)
                     || !renderedActions.add(action.actionId)) {
                 continue;
             }
@@ -191,13 +269,12 @@ final class OperationsTriageContent {
             button.setContentDescription(action.description.isEmpty()
                     ? action.buttonLabel() : action.buttonLabel() + "。" + action.description);
             button.setOnClickListener(view -> actionHandler.onAction(action.actionId));
-            content.addView(button, topMargin(dp(activity, 12)));
+            LinearLayout.LayoutParams buttonParams = topMargin(dp(activity, 4));
+            buttonParams.setMargins(
+                    dp(activity, 16), dp(activity, 4), dp(activity, 16), dp(activity, 12));
+            content.addView(button, buttonParams);
         }
-
-        MaterialCardView card = new MaterialCardView(activity);
-        card.setCardBackgroundColor(findingContainerColor(themeManager, finding.tone()));
-        card.addView(content, matchCardWidth());
-        return card;
+        return content;
     }
 
     private static MaterialButton actionButton(
@@ -233,9 +310,11 @@ final class OperationsTriageContent {
             Activity activity,
             ThemeManager themeManager,
             String value) {
-        return text(activity, value,
+        TextView title = text(activity, value,
                 com.google.android.material.R.style.TextAppearance_Material3_TitleMedium,
                 themeManager.primaryTextColor());
+        ViewCompat.setAccessibilityHeading(title, true);
+        return title;
     }
 
     private static TextView text(Activity activity, String value, int appearance, int color) {
@@ -259,24 +338,14 @@ final class OperationsTriageContent {
         return themeManager.primaryTextColor();
     }
 
-    private static int findingContainerColor(ThemeManager themeManager, int tone) {
+    private static int findingAccentColor(ThemeManager themeManager, int tone) {
         if (tone == OperationsTriagePresentation.TONE_ERROR) {
-            return themeManager.errorContainerColor();
+            return themeManager.errorColor();
         }
         if (tone == OperationsTriagePresentation.TONE_ATTENTION) {
-            return themeManager.tertiaryContainerColor();
+            return themeManager.primaryColor();
         }
-        return themeManager.secondaryContainerColor();
-    }
-
-    private static int findingContentColor(ThemeManager themeManager, int tone) {
-        if (tone == OperationsTriagePresentation.TONE_ERROR) {
-            return themeManager.onErrorContainerColor();
-        }
-        if (tone == OperationsTriagePresentation.TONE_ATTENTION) {
-            return themeManager.onTertiaryContainerColor();
-        }
-        return themeManager.onSecondaryContainerColor();
+        return themeManager.secondaryTextColor();
     }
 
     private static View divider(Activity activity, ThemeManager themeManager) {
@@ -302,11 +371,6 @@ final class OperationsTriageContent {
         LinearLayout.LayoutParams params = matchWidth();
         params.setMargins(0, margin, 0, 0);
         return params;
-    }
-
-    private static LinearLayout.LayoutParams weightedButton() {
-        return new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
     }
 
     private static MaterialCardView.LayoutParams matchCardWidth() {

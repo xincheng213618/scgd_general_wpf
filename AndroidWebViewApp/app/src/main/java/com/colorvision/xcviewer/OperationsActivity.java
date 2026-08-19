@@ -22,6 +22,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -43,7 +44,6 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.chip.Chip;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
@@ -56,6 +56,7 @@ import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -67,18 +68,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class OperationsActivity extends AppCompatActivity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
     static final String EXTRA_OPEN_DESTINATION = "operations_open_destination";
+    static final String EXTRA_RETURN_TO_SETTINGS = "operations_return_to_settings";
     private static final String STATE_DESTINATION = "operations_destination";
     private static final String STATE_RETURN_TO_TRIAGE = "operations_return_to_triage";
     private static final String STATE_RETURN_TO_TOOLBOX = "operations_return_to_toolbox";
+    private static final String STATE_RETURN_TO_SETTINGS = "operations_return_to_settings";
+    private static final String STATE_SCROLL_OVERVIEW = "operations_scroll_overview";
+    private static final String STATE_SCROLL_PROBLEMS = "operations_scroll_problems";
+    private static final String STATE_SCROLL_TOOLS = "operations_scroll_tools";
+    private static final String STATE_SCROLL_SETTINGS = "operations_scroll_settings";
     private static final int REQUEST_QR_SCAN = 2406;
     private static final long LIVE_MONITOR_REFRESH_MILLISECONDS = 10_000L;
     private static final long CONNECTION_HEARTBEAT_MILLISECONDS = 30_000L;
     private static final int FLEET_CONNECT_TIMEOUT_MILLISECONDS = 3_500;
     private static final int FLEET_READ_TIMEOUT_MILLISECONDS = 5_000;
     private static final int NAV_OPERATIONS = 2001;
-    private static final int NAV_TOOLS = 2002;
-    private static final int NAV_SETTINGS = 2003;
-    private static final int MENU_REFRESH_DASHBOARD = 2004;
+    private static final int NAV_PROBLEMS = 2002;
+    private static final int NAV_TOOLS = 2003;
+    private static final int NAV_SETTINGS = 2004;
+    private static final int MENU_REFRESH_DASHBOARD = 2005;
+    private static final int MENU_TARGET = 2006;
+    private static final String PATH_SERVICE_HEALTH = "/ops/v1/services/health";
+    private static final String PATH_RECENT_EVENTS = "/ops/v1/diagnostics/recent-events";
+    private static final String PATH_FAILURE_EVIDENCE = "/ops/v1/diagnostics/failures";
+    private static final String PATH_PERFORMANCE = "/ops/v1/diagnostics/performance";
+    private static final String PATH_AUDIT = "/ops/v1/audit";
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -91,6 +105,7 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean activityResumed;
     private int liveMonitorGeneration;
     private final OperationsLiveMonitorTrend liveMonitorTrend = new OperationsLiveMonitorTrend();
+    private final OperationsTopLevelState topLevelState = new OperationsTopLevelState();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final ExecutorService fleetExecutor = Executors.newFixedThreadPool(3);
     private final Handler supportRefreshHandler = new Handler(Looper.getMainLooper());
@@ -117,14 +132,18 @@ public class OperationsActivity extends AppCompatActivity {
     private JSONObject lastRelaySnapshotResponse;
     private MaterialToolbar title;
     private MenuItem dashboardRefreshMenuItem;
-    private Chip profileTarget;
+    private MenuItem targetMenuItem;
     private TextView state;
     private TextView dashboardFreshness;
     private TextView details;
     private MaterialCardView detailsCard;
+    private OperationsConnectionContent.SummaryView connectionSummaryView;
     private LinearProgressIndicator progress;
     private SwipeRefreshLayout dashboardRefresh;
+    private FrameLayout contentHost;
     private ScrollView dashboardScroll;
+    private ScrollView settingsScroll;
+    private LinearProgressIndicator settingsProgress;
     private LinearLayout dashboardContent;
     private LinearLayout actions;
     private DashboardStatusRow dashboardApplicationStatus;
@@ -137,9 +156,9 @@ public class OperationsActivity extends AppCompatActivity {
     private Button dashboardPriorityAction;
     private Button dashboardCancelFlowButton;
     private Button dashboardRestartApplicationButton;
-    private Button remoteRestartMqttButton;
     private TextView dashboardStatusHeading;
     private TextView dashboardStatusCaption;
+    private LinearLayout dashboardStatusContent;
     private boolean dashboardFlowAvailable;
     private boolean dashboardFlowActive;
     private boolean dashboardFlowCancelAvailable;
@@ -155,6 +174,10 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean connectionRecoveryVisible;
     private boolean connectionHeartbeatInFlight;
     private boolean manualDashboardRefresh;
+    private boolean remoteToolboxRefreshInFlight;
+    private boolean problemCenterRefreshInFlight;
+    private boolean dashboardDetailRefreshInFlight;
+    private String dashboardDetailPath = "";
     private String lastSuccessfulDashboardUpdateLabel = "";
     private int connectionRequestGeneration;
     private int connectionCheckGeneration;
@@ -165,9 +188,17 @@ public class OperationsActivity extends AppCompatActivity {
     private String pendingOperationsDestination = "";
     private String currentDestination = OperationsDestinationState.OVERVIEW;
     private String pendingRestoredDestination = "";
+    private String problemBadgeState = "";
+    private int problemBadgeCount;
     private boolean returnToTriageOnBack;
     private boolean returnToToolboxOnBack;
+    private boolean returnToSettingsOnBack;
     private boolean updatingBottomNavigation;
+    private boolean updatingTopLevelScroll;
+    private boolean settingsConnectionInFlight;
+    private NotificationSettingsController notificationSettingsController;
+    private AndroidUpdateController androidUpdateController;
+    private Snackbar settingsFeedbackSnackbar;
     private boolean pairingApprovalWaiting;
     private long pairingApprovalDeadlineMilliseconds;
     private volatile int pairingRequestGeneration;
@@ -176,11 +207,20 @@ public class OperationsActivity extends AppCompatActivity {
         final LinearLayout container;
         final TextView title;
         final TextView summary;
+        final String actionLabel;
+        OperationsDashboardStatusFormatter.Item item;
 
-        DashboardStatusRow(LinearLayout container, TextView title, TextView summary) {
+        DashboardStatusRow(
+                LinearLayout container,
+                TextView title,
+                TextView summary,
+                String actionLabel,
+                OperationsDashboardStatusFormatter.Item item) {
             this.container = container;
             this.title = title;
             this.summary = summary;
+            this.actionLabel = actionLabel;
+            this.item = item;
         }
     }
 
@@ -200,10 +240,24 @@ public class OperationsActivity extends AppCompatActivity {
                 && savedInstanceState.getBoolean(STATE_RETURN_TO_TRIAGE, false);
         returnToToolboxOnBack = restoring
                 && savedInstanceState.getBoolean(STATE_RETURN_TO_TOOLBOX, false);
+        returnToSettingsOnBack = restoring
+                ? savedInstanceState.getBoolean(STATE_RETURN_TO_SETTINGS, false)
+                : returnToSettingsOnBack;
+        if (restoring) {
+            topLevelState.rememberScroll(OperationsDestinationState.OVERVIEW,
+                    savedInstanceState.getInt(STATE_SCROLL_OVERVIEW, 0));
+            topLevelState.rememberScroll(OperationsDestinationState.TRIAGE,
+                    savedInstanceState.getInt(STATE_SCROLL_PROBLEMS, 0));
+            topLevelState.rememberScroll(OperationsDestinationState.TOOLS,
+                    savedInstanceState.getInt(STATE_SCROLL_TOOLS, 0));
+            topLevelState.rememberScroll(OperationsDestinationState.SETTINGS,
+                    savedInstanceState.getInt(STATE_SCROLL_SETTINGS, 0));
+        }
         if (OperationsDestinationState.shouldRestore(restoredDestination)) {
             pendingRestoredDestination = restoredDestination;
         }
         createView();
+        initializeSettingsControllers();
         installInPageBackNavigation();
 
         String rawPairing = getIntent().getStringExtra(EXTRA_PAIRING_PAYLOAD);
@@ -214,6 +268,20 @@ public class OperationsActivity extends AppCompatActivity {
         } else if (hasPairingPayload
                 && OperationsDestinationState.PAIRING.equals(restoredDestination)) {
             showInterruptedPairing(rawPairing);
+        } else if (preferences.hasOperationsProfile()
+                && (OperationsDestinationState.SETTINGS.equals(
+                            pendingOperationsDestination)
+                        || OperationsDestinationState.SETTINGS.equals(
+                            pendingRestoredDestination))) {
+            pendingOperationsDestination = "";
+            pendingRestoredDestination = "";
+            try {
+                ensureOperationsClients();
+            } catch (Exception ignored) {
+                client = null;
+                relayClient = null;
+            }
+            showSettingsPage();
         } else if (preferences.hasOperationsProfile()) {
             openExistingProfile();
         } else if (hasPairingPayload) {
@@ -231,6 +299,11 @@ public class OperationsActivity extends AppCompatActivity {
         ScrollView scroll = new ScrollView(this);
         dashboardScroll = scroll;
         scroll.setFillViewport(true);
+        scroll.setOnScrollChangeListener((view, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            if (!updatingTopLevelScroll) {
+                topLevelState.rememberScroll(currentDestination, scrollY);
+            }
+        });
         LinearLayout root = new LinearLayout(this);
         dashboardContent = root;
         root.setOrientation(LinearLayout.VERTICAL);
@@ -248,13 +321,24 @@ public class OperationsActivity extends AppCompatActivity {
         title = new MaterialToolbar(this);
         title.setTitle("运维伴侣");
         title.setTitleTextColor(themeManager.primaryTextColor());
+        title.setSubtitleTextColor(themeManager.secondaryTextColor());
         title.setNavigationIconTint(themeManager.primaryTextColor());
         title.setNavigationOnClickListener(v -> navigateUpWithinOperations());
         title.setMinimumHeight(dp(64));
+        targetMenuItem = title.getMenu().add(0, MENU_TARGET, 0, "管理当前电脑");
+        targetMenuItem.setIcon(R.drawable.ic_devices_24);
+        Drawable targetIcon = targetMenuItem.getIcon();
+        if (targetIcon != null) {
+            targetIcon = targetIcon.mutate();
+            targetIcon.setTint(themeManager.primaryTextColor());
+            targetMenuItem.setIcon(targetIcon);
+        }
+        targetMenuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        targetMenuItem.setVisible(false);
         dashboardRefreshMenuItem = title.getMenu().add(
                 0,
                 MENU_REFRESH_DASHBOARD,
-                0,
+                1,
                 R.string.operations_refresh_dashboard);
         dashboardRefreshMenuItem.setIcon(R.drawable.ic_refresh_24);
         Drawable refreshIcon = dashboardRefreshMenuItem.getIcon();
@@ -266,10 +350,26 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardRefreshMenuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
         dashboardRefreshMenuItem.setVisible(false);
         title.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == MENU_TARGET) {
+                showConnectionPreference();
+                return true;
+            }
             if (item.getItemId() != MENU_REFRESH_DASHBOARD) {
                 return false;
             }
-            requestDashboardRefresh();
+            if (isDashboardDetailRefreshDestination()) {
+                refreshDashboardDetail();
+            } else if (isProblemCenterRefreshDestination()) {
+                if (remoteDashboard) {
+                    refreshRemoteProblemCenter();
+                } else {
+                    showTriageCenter();
+                }
+            } else if (isRemoteToolboxRefreshDestination()) {
+                refreshRemoteOperationsToolbox();
+            } else {
+                requestDashboardRefresh();
+            }
             return true;
         });
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
@@ -278,21 +378,6 @@ public class OperationsActivity extends AppCompatActivity {
         shell.addView(header, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
-
-        profileTarget = new Chip(this);
-        profileTarget.setTextSize(12);
-        profileTarget.setSingleLine(true);
-        profileTarget.setEllipsize(TextUtils.TruncateAt.END);
-        profileTarget.setChipIconResource(R.drawable.ic_devices_24);
-        profileTarget.setChipIconTint(ColorStateList.valueOf(themeManager.primaryColor()));
-        profileTarget.setEnsureMinTouchTargetSize(true);
-        profileTarget.setMaxWidth(getResources().getDisplayMetrics().widthPixels - dp(32));
-        profileTarget.setOnClickListener(v -> showConnectionPreference());
-        LinearLayout.LayoutParams profileParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        profileParams.setMargins(0, 0, 0, dp(8));
-        root.addView(profileTarget, profileParams);
 
         state = new TextView(this);
         TextViewCompat.setTextAppearance(state, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
@@ -361,7 +446,19 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardRefresh.addView(scroll, new SwipeRefreshLayout.LayoutParams(
                 SwipeRefreshLayout.LayoutParams.MATCH_PARENT,
                 SwipeRefreshLayout.LayoutParams.MATCH_PARENT));
-        shell.addView(dashboardRefresh, new LinearLayout.LayoutParams(
+
+        contentHost = new FrameLayout(this);
+        contentHost.addView(dashboardRefresh, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        settingsProgress = new LinearProgressIndicator(this);
+        settingsProgress.setVisibility(View.GONE);
+        FrameLayout.LayoutParams settingsProgressParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                dp(4));
+        settingsProgressParams.gravity = Gravity.TOP;
+        contentHost.addView(settingsProgress, settingsProgressParams);
+        shell.addView(contentHost, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
         bottomNavigation = createBottomNavigation();
         shell.addView(bottomNavigation, new LinearLayout.LayoutParams(
@@ -388,55 +485,141 @@ public class OperationsActivity extends AppCompatActivity {
         BottomNavigationView navigation = new BottomNavigationView(this);
         navigation.setBackgroundColor(themeManager.bottomNavBackgroundColor());
         navigation.setLabelVisibilityMode(BottomNavigationView.LABEL_VISIBILITY_LABELED);
-        navigation.getMenu().add(0, NAV_OPERATIONS, 0, "运维").setIcon(R.drawable.ic_devices_24);
-        navigation.getMenu().add(0, NAV_TOOLS, 1, "工具").setIcon(R.drawable.ic_build_24);
-        navigation.getMenu().add(0, NAV_SETTINGS, 2, "设置").setIcon(R.drawable.ic_settings_24);
+        navigation.getMenu().add(0, NAV_OPERATIONS, 0, "概览").setIcon(R.drawable.ic_devices_24);
+        navigation.getMenu().add(0, NAV_PROBLEMS, 1, "问题")
+                .setIcon(R.drawable.ic_report_problem_24);
+        navigation.getMenu().add(0, NAV_TOOLS, 2, "工具").setIcon(R.drawable.ic_build_24);
+        navigation.getMenu().add(0, NAV_SETTINGS, 3, "设置").setIcon(R.drawable.ic_settings_24);
+        renderProblemNavigationBadge(
+                navigation, preferences.getOperationsWatchState(), 0);
         navigation.setSelectedItemId(NAV_OPERATIONS);
         navigation.setOnItemSelectedListener(item -> {
             if (updatingBottomNavigation) {
                 return true;
             }
             if (item.getItemId() == NAV_OPERATIONS) {
+                returnToSettingsOnBack = false;
+                if (connectFromSettings(OperationsDestinationState.OVERVIEW)) {
+                    return true;
+                }
                 showCurrentDashboard();
+                return true;
+            }
+            if (item.getItemId() == NAV_PROBLEMS) {
+                if (preferences == null || !preferences.hasOperationsProfile()) {
+                    return false;
+                }
+                returnToSettingsOnBack = false;
+                if (connectFromSettings(OperationsDestinationState.TRIAGE)) {
+                    return true;
+                }
+                showProblemCenter();
                 return true;
             }
             if (item.getItemId() == NAV_TOOLS) {
                 if (preferences == null || !preferences.hasOperationsProfile()) {
                     return false;
                 }
-                if (remoteDashboard) {
-                    Snackbar.make(dashboardContent,
-                            "运维工具需要与电脑现场安全直连",
-                            Snackbar.LENGTH_LONG).show();
-                    return false;
+                returnToSettingsOnBack = false;
+                if (connectFromSettings(OperationsDestinationState.TOOLS)) {
+                    return true;
                 }
                 showOperationsToolboxPage();
                 return true;
             }
             if (item.getItemId() == NAV_SETTINGS) {
-                openMainTab(MainActivity.TAB_SETTINGS);
+                returnToSettingsOnBack = false;
+                showSettingsPage();
                 return true;
             }
             return false;
         });
         navigation.setOnItemReselectedListener(item -> {
             if (item.getItemId() == NAV_OPERATIONS) {
-                returnToOperationsOverview();
+                topLevelState.resetScroll(OperationsDestinationState.OVERVIEW);
+                if (!returnToOperationsOverview()) {
+                    scrollDashboardToTop();
+                }
+            } else if (item.getItemId() == NAV_PROBLEMS) {
+                topLevelState.resetScroll(OperationsDestinationState.TRIAGE);
+                if (OperationsDestinationState.TRIAGE.equals(currentDestination)
+                        && !returnToTriageOnBack) {
+                    scrollDashboardToTop();
+                } else {
+                    showProblemCenter();
+                }
             } else if (item.getItemId() == NAV_TOOLS) {
+                topLevelState.resetScroll(OperationsDestinationState.TOOLS);
                 if (OperationsDestinationState.TOOLS.equals(currentDestination)) {
                     scrollDashboardToTop();
                 } else {
                     showOperationsToolboxPage();
+                }
+            } else if (item.getItemId() == NAV_SETTINGS) {
+                topLevelState.resetScroll(OperationsDestinationState.SETTINGS);
+                if (OperationsDestinationState.SETTINGS.equals(currentDestination)) {
+                    if (settingsScroll != null) {
+                        settingsScroll.smoothScrollTo(0, 0);
+                    }
+                } else if (returnToSettingsOnBack) {
+                    returnToSettings();
+                } else {
+                    showSettingsPage();
                 }
             }
         });
         return navigation;
     }
 
+    private void renderProblemNavigationBadge(
+            BottomNavigationView navigation, String watchState, int issueCount) {
+        OperationsProblemBadgeRenderer.render(
+                navigation,
+                NAV_PROBLEMS,
+                OperationsProblemBadgePresentation.create(
+                        preferences.getOperationsProfileCount() > 0,
+                        watchState,
+                        issueCount));
+    }
+
+    private void refreshProblemNavigationBadge() {
+        renderProblemNavigationBadge(
+                bottomNavigation,
+                problemBadgeState.isEmpty()
+                        ? preferences.getOperationsWatchState() : problemBadgeState,
+                problemBadgeCount);
+    }
+
+    private void updateProblemNavigationFromMonitor(
+            JSONObject monitor, boolean relay, boolean hostFresh) {
+        if (relay && !hostFresh) {
+            problemBadgeState = OperationsWatchHistory.STATE_REMOTE_WAITING;
+            problemBadgeCount = 0;
+        } else {
+            problemBadgeState = OperationsMonitorClassifier.watchState(
+                    monitor,
+                    relay
+                            ? OperationsWatchHistory.STATE_REMOTE_ONLINE
+                            : OperationsWatchHistory.STATE_ONLINE);
+            problemBadgeCount = monitor == null
+                    ? 0
+                    : OperationsRemoteProblemsPresentation.from(
+                            monitor, true).issues.size();
+        }
+        refreshProblemNavigationBadge();
+    }
+
     private void installInPageBackNavigation() {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
+                if (OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
+                        currentDestination,
+                        returnToTriageOnBack,
+                        returnToToolboxOnBack)) {
+                    showCurrentDashboard();
+                    return;
+                }
                 if (navigateUpWithinOperations()) {
                     return;
                 }
@@ -455,32 +638,46 @@ public class OperationsActivity extends AppCompatActivity {
                 returnToTriageOnBack)) {
             return false;
         }
-        showTriageCenter();
+        showProblemCenter();
         return true;
     }
 
     private String operationsDetailBackLabel() {
+        if (OperationsInPageNavigationPolicy.shouldReturnToSettings(
+                currentDestination, returnToSettingsOnBack)) {
+            return "返回设置";
+        }
         if (returnToTriageOnBack) {
-            return "返回远程排障中心";
+            return "返回问题中心";
         }
         if (returnToToolboxOnBack) {
             return "返回运维工具";
         }
-        return "返回现场运维概览";
+        String parentLabel = OperationsInPageNavigationPolicy.navigateUpLabel(
+                currentDestination,
+                returnToTriageOnBack,
+                returnToToolboxOnBack,
+                showingDashboardSummary,
+                connectionRecoveryVisible);
+        return parentLabel.isEmpty() ? "返回现场运维概览" : parentLabel;
     }
 
     private void returnFromOperationsDetail() {
         if (returnToTriageCenter()) {
             return;
         }
-        if (returnToToolboxOnBack) {
-            showOperationsToolboxPage();
+        if (navigateUpWithinOperations()) {
             return;
         }
         showCurrentDashboard();
     }
 
     private boolean navigateUpWithinOperations() {
+        if (OperationsInPageNavigationPolicy.shouldReturnToSettings(
+                currentDestination, returnToSettingsOnBack)) {
+            returnToSettings();
+            return true;
+        }
         if (!OperationsInPageNavigationPolicy.showsNavigateUp(
                 preferences != null && preferences.hasOperationsProfile(),
                 dashboardVisible,
@@ -502,7 +699,7 @@ public class OperationsActivity extends AppCompatActivity {
             return true;
         }
         if (OperationsDestinationState.TRIAGE.equals(parent)) {
-            showTriageCenter();
+            showProblemCenter();
             return true;
         }
         if (OperationsDestinationState.TOOLS.equals(parent)) {
@@ -542,6 +739,217 @@ public class OperationsActivity extends AppCompatActivity {
         intent.putExtra(MainActivity.EXTRA_FROM_OPERATIONS, true);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         AppScreenMotion.startForward(this, intent);
+    }
+
+    private boolean connectFromSettings(String destination) {
+        if (!OperationsDestinationState.SETTINGS.equals(currentDestination)
+                || settingsConnectionInFlight) {
+            return settingsConnectionInFlight;
+        }
+        pendingOperationsDestination = destination;
+        settingsConnectionInFlight = true;
+        settingsProgress.setIndeterminate(true);
+        settingsProgress.setVisibility(View.VISIBLE);
+        title.setSubtitle("正在连接已配对电脑…");
+        openExistingProfile();
+        return true;
+    }
+
+    private void returnToSettings() {
+        connectionCheckGeneration++;
+        returnToSettingsOnBack = false;
+        showSettingsPage();
+    }
+
+    private void initializeSettingsControllers() {
+        notificationSettingsController = new NotificationSettingsController(
+                this,
+                preferences,
+                new NotificationSettingsController.Host() {
+                    @Override
+                    public void onSettingsChanged() {
+                        if (OperationsDestinationState.SETTINGS.equals(currentDestination)) {
+                            refreshSettingsPage();
+                        }
+                    }
+
+                    @Override
+                    public void showFeedback(String message, boolean offerReminderAction) {
+                        showSettingsFeedback(message, offerReminderAction);
+                    }
+                });
+        androidUpdateController = new AndroidUpdateController(
+                this,
+                new AndroidUpdateController.Host() {
+                    @Override
+                    public void onWorkStarted(String status, boolean determinate) {
+                        settingsProgress.setIndeterminate(!determinate);
+                        if (determinate) {
+                            settingsProgress.setMax(100);
+                            settingsProgress.setProgressCompat(0, false);
+                        }
+                        settingsProgress.setVisibility(View.VISIBLE);
+                        title.setSubtitle(status);
+                    }
+
+                    @Override
+                    public void onProgress(int percent) {
+                        settingsProgress.setProgressCompat(percent, true);
+                    }
+
+                    @Override
+                    public void onWorkFinished() {
+                        settingsProgress.setVisibility(View.GONE);
+                        title.setSubtitle(null);
+                    }
+                });
+    }
+
+    private void showSettingsPage() {
+        connectionCheckGeneration++;
+        cancelDashboardRefresh();
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        returnToTriageOnBack = false;
+        returnToToolboxOnBack = false;
+        setConnectionRecoveryVisible(false);
+        rebuildSettingsPage(false);
+        setCurrentDestination(OperationsDestinationState.SETTINGS);
+        returnToSettingsOnBack = false;
+        syncBottomNavigation();
+        setDashboardVisible(true);
+        setShowingDashboardSummary(false);
+        title.setTitle("设置");
+        title.setSubtitle(null);
+        progress.setVisibility(View.GONE);
+        scheduleConnectionHeartbeat();
+    }
+
+    private void refreshSettingsPage() {
+        if (settingsScroll == null) {
+            return;
+        }
+        rebuildSettingsPage(true);
+    }
+
+    private void rebuildSettingsPage(boolean preserveScroll) {
+        int scrollY = preserveScroll && settingsScroll != null
+                ? settingsScroll.getScrollY()
+                : topLevelState.scrollY(OperationsDestinationState.SETTINGS);
+        if (settingsScroll != null) {
+            contentHost.removeView(settingsScroll);
+        }
+        settingsScroll = SettingsPageContent.create(
+                this,
+                themeManager,
+                settingsViewModel(),
+                new SettingsPageContent.Handler() {
+                    @Override
+                    public void onComputerConnections() {
+                        returnToSettingsOnBack = true;
+                        showConnectionPreference();
+                    }
+
+                    @Override
+                    public void onAddComputer() {
+                        startOperationsPairingScan();
+                    }
+
+                    @Override
+                    public String onWatchChanged(boolean enabled) {
+                        setSettingsWatchEnabled(enabled);
+                        return OperationsWatchPreferencePolicy.status(
+                                preferences.hasOperationsProfile(),
+                                enabled,
+                                notificationSettingsController.remindersAvailable());
+                    }
+
+                    @Override
+                    public void onNotificationPermission() {
+                        notificationSettingsController.manage();
+                    }
+
+                    @Override
+                    public void onThemeMode() {
+                        themeManager.showThemeDialog(
+                                OperationsActivity.this,
+                                MainActivity.TAB_SETTINGS);
+                    }
+
+                    @Override
+                    public void onAppUpdate() {
+                        androidUpdateController.checkForUpdate();
+                    }
+
+                });
+        settingsScroll.setOnScrollChangeListener(
+                (view, scrollX, updatedScrollY, oldScrollX, oldScrollY) -> {
+                    if (!updatingTopLevelScroll) {
+                        topLevelState.rememberScroll(
+                                OperationsDestinationState.SETTINGS, updatedScrollY);
+                    }
+                });
+        settingsScroll.setVisibility(
+                OperationsDestinationState.SETTINGS.equals(currentDestination)
+                        ? View.VISIBLE : View.GONE);
+        contentHost.addView(settingsScroll, 1, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        restoreTopLevelScroll(OperationsDestinationState.SETTINGS, scrollY);
+    }
+
+    private SettingsPageContent.ViewModel settingsViewModel() {
+        boolean paired = preferences.hasOperationsProfile();
+        boolean watchEnabled = preferences.isOperationsWatchUserEnabled();
+        return new SettingsPageContent.ViewModel(
+                paired,
+                paired
+                        ? preferences.getActiveOperationsProfileLabel()
+                                + " · 共 " + preferences.getOperationsProfileCount() + " 台"
+                        : "",
+                watchEnabled,
+                OperationsWatchPreferencePolicy.status(
+                        paired,
+                        watchEnabled,
+                        notificationSettingsController.remindersAvailable()),
+                notificationSettingsController.status(),
+                themeManager.getThemeModeLabel(),
+                "当前 " + androidUpdateController.currentVersionName() + " · 签名校验");
+    }
+
+    private void setSettingsWatchEnabled(boolean enabled) {
+        preferences.saveOperationsWatchUserEnabled(enabled);
+        if (enabled) {
+            OperationsWatchService.start(this);
+            boolean remindersAvailable = notificationSettingsController.remindersAvailable();
+            showSettingsFeedback(
+                    OperationsWatchPreferencePolicy.enabledFeedback(true, remindersAvailable),
+                    OperationsWatchPreferencePolicy.shouldOfferReminderAction(
+                            true, remindersAvailable));
+        } else {
+            OperationsWatchService.stopForUserPreference(this);
+            showSettingsFeedback("持续守护已关闭；前台运维仍可使用", false);
+        }
+        if (settingsScroll != null) {
+            settingsScroll.post(this::refreshSettingsPage);
+        }
+    }
+
+    private void showSettingsFeedback(String message, boolean offerReminderAction) {
+        if (settingsFeedbackSnackbar != null) {
+            settingsFeedbackSnackbar.dismiss();
+        }
+        settingsFeedbackSnackbar = Snackbar.make(
+                contentHost,
+                message,
+                Snackbar.LENGTH_LONG);
+        settingsFeedbackSnackbar.setAnchorView(bottomNavigation);
+        if (offerReminderAction) {
+            settingsFeedbackSnackbar.setAction(
+                    "开启提醒",
+                    view -> notificationSettingsController.manage());
+        }
+        settingsFeedbackSnackbar.show();
     }
 
     private void beginPairing(String rawPairing) {
@@ -873,6 +1281,11 @@ public class OperationsActivity extends AppCompatActivity {
                     reconnectAfterOperationsTargetChange();
                     return;
                 }
+                if (settingsConnectionInFlight) {
+                    settingsConnectionInFlight = false;
+                    settingsProgress.setVisibility(View.GONE);
+                    title.setSubtitle(null);
+                }
                 connectionHeartbeatInFlight = false;
                 if (isRevokedException(finalLocalFailure)
                         || isRevokedException(finalRelayFailure)) {
@@ -922,6 +1335,7 @@ public class OperationsActivity extends AppCompatActivity {
                         ? "已设为固定中继优先"
                         : "已设为现场直连优先",
                 Toast.LENGTH_SHORT).show();
+        pendingOperationsDestination = OperationsDestinationState.CONNECTIONS;
         openExistingProfile();
     }
 
@@ -954,6 +1368,43 @@ public class OperationsActivity extends AppCompatActivity {
                 profileCount,
                 OperationsProfileRegistry.MAX_PROFILES));
         actions.removeAllViews();
+
+        addDashboardSection("当前连接");
+        connectionSummaryView = OperationsConnectionContent.createSummary(
+                this,
+                themeManager,
+                connectionPresentation(checking));
+        actions.addView(connectionSummaryView.view, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        addDashboardSection("电脑管理");
+        actions.addView(OperationsConnectionContent.createManagement(
+                this,
+                themeManager,
+                OperationsProfileRegistry.MAX_PROFILES,
+                new OperationsConnectionContent.Handler() {
+                    @Override
+                    public void onRenameComputer() {
+                        promptRenameOperationsProfile(
+                                preferences.getOperationsHostId(),
+                                OperationsActivity.this::showConnectionPreference);
+                    }
+
+                    @Override
+                    public void onAddComputer() {
+                        startOperationsPairingScan();
+                    }
+
+                    @Override
+                    public void onPairingHelp() {
+                        PairingHelpDialog.show(
+                                OperationsActivity.this,
+                                OperationsActivity.this::startOperationsPairingScan);
+                    }
+                }), new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
 
         if (OperationsConnectionOverview.showsFleetTools(profileCount)) {
             addDashboardSection("电脑");
@@ -988,15 +1439,6 @@ public class OperationsActivity extends AppCompatActivity {
                 relayPreferred,
                 v -> selectConnectionPreference(OperationsConnectionPreference.DIRECT),
                 v -> selectConnectionPreference(OperationsConnectionPreference.RELAY));
-
-        addDashboardSection("电脑管理");
-        addDashboardActionRow(
-                dashboardButton("命名当前电脑", v -> promptRenameOperationsProfile(
-                        preferences.getOperationsHostId(), this::showConnectionPreference)),
-                dashboardButton("扫描并添加电脑", v -> startOperationsPairingScan()));
-        addDashboardWideAction(dashboardButton(
-                "配对码在哪里？",
-                v -> PairingHelpDialog.show(this, this::startOperationsPairingScan)));
 
         addDashboardSection("安全说明");
         addDashboardInfoCard(OperationsConnectionOverview.connectionNote());
@@ -1060,6 +1502,21 @@ public class OperationsActivity extends AppCompatActivity {
                 result,
                 preferences.getOperationsProfiles().size(),
                 OperationsProfileRegistry.MAX_PROFILES));
+        if (connectionSummaryView != null) {
+            connectionSummaryView.render(connectionPresentation(result));
+        }
+    }
+
+    private OperationsConnectionPresentation.ViewModel connectionPresentation(
+            OperationsConnectionOverviewProbe.Result result) {
+        boolean relayPreferred = OperationsConnectionPreference.prefersRelay(
+                preferences.getOperationsConnectionPreference());
+        return OperationsConnectionPresentation.from(
+                preferences.getActiveOperationsProfileLabel(),
+                relayPreferred ? "固定中继" : "现场直连",
+                result,
+                preferences.getOperationsProfiles().size(),
+                OperationsProfileRegistry.MAX_PROFILES);
     }
 
     private View operationsProfileButton(
@@ -1382,6 +1839,10 @@ public class OperationsActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (androidUpdateController != null
+                && androidUpdateController.handleActivityResult(requestCode)) {
+            return;
+        }
         if (requestCode == REQUEST_QR_SCAN) {
             if (resultCode == RESULT_OK && data != null) {
                 preferences.saveCameraPermissionBlocked(false);
@@ -1399,6 +1860,19 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] grantResults) {
+        if (notificationSettingsController != null
+                && notificationSettingsController.handlePermissionResult(
+                        requestCode, permissions, grantResults)) {
+            return;
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     private void handleScannedPairing(String rawPairing) {
@@ -1445,22 +1919,41 @@ public class OperationsActivity extends AppCompatActivity {
         cachedAlertPrimarySource = "";
         cachedAlertSignature = "";
         lastSuccessfulDashboardUpdateLabel = "";
+        problemBadgeState = "";
+        problemBadgeCount = 0;
+        problemCenterRefreshInFlight = false;
+        dashboardDetailPath = "";
+        dashboardDetailRefreshInFlight = false;
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         clearDashboardLiveStatusReferences();
+        refreshProblemNavigationBadge();
     }
 
     private void setCurrentDestination(String destination) {
         String normalized = OperationsDestinationState.normalize(destination);
+        dashboardDetailPath = "";
+        dashboardDetailRefreshInFlight = false;
         int direction = OperationsInPageNavigationPolicy.motionDirection(
                 currentDestination,
                 normalized,
                 returnToTriageOnBack,
-                returnToToolboxOnBack);
-        AppScreenMotion.beginContentTransition(dashboardContent, direction);
+                returnToToolboxOnBack,
+                returnToSettingsOnBack);
+        AppScreenMotion.beginContentTransition(
+                contentHost == null ? dashboardContent : contentHost,
+                direction);
         currentDestination = normalized;
+        boolean settingsVisible = OperationsDestinationState.SETTINGS.equals(normalized);
+        if (dashboardRefresh != null) {
+            dashboardRefresh.setVisibility(settingsVisible ? View.GONE : View.VISIBLE);
+        }
+        if (settingsScroll != null) {
+            settingsScroll.setVisibility(settingsVisible ? View.VISIBLE : View.GONE);
+        }
         refreshDetailsCardVisibility();
         syncBottomNavigation();
         refreshOperationsHeaderNavigation();
+        restoreTopLevelScroll(normalized);
     }
 
     private void setDashboardVisible(boolean visible) {
@@ -1479,9 +1972,23 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         boolean hideForTriage = OperationsDestinationState.TRIAGE.equals(currentDestination);
+        boolean hideForToolbox = OperationsDestinationState.TOOLS.equals(currentDestination);
+        boolean hideForConnections = OperationsDestinationState.CONNECTIONS.equals(
+                currentDestination);
+        boolean hideForStructuredDetail = OperationsDestinationState.CAPABILITY_DETAIL.equals(
+                currentDestination)
+                && (PATH_SERVICE_HEALTH.equals(dashboardDetailPath)
+                        || PATH_RECENT_EVENTS.equals(dashboardDetailPath)
+                        || PATH_FAILURE_EVIDENCE.equals(dashboardDetailPath)
+                        || PATH_PERFORMANCE.equals(dashboardDetailPath)
+                        || PATH_AUDIT.equals(dashboardDetailPath));
         boolean hideDirectDashboardSummary = OperationsDestinationState.OVERVIEW.equals(
                 currentDestination) && showingDashboardSummary && !remoteDashboard;
-        detailsCard.setVisibility(hideForTriage || hideDirectDashboardSummary
+        detailsCard.setVisibility(hideForTriage
+                || hideForToolbox
+                || hideForConnections
+                || hideForStructuredDetail
+                || hideDirectDashboardSummary
                 ? View.GONE : View.VISIBLE);
     }
 
@@ -1491,7 +1998,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void refreshOperationsHeaderNavigation() {
-        if (title == null || profileTarget == null || preferences == null) {
+        if (title == null || targetMenuItem == null || preferences == null) {
             return;
         }
         boolean paired = preferences.hasOperationsProfile();
@@ -1506,51 +2013,95 @@ public class OperationsActivity extends AppCompatActivity {
         if (showNavigateUp) {
             title.setNavigationIcon(R.drawable.ic_arrow_back_24);
             title.setNavigationContentDescription(
-                    OperationsInPageNavigationPolicy.navigateUpLabel(
-                            currentDestination,
-                            returnToTriageOnBack,
-                            returnToToolboxOnBack,
-                            showingDashboardSummary,
-                            connectionRecoveryVisible));
+                    OperationsInPageNavigationPolicy.shouldReturnToSettings(
+                            currentDestination, returnToSettingsOnBack)
+                            ? "返回设置"
+                            : OperationsInPageNavigationPolicy.navigateUpLabel(
+                                    currentDestination,
+                                    returnToTriageOnBack,
+                                    returnToToolboxOnBack,
+                                    showingDashboardSummary,
+                                    connectionRecoveryVisible));
         } else {
             title.setNavigationIcon(null);
             title.setNavigationContentDescription(null);
         }
         if (dashboardRefreshMenuItem != null) {
-            boolean showRefresh = OperationsDashboardRefreshPolicy.showsToolbarAction(
+            boolean showDashboardRefresh = OperationsDashboardRefreshPolicy.showsToolbarAction(
                     paired,
                     dashboardVisible,
                     showingDashboardSummary,
                     connectionRecoveryVisible,
                     client != null || relayClient != null);
+            boolean showToolboxRefresh = OperationsDashboardRefreshPolicy
+                    .showsRemoteToolboxAction(
+                            paired,
+                            dashboardVisible,
+                            OperationsDestinationState.TOOLS.equals(currentDestination),
+                            remoteDashboard,
+                            connectionRecoveryVisible,
+                            relayClient != null);
+            boolean showProblemRefresh = OperationsDashboardRefreshPolicy
+                    .showsProblemCenterAction(
+                            paired,
+                            dashboardVisible,
+                            OperationsDestinationState.TRIAGE.equals(currentDestination),
+                            connectionRecoveryVisible,
+                            remoteDashboard ? relayClient != null : client != null);
+            boolean showDetailRefresh = OperationsDashboardRefreshPolicy
+                    .showsDetailAction(
+                            paired,
+                            dashboardVisible,
+                            OperationsDestinationState.CAPABILITY_DETAIL.equals(
+                                    currentDestination),
+                            connectionRecoveryVisible,
+                            client != null,
+                            dashboardDetailPath);
+            boolean showRefresh = showDashboardRefresh
+                    || showToolboxRefresh
+                    || showProblemRefresh
+                    || showDetailRefresh;
+            String refreshTitle = getString(R.string.operations_refresh_dashboard);
+            boolean refreshInFlight = manualDashboardRefresh;
+            if (showDetailRefresh) {
+                refreshTitle = OperationsDashboardDetailPresentation.forPath(
+                        dashboardDetailPath).refreshLabel;
+                refreshInFlight = dashboardDetailRefreshInFlight;
+            } else if (showProblemRefresh) {
+                refreshTitle = remoteDashboard
+                        ? "刷新电脑签名状态" : "刷新问题摘要";
+                refreshInFlight = problemCenterRefreshInFlight;
+            } else if (showToolboxRefresh) {
+                refreshTitle = "刷新工具可用性";
+                refreshInFlight = remoteToolboxRefreshInFlight;
+            }
+            dashboardRefreshMenuItem.setTitle(refreshTitle);
             dashboardRefreshMenuItem.setVisible(showRefresh);
             dashboardRefreshMenuItem.setEnabled(
                     OperationsDashboardRefreshPolicy.toolbarActionEnabled(
-                            showRefresh, manualDashboardRefresh));
+                            showRefresh, refreshInFlight));
         }
         if (dashboardFreshness != null) {
             dashboardFreshness.setVisibility(
                     dashboardVisible && showingDashboardSummary
                             ? View.VISIBLE : View.GONE);
         }
-        boolean showProfileTarget = paired
-                && dashboardVisible
-                && !OperationsDestinationState.CONNECTIONS.equals(currentDestination);
-        profileTarget.setVisibility(showProfileTarget ? View.VISIBLE : View.GONE);
+        OperationsTargetAppBarPresentation.ViewModel targetAppBar =
+                OperationsTargetAppBarPresentation.from(
+                        paired,
+                        dashboardVisible,
+                        currentDestination,
+                        preferences.getActiveOperationsProfileLabel());
+        title.setSubtitle(targetAppBar.visible ? targetAppBar.subtitle : null);
+        targetMenuItem.setTitle(targetAppBar.actionLabel);
+        targetMenuItem.setVisible(targetAppBar.visible);
+        targetMenuItem.setEnabled(targetAppBar.visible);
     }
 
     private void refreshOperationsTargetPresentation() {
-        if (profileTarget == null || preferences == null) {
+        if (targetMenuItem == null || preferences == null) {
             return;
         }
-        boolean paired = preferences.hasOperationsProfile();
-        String label = paired ? preferences.getActiveOperationsProfileLabel() : "未配对";
-        profileTarget.setText(getString(R.string.operations_target_label, label));
-        profileTarget.setContentDescription(paired
-                ? getString(R.string.operations_target_content_description, label)
-                : getString(R.string.operations_target_unpaired_content_description));
-        profileTarget.setEnabled(paired);
-        profileTarget.setAlpha(paired ? 1f : 0.55f);
         refreshOperationsHeaderNavigation();
     }
 
@@ -1649,8 +2200,6 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardPriorityAction.setEnabled(false);
         addDashboardWideAction(dashboardPriorityAction);
 
-        addDashboardShortcuts();
-
         dashboardStatusHeading = addDashboardSection(
                 OperationsDashboardStatusFormatter.sectionTitle(false, true));
         dashboardApplicationStatus = dashboardStatusRow("应用",
@@ -1662,9 +2211,9 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardMessageStatus = dashboardStatusRow("消息",
                 v -> showDashboardCapabilityDetails("/ops/v1/messaging/health"));
         dashboardAlertStatus = dashboardStatusRow("告警",
-                v -> showDashboardCapabilityDetails("/ops/v1/alerts"));
+                v -> showProblemCenter(), "打开问题中心");
         dashboardPerformanceStatus = dashboardStatusRow("性能",
-                v -> showDashboardCapabilityDetails("/ops/v1/diagnostics/performance"));
+                v -> showDashboardCapabilityDetails(PATH_PERFORMANCE));
         dashboardRecoveryStatus = dashboardStatusRow("恢复", v -> showLiveMonitor());
         dashboardStatusCaption = addDashboardStatusCard(
                 OperationsDashboardStatusFormatter.sectionCaption(false, true),
@@ -1675,27 +2224,6 @@ public class OperationsActivity extends AppCompatActivity {
                 dashboardAlertStatus,
                 dashboardPerformanceStatus,
                 dashboardRecoveryStatus);
-
-        addDashboardSection("远程控制");
-        addDashboardInfoCard(OperationsRemoteActionPresentation.scopeNote(false, true));
-        addDashboardTaskGroup(
-                "窗口控制",
-                OperationsRemoteActionPresentation.windowDescription(false),
-                dashboardTonalButton("显示主窗口", v -> runWindowAction("show", "主窗口已显示")),
-                dashboardButton("最小化窗口", v -> confirmMinimizeWindow()));
-        addDashboardTaskGroup(
-                "恢复与控制",
-                OperationsRemoteActionPresentation.recoveryDescription(false),
-                dashboardTonalButton("恢复消息通道", v -> confirmRecoverMessageChannel()),
-                dashboardRestartApplicationButton = dashboardDestructiveButton(
-                        "重启 ColorVision", v -> confirmRestartApplication()));
-        dashboardCancelFlowButton = dashboardButton("取消检测（读取中）", v -> confirmCancelCurrentFlow());
-        dashboardCancelFlowButton.setEnabled(false);
-        addDashboardTaskGroup(
-                "检测控制",
-                "仅在检测正在运行时开放取消；电脑与连接已提升到上方常用入口。",
-                dashboardCancelFlowButton,
-                dashboardButton("电脑与连接", v -> showConnectionPreference()));
         scheduleConnectionHeartbeat();
         ensureOperationsWatchRunning();
         if (openPendingOperationsDestination()) {
@@ -1705,48 +2233,11 @@ public class OperationsActivity extends AppCompatActivity {
         loadDashboardLiveStatus();
     }
 
-    private void addDashboardShortcuts() {
-        List<OperationsDashboardShortcutPresentation.Shortcut> shortcuts =
-                OperationsDashboardShortcutPresentation.direct();
-        addDashboardSection("常用入口");
-        for (int index = 0; index < shortcuts.size(); index += 2) {
-            addDashboardShortcutRow(
-                    dashboardShortcutButton(shortcuts.get(index)),
-                    dashboardShortcutButton(shortcuts.get(index + 1)));
-        }
-    }
-
-    private Button dashboardShortcutButton(
-            OperationsDashboardShortcutPresentation.Shortcut shortcut) {
-        Button button = shortcut.tonal
-                ? dashboardTonalButton(
-                        shortcut.label, v -> runDashboardShortcut(shortcut.actionId))
-                : dashboardButton(
-                        shortcut.label, v -> runDashboardShortcut(shortcut.actionId));
-        button.setContentDescription(shortcut.accessibilityLabel());
-        return button;
-    }
-
-    private void runDashboardShortcut(String actionId) {
-        switch (actionId) {
-            case OperationsDashboardShortcutPresentation.ACTION_TRIAGE:
-                showTriageCenter();
-                return;
-            case OperationsDashboardShortcutPresentation.ACTION_MONITOR:
-                showLiveMonitor();
-                return;
-            case OperationsDashboardShortcutPresentation.ACTION_CONNECTION_CHECK:
-                runConnectionSelfCheck();
-                return;
-            case OperationsDashboardShortcutPresentation.ACTION_CONNECTIONS:
-                showConnectionPreference();
-                return;
-            default:
-                return;
-        }
-    }
-
     private void showOperationsToolboxPage() {
+        if (remoteDashboard) {
+            showRemoteOperationsToolboxPage();
+            return;
+        }
         scrollDashboardToTop();
         refreshOperationsTargetPresentation();
         leaveSupportCenter();
@@ -1761,7 +2252,10 @@ public class OperationsActivity extends AppCompatActivity {
         title.setTitle("运维工具");
         OperationsToolboxPresentation.ViewModel toolbox =
                 OperationsToolboxPresentation.create();
-        state.setText(getString(R.string.operations_toolbox_count, toolbox.actionCount()));
+        state.setText(getString(
+                R.string.operations_toolbox_compact_state,
+                toolbox.quickActionCount(),
+                toolbox.actionCount()));
         details.setText("按任务分组。只读项目可直接打开；恢复、取证和支持动作仍会在执行前确认。");
         actions.removeAllViews();
         OperationsToolboxContent.addTo(
@@ -1769,31 +2263,156 @@ public class OperationsActivity extends AppCompatActivity {
                 themeManager,
                 actions,
                 toolbox,
-                this::runOperationsToolboxAction);
+                this::runOperationsToolboxAction,
+                this::scrollToToolboxSection);
         scheduleConnectionHeartbeat();
+    }
+
+    private void showRemoteOperationsToolboxPage() {
+        scrollDashboardToTop();
+        refreshOperationsTargetPresentation();
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        returnToTriageOnBack = false;
+        returnToToolboxOnBack = false;
+        setConnectionRecoveryVisible(false);
+        setCurrentDestination(OperationsDestinationState.TOOLS);
+        setDashboardVisible(true);
+        setShowingDashboardSummary(false);
+        progress.setVisibility(View.GONE);
+        title.setTitle("运维工具");
+
+        boolean hasRecentRemoteTask = OperationsRelayPolicy.isSafeIdentifier(
+                preferences.getOperationsRelayTaskId())
+                && OperationsRelayPolicy.isSafeIdentifier(
+                        preferences.getOperationsRelayTaskIdempotencyKey());
+        OperationsRemoteToolboxPresentation.ViewModel model =
+                OperationsRemoteToolboxPresentation.from(
+                        lastRelaySnapshotResponse,
+                        hasRecentRemoteTask,
+                        Build.VERSION.SDK_INT,
+                        System.currentTimeMillis());
+        dashboardRemoteHostFresh = model.hostFresh;
+        state.setText(model.compactStateLabel);
+        details.setText(model.summary);
+        actions.removeAllViews();
+        OperationsToolboxContent.addTo(
+                this,
+                themeManager,
+                actions,
+                model.toolbox,
+                this::runRemoteOperationsToolboxAction,
+                this::scrollToToolboxSection);
+    }
+
+    private void scrollToToolboxSection(View sectionHeading) {
+        sectionHeading.post(() -> dashboardScroll.smoothScrollTo(
+                0,
+                actions.getTop() + sectionHeading.getTop()));
+    }
+
+    private void refreshRemoteOperationsToolbox() {
+        if (remoteToolboxRefreshInFlight) {
+            return;
+        }
+        remoteToolboxRefreshInFlight = true;
+        refreshOperationsHeaderNavigation();
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在核验电脑签名能力…");
+        executor.execute(() -> {
+            try {
+                JSONObject response = relayClient.getSnapshot();
+                runOnUiThread(() -> {
+                    remoteToolboxRefreshInFlight = false;
+                    lastRelaySnapshotResponse = response;
+                    JSONObject host = response.optJSONObject("host");
+                    boolean fresh = host != null && OperationsRelayPolicy.isHostFresh(
+                            host.optLong("signedAt", 0L), System.currentTimeMillis());
+                    updateProblemNavigationFromMonitor(
+                            remoteMonitor(response), true, fresh);
+                    showRemoteOperationsToolboxPage();
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> {
+                    remoteToolboxRefreshInFlight = false;
+                    refreshOperationsHeaderNavigation();
+                    showTransientError(ex);
+                });
+            }
+        });
+    }
+
+    private boolean isRemoteToolboxRefreshDestination() {
+        return remoteDashboard
+                && OperationsDestinationState.TOOLS.equals(currentDestination);
+    }
+
+    private boolean isProblemCenterRefreshDestination() {
+        return OperationsDestinationState.TRIAGE.equals(currentDestination);
+    }
+
+    private boolean isDashboardDetailRefreshDestination() {
+        return OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
+                && !dashboardDetailPath.isEmpty();
+    }
+
+    private void refreshDashboardDetail() {
+        if (!isDashboardDetailRefreshDestination() || dashboardDetailRefreshInFlight) {
+            return;
+        }
+        loadCapability(dashboardDetailPath, true);
+    }
+
+    private void showToolboxCapabilityDetails(String path) {
+        returnToToolboxOnBack = true;
+        showDashboardCapabilityDetails(path);
     }
 
     private void runOperationsToolboxAction(String actionId) {
         returnToTriageOnBack = false;
         returnToToolboxOnBack = true;
         switch (actionId) {
+            case OperationsToolboxPresentation.ACTION_CONNECTION_CHECK:
+                runConnectionSelfCheck();
+                return;
+            case OperationsToolboxPresentation.ACTION_LIVE_MONITOR:
+                showLiveMonitor();
+                return;
+            case OperationsToolboxPresentation.ACTION_DEVICE_HEALTH:
+                showDeviceHealthOverview();
+                return;
             case OperationsToolboxPresentation.ACTION_SERVICES_HEALTH:
-                loadCapability("/ops/v1/services/health");
+                showToolboxCapabilityDetails(PATH_SERVICE_HEALTH);
+                return;
+            case OperationsToolboxPresentation.ACTION_SHOW_WINDOW:
+                runWindowAction("show", "主窗口已显示");
+                return;
+            case OperationsToolboxPresentation.ACTION_MINIMIZE_WINDOW:
+                confirmMinimizeWindow();
+                return;
+            case OperationsToolboxPresentation.ACTION_CANCEL_FLOW:
+                checkAndConfirmCancelCurrentFlowFromToolbox();
+                return;
+            case OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE:
+                confirmRecoverMessageChannel();
                 return;
             case OperationsToolboxPresentation.ACTION_RESTART_MQTT:
                 confirmRestartMqtt();
                 return;
+            case OperationsToolboxPresentation.ACTION_RESTART_APPLICATION:
+                confirmRestartApplication();
+                return;
             case OperationsToolboxPresentation.ACTION_RECENT_EVENTS:
-                loadCapability("/ops/v1/diagnostics/recent-events");
+                showToolboxCapabilityDetails(PATH_RECENT_EVENTS);
                 return;
             case OperationsToolboxPresentation.ACTION_FAILURES:
-                loadCapability("/ops/v1/diagnostics/failures");
+                showToolboxCapabilityDetails(PATH_FAILURE_EVIDENCE);
                 return;
             case OperationsToolboxPresentation.ACTION_JOBS:
                 showJobs();
                 return;
             case OperationsToolboxPresentation.ACTION_AUDIT:
-                loadCapability("/ops/v1/audit");
+                showToolboxCapabilityDetails(PATH_AUDIT);
                 return;
             case OperationsToolboxPresentation.ACTION_CREATE_DIAGNOSTIC:
                 confirmCreateDiagnosticJob();
@@ -1809,6 +2428,49 @@ public class OperationsActivity extends AppCompatActivity {
                 return;
             case OperationsToolboxPresentation.ACTION_DEPLOYMENT:
                 confirmDeploymentReceipt();
+                return;
+            case OperationsToolboxPresentation.ACTION_TIMELINE:
+                showOperationsWatchHistory();
+                return;
+            default:
+                return;
+        }
+    }
+
+    private void runRemoteOperationsToolboxAction(String actionId) {
+        returnToTriageOnBack = false;
+        returnToToolboxOnBack = true;
+        switch (actionId) {
+            case OperationsToolboxPresentation.ACTION_SHOW_WINDOW:
+                runRemoteTask(
+                        OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW, new JSONObject());
+                return;
+            case OperationsToolboxPresentation.ACTION_MINIMIZE_WINDOW:
+                confirmRemoteMinimizeWindow();
+                return;
+            case OperationsToolboxPresentation.ACTION_CANCEL_FLOW:
+                confirmCancelCurrentFlow(canCancelRemoteFlow(lastRelaySnapshotResponse));
+                return;
+            case OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE:
+                confirmRemoteMessageChannelRecovery();
+                return;
+            case OperationsToolboxPresentation.ACTION_RESTART_MQTT:
+                confirmRemoteMqttRestart();
+                return;
+            case OperationsToolboxPresentation.ACTION_RESTART_APPLICATION:
+                confirmRestartApplication();
+                return;
+            case OperationsToolboxPresentation.ACTION_CREATE_DIAGNOSTIC:
+                requestRemoteDiagnostics();
+                return;
+            case OperationsToolboxPresentation.ACTION_FAILURES:
+                readRemoteFailureEvidence();
+                return;
+            case OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT:
+                confirmRemoteWindowSnapshot();
+                return;
+            case OperationsRemoteToolboxPresentation.ACTION_RECENT_REMOTE_TASK:
+                refreshRecentRemoteTask();
                 return;
             case OperationsToolboxPresentation.ACTION_TIMELINE:
                 showOperationsWatchHistory();
@@ -1843,21 +2505,6 @@ public class OperationsActivity extends AppCompatActivity {
         JSONObject host = response.optJSONObject("host");
         JSONObject snapshot = host == null ? null : host.optJSONObject("snapshot");
         JSONObject monitor = snapshot == null ? null : snapshot.optJSONObject("monitor");
-        JSONArray capabilities = host == null ? null : host.optJSONArray("capabilities");
-        boolean canShowWindow = contains(capabilities, OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW);
-        boolean canMinimizeWindow = contains(
-                capabilities, OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW);
-        boolean canRecoverMessageChannel = contains(
-                capabilities, OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL);
-        boolean canRestartMqtt = contains(
-                capabilities, OperationsRelayPolicy.CAPABILITY_RESTART_MQTT);
-        boolean canCancelFlow = contains(capabilities, OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW);
-        boolean canRestartApplication = contains(
-                capabilities, OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION);
-        boolean canRequestDiagnostics = contains(
-                capabilities, OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS);
-        dashboardFlowCancelCapabilityAvailable = canCancelFlow;
-        dashboardRestartCapabilityAvailable = canRestartApplication;
         dashboardRemoteHostFresh = host != null && OperationsRelayPolicy.isHostFresh(
                 host.optLong("signedAt", 0L), System.currentTimeMillis());
 
@@ -1868,58 +2515,6 @@ public class OperationsActivity extends AppCompatActivity {
                 ? OperationsDashboardAdvisor.fromMonitor(
                         monitor, attentionRemindersAvailable())
                 : OperationsDashboardAdvisor.staleRemoteSnapshot());
-
-        addDashboardSection("远程操作");
-        addDashboardInfoCard(OperationsRemoteActionPresentation.scopeNote(
-                true, dashboardRemoteHostFresh));
-        Button showWindow = dashboardTonalButton("显示主窗口", v -> runRemoteTask(
-                OperationsRelayPolicy.CAPABILITY_SHOW_WINDOW, new JSONObject()));
-        showWindow.setEnabled(OperationsRelayPolicy.canControlWindow(
-                canShowWindow, dashboardRemoteHostFresh));
-        Button minimizeWindow = dashboardButton("最小化主窗口",
-                v -> confirmRemoteMinimizeWindow());
-        minimizeWindow.setEnabled(OperationsRelayPolicy.canControlWindow(
-                canMinimizeWindow, dashboardRemoteHostFresh));
-        addDashboardTaskGroup(
-                "窗口控制",
-                OperationsRemoteActionPresentation.windowDescription(
-                        true, dashboardRemoteHostFresh),
-                showWindow,
-                minimizeWindow);
-        Button diagnostics = dashboardTonalButton(
-                dashboardRemoteHostFresh ? "请求远程诊断" : "排队请求诊断", v -> {
-            JSONObject payload = new JSONObject();
-            try {
-                payload.put("reason", "Android 运维伴侣远程调试请求");
-            } catch (Exception ignored) {
-            }
-            runRemoteTask(OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS, payload);
-        });
-        diagnostics.setEnabled(canRequestDiagnostics);
-        Button messageActions = dashboardButton(
-                dashboardRemoteHostFresh ? "检查消息通道" : "上次消息状态",
-                v -> showLatestRemoteMonitorDetail("message"));
-        messageActions.setEnabled(monitor != null
-                && (canRecoverMessageChannel || canRestartMqtt));
-        addDashboardTaskGroup(
-                "诊断与恢复",
-                OperationsRemoteActionPresentation.diagnosticsDescription(
-                        true, dashboardRemoteHostFresh),
-                diagnostics,
-                messageActions);
-        if (dashboardRemoteHostFresh) {
-            dashboardCancelFlowButton = dashboardButton(
-                    "取消检测（读取中）", v -> confirmCancelCurrentFlow());
-            dashboardCancelFlowButton.setEnabled(false);
-            dashboardRestartApplicationButton = dashboardDestructiveButton(
-                    "重启 ColorVision", v -> confirmRestartApplication());
-            dashboardRestartApplicationButton.setEnabled(false);
-            addDashboardTaskGroup(
-                    "受控恢复",
-                    OperationsRemoteActionPresentation.recoveryDescription(true),
-                    dashboardCancelFlowButton,
-                    dashboardRestartApplicationButton);
-        }
 
         if (monitor != null) {
             dashboardStatusHeading = addDashboardSection(
@@ -1932,7 +2527,7 @@ public class OperationsActivity extends AppCompatActivity {
             dashboardMessageStatus = dashboardStatusRow("消息",
                     v -> showLatestRemoteMonitorDetail("message"));
             dashboardAlertStatus = dashboardStatusRow("告警",
-                    v -> showLatestRemoteMonitorDetail("alerts"));
+                    v -> showProblemCenter(), "打开问题中心");
             dashboardPerformanceStatus = dashboardStatusRow("性能",
                     v -> showLatestRemoteMonitorDetail("performance"));
             dashboardRecoveryStatus = dashboardStatusRow("恢复",
@@ -1949,17 +2544,9 @@ public class OperationsActivity extends AppCompatActivity {
             updateDashboardLiveStatus(monitor);
         }
 
-        addDashboardSection("连接与记录");
-        addDashboardActionRow(
-                dashboardButton("刷新远程状态", v -> refreshRemoteDashboard()),
-                dashboardButton("连接方式", v -> showConnectionPreference()));
-        Button recentTask = dashboardButton("最近远程请求", v -> refreshRecentRemoteTask());
-        recentTask.setEnabled(OperationsRelayPolicy.isSafeIdentifier(
-                preferences.getOperationsRelayTaskId()));
-        addDashboardActionRow(
-                recentTask,
-                dashboardButton("运维时间线", v -> showOperationsWatchHistory()));
-
+        if (openPendingOperationsDestination()) {
+            return;
+        }
         scheduleConnectionHeartbeat();
         ensureOperationsWatchRunning();
     }
@@ -2016,39 +2603,26 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showRemoteMonitorDetail(String section, JSONObject monitor) {
+        setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         setShowingDashboardSummary(false);
-        remoteRestartMqttButton = null;
         progress.setVisibility(View.GONE);
         title.setTitle(remoteMonitorTitle(section));
+        if ("performance".equals(section)) {
+            renderPerformanceSnapshot(monitor.optJSONObject("performance"), true, null);
+            addDashboardActionRow(
+                    dashboardButton("刷新远程状态", v -> refreshRemoteMonitorDetail(section)),
+                    dashboardButton(operationsDetailBackLabel(), v -> returnFromOperationsDetail()));
+            scheduleConnectionHeartbeat();
+            return;
+        }
         state.setText("电脑签名远程状态");
         details.setText(getString(
                 R.string.operations_remote_monitor_signed_summary,
                 formatRemoteMonitorSection(section, monitor)));
         actions.removeAllViews();
-        if ("message".equals(section)) {
-            Button recoverMessageChannel = dashboardButton("恢复消息通道",
-                    v -> confirmRemoteMessageChannelRecovery());
-            recoverMessageChannel.setEnabled(isRemoteCapabilityAvailable(
-                    OperationsRelayPolicy.CAPABILITY_RECOVER_MESSAGE_CHANNEL));
-            remoteRestartMqttButton = dashboardButton("重启 MQTT",
-                    v -> confirmRemoteMqttRestart());
-            remoteRestartMqttButton.setEnabled(canRestartRemoteMqttService(
-                    lastRelaySnapshotResponse));
-            addDashboardActionRow(recoverMessageChannel, remoteRestartMqttButton);
-        } else if ("alerts".equals(section)) {
-            Button failureEvidence = dashboardButton("崩溃线索",
-                    v -> readRemoteFailureEvidence());
-            failureEvidence.setEnabled(canReadRemoteFailureEvidence(
-                    lastRelaySnapshotResponse));
-            Button windowSnapshot = dashboardButton("主窗口快照",
-                    v -> confirmRemoteWindowSnapshot());
-            windowSnapshot.setEnabled(canCaptureRemoteWindowSnapshot(
-                    lastRelaySnapshotResponse));
-            addDashboardActionRow(failureEvidence, windowSnapshot);
-        }
         addDashboardActionRow(
                 dashboardButton("刷新远程状态", v -> refreshRemoteMonitorDetail(section)),
-                dashboardButton("返回运维概览", v -> showCurrentDashboard()));
+                dashboardButton(operationsDetailBackLabel(), v -> returnFromOperationsDetail()));
         scheduleConnectionHeartbeat();
     }
 
@@ -2059,6 +2633,11 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         showRemoteMonitorDetail(section, monitor);
+    }
+
+    private void showRemoteProblemDetail(String section) {
+        returnToTriageOnBack = true;
+        showLatestRemoteMonitorDetail(section);
     }
 
     private void refreshRemoteMonitorDetail(String section) {
@@ -2087,12 +2666,6 @@ public class OperationsActivity extends AppCompatActivity {
         return snapshot == null ? null : snapshot.optJSONObject("monitor");
     }
 
-    private boolean isRemoteCapabilityAvailable(String capabilityId) {
-        JSONObject host = lastRelaySnapshotResponse == null
-                ? null : lastRelaySnapshotResponse.optJSONObject("host");
-        return host != null && contains(host.optJSONArray("capabilities"), capabilityId);
-    }
-
     private boolean canRestartRemoteMqttService(JSONObject response) {
         JSONObject host = response == null ? null : response.optJSONObject("host");
         JSONObject monitor = remoteMonitor(response);
@@ -2108,6 +2681,48 @@ public class OperationsActivity extends AppCompatActivity {
                 mqttService != null && mqttService.optBoolean("available", false),
                 mqttService == null ? "unknown" : mqttService.optString("status", "unknown"),
                 mqttService != null && mqttService.optBoolean("maintenanceSupported", false));
+    }
+
+    private boolean canCancelRemoteFlow(JSONObject response) {
+        JSONObject host = response == null ? null : response.optJSONObject("host");
+        JSONObject monitor = remoteMonitor(response);
+        JSONObject flow = monitor == null ? null : monitor.optJSONObject("flow");
+        return host != null
+                && contains(host.optJSONArray("capabilities"),
+                        OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW)
+                && OperationsRelayPolicy.isHostFresh(
+                        host.optLong("signedAt", 0L), System.currentTimeMillis())
+                && flow != null
+                && flow.optBoolean("available", false)
+                && flow.optBoolean("isActive", false)
+                && flow.optBoolean("cancelAvailable", false);
+    }
+
+    private boolean canSubmitRemoteTask(String capabilityId, JSONObject response) {
+        JSONObject host = response == null ? null : response.optJSONObject("host");
+        if (host == null || !contains(host.optJSONArray("capabilities"), capabilityId)) {
+            return false;
+        }
+        if (OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS.equals(capabilityId)) {
+            return true;
+        }
+        if (OperationsRelayPolicy.CAPABILITY_CANCEL_FLOW.equals(capabilityId)) {
+            return canCancelRemoteFlow(response);
+        }
+        if (OperationsRelayPolicy.CAPABILITY_RESTART_MQTT.equals(capabilityId)) {
+            return canRestartRemoteMqttService(response);
+        }
+        if (OperationsRelayPolicy.CAPABILITY_RESTART_APPLICATION.equals(capabilityId)) {
+            JSONObject monitor = remoteMonitor(response);
+            JSONObject flow = monitor == null ? null : monitor.optJSONObject("flow");
+            return OperationsRelayPolicy.isHostFresh(
+                    host.optLong("signedAt", 0L), System.currentTimeMillis())
+                    && flow != null
+                    && flow.optBoolean("available", false)
+                    && !flow.optBoolean("isActive", false);
+        }
+        return OperationsRelayPolicy.isHostFresh(
+                host.optLong("signedAt", 0L), System.currentTimeMillis());
     }
 
     private boolean canReadRemoteFailureEvidence(JSONObject response) {
@@ -2243,25 +2858,21 @@ public class OperationsActivity extends AppCompatActivity {
         return text.append("\n该状态独立于 ColorVision 消息连接和订阅状态。 ").toString();
     }
 
-    private void refreshRemoteDashboard() {
-        progress.setVisibility(View.VISIBLE);
-        state.setText("正在刷新远程中继状态…");
-        executor.execute(() -> {
-            try {
-                JSONObject response = relayClient.getSnapshot();
-                runOnUiThread(() -> showRemoteDashboard(response));
-            } catch (Exception ex) {
-                runOnUiThread(() -> showTransientError(ex));
-            }
-        });
-    }
-
     private void confirmRemoteMinimizeWindow() {
         showTargetedConfirmation(
                 "远程最小化电脑主窗口",
                 "只会最小化已配对电脑上的 ColorVision 主窗口。请求由本机设备密钥签名，电脑核验后执行并返回签名收据。",
                 "取消", "最小化", () -> runRemoteTask(
                         OperationsRelayPolicy.CAPABILITY_MINIMIZE_WINDOW, new JSONObject()));
+    }
+
+    private void requestRemoteDiagnostics() {
+        JSONObject payload = new JSONObject();
+        try {
+            payload.put("reason", "Android 运维伴侣远程调试请求");
+        } catch (Exception ignored) {
+        }
+        runRemoteTask(OperationsRelayPolicy.CAPABILITY_REQUEST_DIAGNOSTICS, payload);
     }
 
     private void confirmRemoteMessageChannelRecovery() {
@@ -2284,9 +2895,6 @@ public class OperationsActivity extends AppCompatActivity {
                 "远程重启 MQTT 服务？",
                 "只会通过已配对电脑的 ColorVisionServiceHost 重启固定的本机 Mosquitto 服务。消息与检测设备通信会短暂中断并自动恢复；不会选择服务、地址、Topic、命令、路径或参数。",
                 "取消", "确认重启", () -> {
-                    if (remoteRestartMqttButton != null) {
-                        remoteRestartMqttButton.setEnabled(false);
-                    }
                     runRemoteTask(OperationsRelayPolicy.CAPABILITY_RESTART_MQTT,
                             new JSONObject());
                 });
@@ -2296,7 +2904,17 @@ public class OperationsActivity extends AppCompatActivity {
         if (!ensureOperationsClientTargetIsCurrent()) {
             return;
         }
+        if (!canSubmitRemoteTask(capabilityId, lastRelaySnapshotResponse)) {
+            Toast.makeText(this,
+                    "电脑签名能力或运行状态已变化，请刷新工具可用性",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         setShowingDashboardSummary(false);
+        scrollDashboardToTop();
+        title.setTitle("远程请求");
+        actions.removeAllViews();
         progress.setVisibility(View.VISIBLE);
         state.setText("正在签名并提交远程请求…");
         int generation = ++remoteTaskGeneration;
@@ -2319,7 +2937,11 @@ public class OperationsActivity extends AppCompatActivity {
                     Toast.LENGTH_LONG).show();
             return;
         }
+        setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         setShowingDashboardSummary(false);
+        scrollDashboardToTop();
+        title.setTitle("远程主窗口快照");
+        actions.removeAllViews();
         progress.setVisibility(View.VISIBLE);
         state.setText("正在生成端到端加密身份并提交快照请求…");
         int generation = ++remoteTaskGeneration;
@@ -2365,7 +2987,11 @@ public class OperationsActivity extends AppCompatActivity {
             Toast.makeText(this, "还没有远程请求记录", Toast.LENGTH_SHORT).show();
             return;
         }
+        setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         setShowingDashboardSummary(false);
+        scrollDashboardToTop();
+        title.setTitle("最近远程请求");
+        actions.removeAllViews();
         progress.setVisibility(View.VISIBLE);
         state.setText("正在读取最近远程请求…");
         int generation = ++remoteTaskGeneration;
@@ -2641,6 +3267,9 @@ public class OperationsActivity extends AppCompatActivity {
             case OperationsDestinationState.TOOLS:
                 showOperationsToolboxPage();
                 return true;
+            case OperationsDestinationState.SETTINGS:
+                showSettingsPage();
+                return true;
             case OperationsDestinationState.CONNECTION_CHECK:
                 runConnectionSelfCheck();
                 return true;
@@ -2654,7 +3283,7 @@ public class OperationsActivity extends AppCompatActivity {
                 showFleetTimeline(true);
                 return true;
             case OperationsDestinationState.TRIAGE:
-                showTriageCenter();
+                showProblemCenter();
                 return true;
             case OperationsDestinationState.JOBS:
                 showJobs();
@@ -2689,7 +3318,10 @@ public class OperationsActivity extends AppCompatActivity {
         }
         if (remoteDashboard
                 && !OperationsDestinationState.OVERVIEW.equals(destination)
-                && !OperationsDestinationState.TOOLS.equals(destination)) {
+                && !OperationsDestinationState.TRIAGE.equals(destination)
+                && !OperationsDestinationState.TOOLS.equals(destination)
+                && !OperationsDestinationState.SETTINGS.equals(destination)
+                && !OperationsDestinationState.CONNECTIONS.equals(destination)) {
             return false;
         }
         pendingOperationsDestination = "";
@@ -2698,21 +3330,23 @@ public class OperationsActivity extends AppCompatActivity {
             return true;
         }
         if (OperationsWatchPolicy.DESTINATION_TRIAGE.equals(destination)) {
-            showTriageCenter();
+            showProblemCenter();
             return true;
         }
         if (OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK.equals(destination)) {
             runConnectionSelfCheck();
             return true;
         }
+        if (OperationsDestinationState.CONNECTIONS.equals(destination)) {
+            showConnectionPreference();
+            return true;
+        }
         if (OperationsDestinationState.TOOLS.equals(destination)) {
-            if (remoteDashboard) {
-                Snackbar.make(dashboardContent,
-                        "运维工具需要与电脑现场安全直连",
-                        Snackbar.LENGTH_LONG).show();
-                return false;
-            }
             showOperationsToolboxPage();
+            return true;
+        }
+        if (OperationsDestinationState.SETTINGS.equals(destination)) {
+            showSettingsPage();
             return true;
         }
         return false;
@@ -2967,11 +3601,18 @@ public class OperationsActivity extends AppCompatActivity {
         String requestedDestination = intent.getStringExtra(EXTRA_OPEN_DESTINATION);
         String destination = OperationsDestinationState.TOOLS.equals(requestedDestination)
                 || OperationsDestinationState.OVERVIEW.equals(requestedDestination)
+                || OperationsDestinationState.SETTINGS.equals(requestedDestination)
+                || OperationsDestinationState.CONNECTIONS.equals(requestedDestination)
                 ? requestedDestination
                 : OperationsWatchPolicy.normalizeDestination(requestedDestination);
+        boolean requestedReturnToSettings = intent.getBooleanExtra(
+                EXTRA_RETURN_TO_SETTINGS, false);
         intent.removeExtra(EXTRA_OPEN_DESTINATION);
+        intent.removeExtra(EXTRA_RETURN_TO_SETTINGS);
         if (!destination.isEmpty()) {
             pendingOperationsDestination = destination;
+            returnToSettingsOnBack = requestedReturnToSettings
+                    && OperationsDestinationState.CONNECTIONS.equals(destination);
         }
     }
 
@@ -3260,6 +3901,11 @@ public class OperationsActivity extends AppCompatActivity {
 
     private DashboardStatusRow dashboardStatusRow(
             String title, View.OnClickListener listener) {
+        return dashboardStatusRow(title, listener, "查看详情");
+    }
+
+    private DashboardStatusRow dashboardStatusRow(
+            String title, View.OnClickListener listener, String actionLabel) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
@@ -3300,8 +3946,11 @@ public class OperationsActivity extends AppCompatActivity {
         arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         row.addView(arrow, new LinearLayout.LayoutParams(dp(24), dp(24)));
 
-        DashboardStatusRow result = new DashboardStatusRow(row, titleView, summaryView);
-        updateDashboardStatus(result, OperationsDashboardStatusFormatter.loading(title));
+        OperationsDashboardStatusFormatter.Item loading =
+                OperationsDashboardStatusFormatter.loading(title);
+        DashboardStatusRow result = new DashboardStatusRow(
+                row, titleView, summaryView, actionLabel, loading);
+        updateDashboardStatus(result, loading);
         return result;
     }
 
@@ -3309,6 +3958,7 @@ public class OperationsActivity extends AppCompatActivity {
             String caption, DashboardStatusRow... statusRows) {
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
+        dashboardStatusContent = content;
 
         TextView captionView = new TextView(this);
         captionView.setText(caption);
@@ -3319,19 +3969,7 @@ public class OperationsActivity extends AppCompatActivity {
         content.addView(captionView, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        for (int index = 0; index < statusRows.length; index++) {
-            content.addView(statusRows[index].container, new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT));
-            if (index < statusRows.length - 1) {
-                View divider = new View(this);
-                divider.setBackgroundColor(themeManager.dividerColor());
-                LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, 1);
-                dividerParams.setMargins(dp(16), 0, 0, 0);
-                content.addView(divider, dividerParams);
-            }
-        }
+        addDashboardStatusRows(content, Arrays.asList(statusRows));
 
         MaterialCardView card = new MaterialCardView(this);
         card.setCardBackgroundColor(themeManager.cardBackgroundColor());
@@ -3353,7 +3991,72 @@ public class OperationsActivity extends AppCompatActivity {
         row.title.setText(item.title);
         row.summary.setText(item.summary);
         row.summary.setTextColor(dashboardStatusColor(item.tone));
-        row.container.setContentDescription(item.accessibilityLabel());
+        row.container.setContentDescription(item.accessibilityLabel(row.actionLabel));
+        row.item = item;
+    }
+
+    private void refreshDashboardStatusOrder() {
+        if (dashboardStatusContent == null) {
+            return;
+        }
+        List<DashboardStatusRow> rows = dashboardStatusRows();
+        Collections.sort(rows, (left, right) ->
+                OperationsDashboardStatusOrder.compare(left.item, right.item));
+        int childCount = dashboardStatusContent.getChildCount();
+        if (childCount > 1) {
+            dashboardStatusContent.removeViews(1, childCount - 1);
+        }
+        addDashboardStatusRows(dashboardStatusContent, rows);
+
+        List<OperationsDashboardStatusFormatter.Item> items = new ArrayList<>();
+        for (DashboardStatusRow row : rows) {
+            items.add(row.item);
+        }
+        int attentionCount = OperationsDashboardStatusOrder.attentionCount(items);
+        if (dashboardStatusHeading != null) {
+            dashboardStatusHeading.setText(OperationsDashboardStatusOrder.sectionTitle(
+                    remoteDashboard, dashboardRemoteHostFresh, attentionCount));
+        }
+        if (dashboardStatusCaption != null) {
+            dashboardStatusCaption.setText(OperationsDashboardStatusOrder.sectionCaption(
+                    remoteDashboard, dashboardRemoteHostFresh, attentionCount));
+        }
+    }
+
+    private List<DashboardStatusRow> dashboardStatusRows() {
+        List<DashboardStatusRow> rows = new ArrayList<>();
+        addDashboardStatusRow(rows, dashboardApplicationStatus);
+        addDashboardStatusRow(rows, dashboardFlowStatus);
+        addDashboardStatusRow(rows, dashboardDeviceStatus);
+        addDashboardStatusRow(rows, dashboardMessageStatus);
+        addDashboardStatusRow(rows, dashboardAlertStatus);
+        addDashboardStatusRow(rows, dashboardPerformanceStatus);
+        addDashboardStatusRow(rows, dashboardRecoveryStatus);
+        return rows;
+    }
+
+    private static void addDashboardStatusRow(
+            List<DashboardStatusRow> rows, DashboardStatusRow row) {
+        if (row != null && row.item != null) {
+            rows.add(row);
+        }
+    }
+
+    private void addDashboardStatusRows(
+            LinearLayout content, List<DashboardStatusRow> statusRows) {
+        for (int index = 0; index < statusRows.size(); index++) {
+            content.addView(statusRows.get(index).container, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+            if (index < statusRows.size() - 1) {
+                View divider = new View(this);
+                divider.setBackgroundColor(themeManager.dividerColor());
+                LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, 1);
+                dividerParams.setMargins(dp(16), 0, 0, 0);
+                content.addView(divider, dividerParams);
+            }
+        }
     }
 
     private int dashboardStatusColor(int tone) {
@@ -3399,10 +4102,10 @@ public class OperationsActivity extends AppCompatActivity {
                 openDashboardMonitorDetail("message", "/ops/v1/messaging/health");
                 return;
             case OperationsDashboardAdvisor.ACTION_ALERTS:
-                openDashboardMonitorDetail("alerts", "/ops/v1/alerts");
+                showProblemCenter();
                 return;
             case OperationsDashboardAdvisor.ACTION_PERFORMANCE:
-                openDashboardMonitorDetail("performance", "/ops/v1/diagnostics/performance");
+                openDashboardMonitorDetail("performance", PATH_PERFORMANCE);
                 return;
             case OperationsDashboardAdvisor.ACTION_MONITOR:
                 if (remoteDashboard) {
@@ -3458,6 +4161,8 @@ public class OperationsActivity extends AppCompatActivity {
         }
         enrichMonitorAlertSource(snapshot, false);
         dashboardSummaryLoaded = true;
+        updateProblemNavigationFromMonitor(
+                snapshot, remoteDashboard, dashboardRemoteHostFresh);
         JSONObject flow = snapshot.optJSONObject("flow");
         JSONObject devices = snapshot.optJSONObject("devices");
         JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
@@ -3508,6 +4213,7 @@ public class OperationsActivity extends AppCompatActivity {
                 recovery != null && recovery.optBoolean("supported", false),
                 recovery != null && recovery.optBoolean("registered", false),
                 recovery != null && recovery.optBoolean("automaticWatchdogActive", false)));
+        refreshDashboardStatusOrder();
         updateDashboardPriority(remoteDashboard && !dashboardRemoteHostFresh
                 ? OperationsDashboardAdvisor.staleRemoteSnapshot()
                 : OperationsDashboardAdvisor.fromMonitor(
@@ -3534,6 +4240,7 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsDashboardStatusFormatter.performance(false, 0, "unavailable"));
         updateDashboardStatus(dashboardRecoveryStatus,
                 OperationsDashboardStatusFormatter.unavailable("恢复"));
+        refreshDashboardStatusOrder();
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
@@ -3556,9 +4263,9 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardPriorityAction = null;
         dashboardCancelFlowButton = null;
         dashboardRestartApplicationButton = null;
-        remoteRestartMqttButton = null;
         dashboardStatusHeading = null;
         dashboardStatusCaption = null;
+        dashboardStatusContent = null;
         dashboardFlowAvailable = false;
         dashboardFlowActive = false;
         dashboardFlowCancelAvailable = false;
@@ -3601,23 +4308,62 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void scrollDashboardToTop() {
         if (dashboardScroll != null) {
-            dashboardScroll.post(() -> dashboardScroll.scrollTo(0, 0));
+            dashboardScroll.post(() -> scrollWithoutRemembering(dashboardScroll, 0));
+        }
+    }
+
+    private void restoreTopLevelScroll(String destination) {
+        restoreTopLevelScroll(destination, topLevelState.scrollY(destination));
+    }
+
+    private void restoreTopLevelScroll(String destination, int scrollY) {
+        String normalized = OperationsDestinationState.normalize(destination);
+        if (OperationsDestinationState.SETTINGS.equals(normalized)) {
+            if (settingsScroll != null) {
+                settingsScroll.post(() -> {
+                    if (OperationsDestinationState.SETTINGS.equals(currentDestination)) {
+                        scrollWithoutRemembering(settingsScroll, scrollY);
+                    }
+                });
+            }
+            return;
+        }
+        if (OperationsTopLevelState.isDashboardTopLevel(normalized)
+                && dashboardScroll != null) {
+            dashboardScroll.post(() -> {
+                if (normalized.equals(currentDestination)) {
+                    scrollWithoutRemembering(dashboardScroll, scrollY);
+                }
+            });
+        }
+    }
+
+    private void scrollWithoutRemembering(ScrollView scrollView, int scrollY) {
+        updatingTopLevelScroll = true;
+        try {
+            scrollView.scrollTo(0, Math.max(0, scrollY));
+        } finally {
+            updatingTopLevelScroll = false;
+        }
+    }
+
+    private void rememberVisibleTopLevelScroll() {
+        if (OperationsDestinationState.SETTINGS.equals(currentDestination)) {
+            if (settingsScroll != null) {
+                topLevelState.rememberScroll(
+                        OperationsDestinationState.SETTINGS, settingsScroll.getScrollY());
+            }
+            return;
+        }
+        if (OperationsTopLevelState.isDashboardTopLevel(currentDestination)
+                && dashboardScroll != null) {
+            topLevelState.rememberScroll(currentDestination, dashboardScroll.getScrollY());
         }
     }
 
     private void addDashboardActionRow(Button left, Button right) {
         actions.addView(createDashboardActionRow(left, right), new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-    }
-
-    private void addDashboardShortcutRow(Button left, Button right) {
-        boolean singleColumn = AppResponsiveLayout.usesSingleColumnDashboardShortcuts(
-                getResources().getConfiguration().screenWidthDp,
-                getResources().getConfiguration().fontScale);
-        actions.addView(createDashboardActionRow(left, right, singleColumn),
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
     private LinearLayout createDashboardActionRow(Button left, Button right) {
@@ -3928,15 +4674,103 @@ public class OperationsActivity extends AppCompatActivity {
         });
     }
 
-    private void showTriageCenter() {
+    private void showProblemCenter() {
+        if (remoteDashboard) {
+            showRemoteProblemCenter();
+        } else {
+            showTriageCenter();
+        }
+    }
+
+    private void showRemoteProblemCenter() {
+        returnToToolboxOnBack = false;
         setCurrentDestination(OperationsDestinationState.TRIAGE);
         returnToTriageOnBack = false;
+        refreshOperationsHeaderNavigation();
         setShowingDashboardSummary(false);
         leaveSupportCenter();
         leaveLiveMonitor();
         setDashboardVisible(true);
+        scrollDashboardToTop();
+        progress.setVisibility(View.GONE);
+        title.setTitle("问题中心");
+
+        JSONObject host = lastRelaySnapshotResponse == null
+                ? null : lastRelaySnapshotResponse.optJSONObject("host");
+        boolean fresh = host != null && OperationsRelayPolicy.isHostFresh(
+                host.optLong("signedAt", 0L), System.currentTimeMillis());
+        dashboardRemoteHostFresh = fresh;
+        OperationsRemoteProblemsPresentation.ViewModel model =
+                OperationsRemoteProblemsPresentation.from(
+                        remoteMonitor(lastRelaySnapshotResponse), fresh);
+        problemBadgeCount = model.snapshotAvailable ? model.issues.size() : 0;
+        refreshProblemNavigationBadge();
+        state.setText(model.stateLabel);
+        actions.removeAllViews();
+        actions.addView(OperationsRemoteProblemsContent.create(
+                        this,
+                        themeManager,
+                        model,
+                        this::showRemoteProblemDetail),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+        restoreTopLevelScroll(OperationsDestinationState.TRIAGE);
+    }
+
+    private void refreshRemoteProblemCenter() {
+        if (problemCenterRefreshInFlight) {
+            return;
+        }
+        problemCenterRefreshInFlight = true;
+        refreshOperationsHeaderNavigation();
         progress.setVisibility(View.VISIBLE);
-        state.setText("正在汇总有界证据与可用处置动作…");
+        state.setText("正在读取电脑签名问题摘要…");
+        executor.execute(() -> {
+            try {
+                JSONObject response = relayClient.getSnapshot();
+                runOnUiThread(() -> {
+                    lastRelaySnapshotResponse = response;
+                    JSONObject host = response.optJSONObject("host");
+                    boolean fresh = host != null && OperationsRelayPolicy.isHostFresh(
+                            host.optLong("signedAt", 0L), System.currentTimeMillis());
+                    JSONObject monitor = remoteMonitor(response);
+                    problemCenterRefreshInFlight = false;
+                    updateProblemNavigationFromMonitor(monitor, true, fresh);
+                    showRemoteProblemCenter();
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> {
+                    problemCenterRefreshInFlight = false;
+                    refreshOperationsHeaderNavigation();
+                    showTransientError(ex);
+                });
+            }
+        });
+    }
+
+    private void showTriageCenter() {
+        if (problemCenterRefreshInFlight) {
+            return;
+        }
+        problemCenterRefreshInFlight = true;
+        boolean preservePreviousReport = OperationsDestinationState.TRIAGE.equals(
+                currentDestination) && actions.getChildCount() > 0;
+        returnToToolboxOnBack = false;
+        setCurrentDestination(OperationsDestinationState.TRIAGE);
+        returnToTriageOnBack = false;
+        refreshOperationsHeaderNavigation();
+        setShowingDashboardSummary(false);
+        leaveSupportCenter();
+        leaveLiveMonitor();
+        setDashboardVisible(true);
+        scrollDashboardToTop();
+        title.setTitle("问题中心");
+        if (!preservePreviousReport) {
+            actions.removeAllViews();
+        }
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在汇总问题证据与可用处置动作…");
         executor.execute(() -> {
             try {
                 JSONObject response = client.get("/ops/v1/triage");
@@ -3952,6 +4786,8 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showTriageError(Exception ex) {
+        problemCenterRefreshInFlight = false;
+        refreshOperationsHeaderNavigation();
         progress.setVisibility(View.GONE);
         state.setText("排障建议未更新");
         details.setText(OperationsTriagePresentation.failureDetails(
@@ -3964,9 +4800,16 @@ public class OperationsActivity extends AppCompatActivity {
     private void renderTriageCenter(JSONObject report) {
         OperationsTriagePresentation.ViewModel model =
                 OperationsTriagePresentation.from(report, this::shortTime);
+        problemCenterRefreshInFlight = false;
+        problemBadgeCount = model.findings.size();
+        if (model.tone == OperationsTriagePresentation.TONE_NORMAL) {
+            problemBadgeState = OperationsWatchHistory.STATE_ONLINE;
+        }
+        refreshProblemNavigationBadge();
+        refreshOperationsHeaderNavigation();
         scrollDashboardToTop();
         progress.setVisibility(View.GONE);
-        title.setTitle("远程排障中心");
+        title.setTitle("问题中心");
         state.setText(model.stateLabel);
         actions.removeAllViews();
         actions.addView(OperationsTriageContent.create(
@@ -3974,18 +4817,29 @@ public class OperationsActivity extends AppCompatActivity {
                         themeManager,
                         model,
                         this::runTriageAction,
-                        this::showTriageCenter,
-                        this::showDashboard),
+                        this::runConnectionSelfCheckFromTriage,
+                        this::showLiveMonitorFromTriage),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
+        restoreTopLevelScroll(OperationsDestinationState.TRIAGE);
+    }
+
+    private void showLiveMonitorFromTriage() {
+        returnToTriageOnBack = true;
+        showLiveMonitor();
+    }
+
+    private void runConnectionSelfCheckFromTriage() {
+        returnToTriageOnBack = true;
+        runConnectionSelfCheck();
     }
 
     private void runTriageAction(String actionId) {
         switch (actionId) {
             case "triage.events.view":
                 returnToTriageOnBack = true;
-                loadCapability("/ops/v1/diagnostics/recent-events");
+                showDashboardCapabilityDetails(PATH_RECENT_EVENTS);
                 return;
             case "triage.window.show":
                 runWindowAction("show", "主窗口已显示");
@@ -4002,14 +4856,14 @@ public class OperationsActivity extends AppCompatActivity {
                 return;
             case "triage.messaging.view":
                 returnToTriageOnBack = true;
-                loadCapability("/ops/v1/messaging/health");
+                showDashboardCapabilityDetails("/ops/v1/messaging/health");
                 return;
             case "triage.messaging.reconnect.request":
                 confirmRecoverMessageChannel();
                 return;
             case "triage.failures.view":
                 returnToTriageOnBack = true;
-                loadCapability("/ops/v1/diagnostics/failures");
+                showDashboardCapabilityDetails(PATH_FAILURE_EVIDENCE);
                 return;
             default:
                 return;
@@ -4374,10 +5228,10 @@ public class OperationsActivity extends AppCompatActivity {
         actions.addView(share, actionParams());
 
         Button back = new MaterialButton(this);
-        back.setText(remote ? "返回远程告警" : "返回作业与审批");
+        back.setText(remote ? operationsDetailBackLabel() : "返回作业与审批");
         back.setOnClickListener(v -> {
             if (remote) {
-                showLatestRemoteMonitorDetail("alerts");
+                returnFromOperationsDetail();
             } else {
                 showJobs();
             }
@@ -4934,34 +5788,29 @@ public class OperationsActivity extends AppCompatActivity {
     private void renderLiveMonitorActions() {
         actions.removeAllViews();
 
-        Button refresh = dashboardTonalButton("立即刷新", v -> loadLiveMonitor(true));
-        refresh.setEnabled(!liveMonitorRefreshInFlight && !liveMonitorCancelInFlight);
+        addDashboardSection("观察控制");
+        OperationsLiveMonitorControlsPresentation.ViewModel controls =
+                OperationsLiveMonitorControlsPresentation.from(
+                        liveMonitorAutoRefresh,
+                        liveMonitorRefreshInFlight,
+                        liveMonitorCancelInFlight);
+        actions.addView(OperationsLiveMonitorControlsContent.create(
+                this,
+                themeManager,
+                controls,
+                new OperationsLiveMonitorControlsContent.Handler() {
+                    @Override
+                    public void onAutoRefreshChanged(boolean enabled) {
+                        setLiveMonitorAutoRefresh(enabled);
+                    }
 
-        Button toggle = dashboardButton(
-                liveMonitorAutoRefresh ? "暂停自动观察" : "恢复每 10 秒观察",
-                null);
-        toggle.setEnabled(!liveMonitorCancelInFlight);
-        toggle.setOnClickListener(v -> {
-            liveMonitorAutoRefresh = !liveMonitorAutoRefresh;
-            liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
-            if (liveMonitorAutoRefresh) {
-                state.setText("自动观察已恢复 · 正在刷新");
-                details.setText(liveMonitorPresentation().overview);
-                renderLiveMonitorActions();
-                loadLiveMonitor(true);
-            } else {
-                state.setText("自动观察已暂停 · 当前快照保留");
-                details.setText(liveMonitorPresentation().overview);
-                renderLiveMonitorActions();
-            }
-        });
-        addDashboardTaskGroup(
-                "观察控制",
-                liveMonitorAutoRefresh
-                        ? "前台每 10 秒更新；切到后台时停止页面刷新。"
-                        : "自动观察已暂停，当前快照与本次内存样本仍保留。",
-                refresh,
-                toggle);
+                    @Override
+                    public void onRefresh() {
+                        loadLiveMonitor(true);
+                    }
+                }), new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
 
         if (liveMonitorLatestSnapshot != null) {
             addDashboardSection("实时状态");
@@ -4986,7 +5835,8 @@ public class OperationsActivity extends AppCompatActivity {
 
         Button share = dashboardTonalButton("分享脱敏趋势", v -> shareLiveMonitorTrend());
         share.setEnabled(liveMonitorTrend.size() >= 2);
-        Button back = dashboardButton("返回现场运维概览", v -> showDashboard());
+        Button back = dashboardButton(
+                operationsDetailBackLabel(), v -> returnFromOperationsDetail());
         addDashboardTaskGroup(
                 "记录与离开",
                 liveMonitorTrend.size() < 2
@@ -4994,6 +5844,24 @@ public class OperationsActivity extends AppCompatActivity {
                         : "只分享本次手机内存中的脱敏聚合趋势；离开本页即清空。",
                 share,
                 back);
+    }
+
+    private void setLiveMonitorAutoRefresh(boolean enabled) {
+        if (liveMonitorAutoRefresh == enabled || liveMonitorCancelInFlight) {
+            return;
+        }
+        liveMonitorAutoRefresh = enabled;
+        liveMonitorRefreshHandler.removeCallbacks(liveMonitorRefresh);
+        if (enabled) {
+            state.setText("自动观察已恢复 · 正在刷新");
+            details.setText(liveMonitorPresentation().overview);
+            renderLiveMonitorActions();
+            loadLiveMonitor(true);
+            return;
+        }
+        state.setText("自动观察已暂停 · 当前快照保留");
+        details.setText(liveMonitorPresentation().overview);
+        renderLiveMonitorActions();
     }
 
     private OperationsLiveMonitorPresentation.ViewModel liveMonitorPresentation() {
@@ -5050,6 +5918,44 @@ public class OperationsActivity extends AppCompatActivity {
         boolean cancelAvailable = liveMonitorVisible
                 ? liveMonitorCancelAvailable
                 : showingDashboardSummary && dashboardFlowCancelAvailable;
+        confirmCancelCurrentFlow(cancelAvailable);
+    }
+
+    private void checkAndConfirmCancelCurrentFlowFromToolbox() {
+        if (!ensureOperationsClientTargetIsCurrent()) {
+            return;
+        }
+        progress.setVisibility(View.VISIBLE);
+        state.setText("正在核对当前检测状态…");
+        executor.execute(() -> {
+            try {
+                JSONObject response = client.get("/ops/v1/flow/runtime");
+                JSONObject data = response.optJSONObject("data");
+                JSONObject flow = data == null ? response : data;
+                boolean available = flow.optBoolean("available", false)
+                        && flow.optBoolean("isActive", false)
+                        && flow.optBoolean("cancelAvailable", false)
+                        && dashboardFlowCancelCapabilityAvailable;
+                runOnUiThread(() -> {
+                    progress.setVisibility(View.GONE);
+                    dashboardFlowAvailable = flow.optBoolean("available", false);
+                    dashboardFlowActive = flow.optBoolean("isActive", false);
+                    dashboardFlowCancelAvailable = available;
+                    state.setText(available
+                            ? "检测运行中 · 等待确认"
+                            : "当前没有可取消的主检测");
+                    details.setText(available
+                            ? R.string.operations_cancel_flow_toolbox_available_details
+                            : R.string.operations_cancel_flow_toolbox_unavailable_details);
+                    confirmCancelCurrentFlow(available);
+                });
+            } catch (Exception ex) {
+                runOnUiThread(() -> showTransientError(ex));
+            }
+        });
+    }
+
+    private void confirmCancelCurrentFlow(boolean cancelAvailable) {
         if (!cancelAvailable) {
             Toast.makeText(this, "当前没有可取消的主检测", Toast.LENGTH_LONG).show();
             return;
@@ -5367,26 +6273,26 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showDashboardApplicationDetails() {
-        AppScreenMotion.beginContentTransition(
-                dashboardContent, AppScreenMotion.DIRECTION_FORWARD);
+        setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
+        dashboardDetailPath = "/ops/v1/snapshot";
+        refreshDetailsCardVisibility();
+        refreshOperationsHeaderNavigation();
         scrollDashboardToTop();
         title.setTitle("应用概况");
         actions.removeAllViews();
-        addDashboardWideAction(dashboardTonalButton(
-                "刷新应用概况", v -> loadCapability("/ops/v1/snapshot", true)));
         loadCapability("/ops/v1/snapshot", true);
     }
 
     private void showDashboardCapabilityDetails(String path) {
         OperationsDashboardDetailPresentation.Item presentation =
                 OperationsDashboardDetailPresentation.forPath(path);
-        AppScreenMotion.beginContentTransition(
-                dashboardContent, AppScreenMotion.DIRECTION_FORWARD);
+        setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
+        dashboardDetailPath = path;
+        refreshDetailsCardVisibility();
+        refreshOperationsHeaderNavigation();
         scrollDashboardToTop();
         title.setTitle(presentation.title);
         actions.removeAllViews();
-        addDashboardWideAction(dashboardTonalButton(
-                presentation.refreshLabel, v -> loadCapability(path)));
         loadCapability(path);
     }
 
@@ -5396,6 +6302,13 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void loadCapability(String path, boolean showDetails) {
         boolean dashboardSnapshot = "/ops/v1/snapshot".equals(path) && !showDetails;
+        boolean dashboardDetailRequest = showDetails
+                && OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
+                && path.equals(dashboardDetailPath);
+        if (dashboardDetailRequest) {
+            dashboardDetailRefreshInFlight = true;
+            refreshOperationsHeaderNavigation();
+        }
         setShowingDashboardSummary(dashboardSnapshot);
         leaveSupportCenter();
         leaveLiveMonitor();
@@ -5405,26 +6318,154 @@ public class OperationsActivity extends AppCompatActivity {
             try {
                 JSONObject response = client.get(path);
                 runOnUiThread(() -> {
+                    if (dashboardDetailRequest
+                            && (!OperationsDestinationState.CAPABILITY_DETAIL.equals(
+                                    currentDestination)
+                                    || !path.equals(dashboardDetailPath))) {
+                        return;
+                    }
+                    if (dashboardDetailRequest) {
+                        dashboardDetailRefreshInFlight = false;
+                        refreshOperationsHeaderNavigation();
+                    }
                     progress.setVisibility(View.GONE);
                     if ("/ops/v1/snapshot".equals(path)) {
                         updateDashboardApplicationStatus(response);
                     }
-                    state.setText(dashboardSnapshot
-                            ? directConnectionState() : capabilityHeading(path));
-                    details.setText(formatCapability(path, response));
+                    if (dashboardDetailRequest && PATH_PERFORMANCE.equals(path)) {
+                        renderPerformanceSnapshot(response, false,
+                                this::showPerformanceLiveMonitor);
+                    } else if (dashboardDetailRequest && PATH_FAILURE_EVIDENCE.equals(path)) {
+                        renderFailureEvidence(response);
+                    } else if (dashboardDetailRequest && PATH_SERVICE_HEALTH.equals(path)) {
+                        renderServiceHealth(response);
+                    } else if (dashboardDetailRequest && PATH_RECENT_EVENTS.equals(path)) {
+                        renderRecentEvents(response);
+                    } else if (dashboardDetailRequest && PATH_AUDIT.equals(path)) {
+                        renderAuditTimeline(response);
+                    } else {
+                        state.setText(dashboardSnapshot
+                                ? directConnectionState() : capabilityHeading(path));
+                        details.setText(formatCapability(path, response));
+                        if (detailsCard != null) {
+                            detailsCard.setVisibility(View.VISIBLE);
+                        }
+                    }
                 });
             } catch (Exception ex) {
                 runOnUiThread(() -> {
+                    if (dashboardDetailRequest
+                            && (!OperationsDestinationState.CAPABILITY_DETAIL.equals(
+                                    currentDestination)
+                                    || !path.equals(dashboardDetailPath))) {
+                        return;
+                    }
+                    if (dashboardDetailRequest) {
+                        dashboardDetailRefreshInFlight = false;
+                        refreshOperationsHeaderNavigation();
+                    }
                     progress.setVisibility(View.GONE);
                     if (dashboardSnapshot) {
                         updateDashboardStatus(dashboardApplicationStatus,
                                 OperationsDashboardStatusFormatter.unavailable("应用"));
+                        refreshDashboardStatusOrder();
                     }
                     state.setText(dashboardSnapshot ? directConnectionState() : "读取失败");
                     details.setText(OperationsErrorPresentation.readable(ex));
+                    if (detailsCard != null) {
+                        detailsCard.setVisibility(View.VISIBLE);
+                    }
                 });
             }
         });
+    }
+
+    private void renderRecentEvents(JSONObject response) {
+        JSONObject data = response.optJSONObject("data");
+        JSONObject payload = data == null ? response : data;
+        OperationsRecentEventsPresentation.ViewModel model =
+                OperationsRecentEventsPresentation.from(payload, this::shortTime);
+        state.setText(model.stateLabel);
+        detailsCard.setVisibility(View.GONE);
+        actions.removeAllViews();
+        actions.addView(OperationsRecentEventsContent.create(
+                        this, themeManager, model),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void renderServiceHealth(JSONObject response) {
+        JSONObject data = response.optJSONObject("data");
+        JSONObject payload = data == null ? response : data;
+        OperationsServiceHealthPresentation.ViewModel model =
+                OperationsServiceHealthPresentation.from(payload, this::shortTime);
+        state.setText(model.stateLabel);
+        detailsCard.setVisibility(View.GONE);
+        actions.removeAllViews();
+        actions.addView(OperationsServiceHealthContent.create(
+                        this, themeManager, model),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void renderFailureEvidence(JSONObject response) {
+        JSONObject data = response.optJSONObject("data");
+        JSONObject payload = data == null ? response : data;
+        OperationsFailureEvidence.Snapshot snapshot =
+                OperationsFailureEvidence.fromLocalPayload(payload);
+        OperationsFailureEvidencePresentation.ViewModel model =
+                OperationsFailureEvidencePresentation.from(
+                        snapshot, shortTime(snapshot.latestEvidenceAt));
+        state.setText(model.stateLabel);
+        detailsCard.setVisibility(View.GONE);
+        actions.removeAllViews();
+        actions.addView(OperationsFailureEvidenceContent.create(
+                        this, themeManager, model),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void renderPerformanceSnapshot(
+            JSONObject response,
+            boolean signedSnapshot,
+            Runnable openLiveMonitor) {
+        JSONObject data = response == null ? null : response.optJSONObject("data");
+        JSONObject payload = data == null ? response : data;
+        OperationsPerformancePresentation.ViewModel model =
+                OperationsPerformancePresentation.from(
+                        payload, this::shortTime, signedSnapshot);
+        state.setText(model.stateLabel);
+        detailsCard.setVisibility(View.GONE);
+        actions.removeAllViews();
+        actions.addView(OperationsPerformanceContent.create(
+                        this, themeManager, model, openLiveMonitor),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void showPerformanceLiveMonitor() {
+        returnToToolboxOnBack = false;
+        returnToTriageOnBack = true;
+        showLiveMonitor();
+    }
+
+    private void renderAuditTimeline(JSONObject response) {
+        JSONObject data = response.optJSONObject("data");
+        JSONObject payload = data == null ? response : data;
+        OperationsAuditPresentation.ViewModel model =
+                OperationsAuditPresentation.from(payload, this::shortTime);
+        state.setText(model.stateLabel);
+        detailsCard.setVisibility(View.GONE);
+        actions.removeAllViews();
+        actions.addView(OperationsAuditContent.create(
+                        this, themeManager, model),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
     private void updateDashboardApplicationStatus(JSONObject response) {
@@ -5443,6 +6484,7 @@ public class OperationsActivity extends AppCompatActivity {
                         window != null && window.optBoolean("isVisible"),
                         window == null ? "" : window.optString("state", ""),
                         process == null ? 0 : process.optDouble("memoryMb", 0)));
+        refreshDashboardStatusOrder();
     }
 
     private void showDeviceHealthOverview() {
@@ -5468,7 +6510,7 @@ public class OperationsActivity extends AppCompatActivity {
                             observedAt,
                             offerTriageAction,
                             this::showDeviceHealthOverview,
-                            this::showTriageCenter);
+                            this::showProblemCenter);
                 });
             } catch (Exception ex) {
                 runOnUiThread(() -> showTransientError(ex));
@@ -5488,16 +6530,16 @@ public class OperationsActivity extends AppCompatActivity {
         if ("/ops/v1/diagnostics/summary".equals(path)) {
             return formatDiagnosticSummary(payload);
         }
-        if ("/ops/v1/diagnostics/failures".equals(path)) {
+        if (PATH_FAILURE_EVIDENCE.equals(path)) {
             return formatFailureEvidence(payload);
         }
-        if ("/ops/v1/diagnostics/performance".equals(path)) {
+        if (PATH_PERFORMANCE.equals(path)) {
             return formatPerformanceSnapshot(payload);
         }
         if ("/ops/v1/flow/runtime".equals(path)) {
             return formatFlowRuntimeStatus(payload);
         }
-        if ("/ops/v1/services/health".equals(path)) {
+        if (PATH_SERVICE_HEALTH.equals(path)) {
             return formatServiceHealth(payload);
         }
         if ("/ops/v1/devices/health".equals(path)) {
@@ -5506,8 +6548,9 @@ public class OperationsActivity extends AppCompatActivity {
         if ("/ops/v1/messaging/health".equals(path)) {
             return formatMessageChannelHealth(payload, true);
         }
-        if ("/ops/v1/audit".equals(path)) {
-            return formatAuditTimeline(payload);
+        if (PATH_AUDIT.equals(path)) {
+            return OperationsAuditPresentation.from(
+                    payload, this::shortTime).plainText();
         }
         if (!"/ops/v1/snapshot".equals(path)) {
             return pretty(payload);
@@ -5557,16 +6600,16 @@ public class OperationsActivity extends AppCompatActivity {
         if ("/ops/v1/diagnostics/summary".equals(path)) {
             return "安全诊断摘要已刷新";
         }
-        if ("/ops/v1/diagnostics/failures".equals(path)) {
+        if (PATH_FAILURE_EVIDENCE.equals(path)) {
             return "崩溃与卡死线索已刷新";
         }
-        if ("/ops/v1/diagnostics/performance".equals(path)) {
+        if (PATH_PERFORMANCE.equals(path)) {
             return "进程性能快照已刷新";
         }
         if ("/ops/v1/flow/runtime".equals(path)) {
             return "当前检测状态已刷新";
         }
-        if ("/ops/v1/services/health".equals(path)) {
+        if (PATH_SERVICE_HEALTH.equals(path)) {
             return "白名单服务状态已刷新";
         }
         if ("/ops/v1/devices/health".equals(path)) {
@@ -5575,94 +6618,10 @@ public class OperationsActivity extends AppCompatActivity {
         if ("/ops/v1/messaging/health".equals(path)) {
             return "消息通道健康已刷新";
         }
-        if ("/ops/v1/audit".equals(path)) {
+        if (PATH_AUDIT.equals(path)) {
             return "近期远程操作记录已刷新";
         }
         return "读取成功 · " + path;
-    }
-
-    private String formatAuditTimeline(JSONObject payload) {
-        JSONArray entries = payload.optJSONArray("entries");
-        if (entries == null || entries.length() == 0) {
-            return "当前没有远程操作记录。\n\n记录只包含时间、角色类型、固定动作和结果，不包含设备、人员、目标或关联标识。";
-        }
-
-        StringBuilder text = new StringBuilder();
-        text.append("近期远程操作：").append(payload.optInt("count", entries.length())).append(" 条");
-        int maximum = Math.min(entries.length(), 30);
-        for (int index = 0; index < maximum; index++) {
-            JSONObject entry = entries.optJSONObject(index);
-            if (entry == null) {
-                continue;
-            }
-            text.append("\n\n").append(index + 1).append(". ")
-                    .append(auditActionLabel(entry.optString("action", "")))
-                    .append("\n结果：").append(auditOutcomeLabel(entry.optString("outcome", "")))
-                    .append(" · 发起方：").append(auditActorLabel(entry.optString("actorType", "")));
-            String timestamp = shortTime(entry.optString("timestamp", ""));
-            if (!timestamp.isEmpty()) {
-                text.append("\n时间：").append(timestamp);
-            }
-        }
-        text.append("\n\n只显示最近 30 条去标识记录；不返回设备 ID、人员名称、操作目标或内部关联 ID。内容不能用于识别具体人员。");
-        return text.toString();
-    }
-
-    private String auditActorLabel(String value) {
-        switch (value) {
-            case "device": return "已配对手机";
-            case "local-user": return "电脑本机人员";
-            case "system": return "运维系统";
-            case "support-relay": return "支持中继";
-            default: return "受控运维通道";
-        }
-    }
-
-    private String auditActionLabel(String value) {
-        switch (value) {
-            case "job.create": return "创建运维作业";
-            case "job.approve": return "手机批准作业";
-            case "job.reject": return "手机拒绝作业";
-            case "job.local_cosign": return "电脑端共签作业";
-            case "job.local_reject": return "电脑端拒绝作业";
-            case "job.execution.start": return "开始执行受控作业";
-            case "job.complete": return "作业执行完成";
-            case "job.evidence.consume": return "读取一次性作业证据";
-            case "desktop.action.execute": return "执行主窗口控制";
-            case "diagnostics.performance.read": return "读取进程性能快照";
-            case "diagnostics.failure-evidence.read": return "读取崩溃与卡死线索";
-            case "flow.runtime.read": return "读取当前检测状态";
-            case "monitor.read": return "持续观察运行状态";
-            case "messaging.health.read": return "读取消息通道健康";
-            case "diagnostic.bundle.download": return "下载安全诊断包";
-            case "window.snapshot.download": return "读取主窗口安全快照";
-            case "deployment.receipt.create": return "提交部署确认";
-            case "support.request": return "申请引导支持会话";
-            case "support.local_consent": return "电脑端同意支持会话";
-            case "support.local_reject": return "电脑端拒绝支持会话";
-            case "support.message.send": return "手机发送支持消息";
-            case "support.message.receive": return "接收支持中继消息";
-            default: return "受控运维活动";
-        }
-    }
-
-    private String auditOutcomeLabel(String value) {
-        switch (value) {
-            case "success":
-            case "completed":
-            case "accepted":
-            case "approved_local":
-            case "active":
-            case "consumed": return "成功";
-            case "rejected":
-            case "rejected_local": return "已拒绝";
-            case "failed": return "失败";
-            case "awaiting_mobile_approval": return "等待手机批准";
-            case "executing": return "执行中";
-            case "awaiting_local_cosign":
-            case "awaiting_local_consent": return "等待电脑确认";
-            default: return "已记录";
-        }
     }
 
     private String formatPerformanceSnapshot(JSONObject payload) {
@@ -5786,38 +6745,8 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private String formatServiceHealth(JSONObject payload) {
-        if (!payload.optBoolean("available", false)) {
-            return "当前无法读取白名单服务状态。\n\n不会仅凭日志建议服务维护；请在电脑端检查 Windows 服务状态。";
-        }
-
-        JSONArray services = payload.optJSONArray("services");
-        StringBuilder text = new StringBuilder();
-        text.append(payload.optBoolean("allHealthy", false) ? "白名单服务均正常" : "有白名单服务需要关注");
-        if (services == null || services.length() == 0) {
-            text.append("\n\n当前没有适用的本机服务状态。");
-        } else {
-            for (int index = 0; index < services.length(); index++) {
-                JSONObject service = services.optJSONObject(index);
-                if (service == null) {
-                    continue;
-                }
-                text.append("\n\n").append(index + 1).append(". ")
-                        .append(service.optString("title", "白名单服务"))
-                        .append("\n状态：").append(serviceStatusLabel(service.optString("status", "unknown")))
-                        .append(service.optBoolean("healthy", false) ? " · 正常" : " · 需关注")
-                        .append("\n来源：").append(serviceSourceLabel(service.optString("statusSource", "")));
-                String observedAt = shortTime(service.optString("observedAt", ""));
-                if (!observedAt.isEmpty()) {
-                    text.append("\n观测时间：").append(observedAt);
-                }
-                if (service.optBoolean("maintenanceSupported", false)) {
-                    text.append("\n维护边界：仅固定 Mosquitto 可由已配对手机确认后重启");
-                }
-            }
-        }
-        text.append("\n\n").append(payload.optString("privacyNotice",
-                "仅报告固定白名单服务的规范化状态；不返回服务账户、程序路径或启动参数。"));
-        return text.toString();
+        return OperationsServiceHealthPresentation.from(
+                payload, this::shortTime).plainText();
     }
 
     private String formatDeviceHealth(JSONObject payload) {
@@ -6086,28 +7015,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private String serviceStatusLabel(String value) {
-        switch (value) {
-            case "running": return "运行中";
-            case "stopped": return "已停止";
-            case "paused": return "已暂停";
-            case "start_pending": return "正在启动";
-            case "stop_pending": return "正在停止";
-            case "pause_pending": return "正在暂停";
-            case "continue_pending": return "正在恢复";
-            case "not_installed": return "未安装";
-            case "not_applicable": return "使用远程端点，本机不适用";
-            default: return "未知";
-        }
-    }
-
-    private String serviceSourceLabel(String value) {
-        if ("windows-service-control-manager".equals(value)) {
-            return "Windows 服务控制管理器";
-        }
-        if ("application-config".equals(value)) {
-            return "应用配置";
-        }
-        return "受限状态提供程序";
+        return OperationsServiceHealthPresentation.statusLabel(value);
     }
 
     private String formatAlerts(JSONObject payload) {
@@ -6276,8 +7184,8 @@ public class OperationsActivity extends AppCompatActivity {
             try {
                 JSONObject connection = client.get("/ops/v1/diagnostics/connection").optJSONObject("data");
                 JSONObject events = client.get("/ops/v1/diagnostics/recent-events").optJSONObject("data");
-                JSONObject services = client.get("/ops/v1/services/health").optJSONObject("data");
-                JSONObject performance = client.get("/ops/v1/diagnostics/performance").optJSONObject("data");
+                JSONObject services = client.get(PATH_SERVICE_HEALTH).optJSONObject("data");
+                JSONObject performance = client.get(PATH_PERFORMANCE).optJSONObject("data");
                 JSONObject flowRuntime = client.get("/ops/v1/flow/runtime").optJSONObject("data");
                 JSONObject devices = client.get("/ops/v1/devices/health").optJSONObject("data");
                 JSONObject messageChannel = client.get("/ops/v1/messaging/health").optJSONObject("data");
@@ -6459,8 +7367,19 @@ public class OperationsActivity extends AppCompatActivity {
         if (bottomNavigation == null) {
             return;
         }
-        int destination = OperationsDestinationState.TOOLS.equals(currentDestination)
-                || returnToToolboxOnBack ? NAV_TOOLS : NAV_OPERATIONS;
+        int destination;
+        if (OperationsDestinationState.SETTINGS.equals(currentDestination)
+                || returnToSettingsOnBack) {
+            destination = NAV_SETTINGS;
+        } else if (OperationsDestinationState.TOOLS.equals(currentDestination)
+                || returnToToolboxOnBack) {
+            destination = NAV_TOOLS;
+        } else if (OperationsDestinationState.TRIAGE.equals(currentDestination)
+                || returnToTriageOnBack) {
+            destination = NAV_PROBLEMS;
+        } else {
+            destination = NAV_OPERATIONS;
+        }
         if (bottomNavigation.getSelectedItemId() != destination) {
             updatingBottomNavigation = true;
             bottomNavigation.setSelectedItemId(destination);
@@ -6508,17 +7427,38 @@ public class OperationsActivity extends AppCompatActivity {
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
+        rememberVisibleTopLevelScroll();
         outState.putString(STATE_DESTINATION,
                 OperationsDestinationState.normalize(currentDestination));
         outState.putBoolean(STATE_RETURN_TO_TRIAGE, returnToTriageOnBack);
         outState.putBoolean(STATE_RETURN_TO_TOOLBOX, returnToToolboxOnBack);
+        outState.putBoolean(STATE_RETURN_TO_SETTINGS, returnToSettingsOnBack);
+        outState.putInt(STATE_SCROLL_OVERVIEW,
+                topLevelState.scrollY(OperationsDestinationState.OVERVIEW));
+        outState.putInt(STATE_SCROLL_PROBLEMS,
+                topLevelState.scrollY(OperationsDestinationState.TRIAGE));
+        outState.putInt(STATE_SCROLL_TOOLS,
+                topLevelState.scrollY(OperationsDestinationState.TOOLS));
+        outState.putInt(STATE_SCROLL_SETTINGS,
+                topLevelState.scrollY(OperationsDestinationState.SETTINGS));
         super.onSaveInstanceState(outState);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        boolean notificationChanged = notificationSettingsController != null
+                && notificationSettingsController.refreshOnResume();
+        boolean cameraGranted = hasCameraPermission();
+        if (cameraGranted || shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
+            preferences.saveCameraPermissionBlocked(false);
+        }
+        if (OperationsDestinationState.SETTINGS.equals(currentDestination)
+                && notificationChanged) {
+            refreshSettingsPage();
+        }
         syncBottomNavigation();
+        refreshProblemNavigationBadge();
         activityResumed = true;
         refreshOperationsTargetPresentation();
         if (preferences != null && preferences.hasOperationsProfile()) {
@@ -6553,6 +7493,9 @@ public class OperationsActivity extends AppCompatActivity {
         leaveLiveMonitor();
         executor.shutdownNow();
         fleetExecutor.shutdownNow();
+        if (androidUpdateController != null) {
+            androidUpdateController.shutdown();
+        }
         super.onDestroy();
     }
 }

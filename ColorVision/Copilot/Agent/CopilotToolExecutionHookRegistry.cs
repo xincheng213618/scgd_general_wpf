@@ -244,7 +244,7 @@ namespace ColorVision.Copilot
             {
                 Revision = Math.Max(0, revision),
                 Fingerprint = ComputeFingerprint(materialized),
-                Entries = materialized,
+                Entries = Array.AsReadOnly(materialized),
             };
         }
 

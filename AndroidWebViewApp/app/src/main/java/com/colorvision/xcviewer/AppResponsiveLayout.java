@@ -2,8 +2,8 @@ package com.colorvision.xcviewer;
 
 final class AppResponsiveLayout {
     private static final int COMPACT_WIDTH_MAX_DP = 599;
-    private static final int DASHBOARD_SHORTCUT_GRID_MIN_DP = 360;
     private static final float SINGLE_COLUMN_FONT_SCALE = 1.2f;
+    private static final float STACKED_CONTROL_EFFECTIVE_WIDTH_DP = 220f;
 
     private AppResponsiveLayout() {
     }
@@ -14,10 +14,11 @@ final class AppResponsiveLayout {
         return compactWidth || largeFont;
     }
 
-    static boolean usesSingleColumnDashboardShortcuts(int screenWidthDp, float fontScale) {
-        boolean narrowWidth = screenWidthDp > 0
-                && screenWidthDp < DASHBOARD_SHORTCUT_GRID_MIN_DP;
-        return narrowWidth || usesLargeFont(fontScale);
+    static boolean usesStackedControlRow(int screenWidthDp, float fontScale) {
+        return screenWidthDp > 0
+                && Float.isFinite(fontScale)
+                && fontScale > 0f
+                && screenWidthDp / fontScale <= STACKED_CONTROL_EFFECTIVE_WIDTH_DP;
     }
 
     private static boolean usesLargeFont(float fontScale) {

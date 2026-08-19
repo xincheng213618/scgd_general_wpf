@@ -37,6 +37,19 @@ namespace ColorVision.Copilot
             await Task.WhenAll(waits).ConfigureAwait(false);
         }
 
+        public static int? TryGetExitCode(Process process)
+        {
+            ArgumentNullException.ThrowIfNull(process);
+            try
+            {
+                return process.HasExited ? process.ExitCode : null;
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException or Win32Exception)
+            {
+                return null;
+            }
+        }
+
         public static async Task<(string StandardOutput, string StandardError)> DrainOutputAsync(
             Task<string> standardOutputTask,
             Task<string> standardErrorTask,

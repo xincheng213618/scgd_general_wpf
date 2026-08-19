@@ -40,7 +40,7 @@ namespace ColorVision.Copilot
     }
 
     internal sealed record CopilotShellProcessResult(
-        int ExitCode,
+        int? ExitCode,
         bool TimedOut,
         string StandardOutput,
         string StandardError,
@@ -208,8 +208,17 @@ namespace ColorVision.Copilot
                     FailureKind = CopilotToolFailureKind.Transient,
                     FailureCode = TimedOutFailureCode,
                     ProcessOperation = CopilotToolProcessEvidence.ShellOperation,
+                    ProcessExitCode = processResult.ExitCode,
                     ProcessTimedOut = true,
                 };
+            }
+
+            if (!processResult.ExitCode.HasValue)
+            {
+                return Failure(
+                    CopilotToolFailureKind.Internal,
+                    $"The {GetShellLabel(execution.Shell)} command ended without an exit code.",
+                    "The managed shell process completed, but its exit code was unavailable.");
             }
 
             var succeeded = processResult.ExitCode == 0;
@@ -441,7 +450,7 @@ namespace ColorVision.Copilot
             builder.AppendLine("[Shell Command]");
             builder.AppendLine($"shell: {GetShellLabel(shell)}");
             builder.AppendLine($"working_directory: {workingDirectory}");
-            builder.AppendLine($"exit_code: {result.ExitCode}");
+            builder.AppendLine($"exit_code: {result.ExitCode?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "unknown"}");
             builder.AppendLine($"outcome: {(result.TimedOut ? "timed_out" : result.ExitCode == 0 ? "completed" : "nonzero_exit")}");
             builder.AppendLine($"duration_ms: {Math.Max(0, (long)result.Duration.TotalMilliseconds)}");
             builder.AppendLine($"process_tree: {(result.ProcessTreeContained ? "windows_job_object" : "best_effort")}");
@@ -696,7 +705,7 @@ namespace ColorVision.Copilot
             if (cancelledByCaller)
                 throw new OperationCanceledException(cancellationToken);
             return new CopilotShellProcessResult(
-                timedOut ? -1 : process.ExitCode,
+                CopilotProcessExecutionSupport.TryGetExitCode(process),
                 timedOut,
                 standardOutput,
                 standardError,

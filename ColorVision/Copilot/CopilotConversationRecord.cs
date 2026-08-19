@@ -248,8 +248,8 @@ namespace ColorVision.Copilot
         public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint { get; internal set; }
 
         /// <summary>
-        /// Latest terminal or checkpoint journal evidence retained independently only
-        /// when it is newer than, or must outlive, the resumable checkpoint.
+        /// Standalone journal owner used only when no resumable checkpoint survives.
+        /// Legacy snapshots that contain both owners are collapsed during normalization.
         /// </summary>
         [JsonProperty]
         public CopilotAgentTaskEventJournalSnapshot? LatestAgentTaskEventJournal { get; internal set; }

@@ -10,15 +10,28 @@ final class OperationsDashboardStatusFormatter {
         final String title;
         final String summary;
         final int tone;
+        final int priority;
 
         Item(String title, String summary, int tone) {
+            this(title, summary, tone, tone == TONE_ACTIVE ? 10 : 0);
+        }
+
+        Item(String title, String summary, int tone, int priority) {
             this.title = title;
             this.summary = summary;
             this.tone = tone;
+            this.priority = Math.max(0, priority);
         }
 
         String accessibilityLabel() {
-            return title + "，" + summary + "，查看详情";
+            return accessibilityLabel("查看详情");
+        }
+
+        String accessibilityLabel(String actionLabel) {
+            String action = actionLabel == null || actionLabel.trim().isEmpty()
+                    ? "查看详情"
+                    : actionLabel.trim();
+            return title + "，" + summary + "，" + action;
         }
     }
 
@@ -66,7 +79,8 @@ final class OperationsDashboardStatusFormatter {
                 : "Minimized".equalsIgnoreCase(windowState) ? "已最小化" : "窗口未显示";
         String memory = memoryMb > 0 ? " · " + Math.round(memoryMb) + " MB" : "";
         return new Item("应用", safeVersion + " · " + window + memory,
-                windowExists ? TONE_DEFAULT : TONE_ATTENTION);
+                windowExists ? TONE_DEFAULT : TONE_ATTENTION,
+                windowExists ? 0 : 30);
     }
 
     static Item flow(boolean available, boolean active, String phase) {
@@ -77,7 +91,7 @@ final class OperationsDashboardStatusFormatter {
             return new Item("检测", "空闲", TONE_DEFAULT);
         }
         if ("paused".equals(phase)) {
-            return new Item("检测", "已暂停", TONE_ATTENTION);
+            return new Item("检测", "已暂停", TONE_ATTENTION, 30);
         }
         if ("cancelling".equals(phase)) {
             return new Item("检测", "正在取消", TONE_ACTIVE);
@@ -115,7 +129,7 @@ final class OperationsDashboardStatusFormatter {
         if (attention > 0) {
             String summary = attentionSummary == null ? "" : attentionSummary.trim();
             return new Item("设备", summary.isEmpty() ? "需关注 " + attention : summary,
-                    TONE_ATTENTION);
+                    TONE_ATTENTION, 70);
         }
         if (busy > 0) {
             return new Item("设备", "忙碌 " + busy + " / " + total, TONE_ACTIVE);
@@ -129,12 +143,12 @@ final class OperationsDashboardStatusFormatter {
             return unavailable("消息");
         }
         if (!connected) {
-            return new Item("消息", "未连接", TONE_ATTENTION);
+            return new Item("消息", "未连接", TONE_ATTENTION, 80);
         }
         if (!subscriptionsReady) {
             return new Item("消息",
                     "订阅 " + activeSubscriptions + " / " + registeredSubscriptions,
-                    TONE_ATTENTION);
+                    TONE_ATTENTION, 80);
         }
         return new Item("消息", "已连接", TONE_DEFAULT);
     }
@@ -146,15 +160,15 @@ final class OperationsDashboardStatusFormatter {
         }
         if (criticalCount > 0) {
             return new Item("告警", alertSummary(primarySource, "严重", criticalCount),
-                    TONE_ATTENTION);
+                    TONE_ATTENTION, 90);
         }
         if (errorCount > 0) {
             return new Item("告警", alertSummary(primarySource, "错误", errorCount),
-                    TONE_ATTENTION);
+                    TONE_ATTENTION, 60);
         }
         if (warningCount > 0) {
             return new Item("告警", alertSummary(primarySource, "警告", warningCount),
-                    TONE_ATTENTION);
+                    TONE_ATTENTION, 40);
         }
         return new Item("告警", "暂无异常", TONE_DEFAULT);
     }
@@ -192,9 +206,11 @@ final class OperationsDashboardStatusFormatter {
         }
         String responsiveness = "unresponsive".equals(uiState) ? "无响应"
                 : "slow".equals(uiState) ? "偏慢" : "正常";
-        int tone = "unresponsive".equals(uiState) || "slow".equals(uiState)
-                ? TONE_ATTENTION : TONE_DEFAULT;
-        return new Item("性能", cpu + " · " + responsiveness, tone);
+        boolean unresponsive = "unresponsive".equals(uiState);
+        boolean slow = "slow".equals(uiState);
+        int tone = unresponsive || slow ? TONE_ATTENTION : TONE_DEFAULT;
+        int priority = unresponsive ? 100 : slow ? 50 : 0;
+        return new Item("性能", cpu + " · " + responsiveness, tone, priority);
     }
 
     static Item recovery(boolean available, boolean supported, boolean registered,
@@ -206,7 +222,7 @@ final class OperationsDashboardStatusFormatter {
             return new Item("恢复", "系统不支持", TONE_MUTED);
         }
         if (!registered) {
-            return new Item("恢复", "未就绪", TONE_ATTENTION);
+            return new Item("恢复", "未就绪", TONE_ATTENTION, 20);
         }
         return new Item("恢复",
                 automaticWatchdogActive ? "自动看门狗" : "Windows 后备",

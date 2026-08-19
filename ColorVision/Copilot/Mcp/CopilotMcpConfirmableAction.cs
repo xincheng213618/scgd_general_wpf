@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -622,12 +623,45 @@ namespace ColorVision.Copilot.Mcp
 
         private void RaiseActionsChanged()
         {
-            ActionsChanged?.Invoke(this, EventArgs.Empty);
+            var handlers = ActionsChanged;
+            if (handlers == null)
+                return;
+
+            foreach (EventHandler handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(this, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning(
+                        "Copilot approval actions subscriber failed after state publication: {0}",
+                        ex.GetType().FullName);
+                }
+            }
         }
 
         private void RaiseActionStatusChanged(ConfirmableAction action)
         {
-            ActionStatusChanged?.Invoke(this, new ConfirmableActionChangedEventArgs(action));
+            var handlers = ActionStatusChanged;
+            if (handlers == null)
+                return;
+
+            var args = new ConfirmableActionChangedEventArgs(action);
+            foreach (EventHandler<ConfirmableActionChangedEventArgs> handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(this, args);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning(
+                        "Copilot approval status subscriber failed after state publication: {0}",
+                        ex.GetType().FullName);
+                }
+            }
         }
     }
 }

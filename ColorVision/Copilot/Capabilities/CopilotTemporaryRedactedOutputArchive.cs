@@ -122,31 +122,52 @@ namespace ColorVision.Copilot
             int maximumCharacters =
                 CopilotOutputArchiveLimits.MaximumArchivedCharacters)
         {
+            return TryCreateUnderRoot(
+                Path.GetTempPath(),
+                archiveKind,
+                streamLabel,
+                maximumCharacters);
+        }
+
+        internal static CopilotTemporaryRedactedOutputArchive? TryCreateUnderRoot(
+            string temporaryRootPath,
+            string archiveKind,
+            string streamLabel,
+            int maximumCharacters =
+                CopilotOutputArchiveLimits.MaximumArchivedCharacters)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(temporaryRootPath);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
                 maximumCharacters);
 
             try
             {
-                var safeArchiveKind =
-                    string.Equals(
-                        archiveKind,
-                        "ShellOutput",
-                        StringComparison.Ordinal)
-                        ? "ShellOutput"
-                        : "BackgroundOutput";
-                var safeStreamLabel =
-                    string.Equals(
-                        streamLabel,
-                        "stderr",
-                        StringComparison.OrdinalIgnoreCase)
-                        ? "stderr"
-                        : "stdout";
+                var safeArchiveKind = archiveKind switch
+                {
+                    "ShellOutput" => "ShellOutput",
+                    "ToolOutput" => "ToolOutput",
+                    _ => "BackgroundOutput",
+                };
+                var safeStreamLabel = streamLabel switch
+                {
+                    "stderr" => "stderr",
+                    "content" => "content",
+                    _ => "stdout",
+                };
                 var directory = Path.Combine(
-                    Path.GetTempPath(),
+                    temporaryRootPath,
                     "ColorVision",
                     "Copilot",
                     safeArchiveKind);
                 Directory.CreateDirectory(directory);
+                if (CopilotWorkspaceSearchSupport.HasReparsePointInPath(directory))
+                {
+                    Trace.TraceWarning(
+                        "Copilot output archive directory contains a reparse point; "
+                        + "temporary output archiving was disabled.");
+                    return null;
+                }
+
                 var path = Path.Combine(
                     directory,
                     $"{Guid.NewGuid():N}-{safeStreamLabel}.log");
@@ -154,7 +175,7 @@ namespace ColorVision.Copilot
                     path,
                     FileMode.CreateNew,
                     FileAccess.ReadWrite,
-                    FileShare.ReadWrite | FileShare.Delete,
+                    FileShare.Read,
                     bufferSize: 4_096,
                     FileOptions.DeleteOnClose | FileOptions.SequentialScan);
                 return new CopilotTemporaryRedactedOutputArchive(
@@ -249,36 +270,60 @@ namespace ColorVision.Copilot
                 try
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    _stream.Flush();
-                    using var stream = new FileStream(
-                        _path,
-                        FileMode.Open,
-                        FileAccess.Read,
-                        FileShare.ReadWrite | FileShare.Delete,
-                        bufferSize: 4_096,
-                        FileOptions.SequentialScan);
-                    stream.Seek(
-                        checked((long)offsetCharacters * sizeof(char)),
-                        SeekOrigin.Begin);
-                    var requestedCharacters = Math.Min(
-                        maximumCharacters,
-                        _archivedCharacters - offsetCharacters);
-                    var content = ReadCharacters(
-                        stream,
-                        requestedCharacters,
-                        cancellationToken);
-                    var nextOffset = offsetCharacters + content.Length;
-                    return new CopilotRedactedOutputArchivePage(
-                        Available: true,
-                        Content: content,
-                        OffsetCharacters: offsetCharacters,
-                        ReturnedCharacters: content.Length,
-                        NextOffsetCharacters: nextOffset,
-                        ArchivedCharacters: _archivedCharacters,
-                        EndOfAvailableOutput:
-                            nextOffset >= _archivedCharacters,
-                        ArchiveTruncated: _isTruncated,
-                        ErrorMessage: string.Empty);
+                    var stream = _stream;
+                    stream.Flush();
+                    var originalPosition = stream.Position;
+                    try
+                    {
+                        stream.Seek(
+                            checked((long)offsetCharacters * sizeof(char)),
+                            SeekOrigin.Begin);
+                        var actualOffsetCharacters = offsetCharacters;
+                        if (actualOffsetCharacters > 0
+                            && actualOffsetCharacters < _archivedCharacters)
+                        {
+                            var leadingCharacter = ReadCharacters(
+                                stream,
+                                1,
+                                cancellationToken);
+                            if (leadingCharacter.Length == 1
+                                && char.IsLowSurrogate(leadingCharacter[0]))
+                            {
+                                actualOffsetCharacters++;
+                            }
+                        }
+                        stream.Seek(
+                            checked((long)actualOffsetCharacters * sizeof(char)),
+                            SeekOrigin.Begin);
+                        var requestedCharacters = Math.Min(
+                            maximumCharacters,
+                            _archivedCharacters - actualOffsetCharacters);
+                        var content = ReadCharacters(
+                            stream,
+                            Math.Min(
+                                requestedCharacters + 1,
+                                _archivedCharacters - actualOffsetCharacters),
+                            cancellationToken);
+                        content = TakeUnicodeSafePage(
+                            content,
+                            requestedCharacters);
+                        var nextOffset = actualOffsetCharacters + content.Length;
+                        return new CopilotRedactedOutputArchivePage(
+                            Available: true,
+                            Content: content,
+                            OffsetCharacters: actualOffsetCharacters,
+                            ReturnedCharacters: content.Length,
+                            NextOffsetCharacters: nextOffset,
+                            ArchivedCharacters: _archivedCharacters,
+                            EndOfAvailableOutput:
+                                nextOffset >= _archivedCharacters,
+                            ArchiveTruncated: _isTruncated,
+                            ErrorMessage: string.Empty);
+                    }
+                    finally
+                    {
+                        stream.Seek(originalPosition, SeekOrigin.Begin);
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -325,70 +370,72 @@ namespace ColorVision.Copilot
                 try
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    _stream.Flush();
+                    var stream = _stream;
+                    stream.Flush();
+                    var originalPosition = stream.Position;
                     var archivedCharacters = _archivedCharacters;
-                    using var stream = new FileStream(
-                        _path,
-                        FileMode.Open,
-                        FileAccess.Read,
-                        FileShare.ReadWrite | FileShare.Delete,
-                        bufferSize: 4_096,
-                        FileOptions.SequentialScan);
-                    stream.Seek(
-                        checked((long)offsetCharacters * sizeof(char)),
-                        SeekOrigin.Begin);
-                    var position = offsetCharacters;
-                    var overlapCharacters = Math.Max(0, pattern.Length - 1);
-                    var carry = string.Empty;
-                    while (position < archivedCharacters)
+                    try
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        var requestedCharacters = Math.Min(
-                            CopilotOutputArchiveLimits.MaximumReadCharacters,
-                            archivedCharacters - position);
-                        var content = ReadCharacters(
-                            stream,
-                            requestedCharacters,
-                            cancellationToken);
-                        if (content.Length == 0)
-                            break;
-
-                        var candidate = carry + content;
-                        if (candidate.Contains(
-                                pattern,
-                                StringComparison.OrdinalIgnoreCase))
+                        stream.Seek(
+                            checked((long)offsetCharacters * sizeof(char)),
+                            SeekOrigin.Begin);
+                        var position = offsetCharacters;
+                        var overlapCharacters = Math.Max(0, pattern.Length - 1);
+                        var carry = string.Empty;
+                        while (position < archivedCharacters)
                         {
-                            return new CopilotRedactedOutputArchiveSearchResult(
-                                Available: true,
-                                Matched: true,
-                                NextOffsetCharacters: GetNextSearchOffset(
-                                    archivedCharacters,
-                                    overlapCharacters,
-                                    offsetCharacters),
-                                ArchivedCharacters: archivedCharacters,
-                                ArchiveTruncated: _isTruncated,
-                                ErrorMessage: string.Empty);
+                            cancellationToken.ThrowIfCancellationRequested();
+                            var requestedCharacters = Math.Min(
+                                CopilotOutputArchiveLimits.MaximumReadCharacters,
+                                archivedCharacters - position);
+                            var content = ReadCharacters(
+                                stream,
+                                requestedCharacters,
+                                cancellationToken);
+                            if (content.Length == 0)
+                                break;
+
+                            var candidate = carry + content;
+                            if (candidate.Contains(
+                                    pattern,
+                                    StringComparison.OrdinalIgnoreCase))
+                            {
+                                return new CopilotRedactedOutputArchiveSearchResult(
+                                    Available: true,
+                                    Matched: true,
+                                    NextOffsetCharacters: GetNextSearchOffset(
+                                        archivedCharacters,
+                                        overlapCharacters,
+                                        offsetCharacters),
+                                    ArchivedCharacters: archivedCharacters,
+                                    ArchiveTruncated: _isTruncated,
+                                    ErrorMessage: string.Empty);
+                            }
+
+                            carry = overlapCharacters == 0
+                                ? string.Empty
+                                : candidate[
+                                    Math.Max(
+                                        0,
+                                        candidate.Length - overlapCharacters)..];
+                            position += content.Length;
                         }
 
-                        carry = overlapCharacters == 0
-                            ? string.Empty
-                            : candidate[
-                                Math.Max(
-                                    0,
-                                    candidate.Length - overlapCharacters)..];
-                        position += content.Length;
+                        return new CopilotRedactedOutputArchiveSearchResult(
+                            Available: true,
+                            Matched: false,
+                            NextOffsetCharacters: GetNextSearchOffset(
+                                archivedCharacters,
+                                overlapCharacters,
+                                offsetCharacters),
+                            ArchivedCharacters: archivedCharacters,
+                            ArchiveTruncated: _isTruncated,
+                            ErrorMessage: string.Empty);
                     }
-
-                    return new CopilotRedactedOutputArchiveSearchResult(
-                        Available: true,
-                        Matched: false,
-                        NextOffsetCharacters: GetNextSearchOffset(
-                            archivedCharacters,
-                            overlapCharacters,
-                            offsetCharacters),
-                        ArchivedCharacters: archivedCharacters,
-                        ArchiveTruncated: _isTruncated,
-                        ErrorMessage: string.Empty);
+                    finally
+                    {
+                        stream.Seek(originalPosition, SeekOrigin.Begin);
+                    }
                 }
                 catch (OperationCanceledException)
                 {

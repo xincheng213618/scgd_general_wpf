@@ -43,16 +43,30 @@ namespace ColorVision.Copilot
             }
             if (requestMode == CopilotAgentMode.Plan)
             {
-                if (steps.Any(step => step.Execution.State == CopilotToolExecutionState.Denied))
-                    return CopilotAgentStopReason.ApprovalDenied;
+                var denied = steps.LastOrDefault(
+                    step => step.Execution.State == CopilotToolExecutionState.Denied);
+                if (denied != null)
+                {
+                    return CopilotToolFailureCode.HasApprovalProvenance(
+                            denied.Observation.FailureCode)
+                        ? CopilotAgentStopReason.ApprovalDenied
+                        : CopilotAgentStopReason.Blocked;
+                }
                 return hasModelFinalAnswer
                     ? CopilotAgentStopReason.Completed
                     : CopilotAgentStopReason.IncompleteOutput;
             }
             if (taskLedger.RemainingCount == 0)
                 return hasModelFinalAnswer ? CopilotAgentStopReason.Completed : CopilotAgentStopReason.IncompleteOutput;
-            if (steps.Any(step => step.Execution.State == CopilotToolExecutionState.Denied))
-                return CopilotAgentStopReason.ApprovalDenied;
+            var latestDenied = steps.LastOrDefault(
+                step => step.Execution.State == CopilotToolExecutionState.Denied);
+            if (latestDenied != null)
+            {
+                return CopilotToolFailureCode.HasApprovalProvenance(
+                        latestDenied.Observation.FailureCode)
+                    ? CopilotAgentStopReason.ApprovalDenied
+                    : CopilotAgentStopReason.Blocked;
+            }
             if (string.Equals(taskLedger.Mode, "plan", StringComparison.OrdinalIgnoreCase))
                 return CopilotAgentStopReason.AwaitingUser;
             return CopilotAgentStopReason.TaskPassLimit;

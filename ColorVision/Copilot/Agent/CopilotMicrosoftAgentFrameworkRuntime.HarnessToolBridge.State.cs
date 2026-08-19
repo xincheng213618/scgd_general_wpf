@@ -28,14 +28,16 @@ namespace ColorVision.Copilot
             {
                 private readonly HarnessToolBridge _owner;
                 private readonly ICopilotTool _tool;
+                private readonly string _functionName;
 
-                public HarnessToolFunction(HarnessToolBridge owner, ICopilotTool tool)
+                public HarnessToolFunction(HarnessToolBridge owner, ICopilotTool tool, string functionName)
                 {
                     _owner = owner;
                     _tool = tool;
+                    _functionName = functionName;
                 }
 
-                public override string Name => ToFunctionName(_tool.Name);
+                public override string Name => _functionName;
 
                 public override string Description => BuildFunctionDescription(_tool);
 

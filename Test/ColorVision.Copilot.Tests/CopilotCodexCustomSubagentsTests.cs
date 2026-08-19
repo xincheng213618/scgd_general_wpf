@@ -559,7 +559,11 @@ public sealed class CopilotCodexCustomSubagentsTests
             ["agent"] = "../docs",
         };
 
-        Assert.True(tool.InputSchema.TryBind(invalidArguments, out _, out _));
+        Assert.False(tool.InputSchema.TryBind(
+            invalidArguments,
+            out _,
+            out var bindError));
+        Assert.Contains("pattern", bindError, StringComparison.OrdinalIgnoreCase);
         var invalid = await tool.ExecuteAsync(
             request,
             new CopilotAgentToolInput { Arguments = invalidArguments },

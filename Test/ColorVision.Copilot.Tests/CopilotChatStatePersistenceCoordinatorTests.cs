@@ -76,6 +76,104 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
     }
 
     [Fact]
+    public async Task IncrementalSnapshotSkipsASupersededCutAndPersistsTheLatestBatch()
+    {
+        var dispatcherReady = new TaskCompletionSource<Dispatcher>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() =>
+        {
+            dispatcherReady.TrySetResult(Dispatcher.CurrentDispatcher);
+            Dispatcher.Run();
+        })
+        {
+            IsBackground = true,
+        };
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+
+        var dispatcher = await dispatcherReady.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        var store = new RecordingStateStore(dispatcher)
+        {
+            BlockFirstIncrementalSnapshot = true,
+            SerializeActualSnapshots = true,
+        };
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = "before-capture",
+        };
+        state.Conversations.Add(CopilotConversationRecord.CreateEmpty("profile", "Profile"));
+        var savedCount = 0;
+        try
+        {
+            using var coordinator = new CopilotChatStatePersistenceCoordinator(
+                store,
+                () => state,
+                () => dispatcher,
+                _ => { },
+                () => Interlocked.Increment(ref savedCount));
+
+            coordinator.RequestSave(immediate: true);
+            await store.FirstIncrementalSnapshotStarted.WaitAsync(TimeSpan.FromSeconds(5));
+            state.ActiveConversationId = "after-capture";
+            coordinator.RequestSave(immediate: true);
+            store.ReleaseBlockedSnapshot();
+            await coordinator.FlushAsync().WaitAsync(TimeSpan.FromSeconds(5));
+
+            var persisted = JObject.Parse(store.SavedSerializedState);
+            Assert.Equal("after-capture", persisted[nameof(CopilotChatState.ActiveConversationId)]?.Value<string>());
+            Assert.Equal(2, store.BeginSnapshotCount);
+            Assert.Equal(1, store.AsyncSaveCount);
+            Assert.Equal(1, savedCount);
+        }
+        finally
+        {
+            store.ReleaseBlockedSnapshot();
+            dispatcher.BeginInvokeShutdown(DispatcherPriority.Send);
+            Assert.True(thread.Join(TimeSpan.FromSeconds(2)));
+        }
+    }
+
+    [Fact]
+    public async Task SerializationSkipsASupersededCutBeforeCommittingTheLatestBatch()
+    {
+        var store = new RecordingStateStore
+        {
+            BlockFirstSerialization = true,
+            SerializeActualSnapshots = true,
+        };
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = "before-serialization",
+        };
+        var savedCount = 0;
+        using var coordinator = new CopilotChatStatePersistenceCoordinator(
+            store,
+            () => state,
+            () => null,
+            _ => { },
+            () => Interlocked.Increment(ref savedCount));
+
+        try
+        {
+            coordinator.RequestSave(immediate: true);
+            await store.FirstSerializationStarted.WaitAsync(TimeSpan.FromSeconds(5));
+            state.ActiveConversationId = "after-serialization";
+            coordinator.RequestSave(immediate: true);
+            store.ReleaseBlockedSerialization();
+            await coordinator.FlushAsync().WaitAsync(TimeSpan.FromSeconds(5));
+
+            var persisted = JObject.Parse(store.SavedSerializedState);
+            Assert.Equal("after-serialization", persisted[nameof(CopilotChatState.ActiveConversationId)]?.Value<string>());
+            Assert.Equal(2, store.SerializeCount);
+            Assert.Equal(1, store.AsyncSaveCount);
+            Assert.Equal(1, savedCount);
+        }
+        finally
+        {
+            store.ReleaseBlockedSerialization();
+        }
+    }
+
+    [Fact]
     public async Task FailedFlushIsReportedAndTheNextRequestCanRetry()
     {
         var store = new RecordingStateStore
@@ -132,6 +230,14 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
     private sealed class RecordingStateStore : IIncrementalCopilotChatStateStore
     {
         private readonly Dispatcher? _dispatcher;
+        private readonly TaskCompletionSource _continueIncrementalSnapshot =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _firstIncrementalSnapshotStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _continueFirstSerialization =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _firstSerializationStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public RecordingStateStore(Dispatcher? dispatcher = null)
         {
@@ -156,6 +262,20 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
 
         public bool BeginSnapshotHadDispatcherAccess { get; private set; }
 
+        public bool BlockFirstIncrementalSnapshot { get; init; }
+
+        public bool SerializeActualSnapshots { get; init; }
+
+        public bool BlockFirstSerialization { get; init; }
+
+        public int BeginSnapshotCount { get; private set; }
+
+        public int SerializeCount { get; private set; }
+
+        public Task FirstIncrementalSnapshotStarted => _firstIncrementalSnapshotStarted.Task;
+
+        public Task FirstSerializationStarted => _firstSerializationStarted.Task;
+
         public CopilotChatState Load() => new();
 
         public void Save(CopilotChatState state)
@@ -169,6 +289,14 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
         {
             DirectCaptureCount++;
             CapturedState = state;
+            if (SerializeActualSnapshots)
+            {
+                var capture = new CopilotChatStateSnapshotCapture(state, new JsonSerializerSettings());
+                while (capture.CaptureNextChunk())
+                {
+                }
+                return capture.Complete();
+            }
             return new CopilotChatStateSnapshot(new JObject());
         }
 
@@ -176,10 +304,32 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
         {
             CapturedState = state;
             BeginSnapshotHadDispatcherAccess = _dispatcher?.CheckAccess() == true;
-            return new CopilotChatStateSnapshotCapture(state, new JsonSerializerSettings());
+            var capture = new CopilotChatStateSnapshotCapture(state, new JsonSerializerSettings());
+            BeginSnapshotCount++;
+            if (BlockFirstIncrementalSnapshot && BeginSnapshotCount == 1)
+            {
+                _firstIncrementalSnapshotStarted.TrySetResult();
+                if (!_continueIncrementalSnapshot.Task.Wait(TimeSpan.FromSeconds(5)))
+                    throw new TimeoutException("Timed out waiting to release the incremental snapshot test gate.");
+            }
+
+            return capture;
         }
 
-        public string Serialize(CopilotChatStateSnapshot snapshot) => "serialized-snapshot";
+        public string Serialize(CopilotChatStateSnapshot snapshot)
+        {
+            SerializeCount++;
+            if (BlockFirstSerialization && SerializeCount == 1)
+            {
+                _firstSerializationStarted.TrySetResult();
+                if (!_continueFirstSerialization.Task.Wait(TimeSpan.FromSeconds(5)))
+                    throw new TimeoutException("Timed out waiting to release the serialization test gate.");
+            }
+
+            return SerializeActualSnapshots
+                ? snapshot.Document.ToString(Formatting.None)
+                : "serialized-snapshot";
+        }
 
         public string Serialize(CopilotChatState state) => "serialized-state";
 
@@ -197,5 +347,9 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
         }
 
         public int CleanupOrphanedAttachments(CopilotChatState state) => 0;
+
+        public void ReleaseBlockedSnapshot() => _continueIncrementalSnapshot.TrySetResult();
+
+        public void ReleaseBlockedSerialization() => _continueFirstSerialization.TrySetResult();
     }
 }

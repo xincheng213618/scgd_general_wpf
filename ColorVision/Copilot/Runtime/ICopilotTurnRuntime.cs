@@ -51,6 +51,23 @@ namespace ColorVision.Copilot
 
     internal abstract record CopilotTurnEvent;
 
+    internal sealed record CopilotTurnStatePersistenceBarrierEvent : CopilotTurnEvent
+    {
+        private readonly TaskCompletionSource _completion = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        internal Task WaitAsync(CancellationToken cancellationToken) =>
+            _completion.Task.WaitAsync(cancellationToken);
+
+        internal bool TryCommit() => _completion.TrySetResult();
+
+        internal bool TryReject(Exception exception)
+        {
+            ArgumentNullException.ThrowIfNull(exception);
+            return _completion.TrySetException(exception);
+        }
+    }
+
     internal enum CopilotTurnStatus
     {
         InProgress,
@@ -403,6 +420,14 @@ namespace ColorVision.Copilot
         public void OnAgentEvent(CopilotAgentEvent agentEvent) =>
             _publish(new CopilotTurnAgentEvent(agentEvent));
 
+        public Task RequestStatePersistenceBarrierAsync(
+            CancellationToken cancellationToken)
+        {
+            var barrier = new CopilotTurnStatePersistenceBarrierEvent();
+            _publish(barrier);
+            return barrier.WaitAsync(cancellationToken);
+        }
+
         public void OnCodeReviewSnapshotUpdated(CopilotCodeReviewSnapshot snapshot)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
@@ -464,9 +489,10 @@ namespace ColorVision.Copilot
             CopilotAgentAccessContext? accessContext = null,
             string? activeGoalText = null,
             CopilotWorkspaceReviewTargetContext? workspaceReviewTarget = null,
-            CopilotAgentSkillReference? agentSkillReference = null)
+            CopilotAgentSkillReference? agentSkillReference = null,
+            CopilotAgentTaskEventJournalSnapshot? taskEventJournalBaseline = null)
         {
-            Profile = profile ?? throw new ArgumentNullException(nameof(profile));
+            Profile = (profile ?? throw new ArgumentNullException(nameof(profile))).Clone();
             Mode = mode;
             UserText = userText ?? string.Empty;
             ExistingRequestContent = existingRequestContent ?? string.Empty;
@@ -474,7 +500,29 @@ namespace ColorVision.Copilot
             RefreshExternalContext = refreshExternalContext;
             HostContext = hostContext ?? throw new ArgumentNullException(nameof(hostContext));
             HistoryLimits = historyLimits;
-            SessionCheckpoint = sessionCheckpoint;
+            SessionCheckpoint = CopilotAgentSessionCheckpoint.TryCreateSnapshot(
+                sessionCheckpoint,
+                out var sessionCheckpointSnapshot)
+                    ? sessionCheckpointSnapshot
+                    : null;
+            if (CopilotAgentTaskEventJournal.TryCreateSnapshot(
+                    taskEventJournalBaseline,
+                    out var journalSnapshot))
+            {
+                TaskEventJournalBaseline = journalSnapshot;
+            }
+            else if (SessionCheckpoint != null)
+            {
+                TaskEventJournalBaseline = SessionCheckpoint.TaskEventJournal;
+            }
+            else
+            {
+                TaskEventJournalBaseline = CopilotAgentTaskEventJournal.TryCreateSnapshot(
+                    sessionCheckpoint?.TaskEventJournal,
+                    out journalSnapshot)
+                        ? journalSnapshot
+                        : null;
+            }
             Recovery = recovery;
             RunControl = runControl;
             AgentDefaults = (agentDefaults ?? throw new ArgumentNullException(nameof(agentDefaults))).Clone();
@@ -518,6 +566,8 @@ namespace ColorVision.Copilot
         public CopilotConversationHistoryLimits HistoryLimits { get; }
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; }
+
+        public CopilotAgentTaskEventJournalSnapshot? TaskEventJournalBaseline { get; }
 
         public CopilotAgentRecoveryRequest? Recovery { get; }
 

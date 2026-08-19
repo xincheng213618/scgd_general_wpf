@@ -21,8 +21,8 @@ namespace ColorVision.Copilot
             IEnumerable<CopilotRequestMessage>? modelMessages,
             IEnumerable<CopilotRequestMessage>? visibleMessages)
         {
-            ModelMessages = (modelMessages ?? Array.Empty<CopilotRequestMessage>()).ToArray();
-            VisibleMessages = (visibleMessages ?? Array.Empty<CopilotRequestMessage>()).ToArray();
+            ModelMessages = Array.AsReadOnly((modelMessages ?? Array.Empty<CopilotRequestMessage>()).ToArray());
+            VisibleMessages = Array.AsReadOnly((visibleMessages ?? Array.Empty<CopilotRequestMessage>()).ToArray());
         }
     }
 

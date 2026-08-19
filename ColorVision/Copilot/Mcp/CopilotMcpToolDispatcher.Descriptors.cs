@@ -15,7 +15,7 @@ namespace ColorVision.Copilot.Mcp
 
         private CopilotMcpToolDefinition[] CreateToolDefinitions()
         {
-            return new[]
+            var localDefinitions = new[]
             {
                 Definition(Tool("get_server_status", "Return ColorVision MCP server status for this authenticated request.", EmptySchema(), "status", "read-only", "Call get_server_status with no arguments."), (_, scope, _) => Task.FromResult(GetServerStatus(scope))),
                 Definition(Tool("get_enabled_tools", "Return the MCP tools currently exposed by ColorVision.", EmptySchema(), "status", "read-only", "Call get_enabled_tools with no arguments."), (_, _, _) => Task.FromResult(GetEnabledTools())),
@@ -61,20 +61,8 @@ namespace ColorVision.Copilot.Mcp
                 }), "status", "read-only", "Call get_diagnostic_bundle with { \"max_chars\": 12000 } before reporting diagnostics."), (arguments, scope, token) => GetDiagnosticBundleAsync(arguments, scope, token)),
                 Definition(Tool("get_live_context", "Return the current ColorVision live Copilot context snapshot, if one is published.", EmptySchema(), "context", "read-only", "Call get_live_context with no arguments."), (_, _, _) => Task.FromResult(GetLiveContext())),
                 Definition(Tool("get_workspace_context", "Return the current ColorVision solution directory, active document, and allowed search roots.", EmptySchema(), "context", "read-only", "Call get_workspace_context to understand allowed roots."), (_, _, _) => Task.FromResult(GetWorkspaceContext())),
-                SharedDefinition(CopilotSharedCapabilityCatalog.RecentLog, (arguments, _, token) => GetRecentLogAsync(arguments, token)),
-                SharedDefinition(CopilotSharedCapabilityCatalog.SearchDocs, (arguments, _, token) => SearchDocsAsync(arguments, token)),
-                SharedDefinition(CopilotSharedCapabilityCatalog.SearchFiles, (arguments, _, token) => Task.FromResult(SearchFiles(arguments, token))),
-                SharedDefinition(CopilotSharedCapabilityCatalog.GrepText, (arguments, _, token) => Task.FromResult(GrepText(arguments, token))),
-                SharedDefinition(CopilotSharedCapabilityCatalog.ReadAllowedFile, (arguments, _, token) => ReadAllowedFileAsync(arguments, token)),
-                SharedDefinition(CopilotSharedCapabilityCatalog.ListAllowedDirectory, (arguments, _, token) => Task.FromResult(ListAllowedDirectory(arguments, token))),
                 Definition(Tool("get_active_template_context", "Return the active template editor context snapshot, if a template editor has published one.", EmptySchema(), "context", "read-only", "Call get_active_template_context before editing template JSON."), (_, _, _) => Task.FromResult(GetActiveTemplateContext())),
-                SharedDefinition(CopilotSharedCapabilityCatalog.SavedTemplateContext, (arguments, _, _) => Task.FromResult(GetSavedTemplateContext(arguments))),
-                SharedDefinition(CopilotSharedCapabilityCatalog.TemplateTypeContext, (arguments, _, _) => Task.FromResult(GetTemplateTypeContext(arguments))),
                 Definition(Tool("get_flow_summary", "Return a read-only summary of the active ColorVision flow, nodes, and recent run state. This never starts or stops a flow.", EmptySchema(), "context", "read-only", "Call get_flow_summary to inspect the current flow."), (_, _, token) => GetFlowSummaryAsync(token)),
-                SharedDefinition(CopilotSharedCapabilityCatalog.FlowGraph, (arguments, _, token) => GetFlowGraphAsync(arguments, token)),
-                SharedDefinition(CopilotSharedCapabilityCatalog.FlowNodeCatalog, (arguments, _, token) => GetFlowNodeCatalogAsync(arguments, token)),
-                SharedDefinition(CopilotSharedCapabilityCatalog.PreviewFlowPatch, (arguments, _, token) => PreviewFlowPatchAsync(arguments, token)),
-                SharedDefinition(CopilotSharedCapabilityCatalog.ApplyFlowPatch, (arguments, scope, token) => ApplyFlowPatchAsync(arguments, scope, token)),
                 Definition(Tool("diagnose_flow_failure", "Build a read-only failure diagnosis from the active flow, matched node, template context, and recent logs. This never runs a flow.", Schema(new Dictionary<string, object>
                 {
                     ["node_id"] = StringProperty("Optional flow node id to focus the diagnosis."),
@@ -86,8 +74,6 @@ namespace ColorVision.Copilot.Mcp
                 {
                     ["panel"] = StringProperty("Panel id or alias. Supported aliases: copilot, log, config, solution, template, device."),
                 }), "app-control", "low-risk-action", "Call open_panel with { \"panel\": \"copilot\" }."), (arguments, _, token) => OpenPanelAsync(arguments, token)),
-                SharedDefinition(CopilotSharedCapabilityCatalog.ExecuteMenu, (arguments, scope, token) => ExecuteMenuAsync(arguments, scope, token)),
-                SharedDefinition(CopilotSharedCapabilityCatalog.CreateFlow, (arguments, scope, token) => CreateFlowAsync(arguments, scope, token)),
                 Definition(Tool("confirm_action", "Execute a previously approved confirmation-required action. Required arguments: action_id, tool_name, arguments_digest.", Schema(new Dictionary<string, object>
                 {
                     ["action_id"] = StringProperty("Confirmable action id returned by a previous tool call."),
@@ -95,7 +81,6 @@ namespace ColorVision.Copilot.Mcp
                     ["arguments_digest"] = StringProperty("Opaque SHA-256 arguments_digest returned with the action. Copy it exactly; it binds approval to the complete original arguments."),
                     ["arguments_summary"] = StringProperty("Optional redacted display summary. It is not used to authorize execution."),
                 }, "action_id", "tool_name", "arguments_digest"), "app-control", "confirmation-required", "Call confirm_action only after the user approves the action in ColorVision, using the exact returned arguments_digest."), ConfirmActionAsync),
-                SharedDefinition(CopilotSharedCapabilityCatalog.PreviewTemplatePatch, (arguments, _, _) => Task.FromResult(PreviewTemplatePatch(arguments))),
                 Definition(Tool("suggest_template_patch", "Prepare a read-only template patch suggestion from the active template, diagnosis, and optional proposed changes. This never applies or saves.", Schema(new Dictionary<string, object>
                 {
                     ["template_identifier"] = StringProperty("Template name, id, key, or editor identifier. Defaults to active template context when possible."),
@@ -108,25 +93,25 @@ namespace ColorVision.Copilot.Mcp
                     },
                     ["current_json"] = StringProperty("Optional current template JSON. If omitted, the active template editor context is used."),
                 }), "context", "read-only", "Call suggest_template_patch with { \"intent\": \"Camera timeout\", \"node_name\": \"Camera\" }, then preview_template_patch."), (arguments, _, token) => SuggestTemplatePatchAsync(arguments, token)),
-                SharedDefinition(CopilotSharedCapabilityCatalog.ApplyTemplatePatch, (arguments, scope, token) => ApplyTemplatePatchAsync(arguments, scope, token)),
                 Definition(Tool("preview_flow_action", "Preview a low-risk flow navigation/inspection action without running or stopping the flow. Required argument: action.", Schema(new Dictionary<string, object>
                 {
                     ["action"] = StringProperty("Preview action: select_node, open_node_property, inspect_node_errors, explain_node, trace_recent_failure. start/stop/run requests are refused."),
                     ["node_id"] = StringProperty("Optional flow node id."),
                     ["node_name"] = StringProperty("Optional flow node name or title."),
                 }, "action"), "context", "read-only", "Call preview_flow_action with { \"action\": \"inspect_node_errors\", \"node_name\": \"Camera\" }."), (arguments, _, token) => PreviewFlowActionAsync(arguments, token)),
-                SharedDefinition(CopilotSharedCapabilityCatalog.SetTheme, (arguments, _, token) => SetThemeAsync(arguments, token)),
-                SharedDefinition(CopilotSharedCapabilityCatalog.SetLanguage, (arguments, scope, token) => SetLanguageAsync(arguments, scope, token)),
             };
+
+            return localDefinitions
+                .Concat(CopilotSharedCapabilityCatalog.All.Select(SharedDefinition))
+                .ToArray();
         }
 
         private static CopilotMcpToolDefinition Definition(
             CopilotMcpToolDescriptor descriptor,
             CopilotScopedMcpToolHandler handler) => new(descriptor, handler);
 
-        private static CopilotMcpToolDefinition SharedDefinition(
-            CopilotSharedCapabilityDefinition capability,
-            CopilotScopedMcpToolHandler handler) =>
+        private CopilotMcpToolDefinition SharedDefinition(
+            CopilotSharedCapabilityDefinition capability) =>
             Definition(
                 Tool(
                     capability.McpToolName,
@@ -138,6 +123,31 @@ namespace ColorVision.Copilot.Mcp
                     capability.AgentCapability.Idempotency,
                     capability.McpMetadata.DestructiveHint,
                     capability.McpMetadata.OpenWorldHint),
-                handler);
+                ResolveSharedHandler(capability));
+
+        private CopilotScopedMcpToolHandler ResolveSharedHandler(
+            CopilotSharedCapabilityDefinition capability) => capability.Id switch
+            {
+                "docs.search" => (arguments, _, token) => SearchDocsAsync(arguments, token),
+                "workspace.search-files" => (arguments, _, token) => Task.FromResult(SearchFiles(arguments, token)),
+                "workspace.grep-text" => (arguments, _, token) => Task.FromResult(GrepText(arguments, token)),
+                "workspace.read-file" => (arguments, _, token) => ReadAllowedFileAsync(arguments, token),
+                "workspace.list-directory" => (arguments, _, token) => Task.FromResult(ListAllowedDirectory(arguments, token)),
+                "diagnostics.recent-log" => (arguments, _, token) => GetRecentLogAsync(arguments, token),
+                "template.saved-context" => (arguments, _, _) => Task.FromResult(GetSavedTemplateContext(arguments)),
+                "template.type-context" => (arguments, _, _) => Task.FromResult(GetTemplateTypeContext(arguments)),
+                "flow.graph" => (arguments, _, token) => GetFlowGraphAsync(arguments, token),
+                "flow.node-catalog" => (arguments, _, token) => GetFlowNodeCatalogAsync(arguments, token),
+                "flow.preview-patch" => (arguments, _, token) => PreviewFlowPatchAsync(arguments, token),
+                "flow.apply-patch" => (arguments, scope, token) => ApplyFlowPatchAsync(arguments, scope, token),
+                "application.execute-menu" => (arguments, scope, token) => ExecuteMenuAsync(arguments, scope, token),
+                "application.create-flow" => (arguments, scope, token) => CreateFlowAsync(arguments, scope, token),
+                "template.preview-patch" => (arguments, _, _) => Task.FromResult(PreviewTemplatePatch(arguments)),
+                "template.apply-patch" => (arguments, scope, token) => ApplyTemplatePatchAsync(arguments, scope, token),
+                "application.set-theme" => (arguments, _, token) => SetThemeAsync(arguments, token),
+                "application.set-language" => (arguments, scope, token) => SetLanguageAsync(arguments, scope, token),
+                _ => throw new InvalidOperationException(
+                    $"Shared capability '{capability.Id}' does not have an MCP execution handler."),
+            };
     }
 }

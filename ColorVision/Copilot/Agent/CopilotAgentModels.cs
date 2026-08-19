@@ -10,36 +10,89 @@ namespace ColorVision.Copilot
 
     public sealed class CopilotAgentPreparedPrompt
     {
-        public CopilotAgentPreparedPrompt(IReadOnlyList<CopilotRequestMessage> messages, string preparedUserMessageContent)
+        public CopilotAgentPreparedPrompt(
+            IReadOnlyList<CopilotRequestMessage> messages,
+            string preparedUserMessageContent)
+            : this(messages, preparedUserMessageContent, CopilotContextProvenanceSnapshot.Empty)
         {
-            Messages = messages ?? Array.Empty<CopilotRequestMessage>();
+        }
+
+        internal CopilotAgentPreparedPrompt(
+            IReadOnlyList<CopilotRequestMessage> messages,
+            string preparedUserMessageContent,
+            CopilotContextProvenanceSnapshot contextProvenance)
+        {
+            Messages = Array.AsReadOnly((messages ?? Array.Empty<CopilotRequestMessage>()).ToArray());
             PreparedUserMessageContent = preparedUserMessageContent ?? string.Empty;
+            ContextProvenance = contextProvenance ?? CopilotContextProvenanceSnapshot.Empty;
         }
 
         public IReadOnlyList<CopilotRequestMessage> Messages { get; }
 
         public string PreparedUserMessageContent { get; }
+
+        internal CopilotContextProvenanceSnapshot ContextProvenance { get; }
     }
 
     public sealed class CopilotAgentRunResult
     {
         public string PreparedUserMessageContent { get; init; } = string.Empty;
 
-        public IReadOnlyList<CopilotAgentStepRecord> StepRecords { get; init; } = Array.Empty<CopilotAgentStepRecord>();
+        public IReadOnlyList<CopilotAgentStepRecord> StepRecords
+        {
+            get => _stepRecords;
+            init => _stepRecords = Freeze(value);
+        }
+        private IReadOnlyList<CopilotAgentStepRecord> _stepRecords = Array.Empty<CopilotAgentStepRecord>();
 
         public CopilotTokenUsage Usage { get; init; } = CopilotTokenUsage.Empty;
 
         public CopilotAgentBudgetSnapshot Budget { get; init; } = new();
 
-        public CopilotAgentTaskLedgerSnapshot TaskLedger { get; init; } = new();
+        public CopilotAgentTaskLedgerSnapshot TaskLedger
+        {
+            get => _taskLedger;
+            init => _taskLedger = CopilotAgentTaskLedgerSnapshot.CreateSnapshot(value, normalize: false);
+        }
+        private CopilotAgentTaskLedgerSnapshot _taskLedger = new();
 
         public CopilotAgentStopReason StopReason { get; init; }
 
-        public IReadOnlyList<CopilotAgentBlockerSnapshot> Blockers { get; init; } = Array.Empty<CopilotAgentBlockerSnapshot>();
+        public IReadOnlyList<CopilotAgentBlockerSnapshot> Blockers
+        {
+            get => _blockers;
+            init => _blockers = Freeze(value);
+        }
+        private IReadOnlyList<CopilotAgentBlockerSnapshot> _blockers = Array.Empty<CopilotAgentBlockerSnapshot>();
 
-        public CopilotAgentTaskEventJournalSnapshot TaskEventJournal { get; init; } = new();
+        public CopilotAgentTaskEventJournalSnapshot TaskEventJournal
+        {
+            get => _taskEventJournal;
+            init => _taskEventJournal = CopilotAgentTaskEventJournal.TryCreateSnapshot(
+                value,
+                out var snapshot)
+                    ? snapshot
+                    : new CopilotAgentTaskEventJournalSnapshot();
+        }
+        private CopilotAgentTaskEventJournalSnapshot _taskEventJournal = new();
 
-        public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
+        public CopilotAgentSessionCheckpoint? SessionCheckpoint
+        {
+            get => _sessionCheckpoint;
+            init => _sessionCheckpoint = CopilotAgentSessionCheckpoint.TryCreateSnapshot(
+                value,
+                out var snapshot)
+                    ? snapshot
+                    : null;
+        }
+        private CopilotAgentSessionCheckpoint? _sessionCheckpoint;
+
+        private static IReadOnlyList<T> Freeze<T>(IReadOnlyList<T>? values)
+        {
+            return values == null || values.Count == 0
+                ? Array.Empty<T>()
+                : Array.AsReadOnly(values.ToArray());
+        }
     }
 
     public enum CopilotAgentStopReason
@@ -74,6 +127,42 @@ namespace ColorVision.Copilot
 
         public int RemainingCount => TotalCount - CompletedCount;
 
+        internal static CopilotAgentTaskLedgerSnapshot CreateSnapshot(
+            CopilotAgentTaskLedgerSnapshot? source,
+            bool normalize)
+        {
+            try
+            {
+                var snapshot = new CopilotAgentTaskLedgerSnapshot
+                {
+                    Mode = source?.Mode ?? string.Empty,
+                    ResumedFromCheckpoint = source?.ResumedFromCheckpoint == true,
+                    Items = Array.AsReadOnly((source?.Items ?? Array.Empty<CopilotAgentTaskItem>())
+                        .Take(MaxItems + 1)
+                        .Select(item => item == null
+                            ? null!
+                            : new CopilotAgentTaskItem
+                            {
+                                Id = item.Id,
+                                Title = item.Title,
+                                Description = item.Description,
+                                IsComplete = item.IsComplete,
+                            })
+                        .ToArray()),
+                };
+                if (normalize)
+                    snapshot.EnsureValid();
+                return snapshot;
+            }
+            catch
+            {
+                var snapshot = new CopilotAgentTaskLedgerSnapshot();
+                if (normalize)
+                    snapshot.EnsureValid();
+                return snapshot;
+            }
+        }
+
         public bool EnsureValid()
         {
             var originalMode = Mode;
@@ -104,7 +193,7 @@ namespace ColorVision.Copilot
                 normalizedItems.Add(item);
             }
 
-            Items = normalizedItems;
+            Items = Array.AsReadOnly(normalizedItems.ToArray());
             return changed || originalItems?.Count != Items.Count;
         }
 

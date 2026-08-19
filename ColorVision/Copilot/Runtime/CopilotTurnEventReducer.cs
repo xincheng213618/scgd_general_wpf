@@ -96,6 +96,8 @@ namespace ColorVision.Copilot
                 CopilotTurnStartedEvent started => ReduceStarted(state, started),
                 CopilotTurnErrorEvent error => ReduceError(state, error),
                 CopilotTurnRuntimeDiagnosticEvent => state,
+                CopilotTurnStatePersistenceBarrierEvent barrier =>
+                    ReduceStatePersistenceBarrier(state, barrier),
                 CopilotTurnRequestPreparedEvent prepared => ReduceRequestPrepared(state, prepared),
                 CopilotTurnChatDeltaEvent => ReduceChatProgress(state, turnEvent),
                 CopilotTurnChatAnswerResetEvent => ReduceChatProgress(state, turnEvent),
@@ -256,6 +258,20 @@ namespace ColorVision.Copilot
                 SteeringLifecycle = steeringLifecycle,
                 ApprovalLifecycle = approvalLifecycle,
             };
+        }
+
+        private static CopilotTurnEventState ReduceStatePersistenceBarrier(
+            CopilotTurnEventState state,
+            CopilotTurnStatePersistenceBarrierEvent barrier)
+        {
+            RequireAgentMode(state, barrier);
+            if (state.AgentCompleted)
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent requested state persistence after its completed item.");
+            }
+
+            return state;
         }
 
         private static CopilotTurnEventState ReduceCodeReviewSnapshotUpdated(

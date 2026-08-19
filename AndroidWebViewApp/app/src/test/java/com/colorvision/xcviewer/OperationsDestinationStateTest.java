@@ -13,12 +13,16 @@ public class OperationsDestinationStateTest {
                 OperationsDestinationState.normalize("connections"));
         assertEquals(OperationsDestinationState.TOOLS,
                 OperationsDestinationState.normalize("tools"));
+        assertEquals(OperationsDestinationState.SETTINGS,
+                OperationsDestinationState.normalize("settings"));
         assertEquals(OperationsDestinationState.CONNECTION_CHECK,
                 OperationsDestinationState.normalize("connection_check"));
         assertEquals(OperationsDestinationState.FLEET_ISSUES,
                 OperationsDestinationState.normalize("fleet_issues"));
         assertEquals(OperationsDestinationState.LIVE_MONITOR,
                 OperationsDestinationState.normalize("live_monitor"));
+        assertEquals(OperationsDestinationState.CAPABILITY_DETAIL,
+                OperationsDestinationState.normalize("capability_detail"));
     }
 
     @Test
@@ -32,31 +36,39 @@ public class OperationsDestinationStateTest {
     }
 
     @Test
-    public void overviewAndPairingAreNeverAutomaticallyReplayed() {
+    public void transientOverviewPairingAndCapabilityDetailsAreNeverAutomaticallyReplayed() {
         assertFalse(OperationsDestinationState.shouldRestore(
                 OperationsDestinationState.OVERVIEW));
         assertFalse(OperationsDestinationState.shouldRestore(
                 OperationsDestinationState.PAIRING));
+        assertFalse(OperationsDestinationState.shouldRestore(
+                OperationsDestinationState.CAPABILITY_DETAIL));
         assertTrue(OperationsDestinationState.shouldRestore(
                 OperationsDestinationState.CONNECTION_CHECK));
         assertTrue(OperationsDestinationState.shouldRestore(
                 OperationsDestinationState.TOOLS));
         assertTrue(OperationsDestinationState.shouldRestore(
+                OperationsDestinationState.SETTINGS));
+        assertTrue(OperationsDestinationState.shouldRestore(
                 OperationsDestinationState.HISTORY));
     }
 
     @Test
-    public void activeRemoteToolsRestoreOnlyAfterDirectConnectionReturns() {
-        assertTrue(OperationsDestinationState.requiresDirectConnection(
+    public void remoteSafeBottomDestinationsRestoreWithoutDirectConnection() {
+        assertFalse(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.TRIAGE));
-        assertTrue(OperationsDestinationState.requiresDirectConnection(
+        assertFalse(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.TOOLS));
+        assertFalse(OperationsDestinationState.requiresDirectConnection(
+                OperationsDestinationState.SETTINGS));
         assertTrue(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.JOBS));
         assertTrue(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.SUPPORT));
         assertTrue(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.LIVE_MONITOR));
+        assertTrue(OperationsDestinationState.requiresDirectConnection(
+                OperationsDestinationState.CAPABILITY_DETAIL));
         assertFalse(OperationsDestinationState.requiresDirectConnection(
                 OperationsDestinationState.CONNECTION_CHECK));
         assertFalse(OperationsDestinationState.requiresDirectConnection(

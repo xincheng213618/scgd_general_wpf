@@ -27,6 +27,8 @@ namespace ColorVision.Copilot
             private readonly CopilotAgentRequest _request;
             private readonly CopilotExecutionScope _executionScope;
             private readonly IReadOnlyDictionary<string, ICopilotTool> _tools;
+            private readonly IReadOnlyDictionary<string, string> _functionNamesByToolName;
+            private readonly IReadOnlyDictionary<string, ICopilotTool> _toolsByFunctionName;
             private readonly CopilotToolExecutor _toolExecutor;
             private readonly CopilotFrameworkApprovalCoordinator _approvalCoordinator;
             private readonly Action<CopilotAgentEvent> _emit;
@@ -38,11 +40,15 @@ namespace ColorVision.Copilot
             private readonly object _syncRoot = new();
             private readonly int _maxToolCalls;
             private readonly Action<CopilotDelegatedRunUsage>? _recordDelegatedRunUsage;
+            private readonly Action? _onPostToolStopRequested;
             private readonly CopilotAgentToolBudgetCompletionGate _toolBudgetCompletionGate;
             private CopilotTokenUsage _delegatedUsage;
+            private CopilotAgentBlockerSnapshot? _postToolStopBlocker;
             private int _reservedToolCalls;
             private MessageInjectingChatClient? _messageInjector;
             private AgentSession? _messageInjectionSession;
+            private Func<CancellationToken, ValueTask<bool>>? _interactionCheckpointPublisher;
+            private Func<CancellationToken, ValueTask<bool>>? _toolDispatchCheckpointPublisher;
 
             public HarnessToolBridge(
                 CopilotAgentRequest request,
@@ -54,11 +60,17 @@ namespace ColorVision.Copilot
                 Action<CopilotAgentEvent> emit,
                 Func<long> capabilityRevisionProvider,
                 Action<CopilotDelegatedRunUsage>? recordDelegatedRunUsage = null,
-                Action? onToolBudgetExhausted = null)
+                Action? onToolBudgetExhausted = null,
+                Action? onPostToolStopRequested = null)
             {
                 _request = request;
                 _executionScope = executionScope ?? throw new ArgumentNullException(nameof(executionScope));
                 _tools = tools.ToDictionary(tool => tool.Name, StringComparer.OrdinalIgnoreCase);
+                _functionNamesByToolName = BuildFunctionNameMap(_tools.Keys);
+                _toolsByFunctionName = _tools.ToDictionary(
+                    entry => _functionNamesByToolName[entry.Key],
+                    entry => entry.Value,
+                    StringComparer.OrdinalIgnoreCase);
                 _maxToolCalls = Math.Max(1, maxToolCalls);
                 _toolExecutor = toolExecutor;
                 _approvalCoordinator = approvalCoordinator;
@@ -66,6 +78,7 @@ namespace ColorVision.Copilot
                 _capabilityRevisionProvider = capabilityRevisionProvider ?? throw new ArgumentNullException(nameof(capabilityRevisionProvider));
                 _recordDelegatedRunUsage = recordDelegatedRunUsage;
                 _toolBudgetCompletionGate = new CopilotAgentToolBudgetCompletionGate(onToolBudgetExhausted);
+                _onPostToolStopRequested = onPostToolStopRequested;
             }
 
             public IReadOnlyList<CopilotAgentStepRecord> StepRecords
@@ -82,6 +95,21 @@ namespace ColorVision.Copilot
                 get => _toolBudgetCompletionGate.IsExhausted;
             }
 
+            public bool PostToolStopRequested
+            {
+                get
+                {
+                    lock (_syncRoot)
+                        return _postToolStopBlocker != null;
+                }
+            }
+
+            public CopilotAgentBlockerSnapshot? GetPostToolStopBlocker()
+            {
+                lock (_syncRoot)
+                    return _postToolStopBlocker;
+            }
+
             public CopilotTokenUsage DelegatedUsage
             {
                 get
@@ -94,9 +122,10 @@ namespace ColorVision.Copilot
             public IList<AITool> CreateFunctions()
             {
                 var functions = new List<AITool>();
-                foreach (var tool in _tools.Values)
+                foreach (var entry in _tools)
                 {
-                    var function = new HarnessToolFunction(this, tool);
+                    var tool = entry.Value;
+                    var function = new HarnessToolFunction(this, tool, _functionNamesByToolName[entry.Key]);
                     functions.Add(RequiresNativeApproval(tool) ? new ApprovalRequiredAIFunction(function) : function);
                 }
                 return functions;
@@ -115,6 +144,55 @@ namespace ColorVision.Copilot
                     _messageInjector = messageInjector;
                     _messageInjectionSession = session;
                 }
+            }
+
+            public void AttachInteractionCheckpointPublisher(
+                Func<CancellationToken, ValueTask<bool>> publisher)
+            {
+                ArgumentNullException.ThrowIfNull(publisher);
+                lock (_syncRoot)
+                {
+                    if (_interactionCheckpointPublisher != null)
+                        throw new InvalidOperationException("Interaction checkpoint publication is already attached.");
+                    _interactionCheckpointPublisher = publisher;
+                }
+            }
+
+            internal ValueTask<bool> TryPublishInteractionCheckpointAsync(
+                CancellationToken cancellationToken)
+            {
+                Func<CancellationToken, ValueTask<bool>>? publisher;
+                lock (_syncRoot)
+                    publisher = _interactionCheckpointPublisher;
+                return publisher != null
+                    ? publisher(cancellationToken)
+                    : ValueTask.FromResult(false);
+            }
+
+            public void AttachToolDispatchCheckpointPublisher(
+                Func<CancellationToken, ValueTask<bool>> publisher)
+            {
+                ArgumentNullException.ThrowIfNull(publisher);
+                lock (_syncRoot)
+                {
+                    if (_toolDispatchCheckpointPublisher != null)
+                    {
+                        throw new InvalidOperationException(
+                            "Tool dispatch checkpoint publication is already attached.");
+                    }
+                    _toolDispatchCheckpointPublisher = publisher;
+                }
+            }
+
+            private ValueTask<bool> TryPublishToolDispatchCheckpointAsync(
+                CancellationToken cancellationToken)
+            {
+                Func<CancellationToken, ValueTask<bool>>? publisher;
+                lock (_syncRoot)
+                    publisher = _toolDispatchCheckpointPublisher;
+                return publisher != null
+                    ? publisher(cancellationToken)
+                    : ValueTask.FromResult(true);
             }
 
             internal static IReadOnlyList<ChatMessage> CreateHookAdditionalContextMessages(

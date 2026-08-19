@@ -76,6 +76,50 @@ namespace ColorVision.Copilot
                 && IsResolutionValid();
         }
 
+        internal static bool TryCreateSnapshot(
+            CopilotUserQuestionSnapshot? source,
+            out CopilotUserQuestionSnapshot snapshot)
+        {
+            snapshot = null!;
+            if (source == null)
+                return false;
+
+            try
+            {
+                var candidate = new CopilotUserQuestionSnapshot
+                {
+                    RequestId = source.RequestId,
+                    ConversationId = source.ConversationId,
+                    TaskId = source.TaskId,
+                    Header = source.Header,
+                    Question = source.Question,
+                    Options = Array.AsReadOnly(source.Options
+                        .Take(4)
+                        .Select(option => new CopilotUserQuestionOption
+                        {
+                            RequestId = option.RequestId,
+                            TaskId = option.TaskId,
+                            Label = option.Label,
+                            Description = option.Description,
+                        })
+                        .ToArray()),
+                    Resolution = source.Resolution,
+                    Answer = source.Answer,
+                    RequestedAtUtc = source.RequestedAtUtc,
+                    ResolvedAtUtc = source.ResolvedAtUtc,
+                };
+                if (!candidate.IsStructurallyValid())
+                    return false;
+
+                snapshot = candidate;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         internal static bool TryCreate(
             string conversationId,
             string taskId,
@@ -161,7 +205,7 @@ namespace ColorVision.Copilot
                 TaskId = normalizedTaskId,
                 Header = normalizedHeader,
                 Question = normalizedQuestion,
-                Options = options,
+                Options = Array.AsReadOnly(options.ToArray()),
                 RequestedAtUtc = DateTimeOffset.UtcNow,
             };
             return true;
@@ -171,19 +215,22 @@ namespace ColorVision.Copilot
             CopilotUserQuestionResolution resolution,
             string answer)
         {
-            return new CopilotUserQuestionSnapshot
+            var candidate = new CopilotUserQuestionSnapshot
             {
                 RequestId = RequestId,
                 ConversationId = ConversationId,
                 TaskId = TaskId,
                 Header = Header,
                 Question = Question,
-                Options = Options.ToArray(),
+                Options = Options,
                 Resolution = resolution,
                 Answer = resolution == CopilotUserQuestionResolution.Answered ? answer : string.Empty,
                 RequestedAtUtc = RequestedAtUtc,
                 ResolvedAtUtc = DateTimeOffset.UtcNow,
             };
+            if (!TryCreateSnapshot(candidate, out var snapshot))
+                throw new InvalidOperationException("The resolved user question snapshot is invalid.");
+            return snapshot;
         }
 
         internal static bool TryNormalizeAnswer(string? answer, out string normalized)
@@ -250,10 +297,12 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request,
             CopilotUserQuestionInput input,
             Action<CopilotAgentEvent> emit,
+            Func<CancellationToken, ValueTask<bool>> publishCheckpoint,
             CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
             ArgumentNullException.ThrowIfNull(emit);
+            ArgumentNullException.ThrowIfNull(publishCheckpoint);
             cancellationToken.ThrowIfCancellationRequested();
             if (!CopilotUserQuestionSnapshot.TryCreate(
                     request.ConversationId,
@@ -273,20 +322,31 @@ namespace ColorVision.Copilot
                 _pending = pending;
             }
 
+            var terminalResolutionRecorded = false;
             try
             {
                 emit(CopilotAgentEvent.UserQuestionRequested(snapshot));
+                if (!await publishCheckpoint(cancellationToken).ConfigureAwait(false))
+                {
+                    throw new InvalidOperationException(
+                        "The structured question could not be checkpointed before waiting for user input.");
+                }
                 using var cancellationRegistration = cancellationToken.Register(
                     () => pending.Completion.TrySetCanceled(cancellationToken));
                 var answer = await pending.Completion.Task.ConfigureAwait(false);
                 var resolved = snapshot.Resolve(CopilotUserQuestionResolution.Answered, answer);
+                terminalResolutionRecorded = true;
                 emit(CopilotAgentEvent.UserQuestionResolved(resolved));
                 return resolved;
             }
-            catch (OperationCanceledException)
+            catch
             {
-                emit(CopilotAgentEvent.UserQuestionResolved(
-                    snapshot.Resolve(CopilotUserQuestionResolution.Cancelled, string.Empty)));
+                if (!terminalResolutionRecorded)
+                {
+                    terminalResolutionRecorded = true;
+                    emit(CopilotAgentEvent.UserQuestionResolved(
+                        snapshot.Resolve(CopilotUserQuestionResolution.Cancelled, string.Empty)));
+                }
                 throw;
             }
             finally

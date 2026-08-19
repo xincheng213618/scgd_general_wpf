@@ -32,6 +32,7 @@ namespace ColorVision.Copilot
             if (LatestCheckpoint != null)
             {
                 RequireMatchingIdentity(LatestCheckpoint, finalCheckpoint);
+                RequireMonotonicJournal(LatestCheckpoint, finalCheckpoint, "final checkpoint");
                 if (finalCheckpoint.UpdatedAtUtc < LatestCheckpoint.UpdatedAtUtc)
                     throw new InvalidOperationException("Copilot Agent final checkpoint moved backwards in time.");
             }
@@ -48,6 +49,7 @@ namespace ColorVision.Copilot
             if (LatestCheckpoint != null)
             {
                 RequireMatchingIdentity(LatestCheckpoint, checkpoint!);
+                RequireMonotonicJournal(LatestCheckpoint, checkpoint!, "checkpoint update");
                 if (checkpoint!.UpdatedAtUtc < LatestCheckpoint.UpdatedAtUtc)
                     throw new InvalidOperationException("Copilot Agent checkpoint update moved backwards in time.");
             }
@@ -110,6 +112,9 @@ namespace ColorVision.Copilot
                 || !string.Equals(expected.EnvironmentFingerprint, actual.EnvironmentFingerprint, StringComparison.OrdinalIgnoreCase)
                 || expected.HookSurfaceVersion != actual.HookSurfaceVersion
                 || !string.Equals(expected.HookSurfaceFingerprint, actual.HookSurfaceFingerprint, StringComparison.OrdinalIgnoreCase)
+                || expected.ProjectInstructionSurfaceVersion != actual.ProjectInstructionSurfaceVersion
+                || !string.Equals(expected.ProjectInstructionSurfaceFingerprint, actual.ProjectInstructionSurfaceFingerprint, StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(expected.TaskIntentText, actual.TaskIntentText, StringComparison.Ordinal)
                 || !expected.AvailableToolNames.SequenceEqual(actual.AvailableToolNames, StringComparer.OrdinalIgnoreCase)
                 || expected.Capabilities.Count != actual.Capabilities.Count
                 || !expected.Capabilities.Zip(actual.Capabilities).All(pair =>
@@ -118,6 +123,20 @@ namespace ColorVision.Copilot
                     && string.Equals(pair.First.Fingerprint, pair.Second.Fingerprint, StringComparison.OrdinalIgnoreCase)))
             {
                 throw new InvalidOperationException("Copilot Agent checkpoint identity changed during the turn.");
+            }
+        }
+
+        private static void RequireMonotonicJournal(
+            CopilotAgentSessionCheckpoint expected,
+            CopilotAgentSessionCheckpoint actual,
+            string checkpointKind)
+        {
+            if (!CopilotAgentTaskEventJournal.IsSameOrForwardBoundedSuccessor(
+                    actual.TaskEventJournal,
+                    expected.TaskEventJournal))
+            {
+                throw new InvalidOperationException(
+                    $"Copilot Agent {checkpointKind} journal did not advance monotonically during the turn.");
             }
         }
     }

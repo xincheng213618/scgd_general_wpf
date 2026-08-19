@@ -67,15 +67,18 @@ namespace ColorVision.Copilot
                 private readonly CopilotUserQuestionCoordinator _coordinator;
                 private readonly CopilotAgentRequest _request;
                 private readonly Action<CopilotAgentEvent> _emit;
+                private readonly Func<CancellationToken, ValueTask<bool>> _publishCheckpoint;
 
                 public UserQuestionAIFunction(
                     CopilotUserQuestionCoordinator coordinator,
                     CopilotAgentRequest request,
-                    Action<CopilotAgentEvent> emit)
+                    Action<CopilotAgentEvent> emit,
+                    Func<CancellationToken, ValueTask<bool>> publishCheckpoint)
                 {
                     _coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
                     _request = request ?? throw new ArgumentNullException(nameof(request));
                     _emit = emit ?? throw new ArgumentNullException(nameof(emit));
+                    _publishCheckpoint = publishCheckpoint ?? throw new ArgumentNullException(nameof(publishCheckpoint));
                 }
 
                 public override string Name => "AskUserQuestion";
@@ -110,6 +113,7 @@ namespace ColorVision.Copilot
                             _request,
                             input ?? new CopilotUserQuestionInput(),
                             _emit,
+                            _publishCheckpoint,
                             cancellationToken).ConfigureAwait(false);
                         return JsonSerializer.Serialize(new
                         {

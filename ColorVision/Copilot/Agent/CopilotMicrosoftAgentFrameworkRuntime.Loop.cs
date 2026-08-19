@@ -35,8 +35,11 @@ namespace ColorVision.Copilot
 
             var requestedCheckpoint = request.SessionCheckpoint;
             var baseExecutionScope = CopilotExecutionScope.ForAgentRun(request);
+            var taskEventJournalBaseline = request.TaskEventJournalBaseline?.IsStructurallyValid() == true
+                ? request.TaskEventJournalBaseline
+                : requestedCheckpoint?.TaskEventJournal;
             var taskEventJournalBuilder = new CopilotAgentTaskEventJournalBuilder(
-                requestedCheckpoint?.TaskEventJournal,
+                taskEventJournalBaseline,
                 baseExecutionScope.RunId);
             var runStartBackgroundShellCommandSnapshots =
                 (_backgroundShellCommandSnapshotProvider(request.ConversationId)
@@ -176,9 +179,11 @@ namespace ColorVision.Copilot
                 : Array.Empty<CopilotAgentEvidenceArtifact>();
             CopilotTokenBudgetChatClient? chatClient = null;
             using var toolBudgetCancellation = new CopilotNonBlockingCancellationSource();
+            using var postToolStopCancellation = new CopilotNonBlockingCancellationSource();
             using var agentLoopCancellation = CancellationTokenSource.CreateLinkedTokenSource(
                 cancellationToken,
-                toolBudgetCancellation.Token);
+                toolBudgetCancellation.Token,
+                postToolStopCancellation.Token);
             var bridge = new HarnessToolBridge(
                 request,
                 executionScope,
@@ -188,8 +193,9 @@ namespace ColorVision.Copilot
                 _approvalCoordinator,
                 emit,
                 () => _capabilityCatalog.GetSnapshot(request.CodexPluginsEnabled).Revision,
-                delegatedRun => chatClient?.RecordDelegatedRunUsage(delegatedRun),
-                toolBudgetCancellation.RequestCancellation);
+                recordDelegatedRunUsage: delegatedRun => chatClient?.RecordDelegatedRunUsage(delegatedRun),
+                onToolBudgetExhausted: toolBudgetCancellation.RequestCancellation,
+                onPostToolStopRequested: postToolStopCancellation.RequestCancellation);
             var harnessPreparation = PrepareHarnessPolicy(
                 request,
                 runBudget,
@@ -369,6 +375,25 @@ namespace ColorVision.Copilot
             var sessionResumed = sessionPreparation.SessionResumed;
             var steeringRegistration = sessionPreparation.SteeringRegistration;
             liveCheckpointPublisher = sessionPreparation.LiveCheckpointPublisher;
+            bridge.AttachInteractionCheckpointPublisher(
+                token => liveCheckpointPublisher.TryPublishAsync(agent, session, token));
+            var statePersistenceBarrier = request.StatePersistenceBarrier;
+            if (statePersistenceBarrier != null)
+            {
+                bridge.AttachToolDispatchCheckpointPublisher(
+                    async token =>
+                    {
+                        if (!await liveCheckpointPublisher
+                                .PublishForToolDispatchAsync(agent, session, token)
+                                .ConfigureAwait(false))
+                        {
+                            return false;
+                        }
+
+                        await statePersistenceBarrier(token).ConfigureAwait(false);
+                        return true;
+                    });
+            }
             var recoveredTaskLedger = sessionPreparation.RecoveredTaskLedger;
             var promptMessages = sessionPreparation.PromptMessages;
             using var deferredBackgroundOutputDelivery =
@@ -427,6 +452,7 @@ namespace ColorVision.Copilot
             var timeBudgetExhausted = false;
             var providerInterrupted = false;
             var contextWindowExceeded = false;
+            var postToolStopRequested = false;
             var automaticReviewCircuitBreakerTripped = false;
             CopilotAutomaticApprovalDenialCircuitBreakerSnapshot? automaticReviewCircuitBreaker = null;
             var outputLengthLimitReached = false;
@@ -445,6 +471,7 @@ namespace ColorVision.Copilot
                     callerCancellationToken,
                     cancellationToken,
                     toolBudgetCancellation.Token,
+                    postToolStopCancellation.Token,
                     agentLoopCancellation.Token,
                     agent,
                     loopMessages,
@@ -473,6 +500,7 @@ namespace ColorVision.Copilot
                 timeBudgetExhausted = loopResult.TimeBudgetExhausted;
                 providerInterrupted = loopResult.ProviderInterrupted;
                 contextWindowExceeded = loopResult.ContextWindowExceeded;
+                postToolStopRequested = loopResult.PostToolStopRequested;
                 var toolBudgetForcedFinalization = loopResult.ToolBudgetForcedFinalization;
                 var providerFinishReason = loopResult.ProviderFinishReason;
                 automaticReviewCircuitBreaker = loopResult.AutomaticReviewCircuitBreaker;
@@ -494,6 +522,11 @@ namespace ColorVision.Copilot
                 {
                     emit(CopilotAgentEvent.RuntimeDiagnostic(
                         "The provider ended the Agent answer with an explicit non-success finish reason; starting one bounded no-tools finalization call instead of accepting partial text."));
+                }
+                if (postToolStopRequested)
+                {
+                    hasModelFinalAnswer = !string.IsNullOrWhiteSpace(answerText.ToString());
+                    break;
                 }
                 hasModelFinalAnswer = !providerInterrupted
                     && !automaticReviewCircuitBreakerTripped
@@ -734,6 +767,7 @@ namespace ColorVision.Copilot
                 _ when contextWindowExceeded => CopilotAgentStopReason.ProviderFailure,
                 _ when providerInterrupted => CopilotAgentStopReason.ProviderFailure,
                 _ when automaticReviewCircuitBreakerTripped => CopilotAgentStopReason.ApprovalDenied,
+                _ when postToolStopRequested => CopilotAgentStopReason.Blocked,
                 _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords, hasModelFinalAnswer, request.Mode),
             };
             if (controlIntent == CopilotAgentControlIntent.None
@@ -741,6 +775,7 @@ namespace ColorVision.Copilot
                 && !providerInterrupted
                 && !contextWindowExceeded
                 && !automaticReviewCircuitBreakerTripped
+                && !postToolStopRequested
                 && executionContractEvaluation.IsRequired
                 && !executionContractEvaluation.IsSatisfied)
             {
@@ -754,9 +789,16 @@ namespace ColorVision.Copilot
                 && !providerInterrupted
                 && !contextWindowExceeded
                 && !automaticReviewCircuitBreakerTripped
+                && !postToolStopRequested
                 && !blockers.Any(blocker => string.Equals(blocker.Code, executionContractBlocker.Code, StringComparison.Ordinal)))
             {
                 blockers = blockers.Append(executionContractBlocker).ToArray();
+            }
+            var postToolStopBlocker = bridge.GetPostToolStopBlocker();
+            if (postToolStopBlocker != null
+                && !blockers.Any(blocker => string.Equals(blocker.Code, postToolStopBlocker.Code, StringComparison.Ordinal)))
+            {
+                blockers = blockers.Prepend(postToolStopBlocker).ToArray();
             }
             if (providerInterrupted)
                 blockers = blockers.Prepend(CreateProviderInterruptionBlocker()).ToArray();

@@ -1,17 +1,26 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using ColorVision.UI;
 
 namespace ColorVision.Copilot
 {
     public sealed class CopilotAgentToolInput
     {
-        public static CopilotAgentToolInput Empty { get; } = new();
+        private static readonly IReadOnlyDictionary<string, object?> EmptyArguments =
+            new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
 
-        public IReadOnlyDictionary<string, object?> Arguments { get; init; } = new Dictionary<string, object?>();
+        public static CopilotAgentToolInput Empty { get; } = new()
+        {
+            Arguments = EmptyArguments,
+        };
+
+        public IReadOnlyDictionary<string, object?> Arguments { get; init; } = EmptyArguments;
 
         public string Query { get; init; } = string.Empty;
 
@@ -275,6 +284,10 @@ namespace ColorVision.Copilot
         public CopilotAgentMode Mode { get; init; } = CopilotAgentMode.Auto;
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
+
+        internal CopilotAgentTaskEventJournalSnapshot? TaskEventJournalBaseline { get; init; }
+
+        internal Func<CancellationToken, Task>? StatePersistenceBarrier { get; init; }
 
         public CopilotAgentRecoveryRequest? Recovery { get; init; }
 
@@ -587,13 +600,20 @@ namespace ColorVision.Copilot
                 ProcessExitCode = processEvidence.ExitCode,
                 ProcessTimedOut = processEvidence.TimedOut,
                 Approval = result?.Approval,
-                SuggestedReadableLocalFilePaths = result?.SuggestedReadableLocalFilePaths ?? Array.Empty<string>(),
-                AttemptedLocalFilePaths = result?.AttemptedLocalFilePaths ?? Array.Empty<string>(),
-                SuccessfullyReadLocalFilePaths = result?.SuccessfullyReadLocalFilePaths ?? Array.Empty<string>(),
-                LocalFileReadScopes = result?.LocalFileReadScopes ?? Array.Empty<CopilotLocalFileReadScope>(),
+                SuggestedReadableLocalFilePaths = Freeze(result?.SuggestedReadableLocalFilePaths),
+                AttemptedLocalFilePaths = Freeze(result?.AttemptedLocalFilePaths),
+                SuccessfullyReadLocalFilePaths = Freeze(result?.SuccessfullyReadLocalFilePaths),
+                LocalFileReadScopes = Freeze(result?.LocalFileReadScopes),
                 DelegatedRunUsage = result?.DelegatedRunUsage,
                 DelegatedAnswer = result?.DelegatedAnswer,
             };
+        }
+
+        private static IReadOnlyList<T> Freeze<T>(IReadOnlyList<T>? values)
+        {
+            return values == null || values.Count == 0
+                ? Array.Empty<T>()
+                : Array.AsReadOnly(values.ToArray());
         }
     }
 
@@ -641,6 +661,17 @@ namespace ColorVision.Copilot
         Transient,
         Internal,
         Cancelled,
+        OutcomeUnknown,
+    }
+
+    internal static class CopilotToolFailureKindProtocol
+    {
+        public static string Format(CopilotToolFailureKind failureKind)
+        {
+            return failureKind == CopilotToolFailureKind.OutcomeUnknown
+                ? "outcome_unknown"
+                : failureKind.ToString().ToLowerInvariant();
+        }
     }
 
     public sealed class CopilotToolExecutionInfo

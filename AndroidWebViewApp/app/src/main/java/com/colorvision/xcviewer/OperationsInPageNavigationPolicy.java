@@ -11,7 +11,9 @@ final class OperationsInPageNavigationPolicy {
             boolean detailOpenedFromTriage,
             boolean detailOpenedFromToolbox) {
         String normalized = OperationsDestinationState.normalize(destination);
-        if (OperationsDestinationState.TRIAGE.equals(normalized) && detailOpenedFromTriage) {
+        if (detailOpenedFromTriage
+                && !OperationsDestinationState.OVERVIEW.equals(normalized)
+                && !OperationsDestinationState.PAIRING.equals(normalized)) {
             return OperationsDestinationState.TRIAGE;
         }
         if (detailOpenedFromToolbox
@@ -25,12 +27,8 @@ final class OperationsInPageNavigationPolicy {
                 || OperationsDestinationState.FLEET_ISSUES.equals(normalized)) {
             return OperationsDestinationState.CONNECTIONS;
         }
-        if (OperationsDestinationState.JOBS.equals(normalized) && detailOpenedFromTriage) {
-            return OperationsDestinationState.TRIAGE;
-        }
         if (OperationsDestinationState.CONNECTIONS.equals(normalized)
                 || OperationsDestinationState.HISTORY.equals(normalized)
-                || OperationsDestinationState.TRIAGE.equals(normalized)
                 || OperationsDestinationState.JOBS.equals(normalized)
                 || OperationsDestinationState.SUPPORT.equals(normalized)
                 || OperationsDestinationState.LIVE_MONITOR.equals(normalized)) {
@@ -50,8 +48,10 @@ final class OperationsInPageNavigationPolicy {
         if (!parent.isEmpty()) {
             return parent;
         }
-        if (OperationsDestinationState.TOOLS.equals(
-                OperationsDestinationState.normalize(destination))) {
+        String normalized = OperationsDestinationState.normalize(destination);
+        if (OperationsDestinationState.TOOLS.equals(normalized)
+                || OperationsDestinationState.SETTINGS.equals(normalized)
+                || OperationsDestinationState.TRIAGE.equals(normalized)) {
             return NO_PARENT;
         }
         return !showingDashboardSummary && !connectionRecoveryVisible
@@ -93,7 +93,7 @@ final class OperationsInPageNavigationPolicy {
             return "返回电脑与连接";
         }
         if (OperationsDestinationState.TRIAGE.equals(parent)) {
-            return "返回远程排障中心";
+            return "返回问题中心";
         }
         if (OperationsDestinationState.TOOLS.equals(parent)) {
             return "返回运维工具";
@@ -108,11 +108,30 @@ final class OperationsInPageNavigationPolicy {
             String fromDestination,
             String toDestination,
             boolean detailOpenedFromTriage,
-            boolean detailOpenedFromToolbox) {
+            boolean detailOpenedFromToolbox,
+            boolean detailOpenedFromSettings) {
         String from = OperationsDestinationState.normalize(fromDestination);
         String to = OperationsDestinationState.normalize(toDestination);
         if (from.equals(to)) {
             return AppScreenMotion.DIRECTION_NONE;
+        }
+        if (detailOpenedFromSettings
+                && OperationsDestinationState.SETTINGS.equals(to)) {
+            return AppScreenMotion.DIRECTION_BACKWARD;
+        }
+        if (detailOpenedFromSettings
+                && OperationsDestinationState.SETTINGS.equals(from)) {
+            return AppScreenMotion.DIRECTION_FORWARD;
+        }
+        int topLevelDirection = topLevelMotionDirection(from, to);
+        if (topLevelDirection != AppScreenMotion.DIRECTION_NONE) {
+            return topLevelDirection;
+        }
+        if (OperationsDestinationState.SETTINGS.equals(to)) {
+            return AppScreenMotion.DIRECTION_FORWARD;
+        }
+        if (OperationsDestinationState.SETTINGS.equals(from)) {
+            return AppScreenMotion.DIRECTION_BACKWARD;
         }
         if (to.equals(parentDestination(
                 from, detailOpenedFromTriage, detailOpenedFromToolbox))) {
@@ -129,6 +148,30 @@ final class OperationsInPageNavigationPolicy {
             return AppScreenMotion.DIRECTION_FORWARD;
         }
         return AppScreenMotion.DIRECTION_NONE;
+    }
+
+    private static int topLevelMotionDirection(String from, String to) {
+        int fromIndex = topLevelIndex(from);
+        int toIndex = topLevelIndex(to);
+        if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) {
+            return AppScreenMotion.DIRECTION_NONE;
+        }
+        return fromIndex < toIndex
+                ? AppScreenMotion.DIRECTION_FORWARD
+                : AppScreenMotion.DIRECTION_BACKWARD;
+    }
+
+    private static int topLevelIndex(String destination) {
+        if (OperationsDestinationState.OVERVIEW.equals(destination)) {
+            return 0;
+        }
+        if (OperationsDestinationState.TRIAGE.equals(destination)) {
+            return 1;
+        }
+        if (OperationsDestinationState.TOOLS.equals(destination)) {
+            return 2;
+        }
+        return OperationsDestinationState.SETTINGS.equals(destination) ? 3 : -1;
     }
 
     static boolean shouldReturnToOverview(
@@ -153,5 +196,24 @@ final class OperationsInPageNavigationPolicy {
                 dashboardVisible,
                 showingDashboardSummary,
                 connectionRecoveryVisible);
+    }
+
+    static boolean shouldReturnToStartDestination(
+            String destination,
+            boolean detailOpenedFromTriage,
+            boolean detailOpenedFromToolbox) {
+        String normalized = OperationsDestinationState.normalize(destination);
+        return (OperationsDestinationState.TRIAGE.equals(normalized)
+                        && !detailOpenedFromTriage)
+                || (OperationsDestinationState.TOOLS.equals(normalized)
+                        && !detailOpenedFromToolbox)
+                || OperationsDestinationState.SETTINGS.equals(normalized);
+    }
+
+    static boolean shouldReturnToSettings(
+            String destination, boolean openedFromSettings) {
+        return openedFromSettings
+                && OperationsDestinationState.CONNECTIONS.equals(
+                        OperationsDestinationState.normalize(destination));
     }
 }

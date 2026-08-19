@@ -246,7 +246,7 @@ namespace ColorVision.Copilot
                 _standardError.ReplacePreview(standardError);
                 _standardOutput.CompleteArchive();
                 _standardError.CompleteArchive();
-                var exitCode = TryGetExitCode(_process);
+                var exitCode = CopilotProcessExecutionSupport.TryGetExitCode(_process);
                 var reason = Volatile.Read(ref _terminationReason);
                 var state = reason switch
                 {
@@ -298,7 +298,7 @@ namespace ColorVision.Copilot
                     Volatile.Read(ref _terminationReason) == 1
                         ? CopilotBackgroundShellCommandState.Stopped
                         : CopilotBackgroundShellCommandState.Failed,
-                    TryGetExitCode(_process),
+                    CopilotProcessExecutionSupport.TryGetExitCode(_process),
                     DateTimeOffset.UtcNow,
                     output.StandardOutput,
                     output.StandardError)
@@ -354,18 +354,6 @@ namespace ColorVision.Copilot
 
         private static TaskCompletionSource CreateObservationChangedSource() =>
             new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        private static int? TryGetExitCode(Process process)
-        {
-            try
-            {
-                return process.HasExited ? process.ExitCode : null;
-            }
-            catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException or Win32Exception)
-            {
-                return null;
-            }
-        }
 
         public void Dispose()
         {

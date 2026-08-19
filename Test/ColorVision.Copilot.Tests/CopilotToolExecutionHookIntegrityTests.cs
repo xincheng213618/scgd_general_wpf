@@ -1,4 +1,5 @@
 using ColorVision.Copilot;
+using Microsoft.Extensions.AI;
 using Newtonsoft.Json;
 
 namespace ColorVision.Copilot.Tests;
@@ -100,6 +101,379 @@ public sealed class CopilotToolExecutionHookIntegrityTests
             CopilotToolExecutionHookState.Denied,
             "repository_policy_denied");
         AssertTerminalEvent(events, CopilotToolExecutionState.Denied, "repository_policy_denied");
+    }
+
+    [Fact]
+    public async Task TerminalEventDispatchFailureDoesNotReclassifyTheCompletedTool()
+    {
+        var tool = new RecordingTool();
+        var terminalEvents = new List<CopilotAgentEvent>();
+
+        var exception = await Assert.ThrowsAsync<CopilotToolResultEventDispatchException>(() =>
+            new CopilotToolExecutor().ExecuteAsync(
+                CreateInvocation(tool, "terminal-dispatch-failure"),
+                agentEvent =>
+                {
+                    if (agentEvent.Type != CopilotAgentEventType.ToolResult)
+                        return;
+
+                    terminalEvents.Add(agentEvent);
+                    throw new InvalidOperationException("The event consumer stopped accepting results.");
+                },
+                CancellationToken.None));
+
+        var terminal = Assert.Single(terminalEvents);
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, terminal.ToolExecution?.State);
+        Assert.Same(exception.Outcome.Execution, terminal.ToolExecution);
+        Assert.Same(exception.Outcome.Result, terminal.ToolResult);
+        Assert.Equal(CopilotToolExecutionState.Completed, exception.Outcome.Execution.State);
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task WriteToolWaitsForItsPreDispatchCheckpoint()
+    {
+        var checkpointEntered = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseCheckpoint = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var tool = new RecordingTool(writeCapable: true);
+        var events = new System.Collections.Concurrent.ConcurrentQueue<CopilotAgentEvent>();
+        var invocation = CopyWithPreDispatchCheckpoint(
+            CreateInvocation(tool, "write-dispatch-checkpoint"),
+            async cancellationToken =>
+            {
+                checkpointEntered.TrySetResult();
+                await releaseCheckpoint.Task.WaitAsync(cancellationToken);
+                return true;
+            });
+
+        var executionTask = new CopilotToolExecutor([]).ExecuteAsync(
+            invocation,
+            events.Enqueue,
+            CancellationToken.None);
+        await checkpointEntered.Task.WaitAsync(TestTimeout);
+
+        Assert.Equal(0, tool.ExecutionCount);
+        Assert.Contains(events, item =>
+            item.Type == CopilotAgentEventType.ToolStarted);
+        Assert.DoesNotContain(events, item =>
+            item.Type == CopilotAgentEventType.ToolResult);
+
+        releaseCheckpoint.TrySetResult();
+        var outcome = await executionTask.WaitAsync(TestTimeout);
+
+        Assert.True(outcome.Result.Success);
+        Assert.Equal(1, tool.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task FailedWriteDispatchCheckpointDoesNotEnterTheToolBody()
+    {
+        var tool = new RecordingTool(writeCapable: true);
+        var events = new List<CopilotAgentEvent>();
+        var invocation = CopyWithPreDispatchCheckpoint(
+            CreateInvocation(tool, "failed-write-dispatch-checkpoint"),
+            _ => ValueTask.FromResult(false));
+
+        var outcome = await new CopilotToolExecutor([]).ExecuteAsync(
+            invocation,
+            events.Add,
+            CancellationToken.None);
+
+        Assert.Equal(0, tool.ExecutionCount);
+        Assert.Equal(CopilotToolExecutionState.Failed, outcome.Execution.State);
+        Assert.Equal(CopilotToolFailureKind.Transient, outcome.Result.FailureKind);
+        Assert.Equal(
+            "tool_dispatch_checkpoint_failed",
+            outcome.Result.FailureCode);
+        Assert.Contains(events, item =>
+            item.Type == CopilotAgentEventType.ToolStarted);
+        Assert.Equal(
+            CopilotToolExecutionState.Failed,
+            Assert.Single(events, item =>
+                item.Type == CopilotAgentEventType.ToolResult)
+                .ToolExecution?.State);
+    }
+
+    [Fact]
+    public async Task ReadOnlyToolDoesNotRequireAWriteDispatchCheckpoint()
+    {
+        var checkpointCalls = 0;
+        var tool = new RecordingTool();
+        var invocation = CopyWithPreDispatchCheckpoint(
+            CreateInvocation(tool, "read-dispatch-checkpoint"),
+            _ =>
+            {
+                Interlocked.Increment(ref checkpointCalls);
+                return ValueTask.FromResult(false);
+            });
+
+        var outcome = await new CopilotToolExecutor([]).ExecuteAsync(
+            invocation,
+            _ => { },
+            CancellationToken.None);
+
+        Assert.True(outcome.Result.Success);
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(0, Volatile.Read(ref checkpointCalls));
+    }
+
+    [Fact]
+    public async Task ConcurrentToolCallsEnterSynchronousPreExecutionHooksInOrder()
+    {
+        var hook = new OrderedBeforeHook();
+        var executor = new CopilotToolExecutor([hook]);
+        var firstTool = new RecordingTool();
+        var secondTool = new RecordingTool();
+
+        var firstExecution = executor.ExecuteAsync(
+            CreateInvocation(firstTool, "ordered-pre-hook-first"),
+            _ => { },
+            CancellationToken.None);
+        await hook.FirstEntered.Task.WaitAsync(TestTimeout);
+
+        var secondExecution = executor.ExecuteAsync(
+            CreateInvocation(secondTool, "ordered-pre-hook-second"),
+            _ => { },
+            CancellationToken.None);
+
+        Assert.False(hook.SecondEntered.Task.IsCompleted);
+        hook.ReleaseFirst.TrySetResult();
+        await hook.SecondEntered.Task.WaitAsync(TestTimeout);
+
+        var outcomes = await Task.WhenAll(firstExecution, secondExecution)
+            .WaitAsync(TestTimeout);
+
+        Assert.All(outcomes, outcome => Assert.True(outcome.Result.Success));
+        Assert.Equal(1, firstTool.ExecutionCount);
+        Assert.Equal(1, secondTool.ExecutionCount);
+    }
+
+    [Theory]
+    [InlineData(CopilotToolAccess.ReadOnly, CopilotAgentEventPersistenceMode.Deferred)]
+    [InlineData(CopilotToolAccess.Write, CopilotAgentEventPersistenceMode.Immediate)]
+    public void ToolResultPersistenceFollowsItsDurabilityRisk(
+        CopilotToolAccess access,
+        CopilotAgentEventPersistenceMode expected)
+    {
+        var assistant = new CopilotChatMessage(
+            CopilotChatRole.Assistant,
+            string.Empty);
+        var presentation = CopilotAssistantMessagePresenter.ApplyAgentEvent(
+            assistant,
+            CopilotAgentEvent.FromToolResult(
+                new CopilotToolResult
+                {
+                    ToolName = "PersistenceTool",
+                    Success = true,
+                    Summary = "Tool completed.",
+                },
+                new CopilotToolExecutionInfo
+                {
+                    CallId = "persistence-tool-call",
+                    ToolName = "PersistenceTool",
+                    Access = access,
+                    State = CopilotToolExecutionState.Completed,
+                }));
+
+        Assert.True(presentation.IsHandled);
+        Assert.Equal(expected, presentation.PersistenceMode);
+    }
+
+    [Fact]
+    public async Task FrameworkBridgeRetainsTheCommittedOutcomeWhenTerminalDispatchFails()
+    {
+        var tool = new RecordingTool();
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "dispatch-failure-conversation",
+            TaskId = "dispatch-failure-task",
+            Mode = CopilotAgentMode.Auto,
+            UserText = "Run the recording tool.",
+            TaskIntentText = "Run the recording tool.",
+        };
+        var terminalEvents = new List<CopilotAgentEvent>();
+        var bridge = new CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge(
+            request,
+            CopilotExecutionScope.ForAgentRun(request),
+            [tool],
+            maxToolCalls: 1,
+            new CopilotToolExecutor(),
+            new CopilotFrameworkApprovalCoordinator(),
+            agentEvent =>
+            {
+                if (agentEvent.Type != CopilotAgentEventType.ToolResult)
+                    return;
+
+                terminalEvents.Add(agentEvent);
+                throw new InvalidOperationException("The event consumer stopped accepting results.");
+            },
+            capabilityRevisionProvider: () => 1);
+        var function = Assert.IsAssignableFrom<AIFunction>(Assert.Single(bridge.CreateFunctions()));
+
+        var exception = await Assert.ThrowsAsync<CopilotToolResultEventDispatchException>(() =>
+            function.InvokeAsync(
+                new AIFunctionArguments(),
+                CancellationToken.None).AsTask());
+
+        var step = Assert.Single(bridge.StepRecords);
+        Assert.Single(terminalEvents);
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
+        Assert.Same(exception.Outcome.Execution, step.Execution);
+        Assert.Equal(exception.Outcome.Result.Success, step.Observation.Success);
+        Assert.Equal(exception.Outcome.Result.Summary, step.Observation.Summary);
+    }
+
+    [Fact]
+    public async Task PostHookLifecycleDispatchFailurePreservesTheCompletedToolOutcome()
+    {
+        var tool = new RecordingTool();
+        var hook = new RecordingHook((_, _) => Task.FromResult(
+            CopilotToolExecutionHookDecision.Proceed));
+
+        var exception = await Assert.ThrowsAsync<CopilotToolResultEventDispatchException>(() =>
+            new CopilotToolExecutor([hook]).ExecuteAsync(
+                CreateInvocation(tool, "post-hook-dispatch-failure"),
+                agentEvent =>
+                {
+                    if (agentEvent.Type == CopilotAgentEventType.HookStarted
+                        && agentEvent.ToolExecutionHook?.Phase
+                            == CopilotToolExecutionHookPhase.AfterExecute)
+                    {
+                        throw new InvalidOperationException(
+                            "The event consumer stopped during post-hook publication.");
+                    }
+                },
+                CancellationToken.None));
+
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(0, hook.AfterCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, exception.Outcome.Execution.State);
+        Assert.True(exception.Outcome.Result.Success);
+        Assert.NotNull(exception.Outcome.FormattedModelResult);
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+    }
+
+    [Fact]
+    public async Task FrameworkBridgeRetainsTheCommittedOutcomeWhenPostHookLifecycleDispatchFails()
+    {
+        var tool = new RecordingTool();
+        var hook = new RecordingHook((_, _) => Task.FromResult(
+            CopilotToolExecutionHookDecision.Proceed));
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "post-hook-dispatch-conversation",
+            TaskId = "post-hook-dispatch-task",
+            Mode = CopilotAgentMode.Auto,
+            UserText = "Run the recording tool.",
+            TaskIntentText = "Run the recording tool.",
+        };
+        var bridge = new CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge(
+            request,
+            CopilotExecutionScope.ForAgentRun(request),
+            [tool],
+            maxToolCalls: 1,
+            new CopilotToolExecutor([hook]),
+            new CopilotFrameworkApprovalCoordinator(),
+            agentEvent =>
+            {
+                if (agentEvent.Type == CopilotAgentEventType.HookStarted
+                    && agentEvent.ToolExecutionHook?.Phase
+                        == CopilotToolExecutionHookPhase.AfterExecute)
+                {
+                    throw new InvalidOperationException(
+                        "The event consumer stopped during post-hook publication.");
+                }
+            },
+            capabilityRevisionProvider: () => 1);
+        var function = Assert.IsAssignableFrom<AIFunction>(Assert.Single(bridge.CreateFunctions()));
+
+        var exception = await Assert.ThrowsAsync<CopilotToolResultEventDispatchException>(() =>
+            function.InvokeAsync(
+                new AIFunctionArguments(),
+                CancellationToken.None).AsTask());
+
+        var step = Assert.Single(bridge.StepRecords);
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(CopilotToolExecutionState.Completed, step.Execution.State);
+        Assert.Same(exception.Outcome.Execution, step.Execution);
+        Assert.Equal(exception.Outcome.Result.Success, step.Observation.Success);
+        Assert.Equal(exception.Outcome.Result.Summary, step.Observation.Summary);
+    }
+
+    [Fact]
+    public async Task FrozenHookBindingsCannotReplaceTheMonotonicWriteGuard()
+    {
+        var spoofedGuard = new RecordingHook((_, _) =>
+            Task.FromResult(CopilotToolExecutionHookDecision.Proceed));
+        var tool = new RecordingTool(writeCapable: true);
+        var invocation = CopyWithInitialHooks(
+            CreateInvocation(tool, "spoofed-write-guard", CopilotAgentMode.Plan),
+            [
+                new CopilotToolExecutionHookBinding(
+                    "builtin:write-tool-policy",
+                    spoofedGuard),
+            ]);
+
+        var outcome = await new CopilotToolExecutor([]).ExecuteAsync(
+            invocation,
+            _ => { },
+            CancellationToken.None);
+
+        AssertDeniedOutcome(
+            outcome,
+            "plan_mode_write_denied",
+            CopilotToolFailureKind.Authorization);
+        Assert.Equal(0, tool.ExecutionCount);
+        Assert.Equal(0, spoofedGuard.BeforeCount);
+        AssertHookRun(
+            outcome.HookRuns,
+            "builtin:write-tool-policy",
+            CopilotToolExecutionHookPhase.BeforeExecute,
+            CopilotToolExecutionHookState.Denied,
+            "plan_mode_write_denied");
+    }
+
+    [Fact]
+    public async Task FrozenHookBindingsRetainCommandHooksAfterFullRegistrySurface()
+    {
+        var spoofedGuard = new RecordingHook((_, _) =>
+            Task.FromResult(CopilotToolExecutionHookDecision.Proceed));
+        var registryHook = new RecordingHook((_, _) =>
+            Task.FromResult(CopilotToolExecutionHookDecision.Proceed));
+        var finalCommandHook = new RecordingHook((_, _) => Task.FromResult(
+            CopilotToolExecutionHookDecision.Deny(
+                "The final captured command hook denied execution.",
+                "late_captured_hook_denied")));
+        var captured = new List<CopilotToolExecutionHookBinding>
+        {
+            new("builtin:write-tool-policy", spoofedGuard),
+        };
+        captured.AddRange(Enumerable.Range(0, CopilotToolExecutionHookRegistry.MaxRegistrations)
+            .Select(index => new CopilotToolExecutionHookBinding(
+                $"registry:{index}",
+                registryHook)));
+        captured.Add(new CopilotToolExecutionHookBinding("command:final", finalCommandHook));
+        var tool = new RecordingTool();
+        var invocation = CopyWithInitialHooks(
+            CreateInvocation(tool, "full-frozen-hook-surface"),
+            captured);
+
+        var outcome = await new CopilotToolExecutor([]).ExecuteAsync(
+            invocation,
+            _ => { },
+            CancellationToken.None);
+
+        AssertDeniedOutcome(
+            outcome,
+            "late_captured_hook_denied",
+            CopilotToolFailureKind.Authorization);
+        Assert.Equal(0, tool.ExecutionCount);
+        Assert.Equal(1, finalCommandHook.BeforeCount);
+        Assert.Equal(CopilotToolExecutionHookRegistry.MaxRegistrations, registryHook.BeforeCount);
     }
 
     [Fact]
@@ -290,6 +664,120 @@ public sealed class CopilotToolExecutionHookIntegrityTests
     }
 
     [Fact]
+    public async Task InvocationSnapshotPreventsHooksFromChangingTheExecutedArguments()
+    {
+        var nested = new Dictionary<string, object?> { ["mode"] = "safe" };
+        var sourceArguments = new Dictionary<string, object?>
+        {
+            ["query"] = "safe",
+            ["options"] = nested,
+        };
+        var toolInput = new CopilotAgentToolInput
+        {
+            Arguments = sourceArguments,
+            Query = "safe",
+        };
+        var hook = new RecordingHook((context, _) =>
+        {
+            sourceArguments["query"] = "tampered";
+            nested["mode"] = "tampered";
+            var publishedArguments = Assert.IsAssignableFrom<IDictionary<string, object?>>(
+                context.Invocation.ToolInput.Arguments);
+            Assert.Throws<NotSupportedException>(() => publishedArguments["query"] = "hook-tampered");
+            return Task.FromResult(CopilotToolExecutionHookDecision.Proceed);
+        });
+        var tool = new RecordingTool(inputSchema: CreateOpenObjectInputSchema());
+        var invocation = CreateInvocation(tool, "immutable-input-snapshot");
+        invocation = new CopilotToolInvocation
+        {
+            CallId = invocation.CallId,
+            Round = invocation.Round,
+            Attempt = invocation.Attempt,
+            MaxAttempts = invocation.MaxAttempts,
+            RuntimeName = invocation.RuntimeName,
+            Tool = invocation.Tool,
+            AgentRequest = invocation.AgentRequest,
+            ToolInput = toolInput,
+            ToolCall = new CopilotToolCall
+            {
+                ToolName = "SpoofedTool",
+                ToolInput = toolInput,
+            },
+        };
+
+        var outcome = await new CopilotToolExecutor([hook]).ExecuteAsync(
+            invocation,
+            _ => { },
+            CancellationToken.None);
+
+        var executedInput = Assert.IsType<CopilotAgentToolInput>(tool.LastInput);
+        Assert.Equal("safe", executedInput.GetStringArgument("query"));
+        Assert.True(executedInput.TryGetJsonElementArgument("options", out var options));
+        Assert.Equal("safe", options.GetProperty("mode").GetString());
+        Assert.Same(outcome.Invocation.ToolInput, outcome.Invocation.ToolCall.ToolInput);
+        Assert.Equal(tool.Name, outcome.Invocation.ToolCall.ToolName);
+        Assert.Equal("safe", outcome.Invocation.ToolInput.GetStringArgument("query"));
+    }
+
+    [Fact]
+    public async Task InvalidInputContractSkipsHooksAndToolExecution()
+    {
+        var hook = new RecordingHook((_, _) =>
+            Task.FromResult(CopilotToolExecutionHookDecision.Proceed));
+        var tool = new RecordingTool(
+            inputSchema: CopilotToolInputSchema.Query("Required query.", required: true));
+        var events = new List<CopilotAgentEvent>();
+
+        var outcome = await new CopilotToolExecutor([hook]).ExecuteAsync(
+            CreateInvocation(tool, "invalid-input-contract"),
+            events.Add,
+            CancellationToken.None);
+
+        Assert.Equal(CopilotToolExecutionState.Failed, outcome.Execution.State);
+        Assert.Equal(CopilotToolFailureKind.Validation, outcome.Result.FailureKind);
+        Assert.Equal("invalid_arguments", outcome.Result.FailureCode);
+        Assert.Equal(0, tool.ExecutionCount);
+        Assert.Equal(0, hook.BeforeCount);
+        Assert.Equal(0, hook.AfterCount);
+        Assert.Empty(outcome.HookRuns);
+        Assert.Equal(CopilotAgentEventType.ToolResult, Assert.Single(events).Type);
+    }
+
+    [Fact]
+    public async Task ValidatedArgumentsAreTheCanonicalExecutedInput()
+    {
+        var tool = new RecordingTool(
+            inputSchema: CopilotToolInputSchema.Query("Required query.", required: true));
+        var invocation = CreateInvocation(tool, "canonical-input-contract");
+        invocation = new CopilotToolInvocation
+        {
+            CallId = invocation.CallId,
+            Round = invocation.Round,
+            RuntimeName = invocation.RuntimeName,
+            Tool = tool,
+            AgentRequest = invocation.AgentRequest,
+            ToolInput = new CopilotAgentToolInput
+            {
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["query"] = "canonical",
+                },
+                Query = "untrusted-legacy-value",
+            },
+        };
+
+        var outcome = await new CopilotToolExecutor([]).ExecuteAsync(
+            invocation,
+            _ => { },
+            CancellationToken.None);
+
+        Assert.True(outcome.Result.Success);
+        Assert.Equal("canonical", Assert.IsType<CopilotAgentToolInput>(tool.LastInput).Query);
+        Assert.Equal("canonical", outcome.Invocation.ToolInput.Query);
+        Assert.Equal("canonical", outcome.Invocation.ToolCall.ToolInput.Query);
+    }
+
+    [Fact]
     public async Task FailedAfterHookRemainsObservableWithoutChangingToolOutcomeOrModelPayload()
     {
         const string sensitiveMessage = "api_key=post-hook-secret";
@@ -434,6 +922,55 @@ public sealed class CopilotToolExecutionHookIntegrityTests
         };
     }
 
+    private static CopilotToolInputSchema CreateOpenObjectInputSchema()
+    {
+        return CopilotToolInputSchema.FromJsonSchema(
+            System.Text.Json.JsonSerializer.SerializeToElement(
+                new Dictionary<string, object?>
+                {
+                    ["type"] = "object",
+                    ["additionalProperties"] = true,
+                }));
+    }
+
+    private static CopilotToolInvocation CopyWithInitialHooks(
+        CopilotToolInvocation source,
+        IReadOnlyList<CopilotToolExecutionHookBinding> hookBindings)
+    {
+        return new CopilotToolInvocation
+        {
+            CallId = source.CallId,
+            Round = source.Round,
+            Attempt = source.Attempt,
+            MaxAttempts = source.MaxAttempts,
+            RuntimeName = source.RuntimeName,
+            Tool = source.Tool,
+            AgentRequest = source.AgentRequest,
+            ToolInput = source.ToolInput,
+            ToolCall = source.ToolCall,
+            InitialHookBindings = hookBindings,
+        };
+    }
+
+    private static CopilotToolInvocation CopyWithPreDispatchCheckpoint(
+        CopilotToolInvocation source,
+        Func<CancellationToken, ValueTask<bool>> checkpoint)
+    {
+        return new CopilotToolInvocation
+        {
+            CallId = source.CallId,
+            Round = source.Round,
+            Attempt = source.Attempt,
+            MaxAttempts = source.MaxAttempts,
+            RuntimeName = source.RuntimeName,
+            Tool = source.Tool,
+            AgentRequest = source.AgentRequest,
+            ToolInput = source.ToolInput,
+            ToolCall = source.ToolCall,
+            PreDispatchCheckpoint = checkpoint,
+        };
+    }
+
     private sealed class RecordingHook : ICopilotToolExecutionHook
     {
         private readonly Func<
@@ -462,12 +999,17 @@ public sealed class CopilotToolExecutionHookIntegrityTests
 
         public int AfterCount => Volatile.Read(ref _afterCount);
 
+        public int BeforeCount { get; private set; }
+
         public CopilotToolExecutionOutcome? LastOutcome { get; private set; }
 
         public Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
             CopilotToolExecutionHookContext context,
-            CancellationToken cancellationToken) =>
-            _beforeExecute(context, cancellationToken);
+            CancellationToken cancellationToken)
+        {
+            BeforeCount++;
+            return _beforeExecute(context, cancellationToken);
+        }
 
         public Task AfterExecuteAsync(
             CopilotToolExecutionOutcome outcome,
@@ -479,21 +1021,65 @@ public sealed class CopilotToolExecutionHookIntegrityTests
         }
     }
 
+    private sealed class OrderedBeforeHook : ICopilotToolExecutionHook
+    {
+        private int _beforeCount;
+
+        public TaskCompletionSource FirstEntered { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource SecondEntered { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource ReleaseFirst { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken)
+        {
+            var position = Interlocked.Increment(ref _beforeCount);
+            if (position == 1)
+            {
+                FirstEntered.TrySetResult();
+                await ReleaseFirst.Task.WaitAsync(cancellationToken);
+            }
+            else if (position == 2)
+            {
+                SecondEntered.TrySetResult();
+            }
+
+            return CopilotToolExecutionHookDecision.Proceed;
+        }
+
+        public Task AfterExecuteAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
     private sealed class RecordingTool : ICopilotTool
     {
         private readonly bool _writeCapable;
+        private readonly CopilotToolInputSchema _inputSchema;
         private int _executionCount;
 
-        public RecordingTool(bool writeCapable = false)
+        public RecordingTool(
+            bool writeCapable = false,
+            CopilotToolInputSchema? inputSchema = null)
         {
             _writeCapable = writeCapable;
+            _inputSchema = inputSchema ?? CopilotToolInputSchema.OptionalQuery;
         }
 
         public int ExecutionCount => Volatile.Read(ref _executionCount);
 
+        public CopilotAgentToolInput? LastInput { get; private set; }
+
         public string Name => "HookIntegrityTool";
 
         public string Description => "Records whether hook integrity tests reached tool execution.";
+
+        public CopilotToolInputSchema InputSchema => _inputSchema;
 
         public CopilotToolCapabilityDescriptor Capability => _writeCapable
             ? new CopilotToolCapabilityDescriptor
@@ -514,6 +1100,7 @@ public sealed class CopilotToolExecutionHookIntegrityTests
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken)
         {
+            LastInput = toolInput;
             Interlocked.Increment(ref _executionCount);
             return Task.FromResult(new CopilotToolResult
             {

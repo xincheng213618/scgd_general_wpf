@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace ColorVision.Copilot
@@ -10,6 +12,9 @@ namespace ColorVision.Copilot
     {
         internal sealed partial class HarnessToolBridge
         {
+            private const int MaximumFunctionNameLength = 64;
+            private const int FunctionNameHashLength = 12;
+
             private bool RequiresNativeApproval(ICopilotTool tool)
             {
                 return CopilotCodexApprovalPolicySelection.RequiresNativeApproval(
@@ -21,7 +26,49 @@ namespace ColorVision.Copilot
             {
                 var snakeCase = Regex.Replace(toolName ?? string.Empty, "(?<!^)([A-Z])", "_$1").ToLowerInvariant();
                 snakeCase = Regex.Replace(snakeCase, "[^a-z0-9]+", "_").Trim('_');
-                return "colorvision_" + snakeCase;
+                var functionName = "colorvision_" + snakeCase;
+                return functionName.Length <= MaximumFunctionNameLength
+                    ? functionName
+                    : AppendFunctionNameHash(functionName, toolName);
+            }
+
+            internal static IReadOnlyDictionary<string, string> BuildFunctionNameMap(IEnumerable<string> toolNames)
+            {
+                var entries = (toolNames ?? Array.Empty<string>())
+                    .Select(toolName => new
+                    {
+                        ToolName = toolName,
+                        FunctionName = ToFunctionName(toolName),
+                    })
+                    .ToArray();
+                var collidingFunctionNames = entries
+                    .GroupBy(entry => entry.FunctionName, StringComparer.OrdinalIgnoreCase)
+                    .Where(group => group.Count() > 1)
+                    .Select(group => group.Key)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var assignedFunctionNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var entry in entries)
+                {
+                    var functionName = collidingFunctionNames.Contains(entry.FunctionName)
+                        ? AppendFunctionNameHash(entry.FunctionName, entry.ToolName)
+                        : entry.FunctionName;
+                    if (!result.TryAdd(entry.ToolName, functionName))
+                        throw new InvalidOperationException($"Duplicate tool name '{entry.ToolName}' cannot be mapped to a provider function.");
+                    if (!assignedFunctionNames.Add(functionName))
+                        throw new InvalidOperationException($"Provider function name '{functionName}' is not unique after normalization.");
+                }
+                return result;
+            }
+
+            private static string AppendFunctionNameHash(string functionName, string? toolName)
+            {
+                var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(toolName ?? string.Empty)))[..FunctionNameHashLength].ToLowerInvariant();
+                var maximumPrefixLength = MaximumFunctionNameLength - hash.Length - 1;
+                var prefix = functionName.Length <= maximumPrefixLength
+                    ? functionName
+                    : functionName[..maximumPrefixLength];
+                return prefix.TrimEnd('_') + "_" + hash;
             }
 
             private static string BuildFunctionDescription(ICopilotTool tool)
@@ -169,7 +216,7 @@ namespace ColorVision.Copilot
 
             private string FormatToolResult(CopilotToolExecutionOutcome outcome)
             {
-                return outcome.FormattedModelResult ?? CopilotFrameworkToolResultFormatter.Format(
+                return CopilotToolOutputArchivePolicy.Format(
                     outcome,
                     _request.ToolOutputTokenLimitOverride);
             }

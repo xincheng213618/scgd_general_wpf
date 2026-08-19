@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace ColorVision.Copilot
 {
@@ -93,7 +94,7 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(server);
             ArgumentNullException.ThrowIfNull(tools);
-            var definitions = tools.Where(tool => tool != null).ToArray();
+            var definitions = CreateToolSnapshots(tools.Where(tool => tool != null));
             var discovered = Math.Max(definitions.Length, discoveredToolCount);
             var signature = CreateSignature(definitions, discovered);
             var key = BuildKey(server, bearerToken);
@@ -196,6 +197,44 @@ namespace ColorVision.Copilot
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString())));
         }
 
+        private static Tool[] CreateToolSnapshots(IEnumerable<Tool> tools)
+            => tools.Select(CreateToolSnapshot).ToArray();
+
+        private static Tool CreateToolSnapshot(Tool tool)
+        {
+            return new Tool
+            {
+                Name = tool.Name,
+                Title = tool.Title,
+                Description = tool.Description,
+                InputSchema = tool.InputSchema.Clone(),
+                OutputSchema = tool.OutputSchema?.Clone(),
+                Annotations = tool.Annotations == null
+                    ? null
+                    : new ToolAnnotations
+                    {
+                        Title = tool.Annotations.Title,
+                        DestructiveHint = tool.Annotations.DestructiveHint,
+                        IdempotentHint = tool.Annotations.IdempotentHint,
+                        OpenWorldHint = tool.Annotations.OpenWorldHint,
+                        ReadOnlyHint = tool.Annotations.ReadOnlyHint,
+                    },
+                Icons = tool.Icons == null
+                    ? null
+                    : Array.AsReadOnly(tool.Icons
+                        .Where(icon => icon != null)
+                        .Select(icon => new Icon
+                        {
+                            Source = icon.Source,
+                            MimeType = icon.MimeType,
+                            Sizes = icon.Sizes == null ? null : Array.AsReadOnly(icon.Sizes.ToArray()),
+                            Theme = icon.Theme,
+                        })
+                        .ToArray()),
+                Meta = tool.Meta == null ? null : (JsonObject)tool.Meta.DeepClone(),
+            };
+        }
+
         private readonly record struct CacheKey(string ServerName, string Endpoint, string TokenFingerprint);
 
         private sealed record CacheEntry(
@@ -207,7 +246,8 @@ namespace ColorVision.Copilot
             long Revision,
             bool Invalidated)
         {
-            public CopilotMcpToolDiscoverySnapshot ToSnapshot() => new(Tools, DiscoveredToolCount, DiscoveredAtUtc, ExpiresAtUtc, Revision);
+            public CopilotMcpToolDiscoverySnapshot ToSnapshot()
+                => new(Array.AsReadOnly(CreateToolSnapshots(Tools)), DiscoveredToolCount, DiscoveredAtUtc, ExpiresAtUtc, Revision);
         }
     }
 

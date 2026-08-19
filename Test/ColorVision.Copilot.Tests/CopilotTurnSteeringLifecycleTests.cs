@@ -5,6 +5,23 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotTurnSteeringLifecycleTests
 {
     [Fact]
+    public void PublishedSteeringEventOwnsItsMessageCollection()
+    {
+        var source = new[]
+        {
+            new CopilotSteeringMessageSnapshot("message:1", "continue"),
+        };
+
+        var agentEvent = CopilotAgentEvent.SteeringDelivered(source);
+        source[0] = new CopilotSteeringMessageSnapshot("message:2", "rewritten");
+
+        Assert.Equal("message:1", Assert.Single(agentEvent.SteeringMessages).MessageId);
+        var messages = Assert.IsAssignableFrom<IList<CopilotSteeringMessageSnapshot>>(
+            agentEvent.SteeringMessages);
+        Assert.Throws<NotSupportedException>(() => messages[0] = source[0]);
+    }
+
+    [Fact]
     public void ReducerAcceptsDistinctDeliveredAndRecoveredMessages()
     {
         var state = Observe(

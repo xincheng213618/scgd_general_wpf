@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using ColorVision.Copilot;
+using Microsoft.Extensions.AI;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -1100,6 +1101,7 @@ public sealed class CopilotCodexConfiguredCommandHookTests
             Assert.Equal("Recording read tool completed.", outcome.StepRecord.Observation.Summary);
             Assert.Equal("PostToolUse hook feedback.", outcome.StepRecord.EffectiveModelObservation.Summary);
             Assert.Equal("review generated output", outcome.StepRecord.EffectiveModelObservation.Content);
+            Assert.Equal(CopilotToolPostExecutionControl.Blocked, outcome.PostExecutionControl);
             using var formatted = JsonDocument.Parse(CopilotFrameworkToolResultFormatter.Format(outcome));
             Assert.Equal(
                 "PostToolUse hook feedback.",
@@ -1155,10 +1157,64 @@ public sealed class CopilotCodexConfiguredCommandHookTests
             Assert.Equal(
                 "re-evaluate the completed output",
                 outcome.StepRecord.EffectiveModelObservation.Content);
+            Assert.Equal(CopilotToolPostExecutionControl.Stopped, outcome.PostExecutionControl);
+            Assert.Equal("re-evaluate the completed output", outcome.PostExecutionControlReason);
             var run = Assert.Single(outcome.HookRuns.Where(item =>
                 item.SourceId.StartsWith("codex-config:", StringComparison.Ordinal)));
             Assert.Equal(CopilotToolExecutionHookState.Stopped, run.State);
             Assert.Empty(run.FailureCode);
+        }
+        finally
+        {
+            Directory.Delete(workspace, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task FrameworkBridgeSignalsPostToolStopAfterRecordingCompletedTool()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var longReason = "review\r\n" + new string('x', 500);
+            var runner = new RecordingCommandHookRunner(new CopilotCodexCommandHookProcessResult(
+                0,
+                false,
+                JsonSerializer.Serialize(new
+                {
+                    @continue = false,
+                    reason = longReason,
+                }),
+                string.Empty));
+            var tool = new RecordingReadTool();
+            var request = CreateRequest(
+                workspace,
+                CreateDefinition(CopilotCodexConfiguredHookEvent.PostToolUse, "^RecordingReadTool$"));
+            var stopSignalCount = 0;
+            var bridge = new CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge(
+                request,
+                CopilotExecutionScope.ForAgentRun(request),
+                [tool],
+                maxToolCalls: 2,
+                CreateExecutor(runner),
+                new CopilotFrameworkApprovalCoordinator(),
+                _ => { },
+                capabilityRevisionProvider: () => 1,
+                onPostToolStopRequested: () => Interlocked.Increment(ref stopSignalCount));
+            var function = Assert.IsAssignableFrom<AIFunction>(Assert.Single(bridge.CreateFunctions()));
+
+            await function.InvokeAsync(new AIFunctionArguments(), CancellationToken.None);
+
+            Assert.Equal(1, stopSignalCount);
+            Assert.True(bridge.PostToolStopRequested);
+            Assert.True(Assert.Single(bridge.StepRecords).Observation.Success);
+            var blocker = Assert.IsType<CopilotAgentBlockerSnapshot>(bridge.GetPostToolStopBlocker());
+            Assert.Equal(CopilotAgentBlockerKind.Policy, blocker.Kind);
+            Assert.Equal("post_tool_hook_stopped", blocker.Code);
+            Assert.Equal("RecordingReadTool", blocker.ToolName);
+            Assert.True(blocker.IsStructurallyValid());
+            Assert.DoesNotContain(blocker.Summary, char.IsControl);
+            Assert.True(blocker.Summary.Length <= CopilotAgentTaskEventJournal.MaxSummaryLength);
         }
         finally
         {

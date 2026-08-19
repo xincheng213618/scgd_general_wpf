@@ -1,4 +1,7 @@
 using ColorVision.Copilot;
+using Microsoft.Extensions.AI;
+using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -94,7 +97,167 @@ public sealed class CopilotToolExecutionCancellationTests
         }
     }
 
-    private static CopilotToolInvocation CreateInvocation(ICopilotTool tool, string callId)
+    [Fact]
+    public async Task NonIdempotentWriteTimeoutReportsUnknownOutcomeWithoutPermittingRetry()
+    {
+        using var tool = new BlockingCancellationTool(
+            TimeSpan.FromMilliseconds(50),
+            isWrite: true);
+        var executor = new CopilotToolExecutor();
+        var executionTask = executor.ExecuteAsync(
+            CreateInvocation(tool, "write-timeout-call", frameworkApprovalGranted: true),
+            _ => { },
+            CancellationToken.None);
+
+        try
+        {
+            Assert.True(tool.Started.Wait(TestTimeout));
+            var outcome = await executionTask.WaitAsync(TestTimeout);
+
+            Assert.Equal(CopilotToolExecutionState.TimedOut, outcome.Execution.State);
+            Assert.Equal(CopilotToolFailureKind.OutcomeUnknown, outcome.Result.FailureKind);
+            Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, outcome.Result.FailureCode);
+            Assert.False(outcome.Execution.RetryEligible);
+            using var payload = JsonDocument.Parse(CopilotFrameworkToolResultFormatter.Format(outcome));
+            Assert.Equal("outcome_unknown", payload.RootElement.GetProperty("failure_kind").GetString());
+            Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, payload.RootElement.GetProperty("failure_code").GetString());
+            Assert.False(payload.RootElement.GetProperty("retry_allowed").GetBoolean());
+            Assert.False(tool.ReleaseInvocation.IsSet);
+        }
+        finally
+        {
+            tool.ReleaseCancellationCallback.Set();
+            tool.ReleaseInvocation.Set();
+            try
+            {
+                await executionTask.WaitAsync(TestTimeout);
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    [Fact]
+    public async Task CancellingStartedWritePublishesInterruptedUnknownOutcome()
+    {
+        using var tool = new BlockingCancellationTool(TimeSpan.FromSeconds(10), isWrite: true);
+        using var cancellation = new CancellationTokenSource();
+        var events = new ConcurrentQueue<CopilotAgentEvent>();
+        var executor = new CopilotToolExecutor();
+        var executionTask = executor.ExecuteAsync(
+            CreateInvocation(tool, "write-cancelled-call", frameworkApprovalGranted: true),
+            events.Enqueue,
+            cancellation.Token);
+
+        try
+        {
+            Assert.True(tool.Started.Wait(TestTimeout));
+            cancellation.Cancel();
+            var cancellationException = await Assert.ThrowsAsync<CopilotToolExecutionCancellationException>(
+                () => executionTask.WaitAsync(TestTimeout));
+
+            var terminal = Assert.Single(events, item => item.Type == CopilotAgentEventType.ToolResult);
+            Assert.Same(cancellationException.Outcome.Execution, terminal.ToolExecution);
+            Assert.Same(cancellationException.Outcome.Result, terminal.ToolResult);
+            Assert.Equal(CopilotToolExecutionState.Interrupted, terminal.ToolExecution?.State);
+            Assert.Equal(CopilotToolFailureKind.OutcomeUnknown, terminal.ToolResult?.FailureKind);
+            Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, terminal.ToolResult?.FailureCode);
+            Assert.False(terminal.ToolExecution!.RetryEligible);
+            Assert.False(tool.ReleaseInvocation.IsSet);
+        }
+        finally
+        {
+            tool.ReleaseCancellationCallback.Set();
+            tool.ReleaseInvocation.Set();
+            try
+            {
+                await executionTask.WaitAsync(TestTimeout);
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    [Fact]
+    public async Task FrameworkBridgeRetainsStartedWriteCancellationAsAStepRecord()
+    {
+        using var tool = new BlockingCancellationTool(
+            TimeSpan.FromSeconds(10),
+            isWrite: true,
+            requiresApproval: false);
+        using var cancellation = new CancellationTokenSource();
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "write-cancellation-conversation",
+            TaskId = "write-cancellation-task",
+            Mode = CopilotAgentMode.Code,
+            UserText = "Apply the requested write.",
+            TaskIntentText = "Apply the requested write.",
+        };
+        var bridge = new CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge(
+            request,
+            CopilotExecutionScope.ForAgentRun(request),
+            [tool],
+            maxToolCalls: 1,
+            new CopilotToolExecutor(),
+            new CopilotFrameworkApprovalCoordinator(),
+            _ => { },
+            capabilityRevisionProvider: () => 1);
+        var function = Assert.IsAssignableFrom<AIFunction>(Assert.Single(bridge.CreateFunctions()));
+        var executionTask = function.InvokeAsync(
+            new AIFunctionArguments(),
+            cancellation.Token).AsTask();
+
+        try
+        {
+            Assert.True(tool.Started.Wait(TestTimeout));
+            cancellation.Cancel();
+            await Assert.ThrowsAsync<CopilotToolExecutionCancellationException>(
+                () => executionTask.WaitAsync(TestTimeout));
+
+            var step = Assert.Single(bridge.StepRecords);
+            Assert.Equal(CopilotToolExecutionState.Interrupted, step.Execution.State);
+            Assert.Equal(CopilotToolFailureKind.OutcomeUnknown, step.Observation.FailureKind);
+            Assert.Equal(CopilotToolFailureCode.OutcomeUnknown, step.Observation.FailureCode);
+            Assert.Contains(CopilotToolFailureCode.OutcomeUnknown, step.ModelToolResult, StringComparison.Ordinal);
+        }
+        finally
+        {
+            tool.ReleaseCancellationCallback.Set();
+            tool.ReleaseInvocation.Set();
+            try
+            {
+                await executionTask.WaitAsync(TestTimeout);
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    [Fact]
+    public async Task SettledWriteCancellationIsNotMisclassifiedAsUnknownOutcome()
+    {
+        var tool = new SelfCancellingWriteTool();
+        var executor = new CopilotToolExecutor();
+
+        var exception = await Assert.ThrowsAsync<CopilotToolExecutionCancellationException>(() =>
+            executor.ExecuteAsync(
+                CreateInvocation(tool, "settled-write-cancellation", frameworkApprovalGranted: true),
+                _ => { },
+                CancellationToken.None));
+
+        Assert.Equal(CopilotToolExecutionState.Cancelled, exception.Outcome.Execution.State);
+        Assert.Equal(CopilotToolFailureKind.Cancelled, exception.Outcome.Result.FailureKind);
+        Assert.NotEqual(CopilotToolFailureCode.OutcomeUnknown, exception.Outcome.Result.FailureCode);
+    }
+
+    private static CopilotToolInvocation CreateInvocation(
+        ICopilotTool tool,
+        string callId,
+        bool frameworkApprovalGranted = false)
     {
         return new CopilotToolInvocation
         {
@@ -104,6 +267,7 @@ public sealed class CopilotToolExecutionCancellationTests
             MaxAttempts = 1,
             RuntimeName = "test",
             Tool = tool,
+            FrameworkApprovalGranted = frameworkApprovalGranted,
             AgentRequest = new CopilotAgentRequest
             {
                 Mode = CopilotAgentMode.Auto,
@@ -112,18 +276,25 @@ public sealed class CopilotToolExecutionCancellationTests
         };
     }
 
-    private sealed class BlockingCancellationTool : ICopilotTool, IDisposable
+    private sealed class BlockingCancellationTool : ICopilotFrameworkApprovedTool, IDisposable
     {
         private readonly TimeSpan _timeout;
+        private readonly bool _isWrite;
+        private readonly bool _requiresApproval;
 
         public BlockingCancellationTool()
-            : this(TimeSpan.FromMilliseconds(50))
+            : this(TimeSpan.FromMilliseconds(50), isWrite: false)
         {
         }
 
-        public BlockingCancellationTool(TimeSpan timeout)
+        public BlockingCancellationTool(
+            TimeSpan timeout,
+            bool isWrite = false,
+            bool requiresApproval = true)
         {
             _timeout = timeout;
+            _isWrite = isWrite;
+            _requiresApproval = requiresApproval;
         }
 
         public ManualResetEventSlim Started { get; } = new();
@@ -139,7 +310,22 @@ public sealed class CopilotToolExecutionCancellationTests
         public string Description => "Blocks its synchronous prefix and cancellation callback for timeout testing.";
 
         public CopilotToolCapabilityDescriptor Capability =>
-            CopilotToolCapabilityDescriptor.ReadOnly(_timeout);
+            _isWrite
+                ? _requiresApproval
+                    ? CopilotToolCapabilityDescriptor.ProtectedWrite(
+                        CopilotToolIdempotency.NonIdempotent,
+                        _timeout)
+                    : new CopilotToolCapabilityDescriptor
+                    {
+                        Access = CopilotToolAccess.Write,
+                        RiskLevel = CopilotToolRiskLevel.Medium,
+                        ApprovalMode = CopilotToolApprovalMode.Never,
+                        Idempotency = CopilotToolIdempotency.NonIdempotent,
+                        ConcurrencyMode = CopilotToolConcurrencyMode.Exclusive,
+                        ExecutionTimeout = _timeout,
+                        EvidenceMode = CopilotToolEvidenceMode.None,
+                    }
+                : CopilotToolCapabilityDescriptor.ReadOnly(_timeout);
 
         public bool CanHandle(CopilotAgentRequest request) => true;
 
@@ -164,6 +350,11 @@ public sealed class CopilotToolExecutionCancellationTests
             });
         }
 
+        public Task<CopilotToolResult> ExecuteApprovedAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken) => ExecuteAsync(request, toolInput, cancellationToken);
+
         public void Dispose()
         {
             ReleaseCancellationCallback.Set();
@@ -173,5 +364,30 @@ public sealed class CopilotToolExecutionCancellationTests
             ReleaseCancellationCallback.Dispose();
             ReleaseInvocation.Dispose();
         }
+    }
+
+    private sealed class SelfCancellingWriteTool : ICopilotFrameworkApprovedTool
+    {
+        public string Name => "SelfCancellingWriteTool";
+
+        public string Description => "Cancels itself after the executor records that it started.";
+
+        public CopilotToolCapabilityDescriptor Capability { get; } =
+            CopilotToolCapabilityDescriptor.ProtectedWrite(
+                CopilotToolIdempotency.NonIdempotent,
+                TimeSpan.FromSeconds(5));
+
+        public bool CanHandle(CopilotAgentRequest request) => true;
+
+        public Task<CopilotToolResult> ExecuteAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken) => ExecuteApprovedAsync(request, toolInput, cancellationToken);
+
+        public Task<CopilotToolResult> ExecuteApprovedAsync(
+            CopilotAgentRequest request,
+            CopilotAgentToolInput toolInput,
+            CancellationToken cancellationToken) => Task.FromCanceled<CopilotToolResult>(
+                new CancellationToken(canceled: true));
     }
 }

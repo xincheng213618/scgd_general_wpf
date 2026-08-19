@@ -465,7 +465,6 @@ namespace ColorVision.Copilot
             {
                 if (hookCancellation != null)
                     await CancelWithoutThrowingAsync(hookCancellation).ConfigureAwait(false);
-                CopilotCancellationBoundary.ObserveLateFault(callbackTask);
                 EnqueueResult(
                     session,
                     conversationId,
@@ -478,15 +477,18 @@ namespace ColorVision.Copilot
                         $"The asynchronous {eventName} hook exceeded its {timeout.TotalSeconds:0}-second timeout."));
                 Log.Warn(
                     $"Copilot async command hook timed out. Event={eventName} Turn={turnId} HookSource={sourceId}");
+                await WaitForCallbackCompletionWithoutThrowingAsync(callbackTask)
+                    .ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (session.IsClosing
                 || session.Lifetime.IsCancellationRequested)
             {
                 if (hookCancellation != null)
                     await CancelWithoutThrowingAsync(hookCancellation).ConfigureAwait(false);
-                CopilotCancellationBoundary.ObserveLateFault(callbackTask);
                 Log.Info(
                     $"Copilot async command hook was cancelled during session shutdown. Event={eventName} Turn={turnId} HookSource={sourceId}");
+                await WaitForCallbackCompletionWithoutThrowingAsync(callbackTask)
+                    .ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -599,6 +601,21 @@ namespace ColorVision.Copilot
             try
             {
                 await cancellation.CancelAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+            }
+        }
+
+        private static async Task WaitForCallbackCompletionWithoutThrowingAsync(
+            Task? callbackTask)
+        {
+            if (callbackTask == null)
+                return;
+
+            try
+            {
+                await callbackTask.ConfigureAwait(false);
             }
             catch
             {

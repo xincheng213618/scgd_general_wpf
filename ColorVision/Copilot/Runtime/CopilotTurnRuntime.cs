@@ -445,6 +445,8 @@ namespace ColorVision.Copilot
                 UserPromptSubmitAdditionalContexts = userPromptSubmitAdditionalContexts,
                 AsyncHookAdditionalContexts = asyncHookAdditionalContexts,
                 SessionCheckpoint = request.SessionCheckpoint,
+                TaskEventJournalBaseline = request.TaskEventJournalBaseline,
+                StatePersistenceBarrier = eventSink.RequestStatePersistenceBarrierAsync,
                 Recovery = request.Recovery,
                 RunControl = request.RunControl,
                 AgentDefaults = request.AgentDefaults,
@@ -474,6 +476,7 @@ namespace ColorVision.Copilot
             {
                 if (reviewAnswer.HasValue)
                     reviewAnswer = reviewAnswer.Value.Observe(agentEvent);
+                var planChanged = turnPlan.Observe(agentEvent, out var planSnapshot);
                 eventSink.OnAgentEvent(agentEvent);
                 if (reviewTarget != null
                     && CopilotTurnCodeReviewSnapshotCapture.TryCaptureUpdate(
@@ -493,7 +496,7 @@ namespace ColorVision.Copilot
                 }
                 if (workspaceDiff.Observe(agentEvent, out var snapshot))
                     eventSink.OnWorkspaceDiffUpdated(snapshot);
-                if (turnPlan.Observe(agentEvent, out var planSnapshot))
+                if (planChanged)
                     eventSink.OnPlanUpdated(planSnapshot);
             }
 

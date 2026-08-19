@@ -9,9 +9,15 @@ import static org.junit.Assert.assertTrue;
 public class AppNavigationPolicyTest {
     @Test
     public void pairedOperationsLaunchUsesTheFullOperationsSurface() {
-        assertTrue(AppNavigationPolicy.shouldOpenOperationsDirectly(true, true));
-        assertFalse(AppNavigationPolicy.shouldOpenOperationsDirectly(false, true));
-        assertFalse(AppNavigationPolicy.shouldOpenOperationsDirectly(true, false));
+        assertTrue(AppNavigationPolicy.shouldOpenPairedWorkspace(true, true));
+        assertFalse(AppNavigationPolicy.shouldOpenPairedWorkspace(false, true));
+        assertFalse(AppNavigationPolicy.shouldOpenPairedWorkspace(true, false));
+        assertEquals(OperationsDestinationState.OVERVIEW,
+                AppNavigationPolicy.pairedDestinationForTab(0, 0, 1, 2));
+        assertEquals(OperationsDestinationState.TOOLS,
+                AppNavigationPolicy.pairedDestinationForTab(1, 0, 1, 2));
+        assertEquals(OperationsDestinationState.SETTINGS,
+                AppNavigationPolicy.pairedDestinationForTab(2, 0, 1, 2));
     }
 
     @Test

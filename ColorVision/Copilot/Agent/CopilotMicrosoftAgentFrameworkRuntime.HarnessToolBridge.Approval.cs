@@ -27,8 +27,9 @@ namespace ColorVision.Copilot
                     return false;
                 }
 
-                var tool = _tools.Values.FirstOrDefault(candidate => string.Equals(ToFunctionName(candidate.Name), functionCall.Name, StringComparison.OrdinalIgnoreCase));
-                if (tool == null || !RequiresNativeApproval(tool))
+                if (string.IsNullOrWhiteSpace(functionCall.Name)
+                    || !_toolsByFunctionName.TryGetValue(functionCall.Name, out var tool)
+                    || !RequiresNativeApproval(tool))
                 {
                     error = $"Function {functionCall.Name} is not registered as a natively approved ColorVision tool.";
                     return false;

@@ -96,7 +96,8 @@ namespace ColorVision.Copilot.Mcp
             };
 
             CurrentScope.Value = scope;
-            Log.Info($"MCP tool call started. TimestampUtc={scope.TimestampUtc:O} Tool={scope.ToolName} Arguments={scope.ArgumentSummary} Caller={EmptyLabel(executionScope.CallerIdentity)} ScopeId={executionScope.ScopeId}");
+            CopilotNonAuthoritativeDiagnosticBoundary.TryWrite(() =>
+                Log.Info($"MCP tool call started. TimestampUtc={scope.TimestampUtc:O} Tool={scope.ToolName} Arguments={scope.ArgumentSummary} Caller={EmptyLabel(executionScope.CallerIdentity)} ScopeId={executionScope.ScopeId}"));
         }
 
         public static void ToolCallCompleted(string toolName, bool success, TimeSpan elapsed, string failureCode)
@@ -121,7 +122,8 @@ namespace ColorVision.Copilot.Mcp
             }
 
             CurrentScope.Value = null;
-            Log.Info($"MCP tool call completed. TimestampUtc={DateTimeOffset.UtcNow:O} Tool={entry.ToolName} Arguments={entry.ArgumentSummary} Success={entry.Success} DurationMs={entry.DurationMs} Error={EmptyLabel(entry.ErrorMessage)} Caller={EmptyLabel(entry.CallerSource)} ScopeId={EmptyLabel(entry.ScopeId)}");
+            CopilotNonAuthoritativeDiagnosticBoundary.TryWrite(() =>
+                Log.Info($"MCP tool call completed. TimestampUtc={DateTimeOffset.UtcNow:O} Tool={entry.ToolName} Arguments={entry.ArgumentSummary} Success={entry.Success} DurationMs={entry.DurationMs} Error={EmptyLabel(entry.ErrorMessage)} Caller={EmptyLabel(entry.CallerSource)} ScopeId={EmptyLabel(entry.ScopeId)}"));
         }
 
         public static void AuthenticationFailed(string? callerSource, string reason)
@@ -144,7 +146,8 @@ namespace ColorVision.Copilot.Mcp
                     RecentEntries.RemoveRange(0, RecentEntries.Count - MaxEntries);
             }
 
-            Log.Warn($"MCP authentication failed. TimestampUtc={entry.TimestampUtc:O} Reason={entry.ErrorMessage} Caller={EmptyLabel(entry.CallerSource)}");
+            CopilotNonAuthoritativeDiagnosticBoundary.TryWrite(() =>
+                Log.Warn($"MCP authentication failed. TimestampUtc={entry.TimestampUtc:O} Reason={entry.ErrorMessage} Caller={EmptyLabel(entry.CallerSource)}"));
         }
 
         public static void ActionCreated(ConfirmableAction action) => RecordActionEvent("action_created", action, true, "Created pending confirmable action.");
@@ -201,7 +204,8 @@ namespace ColorVision.Copilot.Mcp
                     RecentEntries.RemoveRange(0, RecentEntries.Count - MaxEntries);
             }
 
-            Log.Info($"MCP action event. TimestampUtc={entry.TimestampUtc:O} Event={entry.ToolName} ActionId={entry.ActionId} Tool={action.ToolName} Conversation={EmptyLabel(entry.ConversationId)} Task={EmptyLabel(entry.TaskId)} Run={EmptyLabel(entry.RunId)} WorkspaceIdentity={EmptyLabel(entry.WorkspaceIdentity)} Caller={EmptyLabel(entry.CallerSource)} ScopeId={EmptyLabel(entry.ScopeId)} ApprovalSource={EmptyLabel(entry.ApprovalDecisionSource)} ApprovalReason={EmptyLabel(entry.ApprovalDecisionReason)} Success={entry.Success} Message={EmptyLabel(entry.ErrorMessage)}");
+            CopilotNonAuthoritativeDiagnosticBoundary.TryWrite(() =>
+                Log.Info($"MCP action event. TimestampUtc={entry.TimestampUtc:O} Event={entry.ToolName} ActionId={entry.ActionId} Tool={action.ToolName} Conversation={EmptyLabel(entry.ConversationId)} Task={EmptyLabel(entry.TaskId)} Run={EmptyLabel(entry.RunId)} WorkspaceIdentity={EmptyLabel(entry.WorkspaceIdentity)} Caller={EmptyLabel(entry.CallerSource)} ScopeId={EmptyLabel(entry.ScopeId)} ApprovalSource={EmptyLabel(entry.ApprovalDecisionSource)} ApprovalReason={EmptyLabel(entry.ApprovalDecisionReason)} Success={entry.Success} Message={EmptyLabel(entry.ErrorMessage)}"));
         }
 
         private static CopilotMcpAuditEntry WithExecutionScope(

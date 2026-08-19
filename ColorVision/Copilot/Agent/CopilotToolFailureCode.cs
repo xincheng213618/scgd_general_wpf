@@ -6,6 +6,9 @@ namespace ColorVision.Copilot
     public static class CopilotToolFailureCode
     {
         public const int MaxLength = 64;
+        public const string ApprovalInterrupted = "approval_interrupted";
+        public const string NotStarted = "tool_not_started";
+        public const string OutcomeUnknown = "tool_outcome_unknown";
 
         public static string Normalize(string? value)
         {
@@ -34,6 +37,13 @@ namespace ColorVision.Copilot
             }
 
             return builder.ToString().TrimEnd('_');
+        }
+
+        internal static bool HasApprovalProvenance(string? value)
+        {
+            var normalized = Normalize(value);
+            return normalized.Contains("approval", StringComparison.Ordinal)
+                || normalized.StartsWith("automatic_review_", StringComparison.Ordinal);
         }
     }
 }

@@ -50,6 +50,20 @@ namespace ColorVision.Copilot
             }
         }
 
+        private async Task FlushStatePersistenceBarrierAsync()
+        {
+            if (_stateStore is CopilotChatStateStore stateStore
+                && stateStore.IsStatePersistenceBlocked)
+            {
+                throw new InvalidOperationException(
+                    "Copilot state persistence is blocked by a newer state schema.");
+            }
+
+            PublishSelectedTaskEventJournal();
+            _statePersistenceCoordinator.RequestSave(immediate: true);
+            await _statePersistenceCoordinator.FlushAsync();
+        }
+
         private bool CanRetryStatePersistence() => HasStatePersistenceNotice
             && !_isRetryingStatePersistence
             && Volatile.Read(ref _disposeState) == 0;
@@ -81,6 +95,17 @@ namespace ColorVision.Copilot
 
         private void Application_Exit(object? sender, ExitEventArgs e)
         {
+            try
+            {
+                CopilotMcpServer.Instance.ShutdownAsync()
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (Exception exception)
+            {
+                System.Diagnostics.Trace.TraceError(
+                    $"Copilot MCP server shutdown failed: {CopilotAgentTraceEntry.Sanitize(exception.Message)}");
+            }
             PreserveQueuedFollowUpsForRestart();
             CopilotSteeringRecovery.RestorePendingToDrafts(_state);
             var scheduledRuns = _taskHost.ScheduledRuns;
@@ -96,6 +121,17 @@ namespace ColorVision.Copilot
                 System.Diagnostics.Trace.TraceError(
                     $"Copilot SessionEnd hook shutdown failed open: {CopilotAgentTraceEntry.Sanitize(exception.Message)}");
             }
+            try
+            {
+                CopilotToolExecutionHookBackgroundScheduler.Shared.ShutdownAsync()
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (Exception exception)
+            {
+                System.Diagnostics.Trace.TraceError(
+                    $"Copilot async tool hook shutdown failed: {CopilotAgentTraceEntry.Sanitize(exception.Message)}");
+            }
             CopilotBackgroundShellCommandRegistry.Shared.CommandCompleted -= BackgroundShellCommandRegistry_CommandCompleted;
             CopilotBackgroundShellCommandRegistry.Shared.OutputMonitorEvent -= BackgroundShellCommandRegistry_OutputMonitorEvent;
             try
@@ -110,6 +146,7 @@ namespace ColorVision.Copilot
                     $"Copilot background process shutdown failed: {exception}");
             }
             CopilotShellCommandOutputArchiveRegistry.Shared.Dispose();
+            CopilotToolOutputArchiveRegistry.Shared.Dispose();
             FinalizeUnstartedRunsForShutdown(scheduledRuns);
             try
             {

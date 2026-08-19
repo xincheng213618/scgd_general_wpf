@@ -1,5 +1,6 @@
 #pragma warning disable MAAI001
 #pragma warning disable CA1859
+#pragma warning disable CA1001
 using Anthropic;
 using Anthropic.Core;
 using ColorVision.Copilot.Mcp;
@@ -40,7 +41,7 @@ namespace ColorVision.Copilot
             private readonly Func<IReadOnlyList<string>> _deliveredSteeringMessages;
             private CopilotAgentSessionCheckpoint? _latestCheckpoint;
             private CopilotAgentTaskLedgerSnapshot? _latestTaskLedger;
-            private int _publishing;
+            private readonly SemaphoreSlim _publicationGate = new(1, 1);
 
             public LiveCheckpointPublisher(
                 CopilotAgentRequest request,
@@ -88,12 +89,63 @@ namespace ColorVision.Copilot
             {
                 ArgumentNullException.ThrowIfNull(agent);
                 ArgumentNullException.ThrowIfNull(session);
-                if (Interlocked.CompareExchange(ref _publishing, 1, 0) != 0)
+                if (!await _publicationGate.WaitAsync(
+                        millisecondsTimeout: 0,
+                        cancellationToken).ConfigureAwait(false))
+                {
                     return false;
+                }
+                try
+                {
+                    return await PublishCoreAsync(
+                        agent,
+                        session,
+                        knownTaskLedger,
+                        cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    _publicationGate.Release();
+                }
+            }
+
+            public async ValueTask<bool> PublishForToolDispatchAsync(
+                AIAgent agent,
+                AgentSession session,
+                CancellationToken cancellationToken)
+            {
+                ArgumentNullException.ThrowIfNull(agent);
+                ArgumentNullException.ThrowIfNull(session);
+                await _publicationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    return await PublishCoreAsync(
+                        agent,
+                        session,
+                        null,
+                        cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    _publicationGate.Release();
+                }
+            }
+
+            private async ValueTask<bool> PublishCoreAsync(
+                AIAgent agent,
+                AgentSession session,
+                CopilotAgentTaskLedgerSnapshot? knownTaskLedger,
+                CancellationToken cancellationToken)
+            {
                 try
                 {
                     var taskLedger = knownTaskLedger
-                        ?? await CaptureTaskLedgerAsync(_todoProvider, _modeProvider, session, _sessionResumed, cancellationToken);
+                        ?? await CaptureTaskLedgerAsync(
+                            _todoProvider,
+                            _modeProvider,
+                            session,
+                            _sessionResumed,
+                            cancellationToken);
                     if (knownTaskLedger == null)
                         _taskEventJournalBuilder.RecordTaskLedger(taskLedger, "checkpoint");
 
@@ -102,7 +154,10 @@ namespace ColorVision.Copilot
                         _bridge.StepRecords,
                         _capabilitySnapshot,
                         DateTimeOffset.UtcNow);
-                    var serializedSession = await agent.SerializeSessionAsync(session, null, cancellationToken);
+                    var serializedSession = await agent.SerializeSessionAsync(
+                        session,
+                        null,
+                        cancellationToken);
                     var conversationMemory = CopilotAgentConversationMemory.Merge(
                         _requestedCheckpoint?.ConversationMemory,
                         _request.History,
@@ -124,7 +179,8 @@ namespace ColorVision.Copilot
                         _request.ConfiguredDeveloperInstructions);
                     if (checkpoint == null)
                     {
-                        _emit(CopilotAgentEvent.RuntimeDiagnostic("Incremental Agent checkpoint was rejected because the serialized state was invalid."));
+                        _emit(CopilotAgentEvent.RuntimeDiagnostic(
+                            "Incremental Agent checkpoint was rejected because the serialized state was invalid."));
                         return false;
                     }
 
@@ -142,10 +198,6 @@ namespace ColorVision.Copilot
                     _emit(CopilotAgentEvent.RuntimeDiagnostic(
                         $"Incremental Agent checkpoint could not be saved ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
                     return false;
-                }
-                finally
-                {
-                    Volatile.Write(ref _publishing, 0);
                 }
             }
         }

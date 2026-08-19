@@ -270,6 +270,8 @@ public sealed class CopilotReviewProjectInstructionContextTests : IDisposable
         public CopilotToolCapabilityDescriptor Capability { get; } =
             CopilotToolCapabilityDescriptor.ReadOnly();
 
+        public CopilotToolInputSchema InputSchema { get; } = new CopilotInspectGitDiffTool().InputSchema;
+
         public bool CanHandle(CopilotAgentRequest request) => true;
 
         public Task<CopilotToolResult> ExecuteAsync(

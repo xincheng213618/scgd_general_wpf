@@ -2,6 +2,7 @@ using ColorVision.Copilot;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -157,6 +158,24 @@ public sealed class CopilotCodexToolRegistryCollisionTests
 
         Assert.Equal("duplicate tool: functions.collisionprobe", exception.Message);
         Assert.Empty(events);
+    }
+
+    [Fact]
+    public void ProviderFunctionNamesAreBoundedAndCollisionSafe()
+    {
+        string longToolName = new('A', 100);
+        string[] toolNames = ["FooBar", "Foo_Bar", longToolName];
+
+        var first = CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.BuildFunctionNameMap(toolNames);
+        var second = CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.BuildFunctionNameMap(toolNames.Reverse());
+
+        Assert.Equal("colorvision_read_local_file", CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.ToFunctionName("ReadLocalFile"));
+        Assert.Equal(toolNames.Length, first.Values.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.All(first.Values, functionName => Assert.InRange(functionName.Length, 1, 64));
+        Assert.NotEqual(first["FooBar"], first["Foo_Bar"]);
+        Assert.Equal(first["FooBar"], second["FooBar"]);
+        Assert.Equal(first["Foo_Bar"], second["Foo_Bar"]);
+        Assert.Equal(first[longToolName], second[longToolName]);
     }
 
     [Fact]

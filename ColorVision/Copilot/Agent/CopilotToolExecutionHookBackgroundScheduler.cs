@@ -34,14 +34,19 @@ namespace ColorVision.Copilot
     {
         internal const int MaxConcurrency = 4;
         internal const int MaxPending = 64;
+        private static readonly TimeSpan ShutdownWait = TimeSpan.FromSeconds(3);
 
         private static readonly ILog Log = LogManager.GetLogger(
             typeof(CopilotToolExecutionHookBackgroundScheduler));
         private readonly SemaphoreSlim _concurrency = new(MaxConcurrency, MaxConcurrency);
         private readonly object _activityGate = new();
+        private readonly CancellationTokenSource _shutdown = new();
+        private TaskCompletionSource? _quiescence;
+        private Task<bool>? _shutdownTask;
         private int _pending;
         private int _running;
         private int _timedOutRetained;
+        private bool _stopping;
 
         public static CopilotToolExecutionHookBackgroundScheduler Shared { get; } = new();
 
@@ -80,12 +85,32 @@ namespace ColorVision.Copilot
             }
         }
 
+        public Task<bool> ShutdownAsync()
+        {
+            lock (_activityGate)
+            {
+                if (_shutdownTask != null)
+                    return _shutdownTask;
+
+                _stopping = true;
+                var completion = _pending == 0
+                    ? Task.CompletedTask
+                    : _quiescence!.Task;
+                return _shutdownTask = ShutdownCoreAsync(completion);
+            }
+        }
+
         private bool TryReservePendingSlot()
         {
             lock (_activityGate)
             {
-                if (_pending >= MaxPending)
+                if (_stopping || _pending >= MaxPending)
                     return false;
+                if (_pending == 0)
+                {
+                    _quiescence = new TaskCompletionSource(
+                        TaskCreationOptions.RunContinuationsAsynchronously);
+                }
                 _pending++;
                 return true;
             }
@@ -105,11 +130,12 @@ namespace ColorVision.Copilot
             Task? callbackTask = null;
             try
             {
-                await _concurrency.WaitAsync().ConfigureAwait(false);
+                await _concurrency.WaitAsync(_shutdown.Token).ConfigureAwait(false);
                 entered = true;
                 lock (_activityGate)
                     _running++;
-                cancellation = new CancellationTokenSource();
+                cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                    _shutdown.Token);
                 callbackTask = callback(cancellation.Token) ?? Task.CompletedTask;
                 await callbackTask.WaitAsync(timeout).ConfigureAwait(false);
                 Log.Info(
@@ -131,8 +157,16 @@ namespace ColorVision.Copilot
             }
             catch (OperationCanceledException)
             {
-                Log.Warn(
-                    $"Copilot async tool hook cancelled itself. Tool={toolName} CallId={callId} HookSource={sourceId} Phase={phase}");
+                if (_shutdown.IsCancellationRequested)
+                {
+                    Log.Info(
+                        $"Copilot async tool hook stopped during application shutdown. Tool={toolName} CallId={callId} HookSource={sourceId} Phase={phase}");
+                }
+                else
+                {
+                    Log.Warn(
+                        $"Copilot async tool hook cancelled itself. Tool={toolName} CallId={callId} HookSource={sourceId} Phase={phase}");
+                }
             }
             catch (Exception ex)
             {
@@ -164,6 +198,7 @@ namespace ColorVision.Copilot
 
         private void ReleaseReservation(bool entered, bool timedOutRetained = false)
         {
+            TaskCompletionSource? quiescence = null;
             lock (_activityGate)
             {
                 if (timedOutRetained)
@@ -171,9 +206,40 @@ namespace ColorVision.Copilot
                 if (entered)
                     _running--;
                 _pending--;
+                if (_pending == 0)
+                {
+                    quiescence = _quiescence;
+                    _quiescence = null;
+                }
             }
             if (entered)
                 _concurrency.Release();
+            quiescence?.TrySetResult();
+        }
+
+        private async Task<bool> ShutdownCoreAsync(Task completion)
+        {
+            try
+            {
+                await _shutdown.CancelAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(
+                    $"Copilot async tool hook shutdown cancellation failed. ErrorType={ex.GetType().FullName}");
+            }
+
+            try
+            {
+                await completion.WaitAsync(ShutdownWait).ConfigureAwait(false);
+                return true;
+            }
+            catch (TimeoutException)
+            {
+                Log.Warn(
+                    $"Copilot async tool hook shutdown retained unfinished work after {ShutdownWait.TotalSeconds:0} seconds. Outstanding={GetActivitySnapshot().OutstandingCount}");
+                return false;
+            }
         }
 
         private static void CancelAndDisposeWithoutWaiting(

@@ -2,6 +2,7 @@
 using log4net;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -18,6 +19,7 @@ namespace ColorVision.Copilot.Mcp
         public const int MaximumConcurrentClients = 16;
         private const int MaxRequestHeaderBytes = 64 * 1024;
         private const int MaxRequestBodyBytes = 1024 * 1024;
+        private static readonly TimeSpan ShutdownWait = TimeSpan.FromSeconds(3);
         private static readonly ILog Log = LogManager.GetLogger(typeof(CopilotMcpServer));
         private static readonly Lazy<CopilotMcpServer> LazyInstance = new(() => new CopilotMcpServer());
 
@@ -27,9 +29,11 @@ namespace ColorVision.Copilot.Mcp
         private CancellationTokenSource? _cts;
         private TcpListener? _listener;
         private Task? _acceptLoopTask;
+        private Task<bool>? _shutdownTask;
+        private bool _shutdownRequested;
         private CopilotMcpRuntimeSettings _settings = new();
 
-        private CopilotMcpServer()
+        internal CopilotMcpServer()
         {
             _requestHandler = new CopilotMcpRequestHandler(() => _settings);
         }
@@ -61,6 +65,12 @@ namespace ColorVision.Copilot.Mcp
         {
             lock (_syncRoot)
             {
+                if (_shutdownRequested)
+                {
+                    LastStatusMessage = "ColorVision MCP server has shut down for application exit.";
+                    return;
+                }
+
                 var previousPort = _settings.Port;
                 var previousBearerToken = _settings.BearerToken;
                 _settings = settings ?? new CopilotMcpRuntimeSettings();
@@ -94,6 +104,20 @@ namespace ColorVision.Copilot.Mcp
             lock (_syncRoot)
             {
                 StopNoLock("ColorVision MCP server is stopped.");
+            }
+        }
+
+        public Task<bool> ShutdownAsync()
+        {
+            lock (_syncRoot)
+            {
+                if (_shutdownTask != null)
+                    return _shutdownTask;
+
+                _shutdownRequested = true;
+                var acceptLoopTask = _acceptLoopTask;
+                StopNoLock("ColorVision MCP server has shut down for application exit.");
+                return _shutdownTask = WaitForShutdownAsync(acceptLoopTask);
             }
         }
 
@@ -132,10 +156,18 @@ namespace ColorVision.Copilot.Mcp
             try
             {
                 _cts?.Cancel();
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("ColorVision MCP server cancellation failed during shutdown.", ex);
+            }
+            try
+            {
                 _listener?.Stop();
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Warn("ColorVision MCP listener stop failed during shutdown.", ex);
             }
             finally
             {
@@ -147,6 +179,46 @@ namespace ColorVision.Copilot.Mcp
                 IsRunning = false;
                 LastStatusMessage = statusMessage;
             }
+        }
+
+        private async Task<bool> WaitForShutdownAsync(Task? acceptLoopTask)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            if (acceptLoopTask != null)
+            {
+                try
+                {
+                    await acceptLoopTask.WaitAsync(ShutdownWait).ConfigureAwait(false);
+                }
+                catch (TimeoutException)
+                {
+                    Log.Warn(
+                        $"ColorVision MCP accept loop did not stop within {ShutdownWait.TotalSeconds:0} seconds.");
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn("ColorVision MCP accept loop failed while shutting down.", ex);
+                }
+            }
+
+            while (ActiveClientCount > 0)
+            {
+                var remaining = ShutdownWait - stopwatch.Elapsed;
+                if (remaining <= TimeSpan.Zero)
+                {
+                    Log.Warn(
+                        $"ColorVision MCP shutdown retained {ActiveClientCount} active client(s) after {ShutdownWait.TotalSeconds:0} seconds.");
+                    return false;
+                }
+
+                await Task.Delay(
+                    remaining < TimeSpan.FromMilliseconds(20)
+                        ? remaining
+                        : TimeSpan.FromMilliseconds(20)).ConfigureAwait(false);
+            }
+
+            return true;
         }
 
         private async Task AcceptLoopAsync(CancellationToken cancellationToken)

@@ -148,7 +148,12 @@ namespace ColorVision.Copilot
             CopilotToolExecutionInfo? execution = null,
             IReadOnlyList<CopilotToolExecutionHookRun>? hookRuns = null)
         {
-            return FromToolResult(result, execution, hookRuns, string.Empty);
+            ArgumentNullException.ThrowIfNull(result);
+            return FromToolResult(
+                CopilotToolResultContract.CreateSnapshot(result),
+                execution,
+                hookRuns,
+                string.Empty);
         }
 
         internal static CopilotAgentEvent FromToolResult(
@@ -163,7 +168,9 @@ namespace ColorVision.Copilot
                 Text = result?.Summary ?? string.Empty,
                 ToolResult = result,
                 ToolExecution = execution,
-                ToolExecutionHookRuns = hookRuns?.ToArray() ?? Array.Empty<CopilotToolExecutionHookRun>(),
+                ToolExecutionHookRuns = hookRuns == null || hookRuns.Count == 0
+                    ? Array.Empty<CopilotToolExecutionHookRun>()
+                    : Array.AsReadOnly(hookRuns.ToArray()),
                 ModelToolResult = modelToolResult ?? string.Empty,
             };
         }
@@ -260,11 +267,21 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(sessionCheckpoint);
             ArgumentNullException.ThrowIfNull(taskLedger);
+            if (!CopilotAgentSessionCheckpoint.TryCreateSnapshot(
+                    sessionCheckpoint,
+                    out var checkpointSnapshot))
+            {
+                throw new ArgumentException(
+                    "The Agent session checkpoint is not structurally valid.",
+                    nameof(sessionCheckpoint));
+            }
             return new CopilotAgentEvent
             {
                 Type = CopilotAgentEventType.CheckpointUpdated,
-                SessionCheckpoint = sessionCheckpoint,
-                TaskLedger = taskLedger,
+                SessionCheckpoint = checkpointSnapshot,
+                TaskLedger = CopilotAgentTaskLedgerSnapshot.CreateSnapshot(
+                    taskLedger,
+                    normalize: false),
             };
         }
 
@@ -317,24 +334,26 @@ namespace ColorVision.Copilot
         public static CopilotAgentEvent UserQuestionRequested(CopilotUserQuestionSnapshot question)
         {
             ArgumentNullException.ThrowIfNull(question);
-            if (!question.IsPending || !question.IsStructurallyValid())
+            if (!question.IsPending
+                || !CopilotUserQuestionSnapshot.TryCreateSnapshot(question, out var snapshot))
                 throw new ArgumentException("The user question request is not structurally valid.", nameof(question));
             return new CopilotAgentEvent
             {
                 Type = CopilotAgentEventType.UserQuestionRequested,
-                UserQuestion = question,
+                UserQuestion = snapshot,
             };
         }
 
         public static CopilotAgentEvent UserQuestionResolved(CopilotUserQuestionSnapshot question)
         {
             ArgumentNullException.ThrowIfNull(question);
-            if (question.IsPending || !question.IsStructurallyValid())
+            if (question.IsPending
+                || !CopilotUserQuestionSnapshot.TryCreateSnapshot(question, out var snapshot))
                 throw new ArgumentException("The resolved user question is not structurally valid.", nameof(question));
             return new CopilotAgentEvent
             {
                 Type = CopilotAgentEventType.UserQuestionResolved,
-                UserQuestion = question,
+                UserQuestion = snapshot,
             };
         }
     }
@@ -364,7 +383,9 @@ namespace ColorVision.Copilot
                 selected.Add(normalized);
                 characterCount += normalized.Length;
             }
-            return selected.ToArray();
+            return selected.Count == 0
+                ? Array.Empty<string>()
+                : Array.AsReadOnly(selected.ToArray());
         }
 
         internal static IReadOnlyList<CopilotSteeringMessageSnapshot> SelectForRecovery(
@@ -392,7 +413,9 @@ namespace ColorVision.Copilot
                 selected.Add(new CopilotSteeringMessageSnapshot(messageId, text));
                 characterCount += text.Length;
             }
-            return selected.ToArray();
+            return selected.Count == 0
+                ? Array.Empty<CopilotSteeringMessageSnapshot>()
+                : Array.AsReadOnly(selected.ToArray());
         }
     }
 

@@ -51,7 +51,13 @@ namespace ColorVision.Copilot
             }
             var frameworkTools = bridge.CreateFunctions();
             if (IsRequestUserInputToolEnabled(request))
-                frameworkTools.Add(new HarnessToolBridge.UserQuestionAIFunction(_userQuestionCoordinator, request, emit));
+            {
+                frameworkTools.Add(new HarnessToolBridge.UserQuestionAIFunction(
+                    _userQuestionCoordinator,
+                    request,
+                    emit,
+                    bridge.TryPublishInteractionCheckpointAsync));
+            }
             var tokenBudget = CopilotAgentTokenBudget.Create(request.Profile, runBudget);
             var compactionStrategy = new ContextWindowCompactionStrategy(
                 tokenBudget.ContextWindowTokens,
@@ -100,6 +106,7 @@ namespace ColorVision.Copilot
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"Project instructions enabled · {projectInstructionCount} scoped workspace instruction document(s)."));
                 if (!string.IsNullOrWhiteSpace(request.ActiveGoalText))
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"Active conversation goal bound · {request.ActiveGoalText.Length:N0} character(s) · completion constraint only, never authorization."));
+                emit(CopilotAgentEvent.RuntimeDiagnostic(preparedPrompt.ContextProvenance.FormatDiagnostic()));
 
                 return new HarnessPolicyPreparation
                 {

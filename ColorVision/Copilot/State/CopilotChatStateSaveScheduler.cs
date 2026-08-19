@@ -61,6 +61,15 @@ namespace ColorVision.Copilot
             _requestSignal.Release();
         }
 
+        internal long RequestedVersion
+        {
+            get
+            {
+                lock (_syncRoot)
+                    return _requestedVersion;
+            }
+        }
+
         public Task FlushAsync(CancellationToken cancellationToken = default)
         {
             long targetVersion;

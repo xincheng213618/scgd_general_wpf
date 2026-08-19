@@ -132,9 +132,7 @@ namespace ColorVision.Copilot
                 return false;
             }
 
-            message.UserQuestion = question.Resolve(CopilotUserQuestionResolution.Answered, normalized);
             InputText = string.Empty;
-            NotifyUserQuestionStateChanged();
             return true;
         }
 

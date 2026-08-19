@@ -2,6 +2,7 @@ using ColorVision.Copilot.Mcp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -331,7 +332,23 @@ namespace ColorVision.Copilot
 
         private void Store_ActionsChanged(object? sender, EventArgs e)
         {
-            PendingActionsInvalidated?.Invoke(this, EventArgs.Empty);
+            var handlers = PendingActionsInvalidated;
+            if (handlers == null)
+                return;
+
+            foreach (EventHandler handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(this, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning(
+                        "Copilot approval projection subscriber failed after invalidation: {0}",
+                        ex.GetType().FullName);
+                }
+            }
         }
 
         private void Store_ActionStatusChanged(
@@ -341,9 +358,24 @@ namespace ColorVision.Copilot
             var transition = CopilotApprovalActionTransition.Capture(
                 e.Action,
                 DateTimeOffset.UtcNow);
-            ActionTransitioned?.Invoke(
-                this,
-                new CopilotApprovalActionTransitionEventArgs(transition));
+            var handlers = ActionTransitioned;
+            if (handlers == null)
+                return;
+
+            var args = new CopilotApprovalActionTransitionEventArgs(transition);
+            foreach (EventHandler<CopilotApprovalActionTransitionEventArgs> handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(this, args);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning(
+                        "Copilot approval transition subscriber failed after fact publication: {0}",
+                        ex.GetType().FullName);
+                }
+            }
         }
     }
 }

@@ -22,6 +22,8 @@ namespace ColorVision.Copilot
         private const long MaximumStateFileBytes = 64L * 1024 * 1024;
         private const int MaximumRecoverySnapshots = 12;
         private static readonly TimeSpan RecoverySnapshotInterval = TimeSpan.FromMinutes(30);
+        private static readonly UTF8Encoding Utf8WithoutBom = new(
+            encoderShouldEmitUTF8Identifier: false);
         private static readonly Lazy<CopilotChatStateStore> _instance = new(() => new CopilotChatStateStore());
         private static readonly JsonSerializerSettings SerializerSettings = new()
         {
@@ -231,7 +233,10 @@ namespace ColorVision.Copilot
 
                 try
                 {
-                    await File.WriteAllTextAsync(TemporaryStateFilePath, serializedState, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), cancellationToken).ConfigureAwait(false);
+                    await WriteDurableTemporaryStateAsync(
+                        TemporaryStateFilePath,
+                        serializedState,
+                        cancellationToken).ConfigureAwait(false);
                     cancellationToken.ThrowIfCancellationRequested();
                     ValidateStateFile(TemporaryStateFilePath);
                     ReplaceStateFile(TemporaryStateFilePath);
@@ -253,7 +258,9 @@ namespace ColorVision.Copilot
 
             try
             {
-                File.WriteAllText(TemporaryStateFilePath, serializedState, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                WriteDurableTemporaryState(
+                    TemporaryStateFilePath,
+                    serializedState);
                 ValidateStateFile(TemporaryStateFilePath);
                 ReplaceStateFile(TemporaryStateFilePath);
             }
@@ -262,6 +269,61 @@ namespace ColorVision.Copilot
                 TryDeleteFile(TemporaryStateFilePath);
             }
         }
+
+        private static void WriteDurableTemporaryState(
+            string filePath,
+            string serializedState)
+        {
+            using var stream = OpenTemporaryStateStream(
+                filePath,
+                asynchronous: false);
+            using var writer = new StreamWriter(
+                stream,
+                Utf8WithoutBom,
+                bufferSize: 4_096,
+                leaveOpen: true);
+            writer.Write(serializedState);
+            writer.Flush();
+            stream.Flush(flushToDisk: true);
+        }
+
+        private static async Task WriteDurableTemporaryStateAsync(
+            string filePath,
+            string serializedState,
+            CancellationToken cancellationToken)
+        {
+            await using var stream = OpenTemporaryStateStream(
+                filePath,
+                asynchronous: true);
+            await using var writer = new StreamWriter(
+                stream,
+                Utf8WithoutBom,
+                bufferSize: 4_096,
+                leaveOpen: true);
+            await writer.WriteAsync(
+                serializedState.AsMemory(),
+                cancellationToken).ConfigureAwait(false);
+            await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            stream.Flush(flushToDisk: true);
+        }
+
+        private static FileStream OpenTemporaryStateStream(
+            string filePath,
+            bool asynchronous) =>
+            new(
+                filePath,
+                new FileStreamOptions
+                {
+                    Mode = FileMode.Create,
+                    Access = FileAccess.Write,
+                    Share = FileShare.None,
+                    BufferSize = 4_096,
+                    Options = FileOptions.WriteThrough
+                        | (asynchronous
+                            ? FileOptions.Asynchronous
+                            : FileOptions.None),
+                });
 
         private static bool IsPathUnderRoot(string path, string root)
         {

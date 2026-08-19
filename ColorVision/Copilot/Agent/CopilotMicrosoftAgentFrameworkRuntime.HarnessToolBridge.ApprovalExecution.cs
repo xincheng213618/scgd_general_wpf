@@ -100,6 +100,8 @@ namespace ColorVision.Copilot
                         reservation.PreviousObservationProgressSignature,
                     InitialHookRuns = reservation.PermissionHookRuns,
                     InitialHookBindings = reservation.HookBindings,
+                    PreDispatchCheckpoint =
+                        TryPublishToolDispatchCheckpointAsync,
                 };
             }
 

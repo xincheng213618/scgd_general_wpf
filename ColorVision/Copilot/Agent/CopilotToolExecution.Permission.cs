@@ -21,7 +21,20 @@ namespace ColorVision.Copilot
             var callId = string.IsNullOrWhiteSpace(invocation.CallId)
                 ? Guid.NewGuid().ToString("N")
                 : invocation.CallId.Trim();
-            invocation = NormalizeInvocation(invocation, callId);
+            var sourceInvocation = invocation;
+            if (!TryNormalizeInvocation(sourceInvocation, callId, out invocation, out var inputError))
+            {
+                return new CopilotToolPermissionRequestOutcome
+                {
+                    Decision = CopilotToolPermissionRequestDecision.Deny(
+                        string.IsNullOrWhiteSpace(inputError)
+                            ? "The tool arguments do not match the registered input contract."
+                            : CopilotUserFacingErrorFormatter.Sanitize(inputError),
+                        "invalid_arguments"),
+                    HookRuns = Array.Empty<CopilotToolExecutionHookRun>(),
+                    HookBindings = Array.Empty<CopilotToolExecutionHookBinding>(),
+                };
+            }
             var hooks = ResolveInvocationHooks(
                 invocation.Tool.Name,
                 invocation.AgentRequest);

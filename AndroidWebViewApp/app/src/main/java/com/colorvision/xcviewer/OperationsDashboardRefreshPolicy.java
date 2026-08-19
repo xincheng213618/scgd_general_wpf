@@ -28,6 +28,50 @@ final class OperationsDashboardRefreshPolicy {
         return toolbarActionVisible && !manualRefreshInFlight;
     }
 
+    static boolean showsRemoteToolboxAction(
+            boolean hasOperationsProfile,
+            boolean dashboardVisible,
+            boolean toolboxDestination,
+            boolean remoteDashboard,
+            boolean connectionRecoveryVisible,
+            boolean hasRelayClient) {
+        return hasOperationsProfile
+                && dashboardVisible
+                && toolboxDestination
+                && remoteDashboard
+                && !connectionRecoveryVisible
+                && hasRelayClient;
+    }
+
+    static boolean showsProblemCenterAction(
+            boolean hasOperationsProfile,
+            boolean dashboardVisible,
+            boolean problemCenterDestination,
+            boolean connectionRecoveryVisible,
+            boolean hasOperationsClient) {
+        return hasOperationsProfile
+                && dashboardVisible
+                && problemCenterDestination
+                && !connectionRecoveryVisible
+                && hasOperationsClient;
+    }
+
+    static boolean showsDetailAction(
+            boolean hasOperationsProfile,
+            boolean dashboardVisible,
+            boolean detailDestination,
+            boolean connectionRecoveryVisible,
+            boolean hasOperationsClient,
+            String detailPath) {
+        return hasOperationsProfile
+                && dashboardVisible
+                && detailDestination
+                && !connectionRecoveryVisible
+                && hasOperationsClient
+                && detailPath != null
+                && !detailPath.isEmpty();
+    }
+
     static Decision decide(
             boolean activityResumed,
             boolean dashboardVisible,

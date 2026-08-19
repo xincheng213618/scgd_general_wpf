@@ -7,6 +7,7 @@ import java.util.Set;
 final class OperationsDestinationState {
     static final String OVERVIEW = "overview";
     static final String TOOLS = "tools";
+    static final String SETTINGS = "settings";
     static final String PAIRING = "pairing";
     static final String CONNECTIONS = "connections";
     static final String CONNECTION_CHECK = "connection_check";
@@ -17,10 +18,12 @@ final class OperationsDestinationState {
     static final String JOBS = "jobs";
     static final String SUPPORT = "support";
     static final String LIVE_MONITOR = "live_monitor";
+    static final String CAPABILITY_DETAIL = "capability_detail";
 
     private static final Set<String> KNOWN_DESTINATIONS = new HashSet<>(Arrays.asList(
             OVERVIEW,
             TOOLS,
+            SETTINGS,
             PAIRING,
             CONNECTIONS,
             CONNECTION_CHECK,
@@ -30,7 +33,8 @@ final class OperationsDestinationState {
             TRIAGE,
             JOBS,
             SUPPORT,
-            LIVE_MONITOR));
+            LIVE_MONITOR,
+            CAPABILITY_DETAIL));
 
     private OperationsDestinationState() {
     }
@@ -42,16 +46,17 @@ final class OperationsDestinationState {
 
     static boolean shouldRestore(String destination) {
         String normalized = normalize(destination);
-        return !OVERVIEW.equals(normalized) && !PAIRING.equals(normalized);
+        return !OVERVIEW.equals(normalized)
+                && !PAIRING.equals(normalized)
+                && !CAPABILITY_DETAIL.equals(normalized);
     }
 
     static boolean requiresDirectConnection(String destination) {
         String normalized = normalize(destination);
-        return TRIAGE.equals(normalized)
-                || TOOLS.equals(normalized)
-                || JOBS.equals(normalized)
+        return JOBS.equals(normalized)
                 || SUPPORT.equals(normalized)
-                || LIVE_MONITOR.equals(normalized);
+                || LIVE_MONITOR.equals(normalized)
+                || CAPABILITY_DETAIL.equals(normalized);
     }
 
     static boolean isTriage(String destination) {

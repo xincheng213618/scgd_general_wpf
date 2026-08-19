@@ -7,8 +7,16 @@ import java.util.List;
 import java.util.Set;
 
 final class OperationsToolboxPresentation {
+    static final String ACTION_CONNECTION_CHECK = "toolbox.connection.check";
+    static final String ACTION_LIVE_MONITOR = "toolbox.live.monitor";
+    static final String ACTION_DEVICE_HEALTH = "toolbox.devices.health";
     static final String ACTION_SERVICES_HEALTH = "toolbox.services.health";
+    static final String ACTION_SHOW_WINDOW = "toolbox.window.show";
+    static final String ACTION_MINIMIZE_WINDOW = "toolbox.window.minimize";
+    static final String ACTION_CANCEL_FLOW = "toolbox.flow.cancel";
+    static final String ACTION_RECOVER_MESSAGE = "toolbox.message.recover";
     static final String ACTION_RESTART_MQTT = "toolbox.mqtt.restart";
+    static final String ACTION_RESTART_APPLICATION = "toolbox.application.restart";
     static final String ACTION_RECENT_EVENTS = "toolbox.events.recent";
     static final String ACTION_FAILURES = "toolbox.failures";
     static final String ACTION_JOBS = "toolbox.jobs";
@@ -25,6 +33,13 @@ final class OperationsToolboxPresentation {
 
     static ViewModel create() {
         List<Section> sections = new ArrayList<>();
+        sections.add(section("控制",
+                action(ACTION_SHOW_WINDOW,
+                        "显示主窗口", "显示或还原当前 ColorVision 主窗口"),
+                action(ACTION_MINIMIZE_WINDOW,
+                        "最小化主窗口", "最小化当前 ColorVision 主窗口 · 执行前确认"),
+                action(ACTION_CANCEL_FLOW,
+                        "取消当前检测", "仅在主检测运行且允许取消时开放 · 执行前确认")));
         sections.add(section("诊断",
                 action(ACTION_SERVICES_HEALTH,
                         "服务健康", "查看服务、依赖与运行状态"),
@@ -33,8 +48,12 @@ final class OperationsToolboxPresentation {
                 action(ACTION_FAILURES,
                         "崩溃与卡死", "查看崩溃、卡死与转储线索")));
         sections.add(section("恢复",
+                action(ACTION_RECOVER_MESSAGE,
+                        "恢复消息通道", "按电脑现有配置恢复连接与订阅 · 执行前确认"),
                 action(ACTION_RESTART_MQTT,
-                        "重启 MQTT", "重新启动消息服务 · 执行前再次确认")));
+                        "重启 MQTT", "重新启动消息服务 · 执行前再次确认"),
+                action(ACTION_RESTART_APPLICATION,
+                        "重启 ColorVision", "仅在检测空闲时重启应用 · 执行前确认")));
         sections.add(section("取证",
                 action(ACTION_CREATE_DIAGNOSTIC,
                         "生成诊断包", "创建有界脱敏诊断包 · 需手机确认"),
@@ -53,13 +72,31 @@ final class OperationsToolboxPresentation {
                         "提交部署确认", "向电脑端提交本次部署结果"),
                 action(ACTION_TIMELINE,
                         "运维时间线", "查看连接与后台守护状态变化")));
-        return new ViewModel(Collections.unmodifiableList(sections));
+        List<Action> quickActions = new ArrayList<>();
+        quickActions.add(action(ACTION_CONNECTION_CHECK,
+                "连接自检", "只读检查网络、安全通道、证书固定与设备签名"));
+        quickActions.add(action(ACTION_LIVE_MONITOR,
+                "持续观察", "每 10 秒读取一次脱敏运行快照，本次最多保留 30 个样本"));
+        quickActions.add(action(ACTION_DEVICE_HEALTH,
+                "设备状态", "查看检测设备类型、可用性与异常原因汇总"));
+        quickActions.add(findAction(sections, ACTION_RECENT_EVENTS));
+        return new ViewModel(
+                Collections.unmodifiableList(sections),
+                Collections.unmodifiableList(quickActions));
     }
 
     static boolean isSupportedAction(String actionId) {
         switch (actionId) {
+            case ACTION_CONNECTION_CHECK:
+            case ACTION_LIVE_MONITOR:
+            case ACTION_DEVICE_HEALTH:
             case ACTION_SERVICES_HEALTH:
+            case ACTION_SHOW_WINDOW:
+            case ACTION_MINIMIZE_WINDOW:
+            case ACTION_CANCEL_FLOW:
+            case ACTION_RECOVER_MESSAGE:
             case ACTION_RESTART_MQTT:
+            case ACTION_RESTART_APPLICATION:
             case ACTION_RECENT_EVENTS:
             case ACTION_FAILURES:
             case ACTION_JOBS:
@@ -86,17 +123,63 @@ final class OperationsToolboxPresentation {
         return new Action(actionId, title, summary);
     }
 
+    static List<Action> enabledQuickActions(
+            List<Section> sections,
+            String... actionIds) {
+        List<Action> quickActions = new ArrayList<>();
+        for (String actionId : actionIds) {
+            Action action = findAction(sections, actionId);
+            if (action != null && action.enabled) {
+                quickActions.add(action);
+            }
+        }
+        return Collections.unmodifiableList(quickActions);
+    }
+
+    private static Action findAction(List<Section> sections, String actionId) {
+        for (Section section : sections) {
+            for (Action action : section.actions) {
+                if (actionId.equals(action.actionId)) {
+                    return action;
+                }
+            }
+        }
+        return null;
+    }
+
     static final class ViewModel {
         final List<Section> sections;
+        final List<Action> quickActions;
 
         ViewModel(List<Section> sections) {
+            this(sections, Collections.emptyList());
+        }
+
+        ViewModel(List<Section> sections, List<Action> quickActions) {
             this.sections = sections;
+            this.quickActions = quickActions;
+        }
+
+        int quickActionCount() {
+            return quickActions.size();
         }
 
         int actionCount() {
             int count = 0;
             for (Section section : sections) {
                 count += section.actions.size();
+            }
+            return count;
+        }
+
+        int enabledActionCount() {
+            int count = 0;
+            for (Section section : sections) {
+                for (Action action : section.actions) {
+                    if (action.enabled) {
+                        count++;
+                    }
+                }
             }
             return count;
         }
@@ -122,21 +205,36 @@ final class OperationsToolboxPresentation {
             this.title = title;
             this.actions = actions;
         }
+
+        String shortcutLabel() {
+            return title.replace("与", "");
+        }
+
+        String shortcutAccessibilityLabel() {
+            return "跳到" + title + "分组";
+        }
     }
 
     static final class Action {
         final String actionId;
         final String title;
         final String summary;
+        final boolean enabled;
 
         Action(String actionId, String title, String summary) {
+            this(actionId, title, summary, true);
+        }
+
+        Action(String actionId, String title, String summary, boolean enabled) {
             this.actionId = actionId;
             this.title = title;
             this.summary = summary;
+            this.enabled = enabled;
         }
 
         String accessibilityLabel() {
-            return title + "，" + summary.replace(" · ", "，");
+            String availability = enabled ? "" : "，当前不可用";
+            return title + "，" + summary.replace(" · ", "，") + availability;
         }
     }
 }

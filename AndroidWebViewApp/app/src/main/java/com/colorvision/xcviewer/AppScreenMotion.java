@@ -64,6 +64,14 @@ final class AppScreenMotion {
                 animations[1]).toBundle());
     }
 
+    static void startBackward(Activity activity, Intent intent) {
+        int[] animations = activityAnimations(activity, false);
+        activity.startActivity(intent, ActivityOptions.makeCustomAnimation(
+                activity,
+                animations[0],
+                animations[1]).toBundle());
+    }
+
     @SuppressWarnings("deprecation")
     static void finishBackward(Activity activity) {
         activity.finish();

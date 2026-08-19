@@ -56,7 +56,7 @@ namespace ColorVision.Copilot.Mcp
 
         private readonly CopilotMcpToolEnvironment _environment;
         private readonly IReadOnlyList<CopilotMcpToolDefinition> _toolDefinitions;
-        private readonly CopilotMcpToolRouter _router;
+        private readonly IReadOnlyDictionary<string, CopilotMcpToolDefinition> _toolDefinitionsByName;
 
         private readonly record struct CopilotPanelTarget(string Alias, string TargetId);
 
@@ -81,9 +81,27 @@ namespace ColorVision.Copilot.Mcp
         {
             _environment = environment ?? new CopilotMcpToolEnvironment();
             _toolDefinitions = CreateToolDefinitions();
-            _router = CreateRouter(_toolDefinitions);
-            ValidateRouterMatchesDescriptors();
+            ValidateInputSchemas(_toolDefinitions);
+            _toolDefinitionsByName = _toolDefinitions.ToDictionary(
+                definition => definition.Descriptor.Name,
+                StringComparer.OrdinalIgnoreCase);
             CopilotSharedCapabilityCatalog.ValidateMcpSurface(ListTools());
+        }
+
+        private static void ValidateInputSchemas(IEnumerable<CopilotMcpToolDefinition> definitions)
+        {
+            foreach (var definition in definitions)
+            {
+                if (CopilotToolInputContractValidator.TryValidateSchema(
+                    definition.Descriptor.InputSchema,
+                    out var error))
+                {
+                    continue;
+                }
+
+                throw new InvalidOperationException(
+                    $"MCP tool '{definition.Descriptor.Name}' has an invalid input schema: {error}");
+            }
         }
 
         private static CopilotMcpToolCallResult GetCapabilityCatalog()

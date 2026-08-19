@@ -29,6 +29,48 @@ public class OperationsDashboardRefreshPolicyTest {
     }
 
     @Test
+    public void remoteToolboxReusesTheToolbarRefreshAction() {
+        assertTrue(OperationsDashboardRefreshPolicy.showsRemoteToolboxAction(
+                true, true, true, true, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsRemoteToolboxAction(
+                true, true, true, false, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsRemoteToolboxAction(
+                true, true, false, true, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsRemoteToolboxAction(
+                true, true, true, true, true, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsRemoteToolboxAction(
+                true, true, true, true, false, false));
+    }
+
+    @Test
+    public void problemCenterReusesTheToolbarRefreshAction() {
+        assertTrue(OperationsDashboardRefreshPolicy.showsProblemCenterAction(
+                true, true, true, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsProblemCenterAction(
+                true, true, false, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsProblemCenterAction(
+                true, true, true, true, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsProblemCenterAction(
+                false, true, true, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsProblemCenterAction(
+                true, true, true, false, false));
+    }
+
+    @Test
+    public void directDetailReusesTheToolbarRefreshAction() {
+        assertTrue(OperationsDashboardRefreshPolicy.showsDetailAction(
+                true, true, true, false, true, "/ops/v1/services/health"));
+        assertFalse(OperationsDashboardRefreshPolicy.showsDetailAction(
+                true, true, true, false, true, ""));
+        assertFalse(OperationsDashboardRefreshPolicy.showsDetailAction(
+                true, true, false, false, true, "/ops/v1/services/health"));
+        assertFalse(OperationsDashboardRefreshPolicy.showsDetailAction(
+                true, true, true, true, true, "/ops/v1/services/health"));
+        assertFalse(OperationsDashboardRefreshPolicy.showsDetailAction(
+                true, true, true, false, false, "/ops/v1/services/health"));
+    }
+
+    @Test
     public void visibleDashboardStartsANewRefresh() {
         assertEquals(
                 OperationsDashboardRefreshPolicy.Decision.START,

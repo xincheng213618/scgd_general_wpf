@@ -218,11 +218,13 @@ namespace ColorVision.Copilot
                     : null);
         }
 
-        private static Action<CopilotAgentEvent> CreateEventEmitter(Action<CopilotAgentEvent> onEvent)
+        internal static Action<CopilotAgentEvent> CreateEventEmitter(Action<CopilotAgentEvent> onEvent)
         {
+            ArgumentNullException.ThrowIfNull(onEvent);
             var syncRoot = new object();
             return agentEvent =>
             {
+                CopilotAgentEventProtocol.Validate(agentEvent);
                 lock (syncRoot)
                     onEvent(agentEvent);
             };

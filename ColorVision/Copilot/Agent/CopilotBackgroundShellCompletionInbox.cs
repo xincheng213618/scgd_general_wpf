@@ -23,7 +23,7 @@ namespace ColorVision.Copilot
         {
             _owner = owner;
             _conversationId = conversationId;
-            Completions = completions;
+            Completions = Array.AsReadOnly((completions ?? throw new ArgumentNullException(nameof(completions))).ToArray());
         }
 
         public IReadOnlyList<CopilotDeferredBackgroundShellCompletion>

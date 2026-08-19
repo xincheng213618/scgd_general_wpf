@@ -2,6 +2,9 @@ package com.colorvision.xcviewer;
 
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -12,12 +15,32 @@ public class OperationsToolboxPresentationTest {
         OperationsToolboxPresentation.ViewModel model =
                 OperationsToolboxPresentation.create();
 
-        assertEquals(4, model.sections.size());
-        assertEquals("诊断", model.sections.get(0).title);
-        assertEquals("恢复", model.sections.get(1).title);
-        assertEquals("取证", model.sections.get(2).title);
-        assertEquals("支持与记录", model.sections.get(3).title);
-        assertEquals(12, model.actionCount());
+        assertEquals(5, model.sections.size());
+        assertEquals("控制", model.sections.get(0).title);
+        assertEquals("诊断", model.sections.get(1).title);
+        assertEquals("恢复", model.sections.get(2).title);
+        assertEquals("取证", model.sections.get(3).title);
+        assertEquals("支持与记录", model.sections.get(4).title);
+        assertEquals("支持记录", model.sections.get(4).shortcutLabel());
+        assertEquals("跳到支持与记录分组",
+                model.sections.get(4).shortcutAccessibilityLabel());
+        Set<String> shortcutLabels = new HashSet<>();
+        for (OperationsToolboxPresentation.Section section : model.sections) {
+            assertTrue(shortcutLabels.add(section.shortcutLabel()));
+            assertEquals("跳到" + section.title + "分组",
+                    section.shortcutAccessibilityLabel());
+        }
+        assertEquals(17, model.actionCount());
+        assertEquals(17, model.enabledActionCount());
+        assertEquals(4, model.quickActionCount());
+        assertEquals(OperationsToolboxPresentation.ACTION_CONNECTION_CHECK,
+                model.quickActions.get(0).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_LIVE_MONITOR,
+                model.quickActions.get(1).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_DEVICE_HEALTH,
+                model.quickActions.get(2).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_RECENT_EVENTS,
+                model.quickActions.get(3).actionId);
         assertTrue(model.hasUniqueActionIds());
     }
 
@@ -28,6 +51,14 @@ public class OperationsToolboxPresentationTest {
 
         assertTrue(find(model, OperationsToolboxPresentation.ACTION_RESTART_MQTT)
                 .summary.contains("再次确认"));
+        assertTrue(find(model, OperationsToolboxPresentation.ACTION_MINIMIZE_WINDOW)
+                .summary.contains("执行前确认"));
+        assertTrue(find(model, OperationsToolboxPresentation.ACTION_CANCEL_FLOW)
+                .summary.contains("仅在主检测运行"));
+        assertTrue(find(model, OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE)
+                .summary.contains("电脑现有配置"));
+        assertTrue(find(model, OperationsToolboxPresentation.ACTION_RESTART_APPLICATION)
+                .summary.contains("检测空闲"));
         assertTrue(find(model, OperationsToolboxPresentation.ACTION_CREATE_DIAGNOSTIC)
                 .summary.contains("需手机确认"));
         assertTrue(find(model, OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT)
@@ -48,7 +79,17 @@ public class OperationsToolboxPresentationTest {
     @Test
     public void unknownActionsAreNotAvailableToTheActivityDispatcher() {
         assertTrue(OperationsToolboxPresentation.isSupportedAction(
+                OperationsToolboxPresentation.ACTION_CONNECTION_CHECK));
+        assertTrue(OperationsToolboxPresentation.isSupportedAction(
+                OperationsToolboxPresentation.ACTION_LIVE_MONITOR));
+        assertTrue(OperationsToolboxPresentation.isSupportedAction(
+                OperationsToolboxPresentation.ACTION_DEVICE_HEALTH));
+        assertTrue(OperationsToolboxPresentation.isSupportedAction(
                 OperationsToolboxPresentation.ACTION_SERVICES_HEALTH));
+        assertTrue(OperationsToolboxPresentation.isSupportedAction(
+                OperationsToolboxPresentation.ACTION_SHOW_WINDOW));
+        assertTrue(OperationsToolboxPresentation.isSupportedAction(
+                OperationsToolboxPresentation.ACTION_CANCEL_FLOW));
         assertTrue(OperationsToolboxPresentation.isSupportedAction(
                 OperationsToolboxPresentation.ACTION_TIMELINE));
         assertFalse(OperationsToolboxPresentation.isSupportedAction("toolbox.unknown"));
