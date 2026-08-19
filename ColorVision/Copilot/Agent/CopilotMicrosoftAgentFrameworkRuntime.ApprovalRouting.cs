@@ -117,10 +117,11 @@ namespace ColorVision.Copilot
                                 cancellationToken,
                                 reservation.ExecutionScope,
                                 userReviewVisible: !useConfiguredAutomaticReview);
-                            bridge.PublishAwaitingApproval(
+                            await bridge.PublishAwaitingApprovalAsync(
                                 reservation,
                                 handle.Action,
-                                useConfiguredAutomaticReview);
+                                useConfiguredAutomaticReview,
+                                cancellationToken).ConfigureAwait(false);
                             try
                             {
                                 if (useAutomaticReview)
