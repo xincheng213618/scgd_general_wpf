@@ -75,7 +75,7 @@ public class OperationsActivity extends AppCompatActivity {
     private static final String STATE_DESTINATION = "operations_destination";
     private static final String STATE_RETURN_TO_TRIAGE = "operations_return_to_triage";
     private static final String STATE_RETURN_TO_TOOLBOX = "operations_return_to_toolbox";
-    private static final String STATE_RETURN_TO_SETTINGS = "operations_return_to_settings";
+    private static final String STATE_CONNECTIONS_PARENT = "operations_connections_parent";
     private static final String STATE_SCROLL_OVERVIEW = "operations_scroll_overview";
     private static final String STATE_SCROLL_PROBLEMS = "operations_scroll_problems";
     private static final String STATE_SCROLL_TOOLS = "operations_scroll_tools";
@@ -200,7 +200,7 @@ public class OperationsActivity extends AppCompatActivity {
     private int problemBadgeCount;
     private boolean returnToTriageOnBack;
     private boolean returnToToolboxOnBack;
-    private boolean returnToSettingsOnBack;
+    private String connectionsParentDestination = OperationsDestinationState.OVERVIEW;
     private boolean updatingTopLevelNavigation;
     private boolean updatingTopLevelScroll;
     private boolean settingsConnectionInFlight;
@@ -248,9 +248,10 @@ public class OperationsActivity extends AppCompatActivity {
                 && savedInstanceState.getBoolean(STATE_RETURN_TO_TRIAGE, false);
         returnToToolboxOnBack = restoring
                 && savedInstanceState.getBoolean(STATE_RETURN_TO_TOOLBOX, false);
-        returnToSettingsOnBack = restoring
-                ? savedInstanceState.getBoolean(STATE_RETURN_TO_SETTINGS, false)
-                : returnToSettingsOnBack;
+        connectionsParentDestination = restoring
+                ? OperationsInPageNavigationPolicy.normalizeConnectionsParent(
+                        savedInstanceState.getString(STATE_CONNECTIONS_PARENT))
+                : connectionsParentDestination;
         if (restoring) {
             topLevelState.rememberScroll(OperationsDestinationState.OVERVIEW,
                     savedInstanceState.getInt(STATE_SCROLL_OVERVIEW, 0));
@@ -365,8 +366,12 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardRefreshMenuItem.setVisible(false);
         title.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == MENU_TARGET) {
-                returnToSettingsOnBack = OperationsDestinationState.SETTINGS.equals(
-                        currentDestination);
+                connectionsParentDestination = OperationsInPageNavigationPolicy
+                        .targetManagementParentDestination(
+                                currentDestination,
+                                returnToTriageOnBack,
+                                returnToToolboxOnBack,
+                                connectionsParentDestination);
                 showConnectionPreference();
                 return true;
             }
@@ -544,7 +549,7 @@ public class OperationsActivity extends AppCompatActivity {
                 return true;
             }
             if (item.getItemId() == NAV_OPERATIONS) {
-                returnToSettingsOnBack = false;
+                connectionsParentDestination = OperationsDestinationState.OVERVIEW;
                 if (connectFromSettings(OperationsDestinationState.OVERVIEW)) {
                     return true;
                 }
@@ -555,7 +560,7 @@ public class OperationsActivity extends AppCompatActivity {
                 if (preferences == null || !preferences.hasOperationsProfile()) {
                     return false;
                 }
-                returnToSettingsOnBack = false;
+                connectionsParentDestination = OperationsDestinationState.OVERVIEW;
                 if (connectFromSettings(OperationsDestinationState.TRIAGE)) {
                     return true;
                 }
@@ -566,7 +571,7 @@ public class OperationsActivity extends AppCompatActivity {
                 if (preferences == null || !preferences.hasOperationsProfile()) {
                     return false;
                 }
-                returnToSettingsOnBack = false;
+                connectionsParentDestination = OperationsDestinationState.OVERVIEW;
                 if (connectFromSettings(OperationsDestinationState.TOOLS)) {
                     return true;
                 }
@@ -574,7 +579,7 @@ public class OperationsActivity extends AppCompatActivity {
                 return true;
             }
             if (item.getItemId() == NAV_SETTINGS) {
-                returnToSettingsOnBack = false;
+                connectionsParentDestination = OperationsDestinationState.OVERVIEW;
                 showSettingsPage();
                 return true;
             }
@@ -607,8 +612,9 @@ public class OperationsActivity extends AppCompatActivity {
                     if (settingsScroll != null) {
                         settingsScroll.smoothScrollTo(0, 0);
                     }
-                } else if (returnToSettingsOnBack) {
-                    returnToSettings();
+                } else if (OperationsDestinationState.SETTINGS.equals(
+                        connectionsParentDestination)) {
+                    returnToConnectionsParent();
                 } else {
                     showSettingsPage();
                 }
@@ -689,9 +695,10 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private String operationsDetailBackLabel() {
-        if (OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                currentDestination, returnToSettingsOnBack)) {
-            return "返回设置";
+        if (OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                currentDestination, connectionsParentDestination)) {
+            return OperationsInPageNavigationPolicy.connectionsParentLabel(
+                    connectionsParentDestination);
         }
         if (returnToTriageOnBack) {
             return "返回问题中心";
@@ -719,9 +726,9 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private boolean navigateUpWithinOperations() {
-        if (OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                currentDestination, returnToSettingsOnBack)) {
-            returnToSettings();
+        if (OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                currentDestination, connectionsParentDestination)) {
+            returnToConnectionsParent();
             return true;
         }
         if (!OperationsInPageNavigationPolicy.showsNavigateUp(
@@ -801,10 +808,20 @@ public class OperationsActivity extends AppCompatActivity {
         return true;
     }
 
-    private void returnToSettings() {
+    private void returnToConnectionsParent() {
         connectionCheckGeneration++;
-        returnToSettingsOnBack = false;
-        showSettingsPage();
+        String parent = OperationsInPageNavigationPolicy.normalizeConnectionsParent(
+                connectionsParentDestination);
+        if (OperationsDestinationState.SETTINGS.equals(parent)) {
+            showSettingsPage();
+        } else if (OperationsDestinationState.TRIAGE.equals(parent)) {
+            showProblemCenter();
+        } else if (OperationsDestinationState.TOOLS.equals(parent)) {
+            showOperationsToolboxPage();
+        } else {
+            showCurrentDashboard();
+        }
+        connectionsParentDestination = OperationsDestinationState.OVERVIEW;
     }
 
     private void initializeSettingsControllers() {
@@ -861,7 +878,7 @@ public class OperationsActivity extends AppCompatActivity {
         setConnectionRecoveryVisible(false);
         rebuildSettingsPage(false);
         setCurrentDestination(OperationsDestinationState.SETTINGS);
-        returnToSettingsOnBack = false;
+        connectionsParentDestination = OperationsDestinationState.OVERVIEW;
         syncTopLevelNavigation();
         setDashboardVisible(true);
         setShowingDashboardSummary(false);
@@ -891,7 +908,7 @@ public class OperationsActivity extends AppCompatActivity {
                 new SettingsPageContent.Handler() {
                     @Override
                     public void onComputerConnections() {
-                        returnToSettingsOnBack = true;
+                        connectionsParentDestination = OperationsDestinationState.SETTINGS;
                         showConnectionPreference();
                     }
 
@@ -1981,7 +1998,7 @@ public class OperationsActivity extends AppCompatActivity {
                 normalized,
                 returnToTriageOnBack,
                 returnToToolboxOnBack,
-                returnToSettingsOnBack);
+                connectionsParentDestination);
         AppScreenMotion.beginContentTransition(
                 contentHost == null ? dashboardContent : contentHost,
                 direction,
@@ -2091,9 +2108,10 @@ public class OperationsActivity extends AppCompatActivity {
         if (showNavigateUp) {
             title.setNavigationIcon(R.drawable.ic_arrow_back_24);
             title.setNavigationContentDescription(
-                    OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                            currentDestination, returnToSettingsOnBack)
-                            ? "返回设置"
+                    OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                            currentDestination, connectionsParentDestination)
+                            ? OperationsInPageNavigationPolicy.connectionsParentLabel(
+                                    connectionsParentDestination)
                             : OperationsInPageNavigationPolicy.navigateUpLabel(
                                     currentDestination,
                                     returnToTriageOnBack,
@@ -3700,8 +3718,10 @@ public class OperationsActivity extends AppCompatActivity {
         intent.removeExtra(EXTRA_RETURN_TO_SETTINGS);
         if (!destination.isEmpty()) {
             pendingOperationsDestination = destination;
-            returnToSettingsOnBack = requestedReturnToSettings
-                    && OperationsDestinationState.CONNECTIONS.equals(destination);
+            connectionsParentDestination = requestedReturnToSettings
+                            && OperationsDestinationState.CONNECTIONS.equals(destination)
+                    ? OperationsDestinationState.SETTINGS
+                    : OperationsDestinationState.OVERVIEW;
         }
     }
 
@@ -7458,13 +7478,18 @@ public class OperationsActivity extends AppCompatActivity {
         }
         int destination;
         if (OperationsDestinationState.SETTINGS.equals(currentDestination)
-                || returnToSettingsOnBack) {
+                || OperationsDestinationState.SETTINGS.equals(
+                        connectionsParentDestination)) {
             destination = NAV_SETTINGS;
         } else if (OperationsDestinationState.TOOLS.equals(currentDestination)
-                || returnToToolboxOnBack) {
+                || returnToToolboxOnBack
+                || OperationsDestinationState.TOOLS.equals(
+                        connectionsParentDestination)) {
             destination = NAV_TOOLS;
         } else if (OperationsDestinationState.TRIAGE.equals(currentDestination)
-                || returnToTriageOnBack) {
+                || returnToTriageOnBack
+                || OperationsDestinationState.TRIAGE.equals(
+                        connectionsParentDestination)) {
             destination = NAV_PROBLEMS;
         } else {
             destination = NAV_OPERATIONS;
@@ -7521,7 +7546,7 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsDestinationState.normalize(currentDestination));
         outState.putBoolean(STATE_RETURN_TO_TRIAGE, returnToTriageOnBack);
         outState.putBoolean(STATE_RETURN_TO_TOOLBOX, returnToToolboxOnBack);
-        outState.putBoolean(STATE_RETURN_TO_SETTINGS, returnToSettingsOnBack);
+        outState.putString(STATE_CONNECTIONS_PARENT, connectionsParentDestination);
         outState.putInt(STATE_SCROLL_OVERVIEW,
                 topLevelState.scrollY(OperationsDestinationState.OVERVIEW));
         outState.putInt(STATE_SCROLL_PROBLEMS,

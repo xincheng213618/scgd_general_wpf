@@ -6,6 +6,61 @@ final class OperationsInPageNavigationPolicy {
     private OperationsInPageNavigationPolicy() {
     }
 
+    static String normalizeConnectionsParent(String destination) {
+        String normalized = OperationsDestinationState.normalize(destination);
+        if (OperationsDestinationState.TRIAGE.equals(normalized)
+                || OperationsDestinationState.TOOLS.equals(normalized)
+                || OperationsDestinationState.SETTINGS.equals(normalized)) {
+            return normalized;
+        }
+        return OperationsDestinationState.OVERVIEW;
+    }
+
+    static String targetManagementParentDestination(
+            String destination,
+            boolean detailOpenedFromTriage,
+            boolean detailOpenedFromToolbox,
+            String existingConnectionsParent) {
+        String normalized = OperationsDestinationState.normalize(destination);
+        if (OperationsDestinationState.SETTINGS.equals(normalized)) {
+            return OperationsDestinationState.SETTINGS;
+        }
+        if (OperationsDestinationState.TRIAGE.equals(normalized) || detailOpenedFromTriage) {
+            return OperationsDestinationState.TRIAGE;
+        }
+        if (OperationsDestinationState.TOOLS.equals(normalized) || detailOpenedFromToolbox) {
+            return OperationsDestinationState.TOOLS;
+        }
+        if (OperationsDestinationState.CONNECTIONS.equals(normalized)
+                || OperationsDestinationState.CONNECTIONS.equals(
+                        parentDestination(normalized, false, false))) {
+            return normalizeConnectionsParent(existingConnectionsParent);
+        }
+        return OperationsDestinationState.OVERVIEW;
+    }
+
+    static boolean shouldReturnToConnectionsParent(
+            String destination, String connectionsParent) {
+        return OperationsDestinationState.CONNECTIONS.equals(
+                        OperationsDestinationState.normalize(destination))
+                && !OperationsDestinationState.OVERVIEW.equals(
+                        normalizeConnectionsParent(connectionsParent));
+    }
+
+    static String connectionsParentLabel(String connectionsParent) {
+        String normalized = normalizeConnectionsParent(connectionsParent);
+        if (OperationsDestinationState.SETTINGS.equals(normalized)) {
+            return "返回设置";
+        }
+        if (OperationsDestinationState.TRIAGE.equals(normalized)) {
+            return "返回问题中心";
+        }
+        if (OperationsDestinationState.TOOLS.equals(normalized)) {
+            return "返回运维工具";
+        }
+        return "返回现场运维概览";
+    }
+
     static String parentDestination(
             String destination,
             boolean detailOpenedFromTriage,
@@ -109,18 +164,19 @@ final class OperationsInPageNavigationPolicy {
             String toDestination,
             boolean detailOpenedFromTriage,
             boolean detailOpenedFromToolbox,
-            boolean detailOpenedFromSettings) {
+            String connectionsParent) {
         String from = OperationsDestinationState.normalize(fromDestination);
         String to = OperationsDestinationState.normalize(toDestination);
         if (from.equals(to)) {
             return AppScreenMotion.DIRECTION_NONE;
         }
-        if (detailOpenedFromSettings
-                && OperationsDestinationState.SETTINGS.equals(to)) {
+        String normalizedConnectionsParent = normalizeConnectionsParent(connectionsParent);
+        if (OperationsDestinationState.CONNECTIONS.equals(from)
+                && normalizedConnectionsParent.equals(to)) {
             return AppScreenMotion.DIRECTION_BACKWARD;
         }
-        if (detailOpenedFromSettings
-                && OperationsDestinationState.SETTINGS.equals(from)) {
+        if (normalizedConnectionsParent.equals(from)
+                && OperationsDestinationState.CONNECTIONS.equals(to)) {
             return AppScreenMotion.DIRECTION_FORWARD;
         }
         int topLevelDirection = topLevelMotionDirection(from, to);
@@ -216,10 +272,4 @@ final class OperationsInPageNavigationPolicy {
                 || OperationsDestinationState.SETTINGS.equals(normalized);
     }
 
-    static boolean shouldReturnToSettings(
-            String destination, boolean openedFromSettings) {
-        return openedFromSettings
-                && OperationsDestinationState.CONNECTIONS.equals(
-                        OperationsDestinationState.normalize(destination));
-    }
 }

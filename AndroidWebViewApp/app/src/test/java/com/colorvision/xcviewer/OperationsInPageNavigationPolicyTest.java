@@ -155,14 +155,14 @@ public class OperationsInPageNavigationPolicyTest {
                         OperationsDestinationState.SETTINGS,
                         false,
                         false,
-                        true));
+                        OperationsDestinationState.SETTINGS));
         assertEquals(AppScreenMotion.DIRECTION_FORWARD,
                 OperationsInPageNavigationPolicy.motionDirection(
                         OperationsDestinationState.SETTINGS,
                         OperationsDestinationState.CONNECTIONS,
                         false,
                         false,
-                        true));
+                        OperationsDestinationState.SETTINGS));
         assertEquals(AppScreenMotion.DIRECTION_NONE,
                 motion(OperationsDestinationState.FLEET_ALL,
                         OperationsDestinationState.FLEET_ISSUES, false, false));
@@ -241,15 +241,52 @@ public class OperationsInPageNavigationPolicyTest {
     }
 
     @Test
-    public void settingsOwnedConnectionPageReturnsToSettingsOnlyAtItsRoot() {
-        assertTrue(OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                OperationsDestinationState.CONNECTIONS, true));
-        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                OperationsDestinationState.CONNECTIONS, false));
-        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                OperationsDestinationState.CONNECTION_CHECK, true));
-        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                OperationsDestinationState.OVERVIEW, true));
+    public void connectionManagementReturnsToItsOwningBottomDestinationOnlyAtItsRoot() {
+        assertTrue(OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                OperationsDestinationState.CONNECTIONS,
+                OperationsDestinationState.SETTINGS));
+        assertTrue(OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                OperationsDestinationState.CONNECTIONS,
+                OperationsDestinationState.TOOLS));
+        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                OperationsDestinationState.CONNECTIONS,
+                OperationsDestinationState.OVERVIEW));
+        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                OperationsDestinationState.CONNECTION_CHECK,
+                OperationsDestinationState.SETTINGS));
+        assertEquals("返回问题中心",
+                OperationsInPageNavigationPolicy.connectionsParentLabel(
+                        OperationsDestinationState.TRIAGE));
+        assertEquals("返回运维工具",
+                OperationsInPageNavigationPolicy.connectionsParentLabel(
+                        OperationsDestinationState.TOOLS));
+        assertEquals("返回设置",
+                OperationsInPageNavigationPolicy.connectionsParentLabel(
+                        OperationsDestinationState.SETTINGS));
+    }
+
+    @Test
+    public void targetManagementKeepsTheNearestBottomDestination() {
+        assertEquals(OperationsDestinationState.OVERVIEW,
+                targetParent(OperationsDestinationState.OVERVIEW, false, false, ""));
+        assertEquals(OperationsDestinationState.TRIAGE,
+                targetParent(OperationsDestinationState.TRIAGE, false, false, ""));
+        assertEquals(OperationsDestinationState.TOOLS,
+                targetParent(OperationsDestinationState.TOOLS, false, false, ""));
+        assertEquals(OperationsDestinationState.SETTINGS,
+                targetParent(OperationsDestinationState.SETTINGS, false, false, ""));
+        assertEquals(OperationsDestinationState.TRIAGE,
+                targetParent(
+                        OperationsDestinationState.CAPABILITY_DETAIL,
+                        true,
+                        false,
+                        OperationsDestinationState.OVERVIEW));
+        assertEquals(OperationsDestinationState.SETTINGS,
+                targetParent(
+                        OperationsDestinationState.CONNECTION_CHECK,
+                        false,
+                        false,
+                        OperationsDestinationState.SETTINGS));
     }
 
     private static String parent(
@@ -279,6 +316,19 @@ public class OperationsInPageNavigationPolicyTest {
     private static int motion(
             String from, String to, boolean fromTriage, boolean fromToolbox) {
         return OperationsInPageNavigationPolicy.motionDirection(
-                from, to, fromTriage, fromToolbox, false);
+                from,
+                to,
+                fromTriage,
+                fromToolbox,
+                OperationsDestinationState.OVERVIEW);
+    }
+
+    private static String targetParent(
+            String destination,
+            boolean fromTriage,
+            boolean fromToolbox,
+            String existingParent) {
+        return OperationsInPageNavigationPolicy.targetManagementParentDestination(
+                destination, fromTriage, fromToolbox, existingParent);
     }
 }
