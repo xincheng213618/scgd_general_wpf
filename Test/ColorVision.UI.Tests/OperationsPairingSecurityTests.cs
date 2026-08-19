@@ -339,8 +339,10 @@ namespace ColorVision.UI.Tests
                 Assert.False(deviceCategory.TryGetProperty("code", out _));
                 Assert.False(deviceCategory.TryGetProperty("topic", out _));
                 Assert.False(deviceCategory.TryGetProperty("address", out _));
-                Assert.False(deviceCategory.TryGetProperty("offlineCount", out _));
-                Assert.False(deviceCategory.TryGetProperty("unauthorizedCount", out _));
+                Assert.Equal(1, deviceCategory.GetProperty("offlineCount").GetInt32());
+                Assert.Equal(0, deviceCategory.GetProperty("uninitializedCount").GetInt32());
+                Assert.Equal(0, deviceCategory.GetProperty("unauthorizedCount").GetInt32());
+                Assert.Equal(0, deviceCategory.GetProperty("unclassifiedUnavailableCount").GetInt32());
 
                 const string messageChannelPath = "/ops/v1/messaging/health";
                 OperationsApiResponse messageChannel = router.Handle(new OperationsSecureRequest
