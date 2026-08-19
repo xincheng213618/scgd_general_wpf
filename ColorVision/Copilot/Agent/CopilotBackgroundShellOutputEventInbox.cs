@@ -26,7 +26,7 @@ namespace ColorVision.Copilot
         {
             _owner = owner;
             _conversationId = conversationId;
-            Events = events;
+            Events = Array.AsReadOnly((events ?? throw new ArgumentNullException(nameof(events))).ToArray());
         }
 
         public IReadOnlyList<CopilotDeferredBackgroundShellOutputEvent>
