@@ -184,9 +184,12 @@ namespace ColorVision.Copilot
                         return false;
                     }
 
-                    Volatile.Write(ref _latestTaskLedger, taskLedger);
-                    Volatile.Write(ref _latestCheckpoint, checkpoint);
-                    _emit(CopilotAgentEvent.CheckpointUpdated(checkpoint, taskLedger));
+                    var checkpointEvent =
+                        CopilotAgentEvent.CheckpointUpdated(checkpoint, taskLedger);
+                    CopilotAgentEventProtocol.Validate(checkpointEvent);
+                    Volatile.Write(ref _latestTaskLedger, checkpointEvent.TaskLedger);
+                    Volatile.Write(ref _latestCheckpoint, checkpointEvent.SessionCheckpoint);
+                    _emit(checkpointEvent);
                     return true;
                 }
                 catch (OperationCanceledException)
