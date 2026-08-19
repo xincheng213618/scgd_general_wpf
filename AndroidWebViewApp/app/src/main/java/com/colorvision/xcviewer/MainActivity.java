@@ -532,6 +532,7 @@ public class MainActivity extends AppCompatActivity {
                         paired,
                         appPreferences.isOperationsWatchUserEnabled(),
                         operationsRemindersAvailable()),
+                "",
                 notificationPermissionStatus(),
                 getThemeModeLabel(),
                 "当前 " + getAppVersionName() + " · 签名校验");
@@ -557,6 +558,11 @@ public class MainActivity extends AppCompatActivity {
                                 appPreferences.hasOperationsProfile(),
                                 enabled,
                                 operationsRemindersAvailable());
+                    }
+
+                    @Override
+                    public void onWatchStatus() {
+                        openOperationsDirectly(OperationsDestinationState.OVERVIEW);
                     }
 
                     @Override

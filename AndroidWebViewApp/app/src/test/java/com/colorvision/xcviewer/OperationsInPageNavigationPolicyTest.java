@@ -15,7 +15,7 @@ public class OperationsInPageNavigationPolicyTest {
         assertEquals(OperationsDestinationState.TOOLS,
                 OperationsInPageNavigationPolicy.normalizeDetailParent(
                         OperationsDestinationState.TOOLS));
-        assertEquals(OperationsDestinationState.OVERVIEW,
+        assertEquals(OperationsDestinationState.SETTINGS,
                 OperationsInPageNavigationPolicy.normalizeDetailParent(
                         OperationsDestinationState.SETTINGS));
         assertEquals(OperationsDestinationState.TOOLS,
@@ -59,6 +59,10 @@ public class OperationsInPageNavigationPolicyTest {
                 parent(OperationsDestinationState.SUPPORT, false, true));
         assertEquals(OperationsDestinationState.TOOLS,
                 parent(OperationsDestinationState.HISTORY, false, true));
+        assertEquals(OperationsDestinationState.SETTINGS,
+                OperationsInPageNavigationPolicy.parentDestination(
+                        OperationsDestinationState.HISTORY,
+                        OperationsDestinationState.SETTINGS));
         assertEquals("", parent(OperationsDestinationState.TOOLS, false, false));
         assertEquals("", parent(OperationsDestinationState.TOOLS, false, true));
     }
@@ -81,6 +85,10 @@ public class OperationsInPageNavigationPolicyTest {
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.JOBS,
                         detailParent(false, true), false, false));
+        assertEquals("返回设置",
+                OperationsInPageNavigationPolicy.navigateUpLabel(
+                        OperationsDestinationState.HISTORY,
+                        OperationsDestinationState.SETTINGS, false, false));
         assertEquals("返回现场运维概览",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.LIVE_MONITOR,
@@ -187,6 +195,18 @@ public class OperationsInPageNavigationPolicyTest {
         assertEquals(AppScreenMotion.DIRECTION_NONE,
                 motion(OperationsDestinationState.FLEET_ALL,
                         OperationsDestinationState.FLEET_ISSUES, false, false));
+        assertEquals(AppScreenMotion.DIRECTION_FORWARD,
+                OperationsInPageNavigationPolicy.motionDirection(
+                        OperationsDestinationState.SETTINGS,
+                        OperationsDestinationState.HISTORY,
+                        OperationsDestinationState.SETTINGS,
+                        OperationsDestinationState.OVERVIEW));
+        assertEquals(AppScreenMotion.DIRECTION_BACKWARD,
+                OperationsInPageNavigationPolicy.motionDirection(
+                        OperationsDestinationState.HISTORY,
+                        OperationsDestinationState.SETTINGS,
+                        OperationsDestinationState.SETTINGS,
+                        OperationsDestinationState.OVERVIEW));
     }
 
     @Test

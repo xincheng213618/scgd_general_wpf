@@ -11,6 +11,7 @@ final class SettingsInformationArchitecture {
     static final String ADD_COMPUTER = "添加电脑";
     static final String CONNECT_COMPUTER = "连接电脑";
     static final String OPERATIONS_WATCH = "持续守护";
+    static final String OPERATIONS_WATCH_STATUS = "守护状态";
     static final String NOTIFICATION_PERMISSION = "运维提醒";
     static final String THEME_MODE = "主题模式";
     static final String APP_UPDATE = "应用更新";
@@ -31,6 +32,7 @@ final class SettingsInformationArchitecture {
                     COMPUTER_CONNECTIONS,
                     ADD_COMPUTER,
                     OPERATIONS_WATCH,
+                    OPERATIONS_WATCH_STATUS,
                     NOTIFICATION_PERMISSION,
                     THEME_MODE,
                     APP_UPDATE);

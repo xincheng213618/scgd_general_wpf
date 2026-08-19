@@ -201,6 +201,11 @@ final class AppPreferences {
         }
     }
 
+    long getActiveOperationsWatchCheckedAt() {
+        OperationsProfileRegistry.Profile profile = activeOperationsProfile();
+        return profile == null ? 0L : profile.watchCheckedAt;
+    }
+
     String getOperationsProfileLabel(String hostId) {
         synchronized (OPERATIONS_PROFILE_LOCK) {
             return readOperationsProfiles().displayLabel(hostId);

@@ -19,7 +19,8 @@ final class OperationsInPageNavigationPolicy {
     static String normalizeDetailParent(String destination) {
         String normalized = OperationsDestinationState.normalize(destination);
         if (OperationsDestinationState.TRIAGE.equals(normalized)
-                || OperationsDestinationState.TOOLS.equals(normalized)) {
+                || OperationsDestinationState.TOOLS.equals(normalized)
+                || OperationsDestinationState.SETTINGS.equals(normalized)) {
             return normalized;
         }
         return OperationsDestinationState.OVERVIEW;
@@ -170,6 +171,9 @@ final class OperationsInPageNavigationPolicy {
         if (OperationsDestinationState.TOOLS.equals(parent)) {
             return "返回运维工具";
         }
+        if (OperationsDestinationState.SETTINGS.equals(parent)) {
+            return "返回设置";
+        }
         if (OperationsDestinationState.OVERVIEW.equals(parent)) {
             return "返回现场运维概览";
         }
@@ -199,17 +203,17 @@ final class OperationsInPageNavigationPolicy {
         if (topLevelDirection != AppScreenMotion.DIRECTION_NONE) {
             return topLevelDirection;
         }
-        if (OperationsDestinationState.SETTINGS.equals(to)) {
-            return AppScreenMotion.DIRECTION_FORWARD;
-        }
-        if (OperationsDestinationState.SETTINGS.equals(from)) {
-            return AppScreenMotion.DIRECTION_BACKWARD;
-        }
         if (to.equals(parentDestination(from, detailParent))) {
             return AppScreenMotion.DIRECTION_BACKWARD;
         }
         if (from.equals(parentDestination(to, detailParent))) {
             return AppScreenMotion.DIRECTION_FORWARD;
+        }
+        if (OperationsDestinationState.SETTINGS.equals(to)) {
+            return AppScreenMotion.DIRECTION_FORWARD;
+        }
+        if (OperationsDestinationState.SETTINGS.equals(from)) {
+            return AppScreenMotion.DIRECTION_BACKWARD;
         }
         if (OperationsDestinationState.OVERVIEW.equals(to)) {
             return AppScreenMotion.DIRECTION_BACKWARD;

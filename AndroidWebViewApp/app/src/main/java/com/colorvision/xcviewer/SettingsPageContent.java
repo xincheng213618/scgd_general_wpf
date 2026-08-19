@@ -62,6 +62,13 @@ final class SettingsPageContent {
         addSection(activity, themeManager, content,
                 SettingsInformationArchitecture.BACKGROUND_SECTION, backgroundSection);
         addWatchRow(activity, themeManager, backgroundSection, model, handler, true);
+        if (model.paired) {
+            addRow(activity, themeManager, backgroundSection,
+                    SettingsInformationArchitecture.OPERATIONS_WATCH_STATUS,
+                    model.watchRuntimeStatus,
+                    view -> handler.onWatchStatus(),
+                    true);
+        }
         addRow(activity, themeManager, backgroundSection,
                 SettingsInformationArchitecture.NOTIFICATION_PERMISSION,
                 model.notificationStatus,
@@ -307,6 +314,7 @@ final class SettingsPageContent {
         final String computerSummary;
         final boolean watchEnabled;
         final String watchStatus;
+        final String watchRuntimeStatus;
         final String notificationStatus;
         final String themeMode;
         final String appUpdateStatus;
@@ -316,6 +324,7 @@ final class SettingsPageContent {
                 String computerSummary,
                 boolean watchEnabled,
                 String watchStatus,
+                String watchRuntimeStatus,
                 String notificationStatus,
                 String themeMode,
                 String appUpdateStatus) {
@@ -323,6 +332,7 @@ final class SettingsPageContent {
             this.computerSummary = computerSummary;
             this.watchEnabled = watchEnabled;
             this.watchStatus = watchStatus;
+            this.watchRuntimeStatus = watchRuntimeStatus;
             this.notificationStatus = notificationStatus;
             this.themeMode = themeMode;
             this.appUpdateStatus = appUpdateStatus;
@@ -335,6 +345,8 @@ final class SettingsPageContent {
         void onAddComputer();
 
         String onWatchChanged(boolean enabled);
+
+        void onWatchStatus();
 
         void onNotificationPermission();
 

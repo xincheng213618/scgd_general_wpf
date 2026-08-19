@@ -21,6 +21,7 @@ public class SettingsInformationArchitectureTest {
                         "电脑与连接",
                         "添加电脑",
                         "持续守护",
+                        "守护状态",
                         "运维提醒",
                         "主题模式",
                         "应用更新"),

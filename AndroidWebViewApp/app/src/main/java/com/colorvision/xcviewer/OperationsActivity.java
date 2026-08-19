@@ -707,6 +707,9 @@ public class OperationsActivity extends AppCompatActivity {
         if (OperationsDestinationState.TOOLS.equals(detailParentDestination)) {
             return "返回运维工具";
         }
+        if (OperationsDestinationState.SETTINGS.equals(detailParentDestination)) {
+            return "返回设置";
+        }
         String parentLabel = OperationsInPageNavigationPolicy.navigateUpLabel(
                 currentDestination,
                 detailParentDestination,
@@ -755,6 +758,10 @@ public class OperationsActivity extends AppCompatActivity {
         }
         if (OperationsDestinationState.TOOLS.equals(parent)) {
             showOperationsToolboxPage();
+            return true;
+        }
+        if (OperationsDestinationState.SETTINGS.equals(parent)) {
+            showSettingsPage();
             return true;
         }
         if (OperationsDestinationState.OVERVIEW.equals(parent)) {
@@ -869,10 +876,10 @@ public class OperationsActivity extends AppCompatActivity {
         cancelDashboardRefresh();
         leaveSupportCenter();
         leaveLiveMonitor();
-        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setConnectionRecoveryVisible(false);
         rebuildSettingsPage(false);
         setCurrentDestination(OperationsDestinationState.SETTINGS);
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         connectionsParentDestination = OperationsDestinationState.OVERVIEW;
         syncTopLevelNavigation();
         setDashboardVisible(true);
@@ -922,6 +929,11 @@ public class OperationsActivity extends AppCompatActivity {
                     }
 
                     @Override
+                    public void onWatchStatus() {
+                        showOperationsWatchStatus();
+                    }
+
+                    @Override
                     public void onNotificationPermission() {
                         notificationSettingsController.manage();
                     }
@@ -958,6 +970,7 @@ public class OperationsActivity extends AppCompatActivity {
     private SettingsPageContent.ViewModel settingsViewModel() {
         boolean paired = preferences.hasOperationsProfile();
         boolean watchEnabled = preferences.isOperationsWatchUserEnabled();
+        OperationsWatchStatusPresentation.Presentation watchRuntime = watchRuntimeStatus();
         return new SettingsPageContent.ViewModel(
                 paired,
                 paired
@@ -969,9 +982,43 @@ public class OperationsActivity extends AppCompatActivity {
                         paired,
                         watchEnabled,
                         notificationSettingsController.remindersAvailable()),
+                watchRuntime.summary,
                 notificationSettingsController.status(),
                 themeManager.getThemeModeLabel(),
                 "当前 " + androidUpdateController.currentVersionName() + " · 签名校验");
+    }
+
+    private OperationsWatchStatusPresentation.Presentation watchRuntimeStatus() {
+        return OperationsWatchStatusPresentation.create(
+                preferences.hasOperationsProfile(),
+                preferences.isOperationsWatchUserEnabled(),
+                preferences.getOperationsWatchState(),
+                preferences.getActiveOperationsWatchCheckedAt(),
+                System.currentTimeMillis());
+    }
+
+    private void showOperationsWatchStatus() {
+        OperationsWatchStatusPresentation.Presentation presentation = watchRuntimeStatus();
+        MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle("守护状态")
+                .setMessage(presentation.details)
+                .setNegativeButton("查看时间线", (ignored, which) -> {
+                    detailParentDestination = OperationsDestinationState.SETTINGS;
+                    showOperationsWatchHistory();
+                });
+        if (preferences.isOperationsWatchUserEnabled()) {
+            dialog.setPositiveButton("立即检查", (ignored, which) -> {
+                    OperationsWatchService.refreshConnectionPreference(this);
+                    showSettingsFeedback("已请求立即检查；守护将在后台更新状态", false);
+                    if (settingsScroll != null) {
+                        settingsScroll.postDelayed(this::refreshSettingsPage, 2_000L);
+                    }
+                });
+        } else {
+            dialog.setPositiveButton("开启持续守护", (ignored, which) ->
+                    setSettingsWatchEnabled(true));
+        }
+        dialog.show();
     }
 
     private void setSettingsWatchEnabled(boolean enabled) {
@@ -7548,6 +7595,7 @@ public class OperationsActivity extends AppCompatActivity {
         }
         int destination;
         if (OperationsDestinationState.SETTINGS.equals(currentDestination)
+                || OperationsDestinationState.SETTINGS.equals(detailParentDestination)
                 || OperationsDestinationState.SETTINGS.equals(
                         connectionsParentDestination)) {
             destination = NAV_SETTINGS;
