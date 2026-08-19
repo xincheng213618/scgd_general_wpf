@@ -106,6 +106,18 @@ namespace ColorVision.Copilot
 
         public bool EnsureInitialized(CopilotConfig config)
         {
+            return EnsureInitialized(config, normalizeRestoredConversations: false);
+        }
+
+        internal bool EnsureInitializedAfterRestore(CopilotConfig config)
+        {
+            return EnsureInitialized(config, normalizeRestoredConversations: true);
+        }
+
+        private bool EnsureInitialized(
+            CopilotConfig config,
+            bool normalizeRestoredConversations)
+        {
             ArgumentNullException.ThrowIfNull(config);
 
             var changed = false;
@@ -145,14 +157,17 @@ namespace ColorVision.Copilot
             var conversationIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var conversation in Conversations)
             {
-                var interruptedAssistantMessage = conversation.Messages?
-                    .LastOrDefault(message => message?.IsUser == false
-                        && (message.IsResponsePending || message.IsThinkingInProgress));
-                var recoveredAgentRun = CopilotInterruptedAgentRunRecovery.Normalize(conversation, interruptedAssistantMessage);
-                changed |= recoveredAgentRun;
-                if (!recoveredAgentRun)
-                    changed |= CopilotInterruptedResponseRecovery.Normalize(conversation, interruptedAssistantMessage);
-                changed |= conversation.EnsureValid();
+                if (normalizeRestoredConversations)
+                {
+                    var interruptedAssistantMessage = conversation.Messages?
+                        .LastOrDefault(message => message?.IsUser == false
+                            && (message.IsResponsePending || message.IsThinkingInProgress));
+                    var recoveredAgentRun = CopilotInterruptedAgentRunRecovery.Normalize(conversation, interruptedAssistantMessage);
+                    changed |= recoveredAgentRun;
+                    if (!recoveredAgentRun)
+                        changed |= CopilotInterruptedResponseRecovery.Normalize(conversation, interruptedAssistantMessage);
+                    changed |= conversation.EnsureValid();
+                }
                 if (!conversationIds.Add(conversation.Id))
                 {
                     string replacementId;

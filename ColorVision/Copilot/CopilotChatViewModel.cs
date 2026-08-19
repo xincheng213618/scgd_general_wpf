@@ -189,7 +189,7 @@ namespace ColorVision.Copilot
                 PersistConfig();
 
             _state = _stateStore.Load();
-            var stateChanged = _state.EnsureInitialized(_config);
+            var stateChanged = _state.EnsureInitializedAfterRestore(_config);
             stateChanged |= CopilotSteeringRecovery.RestorePendingToDrafts(_state);
             stateChanged |= CopilotConversationGoalRecovery.PauseActiveGoalsAfterProcessRestart(
                 _state,

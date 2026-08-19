@@ -2001,7 +2001,7 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
-    public void InterruptedRunRecoveryRepairsCheckpointJournalBeforeRunStop()
+    public void RestoredStateInitializationRepairsCheckpointJournalBeforeRunStop()
     {
         var profile = CreateProfile();
         var journal = new CopilotAgentTaskEventJournalBuilder();
@@ -2024,8 +2024,24 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             IsExecutionInProgress = true,
         };
         conversation.Messages.Add(assistant);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = profile.Id,
+            Conversations = new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>
+            {
+                conversation,
+            },
+        };
+        var config = new CopilotConfig
+        {
+            Profiles = new System.Collections.ObjectModel.ObservableCollection<CopilotProfileConfig>
+            {
+                profile,
+            },
+        };
 
-        Assert.True(CopilotInterruptedAgentRunRecovery.Normalize(conversation, assistant));
+        Assert.True(state.EnsureInitializedAfterRestore(config));
 
         var recovered = Assert.IsType<CopilotAgentSessionCheckpoint>(conversation.AgentSessionCheckpoint);
         var terminal = Assert.Single(
@@ -2049,6 +2065,53 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
         Assert.True(terminal.Sequence < stopped.Sequence);
         Assert.True(questionResolution.Sequence < stopped.Sequence);
         Assert.Equal(CopilotAgentStopReason.Interrupted, assistant.AgentStopReason);
+    }
+
+    [Fact]
+    public void LiveProfileReconciliationDoesNotRepairAnActiveAgentRun()
+    {
+        var profile = CreateProfile();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("live-call")));
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            CopilotCapabilityCatalog.Shared.GetSnapshot(),
+            taskEventJournal: journal.Snapshot());
+        var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+        conversation.AgentSessionCheckpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint);
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            IsExecutionInProgress = true,
+        };
+        conversation.Messages.Add(assistant);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = profile.Id,
+            Conversations = new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>
+            {
+                conversation,
+            },
+        };
+        var config = new CopilotConfig
+        {
+            Profiles = new System.Collections.ObjectModel.ObservableCollection<CopilotProfileConfig>
+            {
+                profile,
+            },
+        };
+
+        CopilotChatStateProfileReconciler.Apply(state, config, profile.Id);
+
+        var preserved = Assert.IsType<CopilotAgentSessionCheckpoint>(conversation.AgentSessionCheckpoint);
+        Assert.DoesNotContain(
+            preserved.TaskEventJournal.Events,
+            item => item.Type == CopilotAgentTaskEventType.RunStopped);
+        Assert.True(assistant.IsThinkingInProgress);
+        Assert.Equal(CopilotAgentStopReason.None, assistant.AgentStopReason);
     }
 
     [Fact]
