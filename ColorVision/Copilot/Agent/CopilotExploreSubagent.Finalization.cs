@@ -45,8 +45,7 @@ namespace ColorVision.Copilot
                     new CopilotToolExecutor(),
                     _chatClientFactory,
                     EmptyExternalToolProvider.Instance,
-                    new CopilotCapabilityCatalog(),
-                    _stopHookExecutor);
+                    new CopilotCapabilityCatalog());
                 using var steeringTarget = CopilotSubagentCoordination.TryAttachSteeringTarget(
                     parentRequest.ConversationId,
                     runRequest.RunId,

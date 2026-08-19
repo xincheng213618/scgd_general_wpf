@@ -2,7 +2,6 @@ using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,64 +15,8 @@ namespace ColorVision.Copilot
         private readonly CopilotContextRegistry _contextRegistry;
         private readonly CopilotMicrosoftAgentFrameworkRuntime _agentRuntime;
         private readonly CopilotWorkspaceRollbackCoordinator _workspaceRollbackCoordinator;
-        private readonly CopilotCodexSessionStartHookLifecycle _sessionStartHookLifecycle;
-        private readonly CopilotCodexSessionEndHookLifecycle _sessionEndHookLifecycle;
-        private readonly CopilotCodexUserPromptSubmitHookExecutor _userPromptSubmitHookExecutor;
-        private readonly CopilotCodexStopHookExecutor _stopHookExecutor;
 
         public CopilotTurnRuntime(CopilotChatService chatService)
-            : this(
-                chatService,
-                new CopilotCodexSessionStartHookLifecycle(),
-                new CopilotCodexSessionEndHookLifecycle(),
-                new CopilotCodexUserPromptSubmitHookExecutor(),
-                new CopilotCodexStopHookExecutor())
-        {
-        }
-
-        internal CopilotTurnRuntime(
-            CopilotChatService chatService,
-            CopilotCodexStopHookExecutor stopHookExecutor)
-            : this(
-                chatService,
-                new CopilotCodexSessionStartHookLifecycle(),
-                new CopilotCodexSessionEndHookLifecycle(),
-                new CopilotCodexUserPromptSubmitHookExecutor(),
-                stopHookExecutor)
-        {
-        }
-
-        internal CopilotTurnRuntime(
-            CopilotChatService chatService,
-            CopilotCodexSessionStartHookLifecycle sessionStartHookLifecycle)
-            : this(
-                chatService,
-                sessionStartHookLifecycle,
-                new CopilotCodexSessionEndHookLifecycle(),
-                new CopilotCodexUserPromptSubmitHookExecutor(),
-                new CopilotCodexStopHookExecutor())
-        {
-        }
-
-        internal CopilotTurnRuntime(
-            CopilotChatService chatService,
-            CopilotCodexSessionStartHookLifecycle sessionStartHookLifecycle,
-            CopilotCodexSessionEndHookLifecycle sessionEndHookLifecycle)
-            : this(
-                chatService,
-                sessionStartHookLifecycle,
-                sessionEndHookLifecycle,
-                new CopilotCodexUserPromptSubmitHookExecutor(),
-                new CopilotCodexStopHookExecutor())
-        {
-        }
-
-        private CopilotTurnRuntime(
-            CopilotChatService chatService,
-            CopilotCodexSessionStartHookLifecycle sessionStartHookLifecycle,
-            CopilotCodexSessionEndHookLifecycle sessionEndHookLifecycle,
-            CopilotCodexUserPromptSubmitHookExecutor userPromptSubmitHookExecutor,
-            CopilotCodexStopHookExecutor stopHookExecutor)
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
             _conversationRequestBuilder = new CopilotConversationRequestBuilder();
@@ -88,14 +31,6 @@ namespace ColorVision.Copilot
             _workspaceRollbackCoordinator = new CopilotWorkspaceRollbackCoordinator(
                 toolRegistry,
                 toolExecutor);
-            _sessionStartHookLifecycle = sessionStartHookLifecycle
-                ?? throw new ArgumentNullException(nameof(sessionStartHookLifecycle));
-            _sessionEndHookLifecycle = sessionEndHookLifecycle
-                ?? throw new ArgumentNullException(nameof(sessionEndHookLifecycle));
-            _userPromptSubmitHookExecutor = userPromptSubmitHookExecutor
-                ?? throw new ArgumentNullException(nameof(userPromptSubmitHookExecutor));
-            _stopHookExecutor = stopHookExecutor
-                ?? throw new ArgumentNullException(nameof(stopHookExecutor));
         }
 
         public IAsyncEnumerable<CopilotTurnEvent> RunAsync(
@@ -120,99 +55,15 @@ namespace ColorVision.Copilot
         {
             await eventSink.RequestStatePersistenceBarrierAsync(cancellationToken).ConfigureAwait(false);
 
-            var bufferedAsyncHookResults = DrainAsyncHookResults(
-                request.ConversationId,
-                eventSink.OnRuntimeDiagnostic);
-            var hookRequest = CreateUserPromptSubmitHookRequest(request);
-            var sessionStartOutcome = await _sessionStartHookLifecycle.RunBeforeTurnAsync(
-                hookRequest,
-                request.HostContext.ConversationHistory.ModelMessages.Count > 0,
-                eventSink.OnRuntimeDiagnostic,
-                cancellationToken).ConfigureAwait(false);
-            if (sessionStartOutcome.ShouldStop)
-                throw new CopilotSessionStartHookBlockedException(sessionStartOutcome.StopReason);
-
-            var promptHookOutcome = await _userPromptSubmitHookExecutor.RunAsync(
-                hookRequest,
-                request.UserText,
-                eventSink.OnRuntimeDiagnostic,
-                cancellationToken).ConfigureAwait(false);
-            if (promptHookOutcome.ShouldStop)
-            {
-                throw new CopilotUserPromptSubmitHookBlockedException(
-                    promptHookOutcome.StopReason);
-            }
-
-            var requestStartAsyncHookResults = DrainAsyncHookResults(
-                request.ConversationId,
-                eventSink.OnRuntimeDiagnostic);
-            var asyncHookAdditionalContexts = CopilotCodexAsyncHookResultDelivery
-                .GetAdditionalContexts(bufferedAsyncHookResults
-                    .Concat(requestStartAsyncHookResults)
-                    .ToArray());
-
             return request.Mode == CopilotAgentMode.Chat
-                ? await RunChatAsync(
-                    request,
-                    sessionStartOutcome.AdditionalContexts,
-                    promptHookOutcome.AdditionalContexts,
-                    asyncHookAdditionalContexts,
-                    eventSink,
-                    cancellationToken).ConfigureAwait(false)
-                : await RunAgentAsync(
-                    request,
-                    sessionStartOutcome.AdditionalContexts,
-                    promptHookOutcome.AdditionalContexts,
-                    asyncHookAdditionalContexts,
-                    eventSink,
-                    cancellationToken).ConfigureAwait(false);
+                ? await RunChatAsync(request, eventSink, cancellationToken).ConfigureAwait(false)
+                : await RunAgentAsync(request, eventSink, cancellationToken).ConfigureAwait(false);
         }
 
         public CopilotSteeringAdmissionResult EnqueueSteeringMessage(
             string taskId,
             string message) =>
             _agentRuntime.EnqueueSteeringMessage(taskId, message);
-
-        public void QueueSessionStart(
-            string conversationId,
-            CopilotCodexSessionStartSource source)
-        {
-            _sessionEndHookLifecycle.Reopen(conversationId);
-            _sessionStartHookLifecycle.Queue(conversationId, source);
-        }
-
-        public Task<CopilotCodexSessionStartHookOutcome> RunSessionStartHooksAsync(
-            CopilotAgentRequest request,
-            bool hasPersistedHistory,
-            Action<string>? onDiagnostic,
-            CancellationToken cancellationToken) =>
-            _sessionStartHookLifecycle.RunBeforeTurnAsync(
-                request,
-                hasPersistedHistory,
-                onDiagnostic,
-                cancellationToken);
-
-        public async Task<CopilotCodexSessionEndHookOutcome> RunSessionEndHooksAsync(
-            CopilotAgentRequest request,
-            Action<string>? onDiagnostic,
-            CancellationToken cancellationToken)
-        {
-            ArgumentNullException.ThrowIfNull(request);
-            try
-            {
-                await CopilotCodexLifecycleHookBackgroundScheduler.Shared
-                    .ShutdownSessionAsync(request.ConversationId)
-                    .ConfigureAwait(false);
-                return await _sessionEndHookLifecycle.EndAsync(
-                    request,
-                    onDiagnostic,
-                    cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                _sessionStartHookLifecycle.End(request.ConversationId);
-            }
-        }
 
         public bool TryEnqueueBackgroundShellCommandCompletion(
             CopilotBackgroundShellCommandSnapshot snapshot) =>
@@ -225,16 +76,6 @@ namespace ColorVision.Copilot
         public bool TryAnswerUserQuestion(string taskId, string requestId, string answer) =>
             _agentRuntime.TryAnswerUserQuestion(taskId, requestId, answer);
 
-        private static IReadOnlyList<CopilotCodexAsyncHookResult> DrainAsyncHookResults(
-            string conversationId,
-            Action<string>? onDiagnostic)
-        {
-            var results = CopilotCodexLifecycleHookBackgroundScheduler.Shared
-                .DrainCompleted(conversationId);
-            CopilotCodexAsyncHookResultDelivery.PublishDiagnostics(results, onDiagnostic);
-            return results;
-        }
-
         public Task<CopilotWorkspaceRollbackActionResult> RequestWorkspaceRollbackAsync(
             CopilotWorkspaceRollbackActionRequest request,
             Action<CopilotAgentEvent> onEvent,
@@ -246,9 +87,6 @@ namespace ColorVision.Copilot
 
         private async Task<CopilotTurnResult> RunChatAsync(
             CopilotTurnRequest request,
-            IReadOnlyList<string> sessionStartAdditionalContexts,
-            IReadOnlyList<string> userPromptSubmitAdditionalContexts,
-            IReadOnlyList<string> asyncHookAdditionalContexts,
             CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
@@ -299,99 +137,15 @@ namespace ColorVision.Copilot
                 limits: request.HistoryLimits,
                 includeAttachmentContext: false,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
-            var hookDeveloperContext =
-                CopilotCodexSessionStartHookExecutor.MergeDeveloperContexts(
-                    sessionStartAdditionalContexts,
-                    userPromptSubmitAdditionalContexts,
-                    asyncHookAdditionalContexts);
-            var hookRequest = CreateUserPromptSubmitHookRequest(request);
-            var providerUsage = CopilotTokenUsage.Empty;
-            var stopHookActive = false;
-            var continuationCount = 0;
-            var asyncHookContinuationCount = 0;
-            var currentHistory = history;
-            var streamResult = default(CopilotChatStreamResult);
-            while (true)
-            {
-                var assistantText = new StringBuilder();
-                streamResult = await _chatService.StreamReplyAsync(
-                    request.Profile,
-                    currentHistory,
-                    delta =>
-                    {
-                        if (!string.IsNullOrEmpty(delta.Content))
-                            assistantText.Append(delta.Content);
-                        eventSink.OnChatDelta(delta);
-                    },
-                    eventSink.OnProviderRetry,
-                    eventSink.OnProviderConnectionRecovery,
-                    usage => eventSink.OnTokenUsageUpdated(
-                        imageUnderstanding.Usage.Add(providerUsage).Add(usage)),
-                    hookDeveloperContext,
-                    cancellationToken).ConfigureAwait(false);
-                providerUsage = providerUsage.Add(streamResult.Usage);
-                streamResult = streamResult with { Usage = providerUsage };
-                eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage.Add(providerUsage));
-                var completedAsyncHookResults = DrainAsyncHookResults(
-                    request.ConversationId,
-                    eventSink.OnRuntimeDiagnostic);
-                var asyncHookContinuation = CopilotCodexAsyncHookResultDelivery
-                    .BuildContinuationMessage(completedAsyncHookResults);
-                if (asyncHookContinuation.Length > 0)
-                {
-                    if (streamResult.IsIncomplete
-                        || asyncHookContinuationCount
-                            >= CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations)
-                    {
-                        CopilotCodexLifecycleHookBackgroundScheduler.Shared.RequeueContexts(
-                            request.ConversationId,
-                            completedAsyncHookResults);
-                        eventSink.OnRuntimeDiagnostic(streamResult.IsIncomplete
-                            ? "Completed async hook context was buffered for the next user request because the Chat provider response was incomplete."
-                            : $"Async hook continuation limit reached · {CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations} continuation(s); remaining context was buffered for the next user request.");
-                    }
-                    else
-                    {
-                        asyncHookContinuationCount++;
-                        eventSink.OnRuntimeDiagnostic(
-                            $"Async hook continuation {asyncHookContinuationCount}/{CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations} · Chat is delivering completed notification-only hook context at the post-sampling boundary.");
-                        eventSink.OnChatAnswerReset();
-                        currentHistory = CopilotRequestMessageSequence.Normalize(
-                            currentHistory
-                                .Append(new CopilotRequestMessage("assistant", assistantText.ToString()))
-                                .Append(new CopilotRequestMessage("user", asyncHookContinuation)));
-                        continue;
-                    }
-                }
-                if (streamResult.IsIncomplete)
-                    break;
-
-                var stopOutcome = await _stopHookExecutor.RunAsync(
-                    hookRequest,
-                    stopHookActive,
-                    assistantText.ToString(),
-                    eventSink.OnRuntimeDiagnostic,
-                    cancellationToken).ConfigureAwait(false);
-                if (!stopOutcome.ShouldContinue)
-                    break;
-                if (continuationCount >= CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations)
-                {
-                    eventSink.OnRuntimeDiagnostic(
-                        $"Stop hook continuation limit reached · {CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations} consecutive continuation(s); the Chat turn is finalizing to avoid an unbounded hook loop.");
-                    break;
-                }
-
-                continuationCount++;
-                stopHookActive = true;
-                eventSink.OnRuntimeDiagnostic(
-                    $"Stop hook continuation {continuationCount}/{CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations} · Chat is asking the model to revise the completed answer.");
-                eventSink.OnChatAnswerReset();
-                currentHistory = CopilotRequestMessageSequence.Normalize(
-                    currentHistory
-                        .Append(new CopilotRequestMessage("assistant", assistantText.ToString()))
-                        .Append(new CopilotRequestMessage("user", stopOutcome.ContinuationPrompt)));
-            }
-            var turnUsage = imageUnderstanding.Usage.Add(providerUsage);
+            var streamResult = await _chatService.StreamReplyAsync(
+                request.Profile,
+                history,
+                eventSink.OnChatDelta,
+                eventSink.OnProviderRetry,
+                eventSink.OnProviderConnectionRecovery,
+                usage => eventSink.OnTokenUsageUpdated(imageUnderstanding.Usage.Add(usage)),
+                cancellationToken).ConfigureAwait(false);
+            var turnUsage = imageUnderstanding.Usage.Add(streamResult.Usage);
             eventSink.OnTokenUsageUpdated(turnUsage);
             return CopilotTurnResult.FromChat(
                 turnUsage,
@@ -402,9 +156,6 @@ namespace ColorVision.Copilot
 
         private async Task<CopilotTurnResult> RunAgentAsync(
             CopilotTurnRequest request,
-            IReadOnlyList<string> sessionStartAdditionalContexts,
-            IReadOnlyList<string> userPromptSubmitAdditionalContexts,
-            IReadOnlyList<string> asyncHookAdditionalContexts,
             CopilotTurnEventSink eventSink,
             CancellationToken cancellationToken)
         {
@@ -443,9 +194,6 @@ namespace ColorVision.Copilot
                     request.HostContext.ConversationHistory,
                     request.HistoryLimits),
                 ContextItems = contextItems,
-                SessionStartAdditionalContexts = sessionStartAdditionalContexts,
-                UserPromptSubmitAdditionalContexts = userPromptSubmitAdditionalContexts,
-                AsyncHookAdditionalContexts = asyncHookAdditionalContexts,
                 SessionCheckpoint = request.SessionCheckpoint,
                 TaskEventJournalBaseline = request.TaskEventJournalBaseline,
                 StatePersistenceBarrier = eventSink.RequestStatePersistenceBarrierAsync,
@@ -516,37 +264,6 @@ namespace ColorVision.Copilot
                     finalReviewAnswer.IsTruncated);
             }
             return CopilotTurnResult.FromAgent(request.Mode, turnUsage, result);
-        }
-
-        private static CopilotAgentRequest CreateUserPromptSubmitHookRequest(
-            CopilotTurnRequest request)
-        {
-            var options = request.HostContext.ProjectInstructionDiscoveryOptions;
-            var workspacePath = string.IsNullOrWhiteSpace(request.HostContext.SolutionDirectoryPath)
-                ? request.HostContext.ProjectConfigWorkingDirectoryPath
-                : request.HostContext.SolutionDirectoryPath;
-            return new CopilotAgentRequest
-            {
-                ConversationId = request.ConversationId,
-                TaskId = request.TaskId,
-                WorkspacePath = workspacePath,
-                UserText = request.UserText,
-                TaskIntentText = request.UserText,
-                Profile = request.Profile,
-                Mode = request.Mode,
-                SearchRootPaths = request.HostContext.AdditionalReadRootPaths,
-                TrustedProjectRootPaths = string.IsNullOrWhiteSpace(
-                    request.HostContext.PrimaryTrustedProjectRootPath)
-                    ? Array.Empty<string>()
-                    : [request.HostContext.PrimaryTrustedProjectRootPath],
-                CodexSandboxMode = options.ConfiguredSandboxMode,
-                CodexApprovalPolicy = options.ConfiguredApprovalPolicy,
-                CodexHooksEnabled = options.ConfiguredHooksEnabled,
-                CodexCommandHooks = options.ConfiguredCommandHooks
-                    .Select(definition => definition.CreateSnapshot())
-                    .ToArray(),
-                CodexShellEnvironmentPolicy = options.ConfiguredShellEnvironmentPolicy.CreateSnapshot(),
-            };
         }
 
         internal static CopilotTokenUsage GetReportedTokenUsage(CopilotAgentBudgetSnapshot budget)

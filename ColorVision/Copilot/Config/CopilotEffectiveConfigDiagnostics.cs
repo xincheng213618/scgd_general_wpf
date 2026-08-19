@@ -840,10 +840,6 @@ namespace ColorVision.Copilot
             StringBuilder builder,
             CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
         {
-            var synchronousHookCount = codexConfigOptions.ConfiguredCommandHooks.Count(
-                hook => hook.ExecutionMode == CopilotToolExecutionHookMode.Sync);
-            var asynchronousHookCount = codexConfigOptions.ConfiguredCommandHooks.Count(
-                hook => hook.ExecutionMode == CopilotToolExecutionHookMode.Async);
             builder.Append("- Codex features.hooks：")
                 .Append(codexConfigOptions.ConfiguredHooksEnabled ? "true" : "false");
             if (codexConfigOptions.HasHooksEnabledOverride)
@@ -863,23 +859,12 @@ namespace ColorVision.Copilot
                 builder.Append(codexConfigOptions.ConfiguredPluginsEnabled
                     ? " · ColorVision 模块扩展 Hook 可运行"
                     : " · features.plugins=false，模块扩展 Hook 已省略");
-                builder.Append("；受信任 hooks.json 命令 Hook 可运行");
             }
             else
             {
-                builder.Append(" · 模块扩展与 hooks.json 命令 Hook 已省略");
+                builder.Append(" · 模块扩展 Hook 已省略");
             }
-            builder.Append("；已加载命令 Hook ")
-                .Append(codexConfigOptions.ConfiguredCommandHooks.Count)
-                .Append(" 个（同步 ")
-                .Append(synchronousHookCount)
-                .Append(" / 异步 ")
-                .Append(asynchronousHookCount)
-                .Append("） / 来源文件 ")
-                .Append(codexConfigOptions.AppliedHookFilePaths.Count)
-                .Append(" 个 / 配置问题 ")
-                .Append(codexConfigOptions.ConfiguredHookIssues.Count)
-                .AppendLine(" 个；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
+            builder.AppendLine("；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
         }
 
         private static void AppendExecPolicy(

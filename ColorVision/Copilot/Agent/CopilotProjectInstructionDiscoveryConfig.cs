@@ -169,14 +169,6 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> AppliedProjectConfigFilePaths { get; init; } = Array.Empty<string>();
 
-        public IReadOnlyList<string> AppliedHookFilePaths { get; init; } = Array.Empty<string>();
-
-        internal IReadOnlyList<CopilotCodexCommandHookDefinition> ConfiguredCommandHooks { get; init; } =
-            Array.Empty<CopilotCodexCommandHookDefinition>();
-
-        internal IReadOnlyList<CopilotCodexConfiguredHookIssue> ConfiguredHookIssues { get; init; } =
-            Array.Empty<CopilotCodexConfiguredHookIssue>();
-
         public IReadOnlyList<string> AppliedExecPolicyFilePaths { get; init; } = Array.Empty<string>();
 
         internal IReadOnlyList<CopilotCodexExecPolicyRule> ConfiguredExecPolicyRules { get; init; } =
@@ -684,8 +676,6 @@ namespace ColorVision.Copilot
             || HasModelAutoCompactTokenLimitScopeOverride
             || HasModelInstructionsOverride
             || HasCompactPromptOverride
-            || ConfiguredCommandHooks.Count > 0
-            || ConfiguredHookIssues.Count > 0
             || ConfiguredExecPolicyRules.Count > 0
             || ConfiguredExecPolicyIssues.Count > 0;
 
@@ -1009,23 +999,11 @@ namespace ColorVision.Copilot
                 globalSource,
                 globalConfigPath,
                 out var customSubagentDiscoveryIssues);
-            var configuredHooks = normalizedRoot.Length == 0
-                ? CopilotCodexConfiguredHookDiscoveryResult.Empty
-                : DiscoverConfiguredHooksForLayer(
-                    normalizedRoot,
-                    globalConfigPath,
-                    globalSource,
-                    Path.Combine(normalizedRoot, HooksFileName),
-                    CopilotProjectInstructionConfigSources.CodexHome,
-                    startingOrder: 0);
             var execPolicy = DiscoverCodexHomeExecPolicy(normalizedRoot);
             options = options with
             {
                 CustomSubagents = customSubagents,
                 CustomSubagentDiscoveryIssues = customSubagentDiscoveryIssues,
-                ConfiguredCommandHooks = configuredHooks.CommandHooks,
-                ConfiguredHookIssues = configuredHooks.Issues,
-                AppliedHookFilePaths = configuredHooks.SourceFilePaths,
                 ConfiguredExecPolicyRules = execPolicy.Rules,
                 ConfiguredExecPolicyIssues = execPolicy.Issues,
                 AppliedExecPolicyFilePaths = execPolicy.SourceFilePaths,
@@ -1059,11 +1037,6 @@ namespace ColorVision.Copilot
                 normalizedProjectRoot,
                 workingDirectoryPath);
             var appliedConfigFilePaths = new List<string>();
-            var appliedHookFilePaths = options.AppliedHookFilePaths.ToList();
-            var configuredCommandHooks = options.ConfiguredCommandHooks
-                .Select(definition => definition.CreateSnapshot())
-                .ToList();
-            var configuredHookIssues = options.ConfiguredHookIssues.ToList();
             foreach (var directoryPath in configDirectories)
             {
                 var configPath = Path.Combine(directoryPath, ".codex", ConfigFileName);
@@ -1109,25 +1082,6 @@ namespace ColorVision.Copilot
                 if (hasApplicableOverrides || hasCustomSubagentDeclarations)
                     appliedConfigFilePaths.Add(Path.GetFullPath(configPath));
 
-                var hookDiscovery = DiscoverConfiguredHooksForLayer(
-                    normalizedProjectRoot,
-                    configPath,
-                    hasProjectConfig ? projectSource : string.Empty,
-                    Path.Combine(directoryPath, ".codex", HooksFileName),
-                    CopilotProjectInstructionConfigSources.TrustedProject,
-                    configuredCommandHooks.Count);
-                var remainingHookSlots = Math.Max(
-                    0,
-                    MaximumConfiguredHookHandlers - configuredCommandHooks.Count);
-                configuredCommandHooks.AddRange(hookDiscovery.CommandHooks.Take(remainingHookSlots));
-                configuredHookIssues.AddRange(hookDiscovery.Issues);
-                if (hookDiscovery.CommandHooks.Count > remainingHookSlots)
-                {
-                    configuredHookIssues.Add(new CopilotCodexConfiguredHookIssue(
-                        hookDiscovery.SourceFilePaths.FirstOrDefault() ?? directoryPath,
-                        $"Configured command hooks are limited to {MaximumConfiguredHookHandlers} handlers across active layers."));
-                }
-                appliedHookFilePaths.AddRange(hookDiscovery.SourceFilePaths);
             }
 
             var projectExecPolicy = DiscoverTrustedProjectExecPolicy(
@@ -1157,11 +1111,6 @@ namespace ColorVision.Copilot
             {
                 CustomSubagents = customSubagents,
                 CustomSubagentDiscoveryIssues = customSubagentDiscoveryIssues,
-                ConfiguredCommandHooks = configuredCommandHooks.ToArray(),
-                ConfiguredHookIssues = configuredHookIssues.ToArray(),
-                AppliedHookFilePaths = appliedHookFilePaths
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToArray(),
                 ConfiguredExecPolicyRules = configuredExecPolicyRules,
                 ConfiguredExecPolicyIssues = configuredExecPolicyIssues,
                 AppliedExecPolicyFilePaths = appliedExecPolicyFilePaths,

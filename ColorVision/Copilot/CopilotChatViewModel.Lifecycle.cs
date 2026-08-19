@@ -112,17 +112,6 @@ namespace ColorVision.Copilot
             _taskHost.Shutdown();
             try
             {
-                EndOpenSessionsForShutdownAsync()
-                    .GetAwaiter()
-                    .GetResult();
-            }
-            catch (Exception exception)
-            {
-                System.Diagnostics.Trace.TraceError(
-                    $"Copilot SessionEnd hook shutdown failed open: {CopilotAgentTraceEntry.Sanitize(exception.Message)}");
-            }
-            try
-            {
                 CopilotToolExecutionHookBackgroundScheduler.Shared.ShutdownAsync()
                     .GetAwaiter()
                     .GetResult();

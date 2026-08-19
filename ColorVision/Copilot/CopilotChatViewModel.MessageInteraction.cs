@@ -294,9 +294,6 @@ namespace ColorVision.Copilot
         private CopilotConversationRecord InsertAndSelectConversationBranch(CopilotConversationRecord branch)
         {
             CopilotConversationService.Insert(Conversations, branch);
-            _turnRuntime.QueueSessionStart(
-                branch.Id,
-                CopilotCodexSessionStartSource.Startup);
             SelectConversation(branch, persist: false, preferredProfileId: branch.ProfileId);
             PersistState(immediate: true);
             return branch;
@@ -469,8 +466,7 @@ namespace ColorVision.Copilot
                         _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                     CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
                         _currentCodexConfigOptions.ConfiguredHooksEnabled,
-                        _currentCodexConfigOptions.ConfiguredPluginsEnabled,
-                        _currentCodexConfigOptions.ConfiguredCommandHooks));
+                        _currentCodexConfigOptions.ConfiguredPluginsEnabled));
         }
 
         private async Task RetryMessageAsync(CopilotChatMessage? message, bool refreshExternalContext)
@@ -491,8 +487,7 @@ namespace ColorVision.Copilot
                     _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
                     _currentCodexConfigOptions.ConfiguredHooksEnabled,
-                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
-                    _currentCodexConfigOptions.ConfiguredCommandHooks)))
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
             {
                 return;
             }

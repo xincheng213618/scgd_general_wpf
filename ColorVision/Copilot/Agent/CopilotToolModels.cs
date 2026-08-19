@@ -202,15 +202,6 @@ namespace ColorVision.Copilot
 
         public string ConfiguredDeveloperInstructions { get; init; } = string.Empty;
 
-        internal IReadOnlyList<string> SessionStartAdditionalContexts { get; init; } =
-            Array.Empty<string>();
-
-        internal IReadOnlyList<string> UserPromptSubmitAdditionalContexts { get; init; } =
-            Array.Empty<string>();
-
-        internal IReadOnlyList<string> AsyncHookAdditionalContexts { get; init; } =
-            Array.Empty<string>();
-
         internal CopilotCodexWebSearchMode CodexWebSearchMode { get; init; } =
             CopilotCodexWebSearchMode.Unspecified;
 
@@ -221,13 +212,8 @@ namespace ColorVision.Copilot
 
         internal bool CodexHooksEnabled { get; init; } = true;
 
-        internal IReadOnlyList<CopilotCodexCommandHookDefinition> CodexCommandHooks { get; init; } =
-            Array.Empty<CopilotCodexCommandHookDefinition>();
-
         internal IReadOnlyList<CopilotCodexExecPolicyRule> CodexExecPolicyRules { get; init; } =
             Array.Empty<CopilotCodexExecPolicyRule>();
-
-        internal CopilotCodexSubagentHookContext? CodexSubagentHookContext { get; init; }
 
         internal bool CodexPluginsEnabled { get; init; } = true;
 

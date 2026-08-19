@@ -54,13 +54,11 @@ namespace ColorVision.Copilot
                                 Log.Warn(
                                     $"Copilot async pre-tool hook control decision was ignored. Tool={context.Invocation.Tool.Name} CallId={context.Invocation.CallId} HookSource={binding.SourceId}");
                             }
-                            if (output?.HasOutput == true
-                                && binding.Hook is not CopilotCodexCommandHook)
+                            if (output?.HasOutput == true)
                             {
                                 Log.Warn(
                                     $"Copilot async pre-tool hook output was ignored by the notification-only execution mode. Tool={context.Invocation.Tool.Name} CallId={context.Invocation.CallId} HookSource={binding.SourceId}");
                             }
-                            return CopilotCodexAsyncHookOutput.From(output, decision);
                         });
                     continue;
                 }
@@ -432,7 +430,7 @@ namespace ColorVision.Copilot
             List<CopilotToolExecutionHookRun> hookRuns) =>
             Array.AsReadOnly(hookRuns.ToArray());
 
-        private static async Task<CopilotCodexAsyncHookOutput?> RunAsyncPostHookNotificationAsync(
+        private static async Task RunAsyncPostHookNotificationAsync(
             ICopilotToolExecutionHook hook,
             CopilotToolExecutionOutcome outcome,
             CancellationToken cancellationToken)
@@ -442,17 +440,15 @@ namespace ColorVision.Copilot
                 var output = await outputHook.AfterExecuteWithOutputAsync(
                     outcome,
                     cancellationToken).ConfigureAwait(false);
-                if (output?.HasOutput == true
-                    && hook is not CopilotCodexCommandHook)
+                if (output?.HasOutput == true)
                 {
                     Log.Warn(
                         $"Copilot async post-tool hook output was ignored by the notification-only execution mode. Tool={outcome.Invocation.Tool.Name} CallId={outcome.Execution.CallId} Hook={hook.GetType().FullName}");
                 }
-                return CopilotCodexAsyncHookOutput.From(output);
+                return;
             }
 
             await hook.AfterExecuteAsync(outcome, cancellationToken).ConfigureAwait(false);
-            return CopilotCodexAsyncHookOutput.Empty;
         }
 
         private static void ApplyPreExecutionOutput(
@@ -517,26 +513,15 @@ namespace ColorVision.Copilot
             CopilotToolExecutionHookPhase phase,
             CopilotToolInvocation invocation,
             List<CopilotToolExecutionHookRun> hookRuns,
-            Func<CancellationToken, Task<CopilotCodexAsyncHookOutput?>> callback)
+            Func<CancellationToken, Task> callback)
         {
-            var scheduled = binding.Hook is CopilotCodexCommandHook
-                ? CopilotCodexLifecycleHookBackgroundScheduler.Shared.TrySchedule(
-                    invocation.AgentRequest.ConversationId,
-                    binding.SourceId,
-                    GetConfiguredHookEventName(phase),
-                    invocation.AgentRequest.TaskId,
-                    binding.ExecutionTimeout ?? _hookPhaseTimeout,
-                    callback)
-                : CopilotToolExecutionHookBackgroundScheduler.Shared.TrySchedule(
-                    binding.SourceId,
-                    phase,
-                    invocation.Tool.Name,
-                    invocation.CallId,
-                    binding.ExecutionTimeout ?? _hookPhaseTimeout,
-                    async cancellationToken =>
-                    {
-                        _ = await callback(cancellationToken).ConfigureAwait(false);
-                    });
+            var scheduled = CopilotToolExecutionHookBackgroundScheduler.Shared.TrySchedule(
+                binding.SourceId,
+                phase,
+                invocation.Tool.Name,
+                invocation.CallId,
+                binding.ExecutionTimeout ?? _hookPhaseTimeout,
+                callback);
             RecordHookRun(
                 hookRuns,
                 binding.SourceId,
@@ -553,15 +538,6 @@ namespace ColorVision.Copilot
                     $"Copilot async tool hook queue is full. Tool={invocation.Tool.Name} CallId={invocation.CallId} HookSource={binding.SourceId} Phase={phase}");
             }
         }
-
-        private static string GetConfiguredHookEventName(
-            CopilotToolExecutionHookPhase phase) => phase switch
-        {
-            CopilotToolExecutionHookPhase.PermissionRequest => "PermissionRequest",
-            CopilotToolExecutionHookPhase.BeforeExecute => "PreToolUse",
-            CopilotToolExecutionHookPhase.AfterExecute => "PostToolUse",
-            _ => throw new ArgumentOutOfRangeException(nameof(phase)),
-        };
 
         private static void BeginHookRun(
             List<CopilotToolExecutionHookRun> hookRuns,

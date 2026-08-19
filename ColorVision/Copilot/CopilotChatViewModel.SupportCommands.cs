@@ -299,14 +299,10 @@ namespace ColorVision.Copilot
             {
                 HookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
                     _currentCodexConfigOptions.ConfiguredHooksEnabled,
-                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
-                    _currentCodexConfigOptions.ConfiguredCommandHooks),
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 BackgroundActivity = CopilotToolExecutionHookBackgroundScheduler.Shared.GetActivitySnapshot(),
-                AsyncCommandActivity = CopilotCodexLifecycleHookBackgroundScheduler.Shared.GetActivitySnapshot(),
                 ExtensionSources = extensionSnapshot.Sources,
                 ExtensionIssues = extensionSnapshot.Issues,
-                ConfiguredHookFilePaths = _currentCodexConfigOptions.AppliedHookFilePaths,
-                ConfiguredHookIssues = _currentCodexConfigOptions.ConfiguredHookIssues,
                 RecentToolExecutions = CopilotToolExecutionAuditLogger.GetRecentEntries(30),
             });
         }
@@ -385,8 +381,7 @@ namespace ColorVision.Copilot
             var agentExtensionSnapshot = CopilotAgentExtensionBridge.Shared.GetSnapshot();
             var toolHookSurface = CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
                 projectInstructionOptions.ConfiguredHooksEnabled,
-                projectInstructionOptions.ConfiguredPluginsEnabled,
-                projectInstructionOptions.ConfiguredCommandHooks);
+                projectInstructionOptions.ConfiguredPluginsEnabled);
             var agentDefaults = _config.AgentDefaults;
             var retainedHistoryWeight = history.Messages.Sum(message => CopilotTokenEstimator.EstimateTextWeight(message.Content));
             var autoCompactionUsage = CopilotConversationAutoCompactionPolicy.Measure(

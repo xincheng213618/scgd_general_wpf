@@ -510,16 +510,16 @@ public sealed class CopilotToolExecutionHookIntegrityTests
     }
 
     [Fact]
-    public async Task FrozenHookBindingsRetainCommandHooksAfterFullRegistrySurface()
+    public async Task FrozenHookBindingsEnforceNativeRegistrySurfaceLimit()
     {
         var spoofedGuard = new RecordingHook((_, _) =>
             Task.FromResult(CopilotToolExecutionHookDecision.Proceed));
         var registryHook = new RecordingHook((_, _) =>
             Task.FromResult(CopilotToolExecutionHookDecision.Proceed));
-        var finalCommandHook = new RecordingHook((_, _) => Task.FromResult(
+        var overflowHook = new RecordingHook((_, _) => Task.FromResult(
             CopilotToolExecutionHookDecision.Deny(
-                "The final captured command hook denied execution.",
-                "late_captured_hook_denied")));
+                "An overflow hook must not enter the frozen native surface.",
+                "overflow_hook_denied")));
         var captured = new List<CopilotToolExecutionHookBinding>
         {
             new("builtin:write-tool-policy", spoofedGuard),
@@ -528,7 +528,7 @@ public sealed class CopilotToolExecutionHookIntegrityTests
             .Select(index => new CopilotToolExecutionHookBinding(
                 $"registry:{index}",
                 registryHook)));
-        captured.Add(new CopilotToolExecutionHookBinding("command:final", finalCommandHook));
+        captured.Add(new CopilotToolExecutionHookBinding("overflow:final", overflowHook));
         var tool = new RecordingTool();
         var invocation = CopyWithInitialHooks(
             CreateInvocation(tool, "full-frozen-hook-surface"),
@@ -539,12 +539,10 @@ public sealed class CopilotToolExecutionHookIntegrityTests
             _ => { },
             CancellationToken.None);
 
-        AssertDeniedOutcome(
-            outcome,
-            "late_captured_hook_denied",
-            CopilotToolFailureKind.Authorization);
-        Assert.Equal(0, tool.ExecutionCount);
-        Assert.Equal(1, finalCommandHook.BeforeCount);
+        Assert.True(outcome.Result.Success);
+        Assert.Equal(CopilotToolExecutionState.Completed, outcome.Execution.State);
+        Assert.Equal(1, tool.ExecutionCount);
+        Assert.Equal(0, overflowHook.BeforeCount);
         Assert.Equal(CopilotToolExecutionHookRegistry.MaxRegistrations, registryHook.BeforeCount);
     }
 

@@ -9,6 +9,16 @@ using System.Threading;
 
 namespace ColorVision.Copilot
 {
+    [Flags]
+    internal enum CopilotToolExecutionHookPhases
+    {
+        None = 0,
+        PermissionRequest = 1,
+        BeforeExecute = 2,
+        AfterExecute = 4,
+        All = PermissionRequest | BeforeExecute | AfterExecute,
+    }
+
     public enum CopilotToolExecutionHookMode
     {
         Sync,
@@ -80,9 +90,7 @@ namespace ColorVision.Copilot
         {
             return Revision >= 0
                 && Entries != null
-                && Entries.Count <= CopilotToolExecutionHookRegistry.MaxRegistrations
-                    + CopilotProjectInstructionDiscoveryConfig.MaximumConfiguredHookHandlers
-                    + 1
+                && Entries.Count <= CopilotToolExecutionHookRegistry.MaxRegistrations + 1
                 && Entries.All(entry => entry?.IsStructurallyValid() == true)
                 && Entries.Select(entry => entry.SourceId).Distinct(StringComparer.OrdinalIgnoreCase).Count() == Entries.Count
                 && Fingerprint?.Length == 64

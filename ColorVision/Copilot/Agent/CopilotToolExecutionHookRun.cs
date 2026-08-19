@@ -129,11 +129,7 @@ namespace ColorVision.Copilot
 
     internal static class CopilotToolExecutionHookRunProtocol
     {
-        internal const int MaximumEntries =
-            (CopilotToolExecutionHookRegistry.MaxRegistrations
-                + CopilotProjectInstructionDiscoveryConfig.MaximumConfiguredHookHandlers
-                + 1)
-            * 3;
+        internal const int MaximumEntries = (CopilotToolExecutionHookRegistry.MaxRegistrations + 1) * 3;
 
         internal static bool IsStructurallyValid(
             IReadOnlyList<CopilotToolExecutionHookRun>? runs)

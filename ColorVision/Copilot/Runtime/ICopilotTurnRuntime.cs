@@ -12,25 +12,6 @@ namespace ColorVision.Copilot
             CopilotTurnRequest request,
             CancellationToken cancellationToken);
 
-        void QueueSessionStart(
-            string conversationId,
-            CopilotCodexSessionStartSource source)
-        {
-        }
-
-        Task<CopilotCodexSessionStartHookOutcome> RunSessionStartHooksAsync(
-            CopilotAgentRequest request,
-            bool hasPersistedHistory,
-            Action<string>? onDiagnostic,
-            CancellationToken cancellationToken) =>
-            Task.FromResult(CopilotCodexSessionStartHookOutcome.Continue);
-
-        Task<CopilotCodexSessionEndHookOutcome> RunSessionEndHooksAsync(
-            CopilotAgentRequest request,
-            Action<string>? onDiagnostic,
-            CancellationToken cancellationToken) =>
-            Task.FromResult(CopilotCodexSessionEndHookOutcome.NotRun);
-
         CopilotSteeringAdmissionResult EnqueueSteeringMessage(
             string taskId,
             string message);
@@ -95,34 +76,6 @@ namespace ColorVision.Copilot
         public static CopilotTurnError FromException(Exception exception)
         {
             ArgumentNullException.ThrowIfNull(exception);
-            if (exception is CopilotSessionStartHookBlockedException)
-            {
-                var message = CopilotApprovalRequestReason.Normalize(exception.Message);
-                if (message.Length > MaximumMessageLength)
-                {
-                    var length = MaximumMessageLength;
-                    if (char.IsHighSurrogate(message[length - 1]))
-                        length--;
-                    message = message[..length].TrimEnd();
-                }
-                return new CopilotTurnError(
-                    "session_start_hook_stopped",
-                    message);
-            }
-            if (exception is CopilotUserPromptSubmitHookBlockedException)
-            {
-                var message = CopilotApprovalRequestReason.Normalize(exception.Message);
-                if (message.Length > MaximumMessageLength)
-                {
-                    var length = MaximumMessageLength;
-                    if (char.IsHighSurrogate(message[length - 1]))
-                        length--;
-                    message = message[..length].TrimEnd();
-                }
-                return new CopilotTurnError(
-                    "user_prompt_hook_blocked",
-                    message);
-            }
             return new CopilotTurnError(
                 exception is TimeoutException ? "turn_timeout" : "turn_failed",
                 "Copilot turn failed before producing a complete result.");
