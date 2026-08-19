@@ -168,7 +168,8 @@ namespace ColorVision.Copilot
             {
                 return Fail("a required result collection is null", out violation);
             }
-            if (result.WorkspaceMutation?.Files == null)
+            if (result.WorkspaceMutation != null
+                && result.WorkspaceMutation.Files == null)
                 return Fail("the workspace mutation snapshot is invalid", out violation);
 
             violation = string.Empty;
