@@ -1,5 +1,10 @@
 package com.colorvision.xcviewer;
 
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+
+import javax.net.ssl.SSLHandshakeException;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -7,6 +12,26 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 public class OperationsConnectionCheckPresentationTest {
+    @Test
+    public void transportFailureClassificationFindsNestedNetworkCauses() {
+        assertEquals(
+                OperationsConnectionCheck.TransportFailure.TIMEOUT,
+                OperationsConnectionCheck.classifyTransportFailure(
+                        new Exception("request_failed", new SocketTimeoutException())));
+        assertEquals(
+                OperationsConnectionCheck.TransportFailure.REFUSED,
+                OperationsConnectionCheck.classifyTransportFailure(
+                        new Exception("request_failed", new ConnectException())));
+        assertEquals(
+                OperationsConnectionCheck.TransportFailure.TLS,
+                OperationsConnectionCheck.classifyTransportFailure(
+                        new Exception("request_failed", new SSLHandshakeException("rejected"))));
+        assertEquals(
+                OperationsConnectionCheck.TransportFailure.OTHER,
+                OperationsConnectionCheck.classifyTransportFailure(
+                        new Exception("request_failed")));
+    }
+
     @Test
     public void resultKeepsRecommendationSeparateFromTechnicalEvidence() {
         OperationsConnectionCheck.Result result = new OperationsConnectionCheck.Result(
