@@ -86,6 +86,8 @@ public sealed class CopilotUserQuestionCheckpointTests
             TaskCreationOptions.RunContinuationsAsynchronously);
         var checkpointed = new TaskCompletionSource<CopilotAgentSessionCheckpoint>(
             TaskCreationOptions.RunContinuationsAsynchronously);
+        var statePersisted = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
 
         void Observe(CopilotAgentEvent agentEvent)
         {
@@ -100,9 +102,17 @@ public sealed class CopilotUserQuestionCheckpointTests
             }
         }
 
-        var runTask = runtime.RunAsync(CreateRequest(), Observe, CancellationToken.None);
+        var runTask = runtime.RunAsync(
+            CreateRequest(_ =>
+            {
+                statePersisted.TrySetResult();
+                return Task.CompletedTask;
+            }),
+            Observe,
+            CancellationToken.None);
         var pendingQuestion = await requested.Task.WaitAsync(TimeSpan.FromSeconds(10));
         var waitingCheckpoint = await checkpointed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await statePersisted.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         Assert.False(runTask.IsCompleted);
         Assert.Contains(waitingCheckpoint.TaskEventJournal.Events, item =>
@@ -126,7 +136,8 @@ public sealed class CopilotUserQuestionCheckpointTests
         Assert.True(result.TaskEventJournal.IsStructurallyValid());
     }
 
-    private static CopilotAgentRequest CreateRequest() => new()
+    private static CopilotAgentRequest CreateRequest(
+        Func<CancellationToken, Task>? statePersistenceBarrier = null) => new()
     {
         ConversationId = "question-checkpoint-conversation",
         TaskId = CopilotAgentTaskEventIds.CreateRunId(),
@@ -146,6 +157,7 @@ public sealed class CopilotUserQuestionCheckpointTests
         HarnessFeatures = CopilotAgentHarnessFeatures.None,
         CodexApprovalPolicy = CopilotCodexApprovalPolicy.CreateScalar(
             CopilotCodexApprovalPolicyMode.Untrusted),
+        StatePersistenceBarrier = statePersistenceBarrier,
         RunBudgetOverride = new CopilotAgentRunBudgetOverride
         {
             RequestTokenBudget = 16_384,

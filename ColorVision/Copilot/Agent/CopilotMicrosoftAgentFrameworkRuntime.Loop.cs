@@ -375,25 +375,24 @@ namespace ColorVision.Copilot
             var sessionResumed = sessionPreparation.SessionResumed;
             var steeringRegistration = sessionPreparation.SteeringRegistration;
             liveCheckpointPublisher = sessionPreparation.LiveCheckpointPublisher;
-            bridge.AttachInteractionCheckpointPublisher(
-                token => liveCheckpointPublisher.PublishRequiredAsync(agent, session, token));
             var statePersistenceBarrier = request.StatePersistenceBarrier;
-            if (statePersistenceBarrier != null)
+            async ValueTask<bool> PublishRequiredCheckpointAsync(CancellationToken token)
             {
-                bridge.AttachToolDispatchCheckpointPublisher(
-                    async token =>
-                    {
-                        if (!await liveCheckpointPublisher
-                                .PublishRequiredAsync(agent, session, token)
-                                .ConfigureAwait(false))
-                        {
-                            return false;
-                        }
+                if (!await liveCheckpointPublisher
+                        .PublishRequiredAsync(agent, session, token)
+                        .ConfigureAwait(false))
+                {
+                    return false;
+                }
 
-                        await statePersistenceBarrier(token).ConfigureAwait(false);
-                        return true;
-                    });
+                if (statePersistenceBarrier != null)
+                    await statePersistenceBarrier(token).ConfigureAwait(false);
+                return true;
             }
+
+            bridge.AttachInteractionCheckpointPublisher(PublishRequiredCheckpointAsync);
+            if (statePersistenceBarrier != null)
+                bridge.AttachToolDispatchCheckpointPublisher(PublishRequiredCheckpointAsync);
             var recoveredTaskLedger = sessionPreparation.RecoveredTaskLedger;
             var promptMessages = sessionPreparation.PromptMessages;
             using var deferredBackgroundOutputDelivery =
