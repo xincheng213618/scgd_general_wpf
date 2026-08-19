@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 expectedContentHash;
             this.isFlowRunning = isFlowRunning;
             InitializeComponent();
-            HeaderText.Text = $"{flowParam.Name} · 本机版本历史";
+            HeaderText.Text = EngineLocalization.Format($"{flowParam.Name} · 本机版本历史");
             Reload();
         }
 
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             {
                 RevisionGrid.ItemsSource =
                     Array.Empty<FlowVersionHistoryRow>();
-                StatusText.Text = "当前流程还没有稳定 FlowKey。";
+                StatusText.Text = EngineLocalization.Get("当前流程还没有稳定 FlowKey。");
                 return;
             }
 
@@ -49,16 +49,14 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                     .Select(item => new FlowVersionHistoryRow(item))
                     .ToArray();
                 StatusText.Text = revisions.Count == 0
-                    ? "本机尚未产生版本；保存一次后会建立版本 1。"
-                    : $"本机共 {revisions.Count} 个不可变版本，"
-                        + $"当前画布对应版本 "
-                        + $"{flowParam.TemplateRevision?.ToString() ?? "未知"}。";
+                    ? EngineLocalization.Get("本机尚未产生版本；保存一次后会建立版本 1。")
+                    : EngineLocalization.Format($"本机共 {revisions.Count} 个不可变版本，当前画布对应版本 {flowParam.TemplateRevision?.ToString() ?? EngineLocalization.Get("未知")}。");
             }
             catch (Exception ex)
             {
                 RevisionGrid.ItemsSource =
                     Array.Empty<FlowVersionHistoryRow>();
-                StatusText.Text = $"读取版本目录失败：{ex.Message}";
+                StatusText.Text = EngineLocalization.Format($"读取版本目录失败：{ex.Message}");
             }
         }
 
@@ -75,8 +73,8 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             {
                 MessageBox.Show(
                     this,
-                    "请选择恰好两个版本进行对比。",
-                    "流程版本",
+                    EngineLocalization.Get("请选择恰好两个版本进行对比。"),
+                    EngineLocalization.Get("流程版本"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 return;
@@ -94,28 +92,24 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             {
                 MessageBox.Show(
                     this,
-                    $"版本对比失败：{ex.Message}",
-                    "流程版本",
+                    EngineLocalization.Format($"版本对比失败：{ex.Message}"),
+                    EngineLocalization.Get("流程版本"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
                 return;
             }
-            string summary =
-                $"版本 {selected[0].Revision} → "
-                + $"{selected[1].Revision}\n\n"
-                + $"节点：+{diff.AddedNodes.Count} "
-                + $"-{diff.RemovedNodes.Count} "
-                + $"类型变化 {diff.ChangedNodeTypes.Count}\n"
-                + $"属性变化：{diff.PropertyChanges.Count}\n"
-                + $"普通连接：+{diff.AddedEdges.Count} "
-                + $"-{diff.RemovedEdges.Count}\n"
-                + $"布局变化：{diff.LayoutChanges.Count}"
-                + $"{(diff.ViewportChanged ? "，视口已变化" : string.Empty)}"
-                + $"\n\n分类：{(diff.IsLayoutOnly ? "仅布局变化" : diff.HasSemanticChanges ? "语义变化" : "无变化")}";
+            string viewportChange = diff.ViewportChanged ? EngineLocalization.Get("，视口已变化") : string.Empty;
+            string classification = diff.IsLayoutOnly
+                ? EngineLocalization.Get("仅布局变化")
+                : diff.HasSemanticChanges
+                    ? EngineLocalization.Get("语义变化")
+                    : EngineLocalization.Get("无变化");
+            string summary = EngineLocalization.Format(
+                $"版本 {selected[0].Revision} → {selected[1].Revision}\n\n节点：+{diff.AddedNodes.Count} -{diff.RemovedNodes.Count} 类型变化 {diff.ChangedNodeTypes.Count}\n属性变化：{diff.PropertyChanges.Count}\n普通连接：+{diff.AddedEdges.Count} -{diff.RemovedEdges.Count}\n布局变化：{diff.LayoutChanges.Count}{viewportChange}\n\n分类：{classification}");
             MessageBox.Show(
                 this,
                 summary,
-                "流程版本对比",
+                EngineLocalization.Get("流程版本对比"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }
@@ -128,8 +122,8 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             {
                 MessageBox.Show(
                     this,
-                    "流程正在运行，请在运行结束后恢复版本。",
-                    "流程版本",
+                    EngineLocalization.Get("流程正在运行，请在运行结束后恢复版本。"),
+                    EngineLocalization.Get("流程版本"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 return;
@@ -140,8 +134,8 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             {
                 MessageBox.Show(
                     this,
-                    "请选择一个要恢复的版本。",
-                    "流程版本",
+                    EngineLocalization.Get("请选择一个要恢复的版本。"),
+                    EngineLocalization.Get("流程版本"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 return;
@@ -150,8 +144,8 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             {
                 MessageBox.Show(
                     this,
-                    "当前画布已经是这个版本。",
-                    "流程版本",
+                    EngineLocalization.Get("当前画布已经是这个版本。"),
+                    EngineLocalization.Get("流程版本"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 return;
@@ -159,10 +153,8 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
 
             MessageBoxResult confirmation = MessageBox.Show(
                 this,
-                $"恢复版本 {selected.Revision}？\n"
-                + "现有历史不会被覆盖，恢复内容会保存为一个新的版本。"
-                + "\n当前画布尚未保存的修改会被替换。",
-                "恢复流程版本",
+                EngineLocalization.Format($"恢复版本 {selected.Revision}？\n现有历史不会被覆盖，恢复内容会保存为一个新的版本。\n当前画布尚未保存的修改会被替换。"),
+                EngineLocalization.Get("恢复流程版本"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
             if (confirmation != MessageBoxResult.Yes)
@@ -178,9 +170,8 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             {
                 MessageBox.Show(
                     this,
-                    "恢复版本失败："
-                    + result.FailureMessage,
-                    "流程版本",
+                    EngineLocalization.Format($"恢复版本失败：{result.FailureMessage}"),
+                    EngineLocalization.Get("流程版本"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
                 return;
@@ -195,9 +186,8 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
                 {
                     MessageBox.Show(
                         this,
-                        "流程内容已恢复，但本地版本目录更新失败。"
-                        + "\n请查看日志并重新保存。",
-                        "流程已恢复",
+                        EngineLocalization.Get("流程内容已恢复，但本地版本目录更新失败。\n请查看日志并重新保存。"),
+                        EngineLocalization.Get("流程已恢复"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
                 }
@@ -206,9 +196,8 @@ namespace ColorVision.Engine.Templates.Flow.Versioning
             {
                 MessageBox.Show(
                     this,
-                    "版本已经恢复，但刷新编辑器失败："
-                    + ex.Message,
-                    "流程版本",
+                    EngineLocalization.Format($"版本已经恢复，但刷新编辑器失败：{ex.Message}"),
+                    EngineLocalization.Get("流程版本"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }

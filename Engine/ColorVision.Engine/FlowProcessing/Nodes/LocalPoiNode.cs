@@ -1,4 +1,6 @@
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Camera.Local;
+using ColorVision.Engine.Services.Results;
 using ColorVision.Engine.Templates.POI;
 using FlowEngineLib.Base;
 using FlowEngineLib.PropertyEditor;
@@ -39,8 +41,9 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
         [Browsable(false)]
         public string POIReviseTempName { get => _POIReviseTempName; set { _POIReviseTempName = value ?? string.Empty; OnPropertyChanged(); } }
 
-        public LocalPoiNode() : base("本地 POI", "POI", "Calculate", 60000)
+        public LocalPoiNode() : base("本地 POI", "POI", "Calculate")
         {
+            SelectFirstAvailableDevice<DeviceAlgorithm>();
         }
 
         protected override LocalNodeExecutionResult ExecuteLocal(CVStartCFC action)
@@ -60,13 +63,14 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                 stopwatch.Stop();
                 int totalTime = checked((int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue));
                 ViewResultAlgType resultType = LocalPoiCalculator.ResolveResultType(frame.Metadata.Channels);
+                string algorithmDeviceCode = ResolveAvailableDeviceCode<DeviceAlgorithm>();
                 int masterId = LocalFlowResultPersistence.SaveAlgorithmResult(
                     action,
                     resultType,
                     poi.Id,
                     poi.Name,
                     currentFrame.CvCieFilePath,
-                    string.IsNullOrWhiteSpace(DeviceCode) ? frame.Metadata.DeviceCode : DeviceCode,
+                    algorithmDeviceCode,
                     ZIndex,
                     totalTime,
                     new
@@ -83,6 +87,7 @@ namespace ColorVision.Engine.FlowProcessing.Nodes
                     action.RuntimeResources.Set(LocalFlowFrameRuntime.GetPoiResultResourceKey(frame.FrameId), result);
                     action.Data["LocalPoiCount"] = result.Points.Count;
                     action.MasterValue(null, masterId, (int)resultType);
+                    ResultMessageBus.Default.PublishPersisted(ResultRoutes.Algorithm, ResultKinds.Algorithm, algorithmDeviceCode, OperatorCode, action.SerialNumber, NodeID, ZIndex, masterId, (int)resultType);
                     return new LocalNodeExecutionResult
                     {
                         Data = new LocalPoiNodeResultData

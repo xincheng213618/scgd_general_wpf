@@ -13,7 +13,7 @@ public static partial class SpectrumTextParser
     public static SpectrumSeries Parse(string text)
     {
         if (string.IsNullOrWhiteSpace(text))
-            throw new FormatException("光谱文本为空。");
+            throw new FormatException(EngineLocalization.Get("光谱文本为空。"));
 
         List<double> wavelengths = [];
         List<double> values = [];
@@ -26,21 +26,21 @@ public static partial class SpectrumTextParser
 
             string[] columns = SplitColumns(line);
             if (columns.Length != 2)
-                throw new FormatException($"第 {lineIndex + 1} 行必须只有波长和数值两列。");
+                throw new FormatException(EngineLocalization.Format($"第 {lineIndex + 1} 行必须只有波长和数值两列。"));
 
-            double wavelength = ParseFinite(columns[0], lineIndex + 1, "波长");
-            double value = ParseFinite(columns[1], lineIndex + 1, "光谱值");
+            double wavelength = ParseFinite(columns[0], lineIndex + 1, EngineLocalization.Get("波长"));
+            double value = ParseFinite(columns[1], lineIndex + 1, EngineLocalization.Get("光谱值"));
             if (value < 0)
-                throw new FormatException($"第 {lineIndex + 1} 行的光谱值不能为负数。");
+                throw new FormatException(EngineLocalization.Format($"第 {lineIndex + 1} 行的光谱值不能为负数。"));
             if (wavelengths.Count > 0 && wavelength <= wavelengths[^1])
-                throw new FormatException($"第 {lineIndex + 1} 行波长必须严格递增，不能重复或倒序。");
+                throw new FormatException(EngineLocalization.Format($"第 {lineIndex + 1} 行波长必须严格递增，不能重复或倒序。"));
 
             wavelengths.Add(wavelength);
             values.Add(value);
         }
 
         if (wavelengths.Count < 2)
-            throw new FormatException("至少需要两行有效光谱数据。");
+            throw new FormatException(EngineLocalization.Get("至少需要两行有效光谱数据。"));
 
         return new SpectrumSeries(wavelengths, values);
     }
@@ -52,7 +52,7 @@ public static partial class SpectrumTextParser
              && !double.TryParse(text, styles, CultureInfo.InvariantCulture, out value))
             || !double.IsFinite(value))
         {
-            throw new FormatException($"第 {lineNumber} 行的{columnName}不是有效数字: {text}");
+            throw new FormatException(EngineLocalization.Format($"第 {lineNumber} 行的{columnName}不是有效数字: {text}"));
         }
         return value;
     }

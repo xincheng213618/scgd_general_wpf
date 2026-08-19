@@ -23,8 +23,8 @@ namespace ColorVision.Engine.Services.Devices.FileServer
 
             EditCommand = new RelayCommand(a =>
             {
-                var propertyEditorWindow = new PropertyEditorWindow(Config, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                propertyEditorWindow.Submited += (s, e) => Save();
+                var propertyEditorWindow = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                propertyEditorWindow.Submitted += (s, e) => Save();
                 propertyEditorWindow.ShowDialog();
             },a => AccessControl.Check(PermissionMode.Administrator));
         }

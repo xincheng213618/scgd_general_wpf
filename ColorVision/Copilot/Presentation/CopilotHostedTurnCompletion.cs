@@ -21,11 +21,8 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(assistantMessage);
 
-            assistantMessage.CompleteActiveAgentTraces(
-                CopilotToolExecutionState.Interrupted,
-                CopilotToolFailureKind.Internal,
-                "tool_terminal_event_missing",
-                "The hosted turn completed before this tool call emitted an authoritative terminal result.");
+            assistantMessage.CompleteActiveAgentTracesAfterUnexpectedTurnEnd(
+                "The hosted turn completed unexpectedly");
             if (assistantMessage.IsResponseContentTruncated
                 && !assistantMessage.WasResponseInterrupted)
             {
@@ -49,14 +46,16 @@ namespace ColorVision.Copilot
                 CopilotToolFailureKind.Cancelled,
                 "tool_execution_cancelled",
                 "The tool call was cancelled with the hosted Agent turn.");
-            if (controlIntent == CopilotAgentControlIntent.Cancel)
+            if (assistantMessage.RequestMode != CopilotAgentMode.Chat)
             {
-                conversation.AgentSessionCheckpoint = null;
-                assistantMessage.AgentStopReason = CopilotAgentStopReason.Cancelled;
-            }
-            else if (controlIntent == CopilotAgentControlIntent.Pause)
-            {
-                assistantMessage.AgentStopReason = CopilotAgentStopReason.Paused;
+                var stopReason = controlIntent switch
+                {
+                    CopilotAgentControlIntent.Cancel => CopilotAgentStopReason.Cancelled,
+                    CopilotAgentControlIntent.Pause => CopilotAgentStopReason.Paused,
+                    _ => CopilotAgentStopReason.Interrupted,
+                };
+                conversation.CompleteOpenAgentRun(stopReason, controlIntent);
+                assistantMessage.AgentStopReason = stopReason;
             }
 
             assistantMessage.MarkResponseInterrupted(BuildCancellationInterruptionDetail(
@@ -82,11 +81,15 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(assistantMessage);
 
             CompleteThinking(assistantMessage);
-            assistantMessage.CompleteActiveAgentTraces(
-                CopilotToolExecutionState.Interrupted,
-                CopilotToolFailureKind.Internal,
-                "tool_terminal_event_missing",
-                "The hosted Agent turn failed before this tool call emitted an authoritative terminal result.");
+            assistantMessage.CompleteActiveAgentTracesAfterUnexpectedTurnEnd(
+                "The hosted Agent turn failed");
+            if (assistantMessage.RequestMode != CopilotAgentMode.Chat)
+            {
+                conversation.CompleteOpenAgentRun(
+                    CopilotAgentStopReason.Interrupted,
+                    CopilotAgentControlIntent.None);
+                assistantMessage.AgentStopReason = CopilotAgentStopReason.Interrupted;
+            }
             var normalizedError = CopilotUserFacingErrorFormatter.Sanitize(errorMessage, sensitiveValues);
             var hadVisibleContent = !string.IsNullOrWhiteSpace(assistantMessage.Content);
             assistantMessage.MarkResponseInterrupted(hadVisibleContent

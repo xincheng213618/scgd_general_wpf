@@ -190,6 +190,59 @@ public sealed class CopilotAgentRecoveryPolicyTests
     }
 
     [Fact]
+    public void UnknownToolOutcomeChangesRecoveryEntryPointToReplan()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var ledger = new CopilotAgentTaskLedgerSnapshot
+        {
+            Mode = "execute",
+            Items =
+            [
+                new CopilotAgentTaskItem
+                {
+                    Id = 1,
+                    Title = "核对中断写入的当前状态",
+                    IsComplete = false,
+                },
+            ],
+        };
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordTaskLedger(ledger, "interrupted");
+        journal.Observe(CopilotAgentEvent.ToolStarted(new CopilotToolExecutionInfo
+        {
+            CallId = "unknown-write",
+            Round = 1,
+            RuntimeName = "RecoveryPolicyTest",
+            ToolName = "WriteFile",
+            State = CopilotToolExecutionState.Running,
+            StartedAtUtc = DateTimeOffset.UtcNow,
+        }));
+        journal.RecordStop(CopilotAgentStopReason.Interrupted);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot());
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, "Interrupted")
+        {
+            AgentStopReason = CopilotAgentStopReason.Interrupted,
+            AgentTaskLedger = ledger,
+        };
+
+        var decision = CopilotAgentRecoveryPolicy.Evaluate(
+            message,
+            checkpoint,
+            profile,
+            capabilitySnapshot);
+
+        Assert.True(decision.IsAvailable);
+        Assert.Equal(CopilotAgentRecoveryMode.Replan, decision.Request!.Mode);
+        Assert.Equal("重新规划", decision.ActionLabel);
+    }
+
+    [Fact]
     public void HookSurfaceDriftChangesResumeEntryPointToReplan()
     {
         var profile = CreateProfile();

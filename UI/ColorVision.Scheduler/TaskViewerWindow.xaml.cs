@@ -195,7 +195,7 @@ namespace ColorVision.Scheduler
         {
             if (ListViewTask.SelectedItem is SchedulerInfo info)
             {
-                var win = new ColorVision.UI.PropertyEditorWindow(info, false) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                var win = new ColorVision.UI.PropertyEditorWindow(info, ColorVision.UI.PropertyEditorEditMode.Transactional) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 win.ShowDialog();
             }
         }

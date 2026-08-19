@@ -5,10 +5,13 @@ import java.util.List;
 
 final class OperationsWatchHistory {
     static final String STATE_ONLINE = "online";
+    static final String STATE_REMOTE_ONLINE = "remote-online";
+    static final String STATE_REMOTE_WAITING = "remote-waiting";
     static final String STATE_OFFLINE = "offline";
     static final String STATE_REVOKED = "revoked";
     static final int MAX_ENTRIES = 40;
     static final long RETENTION_MILLISECONDS = 7L * 24L * 60L * 60L * 1000L;
+    static final long TRANSIENT_OFFLINE_WINDOW_MILLISECONDS = 2L * 60L * 1000L;
     private static final String ATTENTION_PREFIX = "attention:";
 
     private OperationsWatchHistory() {
@@ -27,7 +30,10 @@ final class OperationsWatchHistory {
 
     static boolean isOnlineState(String state) {
         String normalized = normalizeState(state);
-        return STATE_ONLINE.equals(normalized) || normalized.startsWith(ATTENTION_PREFIX);
+        return STATE_ONLINE.equals(normalized)
+                || STATE_REMOTE_ONLINE.equals(normalized)
+                || STATE_REMOTE_WAITING.equals(normalized)
+                || normalized.startsWith(ATTENTION_PREFIX);
     }
 
     static String attentionKey(String state) {
@@ -46,6 +52,7 @@ final class OperationsWatchHistory {
         boolean changed = !currentState.isEmpty() && !currentState.equals(normalizedPrevious);
         if (changed) {
             entries.add(new Entry(nowMilliseconds, currentState));
+            entries = compactTransientOfflineFlaps(entries);
             while (entries.size() > MAX_ENTRIES) {
                 entries.remove(0);
             }
@@ -75,10 +82,33 @@ final class OperationsWatchHistory {
             } catch (NumberFormatException ignored) {
             }
         }
+        entries = compactTransientOfflineFlaps(entries);
         if (entries.size() > MAX_ENTRIES) {
             entries = new ArrayList<>(entries.subList(entries.size() - MAX_ENTRIES, entries.size()));
         }
         return entries;
+    }
+
+    private static List<Entry> compactTransientOfflineFlaps(List<Entry> entries) {
+        List<Entry> compacted = new ArrayList<>();
+        for (Entry entry : entries) {
+            if (isOnlineState(entry.state) && !compacted.isEmpty()) {
+                Entry possibleOffline = compacted.get(compacted.size() - 1);
+                long offlineDuration = entry.timestampMilliseconds
+                        - possibleOffline.timestampMilliseconds;
+                if (STATE_OFFLINE.equals(possibleOffline.state)
+                        && offlineDuration >= 0L
+                        && offlineDuration < TRANSIENT_OFFLINE_WINDOW_MILLISECONDS) {
+                    compacted.remove(compacted.size() - 1);
+                    if (!compacted.isEmpty()
+                            && compacted.get(compacted.size() - 1).state.equals(entry.state)) {
+                        continue;
+                    }
+                }
+            }
+            compacted.add(entry);
+        }
+        return compacted;
     }
 
     static String label(String state) {
@@ -86,6 +116,10 @@ final class OperationsWatchHistory {
         switch (normalized) {
             case STATE_ONLINE:
                 return "连接在线 · 当前状态稳定";
+            case STATE_REMOTE_ONLINE:
+                return "远程中继在线 · 电脑已连接";
+            case STATE_REMOTE_WAITING:
+                return "远程中继在线 · 等待电脑上线";
             case STATE_OFFLINE:
                 return "连接中断 · 后台自动重试";
             case STATE_REVOKED:
@@ -106,7 +140,11 @@ final class OperationsWatchHistory {
     }
 
     private static String normalizeState(String state) {
-        if (STATE_ONLINE.equals(state) || STATE_OFFLINE.equals(state) || STATE_REVOKED.equals(state)) {
+        if (STATE_ONLINE.equals(state)
+                || STATE_REMOTE_ONLINE.equals(state)
+                || STATE_REMOTE_WAITING.equals(state)
+                || STATE_OFFLINE.equals(state)
+                || STATE_REVOKED.equals(state)) {
             return state;
         }
         if (state != null && state.startsWith(ATTENTION_PREFIX)

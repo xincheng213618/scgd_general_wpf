@@ -12,6 +12,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,7 +20,14 @@ namespace FlowEngineLib.Base;
 
 public class CVBaseServerNode : CVCommonNode
 {
+	private sealed class IgnoreErrorsExecutionState
+	{
+		public int Started;
+	}
+
 	private static readonly ILog logger = LogManager.GetLogger(typeof(CVBaseServerNode));
+
+	private readonly ConditionalWeakTable<CVStartCFC, IgnoreErrorsExecutionState> ignoreErrorsExecutions = new();
 
 	protected string _Token;
 	protected int _MaxTime;
@@ -393,6 +401,11 @@ public class CVBaseServerNode : CVCommonNode
 			cVTransAction = new CVTransAction(action);
 			m_trans_action.TryAdd(action.SerialNumber, cVTransAction);
 		}
+		else if (_ignoreErrors)
+		{
+			cVTransAction = new CVTransAction(action);
+			m_trans_action.TryAdd(action.SerialNumber, cVTransAction);
+		}
 		if (cVTransAction != null)
 		{
 			CVMQTTRequest actionEvent = getActionEvent(e);
@@ -405,7 +418,7 @@ public class CVBaseServerNode : CVCommonNode
 				}
 				string message = JsonConvert.SerializeObject(actionEvent, Formatting.None);
 				string token = GetToken();
-				MQActionEvent act = new MQActionEvent(actionEvent.MsgID, m_nodeName, GetDeviceCode(), GetSendTopic(), actionEvent.EventName, message, token);
+				MQActionEvent act = new MQActionEvent(NodeID, actionEvent.MsgID, m_nodeName, GetDeviceCode(), GetSendTopic(), actionEvent.EventName, message, token);
 				DoTransferToServer(cVTransAction, act, cmd);
 			}
 			else
@@ -593,6 +606,10 @@ public class CVBaseServerNode : CVCommonNode
 
 	private bool IsThisNode(CVBaseDataFlowResp statusEvent)
 	{
+		if (!string.IsNullOrEmpty(statusEvent.DeviceNodeCode))
+		{
+			return statusEvent.DeviceNodeCode == NodeID;
+		}
 		if (statusEvent.ZIndex == base.ZIndex && statusEvent.EventName == operatorCode)
 		{
 			return true;
@@ -663,7 +680,16 @@ public class CVBaseServerNode : CVCommonNode
 					logger.DebugFormat("[{0}]DoServerTransfer => {1}", ToShortString(), cVStartCFC.ToShortString());
 				}
 				cVStartCFC.NormalizeStopStatus();
-				if (ShouldEndFlowImmediately(cVStartCFC))
+				bool isIgnoredErrorExecution = false;
+				if (_ignoreErrors && cVStartCFC.FlowStatus != StatusTypeEnum.Runing)
+				{
+					if (!TryStartIgnoredErrorExecution(cVStartCFC))
+					{
+						return;
+					}
+					isIgnoredErrorExecution = true;
+				}
+				if (!isIgnoredErrorExecution && ShouldEndFlowImmediately(cVStartCFC))
 				{
 					if (cVTransByEvent != null)
 					{
@@ -685,7 +711,7 @@ public class CVBaseServerNode : CVCommonNode
 					m_op_end.TransferData(e.TargetOption.Data);
 					return;
 				}
-				if (cVStartCFC.FlowStatus == StatusTypeEnum.Runing)
+				if (isIgnoredErrorExecution || cVStartCFC.FlowStatus == StatusTypeEnum.Runing)
 				{
 					if (cVTransByEvent != null)
 					{
@@ -763,6 +789,7 @@ public class CVBaseServerNode : CVCommonNode
 		}
 		return trans.TryStartActionCommand(
 				sendEvent,
+				_ignoreErrors,
 				out CVBaseEventCmd command)
 			? command
 			: null;
@@ -989,6 +1016,7 @@ public class CVBaseServerNode : CVCommonNode
 		if (baseEvent != null)
 		{
 			result = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), baseEvent.EventName, cVStartCFC.SerialNumber, baseEvent.Data, GetToken(), base.ZIndex);
+			result.DeviceNodeCode = NodeID;
 		}
 		return result;
 	}
@@ -1042,6 +1070,14 @@ public class CVBaseServerNode : CVCommonNode
 	private static bool ShouldEndFlowImmediately(CVStartCFC start)
 	{
 		return start.TryGetStopStatus(out _);
+	}
+
+	private bool TryStartIgnoredErrorExecution(CVStartCFC start)
+	{
+		IgnoreErrorsExecutionState state = ignoreErrorsExecutions.GetValue(
+			start,
+			static _ => new IgnoreErrorsExecutionState());
+		return Interlocked.Exchange(ref state.Started, 1) == 0;
 	}
 
 	private static void FinishFlow(CVStartCFC start)

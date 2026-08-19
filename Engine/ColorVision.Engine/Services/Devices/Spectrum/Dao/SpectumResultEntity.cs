@@ -57,7 +57,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
         [SugarColumn(ColumnName = "params", IsNullable = true, ColumnDataType = "json", ColumnDescription = "参数")]
         public string? Params { get; set; }
 
-        [SugarColumn(ColumnName = "a_factor", IsNullable = true, ColumnDescription = "EQE修正系数")]
+        [SugarColumn(ColumnName = "a_factor", IsNullable = true, ColumnDescription = "EQE校正系数")]
         public float? AFactor { get; set; }
 
         [SugarColumn(ColumnName = "eqe", IsNullable = true, ColumnDescription = "EQE")]

@@ -2279,13 +2279,13 @@ namespace ColorVision.Engine.Templates.POI
         private void ButtonTransform_Click(object sender, RoutedEventArgs e)
         {
             PoiTransformParams transformParams = new PoiTransformParams();
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(transformParams, true)
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(transformParams, PropertyEditorEditMode.Immediate)
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
 
-            propertyEditorWindow.Submited += (s, ev) =>
+            propertyEditorWindow.Submitted += (s, ev) =>
             {
                 ApplyPoiTransform(transformParams);
             };

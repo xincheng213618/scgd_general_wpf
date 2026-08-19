@@ -61,7 +61,7 @@ namespace ColorVision.Copilot
             _preferredToolNames = _requiredToolGroups.SelectMany(group => group).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
             _acceptedToolNames = _preferredToolNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
             _requiresAttachedFileEvidence = _acceptedToolNames.Contains("ReadAttachedFile");
-            _requiresLocalFileEvidence = _acceptedToolNames.Contains("ReadLocalFile");
+            _requiresLocalFileEvidence = _acceptedToolNames.Contains(CopilotSharedAgentToolNames.ReadLocalFile);
             _requiredAttachedFilePaths = _requiresAttachedFileEvidence
                 ? (requiredAttachedFilePaths ?? Array.Empty<string>())
                     .Where(path => !string.IsNullOrWhiteSpace(path))
@@ -303,7 +303,7 @@ namespace ColorVision.Copilot
                 return "Execution contract: one or more current-turn file attachments have not been successfully read. Call ReadAttachedFile for every attachment still missing below before answering or taking a dependent action. You may omit path for the first bounded batch, then select remaining paths exactly. If a read fails, report the concrete blocker instead of claiming the file was inspected.\n"
                     + BuildBoundedPathList(missingAttachedFilePaths);
             }
-            if (missingGroup.Contains("ReadLocalFile", StringComparer.OrdinalIgnoreCase))
+            if (missingGroup.Contains(CopilotSharedAgentToolNames.ReadLocalFile, StringComparer.OrdinalIgnoreCase))
             {
                 return "Execution contract: one or more explicit current-turn local files have not been successfully read. Call ReadLocalFile separately with the exact path field for every file still missing below before answering or taking a dependent action. If a read fails, report the concrete blocker instead of claiming the file was inspected.\n"
                     + BuildBoundedPathList(missingLocalFilePaths);
@@ -404,9 +404,9 @@ namespace ColorVision.Copilot
                 requiredPaths = _requiredAttachedFilePaths;
             }
             else if (_requiredLocalFilePaths.Length > 0
-                && group.Contains("ReadLocalFile", StringComparer.OrdinalIgnoreCase))
+                && group.Contains(CopilotSharedAgentToolNames.ReadLocalFile, StringComparer.OrdinalIgnoreCase))
             {
-                toolName = "ReadLocalFile";
+                toolName = CopilotSharedAgentToolNames.ReadLocalFile;
                 requiredPaths = _requiredLocalFilePaths;
             }
             else
@@ -655,7 +655,7 @@ namespace ColorVision.Copilot
         {
             if (evaluation.MissingToolNames.Contains("ReadAttachedFile", StringComparer.OrdinalIgnoreCase))
                 return "required_attachment_evidence_missing";
-            if (evaluation.MissingToolNames.Contains("ReadLocalFile", StringComparer.OrdinalIgnoreCase))
+            if (evaluation.MissingToolNames.Contains(CopilotSharedAgentToolNames.ReadLocalFile, StringComparer.OrdinalIgnoreCase))
                 return "required_local_file_evidence_missing";
             if (evaluation.MissingToolNames.Any(name => string.Equals(name, "InspectGitWorkingTree", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(name, "InspectGitDiff", StringComparison.OrdinalIgnoreCase)))

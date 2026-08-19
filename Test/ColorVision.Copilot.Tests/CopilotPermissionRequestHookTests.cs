@@ -102,6 +102,38 @@ public sealed class CopilotPermissionRequestHookTests
     }
 
     [Fact]
+    public async Task InvalidInputCannotReachPermissionHooksOrNativeApproval()
+    {
+        var hook = new RecordingPermissionHook();
+        var invocation = CreateInvocation(
+            new ProtectedRecordingTool(),
+            "invalid-permission-input");
+        invocation = new CopilotToolInvocation
+        {
+            CallId = invocation.CallId,
+            RuntimeName = invocation.RuntimeName,
+            Tool = invocation.Tool,
+            AgentRequest = invocation.AgentRequest,
+            ToolInput = new CopilotAgentToolInput
+            {
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["unexpected"] = true,
+                },
+            },
+        };
+
+        var outcome = await new CopilotToolExecutor([hook])
+            .EvaluatePermissionRequestAsync(invocation, CancellationToken.None);
+
+        Assert.False(outcome.Decision.ShouldPrompt);
+        Assert.Equal("invalid_arguments", outcome.Decision.FailureCode);
+        Assert.Equal(0, hook.PermissionCount);
+        Assert.Empty(outcome.HookRuns);
+        Assert.Empty(outcome.HookBindings);
+    }
+
+    [Fact]
     public async Task PermissionHookFailureClosesApprovalBoundary()
     {
         var hook = new RecordingPermissionHook(failPermissionRequest: true);

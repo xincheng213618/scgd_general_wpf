@@ -12,6 +12,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         private const int CopyBufferSize = 1024 * 1024;
 
         public static LocalFlowFrame Load(string filePath)
+            => Load(filePath, null, null);
+
+        internal static LocalFlowFrame Load(string filePath, float[]? exposureOverride, float? gainOverride)
         {
             if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentException("图像文件路径为空。", nameof(filePath));
             string fullPath = Path.GetFullPath(filePath);
@@ -20,13 +23,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             int dataOffset = CVFileUtil.ReadCIEFileHeader(fullPath, out CVCIEFile fileInfo);
             if (dataOffset > 0)
             {
-                return LoadColorVisionFile(fullPath, fileInfo, dataOffset);
+                return LoadColorVisionFile(fullPath, fileInfo, dataOffset, exposureOverride, gainOverride);
             }
 
-            return LoadBitmap(fullPath);
+            return LoadBitmap(fullPath, exposureOverride, gainOverride);
         }
 
-        public static void SaveCapture(LocalFlowFrame frame, string basePath, string deviceCode)
+        public static void SaveCapture(LocalFlowFrame frame, string basePath, string deviceCode, bool includeRaw = true)
         {
             using LocalFlowFrameLease lease = frame.Acquire();
             if (lease.Metadata.IsMirrorReady && !lease.IsFlipApplied)
@@ -40,8 +43,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             string directory = Path.Combine(root, safeDeviceCode, "Data", DateTime.Now.ToString("yyyy-MM-dd"));
             Directory.CreateDirectory(directory);
             string stem = $"Local_{DateTime.Now:yyyyMMdd_HHmmss_fff}";
+            string generatedRawPath = string.Empty;
 
-            if (lease.HasRaw)
+            if (includeRaw && lease.HasRaw)
             {
                 string rawPath = Path.Combine(directory, stem + ".cvraw");
                 if (lease.IsBufferFlipFailed(LocalFrameBufferKind.CvRaw))
@@ -55,6 +59,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 CVCIEFile rawFile = BuildFileInfo(lease, CVType.Raw, rawData, string.Empty, lease.Metadata.SourceBpp);
                 if (!CVFileUtil.WriteCVRaw(rawPath, rawFile)) throw new IOException($"保存 CVRAW 失败：{rawPath}");
                 frame.CvRawFilePath = rawPath;
+                generatedRawPath = rawPath;
             }
 
             if (lease.HasCie)
@@ -69,13 +74,47 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                     throw new InvalidOperationException("The CIE buffer cannot be saved before its mirror operation completes.");
                 }
                 byte[] cieData = lease.CopyCieToArray();
-                CVCIEFile cieFile = BuildFileInfo(lease, CVType.CIE, cieData, Path.GetFileName(frame.CvRawFilePath), lease.Metadata.CieBpp);
+                string sourceFileName = ResolveCieSourceFile(lease, directory, generatedRawPath);
+                CVCIEFile cieFile = BuildFileInfo(lease, CVType.CIE, cieData, sourceFileName, lease.Metadata.CieBpp);
                 if (!CVFileUtil.WriteCVCIE(ciePath, cieFile)) throw new IOException($"保存 CVCIE 失败：{ciePath}");
                 frame.CvCieFilePath = ciePath;
             }
         }
 
-        private static LocalFlowFrame LoadColorVisionFile(string filePath, CVCIEFile fileInfo, int dataOffset)
+        private static string ResolveCieSourceFile(LocalFlowFrameLease lease, string outputDirectory, string generatedRawPath)
+        {
+            if (!string.IsNullOrWhiteSpace(generatedRawPath))
+            {
+                return Path.GetFileName(generatedRawPath);
+            }
+
+            string sourcePath = lease.Metadata.SourceFilePath;
+            if (string.IsNullOrWhiteSpace(sourcePath))
+            {
+                return string.Empty;
+            }
+
+            string sourceFileName = Path.GetFileName(sourcePath);
+            if (!File.Exists(sourcePath))
+            {
+                return sourceFileName;
+            }
+
+            string localSourcePath = Path.Combine(outputDirectory, sourceFileName);
+            if (!string.Equals(Path.GetFullPath(sourcePath), Path.GetFullPath(localSourcePath), StringComparison.OrdinalIgnoreCase)
+                && !File.Exists(localSourcePath))
+            {
+                File.Copy(sourcePath, localSourcePath);
+            }
+            return sourceFileName;
+        }
+
+        private static LocalFlowFrame LoadColorVisionFile(
+            string filePath,
+            CVCIEFile fileInfo,
+            int dataOffset,
+            float[]? exposureOverride,
+            float? gainOverride)
         {
             using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             using BinaryReader reader = new(stream);
@@ -94,8 +133,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 SourceBpp = isCie ? 0 : fileInfo.Bpp,
                 CieBpp = isCie ? fileInfo.Bpp : 32,
                 Channels = fileInfo.Channels,
-                Gain = fileInfo.Gain,
-                Exposure = fileInfo.Exp ?? Array.Empty<float>(),
+                Gain = gainOverride ?? fileInfo.Gain,
+                Exposure = CloneExposure(exposureOverride ?? fileInfo.Exp),
                 SourceFilePath = filePath,
                 CaptureTime = File.GetLastWriteTime(filePath),
                 PrimaryBufferKind = isCie ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw
@@ -116,29 +155,71 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        private static LocalFlowFrame LoadBitmap(string filePath)
+        private static LocalFlowFrame LoadBitmap(string filePath, float[]? exposureOverride, float? gainOverride)
         {
             using FileStream stream = File.OpenRead(filePath);
             BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
             BitmapSource source = decoder.Frames[0];
-            if (source.Format != PixelFormats.Bgra32)
+
+            int sourceBpp;
+            int channels;
+            bool swapRgb48 = false;
+            if (source.Format == PixelFormats.Gray8)
             {
-                source = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
+                sourceBpp = 8;
+                channels = 1;
+            }
+            else if (source.Format == PixelFormats.Gray16)
+            {
+                sourceBpp = 16;
+                channels = 1;
+            }
+            else if (source.Format == PixelFormats.Rgb48)
+            {
+                sourceBpp = 16;
+                channels = 3;
+                swapRgb48 = true;
+            }
+            else if (source.Format == PixelFormats.Bgr24)
+            {
+                sourceBpp = 8;
+                channels = 3;
+            }
+            else if (source.Format.BitsPerPixel is 24 or 32)
+            {
+                source = new FormatConvertedBitmap(source, PixelFormats.Bgr24, null, 0);
+                sourceBpp = 8;
+                channels = 3;
+            }
+            else
+            {
+                throw new NotSupportedException($"本地校正仅支持 Gray8、Gray16、24/32 位彩色或 Rgb48 图像，当前格式：{source.Format}。");
             }
 
-            int stride = checked(source.PixelWidth * 4);
+            int stride = checked(source.PixelWidth * sourceBpp / 8 * channels);
             int length = checked(stride * source.PixelHeight);
             byte[] pixels = new byte[length];
             source.CopyPixels(pixels, stride, 0);
+            if (swapRgb48)
+            {
+                for (int offset = 0; offset < pixels.Length; offset += 6)
+                {
+                    (pixels[offset], pixels[offset + 4]) = (pixels[offset + 4], pixels[offset]);
+                    (pixels[offset + 1], pixels[offset + 5]) = (pixels[offset + 5], pixels[offset + 1]);
+                }
+            }
+
             LocalFrameMetadata metadata = new()
             {
                 Width = source.PixelWidth,
                 Height = source.PixelHeight,
-                SourceBpp = 8,
-                Channels = 4,
+                SourceBpp = sourceBpp,
+                Channels = channels,
+                Gain = gainOverride ?? 1,
+                Exposure = CloneExposure(exposureOverride),
                 SourceFilePath = filePath,
                 CaptureTime = File.GetLastWriteTime(filePath),
-                PrimaryBufferKind = LocalFrameBufferKind.Source
+                PrimaryBufferKind = LocalFrameBufferKind.CvRaw
             };
             LocalFlowFrame frame = LocalFlowFrame.Allocate(metadata, length, 0);
             try
@@ -170,6 +251,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 Data = data
             };
         }
+
+        private static float[] CloneExposure(float[]? exposure)
+            => exposure == null || exposure.Length == 0 ? Array.Empty<float>() : (float[])exposure.Clone();
 
         private static void CopyStreamToPointer(Stream stream, IntPtr destination, int length)
         {

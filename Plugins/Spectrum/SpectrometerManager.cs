@@ -629,15 +629,23 @@ namespace Spectrum
         public RelayCommand GetSpectrSerialNumberCommand { get; set; }
         public async Task GetSpectrSerialNumberAsync()
         {
-            string raw = await RunExclusiveAsync(token => Task.Run(() =>
+            (int Result, string Json) discovery = await RunExclusiveAsync(token => Task.Run(() =>
             {
                 token.ThrowIfCancellationRequested();
                 const int bufferLength = 1024;
                 StringBuilder result = new(bufferLength);
-                Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, GetConfiguredComPort(), result, bufferLength);
-                return result.ToString();
+                int nativeResult = Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, GetDiscoveryComPort(), result, bufferLength);
+                return (nativeResult, result.ToString());
             }, CancellationToken.None));
-            string display = FormatSerialNumberResult(raw);
+
+            if (discovery.Result != 1)
+            {
+                log.Warn($"获取光谱仪设备列表失败: Type={Config.SpectrometerType}, NativeResult={discovery.Result}");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), $"获取设备列表失败（原生返回值: {discovery.Result}）", "Sprectrum");
+                return;
+            }
+
+            string display = FormatSerialNumberResult(discovery.Json);
             MessageBox1.Show(Application.Current.GetActiveWindow(), display, "Sprectrum");
         }
 
@@ -972,6 +980,13 @@ namespace Spectrum
             throw new FormatException($"无效串口名称: {Config.SzComName}");
         }
 
+        private int GetDiscoveryComPort()
+        {
+            // 高利通 SDK 只支持通过 USB_GetDeviceList 枚举设备。串口选项只用于连接，
+            // 不能传给 GetAllSN，否则原生层会误走串口枚举并返回空列表。
+            return Config.SpectrometerType == SpectrometerType.Gaolitong ? 0 : GetConfiguredComPort();
+        }
+
         private void ReadSerialNumberCore()
         {
             try
@@ -1027,7 +1042,13 @@ namespace Spectrum
         private string? FindSingleDetectedSerialNumberCore()
         {
             StringBuilder resultJson = new(1024);
-            Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, GetConfiguredComPort(), resultJson, resultJson.Capacity);
+            int nativeResult = Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, GetDiscoveryComPort(), resultJson, resultJson.Capacity);
+            if (nativeResult != 1)
+            {
+                log.Debug($"连接失败后枚举光谱仪失败: Type={Config.SpectrometerType}, NativeResult={nativeResult}");
+                return null;
+            }
+
             SpectrometerSnResult? result = JsonConvert.DeserializeObject<SpectrometerSnResult>(resultJson.ToString());
             return result?.IDs?.Count == 1 ? result.IDs[0] : null;
         }
@@ -1046,13 +1067,13 @@ namespace Spectrum
                     if (!IsConnected || Handle == IntPtr.Zero)
                         return -1;
 
-                    bool shouldCloseShutter = ShutterController.IsConnected;
+                    bool shouldControlShutter = ShutterController.IsConnected;
                     try
                     {
-                        if (shouldCloseShutter)
+                        if (shouldControlShutter)
                         {
-                            log.Debug("开启快门进行校零");
-                            await ShutterController.OpenShutter();
+                            log.Debug("关闭快门进行校零");
+                            await ShutterController.CloseShutter();
                         }
 
                         token.ThrowIfCancellationRequested();
@@ -1060,10 +1081,10 @@ namespace Spectrum
                     }
                     finally
                     {
-                        if (shouldCloseShutter && ShutterController.IsConnected)
+                        if (shouldControlShutter && ShutterController.IsConnected)
                         {
-                            log.Debug("关闭快门");
-                            await ShutterController.CloseShutter();
+                            log.Debug("打开快门");
+                            await ShutterController.OpenShutter();
                         }
                     }
                 }, CancellationToken.None),

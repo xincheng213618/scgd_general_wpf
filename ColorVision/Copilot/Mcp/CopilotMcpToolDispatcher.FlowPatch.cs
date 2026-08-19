@@ -8,14 +8,14 @@ namespace ColorVision.Copilot.Mcp
 {
     internal sealed partial class CopilotMcpToolDispatcher
     {
-        private async Task<CopilotMcpToolCallResult> PreviewFlowPatchAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        internal async Task<CopilotMcpToolCallResult> PreviewFlowPatchAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
         {
             if (!TryBuildFlowPatchRequest(arguments, out var request, out var error))
                 return CopilotMcpToolCallResult.Fail("invalid_flow_patch", error);
             return await _environment.PreviewFlowPatchHandler(request, cancellationToken);
         }
 
-        private async Task<CopilotMcpToolCallResult> ApplyFlowPatchAsync(
+        internal async Task<CopilotMcpToolCallResult> ApplyFlowPatchAsync(
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotExecutionScope executionScope,
             CancellationToken cancellationToken)
@@ -34,7 +34,7 @@ namespace ColorVision.Copilot.Mcp
             return CreateConfirmableActionResult(
                 "Confirm Flow graph change",
                 DescribeFlowPatch(request),
-                "apply_flow_patch",
+                CopilotSharedCapabilityCatalog.ApplyFlowPatch.McpToolName,
                 normalizedArguments,
                 preview.Text + Environment.NewLine + "Does not save or run the flow.",
                 token => _environment.ApplyFlowPatchHandler(request, token),

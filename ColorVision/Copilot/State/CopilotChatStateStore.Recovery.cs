@@ -20,9 +20,12 @@ namespace ColorVision.Copilot
             }
         }
 
-        private CopilotChatState BlockForFutureVersion(int schemaVersion)
+        private CopilotChatState BlockForFutureVersion(int schemaVersion, string stateFilePath)
         {
-            LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.FutureVersion, schemaVersion);
+            LastLoadStatus = new CopilotChatStateLoadStatus(
+                CopilotChatStateLoadSource.FutureVersion,
+                schemaVersion,
+                stateFilePath);
             ProtectManagedAttachments();
             return new CopilotChatState();
         }
@@ -32,7 +35,8 @@ namespace ColorVision.Copilot
             if (LastLoadStatus.IsFutureVersion)
                 throw new CopilotChatStateFutureVersionException(
                     LastLoadStatus.SchemaVersion ?? CopilotChatState.CurrentSchemaVersion + 1,
-                    CopilotChatState.CurrentSchemaVersion);
+                    CopilotChatState.CurrentSchemaVersion,
+                    LastLoadStatus.StateFilePath);
         }
 
         private void ReplaceStateFile(string tempFilePath)
@@ -40,8 +44,11 @@ namespace ColorVision.Copilot
             var currentStatus = ReadStateFile(StateFilePath, out _, out var currentSchemaVersion);
             if (currentStatus == StateFileReadStatus.FutureVersion)
             {
-                BlockForFutureVersion(currentSchemaVersion);
-                throw new CopilotChatStateFutureVersionException(currentSchemaVersion, CopilotChatState.CurrentSchemaVersion);
+                BlockForFutureVersion(currentSchemaVersion, StateFilePath);
+                throw new CopilotChatStateFutureVersionException(
+                    currentSchemaVersion,
+                    CopilotChatState.CurrentSchemaVersion,
+                    StateFilePath);
             }
 
             if (currentStatus == StateFileReadStatus.Valid)

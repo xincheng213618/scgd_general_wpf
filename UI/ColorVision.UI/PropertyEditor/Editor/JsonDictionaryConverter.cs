@@ -13,21 +13,15 @@ namespace System.ComponentModel
     // 为 Dictionary<TKey, TValue> 注册 JSON 文本编辑器
     public class DictionaryJsonEditor : IPropertyEditor
     {
-        static DictionaryJsonEditor()
+        internal static bool IsSupportedType(Type type)
         {
-            // 通过谓词注册：匹配 Dictionary<TKey, TValue> 和 IDictionary<TKey, TValue>
-            PropertyEditorHelper.RegisterEditor<DictionaryJsonEditor>(t =>
-            {
-                t = Nullable.GetUnderlyingType(t) ?? t;
-                if (!t.IsGenericType)
-                    return false;
-                
-                var genericTypeDef = t.GetGenericTypeDefinition();
-                
-                // 支持 Dictionary<TKey, TValue> 和 IDictionary<TKey, TValue>
-                return genericTypeDef == typeof(System.Collections.Generic.Dictionary<,>) ||
-                       genericTypeDef == typeof(System.Collections.Generic.IDictionary<,>);
-            });
+            type = Nullable.GetUnderlyingType(type) ?? type;
+            if (!type.IsGenericType)
+                return false;
+
+            Type genericTypeDefinition = type.GetGenericTypeDefinition();
+            return genericTypeDefinition == typeof(Dictionary<,>) ||
+                   genericTypeDefinition == typeof(IDictionary<,>);
         }
 
         public DockPanel GenProperties(PropertyInfo property, object obj)

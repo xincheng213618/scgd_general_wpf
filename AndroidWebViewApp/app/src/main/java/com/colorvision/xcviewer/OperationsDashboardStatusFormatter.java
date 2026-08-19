@@ -1,23 +1,102 @@
 package com.colorvision.xcviewer;
 
 final class OperationsDashboardStatusFormatter {
+    static final int TONE_DEFAULT = 0;
+    static final int TONE_ACTIVE = 1;
+    static final int TONE_ATTENTION = 2;
+    static final int TONE_MUTED = 3;
+
+    static final class Item {
+        final String title;
+        final String summary;
+        final int tone;
+        final int priority;
+
+        Item(String title, String summary, int tone) {
+            this(title, summary, tone, tone == TONE_ACTIVE ? 10 : 0);
+        }
+
+        Item(String title, String summary, int tone, int priority) {
+            this.title = title;
+            this.summary = summary;
+            this.tone = tone;
+            this.priority = Math.max(0, priority);
+        }
+
+        String accessibilityLabel() {
+            return accessibilityLabel("查看详情");
+        }
+
+        String accessibilityLabel(String actionLabel) {
+            String action = actionLabel == null || actionLabel.trim().isEmpty()
+                    ? "查看详情"
+                    : actionLabel.trim();
+            return title + "，" + summary + "，" + action;
+        }
+    }
+
     private OperationsDashboardStatusFormatter() {
     }
 
-    static String flow(boolean available, boolean active, String phase) {
+    static String sectionTitle(boolean remote, boolean fresh) {
+        if (!remote) {
+            return "实时状态";
+        }
+        return fresh ? "电脑签名状态" : "上次电脑签名状态";
+    }
+
+    static String sectionCaption(boolean remote, boolean fresh) {
+        if (!remote) {
+            return "来自当前电脑；点击任一项查看详细状态。";
+        }
+        return fresh
+                ? "电脑刚刚签名返回；点击任一项查看签名详情。"
+                : "快照已过期，仅供参考；点击任一项查看签名详情。";
+    }
+
+    static Item loading(String title) {
+        return new Item(title, "读取中…", TONE_MUTED);
+    }
+
+    static Item unavailable(String title) {
+        return new Item(title, "暂不可用", TONE_MUTED);
+    }
+
+    static Item application(
+            boolean available,
+            String version,
+            boolean windowExists,
+            boolean windowVisible,
+            String windowState,
+            double memoryMb) {
         if (!available) {
-            return "检测\n暂不可用";
+            return unavailable("应用");
+        }
+        String safeVersion = version == null || version.trim().isEmpty()
+                ? "版本未知" : version.trim();
+        String window = !windowExists ? "窗口不可用"
+                : windowVisible ? "窗口可见"
+                : "Minimized".equalsIgnoreCase(windowState) ? "已最小化" : "窗口未显示";
+        String memory = memoryMb > 0 ? " · " + Math.round(memoryMb) + " MB" : "";
+        return new Item("应用", safeVersion + " · " + window + memory,
+                windowExists ? TONE_DEFAULT : TONE_ATTENTION,
+                windowExists ? 0 : 30);
+    }
+
+    static Item flow(boolean available, boolean active, String phase) {
+        if (!available) {
+            return unavailable("检测");
         }
         if (!active) {
-            return "检测\n空闲";
+            return new Item("检测", "空闲", TONE_DEFAULT);
         }
         if ("paused".equals(phase)) {
-            return "检测\n已暂停";
+            return new Item("检测", "已暂停", TONE_ATTENTION, 30);
         }
         if ("cancelling".equals(phase)) {
-            return "检测\n正在取消";
+            return new Item("检测", "正在取消", TONE_ACTIVE);
         }
-        return "检测\n运行中";
+        return new Item("检测", "运行中", TONE_ACTIVE);
     }
 
     static String flowCancellation(boolean available, boolean active, boolean cancelAvailable,
@@ -39,65 +118,114 @@ final class OperationsDashboardStatusFormatter {
         return available && active && cancelAvailable && !inFlight;
     }
 
-    static String devices(boolean available, boolean configured, int ready, int busy, int attention, int total) {
+    static Item devices(boolean available, boolean configured, int ready, int busy, int attention,
+            int total, String attentionSummary) {
         if (!available) {
-            return "设备\n暂不可用";
+            return unavailable("设备");
         }
         if (!configured || total <= 0) {
-            return "设备\n未加载";
+            return new Item("设备", "未加载", TONE_MUTED);
         }
         if (attention > 0) {
-            return "设备\n需关注 " + attention;
+            String summary = attentionSummary == null ? "" : attentionSummary.trim();
+            return new Item("设备", summary.isEmpty() ? "需关注 " + attention : summary,
+                    TONE_ATTENTION, 70);
         }
         if (busy > 0) {
-            return "设备\n忙碌 " + busy + " / " + total;
+            return new Item("设备", "忙碌 " + busy + " / " + total, TONE_ACTIVE);
         }
-        return "设备\n就绪 " + ready + " / " + total;
+        return new Item("设备", "就绪 " + ready + " / " + total, TONE_DEFAULT);
     }
 
-    static String messageChannel(boolean available, boolean connected, boolean subscriptionsReady,
+    static Item messageChannel(boolean available, boolean connected, boolean subscriptionsReady,
             int activeSubscriptions, int registeredSubscriptions) {
         if (!available) {
-            return "消息\n暂不可用";
+            return unavailable("消息");
         }
         if (!connected) {
-            return "消息\n未连接";
+            return new Item("消息", "未连接", TONE_ATTENTION, 80);
         }
         if (!subscriptionsReady) {
-            return "消息\n订阅 " + activeSubscriptions + " / " + registeredSubscriptions;
+            return new Item("消息",
+                    "订阅 " + activeSubscriptions + " / " + registeredSubscriptions,
+                    TONE_ATTENTION, 80);
         }
-        return "消息\n已连接";
+        return new Item("消息", "已连接", TONE_DEFAULT);
     }
 
-    static String alerts(int warningCount, int errorCount, int criticalCount) {
+    static Item alerts(boolean available, int warningCount, int errorCount, int criticalCount,
+            String primarySource) {
+        if (!available) {
+            return unavailable("告警");
+        }
         if (criticalCount > 0) {
-            return "告警\n严重 " + criticalCount;
+            return new Item("告警", alertSummary(primarySource, "严重", criticalCount),
+                    TONE_ATTENTION, 90);
         }
         if (errorCount > 0) {
-            return "告警\n错误 " + errorCount;
+            return new Item("告警", alertSummary(primarySource, "错误", errorCount),
+                    TONE_ATTENTION, 60);
         }
         if (warningCount > 0) {
-            return "告警\n警告 " + warningCount;
+            return new Item("告警", alertSummary(primarySource, "警告", warningCount),
+                    TONE_ATTENTION, 40);
         }
-        return "告警\n暂无异常";
+        return new Item("告警", "暂无异常", TONE_DEFAULT);
     }
 
-    static String performance(boolean available, double cpuPercent, String uiState) {
+    static String alertActionSummary(
+            int warningCount, int errorCount, int criticalCount, String primarySource) {
+        String source = OperationsAlertPresentation.safeSource(primarySource);
+        if (criticalCount > 0) {
+            return source.isEmpty()
+                    ? "严重告警 " + criticalCount + " 个"
+                    : source + " · 严重 " + criticalCount;
+        }
+        if (errorCount > 0) {
+            return source.isEmpty()
+                    ? "错误事件 " + errorCount + " 个"
+                    : source + " · 错误 " + errorCount;
+        }
+        return source.isEmpty()
+                ? "警告 " + warningCount + " 个"
+                : source + " · 警告 " + warningCount;
+    }
+
+    private static String alertSummary(String primarySource, String severity, int count) {
+        String source = OperationsAlertPresentation.safeSource(primarySource);
+        return source.isEmpty() ? severity + " " + count : source + " · " + severity + " " + count;
+    }
+
+    static Item performance(boolean available, double cpuPercent, String uiState) {
         if (!available) {
-            return "性能\n暂不可用";
+            return unavailable("性能");
+        }
+        String cpu = "CPU " + Math.round(Math.max(0, cpuPercent)) + "%";
+        if ("unavailable".equals(uiState)) {
+            return new Item("性能", cpu + " · 界面未知", TONE_MUTED);
         }
         String responsiveness = "unresponsive".equals(uiState) ? "无响应"
                 : "slow".equals(uiState) ? "偏慢" : "正常";
-        return "性能\nCPU " + Math.round(Math.max(0, cpuPercent)) + "% · " + responsiveness;
+        boolean unresponsive = "unresponsive".equals(uiState);
+        boolean slow = "slow".equals(uiState);
+        int tone = unresponsive || slow ? TONE_ATTENTION : TONE_DEFAULT;
+        int priority = unresponsive ? 100 : slow ? 50 : 0;
+        return new Item("性能", cpu + " · " + responsiveness, tone, priority);
     }
 
-    static String recovery(boolean supported, boolean registered, boolean automaticWatchdogActive) {
+    static Item recovery(boolean available, boolean supported, boolean registered,
+            boolean automaticWatchdogActive) {
+        if (!available) {
+            return unavailable("恢复");
+        }
         if (!supported) {
-            return "恢复\n系统不支持";
+            return new Item("恢复", "系统不支持", TONE_MUTED);
         }
         if (!registered) {
-            return "恢复\n未就绪";
+            return new Item("恢复", "未就绪", TONE_ATTENTION, 20);
         }
-        return automaticWatchdogActive ? "恢复\n自动看门狗" : "恢复\nWindows 后备";
+        return new Item("恢复",
+                automaticWatchdogActive ? "自动看门狗" : "Windows 后备",
+                TONE_DEFAULT);
     }
 }

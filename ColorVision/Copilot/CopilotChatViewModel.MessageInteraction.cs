@@ -294,9 +294,6 @@ namespace ColorVision.Copilot
         private CopilotConversationRecord InsertAndSelectConversationBranch(CopilotConversationRecord branch)
         {
             CopilotConversationService.Insert(Conversations, branch);
-            _turnRuntime.QueueSessionStart(
-                branch.Id,
-                CopilotCodexSessionStartSource.Startup);
             SelectConversation(branch, persist: false, preferredProfileId: branch.ProfileId);
             PersistState(immediate: true);
             return branch;
@@ -469,8 +466,7 @@ namespace ColorVision.Copilot
                         _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                     CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
                         _currentCodexConfigOptions.ConfiguredHooksEnabled,
-                        _currentCodexConfigOptions.ConfiguredPluginsEnabled,
-                        _currentCodexConfigOptions.ConfiguredCommandHooks));
+                        _currentCodexConfigOptions.ConfiguredPluginsEnabled));
         }
 
         private async Task RetryMessageAsync(CopilotChatMessage? message, bool refreshExternalContext)
@@ -491,8 +487,7 @@ namespace ColorVision.Copilot
                     _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
                     _currentCodexConfigOptions.ConfiguredHooksEnabled,
-                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
-                    _currentCodexConfigOptions.ConfiguredCommandHooks)))
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
             {
                 return;
             }
@@ -535,12 +530,16 @@ namespace ColorVision.Copilot
             {
                 return;
             }
-            if (!TryValidateComposerAttachments(turnSnapshot.Attachments))
+            if (!TryValidateComposerAttachments(turnSnapshot.Attachments, requestProfile))
                 return;
+            var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments);
+            if (admittedAttachments == null)
+                return;
+            turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
 
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;
-            conversation.AgentSessionCheckpoint = null;
+            conversation.SetAgentSessionCheckpoint(null);
             PersistState();
 
             Task ExecuteAsync(CopilotHostedAgentRun run) => ExecuteHostedRetryAsync(

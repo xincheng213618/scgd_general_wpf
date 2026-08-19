@@ -110,15 +110,8 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            void OpenSource()
-            {
-                ctx.ImageView.ImageShow.Clear();
-                if (File.Exists(result.FilePath))
-                    ctx.ImageView.OpenImage(result.FilePath);
-                log.Info(result.FilePath);
-            }
-
-            OpenSource();
+            OpenSourceImage(ctx, result);
+            log.Info(result.FilePath);
 
             foreach (var item in result.ViewResults.ToSpecificViewResults<Distortion2View>())
             {

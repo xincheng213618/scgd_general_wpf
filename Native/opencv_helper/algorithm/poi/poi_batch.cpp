@@ -80,13 +80,18 @@ ChannelAverage calculateCircle(
 {
     ChannelAverage average;
     if (radius > 0.0) {
-        for (std::int32_t row = static_cast<std::int32_t>(centerY - radius); row <= centerY + radius; ++row) {
-            if (row < 0 || row >= imageHeight) continue;
-            for (std::int32_t column = static_cast<std::int32_t>(centerX - radius); column <= centerX + radius; ++column) {
-                if (column < 0 || column >= imageWidth) continue;
+        const auto firstRow = static_cast<std::int32_t>(std::max(0.0, static_cast<double>(centerY) - radius));
+        const auto lastRow = static_cast<std::int32_t>(std::min(
+            static_cast<double>(imageHeight - 1), static_cast<double>(centerY) + radius));
+        const auto firstColumn = static_cast<std::int32_t>(std::max(0.0, static_cast<double>(centerX) - radius));
+        const auto lastColumn = static_cast<std::int32_t>(std::min(
+            static_cast<double>(imageWidth - 1), static_cast<double>(centerX) + radius));
+        const double radiusSquared = radius * radius;
+        for (std::int32_t row = firstRow; row <= lastRow; ++row) {
+            for (std::int32_t column = firstColumn; column <= lastColumn; ++column) {
                 const double distance = (row - centerY) * (row - centerY)
                     + (column - centerX) * (column - centerX);
-                if (distance < radius * radius) {
+                if (distance < radiusSquared) {
                     addPixel(average, channelX, channelY, channelZ,
                         static_cast<std::size_t>(row) * imageWidth + column, channels);
                 }
@@ -114,14 +119,16 @@ ChannelAverage calculateRectangle(
 {
     ChannelAverage average;
     if (roiWidth > 0 && roiHeight > 0) {
-        const std::int32_t firstRow = static_cast<std::int32_t>(centerY - roiHeight / 2 + 0.5);
-        const std::int32_t lastRow = centerY + roiHeight / 2;
-        const std::int32_t firstColumn = static_cast<std::int32_t>(centerX - roiWidth / 2 + 0.5);
-        const std::int32_t lastColumn = centerX + roiWidth / 2;
+        const auto firstRow = static_cast<std::int32_t>(std::max(
+            0.0, static_cast<double>(centerY) - roiHeight / 2 + 0.5));
+        const auto lastRow = static_cast<std::int32_t>(std::min(
+            static_cast<double>(imageHeight - 1), static_cast<double>(centerY) + roiHeight / 2));
+        const auto firstColumn = static_cast<std::int32_t>(std::max(
+            0.0, static_cast<double>(centerX) - roiWidth / 2 + 0.5));
+        const auto lastColumn = static_cast<std::int32_t>(std::min(
+            static_cast<double>(imageWidth - 1), static_cast<double>(centerX) + roiWidth / 2));
         for (std::int32_t row = firstRow; row <= lastRow; ++row) {
-            if (row < 0 || row >= imageHeight) continue;
             for (std::int32_t column = firstColumn; column <= lastColumn; ++column) {
-                if (column < 0 || column >= imageWidth) continue;
                 addPixel(average, channelX, channelY, channelZ,
                     static_cast<std::size_t>(row) * imageWidth + column, channels);
             }

@@ -51,8 +51,8 @@ namespace ColorVision.Copilot
             TimeSpan disposalTimeout,
             TimeSpan resourceDisposalTimeout)
         {
-            Tools = tools ?? Array.Empty<ICopilotTool>();
-            Diagnostics = diagnostics ?? Array.Empty<string>();
+            Tools = Array.AsReadOnly((tools ?? Array.Empty<ICopilotTool>()).ToArray());
+            Diagnostics = Array.AsReadOnly((diagnostics ?? Array.Empty<string>()).ToArray());
             _resources = resources?.Where(resource => resource != null).ToArray()
                 ?? Array.Empty<IAsyncDisposable>();
             _disposalTimeout = ValidateTimeout(disposalTimeout, nameof(disposalTimeout));
@@ -152,15 +152,24 @@ namespace ColorVision.Copilot
         private static readonly TimeSpan DiscoveryCleanupTimeout = TimeSpan.FromSeconds(1);
         private static readonly TimeSpan DiscoveryResourceCleanupTimeout = TimeSpan.FromMilliseconds(500);
         private readonly CopilotMcpToolDiscoveryCache _discoveryCache;
+        private readonly CopilotCapabilityCatalog _capabilityCatalog;
 
         public CopilotMcpToolProvider()
-            : this(CopilotMcpToolDiscoveryCache.Shared)
+            : this(CopilotMcpToolDiscoveryCache.Shared, CopilotCapabilityCatalog.Shared)
         {
         }
 
         internal CopilotMcpToolProvider(CopilotMcpToolDiscoveryCache discoveryCache)
+            : this(discoveryCache, CopilotCapabilityCatalog.Shared)
+        {
+        }
+
+        internal CopilotMcpToolProvider(
+            CopilotMcpToolDiscoveryCache discoveryCache,
+            CopilotCapabilityCatalog capabilityCatalog)
         {
             _discoveryCache = discoveryCache ?? throw new ArgumentNullException(nameof(discoveryCache));
+            _capabilityCatalog = capabilityCatalog ?? throw new ArgumentNullException(nameof(capabilityCatalog));
         }
 
         public async Task<CopilotExternalToolLease> DiscoverAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
@@ -171,7 +180,7 @@ namespace ColorVision.Copilot
             var diagnostics = new List<string>();
             var clients = new List<IAsyncDisposable>();
             var enabledServers = request.ExternalMcpServers.Where(server => server?.Enabled == true).Take(8).ToArray();
-            CopilotCapabilityCatalog.Shared.RetainExternalMcpServers(enabledServers);
+            _capabilityCatalog.RetainExternalMcpServers(enabledServers);
             foreach (var server in enabledServers)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -308,12 +317,25 @@ namespace ColorVision.Copilot
                     var adapters = allowedTools
                         .Select(allowedTool => new CopilotMcpToolAdapter(server, allowedTool.Tool, allowedTool.AccessPolicy))
                         .ToArray();
-                    tools.AddRange(adapters);
-                    CopilotCapabilityCatalog.Shared.PublishExternalMcp(server, adapters);
+                    var compatibleAdapters = SelectRuntimeCompatibleTools(
+                        adapters,
+                        out var incompatibleSchemaCount);
+                    if (incompatibleSchemaCount > 0)
+                    {
+                        diagnostics.Add(
+                            $"MCP client {server.Name} skipped {incompatibleSchemaCount} tool definition(s) whose input schemas are not executable by the shared runtime.");
+                    }
+
+                    // Publish first: catalog registration is the commit gate for the
+                    // same definitions exposed to this turn. A rejected source must not
+                    // leave callable adapters backed by a client that the finally block
+                    // is about to dispose.
+                    _capabilityCatalog.PublishExternalMcp(server, compatibleAdapters);
+                    tools.AddRange(compatibleAdapters);
                     CopilotMcpClientHealthRegistry.RecordConnected(
                         server,
                         discoveredToolCount,
-                        allowedTools.Length,
+                        compatibleAdapters.Length,
                         usedCachedDiscovery,
                         capabilityRevision,
                         cacheUpdate == CopilotMcpDiscoveryCacheUpdateKind.Changed,
@@ -321,7 +343,7 @@ namespace ColorVision.Copilot
                     Volatile.Write(ref discoveryReady, 1);
                     if (Interlocked.Exchange(ref toolListChangeNotificationPending, 0) == 1)
                         CopilotMcpClientDiscoveryRegistry.NotifyToolListChanged(server, _discoveryCache);
-                    if (allowedTools.Length > 0)
+                    if (compatibleAdapters.Length > 0)
                     {
                         clients.Add(client);
                         client = null;
@@ -332,9 +354,9 @@ namespace ColorVision.Copilot
                         }
                     }
                     var discoverySource = usedCachedDiscovery ? "cached discovery" : "live discovery";
-                    diagnostics.Add(allowedTools.Length == discoveredToolCount
-                        ? $"MCP client connected to {server.Name} · {allowedTools.Length} tool(s) exposed from {discoverySource}."
-                        : $"MCP client connected to {server.Name} · {allowedTools.Length}/{discoveredToolCount} tool(s) exposed from {discoverySource} by policy and request limits.");
+                    diagnostics.Add(compatibleAdapters.Length == discoveredToolCount
+                        ? $"MCP client connected to {server.Name} · {compatibleAdapters.Length} tool(s) exposed from {discoverySource}."
+                        : $"MCP client connected to {server.Name} · {compatibleAdapters.Length}/{discoveredToolCount} tool(s) exposed from {discoverySource} by policy, runtime contract, and request limits.");
                     if (discoveredToolCount > remoteTools.Length)
                         diagnostics.Add($"MCP client {server.Name} cached the first {remoteTools.Length}/{discoveredToolCount} tool definition(s) within the safety limit.");
                     if (cacheUpdate == CopilotMcpDiscoveryCacheUpdateKind.Changed)
@@ -381,6 +403,22 @@ namespace ColorVision.Copilot
                 cancellationToken.ThrowIfCancellationRequested();
             }
             return new CopilotExternalToolLease(tools, diagnostics, clients);
+        }
+
+        internal static ICopilotTool[] SelectRuntimeCompatibleTools(
+            IEnumerable<ICopilotTool>? tools,
+            out int rejectedCount)
+        {
+            var candidates = (tools ?? Array.Empty<ICopilotTool>()).ToArray();
+            var compatible = candidates
+                .Where(tool => tool != null
+                    && CopilotToolInputContractValidator.TryValidateSchema(
+                        tool.InputSchema?.JsonSchema,
+                        out _,
+                        requireClosedObjects: false))
+                .ToArray();
+            rejectedCount = candidates.Length - compatible.Length;
+            return compatible;
         }
 
         private sealed record AllowedMcpTool(McpClientTool Tool, CopilotMcpClientAccessPolicy AccessPolicy);

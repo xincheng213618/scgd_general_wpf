@@ -9,11 +9,6 @@ namespace System.ComponentModel
 {
     public class BoolPropertiesEditor : IPropertyEditor
     {
-        static BoolPropertiesEditor()
-        {
-            PropertyEditorHelper.RegisterEditor<BoolPropertiesEditor>(t => (Nullable.GetUnderlyingType(t) ?? t) == typeof(bool));
-        }
-
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);
@@ -26,7 +21,7 @@ namespace System.ComponentModel
                 Background = Brushes.DodgerBlue,
                 IsThreeState = Nullable.GetUnderlyingType(property.PropertyType) != null
             };
-            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
+            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property);
             toggleSwitch.SetBinding(ToggleButton.IsCheckedProperty, binding);
             DockPanel.SetDock(toggleSwitch, Dock.Right);
 

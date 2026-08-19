@@ -45,6 +45,7 @@ namespace ColorVision.Copilot
     {
         public const int DefaultMaxLogLines = 300;
         public const int DefaultMaxLogChars = 20000;
+        public const int MaximumToolLogLines = 1000;
         public const int FullDayMaxLogChars = 120000;
 
         private const int MaxRetainedLogLines = 2000;
@@ -118,6 +119,11 @@ namespace ColorVision.Copilot
             {
                 return false;
             }
+        }
+
+        public static int NormalizeToolMaxLines(int? maxLines)
+        {
+            return Math.Clamp(maxLines ?? DefaultMaxLogLines, 1, MaximumToolLogLines);
         }
 
         private static async Task<CopilotRecentLogSnapshot> CaptureFileCoreAsync(

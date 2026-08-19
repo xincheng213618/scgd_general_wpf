@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -454,7 +455,28 @@ namespace ColorVision.Copilot
             }
             foreach (var item in ordered)
                 item.UpdateQueuePosition(positions[item.RunId], queuedRuns.Count);
-            Changed?.Invoke(this, EventArgs.Empty);
+            RaiseChanged();
+        }
+
+        private void RaiseChanged()
+        {
+            var handlers = Changed;
+            if (handlers == null)
+                return;
+
+            foreach (EventHandler handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(this, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning(
+                        "Copilot queued follow-up observer failed: {0}",
+                        ex.GetType().Name);
+                }
+            }
         }
 
         private void Register(CopilotQueuedFollowUp item, bool addRecoveryRecord)

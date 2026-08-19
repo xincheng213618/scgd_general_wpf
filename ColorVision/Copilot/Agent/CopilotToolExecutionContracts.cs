@@ -54,6 +54,8 @@ namespace ColorVision.Copilot
         internal IReadOnlyList<CopilotToolExecutionHookBinding> InitialHookBindings { get; init; } =
             Array.Empty<CopilotToolExecutionHookBinding>();
 
+        internal Func<CancellationToken, ValueTask<bool>>? PreDispatchCheckpoint { get; init; }
+
         internal IReadOnlyList<CopilotToolAdditionalContext> PreToolAdditionalContexts
         {
             get
@@ -120,8 +122,12 @@ namespace ColorVision.Copilot
             "\n...[PreToolUse additional context truncated]...\n";
         private CopilotToolResult? _modelVisibleResult;
         private readonly List<string> _modelAdditionalContexts = [];
+        private CopilotToolPostExecutionControl _postExecutionControl;
+        private string _postExecutionControlReason = string.Empty;
 
         internal string? FormattedModelResult { get; set; }
+
+        internal CopilotToolOutputArchiveSnapshot? ToolOutputArchive { get; set; }
 
         public CopilotToolInvocation Invocation { get; init; } = null!;
 
@@ -133,6 +139,10 @@ namespace ColorVision.Copilot
             Array.Empty<CopilotToolExecutionHookRun>();
 
         internal CopilotToolResult EffectiveModelResult => _modelVisibleResult ?? Result;
+
+        internal CopilotToolPostExecutionControl PostExecutionControl => _postExecutionControl;
+
+        internal string PostExecutionControlReason => _postExecutionControlReason;
 
         internal IReadOnlyList<string> ModelAdditionalContexts
         {
@@ -182,6 +192,24 @@ namespace ColorVision.Copilot
                 ProcessTimedOut = original.ProcessTimedOut,
                 SuppressModelOutput = false,
             };
+        }
+
+        internal void ApplyPostExecutionControl(
+            CopilotToolPostExecutionControl control,
+            string? reason)
+        {
+            if (control == CopilotToolPostExecutionControl.None
+                || _postExecutionControl == CopilotToolPostExecutionControl.Stopped)
+            {
+                return;
+            }
+
+            if (control == CopilotToolPostExecutionControl.Stopped
+                || _postExecutionControl == CopilotToolPostExecutionControl.None)
+            {
+                _postExecutionControl = control;
+                _postExecutionControlReason = CopilotApprovalRequestReason.Normalize(reason);
+            }
         }
 
         internal void AddModelAdditionalContext(
@@ -271,6 +299,37 @@ namespace ColorVision.Copilot
                 + truncationMarker
                 + value[tailStart..];
         }
+    }
+
+    internal sealed class CopilotToolExecutionCancellationException : OperationCanceledException
+    {
+        public CopilotToolExecutionCancellationException(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken)
+            : base(
+                "Tool execution was cancelled after it entered the running stage.",
+                innerException: null,
+                cancellationToken)
+        {
+            Outcome = outcome ?? throw new ArgumentNullException(nameof(outcome));
+        }
+
+        public CopilotToolExecutionOutcome Outcome { get; }
+    }
+
+    internal sealed class CopilotToolResultEventDispatchException : Exception
+    {
+        public CopilotToolResultEventDispatchException(
+            CopilotToolExecutionOutcome outcome,
+            Exception innerException)
+            : base(
+                "The authoritative Copilot tool result could not be published.",
+                innerException)
+        {
+            Outcome = outcome ?? throw new ArgumentNullException(nameof(outcome));
+        }
+
+        public CopilotToolExecutionOutcome Outcome { get; }
     }
 
     public sealed class CopilotToolExecutionHookContext

@@ -916,10 +916,12 @@ namespace ColorVision.Update
                 string batchFilePath = Path.Combine(tempRoot, "update.bat");
                 string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
                 string executableName = Path.GetFileName(Environment.ProcessPath) ?? "ColorVision.exe";
-                scanProtectionId = ApplicationUpdateScanProtection.TryBegin(tempRoot);
                 File.WriteAllText(batchFilePath, string.Empty);
                 handoffState = ExitUpdateHandoff.Prepare(programDirectory, tempRoot);
+                Task downloadManagerStopTask = Aria2cDownloadManager.GetInstance().StopDaemonForUpdateHandoffAsync();
+                Task<string?> scanProtectionTask = Task.Run(() => ApplicationUpdateScanProtection.TryBegin(tempRoot));
                 ApplicationUpdateProcessCoordinator.CloseOtherApplicationProcesses();
+                scanProtectionId = scanProtectionTask.GetAwaiter().GetResult();
 
                 string stageDirectory = Path.Combine(tempRoot, "ColorVision");
                 Directory.CreateDirectory(stageDirectory);
@@ -961,7 +963,7 @@ namespace ColorVision.Update
                 {
                     if (!PluginUpdater.TryGetPluginTargetDirectory(installedPluginsDirectory, pluginId, out string targetPluginDirectory))
                         throw new InvalidDataException($"Plugin manifest id '{pluginId}' does not resolve inside the installation Plugins directory.");
-                    PluginRecoveryBackupService.Instance.CreateVerifiedBackup(pluginId, targetPluginDirectory);
+                    PluginRecoveryBackupService.Instance.EnsureCurrentVersionBackup(pluginId, targetPluginDirectory);
                 }
 
                 int skippedShellExtensionFiles = RemoveShellExtensionFilesFromUpdateStage(stageDirectory)
@@ -989,6 +991,7 @@ namespace ColorVision.Update
                 }
 
                 ApplicationSnapshotService.Instance.CreateUpdateSnapshotIfEnabled();
+                downloadManagerStopTask.GetAwaiter().GetResult();
 
                 string batchContent = CreateIncrementalUpdateBatch(
                     stageDirectory,

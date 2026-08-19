@@ -36,10 +36,17 @@ namespace ColorVision.Copilot
 
         public static bool Publish(string conversationId, CopilotAgentTaskEventJournalSnapshot journal)
         {
+            if (!CopilotAgentTaskEventJournal.TryCreateSnapshot(
+                    journal,
+                    out var detachedJournal))
+            {
+                return false;
+            }
+
             var context = new CopilotAgentTaskEventJournalContext
             {
                 ConversationId = (conversationId ?? string.Empty).Trim(),
-                Journal = journal ?? new CopilotAgentTaskEventJournalSnapshot(),
+                Journal = detachedJournal,
                 PublishedAtUtc = DateTimeOffset.UtcNow,
             };
             if (!context.IsStructurallyValid())

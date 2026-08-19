@@ -222,8 +222,7 @@ namespace ColorVision.Copilot
             {
                 ShowLocalCommandResult(
                     command,
-                    $"已永久删除“{result.DeletedTitle}”。本地消息、草稿和托管附件已移除，不能通过 /unarchive 恢复。"
-                    + FormatSessionEndHookDiagnostics(result.HookDiagnostics));
+                    $"已永久删除“{result.DeletedTitle}”。本地消息、草稿和托管附件已移除，不能通过 /unarchive 恢复。");
             }
         }
 
@@ -283,7 +282,6 @@ namespace ColorVision.Copilot
             CommandManager.InvalidateRequerySuggested();
             try
             {
-                var hookDiagnostics = await EndConversationSessionAsync(target);
                 if (!Conversations.Contains(target))
                     return CopilotConversationDeletionResult.NotDeleted;
 
@@ -297,15 +295,14 @@ namespace ColorVision.Copilot
                 var currentIndex = Conversations.IndexOf(target);
                 if (!Conversations.Remove(target))
                 {
-                    _turnRuntime.QueueSessionStart(
-                        target.Id,
-                        CopilotCodexSessionStartSource.Resume);
                     return CopilotConversationDeletionResult.NotDeleted;
                 }
 
                 RemoveQueuedFollowUpRecoveryRecords(target.Id);
                 CopilotBackgroundShellCommandRegistry.Shared.ClearCompleted(target.Id);
                 CopilotShellCommandOutputArchiveRegistry.Shared.ClearConversation(
+                    target.Id);
+                CopilotToolOutputArchiveRegistry.Shared.ClearConversation(
                     target.Id);
                 RemoveManagedAttachmentFiles(managedAttachments);
 
@@ -319,10 +316,7 @@ namespace ColorVision.Copilot
                 }
 
                 PersistState(immediate: true);
-                return new CopilotConversationDeletionResult(
-                    true,
-                    deletedTitle,
-                    hookDiagnostics);
+                return new CopilotConversationDeletionResult(true, deletedTitle);
             }
             finally
             {
@@ -333,11 +327,10 @@ namespace ColorVision.Copilot
 
         private sealed record CopilotConversationDeletionResult(
             bool Deleted,
-            string DeletedTitle,
-            IReadOnlyList<string> HookDiagnostics)
+            string DeletedTitle)
         {
             public static CopilotConversationDeletionResult NotDeleted { get; } =
-                new(false, string.Empty, Array.Empty<string>());
+                new(false, string.Empty);
         }
 
         private bool CanDeleteConversation(CopilotConversationRecord? conversation) =>

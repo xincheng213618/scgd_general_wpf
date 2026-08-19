@@ -45,6 +45,11 @@ namespace ColorVision.Copilot
             CancellationToken cancellationToken);
     }
 
+    public interface ICopilotApplicationCapabilityClient
+    {
+        ICopilotApplicationCapabilityInvoker ApplicationCapabilityInvoker { get; }
+    }
+
     internal interface ICopilotScopedApplicationCapabilityInvoker
     {
         Task<CopilotApplicationCapabilityCallResult> InvokeScopedAsync(
@@ -90,6 +95,39 @@ namespace ColorVision.Copilot
 
     internal static class CopilotApplicationCapabilityInvocation
     {
+        public static CopilotToolResult ToToolResult(
+            CopilotApplicationCapabilityCallResult result,
+            string toolName,
+            string successSummary,
+            string failureSummary,
+            string approvalSummary = "")
+        {
+            ArgumentNullException.ThrowIfNull(result);
+            if (string.IsNullOrWhiteSpace(toolName))
+                throw new ArgumentException("A tool name is required.", nameof(toolName));
+
+            var waitingForApproval = result.IsApprovalRequired;
+            if (waitingForApproval && string.IsNullOrWhiteSpace(approvalSummary))
+                throw new ArgumentException("An approval summary is required for an approval result.", nameof(approvalSummary));
+
+            var accepted = result.Success || waitingForApproval;
+            return new CopilotToolResult
+            {
+                ToolName = toolName,
+                Success = accepted,
+                Summary = waitingForApproval
+                    ? approvalSummary
+                    : result.Success ? successSummary : failureSummary,
+                Content = result.Content,
+                ErrorMessage = accepted ? string.Empty : result.Content,
+                FailureKind = result.FailureKind,
+                FailureCode = accepted
+                    ? string.Empty
+                    : CopilotToolFailureCode.Normalize(result.ErrorCode),
+                Approval = result.Approval,
+            };
+        }
+
         public static Task<CopilotApplicationCapabilityCallResult> InvokeAsync(
             ICopilotApplicationCapabilityInvoker invoker,
             string capabilityName,

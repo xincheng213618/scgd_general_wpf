@@ -14,16 +14,17 @@ def releaseSigningReady = signingPropertiesFile.exists()
         && signingProperties["keyPassword"]
 
 android {
-    namespace "com.colorvision.xcviewer"
-    compileSdk 35
-    buildToolsVersion "35.0.0"
+    namespace = "com.colorvision.xcviewer"
+    compileSdk 36
+    buildToolsVersion "36.0.0"
 
     defaultConfig {
         applicationId "com.colorvision.xcviewer"
         minSdk 23
-        targetSdk 35
-        versionCode 45
-        versionName "2.34"
+        targetSdk 36
+        versionCode 207
+        versionName "3.96"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -39,7 +40,7 @@ android {
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            signingConfig = signingConfigs.release
             minifyEnabled false
         }
     }
@@ -51,10 +52,20 @@ android {
 }
 
 dependencies {
+    def cameraXVersion = "1.5.3"
+    implementation "androidx.camera:camera-core:$cameraXVersion"
+    implementation "androidx.camera:camera-camera2:$cameraXVersion"
+    implementation "androidx.camera:camera-lifecycle:$cameraXVersion"
+    implementation "androidx.camera:camera-view:$cameraXVersion"
     implementation "com.google.zxing:core:3.5.3"
     implementation "androidx.core:core:1.15.0"
-    implementation "androidx.media3:media3-exoplayer:1.7.1"
+    implementation "androidx.appcompat:appcompat:1.7.0"
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.2.0"
+    implementation "com.google.android.material:material:1.13.0"
     testImplementation "junit:junit:4.13.2"
+    testImplementation "org.json:json:20250517"
+    androidTestImplementation "androidx.test.ext:junit:1.3.0"
+    androidTestImplementation "androidx.test:runner:1.7.0"
 }
 
 gradle.taskGraph.whenReady { graph ->

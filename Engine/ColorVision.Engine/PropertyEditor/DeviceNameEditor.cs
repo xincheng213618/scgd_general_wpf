@@ -52,7 +52,7 @@ namespace ColorVision.Engine.PropertyEditor
                 SelectedValuePath = "Code"
             };
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
-            combo.SetBinding(Selector.SelectedValueProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
+            combo.SetBinding(Selector.SelectedValueProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property));
 
 
             Type targetType = ResolveDeviceType(property, obj);
@@ -64,12 +64,6 @@ namespace ColorVision.Engine.PropertyEditor
 
             string? code = property.GetValue(obj)?.ToString();
             var selectedItem = ItemsSource.FirstOrDefault(x => x.Code == code);
-            if (selectedItem == null && string.IsNullOrWhiteSpace(code) && IsLocalCameraNode(obj))
-            {
-                selectedItem = ItemsSource.FirstOrDefault();
-                if (selectedItem != null)
-                    SetValueAndNotify(property, obj, selectedItem.Code);
-            }
             if (selectedItem != null)
                 combo.SelectedItem = selectedItem;
 

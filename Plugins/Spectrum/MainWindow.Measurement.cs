@@ -120,7 +120,7 @@ namespace Spectrum
                 }
                 catch (Exception ex)
                 {
-                    log.Warn("无法记录本次测量使用的幅值 DAT，结果不会用于光谱修正。", ex);
+                    log.Warn("无法记录本次测量使用的幅值 DAT，结果不会用于光谱校正。", ex);
                 }
 
                 SpectrumMeasurementResult result = await Manager.MeasureAsync();
@@ -244,7 +244,7 @@ namespace Spectrum
                 }
                 catch (Exception ex)
                 {
-                    log.Warn("无法记录本次连续测量使用的幅值 DAT，结果不会用于光谱修正。", ex);
+                    log.Warn("无法记录本次连续测量使用的幅值 DAT，结果不会用于光谱校正。", ex);
                 }
 
                 SpectrumMeasurementResult result = await Manager.MeasureAsync(cancellationToken);

@@ -34,7 +34,7 @@ namespace ColorVision.Copilot
                 "Copilot Agent final budget did not cover its latest update.");
         }
 
-        private static bool IsStructurallyValid(CopilotAgentBudgetSnapshot? budget)
+        internal static bool IsStructurallyValid(CopilotAgentBudgetSnapshot? budget)
         {
             if (budget == null
                 || budget.ContextWindowTokens < CopilotAgentTokenBudget.MinimumContextWindowTokens

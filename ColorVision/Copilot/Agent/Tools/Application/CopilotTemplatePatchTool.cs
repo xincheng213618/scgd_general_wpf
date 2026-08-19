@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
-    public sealed class CopilotTemplatePatchTool : ICopilotTool
+    public sealed class CopilotTemplatePatchTool : ICopilotTool, ICopilotApplicationCapabilityClient
     {
         private readonly ICopilotApplicationCapabilityInvoker _capabilityInvoker;
 
@@ -22,19 +22,24 @@ namespace ColorVision.Copilot
             _capabilityInvoker = capabilityInvoker ?? throw new ArgumentNullException(nameof(capabilityInvoker));
         }
 
-        public string Name => "TemplatePatch";
+        public string Name => CopilotSharedCapabilityCatalog.PreviewTemplatePatch.AgentToolName;
 
-        public string Description => "Preview guarded changes to the active template JSON. input.query must be a JSON string like {\"proposed_changes\":{\"Exposure\":12}}. This function never applies or saves the template; use ApplyTemplatePatch for an existing preview.";
+        public ICopilotApplicationCapabilityInvoker ApplicationCapabilityInvoker => _capabilityInvoker;
 
-        public CopilotToolAccess Access => CopilotToolAccess.ReadOnly;
+        public string Description => CopilotSharedCapabilityCatalog.PreviewTemplatePatch.AgentDescription;
 
-        public CopilotToolRiskLevel RiskLevel => CopilotToolRiskLevel.Low;
+        public CopilotToolCapabilityDescriptor Capability =>
+            CopilotSharedCapabilityCatalog.PreviewTemplatePatch.AgentCapability;
 
-        public CopilotToolApprovalMode ApprovalMode => CopilotToolApprovalMode.Never;
+        public CopilotToolAccess Access => Capability.Access;
 
-        public CopilotToolIdempotency Idempotency => CopilotToolIdempotency.Unknown;
+        public CopilotToolRiskLevel RiskLevel => Capability.RiskLevel;
 
-        public CopilotToolInputSchema InputSchema { get; } = CopilotToolInputSchema.Query("JSON object containing proposed_changes for a preview.", required: true);
+        public CopilotToolApprovalMode ApprovalMode => Capability.ApprovalMode;
+
+        public CopilotToolIdempotency Idempotency => Capability.Idempotency;
+
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.PreviewTemplatePatch.AgentInputSchema;
 
         public bool CanHandle(CopilotAgentRequest request)
         {
@@ -58,57 +63,71 @@ namespace ColorVision.Copilot
             if (request.Mode == CopilotAgentMode.Diagnose)
                 return Failure("Template patch preview is unavailable in Diagnose mode.", "Start a separate explicit template-edit request before creating a preview.");
 
-            var payloadText = ExtractJsonObject(toolInput?.Query);
-            if (string.IsNullOrWhiteSpace(payloadText))
-                return Failure("Template patch input is missing.", "The planner must provide input.query as JSON with proposed_changes, or preview_id plus apply=true.");
-
+            Dictionary<string, JsonElement> arguments;
             try
             {
-                using var document = JsonDocument.Parse(payloadText);
-                if (document.RootElement.ValueKind != JsonValueKind.Object)
-                    return Failure("Template patch input is invalid.", "The template patch input root must be a JSON object.");
-
-                if (TryGetString(document.RootElement, "preview_id", out var previewId))
-                    return Failure("Template patch preview input cannot apply an existing preview.", $"Use ApplyTemplatePatch with preview_id={previewId} after an explicit apply request.");
-
-                var proposedChanges = document.RootElement.TryGetProperty("proposed_changes", out var proposedElement)
-                    ? proposedElement
-                    : document.RootElement;
-                if (proposedChanges.ValueKind != JsonValueKind.Object)
-                    return Failure("Template patch input is invalid.", "proposed_changes must be a JSON object.");
-
-                var arguments = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase)
+                if (toolInput.TryGetJsonElementArgument("proposed_changes", out var structuredChanges))
                 {
-                    ["template_identifier"] = JsonSerializer.SerializeToElement("active-template"),
-                    ["proposed_changes"] = proposedChanges.Clone(),
-                };
-                var result = await CopilotApplicationCapabilityInvocation.InvokeAsync(
-                    _capabilityInvoker,
-                    "preview_template_patch",
-                    arguments,
-                    request,
-                    frameworkApprovalGranted: false,
-                    cancellationToken);
-                return ToToolResult(result, "Template patch preview created.", "Template patch preview failed.");
+                    var templateIdentifier = toolInput.GetStringArgument("template_identifier");
+                    arguments = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["template_identifier"] = JsonSerializer.SerializeToElement(
+                            string.IsNullOrWhiteSpace(templateIdentifier)
+                                ? "active-template"
+                                : templateIdentifier),
+                        ["proposed_changes"] = structuredChanges,
+                    };
+                    var currentJson = toolInput.GetStringArgument("current_json");
+                    if (!string.IsNullOrWhiteSpace(currentJson))
+                        arguments["current_json"] = JsonSerializer.SerializeToElement(currentJson);
+                }
+                else
+                {
+                    var payloadText = ExtractJsonObject(toolInput?.Query);
+                    if (string.IsNullOrWhiteSpace(payloadText))
+                    {
+                        return Failure(
+                            "Template patch input is missing.",
+                            "The planner must provide template_identifier and proposed_changes.");
+                    }
+
+                    using var document = JsonDocument.Parse(payloadText);
+                    if (document.RootElement.ValueKind != JsonValueKind.Object)
+                        return Failure("Template patch input is invalid.", "The template patch input root must be a JSON object.");
+
+                    if (TryGetString(document.RootElement, "preview_id", out var previewId))
+                        return Failure("Template patch preview input cannot apply an existing preview.", $"Use ApplyTemplatePatch with preview_id={previewId} after an explicit apply request.");
+
+                    var proposedChanges = document.RootElement.TryGetProperty("proposed_changes", out var proposedElement)
+                        ? proposedElement
+                        : document.RootElement;
+                    if (proposedChanges.ValueKind != JsonValueKind.Object)
+                        return Failure("Template patch input is invalid.", "proposed_changes must be a JSON object.");
+
+                    arguments = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["template_identifier"] = JsonSerializer.SerializeToElement("active-template"),
+                        ["proposed_changes"] = proposedChanges.Clone(),
+                    };
+                }
             }
             catch (JsonException ex)
             {
                 return Failure("Template patch input is invalid JSON.", ex.Message);
             }
-        }
 
-        private CopilotToolResult ToToolResult(CopilotApplicationCapabilityCallResult result, string successSummary, string failureSummary)
-        {
-            return new CopilotToolResult
-            {
-                ToolName = Name,
-                Success = result.Success,
-                Summary = result.Success ? successSummary : failureSummary,
-                Content = result.Content,
-                ErrorMessage = result.Success ? string.Empty : result.Content,
-                FailureKind = result.FailureKind,
-                FailureCode = result.Success ? string.Empty : CopilotToolFailureCode.Normalize(result.ErrorCode),
-            };
+            var result = await CopilotApplicationCapabilityInvocation.InvokeAsync(
+                _capabilityInvoker,
+                CopilotSharedCapabilityCatalog.PreviewTemplatePatch.McpToolName,
+                arguments,
+                request,
+                frameworkApprovalGranted: false,
+                cancellationToken);
+            return CopilotApplicationCapabilityInvocation.ToToolResult(
+                result,
+                Name,
+                "Template patch preview created.",
+                "Template patch preview failed.");
         }
 
         private CopilotToolResult Failure(string summary, string error)

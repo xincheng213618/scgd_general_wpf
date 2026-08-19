@@ -1,4 +1,5 @@
-using ColorVision.FileIO;
+using ColorVision.ImageEditor;
+using ProjectARVRPro.ImageExport;
 using System.IO;
 using System.Windows.Media;
 using Xunit;
@@ -7,6 +8,273 @@ namespace ProjectARVRPro.Tests;
 
 public sealed class ResultImagePresentationTests
 {
+    [Fact]
+    public async Task CandidateOpenContinuesAfterExistingFirstFileCannotBeOpened()
+    {
+        ResultImageFileCandidate[] candidates =
+        [
+            new(@"C:\images\broken.cvraw", ResultImageFileKind.Original),
+            new(@"C:\exports\source.png", ResultImageFileKind.SavedSource),
+        ];
+        List<string> attempts = [];
+
+        ResultImageFileCandidate? opened = await ResultImageFileCandidates.OpenFirstAsync(
+            candidates,
+            (candidate, _) =>
+            {
+                attempts.Add(candidate.FilePath);
+                return candidate.Kind == ResultImageFileKind.Original
+                    ? Task.FromException<bool>(new InvalidDataException("decode failed"))
+                    : Task.FromResult(true);
+            });
+
+        Assert.Equal(candidates[1], opened);
+        Assert.Equal(candidates.Select(candidate => candidate.FilePath), attempts);
+    }
+
+    [Fact]
+    public void ExistingImageCandidatesPreferOriginalThenSavedSourceThenSavedResult()
+    {
+        ProjectARVRReuslt result = new()
+        {
+            FileName = @"C:\images\original.cvraw",
+            SavedSourceImageFileName = @"C:\exports\source.png",
+            SavedResultImageFileName = @"C:\exports\result.png",
+        };
+
+        IReadOnlyList<ResultImageFileCandidate> candidates = ResultImageFileCandidates.GetExisting(result, _ => true);
+
+        Assert.Equal(
+            [
+                ResultImageFileKind.Original,
+                ResultImageFileKind.SavedSource,
+                ResultImageFileKind.SavedResult,
+            ],
+            candidates.Select(candidate => candidate.Kind));
+        Assert.True(candidates[0].RequiresOverlayRendering);
+        Assert.True(candidates[1].RequiresOverlayRendering);
+        Assert.False(candidates[2].RequiresOverlayRendering);
+    }
+
+    [Fact]
+    public void ExistingImageCandidatesSkipMissingFilesAndDuplicatePaths()
+    {
+        ProjectARVRReuslt result = new()
+        {
+            FileName = @"C:\missing\original.cvraw",
+            SavedSourceImageFileName = @"C:\exports\result.png",
+            SavedResultImageFileName = @"c:\EXPORTS\result.png",
+        };
+
+        ResultImageFileCandidate candidate = Assert.Single(ResultImageFileCandidates.GetExisting(
+            result,
+            path => path.EndsWith("result.png", StringComparison.OrdinalIgnoreCase)));
+
+        Assert.Equal(ResultImageFileKind.SavedSource, candidate.Kind);
+        Assert.True(candidate.RequiresOverlayRendering);
+    }
+
+    [Fact]
+    public async Task SuccessfulRenderedImageWithoutOverlaysClearsAnnotatedPathAndPreservesSourcePath()
+    {
+        string directory = CreateTemporaryDirectory();
+        string renderedFile = Path.Combine(directory, "result.png");
+        try
+        {
+            using ProjectImageExportAttempt exportAttempt = new(renderedFile, null);
+            await ImageView.SaveSnapshotExportsAsync(
+                CreateRenderedOnlySnapshot(),
+                exportAttempt.CreateOptions(
+                    ImageViewSnapshotSaveOptions.Default,
+                    ImageViewSourceSaveOptions.Default));
+            ProjectImageExportAttemptResult exportResult = exportAttempt.CommitSuccessfulChannels();
+            ResultImageExportPathUpdate update = ResultImageExportPathUpdate.From(
+                exportResult,
+                renderedImageIncludesOverlays: false,
+                currentSavedResultImageFileName: Path.Combine(directory, ".", "RESULT.png"));
+            ProjectARVRReuslt item = new()
+            {
+                Id = 7,
+                SavedResultImageFileName = Path.Combine(directory, ".", "RESULT.png"),
+                SavedSourceImageFileName = @"C:\exports\source.png",
+            };
+            (string? Result, string? Source) persisted = default;
+
+            bool changed = ViewResultManager.ApplySavedImagePathUpdate(
+                item,
+                update,
+                (resultPath, sourcePath) => persisted = (resultPath, sourcePath));
+
+            Assert.True(changed);
+            Assert.Null(item.SavedResultImageFileName);
+            Assert.Equal(@"C:\exports\source.png", item.SavedSourceImageFileName);
+            Assert.Null(persisted.Result);
+            Assert.Equal(item.SavedSourceImageFileName, persisted.Source);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SuccessfulRenderedImageWithoutOverlaysPreservesAnnotatedPathAtDifferentFile()
+    {
+        string directory = CreateTemporaryDirectory();
+        string renderedFile = Path.Combine(directory, "base.png");
+        string annotatedFile = Path.Combine(directory, "annotated.png");
+        try
+        {
+            using ProjectImageExportAttempt exportAttempt = new(renderedFile, null);
+            await ImageView.SaveSnapshotExportsAsync(
+                CreateRenderedOnlySnapshot(),
+                exportAttempt.CreateOptions(
+                    ImageViewSnapshotSaveOptions.Default,
+                    ImageViewSourceSaveOptions.Default));
+            ProjectImageExportAttemptResult exportResult = exportAttempt.CommitSuccessfulChannels();
+
+            ResultImageExportPathUpdate update = ResultImageExportPathUpdate.From(
+                exportResult,
+                renderedImageIncludesOverlays: false,
+                currentSavedResultImageFileName: annotatedFile);
+            ProjectARVRReuslt item = new()
+            {
+                Id = 8,
+                SavedResultImageFileName = annotatedFile,
+            };
+
+            bool changed = ViewResultManager.ApplySavedImagePathUpdate(item, update, (_, _) => { });
+
+            Assert.False(update.UpdateSavedResultImageFileName);
+            Assert.False(changed);
+            Assert.Equal(annotatedFile, item.SavedResultImageFileName);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void UnsuccessfulRenderedImageWithoutOverlaysPreservesAnnotatedPath()
+    {
+        const string annotatedFile = @"C:\exports\annotated.png";
+        ProjectImageExportAttemptResult exportResult = new();
+
+        ResultImageExportPathUpdate update = ResultImageExportPathUpdate.From(
+            exportResult,
+            renderedImageIncludesOverlays: false,
+            currentSavedResultImageFileName: annotatedFile);
+        ProjectARVRReuslt item = new()
+        {
+            Id = 9,
+            SavedResultImageFileName = annotatedFile,
+        };
+
+        bool changed = ViewResultManager.ApplySavedImagePathUpdate(item, update, (_, _) => { });
+
+        Assert.False(update.UpdateSavedResultImageFileName);
+        Assert.False(changed);
+        Assert.Equal(annotatedFile, item.SavedResultImageFileName);
+    }
+
+    [Fact]
+    public async Task RenderedSuccessAndSourceFailurePersistOnlyThisAttemptsRenderedPath()
+    {
+        string directory = CreateTemporaryDirectory();
+        string renderedFile = Path.Combine(directory, "result.png");
+        string sourceFile = Path.Combine(directory, "source.png");
+        try
+        {
+            using ProjectImageExportAttempt exportAttempt = new(renderedFile, sourceFile);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                ImageView.SaveSnapshotExportsAsync(
+                    CreateRenderedOnlySnapshot(),
+                    exportAttempt.CreateOptions(
+                        ImageViewSnapshotSaveOptions.Default,
+                        ImageViewSourceSaveOptions.Default)));
+            ProjectImageExportAttemptResult exportResult = exportAttempt.CommitSuccessfulChannels();
+
+            ResultImageExportPathUpdate update = ResultImageExportPathUpdate.From(
+                exportResult,
+                renderedImageIncludesOverlays: true,
+                currentSavedResultImageFileName: null);
+            ProjectARVRReuslt item = new()
+            {
+                Id = 8,
+                SavedSourceImageFileName = @"C:\exports\previous-source.png",
+            };
+            ViewResultManager.ApplySavedImagePathUpdate(item, update, (_, _) => { });
+
+            Assert.Equal(renderedFile, exportResult.RenderedFileName);
+            Assert.Null(exportResult.SourceFileName);
+            Assert.Equal(renderedFile, item.SavedResultImageFileName);
+            Assert.Equal(@"C:\exports\previous-source.png", item.SavedSourceImageFileName);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ExistingSourceFileIsNotReportedWhenThisAttemptFailsBeforeWritingIt()
+    {
+        string directory = CreateTemporaryDirectory();
+        string renderedFile = Path.Combine(directory, "result.png");
+        string sourceFile = Path.Combine(directory, "source.png");
+        try
+        {
+            File.WriteAllBytes(sourceFile, [1, 2, 3]);
+            using ProjectImageExportAttempt exportAttempt = new(renderedFile, sourceFile);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                ImageView.SaveSnapshotExportsAsync(
+                    CreateRenderedOnlySnapshot(),
+                    exportAttempt.CreateOptions(
+                        ImageViewSnapshotSaveOptions.Default,
+                        ImageViewSourceSaveOptions.Default)));
+            ProjectImageExportAttemptResult exportResult = exportAttempt.CommitSuccessfulChannels();
+
+            ResultImageExportPathUpdate update = ResultImageExportPathUpdate.From(
+                exportResult,
+                renderedImageIncludesOverlays: true,
+                currentSavedResultImageFileName: null);
+            Assert.True(File.Exists(sourceFile));
+            Assert.False(update.UpdateSavedSourceImageFileName);
+            Assert.Null(exportResult.SourceFileName);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DatabaseFailureLeavesInMemorySavedPathsUnchanged()
+    {
+        ProjectARVRReuslt item = new()
+        {
+            Id = 9,
+            SavedResultImageFileName = @"C:\exports\old-result.png",
+            SavedSourceImageFileName = @"C:\exports\old-source.png",
+        };
+        ResultImageExportPathUpdate update = new(
+            UpdateSavedResultImageFileName: true,
+            SavedResultImageFileName: @"C:\exports\new-result.png",
+            UpdateSavedSourceImageFileName: true,
+            SavedSourceImageFileName: @"C:\exports\new-source.png");
+
+        Assert.Throws<IOException>(() => ViewResultManager.ApplySavedImagePathUpdate(
+            item,
+            update,
+            (_, _) => throw new IOException("database unavailable")));
+
+        Assert.Equal(@"C:\exports\old-result.png", item.SavedResultImageFileName);
+        Assert.Equal(@"C:\exports\old-source.png", item.SavedSourceImageFileName);
+    }
+
     [Fact]
     public void PlaceholderCacheReusesTheExactDrawingForTheSameSize()
     {
@@ -56,24 +324,23 @@ public sealed class ResultImagePresentationTests
         Assert.False(ResultImageDimensions.TryReadFrameInfo(json, out _, out _));
     }
 
-    [Fact]
-    public void FileDimensionReaderUsesTheCvHeaderWithoutOpeningAPixelView()
+    private static ImageViewSnapshot CreateRenderedOnlySnapshot()
     {
-        string filePath = Path.Combine(Path.GetTempPath(), $"ProjectARVRPro.Dimensions.{Guid.NewGuid():N}.cvcie");
-        try
-        {
-            Assert.True(CVFileUtil.WriteCIEFile(filePath, new byte[15], rows: 3, cols: 5, bpp: 8, channels: 1));
+        DrawingGroup scene = new();
+        scene.Children.Add(new GeometryDrawing(
+            Brushes.White,
+            null,
+            new RectangleGeometry(new System.Windows.Rect(0, 0, 2, 2))));
+        return ImageViewSnapshot.Create(scene, 2, 2);
+    }
 
-            bool found = ResultImageDimensions.TryReadFromFile(filePath, out int width, out int height);
-
-            Assert.True(found);
-            Assert.Equal(5, width);
-            Assert.Equal(3, height);
-        }
-        finally
-        {
-            if (File.Exists(filePath))
-                File.Delete(filePath);
-        }
+    private static string CreateTemporaryDirectory()
+    {
+        string directory = Path.Combine(
+            Path.GetTempPath(),
+            "ProjectARVRPro.Tests",
+            Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        return directory;
     }
 }

@@ -7,6 +7,7 @@ using ColorVision.UI;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -356,6 +357,32 @@ namespace ColorVision.UI.Desktop.Download
             log.Error("Failed to start aria2c RPC daemon");
             StatusMessage = Properties.Resources.Aria2cStartFailed;
             throw new Exception("Failed to start aria2c RPC daemon");
+        }
+
+        public async Task StopDaemonForUpdateHandoffAsync()
+        {
+            if (IsDisposingOrDisposed)
+                return;
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            await _daemonLifecycleLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                if (IsDisposingOrDisposed)
+                    return;
+
+                await Task.Run(StopAria2cDaemon).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Unable to stop aria2c early for the application update handoff.", ex);
+            }
+            finally
+            {
+                stopwatch.Stop();
+                log.Info($"aria2c update-handoff shutdown completed in {stopwatch.ElapsedMilliseconds} ms.");
+                _daemonLifecycleLock.Release();
+            }
         }
 
         private void StopAria2cDaemon()

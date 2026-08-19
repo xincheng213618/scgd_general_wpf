@@ -1,5 +1,4 @@
 ﻿#pragma warning disable
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.LogImp;
@@ -61,7 +60,21 @@ namespace ColorVision.UI
     /// </summary>
     public partial class PropertyEditorWindow : Window
     {
-        public event EventHandler Submited;
+        private event EventHandler? SubmittedCore;
+
+        public event EventHandler Submitted
+        {
+            add => SubmittedCore += value;
+            remove => SubmittedCore -= value;
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Use Submitted instead. This compatibility alias will be removed in a future major version.")]
+        public event EventHandler Submited
+        {
+            add => SubmittedCore += value;
+            remove => SubmittedCore -= value;
+        }
 
         public object ConfigCopy { get; set; }
 
@@ -72,17 +85,32 @@ namespace ColorVision.UI
         
         private string searchText = string.Empty;
         private PropertySortMode currentSortMode = PropertySortMode.Default;
-        private object CurrentSource => isEdit ? Config : EditConfig;
+        private object CurrentSource => _editSession?.EditableObject ?? Config;
 
         /// <summary>
         /// Observable collection for TreeView binding
         /// </summary>
         public ObservableCollection<PropertyTreeNode> TreeNodes { get; } = new ObservableCollection<PropertyTreeNode>();
 
-        private bool isEdit = true;
-        public PropertyEditorWindow(object config ,bool isEdit = true)
+        private readonly PropertyEditorEditMode _editMode;
+        private PropertyEditSession? _editSession;
+
+        public PropertyEditorWindow(object config)
+            : this(config, PropertyEditorEditMode.Immediate)
         {
-            this.isEdit = isEdit;
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Use PropertyEditorWindow(object, PropertyEditorEditMode) instead.")]
+        public PropertyEditorWindow(object config, bool isEdit)
+            : this(config, isEdit ? PropertyEditorEditMode.Immediate : PropertyEditorEditMode.Transactional)
+        {
+        }
+
+        public PropertyEditorWindow(object config, PropertyEditorEditMode editMode)
+        {
+            ArgumentNullException.ThrowIfNull(config);
+            _editMode = editMode;
             Config = config;
             InitializeComponent();
             this.ApplyCaption();
@@ -99,17 +127,16 @@ namespace ColorVision.UI
             SortComboBox.Items.Add(new ComboBoxItem { Content = Properties.Resources.PropEditor_SortCategoryDesc, Tag = PropertySortMode.CategoryDescending });
             SortComboBox.SelectedIndex = 0;
 
-
-            EditConfig = Config.Clone();
+            _editSession = PropertyEditSession.Create(Config, _editMode);
+            EditConfig = _editSession.EditableObject;
+            if (_editMode == PropertyEditorEditMode.Immediate)
+                CancelButton.Content = Properties.Resources.Close;
             DisplayProperties(CurrentSource);
         }
         private void OK_Click(object sender, RoutedEventArgs e)
         {
-            if (!isEdit)
-            {
-                EditConfig.CopyTo(Config);
-            }
-            Submited?.Invoke(sender, new EventArgs());
+            _editSession?.Commit();
+            SubmittedCore?.Invoke(sender, EventArgs.Empty);
             this.Close();
         }
 
@@ -121,14 +148,7 @@ namespace ColorVision.UI
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
             SearchBox.Text = string.Empty;
-            if (!isEdit)
-            {
-                Config.CopyTo(EditConfig);
-            }
-            else
-            {
-                EditConfig.CopyTo(Config);
-            }
+            _editSession?.Reset();
 
             DisplayProperties(CurrentSource);
         }
@@ -136,14 +156,7 @@ namespace ColorVision.UI
         private void ResetToFactory_Click(object sender, RoutedEventArgs e)
         {
             SearchBox.Text = string.Empty;
-            if (!isEdit)
-            {
-                EditConfig.Reset();
-            }
-            else
-            {
-                Config.Reset();
-            }
+            _editSession?.ResetToDefaults();
 
             DisplayProperties(CurrentSource);
   
@@ -163,10 +176,10 @@ namespace ColorVision.UI
         public void GenCategoryGroups(object source)
         {
             var t = source.GetType();
+            ResourceManager? resourceManager = PropertyEditorHelper.GetResourceManager(source);
 
             // 1. 获取属性
-            var allProps = t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                            .Where(p => p.CanRead && p.CanWrite);
+            var allProps = PropertyEditorHelper.GetEditableProperties(t);
 
             // 2. 【关键修改】进行排序
             // GetInheritanceDepth 越小，说明越靠近基类 (object -> BaseConfig -> DeviceServiceConfig -> ConfigPG)
@@ -180,12 +193,8 @@ namespace ColorVision.UI
 
             foreach (var prop in sortedProps)
             {
-                var browsableAttr = prop.GetCustomAttribute<BrowsableAttribute>();
-                if (!(browsableAttr?.Browsable ?? true))
-                    continue;
-
                 var categoryAttr = prop.GetCustomAttribute<CategoryAttribute>();
-                string category = categoryAttr?.Category ?? t.Name;
+                string category = PropertyEditorHelper.GetLocalizedString(resourceManager, categoryAttr?.Category ?? t.Name);
 
                 if (!categoryGroups.TryGetValue(category, out var list))
                 {
@@ -499,9 +508,8 @@ namespace ColorVision.UI
 
         private bool MatchesSearch(PropertyInfo property)
         {
-            // Check DisplayName
-            var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
-            string displayName = displayNameAttr?.DisplayName ?? property.Name;
+            ResourceManager? resourceManager = PropertyEditorHelper.GetResourceManager(CurrentSource);
+            string displayName = PropertyEditorHelper.GetDisplayName(resourceManager, property);
             if (displayName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                 return true;
 
@@ -509,14 +517,14 @@ namespace ColorVision.UI
             if (property.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                 return true;
 
-            // Check Description
-            var descAttr = property.GetCustomAttribute<DescriptionAttribute>();
-            if (descAttr?.Description != null && descAttr.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            string description = PropertyEditorHelper.GetDescription(resourceManager, property);
+            if (description.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                 return true;
 
-            // Check Category
-            var categoryAttr = property.GetCustomAttribute<CategoryAttribute>();
-            if (categoryAttr?.Category != null && categoryAttr.Category.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            string category = PropertyEditorHelper.GetLocalizedString(
+                resourceManager,
+                property.GetCustomAttribute<CategoryAttribute>()?.Category ?? property.DeclaringType?.Name);
+            if (category.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                 return true;
 
             return false;
@@ -563,12 +571,13 @@ namespace ColorVision.UI
 
         private void SortPropertiesByName(bool ascending)
         {
+            ResourceManager? resourceManager = PropertyEditorHelper.GetResourceManager(CurrentSource);
             // Sort properties within each category
             foreach (var category in categoryGroups.Keys.ToList())
             {
                 var sortedProperties = ascending
-                    ? categoryGroups[category].OrderBy(p => p.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? p.Name).ToList()
-                    : categoryGroups[category].OrderByDescending(p => p.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? p.Name).ToList();
+                    ? categoryGroups[category].OrderBy(property => PropertyEditorHelper.GetDisplayName(resourceManager, property)).ToList()
+                    : categoryGroups[category].OrderByDescending(property => PropertyEditorHelper.GetDisplayName(resourceManager, property)).ToList();
                 
                 categoryGroups[category] = sortedProperties;
             }

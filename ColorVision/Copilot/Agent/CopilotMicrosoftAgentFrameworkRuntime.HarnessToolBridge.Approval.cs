@@ -27,8 +27,9 @@ namespace ColorVision.Copilot
                     return false;
                 }
 
-                var tool = _tools.Values.FirstOrDefault(candidate => string.Equals(ToFunctionName(candidate.Name), functionCall.Name, StringComparison.OrdinalIgnoreCase));
-                if (tool == null || !RequiresNativeApproval(tool))
+                if (string.IsNullOrWhiteSpace(functionCall.Name)
+                    || !_toolsByFunctionName.TryGetValue(functionCall.Name, out var tool)
+                    || !RequiresNativeApproval(tool))
                 {
                     error = $"Function {functionCall.Name} is not registered as a natively approved ColorVision tool.";
                     return false;
@@ -119,10 +120,11 @@ namespace ColorVision.Copilot
                 return outcome;
             }
 
-            public void PublishAwaitingApproval(
+            public async ValueTask PublishAwaitingApprovalAsync(
                 FrameworkApprovalReservation reservation,
                 Mcp.ConfirmableAction action,
-                bool automaticReview)
+                bool automaticReview,
+                CancellationToken cancellationToken)
             {
                 reservation.ApprovalActionId = action.ActionId;
                 reservation.ApprovalArgumentsDigest = action.ArgumentsDigest;
@@ -143,10 +145,25 @@ namespace ColorVision.Copilot
                         ResumesAgentOnApproval = true,
                     },
                 };
-                _emit(CopilotAgentEvent.FromToolResult(
-                    result,
-                    CreateApprovalExecutionInfo(reservation, CopilotToolExecutionState.AwaitingApproval, action.ActionId),
-                    reservation.PermissionHookRuns));
+                try
+                {
+                    _emit(CopilotAgentEvent.FromToolResult(
+                        result,
+                        CreateApprovalExecutionInfo(reservation, CopilotToolExecutionState.AwaitingApproval, action.ActionId),
+                        reservation.PermissionHookRuns));
+                    if (!await TryPublishInteractionCheckpointAsync(cancellationToken).ConfigureAwait(false))
+                    {
+                        throw new InvalidOperationException(
+                            "The approval request could not be checkpointed before waiting for a decision.");
+                    }
+                }
+                catch
+                {
+                    CancelApproval(
+                        reservation,
+                        "The approval request could not be published and checkpointed before waiting for a decision.");
+                    throw;
+                }
             }
 
             public void Approve(FrameworkApprovalReservation reservation)

@@ -24,10 +24,6 @@ namespace ColorVision.Copilot.Mcp
         ICopilotScopedApplicationCapabilityInvoker,
         ICopilotApprovedApplicationCapabilityInvoker
     {
-        private const int MaxSearchResults = 30;
-        private const int MaxGrepMatches = 40;
-        private const int MaxLogLines = 300;
-        private const int MaxLogChars = 20000;
         private const int MaxAuditEntries = 80;
         private const int DefaultDiagnosticBundleChars = 12000;
         private const int MaxDiagnosticBundleChars = 60000;
@@ -59,7 +55,9 @@ namespace ColorVision.Copilot.Mcp
         };
 
         private readonly CopilotMcpToolEnvironment _environment;
-        private readonly CopilotMcpToolRouter _router;
+        private readonly TimeSpan _executionTimeoutLimit;
+        private readonly IReadOnlyList<CopilotMcpToolDefinition> _toolDefinitions;
+        private readonly IReadOnlyDictionary<string, CopilotMcpToolDefinition> _toolDefinitionsByName;
 
         private readonly record struct CopilotPanelTarget(string Alias, string TargetId);
 
@@ -80,11 +78,43 @@ namespace ColorVision.Copilot.Mcp
             public bool IsApplyEligible => !string.IsNullOrWhiteSpace(SourceId);
         }
 
-        public CopilotMcpToolDispatcher(CopilotMcpToolEnvironment? environment = null)
+        public CopilotMcpToolDispatcher(
+            CopilotMcpToolEnvironment? environment = null,
+            TimeSpan? executionTimeoutLimit = null)
         {
+            if (executionTimeoutLimit is { } timeoutLimit
+                && (timeoutLimit <= TimeSpan.Zero || timeoutLimit == Timeout.InfiniteTimeSpan))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(executionTimeoutLimit),
+                    "The MCP execution timeout limit must be finite and positive.");
+            }
+
             _environment = environment ?? new CopilotMcpToolEnvironment();
-            _router = CreateRouter();
-            ValidateRouterMatchesDescriptors();
+            _executionTimeoutLimit = executionTimeoutLimit
+                ?? CopilotToolCapabilityDescriptor.MaximumExecutionTimeout;
+            _toolDefinitions = CreateToolDefinitions();
+            ValidateInputSchemas(_toolDefinitions);
+            _toolDefinitionsByName = _toolDefinitions.ToDictionary(
+                definition => definition.Descriptor.Name,
+                StringComparer.OrdinalIgnoreCase);
+            CopilotSharedCapabilityCatalog.ValidateMcpSurface(ListTools());
+        }
+
+        private static void ValidateInputSchemas(IEnumerable<CopilotMcpToolDefinition> definitions)
+        {
+            foreach (var definition in definitions)
+            {
+                if (CopilotToolInputContractValidator.TryValidateSchema(
+                    definition.Descriptor.InputSchema,
+                    out var error))
+                {
+                    continue;
+                }
+
+                throw new InvalidOperationException(
+                    $"MCP tool '{definition.Descriptor.Name}' has an invalid input schema: {error}");
+            }
         }
 
         private static CopilotMcpToolCallResult GetCapabilityCatalog()

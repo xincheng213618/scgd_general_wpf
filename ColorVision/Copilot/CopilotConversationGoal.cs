@@ -363,7 +363,12 @@ namespace ColorVision.Copilot
 
         public DateTimeOffset? LastEvaluatedAtUtc { get; init; }
 
-        public IReadOnlyList<CopilotConversationGoalIteration> IterationLog { get; init; } =
+        public IReadOnlyList<CopilotConversationGoalIteration> IterationLog
+        {
+            get => _iterationLog;
+            init => _iterationLog = FreezeIterationLog(value);
+        }
+        private readonly IReadOnlyList<CopilotConversationGoalIteration> _iterationLog =
             Array.Empty<CopilotConversationGoalIteration>();
 
         [JsonIgnore]
@@ -690,6 +695,17 @@ namespace ColorVision.Copilot
             for (var index = 0; index < count; index++)
                 result[index] = source[start + index];
             return result;
+        }
+
+        private static IReadOnlyList<CopilotConversationGoalIteration> FreezeIterationLog(
+            IReadOnlyList<CopilotConversationGoalIteration>? source)
+        {
+            if (source == null || source.Count == 0)
+                return Array.Empty<CopilotConversationGoalIteration>();
+            var result = new CopilotConversationGoalIteration[source.Count];
+            for (var index = 0; index < source.Count; index++)
+                result[index] = source[index];
+            return Array.AsReadOnly(result);
         }
 
         private static CopilotConversationGoalIteration[] AppendIteration(

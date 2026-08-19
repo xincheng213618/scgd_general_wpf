@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
              xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:engine="clr-namespace:ColorVision.Engine"
              mc:Ignorable="d"
              d:DesignHeight="520"
              d:DesignWidth="520"
@@ -30,7 +31,7 @@
 
                 <TextBlock VerticalAlignment="Center"
                            FontWeight="SemiBold"
-                           Text="统一曝光 (ms)"/>
+                           Text="{engine:EngineLang Key='统一曝光 (ms)'}"/>
                 <hc:TextBox x:Name="UnifiedExposureTextBox"
                             Grid.Column="1"
                             MinWidth="120"
@@ -43,7 +44,7 @@
                         Grid.Column="2"
                         MinWidth="88"
                         Padding="12,4"
-                        Content="同步四路"
+                        Content="{engine:EngineLang 同步四路}"
                         Click="ApplyUnifiedExposure_Click"/>
             </Grid>
         </Border>

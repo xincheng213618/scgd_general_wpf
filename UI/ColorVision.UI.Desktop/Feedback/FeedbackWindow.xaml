@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.SendFeedback}" 
         Background="{DynamicResource GlobalBackground}" 
-        Height="620" Width="760"
+        Height="720" Width="760"
         MinHeight="560" MinWidth="680"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
@@ -59,18 +59,12 @@
     <Grid Margin="18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Text="{x:Static properties:Resources.SendFeedback}"
-                   FontSize="22"
-                   FontWeight="SemiBold"
-                   Margin="0,0,0,14"/>
-
-        <Border Grid.Row="1" Style="{StaticResource FeedbackSectionBorderStyle}" Margin="0,0,0,12">
+        <Border Style="{StaticResource FeedbackSectionBorderStyle}" Margin="0,0,0,12">
             <TextBox x:Name="MessageTextBox"
                      AcceptsReturn="True"
                      Background="Transparent"
@@ -87,7 +81,7 @@
                      LostFocus="MessageTextBox_LostFocus"/>
         </Border>
 
-        <Border Grid.Row="2" Style="{StaticResource FeedbackSectionBorderStyle}">
+        <Border Grid.Row="1" Style="{StaticResource FeedbackSectionBorderStyle}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -112,7 +106,7 @@
                 <ListBox x:Name="CollectorsList"
                          Grid.Row="1"
                          Margin="0,12,0,0"
-                         MinHeight="190"
+                         MinHeight="250"
                          Style="{StaticResource FeedbackListBoxStyle}"
                          ItemContainerStyle="{StaticResource FeedbackListBoxItemStyle}">
                     <ListBox.ItemTemplate>
@@ -170,7 +164,7 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="3" Margin="0,12,0,0">
+        <Grid Grid.Row="2" Margin="0,12,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -246,7 +240,7 @@
             </ListBox>
         </Grid>
 
-        <Grid Grid.Row="4" Margin="0,14,0,0">
+        <Grid Grid.Row="3" Margin="0,14,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -273,7 +267,7 @@
                     Grid.Column="1"
                     Content="{x:Static properties:Resources.SendFeedback}"
                     Click="Send_Click"
-                    Padding="18,6"
+                    Padding="12,4"
                     Margin="0,8,10,0"
                     Foreground="White"
                     Background="{DynamicResource PrimaryBrush}"

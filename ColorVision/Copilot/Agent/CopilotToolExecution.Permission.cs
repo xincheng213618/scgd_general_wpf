@@ -21,7 +21,20 @@ namespace ColorVision.Copilot
             var callId = string.IsNullOrWhiteSpace(invocation.CallId)
                 ? Guid.NewGuid().ToString("N")
                 : invocation.CallId.Trim();
-            invocation = NormalizeInvocation(invocation, callId);
+            var sourceInvocation = invocation;
+            if (!TryNormalizeInvocation(sourceInvocation, callId, out invocation, out var inputError))
+            {
+                return new CopilotToolPermissionRequestOutcome
+                {
+                    Decision = CopilotToolPermissionRequestDecision.Deny(
+                        string.IsNullOrWhiteSpace(inputError)
+                            ? "The tool arguments do not match the registered input contract."
+                            : CopilotUserFacingErrorFormatter.Sanitize(inputError),
+                        "invalid_arguments"),
+                    HookRuns = Array.Empty<CopilotToolExecutionHookRun>(),
+                    HookBindings = Array.Empty<CopilotToolExecutionHookBinding>(),
+                };
+            }
             var hooks = ResolveInvocationHooks(
                 invocation.Tool.Name,
                 invocation.AgentRequest);
@@ -116,13 +129,11 @@ namespace ColorVision.Copilot
                                 Log.Warn(
                                     $"Copilot async permission-hook control decision was ignored. Tool={invocation.Tool.Name} CallId={invocation.CallId} HookSource={binding.SourceId}");
                             }
-                            if (output?.HasOutput == true
-                                && binding.Hook is not CopilotCodexCommandHook)
+                            if (output?.HasOutput == true)
                             {
                                 Log.Warn(
                                     $"Copilot async permission-hook output was ignored by the notification-only execution mode. Tool={invocation.Tool.Name} CallId={invocation.CallId} HookSource={binding.SourceId}");
                             }
-                            return CopilotCodexAsyncHookOutput.From(output, decision);
                         });
                     continue;
                 }

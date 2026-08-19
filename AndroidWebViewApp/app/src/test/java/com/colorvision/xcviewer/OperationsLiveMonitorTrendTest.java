@@ -15,9 +15,11 @@ public class OperationsLiveMonitorTrendTest {
                     index,
                     100 + index,
                     index == 33 ? "slow" : index == 34 ? "unresponsive" : "responsive",
-                    (long) index,
-                    index < 20 ? "running" : "idle",
-                    index % 4));
+                     (long) index,
+                     index < 20 ? "running" : "idle",
+                     index % 4,
+                     true,
+                     index < 34 ? 2 : 0));
         }
 
         OperationsLiveMonitorTrend.Summary summary = trend.summarize();
@@ -38,13 +40,16 @@ public class OperationsLiveMonitorTrendTest {
         assertEquals(1, summary.flowPhaseTransitionCount);
         assertEquals(2, summary.latestAlertCount);
         assertEquals(3, summary.maximumAlertCount);
+        assertEquals(2, summary.initialDeviceAttentionCount);
+        assertEquals(0, summary.latestDeviceAttentionCount);
+        assertEquals(1, summary.consecutiveHealthyDeviceSamples);
     }
 
     @Test
     public void resetRemovesTheEntireInMemorySession() {
         OperationsLiveMonitorTrend trend = new OperationsLiveMonitorTrend();
         trend.add(new OperationsLiveMonitorTrend.Sample(
-                -1, -2, -3, "", null, "", -4));
+                -1, -2, -3, "", null, "", -4, false, -5));
         trend.reset();
 
         OperationsLiveMonitorTrend.Summary summary = trend.summarize();
@@ -53,5 +58,36 @@ public class OperationsLiveMonitorTrendTest {
         assertEquals(0, summary.sampleCount);
         assertEquals("unavailable", summary.latestFlowPhase);
         assertNull(summary.maximumUiLatencyMilliseconds);
+    }
+
+    @Test
+    public void deviceRecoveryNeedsTwoConsecutiveHealthySamples() {
+        OperationsLiveMonitorTrend trend = new OperationsLiveMonitorTrend();
+        trend.trackDeviceRecovery(2);
+        trend.add(new OperationsLiveMonitorTrend.Sample(
+                1_000, 0, 100, "responsive", 10L, "idle", 0, true, 0));
+
+        OperationsLiveMonitorTrend.Summary pending = trend.summarize();
+
+        assertEquals(1, pending.consecutiveHealthyDeviceSamples);
+        assertEquals(true, pending.deviceRecoveryPendingConfirmation());
+        assertEquals(false, pending.deviceRecoveryConfirmed());
+
+        trend.add(new OperationsLiveMonitorTrend.Sample(
+                11_000, 0, 100, "responsive", 10L, "idle", 0, true, 0));
+
+        OperationsLiveMonitorTrend.Summary confirmed = trend.summarize();
+
+        assertEquals(2, confirmed.consecutiveHealthyDeviceSamples);
+        assertEquals(false, confirmed.deviceRecoveryPendingConfirmation());
+        assertEquals(true, confirmed.deviceRecoveryConfirmed());
+
+        trend.add(new OperationsLiveMonitorTrend.Sample(
+                21_000, 0, 100, "responsive", 10L, "idle", 0, true, 1));
+
+        OperationsLiveMonitorTrend.Summary relapsed = trend.summarize();
+
+        assertEquals(0, relapsed.consecutiveHealthyDeviceSamples);
+        assertEquals(false, relapsed.deviceRecoveryConfirmed());
     }
 }

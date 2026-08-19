@@ -473,8 +473,8 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "流程正在运行，请在运行结束后查看或恢复版本。",
-                    "流程版本");
+                    EngineLocalization.Get("流程正在运行，请在运行结束后查看或恢复版本。"),
+                    EngineLocalization.Get("流程版本"));
                 return;
             }
 
@@ -484,8 +484,8 @@ namespace ColorVision.Engine.FlowProcessing
             {
                 MessageBox.Show(
                     Application.Current.GetActiveWindow(),
-                    "当前文档还没有可用的流程版本。",
-                    "流程版本");
+                    EngineLocalization.Get("当前文档还没有可用的流程版本。"),
+                    EngineLocalization.Get("流程版本"));
                 return;
             }
 

@@ -7,6 +7,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using ProjectARVRPro.Process.KeyedResults;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
@@ -148,13 +149,14 @@ namespace ProjectARVRPro.Process.Chessboard
 
                 testResult.Items = CollectItems(chessboardResult);
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
-                ctx.ObjectiveTestResult.DynamicTestResults[GetOutputName()] = testResult.Items;
+                var objectiveResult = JsonConvert.DeserializeObject<ChessboardTestResult>(JsonConvert.SerializeObject(chessboardResult)) ?? new();
+                KeyedTestResultWriter.Write(ctx.ObjectiveTestResult, Config.GetOutputKey(), objectiveResult);
                 if (Config.SaveCsv)
                 {
                     ChessboardCsvExporter.SavePoixyuvDatas(
                         chessboardResult.PoixyuvDatas,
                         ctx,
-                        GetOutputName(),
+                        Config.GetOutputKey(),
                         calculation,
                         chessboardResult.ChessboardContrast?.Value,
                         contrastResultName,
@@ -185,7 +187,7 @@ namespace ProjectARVRPro.Process.Chessboard
         public override void GenText(IProcessExecutionContext ctx, System.Windows.Documents.Paragraph paragraph, System.Windows.Media.Brush foreground, double fontSize)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"{GetOutputName()} 画面结果");
+            sb.AppendLine($"{Config.GetOutputKey()} 画面结果");
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) { AppendPlainText(paragraph, sb.ToString(), foreground, fontSize); return; }
 
@@ -222,9 +224,5 @@ namespace ProjectARVRPro.Process.Chessboard
             return items;
         }
 
-        private string GetOutputName()
-        {
-            return string.IsNullOrWhiteSpace(Config.Name) ? "Chessboard" : Config.Name.Trim();
-        }
     }
 }

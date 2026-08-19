@@ -10,6 +10,67 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexShellEnvironmentPolicyTests
 {
     [Fact]
+    public void PolicyAssignmentsFreezeTheSubmittedEnvironmentRules()
+    {
+        var exclude = new List<string> { "SECRET_*" };
+        var set = new Dictionary<string, string> { ["CV_FIXED"] = "original" };
+        var includeOnly = new List<string> { "PATH" };
+        var policy = new CopilotCodexShellEnvironmentPolicy
+        {
+            Exclude = exclude,
+            Set = set,
+            IncludeOnly = includeOnly,
+        };
+
+        exclude[0] = "PUBLIC_*";
+        set["CV_FIXED"] = "mutated";
+        set["CV_ADDED"] = "late";
+        includeOnly.Clear();
+
+        Assert.Equal("SECRET_*", Assert.Single(policy.Exclude));
+        Assert.Equal("original", Assert.Single(policy.Set).Value);
+        Assert.Equal("PATH", Assert.Single(policy.IncludeOnly));
+        Assert.Throws<NotSupportedException>(() =>
+            ((IList<string>)policy.Exclude)[0] = "MUTATED_*");
+        Assert.Throws<NotSupportedException>(() =>
+            ((IDictionary<string, string>)policy.Set)["CV_ADDED"] = "late");
+        Assert.Throws<NotSupportedException>(() =>
+            ((IList<string>)policy.IncludeOnly).Clear());
+    }
+
+    [Fact]
+    public void DefaultPolicyScrubsAmbientCredentialShapedNames()
+    {
+        var environment = CopilotCodexShellEnvironmentPolicy.Default.CreateEnvironmentVariables(
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["PATH"] = "C:\\Tools",
+                ["SERVICE_API_KEY"] = "secret",
+                ["DATABASE_PASSWORD"] = "secret",
+                ["CLIENT_SECRET"] = "secret",
+                ["ACCESS_TOKEN"] = "secret",
+                ["PUBLIC_VALUE"] = "visible",
+            },
+            conversationId: null);
+
+        Assert.False(CopilotCodexShellEnvironmentPolicy.Default.IgnoreDefaultExcludes);
+        Assert.Equal("C:\\Tools", environment["PATH"]);
+        Assert.Equal("visible", environment["PUBLIC_VALUE"]);
+        Assert.DoesNotContain("SERVICE_API_KEY", environment.Keys);
+        Assert.DoesNotContain("DATABASE_PASSWORD", environment.Keys);
+        Assert.DoesNotContain("CLIENT_SECRET", environment.Keys);
+        Assert.DoesNotContain("ACCESS_TOKEN", environment.Keys);
+
+        var explicitlyUnfiltered = new CopilotCodexShellEnvironmentPolicy
+        {
+            IgnoreDefaultExcludes = true,
+        }.CreateEnvironmentVariables(
+            new Dictionary<string, string> { ["DATABASE_PASSWORD"] = "configured" },
+            conversationId: null);
+        Assert.Equal("configured", explicitlyUnfiltered["DATABASE_PASSWORD"]);
+    }
+
+    [Fact]
     public void TrustedLayersMergeAndFreezePolicyIntoSubmittedRequest()
     {
         string globalRoot = CreateTemporaryDirectory();

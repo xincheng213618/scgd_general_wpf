@@ -23,7 +23,11 @@ class FeedbackAdminTests(unittest.TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
-    def _create_feedback(self, feedback_id: str = "20260812_120000_demo") -> Path:
+    def _create_feedback(
+        self,
+        feedback_id: str = "20260812_120000_demo",
+        created_at: str = "2026-08-12T12:00:00+00:00",
+    ) -> Path:
         directory = self.feedback_root / feedback_id
         directory.mkdir()
         (directory / "feedback.json").write_text(json.dumps({
@@ -33,7 +37,7 @@ class FeedbackAdminTests(unittest.TestCase):
             "appVersion": "1.2.3.4",
             "machineInfo": "Windows test host",
             "clientIp": "hashed-client",
-            "createdAt": "2026-08-12T12:00:00+00:00",
+            "createdAt": created_at,
             "files": ["report.zip"],
         }), encoding="utf-8")
         (directory / "report.zip").write_bytes(b"diagnostic")
@@ -55,6 +59,24 @@ class FeedbackAdminTests(unittest.TestCase):
         self.assertEqual(result["summary"]["records"], 2)
         self.assertEqual(result["summary"]["invalid_metadata"], 1)
         self.assertEqual(result["summary"]["attachment_count"], 2)
+        self.assertEqual(result["summary"]["oldest_open_at"], "2026-08-12T12:00:00+00:00")
+
+    def test_open_filter_keeps_new_and_in_progress_feedback(self):
+        first = self._create_feedback("20260810_120000_new", "2026-08-10T12:00:00+00:00")
+        second = self._create_feedback("20260811_120000_progress", "2026-08-11T12:00:00+00:00")
+        resolved = self._create_feedback("20260812_120000_resolved", "2026-08-12T12:00:00+00:00")
+        update_feedback_status(self.storage, second.name, "in_progress")
+        update_feedback_status(self.storage, resolved.name, "resolved")
+
+        result = query_feedback(self.storage, status="open", limit=20, offset=0)
+
+        self.assertEqual(result["total"], 2)
+        self.assertEqual(
+            {item["feedback_id"]: item["status"] for item in result["items"]},
+            {first.name: "new", second.name: "in_progress"},
+        )
+        self.assertEqual(result["summary"]["status_counts"]["resolved"], 1)
+        self.assertEqual(result["summary"]["oldest_open_at"], "2026-08-10T12:00:00+00:00")
 
     def test_detail_and_attachment_reject_traversal_and_internal_files(self):
         directory = self._create_feedback()

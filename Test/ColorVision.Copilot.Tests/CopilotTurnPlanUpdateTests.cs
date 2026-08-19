@@ -5,6 +5,71 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotTurnPlanUpdateTests
 {
     [Fact]
+    public void PublishedAgentSnapshotsOwnTheirTaskLedgerPayloads()
+    {
+        var sourceItem = new CopilotAgentTaskItem
+        {
+            Id = 1,
+            Title = "Inspect runtime",
+        };
+        var sourceItems = new[] { sourceItem };
+        var ledger = new CopilotAgentTaskLedgerSnapshot
+        {
+            Mode = "execute",
+            Items = sourceItems,
+        };
+
+        var checkpointEvent = CopilotAgentEvent.CheckpointUpdated(CreateCheckpoint(), ledger);
+        var runResult = new CopilotAgentRunResult { TaskLedger = ledger };
+        sourceItem.Title = "rewritten after publication";
+        sourceItems[0] = new CopilotAgentTaskItem { Id = 2, Title = "replacement" };
+
+        var eventLedger = Assert.IsType<CopilotAgentTaskLedgerSnapshot>(checkpointEvent.TaskLedger);
+        Assert.Equal("Inspect runtime", Assert.Single(eventLedger.Items).Title);
+        Assert.Equal("Inspect runtime", Assert.Single(runResult.TaskLedger.Items).Title);
+        var eventItems = Assert.IsAssignableFrom<IList<CopilotAgentTaskItem>>(
+            eventLedger.Items);
+        var resultItems = Assert.IsAssignableFrom<IList<CopilotAgentTaskItem>>(
+            runResult.TaskLedger.Items);
+        Assert.Throws<NotSupportedException>(() => eventItems[0] = sourceItems[0]);
+        Assert.Throws<NotSupportedException>(() => resultItems[0] = sourceItems[0]);
+        Assert.Throws<InvalidOperationException>(() => eventLedger.Mode = "plan");
+        Assert.Throws<InvalidOperationException>(() => eventLedger.Items[0].Title = "rewritten");
+        Assert.Throws<InvalidOperationException>(() => runResult.TaskLedger.Items[0].IsComplete = true);
+    }
+
+    [Fact]
+    public void AssistantMessageOwnsItsNormalizedTaskLedger()
+    {
+        var sourceItem = new CopilotAgentTaskItem
+        {
+            Id = 1,
+            Title = "  Inspect runtime  ",
+        };
+        var ledger = new CopilotAgentTaskLedgerSnapshot
+        {
+            Mode = "unexpected",
+            Items = [sourceItem],
+        };
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            AgentTaskLedger = ledger,
+        };
+
+        sourceItem.Title = "rewritten after persistence";
+
+        Assert.Equal("execute", assistant.AgentTaskLedger.Mode);
+        Assert.Equal("Inspect runtime", Assert.Single(assistant.AgentTaskLedger.Items).Title);
+        var persistedItems = Assert.IsAssignableFrom<IList<CopilotAgentTaskItem>>(
+            assistant.AgentTaskLedger.Items);
+        Assert.Throws<NotSupportedException>(() =>
+            persistedItems[0] = new CopilotAgentTaskItem { Id = 2, Title = "replacement" });
+        Assert.Throws<InvalidOperationException>(() => assistant.AgentTaskLedger.Mode = "plan");
+        Assert.Throws<InvalidOperationException>(() =>
+            assistant.AgentTaskLedger.Items[0].Title = "rewritten through projection");
+    }
+
+    [Fact]
     public void AccumulatorEmitsOnlyChangedCheckpointPlansAndOwnsItsSnapshot()
     {
         var sourceItem = new CopilotAgentTaskItem

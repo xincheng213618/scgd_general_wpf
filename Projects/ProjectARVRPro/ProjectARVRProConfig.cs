@@ -37,7 +37,6 @@ namespace ProjectARVRPro
     public class ProjectARVRProConfig: ViewModelBase, IConfig
     {
         public static ProjectARVRProConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRProConfig>();
-
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
         public static ThunderbirdSerialManager ThunderbirdSerialManager => ThunderbirdSerialManager.GetInstance();
@@ -63,7 +62,6 @@ namespace ProjectARVRPro
             TemplateItemSource = TemplateFlow.Params;
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
             InitTestCommand = new RelayCommand(a => InitTest());
-
         }
 
         public void InitTest()

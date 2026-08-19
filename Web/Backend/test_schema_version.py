@@ -392,6 +392,97 @@ class SchemaVersionTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_v15_adds_encrypted_window_snapshot_metadata_without_ciphertext(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                PRAGMA foreign_keys=ON;
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 14);
+                CREATE TABLE operations_tasks (task_id TEXT PRIMARY KEY);
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            columns = {
+                row["name"]: row["type"]
+                for row in db.execute(
+                    "PRAGMA table_info(operations_relay_window_snapshots)"
+                )
+            }
+            self.assertEqual(set(columns), {
+                "task_id", "host_id", "device_id", "job_id", "sealed_sha256",
+                "sealed_bytes", "captured_at", "expires_at", "created_at",
+            })
+            self.assertNotIn("BLOB", {value.upper() for value in columns.values()})
+            indexes = {
+                row["name"] for row in db.execute(
+                    "PRAGMA index_list(operations_relay_window_snapshots)"
+                )
+            }
+            self.assertIn("idx_ops_relay_window_snapshots_expiry", indexes)
+
+            ensure_schema_version(db)
+            self.assertEqual(db.execute(
+                "SELECT COUNT(*) FROM sqlite_master "
+                "WHERE type='table' AND name='operations_relay_window_snapshots'"
+            ).fetchone()[0], 1)
+        finally:
+            db.close()
+
+    def test_v16_adds_exact_error_status_aggregates_idempotently(self):
+        db = sqlite3.connect(":memory:")
+        db.row_factory = sqlite3.Row
+        try:
+            db.executescript(
+                """
+                PRAGMA foreign_keys=ON;
+                CREATE TABLE schema_version (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+                INSERT INTO schema_version VALUES ('version', 15);
+                CREATE TABLE operations_tasks (task_id TEXT PRIMARY KEY);
+                CREATE TABLE access_error_daily (
+                    day TEXT NOT NULL,
+                    route TEXT NOT NULL,
+                    method TEXT NOT NULL,
+                    status_code INTEGER NOT NULL,
+                    responses INTEGER NOT NULL DEFAULT 0,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (day, route, method, status_code)
+                );
+                INSERT INTO access_error_daily
+                    (day, route, method, status_code, responses, updated_at)
+                VALUES ('2026-08-13', '__unmatched__', 'GET', 404, 1, 'old-v15');
+                """
+            )
+
+            self.assertEqual(ensure_schema_version(db), CURRENT_SCHEMA_VERSION)
+            columns = {
+                row["name"] for row in db.execute(
+                    "PRAGMA table_info(access_error_daily)"
+                )
+            }
+            self.assertEqual(
+                columns,
+                {"day", "route", "method", "status_code", "responses", "updated_at"},
+            )
+            self.assertEqual(
+                db.execute(
+                    "SELECT COUNT(*) FROM sqlite_master "
+                    "WHERE type='table' AND name='operations_relay_window_snapshots'"
+                ).fetchone()[0],
+                1,
+            )
+
+            ensure_schema_version(db)
+            self.assertEqual(
+                db.execute("SELECT responses FROM access_error_daily").fetchone()[0],
+                1,
+            )
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()

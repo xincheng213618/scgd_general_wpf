@@ -1,7 +1,8 @@
 <Window x:Class="ColorVision.Engine.Services.Devices.Camera.Local.LocalCalibrationCacheManagerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="本地校正缓存管理"
+        xmlns:engine="clr-namespace:ColorVision.Engine"
+        Title="{engine:EngineLang 本地校正缓存管理}"
         Width="1160"
         Height="680"
         MinWidth="900"
@@ -40,24 +41,24 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="本地校正缓存管理"
+                    <TextBlock Text="{engine:EngineLang 本地校正缓存管理}"
                                FontSize="21"
                                FontWeight="SemiBold"/>
                     <TextBlock Margin="0,3,0,0"
                                FontSize="12"
                                Foreground="{DynamicResource SecondaryTextBrush}"
-                               Text="查看 opencv_helper 在当前进程中复用的单校正文件缓存。"/>
+                               Text="{engine:EngineLang Key='查看 opencv_helper 在当前进程中复用的单校正文件缓存。'}"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button x:Name="RefreshButton"
-                            Content="刷新"
-                            ToolTip="重新读取当前进程的缓存清单"
+                            Content="{engine:EngineLang 刷新}"
+                            ToolTip="{engine:EngineLang 重新读取当前进程的缓存清单}"
                             Click="RefreshButton_Click"
                             Style="{StaticResource CacheActionButtonStyle}"/>
                     <Button x:Name="ReleaseAllButton"
-                            Content="释放全部"
-                            ToolTip="等待正在执行的校正结束，然后释放所有相机上下文与可释放的共享文件缓存"
+                            Content="{engine:EngineLang 释放全部}"
+                            ToolTip="{engine:EngineLang Key='等待正在执行的校正结束，然后释放所有相机上下文与可释放的共享文件缓存'}"
                             Click="ReleaseAllButton_Click"
                             Background="Firebrick"
                             Foreground="White"
@@ -81,15 +82,15 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="EntryCountText" FontWeight="SemiBold" Text="缓存文件：--"/>
-                <TextBlock Grid.Column="1" Margin="22,0,0,0" FontWeight="SemiBold" Text="驻留内存：--" x:Name="ResidentMemoryText"/>
-                <TextBlock Grid.Column="2" Margin="22,0,0,0" Text="缓存预算：--" x:Name="BudgetText"/>
-                <TextBlock Grid.Column="3" Margin="22,0,0,0" Text="命中：--" x:Name="HitSummaryText"/>
+                <TextBlock x:Name="EntryCountText" FontWeight="SemiBold" Text="{engine:EngineLang Key='缓存文件：--'}"/>
+                <TextBlock Grid.Column="1" Margin="22,0,0,0" FontWeight="SemiBold" Text="{engine:EngineLang Key='驻留内存：--'}" x:Name="ResidentMemoryText"/>
+                <TextBlock Grid.Column="2" Margin="22,0,0,0" Text="{engine:EngineLang Key='缓存预算：--'}" x:Name="BudgetText"/>
+                <TextBlock Grid.Column="3" Margin="22,0,0,0" Text="{engine:EngineLang Key='命中：--'}" x:Name="HitSummaryText"/>
                 <TextBlock Grid.Column="4"
                            Margin="22,0,0,0"
                            HorizontalAlignment="Right"
                            Foreground="{DynamicResource SecondaryTextBrush}"
-                           Text="内存为 native 估算的缓存驻留量"/>
+                           Text="{engine:EngineLang Key='内存为 native 估算的缓存驻留量'}"/>
             </Grid>
         </Border>
 
@@ -110,11 +111,11 @@
                       RowHeaderWidth="0"
                       EnableRowVirtualization="True">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="校正类型" Binding="{Binding CalibrationTypeText}" Width="125"/>
-                    <DataGridTextColumn Header="文件路径" Binding="{Binding FilePath}" Width="*"/>
-                    <DataGridTextColumn Header="驻留内存" Binding="{Binding ResidentMemoryText}" Width="115"/>
-                    <DataGridTextColumn Header="命中次数" Binding="{Binding HitCount}" Width="90"/>
-                    <DataGridTextColumn Header="使用状态" Binding="{Binding UsageText}" Width="180"/>
+                    <DataGridTextColumn Header="{engine:EngineLang 校正类型}" Binding="{Binding CalibrationTypeText}" Width="125"/>
+                    <DataGridTextColumn Header="{engine:EngineLang 文件路径}" Binding="{Binding FilePath}" Width="*"/>
+                    <DataGridTextColumn Header="{engine:EngineLang 驻留内存}" Binding="{Binding ResidentMemoryText}" Width="115"/>
+                    <DataGridTextColumn Header="{engine:EngineLang 命中次数}" Binding="{Binding HitCount}" Width="90"/>
+                    <DataGridTextColumn Header="{engine:EngineLang 使用状态}" Binding="{Binding UsageText}" Width="180"/>
                 </DataGrid.Columns>
             </DataGrid>
 
@@ -126,7 +127,7 @@
                     <TextBlock x:Name="LoadingText"
                                Margin="0,12,0,0"
                                HorizontalAlignment="Center"
-                               Text="正在读取缓存状态…"/>
+                               Text="{engine:EngineLang 正在读取缓存状态…}"/>
                 </StackPanel>
             </Border>
         </Grid>
@@ -136,7 +137,7 @@
                 Padding="2,4">
             <TextBlock x:Name="StatusText"
                        Foreground="{DynamicResource SecondaryTextBrush}"
-                       Text="尚未读取缓存状态。"
+                       Text="{engine:EngineLang 尚未读取缓存状态。}"
                        TextWrapping="Wrap"/>
         </Border>
     </Grid>

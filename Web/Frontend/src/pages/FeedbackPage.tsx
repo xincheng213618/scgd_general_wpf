@@ -16,6 +16,7 @@ import {
   Drawer,
   List,
   Row,
+  Segmented,
   Space,
   Statistic,
   Tag,
@@ -30,11 +31,13 @@ import {
 } from '../services/admin'
 import type {
   FeedbackDetail,
+  FeedbackInboxFilter,
   FeedbackInboxResponse,
   FeedbackItem,
   FeedbackStatus,
 } from '../types/admin'
 import {
+  feedbackAgeInfo,
   feedbackStatusAction,
   feedbackStatusColors,
   feedbackStatusLabels,
@@ -47,22 +50,25 @@ const columnsBase: ProColumns<FeedbackItem>[] = [
     title: '状态',
     dataIndex: 'status',
     width: 110,
-    valueType: 'select',
-    valueEnum: {
-      new: { text: feedbackStatusLabels.new },
-      in_progress: { text: feedbackStatusLabels.in_progress },
-      resolved: { text: feedbackStatusLabels.resolved },
-    },
+    search: false,
     render: (_, record) => (
       <Tag color={feedbackStatusColors[record.status]}>{feedbackStatusLabels[record.status]}</Tag>
     ),
   },
   {
-    title: '提交时间',
+    title: '提交与等待',
     dataIndex: 'created_at',
-    width: 170,
+    width: 180,
     search: false,
-    renderText: (value: string) => shortDate(value),
+    render: (_, record) => {
+      const age = feedbackAgeInfo(record.status, record.created_at)
+      return (
+        <Space direction="vertical" size={2}>
+          <Typography.Text>{shortDate(record.created_at)}</Typography.Text>
+          <Tag color={age.color}>{age.label}</Tag>
+        </Space>
+      )
+    },
   },
   {
     title: '提交者',
@@ -119,7 +125,9 @@ export function FeedbackPage() {
     attachment_bytes: 0,
     invalid_metadata: 0,
     invalid_state: 0,
+    oldest_open_at: null,
   })
+  const [statusFilter, setStatusFilter] = useState<FeedbackInboxFilter>('open')
   const [detail, setDetail] = useState<FeedbackDetail | null>(null)
   const [detailError, setDetailError] = useState('')
   const [detailLoading, setDetailLoading] = useState(false)
@@ -166,20 +174,34 @@ export function FeedbackPage() {
       width: 90,
       fixed: 'right',
       render: (_, record) => (
-        <Button type="link" onClick={() => void openDetail(record.feedback_id)}>查看</Button>
+        <Button type="link" onClick={() => void openDetail(record.feedback_id)}>
+          {record.status === 'resolved' ? '查看' : '处理'}
+        </Button>
       ),
     },
   ]
   const nextStatus = detail ? nextFeedbackStatus(detail.status) : null
+  const openCount = summary.status_counts.new + summary.status_counts.in_progress
+  const oldestOpenAge = summary.oldest_open_at
+    ? feedbackAgeInfo('new', summary.oldest_open_at)
+    : null
 
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
       <Row gutter={[16, 16]}>
-        <Col xs={12} lg={6}><Card><Statistic title="全部反馈" value={summary.records} prefix={<InboxOutlined />} /></Card></Col>
-        <Col xs={12} lg={6}><Card><Statistic title="待处理" value={summary.status_counts.new} valueStyle={{ color: summary.status_counts.new ? '#cf1322' : undefined }} /></Card></Col>
+        <Col xs={12} lg={6}><Card><Statistic title="未解决" value={openCount} prefix={<InboxOutlined />} valueStyle={{ color: openCount ? '#cf1322' : undefined }} /></Card></Col>
+        <Col xs={12} lg={6}><Card><Statistic title="新反馈" value={summary.status_counts.new} valueStyle={{ color: summary.status_counts.new ? '#cf1322' : undefined }} /></Card></Col>
         <Col xs={12} lg={6}><Card><Statistic title="处理中" value={summary.status_counts.in_progress} prefix={<LoadingOutlined />} /></Card></Col>
-        <Col xs={12} lg={6}><Card><Statistic title="诊断附件" value={summary.attachment_count} suffix={humanSize(summary.attachment_bytes)} /></Card></Col>
+        <Col xs={12} lg={6}><Card><Statistic title="已解决" value={summary.status_counts.resolved} prefix={<CheckCircleOutlined />} /></Card></Col>
       </Row>
+      {openCount > 0 && oldestOpenAge && (
+        <Alert
+          type={oldestOpenAge.color === 'red' || oldestOpenAge.color === 'orange' ? 'warning' : 'info'}
+          showIcon
+          message={`当前有 ${openCount} 条未解决反馈`}
+          description={`最久一条已${oldestOpenAge.label}。列表默认只显示未解决反馈，打开详情即可推进处理状态。`}
+        />
+      )}
       {(summary.invalid_metadata > 0 || summary.invalid_state > 0) && (
         <Alert
           type="warning"
@@ -192,11 +214,12 @@ export function FeedbackPage() {
         actionRef={actionRef}
         rowKey="feedback_id"
         columns={columns}
+        params={{ inboxStatus: statusFilter }}
         request={async (params) => {
           const result = await getFeedbackInbox({
             current: params.current,
             pageSize: params.pageSize,
-            status: params.status as FeedbackStatus | undefined,
+            status: params.inboxStatus as FeedbackInboxFilter,
             query: params.query as string | undefined,
           })
           setSummary(result.summary)
@@ -205,8 +228,25 @@ export function FeedbackPage() {
         pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
         options={{ density: true, fullScreen: true, reload: true, setting: true }}
         cardBordered
-        headerTitle="反馈收件箱"
+        headerTitle={(
+          <Space wrap>
+            <Typography.Text strong>反馈收件箱</Typography.Text>
+            <Segmented<FeedbackInboxFilter>
+              size="small"
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { label: `未解决 (${openCount})`, value: 'open' },
+                { label: `新反馈 (${summary.status_counts.new})`, value: 'new' },
+                { label: `处理中 (${summary.status_counts.in_progress})`, value: 'in_progress' },
+                { label: `已解决 (${summary.status_counts.resolved})`, value: 'resolved' },
+                { label: `全部 (${summary.records})`, value: 'all' },
+              ]}
+            />
+          </Space>
+        )}
         toolBarRender={() => [
+          <Typography.Text type="secondary" key="attachments">诊断附件 {summary.attachment_count} 个 · {humanSize(summary.attachment_bytes)}</Typography.Text>,
           <Typography.Text type="secondary" key="privacy">详情和附件仅对管理员开放，下载会写入审计日志</Typography.Text>,
         ]}
         scroll={{ x: 1150 }}

@@ -1,111 +1,221 @@
 package com.colorvision.xcviewer;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.hardware.Camera;
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.BinaryBitmap;
-import com.google.zxing.DecodeHintType;
-import com.google.zxing.MultiFormatReader;
-import com.google.zxing.NotFoundException;
-import com.google.zxing.PlanarYUVLuminanceSource;
-import com.google.zxing.Result;
-import com.google.zxing.common.HybridBinarizer;
+import androidx.camera.core.Camera;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.ImageProxy;
+import androidx.camera.core.Preview;
+import androidx.camera.core.TorchState;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.view.PreviewView;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.appcompat.app.AppCompatActivity;
 
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
+import com.google.common.util.concurrent.ListenableFuture;
 
-@SuppressWarnings("deprecation")
-public class QrScanActivity extends Activity implements SurfaceHolder.Callback, Camera.PreviewCallback {
+import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class QrScanActivity extends AppCompatActivity {
     public static final String EXTRA_QR_RESULT = "qr_result";
+    public static final String EXTRA_SCAN_FAILURE = "qr_scan_failure";
 
     private static final int REQUEST_CAMERA_PERMISSION = 2001;
 
-    private SurfaceView surfaceView;
-    private TextView statusText;
+    private final RuntimePermissionDialogState cameraPermissionDialogState =
+            new RuntimePermissionDialogState();
+    private final ExecutorService analysisExecutor = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "ColorVisionQrAnalysis");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private final QrFrameDecoder frameDecoder = new QrFrameDecoder();
+    private final AtomicBoolean completed = new AtomicBoolean();
+    private final AtomicBoolean pairingHelpVisible = new AtomicBoolean();
+
+    private FrameLayout root;
+    private PreviewView previewView;
+    private MaterialButton torchButton;
+    private ProcessCameraProvider cameraProvider;
+    private ImageAnalysis imageAnalysis;
     private Camera camera;
-    private SurfaceHolder surfaceHolder;
-    private MultiFormatReader reader;
-    private boolean surfaceReady;
-    private boolean decoding;
-    private boolean completed;
+    private boolean cameraStartRequested;
+    private boolean torchEnabled;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        reader = createReader();
+        configureSystemBars();
         createContentView();
         if (hasCameraPermission()) {
             startCameraIfReady();
         } else {
-            requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+            requestCameraPermission();
         }
     }
 
+    private void configureSystemBars() {
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        getWindow().setStatusBarColor(Color.BLACK);
+        getWindow().setNavigationBarColor(Color.BLACK);
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(
+                getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
+    }
+
     private void createContentView() {
-        FrameLayout root = new FrameLayout(this);
+        root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
 
-        surfaceView = new SurfaceView(this);
-        surfaceHolder = surfaceView.getHolder();
-        surfaceHolder.addCallback(this);
-        root.addView(surfaceView, new FrameLayout.LayoutParams(
+        previewView = new PreviewView(this);
+        previewView.setImplementationMode(PreviewView.ImplementationMode.COMPATIBLE);
+        previewView.setScaleType(PreviewView.ScaleType.FILL_CENTER);
+        root.addView(previewView, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
 
-        TextView backButton = new TextView(this);
-        backButton.setText("←");
-        backButton.setTextColor(Color.WHITE);
-        backButton.setTextSize(34);
-        backButton.setGravity(Gravity.CENTER);
-        backButton.setBackgroundColor(Color.argb(96, 0, 0, 0));
-        backButton.setOnClickListener(v -> finish());
-        FrameLayout.LayoutParams backParams = new FrameLayout.LayoutParams(dp(58), dp(58), Gravity.TOP | Gravity.LEFT);
-        backParams.setMargins(dp(12), dp(18), 0, 0);
+        MaterialButton backButton = createCameraIconButton(
+                R.drawable.ic_arrow_back_24, getString(R.string.qr_scan_back));
+        backButton.setOnClickListener(view -> finish());
+        FrameLayout.LayoutParams backParams = new FrameLayout.LayoutParams(
+                dp(48), dp(48), Gravity.TOP | Gravity.START);
+        backParams.setMargins(dp(16), dp(16), 0, 0);
         root.addView(backButton, backParams);
 
-        statusText = new TextView(this);
-        statusText.setText("将电脑端二维码放入取景框");
-        statusText.setTextColor(Color.WHITE);
-        statusText.setTextSize(16);
-        statusText.setGravity(Gravity.CENTER);
-        statusText.setPadding(dp(18), dp(10), dp(18), dp(10));
-        statusText.setBackgroundColor(Color.argb(132, 0, 0, 0));
+        MaterialCardView statusCard = new MaterialCardView(this);
+
+        LinearLayout statusContent = new LinearLayout(this);
+        statusContent.setOrientation(LinearLayout.VERTICAL);
+        statusContent.setPadding(dp(16), dp(16), dp(16), dp(16));
+
+        TextView statusText = new TextView(this);
+        statusText.setText(R.string.qr_scan_prompt);
+        statusText.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyLarge);
+        statusText.setGravity(Gravity.START);
+        statusContent.addView(statusText, new LinearLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT));
+
+        boolean stackActions = AppResponsiveLayout.usesStackedButtonGrid(
+                getResources().getConfiguration().fontScale);
+        LinearLayout actionBar = new LinearLayout(this);
+        actionBar.setOrientation(stackActions ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        actionBar.setGravity(Gravity.END);
+        LinearLayout.LayoutParams actionBarParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        actionBarParams.topMargin = dp(12);
+        statusContent.addView(actionBar, actionBarParams);
+
+        MaterialButton helpButton = new MaterialButton(
+                this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        helpButton.setText(R.string.qr_scan_help);
+        helpButton.setOnClickListener(view -> showPairingHelp());
+
+        torchButton = new MaterialButton(
+                this, null, com.google.android.material.R.attr.materialButtonTonalStyle);
+        torchButton.setText(R.string.qr_scan_torch_on);
+        torchButton.setIconResource(R.drawable.ic_flash_on_24);
+        torchButton.setVisibility(View.GONE);
+        torchButton.setOnClickListener(view -> toggleTorch());
+
+        if (stackActions) {
+            actionBar.addView(helpButton, fullWidthActionParams(0));
+            actionBar.addView(torchButton, fullWidthActionParams(8));
+        } else {
+            actionBar.addView(helpButton, weightedActionParams());
+            LinearLayout.LayoutParams torchParams = weightedActionParams();
+            torchParams.setMarginStart(dp(8));
+            actionBar.addView(torchButton, torchParams);
+        }
+
+        statusCard.addView(statusContent, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT));
         FrameLayout.LayoutParams statusParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM);
-        statusParams.setMargins(dp(18), 0, dp(18), dp(28));
-        root.addView(statusText, statusParams);
+        statusParams.setMargins(dp(16), 0, dp(16), dp(16));
+        root.addView(statusCard, statusParams);
 
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, windowInsets) -> {
+            Insets statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars());
+            Insets displayCutout = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout());
+            Insets navigationBars = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars());
+            backParams.topMargin = AppWindowInsetsPolicy.topContentInset(
+                    statusBars.top, displayCutout.top) + dp(16);
+            statusParams.bottomMargin = Math.max(
+                    navigationBars.bottom, displayCutout.bottom) + dp(16);
+            backButton.setLayoutParams(backParams);
+            statusCard.setLayoutParams(statusParams);
+            return windowInsets;
+        });
         setContentView(root);
+        ViewCompat.requestApplyInsets(root);
     }
 
-    private MultiFormatReader createReader() {
-        MultiFormatReader formatReader = new MultiFormatReader();
-        Map<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
-        hints.put(DecodeHintType.POSSIBLE_FORMATS, Arrays.asList(BarcodeFormat.QR_CODE));
-        hints.put(DecodeHintType.CHARACTER_SET, "UTF-8");
-        formatReader.setHints(hints);
-        return formatReader;
+    private MaterialButton createCameraIconButton(int iconResource, String description) {
+        MaterialButton button = new MaterialButton(
+                this, null, com.google.android.material.R.attr.materialIconButtonFilledTonalStyle);
+        button.setIconResource(iconResource);
+        button.setContentDescription(description);
+        return button;
+    }
+
+    private LinearLayout.LayoutParams weightedActionParams() {
+        return new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+    }
+
+    private LinearLayout.LayoutParams fullWidthActionParams(int topMarginDp) {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.topMargin = dp(topMarginDp);
+        return params;
     }
 
     private boolean hasCameraPermission() {
         return checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void requestCameraPermission() {
+        int requestGeneration = cameraPermissionDialogState.begin();
+        requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+        root.postDelayed(() -> cameraPermissionDialogState.observe(
+                        requestGeneration, hasCameraPermission(), hasWindowFocus()),
+                RuntimePermissionDialogState.OBSERVE_DELAY_MILLISECONDS);
+        root.postDelayed(() -> recoverBlockedCameraPermissionRequest(requestGeneration),
+                RuntimePermissionDialogState.NO_DIALOG_RECOVERY_DELAY_MILLISECONDS);
+    }
+
+    private void recoverBlockedCameraPermissionRequest(int requestGeneration) {
+        if (completed.get() || !cameraPermissionDialogState.shouldRecoverAsBlocked(
+                requestGeneration, hasCameraPermission(), hasWindowFocus())) {
+            return;
+        }
+        finishWithFailure(QrScanFailurePresentation.CAMERA_PERMISSION_BLOCKED);
     }
 
     @Override
@@ -115,159 +225,155 @@ public class QrScanActivity extends Activity implements SurfaceHolder.Callback, 
             return;
         }
 
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        boolean granted = grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+        if (granted) {
+            cameraPermissionDialogState.completeFromSystemResult(true);
             startCameraIfReady();
             return;
         }
-
-        Toast.makeText(this, "没有相机权限，请授权后重新扫描运维配对码", Toast.LENGTH_LONG).show();
-        setResult(RESULT_CANCELED);
-        finish();
-    }
-
-    @Override
-    public void surfaceCreated(SurfaceHolder holder) {
-        surfaceReady = true;
-        startCameraIfReady();
-    }
-
-    @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        surfaceReady = false;
-        releaseCamera();
+        if (cameraPermissionDialogState.completeFromSystemResult(false)) {
+            finishWithFailure(QrScanFailurePresentation.CAMERA_PERMISSION_DENIED);
+        }
     }
 
     private void startCameraIfReady() {
-        if (!surfaceReady || !hasCameraPermission() || camera != null) {
+        if (!hasCameraPermission() || cameraStartRequested || completed.get()) {
             return;
         }
+        cameraStartRequested = true;
+        ListenableFuture<ProcessCameraProvider> providerFuture =
+                ProcessCameraProvider.getInstance(this);
+        providerFuture.addListener(() -> bindCamera(providerFuture),
+                ContextCompat.getMainExecutor(this));
+    }
 
+    private void bindCamera(ListenableFuture<ProcessCameraProvider> providerFuture) {
+        if (completed.get() || isFinishing() || isDestroyed()) {
+            return;
+        }
         try {
-            camera = Camera.open();
-            configureCamera(camera);
-            camera.setPreviewDisplay(surfaceHolder);
-            camera.setPreviewCallback(this);
-            camera.startPreview();
-        } catch (Exception ex) {
-            releaseCamera();
-            Toast.makeText(this, "相机启动失败，请返回后重新扫描运维配对码", Toast.LENGTH_LONG).show();
-            setResult(RESULT_CANCELED);
-            finish();
-        }
-    }
+            cameraProvider = providerFuture.get();
+            Preview preview = new Preview.Builder().build();
+            preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
-    private void configureCamera(Camera targetCamera) {
-        targetCamera.setDisplayOrientation(90);
-        Camera.Parameters parameters = targetCamera.getParameters();
-        List<String> focusModes = parameters.getSupportedFocusModes();
-        if (focusModes != null) {
-            if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
-                parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
-            } else if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
-                parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
-            } else if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
-                parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
-            }
-        }
-        targetCamera.setParameters(parameters);
-    }
+            imageAnalysis = new ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build();
+            imageAnalysis.setAnalyzer(analysisExecutor, this::analyzeFrame);
 
-    @Override
-    public void onPreviewFrame(byte[] data, Camera sourceCamera) {
-        if (completed || decoding || data == null || sourceCamera == null) {
-            return;
-        }
-
-        Camera.Size size = sourceCamera.getParameters().getPreviewSize();
-        if (size == null) {
-            return;
-        }
-
-        decoding = true;
-        byte[] frame = Arrays.copyOf(data, data.length);
-        int width = size.width;
-        int height = size.height;
-
-        new Thread(() -> {
-            String text = decodeFrame(frame, width, height);
-            runOnUiThread(() -> {
-                decoding = false;
-                if (text != null && !text.isEmpty()) {
-                    completed = true;
-                    Intent result = new Intent();
-                    result.putExtra(EXTRA_QR_RESULT, text);
-                    setResult(RESULT_OK, result);
-                    finish();
-                }
+            cameraProvider.unbindAll();
+            camera = cameraProvider.bindToLifecycle(
+                    this,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    preview,
+                    imageAnalysis);
+            boolean hasFlash = camera.getCameraInfo().hasFlashUnit();
+            torchButton.setVisibility(hasFlash ? View.VISIBLE : View.GONE);
+            camera.getCameraInfo().getTorchState().observe(this, state -> {
+                torchEnabled = state != null && state == TorchState.ON;
+                updateTorchButton();
             });
-        }, "ColorVisionQrDecode").start();
-    }
-
-    private String decodeFrame(byte[] frame, int width, int height) {
-        String rotated = decodeLuminance(rotateYPlane90(frame, width, height), height, width);
-        if (rotated != null) {
-            return rotated;
-        }
-        return decodeLuminance(frame, width, height);
-    }
-
-    private String decodeLuminance(byte[] data, int width, int height) {
-        try {
-            PlanarYUVLuminanceSource source = new PlanarYUVLuminanceSource(
-                    data,
-                    width,
-                    height,
-                    0,
-                    0,
-                    width,
-                    height,
-                    false);
-            BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
-            Result result = reader.decodeWithState(bitmap);
-            return result == null ? null : result.getText();
-        } catch (NotFoundException ex) {
-            return null;
         } catch (Exception ex) {
-            return null;
-        } finally {
-            reader.reset();
+            cameraStartRequested = false;
+            finishWithFailure(QrScanFailurePresentation.CAMERA_UNAVAILABLE);
         }
     }
 
-    private byte[] rotateYPlane90(byte[] data, int width, int height) {
-        byte[] rotated = new byte[width * height];
-        int index = 0;
-        for (int x = 0; x < width; x++) {
-            for (int y = height - 1; y >= 0; y--) {
-                rotated[index++] = data[y * width + x];
+    private void analyzeFrame(ImageProxy image) {
+        try {
+            if (!QrScanFramePolicy.shouldAnalyze(
+                    completed.get(), pairingHelpVisible.get(), image.getPlanes().length)) {
+                return;
             }
+            ImageProxy.PlaneProxy lumaPlane = image.getPlanes()[0];
+            ByteBuffer buffer = lumaPlane.getBuffer();
+            byte[] luma = QrFrameDecoder.copyLumaPlane(
+                    buffer,
+                    image.getWidth(),
+                    image.getHeight(),
+                    lumaPlane.getRowStride(),
+                    lumaPlane.getPixelStride());
+            String text = frameDecoder.decode(
+                    luma,
+                    image.getWidth(),
+                    image.getHeight(),
+                    image.getImageInfo().getRotationDegrees());
+            if (!pairingHelpVisible.get() && text != null && !text.isEmpty()) {
+                finishWithQrResult(text);
+            }
+        } catch (RuntimeException ignored) {
+            // A malformed vendor frame is dropped; CameraX supplies the next latest frame.
+        } finally {
+            image.close();
         }
-        return rotated;
+    }
+
+    private void finishWithQrResult(String text) {
+        if (!completed.compareAndSet(false, true)) {
+            return;
+        }
+        ContextCompat.getMainExecutor(this).execute(() -> {
+            if (isFinishing() || isDestroyed()) {
+                return;
+            }
+            Intent result = new Intent();
+            result.putExtra(EXTRA_QR_RESULT, text);
+            setResult(RESULT_OK, result);
+            finish();
+        });
+    }
+
+    private void finishWithFailure(String reason) {
+        if (!completed.compareAndSet(false, true)) {
+            return;
+        }
+        Intent result = new Intent();
+        result.putExtra(EXTRA_SCAN_FAILURE, reason);
+        setResult(RESULT_CANCELED, result);
+        finish();
+    }
+
+    private void toggleTorch() {
+        if (camera == null || !camera.getCameraInfo().hasFlashUnit()) {
+            return;
+        }
+        torchButton.setEnabled(false);
+        ListenableFuture<Void> request = camera.getCameraControl().enableTorch(!torchEnabled);
+        request.addListener(() -> {
+            if (!isDestroyed()) {
+                torchButton.setEnabled(true);
+            }
+        }, ContextCompat.getMainExecutor(this));
+    }
+
+    private void showPairingHelp() {
+        if (!pairingHelpVisible.compareAndSet(false, true)) {
+            return;
+        }
+        PairingHelpDialog.showDuringScan(
+                this, () -> pairingHelpVisible.set(false));
+    }
+
+    private void updateTorchButton() {
+        if (torchButton == null) {
+            return;
+        }
+        torchButton.setText(torchEnabled
+                ? R.string.qr_scan_torch_off : R.string.qr_scan_torch_on);
     }
 
     @Override
-    protected void onPause() {
-        releaseCamera();
-        super.onPause();
-    }
-
-    private void releaseCamera() {
-        if (camera == null) {
-            return;
+    protected void onDestroy() {
+        completed.set(true);
+        if (imageAnalysis != null) {
+            imageAnalysis.clearAnalyzer();
         }
-
-        try {
-            camera.setPreviewCallback(null);
-            camera.stopPreview();
-            camera.release();
-        } catch (Exception ignored) {
-        } finally {
-            camera = null;
+        if (cameraProvider != null) {
+            cameraProvider.unbindAll();
         }
+        analysisExecutor.shutdownNow();
+        super.onDestroy();
     }
 
     private int dp(int value) {

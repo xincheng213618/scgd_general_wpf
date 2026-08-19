@@ -24,14 +24,17 @@ namespace ColorVision.Copilot
         public void ValidateCompletion(CopilotAgentRunResult agentRunResult)
         {
             ArgumentNullException.ThrowIfNull(agentRunResult);
-            var finalCheckpoint = agentRunResult.SessionCheckpoint;
-            if (finalCheckpoint == null)
+            var finalCheckpointSource = agentRunResult.SessionCheckpoint;
+            if (finalCheckpointSource == null)
                 return;
-            if (!IsValidCheckpoint(finalCheckpoint))
+            if (!TryCreateValidCheckpointSnapshot(
+                    finalCheckpointSource,
+                    out var finalCheckpoint))
                 throw new InvalidOperationException("Copilot Agent completed with an invalid session checkpoint.");
             if (LatestCheckpoint != null)
             {
                 RequireMatchingIdentity(LatestCheckpoint, finalCheckpoint);
+                RequireMonotonicJournal(LatestCheckpoint, finalCheckpoint, "final checkpoint");
                 if (finalCheckpoint.UpdatedAtUtc < LatestCheckpoint.UpdatedAtUtc)
                     throw new InvalidOperationException("Copilot Agent final checkpoint moved backwards in time.");
             }
@@ -39,16 +42,18 @@ namespace ColorVision.Copilot
 
         private CopilotTurnCheckpointLifecycleState ObserveUpdated(CopilotAgentEvent agentEvent)
         {
-            var checkpoint = agentEvent.SessionCheckpoint;
-            if (!IsValidCheckpoint(checkpoint))
+            if (!TryCreateValidCheckpointSnapshot(
+                    agentEvent.SessionCheckpoint,
+                    out var checkpoint))
                 throw new InvalidOperationException("Copilot Agent emitted an invalid checkpoint update.");
-            if (!IsValidTaskLedger(agentEvent.TaskLedger))
+            if (agentEvent.TaskLedger?.IsStructurallyValid() != true)
                 throw new InvalidOperationException("Copilot Agent checkpoint update carried an invalid task ledger.");
 
             if (LatestCheckpoint != null)
             {
-                RequireMatchingIdentity(LatestCheckpoint, checkpoint!);
-                if (checkpoint!.UpdatedAtUtc < LatestCheckpoint.UpdatedAtUtc)
+                RequireMatchingIdentity(LatestCheckpoint, checkpoint);
+                RequireMonotonicJournal(LatestCheckpoint, checkpoint, "checkpoint update");
+                if (checkpoint.UpdatedAtUtc < LatestCheckpoint.UpdatedAtUtc)
                     throw new InvalidOperationException("Copilot Agent checkpoint update moved backwards in time.");
             }
 
@@ -71,32 +76,13 @@ namespace ColorVision.Copilot
             return this;
         }
 
-        private static bool IsValidCheckpoint(CopilotAgentSessionCheckpoint? checkpoint) =>
-            checkpoint?.IsStructurallyValid() == true
-            && checkpoint.UpdatedAtUtc != default
-            && checkpoint.UpdatedAtUtc.Offset == TimeSpan.Zero;
-
-        private static bool IsValidTaskLedger(CopilotAgentTaskLedgerSnapshot? taskLedger)
+        private static bool TryCreateValidCheckpointSnapshot(
+            CopilotAgentSessionCheckpoint? source,
+            out CopilotAgentSessionCheckpoint snapshot)
         {
-            if (taskLedger == null
-                || taskLedger.Mode is not ("plan" or "execute")
-                || taskLedger.Items == null
-                || taskLedger.Items.Count > CopilotAgentTaskLedgerSnapshot.MaxItems)
-            {
-                return false;
-            }
-
-            return taskLedger.Items.All(item => item != null
-                    && item.Id >= 0
-                    && !string.IsNullOrWhiteSpace(item.Title)
-                    && string.Equals(item.Title, item.Title.Trim(), StringComparison.Ordinal)
-                    && item.Title.Length <= CopilotAgentTaskItem.MaxTitleLength
-                    && !item.Title.Contains('\0')
-                    && item.Description != null
-                    && string.Equals(item.Description, item.Description.Trim(), StringComparison.Ordinal)
-                    && item.Description.Length <= CopilotAgentTaskItem.MaxDescriptionLength
-                    && !item.Description.Contains('\0'))
-                && taskLedger.Items.Select(item => item.Id).Distinct().Count() == taskLedger.Items.Count;
+            return CopilotAgentSessionCheckpoint.TryCreateSnapshot(source, out snapshot)
+                && snapshot.UpdatedAtUtc != default
+                && snapshot.UpdatedAtUtc.Offset == TimeSpan.Zero;
         }
 
         private static void RequireMatchingIdentity(
@@ -110,6 +96,9 @@ namespace ColorVision.Copilot
                 || !string.Equals(expected.EnvironmentFingerprint, actual.EnvironmentFingerprint, StringComparison.OrdinalIgnoreCase)
                 || expected.HookSurfaceVersion != actual.HookSurfaceVersion
                 || !string.Equals(expected.HookSurfaceFingerprint, actual.HookSurfaceFingerprint, StringComparison.OrdinalIgnoreCase)
+                || expected.ProjectInstructionSurfaceVersion != actual.ProjectInstructionSurfaceVersion
+                || !string.Equals(expected.ProjectInstructionSurfaceFingerprint, actual.ProjectInstructionSurfaceFingerprint, StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(expected.TaskIntentText, actual.TaskIntentText, StringComparison.Ordinal)
                 || !expected.AvailableToolNames.SequenceEqual(actual.AvailableToolNames, StringComparer.OrdinalIgnoreCase)
                 || expected.Capabilities.Count != actual.Capabilities.Count
                 || !expected.Capabilities.Zip(actual.Capabilities).All(pair =>
@@ -118,6 +107,20 @@ namespace ColorVision.Copilot
                     && string.Equals(pair.First.Fingerprint, pair.Second.Fingerprint, StringComparison.OrdinalIgnoreCase)))
             {
                 throw new InvalidOperationException("Copilot Agent checkpoint identity changed during the turn.");
+            }
+        }
+
+        private static void RequireMonotonicJournal(
+            CopilotAgentSessionCheckpoint expected,
+            CopilotAgentSessionCheckpoint actual,
+            string checkpointKind)
+        {
+            if (!CopilotAgentTaskEventJournal.IsSameOrForwardBoundedSuccessor(
+                    actual.TaskEventJournal,
+                    expected.TaskEventJournal))
+            {
+                throw new InvalidOperationException(
+                    $"Copilot Agent {checkpointKind} journal did not advance monotonically during the turn.");
             }
         }
     }

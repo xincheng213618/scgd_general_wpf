@@ -2,8 +2,8 @@
   "manifest_version": 1,
   "Id": "ProjectKB",
   "name": "ProjectKB",
-  "version": "1.4.6.13",
+  "version": "1.4.6.14",
   "description": "",
   "dllpath": "ProjectKB.dll",
-  "requires": "1.4.12.34"
+  "requires": "1.4.12.44"
 }

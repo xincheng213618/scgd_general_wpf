@@ -16,15 +16,15 @@ CopilotToolRegistry
   -> Always 审批工具由 ApprovalRequiredAIFunction 形成精确调用边界
   -> 按需确认时 Pending Actions 收集批准/拒绝/过期决定；临时授权仅允许路径和哈希绑定的工作区补丁/回滚自动批准
   -> 使用同一 AgentSession 回传 ToolApprovalResponseContent
-  -> CopilotToolExecutor 运行前置 Hook
+  -> CopilotToolExecutor 在执行瞬间重绑不可替换的内置写保护，再运行冻结的前置 Hook；冻结表完整容纳注册表与项目 Hook
   -> 进入资源感知执行闸门（最多 4 个独立只读调用）
   -> 同资源调用互斥，写调用等待全部读调用并全局独占
   -> 发布 ToolStarted
-  -> 在工具级超时和取消令牌下执行
+  -> 在工具级超时和取消令牌下执行；写入/非幂等调用跨界但尚未静止时记录 OutcomeUnknown，先核对外部状态再重试
   -> 返回 failure_kind / retry_allowed / attempt
   -> 仅当模型显式重试幂等工具的瞬时失败时允许第二次尝试
   -> 用户批准、拒绝或审批过期后回写同一 CallId
-  -> 写入脱敏审计并运行后置 Hook
+  -> 写入脱敏审计并运行同步后置 Hook；`decision:block` 仅替换模型可见反馈，`continue:false` 则在已完成结果落账后以策略阻塞结束本轮
   -> 发布 ToolResult
   -> 将 observation 交回模型进入下一轮
   -> ExecutionContractLoopEvaluator 校验显式 URL / Web 搜索是否已有成功工具证据
@@ -38,7 +38,7 @@ CopilotToolRegistry
 
 直接 URL 请求还有确定性策略：`Auto` 模式会同时暴露 `FetchUrl` 与作为回退的 `WebSearch`，先读取原 URL，失败或证据不足时再搜索公开网页。Framework 原生 `LoopEvaluator` 上的执行契约会检查真实 step record；如果模型先写出答案却没有调用匹配工具，运行时撤回这段未支持草稿，并在同一 Session 中反馈缺失证据、要求下一轮调用工具。只有成功的 URL/搜索 observation 才满足契约；直接读取失败且仍有未尝试的搜索工具时继续回退，所有匹配路径都失败或模型仍拒绝调用时以 `Blocked` 和稳定 blocker code 结束，不再把模型文字当成已访问网页的证明。
 
-`WebSearch` 在返回标题、摘要和 URL 的同时，从显式 URL 或 `site:` 查询提取目标主机，优先选择匹配结果，并通过同一 `FetchUrl` 实现深读；没有目标主机时只深读排名第一的安全结果。深读连同已确认的同源 JSON、RSS 和 Atom 最多读取三个资源，失败不会抹掉搜索线索，模型也不应重复读取已经成功深读的结果。工具结果压缩会分别保留搜索线索和深读正文。最终回答若使用成功的内置或外部网页工具却没有引用其返回的任何 URL，运行时会追加最多三个经过 http/https 校验的真实来源；已有有效引用、失败工具、普通问答、暂停和超时运行都不会触发补写。用户明确要求不访问网络时不触发该策略。
+`WebSearch` 在返回标题、摘要和 URL 的同时，从显式 URL 或 `site:` 查询提取目标主机，优先选择匹配结果，并通过同一 `FetchUrl` 实现深读；没有目标主机时只深读排名第一的安全结果。深读连同已确认的同源 JSON、RSS 和 Atom 最多读取三个资源，失败不会抹掉搜索线索，模型也不应重复读取已经成功深读的结果。工具结果压缩会分别保留搜索线索和深读正文；所有模型可见工具结果在产生时即受字符/Token 双预算约束并按工具类型保留头尾或分段，截断边界不会拆开 UTF-16 代理对，因此不需要再引入一套改写历史 ToolResult 的剪枝日志。普通成功工具的纯文本结果如果仍被截断，运行时会把完整脱敏文本放入最多 24 个临时会话归档，只向模型暴露 `content_archive` 中的不透明 ID，并由 `ReadToolOutput` 按需分页读取；归档不暴露文件路径、不可跨会话，并在容量淘汰、会话删除或应用退出时清理，读取归档的工具结果不会再递归归档。最终回答若使用成功的内置或外部网页工具却没有引用其返回的任何 URL，运行时会追加最多三个经过 http/https 校验的真实来源；已有有效引用、失败工具、普通问答、暂停和超时运行都不会触发补写。用户明确要求不访问网络时不触发该策略。
 
 `Auto` 模式只要拥有当前解决方案的搜索根，就稳定提供 `SearchFiles`、`GrepText`、`ReadLocalFile` 和 `ListDirectory`。它们不再按当前句子的关键词裁剪；模型依据名称、描述和 JSON Schema 自主决定是否调用，因此普通概念问答仍可不执行搜索。搜索发现的根目录内文件可以在同一 Agent 运行中继续读取，不要求文件路径必须在发送问题前已经显式出现；读取和列目录仍做规范化根边界检查，并拒绝经重解析目录越界。公开网页/最新信息与直接 URL 仍分别控制 `WebSearch` 和 `FetchUrl` 的动态暴露。数据库、日志、流程统计、系统诊断和通用 Shell 同样属于稳定内置能力。外部 MCP 中名称或描述可识别为文件搜索、网页搜索和 URL 读取的工具仍服从对应意图门槛，其他设备、状态与业务工具继续按自身运行时可用性判断。
 
@@ -58,9 +58,9 @@ CopilotToolRegistry
 
 窗口始终保留最初用户目标和最近一轮，字符超限时优先删除完整的旧 `user -> assistant` 轮次，避免留下失去问题来源的孤立回复。无用户消息的异常历史只做有界截断，不会构造默认空目标。Chat 附件上下文占用一个独立槽位，并计入同一个自适应字符预算；`/context` 显示本轮实际解析出的条数、总字符和单条字符上限。
 
-该窗口只收敛发给模型的历史，不删除本地完整会话，也不为每轮额外调用模型做摘要；请求预览会显示实际保留的消息数、字符数和原始规模。这样先用确定性窗口为其他上下文组成留出稳定余量，再由 Agent Framework 的 Token 压缩处理运行时消息，避免重复摘要成本。设计取向与 [Codex `/compact`](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) 保留关键点、释放上下文，以及 [Claude Code `/compact`](https://code.claude.com/docs/en/commands) 对长对话主动压缩的原则一致。Harness 指令仍由当前 Profile 和运行时单独提供。
+该窗口只收敛发给模型的历史，不删除本地完整会话，也不为每轮额外调用模型做摘要；请求预览会显示实际保留的消息数、字符数和原始规模。这样先用确定性窗口为其他上下文组成留出稳定余量，再由 Agent Framework 的 Token 压缩处理运行时消息，避免重复摘要成本。`CopilotAgentContextBuilder` 同时从实际 user-role 组装结果派生只读 provenance：以稳定的 source / form / trust 和保留项数、字符数区分历史 recall、用户目标与问题、配置 catalog、应用/附件/工具 snapshot、项目 instructions 和宿主回答约束；运行诊断只记录这些元数据，不记录正文、路径或凭据。该快照不持久、不参与恢复，也不成为会话或 prompt 的第二个 owner；Harness 指令仍由当前 Profile 和运行时单独提供。设计取向与 [Codex `/compact`](https://learn.chatgpt.com/docs/developer-commands.md?surface=cli) 保留关键点、释放上下文，以及 [Claude Code `/compact`](https://code.claude.com/docs/en/commands) 对长对话主动压缩的原则一致。
 
-主动 `/compact` 使用 `CopilotConversationCompactionPlanner` 选择最早的完整 `user -> assistant` 轮次，并保留最近一轮原文。`CopilotConversationCompactionTerminalEvidence` 从本地仍完整保存的原始 assistant 消息重新计算截至边界的回答中断与非完成 Agent stop reason，不依赖旧摘要是否正确转述；压缩提示要求每种 `<assistant_response_interrupted>` 和 `<agent_turn_incomplete stop_reason="...">` opening marker 至少原样保留一次。摘要完成后 `EnsurePreserved` 再做确定性校验，遗漏任何所需 marker 时拒绝写入 `conversation.Compaction`，因此模型生成的摘要不能把部分工作升级成完成证据。用户提供的聚焦要求仍会进入摘要请求，但终态完整性约束放在其后，不能被聚焦要求静默删除。该契约结合 [Codex `/compact` 保留关键细节](https://learn.chatgpt.com/docs/developer-commands?surface=cli#keep-transcripts-lean-with-compact)、[Claude Code compaction 的结构化摘要与自定义聚焦](https://code.claude.com/docs/en/sessions#manage-context-within-a-session)，以及 grok `PriorTurnInterrupt` 的结构化中断原因。
+主动 `/compact` 使用 `CopilotConversationCompactionPlanner` 选择最早的完整 `user -> assistant` 轮次，并保留最近一轮原文。`CopilotConversationCompactionTerminalEvidence` 从本地仍完整保存的原始 assistant 消息重新计算截至边界的回答中断与非完成 Agent stop reason，不依赖旧摘要是否正确转述；压缩提示要求每种 `<assistant_response_interrupted>` 和 `<agent_turn_incomplete stop_reason="...">` opening marker 至少原样保留一次。摘要完成后 `EnsurePreserved` 再做确定性校验，遗漏任何所需 marker 时拒绝写入 `conversation.Compaction`，因此模型生成的摘要不能把部分工作升级成完成证据；`EnsureSummaryShrinks` 还要求新摘要连同历史上下文标记的估算权重严格小于被替换消息，拒绝形式上成功但实际扩大上下文的结果。用户提供的聚焦要求仍会进入摘要请求，但终态完整性与收敛约束放在其后，不能被聚焦要求静默删除。该契约结合 [Codex `/compact` 保留关键细节](https://learn.chatgpt.com/docs/developer-commands?surface=cli#keep-transcripts-lean-with-compact)、[Claude Code compaction 的结构化摘要与自定义聚焦](https://code.claude.com/docs/en/sessions#manage-context-within-a-session)，以及 grok `PriorTurnInterrupt` 的结构化中断原因。
 
 输入框使用一个有界的本地 Slash 命令目录。输入 `/` 会显示全部候选，继续输入会按命令名前缀过滤；候选变化时默认选中第一项，↑↓ 在当前列表内环绕选择，Tab 只补全选中项，Enter 对终结项补全后直接执行，也可以点击任意候选。命令候选键盘路由早于提示历史导航，只有目录关闭后 ↑↓ 才继续浏览历史；浏览候选本身不改写输入草稿，选中状态失效或列表变化时回到第一项。固定目录复用既有能力：`/help` 提供可查询目录，`/shortcuts` 提供按焦点分组的快捷键速查，`/recap` 提供当前会话回顾，`/status`、`/doctor`、`/tasks`、`/queue`、`/approve`、`/usage`（兼容别名 `/stats`）、`/context`、`/permissions`、`/hooks`、`/skills`、`/mcp` 提供本地状态与诊断，`/init`、`/mention`、`/diff`、`/compact`、`/review`、`/plan`、`/view-plan`、`/goal` 提供上下文、工作区和任务控制，`/resume`、`/rename`、`/rewind`、`/turn`、`/history`、`/clear`（兼容别名 `/new`）、`/fork`（别名 `/branch`）、`/find` 提供会话导航、命名与查找，`/copy`、`/export`、`/transcript`、`/feedback` 提供可见会话内容出口与问题反馈，`/model`、`/reasoning`（别名 `/effort`）提供模型入口。Skill 还可以按 `$name` 或 `/name` 出现在同一补全目录中；候选上限以 40 为基线，并至少等于“固定命令数 + 9”，确保当前 56 个固定命令在裸 `/` 查询中全部可见，同时继续为动态 Skill 保留至少 9 个槽位。`CopilotComposerReferenceCatalog` 为输入框提供独立的 `@` 目录；既可直接键入，也可从 `+` 菜单在当前光标或选区位置插入，已有未闭合 mention 不会重复追加。`/mention [查询]` 先按同一 80 字符、单行和未闭合 token 规则生成 `@查询`，再由 `InputText` 的既有刷新链路打开目录；命令本身不解析候选、不建立附件、不读取文件，也不在 Agent 运行中执行。这个键盘入口对齐 [Codex `/mention`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#highlight-files-with-mention)、[Claude Code `@` 文件路径补全](https://code.claude.com/docs/en/interactive-mode#quick-commands) 与本地 Grok pager 的 `@` file-search 状态机，同时保留 ColorVision 的模板、菜单和文件统一目录。目录从 `TemplateControl.ITemplateNames` 的模板类型与已保存模板名、`CopilotMenuToolSupport` 和当前 solution root 的有界文件索引生成最多 12 个候选；空查询在模板、菜单和文件之间均衡取样，输入查询后按标题、路径和代码相关性排序。模板和菜单候选先在 UI 线程立即显示；文件扫描在后台最多索引 5,000 个受支持文件，跳过 `.git`、IDE 状态、依赖和构建输出目录，同一次未闭合 `@` 查询复用结果，每次新的 `@` 查询重新取样，因此刚创建的文件不会被长期缓存隐藏。仅等待文件结果或最终没有命中时，`@` 弹层分别显示“正在索引”和“未找到”状态；索引完成前 Enter 不会误发未完成查询，Tab 也不会误触发排队。选择文件会走既有附件边界；选择模板或菜单会生成带稳定 source ID 的 `CopilotContextItem`，保存模板引用只携带身份元数据，菜单上下文明确不构成执行请求。完成后的文本使用 `@[标题]` 闭合标记，防止继续被当作未完成查询。
 `/help [命令]` 直接读取 `CopilotLocalCommandCatalog` 的固定元数据：无参数按类别列出全部命令、精确用法和 Agent 运行中可用性，带参数时接受有无 `/` 前缀且不区分大小写的完整命令名；无匹配时只返回目录提示，不做模糊猜测。命令在 Profile 校验和任务调度前纯本地执行，不调用模型、不写入聊天记录，也不会改变任务、权限或工作区；`/effort`、`/branch` 等别名仍作为独立可查询入口。动态 Skill 继续由 `/skills`、`$name` 和 `/name` 发现，不计入固定命令数量。该设计结合 [Codex Slash 命令目录](https://learn.chatgpt.com/docs/developer-commands?surface=cli) 的输入过滤、[Claude Code `/help`](https://code.claude.com/docs/en/commands) 的可用命令入口，以及本地 Grok pager 以统一命令元数据驱动帮助面板的做法，避免补全列表和帮助文本发生漂移。

@@ -32,108 +32,18 @@ namespace ColorVision.Copilot
         Live,
     }
 
-    internal enum CopilotCodexWebSearchConfigKey
-    {
-        None,
-        WebSearch,
-        FeaturesWebSearch,
-        FeaturesWebSearchCached,
-        FeaturesWebSearchRequest,
-    }
-
-    internal readonly record struct CopilotCodexWebSearchModeResolution(
-        CopilotCodexWebSearchMode Mode,
-        bool HasOverride,
-        CopilotCodexWebSearchConfigKey ConfigKey,
-        CopilotProjectInstructionConfigSources Source);
-
     internal readonly record struct CopilotCodexWebSearchConfigState(
-        bool HasCanonicalModeOverride,
-        CopilotCodexWebSearchMode CanonicalMode,
-        CopilotProjectInstructionConfigSources CanonicalModeSource,
-        bool? LegacyWebSearchEnabled,
-        CopilotProjectInstructionConfigSources LegacyWebSearchSource,
-        bool? LegacyWebSearchCachedEnabled,
-        CopilotProjectInstructionConfigSources LegacyWebSearchCachedSource,
-        bool? LegacyWebSearchRequestEnabled,
-        CopilotProjectInstructionConfigSources LegacyWebSearchRequestSource)
+        bool HasOverride,
+        CopilotCodexWebSearchMode Mode,
+        CopilotProjectInstructionConfigSources Source)
     {
-        public bool HasAnyAssignment => HasCanonicalModeOverride
-            || LegacyWebSearchEnabled.HasValue
-            || LegacyWebSearchCachedEnabled.HasValue
-            || LegacyWebSearchRequestEnabled.HasValue;
+        public bool HasAnyAssignment => HasOverride;
 
         public CopilotCodexWebSearchConfigState Apply(
             CopilotCodexWebSearchConfigState layer,
-            CopilotProjectInstructionConfigSources source) => this with
-        {
-            HasCanonicalModeOverride = layer.HasCanonicalModeOverride
-                || HasCanonicalModeOverride,
-            CanonicalMode = layer.HasCanonicalModeOverride
-                ? layer.CanonicalMode
-                : CanonicalMode,
-            CanonicalModeSource = layer.HasCanonicalModeOverride
-                ? source
-                : CanonicalModeSource,
-            LegacyWebSearchEnabled = layer.LegacyWebSearchEnabled.HasValue
-                ? layer.LegacyWebSearchEnabled
-                : LegacyWebSearchEnabled,
-            LegacyWebSearchSource = layer.LegacyWebSearchEnabled.HasValue
-                ? source
-                : LegacyWebSearchSource,
-            LegacyWebSearchCachedEnabled = layer.LegacyWebSearchCachedEnabled.HasValue
-                ? layer.LegacyWebSearchCachedEnabled
-                : LegacyWebSearchCachedEnabled,
-            LegacyWebSearchCachedSource = layer.LegacyWebSearchCachedEnabled.HasValue
-                ? source
-                : LegacyWebSearchCachedSource,
-            LegacyWebSearchRequestEnabled = layer.LegacyWebSearchRequestEnabled.HasValue
-                ? layer.LegacyWebSearchRequestEnabled
-                : LegacyWebSearchRequestEnabled,
-            LegacyWebSearchRequestSource = layer.LegacyWebSearchRequestEnabled.HasValue
-                ? source
-                : LegacyWebSearchRequestSource,
-        };
-
-        public CopilotCodexWebSearchModeResolution Resolve()
-        {
-            if (HasCanonicalModeOverride)
-            {
-                return new(
-                    CanonicalMode,
-                    HasOverride: true,
-                    CopilotCodexWebSearchConfigKey.WebSearch,
-                    CanonicalModeSource);
-            }
-
-            if (LegacyWebSearchCachedEnabled is true)
-            {
-                return new(
-                    CopilotCodexWebSearchMode.Cached,
-                    HasOverride: true,
-                    CopilotCodexWebSearchConfigKey.FeaturesWebSearchCached,
-                    LegacyWebSearchCachedSource);
-            }
-
-            if (LegacyWebSearchRequestEnabled.HasValue)
-            {
-                return LegacyWebSearchRequestEnabled.Value
-                    ? new(
-                        CopilotCodexWebSearchMode.Live,
-                        HasOverride: true,
-                        CopilotCodexWebSearchConfigKey.FeaturesWebSearchRequest,
-                        LegacyWebSearchRequestSource)
-                    : default;
-            }
-
-            return LegacyWebSearchEnabled is true
-                ? new(
-                    CopilotCodexWebSearchMode.Live,
-                    HasOverride: true,
-                    CopilotCodexWebSearchConfigKey.FeaturesWebSearch,
-                    LegacyWebSearchSource)
-                : default;
-        }
+            CopilotProjectInstructionConfigSources source) => layer.HasOverride
+                ? layer with { Source = source }
+                : this;
     }
 
     internal enum CopilotCodexSandboxMode
@@ -202,15 +112,6 @@ namespace ColorVision.Copilot
             _ => "未配置",
         };
 
-        public static string GetConfigKey(CopilotCodexWebSearchConfigKey key) => key switch
-        {
-            CopilotCodexWebSearchConfigKey.WebSearch => "web_search",
-            CopilotCodexWebSearchConfigKey.FeaturesWebSearch => "features.web_search",
-            CopilotCodexWebSearchConfigKey.FeaturesWebSearchCached => "features.web_search_cached",
-            CopilotCodexWebSearchConfigKey.FeaturesWebSearchRequest => "features.web_search_request",
-            _ => "web_search",
-        };
-
         public static bool AllowsLiveSearch(CopilotCodexWebSearchMode mode) => mode is
             CopilotCodexWebSearchMode.Unspecified or CopilotCodexWebSearchMode.Live;
 
@@ -268,14 +169,6 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<string> AppliedProjectConfigFilePaths { get; init; } = Array.Empty<string>();
 
-        public IReadOnlyList<string> AppliedHookFilePaths { get; init; } = Array.Empty<string>();
-
-        internal IReadOnlyList<CopilotCodexCommandHookDefinition> ConfiguredCommandHooks { get; init; } =
-            Array.Empty<CopilotCodexCommandHookDefinition>();
-
-        internal IReadOnlyList<CopilotCodexConfiguredHookIssue> ConfiguredHookIssues { get; init; } =
-            Array.Empty<CopilotCodexConfiguredHookIssue>();
-
         public IReadOnlyList<string> AppliedExecPolicyFilePaths { get; init; } = Array.Empty<string>();
 
         internal IReadOnlyList<CopilotCodexExecPolicyRule> ConfiguredExecPolicyRules { get; init; } =
@@ -283,12 +176,6 @@ namespace ColorVision.Copilot
 
         internal IReadOnlyList<CopilotCodexExecPolicyIssue> ConfiguredExecPolicyIssues { get; init; } =
             Array.Empty<CopilotCodexExecPolicyIssue>();
-
-        internal IReadOnlyList<CopilotCodexCustomSubagentDefinition> CustomSubagents { get; init; } =
-            Array.Empty<CopilotCodexCustomSubagentDefinition>();
-
-        internal IReadOnlyList<CopilotCodexCustomSubagentDiscoveryIssue> CustomSubagentDiscoveryIssues { get; init; } =
-            Array.Empty<CopilotCodexCustomSubagentDiscoveryIssue>();
 
         public string DeveloperInstructions { get; init; } = string.Empty;
 
@@ -316,9 +203,6 @@ namespace ColorVision.Copilot
             CopilotCodexWebSearchMode.Unspecified;
 
         public bool HasWebSearchModeOverride { get; init; }
-
-        public CopilotCodexWebSearchConfigKey WebSearchModeConfigKey { get; init; } =
-            CopilotCodexWebSearchConfigKey.None;
 
         internal CopilotCodexWebSearchConfigState WebSearchConfigState { get; init; }
 
@@ -786,8 +670,6 @@ namespace ColorVision.Copilot
             || HasModelAutoCompactTokenLimitScopeOverride
             || HasModelInstructionsOverride
             || HasCompactPromptOverride
-            || ConfiguredCommandHooks.Count > 0
-            || ConfiguredHookIssues.Count > 0
             || ConfiguredExecPolicyRules.Count > 0
             || ConfiguredExecPolicyIssues.Count > 0;
 
@@ -802,345 +684,103 @@ namespace ColorVision.Copilot
 
         public bool AllowsProjectCodexConfig => ProjectTrustLevel == CopilotCodexProjectTrustLevel.Trusted;
 
-        public string DeveloperInstructionsSourceLabel => DeveloperInstructionsSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml",
-            _ => string.Empty,
-        };
+        public string DeveloperInstructionsSourceLabel => FormatSourceLabel(DeveloperInstructionsSource);
 
-        public string PersonalitySourceLabel => PersonalitySource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml personality",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml personality",
-            _ => string.Empty,
-        };
+        public string PersonalitySourceLabel => FormatSourceLabel(PersonalitySource, "personality");
 
-        public string PersonalityEnabledSourceLabel => PersonalityEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome =>
-                "Codex Home config.toml features.personality",
-            CopilotProjectInstructionConfigSources.TrustedProject =>
-                "受信项目 .codex/config.toml features.personality",
-            _ => string.Empty,
-        };
+        public string PersonalityEnabledSourceLabel => FormatSourceLabel(PersonalityEnabledSource, "features.personality");
 
-        public string WebSearchModeSourceLabel
-        {
-            get
-            {
-                var configKey = CopilotCodexWebSearchModeSelection.GetConfigKey(WebSearchModeConfigKey);
-                if (configKey.Length == 0)
-                    return string.Empty;
-                return WebSearchModeSource switch
-                {
-                    CopilotProjectInstructionConfigSources.CodexHome => $"Codex Home config.toml {configKey}",
-                    CopilotProjectInstructionConfigSources.TrustedProject => $"受信项目 .codex/config.toml {configKey}",
-                    _ => string.Empty,
-                };
-            }
-        }
+        public string WebSearchModeSourceLabel => HasWebSearchModeOverride
+            ? FormatSourceLabel(WebSearchModeSource, "web_search")
+            : string.Empty;
 
-        public string SandboxModeSourceLabel => SandboxModeSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml sandbox_mode",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml sandbox_mode",
-            _ => string.Empty,
-        };
+        public string SandboxModeSourceLabel => FormatSourceLabel(SandboxModeSource, "sandbox_mode");
 
-        public string ApprovalPolicySourceLabel => ApprovalPolicySource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml approval_policy",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml approval_policy",
-            _ => string.Empty,
-        };
+        public string ApprovalPolicySourceLabel => FormatSourceLabel(ApprovalPolicySource, "approval_policy");
 
-        public string ShellEnvironmentPolicySourceLabel => ShellEnvironmentPolicySources switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome =>
-                "Codex Home config.toml shell_environment_policy",
-            CopilotProjectInstructionConfigSources.TrustedProject =>
-                "受信项目 .codex/config.toml shell_environment_policy",
-            CopilotProjectInstructionConfigSources.CodexHome
-                | CopilotProjectInstructionConfigSources.TrustedProject =>
-                "Codex Home + 受信项目 .codex/config.toml shell_environment_policy",
-            _ => string.Empty,
-        };
+        public string ShellEnvironmentPolicySourceLabel => FormatSourceLabel(
+            ShellEnvironmentPolicySources,
+            "shell_environment_policy",
+            allowCombined: true);
 
-        public string ApprovalsReviewerSourceLabel => ApprovalsReviewerSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml approvals_reviewer",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml approvals_reviewer",
-            _ => string.Empty,
-        };
+        public string ApprovalsReviewerSourceLabel => FormatSourceLabel(ApprovalsReviewerSource, "approvals_reviewer");
 
-        public string GuardianApprovalEnabledSourceLabel => GuardianApprovalEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.guardian_approval",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.guardian_approval",
-            _ => string.Empty,
-        };
+        public string GuardianApprovalEnabledSourceLabel => FormatSourceLabel(GuardianApprovalEnabledSource, "features.guardian_approval");
 
-        public string AutoReviewPolicySourceLabel => AutoReviewPolicySource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml auto_review.policy",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml auto_review.policy",
-            _ => string.Empty,
-        };
+        public string AutoReviewPolicySourceLabel => FormatSourceLabel(AutoReviewPolicySource, "auto_review.policy");
 
-        public string ModelSourceLabel => ModelSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model",
-            _ => string.Empty,
-        };
+        public string ModelSourceLabel => FormatSourceLabel(ModelSource, "model");
 
-        public string ReviewModelSourceLabel => ReviewModelSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml review_model",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml review_model",
-            _ => string.Empty,
-        };
+        public string ReviewModelSourceLabel => FormatSourceLabel(ReviewModelSource, "review_model");
 
-        public string PreventIdleSleepSourceLabel => PreventIdleSleepSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.prevent_idle_sleep",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.prevent_idle_sleep",
-            _ => string.Empty,
-        };
+        public string PreventIdleSleepSourceLabel => FormatSourceLabel(PreventIdleSleepSource, "features.prevent_idle_sleep");
 
-        public string ShellToolEnabledSourceLabel => ShellToolEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.shell_tool",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.shell_tool",
-            _ => string.Empty,
-        };
+        public string ShellToolEnabledSourceLabel => FormatSourceLabel(ShellToolEnabledSource, "features.shell_tool");
 
-        public string HooksEnabledSourceLabel => HooksEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.hooks",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.hooks",
-            _ => string.Empty,
-        };
+        public string HooksEnabledSourceLabel => FormatSourceLabel(HooksEnabledSource, "features.hooks");
 
-        public string PluginsEnabledSourceLabel => PluginsEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.plugins",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.plugins",
-            _ => string.Empty,
-        };
+        public string PluginsEnabledSourceLabel => FormatSourceLabel(PluginsEnabledSource, "features.plugins");
 
-        public string ErrorOnToolCollisionsSourceLabel => ErrorOnToolCollisionsSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome =>
-                "Codex Home config.toml features.tool_registry.error_on_tool_collisions",
-            CopilotProjectInstructionConfigSources.TrustedProject =>
-                "受信项目 .codex/config.toml features.tool_registry.error_on_tool_collisions",
-            _ => string.Empty,
-        };
+        public string ErrorOnToolCollisionsSourceLabel => FormatSourceLabel(ErrorOnToolCollisionsSource, "features.tool_registry.error_on_tool_collisions");
 
-        public string MentionsV2EnabledSourceLabel => MentionsV2EnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.mentions_v2",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.mentions_v2",
-            _ => string.Empty,
-        };
+        public string MentionsV2EnabledSourceLabel => FormatSourceLabel(MentionsV2EnabledSource, "features.mentions_v2");
 
-        public string SkillMcpDependencyInstallEnabledSourceLabel => SkillMcpDependencyInstallEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.skill_mcp_dependency_install",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.skill_mcp_dependency_install",
-            _ => string.Empty,
-        };
+        public string SkillMcpDependencyInstallEnabledSourceLabel => FormatSourceLabel(SkillMcpDependencyInstallEnabledSource, "features.skill_mcp_dependency_install");
 
-        public string GoalsEnabledSourceLabel => GoalsEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.goals",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.goals",
-            _ => string.Empty,
-        };
+        public string GoalsEnabledSourceLabel => FormatSourceLabel(GoalsEnabledSource, "features.goals");
 
-        public string DefaultModeRequestUserInputEnabledSourceLabel => DefaultModeRequestUserInputEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml features.default_mode_request_user_input",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml features.default_mode_request_user_input",
-            _ => string.Empty,
-        };
+        public string DefaultModeRequestUserInputEnabledSourceLabel => FormatSourceLabel(DefaultModeRequestUserInputEnabledSource, "features.default_mode_request_user_input");
 
-        public string ExperimentalRequestUserInputEnabledSourceLabel => ExperimentalRequestUserInputEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml tools.experimental_request_user_input.enabled",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml tools.experimental_request_user_input.enabled",
-            _ => string.Empty,
-        };
+        public string ExperimentalRequestUserInputEnabledSourceLabel => FormatSourceLabel(ExperimentalRequestUserInputEnabledSource, "tools.experimental_request_user_input.enabled");
 
-        public string UpdatePlanEnabledSourceLabel => UpdatePlanEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml tools.update_plan.enabled",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml tools.update_plan.enabled",
-            _ => string.Empty,
-        };
+        public string UpdatePlanEnabledSourceLabel => FormatSourceLabel(UpdatePlanEnabledSource, "tools.update_plan.enabled");
 
-        public string IncludePermissionsInstructionsSourceLabel => IncludePermissionsInstructionsSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml include_permissions_instructions",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml include_permissions_instructions",
-            _ => string.Empty,
-        };
+        public string IncludePermissionsInstructionsSourceLabel => FormatSourceLabel(IncludePermissionsInstructionsSource, "include_permissions_instructions");
 
-        public string IncludeCollaborationModeInstructionsSourceLabel => IncludeCollaborationModeInstructionsSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml include_collaboration_mode_instructions",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml include_collaboration_mode_instructions",
-            _ => string.Empty,
-        };
+        public string IncludeCollaborationModeInstructionsSourceLabel => FormatSourceLabel(IncludeCollaborationModeInstructionsSource, "include_collaboration_mode_instructions");
 
-        public string IncludeEnvironmentContextSourceLabel => IncludeEnvironmentContextSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml include_environment_context",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml include_environment_context",
-            _ => string.Empty,
-        };
+        public string IncludeEnvironmentContextSourceLabel => FormatSourceLabel(IncludeEnvironmentContextSource, "include_environment_context");
 
-        public string IncludeSkillInstructionsSourceLabel => IncludeSkillInstructionsSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml skills.include_instructions",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml skills.include_instructions",
-            _ => string.Empty,
-        };
+        public string IncludeSkillInstructionsSourceLabel => FormatSourceLabel(IncludeSkillInstructionsSource, "skills.include_instructions");
 
-        public string MultiAgentEnabledSourceLabel => MultiAgentEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome =>
-                "Codex Home config.toml features.multi_agent",
-            CopilotProjectInstructionConfigSources.TrustedProject =>
-                "受信项目 .codex/config.toml features.multi_agent",
-            _ => string.Empty,
-        };
+        public string MultiAgentEnabledSourceLabel => FormatSourceLabel(MultiAgentEnabledSource, "features.multi_agent");
 
         public bool EffectiveAgentsEnabled => ConfiguredMultiAgentEnabled
             && ConfiguredAgentsEnabled;
 
-        public string AgentsEnabledSourceLabel => AgentsEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.enabled",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents.enabled",
-            _ => string.Empty,
-        };
+        public string AgentsEnabledSourceLabel => FormatSourceLabel(AgentsEnabledSource, "agents.enabled");
 
-        public string InterruptMessageSourceLabel => InterruptMessageSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.interrupt_message",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents.interrupt_message",
-            _ => string.Empty,
-        };
+        public string InterruptMessageSourceLabel => FormatSourceLabel(InterruptMessageSource, "agents.interrupt_message");
 
-        public string MaximumConcurrentSubagentRunsSourceLabel => MaximumConcurrentSubagentRunsSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents concurrency",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents concurrency",
-            _ => string.Empty,
-        };
+        public string MaximumConcurrentSubagentRunsSourceLabel => FormatSourceLabel(MaximumConcurrentSubagentRunsSource, "agents concurrency");
 
-        public string DefaultSubagentModelSourceLabel => DefaultSubagentModelSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.default_subagent_model",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents.default_subagent_model",
-            _ => string.Empty,
-        };
+        public string DefaultSubagentModelSourceLabel => FormatSourceLabel(DefaultSubagentModelSource, "agents.default_subagent_model");
 
-        public string DefaultSubagentReasoningEffortSourceLabel => DefaultSubagentReasoningEffortSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml agents.default_subagent_reasoning_effort",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml agents.default_subagent_reasoning_effort",
-            _ => string.Empty,
-        };
+        public string DefaultSubagentReasoningEffortSourceLabel => FormatSourceLabel(DefaultSubagentReasoningEffortSource, "agents.default_subagent_reasoning_effort");
 
-        public string ModelContextWindowSourceLabel => ModelContextWindowSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_context_window",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_context_window",
-            _ => string.Empty,
-        };
+        public string ModelContextWindowSourceLabel => FormatSourceLabel(ModelContextWindowSource, "model_context_window");
 
-        public string ToolOutputTokenLimitSourceLabel => ToolOutputTokenLimitSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml tool_output_token_limit",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml tool_output_token_limit",
-            _ => string.Empty,
-        };
+        public string ToolOutputTokenLimitSourceLabel => FormatSourceLabel(ToolOutputTokenLimitSource, "tool_output_token_limit");
 
-        public string ModelReasoningEffortSourceLabel => ModelReasoningEffortSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_reasoning_effort",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_reasoning_effort",
-            _ => string.Empty,
-        };
+        public string ModelReasoningEffortSourceLabel => FormatSourceLabel(ModelReasoningEffortSource, "model_reasoning_effort");
 
-        public string PlanModeReasoningEffortSourceLabel => PlanModeReasoningEffortSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml plan_mode_reasoning_effort",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml plan_mode_reasoning_effort",
-            _ => string.Empty,
-        };
+        public string PlanModeReasoningEffortSourceLabel => FormatSourceLabel(PlanModeReasoningEffortSource, "plan_mode_reasoning_effort");
 
-        public string ModelReasoningSummarySourceLabel => ModelReasoningSummarySource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_reasoning_summary",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_reasoning_summary",
-            _ => string.Empty,
-        };
+        public string ModelReasoningSummarySourceLabel => FormatSourceLabel(ModelReasoningSummarySource, "model_reasoning_summary");
 
-        public string ModelSupportsReasoningSummariesSourceLabel => ModelSupportsReasoningSummariesSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_supports_reasoning_summaries",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_supports_reasoning_summaries",
-            _ => string.Empty,
-        };
+        public string ModelSupportsReasoningSummariesSourceLabel => FormatSourceLabel(ModelSupportsReasoningSummariesSource, "model_supports_reasoning_summaries");
 
-        public string HideAgentReasoningSourceLabel => HideAgentReasoningSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml hide_agent_reasoning",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml hide_agent_reasoning",
-            _ => string.Empty,
-        };
+        public string HideAgentReasoningSourceLabel => FormatSourceLabel(HideAgentReasoningSource, "hide_agent_reasoning");
 
-        public string ServiceTierSourceLabel => ServiceTierSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml service_tier",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml service_tier",
-            _ => string.Empty,
-        };
+        public string ServiceTierSourceLabel => FormatSourceLabel(ServiceTierSource, "service_tier");
 
-        public string FastModeEnabledSourceLabel => FastModeEnabledSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome =>
-                "Codex Home config.toml features.fast_mode",
-            CopilotProjectInstructionConfigSources.TrustedProject =>
-                "受信项目 .codex/config.toml features.fast_mode",
-            _ => string.Empty,
-        };
+        public string FastModeEnabledSourceLabel => FormatSourceLabel(FastModeEnabledSource, "features.fast_mode");
 
-        public string ModelVerbositySourceLabel => ModelVerbositySource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_verbosity",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_verbosity",
-            _ => string.Empty,
-        };
+        public string ModelVerbositySourceLabel => FormatSourceLabel(ModelVerbositySource, "model_verbosity");
 
-        public string ModelAutoCompactTokenLimitSourceLabel => ModelAutoCompactTokenLimitSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_auto_compact_token_limit",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_auto_compact_token_limit",
-            _ => string.Empty,
-        };
+        public string ModelAutoCompactTokenLimitSourceLabel => FormatSourceLabel(ModelAutoCompactTokenLimitSource, "model_auto_compact_token_limit");
 
-        public string ModelAutoCompactTokenLimitScopeSourceLabel => ModelAutoCompactTokenLimitScopeSource switch
-        {
-            CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml model_auto_compact_token_limit_scope",
-            CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml model_auto_compact_token_limit_scope",
-            _ => string.Empty,
-        };
+        public string ModelAutoCompactTokenLimitScopeSourceLabel => FormatSourceLabel(ModelAutoCompactTokenLimitScopeSource, "model_auto_compact_token_limit_scope");
 
         public string ModelInstructionsSourceLabel
         {
@@ -1187,6 +827,25 @@ namespace ColorVision.Copilot
                 "Codex Home trust_level 无效；已保守跳过项目 .codex/config.toml",
             _ => "项目目录信任未决定；已跳过项目 .codex/config.toml",
         };
+
+        private static string FormatSourceLabel(
+            CopilotProjectInstructionConfigSources source,
+            string configKey = "",
+            bool allowCombined = false)
+        {
+            var prefix = source switch
+            {
+                CopilotProjectInstructionConfigSources.CodexHome => "Codex Home config.toml",
+                CopilotProjectInstructionConfigSources.TrustedProject => "受信项目 .codex/config.toml",
+                CopilotProjectInstructionConfigSources.CodexHome
+                    | CopilotProjectInstructionConfigSources.TrustedProject when allowCombined =>
+                    "Codex Home + 受信项目 .codex/config.toml",
+                _ => string.Empty,
+            };
+            return prefix.Length == 0 || configKey.Length == 0
+                ? prefix
+                : $"{prefix} {configKey}";
+        }
     }
 
     internal sealed record CopilotCodexHomeConfigSnapshot(
@@ -1225,12 +884,6 @@ namespace ColorVision.Copilot
         private const string PersonalityEnabledKey = "features.personality";
         private const string PersonalityEnabledFeatureKey = "personality";
         private const string WebSearchKey = "web_search";
-        private const string LegacyWebSearchKey = "features.web_search";
-        private const string LegacyWebSearchFeatureKey = "web_search";
-        private const string LegacyWebSearchCachedKey = "features.web_search_cached";
-        private const string LegacyWebSearchCachedFeatureKey = "web_search_cached";
-        private const string LegacyWebSearchRequestKey = "features.web_search_request";
-        private const string LegacyWebSearchRequestFeatureKey = "web_search_request";
         private const string SandboxModeKey = "sandbox_mode";
         private const string ApprovalPolicyKey = "approval_policy";
         private const string ApprovalsReviewerKey = "approvals_reviewer";
@@ -1335,28 +988,9 @@ namespace ColorVision.Copilot
                     includeProjectRootMarkers: true);
             }
 
-            var customSubagents = DiscoverCodexHomeCustomSubagents(
-                normalizedRoot,
-                globalSource,
-                globalConfigPath,
-                out var customSubagentDiscoveryIssues);
-            var configuredHooks = normalizedRoot.Length == 0
-                ? CopilotCodexConfiguredHookDiscoveryResult.Empty
-                : DiscoverConfiguredHooksForLayer(
-                    normalizedRoot,
-                    globalConfigPath,
-                    globalSource,
-                    Path.Combine(normalizedRoot, HooksFileName),
-                    CopilotProjectInstructionConfigSources.CodexHome,
-                    startingOrder: 0);
             var execPolicy = DiscoverCodexHomeExecPolicy(normalizedRoot);
             options = options with
             {
-                CustomSubagents = customSubagents,
-                CustomSubagentDiscoveryIssues = customSubagentDiscoveryIssues,
-                ConfiguredCommandHooks = configuredHooks.CommandHooks,
-                ConfiguredHookIssues = configuredHooks.Issues,
-                AppliedHookFilePaths = configuredHooks.SourceFilePaths,
                 ConfiguredExecPolicyRules = execPolicy.Rules,
                 ConfiguredExecPolicyIssues = execPolicy.Issues,
                 AppliedExecPolicyFilePaths = execPolicy.SourceFilePaths,
@@ -1390,11 +1024,6 @@ namespace ColorVision.Copilot
                 normalizedProjectRoot,
                 workingDirectoryPath);
             var appliedConfigFilePaths = new List<string>();
-            var appliedHookFilePaths = options.AppliedHookFilePaths.ToList();
-            var configuredCommandHooks = options.ConfiguredCommandHooks
-                .Select(definition => definition.CreateSnapshot())
-                .ToList();
-            var configuredHookIssues = options.ConfiguredHookIssues.ToList();
             foreach (var directoryPath in configDirectories)
             {
                 var configPath = Path.Combine(directoryPath, ".codex", ConfigFileName);
@@ -1409,8 +1038,6 @@ namespace ColorVision.Copilot
                     projectLayer = parsedProjectLayer;
                 }
                 var hasInstructionAssignments = projectLayer != null;
-                var hasCustomSubagentDeclarations = hasProjectConfig
-                    && HasValidCustomSubagentDeclarations(projectSource);
                 var hasApplicableOverrides = false;
 
                 if (hasInstructionAssignments && projectLayer != null)
@@ -1437,28 +1064,9 @@ namespace ColorVision.Copilot
                         includeProjectRootMarkers: false);
                     }
                 }
-                if (hasApplicableOverrides || hasCustomSubagentDeclarations)
+                if (hasApplicableOverrides)
                     appliedConfigFilePaths.Add(Path.GetFullPath(configPath));
 
-                var hookDiscovery = DiscoverConfiguredHooksForLayer(
-                    normalizedProjectRoot,
-                    configPath,
-                    hasProjectConfig ? projectSource : string.Empty,
-                    Path.Combine(directoryPath, ".codex", HooksFileName),
-                    CopilotProjectInstructionConfigSources.TrustedProject,
-                    configuredCommandHooks.Count);
-                var remainingHookSlots = Math.Max(
-                    0,
-                    MaximumConfiguredHookHandlers - configuredCommandHooks.Count);
-                configuredCommandHooks.AddRange(hookDiscovery.CommandHooks.Take(remainingHookSlots));
-                configuredHookIssues.AddRange(hookDiscovery.Issues);
-                if (hookDiscovery.CommandHooks.Count > remainingHookSlots)
-                {
-                    configuredHookIssues.Add(new CopilotCodexConfiguredHookIssue(
-                        hookDiscovery.SourceFilePaths.FirstOrDefault() ?? directoryPath,
-                        $"Configured command hooks are limited to {MaximumConfiguredHookHandlers} handlers across active layers."));
-                }
-                appliedHookFilePaths.AddRange(hookDiscovery.SourceFilePaths);
             }
 
             var projectExecPolicy = DiscoverTrustedProjectExecPolicy(
@@ -1478,21 +1086,8 @@ namespace ColorVision.Copilot
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
-            var customSubagents = ApplyTrustedProjectCustomSubagents(
-                options.CustomSubagents,
-                options.CustomSubagentDiscoveryIssues,
-                normalizedProjectRoot,
-                configDirectories,
-                out var customSubagentDiscoveryIssues);
             options = options with
             {
-                CustomSubagents = customSubagents,
-                CustomSubagentDiscoveryIssues = customSubagentDiscoveryIssues,
-                ConfiguredCommandHooks = configuredCommandHooks.ToArray(),
-                ConfiguredHookIssues = configuredHookIssues.ToArray(),
-                AppliedHookFilePaths = appliedHookFilePaths
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToArray(),
                 ConfiguredExecPolicyRules = configuredExecPolicyRules,
                 ConfiguredExecPolicyIssues = configuredExecPolicyIssues,
                 AppliedExecPolicyFilePaths = appliedExecPolicyFilePaths,
@@ -1525,7 +1120,6 @@ namespace ColorVision.Copilot
             var webSearchConfigState = current.WebSearchConfigState.Apply(
                 layer.WebSearchConfigState,
                 source);
-            var webSearchResolution = webSearchConfigState.Resolve();
 
             return current with
             {
@@ -1563,10 +1157,9 @@ namespace ColorVision.Copilot
                 PersonalitySource = layer.HasPersonalityOverride
                     ? source
                     : current.PersonalitySource,
-                ConfiguredWebSearchMode = webSearchResolution.Mode,
-                HasWebSearchModeOverride = webSearchResolution.HasOverride,
-                WebSearchModeSource = webSearchResolution.Source,
-                WebSearchModeConfigKey = webSearchResolution.ConfigKey,
+                ConfiguredWebSearchMode = webSearchConfigState.Mode,
+                HasWebSearchModeOverride = webSearchConfigState.HasOverride,
+                WebSearchModeSource = webSearchConfigState.Source,
                 WebSearchConfigState = webSearchConfigState,
                 ConfiguredSandboxMode = layer.HasSandboxModeOverride
                     ? layer.SandboxMode
@@ -2311,14 +1904,7 @@ namespace ColorVision.Copilot
             var hasDeveloperInstructionsOverride = false;
             var hasPersonalityEnabledOverride = false;
             var hasPersonalityOverride = false;
-            var hasCanonicalWebSearchModeOverride = false;
-            var hasCanonicalWebSearchModeAssignment = false;
-            var hasLegacyWebSearchAssignment = false;
-            var legacyWebSearchEnabled = false;
-            var hasLegacyWebSearchCachedAssignment = false;
-            var legacyWebSearchCachedEnabled = false;
-            var hasLegacyWebSearchRequestAssignment = false;
-            var legacyWebSearchRequestEnabled = false;
+            var hasWebSearchModeOverride = false;
             var hasSandboxModeOverride = false;
             var hasApprovalPolicyOverride = false;
             var hasApprovalsReviewerOverride = false;
@@ -2423,7 +2009,6 @@ namespace ColorVision.Copilot
 
                 if (string.Equals(assignment.Key, WebSearchKey, StringComparison.Ordinal))
                 {
-                    hasCanonicalWebSearchModeAssignment = true;
                     if (!TryParseConfiguredText(
                         assignment.Value,
                         MaximumPersonalityCharacters,
@@ -2434,37 +2019,7 @@ namespace ColorVision.Copilot
                     {
                         continue;
                     }
-                    hasCanonicalWebSearchModeOverride = true;
-                    continue;
-                }
-
-                if (string.Equals(assignment.Key, LegacyWebSearchKey, StringComparison.Ordinal))
-                {
-                    if (TryParseTomlBoolean(assignment.Value, out var enabled))
-                    {
-                        hasLegacyWebSearchAssignment = true;
-                        legacyWebSearchEnabled = enabled;
-                    }
-                    continue;
-                }
-
-                if (string.Equals(assignment.Key, LegacyWebSearchCachedKey, StringComparison.Ordinal))
-                {
-                    if (TryParseTomlBoolean(assignment.Value, out var enabled))
-                    {
-                        hasLegacyWebSearchCachedAssignment = true;
-                        legacyWebSearchCachedEnabled = enabled;
-                    }
-                    continue;
-                }
-
-                if (string.Equals(assignment.Key, LegacyWebSearchRequestKey, StringComparison.Ordinal))
-                {
-                    if (TryParseTomlBoolean(assignment.Value, out var enabled))
-                    {
-                        hasLegacyWebSearchRequestAssignment = true;
-                        legacyWebSearchRequestEnabled = enabled;
-                    }
+                    hasWebSearchModeOverride = true;
                     continue;
                 }
 
@@ -3068,23 +2623,9 @@ namespace ColorVision.Copilot
                 hasProjectRootMarkersOverride = true;
             }
 
-            var acceptLegacyWebSearchAssignments = !hasCanonicalWebSearchModeAssignment
-                || hasCanonicalWebSearchModeOverride;
             var webSearchConfigState = new CopilotCodexWebSearchConfigState(
-                hasCanonicalWebSearchModeOverride,
+                hasWebSearchModeOverride,
                 webSearchMode,
-                CopilotProjectInstructionConfigSources.None,
-                acceptLegacyWebSearchAssignments && hasLegacyWebSearchAssignment
-                    ? legacyWebSearchEnabled
-                    : null,
-                CopilotProjectInstructionConfigSources.None,
-                acceptLegacyWebSearchAssignments && hasLegacyWebSearchCachedAssignment
-                    ? legacyWebSearchCachedEnabled
-                    : null,
-                CopilotProjectInstructionConfigSources.None,
-                acceptLegacyWebSearchAssignments && hasLegacyWebSearchRequestAssignment
-                    ? legacyWebSearchRequestEnabled
-                    : null,
                 CopilotProjectInstructionConfigSources.None);
 
             layer = new ProjectInstructionConfigLayer(
@@ -3415,9 +2956,6 @@ namespace ColorVision.Copilot
                         MultiAgentEnabledFeatureKey => MultiAgentEnabledKey,
                         GoalsEnabledFeatureKey => GoalsEnabledKey,
                         DefaultModeRequestUserInputEnabledFeatureKey => DefaultModeRequestUserInputEnabledKey,
-                        LegacyWebSearchFeatureKey => LegacyWebSearchKey,
-                        LegacyWebSearchCachedFeatureKey => LegacyWebSearchCachedKey,
-                        LegacyWebSearchRequestFeatureKey => LegacyWebSearchRequestKey,
                         _ => string.Empty,
                     }
                         : inToolRegistryTable
@@ -3456,9 +2994,6 @@ namespace ColorVision.Copilot
                     && !string.Equals(key, PersonalityEnabledKey, StringComparison.Ordinal)
                     && !string.Equals(key, PersonalityKey, StringComparison.Ordinal)
                     && !string.Equals(key, WebSearchKey, StringComparison.Ordinal)
-                    && !string.Equals(key, LegacyWebSearchKey, StringComparison.Ordinal)
-                    && !string.Equals(key, LegacyWebSearchCachedKey, StringComparison.Ordinal)
-                    && !string.Equals(key, LegacyWebSearchRequestKey, StringComparison.Ordinal)
                     && !string.Equals(key, SandboxModeKey, StringComparison.Ordinal)
                     && !string.Equals(key, ApprovalPolicyKey, StringComparison.Ordinal)
                     && !string.Equals(key, ApprovalsReviewerKey, StringComparison.Ordinal)

@@ -35,8 +35,11 @@ namespace ColorVision.Copilot
 
             var requestedCheckpoint = request.SessionCheckpoint;
             var baseExecutionScope = CopilotExecutionScope.ForAgentRun(request);
+            var taskEventJournalBaseline = request.TaskEventJournalBaseline?.IsStructurallyValid() == true
+                ? request.TaskEventJournalBaseline
+                : requestedCheckpoint?.TaskEventJournal;
             var taskEventJournalBuilder = new CopilotAgentTaskEventJournalBuilder(
-                requestedCheckpoint?.TaskEventJournal,
+                taskEventJournalBaseline,
                 baseExecutionScope.RunId);
             var runStartBackgroundShellCommandSnapshots =
                 (_backgroundShellCommandSnapshotProvider(request.ConversationId)
@@ -151,8 +154,7 @@ namespace ColorVision.Copilot
                 : null;
             var hookSurfaceSnapshot = _toolExecutor.GetHookSurfaceSnapshot(
                 request.CodexHooksEnabled,
-                request.CodexPluginsEnabled,
-                request.CodexCommandHooks);
+                request.CodexPluginsEnabled);
             var executionScope = baseExecutionScope.WithRuntimeSnapshot(
                 environmentContext.Fingerprint,
                 capabilitySnapshot.Revision);
@@ -166,8 +168,7 @@ namespace ColorVision.Copilot
                 requireEnvironmentContextMatch: true,
                 projectInstructions: request.ProjectInstructions,
                 configuredDeveloperInstructions: request.ConfiguredDeveloperInstructions);
-            var requiresCheckpointReplan = checkpointCompatibility?.Kind == CopilotAgentCheckpointCompatibilityKind.ProfileChanged
-                || checkpointCompatibility?.RequiresReplan == true;
+            var requiresCheckpointReplan = checkpointCompatibility?.RequiresReplan == true;
             var recovery = NormalizeRecoveryRequest(request.Recovery, requestedCheckpoint, availableTools, requiresCheckpointReplan);
             if (recovery != null)
                 taskEventJournalBuilder.RecordRecovery(recovery);
@@ -176,9 +177,11 @@ namespace ColorVision.Copilot
                 : Array.Empty<CopilotAgentEvidenceArtifact>();
             CopilotTokenBudgetChatClient? chatClient = null;
             using var toolBudgetCancellation = new CopilotNonBlockingCancellationSource();
+            using var postToolStopCancellation = new CopilotNonBlockingCancellationSource();
             using var agentLoopCancellation = CancellationTokenSource.CreateLinkedTokenSource(
                 cancellationToken,
-                toolBudgetCancellation.Token);
+                toolBudgetCancellation.Token,
+                postToolStopCancellation.Token);
             var bridge = new HarnessToolBridge(
                 request,
                 executionScope,
@@ -188,8 +191,9 @@ namespace ColorVision.Copilot
                 _approvalCoordinator,
                 emit,
                 () => _capabilityCatalog.GetSnapshot(request.CodexPluginsEnabled).Revision,
-                delegatedRun => chatClient?.RecordDelegatedRunUsage(delegatedRun),
-                toolBudgetCancellation.RequestCancellation);
+                recordDelegatedRunUsage: delegatedRun => chatClient?.RecordDelegatedRunUsage(delegatedRun),
+                onToolBudgetExhausted: toolBudgetCancellation.RequestCancellation,
+                onPostToolStopRequested: postToolStopCancellation.RequestCancellation);
             var harnessPreparation = PrepareHarnessPolicy(
                 request,
                 runBudget,
@@ -230,8 +234,13 @@ namespace ColorVision.Copilot
             var contextRecoveryChatClient = providerPipeline.ContextRecoveryChatClient;
             var trackingChatClient = providerPipeline.TrackingChatClient;
             LiveCheckpointPublisher? liveCheckpointPublisher = null;
-            async ValueTask OnHistoryStoredAsync(AIAgent checkpointAgent, AgentSession checkpointSession, CancellationToken checkpointToken)
+            async ValueTask OnHistoryStoredAsync(
+                AIAgent checkpointAgent,
+                AgentSession checkpointSession,
+                CopilotProviderToolHistoryDelta toolHistoryDelta,
+                CancellationToken checkpointToken)
             {
+                taskEventJournalBuilder.RecordProviderToolHistory(toolHistoryDelta);
                 if (liveCheckpointPublisher != null)
                     await liveCheckpointPublisher.TryPublishAsync(checkpointAgent, checkpointSession, checkpointToken);
             }
@@ -369,6 +378,24 @@ namespace ColorVision.Copilot
             var sessionResumed = sessionPreparation.SessionResumed;
             var steeringRegistration = sessionPreparation.SteeringRegistration;
             liveCheckpointPublisher = sessionPreparation.LiveCheckpointPublisher;
+            var statePersistenceBarrier = request.StatePersistenceBarrier;
+            async ValueTask<bool> PublishRequiredCheckpointAsync(CancellationToken token)
+            {
+                if (!await liveCheckpointPublisher
+                        .PublishRequiredAsync(agent, session, token)
+                        .ConfigureAwait(false))
+                {
+                    return false;
+                }
+
+                if (statePersistenceBarrier != null)
+                    await statePersistenceBarrier(token).ConfigureAwait(false);
+                return true;
+            }
+
+            bridge.AttachInteractionCheckpointPublisher(PublishRequiredCheckpointAsync);
+            if (statePersistenceBarrier != null)
+                bridge.AttachToolDispatchCheckpointPublisher(PublishRequiredCheckpointAsync);
             var recoveredTaskLedger = sessionPreparation.RecoveredTaskLedger;
             var promptMessages = sessionPreparation.PromptMessages;
             using var deferredBackgroundOutputDelivery =
@@ -419,14 +446,11 @@ namespace ColorVision.Copilot
                 ? "Agent Framework is generating an answer without tools."
                 : $"Agent Framework can use {frameworkTools.Count} request-scoped tool(s)."));
 
-            var stopHookActive = false;
-            var stopContinuationCount = 0;
-            var asyncHookContinuationCount = 0;
-            var loopMessages = initialMessages;
             var controlIntent = CopilotAgentControlIntent.None;
             var timeBudgetExhausted = false;
             var providerInterrupted = false;
             var contextWindowExceeded = false;
+            var postToolStopRequested = false;
             var automaticReviewCircuitBreakerTripped = false;
             CopilotAutomaticApprovalDenialCircuitBreakerSnapshot? automaticReviewCircuitBreaker = null;
             var outputLengthLimitReached = false;
@@ -435,8 +459,6 @@ namespace ColorVision.Copilot
             var hasModelFinalAnswer = false;
             while (true)
             {
-                var finalAnswerRecoveredOutsideSession = false;
-                var isStopContinuation = stopContinuationCount > 0;
                 var loopResult = await RunAgentStreamingLoopAsync(
                     request,
                     runBudget,
@@ -445,9 +467,10 @@ namespace ColorVision.Copilot
                     callerCancellationToken,
                     cancellationToken,
                     toolBudgetCancellation.Token,
+                    postToolStopCancellation.Token,
                     agentLoopCancellation.Token,
                     agent,
-                    loopMessages,
+                    initialMessages,
                     session,
                     bridge,
                     contextRecoveryChatClient,
@@ -459,20 +482,15 @@ namespace ColorVision.Copilot
                     answerText,
                     deferredBackgroundOutputDelivery,
                     deferredBackgroundCompletionDelivery,
-                    isStopContinuation
-                        ? Array.Empty<CopilotDeferredBackgroundShellOutputEvent>()
-                        : deferredBackgroundOutputEvents,
-                    isStopContinuation
-                        ? Array.Empty<CopilotDeferredBackgroundShellCompletion>()
-                        : deferredBackgroundCompletions,
-                    isStopContinuation
-                        ? Array.Empty<string>()
-                        : deferredBackgroundSignalMessages);
+                    deferredBackgroundOutputEvents,
+                    deferredBackgroundCompletions,
+                    deferredBackgroundSignalMessages);
                 usage = usage.Add(loopResult.Usage);
                 controlIntent = loopResult.ControlIntent;
                 timeBudgetExhausted = loopResult.TimeBudgetExhausted;
                 providerInterrupted = loopResult.ProviderInterrupted;
                 contextWindowExceeded = loopResult.ContextWindowExceeded;
+                postToolStopRequested = loopResult.PostToolStopRequested;
                 var toolBudgetForcedFinalization = loopResult.ToolBudgetForcedFinalization;
                 var providerFinishReason = loopResult.ProviderFinishReason;
                 automaticReviewCircuitBreaker = loopResult.AutomaticReviewCircuitBreaker;
@@ -494,6 +512,11 @@ namespace ColorVision.Copilot
                 {
                     emit(CopilotAgentEvent.RuntimeDiagnostic(
                         "The provider ended the Agent answer with an explicit non-success finish reason; starting one bounded no-tools finalization call instead of accepting partial text."));
+                }
+                if (postToolStopRequested)
+                {
+                    hasModelFinalAnswer = !string.IsNullOrWhiteSpace(answerText.ToString());
+                    break;
                 }
                 hasModelFinalAnswer = !providerInterrupted
                     && !automaticReviewCircuitBreakerTripped
@@ -530,7 +553,6 @@ namespace ColorVision.Copilot
                     outputContentFiltered = recoveredFinalAnswer.OutputContentFiltered;
                     outputFinishReasonIncomplete = recoveredFinalAnswer.OutputFinishReasonIncomplete;
                     hasModelFinalAnswer = recoveredFinalAnswer.HasModelFinalAnswer;
-                    finalAnswerRecoveredOutsideSession = recoveredFinalAnswer.HasModelFinalAnswer;
                 }
                 hasModelFinalAnswer = ApplyFinalAnswerQualityGates(
                     request,
@@ -547,106 +569,7 @@ namespace ColorVision.Copilot
                     outputLengthLimitReached,
                     outputContentFiltered,
                     outputFinishReasonIncomplete);
-                var completedAsyncHookResults =
-                    CopilotCodexLifecycleHookBackgroundScheduler.Shared.DrainCompleted(
-                        request.ConversationId);
-                CopilotCodexAsyncHookResultDelivery.PublishDiagnostics(
-                    completedAsyncHookResults,
-                    diagnostic => emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic)));
-                var asyncHookContinuation = CopilotCodexAsyncHookResultDelivery
-                    .BuildContinuationMessage(completedAsyncHookResults);
-                if (asyncHookContinuation.Length > 0)
-                {
-                    var asyncHookBudgetExhausted = chatClient.Snapshot.BudgetExhausted
-                        || bridge.ToolBudgetExhausted
-                        || timeBudgetCancellation.IsCancellationRequested
-                        || agentLoopCancellation.IsCancellationRequested;
-                    if (!hasModelFinalAnswer
-                        || asyncHookBudgetExhausted
-                        || asyncHookContinuationCount
-                            >= CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations)
-                    {
-                        CopilotCodexLifecycleHookBackgroundScheduler.Shared.RequeueContexts(
-                            request.ConversationId,
-                            completedAsyncHookResults);
-                        emit(CopilotAgentEvent.RuntimeDiagnostic(!hasModelFinalAnswer
-                            ? "Completed async hook context was buffered for the next user request because the Agent did not reach a safe completed-answer boundary."
-                            : asyncHookBudgetExhausted
-                                ? "Completed async hook context was buffered for the next user request because the Agent run's existing time, token, or tool-call budget is exhausted."
-                                : $"Async hook continuation limit reached · {CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations} continuation(s); remaining context was buffered for the next user request."));
-                    }
-                    else
-                    {
-                        asyncHookContinuationCount++;
-                        var asyncHookCompletedAnswer = answerText.ToString();
-                        emit(CopilotAgentEvent.RuntimeDiagnostic(
-                            $"Async hook continuation {asyncHookContinuationCount}/{CopilotCodexAsyncHookResultDelivery.MaximumConsecutiveContinuations} · Agent is delivering completed notification-only hook context at the post-sampling boundary."));
-                        emit(CopilotAgentEvent.AnswerReset());
-                        loopMessages = finalAnswerRecoveredOutsideSession
-                            ?
-                            [
-                                new ChatMessage(ChatRole.Assistant, asyncHookCompletedAnswer),
-                                new ChatMessage(ChatRole.User, asyncHookContinuation),
-                            ]
-                            :
-                            [
-                                new ChatMessage(ChatRole.User, asyncHookContinuation),
-                            ];
-                        continue;
-                    }
-                }
-                if (!hasModelFinalAnswer)
-                    break;
-
-                var stopOutcome = await _stopHookExecutor.RunAsync(
-                    request,
-                    stopHookActive,
-                    answerText.ToString(),
-                    diagnostic => emit(CopilotAgentEvent.RuntimeDiagnostic(diagnostic)),
-                    cancellationToken).ConfigureAwait(false);
-                if (!stopOutcome.ShouldContinue)
-                    break;
-
-                if (stopContinuationCount >= CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations)
-                {
-                    var eventName = request.CodexSubagentHookContext == null
-                        ? "Stop"
-                        : "SubagentStop";
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(
-                        $"{eventName} hook continuation limit reached · {CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations} consecutive continuation(s); the Agent turn is finalizing to avoid an unbounded hook loop."));
-                    break;
-                }
-
-                var budgetExhausted = chatClient.Snapshot.BudgetExhausted;
-                if (budgetExhausted
-                    || bridge.ToolBudgetExhausted
-                    || timeBudgetCancellation.IsCancellationRequested
-                    || agentLoopCancellation.IsCancellationRequested)
-                {
-                    emit(CopilotAgentEvent.RuntimeDiagnostic(
-                        "Stop hook requested continuation, but the Agent run's existing time, token, or tool-call budget is exhausted; the current answer is finalizing."));
-                    break;
-                }
-
-                stopContinuationCount++;
-                stopHookActive = true;
-                var stopEventName = request.CodexSubagentHookContext == null
-                    ? "Stop"
-                    : "SubagentStop";
-                emit(CopilotAgentEvent.RuntimeDiagnostic(
-                    $"{stopEventName} hook continuation {stopContinuationCount}/{CopilotCodexStopHookExecutor.MaximumConsecutiveContinuations} · Agent is asking the current Harness session to revise the completed answer."));
-                var completedAnswer = answerText.ToString();
-                emit(CopilotAgentEvent.AnswerReset());
-                loopMessages = finalAnswerRecoveredOutsideSession
-                    ?
-                    [
-                        new ChatMessage(ChatRole.Assistant, completedAnswer),
-                        new ChatMessage(ChatRole.User, stopOutcome.ContinuationPrompt),
-                    ]
-                    :
-                    [
-                        new ChatMessage(ChatRole.User, stopOutcome.ContinuationPrompt),
-                    ];
+                break;
             }
             var budgetSnapshot = runBudget.CreateSnapshot(
                 chatClient.Snapshot,
@@ -734,6 +657,7 @@ namespace ColorVision.Copilot
                 _ when contextWindowExceeded => CopilotAgentStopReason.ProviderFailure,
                 _ when providerInterrupted => CopilotAgentStopReason.ProviderFailure,
                 _ when automaticReviewCircuitBreakerTripped => CopilotAgentStopReason.ApprovalDenied,
+                _ when postToolStopRequested => CopilotAgentStopReason.Blocked,
                 _ => DetermineStopReason(taskLedger, budgetSnapshot, bridge.StepRecords, hasModelFinalAnswer, request.Mode),
             };
             if (controlIntent == CopilotAgentControlIntent.None
@@ -741,6 +665,7 @@ namespace ColorVision.Copilot
                 && !providerInterrupted
                 && !contextWindowExceeded
                 && !automaticReviewCircuitBreakerTripped
+                && !postToolStopRequested
                 && executionContractEvaluation.IsRequired
                 && !executionContractEvaluation.IsSatisfied)
             {
@@ -754,9 +679,16 @@ namespace ColorVision.Copilot
                 && !providerInterrupted
                 && !contextWindowExceeded
                 && !automaticReviewCircuitBreakerTripped
+                && !postToolStopRequested
                 && !blockers.Any(blocker => string.Equals(blocker.Code, executionContractBlocker.Code, StringComparison.Ordinal)))
             {
                 blockers = blockers.Append(executionContractBlocker).ToArray();
+            }
+            var postToolStopBlocker = bridge.GetPostToolStopBlocker();
+            if (postToolStopBlocker != null
+                && !blockers.Any(blocker => string.Equals(blocker.Code, postToolStopBlocker.Code, StringComparison.Ordinal)))
+            {
+                blockers = blockers.Prepend(postToolStopBlocker).ToArray();
             }
             if (providerInterrupted)
                 blockers = blockers.Prepend(CreateProviderInterruptionBlocker()).ToArray();

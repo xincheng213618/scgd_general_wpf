@@ -15,7 +15,7 @@ namespace System.ComponentModel
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             dockPanel.Children.Add(textBlock);
 
-            var textBinding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
+            var textBinding = PropertyEditorHelper.CreateTwoWayBinding(obj, property);
             var textbox = PropertyEditorHelper.CreateSmallTextBox(textBinding);
 
             var selectBtn = new Button { Content = "...", Margin = new Thickness(5, 0, 0, 0) };

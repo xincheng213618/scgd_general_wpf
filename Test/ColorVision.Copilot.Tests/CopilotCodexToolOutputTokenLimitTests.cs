@@ -173,6 +173,21 @@ public sealed class CopilotCodexToolOutputTokenLimitTests
     }
 
     [Fact]
+    public void HeadTailCompactionDoesNotSplitUnicodeSurrogatePairs()
+    {
+        string originalContent = string.Concat(Enumerable.Repeat("😀a", 7_000))
+            + new string('b', 20_000);
+
+        string formatted = CopilotFrameworkToolResultFormatter.Format(CreateOutcome(originalContent));
+        using var document = JsonDocument.Parse(formatted);
+        string content = document.RootElement.GetProperty("content").GetString() ?? string.Empty;
+
+        Assert.True(IsWellFormedUtf16(content));
+        Assert.Contains("tool content compacted", content, StringComparison.Ordinal);
+        Assert.True(document.RootElement.GetProperty("content_truncated").GetBoolean());
+    }
+
+    [Fact]
     public void RejectedOutputStaysValidAndPreservesFailureIdentityWithinTheBudget()
     {
         string formatted = CopilotFrameworkToolResultFormatter.FormatRejected(
@@ -279,6 +294,24 @@ public sealed class CopilotCodexToolOutputTokenLimitTests
                 RetryEligible = false,
             },
         };
+    }
+
+    private static bool IsWellFormedUtf16(string value)
+    {
+        for (var index = 0; index < value.Length; index++)
+        {
+            if (char.IsHighSurrogate(value[index]))
+            {
+                if (index + 1 >= value.Length || !char.IsLowSurrogate(value[index + 1]))
+                    return false;
+                index++;
+            }
+            else if (char.IsLowSurrogate(value[index]))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static string CreateTemporaryDirectory()

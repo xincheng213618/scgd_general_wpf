@@ -466,8 +466,7 @@ namespace ColorVision.Copilot
             string focusInstructions,
             bool includeFocusInResult = true,
             CopilotAgentDefaultsConfig? agentDefaults = null,
-            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null,
-            CopilotCodexCompactHookTrigger hookTrigger = CopilotCodexCompactHookTrigger.Manual)
+            CopilotProjectInstructionDiscoveryOptions? codexConfigOptions = null)
         {
             agentDefaults ??= _config.AgentDefaults;
             var conversation = SelectedConversation;
@@ -489,8 +488,7 @@ namespace ColorVision.Copilot
                     _currentCodexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
                     _currentCodexConfigOptions.ConfiguredHooksEnabled,
-                    _currentCodexConfigOptions.ConfiguredPluginsEnabled,
-                    _currentCodexConfigOptions.ConfiguredCommandHooks)))
+                    _currentCodexConfigOptions.ConfiguredPluginsEnabled)))
             {
                 var latestAssistant = conversation.Messages.LastOrDefault(message => message != null && !message.IsUser);
                 var isFinalAnswerRecovery = latestAssistant?.HasRecoverableFinalAnswer == true;
@@ -557,104 +555,45 @@ namespace ColorVision.Copilot
             _isCompactingConversation = true;
             IsBusy = true;
             ShowLocalCommandResult(command, "正在压缩当前对话…完整聊天记录会继续保留在本地。");
-            var hookDiagnostics = new List<string>();
-            var hookRequest = CreateCompactionHookRequest(
-                conversation,
-                profile,
-                compactionConfig,
-                focusInstructions);
-            var compactionApplied = false;
-            var continueAfterCompaction = false;
             try
             {
-                var reply = default(CopilotCompletedReplyResult);
-                var summary = string.Empty;
-                var sessionStart = await _turnRuntime.RunSessionStartHooksAsync(
-                    hookRequest,
-                    hasPersistedHistory: sourceMessages.Length > 0,
-                    hookDiagnostics.Add,
+                var reply = await _chatService.CompleteReplyDetailedAsync(
+                    compactProfile,
+                    request,
                     cancellation.Token);
-                if (sessionStart.ShouldStop)
+                if (CanApplyAuxiliaryConversationResult(conversation))
                 {
-                    ShowLocalCommandResult(
-                        command,
-                        "压缩未开始：SessionStart Hook 已停止本次模型请求。"
-                        + FormatCompactionHookReason(sessionStart.StopReason)
-                        + FormatCompactionHookDiagnostics(hookDiagnostics));
+                    conversation.RecordCompactionUsage(reply.Usage, DateTimeOffset.UtcNow);
+                    PersistState();
+                }
+                else if (Volatile.Read(ref _disposeState) == 1)
+                {
                     return false;
                 }
-                var sessionStartContext =
-                    CopilotCodexSessionStartHookExecutor.BuildDeveloperContext(
-                        sessionStart.AdditionalContexts);
-                if (sessionStartContext.Length > 0)
-                {
-                    compactProfile.UseSystemPromptOverride(
-                        CopilotConversationCompactionPrompt.SystemPrompt
-                        + Environment.NewLine
-                        + Environment.NewLine
-                        + sessionStartContext);
-                }
-                var lifecycle = await new CopilotCodexCompactionHookLifecycle().RunAsync(
-                    hookRequest,
-                    hookTrigger,
-                    async compactCancellationToken =>
-                    {
-                        reply = await _chatService.CompleteReplyDetailedAsync(
-                            compactProfile,
-                            request,
-                            compactCancellationToken);
-                        if (CanApplyAuxiliaryConversationResult(conversation))
-                        {
-                            conversation.RecordCompactionUsage(reply.Usage, DateTimeOffset.UtcNow);
-                            PersistState();
-                        }
-                        else if (Volatile.Read(ref _disposeState) == 1)
-                        {
-                            return false;
-                        }
-                        compactCancellationToken.ThrowIfCancellationRequested();
-                        if (reply.IsIncomplete)
-                            throw new InvalidOperationException(BuildIncompleteCompactionMessage(reply));
-                        summary = NormalizeCompactSummary(reply.Content, summaryMaximumWeight);
-                        if (summary.Length == 0)
-                            throw new InvalidOperationException("模型没有返回可用的压缩摘要。");
-                        compactionPlan.TerminalEvidence.EnsurePreserved(summary);
-                        if (!Conversations.Contains(conversation) || !conversation.Messages.Contains(compactionPlan.BoundaryMessage))
-                            throw new InvalidOperationException("压缩期间会话已发生变化，结果未应用。");
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (reply.IsIncomplete)
+                    throw new InvalidOperationException(BuildIncompleteCompactionMessage(reply));
+                var summary = NormalizeCompactSummary(reply.Content, summaryMaximumWeight);
+                if (summary.Length == 0)
+                    throw new InvalidOperationException("模型没有返回可用的压缩摘要。");
+                compactionPlan.TerminalEvidence.EnsurePreserved(summary);
+                compactionPlan.EnsureSummaryShrinks(summary);
+                if (!Conversations.Contains(conversation))
+                    throw new InvalidOperationException("压缩期间会话已发生变化，结果未应用。");
+                compactionPlan.EnsureSourceStillCurrent(conversation);
 
-                        conversation.Compaction = new CopilotConversationCompaction
-                        {
-                            StrategyVersion = CopilotConversationCompaction.CurrentStrategyVersion,
-                            Summary = summary,
-                            ThroughMessageId = compactionPlan.BoundaryMessage.Id,
-                            CreatedAtUtc = DateTimeOffset.UtcNow,
-                            SourceMessageCount = compactionPlan.TotalSourceMessageCount,
-                            SourceCharacters = compactionPlan.TotalSourceCharacters,
-                        };
-                        conversation.AgentSessionCheckpoint = null;
-                        _turnRuntime.QueueSessionStart(
-                            conversation.Id,
-                            CopilotCodexSessionStartSource.Compact);
-                        UpdateConversationMetadata(conversation, touch: true);
-                        PersistState();
-                        compactionApplied = true;
-                        return true;
-                    },
-                    hookDiagnostics.Add,
-                    cancellation.Token);
-                if (!lifecycle.CompactionApplied)
+                conversation.Compaction = new CopilotConversationCompaction
                 {
-                    if (lifecycle.PreCompact.ShouldStop)
-                    {
-                        ShowLocalCommandResult(
-                            command,
-                            "压缩未开始：PreCompact Hook 已停止本次压缩。"
-                            + FormatCompactionHookReason(lifecycle.PreCompact.StopReason)
-                            + FormatCompactionHookDiagnostics(hookDiagnostics));
-                    }
-                    return false;
-                }
-                continueAfterCompaction = !lifecycle.PostCompact.ShouldStop;
+                    StrategyVersion = CopilotConversationCompaction.CurrentStrategyVersion,
+                    Summary = summary,
+                    ThroughMessageId = compactionPlan.BoundaryMessage.Id,
+                    CreatedAtUtc = DateTimeOffset.UtcNow,
+                    SourceMessageCount = compactionPlan.TotalSourceMessageCount,
+                    SourceCharacters = compactionPlan.TotalSourceCharacters,
+                };
+                conversation.SetAgentSessionCheckpoint(null);
+                UpdateConversationMetadata(conversation, touch: true);
+                PersistState();
 
                 var retainedAfterBoundary = CopilotConversationCompactionContext.CountMessagesAfterBoundary(conversation);
                 ShowLocalCommandResult(
@@ -664,23 +603,15 @@ namespace ColorVision.Copilot
                     + FormatCompactionUsage(reply.Usage)
                     + (!includeFocusInResult || string.IsNullOrWhiteSpace(focusInstructions)
                         ? string.Empty
-                        : "\n聚焦要求：" + focusInstructions.Trim())
-                    + (lifecycle.PostCompact.ShouldStop
-                        ? "\nPostCompact Hook 已保留压缩摘要，但停止了后续请求。"
-                            + FormatCompactionHookReason(lifecycle.PostCompact.StopReason)
-                        : string.Empty)
-                    + FormatCompactionHookDiagnostics(hookDiagnostics));
+                        : "\n聚焦要求：" + focusInstructions.Trim()));
                 RefreshComposerTokenEstimate();
+                return true;
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
                 ShowLocalCommandResult(
                     command,
-                    compactionApplied
-                        ? "压缩摘要已应用；PostCompact Hook 检查被取消，后续请求未发送。"
-                            + FormatCompactionHookDiagnostics(hookDiagnostics)
-                        : "上下文压缩已取消，原有对话和压缩摘要均未改变；若 Provider 已完成响应，其 Token 元数据仍会计入本会话用量。"
-                            + FormatCompactionHookDiagnostics(hookDiagnostics));
+                    "上下文压缩已取消，原有对话和压缩摘要均未改变；若 Provider 已完成响应，其 Token 元数据仍会计入本会话用量。");
             }
             catch (Exception ex)
             {
@@ -693,59 +624,7 @@ namespace ColorVision.Copilot
                 _isCompactingConversation = false;
                 IsBusy = _taskHost.IsActive;
             }
-            return continueAfterCompaction;
-        }
-
-        private CopilotAgentRequest CreateCompactionHookRequest(
-            CopilotConversationRecord conversation,
-            CopilotProfileConfig profile,
-            CopilotProjectInstructionDiscoveryOptions compactionConfig,
-            string focusInstructions)
-        {
-            var solutionDirectory = SolutionManager.GetInstance()
-                .CurrentSolutionExplorer?.DirectoryInfo?.FullName ?? string.Empty;
-            var workingDirectory = CopilotAgentRequestFactory.ResolvePrimaryProjectWorkingDirectoryPath(
-                solutionDirectory,
-                _activeDocumentPath);
-            return new CopilotAgentRequest
-            {
-                ConversationId = conversation.Id,
-                TaskId = "compact-" + Guid.NewGuid().ToString("N"),
-                WorkspacePath = workingDirectory,
-                UserText = focusInstructions ?? string.Empty,
-                TaskIntentText = focusInstructions ?? string.Empty,
-                Profile = profile.Clone(),
-                SearchRootPaths = string.IsNullOrWhiteSpace(workingDirectory)
-                    ? Array.Empty<string>()
-                    : [workingDirectory],
-                Mode = CopilotAgentMode.Chat,
-                CodexHooksEnabled = compactionConfig.ConfiguredHooksEnabled,
-                CodexCommandHooks = compactionConfig.ConfiguredCommandHooks
-                    .Where(definition => definition?.IsStructurallyValid() == true)
-                    .Select(definition => definition.CreateSnapshot())
-                    .ToArray(),
-                CodexPluginsEnabled = compactionConfig.ConfiguredPluginsEnabled,
-                CodexShellEnvironmentPolicy = compactionConfig
-                    .ConfiguredShellEnvironmentPolicy.CreateSnapshot(),
-                CodexApprovalPolicy = compactionConfig.ConfiguredApprovalPolicy,
-            };
-        }
-
-        private static string FormatCompactionHookReason(string reason)
-        {
-            var normalized = CopilotApprovalRequestReason.Normalize(reason);
-            return normalized.Length == 0 ? string.Empty : "\n原因：" + normalized;
-        }
-
-        private static string FormatCompactionHookDiagnostics(IReadOnlyList<string> diagnostics)
-        {
-            var visible = (diagnostics ?? Array.Empty<string>())
-                .Where(message => !string.IsNullOrWhiteSpace(message))
-                .Select(message => message.Trim())
-                .ToArray();
-            return visible.Length == 0
-                ? string.Empty
-                : "\nHook 运行：\n- " + string.Join("\n- ", visible);
+            return false;
         }
 
         private async Task<CopilotAutomaticCompactionOutcome> TryAutoCompactConversationAsync(
@@ -764,8 +643,7 @@ namespace ColorVision.Copilot
                     codexConfigOptions.ConfiguredPluginsEnabled),
                 CopilotToolExecutor.GetSharedHookSurfaceSnapshot(
                     codexConfigOptions.ConfiguredHooksEnabled,
-                    codexConfigOptions.ConfiguredPluginsEnabled,
-                    codexConfigOptions.ConfiguredCommandHooks)))
+                    codexConfigOptions.ConfiguredPluginsEnabled)))
             {
                 return CopilotAutomaticCompactionOutcome.NotNeeded;
             }
@@ -795,8 +673,7 @@ namespace ColorVision.Copilot
                     agentDefaults.AutoCompactInstructions),
                 includeFocusInResult: false,
                 agentDefaults,
-                codexConfigOptions,
-                CopilotCodexCompactHookTrigger.Auto);
+                codexConfigOptions);
             var applied = !ReferenceEquals(previousCompaction, conversation.Compaction)
                 && conversation.Compaction?.IsStructurallyValid() == true;
             if (!applied)

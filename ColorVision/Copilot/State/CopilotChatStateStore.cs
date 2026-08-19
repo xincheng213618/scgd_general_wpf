@@ -22,6 +22,8 @@ namespace ColorVision.Copilot
         private const long MaximumStateFileBytes = 64L * 1024 * 1024;
         private const int MaximumRecoverySnapshots = 12;
         private static readonly TimeSpan RecoverySnapshotInterval = TimeSpan.FromMinutes(30);
+        private static readonly UTF8Encoding Utf8WithoutBom = new(
+            encoderShouldEmitUTF8Identifier: false);
         private static readonly Lazy<CopilotChatStateStore> _instance = new(() => new CopilotChatStateStore());
         private static readonly JsonSerializerSettings SerializerSettings = new()
         {
@@ -89,12 +91,12 @@ namespace ColorVision.Copilot
 
                 var temporaryStatus = ReadStateFile(TemporaryStateFilePath, out var temporaryState, out var temporarySchemaVersion);
                 if (temporaryStatus == StateFileReadStatus.FutureVersion)
-                    return BlockForFutureVersion(temporarySchemaVersion);
+                    return BlockForFutureVersion(temporarySchemaVersion, TemporaryStateFilePath);
                 if (temporaryStatus == StateFileReadStatus.Valid)
                 {
                     var primaryStatus = ReadStateFile(StateFilePath, out var primaryState, out var primarySchemaVersion);
                     if (primaryStatus == StateFileReadStatus.FutureVersion)
-                        return BlockForFutureVersion(primarySchemaVersion);
+                        return BlockForFutureVersion(primarySchemaVersion, StateFilePath);
                     if (primaryStatus == StateFileReadStatus.Valid
                         && File.GetLastWriteTimeUtc(TemporaryStateFilePath) <= File.GetLastWriteTimeUtc(StateFilePath))
                     {
@@ -110,7 +112,7 @@ namespace ColorVision.Copilot
                         }
                         catch (CopilotChatStateFutureVersionException ex)
                         {
-                            return BlockForFutureVersion(ex.SchemaVersion);
+                            return BlockForFutureVersion(ex.SchemaVersion, ex.StateFilePath);
                         }
                         catch
                         {
@@ -126,7 +128,7 @@ namespace ColorVision.Copilot
 
                 var primaryReadStatus = ReadStateFile(StateFilePath, out var state, out var stateSchemaVersion);
                 if (primaryReadStatus == StateFileReadStatus.FutureVersion)
-                    return BlockForFutureVersion(stateSchemaVersion);
+                    return BlockForFutureVersion(stateSchemaVersion, StateFilePath);
                 if (primaryReadStatus == StateFileReadStatus.Valid)
                 {
                     LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Primary);
@@ -135,7 +137,7 @@ namespace ColorVision.Copilot
 
                 var backupReadStatus = ReadStateFile(BackupStateFilePath, out state, out stateSchemaVersion);
                 if (backupReadStatus == StateFileReadStatus.FutureVersion)
-                    return BlockForFutureVersion(stateSchemaVersion);
+                    return BlockForFutureVersion(stateSchemaVersion, BackupStateFilePath);
                 if (backupReadStatus == StateFileReadStatus.Valid)
                 {
                     LastLoadStatus = new CopilotChatStateLoadStatus(CopilotChatStateLoadSource.Backup);
@@ -147,7 +149,7 @@ namespace ColorVision.Copilot
                 {
                     var recoveryReadStatus = ReadStateFile(recoveryStateFile, out state, out stateSchemaVersion);
                     if (recoveryReadStatus == StateFileReadStatus.FutureVersion)
-                        return BlockForFutureVersion(stateSchemaVersion);
+                        return BlockForFutureVersion(stateSchemaVersion, recoveryStateFile);
                     if (recoveryReadStatus != StateFileReadStatus.Valid)
                         continue;
 
@@ -231,7 +233,10 @@ namespace ColorVision.Copilot
 
                 try
                 {
-                    await File.WriteAllTextAsync(TemporaryStateFilePath, serializedState, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), cancellationToken).ConfigureAwait(false);
+                    await WriteDurableTemporaryStateAsync(
+                        TemporaryStateFilePath,
+                        serializedState,
+                        cancellationToken).ConfigureAwait(false);
                     cancellationToken.ThrowIfCancellationRequested();
                     ValidateStateFile(TemporaryStateFilePath);
                     ReplaceStateFile(TemporaryStateFilePath);
@@ -253,7 +258,9 @@ namespace ColorVision.Copilot
 
             try
             {
-                File.WriteAllText(TemporaryStateFilePath, serializedState, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                WriteDurableTemporaryState(
+                    TemporaryStateFilePath,
+                    serializedState);
                 ValidateStateFile(TemporaryStateFilePath);
                 ReplaceStateFile(TemporaryStateFilePath);
             }
@@ -262,6 +269,61 @@ namespace ColorVision.Copilot
                 TryDeleteFile(TemporaryStateFilePath);
             }
         }
+
+        private static void WriteDurableTemporaryState(
+            string filePath,
+            string serializedState)
+        {
+            using var stream = OpenTemporaryStateStream(
+                filePath,
+                asynchronous: false);
+            using var writer = new StreamWriter(
+                stream,
+                Utf8WithoutBom,
+                bufferSize: 4_096,
+                leaveOpen: true);
+            writer.Write(serializedState);
+            writer.Flush();
+            stream.Flush(flushToDisk: true);
+        }
+
+        private static async Task WriteDurableTemporaryStateAsync(
+            string filePath,
+            string serializedState,
+            CancellationToken cancellationToken)
+        {
+            await using var stream = OpenTemporaryStateStream(
+                filePath,
+                asynchronous: true);
+            await using var writer = new StreamWriter(
+                stream,
+                Utf8WithoutBom,
+                bufferSize: 4_096,
+                leaveOpen: true);
+            await writer.WriteAsync(
+                serializedState.AsMemory(),
+                cancellationToken).ConfigureAwait(false);
+            await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            stream.Flush(flushToDisk: true);
+        }
+
+        private static FileStream OpenTemporaryStateStream(
+            string filePath,
+            bool asynchronous) =>
+            new(
+                filePath,
+                new FileStreamOptions
+                {
+                    Mode = FileMode.Create,
+                    Access = FileAccess.Write,
+                    Share = FileShare.None,
+                    BufferSize = 4_096,
+                    Options = FileOptions.WriteThrough
+                        | (asynchronous
+                            ? FileOptions.Asynchronous
+                            : FileOptions.None),
+                });
 
         private static bool IsPathUnderRoot(string path, string root)
         {

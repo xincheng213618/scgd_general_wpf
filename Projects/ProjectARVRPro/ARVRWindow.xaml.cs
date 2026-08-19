@@ -52,7 +52,6 @@ namespace ProjectARVRPro
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
         private const string FlowStartRejectedMessage = "FlowStartRejected";
-        private const double StepBarItemWidth = 48;
 
         public static ProjectARVRProConfig ProjectConfig => ProjectARVRProConfig.Instance;
 
@@ -65,16 +64,7 @@ namespace ProjectARVRPro
 
         private readonly PictureSwitchService _pictureSwitchService;
 
-        private enum ResultImageBackgroundKind
-        {
-            None,
-            Placeholder,
-            Real,
-        }
-
         private readonly ResultImagePlaceholderCache _resultImagePlaceholderCache = new();
-        private ResultImageBackgroundKind _resultImageBackgroundKind;
-        private string? _loadedResultImagePath;
         private long _resultImagePresentationVersion;
         private CancellationTokenSource? _resultImagePresentationCancellation;
 
@@ -116,7 +106,6 @@ namespace ProjectARVRPro
             || flowControl.IsFlowRun
             || _isFlowLifecycleActive
             || _isRunAllRunning
-            || _isContinuousTestRunning
             || _runAllSessionPrepared
             || _objectiveSessionPrepared;
 
@@ -205,7 +194,7 @@ namespace ProjectARVRPro
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning || _isContinuousTestRunning)
+                if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning)
                 {
                     log.Info("PG切换错误，正在执行流程或处理流程结果");
                     return false;
@@ -280,15 +269,15 @@ namespace ProjectARVRPro
 
         private LogOutput? logOutput;
         private bool _isDisposed;
-        private CopilotDynamicContextSession? _copilotContextSession;
-        private int _copilotPublishQueued;
         private EventHandler? _activeGroupChangedHandler;
-        private Func<bool>? _sourceBmpAvailabilityProvider;
+        private EventHandler? _activeProcessMetasChangedHandler;
         private void Window_Initialized(object sender, EventArgs e)
         {
             RefreshStepBar();
             _activeGroupChangedHandler = ProcessManager_ActiveGroupChanged;
             ProcessManager.ActiveGroupChanged += _activeGroupChangedHandler;
+            _activeProcessMetasChangedHandler = ProcessManager_ActiveProcessMetasChanged;
+            ProcessManager.ActiveProcessMetasChanged += _activeProcessMetasChangedHandler;
             this.DataContext = ProjectARVRProConfig.Instance;
             ProjectConfig.PropertyChanged += ProjectConfig_PropertyChanged;
             ApplyResultOverlayConfig();
@@ -313,10 +302,7 @@ namespace ProjectARVRPro
             };
 
 
-            ViewResultManager.ListView = listView1;
             ImageView.ExternalRenderCompleted += ImageView_ExternalRenderCompleted;
-            _sourceBmpAvailabilityProvider = CanCurrentSourceExportBmp;
-            ViewResultManager.SourceBmpAvailabilityProvider = _sourceBmpAvailabilityProvider;
             listView1.ItemsSource = ViewResluts;
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
@@ -326,92 +312,30 @@ namespace ProjectARVRPro
             // 构建 ListView 统一的右键菜单（替代原先每个实体各自创建 ContextMenu 的方案）
             BuildListViewContextMenu();
             ViewResluts.CollectionChanged += ViewResults_CollectionChanged;
-            RegisterCopilotContext();
 
-        }
-
-        private void RegisterCopilotContext()
-        {
-            try
-            {
-                _copilotContextSession = ProjectARVRCopilotContextHub.Shared.Register(
-                    CaptureCopilotSnapshotAsync,
-                    typeof(ARVRWindow).Assembly.GetName().Version?.ToString());
-            }
-            catch (Exception ex)
-            {
-                log.Warn("Could not register the ARVRPro result Copilot context; the inspection window will continue to operate.", ex);
-            }
-        }
-
-        private async Task<CopilotProjectResultContextSnapshot?> CaptureCopilotSnapshotAsync(CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (_isDisposed)
-                return null;
-            if (!Dispatcher.CheckAccess())
-            {
-                return await Dispatcher.InvokeAsync(() =>
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    return _isDisposed ? null : CaptureCopilotSnapshot();
-                });
-            }
-
-            return CaptureCopilotSnapshot();
-        }
-
-        private CopilotProjectResultContextSnapshot CaptureCopilotSnapshot()
-        {
-            return ProjectARVRCopilotSnapshotFactory.CreateForResultList(
-                "ARVRPro module inspection result list",
-                ViewResluts,
-                listView1.SelectedItem as ProjectARVRReuslt);
-        }
-
-        protected override void OnActivated(EventArgs e)
-        {
-            base.OnActivated(e);
-            _copilotContextSession?.Activate();
-            PublishCopilotContext();
         }
 
         private void ViewResults_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            QueueCopilotContextPublish();
-        }
-
-        private void QueueCopilotContextPublish()
-        {
-            if (_isDisposed || Interlocked.Exchange(ref _copilotPublishQueued, 1) != 0)
-                return;
-
-            Dispatcher.BeginInvoke(new Action(() =>
+            if (e.Action == NotifyCollectionChangedAction.Add
+                && e.NewStartingIndex == 0
+                && e.NewItems?[0] is ProjectARVRReuslt result)
             {
-                Interlocked.Exchange(ref _copilotPublishQueued, 0);
-                PublishCopilotContext();
-            }));
-        }
-
-        private void PublishCopilotContext()
-        {
-            if (_isDisposed || _copilotContextSession?.IsCurrent != true || !IsActive)
-                return;
-
-            try
-            {
-                var item = CopilotBusinessContextBuilder.BuildProjectResultContextItem(CaptureCopilotSnapshot());
-                CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromItem(
-                    ProjectARVRCopilotAgentExtension.SourceId,
-                    item));
-            }
-            catch (Exception ex)
-            {
-                log.Debug($"Could not publish the active ARVRPro result context to Copilot: {ex.Message}");
+                listView1.SelectedItem = result;
+                listView1.ScrollIntoView(result);
             }
         }
 
         private void ProcessManager_ActiveGroupChanged(object? sender, EventArgs e)
+        {
+            if (!_isDisposed)
+            {
+                RefreshStepBar();
+                ResetStepProgress();
+            }
+        }
+
+        private void ProcessManager_ActiveProcessMetasChanged(object? sender, EventArgs e)
         {
             if (!_isDisposed)
             {
@@ -664,7 +588,7 @@ namespace ProjectARVRPro
             ProcessMeta? runProcessMeta,
             CancellationToken cancellationToken = default)
         {
-            if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning || _isContinuousTestRunning)
+            if (_isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _isRunAllRunning)
             {
                 log.Info("当前flowControl存在流程执行或正在处理流程结果");
                 return false;
@@ -947,7 +871,6 @@ namespace ProjectARVRPro
         private void RefreshStepBar()
         {
             ProcessManager.GenStepBar(stepBar);
-            stepBar.Width = stepBar.Items.Count * StepBarItemWidth;
 
             foreach (object item in stepBar.Items)
             {
@@ -961,7 +884,10 @@ namespace ProjectARVRPro
             if (stepBar == null || stepBar.Items.Count == 0 || stepIndex < 0)
                 return;
 
-            int normalizedStepIndex = Math.Min(stepIndex, stepBar.Items.Count - 1);
+            int normalizedStepIndex = ProcessManager.GetEnabledStepIndex(ProcessMetas, stepIndex);
+            if (normalizedStepIndex < 0 || normalizedStepIndex >= stepBar.Items.Count)
+                return;
+
             ProjectConfig.StepIndex = normalizedStepIndex;
 
             for (int i = 0; i < stepBar.Items.Count; i++)
@@ -1663,6 +1589,17 @@ namespace ProjectARVRPro
             outputText.Background = Brushes.Transparent;
         }
 
+        private void Button_Click_EditResultConfig(object sender, RoutedEventArgs e)
+        {
+            ViewResultManager.Config.SourceImageSupportsBmp = CanCurrentSourceExportBmp();
+            new PropertyEditorWindow(ViewResultManager.Config)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            }.ShowDialog();
+            ConfigService.Instance.SaveConfigs();
+        }
+
         public async Task OpenBatchResultAsync(MeasureBatchModel batch, string flowName)
         {
             ArgumentNullException.ThrowIfNull(batch);
@@ -1813,7 +1750,7 @@ namespace ProjectARVRPro
                     log.Error(ex);
                 }
 
-                string? filePath = result.FileName;
+                IReadOnlyList<ResultImageFileCandidate> imageCandidates = ResultImageFileCandidates.GetExisting(result);
                 CancellationTokenSource requestCancellation = new();
                 Interlocked.Exchange(ref _resultImagePresentationCancellation, requestCancellation)?.Cancel();
                 _ = Application.Current.Dispatcher.BeginInvoke(async () =>
@@ -1827,64 +1764,55 @@ namespace ProjectARVRPro
                             return;
 
                         bool hasDisplaySurface = false;
-                        if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
-                        {
-                            try
+                        bool renderOverlays = true;
+                        ResultImageFileCandidate? openedCandidate = await ResultImageFileCandidates.OpenFirstAsync(
+                            imageCandidates,
+                            async (candidate, cancellationToken) =>
                             {
-                                await OpenResultImageAsync(filePath, requestCancellation.Token);
+                                BitmapSource? loadedSource = await OpenResultImageAsync(candidate.FilePath, cancellationToken);
                                 if (!IsCurrentResultImageRequest(requestVersion, result))
-                                    return;
-
-                                if (GetLoadedImageSource() is BitmapSource source)
-                                {
-                                    _resultImageBackgroundKind = ResultImageBackgroundKind.Real;
-                                    _loadedResultImagePath = filePath;
-                                    PersistResultImageDimensions(result, source.PixelWidth, source.PixelHeight);
-                                    hasDisplaySurface = true;
-                                }
-                            }
-                            catch (TimeoutException ex)
+                                    throw new OperationCanceledException(cancellationToken);
+                                return loadedSource != null;
+                            },
+                            (candidate, exception) =>
                             {
-                                log.Warn($"加载结果图片超时，将尝试显示空白画布：{filePath}", ex);
-                            }
-                            catch (OperationCanceledException)
-                            {
-                                throw;
-                            }
-                            catch (Exception ex)
-                            {
-                                log.Warn($"加载结果图片失败，将尝试显示空白画布：{filePath}", ex);
-                            }
+                                if (exception is TimeoutException)
+                                    log.Warn($"加载结果图片超时，将尝试下一候选图：{candidate.FilePath}", exception);
+                                else if (exception != null)
+                                    log.Warn($"加载结果图片失败，将尝试下一候选图：{candidate.FilePath}", exception);
+                                else
+                                    log.Warn($"加载结果图片后没有有效图像，将尝试下一候选图：{candidate.FilePath}");
+                            },
+                            requestCancellation.Token);
+                        if (openedCandidate is ResultImageFileCandidate candidate
+                            && GetLoadedImageSource() is BitmapSource)
+                        {
+                            hasDisplaySurface = true;
+                            renderOverlays = candidate.RequiresOverlayRendering;
+                            if (candidate.Kind != ResultImageFileKind.Original)
+                                log.Info($"原始结果图不可用，已改用{DescribeResultImageCandidate(candidate.Kind)}：{candidate.FilePath}");
                         }
 
                         if (!hasDisplaySurface)
                         {
-                            string? activeFilePath = ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-                            if (_resultImageBackgroundKind != ResultImageBackgroundKind.Placeholder
-                                || !string.IsNullOrWhiteSpace(activeFilePath))
+                            if (TryGetResultImageDimensions(result, out int width, out int height))
                             {
-                                ClearResultImageSurface();
-                            }
-
-                            await EnsureResultImageDimensionsAsync(result, filePath, requestCancellation.Token);
-                            if (!IsCurrentResultImageRequest(requestVersion, result))
-                                return;
-
-                            if (ResultImageDimensions.IsValid(result.ImageWidth, result.ImageHeight))
-                            {
-                                ShowResultImagePlaceholder(result.ImageWidth!.Value, result.ImageHeight!.Value);
+                                ShowResultImagePlaceholder(width, height);
                                 hasDisplaySurface = true;
                             }
                             else
                             {
                                 ClearResultImageSurface();
-                                log.Warn($"结果图片不存在且没有可用尺寸，已清除旧底图：resultId={result.Id}, file={filePath}");
+                                log.Warn($"结果图片不存在且没有可用尺寸，已清除旧底图：resultId={result.Id}, file={result.FileName}");
                             }
                         }
 
                         if (hasDisplaySurface && HasResultDisplaySurface())
                         {
-                            RenderResultImage(result);
+                            if (renderOverlays)
+                                RenderResultImage(result);
+                            else
+                                ShowSavedResultImage(result);
                         }
                         else
                         {
@@ -1912,10 +1840,6 @@ namespace ProjectARVRPro
                         requestCancellation.Dispose();
                     }
                 });
-
-                _copilotContextSession?.Activate();
-                QueueCopilotContextPublish();
-
             }
         }
 
@@ -1953,22 +1877,41 @@ namespace ProjectARVRPro
             }
         }
 
-        private async Task OpenResultImageAsync(string filePath, CancellationToken cancellationToken)
+        private void ShowSavedResultImage(ProjectARVRReuslt result)
+        {
+            ImageView.ImageShow.Clear();
+            ImageView.NotifyExternalRenderCompleted(result, succeeded: HasResultDisplaySurface());
+        }
+
+        private static string DescribeResultImageCandidate(ResultImageFileKind kind) => kind switch
+        {
+            ResultImageFileKind.SavedSource => "已保存原图并重新渲染标记",
+            ResultImageFileKind.SavedResult => "已保存标记图",
+            _ => "算法原图",
+        };
+
+        private async Task<BitmapSource?> OpenResultImageAsync(string filePath, CancellationToken cancellationToken)
         {
             string? activeFilePath = ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-            if (_resultImageBackgroundKind == ResultImageBackgroundKind.Real
-                && GetLoadedImageSource() != null
-                && string.Equals(_loadedResultImagePath, filePath, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(activeFilePath, filePath, StringComparison.OrdinalIgnoreCase))
-                return;
+            if (string.Equals(activeFilePath, filePath, StringComparison.OrdinalIgnoreCase)
+                && GetLoadedImageSource() is BitmapSource currentSource)
+                return currentSource;
 
-            TaskCompletionSource<object?> imageLoaded = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            EventHandler<ImageViewImageSourceLoadedEventArgs> imageSourceLoaded = (_, _) => imageLoaded.TrySetResult(null);
+            TaskCompletionSource<ImageViewImageSourceLoadedEventArgs> imageLoaded = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            EventHandler<ImageViewImageSourceLoadedEventArgs> imageSourceLoaded = (_, e) => imageLoaded.TrySetResult(e);
             ImageView.ImageSourceLoaded += imageSourceLoaded;
             try
             {
                 ImageView.OpenImage(filePath);
-                await imageLoaded.Task.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
+                ImageViewImageSourceLoadedEventArgs loaded = await imageLoaded.Task.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
+                activeFilePath = ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
+                if (!string.Equals(activeFilePath, filePath, StringComparison.OrdinalIgnoreCase)
+                    || !ImageView.IsCurrentImageRevision(loaded.ImageRevision))
+                {
+                    return null;
+                }
+
+                return loaded.Source as BitmapSource;
             }
             finally
             {
@@ -1986,54 +1929,19 @@ namespace ProjectARVRPro
                 && ReferenceEquals(listView1.SelectedItem, result);
         }
 
-        private static async Task EnsureResultImageDimensionsAsync(ProjectARVRReuslt result, string? filePath, CancellationToken cancellationToken)
+        private static bool TryGetResultImageDimensions(ProjectARVRReuslt result, out int width, out int height)
         {
-            if (ResultImageDimensions.IsValid(result.ImageWidth, result.ImageHeight))
-                return;
-
-            if (ResultImageDimensions.TryReadFromFile(filePath, out int fileWidth, out int fileHeight))
-            {
-                PersistResultImageDimensions(result, fileWidth, fileHeight);
-                return;
-            }
-
-            Task<(bool Found, int Width, int Height)> recoveryTask = Task.Run(() =>
-            {
-                bool found = ResultImageDimensions.TryReadFromMeasureResults(result.BatchId, filePath, out int width, out int height);
-                return (found, width, height);
-            });
-            (bool Found, int Width, int Height) recovered = await recoveryTask.WaitAsync(cancellationToken);
-
-            if (recovered.Found)
-                PersistResultImageDimensions(result, recovered.Width, recovered.Height);
-        }
-
-        private static void PersistResultImageDimensions(ProjectARVRReuslt result, int width, int height)
-        {
-            try
-            {
-                ViewResultManager.UpdateImageDimensions(result, width, height);
-            }
-            catch (Exception ex)
-            {
-                log.Warn($"保存历史结果图像尺寸失败：resultId={result.Id}, size={width}x{height}", ex);
-            }
+            width = result.ImageWidth.GetValueOrDefault();
+            height = result.ImageHeight.GetValueOrDefault();
+            return width > 0 && height > 0;
         }
 
         private void ShowResultImagePlaceholder(int width, int height)
         {
             DrawingImage placeholder = _resultImagePlaceholderCache.GetOrCreate(width, height);
-            bool canReuseCurrentSource = _resultImageBackgroundKind == ResultImageBackgroundKind.Placeholder
-                && _resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height);
-            if (!canReuseCurrentSource)
+            if (!_resultImagePlaceholderCache.IsCurrent(ImageView.ImageShow.Source, width, height))
             {
-                string? activeFilePath = ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-                if (_resultImageBackgroundKind != ResultImageBackgroundKind.None
-                    || ImageView.ImageShow.Source != null
-                    || !string.IsNullOrWhiteSpace(activeFilePath))
-                {
-                    ImageView.Clear();
-                }
+                ImageView.Clear();
                 ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Cols, width, nameof(ARVRWindow), "历史结果坐标空间宽度");
                 ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.Rows, height, nameof(ARVRWindow), "历史结果坐标空间高度");
                 ImageView.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, width, nameof(ARVRWindow), "历史结果图像像素宽度");
@@ -2041,23 +1949,16 @@ namespace ProjectARVRPro
                 ImageView.SetImageSource(placeholder, enableEditorImageServices: false, configureDefaultLayerController: false);
                 ImageView.UpdateZoomAndScale();
             }
-
-            _resultImageBackgroundKind = ResultImageBackgroundKind.Placeholder;
-            _loadedResultImagePath = null;
         }
 
         private void ClearResultImageSurface()
         {
             string? activeFilePath = ImageView.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-            if (_resultImageBackgroundKind != ResultImageBackgroundKind.None
-                || ImageView.ImageShow.Source != null
+            if (ImageView.ImageShow.Source != null
                 || !string.IsNullOrWhiteSpace(activeFilePath))
             {
                 ImageView.Clear();
             }
-
-            _resultImageBackgroundKind = ResultImageBackgroundKind.None;
-            _loadedResultImagePath = null;
         }
 
         private bool HasResultDisplaySurface()
@@ -2209,7 +2110,9 @@ namespace ProjectARVRPro
             string? renderedFilePath = null;
             string? sourceFilePath = null;
             Stopwatch? exportStopwatch = null;
-            bool exportSucceeded = false;
+            bool exportCompleted = false;
+            ProjectImageExportAttempt? exportAttempt = null;
+            ProjectImageExportAttemptResult exportResult = new();
             try
             {
                 if (_isDisposed)
@@ -2255,13 +2158,10 @@ namespace ProjectARVRPro
                     log.Info($"后台导出原尺寸、原位深、无标记原图：{sourceDescription}");
                 }
 
-                ImageViewSnapshotExportOptions exportOptions = new()
-                {
-                    RenderedFileName = renderedFilePath,
-                    RenderedOptions = ProjectImageExportService.CreateRenderedOptions(resultFormat, resultSize),
-                    SourceFileName = sourceFilePath,
-                    SourceOptions = ProjectImageExportService.CreateSourceOptions(sourceFormat, sourceTiffCompression),
-                };
+                exportAttempt = new ProjectImageExportAttempt(renderedFilePath, sourceFilePath);
+                ImageViewSnapshotExportOptions exportOptions = exportAttempt.CreateOptions(
+                    ProjectImageExportService.CreateRenderedOptions(resultFormat, resultSize),
+                    ProjectImageExportService.CreateSourceOptions(sourceFormat, sourceTiffCompression));
 
                 exportStopwatch = Stopwatch.StartNew();
                 ImageViewSnapshot ownedSnapshot = snapshot;
@@ -2269,7 +2169,7 @@ namespace ProjectARVRPro
                 await ColorVision.ImageEditor.ImageView.SaveSnapshotExportsAsync(
                     ownedSnapshot,
                     exportOptions).ConfigureAwait(false);
-                exportSucceeded = true;
+                exportCompleted = true;
             }
             catch (Exception ex)
             {
@@ -2278,14 +2178,32 @@ namespace ProjectARVRPro
             finally
             {
                 exportStopwatch?.Stop();
-                if (exportSucceeded)
+                if (exportAttempt != null)
                 {
-                    LogExportedImage("8位标记图", renderedFilePath);
-                    LogExportedImage("原位深原图", sourceFilePath);
+                    exportResult = exportAttempt.CommitSuccessfulChannels((channel, fileName, ex) =>
+                        log.Error($"{channel}已编码，但替换正式导出文件失败：{fileName}", ex));
+                    exportAttempt.Dispose();
                 }
+                ResultImageExportPathUpdate pathUpdate = ResultImageExportPathUpdate.From(
+                    exportResult,
+                    includeOverlays,
+                    result.SavedResultImageFileName);
+                if (pathUpdate.UpdateSavedResultImageFileName || pathUpdate.UpdateSavedSourceImageFileName)
+                {
+                    try
+                    {
+                        ViewResultManager.UpdateSavedImagePaths(result, pathUpdate);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("图像已写盘，但保存本次成功导出路径到结果数据库失败；内存结果未更新。", ex);
+                    }
+                }
+                LogExportedImage("8位标记图", exportResult.RenderedFileName);
+                LogExportedImage("原位深原图", exportResult.SourceFileName);
                 if (exportStopwatch != null)
                 {
-                    string outcome = exportSucceeded ? "完成" : "结束（含失败）";
+                    string outcome = exportCompleted ? "完成" : "结束（含失败）";
                     log.Info($"ImageEditor图像导出任务{outcome}，总耗时 {exportStopwatch.ElapsedMilliseconds}ms。");
                 }
                 snapshot?.Dispose();
@@ -2415,143 +2333,17 @@ namespace ProjectARVRPro
         }
 
         private bool _isRunAllRunning;
-        private bool _isContinuousTestRunning;
-        private CancellationTokenSource? _continuousTestCancellation;
-        private static readonly TimeSpan ContinuousTestInterval = TimeSpan.FromMilliseconds(250);
 
         private async void RunAllClick(object sender, RoutedEventArgs e)
         {
             await RunAllAsync();
         }
 
-        private async void ContinuousTestClick(object sender, RoutedEventArgs e)
-        {
-            if (_isContinuousTestRunning)
-            {
-                if (MessageBox.Show(
-                    this,
-                    "停止后会取消当前正在执行的流程，并将未完成批次记录为已取消。\n\n确定停止连续测试吗？",
-                    "停止连续测试",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question,
-                    MessageBoxResult.No) == MessageBoxResult.Yes)
-                {
-                    StopContinuousTest();
-                }
-                return;
-            }
-
-            if (_isRunAllRunning || _isFlowStartPending || flowControl.IsFlowRun || _isFlowLifecycleActive || _objectiveSessionPrepared)
-            {
-                log.Info("当前存在尚未结束的测试会话，无法启动连续测试");
-                return;
-            }
-
-            if (!ProcessMetas.Any(meta => meta.IsEnabled))
-            {
-                log.Info("当前组没有启用的流程，无法启动连续测试");
-                return;
-            }
-
-            string groupName = ProcessManager.ActiveGroup?.Name ?? "<未命名>";
-            if (MessageBox.Show(
-                this,
-                $"即将连续执行当前组“{groupName}”的全部启用流程。\n每轮会自动生成新的 SN，并持续运行，直到手动停止。\n\n确定开始连续测试吗？",
-                "连续测试确认",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning,
-                MessageBoxResult.No) != MessageBoxResult.Yes)
-            {
-                return;
-            }
-
-            using var cancellation = new CancellationTokenSource();
-            _continuousTestCancellation = cancellation;
-            _isContinuousTestRunning = true;
-            RunAllButton.IsEnabled = false;
-            GroupSelector.IsEnabled = false;
-            ContinuousTestButton.Content = "■ 停止测试 (0)";
-            ContinuousTestButton.ToolTip = "点击停止连续测试";
-            log.Info($"连续测试开始，当前组: {groupName}");
-
-            ContinuousTestProgress lastProgress = default;
-            try
-            {
-                await ContinuousTestRunner.RunAsync(
-                    async cancellationToken =>
-                    {
-                        await RunAllAsync(cancellationToken);
-                        return ObjectiveTestResult.TotalResult;
-                    },
-                    progress =>
-                    {
-                        lastProgress = progress;
-                        ContinuousTestButton.Content = $"■ 停止测试 ({progress.CompletedRounds})";
-                        ContinuousTestButton.ToolTip =
-                            $"已完成 {progress.CompletedRounds} 轮，通过 {progress.PassedRounds} 轮，失败 {progress.FailedRounds} 轮，耗时 {progress.Elapsed:hh\\:mm\\:ss}";
-                        log.Info(
-                            $"连续测试第 {progress.CompletedRounds} 轮完成，" +
-                            $"通过={progress.PassedRounds}，失败={progress.FailedRounds}，耗时={progress.Elapsed:hh\\:mm\\:ss}");
-                    },
-                    ContinuousTestInterval,
-                    cancellation.Token);
-            }
-            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
-            {
-                log.Info(
-                    $"连续测试已停止，完成 {lastProgress.CompletedRounds} 轮，" +
-                    $"通过 {lastProgress.PassedRounds} 轮，失败 {lastProgress.FailedRounds} 轮，" +
-                    $"耗时 {lastProgress.Elapsed:hh\\:mm\\:ss}");
-            }
-            catch (Exception ex)
-            {
-                log.Error("连续测试异常终止", ex);
-            }
-            finally
-            {
-                if (ReferenceEquals(_continuousTestCancellation, cancellation))
-                    _continuousTestCancellation = null;
-                _isContinuousTestRunning = false;
-
-                if (!_isDisposed)
-                {
-                    RunAllButton.IsEnabled = true;
-                    GroupSelector.IsEnabled = true;
-                    ContinuousTestButton.IsEnabled = true;
-                    ContinuousTestButton.Content = "测试";
-                    ContinuousTestButton.ToolTip =
-                        $"上次完成 {lastProgress.CompletedRounds} 轮，通过 {lastProgress.PassedRounds} 轮，失败 {lastProgress.FailedRounds} 轮";
-                }
-            }
-        }
-
-        private void StopContinuousTest()
-        {
-            CancellationTokenSource? cancellation = _continuousTestCancellation;
-            if (cancellation == null || cancellation.IsCancellationRequested)
-                return;
-
-            ContinuousTestButton.Content = "正在停止...";
-            ContinuousTestButton.IsEnabled = false;
-            cancellation.Cancel();
-            flowControl.Stop();
-        }
-
         /// <summary>
         /// 一键执行当前组的所有启用的 ProcessMeta
         /// </summary>
-        public async Task RunAllAsync(CancellationToken cancellationToken = default)
+        public async Task RunAllAsync()
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            bool isContinuousTestRound =
-                _isContinuousTestRunning &&
-                _continuousTestCancellation != null &&
-                cancellationToken == _continuousTestCancellation.Token;
-            if (_isContinuousTestRunning && !isContinuousTestRound)
-            {
-                log.Info("连续测试正在运行，忽略其他一键执行请求");
-                return;
-            }
             if (_isRunAllRunning)
             {
                 log.Info("一键执行已在运行中，忽略重复调用");
@@ -2571,15 +2363,12 @@ namespace ProjectARVRPro
             _isRunAllRunning = true;
             CurrentFlowResult = null!;
             ProjectARVRReuslt? lastPersistedRunAllResult = null;
-            bool hasRunAllSession = _runAllSessionPrepared;
             try
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 bool usePreparedSession = _runAllSessionPrepared;
                 _runAllSessionPrepared = false;
                 if (!usePreparedSession)
-                    InitializeTestSession(isContinuousTestRound ? null : ProjectARVRProConfig.Instance.SN);
-                hasRunAllSession = true;
+                    InitializeTestSession(ProjectARVRProConfig.Instance.SN);
 
                 var enabledMetas = ProcessMetas.Where(m => m.IsEnabled).ToList();
                 log.Info($"一键执行开始，共 {enabledMetas.Count} 个启用的流程");
@@ -2608,7 +2397,6 @@ namespace ProjectARVRPro
                     FlowName = CurrentFlowResult.Model;
                     string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
                     CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
-                    cancellationToken.ThrowIfCancellationRequested();
 
                     log.Info($"一键执行 [{i + 1}/{enabledMetas.Count}]: {meta.Name} ({meta.FlowTemplate})");
 
@@ -2630,7 +2418,6 @@ namespace ProjectARVRPro
                     TryCount = 0;
 
                     await Refresh();
-                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (!await _pictureSwitchService.ExecuteAsync(meta))
                     {
@@ -2651,7 +2438,6 @@ namespace ProjectARVRPro
 
                         continue;
                     }
-                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (!await PreProcessing(FlowName, CurrentFlowResult.SN))
                     {
@@ -2672,7 +2458,6 @@ namespace ProjectARVRPro
 
                         continue;
                     }
-                    cancellationToken.ThrowIfCancellationRequested();
 
                     CurrentFlowResult.FlowStatus = FlowStatus.Ready;
 
@@ -2681,8 +2466,7 @@ namespace ProjectARVRPro
                             new FlowIdentity(
                                 templateParam.Id,
                                 templateParam.Key,
-                                FlowName)),
-                        cancellationToken);
+                                FlowName)));
 
                     CreateCurrentFlowBatch();
 
@@ -2692,7 +2476,7 @@ namespace ProjectARVRPro
                     FlowControlData flowResult;
                     try
                     {
-                        if (!await flowControl.TryStartAsync(CurrentFlowResult.Code, cancellationToken))
+                        if (!await flowControl.TryStartAsync(CurrentFlowResult.Code))
                         {
                             log.Error($"流程 {meta.Name} 启动被拒绝");
                             flowResult = new FlowControlData
@@ -2710,10 +2494,10 @@ namespace ProjectARVRPro
                             SetStepProgress(CurrentTestType, completed: false);
                             timer.Change(0, 500);
 
-                            // 等待流程完成（带超时与连续测试停止保护，默认10分钟）
+                            // 等待流程完成，默认超时 10 分钟。
                             try
                             {
-                                flowResult = await tcs.Task.WaitAsync(TimeSpan.FromMinutes(10), cancellationToken);
+                                flowResult = await tcs.Task.WaitAsync(TimeSpan.FromMinutes(10));
                             }
                             catch (TimeoutException)
                             {
@@ -2777,13 +2561,6 @@ namespace ProjectARVRPro
                 log.Info($"一键执行完成, TotalResult={ObjectiveTestResult.TotalResult}");
                 TestCompleted();
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                if (hasRunAllSession)
-                    await FinalizeCanceledRunAllFlowAsync(lastPersistedRunAllResult);
-                log.Info("一键执行已由连续测试停止请求取消");
-                throw;
-            }
             catch (Exception ex)
             {
                 string message = $"一键执行异常: {ex.Message}";
@@ -2826,44 +2603,6 @@ namespace ProjectARVRPro
             }
         }
 
-        private async Task FinalizeCanceledRunAllFlowAsync(ProjectARVRReuslt? lastPersistedRunAllResult)
-        {
-            flowControl.Stop();
-            stopwatch.Stop();
-            timer.Change(Timeout.Infinite, 500);
-
-            const string message = "连续测试已停止";
-            RecordFlowFailure(message);
-            if (CurrentFlowResult != null)
-            {
-                CurrentFlowResult.Msg = message;
-                CurrentFlowResult.FlowStatus = FlowStatus.Failed;
-                if (_currentFlowBatch?.Id > 0)
-                {
-                    await FinalizeCurrentFlowRunAsync(new FlowControlData
-                    {
-                        EventName = "Canceled",
-                        Status = StatusTypeEnum.Canceled,
-                        SerialNumber = CurrentFlowResult.Code,
-                        Message = message,
-                        Params = message,
-                        TotalTime = stopwatch.ElapsedMilliseconds,
-                    });
-                }
-                ViewResultManager.Save(CurrentFlowResult);
-                SaveObjectiveTestResultRecord(CurrentFlowResult);
-            }
-            else if (lastPersistedRunAllResult != null)
-            {
-                // Cancellation landed after one iteration finished but before the next result
-                // was created. Preserve that flow row and only finalize the product as failed.
-                SaveObjectiveTestResultRecord(lastPersistedRunAllResult);
-            }
-            FinalizeObjectiveTestResultRecord();
-            _objectiveSessionCompleted = true;
-            _objectiveSessionPrepared = false;
-        }
-
         private static string BuildDailyCustomXlsxBaseFileName(DateTime exportTime, string? projectName)
         {
             string safeProjectName = SanitizeFileName(string.IsNullOrWhiteSpace(projectName)
@@ -2892,29 +2631,22 @@ namespace ProjectARVRPro
                 return;
 
             _isDisposed = true;
-            _continuousTestCancellation?.Cancel();
             Interlocked.Increment(ref _resultImagePresentationVersion);
             Interlocked.Exchange(ref _resultImagePresentationCancellation, null)?.Cancel();
             _automaticImageExportResults.Clear();
             ImageView.ExternalRenderCompleted -= ImageView_ExternalRenderCompleted;
             ViewResluts.CollectionChanged -= ViewResults_CollectionChanged;
-            var wasCurrentCopilotSession = _copilotContextSession?.IsCurrent == true;
-            _copilotContextSession?.Dispose();
-            _copilotContextSession = null;
-            if (wasCurrentCopilotSession)
-                CopilotLiveContextRegistry.Clear(ProjectARVRCopilotAgentExtension.SourceId);
             ProjectConfig.PropertyChanged -= ProjectConfig_PropertyChanged;
             if (_activeGroupChangedHandler != null)
             {
                 ProcessManager.ActiveGroupChanged -= _activeGroupChangedHandler;
                 _activeGroupChangedHandler = null;
             }
-            if (ReferenceEquals(ViewResultManager.ListView, listView1))
-                ViewResultManager.ListView = null;
-            if (ReferenceEquals(ViewResultManager.SourceBmpAvailabilityProvider, _sourceBmpAvailabilityProvider))
-                ViewResultManager.SourceBmpAvailabilityProvider = null;
-            _sourceBmpAvailabilityProvider = null;
-
+            if (_activeProcessMetasChangedHandler != null)
+            {
+                ProcessManager.ActiveProcessMetasChanged -= _activeProcessMetasChangedHandler;
+                _activeProcessMetasChangedHandler = null;
+            }
             listView1.SelectionChanged -= listView1_SelectionChanged;
             listView1.ItemsSource = null;
             listView1.ContextMenu = null;

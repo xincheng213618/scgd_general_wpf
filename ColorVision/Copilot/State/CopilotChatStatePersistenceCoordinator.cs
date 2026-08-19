@@ -14,6 +14,8 @@ namespace ColorVision.Copilot
         private readonly Func<Dispatcher?> _dispatcherProvider;
         private readonly Action<Exception> _onError;
         private readonly CopilotChatStateSaveScheduler _scheduler;
+        private readonly SemaphoreSlim _commitGate = new(1, 1);
+        private int _lastSavePersisted;
         private int _stopState;
 
         public CopilotChatStatePersistenceCoordinator(
@@ -28,10 +30,14 @@ namespace ColorVision.Copilot
             _dispatcherProvider = dispatcherProvider ?? throw new ArgumentNullException(nameof(dispatcherProvider));
             _onError = onError ?? throw new ArgumentNullException(nameof(onError));
             ArgumentNullException.ThrowIfNull(onSaved);
-            _scheduler = new CopilotChatStateSaveScheduler(
+            _scheduler = CopilotChatStateSaveScheduler.CreateOutcomeAware(
                 SaveSnapshotAsync,
                 onError: onError,
-                onSaved: onSaved);
+                onSaved: () =>
+                {
+                    if (Interlocked.Exchange(ref _lastSavePersisted, 0) == 1)
+                        onSaved();
+                });
         }
 
         public void RequestSave(bool immediate = false) => _scheduler.RequestSave(immediate);
@@ -42,6 +48,7 @@ namespace ColorVision.Copilot
         public void SaveSynchronouslyAndStop()
         {
             Stop();
+            _commitGate.Wait();
             try
             {
                 if (_stateStore is not CopilotChatStateStore stateStore || !stateStore.IsStatePersistenceBlocked)
@@ -51,6 +58,10 @@ namespace ColorVision.Copilot
             {
                 ReportError(exception);
             }
+            finally
+            {
+                _commitGate.Release();
+            }
         }
 
         public void Dispose()
@@ -59,8 +70,10 @@ namespace ColorVision.Copilot
             GC.SuppressFinalize(this);
         }
 
-        private async Task SaveSnapshotAsync(CancellationToken cancellationToken)
+        private async Task<bool> SaveSnapshotAsync(CancellationToken cancellationToken)
         {
+            Interlocked.Exchange(ref _lastSavePersisted, 0);
+            var captureVersion = _scheduler.RequestedVersion;
             var state = GetState();
             var dispatcher = _dispatcherProvider();
             CopilotChatStateSnapshot snapshot;
@@ -89,10 +102,30 @@ namespace ColorVision.Copilot
                 snapshot = capture.Complete();
             }
 
+            if (_scheduler.RequestedVersion != captureVersion)
+                return false;
+
             var serializedState = await Task.Run(
                 () => _stateStore.Serialize(snapshot),
                 cancellationToken).ConfigureAwait(false);
-            await _stateStore.SaveSerializedAsync(serializedState, cancellationToken).ConfigureAwait(false);
+            if (_scheduler.RequestedVersion != captureVersion)
+                return false;
+
+            await _commitGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                if (_scheduler.RequestedVersion != captureVersion)
+                    return false;
+
+                await _stateStore.SaveSerializedAsync(serializedState, cancellationToken).ConfigureAwait(false);
+                if (_scheduler.RequestedVersion == captureVersion)
+                    Interlocked.Exchange(ref _lastSavePersisted, 1);
+                return true;
+            }
+            finally
+            {
+                _commitGate.Release();
+            }
         }
 
         private CopilotChatState GetState() =>

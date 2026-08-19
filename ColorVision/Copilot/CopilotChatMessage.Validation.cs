@@ -136,7 +136,9 @@ namespace ColorVision.Copilot
 
             if (_agentTaskLedger == null)
             {
-                _agentTaskLedger = new CopilotAgentTaskLedgerSnapshot();
+                _agentTaskLedger = CopilotAgentTaskLedgerSnapshot.CreateSnapshot(
+                    source: null,
+                    normalize: true);
                 changed = true;
             }
             else
@@ -159,11 +161,11 @@ namespace ColorVision.Copilot
             }
             changed |= SetReportedUsage(IsUser ? CopilotTokenUsage.Empty : ReportedUsage);
 
-            var validBlockers = (_agentBlockers ?? Array.Empty<CopilotAgentBlockerSnapshot>())
-                .Where(item => item?.IsStructurallyValid() == true)
-                .Take(8)
-                .ToArray();
-            if (_agentBlockers == null || validBlockers.Length != _agentBlockers.Count)
+            var validBlockers = CaptureAgentBlockers(_agentBlockers);
+            if (_agentBlockers == null
+                || validBlockers.Count != _agentBlockers.Count
+                || validBlockers.Count > 0
+                && _agentBlockers is not ReadOnlyCollection<CopilotAgentBlockerSnapshot>)
             {
                 _agentBlockers = validBlockers;
                 changed = true;

@@ -264,7 +264,9 @@ namespace ColorVision.UI.Tests
                 originalProcessId: 4242);
 
             Assert.Contains("set \"ORIGINAL_PID=4242\"", batch, StringComparison.Ordinal);
-            Assert.Contains("tasklist /fi \"PID eq %ORIGINAL_PID%\"", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("GetProcessById([int]$env:ORIGINAL_PID)", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("WaitForExit(15000)", batch, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("tasklist", batch, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("taskkill /f /pid \"%ORIGINAL_PID%\"", batch, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("taskkill /f /im", batch, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("Waiting for original application process to exit.", batch, StringComparison.Ordinal);

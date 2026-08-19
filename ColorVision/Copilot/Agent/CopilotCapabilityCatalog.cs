@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 
 namespace ColorVision.Copilot
@@ -105,7 +106,9 @@ namespace ColorVision.Copilot
         private readonly Func<DateTimeOffset> _utcNow;
         private readonly object _syncRoot = new();
         private long _revision;
+        private long _nonPluginRevision;
         private DateTimeOffset _updatedAtUtc;
+        private DateTimeOffset _nonPluginUpdatedAtUtc;
 
         public CopilotCapabilityCatalog(Func<DateTimeOffset>? utcNow = null)
         {
@@ -188,6 +191,14 @@ namespace ColorVision.Copilot
 
                 _revision++;
                 _updatedAtUtc = _utcNow();
+                if ((previousSource != null
+                        && previousSource.SourceKind != CopilotCapabilitySourceKind.Plugin)
+                    || (candidates.Length > 0
+                        && sourceKind != CopilotCapabilitySourceKind.Plugin))
+                {
+                    _nonPluginRevision++;
+                    _nonPluginUpdatedAtUtc = _updatedAtUtc;
+                }
                 snapshot = CreateSnapshotLocked();
                 change = new CopilotCapabilityCatalogChangedEventArgs
                 {
@@ -223,6 +234,11 @@ namespace ColorVision.Copilot
                 TrimKnownCapabilitiesLocked();
                 _revision++;
                 _updatedAtUtc = _utcNow();
+                if (sourceKind != CopilotCapabilitySourceKind.Plugin)
+                {
+                    _nonPluginRevision++;
+                    _nonPluginUpdatedAtUtc = _updatedAtUtc;
+                }
                 snapshot = CreateSnapshotLocked();
                 change = new CopilotCapabilityCatalogChangedEventArgs
                 {
@@ -249,15 +265,13 @@ namespace ColorVision.Copilot
                     .ToArray();
                 return new CopilotCapabilityCatalogSnapshot
                 {
-                    Revision = capabilities.Length == 0
-                        ? 0
-                        : capabilities.Max(entry => entry.Revision),
-                    UpdatedAtUtc = snapshot.UpdatedAtUtc,
+                    Revision = _nonPluginRevision,
+                    UpdatedAtUtc = _nonPluginUpdatedAtUtc,
                     SourceCount = capabilities
                         .Select(entry => entry.SourceId)
                         .Distinct(StringComparer.OrdinalIgnoreCase)
                         .Count(),
-                    Capabilities = capabilities,
+                    Capabilities = Array.AsReadOnly(capabilities),
                 };
             }
         }
@@ -281,8 +295,17 @@ namespace ColorVision.Copilot
             ArgumentNullException.ThrowIfNull(server);
             var endpoint = server.Endpoint?.Trim() ?? string.Empty;
             if (Uri.TryCreate(endpoint, UriKind.Absolute, out var uri))
-                endpoint = uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.Path, UriFormat.UriEscaped).TrimEnd('/');
-            var connectionIdentity = endpoint.ToUpperInvariant() + "\n" + (server.BearerTokenEnvironmentVariable?.Trim().ToUpperInvariant() ?? string.Empty);
+            {
+                var authority = uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.UriEscaped).ToUpperInvariant();
+                var pathAndQuery = uri.GetComponents(UriComponents.PathAndQuery, UriFormat.UriEscaped);
+                endpoint = authority + pathAndQuery;
+            }
+            var connectionIdentity = string.Join("\n", new[]
+            {
+                server.Name?.Trim().ToUpperInvariant() ?? string.Empty,
+                endpoint,
+                server.BearerTokenEnvironmentVariable?.Trim().ToUpperInvariant() ?? string.Empty,
+            });
             var fingerprint = SHA256.HashData(Encoding.UTF8.GetBytes(connectionIdentity));
             return "mcp:" + Convert.ToHexString(fingerprint.AsSpan(0, 6)).ToLowerInvariant();
         }
@@ -363,7 +386,10 @@ namespace ColorVision.Copilot
             }
             var id = sourceId + ":" + NormalizeCapabilityKey(capabilityKey);
             var description = Sanitize(rawDescription, MaximumDescriptionLength);
-            var schema = GetSchemaText(tool, name);
+            var schema = GetSchemaText(
+                tool,
+                name,
+                requireClosedObjects: sourceKind != CopilotCapabilitySourceKind.ExternalMcp);
             var schemaFingerprint = CreateHash(schema)[..16].ToLowerInvariant();
             var rawVersionFingerprint = tool is ICopilotCapabilityCatalogVersionIdentity versionIdentity
                 ? versionIdentity.CatalogVersionFingerprint ?? string.Empty
@@ -432,7 +458,7 @@ namespace ColorVision.Copilot
                 Revision = _revision,
                 UpdatedAtUtc = _updatedAtUtc,
                 SourceCount = _sources.Count,
-                Capabilities = entries,
+                Capabilities = Array.AsReadOnly(entries),
             };
         }
 
@@ -510,14 +536,25 @@ namespace ColorVision.Copilot
             return key.Length <= 96 ? key : key[..83] + "-" + CreateHash(source)[..12].ToLowerInvariant();
         }
 
-        private static string GetSchemaText(ICopilotTool tool, string toolName)
+        private static string GetSchemaText(
+            ICopilotTool tool,
+            string toolName,
+            bool requireClosedObjects)
         {
-            string schema;
+            JsonElement schema;
             try
             {
                 var inputSchema = tool.InputSchema
                     ?? throw new InvalidOperationException("The tool returned a null input schema.");
-                schema = inputSchema.JsonSchema.GetRawText();
+                if (!CopilotToolInputContractValidator.TryValidateSchema(
+                        inputSchema.JsonSchema,
+                        out var schemaError,
+                        requireClosedObjects))
+                {
+                    throw new InvalidOperationException(
+                        $"The tool input schema is not executable by the shared runtime: {schemaError}");
+                }
+                schema = inputSchema.JsonSchema;
             }
             catch (Exception ex)
             {
@@ -526,13 +563,13 @@ namespace ColorVision.Copilot
                     nameof(tool),
                     ex);
             }
-            if (schema.Length > MaximumInputSchemaCharacters)
+            if (schema.GetRawText().Length > MaximumInputSchemaCharacters)
             {
                 throw new ArgumentException(
                     $"Catalog capability '{toolName}' has an input schema longer than {MaximumInputSchemaCharacters} characters.",
                     nameof(tool));
             }
-            return schema;
+            return CopilotCanonicalJson.Serialize(schema);
         }
 
         private static string CreateHash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value ?? string.Empty)));

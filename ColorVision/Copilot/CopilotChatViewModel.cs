@@ -189,7 +189,7 @@ namespace ColorVision.Copilot
                 PersistConfig();
 
             _state = _stateStore.Load();
-            var stateChanged = _state.EnsureInitialized(_config);
+            var stateChanged = _state.EnsureInitializedAfterRestore(_config);
             stateChanged |= CopilotSteeringRecovery.RestorePendingToDrafts(_state);
             stateChanged |= CopilotConversationGoalRecovery.PauseActiveGoalsAfterProcessRestart(
                 _state,
@@ -208,13 +208,6 @@ namespace ColorVision.Copilot
             InitializeStateRecoveryNotice();
             if (stateChanged)
                 PersistState();
-
-            foreach (var restoredConversation in Conversations.Where(conversation => !conversation.IsArchived))
-            {
-                _turnRuntime.QueueSessionStart(
-                    restoredConversation.Id,
-                    CopilotCodexSessionStartSource.Resume);
-            }
 
             Conversations.CollectionChanged += Conversations_CollectionChanged;
 
@@ -383,8 +376,7 @@ namespace ColorVision.Copilot
         private void PublishSelectedTaskEventJournal()
         {
             var conversation = SelectedConversation;
-            var journal = conversation?.LatestAgentTaskEventJournal
-                ?? conversation?.AgentSessionCheckpoint?.TaskEventJournal;
+            var journal = conversation?.CurrentAgentTaskEventJournal;
             if (conversation != null
                 && journal?.Events?.Count > 0
                 && journal.IsStructurallyValid()

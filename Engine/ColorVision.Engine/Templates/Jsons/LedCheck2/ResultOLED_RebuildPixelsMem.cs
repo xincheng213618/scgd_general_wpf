@@ -3,7 +3,6 @@
 using ColorVision.Database;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Services;
-using log4net;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
 using SqlSugar;
@@ -18,22 +17,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {
     public class Compliance_Math: IResultHandleBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(Compliance_Math));
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.Compliance_Math };
-        public override void Load(ViewResultContext ctx, ViewResultAlg result)
-        {
-            if (result.ViewResults == null)
-            {
-                //result.ViewResults = new ObservableCollection<IViewResult>();
-                //using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                //var list = db.Queryable<AlgResultPoiCieFileModel>().Where(it => it.Pid == result.Id).ToList();
-
-                //foreach (var item in list)
-                //{
-                //    result.ViewResults.Add(item);
-                //}
-            }
-        }
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
@@ -47,30 +31,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 
     public class ResultOLED_RebuildPixelsMem : IResultHandleBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ResultOLED_RebuildPixelsMem));
-
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.OLED_FindDotsArrayMem_File, ViewResultAlgType.OLED_FindDotsArrayMem, ViewResultAlgType.OLED_RebuildPixelsMem , ViewResultAlgType.OLED_FindDotsArrayByCornerPts_File, ViewResultAlgType.OLED_FindDotsArrayOutFile };
-
-        public override void SideSave(ViewResultAlg result, string selectedPath)
-        {
-            string filePath = Path.Combine(selectedPath, $"{result.Batch}{result.ResultType}_LEDStripV2.csv");
-
-            //var viewResults = result.ViewResults.ToSpecificViewResults<LEDStripDetailViewResult>();
-            //var csvBuilder = new StringBuilder();
-            //csvBuilder.AppendLine("name,physicalLength,pixLength,x1,y1,x2,y2");
-            //if (viewResults.Count == 1)
-            //{
-            //    var items = viewResults[0].LEDStripResult?.Result;
-            //    if (items != null)
-            //    {
-            //        foreach (var item in items)
-            //        {
-            //            csvBuilder.AppendLine($"{item.Name},{item.PhysicalLength},{item.PixLength},{item.EndPoints[0].X},{item.EndPoints[0].Y},{item.EndPoints[1].X},{item.EndPoints[1].Y}");
-            //        }
-            //    }
-            //    File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
-            //}
-        }
 
 
         public override void Load(ViewResultContext ctx, ViewResultAlg result)
@@ -149,8 +110,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
                 }
                 else
                 {
-                    if (File.Exists(result.FilePath))
-                        ctx.ImageView.OpenImage(result.FilePath);
+                    OpenSourceImage(ctx, result);
                 }
             }
 

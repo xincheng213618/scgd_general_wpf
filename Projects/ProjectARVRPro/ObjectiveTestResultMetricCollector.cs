@@ -38,6 +38,12 @@ namespace ProjectARVRPro
                     continue;
                 }
 
+                if (property.Name == nameof(ObjectiveTestResult.ChessboardTestResult) &&
+                    ContainsKey(result.ChessboardTestResults, "Chessboard"))
+                {
+                    continue;
+                }
+
                 object? value = property.GetValue(result);
                 if (value == null || property.PropertyType.IsValueType || property.PropertyType == typeof(string))
                     continue;
@@ -59,8 +65,12 @@ namespace ProjectARVRPro
 
             CollectDynamicItems(result.DynamicTestResults, metrics, keys);
             CollectKeyedObjects(result.DynamicMTFHV058TestResults, metrics, keys);
+            CollectKeyedObjects(result.MTFH07TestResults, metrics, keys);
+            CollectKeyedObjects(result.MTFV07TestResults, metrics, keys);
             CollectKeyedObjects(result.LuminanceChromaticityTestResults, metrics, keys);
+            CollectKeyedObjects(result.LuminanceChromaticityYWTestResults, metrics, keys);
             CollectKeyedObjects(result.FieldOfViewTestResults, metrics, keys);
+            CollectKeyedObjects(result.ChessboardTestResults, metrics, keys);
             CollectDynamicPois(result.DynamicPoixyuvDatas, metrics, keys);
 
             return metrics;
@@ -72,8 +82,12 @@ namespace ProjectARVRPro
                    propertyName == nameof(ObjectiveTestResult.DynamicPoixyuvDatas) ||
                    propertyName == nameof(ObjectiveTestResult.DynamicScreenDefectResults) ||
                    propertyName == nameof(ObjectiveTestResult.DynamicMTFHV058TestResults) ||
+                   propertyName == nameof(ObjectiveTestResult.MTFH07TestResults) ||
+                   propertyName == nameof(ObjectiveTestResult.MTFV07TestResults) ||
                    propertyName == nameof(ObjectiveTestResult.LuminanceChromaticityTestResults) ||
-                   propertyName == nameof(ObjectiveTestResult.FieldOfViewTestResults);
+                   propertyName == nameof(ObjectiveTestResult.LuminanceChromaticityYWTestResults) ||
+                   propertyName == nameof(ObjectiveTestResult.FieldOfViewTestResults) ||
+                   propertyName == nameof(ObjectiveTestResult.ChessboardTestResults);
         }
 
         private static bool ContainsKey<T>(IReadOnlyDictionary<string, T>? results, string key)
@@ -146,9 +160,14 @@ namespace ProjectARVRPro
             ICollection<ObjectiveTestResultMetric> metrics,
             ISet<string> keys)
         {
-            foreach (PropertyInfo property in source.GetType()
+            PropertyInfo[] properties = source.GetType()
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .OrderBy(item => item.MetadataToken))
+                .OrderBy(item => item.MetadataToken)
+                .ToArray();
+            bool hasMultiplePoiCollections = properties.Count(property =>
+                typeof(IEnumerable<PoixyuvData>).IsAssignableFrom(property.PropertyType)) > 1;
+
+            foreach (PropertyInfo property in properties)
             {
                 object? value;
                 try
@@ -166,10 +185,13 @@ namespace ProjectARVRPro
                 }
                 else if (value is IEnumerable<PoixyuvData> pois)
                 {
+                    string poiTestName = hasMultiplePoiCollections
+                        ? $"{testName}_{GetPoiGroupName(property.Name)}"
+                        : testName;
                     foreach (PoixyuvData? poi in pois)
                     {
                         if (poi != null)
-                            AddPoi(testName, poi, metrics, keys);
+                            AddPoi(poiTestName, poi, metrics, keys);
                     }
                 }
                 else if (value != null &&
@@ -180,6 +202,14 @@ namespace ProjectARVRPro
                     CollectObject(value, testName, metrics, keys);
                 }
             }
+        }
+
+        private static string GetPoiGroupName(string propertyName)
+        {
+            const string prefix = "PoixyuvDatas";
+            return propertyName.StartsWith(prefix, StringComparison.Ordinal)
+                ? propertyName[prefix.Length..]
+                : propertyName;
         }
 
         private static void AddItem(

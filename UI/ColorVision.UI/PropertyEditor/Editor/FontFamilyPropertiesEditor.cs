@@ -10,10 +10,6 @@ namespace System.ComponentModel
 {
     public class FontFamilyPropertiesEditor : IPropertyEditor
     {
-        static FontFamilyPropertiesEditor()
-        {
-            PropertyEditorHelper.RegisterEditor<FontFamilyPropertiesEditor>(typeof(FontFamily));
-        }
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);
@@ -34,7 +30,7 @@ namespace System.ComponentModel
                     )).ToList()
             };
 
-            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
+            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property);
             comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
             DockPanel.SetDock(comboBox, Dock.Right);
 

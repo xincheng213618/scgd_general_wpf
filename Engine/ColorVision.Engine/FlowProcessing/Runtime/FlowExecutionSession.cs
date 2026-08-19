@@ -315,13 +315,13 @@ namespace ColorVision.Engine.FlowProcessing
             }
         }
 
-        private void SubscribeNodeEvents(CVBaseServerNode node)
+        private void SubscribeNodeEvents(CVCommonNode node)
         {
             node.nodeRunEvent += NodeRunEvent;
             node.nodeEndEvent += NodeEndEvent;
         }
 
-        private void UnsubscribeNodeEvents(CVBaseServerNode node)
+        private void UnsubscribeNodeEvents(CVCommonNode node)
         {
             node.nodeRunEvent -= NodeRunEvent;
             node.nodeEndEvent -= NodeEndEvent;
@@ -329,7 +329,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         private void AttachExecutionNodeEvents()
         {
-            foreach (CVBaseServerNode node in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+            foreach (CVCommonNode node in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
             {
                 UnsubscribeNodeEvents(node);
                 SubscribeNodeEvents(node);
@@ -338,7 +338,7 @@ namespace ColorVision.Engine.FlowProcessing
 
         internal void DetachNodeEvents()
         {
-            foreach (CVBaseServerNode node in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+            foreach (CVCommonNode node in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                 UnsubscribeNodeEvents(node);
         }
 
@@ -566,7 +566,7 @@ namespace ColorVision.Engine.FlowProcessing
         private async Task LoadNodeExpectedDurationsAsync()
         {
             string[] nodeIds = View.STNodeEditorMain.Nodes
-                .OfType<CVBaseServerNode>()
+                .OfType<CVCommonNode>()
                 .Select(node => node.NodeID)
                 .Distinct(StringComparer.Ordinal)
                 .ToArray();
@@ -1096,7 +1096,7 @@ namespace ColorVision.Engine.FlowProcessing
                         null);
                 }
 
-                foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+                foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                 {
                     item.TitleColor = System.Drawing.Color.Blue;
                 }

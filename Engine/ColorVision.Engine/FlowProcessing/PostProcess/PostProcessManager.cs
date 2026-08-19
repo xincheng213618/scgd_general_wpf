@@ -167,7 +167,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             var dialog = new PostProcessMetaEditWindow(
                 templateModels,
                 Processes,
-                "新增后处理项")
+                EngineLocalization.Get("新增后处理项"))
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
@@ -213,7 +213,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             var dialog = new PostProcessMetaEditWindow(
                 templateModels,
                 Processes,
-                "编辑后处理项",
+                EngineLocalization.Get("编辑后处理项"),
                 selectedMeta.Name,
                 selectedMeta.TemplateName,
                 selectedMeta.PostProcessor,

@@ -203,6 +203,8 @@ public sealed class CopilotExecutionScopeTests
             CodexIncludePermissionsInstructions = false,
             CodexIncludeCollaborationModeInstructions = false,
             CodexIncludeSkillInstructions = false,
+            CodexApprovalPolicy = CopilotCodexApprovalPolicy.CreateScalar(
+                CopilotCodexApprovalPolicyMode.OnRequest),
             CodexShellEnvironmentPolicy = new CopilotCodexShellEnvironmentPolicy
             {
                 Inherit = CopilotCodexShellEnvironmentInherit.None,
@@ -247,6 +249,8 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(parentRequest.CodexIncludePermissionsInstructions, childRequest.CodexIncludePermissionsInstructions);
         Assert.Equal(parentRequest.CodexIncludeCollaborationModeInstructions, childRequest.CodexIncludeCollaborationModeInstructions);
         Assert.Equal(parentRequest.CodexIncludeSkillInstructions, childRequest.CodexIncludeSkillInstructions);
+        Assert.Equal(CopilotCodexApprovalPolicyMode.OnRequest, parentRequest.CodexApprovalPolicy.Mode);
+        Assert.Equal(CopilotCodexApprovalPolicyMode.Never, childRequest.CodexApprovalPolicy.Mode);
         Assert.Equal(parentRequest.CodexShellEnvironmentPolicy.Inherit, childRequest.CodexShellEnvironmentPolicy.Inherit);
         Assert.Equal("frozen", childRequest.CodexShellEnvironmentPolicy.Set["CV_CHILD_ENV"]);
         Assert.NotSame(parentRequest.CodexShellEnvironmentPolicy, childRequest.CodexShellEnvironmentPolicy);
@@ -302,6 +306,7 @@ public sealed class CopilotExecutionScopeTests
         Assert.Equal(childRequest.CodexIncludePermissionsInstructions, finalizationRequest.CodexIncludePermissionsInstructions);
         Assert.Equal(childRequest.CodexIncludeCollaborationModeInstructions, finalizationRequest.CodexIncludeCollaborationModeInstructions);
         Assert.Equal(childRequest.CodexIncludeSkillInstructions, finalizationRequest.CodexIncludeSkillInstructions);
+        Assert.Equal(CopilotCodexApprovalPolicyMode.Never, finalizationRequest.CodexApprovalPolicy.Mode);
         Assert.Equal(childRequest.CodexShellEnvironmentPolicy.Inherit, finalizationRequest.CodexShellEnvironmentPolicy.Inherit);
         Assert.Equal("frozen", finalizationRequest.CodexShellEnvironmentPolicy.Set["CV_CHILD_ENV"]);
         Assert.NotSame(childRequest.CodexShellEnvironmentPolicy, finalizationRequest.CodexShellEnvironmentPolicy);

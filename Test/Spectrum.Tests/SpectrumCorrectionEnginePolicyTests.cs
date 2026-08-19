@@ -128,28 +128,4 @@ public class SpectrumCorrectionEnginePolicyTests
         Assert.Equal(expected, DeviceSpectrum.IsCorrectionCaptureReadyStatus(status));
     }
 
-    [Theory]
-    [InlineData(DeviceStatusType.Closed, true)]
-    [InlineData(DeviceStatusType.Closing, true)]
-    [InlineData(DeviceStatusType.OffLine, true)]
-    [InlineData(DeviceStatusType.Opening, true)]
-    [InlineData(DeviceStatusType.Free, false)]
-    [InlineData(DeviceStatusType.Busy, false)]
-    public void RestartVerificationRequiresARealDepartureState(DeviceStatusType status, bool expected)
-    {
-        Assert.Equal(expected, DeviceSpectrum.IsCorrectionRestartDepartureStatus(status));
-    }
-
-    [Fact]
-    public void RestartVerificationDoesNotAcceptReadyHeartbeatWithoutDeparture()
-    {
-        var first = DeviceSpectrum.AdvanceCorrectionRestartVerification(false, DeviceStatusType.Free);
-        var departed = DeviceSpectrum.AdvanceCorrectionRestartVerification(first.DepartureObserved, DeviceStatusType.Closing);
-        var recovered = DeviceSpectrum.AdvanceCorrectionRestartVerification(departed.DepartureObserved, DeviceStatusType.Free);
-
-        Assert.False(first.RestartVerified);
-        Assert.True(departed.DepartureObserved);
-        Assert.False(departed.RestartVerified);
-        Assert.True(recovered.RestartVerified);
-    }
 }

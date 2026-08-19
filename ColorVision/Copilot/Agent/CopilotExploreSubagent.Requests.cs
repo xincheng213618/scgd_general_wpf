@@ -156,23 +156,13 @@ namespace ColorVision.Copilot
                 TrustedProjectRootPaths = Array.Empty<string>(),
                 ActiveDocumentPath = string.Empty,
                 ConfiguredDeveloperInstructions = explorationRequest.ConfiguredDeveloperInstructions,
-                SessionStartAdditionalContexts = (explorationRequest.SessionStartAdditionalContexts
-                        ?? Array.Empty<string>())
-                    .ToArray(),
-                AsyncHookAdditionalContexts = (explorationRequest.AsyncHookAdditionalContexts
-                        ?? Array.Empty<string>())
-                    .ToArray(),
                 CodexWebSearchMode = explorationRequest.CodexWebSearchMode,
                 CodexSandboxMode = explorationRequest.CodexSandboxMode,
                 CodexShellToolEnabled = explorationRequest.CodexShellToolEnabled,
                 CodexHooksEnabled = explorationRequest.CodexHooksEnabled,
-                CodexCommandHooks = explorationRequest.CodexCommandHooks
-                    .Select(definition => definition.CreateSnapshot())
-                    .ToArray(),
                 CodexExecPolicyRules = explorationRequest.CodexExecPolicyRules
                     .Select(rule => rule.CreateSnapshot())
                     .ToArray(),
-                CodexSubagentHookContext = explorationRequest.CodexSubagentHookContext?.CreateSnapshot(),
                 CodexPluginsEnabled = explorationRequest.CodexPluginsEnabled,
                 CodexErrorOnToolCollisions = explorationRequest.CodexErrorOnToolCollisions,
                 CodexShellEnvironmentPolicy = explorationRequest.CodexShellEnvironmentPolicy.CreateSnapshot(),

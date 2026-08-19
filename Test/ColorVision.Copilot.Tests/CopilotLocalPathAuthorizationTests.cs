@@ -9,6 +9,62 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotLocalPathAuthorizationTests
 {
     [Fact]
+    public void AgentRequestFreezesPathAuthorizationAndEvidenceRequirements()
+    {
+        var searchRoots = new List<string> { @"C:\search" };
+        var trustedRoots = new List<string> { @"C:\trusted" };
+        var readableFiles = new List<string> { @"C:\read\file.txt" };
+        var readableDirectories = new List<string> { @"C:\read" };
+        var writableRoots = new List<string> { @"C:\write" };
+        var writableFiles = new List<string> { @"C:\write\file.txt" };
+        var requiredTools = new List<string> { "DelegateExplore" };
+        var request = new CopilotAgentRequest
+        {
+            SearchRootPaths = searchRoots,
+            TrustedProjectRootPaths = trustedRoots,
+            ReadableLocalFilePaths = readableFiles,
+            ReadableLocalDirectoryPaths = readableDirectories,
+            WritableLocalRootPaths = writableRoots,
+            WritableLocalFilePaths = writableFiles,
+            RequiredSuccessfulToolNames = requiredTools,
+        };
+
+        searchRoots.Clear();
+        trustedRoots.Clear();
+        readableFiles.Clear();
+        readableDirectories.Clear();
+        writableRoots.Clear();
+        writableFiles.Clear();
+        requiredTools.Clear();
+
+        Assert.Equal(@"C:\search", Assert.Single(request.SearchRootPaths));
+        Assert.Equal(@"C:\trusted", Assert.Single(request.TrustedProjectRootPaths));
+        Assert.Equal(@"C:\read\file.txt", Assert.Single(request.ReadableLocalFilePaths));
+        Assert.Equal(@"C:\read", Assert.Single(request.ReadableLocalDirectoryPaths));
+        Assert.Equal(@"C:\write", Assert.Single(request.WritableLocalRootPaths));
+        Assert.Equal(@"C:\write\file.txt", Assert.Single(request.WritableLocalFilePaths));
+        Assert.Equal("DelegateExplore", Assert.Single(request.RequiredSuccessfulToolNames));
+        Assert.Throws<NotSupportedException>(() =>
+            ((IList<string>)request.WritableLocalRootPaths).Clear());
+        Assert.Throws<NotSupportedException>(() =>
+            ((IList<string>)request.RequiredSuccessfulToolNames).Clear());
+    }
+
+    [Fact]
+    public void ExplicitAllowListRequiresAnExactFullyQualifiedPath()
+    {
+        var allowedPath = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "copilot-explicit-path", "sample.cs"));
+
+        Assert.True(CopilotWorkspaceSearchSupport.IsExplicitlyAllowedPath(
+            allowedPath.ToUpperInvariant(),
+            [allowedPath]));
+        Assert.False(CopilotWorkspaceSearchSupport.IsExplicitlyAllowedPath("sample.cs", [allowedPath]));
+        Assert.False(CopilotWorkspaceSearchSupport.IsExplicitlyAllowedPath(
+            Path.Combine(Path.GetDirectoryName(allowedPath)!, "sibling.cs"),
+            [allowedPath]));
+    }
+
+    [Fact]
     public async Task BareDirectoryBeforeChinesePunctuationRemainsAuthorizedAsync()
     {
         var root = Path.Combine(Path.GetTempPath(), $"copilot-local-path-{Guid.NewGuid():N}");

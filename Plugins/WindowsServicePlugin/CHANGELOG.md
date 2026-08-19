@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 1.4.3.26 - 2026-08-19
+
+### Changed
+
+- Unified MySQL reset and restore operations with the shared database
+  maintenance workflow, including preserved resource data and installed-service
+  configuration synchronization.
+- Added staged restore progress and stopped service restart when required MySQL
+  configuration files cannot be synchronized.
+
+## 1.4.3.25 - 2026-08-13
+
+### Fixed
+
+- Rebuilt the service manager against the current database migration API so
+  preserved-table backup no longer fails with `MissingMethodException`.
+
 ## 1.4.3.24 - 2026-07-23
 
 ### Added

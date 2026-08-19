@@ -108,7 +108,7 @@ namespace ColorVision.Engine.PropertyEditor
             };
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
 
-            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
+            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property);
             binding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
             binding.Converter = SmuRangeValueConverter.Instance;
             combo.SetBinding(ComboBox.TextProperty, binding);
@@ -268,7 +268,9 @@ namespace ColorVision.Engine.PropertyEditor
                 SetValueAndNotify(property, obj, selectedName);
             };
 
-            RefreshItems(clearUnavailableSelection: refreshPropertyName != null);
+            // Rendering an editor must not normalize or clear the source value. A stale
+            // selection is cleared only after the user changes its dependency.
+            RefreshItems();
 
             if (refreshPropertyName != null && obj is INotifyPropertyChanged notifyPropertyChanged)
             {
@@ -304,7 +306,7 @@ namespace ColorVision.Engine.PropertyEditor
                     notifyPropertyChanged.PropertyChanged += dependencyChanged;
                     isSubscribed = true;
                     dependencyValue = GetStringProperty(obj, refreshPropertyName);
-                    RefreshItems(clearUnavailableSelection: true);
+                    RefreshItems();
                 };
             }
 

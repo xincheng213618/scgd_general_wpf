@@ -163,7 +163,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
             {
                 FindLuminousAreaCorner findLuminousAreaCorner = new FindLuminousAreaCorner();
                 var PropertyEditorWindow = new PropertyEditorWindow(findLuminousAreaCorner) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                PropertyEditorWindow.Submited += (_, _) =>
+                PropertyEditorWindow.Submitted += (_, _) =>
                 {
                     new FindLuminousArea(_imageContext, _drawContext).Execute(findLuminousAreaCorner, new RoiRect(roiX, roiY, roiW,roiH));
                 };
@@ -184,7 +184,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLuminousA
             {
                 FindLuminousAreaCorner findLuminousAreaCorner = new FindLuminousAreaCorner();
                 var PropertyEditorWindow = new PropertyEditorWindow(findLuminousAreaCorner) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                PropertyEditorWindow.Submited += (_, _) =>
+                PropertyEditorWindow.Submitted += (_, _) =>
                 {
                     new FindLuminousArea(ImageContext, DrawContext).Execute(findLuminousAreaCorner, new RoiRect());
                 };

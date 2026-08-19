@@ -1,5 +1,6 @@
 using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
+using System.ComponentModel;
 
 namespace ColorVision.Copilot.Tests;
 
@@ -120,6 +121,99 @@ public sealed class CopilotApprovalCoordinatorTests
         Assert.Equal(2, projection.VisibleCount);
         Assert.Equal(4, projection.TotalPendingCount);
         Assert.Equal([current, external], coordinator.PendingActions);
+    }
+
+    [Fact]
+    public void ApprovalFactPublicationIsolatesFailingSubscribers()
+    {
+        var store = CopilotMcpConfirmationStore.Instance;
+        store.ClearForTests();
+        using var coordinator = new CopilotApprovalCoordinator(store, new CopilotChatState());
+        var storeActionsObserved = 0;
+        var storeTransitionsObserved = 0;
+        var projectionInvalidationsObserved = 0;
+        var coordinatorTransitionsObserved = 0;
+        EventHandler throwingStoreActions = (_, _) => throw new InvalidOperationException("store actions subscriber failed");
+        EventHandler observingStoreActions = (_, _) => storeActionsObserved++;
+        EventHandler<ConfirmableActionChangedEventArgs> throwingStoreTransition = (_, _) => throw new InvalidOperationException("store transition subscriber failed");
+        EventHandler<ConfirmableActionChangedEventArgs> observingStoreTransition = (_, _) => storeTransitionsObserved++;
+        EventHandler throwingProjectionInvalidation = (_, _) => throw new InvalidOperationException("projection subscriber failed");
+        EventHandler observingProjectionInvalidation = (_, _) => projectionInvalidationsObserved++;
+        EventHandler<CopilotApprovalActionTransitionEventArgs> throwingCoordinatorTransition = (_, _) => throw new InvalidOperationException("coordinator transition subscriber failed");
+        EventHandler<CopilotApprovalActionTransitionEventArgs> observingCoordinatorTransition = (_, _) => coordinatorTransitionsObserved++;
+        store.ActionsChanged += throwingStoreActions;
+        store.ActionsChanged += observingStoreActions;
+        store.ActionStatusChanged += throwingStoreTransition;
+        store.ActionStatusChanged += observingStoreTransition;
+        coordinator.PendingActionsInvalidated += throwingProjectionInvalidation;
+        coordinator.PendingActionsInvalidated += observingProjectionInvalidation;
+        coordinator.ActionTransitioned += throwingCoordinatorTransition;
+        coordinator.ActionTransitioned += observingCoordinatorTransition;
+
+        try
+        {
+            var action = store.Create(
+                "Protected action",
+                "Publish one committed approval fact.",
+                "confirmation-required",
+                "approval_callback_test",
+                "{}",
+                _ => Task.FromResult(CopilotMcpToolCallResult.Ok("executed")),
+                requestContext: CreateRequestContext());
+
+            Assert.Equal(ConfirmableActionStatus.Pending, action.Status);
+            Assert.Equal(1, storeActionsObserved);
+            Assert.Equal(1, storeTransitionsObserved);
+            Assert.Equal(1, projectionInvalidationsObserved);
+            Assert.Equal(1, coordinatorTransitionsObserved);
+        }
+        finally
+        {
+            store.ActionsChanged -= throwingStoreActions;
+            store.ActionsChanged -= observingStoreActions;
+            store.ActionStatusChanged -= throwingStoreTransition;
+            store.ActionStatusChanged -= observingStoreTransition;
+            coordinator.PendingActionsInvalidated -= throwingProjectionInvalidation;
+            coordinator.PendingActionsInvalidated -= observingProjectionInvalidation;
+            coordinator.ActionTransitioned -= throwingCoordinatorTransition;
+            coordinator.ActionTransitioned -= observingCoordinatorTransition;
+            store.ClearForTests();
+        }
+    }
+
+    [Fact]
+    public void ApprovalPropertyPublicationCannotInterruptCommittedDecision()
+    {
+        var store = CopilotMcpConfirmationStore.Instance;
+        store.ClearForTests();
+        var action = store.Create(
+            "Protected action",
+            "Publish one committed approval decision.",
+            "confirmation-required",
+            "approval_property_callback_test",
+            "{}",
+            _ => Task.FromResult(CopilotMcpToolCallResult.Ok("executed")),
+            requestContext: CreateRequestContext());
+        var observedProperties = new HashSet<string>(StringComparer.Ordinal);
+        PropertyChangedEventHandler throwingSubscriber = (_, _) => throw new InvalidOperationException("property subscriber failed");
+        PropertyChangedEventHandler observingSubscriber = (_, e) => observedProperties.Add(e.PropertyName ?? string.Empty);
+        action.PropertyChanged += throwingSubscriber;
+        action.PropertyChanged += observingSubscriber;
+
+        try
+        {
+            Assert.True(store.Approve(action.ActionId, Scope().ToReviewContext(), out _));
+            Assert.Equal(ConfirmableActionStatus.Approved, action.Status);
+            Assert.Contains(nameof(ConfirmableAction.Status), observedProperties);
+            Assert.Contains(nameof(ConfirmableAction.IsPending), observedProperties);
+        }
+        finally
+        {
+            action.PropertyChanged -= throwingSubscriber;
+            action.PropertyChanged -= observingSubscriber;
+            store.Cancel(action.ActionId, out _);
+            store.ClearForTests();
+        }
     }
 
     [Fact]

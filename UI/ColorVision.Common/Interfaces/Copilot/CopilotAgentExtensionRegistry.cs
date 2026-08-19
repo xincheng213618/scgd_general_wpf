@@ -227,7 +227,9 @@ namespace ColorVision.UI
                 return new CopilotAgentExtensionRegistrySnapshot
                 {
                     Revision = _revision,
-                    Extensions = _extensions.Values.OrderBy(extension => extension.SourceId, StringComparer.OrdinalIgnoreCase).ToArray(),
+                    Extensions = Array.AsReadOnly(_extensions.Values
+                        .OrderBy(extension => extension.SourceId, StringComparer.OrdinalIgnoreCase)
+                        .ToArray()),
                 };
             }
         }
@@ -302,17 +304,16 @@ namespace ColorVision.UI
                     nameof(registration));
             }
 
-            foreach (var provider in contextProviders)
-                _ = provider.Order;
-            foreach (var tool in tools)
-                ValidateTool(tool);
-            foreach (var hook in toolExecutionHooks)
-                ValidateToolExecutionHook(hook);
-            var duplicateToolName = tools.GroupBy(tool => tool.Name.Trim(), StringComparer.OrdinalIgnoreCase).FirstOrDefault(group => group.Count() > 1)?.Key;
+            var registeredContextProviders = contextProviders
+                .Select(provider => new RegisteredContextProvider(provider, provider.Order))
+                .ToArray();
+            var registeredTools = tools.Select(CreateRegisteredTool).ToArray();
+            var registeredHooks = toolExecutionHooks.Select(CreateRegisteredHook).ToArray();
+            var duplicateToolName = registeredTools.GroupBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase).FirstOrDefault(group => group.Count() > 1)?.Key;
             if (!string.IsNullOrWhiteSpace(duplicateToolName))
                 throw new ArgumentException($"Agent extension '{sourceId}' declares module tool '{duplicateToolName}' more than once.", nameof(registration));
-            var duplicateHookName = toolExecutionHooks
-                .GroupBy(hook => hook.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+            var duplicateHookName = registeredHooks
+                .GroupBy(hook => hook.Name, StringComparer.OrdinalIgnoreCase)
                 .FirstOrDefault(group => group.Count() > 1)
                 ?.Key;
             if (!string.IsNullOrWhiteSpace(duplicateHookName))
@@ -326,23 +327,25 @@ namespace ColorVision.UI
                 sourceId,
                 sourceName,
                 sourceVersion,
-                contextProviders,
-                tools,
-                toolExecutionHooks,
+                Array.AsReadOnly<ICopilotContextProvider>(registeredContextProviders),
+                Array.AsReadOnly<ICopilotModuleTool>(registeredTools),
+                Array.AsReadOnly<ICopilotModuleToolExecutionHook>(registeredHooks),
                 Guid.NewGuid().ToString("N"));
         }
 
-        private static void ValidateTool(ICopilotModuleTool tool)
+        private static RegisteredModuleTool CreateRegisteredTool(ICopilotModuleTool tool)
         {
             var name = tool.Name?.Trim() ?? string.Empty;
             if (name.Length == 0 || name.Length > MaximumToolNameLength)
                 throw new ArgumentException($"A module tool name must contain 1-{MaximumToolNameLength} characters.");
             if (name.Any(character => !(character is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_' or '-')))
                 throw new ArgumentException($"Module tool '{name}' may contain only ASCII letters, digits, '_' and '-'.");
-            _ = NormalizeRequiredText(tool.Description, MaximumToolDescriptionLength, $"Module tool '{name}' requires a description.");
-            if (!Enum.IsDefined(tool.Access))
+            var description = NormalizeRequiredText(tool.Description, MaximumToolDescriptionLength, $"Module tool '{name}' requires a description.");
+            var access = tool.Access;
+            if (!Enum.IsDefined(access))
                 throw new ArgumentException($"Module tool '{name}' has an invalid access mode.");
-            if (tool.ExecutionTimeout <= TimeSpan.Zero || tool.ExecutionTimeout > TimeSpan.FromMinutes(10))
+            var executionTimeout = tool.ExecutionTimeout;
+            if (executionTimeout <= TimeSpan.Zero || executionTimeout > TimeSpan.FromMinutes(10))
                 throw new ArgumentException($"Module tool '{name}' must use an execution timeout between zero and ten minutes.");
 
             var schemaText = tool.InputJsonSchema?.Trim() ?? string.Empty;
@@ -358,9 +361,18 @@ namespace ColorVision.UI
             {
                 throw new ArgumentException($"Module tool '{name}' input schema is not valid JSON: {ex.Message}", ex);
             }
+
+            return new RegisteredModuleTool(
+                tool,
+                name,
+                description,
+                access,
+                schemaText,
+                executionTimeout);
         }
 
-        private static void ValidateToolExecutionHook(ICopilotModuleToolExecutionHook hook)
+        private static RegisteredModuleToolExecutionHook CreateRegisteredHook(
+            ICopilotModuleToolExecutionHook hook)
         {
             var name = hook.Name?.Trim() ?? string.Empty;
             if (name.Length == 0 || name.Length > MaximumHookNameLength)
@@ -379,9 +391,10 @@ namespace ColorVision.UI
                     $"Module tool execution hook '{name}' may contain only ASCII letters, digits, '_', '-' and '.'.");
             }
 
-            var pattern = string.IsNullOrWhiteSpace(hook.ToolNamePattern)
+            var rawPattern = hook.ToolNamePattern;
+            var pattern = string.IsNullOrWhiteSpace(rawPattern)
                 ? "*"
-                : hook.ToolNamePattern.Trim();
+                : rawPattern.Trim();
             if (pattern.Length > MaximumHookPatternLength || pattern.Any(char.IsControl))
             {
                 throw new ArgumentException(
@@ -400,12 +413,28 @@ namespace ColorVision.UI
                     ex);
             }
 
-            _ = hook.Order;
-            if (!Enum.IsDefined(hook.ExecutionMode))
+            var order = hook.Order;
+            var executionMode = hook.ExecutionMode;
+            if (!Enum.IsDefined(executionMode))
             {
                 throw new ArgumentException(
                     $"Module tool execution hook '{name}' has an invalid execution mode.");
             }
+
+            return hook is ICopilotModuleToolPermissionRequestHook permissionRequestHook
+                ? new RegisteredModuleToolPermissionRequestHook(
+                    hook,
+                    permissionRequestHook,
+                    name,
+                    pattern,
+                    order,
+                    executionMode)
+                : new RegisteredModuleToolExecutionHook(
+                    hook,
+                    name,
+                    pattern,
+                    order,
+                    executionMode);
         }
 
         private static string NormalizeSourceId(string sourceId)
@@ -450,6 +479,128 @@ namespace ColorVision.UI
                 {
                 }
             }
+        }
+
+        private sealed class RegisteredModuleTool : ICopilotModuleTool
+        {
+            private readonly ICopilotModuleTool _implementation;
+
+            public RegisteredModuleTool(
+                ICopilotModuleTool implementation,
+                string name,
+                string description,
+                CopilotModuleToolAccess access,
+                string inputJsonSchema,
+                TimeSpan executionTimeout)
+            {
+                _implementation = implementation;
+                Name = name;
+                Description = description;
+                Access = access;
+                InputJsonSchema = inputJsonSchema;
+                ExecutionTimeout = executionTimeout;
+            }
+
+            public string Name { get; }
+
+            public string Description { get; }
+
+            public CopilotModuleToolAccess Access { get; }
+
+            public string InputJsonSchema { get; }
+
+            public TimeSpan ExecutionTimeout { get; }
+
+            public bool IsAvailable(CopilotModuleToolRequest request) =>
+                _implementation.IsAvailable(request);
+
+            public Task<CopilotModuleToolResult> ExecuteAsync(
+                CopilotModuleToolRequest request,
+                CancellationToken cancellationToken) =>
+                _implementation.ExecuteAsync(request, cancellationToken);
+        }
+
+        private sealed class RegisteredContextProvider : ICopilotContextProvider
+        {
+            private readonly ICopilotContextProvider _implementation;
+
+            public RegisteredContextProvider(
+                ICopilotContextProvider implementation,
+                int order)
+            {
+                _implementation = implementation;
+                Order = order;
+            }
+
+            public int Order { get; }
+
+            public bool CanProvide(CopilotContextScope scope) =>
+                _implementation.CanProvide(scope);
+
+            public Task<CopilotContextItem?> CaptureAsync(
+                CopilotContextRequest request,
+                CancellationToken cancellationToken) =>
+                _implementation.CaptureAsync(request, cancellationToken);
+        }
+
+        private class RegisteredModuleToolExecutionHook : ICopilotModuleToolExecutionHook
+        {
+            private readonly ICopilotModuleToolExecutionHook _implementation;
+
+            public RegisteredModuleToolExecutionHook(
+                ICopilotModuleToolExecutionHook implementation,
+                string name,
+                string toolNamePattern,
+                int order,
+                CopilotModuleToolExecutionHookMode executionMode)
+            {
+                _implementation = implementation;
+                Name = name;
+                ToolNamePattern = toolNamePattern;
+                Order = order;
+                ExecutionMode = executionMode;
+            }
+
+            public string Name { get; }
+
+            public string ToolNamePattern { get; }
+
+            public int Order { get; }
+
+            public CopilotModuleToolExecutionHookMode ExecutionMode { get; }
+
+            public Task<CopilotModuleToolExecutionHookDecision> BeforeExecuteAsync(
+                CopilotModuleToolExecutionHookContext context,
+                CancellationToken cancellationToken) =>
+                _implementation.BeforeExecuteAsync(context, cancellationToken);
+
+            public Task AfterExecuteAsync(
+                CopilotModuleToolExecutionHookOutcome outcome,
+                CancellationToken cancellationToken) =>
+                _implementation.AfterExecuteAsync(outcome, cancellationToken);
+        }
+
+        private sealed class RegisteredModuleToolPermissionRequestHook
+            : RegisteredModuleToolExecutionHook, ICopilotModuleToolPermissionRequestHook
+        {
+            private readonly ICopilotModuleToolPermissionRequestHook _implementation;
+
+            public RegisteredModuleToolPermissionRequestHook(
+                ICopilotModuleToolExecutionHook hook,
+                ICopilotModuleToolPermissionRequestHook implementation,
+                string name,
+                string toolNamePattern,
+                int order,
+                CopilotModuleToolExecutionHookMode executionMode)
+                : base(hook, name, toolNamePattern, order, executionMode)
+            {
+                _implementation = implementation;
+            }
+
+            public Task<CopilotModuleToolPermissionRequestDecision> OnPermissionRequestAsync(
+                CopilotModuleToolExecutionHookContext context,
+                CancellationToken cancellationToken) =>
+                _implementation.OnPermissionRequestAsync(context, cancellationToken);
         }
 
         private sealed class Registration : IDisposable

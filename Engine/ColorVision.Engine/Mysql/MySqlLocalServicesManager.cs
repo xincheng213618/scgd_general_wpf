@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CA1822,CA1863,CS8602,CS8603
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.ServiceHost;
@@ -55,10 +56,10 @@ namespace ColorVision.Database
 
 
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = "复制", Command = ApplicationCommands.Copy });
-            ContextMenu.Items.Add(new MenuItem() { Header = "删除", Command = ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Header = "还原", Command = RestoreCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "选中", Command = SelectCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = EngineLocalization.Get("复制"), Command = ApplicationCommands.Copy });
+            ContextMenu.Items.Add(new MenuItem() { Header = EngineLocalization.Get("删除"), Command = ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Header = EngineLocalization.Get("还原"), Command = RestoreCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = EngineLocalization.Get("选中"), Command = SelectCommand });
 
         }
 
@@ -567,76 +568,56 @@ namespace ColorVision.Database
                 return;
             }
 
+            MySqlRestoreProgressWindow? progressWindow = null;
+            RunOnUi(() =>
+            {
+                progressWindow = new MySqlRestoreProgressWindow(backupFile, MySqlSetting.Instance.MySqlConfig.Database)
+                {
+                    Owner = WindowHelpers.GetActiveWindow()
+                };
+                progressWindow.Show();
+            });
+
+            void Report(string stage, string message, int progress)
+            {
+                log.Info($"{stage}: {message}");
+                progressWindow?.Report(stage, message, progress);
+            }
+
             try
             {
                 try
                 {
-                    await Task.Run(() => RestoreMysql(backupFile)).ConfigureAwait(false);
+                    Report("校验备份", $"正在校验 SQL 文件：{backupFile}", 5);
+                    Report("导入数据库", $"使用业务账号导入到数据库 {MySqlSetting.Instance.MySqlConfig.Database}", 15);
+                    await RestoreMysqlCoreAsync(backupFile).ConfigureAwait(false);
+                    Report("导入数据库", "SQL 数据导入完成", 65);
+
+                    Report("同步服务配置", "同步注册中心、x64 主服务和 dev 主服务的 MySql.config", 72);
+                    IReadOnlyList<string> synchronizedFiles = await Task.Run(() =>
+                        MySqlDatabaseMaintenanceService.SynchronizeInstalledServiceConfigs(
+                            MySqlSetting.Instance.MySqlConfig,
+                            message => Report("同步服务配置", message, 78))).ConfigureAwait(false);
+                    if (synchronizedFiles.Count == 0)
+                        throw new InvalidOperationException("未找到任何已安装服务的 MySql.config，数据库已导入，但已停止服务重启。");
+                    Report("同步服务配置", $"服务配置同步完成，共更新 {synchronizedFiles.Count} 个文件", 82);
+
+                    Report("重启服务", $"正在重启 {RegistrationCenterServiceName}", 88);
+                    ServiceHostResponse response = await ColorVisionServiceHostClient.Default.RestartServiceAsync(
+                        RegistrationCenterServiceName,
+                        timeoutSeconds: 60,
+                        timeout: TimeSpan.FromSeconds(90)).ConfigureAwait(false);
+                    if (!response.Success)
+                        throw new InvalidOperationException($"{ColorVision.Engine.Properties.Resources.Engine_Msg_ServiceRestartFailed} {response.Message}");
+
+                    Report("重启服务", response.Message, 96);
+                    progressWindow?.Complete(true, "SQL 恢复、服务配置同步及注册中心重启均已完成。可检查上方详情，然后重启 ColorVision。 ");
                 }
                 catch (Exception ex)
                 {
                     log.Error($"加载MySQL备份失败：{backupFile}", ex);
-                    RunOnUi(() => MessageBox.Show(Application.Current?.MainWindow, $"加载备份失败：{ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error));
-                    return;
+                    progressWindow?.Complete(false, $"执行失败：{ex.Message}");
                 }
-
-                RunOnUi(() => MessageBox.Show(Application.Current?.MainWindow, ColorVision.Engine.Properties.Resources.Engine_Msg_RestoreSuccessRestarting));
-
-                ServiceHostResponse response;
-                try
-                {
-                    response = await ColorVisionServiceHostClient.Default.RestartServiceAsync(
-                        RegistrationCenterServiceName,
-                        timeoutSeconds: 60,
-                        timeout: TimeSpan.FromSeconds(90)).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    log.Error($"通过ColorVisionServiceHost重启{RegistrationCenterServiceName}失败。", ex);
-                    RunOnUi(() => MessageBox.Show(
-                        Application.Current?.MainWindow,
-                        $"{ColorVision.Engine.Properties.Resources.Engine_Msg_ServiceRestartFailed}{Environment.NewLine}{ex.Message}",
-                        "ColorVision",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error));
-                    return;
-                }
-
-                if (!response.Success)
-                {
-                    RunOnUi(() => MessageBox.Show(
-                        Application.Current?.MainWindow,
-                        $"{ColorVision.Engine.Properties.Resources.Engine_Msg_ServiceRestartFailed}{Environment.NewLine}{response.Message}",
-                        "ColorVision",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error));
-                    return;
-                }
-
-                RunOnUi(() =>
-                {
-                    MessageBox.Show(Application.Current?.MainWindow, ColorVision.Engine.Properties.Resources.Engine_Msg_ServiceRestartSuccess);
-                    try
-                    {
-                        string applicationPath = Path.ChangeExtension(Application.ResourceAssembly.Location, ".exe");
-                        Process? restartedApplication = Process.Start(applicationPath, "-r");
-                        if (restartedApplication == null)
-                            throw new InvalidOperationException("未能创建新的应用进程。");
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error("数据库及服务已恢复，但应用自动重启失败。", ex);
-                        MessageBox.Show(
-                            Application.Current?.MainWindow,
-                            $"数据库及服务已恢复，但应用自动重启失败。{Environment.NewLine}{ex.Message}",
-                            "ColorVision",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error);
-                        return;
-                    }
-
-                    Application.Current.Shutdown();
-                });
             }
             finally
             {
@@ -1106,10 +1087,30 @@ namespace ColorVision.Database
             RunMysqlDumpAsync(outputFile, tableNames, replaceExistingRows).GetAwaiter().GetResult();
         }
 
-        private static async Task RunMysqlDumpAsync(string outputFile, IReadOnlyCollection<string> tableNames, bool replaceExistingRows)
+        private static Task RunMysqlDumpAsync(string outputFile, IReadOnlyCollection<string> tableNames, bool replaceExistingRows)
         {
-            MySqlConfig config = MySqlSetting.Instance.MySqlConfig;
-            ProcessStartInfo startInfo = CreateMySqlProcessStartInfo(Config.MysqldumpPath, config, redirectStandardInput: false);
+            return RunMysqlDumpAsync(outputFile, tableNames, replaceExistingRows, MySqlSetting.Instance.MySqlConfig, Config.MysqldumpPath);
+        }
+
+        internal static async Task RunMysqlDumpAsync(
+            string outputFile,
+            IReadOnlyCollection<string> tableNames,
+            bool replaceExistingRows,
+            MySqlConfig config,
+            string mysqldumpPath,
+            bool dataOnly = false)
+        {
+            ProcessStartInfo startInfo = CreateMySqlProcessStartInfo(mysqldumpPath, config, redirectStandardInput: false);
+            if (dataOnly)
+            {
+                startInfo.ArgumentList.Add("--single-transaction");
+                startInfo.ArgumentList.Add("--quick");
+                startInfo.ArgumentList.Add("--skip-triggers");
+                startInfo.ArgumentList.Add("--skip-lock-tables");
+                startInfo.ArgumentList.Add("--skip-add-locks");
+                startInfo.ArgumentList.Add("--no-create-info");
+                startInfo.ArgumentList.Add("--complete-insert");
+            }
             if (replaceExistingRows)
                 startInfo.ArgumentList.Add("--replace");
 
@@ -1314,7 +1315,20 @@ namespace ColorVision.Database
             return RestoreMysqlCoreAsync(backupFile).GetAwaiter().GetResult();
         }
 
-        private static async Task<string> RestoreMysqlCoreAsync(string backupFile)
+        private static Task<string> RestoreMysqlCoreAsync(string backupFile)
+        {
+            return MySqlDatabaseMaintenanceService.RestoreSqlFileAsync(
+                backupFile,
+                MySqlSetting.Instance.MySqlConfig,
+                Config.MysqlPath,
+                selectDatabase: true);
+        }
+
+        internal static async Task<string> ExecuteSqlFileCoreAsync(
+            string backupFile,
+            MySqlConfig config,
+            string mysqlPath,
+            bool selectDatabase)
         {
             string fullBackupPath = Path.GetFullPath(backupFile);
             if (!string.Equals(Path.GetExtension(fullBackupPath), ".sql", StringComparison.OrdinalIgnoreCase))
@@ -1324,9 +1338,9 @@ namespace ColorVision.Database
             if (new FileInfo(fullBackupPath).Length <= 0)
                 throw new InvalidOperationException("MySQL备份文件为空，已中止恢复。");
 
-            MySqlConfig config = MySqlSetting.Instance.MySqlConfig;
-            ProcessStartInfo startInfo = CreateMySqlProcessStartInfo(Config.MysqlPath, config, redirectStandardInput: true);
-            startInfo.ArgumentList.Add(config.Database);
+            ProcessStartInfo startInfo = CreateMySqlProcessStartInfo(mysqlPath, config, redirectStandardInput: true);
+            if (selectDatabase)
+                startInfo.ArgumentList.Add(config.Database);
 
             using FileStream input = new(fullBackupPath, new FileStreamOptions
             {

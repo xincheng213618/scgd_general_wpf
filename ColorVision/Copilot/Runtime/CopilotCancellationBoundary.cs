@@ -17,6 +17,41 @@ namespace ColorVision.Copilot
             return WaitAsync(operationTask, cancellationToken);
         }
 
+        public static async Task<T> RunTaskAsync<T>(
+            Func<CancellationToken, Task<T>> operation,
+            TimeSpan timeout,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(operation);
+            if (timeout <= TimeSpan.Zero || timeout == Timeout.InfiniteTimeSpan)
+                throw new ArgumentOutOfRangeException(nameof(timeout), "The execution timeout must be finite and positive.");
+            cancellationToken.ThrowIfCancellationRequested();
+
+            using var operationCancellation = new CopilotNonBlockingCancellationSource();
+            Task<T>? operationTask = null;
+            try
+            {
+                operationTask = Task.Run(
+                    () => operation(operationCancellation.Token),
+                    operationCancellation.Token);
+                return await operationTask
+                    .WaitAsync(timeout, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                operationCancellation.RequestCancellation();
+                ObserveLateFault(operationTask);
+                throw;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                operationCancellation.RequestCancellation();
+                ObserveLateFault(operationTask);
+                throw;
+            }
+        }
+
         public static Task<T> RunSynchronousAsync<T>(
             Func<CancellationToken, T> operation,
             CancellationToken cancellationToken)

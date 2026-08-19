@@ -5,11 +5,14 @@ namespace ColorVision.UI.Desktop.Operations
         public const string ViewRecentEvents = "triage.events.view";
         public const string ShowMainWindow = "triage.window.show";
         public const string ReviewJobs = "triage.jobs.review";
+        public const string ViewServiceHealth = "triage.services.view";
         public const string RequestMqttRestart = "triage.mqtt.restart.request";
         public const string ViewDeviceHealth = "triage.devices.view";
         public const string ViewMessageChannelHealth = "triage.messaging.view";
         public const string RequestMessageChannelRecovery = "triage.messaging.reconnect.request";
         public const string ViewFailureEvidence = "triage.failures.view";
+        public const string ViewPerformance = "triage.performance.view";
+        public const string ViewApplication = "triage.application.view";
     }
 
     public sealed class OperationsTriageAction
@@ -77,11 +80,14 @@ namespace ColorVision.UI.Desktop.Operations
             OperationsServiceHealthReport? serviceHealth = null,
             OperationsDeviceHealthSnapshot? deviceHealth = null,
             OperationsMessageChannelHealthSnapshot? messageChannel = null,
-            OperationsFailureEvidenceSnapshot? failureEvidence = null)
+            OperationsFailureEvidenceSnapshot? failureEvidence = null,
+            OperationsRuntimePerformanceSnapshot? performance = null)
         {
             int boundedPendingJobCount = Math.Max(0, pendingJobCount);
             List<OperationsTriageFinding> findings = [];
 
+            if (performance != null)
+                AddPerformanceFinding(performance, findings);
             if (serviceHealth != null)
                 AddServiceHealthFindings(serviceHealth, findings);
             if (messageChannel != null)
@@ -92,7 +98,7 @@ namespace ColorVision.UI.Desktop.Operations
                 AddFailureEvidenceFinding(failureEvidence, findings);
             AddLogFindings(digest, findings);
             AddMessageServiceFinding(digest, serviceHealth, findings);
-            AddDesktopFinding(desktop, findings);
+            AddDesktopFinding(desktop, performance, findings);
             AddPendingJobFinding(boundedPendingJobCount, findings);
 
             string state = digest.CriticalCount > 0
@@ -131,12 +137,68 @@ namespace ColorVision.UI.Desktop.Operations
             };
         }
 
+        private static void AddPerformanceFinding(
+            OperationsRuntimePerformanceSnapshot performance,
+            List<OperationsTriageFinding> findings)
+        {
+            if (!performance.MainUi.Available)
+                return;
+
+            string state = performance.MainUi.State.Trim().ToLowerInvariant();
+            if (state is not ("slow" or "unresponsive"))
+                return;
+
+            bool unresponsive = state == "unresponsive";
+            findings.Add(new OperationsTriageFinding
+            {
+                FindingId = unresponsive ? "main-ui-unresponsive" : "main-ui-slow",
+                Severity = unresponsive ? "error" : "warning",
+                Category = "performance",
+                Title = unresponsive ? "电脑主界面响应超时" : "电脑主界面响应偏慢",
+                Summary = unresponsive
+                    ? "固定 1 秒主界面响应探针超时。此结果只说明采样时 UI 线程未及时响应；不会根据单次 CPU 或内存读数自动建议维护。"
+                    : "固定主界面响应探针在 250 毫秒阈值后才完成。请查看同次聚合性能快照；不会根据单次 CPU 或内存读数自动建议维护。",
+                EvidenceCount = 1,
+                LatestAt = performance.CapturedAt,
+                Actions = [ViewPerformanceAction()],
+            });
+        }
+
         private static void AddFailureEvidenceFinding(
             OperationsFailureEvidenceSnapshot failureEvidence,
             List<OperationsTriageFinding> findings)
         {
-            if (!failureEvidence.Available || !failureEvidence.HasEvidence)
+            if (!failureEvidence.Available)
+            {
+                findings.Add(new OperationsTriageFinding
+                {
+                    FindingId = "failure-evidence-unavailable",
+                    Severity = "info",
+                    Category = "failure-evidence",
+                    Title = "崩溃与卡死证据暂不可用",
+                    Summary = "当前无法读取 Windows 应用事件和本机转储；这表示证据来源不可用，不能据此判断近期没有故障。",
+                    Actions = [ViewFailureEvidenceAction()],
+                });
                 return;
+            }
+
+            string coverageSummary = FailureEvidenceCoverageSummary(failureEvidence);
+            if (!failureEvidence.HasEvidence)
+            {
+                if (coverageSummary.Length == 0)
+                    return;
+
+                findings.Add(new OperationsTriageFinding
+                {
+                    FindingId = "failure-evidence-coverage-limited",
+                    Severity = "info",
+                    Category = "failure-evidence",
+                    Title = "崩溃与卡死证据覆盖不完整",
+                    Summary = $"当前可读取来源中未发现近期故障线索。{coverageSummary}不能据此确认最近 {failureEvidence.WindowDays} 天没有故障。",
+                    Actions = [ViewFailureEvidenceAction()],
+                });
+                return;
+            }
 
             List<string> evidence = [];
             AddEvidence(evidence, "应用崩溃", failureEvidence.CrashCount);
@@ -150,21 +212,28 @@ namespace ColorVision.UI.Desktop.Operations
                 Severity = failureEvidence.CrashCount > 0 || failureEvidence.HangCount > 0 ? "error" : "warning",
                 Category = "failure-evidence",
                 Title = "最近存在崩溃或卡死线索",
-                Summary = $"最近 {failureEvidence.WindowDays} 天发现{string.Join("、", evidence)}。这些是聚合线索，可能包含同一次故障的重复记录；请结合发生时间在电脑端继续定位。",
+                Summary = $"最近 {failureEvidence.WindowDays} 天发现{string.Join("、", evidence)}。这些是聚合线索，可能包含同一次故障的重复记录；{coverageSummary}请结合发生时间在电脑端继续定位。",
                 EvidenceCount = Math.Min(999, failureEvidence.FailureEventCount + failureEvidence.DumpCount),
                 LatestAt = failureEvidence.LatestEvidenceAt,
-                Actions =
-                [
-                    new OperationsTriageAction
-                    {
-                        ActionId = OperationsTriageActionIds.ViewFailureEvidence,
-                        Title = "查看崩溃与卡死线索",
-                        Kind = "client-navigation",
-                        RiskLevel = OperationsRiskLevels.ReadOnly,
-                        Description = "只查看最近七天固定类别的计数与聚合时间，不返回事件正文、文件名、路径或转储内容。",
-                    },
-                ],
+                Actions = [ViewFailureEvidenceAction()],
             });
+        }
+
+        private static string FailureEvidenceCoverageSummary(
+            OperationsFailureEvidenceSnapshot failureEvidence)
+        {
+            List<string> limitations = [];
+            if (!failureEvidence.EventLogAvailable)
+                limitations.Add("Windows 应用事件不可读取");
+            else if (failureEvidence.EventScanLimited)
+                limitations.Add("Windows 应用事件仅扫描安全上限内条目");
+            if (!failureEvidence.DumpFolderAvailable)
+                limitations.Add("本机转储目录不可读取");
+            else if (failureEvidence.DumpScanLimited)
+                limitations.Add("本机转储仅扫描安全上限内文件");
+            return limitations.Count == 0
+                ? string.Empty
+                : $"证据覆盖有限：{string.Join("、", limitations)}。";
         }
 
         private static void AddEvidence(List<string> evidence, string title, int count, string unit = "条")
@@ -187,6 +256,7 @@ namespace ColorVision.UI.Desktop.Operations
                     Category = "devices",
                     Title = "检测设备状态暂不可用",
                     Summary = "当前无法取得设备注册表的类别级运行状态汇总；不会据此执行任何设备操作。",
+                    Actions = [ViewDeviceHealthAction()],
                 });
                 return;
             }
@@ -208,17 +278,7 @@ namespace ColorVision.UI.Desktop.Operations
                 Summary = $"已加载设备 {deviceHealth.TotalCount} 台，其中不可用 {deviceHealth.UnavailableCount} 台、状态未知 {deviceHealth.UnknownCount} 台。{unavailableReasonSummary}{correlationSummary}",
                 EvidenceCount = deviceHealth.AttentionCount,
                 LatestAt = deviceHealth.ObservedAt,
-                Actions =
-                [
-                    new OperationsTriageAction
-                    {
-                        ActionId = OperationsTriageActionIds.ViewDeviceHealth,
-                        Title = "查看设备状态概览",
-                        Kind = "client-navigation",
-                        RiskLevel = OperationsRiskLevels.ReadOnly,
-                        Description = "只查看固定类别的规范化运行状态计数，不返回设备身份，也不执行重连或重启。",
-                    },
-                ],
+                Actions = [ViewDeviceHealthAction()],
             });
         }
 
@@ -254,6 +314,7 @@ namespace ColorVision.UI.Desktop.Operations
                     Category = "message-channel",
                     Title = "消息通道状态暂不可用",
                     Summary = "当前无法取得 ColorVision 消息客户端的脱敏连接状态；不会据此自动重连或重启。",
+                    Actions = [ViewMessageChannelHealthAction()],
                 });
                 return;
             }
@@ -283,14 +344,7 @@ namespace ColorVision.UI.Desktop.Operations
             }
             List<OperationsTriageAction> actions =
             [
-                new OperationsTriageAction
-                {
-                    ActionId = OperationsTriageActionIds.ViewMessageChannelHealth,
-                    Title = "查看消息通道健康",
-                    Kind = "client-navigation",
-                    RiskLevel = OperationsRiskLevels.ReadOnly,
-                    Description = "只查看脱敏连接状态、订阅计数和聚合活动时间，不执行重连、重启或任意目标操作。",
-                },
+                ViewMessageChannelHealthAction(),
             ];
             if (messageChannel.State is OperationsMessageChannelStates.Disconnected or OperationsMessageChannelStates.Degraded)
             {
@@ -331,13 +385,14 @@ namespace ColorVision.UI.Desktop.Operations
                     Category = "services",
                     Title = "白名单服务状态暂不可用",
                     Summary = "当前无法取得 Windows 服务控制管理器状态；不会仅凭日志自动建议维护动作。",
+                    Actions = [ViewServiceHealthAction()],
                 });
                 return;
             }
 
             foreach (OperationsServiceHealthItem service in serviceHealth.Services.Where(item => !item.Healthy))
             {
-                List<OperationsTriageAction> actions = [];
+                List<OperationsTriageAction> actions = [ViewServiceHealthAction()];
                 if (service.ServiceId == OperationsServiceIds.MqttBroker
                     && service.MaintenanceSupported
                     && service.Status is "stopped" or "paused")
@@ -369,6 +424,7 @@ namespace ColorVision.UI.Desktop.Operations
                     Category = "diagnostics",
                     Title = "近期日志摘要暂不可用",
                     Summary = "电脑端当前没有可读取的应用日志摘要。其他运行状态仍可继续检查。",
+                    Actions = [ViewEventsAction()],
                 });
                 return;
             }
@@ -425,8 +481,14 @@ namespace ColorVision.UI.Desktop.Operations
             });
         }
 
-        private static void AddDesktopFinding(OperationsDesktopState desktop, List<OperationsTriageFinding> findings)
+        private static void AddDesktopFinding(
+            OperationsDesktopState desktop,
+            OperationsRuntimePerformanceSnapshot? performance,
+            List<OperationsTriageFinding> findings)
         {
+            if (performance?.MainUi is { Available: true, State: "unresponsive" })
+                return;
+
             if (!desktop.DispatcherAvailable || !desktop.Exists)
             {
                 findings.Add(new OperationsTriageFinding
@@ -436,6 +498,7 @@ namespace ColorVision.UI.Desktop.Operations
                     Category = "desktop",
                     Title = "电脑主窗口不可用",
                     Summary = "当前无法取得 ColorVision 主窗口；请在电脑端确认应用启动状态。",
+                    Actions = [ViewApplicationAction()],
                 });
                 return;
             }
@@ -453,6 +516,7 @@ namespace ColorVision.UI.Desktop.Operations
                 EvidenceCount = 1,
                 Actions =
                 [
+                    ViewApplicationAction(),
                     new OperationsTriageAction
                     {
                         ActionId = OperationsTriageActionIds.ShowMainWindow,
@@ -501,6 +565,51 @@ namespace ColorVision.UI.Desktop.Operations
             Description = "打开有界脱敏日志摘要，不读取原始日志。",
         };
 
+        private static OperationsTriageAction ViewDeviceHealthAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.ViewDeviceHealth,
+            Title = "查看设备状态概览",
+            Kind = "client-navigation",
+            RiskLevel = OperationsRiskLevels.ReadOnly,
+            Description = "只查看固定类别的规范化运行状态计数，不返回设备身份，也不执行重连或重启。",
+        };
+
+        private static OperationsTriageAction ViewMessageChannelHealthAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.ViewMessageChannelHealth,
+            Title = "查看消息通道健康",
+            Kind = "client-navigation",
+            RiskLevel = OperationsRiskLevels.ReadOnly,
+            Description = "只查看脱敏连接状态、订阅计数和聚合活动时间，不执行重连、重启或任意目标操作。",
+        };
+
+        private static OperationsTriageAction ViewFailureEvidenceAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.ViewFailureEvidence,
+            Title = "查看崩溃与卡死线索",
+            Kind = "client-navigation",
+            RiskLevel = OperationsRiskLevels.ReadOnly,
+            Description = "只查看最近七天固定类别的计数与聚合时间，不返回事件正文、文件名、路径或转储内容。",
+        };
+
+        private static OperationsTriageAction ViewPerformanceAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.ViewPerformance,
+            Title = "查看进程性能快照",
+            Kind = "client-navigation",
+            RiskLevel = OperationsRiskLevels.ReadOnly,
+            Description = "只查看聚合进程计数和主界面响应状态，不返回进程身份、路径或窗口内容，也不执行维护。",
+        };
+
+        private static OperationsTriageAction ViewApplicationAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.ViewApplication,
+            Title = "查看应用概况",
+            Kind = "client-navigation",
+            RiskLevel = OperationsRiskLevels.ReadOnly,
+            Description = "只查看应用版本、运行时间、聚合内存、主窗口与安全通道状态，不返回窗口标题、进程身份或路径。",
+        };
+
         private static OperationsTriageAction RestartMqttAction() => new()
         {
             ActionId = OperationsTriageActionIds.RequestMqttRestart,
@@ -510,6 +619,15 @@ namespace ColorVision.UI.Desktop.Operations
             Description = "仅通过 ServiceHost 重启固定 Mosquitto 服务；已配对手机确认后立即执行。",
             RequiresConfirmation = true,
             RequiresLocalCoSign = false,
+        };
+
+        private static OperationsTriageAction ViewServiceHealthAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.ViewServiceHealth,
+            Title = "查看白名单服务状态",
+            Kind = "client-navigation",
+            RiskLevel = OperationsRiskLevels.ReadOnly,
+            Description = "只查看固定 ColorVision 后台服务与 MQTT 服务的规范化状态、来源和观测时间，不执行维护。",
         };
 
         private static string ServiceHealthSummary(OperationsServiceHealthItem service) => service.Status switch

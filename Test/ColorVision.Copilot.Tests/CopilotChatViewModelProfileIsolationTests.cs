@@ -196,7 +196,188 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 CopilotAgentEvent.CheckpointUpdated(checkpoint, taskLedger));
 
             Assert.Empty(conversation.PendingSteeringRecoveries);
-            Assert.Same(checkpoint, conversation.AgentSessionCheckpoint);
+            var committedCheckpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(
+                conversation.AgentSessionCheckpoint);
+            Assert.NotSame(checkpoint, committedCheckpoint);
+            Assert.Equal(checkpoint.UpdatedAtUtc, committedCheckpoint.UpdatedAtUtc);
+            Assert.Equal(checkpoint.ConversationMemory, committedCheckpoint.ConversationMemory);
+        }
+        finally
+        {
+            hostedRun.Complete(error: null);
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public void RejectedCheckpointCannotCommitDeliveredSteeringRecovery()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "rejected-steering-checkpoint-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        conversation.Messages.Add(assistantMessage);
+        var steeringMessage = new CopilotSteeringMessageSnapshot(
+            "steering:rejected-checkpoint",
+            "retain this instruction until durable");
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var regressingJournal = journal.Snapshot();
+        journal.RecordStop(CopilotAgentStopReason.Paused);
+        var currentCheckpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "profile-a|model-a",
+            SerializedSessionJson = "{}",
+            TaskEventJournal = journal.Snapshot(),
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        };
+        Assert.True(conversation.SetAgentSessionCheckpoint(currentCheckpoint));
+        var acceptedCheckpoint = conversation.AgentSessionCheckpoint;
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(
+            conversation,
+            config,
+            new GatedFailingTurnRuntime(),
+            new CopilotAgentTaskHost());
+        using var hostedRun = new CopilotHostedAgentRun(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            "run:rejected-checkpoint");
+        try
+        {
+            Assert.True(CopilotSteeringRecovery.TrackPending(
+                conversation,
+                hostedRun.Id,
+                steeringMessage,
+                DateTimeOffset.UtcNow));
+            ApplyAgentEvents(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                CopilotAgentEvent.SteeringDelivered([steeringMessage]));
+
+            var rejectedCheckpoint = new CopilotAgentSessionCheckpoint
+            {
+                ProfileKey = "profile-a|model-a",
+                SerializedSessionJson = "{}",
+                ConversationMemory =
+                [
+                    new CopilotRequestMessage("user", steeringMessage.Text)
+                    {
+                        IsSteering = true,
+                    },
+                ],
+                TaskEventJournal = regressingJournal,
+                UpdatedAtUtc = currentCheckpoint.UpdatedAtUtc.AddSeconds(1),
+            };
+            ApplyAgentEvents(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                CopilotAgentEvent.CheckpointUpdated(
+                    rejectedCheckpoint,
+                    new CopilotAgentTaskLedgerSnapshot
+                    {
+                        Mode = "execute",
+                        Items =
+                        [
+                            new CopilotAgentTaskItem
+                            {
+                                Id = 1,
+                                Title = "Retain steering",
+                                Description = "Do not commit recovery through rejected evidence.",
+                            },
+                        ],
+                    }));
+
+            Assert.Same(acceptedCheckpoint, conversation.AgentSessionCheckpoint);
+            Assert.Single(conversation.PendingSteeringRecoveries);
+        }
+        finally
+        {
+            hostedRun.Complete(error: null);
+            viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public void RejectedTerminalCheckpointRestoresDeliveredSteeringToDraft()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "rejected-terminal-checkpoint-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty);
+        conversation.Messages.Add(assistantMessage);
+        var steeringMessage = new CopilotSteeringMessageSnapshot(
+            "steering:rejected-terminal-checkpoint",
+            "restore this terminal instruction");
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var rejectedJournal = journal.Snapshot();
+        journal.RecordStop(CopilotAgentStopReason.Paused);
+        var currentCheckpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "profile-a|model-a",
+            SerializedSessionJson = "{}",
+            TaskEventJournal = journal.Snapshot(),
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        };
+        conversation.SetAgentSessionCheckpoint(currentCheckpoint);
+        var acceptedCheckpoint = conversation.AgentSessionCheckpoint;
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(
+            conversation,
+            config,
+            new GatedFailingTurnRuntime(),
+            new CopilotAgentTaskHost());
+        using var hostedRun = new CopilotHostedAgentRun(
+            conversation.Id,
+            CopilotAgentMode.Auto,
+            "run:rejected-terminal-checkpoint");
+        try
+        {
+            Assert.True(CopilotSteeringRecovery.TrackPending(
+                conversation,
+                hostedRun.Id,
+                steeringMessage,
+                DateTimeOffset.UtcNow));
+            ApplyAgentEvents(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                CopilotAgentEvent.SteeringDelivered([steeringMessage]));
+            var rejectedCheckpoint = new CopilotAgentSessionCheckpoint
+            {
+                ProfileKey = "profile-a|model-a",
+                SerializedSessionJson = "{}",
+                ConversationMemory =
+                [
+                    new CopilotRequestMessage("user", steeringMessage.Text)
+                    {
+                        IsSteering = true,
+                    },
+                ],
+                TaskEventJournal = rejectedJournal,
+                UpdatedAtUtc = currentCheckpoint.UpdatedAtUtc.AddSeconds(1),
+            };
+
+            var accepted = CommitAgentRunStateAndResolveSteering(
+                viewModel,
+                hostedRun,
+                conversation,
+                rejectedJournal,
+                rejectedCheckpoint,
+                CopilotAgentStopReason.Paused);
+
+            Assert.False(accepted);
+            Assert.Same(acceptedCheckpoint, conversation.AgentSessionCheckpoint);
+            Assert.Empty(conversation.PendingSteeringRecoveries);
+            Assert.Contains(steeringMessage.Text, conversation.DraftText, StringComparison.Ordinal);
         }
         finally
         {
@@ -590,6 +771,89 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             {
             }
             viewModel.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task UserQuestionAnswerStateChangesOnlyWhenTheRuntimeEventArrives()
+    {
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        var config = CreateConfig(profile, "question-answer-event-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var runtime = new AcceptingQuestionTurnRuntime();
+        var taskHost = new CopilotAgentTaskHost();
+        var releaseRun = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        using var viewModel = CreateViewModel(conversation, config, runtime, taskHost);
+        var hostedRun = taskHost.Start(
+            conversation.Id,
+            CopilotAgentMode.Plan,
+            async _ => await releaseRun.Task);
+        var question = new CopilotUserQuestionSnapshot
+        {
+            RequestId = "question:" + new string('a', 32),
+            ConversationId = conversation.Id,
+            TaskId = hostedRun.Id,
+            Header = "Scope",
+            Question = "Which scope should be used?",
+            Options =
+            [
+                new CopilotUserQuestionOption
+                {
+                    RequestId = "question:" + new string('a', 32),
+                    TaskId = hostedRun.Id,
+                    Label = "Current (Recommended)",
+                    Description = "Keep the current bounded scope.",
+                },
+                new CopilotUserQuestionOption
+                {
+                    RequestId = "question:" + new string('a', 32),
+                    TaskId = hostedRun.Id,
+                    Label = "Expand",
+                    Description = "Include adjacent modules.",
+                },
+            ],
+            RequestedAtUtc = DateTimeOffset.UtcNow,
+        };
+        var assistantMessage = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            UserQuestion = question,
+        };
+        conversation.Messages.Add(assistantMessage);
+        try
+        {
+            viewModel.InputText = "Keep the current scope";
+
+            Assert.True(viewModel.SubmitUserQuestionAnswerCommand.CanExecute(null));
+            viewModel.SubmitUserQuestionAnswerCommand.Execute(null);
+
+            Assert.Equal(string.Empty, viewModel.InputText);
+            Assert.Equal("Keep the current scope", runtime.Answer);
+            var persistedQuestion = Assert.IsType<CopilotUserQuestionSnapshot>(assistantMessage.UserQuestion);
+            Assert.NotSame(question, persistedQuestion);
+            Assert.Equal(question.RequestId, persistedQuestion.RequestId);
+            Assert.True(persistedQuestion.IsPending);
+
+            ApplyAgentEvents(
+                viewModel,
+                hostedRun,
+                conversation,
+                assistantMessage,
+                CopilotAgentEvent.UserQuestionResolved(
+                    question.Resolve(
+                        CopilotUserQuestionResolution.Answered,
+                        "Keep the current scope")));
+
+            Assert.Equal(
+                CopilotUserQuestionResolution.Answered,
+                assistantMessage.UserQuestion.Resolution);
+            Assert.Equal("Keep the current scope", assistantMessage.UserQuestion.Answer);
+        }
+        finally
+        {
+            releaseRun.TrySetResult();
+            await hostedRun.Completion.WaitAsync(TestTimeout);
         }
     }
 
@@ -1021,6 +1285,82 @@ public sealed class CopilotChatViewModelProfileIsolationTests
     }
 
     [Fact]
+    public async Task QueuedImageIsCommittedToManagedStorageBeforeItsTurnStarts()
+    {
+        var root = Path.Combine(
+            Path.GetTempPath(),
+            nameof(QueuedImageIsCommittedToManagedStorageBeforeItsTurnStarts),
+            Guid.NewGuid().ToString("N"));
+        var attachmentDirectoryPath = Path.Combine(root, "attachments");
+        var sourcePath = Path.Combine(root, "source.png");
+        Directory.CreateDirectory(root);
+        await File.WriteAllBytesAsync(
+            sourcePath,
+            Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="));
+        var profile = CreateProfile("profile-a", "Profile A", "model-a");
+        profile.SupportsImageInput = true;
+        var config = CreateConfig(profile, "queued-image-admission-test-token");
+        var conversation = CreateConversation(profile, "conversation-a", string.Empty);
+        var runtime = new GatedFailingTurnRuntime();
+        var queuedFollowUp = new CopilotQueuedFollowUp(
+            "queued-image-admission-run",
+            conversation.Id,
+            conversation.Title,
+            "inspect the queued image",
+            CopilotAgentMode.Auto,
+            profile,
+            new CopilotAgentHostContextSnapshot(
+                "",
+                "",
+                [CopilotAttachmentItem.CreateImage(sourcePath, "Evidence")]));
+        using var solutionManagerScope = new IsolatedSolutionManagerScope();
+        var viewModel = CreateViewModel(
+            conversation,
+            config,
+            runtime,
+            new CopilotAgentTaskHost(),
+            attachmentDirectoryPath);
+        using var hostedRun = new CopilotHostedAgentRun(
+            conversation.Id,
+            CopilotAgentMode.Auto);
+        var executeMethod = typeof(CopilotChatViewModel).GetMethod(
+            "ExecuteQueuedFollowUpAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ExecuteQueuedFollowUpAsync was not found.");
+
+        try
+        {
+            var execution = Assert.IsAssignableFrom<Task>(executeMethod.Invoke(
+                viewModel,
+                [hostedRun, queuedFollowUp]));
+            var request = await runtime.Entered.WaitAsync(TestTimeout);
+            var admittedImage = Assert.Single(request.HostContext.Attachments);
+
+            Assert.StartsWith(
+                Path.Combine(attachmentDirectoryPath, "image-"),
+                admittedImage.Value,
+                StringComparison.OrdinalIgnoreCase);
+            Assert.True(File.Exists(admittedImage.Value));
+            Assert.Equal(
+                admittedImage.Value,
+                Assert.Single(conversation.Messages, message => message.IsUser)
+                    .Attachments.Single().Value);
+
+            File.Delete(sourcePath);
+            runtime.Release();
+            await execution.WaitAsync(TestTimeout);
+        }
+        finally
+        {
+            runtime.Release();
+            viewModel.Dispose();
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task QueuedSlashCommandRunsInItsOriginConversationAndRestoresLaterSelection()
     {
         var profileA = CreateProfile("profile-a", "Profile A", "model-a");
@@ -1412,7 +1752,8 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         CopilotConversationRecord conversation,
         CopilotConfig config,
         ICopilotTurnRuntime runtime,
-        CopilotAgentTaskHost taskHost)
+        CopilotAgentTaskHost taskHost,
+        string attachmentDirectoryPath = "")
     {
         var state = new CopilotChatState
         {
@@ -1422,7 +1763,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         };
         return new CopilotChatViewModel(
             new CopilotChatService(),
-            new InMemoryStateStore(state),
+            new InMemoryStateStore(state, attachmentDirectoryPath),
             config,
             runtime,
             taskHost);
@@ -1442,6 +1783,23 @@ public sealed class CopilotChatViewModelProfileIsolationTests
         method.Invoke(
             viewModel,
             [hostedRun, conversation, assistantMessage, agentEvents]);
+    }
+
+    private static bool CommitAgentRunStateAndResolveSteering(
+        CopilotChatViewModel viewModel,
+        CopilotHostedAgentRun hostedRun,
+        CopilotConversationRecord conversation,
+        CopilotAgentTaskEventJournalSnapshot journal,
+        CopilotAgentSessionCheckpoint checkpoint,
+        CopilotAgentStopReason stopReason)
+    {
+        var method = typeof(CopilotChatViewModel).GetMethod(
+            "CommitAgentRunStateAndResolveSteering",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("CommitAgentRunStateAndResolveSteering was not found.");
+        return Assert.IsType<bool>(method.Invoke(
+            viewModel,
+            [hostedRun, conversation, journal, checkpoint, stopReason]));
     }
 
     private static async Task ProcessGoalAfterTurnAsync(
@@ -1572,9 +1930,44 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             Task.FromException<CopilotWorkspaceRollbackActionResult>(new NotSupportedException());
     }
 
-    private sealed class InMemoryStateStore(CopilotChatState state) : ICopilotChatStateStore
+    private sealed class AcceptingQuestionTurnRuntime : ICopilotTurnRuntime
     {
-        public string AttachmentDirectoryPath => string.Empty;
+        public string Answer { get; private set; } = string.Empty;
+
+        public async IAsyncEnumerable<CopilotTurnEvent> RunAsync(
+            CopilotTurnRequest request,
+            [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.CompletedTask;
+            yield break;
+        }
+
+        public CopilotSteeringAdmissionResult EnqueueSteeringMessage(string taskId, string message) =>
+            new(CopilotSteeringAdmissionReason.RuntimeUnavailable);
+
+        public bool TryEnqueueBackgroundShellCommandCompletion(CopilotBackgroundShellCommandSnapshot snapshot) => false;
+
+        public bool TryEnqueueBackgroundShellCommandOutput(CopilotBackgroundShellOutputMonitorEventArgs eventArgs) => false;
+
+        public bool TryAnswerUserQuestion(string taskId, string requestId, string answer)
+        {
+            Answer = answer;
+            return true;
+        }
+
+        public Task<CopilotWorkspaceRollbackActionResult> RequestWorkspaceRollbackAsync(
+            CopilotWorkspaceRollbackActionRequest request,
+            Action<CopilotAgentEvent> onEvent,
+            CancellationToken cancellationToken) =>
+            Task.FromException<CopilotWorkspaceRollbackActionResult>(new NotSupportedException());
+    }
+
+    private sealed class InMemoryStateStore(
+        CopilotChatState state,
+        string attachmentDirectoryPath = "") : ICopilotChatStateStore
+    {
+        public string AttachmentDirectoryPath { get; } = attachmentDirectoryPath;
 
         public CopilotChatState Load() => state;
 

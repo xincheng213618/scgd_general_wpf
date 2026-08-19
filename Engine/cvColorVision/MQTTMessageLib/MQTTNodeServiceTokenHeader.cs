@@ -10,21 +10,4 @@ public class MQTTNodeServiceTokenHeader : MQTTNodeServiceHeader
 		Token = token;
 	}
 
-	public MQTTNodeServiceTokenHeader()
-	{
-	}
-
-	public bool TokenCheck(string accessToken)
-	{
-		string version = base.Version;
-		if (version == null || version.Equals("1.0"))
-		{
-			return true;
-		}
-		if (!string.IsNullOrWhiteSpace(Token))
-		{
-			return Token.Equals(accessToken);
-		}
-		return false;
-	}
 }

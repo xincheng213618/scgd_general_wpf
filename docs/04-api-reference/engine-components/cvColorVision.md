@@ -38,6 +38,22 @@
 | 源表链路 | 打开、设置源模式、读电压电流、步进/扫描、关闭有明确调用顺序 |
 | 错误码 | 原生返回码能进入日志或上层异常，不被吞掉 |
 
+## cvCamera.dll 许可证构建约定
+
+本仓库 `DLL/scgd_internal_dll/cvCamera.dll` 默认保存公司内部使用版本：相机和光谱仪打开链路均不执行许可证验证。外部 `scgd_internal_dll` 源码仓库仅用于本地修改和构建，不在本仓库的交付流程中提交；确认产物后，只把 DLL 复制到本仓库并在这里提交。
+
+生成内部版本时，检查以下开关：
+
+| 设备链路 | 源码位置 | 内部版本 | 需要许可证的交付版本 |
+| --- | --- | --- | --- |
+| 相机 | `cvCameraItem/cvCameraItem/cvCamera.cpp` 中的 `CM_ValiLic` | 许可证分支使用 `if (false)` | 使用 `if (true)` |
+| vLight 光谱仪 | `cvCamera/cvCamera/SpectroHelper.cpp` 中的 `_ACTIVE_LICENSE_` | 定义为 `0` | 定义为 `1` |
+| 高立通光谱仪 | `cvCamera/cvCamera/SpectroGaolitong.cpp` 中的许可证分支 | 使用 `if (false)` | 使用 `if (true)` |
+
+`pCamMan->SetDeviceMode(mode)` 保存的是许可证中的 `device_mode`，供 `CM_GetDeviceMode` 返回，不是设置相机硬件工作模式。内部版本不执行许可证分支时不要单独补调用；此时设备模式保持为空，上层应继续使用配置的相机型号作为回退。
+
+按 `Release|x64` 构建后，确认相机、vLight 光谱仪和高立通光谱仪的打开路径没有活动的 `LicenseValidate` 调用，再把产物复制到 `DLL/scgd_internal_dll/cvCamera.dll`。静态许可证/HASP 代码或导出仍可能保留在 DLL 中；内部版本的验收标准是上述运行路径不触发许可证验证。
+
 ## 变更边界
 
 | 变更类型 | 是否改这里 |

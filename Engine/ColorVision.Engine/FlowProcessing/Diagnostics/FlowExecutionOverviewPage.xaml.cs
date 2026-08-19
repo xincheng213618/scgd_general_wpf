@@ -47,8 +47,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             string serialText = string.IsNullOrWhiteSpace(_session.SerialNumber)
                 ? string.Empty
                 : $" · SN {_session.SerialNumber}";
-            SessionText.Text = $"Batch {_session.BatchId} · {_session.Records.Count} 个执行节点{serialText}";
-            OpenMessagesButton.Content = $"查看本批消息（{_session.Messages.Count}）";
+            SessionText.Text = EngineLocalization.Format($"Batch {_session.BatchId} · {_session.Records.Count} 个执行节点{serialText}");
+            OpenMessagesButton.Content = EngineLocalization.Format($"查看本批消息（{_session.Messages.Count}）");
         }
 
         private void PopulateSummary()
@@ -61,23 +61,23 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             if (_session.PhaseSummary.PreProcessMs is long preProcessMs)
             {
                 timingParts.Add(
-                    $"前处理 {FlowExecutionAnalysisPresentation.FormatDuration(preProcessMs)}");
+                    EngineLocalization.Format($"前处理 {FlowExecutionAnalysisPresentation.FormatDuration(preProcessMs)}"));
             }
             timingParts.Add(
-                $"节点活动 {FlowExecutionAnalysisPresentation.FormatDuration(summary.ActiveMs)}");
+                EngineLocalization.Format($"节点活动 {FlowExecutionAnalysisPresentation.FormatDuration(summary.ActiveMs)}"));
             timingParts.Add(
                 _session.PhaseSummary.PreProcessMs.HasValue
-                    ? $"其他流程开销 {FlowExecutionAnalysisPresentation.FormatDuration(_session.OtherExecutionMs)}"
-                    : $"节点外耗时 {FlowExecutionAnalysisPresentation.FormatDuration(_session.NodeInactiveMs)}");
+                    ? EngineLocalization.Format($"其他流程开销 {FlowExecutionAnalysisPresentation.FormatDuration(_session.OtherExecutionMs)}")
+                    : EngineLocalization.Format($"节点外耗时 {FlowExecutionAnalysisPresentation.FormatDuration(_session.NodeInactiveMs)}"));
             if (_session.PhaseSummary.PostProcessMs is long postProcessMs)
             {
                 timingParts.Add(
-                    $"后处理 {FlowExecutionAnalysisPresentation.FormatDuration(postProcessMs)}（另计）");
+                    EngineLocalization.Format($"后处理 {FlowExecutionAnalysisPresentation.FormatDuration(postProcessMs)}（另计）"));
             }
             if (summary.OverlapMs > 0)
             {
                 timingParts.Add(
-                    $"节点并行重叠 {FlowExecutionAnalysisPresentation.FormatDuration(summary.OverlapMs)}");
+                    EngineLocalization.Format($"节点并行重叠 {FlowExecutionAnalysisPresentation.FormatDuration(summary.OverlapMs)}"));
             }
             SummaryTotalTimeHintText.Text = string.Join(" · ", timingParts);
 
@@ -92,10 +92,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             int messageIssueCount = _session.Messages.Count(item =>
                 item.State == FlowMessageState.Fail || item.State == FlowMessageState.Timeout);
             SummaryMessageStateText.Text = messageIssueCount > 0
-                ? $"{messageIssueCount} 条失败或超时"
+                ? EngineLocalization.Format($"{messageIssueCount} 条失败或超时")
                 : _session.Messages.Count > 0
-                    ? "未发现失败或超时"
-                    : "本批次没有 MQTT 记录";
+                    ? EngineLocalization.Get("未发现失败或超时")
+                    : EngineLocalization.Get("本批次没有 MQTT 记录");
         }
 
         private static string BuildNodeStateSummary(FlowExecutionAnalysisSummary summary)
@@ -103,12 +103,12 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             var parts = new List<string>();
             int completedCount = summary.NodeCount - summary.TimeoutCount;
             if (completedCount > 0)
-                parts.Add($"{completedCount} 已完成");
+                parts.Add(EngineLocalization.Format($"{completedCount} 已完成"));
             if (summary.TimeoutCount > 0)
-                parts.Add($"{summary.TimeoutCount} 超时");
+                parts.Add(EngineLocalization.Format($"{summary.TimeoutCount} 超时"));
             if (summary.WarningCount > 0)
-                parts.Add($"{summary.WarningCount} 个慢节点");
-            return parts.Count == 0 ? "等待执行记录" : string.Join(" · ", parts);
+                parts.Add(EngineLocalization.Format($"{summary.WarningCount} 个慢节点"));
+            return parts.Count == 0 ? EngineLocalization.Get("等待执行记录") : string.Join(" · ", parts);
         }
 
         private void UpdateEmptyState()
@@ -262,8 +262,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             barPlot.Horizontal = true;
             TimelinePlot.Plot.Axes.Left.TickGenerator =
                 new ScottPlot.TickGenerators.NumericManual(ticks.ToArray());
-            TimelinePlot.Plot.Title($"执行时序 · Batch {_session.BatchId}");
-            TimelinePlot.Plot.XLabel("时间 (ms)");
+            TimelinePlot.Plot.Title(EngineLocalization.Format($"执行时序 · Batch {_session.BatchId}"));
+            TimelinePlot.Plot.XLabel(EngineLocalization.Get("时间 (ms)"));
             TimelinePlot.Plot.YLabel(string.Empty);
             TimelinePlot.Plot.Axes.AutoScale();
             TimelinePlot.Plot.Axes.SetLimitsX(0, totalMs * 1.04);

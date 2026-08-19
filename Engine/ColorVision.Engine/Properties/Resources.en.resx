@@ -225,9 +225,7 @@
   </data>
   <data name="MqttConnection" xml:space="preserve">
     <value>MQTT Connection</value>
-  </data>  <data name="MenuValidue" xml:space="preserve">
-    <value>Verification template settings (B)</value>
-  </data>
+  </data>  
   <data name="MenuTemplate" xml:space="preserve">
     <value>Te_mplate</value>
   </data>
@@ -620,12 +618,8 @@
   <data name="AutoFocusTemplate" xml:space="preserve">
     <value>Autofocus Template</value>
   </data>
-  <data name="POITemplateSettings" xml:space="preserve">
-    <value>POI Template Settings</value>
-  </data>
-  <data name="POIFilterTemplateSettings" xml:space="preserve">
-    <value>POI Filter Template Settings</value>
-  </data>
+  
+  
   <data name="POICorrectionTemplateSettings" xml:space="preserve">
     <value>POI Correction Template Settings</value>
   </data>
@@ -633,13 +627,9 @@
   <data name="POIPlacementTemplateSettings" xml:space="preserve">
     <value>POI Point Layout Template Settings</value>
   </data>
-  <data name="POIAnalysis" xml:space="preserve">
-    <value>POI Analysis</value>
-  </data>
+  
 
-  <data name="POIFileOutputTemplateSettings" xml:space="preserve">
-    <value>POI File Output Template Settings</value>
-  </data>
+  
   <data name="POICalibrationCorrectionTemplateSettings" xml:space="preserve">
     <value>POI Calibration Correction Parameter Template Settings</value>
   </data>
@@ -652,18 +642,12 @@
   <data name="GhostingDetection2_0" xml:space="preserve">
     <value>Ghosting Detection 2.0</value>
   </data>
-  <data name="CrossCalculation" xml:space="preserve">
-    <value>Cross Calculation</value>
-  </data>
+  
 
 
 
-  <data name="EditDefaultSensorDictionary" xml:space="preserve">
-    <value>Edit Default Sensor Dictionary</value>
-  </data>
-  <data name="CacheManagement" xml:space="preserve">
-    <value>Cache Management</value>
-  </data>
+  
+  
   <data name="Archive" xml:space="preserve">
     <value>Archive</value>
   </data>
@@ -682,9 +666,7 @@
   <data name="ArchiveConfigInfoNotFound" xml:space="preserve">
     <value>Archive configuration information not found</value>
   </data>
-  <data name="EditDefaultAlgorithmDictionary" xml:space="preserve">
-    <value>Edit the default algorithm dictionary</value>
-  </data>
+  
   <data name="UnauthorizedOrLicenseExpired" xml:space="preserve">
     <value>Unauthorized or expired license</value>
   </data>
@@ -701,9 +683,7 @@
   <data name="RetentionDays" xml:space="preserve">
     <value>Storage days</value>
   </data>
-  <data name="CreateProcessMeta" xml:space="preserve">
-    <value>Create ProcessMeta</value>
-  </data>
+  
   <data name="DistortionEvaluation" xml:space="preserve">
     <value>Distortion assessment</value>
   </data>
@@ -720,9 +700,7 @@
     <value>Keyboard Inspection</value>
   </data>
 
-  <data name="SFRFindRoi" xml:space="preserve">
-    <value>SFRROI search</value>
-  </data>
+  
   <data name="PixelLedDetect" xml:space="preserve">
     <value>Pixel-level LED detection</value>
   </data>
@@ -1094,9 +1072,7 @@
   <data name="PgTemplateConfig" xml:space="preserve">
     <value>PG Template Configuration</value>
   </data>
-  <data name="SensorDicEdit" xml:space="preserve">
-    <value>Sensor Dictionary Editing</value>
-  </data>
+  
 
   <data name="UploadLic" xml:space="preserve">
     <value>Upload License</value>
@@ -1399,12 +1375,8 @@
   <data name="AutoSaveDataColum" xml:space="preserve">
     <value>Automatically save data columns</value>
   </data>
-  <data name="AutoSaveRenderedImage" xml:space="preserve">
-    <value>Automatically save rendering</value>
-  </data>
-  <data name="HistoricalDataQuery" xml:space="preserve">
-    <value>Historical data query</value>
-  </data>
+  
+  
   <data name="ShowSiteInfo" xml:space="preserve">
     <value>Display site information</value>
   </data>
@@ -1416,33 +1388,21 @@
   </data>
   <data name="Operation" xml:space="preserve">
     <value>Operate</value>
-  </data>  <data name="ImageFlip" xml:space="preserve">
-    <value>Image Flip</value>
-  </data>
+  </data>  
   <data name="ParameterTemplate" xml:space="preserve">
     <value>Parameter template</value>
   </data>
-  <data name="FileExport" xml:space="preserve">
-    <value>File Export</value>
-  </data>
-  <data name="StorageType" xml:space="preserve">
-    <value>Storage Type</value>
-  </data>
-  <data name="POIFile" xml:space="preserve">
-    <value>POI File</value>
-  </data>
-  <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
-    <value>Calculate color temperature wavelength</value>
-  </data>
+  
+  
+  
+  
   <data name="CenterlX" xml:space="preserve">
     <value>Center X</value>
   </data>
   <data name="CentralY" xml:space="preserve">
     <value>Center Y</value>
   </data>
-  <data name="CADFile" xml:space="preserve">
-    <value>CAD files</value>
-  </data>
+  
   <data name="AddCmd" xml:space="preserve">
     <value>Add instructions</value>
   </data>
@@ -1506,9 +1466,7 @@
   <data name="SaveChangesPrompt" xml:space="preserve">
     <value>Save changes?</value>
   </data>
-  <data name="ClearCreatedProcess_ConfirmAutoSaveClosePrompt" xml:space="preserve">
-    <value>Do you want to clear the already created processes?\n\rAfter clearing, automatically save and close.</value>
-  </data>
+  
   <data name="FlowEditor" xml:space="preserve">
     <value>Flow Editor</value>
   </data>
@@ -1536,9 +1494,7 @@
   <data name="SFRTemplateManagement" xml:space="preserve">
     <value>SFR Template Management</value>
   </data>
-  <data name="BuzProcucTemplateManagement" xml:space="preserve">
-    <value>BuzProduc Template Management</value>
-  </data>
+  
   <data name="DataLoadTemplateManagement" xml:space="preserve">
     <value>Data loading template management</value>
   </data>
@@ -1554,9 +1510,7 @@
   <data name="ImageCroppingTemplateSettings" xml:space="preserve">
     <value>Illumination area cutting template</value>
   </data>
-  <data name="JNDTemplateManagement" xml:space="preserve">
-    <value>JND Template Management</value>
-  </data>
+  
   <data name="ImageEdit" xml:space="preserve">
     <value>Image Edit</value>
   </data>
@@ -1579,12 +1533,8 @@
     <value>Use the system default template</value>
   </data>
 
-  <data name="EditDefaultComplianceTemplate" xml:space="preserve">
-    <value>Edit Default Compliance Template</value>
-  </data>
-  <data name="TemplateExists_PleaseRename" xml:space="preserve">
-    <value>This template already exists. Please change the template name.</value>
-  </data>
+  
+  
   <data name="PoiFileOutputTemplateSetting" xml:space="preserve">
     <value>POI File Output Template Settings</value>
   </data>
@@ -1640,15 +1590,9 @@
     <value>Message Log Window</value>
   </data>
 
-  <data name="ComplyPoint" xml:space="preserve">
-    <value>Point</value>
-  </data>
-  <data name="ComplyPointList_" xml:space="preserve">
-    <value>Dot set</value>
-  </data>
-  <data name="EditDefaultComplianceDictionary" xml:space="preserve">
-    <value>Edit the default compliance dictionary</value>
-  </data>
+  
+  
+  
 
 
 
@@ -1739,9 +1683,7 @@
   <data name="ProcessHandlingConfig" xml:space="preserve">
     <value>Post-Process Configuration</value>
   </data>
-  <data name="UpdateProcessMeta" xml:space="preserve">
-    <value>Update ProcessMeta</value>
-  </data>
+  
 
   <data name="DeleteSelected" xml:space="preserve">
     <value>Delete selected</value>
@@ -1753,9 +1695,7 @@
     <value>Duplicate Names</value>
   </data>
 
-  <data name="NoServicesRequireCachePathConfiguration" xml:space="preserve">
-    <value>No service requires configuring a cache path.</value>
-  </data>
+  
   <data name="BulkEdit" xml:space="preserve">
     <value>Unified Editing</value>
   </data>
@@ -1781,9 +1721,7 @@
     <value>Enumerate</value>
   </data>
 
-  <data name="ExportTo" xml:space="preserve">
-    <value>ExportAs</value>
-  </data>
+  
   <data name="OpenFileFailed" xml:space="preserve">
     <value>File failed to open</value>
   </data>
@@ -1876,9 +1814,7 @@
   <data name="DefaultSavePath" xml:space="preserve">
     <value>Default Save Path</value>
   </data>
-  <data name="LightBar" xml:space="preserve">
-    <value>Light Bar</value>
-  </data>
+  
   <data name="Spectrometer" xml:space="preserve">
     <value>Spectrometer</value>
   </data>
@@ -2036,9 +1972,7 @@
   <data name="TemplateEdit" xml:space="preserve">
     <value>Template editing</value>
   </data>
-  <data name="DefaultValueType" xml:space="preserve">
-    <value>Default value type</value>
-  </data>
+  
   <data name="ServiceRegistryCenterConfig" xml:space="preserve">
     <value>Service Registry Configuration</value>
   </data>
@@ -2064,9 +1998,7 @@
   <data name="InternalTools" xml:space="preserve">
     <value>Internal Tools</value>
   </data>
-  <data name="AlgorithmVisibilitySettings" xml:space="preserve">
-    <value>Algorithm Visibility Settings</value>
-  </data>
+  
   <data name="Visible" xml:space="preserve">
     <value>Visible</value>
   </data>
@@ -2076,15 +2008,9 @@
   <data name="ShowAll" xml:space="preserve">
     <value>Show All</value>
   </data>
-  <data name="HideAll" xml:space="preserve">
-    <value>Hide All</value>
-  </data>
-  <data name="ShowGroup" xml:space="preserve">
-    <value>Show Group</value>
-  </data>
-  <data name="HideGroup" xml:space="preserve">
-    <value>Hide Group</value>
-  </data>
+  
+  
+  
   <data name="Image" xml:space="preserve">
     <value>Image</value>
   </data>
@@ -2487,25 +2413,17 @@
   <data name="AddNewLine" xml:space="preserve">
     <value>Add Newline</value>
   </data>
-  <data name="AllowSave" xml:space="preserve">
-    <value>Allow Saving</value>
-  </data>
+  
 
   <data name="AutoExposureFailedCheckLog" xml:space="preserve">
     <value>Auto exposure failed, check log {0}{1}</value>
   </data>
-  <data name="AutoExposureParamSettings" xml:space="preserve">
-    <value>Auto Exposure Parameter Settings</value>
-  </data>
+  
   <data name="AutoExposureTimeoutCheckLog" xml:space="preserve">
     <value>Auto exposure timeout, check service log</value>
   </data>
-  <data name="AutoFocusTest" xml:space="preserve">
-    <value>Autofocus Test</value>
-  </data>
-  <data name="BasicParamSettings" xml:space="preserve">
-    <value>Basic Parameter Settings</value>
-  </data>
+  
+  
 
   <data name="BindDLL" xml:space="preserve">
     <value>Bind DLL</value>
@@ -2546,9 +2464,7 @@
   <data name="CalcAutoExposure" xml:space="preserve">
     <value>Calculate Auto Exposure</value>
   </data>
-  <data name="CalcPosition" xml:space="preserve">
-    <value>Calculate Position</value>
-  </data>
+  
   <data name="CalculateEQE" xml:space="preserve">
     <value>Calculate EQE</value>
   </data>
@@ -2594,9 +2510,7 @@
     <value>Camera ID</value>
   </data>
 
-  <data name="CameraParamSettings" xml:space="preserve">
-    <value>Camera Parameter Settings</value>
-  </data>
+  
   <data name="CameraReset" xml:space="preserve">
     <value>Reset</value>
   </data>
@@ -2616,9 +2530,7 @@
   <data name="ChannelCount" xml:space="preserve">
     <value>Channel Count</value>
   </data>
-  <data name="ChannelOrder" xml:space="preserve">
-    <value>Channel Order</value>
-  </data>
+  
   <data name="ChannelParamSettings" xml:space="preserve">
     <value>Channel Parameter Settings</value>
   </data>
@@ -2734,9 +2646,7 @@
   <data name="DevicesDetected" xml:space="preserve">
     <value>Detected {0} devices:</value>
   </data>
-  <data name="DisplaySettings" xml:space="preserve">
-    <value>Display Settings</value>
-  </data>
+  
   <data name="EditTemplate" xml:space="preserve">
     <value>Edit Template</value>
   </data>
@@ -2752,15 +2662,9 @@
   <data name="EnterVoltageV" xml:space="preserve">
     <value>Enter voltage (V):</value>
   </data>
-  <data name="ExecuteDisto" xml:space="preserve">
-    <value>Execute Disto</value>
-  </data>
-  <data name="ExecuteFOV" xml:space="preserve">
-    <value>Execute FOV</value>
-  </data>
-  <data name="ExecuteSFR" xml:space="preserve">
-    <value>Execute SFR</value>
-  </data>
+  
+  
+  
 
   <data name="ExposureBLabel" xml:space="preserve">
     <value>Exposure B</value>
@@ -2777,9 +2681,7 @@
   <data name="FileServiceCleanupComplete" xml:space="preserve">
     <value>File Service Cleanup Complete</value>
   </data>
-  <data name="FrameSelect" xml:space="preserve">
-    <value>Frame Select</value>
-  </data>
+  
   <data name="GetCameraIdFailed" xml:space="preserve">
     <value>Failed to get camera ID</value>
   </data>
@@ -3050,14 +2952,10 @@ Please close camera or other programs using this serial port, or check device co
   <data name="SetCorrectParameters" xml:space="preserve">
     <value>Please set correct parameters!</value>
   </data>
-  <data name="ShowCenterLine" xml:space="preserve">
-    <value>Show Center Line</value>
-  </data>
+  
 
 
-  <data name="SwapRB" xml:space="preserve">
-    <value>Swap R/B</value>
-  </data>
+  
 
   <data name="Temperature" xml:space="preserve">
     <value>Temperature</value>
@@ -3082,9 +2980,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="ThirdPartyAlgorithm" xml:space="preserve">
     <value>ThirdPartyAlgorithm</value>
   </data>
-  <data name="ThresholdRange" xml:space="preserve">
-    <value>Threshold (0-255)</value>
-  </data>
+  
   <data name="Time" xml:space="preserve">
     <value>Time</value>
   </data>
@@ -3147,9 +3043,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_NoFlowTemplate" xml:space="preserve">
     <value>No flow templates available</value>
   </data>
-  <data name="Flow_NodeTimeAnalysis" xml:space="preserve">
-    <value>Node Time Analysis</value>
-  </data>
+  
   <data name="Flow_SaveFailed" xml:space="preserve">
     <value>Save failed: {0}</value>
   </data>
@@ -3240,87 +3134,39 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_MessageList_DisplayCount" xml:space="preserve">
     <value>Showing:</value>
   </data>
-  <data name="Flow_MessageList_ElapsedMs" xml:space="preserve">
-    <value>Elapsed(ms)</value>
-  </data>
+  
   <data name="Flow_MessageList_LoadCount" xml:space="preserve">
     <value>Load Count:</value>
   </data>
-  <data name="Flow_MessageList_Node" xml:space="preserve">
-    <value>Node:</value>
-  </data>
-  <data name="Flow_MessageList_NodeHeader" xml:space="preserve">
-    <value>Node</value>
-  </data>
-  <data name="Flow_MessageList_Query" xml:space="preserve">
-    <value>Query</value>
-  </data>
-  <data name="Flow_MessageList_RecvData" xml:space="preserve">
-    <value>Receive Data</value>
-  </data>
-  <data name="Flow_MessageList_RecvTime" xml:space="preserve">
-    <value>Receive Time</value>
-  </data>
-  <data name="Flow_MessageList_Refresh" xml:space="preserve">
-    <value>Refresh</value>
-  </data>
-  <data name="Flow_MessageList_SendData" xml:space="preserve">
-    <value>Send Data</value>
-  </data>
-  <data name="Flow_MessageList_SendTime" xml:space="preserve">
-    <value>Send Time</value>
-  </data>
-  <data name="Flow_MessageList_State" xml:space="preserve">
-    <value>State:</value>
-  </data>
-  <data name="Flow_MessageList_StateHeader" xml:space="preserve">
-    <value>State</value>
-  </data>
-  <data name="Flow_MessageList_StatusCode" xml:space="preserve">
-    <value>Status Code</value>
-  </data>
-  <data name="Flow_MessageList_Title" xml:space="preserve">
-    <value>Flow MQTT Message Query</value>
-  </data>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   <data name="Flow_MessageList_TotalCount" xml:space="preserve">
     <value>Total:</value>
   </data>
-  <data name="Flow_NodeAnalysis_All" xml:space="preserve">
-    <value>All</value>
-  </data>
-  <data name="Flow_NodeAnalysis_BatchSelection" xml:space="preserve">
-    <value>Batch Selection:</value>
-  </data>
-  <data name="Flow_NodeAnalysis_Compare" xml:space="preserve">
-    <value>Compare</value>
-  </data>
+  
+  
+  
   <data name="Flow_NodeAnalysis_CsvHeader" xml:space="preserve">
     <value>BatchId,NodeName,NodeType,StartTime,EndTime,Elapsed(ms),SN</value>
   </data>
-  <data name="Flow_NodeAnalysis_ElapsedMs" xml:space="preserve">
-    <value>Elapsed(ms)</value>
-  </data>
-  <data name="Flow_NodeAnalysis_EndTime" xml:space="preserve">
-    <value>End Time</value>
-  </data>
-  <data name="Flow_NodeAnalysis_Export" xml:space="preserve">
-    <value>Export</value>
-  </data>
-  <data name="Flow_NodeAnalysis_FileNamePrefix" xml:space="preserve">
-    <value>NodeTimeAnalysis_</value>
-  </data>
-  <data name="Flow_NodeAnalysis_GanttCompareTitle" xml:space="preserve">
-    <value>Flow Node Comparison (Multi-batch)</value>
-  </data>
-  <data name="Flow_NodeAnalysis_GanttTitle" xml:space="preserve">
-    <value>Flow Node Gantt Chart</value>
-  </data>
-  <data name="Flow_NodeAnalysis_Load" xml:space="preserve">
-    <value>Load</value>
-  </data>
-  <data name="Flow_NodeAnalysis_MessageQueryWindow" xml:space="preserve">
-    <value>Message Query Window</value>
-  </data>
+  
+  
+  
+  
+  
+  
+  
+  
   <data name="Flow_NodeAnalysis_MqttCsvHeader" xml:space="preserve">
     <value>BatchId,Node,NodeId,EventName,MsgId,SendTopic,SendTime,RecvTopic,RecvTime,Elapsed(ms),StatusCode,StatusMessage,State</value>
   </data>
@@ -3330,57 +3176,23 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_NodeAnalysis_NoDataToExport" xml:space="preserve">
     <value>No data to export, please load batch data first</value>
   </data>
-  <data name="Flow_NodeAnalysis_Node" xml:space="preserve">
-    <value>Node</value>
-  </data>
-  <data name="Flow_NodeAnalysis_NodeFilter" xml:space="preserve">
-    <value>Node Filter:</value>
-  </data>
-  <data name="Flow_NodeAnalysis_NodeName" xml:space="preserve">
-    <value>Node Name</value>
-  </data>
-  <data name="Flow_NodeAnalysis_NodeType" xml:space="preserve">
-    <value>Node Type</value>
-  </data>
-  <data name="Flow_NodeAnalysis_RecvData" xml:space="preserve">
-    <value>Receive Data</value>
-  </data>
-  <data name="Flow_NodeAnalysis_RecvTime" xml:space="preserve">
-    <value>Receive Time</value>
-  </data>
-  <data name="Flow_NodeAnalysis_SelectAtLeastOneBatch" xml:space="preserve">
-    <value>Please select at least one batch</value>
-  </data>
-  <data name="Flow_NodeAnalysis_SelectAtLeastTwoBatches" xml:space="preserve">
-    <value>Please select at least two batches to compare</value>
-  </data>
-  <data name="Flow_NodeAnalysis_SendData" xml:space="preserve">
-    <value>Send Data</value>
-  </data>
-  <data name="Flow_NodeAnalysis_SendTime" xml:space="preserve">
-    <value>Send Time</value>
-  </data>
-  <data name="Flow_NodeAnalysis_StartTime" xml:space="preserve">
-    <value>Start Time</value>
-  </data>
-  <data name="Flow_NodeAnalysis_State" xml:space="preserve">
-    <value>State</value>
-  </data>
-  <data name="Flow_NodeAnalysis_StateFilter" xml:space="preserve">
-    <value>State Filter:</value>
-  </data>
-  <data name="Flow_NodeAnalysis_Title" xml:space="preserve">
-    <value>Flow Node Time Analysis</value>
-  </data>
-  <data name="Flow_NodeAnalysis_TotalTime" xml:space="preserve">
-    <value>Total Time</value>
-  </data>
-  <data name="Flow_NodeAnalysis_XLabelElapsed" xml:space="preserve">
-    <value>Elapsed (ms)</value>
-  </data>
-  <data name="Flow_NodeAnalysis_XLabelTime" xml:space="preserve">
-    <value>Time (ms)</value>
-  </data>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   <data name="Flow_CreateTemplateBeforeSelection" xml:space="preserve">
     <value>Please create the corresponding template before selecting</value>
   </data>
@@ -3435,16 +3247,12 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Flow_ImportFlowPackageError" xml:space="preserve">
     <value>Error importing flow package: {0}</value>
   </data>
-  <data name="Flow_MessageList_ConfirmClearAll" xml:space="preserve">
-    <value>Are you sure you want to clear all flow MQTT message records?</value>
-  </data>
+  
 
 
 
 
-  <data name="Flow_NodeAnalysis_Timeout" xml:space="preserve">
-    <value>Timeout</value>
-  </data>
+  
 
 
 
@@ -3527,9 +3335,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Engine_Msg_ConnectFailed" xml:space="preserve">
     <value>Connection failed</value>
   </data>
-  <data name="Engine_Msg_RestoreSuccessRestartRequired" xml:space="preserve">
-    <value>Restore successful, service restart required to load resource files</value>
-  </data>
+  
   <data name="Engine_Msg_LoadingResultTableStats" xml:space="preserve">
     <value>Failed to load result table stats: {0}</value>
   </data>
@@ -3658,9 +3464,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Engine_PG_SaveCSV" xml:space="preserve">
     <value>Save CSV</value>
   </data>
-  <data name="Engine_PG_ShowWindow" xml:space="preserve">
-    <value>Show Window</value>
-  </data>
+  
 
 
   <data name="Engine_PG_ShowPlot" xml:space="preserve">
@@ -3903,15 +3707,11 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CleanupHistory" xml:space="preserve">
     <value>Cleanup History Data</value>
   </data>
-  <data name="ClearAllData" xml:space="preserve">
-    <value>Clear All Data</value>
-  </data>
+  
   <data name="CurveName" xml:space="preserve">
     <value>Curve Name:</value>
   </data>
-  <data name="DataCleanupDesc" xml:space="preserve">
-    <value>Unified display in standalone window...</value>
-  </data>
+  
   <data name="DefaultUseInitialMatrix" xml:space="preserve">
     <value>Default values use the initial matrix from the class.</value>
   </data>
@@ -3976,9 +3776,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="MtfAtFreqQuery" xml:space="preserve">
     <value>MTF@Freq Query</value>
   </data>
-  <data name="MysqlMovedToWindow" xml:space="preserve">
-    <value>MySQL result table cleanup moved to standalone window...</value>
-  </data>
+  
   <data name="NewTemplateName" xml:space="preserve">
     <value>New Template Name</value>
   </data>
@@ -3992,9 +3790,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="PropertyConfig" xml:space="preserve">
     <value>Property Configuration</value>
   </data>
-  <data name="RefreshStats" xml:space="preserve">
-    <value>Refresh Statistics</value>
-  </data>
+  
   <data name="ResetToClassDefault" xml:space="preserve">
     <value>Reset to Class Default</value>
   </data>
@@ -4004,9 +3800,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Restore_Mysql" xml:space="preserve">
     <value>Restore</value>
   </data>
-  <data name="RetainMonths" xml:space="preserve">
-    <value>Retain Months</value>
-  </data>
+  
   <data name="SaveAs" xml:space="preserve">
     <value>Save As</value>
   </data>
@@ -4023,9 +3817,7 @@ Please close camera or other programs using this serial port, or check device co
     <value>Select a process item to view config</value>
   </data>
 
-  <data name="Size_Column" xml:space="preserve">
-    <value>Size</value>
-  </data>
+  
   <data name="TableName" xml:space="preserve">
     <value>Table Name</value>
   </data>
@@ -4294,7 +4086,7 @@ Please close camera or other programs using this serial port, or check device co
   <data name="RunOnce" xml:space="preserve"><value>Run once</value></data>
   <data name="ScreenDefect_OpenResultFile" xml:space="preserve"><value>Open screen-defect result</value></data>
   <data name="ScreenDefect_SelectResultFile" xml:space="preserve"><value>Select screen-defect result in folder</value></data>
-  <data name="ScreenDefect_SelectTemplateFirst" xml:space="preserve"><value>Select a screen-defect detection template first</value></data>
+  
   <data name="ScreenDefect_TemplateManagement" xml:space="preserve"><value>Screen-defect detection template management</value></data>
   <data name="ScreenDefectDetection" xml:space="preserve"><value>Screen-defect detection</value></data>
   <data name="SelectWithEllipsis" xml:space="preserve"><value>Select...</value></data>
@@ -4365,8 +4157,8 @@ Please close camera or other programs using this serial port, or check device co
   <data name="Coordinates" xml:space="preserve"><value>Coordinates</value></data>
 
   <data name="Flow_AskAiAnalyzeCurrentFlow" xml:space="preserve"><value>Ask AI to analyze this flow</value></data>
-  <data name="Flow_OpenServiceLogFailed" xml:space="preserve"><value>Failed to open the service log: {0}</value></data>
-  <data name="Flow_ServiceLogNotFound" xml:space="preserve"><value>No matching service log was found. Confirm that the service is installed and has generated logs.</value></data>
+  
+  
   <data name="GhostGrayscale" xml:space="preserve"><value>Ghost grayscale</value></data>
   <data name="OpenResultSetFormat" xml:space="preserve"><value>Open {0} result set</value></data>
   <data name="Score" xml:space="preserve"><value>Score</value></data>
@@ -4420,12 +4212,8 @@ Please close camera or other programs using this serial port, or check device co
   <data name="ImageExportTiffCompression" xml:space="preserve">
     <value>TIFF compression (LZW default, fast and lossless)</value>
   </data>
-  <data name="ImageExportPngCompressionLevel" xml:space="preserve">
-    <value>PNG compression (0=none, 1=fastest, 9=smallest)</value>
-  </data>
-  <data name="ImageExportJpegQuality" xml:space="preserve">
-    <value>JPEG quality (0-100, default 95)</value>
-  </data>
+  
+  
   <data name="DisplayAlgorithmRecalculate" xml:space="preserve">
     <value>Re-run service algorithm</value>
   </data>
@@ -4471,4 +4259,690 @@ Please close camera or other programs using this serial port, or check device co
   <data name="CloneCalibrationTemplatesFailure" xml:space="preserve">
     <value>Failed to clone calibration templates: {0}</value>
   </data>
+  <data name="Flow_NodeInspector_Configuration" xml:space="preserve"><value>Configuration</value></data>
+  <data name="Flow_NodeInspector_Documentation" xml:space="preserve"><value>Documentation</value></data>
+  <data name="Flow_NodeInspector_NoDocumentation" xml:space="preserve"><value>No usage documentation is available for this node.</value></data>
+  <data name="Flow_NodeInspector_Purpose" xml:space="preserve"><value>Purpose</value></data>
+  <data name="Flow_NodeInspector_HowToUse" xml:space="preserve"><value>How to use</value></data>
+  <data name="Flow_NodeInspector_ProcessingOrder" xml:space="preserve"><value>Processing order</value></data>
+  <data name="Flow_NodeInspector_Notes" xml:space="preserve"><value>Notes</value></data>
+  <data name="Flow_NodeInspector_Ports" xml:space="preserve"><value>Ports</value></data>
+  <data name="Flow_NodeInspector_Input" xml:space="preserve"><value>Input</value></data>
+  <data name="Flow_NodeInspector_Output" xml:space="preserve"><value>Output</value></data>
+  <data name="Flow_NodeInspector_PropertyDescriptions" xml:space="preserve"><value>Property descriptions</value></data>
+  <data name="Flow_LocalCamera_Summary" xml:space="preserve"><value>Captures one RAW frame from a local physical camera and optionally performs local calibration, image flipping, and file saving.</value></data>
+  <data name="Flow_LocalCamera_Usage" xml:space="preserve"><value>1. Select the device code and configure the exposure time, gain, and average count.&#xA;2. Select a calibration template when calibration is required; leave it empty to output RAW only.&#xA;3. Enable auto connect, auto exposure, file saving, and image flipping as needed.&#xA;4. Connect OUT to a downstream local calibration, POI, or other algorithm node.</value></data>
+  <data name="Flow_LocalCamera_Processing" xml:space="preserve"><value>Camera RAW capture → spatial/general calibration → color calibration and CIE generation (when included in the template) → image flip → file save. Downstream POI nodes always use coordinates in the final image orientation.</value></data>
+  <data name="Flow_LocalCamera_Notes" xml:space="preserve"><value>X flips vertically, Y mirrors horizontally, and XY rotates 180°. Rotations of 90° and 270° are not supported. When no calibration template is selected, RAW is not flipped early; the orientation setting is preserved until downstream local calibration finishes.</value></data>
+
+  <data name="本地关注点布点(Re)" xml:space="preserve"><value>Local POI Layout (Remap)</value></data>
+  <data name="本地关注点布点(参数)" xml:space="preserve"><value>Local POI Layout (Parameters)</value></data>
+  <data name="本地校正" xml:space="preserve"><value>Local Calibration</value></data>
+  <data name="本地校正+实时 POI" xml:space="preserve"><value>Local Calibration + Real-time POI</value></data>
+  <data name="本地相机取图" xml:space="preserve"><value>Local Camera Capture</value></data>
+  <data name="本地相机" xml:space="preserve"><value>Local Camera</value></data>
+  <data name="本地 POI" xml:space="preserve"><value>Local POI</value></data>
+  <data name="实时 POI" xml:space="preserve"><value>Real-time POI</value></data>
+  <data name="备用图像文件" xml:space="preserve"><value>Fallback Image File</value></data>
+  <data name="POI 模板" xml:space="preserve"><value>POI Template</value></data>
+  <data name="POI 类型" xml:space="preserve"><value>POI Type</value></data>
+  <data name="POI 宽度" xml:space="preserve"><value>POI Width</value></data>
+  <data name="POI 高度" xml:space="preserve"><value>POI Height</value></data>
+  <data name="校正模板" xml:space="preserve"><value>Calibration Template</value></data>
+  <data name="保存校正文件" xml:space="preserve"><value>Save Calibrated File</value></data>
+  <data name="布点 ROI" xml:space="preserve"><value>Layout ROI</value></data>
+  <data name="POI 模板(Re)" xml:space="preserve"><value>POI Template (Re)</value></data>
+  <data name="名称前缀" xml:space="preserve"><value>Name Prefix</value></data>
+  <data name="参数模板" xml:space="preserve"><value>Parameter Template</value></data>
+  <data name="曝光时间(ms)" xml:space="preserve"><value>Exposure Time (ms)</value></data>
+  <data name="增益" xml:space="preserve"><value>Gain</value></data>
+  <data name="平均次数" xml:space="preserve"><value>Average Count</value></data>
+  <data name="自动连接" xml:space="preserve"><value>Auto Connect</value></data>
+  <data name="自动曝光" xml:space="preserve"><value>Auto Exposure</value></data>
+  <data name="保存文件" xml:space="preserve"><value>Save Files</value></data>
+  <data name="图像翻转" xml:space="preserve"><value>Image Flip</value></data>
+  <data name="相机管理" xml:space="preserve"><value>Camera Management</value></data>
+  <data name="校正缓存" xml:space="preserve"><value>Calibration Cache</value></data>
+  <data name="本地校正缓存管理" xml:space="preserve"><value>Local Calibration Cache Management</value></data>
+
+  <data name="上游没有本地内存帧时读取此文件；有上游帧时忽略" xml:space="preserve"><value>Read this file when no local in-memory frame is available upstream; ignored when an upstream frame exists.</value></data>
+  <data name="校正后直接在 CIE 内存上计算的 POI 模板" xml:space="preserve"><value>POI template calculated directly from the calibrated CIE frame in memory.</value></data>
+  <data name="IN_POI 没有布点结果时使用的备用 POI 模板" xml:space="preserve"><value>Fallback POI template used when IN_POI has no layout result.</value></data>
+  <data name="与服务实时关注点算法一致；None 使用上游布点结果中的类型" xml:space="preserve"><value>Matches the service real-time POI algorithm; None uses the type from the upstream layout result.</value></data>
+  <data name="POI 类型为圆或矩形时覆盖上游布点宽度" xml:space="preserve"><value>Overrides the upstream layout width when the POI type is Circle or Rectangle.</value></data>
+  <data name="POI 类型为圆或矩形时覆盖上游布点高度" xml:space="preserve"><value>Overrides the upstream layout height when the POI type is Circle or Rectangle.</value></data>
+  <data name="要计算的 POI 模板" xml:space="preserve"><value>POI template to calculate.</value></data>
+  <data name="对 RAW 指针执行的相机校正模板；CVCIE 输入会直接透传" xml:space="preserve"><value>Camera calibration template applied to the RAW pointer; CVCIE input passes through unchanged.</value></data>
+  <data name="默认关闭；基础校正保存 CVRAW，包含亮度/颜色校正时保存 CVCIE" xml:space="preserve"><value>Off by default. Basic calibration saves CVRAW; calibration containing luminance or color correction saves CVCIE.</value></data>
+  <data name="包含目标四角点的 POI 模板，例如 POI_W_AUTO" xml:space="preserve"><value>POI template containing the four target corner points, such as POI_W_AUTO.</value></data>
+  <data name="包含画布四角参考点、用于 ReMapping 的 POI 模板" xml:space="preserve"><value>POI template containing the four canvas reference corners for remapping.</value></data>
+  <data name="添加到映射后每个关注点名称之前的前缀" xml:space="preserve"><value>Prefix added to each mapped POI name.</value></data>
+  <data name="使用行列、边距、点类型和点尺寸生成关注点" xml:space="preserve"><value>Generates POIs from rows, columns, margins, point type, and point size.</value></data>
+  <data name="提供布点区域的 POI 模板，例如 POI_W_AUTO" xml:space="preserve"><value>POI template that defines the layout area, such as POI_W_AUTO.</value></data>
+  <data name="本次取图使用的曝光时间；三通道相机的 R/G/B 使用相同值" xml:space="preserve"><value>Exposure time for this capture; R, G, and B use the same value on a three-channel camera.</value></data>
+  <data name="本次取图使用的相机增益" xml:space="preserve"><value>Camera gain for this capture.</value></data>
+  <data name="单次流程执行中用于平均的采集次数，最小为 1" xml:space="preserve"><value>Number of captures averaged in one flow execution; minimum 1.</value></data>
+  <data name="取图时使用的校正模板；为空时只输出 CVRAW" xml:space="preserve"><value>Calibration template used during capture; leave empty to output CVRAW only.</value></data>
+  <data name="执行取图前，相机未连接时按设备当前配置自动尝试连接" xml:space="preserve"><value>Attempts to connect using the current device configuration when the camera is disconnected before capture.</value></data>
+  <data name="启用相机本地自动曝光" xml:space="preserve"><value>Enables local camera auto exposure.</value></data>
+  <data name="按本地相机规则保存 CVRAW，并在有校正数据时保存 CVCIE" xml:space="preserve"><value>Saves CVRAW according to local camera rules and saves CVCIE when calibrated data is available.</value></data>
+  <data name="X=上下翻转，Y=左右镜像，XY=180°（不支持 90°/270°旋转）。空间/普通校正始终先执行；有色度校正时翻转最终 CIE，否则翻转校正后的 RAW。未选择校正模板时保留方向配置，等待下游本地校正后应用；POI 使用最终方向的坐标。" xml:space="preserve"><value>X flips vertically, Y mirrors horizontally, and XY rotates 180° (90°/270° rotations are unsupported). Spatial/general calibration always runs first. With color calibration, the final CIE is flipped; otherwise the calibrated RAW is flipped. Without a calibration template, the orientation is retained for downstream local calibration. POI uses coordinates in the final orientation.</value></data>
+  <data name="打开本地相机管理窗口，并与当前节点同步取图参数" xml:space="preserve"><value>Opens local camera management and synchronizes capture parameters with the current node.</value></data>
+  <data name="查看已缓存的校正文件、内存占用，并可释放本机校正缓存" xml:space="preserve"><value>Shows cached calibration files and memory usage, and allows the local calibration cache to be released.</value></data>
+  <data name="查看 opencv_helper 在当前进程中复用的单校正文件缓存。" xml:space="preserve"><value>View the single-calibration file cache reused by opencv_helper in the current process.</value></data>
+  <data name="刷新" xml:space="preserve"><value>Refresh</value></data>
+  <data name="重新读取当前进程的缓存清单" xml:space="preserve"><value>Reload the cache list for the current process</value></data>
+  <data name="释放全部" xml:space="preserve"><value>Release All</value></data>
+  <data name="等待正在执行的校正结束，然后释放所有相机上下文与可释放的共享文件缓存" xml:space="preserve"><value>Wait for active calibrations to finish, then release all camera contexts and releasable shared file caches</value></data>
+  <data name="缓存文件：--" xml:space="preserve"><value>Cached Files: --</value></data>
+  <data name="驻留内存：--" xml:space="preserve"><value>Resident Memory: --</value></data>
+  <data name="缓存预算：--" xml:space="preserve"><value>Cache Budget: --</value></data>
+  <data name="命中：--" xml:space="preserve"><value>Hits: --</value></data>
+  <data name="内存为 native 估算的缓存驻留量" xml:space="preserve"><value>Memory is the native estimate of resident cache usage</value></data>
+  <data name="校正类型" xml:space="preserve"><value>Calibration Type</value></data>
+  <data name="文件路径" xml:space="preserve"><value>File Path</value></data>
+  <data name="驻留内存" xml:space="preserve"><value>Resident Memory</value></data>
+  <data name="命中次数" xml:space="preserve"><value>Hit Count</value></data>
+  <data name="使用状态" xml:space="preserve"><value>Usage Status</value></data>
+  <data name="正在读取缓存状态…" xml:space="preserve"><value>Reading cache status…</value></data>
+  <data name="尚未读取缓存状态。" xml:space="preserve"><value>Cache status has not been read.</value></data>
+  <data name="本地相机管理" xml:space="preserve"><value>Local Camera Management</value></data>
+  <data name="同步本地取图节点参数" xml:space="preserve"><value>Synchronize local capture node parameters</value></data>
+  <data name="查看已缓存的校正文件和内存占用" xml:space="preserve"><value>View cached calibration files and memory usage</value></data>
+  <data name="与本地相机取图节点一致：保存 CVRAW，有校正结果时同时保存 CVCIE" xml:space="preserve"><value>Same as the local camera capture node: save CVRAW and also save CVCIE when calibration results are available</value></data>
+  <data name="统一曝光 (ms)" xml:space="preserve"><value>Unified Exposure (ms)</value></data>
+  <data name="同步四路" xml:space="preserve"><value>Synchronize Four Channels</value></data>
+  <data name="新增" xml:space="preserve"><value>Add</value></data>
+  <data name="编辑" xml:space="preserve"><value>Edit</value></data>
+  <data name="失败策略" xml:space="preserve"><value>Failure Policy</value></data>
+  <data name="后处理项" xml:space="preserve"><value>Post-processing Item</value></data>
+  <data name="填写基本信息，按分类选择后处理类型，并在右侧确认配置。" xml:space="preserve"><value>Enter the basic information, select a post-processing type by category, and confirm its configuration on the right.</value></data>
+  <data name="名称" xml:space="preserve"><value>Name</value></data>
+  <data name="标签" xml:space="preserve"><value>Tag</value></data>
+  <data name="流程模板" xml:space="preserve"><value>Flow Template</value></data>
+  <data name="输入模板名称筛选" xml:space="preserve"><value>Enter a template name to filter</value></data>
+  <data name="处理配置" xml:space="preserve"><value>Processing Configuration</value></data>
+  <data name="未选择处理类型" xml:space="preserve"><value>No processing type selected</value></data>
+  <data name="保存" xml:space="preserve"><value>Save</value></data>
+  <data name="取消" xml:space="preserve"><value>Cancel</value></data>
+  <data name="流程版本历史" xml:space="preserve"><value>Flow Version History</value></data>
+  <data name="流程 Incident 管理" xml:space="preserve"><value>Flow Incident Management</value></data>
+  <data name="适应全部节点" xml:space="preserve"><value>Fit All Nodes</value></data>
+  <data name="执行分析" xml:space="preserve"><value>Execution Analysis</value></data>
+  <data name="本机流程版本历史" xml:space="preserve"><value>Local Flow Version History</value></data>
+  <data name="版本" xml:space="preserve"><value>Version</value></data>
+  <data name="来源" xml:space="preserve"><value>Source</value></data>
+  <data name="已发布" xml:space="preserve"><value>Published</value></data>
+  <data name="时间 (UTC)" xml:space="preserve"><value>Time (UTC)</value></data>
+  <data name="作者" xml:space="preserve"><value>Author</value></data>
+  <data name="内容哈希" xml:space="preserve"><value>Content Hash</value></data>
+  <data name="说明" xml:space="preserve"><value>Description</value></data>
+  <data name="对比所选两版" xml:space="preserve"><value>Compare Selected Versions</value></data>
+  <data name="恢复到所选版本" xml:space="preserve"><value>Restore Selected Version</value></data>
+  <data name="关闭" xml:space="preserve"><value>Close</value></data>
+  <data name="缓存操作正在进行，请等待操作完成后再关闭窗口。" xml:space="preserve"><value>A cache operation is in progress. Wait for it to finish before closing the window.</value></data>
+  <data name="读取缓存状态失败：{0}" xml:space="preserve"><value>Failed to read cache status: {0}</value></data>
+  <data name="读取本地校正缓存失败：{0}" xml:space="preserve"><value>Failed to read the local calibration cache: {0}</value></data>
+  <data name="将释放所有相机的本地校正上下文，并清理 opencv_helper 可释放的共享校正文件缓存。&#xA;&#xA;正在执行的校正会先完成；仍被其他活动上下文使用的内存不会被强制释放。是否继续？" xml:space="preserve"><value>This releases the local calibration contexts for all cameras and clears releasable shared calibration file caches in opencv_helper.&#xA;&#xA;Active calibrations will finish first. Memory still used by other active contexts will not be forcibly released. Continue?</value></data>
+  <data name="正在等待校正执行结束并释放缓存…" xml:space="preserve"><value>Waiting for calibrations to finish and releasing caches…</value></data>
+  <data name="释放缓存失败：{0}" xml:space="preserve"><value>Failed to release cache: {0}</value></data>
+  <data name="释放本地校正缓存失败：{0}" xml:space="preserve"><value>Failed to release the local calibration cache: {0}</value></data>
+  <data name="缓存文件：{0:N0}" xml:space="preserve"><value>Cached Files: {0:N0}</value></data>
+  <data name="驻留内存：{0}" xml:space="preserve"><value>Resident Memory: {0}</value></data>
+  <data name="缓存预算：未限制" xml:space="preserve"><value>Cache Budget: Unlimited</value></data>
+  <data name="缓存预算：{0}" xml:space="preserve"><value>Cache Budget: {0}</value></data>
+  <data name="命中：{0:N0} / 未命中：{1:N0}" xml:space="preserve"><value>Hits: {0:N0} / Misses: {1:N0}</value></data>
+  <data name="最后刷新：{0:HH:mm:ss}。当前没有缓存被活动上下文占用。" xml:space="preserve"><value>Last refreshed: {0:HH:mm:ss}. No caches are currently held by active contexts.</value></data>
+  <data name="最后刷新：{0:HH:mm:ss}。{1} 个缓存文件仍有 {2} 个活动引用。" xml:space="preserve"><value>Last refreshed: {0:HH:mm:ss}. {1} cached file(s) still have {2} active reference(s).</value></data>
+  <data name="已检查 {0} 台相机，释放 {1} 个本地校正上下文缓存项。" xml:space="preserve"><value>Checked {0} camera(s) and released {1} local calibration context cache item(s).</value></data>
+  <data name="共享文件缓存已移除 {0} 项，涉及驻留内存约 {1}。" xml:space="preserve"><value>Removed {0} shared file cache item(s), representing approximately {1} of resident memory.</value></data>
+  <data name="其中仍有 {0} 项被 {1} 个活动引用使用，约 {2} 暂未物理释放。完成相关执行后可再次释放。" xml:space="preserve"><value>{0} item(s) are still used by {1} active reference(s); approximately {2} has not yet been physically released. Release again after the related executions finish.</value></data>
+  <data name="没有共享文件缓存仍被活动上下文占用。" xml:space="preserve"><value>No shared file caches are still held by active contexts.</value></data>
+  <data name="opencv_helper 共享文件缓存未能执行释放。" xml:space="preserve"><value>The opencv_helper shared file cache could not be released.</value></data>
+  <data name="释放错误：" xml:space="preserve"><value>Release errors: </value></data>
+  <data name="；" xml:space="preserve"><value>; </value></data>
+  <data name="释放后刷新失败：{0}" xml:space="preserve"><value>Refresh after release failed: {0}</value></data>
+  <data name="未知 ({0})" xml:space="preserve"><value>Unknown ({0})</value></data>
+  <data name="正在加载" xml:space="preserve"><value>Loading</value></data>
+  <data name="仍被使用（{0} 个引用）" xml:space="preserve"><value>In use ({0} reference(s))</value></data>
+  <data name="已缓存（可释放）" xml:space="preserve"><value>Cached (releasable)</value></data>
+  <data name="等待加载" xml:space="preserve"><value>Waiting to load</value></data>
+  <data name="正在取图，完成后可以关闭窗口。" xml:space="preserve"><value>Capturing an image. The window can be closed when capture finishes.</value></data>
+  <data name="正在取图…" xml:space="preserve"><value>Capturing…</value></data>
+  <data name="取图 {0} ms · 校正 {1} ms · 保存 {2} ms · 总计 {3} ms" xml:space="preserve"><value>Capture {0} ms · Calibration {1} ms · Save {2} ms · Total {3} ms</value></data>
+
+  <data name="类别" xml:space="preserve"><value>Category</value></data>
+  <data name="类型" xml:space="preserve"><value>Type</value></data>
+  <data name="数据导出" xml:space="preserve"><value>Data Export</value></data>
+  <data name="设备控制" xml:space="preserve"><value>Device Control</value></data>
+  <data name="系统维护" xml:space="preserve"><value>System Maintenance</value></data>
+  <data name="项目插件" xml:space="preserve"><value>Project Plugins</value></data>
+  <data name="通用" xml:space="preserve"><value>General</value></data>
+  <data name="流程完成后执行 {0}。" xml:space="preserve"><value>Runs {0} after the flow completes.</value></data>
+  <data name="无需额外配置" xml:space="preserve"><value>No additional configuration</value></data>
+  <data name="支持处理配置" xml:space="preserve"><value>Configurable</value></data>
+  <data name="新增后处理项" xml:space="preserve"><value>Add Post-processing Item</value></data>
+  <data name="编辑后处理项" xml:space="preserve"><value>Edit Post-processing Item</value></data>
+  <data name="选择处理类型后显示配置" xml:space="preserve"><value>Select a processing type to show its configuration</value></data>
+  <data name="此处理类型无需额外配置" xml:space="preserve"><value>This processing type requires no additional configuration</value></data>
+  <data name="名称不能为空" xml:space="preserve"><value>Name cannot be empty.</value></data>
+  <data name="请选择流程模板" xml:space="preserve"><value>Select a flow template.</value></data>
+  <data name="请选择处理类型" xml:space="preserve"><value>Select a processing type.</value></data>
+  <data name="请选择一个处理项查看配置" xml:space="preserve"><value>Select a processing item to view its configuration</value></data>
+  <data name="基本信息" xml:space="preserve"><value>Basic Information</value></data>
+  <data name="名称:" xml:space="preserve"><value>Name:</value></data>
+  <data name="流程模板:" xml:space="preserve"><value>Flow Template:</value></data>
+  <data name="处理类:" xml:space="preserve"><value>Processor:</value></data>
+  <data name="标签:" xml:space="preserve"><value>Tag:</value></data>
+  <data name="失败策略:" xml:space="preserve"><value>Failure Policy:</value></data>
+  <data name="描述:" xml:space="preserve"><value>Description:</value></data>
+  <data name="文件清理" xml:space="preserve"><value>File Cleanup</value></data>
+  <data name="删除流程中产生的临时文件或指定文件" xml:space="preserve"><value>Delete temporary or specified files generated by the flow.</value></data>
+  <data name="IVL完整处理" xml:space="preserve"><value>Full IVL Processing</value></data>
+  <data name="处理IVL批次数据，包含Camera和Spectrum数据的导出" xml:space="preserve"><value>Process IVL batch data, including Camera and Spectrum data export.</value></data>
+  <data name="POI处理" xml:space="preserve"><value>POI Processing</value></data>
+  <data name="处理POI批次数据并导出CIE数据" xml:space="preserve"><value>Process POI batch data and export CIE data.</value></data>
+  <data name="源表关闭" xml:space="preserve"><value>Close Source Meter</value></data>
+  <data name="关闭源表" xml:space="preserve"><value>Close the source meter.</value></data>
+
+  <data name="{0} · 本机版本历史" xml:space="preserve"><value>{0} · Local Version History</value></data>
+  <data name="当前流程还没有稳定 FlowKey。" xml:space="preserve"><value>The current flow does not yet have a stable FlowKey.</value></data>
+  <data name="本机尚未产生版本；保存一次后会建立版本 1。" xml:space="preserve"><value>No local version exists yet. Saving once will create version 1.</value></data>
+  <data name="本机共 {0} 个不可变版本，当前画布对应版本 {1}。" xml:space="preserve"><value>There are {0} immutable local version(s). The current canvas corresponds to version {1}.</value></data>
+  <data name="未知" xml:space="preserve"><value>Unknown</value></data>
+  <data name="读取版本目录失败：{0}" xml:space="preserve"><value>Failed to read the version catalog: {0}</value></data>
+  <data name="请选择恰好两个版本进行对比。" xml:space="preserve"><value>Select exactly two versions to compare.</value></data>
+  <data name="流程版本" xml:space="preserve"><value>Flow Version</value></data>
+  <data name="版本对比失败：{0}" xml:space="preserve"><value>Version comparison failed: {0}</value></data>
+  <data name="，视口已变化" xml:space="preserve"><value>; viewport changed</value></data>
+  <data name="仅布局变化" xml:space="preserve"><value>Layout-only changes</value></data>
+  <data name="语义变化" xml:space="preserve"><value>Semantic changes</value></data>
+  <data name="无变化" xml:space="preserve"><value>No changes</value></data>
+  <data name="版本 {0} → {1}&#xA;&#xA;节点：+{2} -{3} 类型变化 {4}&#xA;属性变化：{5}&#xA;普通连接：+{6} -{7}&#xA;布局变化：{8}{9}&#xA;&#xA;分类：{10}" xml:space="preserve"><value>Version {0} → {1}&#xA;&#xA;Nodes: +{2} -{3}; type changes: {4}&#xA;Property changes: {5}&#xA;Standard connections: +{6} -{7}&#xA;Layout changes: {8}{9}&#xA;&#xA;Classification: {10}</value></data>
+  <data name="流程版本对比" xml:space="preserve"><value>Flow Version Comparison</value></data>
+  <data name="流程正在运行，请在运行结束后恢复版本。" xml:space="preserve"><value>The flow is running. Restore a version after execution finishes.</value></data>
+  <data name="请选择一个要恢复的版本。" xml:space="preserve"><value>Select a version to restore.</value></data>
+  <data name="当前画布已经是这个版本。" xml:space="preserve"><value>The current canvas is already at this version.</value></data>
+  <data name="恢复版本 {0}？&#xA;现有历史不会被覆盖，恢复内容会保存为一个新的版本。&#xA;当前画布尚未保存的修改会被替换。" xml:space="preserve"><value>Restore version {0}?&#xA;Existing history will not be overwritten; the restored content will be saved as a new version.&#xA;Unsaved changes on the current canvas will be replaced.</value></data>
+  <data name="恢复流程版本" xml:space="preserve"><value>Restore Flow Version</value></data>
+  <data name="恢复版本失败：{0}" xml:space="preserve"><value>Failed to restore the version: {0}</value></data>
+  <data name="流程内容已恢复，但本地版本目录更新失败。&#xA;请查看日志并重新保存。" xml:space="preserve"><value>The flow content was restored, but the local version catalog could not be updated.&#xA;Check the log and save again.</value></data>
+  <data name="流程已恢复" xml:space="preserve"><value>Flow Restored</value></data>
+  <data name="版本已经恢复，但刷新编辑器失败：{0}" xml:space="preserve"><value>The version was restored, but the editor could not be refreshed: {0}</value></data>
+  <data name="流程正在运行，请在运行结束后查看或恢复版本。" xml:space="preserve"><value>The flow is running. View or restore versions after execution finishes.</value></data>
+  <data name="当前文档还没有可用的流程版本。" xml:space="preserve"><value>The current document has no available flow versions.</value></data>
+  <data name="   失败 " xml:space="preserve"><value>   Failed </value></data>
+  <data name="← 返回概览" xml:space="preserve"><value>← Back to Overview</value></data>
+  <data name="0 条消息" xml:space="preserve"><value>0 messages</value></data>
+  <data name="按耗时从高到低排列，条形长度相对本批最慢节点" xml:space="preserve"><value>Sorted by duration from longest to shortest; bar lengths are relative to the slowest node in this batch</value></data>
+  <data name="备注" xml:space="preserve"><value>Notes</value></data>
+  <data name="本次耗时" xml:space="preserve"><value>Current Duration</value></data>
+  <data name="本次节点消息" xml:space="preserve"><value>Messages for This Node Execution</value></data>
+  <data name="本次执行没有记录消息。&#xA;本地节点可能直接在进程内执行，不经过 MQTT；也可能尚未产生可追踪消息。" xml:space="preserve"><value>No messages were recorded for this execution.&#xA;The local node may run directly in process without MQTT, or it may not have produced traceable messages yet.</value></data>
+  <data name="本批次没有节点执行记录" xml:space="preserve"><value>This batch has no node execution records</value></data>
+  <data name="本批次没有可显示的执行时序" xml:space="preserve"><value>This batch has no execution timeline to display</value></data>
+  <data name="本运行消息" xml:space="preserve"><value>Run Messages</value></data>
+  <data name="操作人" xml:space="preserve"><value>Operator</value></data>
+  <data name="查看" xml:space="preserve"><value>View</value></data>
+  <data name="查看本批消息" xml:space="preserve"><value>View Batch Messages</value></data>
+  <data name="超时" xml:space="preserve"><value>Timed Out</value></data>
+  <data name="成功 " xml:space="preserve"><value>Succeeded </value></data>
+  <data name="成功平均耗时" xml:space="preserve"><value>Average Successful Duration</value></data>
+  <data name="错误" xml:space="preserve"><value>Error</value></data>
+  <data name="错误码" xml:space="preserve"><value>Error Code</value></data>
+  <data name="打开当前消息所属的节点执行分析" xml:space="preserve"><value>Open the node execution analysis associated with the current message</value></data>
+  <data name="打开运行分析" xml:space="preserve"><value>Open Run Analysis</value></data>
+  <data name="待处置" xml:space="preserve"><value>Active</value></data>
+  <data name="单击切换到该次节点执行" xml:space="preserve"><value>Click to switch to this node execution</value></data>
+  <data name="当前匹配" xml:space="preserve"><value>Current Matches</value></data>
+  <data name="导出" xml:space="preserve"><value>Export</value></data>
+  <data name="定位" xml:space="preserve"><value>Locate</value></data>
+  <data name="定位当前画布节点" xml:space="preserve"><value>Locate Node on Current Canvas</value></data>
+  <data name="定位到流程图" xml:space="preserve"><value>Locate in Flow Diagram</value></data>
+  <data name="发送 Payload" xml:space="preserve"><value>Send Payload</value></data>
+  <data name="发送（Send）" xml:space="preserve"><value>Send</value></data>
+  <data name="发送时间" xml:space="preserve"><value>Sent Time</value></data>
+  <data name="发现时间 (UTC)" xml:space="preserve"><value>Detected Time (UTC)</value></data>
+  <data name="返回执行概览" xml:space="preserve"><value>Back to Execution Overview</value></data>
+  <data name="复制稳定标识" xml:space="preserve"><value>Copy Stable Identifier</value></data>
+  <data name="关闭信息" xml:space="preserve"><value>Resolution Information</value></data>
+  <data name="观察节点执行、并行与调度衔接" xml:space="preserve"><value>Inspect node execution, parallelism, and scheduling transitions</value></data>
+  <data name="耗时" xml:space="preserve"><value>Duration</value></data>
+  <data name="耗时(ms)" xml:space="preserve"><value>Duration (ms)</value></data>
+  <data name="级别" xml:space="preserve"><value>Severity</value></data>
+  <data name="加载中…" xml:space="preserve"><value>Loading…</value></data>
+  <data name="接收 Payload" xml:space="preserve"><value>Receive Payload</value></data>
+  <data name="接收（Receive）" xml:space="preserve"><value>Receive</value></data>
+  <data name="接收时间" xml:space="preserve"><value>Received Time</value></data>
+  <data name="节点" xml:space="preserve"><value>Node</value></data>
+  <data name="节点尝试" xml:space="preserve"><value>Node Attempts</value></data>
+  <data name="节点分析" xml:space="preserve"><value>Node Analysis</value></data>
+  <data name="节点工作量占比" xml:space="preserve"><value>Share of Node Workload</value></data>
+  <data name="节点耗时分布" xml:space="preserve"><value>Node Duration Distribution</value></data>
+  <data name="结果" xml:space="preserve"><value>Result</value></data>
+  <data name="结束" xml:space="preserve"><value>End</value></data>
+  <data name="进入完整消息页" xml:space="preserve"><value>Open Full Message View</value></data>
+  <data name="开始" xml:space="preserve"><value>Start</value></data>
+  <data name="开始 (UTC)" xml:space="preserve"><value>Start (UTC)</value></data>
+  <data name="开始时间" xml:space="preserve"><value>Start Time</value></data>
+  <data name="列表显示" xml:space="preserve"><value>Displayed in List</value></data>
+  <data name="流程" xml:space="preserve"><value>Flow</value></data>
+  <data name="流程概览" xml:space="preserve"><value>Flow Overview</value></data>
+  <data name="流程执行分析" xml:space="preserve"><value>Flow Execution Analysis</value></data>
+  <data name="流程执行耗时" xml:space="preserve"><value>Flow Execution Duration</value></data>
+  <data name="留空表示全部；例如 Error、Warning" xml:space="preserve"><value>Leave empty for all; for example, Error or Warning</value></data>
+  <data name="留空表示全部；例如 NodeFailure" xml:space="preserve"><value>Leave empty for all; for example, NodeFailure</value></data>
+  <data name="慢节点" xml:space="preserve"><value>Slow Node</value></data>
+  <data name="没有消息" xml:space="preserve"><value>No Messages</value></data>
+  <data name="批次" xml:space="preserve"><value>Batch</value></data>
+  <data name="批次 / SN" xml:space="preserve"><value>Batch / SN</value></data>
+  <data name="其中超时 0 · 未判定 0" xml:space="preserve"><value>Timed out 0 · Undetermined 0</value></data>
+  <data name="清空当前流程所含节点的全部本地分析历史" xml:space="preserve"><value>Clear all local analysis history for nodes in the current flow</value></data>
+  <data name="清空该节点的全部本地分析历史与消息" xml:space="preserve"><value>Clear all local analysis history and messages for this node</value></data>
+  <data name="清空全部记录" xml:space="preserve"><value>Clear All Records</value></data>
+  <data name="清空所有流程的本地分析节点记录与消息记录" xml:space="preserve"><value>Clear local analysis node and message records for all flows</value></data>
+  <data name="清理当前节点" xml:space="preserve"><value>Clear Current Node</value></data>
+  <data name="清理当前流程" xml:space="preserve"><value>Clear Current Flow</value></data>
+  <data name="全部" xml:space="preserve"><value>All</value></data>
+  <data name="全部流程" xml:space="preserve"><value>All Flows</value></data>
+  <data name="确认" xml:space="preserve"><value>Acknowledge</value></data>
+  <data name="确认备注可选；关闭备注必填" xml:space="preserve"><value>Acknowledgment note is optional; resolution is required when closing</value></data>
+  <data name="确认信息" xml:space="preserve"><value>Acknowledgment Information</value></data>
+  <data name="筛选只影响列表；上方总量与异常统计始终基于本运行的全部消息。" xml:space="preserve"><value>Filters affect only the list; totals and issue statistics above always use all messages from this run.</value></data>
+  <data name="上次相同流程执行" xml:space="preserve"><value>Previous Same-flow Execution</value></data>
+  <data name="上一次流程执行" xml:space="preserve"><value>Previous Flow Execution</value></data>
+  <data name="上一个节点" xml:space="preserve"><value>Previous Node</value></data>
+  <data name="上一页" xml:space="preserve"><value>Previous Page</value></data>
+  <data name="尚未关闭" xml:space="preserve"><value>Not closed</value></data>
+  <data name="尚未确认" xml:space="preserve"><value>Not acknowledged</value></data>
+  <data name="失败 / 超时" xml:space="preserve"><value>Failed / Timed Out</value></data>
+  <data name="失败平均耗时" xml:space="preserve"><value>Average Failed Duration</value></data>
+  <data name="事件" xml:space="preserve"><value>Event</value></data>
+  <data name="双击或按 Enter 查看节点" xml:space="preserve"><value>Double-click or press Enter to view the node</value></data>
+  <data name="搜索" xml:space="preserve"><value>Search</value></data>
+  <data name="搜索摘要、节点 ID 和详细信息" xml:space="preserve"><value>Search summaries, node IDs, and details</value></data>
+  <data name="跳到关联节点" xml:space="preserve"><value>Go to Associated Node</value></data>
+  <data name="同流程" xml:space="preserve"><value>Same Flow</value></data>
+  <data name="完成" xml:space="preserve"><value>Completed</value></data>
+  <data name="未确认" xml:space="preserve"><value>Unacknowledged</value></data>
+  <data name="未知节点" xml:space="preserve"><value>Unknown Node</value></data>
+  <data name="下次相同流程执行" xml:space="preserve"><value>Next Same-flow Execution</value></data>
+  <data name="下一次流程执行" xml:space="preserve"><value>Next Flow Execution</value></data>
+  <data name="下一个节点" xml:space="preserve"><value>Next Node</value></data>
+  <data name="下一页" xml:space="preserve"><value>Next Page</value></data>
+  <data name="详情" xml:space="preserve"><value>Details</value></data>
+  <data name="消息" xml:space="preserve"><value>Message</value></data>
+  <data name="消息列表" xml:space="preserve"><value>Message List</value></data>
+  <data name="消息详情" xml:space="preserve"><value>Message Details</value></data>
+  <data name="消息追踪" xml:space="preserve"><value>Message Trace</value></data>
+  <data name="选择一条消息查看 Topic 与 Payload" xml:space="preserve"><value>Select a message to view its Topic and Payload</value></data>
+  <data name="选择一条消息查看详情" xml:space="preserve"><value>Select a message to view details</value></data>
+  <data name="严重级别" xml:space="preserve"><value>Severity</value></data>
+  <data name="已固定到这一次节点执行" xml:space="preserve"><value>Pinned to this node execution</value></data>
+  <data name="已关闭" xml:space="preserve"><value>Closed</value></data>
+  <data name="已确认" xml:space="preserve"><value>Acknowledged</value></data>
+  <data name="右侧会显示发送与接收 Topic，并自动格式化 JSON Payload。" xml:space="preserve"><value>The right pane shows send and receive Topics and automatically formats JSON Payloads.</value></data>
+  <data name="原始信息" xml:space="preserve"><value>Raw Information</value></data>
+  <data name="运行事件" xml:space="preserve"><value>Run Events</value></data>
+  <data name="摘要" xml:space="preserve"><value>Summary</value></data>
+  <data name="占比" xml:space="preserve"><value>Share</value></data>
+  <data name="正在读取最近一次流程执行" xml:space="preserve"><value>Reading the latest flow execution</value></data>
+  <data name="正在加载该节点最近的执行记录…" xml:space="preserve"><value>Loading recent executions for this node…</value></data>
+  <data name="正在加载流程执行记录…" xml:space="preserve"><value>Loading flow execution records…</value></data>
+  <data name="执行概览" xml:space="preserve"><value>Execution Overview</value></data>
+  <data name="执行节点" xml:space="preserve"><value>Executed Nodes</value></data>
+  <data name="执行时序" xml:space="preserve"><value>Execution Timeline</value></data>
+  <data name="重新读取本次流程的节点与消息记录" xml:space="preserve"><value>Reload node and message records for this flow execution</value></data>
+  <data name="重置筛选" xml:space="preserve"><value>Reset Filters</value></data>
+  <data name="状态" xml:space="preserve"><value>Status</value></data>
+  <data name="状态消息" xml:space="preserve"><value>Status Message</value></data>
+  <data name="最近执行结果" xml:space="preserve"><value>Recent Execution Results</value></data>
+  <data name="最近执行历史" xml:space="preserve"><value>Recent Execution History</value></data>
+  <data name="最慢节点" xml:space="preserve"><value>Slowest Node</value></data>
+  <data name="MQTT 消息" xml:space="preserve"><value>MQTT Messages</value></data>
+  <data name="（尚未记录接收 Topic）" xml:space="preserve"><value>(Receive Topic not recorded)</value></data>
+  <data name="（尚未收到 Payload）" xml:space="preserve"><value>(Payload not received)</value></data>
+  <data name="（未记录发送 Topic）" xml:space="preserve"><value>(Send Topic not recorded)</value></data>
+  <data name="（无发送 Payload）" xml:space="preserve"><value>(No send Payload)</value></data>
+  <data name="（正在加载 Payload…）" xml:space="preserve"><value>(Loading Payload…)</value></data>
+  <data name="本次节点执行" xml:space="preserve"><value>This Node Execution</value></data>
+  <data name="本次节点执行没有消息记录" xml:space="preserve"><value>This node execution has no message records</value></data>
+  <data name="本次运行没有消息记录" xml:space="preserve"><value>This run has no message records</value></data>
+  <data name="本次执行没有可追踪消息" xml:space="preserve"><value>This execution has no traceable messages</value></data>
+  <data name="本批次没有 MQTT 记录" xml:space="preserve"><value>This batch has no MQTT records</value></data>
+  <data name="成功" xml:space="preserve"><value>Succeeded</value></data>
+  <data name="成功 · 慢节点" xml:space="preserve"><value>Succeeded · Slow Node</value></data>
+  <data name="初始" xml:space="preserve"><value>Initial</value></data>
+  <data name="打开当前固定范围对应的节点执行分析" xml:space="preserve"><value>Open node execution analysis for the current pinned scope</value></data>
+  <data name="当前 Batch 没有记录 MQTT 消息。流程仍可能正常完成；也可能是本次执行未启用消息追踪。" xml:space="preserve"><value>The current Batch has no recorded MQTT messages. The flow may still have completed normally, or message tracing may not have been enabled for this execution.</value></data>
+  <data name="当前画布不是该 Incident 对应流程，或节点已不在当前版本中。" xml:space="preserve"><value>The current canvas is not the flow associated with this Incident, or the node is no longer in the current version.</value></data>
+  <data name="当前记录没有节点标识，为避免误删其他同名节点，未执行清理。" xml:space="preserve"><value>The current record has no node identifier. Nothing was cleared to avoid deleting records for another node with the same name.</value></data>
+  <data name="当前流程" xml:space="preserve"><value>Current Flow</value></data>
+  <data name="当前流程没有可识别的节点标识，未执行清理。" xml:space="preserve"><value>The current flow has no identifiable node IDs. Nothing was cleared.</value></data>
+  <data name="当前流程图中没有找到这个节点。历史记录可能来自另一个流程模板。" xml:space="preserve"><value>This node was not found in the current flow diagram. The history may come from a different flow template.</value></data>
+  <data name="当前筛选没有匹配消息" xml:space="preserve"><value>No messages match the current filters</value></data>
+  <data name="等待接收" xml:space="preserve"><value>Waiting to Receive</value></data>
+  <data name="等待执行记录" xml:space="preserve"><value>Waiting for Execution Records</value></data>
+  <data name="该节点在这个 Batch 的这一次执行中没有匹配到 MQTT 消息。这通常表示节点未发送消息，或执行时消息追踪尚未启用。" xml:space="preserve"><value>No MQTT messages matched this node execution in this Batch. This usually means the node did not send a message or message tracing was not enabled during execution.</value></data>
+  <data name="该批次可能来自旧版本，或没有执行到可记录节点。" xml:space="preserve"><value>This batch may come from an older version or may not have executed any recordable nodes.</value></data>
+  <data name="该运行没有关联旧版 Batch 记录，无法打开节点耗时分析。" xml:space="preserve"><value>This run has no associated legacy Batch record, so node duration analysis cannot be opened.</value></data>
+  <data name="固定范围消息" xml:space="preserve"><value>Pinned-scope Messages</value></data>
+  <data name="关闭 Incident 前请填写处置结果。" xml:space="preserve"><value>Enter a resolution before closing the Incident.</value></data>
+  <data name="还没有流程执行记录" xml:space="preserve"><value>No Flow Execution Records Yet</value></data>
+  <data name="将清空本机流程分析数据库中的全部节点记录和消息记录，包含所有流程。&#xA;&#xA;该操作不会删除测量结果或流程配置，但分析记录无法恢复。是否继续？" xml:space="preserve"><value>This clears all node and message records for every flow from the local flow analysis database.&#xA;&#xA;Measurement results and flow configuration will not be deleted, but analysis records cannot be recovered. Continue?</value></data>
+  <data name="节点记录仍在写入，请稍后点击刷新。" xml:space="preserve"><value>Node records are still being written. Click Refresh again shortly.</value></data>
+  <data name="流程 Incident" xml:space="preserve"><value>Flow Incident</value></data>
+  <data name="流程分析记录已清空" xml:space="preserve"><value>Flow Analysis Records Cleared</value></data>
+  <data name="没有上次相同流程执行" xml:space="preserve"><value>No previous execution of the same flow</value></data>
+  <data name="没有上一次流程执行" xml:space="preserve"><value>No previous flow execution</value></data>
+  <data name="没有下次相同流程执行" xml:space="preserve"><value>No next execution of the same flow</value></data>
+  <data name="没有下一次流程执行" xml:space="preserve"><value>No next flow execution</value></data>
+  <data name="其中超时 — · 未判定 —" xml:space="preserve"><value>Timed out — · Undetermined —</value></data>
+  <data name="请先选择一条能够关联到节点执行的消息" xml:space="preserve"><value>Select a message that can be associated with a node execution</value></data>
+  <data name="全部节点" xml:space="preserve"><value>All Nodes</value></data>
+  <data name="全部状态" xml:space="preserve"><value>All Statuses</value></data>
+  <data name="确认清空全部流程分析记录" xml:space="preserve"><value>Confirm Clearing All Flow Analysis Records</value></data>
+  <data name="确认清理当前节点分析记录" xml:space="preserve"><value>Confirm Clearing Current Node Analysis Records</value></data>
+  <data name="确认清理当前流程分析记录" xml:space="preserve"><value>Confirm Clearing Current Flow Analysis Records</value></data>
+  <data name="尚未收到响应或未记录接收 Topic" xml:space="preserve"><value>No response received or receive Topic not recorded</value></data>
+  <data name="失败" xml:space="preserve"><value>Failed</value></data>
+  <data name="失败 · 超时" xml:space="preserve"><value>Failed · Timed Out</value></data>
+  <data name="时间 (ms)" xml:space="preserve"><value>Time (ms)</value></data>
+  <data name="完整消息仍然存在，请调整节点或状态筛选，或点击“重置筛选”。" xml:space="preserve"><value>The complete messages still exist. Adjust the node or status filters, or click Reset Filters.</value></data>
+  <data name="未发现失败或超时" xml:space="preserve"><value>No failures or timeouts found</value></data>
+  <data name="未记录额外状态信息" xml:space="preserve"><value>No additional status information recorded</value></data>
+  <data name="未记录发送 Topic" xml:space="preserve"><value>Send Topic not recorded</value></data>
+  <data name="未判定" xml:space="preserve"><value>Undetermined</value></data>
+  <data name="未选择 Incident。" xml:space="preserve"><value>No Incident selected.</value></data>
+  <data name="未知类型" xml:space="preserve"><value>Unknown Type</value></data>
+  <data name="无 SN 流程" xml:space="preserve"><value>Flow without SN</value></data>
+  <data name="已发送" xml:space="preserve"><value>Sent</value></data>
+  <data name="已取消" xml:space="preserve"><value>Canceled</value></data>
+  <data name="已完成 · 未记录结果" xml:space="preserve"><value>Completed · Result Not Recorded</value></data>
+  <data name="已完成 · 未记录结果 · 慢节点" xml:space="preserve"><value>Completed · Result Not Recorded · Slow Node</value></data>
+  <data name="暂时没有该节点的历史记录" xml:space="preserve"><value>No history is currently available for this node</value></data>
+  <data name="这条消息没有可定位的节点执行记录" xml:space="preserve"><value>This message has no locatable node execution record</value></data>
+  <data name="正在加载 Payload…" xml:space="preserve"><value>Loading Payload…</value></data>
+  <data name="执行新的流程后，这里会重新开始记录节点耗时与消息。" xml:space="preserve"><value>After a new flow execution, node durations and messages will start being recorded here again.</value></data>
+  <data name="执行一次流程后，这里会显示节点耗时、执行时序和消息追踪。" xml:space="preserve"><value>After a flow executes, node durations, the execution timeline, and message traces will appear here.</value></data>
+  <data name="读取 Incident 失败" xml:space="preserve"><value>Failed to Read Incidents</value></data>
+  <data name="读取 Incident 详情失败" xml:space="preserve"><value>Failed to Read Incident Details</value></data>
+  <data name="确认 Incident 失败" xml:space="preserve"><value>Failed to Acknowledge Incident</value></data>
+  <data name="关闭 Incident 失败" xml:space="preserve"><value>Failed to Close Incident</value></data>
+  <data name="打开运行分析失败" xml:space="preserve"><value>Failed to Open Run Analysis</value></data>
+  <data name="定位流程节点失败" xml:space="preserve"><value>Failed to Locate Flow Node</value></data>
+  <data name="复制稳定标识失败" xml:space="preserve"><value>Failed to Copy Stable Identifier</value></data>
+  <data name="流程概览 / 节点分析" xml:space="preserve"><value>Flow Overview / Node Analysis</value></data>
+  <data name="流程概览 / 消息追踪" xml:space="preserve"><value>Flow Overview / Message Trace</value></data>
+  <data name="流程概览 / 节点分析 / 消息追踪" xml:space="preserve"><value>Flow Overview / Node Analysis / Message Trace</value></data>
+  <data name="空状态" xml:space="preserve"><value>Empty State</value></data>
+
+  <data name="第 {0} / {1} 页，共 {2} 条" xml:space="preserve"><value>Page {0} of {1}; {2} total</value></data>
+  <data name="Batch {0} · {1} · {2:yyyy/MM/dd HH:mm:ss.fff}" xml:space="preserve"><value>Batch {0} · {1} · {2:yyyy/MM/dd HH:mm:ss.fff}</value></data>
+  <data name="本次执行 {0} 条消息 · 双击可进入完整消息页" xml:space="preserve"><value>{0} message(s) for this execution · Double-click to open the full message view</value></data>
+  <data name="最近 {0} 次执行 · 单击一行切换；失败包含超时，超时不统计耗时" xml:space="preserve"><value>Last {0} execution(s) · Click a row to switch; failures include timeouts, and timeout duration is excluded</value></data>
+  <data name="历史记录加载失败：{0}" xml:space="preserve"><value>Failed to load history: {0}</value></data>
+  <data name="其中超时 {0} · 未判定 {1} · 成功率 {2}" xml:space="preserve"><value>Timed out {0} · Undetermined {1} · Success rate {2}</value></data>
+  <data name="Payload 读取失败：{0}" xml:space="preserve"><value>Failed to read Payload: {0}</value></data>
+  <data name="Batch {0} · SN {1} · 本次运行的全部消息" xml:space="preserve"><value>Batch {0} · SN {1} · All Messages for This Run</value></data>
+  <data name="仅显示“{0}”在 {1:HH:mm:ss.fff} 开始的这一次执行所关联的消息。作用域由节点执行记录确定，不会混入同名节点的其他批次或其他执行。" xml:space="preserve"><value>Shows only messages associated with the execution of “{0}” that started at {1:HH:mm:ss.fff}. The scope is determined by the node execution record and excludes other batches or executions of nodes with the same name.</value></data>
+  <data name="{0:N0} 条" xml:space="preserve"><value>{0:N0} item(s)</value></data>
+  <data name="{0:N0} / {1:N0} 条" xml:space="preserve"><value>{0:N0} / {1:N0} item(s)</value></data>
+  <data name="为保证界面流畅，列表最多显示 {0:N0} 条。当前筛选完整匹配 {1:N0} 条，上方统计仍基于完整数据。" xml:space="preserve"><value>To keep the UI responsive, the list shows at most {0:N0} items. The current filters match {1:N0} items in total; the statistics above still use the complete data.</value></data>
+  <data name="状态码 {0}" xml:space="preserve"><value>Status code {0}</value></data>
+  <data name="（Payload 读取失败：{0}）" xml:space="preserve"><value>(Failed to read Payload: {0})</value></data>
+  <data name="Batch {0} · {1} 个执行节点{2}" xml:space="preserve"><value>Batch {0} · {1} executed node(s){2}</value></data>
+  <data name="查看本批消息（{0}）" xml:space="preserve"><value>View Batch Messages ({0})</value></data>
+  <data name="前处理 {0}" xml:space="preserve"><value>Pre-processing {0}</value></data>
+  <data name="节点活动 {0}" xml:space="preserve"><value>Node activity {0}</value></data>
+  <data name="其他流程开销 {0}" xml:space="preserve"><value>Other flow overhead {0}</value></data>
+  <data name="节点外耗时 {0}" xml:space="preserve"><value>Time outside nodes {0}</value></data>
+  <data name="后处理 {0}（另计）" xml:space="preserve"><value>Post-processing {0} (reported separately)</value></data>
+  <data name="节点并行重叠 {0}" xml:space="preserve"><value>Parallel node overlap {0}</value></data>
+  <data name="{0} 条失败或超时" xml:space="preserve"><value>{0} failed or timed-out message(s)</value></data>
+  <data name="{0} 已完成" xml:space="preserve"><value>{0} completed</value></data>
+  <data name="{0} 超时" xml:space="preserve"><value>{0} timed out</value></data>
+  <data name="{0} 个慢节点" xml:space="preserve"><value>{0} slow node(s)</value></data>
+  <data name="执行时序 · Batch {0}" xml:space="preserve"><value>Execution Timeline · Batch {0}</value></data>
+  <data name="{0} · 超时" xml:space="preserve"><value>{0} · Timed Out</value></data>
+  <data name="Batch {0} 没有节点记录" xml:space="preserve"><value>Batch {0} Has No Node Records</value></data>
+  <data name="切换到该次执行失败：{0}" xml:space="preserve"><value>Failed to switch to this execution: {0}</value></data>
+  <data name="切换相同流程执行记录失败：{0}" xml:space="preserve"><value>Failed to switch to another execution of the same flow: {0}</value></data>
+  <data name="切换流程执行记录失败：{0}" xml:space="preserve"><value>Failed to switch flow execution records: {0}</value></data>
+  <data name="将清空当前流程中 {0} 个节点的全部本地分析历史和消息记录。&#xA;&#xA;该操作不会删除测量结果或流程配置，但分析记录无法恢复。是否继续？" xml:space="preserve"><value>This clears all local analysis history and message records for {0} node(s) in the current flow.&#xA;&#xA;Measurement results and flow configuration will not be deleted, but analysis records cannot be recovered. Continue?</value></data>
+  <data name="将清空节点“{0}”的全部本地分析历史和消息记录。&#xA;&#xA;该操作不会删除测量结果或流程配置，但分析记录无法恢复。是否继续？" xml:space="preserve"><value>This clears all local analysis history and message records for node “{0}”.&#xA;&#xA;Measurement results and flow configuration will not be deleted, but analysis records cannot be recovered. Continue?</value></data>
+  <data name="节点“{0}”" xml:space="preserve"><value>Node “{0}”</value></data>
+  <data name="{0}分析记录已清理：节点记录 {1} 条，消息记录 {2} 条。" xml:space="preserve"><value>{0} analysis records cleared: {1} node record(s), {2} message record(s).</value></data>
+  <data name="清理分析记录失败：{0}" xml:space="preserve"><value>Failed to clear analysis records: {0}</value></data>
+  <data name="流程执行分析_Batch{0}_{1:yyyy-MM-dd_HH-mm-ss}" xml:space="preserve"><value>FlowExecutionAnalysis_Batch{0}_{1:yyyy-MM-dd_HH-mm-ss}</value></data>
+  <data name="上一次流程执行：{0}" xml:space="preserve"><value>Previous flow execution: {0}</value></data>
+  <data name="下一次流程执行：{0}" xml:space="preserve"><value>Next flow execution: {0}</value></data>
+  <data name="上次相同流程执行：{0}" xml:space="preserve"><value>Previous execution of the same flow: {0}</value></data>
+  <data name="下次相同流程执行：{0}" xml:space="preserve"><value>Next execution of the same flow: {0}</value></data>
+  <data name="Batch {0} · {1} 次节点执行{2}" xml:space="preserve"><value>Batch {0} · {1} node execution(s){2}</value></data>
+  <data name="重命名" xml:space="preserve"><value>Rename</value></data>
+  <data name="重命名备份" xml:space="preserve"><value>Rename Backup</value></data>
+  <data name="重命名失败：{0}" xml:space="preserve"><value>Failed to rename: {0}</value></data>
+  <data name="备份名称不能为空。" xml:space="preserve"><value>Backup name cannot be empty.</value></data>
+  <data name="备份名称不能以空格开头或结尾。" xml:space="preserve"><value>Backup name cannot begin or end with a space.</value></data>
+  <data name="备份名称过长，请缩短后重试。" xml:space="preserve"><value>Backup name is too long. Shorten it and try again.</value></data>
+  <data name="备份名称包含 Windows 文件名不允许的字符或结尾。" xml:space="preserve"><value>Backup name contains characters or an ending that Windows file names do not allow.</value></data>
+  <data name="该名称是 Windows 保留文件名，请使用其他名称。" xml:space="preserve"><value>This is a reserved Windows file name. Use a different name.</value></data>
+  <data name="只能重命名备份目录中的 SQL 文件。" xml:space="preserve"><value>Only SQL files in the backup directory can be renamed.</value></data>
+  <data name="目标文件名超出了备份目录。" xml:space="preserve"><value>The target file name resolves outside the backup directory.</value></data>
+  <data name="同名备份已经存在，请使用其他名称。" xml:space="preserve"><value>A backup with this name already exists. Use a different name.</value></data>
+  <data name="备份名称无效：{0}" xml:space="preserve"><value>Invalid backup name: {0}</value></data>
+  <data name="备份名称（无需输入 .sql）：" xml:space="preserve"><value>Backup name (do not include .sql):</value></data>
+  <data name="确定" xml:space="preserve"><value>OK</value></data>
+  <data name="复制" xml:space="preserve"><value>Copy</value></data>
+  <data name="删除" xml:space="preserve"><value>Delete</value></data>
+  <data name="还原" xml:space="preserve"><value>Restore</value></data>
+  <data name="选中" xml:space="preserve"><value>Select</value></data>
+  <data name="数据库清理" xml:space="preserve"><value>Database Cleanup</value></data>
+  <data name="先确认范围和备份策略，再清理历史数据或指定数据表。" xml:space="preserve"><value>Confirm the scope and backup policy before cleaning historical data or selected tables.</value></data>
+  <data name="企业数据操作" xml:space="preserve"><value>Enterprise Data Operation</value></data>
+  <data name="刷新统计" xml:space="preserve"><value>Refresh Statistics</value></data>
+  <data name="仅创建完整备份" xml:space="preserve"><value>Create Full Backup Only</value></data>
+  <data name="清理策略" xml:space="preserve"><value>Cleanup Policy</value></data>
+  <data name="保留最近" xml:space="preserve"><value>Keep the latest</value></data>
+  <data name="个月" xml:space="preserve"><value>month(s)</value></data>
+  <data name="清理过期数据" xml:space="preserve"><value>Clean Expired Data</value></data>
+  <data name="清理前创建完整备份（推荐）" xml:space="preserve"><value>Create a full backup before cleanup (recommended)</value></data>
+  <data name="按表清理只处理勾选项；清理主表时需同时选择所有现存关联明细表；完全清理会清空所有可用表。" xml:space="preserve"><value>Table cleanup processes only selected items. When cleaning a primary table, select all existing related detail tables. Full cleanup clears every available table.</value></data>
+  <data name="清空选中表" xml:space="preserve"><value>Clear Selected Tables</value></data>
+  <data name="完全清理全部表" xml:space="preserve"><value>Fully Clear All Tables</value></data>
+  <data name="可清理数据表" xml:space="preserve"><value>Cleanable Tables</value></data>
+  <data name="全选可用表" xml:space="preserve"><value>Select All Available Tables</value></data>
+  <data name="清除选择" xml:space="preserve"><value>Clear Selection</value></data>
+  <data name="选择" xml:space="preserve"><value>Select</value></data>
+  <data name="表名" xml:space="preserve"><value>Table Name</value></data>
+  <data name="行数" xml:space="preserve"><value>Rows</value></data>
+  <data name="占用空间" xml:space="preserve"><value>Storage Used</value></data>
+  <data name="存在" xml:space="preserve"><value>Exists</value></data>
+  <data name="未找到" xml:space="preserve"><value>Not Found</value></data>
+  <data name="清理" xml:space="preserve"><value>cleanup</value></data>
+  <data name="迁移" xml:space="preserve"><value>migration</value></data>
+  <data name="打开窗口后会自动统计。" xml:space="preserve"><value>Statistics will load automatically when the window opens.</value></data>
+  <data name="{0:N0} 张表 · {1:N0} 行 · {2}" xml:space="preserve"><value>{0:N0} table(s) · {1:N0} row(s) · {2}</value></data>
+  <data name="已选择 {0:N0} 张表" xml:space="preserve"><value>{0:N0} table(s) selected</value></data>
+  <data name="尚未选择数据表" xml:space="preserve"><value>No tables selected</value></data>
+  <data name="正在统计表数据..." xml:space="preserve"><value>Loading table statistics...</value></data>
+  <data name="已加载 {0:N0} 张可清理数据表。" xml:space="preserve"><value>Loaded {0:N0} cleanable table(s).</value></data>
+  <data name="当前没有找到可清理数据表。" xml:space="preserve"><value>No cleanable tables were found.</value></data>
+  <data name="加载统计失败。" xml:space="preserve"><value>Failed to load statistics.</value></data>
+  <data name="{0} 统计失败：{1}" xml:space="preserve"><value>Failed to load statistics for {0}: {1}</value></data>
+  <data name="正在创建 {0} 完整备份..." xml:space="preserve"><value>Creating a full backup of {0}...</value></data>
+  <data name="完整备份失败。" xml:space="preserve"><value>Full backup failed.</value></data>
+  <data name="{0} 完整备份失败：{1}" xml:space="preserve"><value>Full backup of {0} failed: {1}</value></data>
+  <data name="保留月数必须是大于 0 的整数。" xml:space="preserve"><value>The number of months to keep must be a positive integer.</value></data>
+  <data name="将保留最近 {0} 个月的数据，并清理其余历史结果。" xml:space="preserve"><value>Data from the latest {0} month(s) will be kept, and older results will be cleaned.</value></data>
+  <data name="是否继续？" xml:space="preserve"><value>Continue?</value></data>
+  <data name="正在清理 {0} 历史数据..." xml:space="preserve"><value>Cleaning historical data from {0}...</value></data>
+  <data name="请先选择至少一张要清理的数据表。" xml:space="preserve"><value>Select at least one table to clean.</value></data>
+  <data name="将清空以下 {0:N0} 张数据表：" xml:space="preserve"><value>The following {0:N0} table(s) will be cleared:</value></data>
+  <data name="此操作不可撤销，是否继续？" xml:space="preserve"><value>This operation cannot be undone. Continue?</value></data>
+  <data name="正在清空选中的 {0:N0} 张数据表..." xml:space="preserve"><value>Clearing the selected {0:N0} table(s)...</value></data>
+  <data name="危险操作：将清空 {0} 中全部 {1:N0} 张可用数据表。" xml:space="preserve"><value>Dangerous operation: all {1:N0} available table(s) in {0} will be cleared.</value></data>
+  <data name="全部数据清理后无法撤销，是否确定继续？" xml:space="preserve"><value>Clearing all data cannot be undone. Are you sure you want to continue?</value></data>
+  <data name="正在清空 {0} 全部数据..." xml:space="preserve"><value>Clearing all data from {0}...</value></data>
+  <data name="该迁移没有可用的完整备份能力，已拒绝执行。" xml:space="preserve"><value>This migration has no full-backup capability and was refused.</value></data>
+  <data name="正在执行 {0} 数据迁移并释放空间..." xml:space="preserve"><value>Migrating {0} data and reclaiming space...</value></data>
+  <data name="正在同一维护操作中创建完整备份并执行{0}..." xml:space="preserve"><value>Creating a full backup and running {0} in the same maintenance operation...</value></data>
+  <data name="完整备份与{0}组合操作失败。" xml:space="preserve"><value>The combined full-backup and {0} operation failed.</value></data>
+  <data name="{0} 完整备份与{1}组合操作失败：{2}" xml:space="preserve"><value>The combined full-backup and {1} operation for {0} failed: {2}</value></data>
+  <data name="如备份已经生成，备份文件会保留；请刷新统计后确认当前数据状态。" xml:space="preserve"><value>If a backup was generated, it has been retained. Refresh statistics to confirm the current data state.</value></data>
+  <data name="正在创建{0}前完整备份..." xml:space="preserve"><value>Creating a full backup before {0}...</value></data>
+  <data name="备份失败，未执行{0}。" xml:space="preserve"><value>Backup failed; {0} was not performed.</value></data>
+  <data name="{0}前完整备份失败，数据尚未更改：{1}" xml:space="preserve"><value>The full backup before {0} failed. Data has not been changed: {1}</value></data>
+  <data name="{0}失败。" xml:space="preserve"><value>{0} failed.</value></data>
+  <data name="{0} {1}失败：{2}" xml:space="preserve"><value>{1} failed for {0}: {2}</value></data>
+  <data name=" 表统计刷新失败，请稍后手动刷新。" xml:space="preserve"><value> Table statistics could not be refreshed. Refresh them manually later.</value></data>
+  <data name="数据已完成{0}，但统计刷新失败：{1}" xml:space="preserve"><value>Data {0} completed, but statistics could not be refreshed: {1}</value></data>
+  <data name="当前数据源不支持自动备份，请确认已有可恢复副本。" xml:space="preserve"><value>This data source does not support automatic backup. Confirm that a recoverable copy already exists.</value></data>
+  <data name="本次迁移会强制先创建完整备份；备份失败时不会执行迁移。" xml:space="preserve"><value>This migration requires a full backup first. Migration will not run if the backup fails.</value></data>
+  <data name="操作前会先创建完整备份；备份失败时不会继续。" xml:space="preserve"><value>A full backup will be created first. The operation will not continue if the backup fails.</value></data>
+  <data name="本次操作不会自动创建备份。" xml:space="preserve"><value>This operation will not create a backup automatically.</value></data>
+  <data name="MySQL 结果表" xml:space="preserve"><value>MySQL Result Tables</value></data>
+  <data name="数据库: {0}    主机: {1}:{2}" xml:space="preserve"><value>Database: {0}    Host: {1}:{2}</value></data>
+  <data name="检测到未登记的结果明细表，无法安全清理历史数据。请先确认这些表与主表的关联关系：" xml:space="preserve"><value>Unregistered result detail tables were detected, so historical data cannot be cleaned safely. Confirm their relationship to the primary table:</value></data>
+  <data name="已保留最近 {0} 个月的 MySQL 结果数据。" xml:space="preserve"><value>Kept the latest {0} month(s) of MySQL result data.</value></data>
+  <data name="{0}: 删除 {1:N0} 行" xml:space="preserve"><value>{0}: deleted {1:N0} row(s)</value></data>
+  <data name="没有找到可执行的 MySQL 历史清理项。" xml:space="preserve"><value>No MySQL historical cleanup items were found.</value></data>
+  <data name="完整备份已创建：{0}" xml:space="preserve"><value>Full backup created: {0}</value></data>
+  <data name="至少选择一张要清理的数据表。" xml:space="preserve"><value>Select at least one table to clean.</value></data>
+  <data name="不允许清理未登记的数据表：{0}" xml:space="preserve"><value>Unregistered tables cannot be cleaned: {0}</value></data>
+  <data name="不能清理所选主表，因为仍存在未选中的关联明细表。请同时选择以下数据表：" xml:space="preserve"><value>The selected primary table cannot be cleaned while related detail tables remain unselected. Also select these tables:</value></data>
+  <data name="{0}: 未找到，已跳过" xml:space="preserve"><value>{0}: not found, skipped</value></data>
+  <data name="{0}: 已清空" xml:space="preserve"><value>{0}: cleared</value></data>
+  <data name="没有找到可清空的 MySQL 结果表。" xml:space="preserve"><value>No MySQL result tables were available to clear.</value></data>
+  <data name="已清空全部 {0:N0} 张可用 MySQL 结果表。" xml:space="preserve"><value>Cleared all {0:N0} available MySQL result table(s).</value></data>
+  <data name="已清空选中的 {0:N0} 张 MySQL 结果表。" xml:space="preserve"><value>Cleared the selected {0:N0} MySQL result table(s).</value></data>
+  <data name="Socket 消息 SQLite" xml:space="preserve"><value>Socket Messages SQLite</value></data>
+  <data name="数据库文件: {0}" xml:space="preserve"><value>Database file: {0}</value></data>
+  <data name="迁移并压缩历史消息" xml:space="preserve"><value>Migrate and Compress Historical Messages</value></data>
+  <data name="将把 SocketMessage.Content 旧 TEXT 正文迁移为同表 GZip BLOB，生成列表预览，校验一致后清空旧字段并执行 VACUUM 释放空间。" xml:space="preserve"><value>Legacy SocketMessage.Content TEXT bodies will be migrated to GZip BLOBs in the same table, with list previews generated. After verification, the legacy field will be cleared and VACUUM will reclaim space.</value></data>
+  <data name="迁移后旧版程序不能读取这些历史正文；迁移期间 Socket 消息写入会暂时等待。" xml:space="preserve"><value>Older application versions cannot read these historical bodies after migration. Socket message writes will wait temporarily during migration.</value></data>
+  <data name="已保留最近 {0} 个月的 Socket 消息。" xml:space="preserve"><value>Kept the latest {0} month(s) of Socket messages.</value></data>
+  <data name="已清空 Socket 消息数据库。" xml:space="preserve"><value>Cleared the Socket messages database.</value></data>
+  <data name="完整备份已保留：{0}" xml:space="preserve"><value>Full backup retained: {0}</value></data>
+  <data name="未发现待迁移的旧 Socket 正文，已完成数据库压缩整理。" xml:space="preserve"><value>No legacy Socket message bodies required migration. Database compaction is complete.</value></data>
+  <data name="已迁移 {0:N0} 条历史 Socket 正文，并释放 SQLite 空闲空间。" xml:space="preserve"><value>Migrated {0:N0} historical Socket message body/bodies and reclaimed free SQLite space.</value></data>
+  <data name="{0}: 迁移 {1:N0} 条，清理残留旧字段 {2:N0} 条" xml:space="preserve"><value>{0}: migrated {1:N0}, cleared {2:N0} residual legacy field(s)</value></data>
+  <data name="数据库大小: {0} → {1}" xml:space="preserve"><value>Database size: {0} → {1}</value></data>
+  <data name="SQLite 完整性检查: {0}" xml:space="preserve"><value>SQLite integrity check: {0}</value></data>
+  <data name="已创建 Socket 消息完整备份（{0}）。" xml:space="preserve"><value>Created a full Socket messages backup ({0}).</value></data>
+  <data name="Socket 消息 SQLite 数据库文件不存在。" xml:space="preserve"><value>The Socket messages SQLite database file does not exist.</value></data>
+  <data name="光谱校正" xml:space="preserve"><value>Spectral Correction</value></data>
+  <data name="设备" xml:space="preserve"><value>Device</value></data>
+  <data name="采集后显示" xml:space="preserve"><value>Shown after capture</value></data>
+  <data name="标定组" xml:space="preserve"><value>Calibration Group</value></data>
+  <data name="采集实测" xml:space="preserve"><value>Capture Measurement</value></data>
+  <data name="当前 DAT" xml:space="preserve"><value>Current DAT</value></data>
+  <data name="采集后自动读取当前标定组" xml:space="preserve"><value>Current calibration group will be read automatically after capture</value></data>
+  <data name="单独亮度校正" xml:space="preserve"><value>Brightness-only Correction</value></data>
+  <data name="目标亮度/光度值" xml:space="preserve"><value>Target Brightness/Photometric Value</value></data>
+  <data name="本次服务实测值" xml:space="preserve"><value>Current Service Measurement</value></data>
+  <data name="校正比例" xml:space="preserve"><value>Correction Factor</value></data>
+  <data name="整体亮度校正" xml:space="preserve"><value>Overall Brightness Correction</value></data>
+  <data name="输入目标值，预览后导出 DAT；相对光谱形状不变。" xml:space="preserve"><value>Enter the target value, preview, then export the DAT. The relative spectral shape remains unchanged.</value></data>
+  <data name="应用会重启服务；恢复后请重新采集验证。" xml:space="preserve"><value>Applying will restart the service. Capture again to verify after recovery.</value></data>
+  <data name="完整光谱校正" xml:space="preserve"><value>Full Spectral Correction</value></data>
+  <data name="从 CSV/TXT 导入" xml:space="preserve"><value>Import from CSV/TXT</value></data>
+  <data name="清空标准值" xml:space="preserve"><value>Clear Standard Values</value></data>
+  <data name="导入覆盖当前波段的两列标准谱；可编辑或按 Ctrl+V 粘贴。" xml:space="preserve"><value>Import a two-column standard spectrum covering the current wavelength range. Values can also be edited or pasted with Ctrl+V.</value></data>
+  <data name="标准绝对光谱（可编辑）" xml:space="preserve"><value>Standard Absolute Spectrum (Editable)</value></data>
+  <data name="波长 (nm)" xml:space="preserve"><value>Wavelength (nm)</value></data>
+  <data name="标准值" xml:space="preserve"><value>Standard Value</value></data>
+  <data name="服务实测绝对光谱（只读）" xml:space="preserve"><value>Service-measured Absolute Spectrum (Read-only)</value></data>
+  <data name="请先采集服务实测数据。" xml:space="preserve"><value>Capture service measurement data first.</value></data>
+  <data name="预览" xml:space="preserve"><value>Preview</value></data>
+  <data name="导出 DAT" xml:space="preserve"><value>Export DAT</value></data>
+  <data name="应用并重启服务" xml:space="preserve"><value>Apply and Restart Service</value></data>
+  <data name="标准光谱 / 实测光谱 / 校正预测" xml:space="preserve"><value>Standard Spectrum / Measured Spectrum / Correction Prediction</value></data>
+  <data name="光谱校正预览" xml:space="preserve"><value>Spectral Correction Preview</value></data>
+  <data name="绝对光谱值" xml:space="preserve"><value>Absolute Spectral Value</value></data>
+  <data name="正在通过服务采集实测光谱……" xml:space="preserve"><value>Capturing the measured spectrum through the service...</value></data>
+  <data name="当前标定组没有幅值标定文件路径。" xml:space="preserve"><value>The current calibration group has no magnitude calibration file path.</value></data>
+  <data name="找不到服务本次测量使用的幅值标定文件。" xml:space="preserve"><value>The magnitude calibration file used for this service measurement could not be found.</value></data>
+  <data name="当前 DAT 已在采集后发生变化。请重新采集，确保实测数据和旧系数来自同一份文件。" xml:space="preserve"><value>The current DAT changed after capture. Capture again to ensure the measured data and original coefficients come from the same file.</value></data>
+  <data name="采集完成：{0} 点，{1:G6}–{2:G6} nm，间隔 {3:G6} nm。" xml:space="preserve"><value>Capture complete: {0} points, {1:G6}–{2:G6} nm, interval {3:G6} nm.</value></data>
+  <data name="采集已取消。" xml:space="preserve"><value>Capture canceled.</value></data>
+  <data name="采集实测数据失败" xml:space="preserve"><value>Failed to Capture Measurement Data</value></data>
+  <data name="导入标准绝对光谱" xml:space="preserve"><value>Import Standard Absolute Spectrum</value></data>
+  <data name="光谱数据 (*.csv;*.txt;*.dat)|*.csv;*.txt;*.dat|所有文件 (*.*)|*.*" xml:space="preserve"><value>Spectrum data (*.csv;*.txt;*.dat)|*.csv;*.txt;*.dat|All files (*.*)|*.*</value></data>
+  <data name="已导入 {0} 个标准谱点：{1}" xml:space="preserve"><value>Imported {0} standard spectrum point(s): {1}</value></data>
+  <data name="导入标准光谱失败" xml:space="preserve"><value>Failed to Import Standard Spectrum</value></data>
+  <data name="剪贴板中没有文本数据。" xml:space="preserve"><value>The clipboard contains no text data.</value></data>
+  <data name="已从剪贴板粘贴 {0} 个标准谱点。" xml:space="preserve"><value>Pasted {0} standard spectrum point(s) from the clipboard.</value></data>
+  <data name="粘贴标准光谱失败" xml:space="preserve"><value>Failed to Paste Standard Spectrum</value></data>
+  <data name="标准光谱已清空。" xml:space="preserve"><value>The standard spectrum has been cleared.</value></data>
+  <data name="无法计算校正预览" xml:space="preserve"><value>Unable to Calculate Correction Preview</value></data>
+  <data name="保存新幅值标定文件" xml:space="preserve"><value>Save New Magnitude Calibration File</value></data>
+  <data name="幅值标定文件 (*.dat)|*.dat" xml:space="preserve"><value>Magnitude calibration file (*.dat)|*.dat</value></data>
+  <data name="已生成：{0}" xml:space="preserve"><value>Generated: {0}</value></data>
+  <data name="新 DAT 已生成，原文件未修改。" xml:space="preserve"><value>The new DAT was generated. The original file was not modified.</value></data>
+  <data name="生成新 DAT 失败" xml:space="preserve"><value>Failed to Generate New DAT</value></data>
+  <data name="正在应用新 DAT……" xml:space="preserve"><value>Applying the new DAT...</value></data>
+  <data name="服务未能应用新 DAT。" xml:space="preserve"><value>The service could not apply the new DAT.</value></data>
+  <data name="已应用，服务正在重启。" xml:space="preserve"><value>Applied. The service is restarting.</value></data>
+  <data name="已应用。" xml:space="preserve"><value>Applied.</value></data>
+  <data name="当前 DAT：{0}" xml:space="preserve"><value>Current DAT: {0}</value></data>
+  <data name="服务恢复后请重新采集验证。" xml:space="preserve"><value>Capture again to verify after the service recovers.</value></data>
+  <data name="新 DAT 已应用。" xml:space="preserve"><value>The new DAT has been applied.</value></data>
+  <data name="应用已取消。" xml:space="preserve"><value>Apply canceled.</value></data>
+  <data name="应用新 DAT 失败" xml:space="preserve"><value>Failed to Apply New DAT</value></data>
+  <data name="请先点击“采集实测”，获取本次服务结果和当前 DAT。" xml:space="preserve"><value>Click “Capture Measurement” first to obtain the current service result and DAT.</value></data>
+  <data name="请先点击“采集实测”。" xml:space="preserve"><value>Click “Capture Measurement” first.</value></data>
+  <data name="请导入、粘贴或编辑至少两个标准绝对光谱点。" xml:space="preserve"><value>Import, paste, or edit at least two standard absolute spectrum points.</value></data>
+  <data name="服务实测" xml:space="preserve"><value>Service Measurement</value></data>
+  <data name="校正预测" xml:space="preserve"><value>Correction Prediction</value></data>
+  <data name="标准光谱" xml:space="preserve"><value>Standard Spectrum</value></data>
+  <data name="亮度校正比例：{0:G8}。点击“导出 DAT”后写入文件。" xml:space="preserve"><value>Brightness correction factor: {0:G8}. Click “Export DAT” to write it to a file.</value></data>
+  <data name="完整光谱校正预览完成，共 {0} 点。" xml:space="preserve"><value>Full spectral correction preview complete: {0} points.</value></data>
+  <data name="注意：{0} 个低/零实测点未参与除法，校正比例由相邻有效点插值或延伸。" xml:space="preserve"><value>Note: {0} low/zero measured point(s) were excluded from division. Correction factors were interpolated or extended from adjacent valid points.</value></data>
+  <data name="{0}：{1}" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="{0}必须是有限正数。" xml:space="preserve"><value>{0} must be a finite positive number.</value></data>
+  <data name="当前操作完成前不能关闭窗口。" xml:space="preserve"><value>The window cannot be closed until the current operation finishes.</value></data>
+  <data name="光谱文本为空。" xml:space="preserve"><value>The spectrum text is empty.</value></data>
+  <data name="第 {0} 行必须只有波长和数值两列。" xml:space="preserve"><value>Line {0} must contain exactly two columns: wavelength and value.</value></data>
+  <data name="波长" xml:space="preserve"><value>wavelength</value></data>
+  <data name="光谱值" xml:space="preserve"><value>spectrum value</value></data>
+  <data name="第 {0} 行的光谱值不能为负数。" xml:space="preserve"><value>The spectrum value on line {0} cannot be negative.</value></data>
+  <data name="第 {0} 行波长必须严格递增，不能重复或倒序。" xml:space="preserve"><value>Wavelengths must strictly increase on line {0}; duplicates and descending order are not allowed.</value></data>
+  <data name="至少需要两行有效光谱数据。" xml:space="preserve"><value>At least two valid rows of spectrum data are required.</value></data>
+  <data name="第 {0} 行的{1}不是有效数字: {2}" xml:space="preserve"><value>The {1} on line {0} is not a valid number: {2}</value></data>
+  <data name="半径" xml:space="preserve"><value>Radius</value></data>
+  <data name="布点类型" xml:space="preserve"><value>Point Layout Type</value></data>
+  <data name="布局类型" xml:space="preserve"><value>Layout Type</value></data>
+  <data name="常规布局" xml:space="preserve"><value>Standard Layout</value></data>
+  <data name="串口" xml:space="preserve"><value>Serial Port</value></data>
+  <data name="存储类型" xml:space="preserve"><value>Storage Type</value></data>
+  <data name="点1" xml:space="preserve"><value>Point 1</value></data>
+  <data name="点2" xml:space="preserve"><value>Point 2</value></data>
+  <data name="点3" xml:space="preserve"><value>Point 3</value></data>
+  <data name="点4" xml:space="preserve"><value>Point 4</value></data>
+  <data name="端口地址" xml:space="preserve"><value>Endpoint Address</value></data>
+  <data name="分别配置 R、G、B 三个曝光值；关闭时只使用一个曝光值。" xml:space="preserve"><value>Configure separate R, G, and B exposure values. When disabled, a single exposure value is used.</value></data>
+  <data name="高度" xml:space="preserve"><value>Height</value></data>
+  <data name="高级设置" xml:space="preserve"><value>Advanced Settings</value></data>
+  <data name="缓存大小" xml:space="preserve"><value>Cache Size</value></data>
+  <data name="计算色温波长" xml:space="preserve"><value>CCT Wavelength</value></data>
+  <data name="矩形" xml:space="preserve"><value>Rectangle</value></data>
+  <data name="宽度" xml:space="preserve"><value>Width</value></data>
+  <data name="使用本地校正" xml:space="preserve"><value>Use Local Correction</value></data>
+  <data name="使用服务测量结果进行完整光谱或单独亮度校正" xml:space="preserve"><value>Use service measurement results for full spectral or brightness-only correction</value></data>
+  <data name="使用进程内优化校正；关闭后通过 MQTT 校正服务执行。" xml:space="preserve"><value>Use optimized in-process correction. When disabled, correction runs through the MQTT correction service.</value></data>
+  <data name="使用三通道曝光" xml:space="preserve"><value>Use Three-channel Exposure</value></data>
+  <data name="四边形" xml:space="preserve"><value>Quadrilateral</value></data>
+  <data name="形状椭圆控制" xml:space="preserve"><value>Ellipse Shape Control</value></data>
+  <data name="形状圆控制" xml:space="preserve"><value>Circle Shape Control</value></data>
+  <data name="亚像素" xml:space="preserve"><value>Subpixel</value></data>
+  <data name="圆形" xml:space="preserve"><value>Circle</value></data>
+  <data name="中心X" xml:space="preserve"><value>Center X</value></data>
+  <data name="中心Y" xml:space="preserve"><value>Center Y</value></data>
+  <data name="主机" xml:space="preserve"><value>Host</value></data>
+  <data name="CAD文件" xml:space="preserve"><value>CAD File</value></data>
+  <data name="CAD映射" xml:space="preserve"><value>CAD Mapping</value></data>
+  <data name="CIE文件" xml:space="preserve"><value>CIE File</value></data>
+  <data name="POI文件" xml:space="preserve"><value>POI File</value></data>
 </root>

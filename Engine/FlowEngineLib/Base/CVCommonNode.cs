@@ -28,6 +28,8 @@ public class CVCommonNode : STNode
 
 	protected int OptionItemHeight;
 
+	protected bool _ignoreErrors;
+
 	[STNodeProperty("服务名称", "服务名称", false, false)]
 	public string NodeName
 	{
@@ -118,6 +120,7 @@ public class CVCommonNode : STNode
 		DeviceCode = deviceCode;
 		m_zIndex = -1;
 		OptionItemHeight = 18;
+		_ignoreErrors = false;
 		base.Height = 90;
 	}
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -174,7 +175,24 @@ namespace ColorVision.Copilot.Mcp
 
         private void OnPropertyChanged(string propertyName)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            var handlers = PropertyChanged;
+            if (handlers == null)
+                return;
+
+            var args = new PropertyChangedEventArgs(propertyName);
+            foreach (PropertyChangedEventHandler handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(this, args);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning(
+                        "Copilot approval property subscriber failed after state publication: {0}",
+                        ex.GetType().FullName);
+                }
+            }
         }
 
         internal void ReleaseExecutor() => Executor = MissingExecutorAsync;

@@ -1,4 +1,5 @@
 using SqlSugar;
+using ColorVision.Engine;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -44,14 +45,14 @@ namespace ColorVision.Database
         public static IReadOnlyList<string> ResultTableNames { get; } = CleanupTableDefinitions.Select(item => item.TableName).ToArray();
 
         public string Id => "mysql-results";
-        public string DisplayName => "MySQL 结果表";
+        public string DisplayName => EngineLocalization.Get("MySQL 结果表");
         public int Order => 10;
         public string Description
         {
             get
             {
                 var config = MySqlSetting.Instance.MySqlConfig;
-                return $"数据库: {config.Database}    主机: {config.Host}:{config.Port}";
+                return EngineLocalization.Format($"数据库: {config.Database}    主机: {config.Host}:{config.Port}");
             }
         }
 
@@ -108,13 +109,13 @@ namespace ColorVision.Database
             {
                 string tableList = string.Join(Environment.NewLine, unknownDetailTables.Select(tableName => $"- {tableName}"));
                 throw new InvalidOperationException(
-                    $"检测到未登记的结果明细表，无法安全清理历史数据。请先确认这些表与主表的关联关系：{Environment.NewLine}{tableList}");
+                    EngineLocalization.Get("检测到未登记的结果明细表，无法安全清理历史数据。请先确认这些表与主表的关联关系：") + Environment.NewLine + tableList);
             }
 
             var columnsByTable = GetColumnsByTable(db, existingTables);
             var result = new DatabaseCleanupExecutionResult
             {
-                StatusMessage = $"已保留最近 {keepMonths} 个月的 MySQL 结果数据。"
+                StatusMessage = EngineLocalization.Format($"已保留最近 {keepMonths} 个月的 MySQL 结果数据。")
             };
 
             string? resultMasterTimeColumn = ResolveTimeColumn(columnsByTable, ResultMasterTableName);
@@ -134,13 +135,13 @@ namespace ColorVision.Database
                     deletedRows = DeleteByDate(db, definition.TableName, directTimeColumn, cutoffDate);
                 }
 
-                result.SummaryLines.Add($"{definition.TableName}: 删除 {deletedRows:N0} 行");
+                result.SummaryLines.Add(EngineLocalization.Format($"{definition.TableName}: 删除 {deletedRows:N0} 行"));
             }
 
             if (existingTables.Contains(ResultMasterTableName) && resultMasterTimeColumn != null)
             {
                 int deletedRows = DeleteByDate(db, ResultMasterTableName, resultMasterTimeColumn, cutoffDate);
-                result.SummaryLines.Add($"{ResultMasterTableName}: 删除 {deletedRows:N0} 行");
+                result.SummaryLines.Add(EngineLocalization.Format($"{ResultMasterTableName}: 删除 {deletedRows:N0} 行"));
             }
 
             foreach (var definition in CleanupTableDefinitions.Where(item => item.Kind == CleanupTableKind.MeasureDetail && existingTables.Contains(item.TableName)))
@@ -157,18 +158,18 @@ namespace ColorVision.Database
                     deletedRows = DeleteByDate(db, definition.TableName, directTimeColumn, cutoffDate);
                 }
 
-                result.SummaryLines.Add($"{definition.TableName}: 删除 {deletedRows:N0} 行");
+                result.SummaryLines.Add(EngineLocalization.Format($"{definition.TableName}: 删除 {deletedRows:N0} 行"));
             }
 
             if (existingTables.Contains(MeasureBatchTableName) && measureBatchTimeColumn != null)
             {
                 int deletedRows = DeleteByDate(db, MeasureBatchTableName, measureBatchTimeColumn, cutoffDate);
-                result.SummaryLines.Add($"{MeasureBatchTableName}: 删除 {deletedRows:N0} 行");
+                result.SummaryLines.Add(EngineLocalization.Format($"{MeasureBatchTableName}: 删除 {deletedRows:N0} 行"));
             }
 
             if (result.SummaryLines.Count == 0)
             {
-                result.SummaryLines.Add("没有找到可执行的 MySQL 历史清理项。");
+                result.SummaryLines.Add(EngineLocalization.Get("没有找到可执行的 MySQL 历史清理项。"));
             }
 
             return result;
@@ -193,7 +194,7 @@ namespace ColorVision.Database
                 return new DatabaseCleanupBackupResult
                 {
                     FilePath = backupPath,
-                    StatusMessage = $"完整备份已创建：{Path.GetFileName(backupPath)}"
+                    StatusMessage = EngineLocalization.Format($"完整备份已创建：{Path.GetFileName(backupPath)}")
                 };
             });
         }
@@ -219,7 +220,7 @@ namespace ColorVision.Database
             ArgumentNullException.ThrowIfNull(tableNames);
 
             if (tableNames.Count == 0)
-                throw new ArgumentException("至少选择一张要清理的数据表。", nameof(tableNames));
+                throw new ArgumentException(EngineLocalization.Get("至少选择一张要清理的数据表。"), nameof(tableNames));
 
             var definitionsByName = CleanupTableDefinitions.ToDictionary(item => item.TableName, StringComparer.OrdinalIgnoreCase);
             var validatedDefinitions = new List<CleanupTableDefinition>();
@@ -228,7 +229,7 @@ namespace ColorVision.Database
             foreach (string tableName in tableNames)
             {
                 if (string.IsNullOrWhiteSpace(tableName) || !definitionsByName.TryGetValue(tableName, out var definition))
-                    throw new ArgumentException($"不允许清理未登记的数据表：{tableName}", nameof(tableNames));
+                    throw new ArgumentException(EngineLocalization.Format($"不允许清理未登记的数据表：{tableName}"), nameof(tableNames));
 
                 if (seen.Add(definition.TableName))
                 {
@@ -299,7 +300,7 @@ namespace ColorVision.Database
             {
                 string dependencyList = string.Join(Environment.NewLine, missingDependencies.Select(tableName => $"- {tableName}"));
                 throw new InvalidOperationException(
-                    $"不能清理所选主表，因为仍存在未选中的关联明细表。请同时选择以下数据表：{Environment.NewLine}{dependencyList}");
+                    EngineLocalization.Get("不能清理所选主表，因为仍存在未选中的关联明细表。请同时选择以下数据表：") + Environment.NewLine + dependencyList);
             }
 
             var requestedTables = tableNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -320,13 +321,13 @@ namespace ColorVision.Database
                     {
                         if (!isCompleteCleanup)
                         {
-                            result.SummaryLines.Add($"{definition.TableName}: 未找到，已跳过");
+                            result.SummaryLines.Add(EngineLocalization.Format($"{definition.TableName}: 未找到，已跳过"));
                         }
                         continue;
                     }
 
                     db.Ado.ExecuteCommand($"TRUNCATE TABLE {QuoteIdentifier(definition.TableName)};");
-                    result.SummaryLines.Add($"{definition.TableName}: 已清空");
+                    result.SummaryLines.Add(EngineLocalization.Format($"{definition.TableName}: 已清空"));
                     clearedTableCount++;
                 }
             }
@@ -337,12 +338,12 @@ namespace ColorVision.Database
 
             if (clearedTableCount == 0)
             {
-                result.SummaryLines.Add("没有找到可清空的 MySQL 结果表。");
+                result.SummaryLines.Add(EngineLocalization.Get("没有找到可清空的 MySQL 结果表。"));
             }
 
             result.StatusMessage = isCompleteCleanup
-                ? $"已清空全部 {clearedTableCount:N0} 张可用 MySQL 结果表。"
-                : $"已清空选中的 {clearedTableCount:N0} 张 MySQL 结果表。";
+                ? EngineLocalization.Format($"已清空全部 {clearedTableCount:N0} 张可用 MySQL 结果表。")
+                : EngineLocalization.Format($"已清空选中的 {clearedTableCount:N0} 张 MySQL 结果表。");
 
             return result;
         }

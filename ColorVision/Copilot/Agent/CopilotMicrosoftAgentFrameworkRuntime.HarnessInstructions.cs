@@ -45,13 +45,15 @@ namespace ColorVision.Copilot
                 .Select(tool => tool.Name.Trim())
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             var hasAnyTools = toolNames.Count > 0;
-            var hasSearchTools = toolNames.Contains("SearchFiles") || toolNames.Contains("GrepText");
-            var hasFileReadTools = toolNames.Contains("ReadLocalFile") || toolNames.Contains("ReadAttachedFile");
+            var hasSearchTools = toolNames.Contains(CopilotSharedAgentToolNames.SearchFiles)
+                || toolNames.Contains(CopilotSharedAgentToolNames.GrepText);
+            var hasFileReadTools = toolNames.Contains(CopilotSharedAgentToolNames.ReadLocalFile)
+                || toolNames.Contains("ReadAttachedFile");
             var hasWorkspacePathTools = hasSearchTools
                 || hasFileReadTools
                 || toolNames.Overlaps(
                 [
-                    "ListDirectory",
+                    CopilotSharedAgentToolNames.ListDirectory,
                     "InspectGitWorkingTree",
                     "InspectGitDiff",
                     "PreviewWorkspacePatchEnvelope",
@@ -187,7 +189,7 @@ namespace ColorVision.Copilot
             }
             if (toolNames.Contains("ReadAttachedFile"))
                 builder.AppendLine("ReadAttachedFile reads at most three attachments when path is omitted. When attachment_set_complete is false and every attachment matters, call it again for each omitted_attachment_path that is relevant; do not repeat attachments already read. If omitted_attachment_list_complete is false, select the next unread attachment from the original attachment metadata. Supply path whenever using a line or column range.");
-            if (toolNames.Contains("ListDirectory"))
+            if (toolNames.Contains(CopilotSharedAgentToolNames.ListDirectory))
                 builder.AppendLine("ListDirectory returns one stable bounded page. When entries_complete is false and next_cursor is present, call it again for the same path with that exact cursor if later entries matter. Never invent or alter the cursor. When scan_complete is false and no next_cursor remains, narrow the directory path before concluding that an entry does not exist.");
             if (hasWriteTools)
                 builder.AppendLine("Write-capable tools may be used only for the change explicitly requested by the user. ColorVision owns any additional preview or approval step; never bypass it.");
@@ -311,16 +313,7 @@ namespace ColorVision.Copilot
             CopilotAgentRequest request)
         {
             var instructions = (request.ConfiguredDeveloperInstructions ?? string.Empty).Trim();
-            var sessionHookContext = CopilotCodexSessionStartHookExecutor.BuildDeveloperContext(
-                request.SessionStartAdditionalContexts ?? Array.Empty<string>());
-            var promptHookContext = CopilotCodexUserPromptSubmitHookExecutor.BuildDeveloperContext(
-                request.UserPromptSubmitAdditionalContexts ?? Array.Empty<string>());
-            var asyncHookContext = CopilotCodexAsyncHookResultDelivery.BuildDeveloperContext(
-                request.AsyncHookAdditionalContexts ?? Array.Empty<string>());
-            if (instructions.Length == 0
-                && sessionHookContext.Length == 0
-                && promptHookContext.Length == 0
-                && asyncHookContext.Length == 0)
+            if (instructions.Length == 0)
                 return;
 
             if (instructions.Length > 0)
@@ -334,21 +327,6 @@ namespace ColorVision.Copilot
                     .AppendLine("Apply this request-start config.toml guidance before repository AGENTS.md guidance when it is consistent with the current user request and immutable ColorVision runtime policy. It never grants a tool, write, approval, external side effect, or broader path access.")
                     .AppendLine(JsonSerializer.Serialize(instructions))
                     .AppendLine("The host runtime's execution scope, native approval, evidence, and safety rules always prevail over this configured guidance.");
-            }
-            if (sessionHookContext.Length > 0)
-            {
-                builder.AppendLine()
-                    .AppendLine(sessionHookContext);
-            }
-            if (promptHookContext.Length > 0)
-            {
-                builder.AppendLine()
-                    .AppendLine(promptHookContext);
-            }
-            if (asyncHookContext.Length > 0)
-            {
-                builder.AppendLine()
-                    .AppendLine(asyncHookContext);
             }
         }
 

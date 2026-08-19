@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
-        Title="光谱修正" Width="1180" Height="780" MinWidth="980" MinHeight="680"
+        Title="光谱校正" Width="1180" Height="780" MinWidth="980" MinHeight="680"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource GlobalBackground}"
         Foreground="{DynamicResource GlobalTextBrush}">
@@ -61,13 +61,13 @@
                            ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}" />
                 <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="6" Margin="0,8,0,0"
                            Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"
-                           Text="实测值取自 Spectrum 当前选中的校正后完整光谱（fPL × fPlambda）。本窗口只生成新的 DAT，不替换当前标定组，也不重新连接光谱仪。" />
+                           Text="使用当前选中结果预览并导出 DAT；不会更改当前标定组。" />
             </Grid>
         </Border>
 
         <TabControl x:Name="CorrectionTabs" Grid.Row="1" SelectedIndex="1" Margin="0,0,0,8"
                     SelectionChanged="CorrectionTabs_SelectionChanged">
-            <TabItem Header="单独亮度修正">
+            <TabItem Header="单独亮度校正">
                 <Grid Margin="18">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="180" />
@@ -84,15 +84,15 @@
                     <TextBox x:Name="TargetBrightnessTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" TextChanged="BrightnessInput_Changed" />
                     <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,12,10" Text="当前结果实测值" />
                     <TextBox x:Name="MeasuredBrightnessTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" IsReadOnly="True" />
-                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,12,10" Text="修正比例" />
+                    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,12,10" Text="校正比例" />
                     <TextBox x:Name="BrightnessRatioTextBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,10" IsReadOnly="True" />
                     <TextBlock Grid.Row="0" Grid.RowSpan="3" Grid.Column="2" Margin="28,0,0,0" TextWrapping="Wrap"
                                Foreground="{DynamicResource SecondaryTextBrush}"
-                               Text="新系数 = 当前系数 ×（目标值 ÷ 实测值）。只改变整体亮度，不改变相对光谱形状。" />
+                               Text="输入目标值后预览并导出 DAT；相对光谱形状不变。" />
                 </Grid>
             </TabItem>
 
-            <TabItem Header="完整光谱修正">
+            <TabItem Header="完整光谱校正">
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -104,7 +104,7 @@
                             <Button Content="清空标准值" Click="ClearStandardButton_Click" />
                         </StackPanel>
                         <TextBlock Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"
-                                   Text="标准谱必须覆盖 380–780 nm，支持 Ctrl+V 粘贴两列数据。" />
+                                   Text="导入覆盖 380–780 nm 的两列标准谱；可按 Ctrl+V 粘贴。" />
                     </DockPanel>
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
@@ -150,8 +150,8 @@
                            TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource Self}, Path=Text}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Button Margin="0,0,8,0" MinWidth="100" Content="计算预览" Click="PreviewButton_Click" />
-                <Button MinWidth="120" Content="生成新 DAT" Click="GenerateButton_Click" />
+                <Button Margin="0,0,8,0" MinWidth="100" Content="预览" Click="PreviewButton_Click" />
+                <Button MinWidth="120" Content="导出 DAT" Click="GenerateButton_Click" />
             </StackPanel>
         </Grid>
     </Grid>

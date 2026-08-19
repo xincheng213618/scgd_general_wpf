@@ -21,6 +21,15 @@ namespace ColorVision.Copilot
 
             foreach (var tool in registeredTools)
             {
+                if (!CopilotToolInputContractValidator.TryValidateSchema(
+                        tool.InputSchema?.JsonSchema,
+                        out var schemaError))
+                {
+                    throw new ArgumentException(
+                        $"Copilot tool '{tool.Name}' has an invalid input schema: {schemaError}",
+                        nameof(tools));
+                }
+
                 var capability = tool.Capability
                     ?? throw new ArgumentException($"Copilot tool '{tool.Name}' has no capability descriptor.", nameof(tools));
                 capability.Validate(tool.Name.Trim());
@@ -154,31 +163,13 @@ namespace ColorVision.Copilot
             var workspacePatchStore = new CopilotWorkspacePatchStore(
                 CopilotWorkspaceChangeSetCheckpointStore.CreateDefault());
             var applicationCapabilities = CopilotApplicationCapabilityInvokerFactory.CreateDefault();
-            return new ICopilotTool[]
+            var localTools = new ICopilotTool[]
             {
-                new CopilotCreateFlowTool(applicationCapabilities),
                 new CopilotConvertBatchImagesTool(),
                 new CopilotOpenBatchImageProcessingTool(),
-                new CopilotExecuteMenuTool(applicationCapabilities),
-                new CopilotSetThemeTool(),
-                new CopilotSetLanguageTool(applicationCapabilities),
-                new CopilotInspectSavedTemplateTool(applicationCapabilities),
-                new CopilotInspectTemplateTypeTool(applicationCapabilities),
-                new CopilotTemplatePatchTool(applicationCapabilities),
-                new CopilotApplyTemplatePatchTool(applicationCapabilities),
-                new CopilotSearchDocsTool(),
                 new CopilotFetchUrlTool(),
-                new CopilotSearchFilesTool(),
-                new CopilotGrepTextTool(),
                 new CopilotWebSearchTool(),
-                new CopilotReadLocalFileTool(),
-                new CopilotListDirectoryTool(),
                 new CopilotReadAttachedFileTool(),
-                new CopilotGetRecentLogTool(),
-                new CopilotInspectFlowGraphTool(applicationCapabilities),
-                new CopilotSearchFlowNodeCatalogTool(applicationCapabilities),
-                new CopilotPreviewFlowPatchTool(applicationCapabilities),
-                new CopilotApplyFlowPatchTool(applicationCapabilities),
                 new CopilotQueryFlowExecutionStatsTool(),
                 new CopilotQueryDatabaseSqlTool(),
                 new CopilotExecuteDatabaseSqlTool(),
@@ -191,6 +182,7 @@ namespace ColorVision.Copilot
                 new CopilotSubmitCodeReviewFindingsTool(),
                 new CopilotShellCommandTool(),
                 new CopilotReadShellCommandOutputTool(),
+                new CopilotReadToolOutputTool(),
                 new CopilotStartBackgroundShellCommandTool(),
                 new CopilotInspectBackgroundShellCommandsTool(),
                 new CopilotReadBackgroundShellCommandOutputTool(),
@@ -204,6 +196,48 @@ namespace ColorVision.Copilot
                 new CopilotRollbackWorkspacePatchEnvelopeTool(workspacePatchStore),
                 new CopilotWorkspaceValidationTool(),
             };
+            var tools = localTools
+                .Concat(CopilotSharedCapabilityCatalog.All.Select(definition =>
+                    definition.CreateAgentTool(applicationCapabilities)))
+                .ToArray();
+            CopilotSharedCapabilityCatalog.ValidateAgentSurface(tools);
+            ValidateApplicationCapabilityRuntime(tools, applicationCapabilities);
+            return tools;
+        }
+
+        private static void ValidateApplicationCapabilityRuntime(
+            IEnumerable<ICopilotTool> tools,
+            ICopilotApplicationCapabilityInvoker expectedInvoker)
+        {
+            var toolArray = (tools ?? Array.Empty<ICopilotTool>()).ToArray();
+            var toolsByName = toolArray.ToDictionary(
+                tool => tool.Name,
+                StringComparer.OrdinalIgnoreCase);
+            var routeMismatches = CopilotSharedCapabilityCatalog.All
+                .Where(definition => toolsByName.TryGetValue(definition.AgentToolName, out var tool)
+                    && (tool is ICopilotApplicationCapabilityClient)
+                        != (definition.ExecutionRoute
+                            == CopilotSharedCapabilityExecutionRoute.ApplicationCapabilityRuntime))
+                .Select(definition => definition.AgentToolName)
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (routeMismatches.Length > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Application capability route bindings do not match the shared catalog: {string.Join(", ", routeMismatches)}.");
+            }
+
+            var mismatched = toolArray
+                .Where(tool => tool is ICopilotApplicationCapabilityClient client
+                    && !ReferenceEquals(client.ApplicationCapabilityInvoker, expectedInvoker))
+                .Select(tool => tool.Name)
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (mismatched.Length == 0)
+                return;
+
+            throw new InvalidOperationException(
+                $"Application capability tools must share the composition-root runtime: {string.Join(", ", mismatched)}.");
         }
 
         private ICopilotTool[] GetCurrentTools(bool includeExtensionTools = true)

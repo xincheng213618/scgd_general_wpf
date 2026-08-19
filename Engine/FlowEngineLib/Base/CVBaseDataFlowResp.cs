@@ -12,6 +12,8 @@ public class CVBaseDataFlowResp
 
 	public string ServiceName { get; set; }
 
+	public string DeviceNodeCode { get; set; }
+
 	public string EventName { get; set; }
 
 	public string SerialNumber { get; set; }

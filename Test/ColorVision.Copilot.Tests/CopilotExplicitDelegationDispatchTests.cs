@@ -15,7 +15,7 @@ public sealed class CopilotExplicitDelegationDispatchTests
         var dispatchCount = 0;
         using var client = new CopilotExplicitDelegationDispatchChatClient(
             inner,
-            CreateRequest(Array.Empty<CopilotCodexCustomSubagentDefinition>()),
+            CreateRequest(),
             DelegateFunctionName,
             taskLedgerEnabled: false,
             () => dispatchCount++);
@@ -33,40 +33,7 @@ public sealed class CopilotExplicitDelegationDispatchTests
         Assert.Equal(0, inner.CallCount);
     }
 
-    [Fact]
-    public async Task AvailableCustomAgentsReturnExplicitDelegationToParentPlanning()
-    {
-        var inner = new RecordingChatClient();
-        var dispatchCount = 0;
-        using var client = new CopilotExplicitDelegationDispatchChatClient(
-            inner,
-            CreateRequest(
-            [
-                new CopilotCodexCustomSubagentDefinition
-                {
-                    Name = "reviewer",
-                    Description = "Review bounded workspace evidence.",
-                    DeveloperInstructions = "Prioritize authorization boundaries.",
-                },
-            ]),
-            DelegateFunctionName,
-            taskLedgerEnabled: false,
-            () => dispatchCount++);
-
-        var response = await client.GetResponseAsync(
-            [new ChatMessage(ChatRole.User, ExplicitTask)],
-            CreateOptions());
-
-        Assert.Empty(response.Messages
-            .SelectMany(message => message.Contents)
-            .OfType<FunctionCallContent>());
-        Assert.Equal("provider-planned", response.Text);
-        Assert.Equal(0, dispatchCount);
-        Assert.Equal(1, inner.CallCount);
-    }
-
-    private static CopilotAgentRequest CreateRequest(
-        IReadOnlyList<CopilotCodexCustomSubagentDefinition> customSubagents) => new()
+    private static CopilotAgentRequest CreateRequest() => new()
         {
             ConversationId = "explicit-delegation-" + Guid.NewGuid().ToString("N"),
             UserText = ExplicitTask,
@@ -81,7 +48,6 @@ public sealed class CopilotExplicitDelegationDispatchTests
                 MaxTokens = 4_096,
             },
             CodexAgentsEnabled = true,
-            CodexCustomSubagents = customSubagents,
             SearchRootPaths = [@"C:\workspace"],
             RequiredSuccessfulToolNames = ["DelegateExplore"],
             RequiresDelegatedWorkspaceEvidence = true,

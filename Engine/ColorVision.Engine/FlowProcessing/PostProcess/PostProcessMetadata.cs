@@ -92,10 +92,10 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             if (attribute != null)
             {
                 displayName = !string.IsNullOrWhiteSpace(attribute.DisplayName) 
-                    ? attribute.DisplayName 
+                    ? EngineLocalization.Get(attribute.DisplayName)
                     : type.Name;
-                description = attribute.Description ?? string.Empty;
-                category = attribute.Category ?? string.Empty;
+                description = EngineLocalization.Get(attribute.Description ?? string.Empty);
+                category = EngineLocalization.Get(attribute.Category ?? string.Empty);
                 order = attribute.Order;
             }
             else
@@ -136,8 +136,8 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             if (!string.IsNullOrWhiteSpace(Description))
                 text += $"\n\n{Description}";
             if (!string.IsNullOrWhiteSpace(Category))
-                text += $"\n\n类别: {Category}";
-            text += $"\n\n类型: {TypeName}";
+                text += $"\n\n{EngineLocalization.Get("类别")}: {Category}";
+            text += $"\n\n{EngineLocalization.Get("类型")}: {TypeName}";
             return text;
         }
     }

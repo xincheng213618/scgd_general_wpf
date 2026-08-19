@@ -94,7 +94,7 @@ namespace ColorVision.Copilot
                 activeRun.Mode,
                 submissionContext.ProjectInstructionDiscoveryOptions);
             if (!TryValidateComposerCharacterLimit(prompt)
-                || !TryValidateComposerAttachments(submissionContext.Attachments)
+                || !TryValidateComposerAttachments(submissionContext.Attachments, requestProfile)
                 || !isLocalCommand
                     && !TryValidatePromptBudget(
                         prompt,
@@ -204,8 +204,27 @@ namespace ColorVision.Copilot
                 return;
             }
 
+            CopilotAgentHostContextSnapshot admittedSubmissionContext;
+            try
+            {
+                var admittedAttachments = await CopilotImageAttachmentAdmission.PersistAsync(
+                    queuedFollowUp.SubmissionContext.Attachments,
+                    _stateStore.AttachmentDirectoryPath,
+                    hostedRun.CancellationToken).ConfigureAwait(false);
+                admittedSubmissionContext = queuedFollowUp.SubmissionContext.WithAttachments(
+                    admittedAttachments);
+            }
+            catch (CopilotImageAttachmentAdmissionException ex)
+            {
+                CopilotUiDispatcher.Invoke(() =>
+                    RestoreQueuedFollowUpAfterImageAdmissionFailure(queuedFollowUp, ex));
+                return;
+            }
+
             var preparedTurn = CopilotUiDispatcher.Invoke(
-                () => PrepareQueuedFollowUpTurn(queuedFollowUp),
+                () => PrepareQueuedFollowUpTurn(
+                    queuedFollowUp,
+                    admittedSubmissionContext),
                 fallback: null as CopilotPreparedHostedTurn);
             if (preparedTurn == null)
             {
@@ -448,7 +467,40 @@ namespace ColorVision.Copilot
             OnComposerRequestModeChanged();
         }
 
-        private CopilotPreparedHostedTurn? PrepareQueuedFollowUpTurn(CopilotQueuedFollowUp queuedFollowUp)
+        private void RestoreQueuedFollowUpAfterImageAdmissionFailure(
+            CopilotQueuedFollowUp queuedFollowUp,
+            CopilotImageAttachmentAdmissionException exception)
+        {
+            if (queuedFollowUp.IsAutomaticGoalContinuation)
+            {
+                _followUpQueue.RemoveRecovery(queuedFollowUp.RunId);
+                var conversation = Conversations.FirstOrDefault(candidate =>
+                    string.Equals(
+                        candidate.Id,
+                        queuedFollowUp.ConversationId,
+                        StringComparison.Ordinal));
+                var goal = conversation?.Goal;
+                if (goal?.IsActive == true
+                    && string.Equals(goal.Id, queuedFollowUp.GoalId, StringComparison.Ordinal))
+                {
+                    conversation!.Goal = goal.WithState(
+                        CopilotConversationGoalState.Paused,
+                        DateTimeOffset.UtcNow,
+                        "持续目标的图片附件未能通过准入或持久化，自动续作已暂停，避免静默丢失任务。");
+                }
+            }
+            else if (_followUpQueue.RestoreRecoveryToDraft(queuedFollowUp.RunId))
+            {
+                SynchronizeSelectedDraftAfterQueuedRecovery();
+            }
+
+            ReportImageAttachmentAdmissionFailure(exception);
+            PersistState(immediate: true);
+        }
+
+        private CopilotPreparedHostedTurn? PrepareQueuedFollowUpTurn(
+            CopilotQueuedFollowUp queuedFollowUp,
+            CopilotAgentHostContextSnapshot admittedSubmissionContext)
         {
             RemoveQueuedFollowUp(queuedFollowUp.RunId, removeRecoveryRecord: false);
             var conversation = Conversations.FirstOrDefault(candidate =>
@@ -462,7 +514,7 @@ namespace ColorVision.Copilot
                 PersistState(immediate: true);
                 return null;
             }
-            var turnSnapshot = queuedFollowUp.CreateExecutionContext(
+            var turnSnapshot = admittedSubmissionContext.WithConversationHistory(
                 CopilotConversationRequestBuilder.CaptureHistorySnapshot(conversation));
             var userMessage = new CopilotChatMessage(CopilotChatRole.User, queuedFollowUp.Prompt)
             {

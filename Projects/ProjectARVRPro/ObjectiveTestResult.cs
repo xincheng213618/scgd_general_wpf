@@ -3,6 +3,8 @@ using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Distortion;
+using ProjectARVRPro.Process.MTF.MTF07.MTFH;
+using ProjectARVRPro.Process.MTF.MTF07.MTFV;
 using ProjectARVRPro.Process.MTF.MTFHV;
 using ProjectARVRPro.Process.MTF.MTFHV048;
 using ProjectARVRPro.Process.MTF.MTFHV058;
@@ -41,8 +43,14 @@ namespace ProjectARVRPro
         [DisplayName("亮色度测试")]
         public Dictionary<string, LuminanceChromaticityTestResult> LuminanceChromaticityTestResults { get; set; } = new();
 
+        [DisplayName("YW亮色度测试")]
+        public Dictionary<string, LuminanceChromaticityYWTestResult> LuminanceChromaticityYWTestResults { get; set; } = new();
+
         [DisplayName("Chessborad")]
         public ChessboardTestResult ChessboardTestResult { get; set; }
+
+        [DisplayName("棋盘格测试")]
+        public Dictionary<string, ChessboardTestResult> ChessboardTestResults { get; set; } = new();
 
         [DisplayName("MTF")]
         public MTFHVTestResult MTFHVTestResult { get; set; }
@@ -55,6 +63,12 @@ namespace ProjectARVRPro
 
         [DisplayName("DynamicMTFHV058")]
         public Dictionary<string, MTFHV058TestResult> DynamicMTFHV058TestResults { get; set; } = new Dictionary<string, MTFHV058TestResult>();
+
+        [DisplayName("MTFH07")]
+        public Dictionary<string, MTFH07TestResult> MTFH07TestResults { get; set; } = new();
+
+        [DisplayName("MTFV07")]
+        public Dictionary<string, MTFV07TestResult> MTFV07TestResults { get; set; } = new();
 
         [DisplayName("Distortion")]
         public DistortionTestResult DistortionTestResult { get; set; }

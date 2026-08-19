@@ -9,6 +9,7 @@ using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.Menus;
+using ColorVision.UI.Plugins;
 using ColorVision.UI.Views;
 using AvalonDock.Controls;
 using AvalonDock.Layout;
@@ -408,6 +409,7 @@ namespace ColorVision
             ContentRendered -= MainWindow_ContentRendered;
             ProgramTimer.StopAndReport();
             Update.ApplicationUpdateScanProtection.CompleteAfterUpdateRestart();
+            PluginRecoveryBackupService.Instance.ScheduleHealthyStartupBackups();
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
                 Stopwatch stopwatch = Stopwatch.StartNew();

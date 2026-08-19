@@ -43,16 +43,30 @@ namespace ColorVision.Copilot
             }
             if (requestMode == CopilotAgentMode.Plan)
             {
-                if (steps.Any(step => step.Execution.State == CopilotToolExecutionState.Denied))
-                    return CopilotAgentStopReason.ApprovalDenied;
+                var denied = steps.LastOrDefault(
+                    step => step.Execution.State == CopilotToolExecutionState.Denied);
+                if (denied != null)
+                {
+                    return CopilotToolFailureCode.HasApprovalProvenance(
+                            denied.Observation.FailureCode)
+                        ? CopilotAgentStopReason.ApprovalDenied
+                        : CopilotAgentStopReason.Blocked;
+                }
                 return hasModelFinalAnswer
                     ? CopilotAgentStopReason.Completed
                     : CopilotAgentStopReason.IncompleteOutput;
             }
             if (taskLedger.RemainingCount == 0)
                 return hasModelFinalAnswer ? CopilotAgentStopReason.Completed : CopilotAgentStopReason.IncompleteOutput;
-            if (steps.Any(step => step.Execution.State == CopilotToolExecutionState.Denied))
-                return CopilotAgentStopReason.ApprovalDenied;
+            var latestDenied = steps.LastOrDefault(
+                step => step.Execution.State == CopilotToolExecutionState.Denied);
+            if (latestDenied != null)
+            {
+                return CopilotToolFailureCode.HasApprovalProvenance(
+                        latestDenied.Observation.FailureCode)
+                    ? CopilotAgentStopReason.ApprovalDenied
+                    : CopilotAgentStopReason.Blocked;
+            }
             if (string.Equals(taskLedger.Mode, "plan", StringComparison.OrdinalIgnoreCase))
                 return CopilotAgentStopReason.AwaitingUser;
             return CopilotAgentStopReason.TaskPassLimit;
@@ -126,6 +140,10 @@ namespace ColorVision.Copilot
                 return "Persisted Agent session predates project-instruction tracking; its internal task state was discarded and Agent Framework will re-plan under the current personal and project instructions.";
             if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.ProjectInstructionDrift)
                 return "Personal or project instructions changed. Persisted internal task state was discarded and Agent Framework will re-plan under the current instruction documents.";
+            if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome)
+                return "The latest Agent run contains a started tool call without an authoritative terminal outcome. The persisted provider session was discarded so it cannot replay that call; Agent Framework will re-plan from bounded conversation and attempted-tool evidence.";
+            if (compatibility.Kind == CopilotAgentCheckpointCompatibilityKind.UnresolvedProviderToolCall)
+                return "The latest Agent run contains a provider-persisted tool request without a matching provider-persisted result. The provider session was discarded so it cannot resume with a dangling tool call; Agent Framework will re-plan from bounded conversation and attempted-tool evidence.";
 
             var removed = compatibility.RemovedCapabilityIds.Count;
             var changed = compatibility.ChangedCapabilityIds.Count;

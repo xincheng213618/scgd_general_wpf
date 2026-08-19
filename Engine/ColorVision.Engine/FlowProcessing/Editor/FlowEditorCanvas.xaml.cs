@@ -5,6 +5,7 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -61,6 +62,8 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         public FlowEditorCanvas()
         {
             InitializeComponent();
+            ConfigurationViewButton.Content = GetInspectorText("Flow_NodeInspector_Configuration");
+            DocumentationViewButton.Content = GetInspectorText("Flow_NodeInspector_Documentation");
             STNodeEditorMain.EnableHistory = true;
             AttachEditCommandRouting(this);
             SizeChanged += FlowEditorCanvas_SizeChanged;
@@ -78,6 +81,11 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             ThemeChanged(ThemeManager.Current.CurrentUITheme);
             AdvancedPropertiesButton.ToolTip = FlowNodePropertyMetadataProvider.AdvancedOptions.ToolTip;
             UpdateInspectorViewButtons();
+        }
+
+        private static string GetInspectorText(string key)
+        {
+            return Properties.Resources.ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
         }
 
         private static void OnPropertyPanelMarginChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

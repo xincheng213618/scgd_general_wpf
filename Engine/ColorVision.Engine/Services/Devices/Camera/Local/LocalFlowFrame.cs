@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
     }
 
     /// <summary>
-    /// Owns the root reference to a pair of process-local unmanaged image buffers.
+    /// Owns the root reference to process-local RAW memory and optional CIE data memory.
     /// Consumers must use <see cref="Acquire"/> and dispose the returned lease.
     /// </summary>
     public sealed class LocalFlowFrame : IDisposable
@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         }
 
         public Guid FrameId { get; }
-        public LocalFrameMetadata Metadata { get; }
+        public LocalFrameMetadata Metadata { get; private set; }
         public int MasterId { get; set; } = -1;
         public string CvRawFilePath { get; set; } = string.Empty;
         public string CvCieFilePath { get; set; } = string.Empty;
@@ -60,10 +60,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
         public bool IsCieFlipApplied => storage.IsBufferFlipApplied(LocalFrameBufferKind.CvCie, Metadata.FlipMode);
         public bool IsFlipApplied => storage.IsBufferFlipApplied(Metadata.PrimaryBufferKind, Metadata.FlipMode);
 
-        /// <summary>
-        /// Records that a newly generated primary buffer inherited the already-finalized
-        /// pixel orientation of its source without performing another physical flip.
-        /// </summary>
         internal void MarkPrimaryBufferFlipApplied()
             => storage.MarkFlipApplied(Metadata.PrimaryBufferKind);
 
@@ -74,6 +70,32 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ArgumentOutOfRangeException.ThrowIfNegative(cieLength);
             if (rawLength == 0 && cieLength == 0) throw new ArgumentException("At least one image buffer is required.");
             return new LocalFlowFrame(new SharedFrameStorage(rawLength, cieLength), metadata);
+        }
+
+        internal void PrepareForCalibration(string calibrationTemplate, int cieLength, bool hasBasicCalibration)
+        {
+            ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
+            storage.ResizeCieBuffer(cieLength);
+            LocalFrameMetadata source = Metadata;
+            Metadata = new LocalFrameMetadata
+            {
+                Width = source.Width,
+                Height = source.Height,
+                SourceBpp = source.SourceBpp,
+                CieBpp = source.CieBpp,
+                Channels = source.Channels,
+                Gain = source.Gain,
+                Exposure = source.Exposure,
+                DeviceCode = source.DeviceCode,
+                SourceFilePath = source.SourceFilePath,
+                CalibrationTemplate = calibrationTemplate,
+                CaptureTime = source.CaptureTime,
+                PrimaryBufferKind = cieLength > 0 ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw,
+                FlipMode = source.FlipMode,
+                IsMirrorReady = true
+            };
+            CvCieFilePath = string.Empty;
+            if (hasBasicCalibration) CvRawFilePath = string.Empty;
         }
 
         public LocalFlowFrameLease Acquire()
@@ -126,16 +148,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
         internal sealed class SharedFrameStorage
         {
+            private readonly object bufferSync = new();
             private int referenceCount = 1;
             private int rawFlipState;
             private int cieFlipState;
+            private int cieLength;
             private IntPtr rawPointer;
             private IntPtr ciePointer;
 
             public SharedFrameStorage(int rawLength, int cieLength)
             {
                 RawLength = rawLength;
-                CieLength = cieLength;
+                this.cieLength = cieLength;
                 try
                 {
                     if (rawLength > 0) rawPointer = Marshal.AllocHGlobal(rawLength);
@@ -154,9 +178,24 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
 
             public int RawLength { get; }
-            public int CieLength { get; }
+            public int CieLength => Volatile.Read(ref cieLength);
             public IntPtr RawPointer => rawPointer;
             public IntPtr CiePointer => ciePointer;
+
+            public void ResizeCieBuffer(int requiredLength)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(requiredLength);
+                lock (bufferSync)
+                {
+                    if (requiredLength == cieLength) return;
+                    IntPtr replacement = requiredLength > 0 ? Marshal.AllocHGlobal(requiredLength) : IntPtr.Zero;
+                    IntPtr previous = ciePointer;
+                    ciePointer = replacement;
+                    Volatile.Write(ref cieLength, requiredLength);
+                    Volatile.Write(ref cieFlipState, 0);
+                    if (previous != IntPtr.Zero) Marshal.FreeHGlobal(previous);
+                }
+            }
 
             public bool IsBufferFlipApplied(LocalFrameBufferKind bufferKind, CVImageFlipMode flipMode)
                 => flipMode == CVImageFlipMode.None || Volatile.Read(ref GetFlipState(bufferKind)) == 1;
@@ -192,10 +231,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
 
             private void FreeBuffers()
             {
-                IntPtr raw = Interlocked.Exchange(ref rawPointer, IntPtr.Zero);
-                if (raw != IntPtr.Zero) Marshal.FreeHGlobal(raw);
-                IntPtr cie = Interlocked.Exchange(ref ciePointer, IntPtr.Zero);
-                if (cie != IntPtr.Zero) Marshal.FreeHGlobal(cie);
+                lock (bufferSync)
+                {
+                    IntPtr raw = Interlocked.Exchange(ref rawPointer, IntPtr.Zero);
+                    if (raw != IntPtr.Zero) Marshal.FreeHGlobal(raw);
+                    IntPtr cie = Interlocked.Exchange(ref ciePointer, IntPtr.Zero);
+                    if (cie != IntPtr.Zero) Marshal.FreeHGlobal(cie);
+                    Volatile.Write(ref cieLength, 0);
+                }
             }
 
             private ref int GetFlipState(LocalFrameBufferKind bufferKind)

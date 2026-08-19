@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ColorVision.Copilot
@@ -123,6 +124,24 @@ namespace ColorVision.Copilot
             return normalized.Length <= MaxSourceIdLength
                 ? normalized
                 : normalized[..MaxSourceIdLength];
+        }
+    }
+
+    internal static class CopilotToolExecutionHookRunProtocol
+    {
+        internal const int MaximumEntries = (CopilotToolExecutionHookRegistry.MaxRegistrations + 1) * 3;
+
+        internal static bool IsStructurallyValid(
+            IReadOnlyList<CopilotToolExecutionHookRun>? runs)
+        {
+            if (runs == null || runs.Count > MaximumEntries)
+                return false;
+
+            return runs.All(run => run?.IsStructurallyValid() == true)
+                && runs
+                    .Select(run => (run.SourceId, run.Phase))
+                    .Distinct()
+                    .Count() == runs.Count;
         }
     }
 

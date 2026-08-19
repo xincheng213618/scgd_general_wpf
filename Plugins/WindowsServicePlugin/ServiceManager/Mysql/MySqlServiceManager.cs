@@ -8,8 +8,6 @@ namespace WindowsServicePlugin.ServiceManager
 {
     public class MySqlServiceManager
     {
-        private static readonly string[] ResetPreservedTables = MySqlLocalServicesManager.MigrationBackupTableNames.ToArray();
-
         public MySqlServiceConfig Config { get; } = MySqlServiceConfig.Instance;
 
         public MySqlServiceHelper Helper { get; } = new MySqlServiceHelper();
@@ -246,7 +244,22 @@ namespace WindowsServicePlugin.ServiceManager
 
         public bool RestoreDatabase(string filePath, Action<string> logCallback)
         {
-            return Helper.RestoreDatabase(Config.AppUser, Config.AppPassword, Config.Database, filePath, logCallback);
+            try
+            {
+                MySqlConfig businessConfig = CreateMySqlConfig(Config.AppUser, Config.AppPassword, Config.Database);
+                MySqlDatabaseMaintenanceService.RestoreSqlFileAsync(
+                    filePath,
+                    businessConfig,
+                    ResolveMysqlClientPath(),
+                    selectDatabase: true).GetAwaiter().GetResult();
+                logCallback("数据库恢复完成");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logCallback($"数据库恢复失败: {ex.Message}");
+                return false;
+            }
         }
 
         public bool ExecuteSqlFile(string filePath, Action<string> logCallback)
@@ -556,52 +569,20 @@ namespace WindowsServicePlugin.ServiceManager
 
         private bool ResetDatabaseFromSqlFile(string sqlFilePath, string sourceDatabase, string targetDatabase, Action<string> logCallback)
         {
-            if (string.IsNullOrWhiteSpace(sourceDatabase) || string.IsNullOrWhiteSpace(targetDatabase))
-            {
-                logCallback("源数据库或目标数据库名称为空，无法执行数据库更新");
-                return false;
-            }
-
             if (!EnsureRootPasswordReady(logCallback))
-            {
                 return false;
-            }
 
-            logCallback($"数据库更新路径: {sourceDatabase} -> {targetDatabase}");
-            if (!string.Equals(sourceDatabase, targetDatabase, StringComparison.OrdinalIgnoreCase)
-                && !VerifyDatabase(sourceDatabase, logCallback))
-            {
-                logCallback($"跨版本更新的源数据库 {sourceDatabase} 不存在或无法连接，已停止更新");
-                return false;
-            }
-
-            if (!TryBackupResetPreservedData(sourceDatabase, logCallback, out string? preservedDataSql))
-            {
-                logCallback("重置前资源数据备份失败，已停止执行以避免数据丢失");
-                return false;
-            }
-
-            if (!ExecuteRootSqlFile(sqlFilePath, logCallback, null, false))
-            {
-                return false;
-            }
-
-            if (!VerifyDatabase(targetDatabase, logCallback))
-            {
-                logCallback($"安装版本没有创建预期目标数据库 {targetDatabase}，已停止资源数据回写");
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(preservedDataSql))
-            {
-                logCallback("没有检测到需要回写的旧资源数据");
-                return true;
-            }
-
-            logCallback($"正在回写资源数据: {preservedDataSql}");
-            bool restored = Helper.ExecuteSqlFile("root", Config.RootPassword, targetDatabase, preservedDataSql, logCallback);
-            logCallback(restored ? "资源数据回写完成" : "资源数据回写失败");
-            return restored;
+            MySqlConfig rootConfig = CreateMySqlConfig("root", Config.RootPassword, sourceDatabase);
+            string backupDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Backup");
+            return MySqlDatabaseMaintenanceService.ResetDatabaseFromSqlFileAsync(
+                sqlFilePath,
+                sourceDatabase,
+                targetDatabase,
+                rootConfig,
+                ResolveMysqlClientPath(),
+                ResolveMysqlDumpPath(),
+                backupDirectory,
+                logCallback).GetAwaiter().GetResult();
         }
 
         private bool VerifyDatabase(string database, Action<string> logCallback)
@@ -651,50 +632,30 @@ namespace WindowsServicePlugin.ServiceManager
                     && Helper.TestConnection("localhost", Helper.Port, "root", rootPassword, null));
         }
 
-        private bool TryBackupResetPreservedData(string sourceDatabase, Action<string> logCallback, out string? backupFile)
+        private MySqlConfig CreateMySqlConfig(string userName, string password, string database)
         {
-            backupFile = null;
+            return new MySqlConfig
+            {
+                Host = string.IsNullOrWhiteSpace(Config.Host) ? "127.0.0.1" : Config.Host.Trim(),
+                Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort),
+                UserName = userName,
+                UserPwd = password,
+                Database = database
+            };
+        }
 
-            Helper.Port = GetConfiguredPort(ServiceManagerConfig.Instance.MySqlPort);
+        private string ResolveMysqlClientPath()
+        {
             if (!File.Exists(Helper.MysqlExePath))
-            {
                 Helper.DetectFromRegistry();
-            }
+            return File.Exists(Helper.MysqlExePath) ? Helper.MysqlExePath : MySqlLocalConfig.Instance.MysqlPath;
+        }
 
-            if (string.IsNullOrWhiteSpace(Config.RootPassword))
-            {
-                logCallback("未找到 root 密码，无法备份重置前资源数据");
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(sourceDatabase))
-            {
-                logCallback("未配置业务数据库名，跳过资源数据备份");
-                return true;
-            }
-
-            if (!Helper.TryGetExistingTables("root", Config.RootPassword, sourceDatabase, ResetPreservedTables, out IReadOnlyList<string> existingTables, logCallback))
-            {
-                return false;
-            }
-
-            if (existingTables.Count == 0)
-            {
-                logCallback("未检测到旧资源数据表，跳过资源数据备份");
-                return true;
-            }
-
-            string timestamp = DateTime.Now.ToString("yyyyMMdd'T'HHmmss");
-            string backupDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Backup");
-            backupFile = Path.Combine(backupDir, $"color_vision_resources_{timestamp}.sql");
-
-            if (!Helper.BackupDataTables("root", Config.RootPassword, sourceDatabase, backupFile, existingTables, logCallback))
-            {
-                backupFile = null;
-                return false;
-            }
-
-            return true;
+        private string ResolveMysqlDumpPath()
+        {
+            if (!File.Exists(Helper.MysqldumpExePath))
+                Helper.DetectFromRegistry();
+            return File.Exists(Helper.MysqldumpExePath) ? Helper.MysqldumpExePath : MySqlLocalConfig.Instance.MysqldumpPath;
         }
 
         public static string? ResolveColorVisionAllSqlPath(string? basePath)

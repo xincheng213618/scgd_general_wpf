@@ -164,6 +164,58 @@ namespace ColorVision.Copilot
             return true;
         }
 
+        internal bool CompleteActiveAgentTracesAfterUnexpectedTurnEnd(
+            string turnDescription,
+            DateTimeOffset? completedAtUtc = null)
+        {
+            if (AgentTraceEntries == null || AgentTraceEntries.Count == 0)
+                return false;
+
+            var completedAt = completedAtUtc ?? DateTimeOffset.UtcNow;
+            var description = string.IsNullOrWhiteSpace(turnDescription)
+                ? "The Agent turn ended unexpectedly"
+                : turnDescription.Trim();
+            var changed = false;
+            var hasUnknownToolOutcome = false;
+            foreach (var entry in AgentTraceEntries.Where(entry => entry != null))
+            {
+                var sourceState = entry.State;
+                var entryChanged = sourceState switch
+                {
+                    CopilotToolExecutionState.Running => entry.CompleteActiveExecution(
+                        CopilotToolExecutionState.Interrupted,
+                        CopilotToolFailureKind.Internal,
+                        CopilotToolFailureCode.OutcomeUnknown,
+                        $"{description} after this tool execution entered the running stage but before an authoritative terminal result was saved; its external outcome is unknown.",
+                        completedAt),
+                    CopilotToolExecutionState.Pending => entry.CompleteActiveExecution(
+                        CopilotToolExecutionState.Interrupted,
+                        CopilotToolFailureKind.Internal,
+                        CopilotToolFailureCode.NotStarted,
+                        $"{description} before this queued tool call entered the running stage; the tool was not started.",
+                        completedAt),
+                    CopilotToolExecutionState.AwaitingApproval => entry.CompleteActiveExecution(
+                        CopilotToolExecutionState.Interrupted,
+                        CopilotToolFailureKind.Authorization,
+                        CopilotToolFailureCode.ApprovalInterrupted,
+                        $"{description} while this tool call awaited approval; the protected operation was not started and requires a fresh approval if requested again.",
+                        completedAt),
+                    _ => false,
+                };
+                changed |= entryChanged;
+                hasUnknownToolOutcome |= entryChanged
+                    && sourceState == CopilotToolExecutionState.Running;
+            }
+
+            if (!changed)
+                return false;
+
+            RebuildExecutionContentFromAgentTrace();
+            OnPropertyChanged(nameof(AgentRecoveryActionLabel));
+            OnPropertyChanged(nameof(AgentRecoveryToolTip));
+            return hasUnknownToolOutcome;
+        }
+
         public void RebuildExecutionContentFromAgentTrace()
         {
             if (AgentTraceEntries == null || AgentTraceEntries.Count == 0)
@@ -417,4 +469,3 @@ namespace ColorVision.Copilot
 
     }
 }
-

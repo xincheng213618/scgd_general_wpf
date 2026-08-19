@@ -37,6 +37,8 @@ namespace ColorVision.Copilot
             _buffer.Enqueue(agentEvent);
         }
 
+        public Task FlushAsync() => _buffer.FlushAsync();
+
         public Task CompleteAsync() => _buffer.CompleteAsync();
 
         private sealed class PendingAgentEventBatch : ICopilotPendingBatch<CopilotAgentEvent>

@@ -95,8 +95,12 @@ namespace ColorVision.Copilot
                     "The explicit exclusive DelegateExplore request was dispatched directly without a parent provider planning call.")));
             pipeline.ChatClient = chatClient;
             pipeline.ContextRecoveryChatClient = contextRecoveryChatClient;
-            pipeline.TrackingChatClient = new CopilotUnknownToolCallTrackingChatClient(
+            var incompleteToolCallGuardChatClient = new CopilotIncompleteToolCallGuardChatClient(
                 explicitDelegationDispatchChatClient,
+                (suppressedCallCount, finishReason) => emit(CopilotAgentEvent.RuntimeDiagnostic(
+                    $"Provider returned {suppressedCallCount} unhandled tool call(s) with incomplete finish reason '{CopilotAgentTraceEntry.Sanitize(finishReason.Value)}'; the calls were retained as informational evidence and were not dispatched.")));
+            pipeline.TrackingChatClient = new CopilotUnknownToolCallTrackingChatClient(
+                incompleteToolCallGuardChatClient,
                 bridge.RecordUnknownToolCall);
             return pipeline;
         }

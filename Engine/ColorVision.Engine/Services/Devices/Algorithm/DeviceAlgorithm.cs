@@ -24,18 +24,18 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DService = new MQTTAlgorithm(this, Config);
+            DService = new MQTTAlgorithm(Config);
             _view = new Lazy<AlgorithmView>(() => Application.Current.Dispatcher.CheckAccess()
-                ? new AlgorithmView()
-                : Application.Current.Dispatcher.Invoke(() => new AlgorithmView()));
+                ? new AlgorithmView(this)
+                : Application.Current.Dispatcher.Invoke(() => new AlgorithmView(this)));
             this.SetIconResource("DrawingImageAlgorithm");
 
             DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithm>(() => { DisplayAlgorithm ??= new DisplayAlgorithm(this); return DisplayAlgorithm; });
 
             EditCommand = new RelayCommand(a =>
             {
-                var propertyEditorWindow = new PropertyEditorWindow(Config, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                propertyEditorWindow.Submited += (s, e) => Save();
+                var propertyEditorWindow = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                propertyEditorWindow.Submitted += (s, e) => Save();
                 propertyEditorWindow.ShowDialog();
 
             }, a => AccessControl.Check(PermissionMode.Administrator));

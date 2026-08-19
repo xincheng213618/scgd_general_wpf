@@ -8,10 +8,6 @@ namespace System.ComponentModel
 {
     public class FontWeightPropertiesEditor : IPropertyEditor
     {
-        static FontWeightPropertiesEditor()
-        {
-            PropertyEditorHelper.RegisterEditor<FontWeightPropertiesEditor>(typeof(FontWeight));
-        }
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);
@@ -29,7 +25,7 @@ namespace System.ComponentModel
                     .Select(p => new KeyValuePair<FontWeight, string>((FontWeight)p.GetValue(null), p.Name)).ToList()
             };
 
-            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
+            var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property);
             comboBox.SetBinding(ComboBox.SelectedValueProperty, binding);
             DockPanel.SetDock(comboBox, Dock.Right);
 

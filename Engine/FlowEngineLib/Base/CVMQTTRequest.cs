@@ -20,6 +20,8 @@ public class CVMQTTRequest
 
 	public string SerialNumber { get; set; }
 
+	public string DeviceNodeCode { get; set; }
+
 	public string MsgID { get; set; }
 
 	[JsonProperty("params")]

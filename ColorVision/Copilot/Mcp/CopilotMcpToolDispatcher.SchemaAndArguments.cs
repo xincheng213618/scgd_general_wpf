@@ -1,6 +1,7 @@
 #pragma warning disable CA1822,CA1826,CA1859,CA1861
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -11,28 +12,59 @@ namespace ColorVision.Copilot.Mcp
 {
     internal sealed partial class CopilotMcpToolDispatcher
     {
-        private static CopilotMcpToolDescriptor Tool(string name, string description, object inputSchema, string category, string riskLevel, string usageExample) => new()
+        private static CopilotMcpToolDescriptor Tool(
+            string name,
+            string description,
+            object inputSchema,
+            string category,
+            string riskLevel,
+            string usageExample,
+            CopilotToolIdempotency? idempotency = null,
+            bool? destructiveHint = null,
+            bool? openWorldHint = null,
+            TimeSpan? executionTimeout = null) => new()
         {
             Name = name,
             Description = description,
-            InputSchema = inputSchema,
+            InputSchema = FreezeInputSchema(inputSchema),
             Category = category,
             RiskLevel = riskLevel,
             UsageExample = usageExample,
-            Annotations = BuildToolAnnotations(riskLevel),
+            Annotations = BuildToolAnnotations(
+                riskLevel,
+                idempotency,
+                destructiveHint,
+                openWorldHint),
+            ExecutionTimeout = executionTimeout
+                ?? CopilotToolCapabilityDescriptor.DefaultExecutionTimeout,
         };
 
-        private static IReadOnlyDictionary<string, object> BuildToolAnnotations(string riskLevel)
+        private static IReadOnlyDictionary<string, object> BuildToolAnnotations(
+            string riskLevel,
+            CopilotToolIdempotency? idempotency,
+            bool? destructiveHint,
+            bool? openWorldHint)
         {
             var isReadOnly = string.Equals(riskLevel, "read-only", StringComparison.OrdinalIgnoreCase);
-            return new Dictionary<string, object>
+            var isIdempotent = idempotency.HasValue
+                ? idempotency == CopilotToolIdempotency.Idempotent
+                : isReadOnly;
+            return new ReadOnlyDictionary<string, object>(new Dictionary<string, object>
             {
                 ["readOnlyHint"] = isReadOnly,
-                ["destructiveHint"] = false,
-                ["idempotentHint"] = isReadOnly,
-                ["openWorldHint"] = false,
+                ["destructiveHint"] = destructiveHint ?? !isReadOnly,
+                ["idempotentHint"] = isIdempotent,
+                ["openWorldHint"] = openWorldHint ?? false,
                 ["riskLevel"] = riskLevel,
-            };
+            });
+        }
+
+        private static JsonElement FreezeInputSchema(object inputSchema)
+        {
+            ArgumentNullException.ThrowIfNull(inputSchema);
+            return inputSchema is JsonElement element
+                ? element.Clone()
+                : JsonSerializer.SerializeToElement(inputSchema);
         }
 
         private static object EmptySchema() => Schema(new Dictionary<string, object>());
@@ -181,41 +213,13 @@ namespace ColorVision.Copilot.Mcp
                     foreach (var pair in arguments.OrderBy(item => item.Key, StringComparer.Ordinal))
                     {
                         writer.WritePropertyName(pair.Key);
-                        WriteCanonicalJsonElement(writer, pair.Value);
+                        CopilotCanonicalJson.Write(writer, pair.Value);
                     }
                 }
                 writer.WriteEndObject();
             }
 
             return Encoding.UTF8.GetString(stream.ToArray());
-        }
-
-        private static void WriteCanonicalJsonElement(Utf8JsonWriter writer, JsonElement value)
-        {
-            switch (value.ValueKind)
-            {
-                case JsonValueKind.Object:
-                    writer.WriteStartObject();
-                    foreach (var property in value.EnumerateObject().OrderBy(item => item.Name, StringComparer.Ordinal))
-                    {
-                        writer.WritePropertyName(property.Name);
-                        WriteCanonicalJsonElement(writer, property.Value);
-                    }
-                    writer.WriteEndObject();
-                    return;
-                case JsonValueKind.Array:
-                    writer.WriteStartArray();
-                    foreach (var item in value.EnumerateArray())
-                        WriteCanonicalJsonElement(writer, item);
-                    writer.WriteEndArray();
-                    return;
-                case JsonValueKind.Undefined:
-                    writer.WriteNullValue();
-                    return;
-                default:
-                    value.WriteTo(writer);
-                    return;
-            }
         }
 
         private static string GetString(IReadOnlyDictionary<string, JsonElement>? arguments, params string[] names)

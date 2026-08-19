@@ -1,6 +1,7 @@
 using ColorVision.UI.ServiceHost;
 using ColorVision.Update;
 using log4net;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
@@ -80,6 +81,7 @@ namespace ColorVision.UI.Plugins
         private const int MaximumCompletedBackupsPerPlugin = 3;
         private const string MetadataFileName = "backup.json";
         private const string PayloadDirectoryName = "payload";
+        private static readonly TimeSpan HealthyStartupBackupDelay = TimeSpan.FromSeconds(2);
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginRecoveryBackupService));
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
@@ -88,6 +90,9 @@ namespace ColorVision.UI.Plugins
         };
 
         private readonly string _backupRootDirectory;
+        private readonly ConcurrentDictionary<string, PluginRecoveryBackupInfo> _preparedBackups = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, object> _pluginBackupLocks = new(StringComparer.OrdinalIgnoreCase);
+        private int _healthyStartupBackupScheduled;
 
         public static PluginRecoveryBackupService Instance { get; } = new();
 
@@ -101,6 +106,63 @@ namespace ColorVision.UI.Plugins
             if (!Path.IsPathFullyQualified(configuredBackupRoot))
                 throw new ArgumentException("Plugin recovery backup root must be an absolute path.", nameof(backupRootDirectory));
             _backupRootDirectory = Path.GetFullPath(configuredBackupRoot);
+        }
+
+        public void ScheduleHealthyStartupBackups()
+        {
+            if (Interlocked.Exchange(ref _healthyStartupBackupScheduled, 1) != 0)
+                return;
+
+            try
+            {
+                new Thread(PrepareHealthyStartupBackups)
+                {
+                    IsBackground = true,
+                    Name = "ColorVision plugin recovery backup",
+                    Priority = ThreadPriority.BelowNormal,
+                }.Start();
+            }
+            catch (Exception ex)
+            {
+                Volatile.Write(ref _healthyStartupBackupScheduled, 0);
+                log.Warn($"Unable to start the healthy-start plugin recovery backup worker: {ex.Message}");
+            }
+        }
+
+        public PluginRecoveryBackupInfo? EnsureCurrentVersionBackup(
+            string pluginId,
+            string pluginDirectory,
+            CancellationToken cancellationToken = default)
+        {
+            PluginLocation location = ResolvePluginLocation(pluginId, pluginDirectory);
+            string preparedBackupKey = GetPreparedBackupKey(location);
+            object backupLock = _pluginBackupLocks.GetOrAdd(preparedBackupKey, static _ => new object());
+
+            lock (backupLock)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                PluginRecoveryManifestMetadata? currentManifest = TryReadManifestMetadata(Path.Combine(location.PluginDirectory, "manifest.json"));
+                if (currentManifest != null
+                    && _preparedBackups.TryGetValue(preparedBackupKey, out PluginRecoveryBackupInfo? preparedBackup)
+                    && Directory.Exists(preparedBackup.BackupDirectory)
+                    && ManifestMetadataMatches(preparedBackup.Manifest, currentManifest))
+                {
+                    log.Info($"Reused healthy-start plugin recovery backup for '{pluginId}': {preparedBackup.BackupDirectory}");
+                    return preparedBackup;
+                }
+
+                PluginRecoveryBackupInfo? availableBackup = GetAvailableBackup(pluginId, pluginDirectory);
+                if (currentManifest != null
+                    && availableBackup != null
+                    && ManifestMetadataMatches(availableBackup.Manifest, currentManifest))
+                {
+                    _preparedBackups[preparedBackupKey] = availableBackup;
+                    log.Info($"Reused verified plugin recovery backup for current '{pluginId}' installation: {availableBackup.BackupDirectory}");
+                    return availableBackup;
+                }
+
+                return CreateVerifiedBackup(pluginId, pluginDirectory, cancellationToken);
+            }
         }
 
         public PluginRecoveryBackupInfo? CreateVerifiedBackup(string pluginId, string pluginDirectory, CancellationToken cancellationToken = default)
@@ -163,6 +225,7 @@ namespace ColorVision.UI.Plugins
                 Directory.Move(creatingDirectory, completedDirectory);
 
                 PluginRecoveryBackupInfo backup = ReadAndValidateBackup(completedDirectory, location, cancellationToken);
+                _preparedBackups[GetPreparedBackupKey(location)] = backup;
                 log.Info($"Created verified plugin recovery backup for '{pluginId}': {completedDirectory}");
                 PruneOlderVerifiedBackups(pluginBackupRoot, completedDirectory, location);
                 return backup;
@@ -191,14 +254,16 @@ namespace ColorVision.UI.Plugins
                 return null;
             EnsureDirectoryChainIsNotReparsePoint(_backupRootDirectory, pluginBackupRoot);
 
-            return Directory
+            foreach (string backupDirectory in Directory
                 .EnumerateDirectories(pluginBackupRoot, "*", SearchOption.TopDirectoryOnly)
                 .Where(path => !path.EndsWith(".creating", StringComparison.OrdinalIgnoreCase))
-                .Select(path => TryReadBackupMetadata(path, location, out PluginRecoveryBackupInfo? backup) ? backup : null)
-                .Where(backup => backup != null)
-                .OrderByDescending(backup => backup!.CreatedUtc)
-                .ThenByDescending(backup => backup!.BackupDirectory, StringComparer.OrdinalIgnoreCase)
-                .FirstOrDefault();
+                .OrderByDescending(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase))
+            {
+                if (TryReadBackupMetadata(backupDirectory, location, out PluginRecoveryBackupInfo? backup))
+                    return backup;
+            }
+
+            return null;
         }
 
         public IReadOnlyList<PluginRecoveryBackupInfo> GetAvailableBackups(string programDirectory)
@@ -571,6 +636,53 @@ namespace ColorVision.UI.Plugins
                 log.Warn($"Failed to enforce plugin recovery backup retention for '{expectedLocation.PluginId}': {ex.Message}");
             }
         }
+
+        private void PrepareHealthyStartupBackups()
+        {
+            Thread.Sleep(HealthyStartupBackupDelay);
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            int preparedCount = 0;
+            try
+            {
+                string pluginsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
+                if (!Directory.Exists(pluginsDirectory))
+                    return;
+
+                foreach (string pluginDirectory in Directory.EnumerateDirectories(pluginsDirectory, "*", SearchOption.TopDirectoryOnly))
+                {
+                    PluginRecoveryManifestMetadata? manifest = TryReadManifestMetadata(Path.Combine(pluginDirectory, "manifest.json"));
+                    if (manifest == null
+                        || string.IsNullOrWhiteSpace(manifest.Id)
+                        || !string.Equals(Path.GetFileName(pluginDirectory), manifest.Id, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        if (EnsureCurrentVersionBackup(manifest.Id, pluginDirectory) != null)
+                            preparedCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Warn($"Unable to prepare background recovery backup for plugin '{manifest.Id}': {ex.Message}");
+                    }
+
+                    Thread.Sleep(50);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"Unable to enumerate plugins for background recovery backup: {ex.Message}");
+            }
+            finally
+            {
+                stopwatch.Stop();
+                log.Info($"Healthy-start plugin recovery backup preparation completed for {preparedCount} plugin(s) in {stopwatch.ElapsedMilliseconds} ms.");
+            }
+        }
+
+        private static string GetPreparedBackupKey(PluginLocation location) => $"{location.InstallationKey}\0{location.PluginId}";
 
         private string GetPluginBackupRoot(string installationKey, string pluginId) => Path.Combine(
             _backupRootDirectory,

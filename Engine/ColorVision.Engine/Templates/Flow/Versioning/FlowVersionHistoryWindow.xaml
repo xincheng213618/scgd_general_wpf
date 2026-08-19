@@ -1,7 +1,8 @@
 <Window x:Class="ColorVision.Engine.Templates.Flow.Versioning.FlowVersionHistoryWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="本机流程版本历史"
+        xmlns:engine="clr-namespace:ColorVision.Engine"
+        Title="{engine:EngineLang 本机流程版本历史}"
         Width="980" Height="620"
         MinWidth="760" MinHeight="440"
         WindowStartupLocation="CenterOwner"
@@ -28,13 +29,13 @@
                   CanUserAddRows="False"
                   HeadersVisibility="Column">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="版本" Binding="{Binding Revision}" Width="70"/>
-                <DataGridTextColumn Header="来源" Binding="{Binding Source}" Width="90"/>
-                <DataGridCheckBoxColumn Header="已发布" Binding="{Binding IsPublished, Mode=OneWay}" Width="70"/>
-                <DataGridTextColumn Header="时间 (UTC)" Binding="{Binding CreatedTimeUtc}" Width="155"/>
-                <DataGridTextColumn Header="作者" Binding="{Binding Author}" Width="110"/>
-                <DataGridTextColumn Header="内容哈希" Binding="{Binding ShortBinaryHash}" Width="120"/>
-                <DataGridTextColumn Header="说明" Binding="{Binding Message}" Width="*"/>
+                <DataGridTextColumn Header="{engine:EngineLang 版本}" Binding="{Binding Revision}" Width="70"/>
+                <DataGridTextColumn Header="{engine:EngineLang 来源}" Binding="{Binding Source}" Width="90"/>
+                <DataGridCheckBoxColumn Header="{engine:EngineLang 已发布}" Binding="{Binding IsPublished, Mode=OneWay}" Width="70"/>
+                <DataGridTextColumn Header="{engine:EngineLang Key='时间 (UTC)'}" Binding="{Binding CreatedTimeUtc}" Width="155"/>
+                <DataGridTextColumn Header="{engine:EngineLang 作者}" Binding="{Binding Author}" Width="110"/>
+                <DataGridTextColumn Header="{engine:EngineLang 内容哈希}" Binding="{Binding ShortBinaryHash}" Width="120"/>
+                <DataGridTextColumn Header="{engine:EngineLang 说明}" Binding="{Binding Message}" Width="*"/>
             </DataGrid.Columns>
         </DataGrid>
 
@@ -49,13 +50,13 @@
                        Foreground="{DynamicResource GlobalTextBrush}"/>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <Button Margin="4,0" Padding="14,5"
-                        Content="对比所选两版"
+                        Content="{engine:EngineLang 对比所选两版}"
                         Click="CompareButton_Click"/>
                 <Button Margin="4,0" Padding="14,5"
-                        Content="恢复到所选版本"
+                        Content="{engine:EngineLang 恢复到所选版本}"
                         Click="RestoreButton_Click"/>
                 <Button Margin="4,0" Padding="14,5"
-                        Content="关闭"
+                        Content="{engine:EngineLang 关闭}"
                         IsCancel="True"/>
             </StackPanel>
         </Grid>

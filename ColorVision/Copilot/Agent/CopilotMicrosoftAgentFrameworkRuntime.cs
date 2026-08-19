@@ -50,7 +50,6 @@ namespace ColorVision.Copilot
         private bool _isFrameworkApprovalPending;
         private readonly object _steeringSyncRoot = new();
         private ActiveSteeringContext? _activeSteeringContext;
-        private readonly CopilotCodexStopHookExecutor _stopHookExecutor;
         private readonly Func<string?, IReadOnlyList<CopilotBackgroundShellCommandSnapshot>>
             _backgroundShellCommandSnapshotProvider;
 
@@ -111,36 +110,9 @@ namespace ColorVision.Copilot
             Func<CopilotProfileConfig, IChatClient> chatClientFactory,
             ICopilotExternalToolProvider externalToolProvider,
             CopilotCapabilityCatalog? capabilityCatalog,
-            CopilotCodexStopHookExecutor stopHookExecutor,
-            Func<string?, IReadOnlyList<CopilotBackgroundShellCommandSnapshot>>?
-                backgroundShellCommandSnapshotProvider = null)
-            : this(
-                toolRegistry,
-                contextBuilder,
-                toolExecutor,
-                chatClientFactory,
-                externalToolProvider,
-                capabilityCatalog,
-                skillUsageStore: null,
-                automaticApprovalReviewer: new CopilotAutomaticApprovalReviewer(),
-                automaticApprovalOverrideStore: null,
-                stopHookExecutor: stopHookExecutor,
-                backgroundShellCommandSnapshotProvider:
-                    backgroundShellCommandSnapshotProvider)
-        {
-        }
-
-        internal CopilotMicrosoftAgentFrameworkRuntime(
-            CopilotToolRegistry toolRegistry,
-            CopilotAgentContextBuilder contextBuilder,
-            CopilotToolExecutor toolExecutor,
-            Func<CopilotProfileConfig, IChatClient> chatClientFactory,
-            ICopilotExternalToolProvider externalToolProvider,
-            CopilotCapabilityCatalog? capabilityCatalog,
             CopilotAgentSkillUsageStore? skillUsageStore,
             ICopilotAutomaticApprovalReviewer automaticApprovalReviewer,
             CopilotAutomaticApprovalOverrideStore? automaticApprovalOverrideStore = null,
-            CopilotCodexStopHookExecutor? stopHookExecutor = null,
             Func<string?, IReadOnlyList<CopilotBackgroundShellCommandSnapshot>>?
                 backgroundShellCommandSnapshotProvider = null)
         {
@@ -156,7 +128,6 @@ namespace ColorVision.Copilot
                 ?? throw new ArgumentNullException(nameof(automaticApprovalReviewer));
             _automaticApprovalOverrideStore = automaticApprovalOverrideStore
                 ?? CopilotAutomaticApprovalOverrideStore.Shared;
-            _stopHookExecutor = stopHookExecutor ?? new CopilotCodexStopHookExecutor();
             _backgroundShellCommandSnapshotProvider =
                 backgroundShellCommandSnapshotProvider
                 ?? (conversationId => CopilotBackgroundShellCommandRegistry.Shared
@@ -414,7 +385,7 @@ namespace ColorVision.Copilot
                     && CopilotToolIntentPolicy.CanRetainForFollowUp(request, tool);
                 if (!directlyAvailable && !retainedForFollowUp)
                     continue;
-                if (!names.Add(tool.Name))
+                if (!names.Add(tool.Name.Trim()))
                 {
                     if (request.CodexErrorOnToolCollisions)
                         throw new InvalidOperationException($"duplicate tool: functions.{tool.Name.Trim()}");
@@ -425,7 +396,9 @@ namespace ColorVision.Copilot
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent Framework retained recent read-only tool {tool.Name} for follow-up continuity."));
                 merged.Add(tool);
             }
-            return merged.ToArray();
+            return merged
+                .OrderBy(tool => tool.Name.Trim(), StringComparer.Ordinal)
+                .ToArray();
         }
 
         private static string GetCurrentWorkspacePath()

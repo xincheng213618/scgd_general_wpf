@@ -54,41 +54,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        public void ExecuteFromSource(
-            LocalCalibrationLayout layout,
-            IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
-            IntPtr sourceRawPointer,
-            IntPtr correctedRawPointer,
-            IntPtr ciePointer,
-            float[] exposure)
-        {
-            ObjectDisposedException.ThrowIf(disposed, this);
-            ArgumentNullException.ThrowIfNull(calibrationFiles);
-            ArgumentNullException.ThrowIfNull(exposure);
-            if (sourceRawPointer == IntPtr.Zero) throw new ArgumentException("Source RAW pointer is null.", nameof(sourceRawPointer));
-
-            CachedContext cachedContext = Prepare(layout, calibrationFiles, ciePointer);
-            CalibrationExecutionOptionsV1 options = CalibrationExecutionOptionsV1.Create(exposure);
-            (ulong rawByteLength, ulong cieFloatCount) = GetBufferLengths(layout, cachedContext.Files);
-            int result = OpenCVCalibration.M_CalibrationExecuteToV1(
-                cachedContext.Context,
-                checked((uint)layout.Width),
-                checked((uint)layout.Height),
-                checked((uint)layout.Bpp),
-                checked((uint)layout.Channels),
-                sourceRawPointer,
-                rawByteLength,
-                correctedRawPointer,
-                correctedRawPointer == IntPtr.Zero ? 0 : rawByteLength,
-                ciePointer,
-                cieFloatCount,
-                in options);
-            if (result != OpenCVCalibration.CalibrationOk)
-            {
-                throw CreateNativeException("执行只读源本地校正失败", result, cachedContext.Context);
-            }
-        }
-
         public int Release()
         {
             ObjectDisposedException.ThrowIf(disposed, this);

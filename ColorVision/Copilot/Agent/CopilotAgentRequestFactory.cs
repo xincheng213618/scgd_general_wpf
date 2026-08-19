@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ColorVision.Copilot
 {
@@ -130,6 +132,23 @@ namespace ColorVision.Copilot
                 ProjectInstructionDiscoveryOptions);
         }
 
+        internal CopilotAgentHostContextSnapshot WithAttachments(
+            IEnumerable<CopilotAttachmentItem> attachments)
+        {
+            ArgumentNullException.ThrowIfNull(attachments);
+            return new CopilotAgentHostContextSnapshot(
+                ActiveDocumentPath,
+                SolutionDirectoryPath,
+                attachments,
+                LiveContext,
+                ConversationHistory,
+                AdditionalReadRootPaths,
+                GlobalInstructionRootPath,
+                PrimaryTrustedProjectRootPath,
+                ProjectConfigWorkingDirectoryPath,
+                ProjectInstructionDiscoveryOptions);
+        }
+
         private CopilotAgentHostContextSnapshot(
             string activeDocumentPath,
             string solutionDirectoryPath,
@@ -239,9 +258,6 @@ namespace ColorVision.Copilot
 
         internal bool CodexHooksEnabled { get; init; } = true;
 
-        internal IReadOnlyList<CopilotCodexCommandHookDefinition> CodexCommandHooks { get; init; } =
-            Array.Empty<CopilotCodexCommandHookDefinition>();
-
         internal IReadOnlyList<CopilotCodexExecPolicyRule> CodexExecPolicyRules { get; init; } =
             Array.Empty<CopilotCodexExecPolicyRule>();
 
@@ -289,9 +305,6 @@ namespace ColorVision.Copilot
 
         internal CopilotCodexReasoningEffort CodexDefaultSubagentReasoningEffort { get; init; } =
             CopilotCodexReasoningEffort.Unspecified;
-
-        internal IReadOnlyList<CopilotCodexCustomSubagentDefinition> CodexCustomSubagents { get; init; } =
-            Array.Empty<CopilotCodexCustomSubagentDefinition>();
 
         internal int? ModelContextWindowTokensOverride { get; init; }
 
@@ -341,16 +354,11 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotContextItem> ContextItems { get; init; } = Array.Empty<CopilotContextItem>();
 
-        internal IReadOnlyList<string> UserPromptSubmitAdditionalContexts { get; init; } =
-            Array.Empty<string>();
-
-        internal IReadOnlyList<string> SessionStartAdditionalContexts { get; init; } =
-            Array.Empty<string>();
-
-        internal IReadOnlyList<string> AsyncHookAdditionalContexts { get; init; } =
-            Array.Empty<string>();
-
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
+
+        internal CopilotAgentTaskEventJournalSnapshot? TaskEventJournalBaseline { get; init; }
+
+        internal Func<CancellationToken, Task>? StatePersistenceBarrier { get; init; }
 
         public CopilotAgentRecoveryRequest? Recovery { get; init; }
 
@@ -474,9 +482,6 @@ namespace ColorVision.Copilot
                 CodexSandboxMode = codexSandboxMode,
                 CodexShellToolEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredShellToolEnabled,
                 CodexHooksEnabled = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredHooksEnabled,
-                CodexCommandHooks = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredCommandHooks
-                    .Select(definition => definition.CreateSnapshot())
-                    .ToArray(),
                 CodexExecPolicyRules = hostContext.ProjectInstructionDiscoveryOptions.ConfiguredExecPolicyRules
                     .Select(rule => rule.CreateSnapshot())
                     .ToArray(),
@@ -507,9 +512,6 @@ namespace ColorVision.Copilot
                     hostContext.ProjectInstructionDiscoveryOptions.HasDefaultSubagentReasoningEffortOverride
                         ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredDefaultSubagentReasoningEffort
                         : CopilotCodexReasoningEffort.Unspecified,
-                CodexCustomSubagents = hostContext.ProjectInstructionDiscoveryOptions.CustomSubagents
-                    .Select(definition => definition.CreateSnapshot())
-                    .ToArray(),
                 ModelContextWindowTokensOverride = hostContext.ProjectInstructionDiscoveryOptions.HasModelContextWindowOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelContextWindowTokens
                     : null,
@@ -579,21 +581,6 @@ namespace ColorVision.Copilot
                 History = input.History.ToArray(),
                 Attachments = plan.Attachments,
                 ContextItems = input.ContextItems.ToArray(),
-                SessionStartAdditionalContexts = (input.SessionStartAdditionalContexts
-                        ?? Array.Empty<string>())
-                    .Where(context => !string.IsNullOrWhiteSpace(context))
-                    .Select(context => context.Trim())
-                    .ToArray(),
-                UserPromptSubmitAdditionalContexts = (input.UserPromptSubmitAdditionalContexts
-                        ?? Array.Empty<string>())
-                    .Where(context => !string.IsNullOrWhiteSpace(context))
-                    .Select(context => context.Trim())
-                    .ToArray(),
-                AsyncHookAdditionalContexts = (input.AsyncHookAdditionalContexts
-                        ?? Array.Empty<string>())
-                    .Where(context => !string.IsNullOrWhiteSpace(context))
-                    .Select(context => context.Trim())
-                    .ToArray(),
                 SearchRootPaths = plan.SearchRootPaths,
                 TrustedProjectRootPaths = plan.TrustedProjectRootPaths,
                 ActiveDocumentPath = plan.ActiveDocumentPath,
@@ -602,10 +589,6 @@ namespace ColorVision.Copilot
                 CodexSandboxMode = plan.CodexSandboxMode,
                 CodexShellToolEnabled = plan.CodexShellToolEnabled,
                 CodexHooksEnabled = plan.CodexHooksEnabled,
-                CodexCommandHooks = plan.CodexCommandHooks
-                    .Where(definition => definition?.IsStructurallyValid() == true)
-                    .Select(definition => definition.CreateSnapshot())
-                    .ToArray(),
                 CodexExecPolicyRules = plan.CodexExecPolicyRules
                     .Where(rule => rule?.IsStructurallyValid() == true)
                     .Select(rule => rule.CreateSnapshot())
@@ -629,9 +612,6 @@ namespace ColorVision.Copilot
                 CodexMaximumConcurrentSubagentRuns = plan.CodexMaximumConcurrentSubagentRuns,
                 CodexDefaultSubagentModel = plan.CodexDefaultSubagentModel,
                 CodexDefaultSubagentReasoningEffort = plan.CodexDefaultSubagentReasoningEffort,
-                CodexCustomSubagents = plan.CodexCustomSubagents
-                    .Select(definition => definition.CreateSnapshot())
-                    .ToArray(),
                 ToolOutputTokenLimitOverride = plan.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = plan.CodexReasoningEffort,
                 CodexReasoningSummary = plan.CodexReasoningSummary,
@@ -660,6 +640,10 @@ namespace ColorVision.Copilot
                 PreferredShell = agentDefaults.PreferredShell,
                 Mode = plan.Mode,
                 SessionCheckpoint = input.SessionCheckpoint,
+                TaskEventJournalBaseline = input.TaskEventJournalBaseline?.IsStructurallyValid() == true
+                    ? input.TaskEventJournalBaseline
+                    : input.SessionCheckpoint?.TaskEventJournal,
+                StatePersistenceBarrier = input.StatePersistenceBarrier,
                 Recovery = input.SessionCheckpoint == null ? null : input.Recovery,
                 RunControl = input.RunControl,
                 RunBudgetDefaults = agentDefaults.CreateRunBudgetDefaults(),

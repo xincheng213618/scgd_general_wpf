@@ -59,7 +59,6 @@
                         <DockPanel LastChildFill="True">
                             <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right" Orientation="Horizontal">
                             <Button x:Name="ConfigurationViewButton"
-                                    Content="配置"
                                     Click="ConfigurationViewButton_Click"
                                     Padding="9,2"
                                     Margin="0,0,3,0"
@@ -67,7 +66,6 @@
                                     Background="Transparent"
                                     Focusable="False"/>
                             <Button x:Name="DocumentationViewButton"
-                                    Content="说明"
                                     Click="DocumentationViewButton_Click"
                                     Padding="9,2"
                                     BorderThickness="0"

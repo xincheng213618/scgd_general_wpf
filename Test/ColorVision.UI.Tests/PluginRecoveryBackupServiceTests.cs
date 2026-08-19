@@ -56,6 +56,20 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void CurrentVersionBackupIsPreparedOnceAndReused()
+        {
+            string programDirectory = Path.Combine(_tempDirectory, "PreparedInstall");
+            string pluginDirectory = CreatePlugin(programDirectory, "third.party", "1.2.3", "payload");
+            PluginRecoveryBackupService service = new(Path.Combine(_tempDirectory, "Backups"));
+
+            PluginRecoveryBackupInfo first = service.EnsureCurrentVersionBackup("third.party", pluginDirectory)!;
+            PluginRecoveryBackupInfo second = service.EnsureCurrentVersionBackup("third.party", pluginDirectory)!;
+
+            Assert.Equal(first.BackupDirectory, second.BackupDirectory);
+            Assert.Single(Directory.EnumerateDirectories(Path.GetDirectoryName(first.BackupDirectory)!, "*", SearchOption.TopDirectoryOnly));
+        }
+
+        [Fact]
         public void CorruptedBackupIsNotAvailable()
         {
             string programDirectory = Path.Combine(_tempDirectory, "Install");

@@ -5,7 +5,6 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -33,8 +32,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            if (File.Exists(result.FilePath))
-                ctx.ImageView.OpenImage(result.FilePath);
+            OpenSourceImage(ctx, result);
 
 
             List<PoiPoint> poiPoints = new();

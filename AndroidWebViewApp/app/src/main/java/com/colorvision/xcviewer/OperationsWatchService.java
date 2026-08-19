@@ -12,10 +12,12 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -24,16 +26,29 @@ import androidx.core.content.ContextCompat;
 
 import org.json.JSONObject;
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public final class OperationsWatchService extends Service {
     private static final String ACTION_START =
             "com.colorvision.xcviewer.action.START_OPERATIONS_WATCH";
+    private static final String ACTION_REFRESH_CONNECTION =
+            "com.colorvision.xcviewer.action.REFRESH_OPERATIONS_CONNECTION";
+    private static final String ACTION_CHECK_NOW =
+            "com.colorvision.xcviewer.action.CHECK_OPERATIONS_NOW";
     private static final String NOTIFICATION_CHANNEL_ID = "operations_watch";
-    private static final String ATTENTION_CHANNEL_ID = "operations_attention";
+    static final String ATTENTION_CHANNEL_ID = "operations_attention";
     private static final int NOTIFICATION_ID = 22023;
-    private static final int ATTENTION_NOTIFICATION_ID = 22024;
+    private static final int LEGACY_ATTENTION_NOTIFICATION_ID = 22024;
+    static final int ATTENTION_NOTIFICATION_ID = 22024;
+    private static final int REMINDER_TEST_NOTIFICATION_ID = 22025;
+    private static final int CHECK_NOW_REQUEST_CODE = 22026;
+    private static final int FLEET_CONNECT_TIMEOUT_MILLISECONDS = 4_000;
+    private static final int FLEET_READ_TIMEOUT_MILLISECONDS = 6_000;
     private static final String LOG_TAG = "CVOperationsWatch";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -42,31 +57,165 @@ public final class OperationsWatchService extends Service {
     private AppPreferences preferences;
     private OperationsApiClient client;
     private String clientProfileKey = "";
+    private OperationsRelayApiClient relayClient;
+    private String relayClientProfileKey = "";
     private boolean monitoring;
     private boolean checkInFlight;
+    private boolean checkAgainAfterCurrent;
+    private int checkGeneration;
     private int consecutiveFailures;
-    private boolean lastCheckOnline;
+    private long firstFailureAtElapsedMilliseconds;
+    private boolean offlineConfirmed;
     private boolean hasCompletedCheck;
-    private String lastAttentionKey = "";
+    private final Map<String, SecondaryFailure> secondaryFailures = new HashMap<>();
     private ConnectivityManager connectivityManager;
     private ConnectivityManager.NetworkCallback networkCallback;
     private boolean networkCallbackRegistered;
 
     static void start(Context context) {
         AppPreferences preferences = new AppPreferences(context);
-        if (!preferences.hasOperationsProfile()) {
+        if (!OperationsWatchPreferencePolicy.shouldRun(
+                preferences.hasOperationsProfile(),
+                preferences.isOperationsWatchUserEnabled())) {
             return;
         }
         Intent intent = new Intent(context, OperationsWatchService.class).setAction(ACTION_START);
         ContextCompat.startForegroundService(context, intent);
     }
 
-    static void stopForProfileRemoval(Context context) {
+    static void stopForProfileRemoval(Context context, String hostId) {
         context.stopService(new Intent(context, OperationsWatchService.class));
         NotificationManager manager = context.getSystemService(NotificationManager.class);
         if (manager != null) {
-            manager.cancel(ATTENTION_NOTIFICATION_ID);
+            manager.cancel(LEGACY_ATTENTION_NOTIFICATION_ID);
         }
+        dismissAttentionNotification(context, hostId);
+    }
+
+    static void stopForUserPreference(Context context) {
+        stopAndClearNotifications(context);
+    }
+
+    private static void stopAndClearNotifications(Context context) {
+        context.stopService(new Intent(context, OperationsWatchService.class));
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        if (manager != null) {
+            manager.cancel(LEGACY_ATTENTION_NOTIFICATION_ID);
+            for (OperationsProfileRegistry.Profile profile
+                    : new AppPreferences(context).getOperationsProfiles()) {
+                manager.cancel(
+                        OperationsBackgroundFleetPolicy.attentionNotificationTag(profile.hostId),
+                        ATTENTION_NOTIFICATION_ID);
+            }
+        }
+    }
+
+    static boolean postReminderTest(Context context) {
+        if (!NotificationPermissionPolicy.canPostAttention(
+                Build.VERSION.SDK_INT,
+                NotificationPermissionState.hasRuntimePermission(context),
+                NotificationPermissionState.appNotificationsEnabled(context),
+                NotificationPermissionState.attentionChannelEnabled(context))) {
+            return false;
+        }
+        createNotificationChannels(context);
+        if (!NotificationPermissionState.attentionChannelEnabled(context)) {
+            return false;
+        }
+        Context applicationContext = context.getApplicationContext();
+        AppPreferences preferences = new AppPreferences(applicationContext);
+        String hostId = preferences.getOperationsHostId();
+        String attentionFocus = OperationsAttentionFocus.fromWatchState(
+                preferences.getOperationsWatchState());
+        boolean testProblemFocus = preferences.hasOperationsProfile()
+                && OperationsRelayPolicy.isSafeIdentifier(hostId)
+                && !attentionFocus.isEmpty();
+        Intent openIntent;
+        String body;
+        if (testProblemFocus) {
+            openIntent = new Intent(applicationContext, OperationsActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    .putExtra(OperationsActivity.EXTRA_SELECT_HOST_ID, hostId)
+                    .putExtra(
+                            OperationsActivity.EXTRA_OPEN_DESTINATION,
+                            OperationsWatchPolicy.DESTINATION_TRIAGE)
+                    .putExtra(OperationsActivity.EXTRA_ATTENTION_FOCUS, attentionFocus)
+                    .setData(Uri.parse("colorvision://operations/reminder-test/"
+                            + Uri.encode(hostId) + '/' + Uri.encode(attentionFocus)));
+            body = applicationContext.getString(
+                    R.string.operations_reminder_test_attention_notification_body,
+                    OperationsAttentionFocus.label(attentionFocus));
+        } else {
+            openIntent = new Intent(applicationContext, MainActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    .putExtra(MainActivity.EXTRA_START_TAB, MainActivity.TAB_SETTINGS);
+            body = applicationContext.getString(
+                    R.string.operations_reminder_test_notification_body);
+        }
+        PendingIntent contentIntent = PendingIntent.getActivity(
+                applicationContext,
+                2,
+                openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        Notification notification = new NotificationCompat.Builder(
+                applicationContext, ATTENTION_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_devices_24)
+                .setContentTitle(applicationContext.getString(
+                        R.string.operations_reminder_test_notification_title))
+                .setContentText(body)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                .setContentIntent(contentIntent)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(false)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .build();
+        NotificationManager manager = applicationContext.getSystemService(
+                NotificationManager.class);
+        if (manager == null) {
+            return false;
+        }
+        try {
+            manager.notify(REMINDER_TEST_NOTIFICATION_ID, notification);
+            return true;
+        } catch (SecurityException ex) {
+            Log.w(LOG_TAG, "operations_reminder_test_denied", ex);
+            return false;
+        }
+    }
+
+    static void refreshConnectionPreference(Context context) {
+        AppPreferences preferences = new AppPreferences(context);
+        if (!OperationsWatchPreferencePolicy.shouldRun(
+                preferences.hasOperationsProfile(),
+                preferences.isOperationsWatchUserEnabled())) {
+            return;
+        }
+        Intent intent = new Intent(context, OperationsWatchService.class)
+                .setAction(ACTION_REFRESH_CONNECTION);
+        ContextCompat.startForegroundService(context, intent);
+    }
+
+    static void restartForProfileChange(Context context) {
+        context.stopService(new Intent(context, OperationsWatchService.class));
+        start(context);
+    }
+
+    static void dismissAttentionNotification(Context context, String hostId) {
+        if (context == null || !OperationsRelayPolicy.isSafeIdentifier(hostId)) {
+            return;
+        }
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        if (manager == null) {
+            return;
+        }
+        if (hostId.equals(new AppPreferences(context).getOperationsHostId())) {
+            manager.cancel(LEGACY_ATTENTION_NOTIFICATION_ID);
+        }
+        manager.cancel(
+                OperationsBackgroundFleetPolicy.attentionNotificationTag(hostId),
+                ATTENTION_NOTIFICATION_ID);
     }
 
     @Override
@@ -75,23 +224,37 @@ public final class OperationsWatchService extends Service {
         preferences = new AppPreferences(this);
         String persistedState = preferences.getOperationsWatchState();
         hasCompletedCheck = !persistedState.isEmpty();
-        lastCheckOnline = OperationsWatchHistory.isOnlineState(persistedState);
-        lastAttentionKey = OperationsWatchHistory.attentionKey(persistedState);
-        createNotificationChannels();
+        offlineConfirmed = OperationsWatchHistory.STATE_OFFLINE.equals(persistedState);
+        createNotificationChannels(this);
         registerNetworkCallback();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (!preferences.hasOperationsProfile()) {
+        if (!OperationsWatchPreferencePolicy.shouldRun(
+                preferences.hasOperationsProfile(),
+                preferences.isOperationsWatchUserEnabled())) {
             stopMonitoring(true);
             return START_NOT_STICKY;
         }
 
+        String action = intent == null ? "" : intent.getAction();
+        boolean refreshRequested = ACTION_REFRESH_CONNECTION.equals(action);
+        boolean checkNowRequested = ACTION_CHECK_NOW.equals(action);
+        if (checkNowRequested) {
+            Log.i(LOG_TAG, "operations_watch_check_now_requested");
+        }
         if (!monitoring) {
             monitoring = true;
-            startInForeground("正在连接已配对主机…");
+            startInForeground(checkNowRequested
+                    ? getString(R.string.operations_watch_checking_now)
+                    : "正在连接已配对主机…");
             handler.post(scheduledCheck);
+        } else if (refreshRequested || checkNowRequested) {
+            if (checkNowRequested) {
+                updateNotification(getString(R.string.operations_watch_checking_now), true);
+            }
+            requestImmediateCheck();
         }
         return START_STICKY;
     }
@@ -104,6 +267,7 @@ public final class OperationsWatchService extends Service {
     @Override
     public void onDestroy() {
         monitoring = false;
+        checkGeneration++;
         handler.removeCallbacks(scheduledCheck);
         unregisterNetworkCallback();
         executor.shutdownNow();
@@ -156,13 +320,21 @@ public final class OperationsWatchService extends Service {
     }
 
     private void requestImmediateCheckAfterNetworkChange() {
-        handler.post(() -> {
-            if (!monitoring) {
-                return;
-            }
-            handler.removeCallbacks(scheduledCheck);
-            handler.post(scheduledCheck);
-        });
+        handler.post(this::requestImmediateCheck);
+    }
+
+    private void requestImmediateCheck() {
+        OperationsWatchCheckRequestPolicy.Decision decision =
+                OperationsWatchCheckRequestPolicy.decide(monitoring, checkInFlight);
+        if (decision == OperationsWatchCheckRequestPolicy.Decision.IGNORE) {
+            return;
+        }
+        handler.removeCallbacks(scheduledCheck);
+        if (decision == OperationsWatchCheckRequestPolicy.Decision.RUN_AFTER_CURRENT) {
+            checkAgainAfterCurrent = true;
+            return;
+        }
+        handler.post(scheduledCheck);
     }
 
     private void runCheck() {
@@ -175,21 +347,311 @@ public final class OperationsWatchService extends Service {
         }
 
         checkInFlight = true;
+        int generation = ++checkGeneration;
+        String hostId = preferences.getOperationsHostId();
         executor.execute(() -> {
-            try {
-                JSONObject response = getClient().get("/ops/v1/monitor");
-                JSONObject snapshot = response.optJSONObject("data");
-                if (snapshot == null) {
-                    throw new IllegalStateException("incomplete_live_monitor_response");
-                }
-                String status = notificationStatus(snapshot);
-                String attentionKey = notificationAttentionKey(snapshot);
-                handler.post(() -> completeSuccessfulCheck(status, attentionKey));
-            } catch (Exception ex) {
-                String code = ex.getMessage() == null ? "" : ex.getMessage();
-                handler.post(() -> completeFailedCheck(code));
+            if (OperationsConnectionPreference.prefersRelay(
+                    preferences.getOperationsConnectionPreference())) {
+                runRelayPreferredCheck(generation, hostId);
+            } else {
+                runDirectPreferredCheck(generation, hostId);
             }
         });
+    }
+
+    private void runDirectPreferredCheck(int generation, String hostId) {
+        String localCode;
+        try {
+            LocalCheck check = readLocalCheck();
+            postCheckCompletion(generation, hostId,
+                    () -> completeSuccessfulCheck(
+                            check.status, check.attentionKey, check.evidence));
+            runSecondaryProfileCheck(hostId);
+            return;
+        } catch (Exception localException) {
+            localCode = errorCode(localException);
+            if (isRevoked(localCode)) {
+                postCheckCompletion(generation, hostId, () -> completeFailedCheck(localCode));
+                return;
+            }
+        }
+
+        try {
+            RelayCheck check = readRelayCheck();
+            postCheckCompletion(generation, hostId, () -> completeRemoteCheck(check));
+            runSecondaryProfileCheck(hostId);
+        } catch (Exception relayException) {
+            String relayCode = errorCode(relayException);
+            Log.w(LOG_TAG, "operations_watch_relay_unavailable code=" + relayCode);
+            postCheckCompletion(generation, hostId,
+                    () -> completeFailedCheck(isRevoked(relayCode) ? relayCode : localCode));
+        }
+    }
+
+    private void runRelayPreferredCheck(int generation, String hostId) {
+        String relayCode;
+        try {
+            RelayCheck check = readRelayCheck();
+            postCheckCompletion(generation, hostId, () -> completeRemoteCheck(check));
+            runSecondaryProfileCheck(hostId);
+            return;
+        } catch (Exception relayException) {
+            relayCode = errorCode(relayException);
+            Log.w(LOG_TAG, "operations_watch_relay_unavailable code=" + relayCode);
+            if (isRevoked(relayCode)) {
+                postCheckCompletion(generation, hostId, () -> completeFailedCheck(relayCode));
+                return;
+            }
+        }
+
+        try {
+            LocalCheck check = readLocalCheck();
+            postCheckCompletion(generation, hostId,
+                    () -> completeSuccessfulCheck(
+                            check.status, check.attentionKey, check.evidence));
+            runSecondaryProfileCheck(hostId);
+        } catch (Exception localException) {
+            String localCode = errorCode(localException);
+            postCheckCompletion(generation, hostId,
+                    () -> completeFailedCheck(isRevoked(localCode) ? localCode : relayCode));
+        }
+    }
+
+    private void postCheckCompletion(int generation, String hostId, Runnable completion) {
+        handler.post(() -> {
+            if (!monitoring) {
+                return;
+            }
+            if (!OperationsWatchPolicy.isCurrentProfileCheck(
+                    hostId, preferences.getOperationsHostId(), generation, checkGeneration)) {
+                checkInFlight = false;
+                checkAgainAfterCurrent = false;
+                client = null;
+                clientProfileKey = "";
+                relayClient = null;
+                relayClientProfileKey = "";
+                handler.removeCallbacks(scheduledCheck);
+                handler.post(scheduledCheck);
+                return;
+            }
+            completion.run();
+        });
+    }
+
+    private LocalCheck readLocalCheck() throws Exception {
+        JSONObject response = getClient().get("/ops/v1/monitor");
+        JSONObject snapshot = response.optJSONObject("data");
+        if (snapshot == null) {
+            throw new IllegalStateException("incomplete_live_monitor_response");
+        }
+        String attentionKey = OperationsMonitorClassifier.attentionKey(snapshot);
+        return new LocalCheck(
+                OperationsMonitorClassifier.status(snapshot),
+                attentionKey,
+                OperationsMonitorClassifier.evidence(snapshot, attentionKey));
+    }
+
+    private RelayCheck readRelayCheck() throws Exception {
+        JSONObject response = getRelayClient().getSnapshot();
+        JSONObject host = response.optJSONObject("host");
+        if (host == null) {
+            throw new IllegalStateException("incomplete_relay_snapshot");
+        }
+        boolean hostFresh = OperationsRelayPolicy.isHostFresh(
+                host.optLong("signedAt", 0L),
+                System.currentTimeMillis());
+        JSONObject snapshot = host.optJSONObject("snapshot");
+        JSONObject monitor = snapshot == null ? null : snapshot.optJSONObject("monitor");
+        if (!hostFresh || monitor == null) {
+            return new RelayCheck(
+                    hostFresh,
+                    "",
+                    "",
+                    OperationsMonitorEvidenceRevision.Evidence.EMPTY);
+        }
+        String attentionKey = OperationsMonitorClassifier.attentionKey(monitor);
+        return new RelayCheck(
+                true,
+                OperationsMonitorClassifier.status(monitor),
+                attentionKey,
+                OperationsMonitorClassifier.evidence(monitor, attentionKey));
+    }
+
+    private void runSecondaryProfileCheck(String activeHostId) {
+        long nowMilliseconds = System.currentTimeMillis();
+        OperationsProfileRegistry.Profile profile =
+                OperationsBackgroundFleetPolicy.selectSecondaryProfile(
+                        preferences.getOperationsProfiles(), activeHostId, nowMilliseconds);
+        if (profile == null) {
+            return;
+        }
+        OperationsProfileMonitorProbe.Result result = OperationsProfileMonitorProbe.check(
+                profile,
+                preferences.getOrCreateDeviceId(),
+                FLEET_CONNECT_TIMEOUT_MILLISECONDS,
+                FLEET_READ_TIMEOUT_MILLISECONDS,
+                nowMilliseconds);
+        handler.post(() -> completeSecondaryProfileCheck(profile.hostId, result));
+    }
+
+    private void completeSecondaryProfileCheck(
+            String hostId, OperationsProfileMonitorProbe.Result result) {
+        if (!monitoring) {
+            return;
+        }
+        OperationsProfileRegistry.Profile profile = findUsableProfile(hostId);
+        if (profile == null) {
+            secondaryFailures.remove(hostId);
+            clearAttentionNotification(hostId);
+            return;
+        }
+        long nowMilliseconds = System.currentTimeMillis();
+        String previousState = OperationsBackgroundFleetPolicy.latestState(
+                profile.watchHistory, nowMilliseconds);
+        if (result.revoked) {
+            secondaryFailures.remove(hostId);
+            clearRemoteWindowSnapshotSecrets(hostId);
+            preferences.saveOperationsWatchEvidence(
+                    hostId, "", OperationsMonitorEvidenceRevision.Evidence.EMPTY);
+            preferences.recordOperationsProfileWatchState(
+                    hostId, OperationsWatchHistory.STATE_REVOKED, nowMilliseconds);
+            preferences.markOperationsProfileRevoked(hostId);
+            postAttentionNotification(
+                    hostId,
+                    preferences.getOperationsProfileLabel(hostId),
+                    OperationsWatchPolicy.ATTENTION_REVOKED,
+                    false);
+            Log.w(LOG_TAG, "operations_watch_secondary_revoked");
+            return;
+        }
+        if (!result.reachable) {
+            completeSecondaryProfileFailure(profile, previousState, nowMilliseconds);
+            return;
+        }
+
+        secondaryFailures.remove(hostId);
+        preferences.recordOperationsProfileWatchState(hostId, result.state, nowMilliseconds);
+        String previousAttentionKey = OperationsWatchHistory.attentionKey(previousState);
+        OperationsMonitorEvidenceRevision.Evidence previousEvidence =
+                preferences.getOperationsWatchEvidence(
+                hostId, previousAttentionKey);
+        boolean newEvidence = OperationsWatchPolicy.isEvidenceUpdate(
+                result.attentionKey,
+                previousAttentionKey,
+                result.evidence,
+                previousEvidence);
+        if (OperationsWatchPolicy.shouldPostAttention(
+                result.attentionKey,
+                previousAttentionKey,
+                result.evidence,
+                previousEvidence)) {
+            postAttentionNotification(
+                    hostId,
+                    preferences.getOperationsProfileLabel(hostId),
+                    result.attentionKey,
+                    newEvidence);
+        } else if (result.attentionKey.isEmpty()) {
+            clearAttentionNotification(hostId);
+        }
+        preferences.saveOperationsWatchEvidence(
+                hostId, result.attentionKey, result.evidence);
+        Log.i(LOG_TAG, "operations_watch_secondary_checked");
+    }
+
+    private void completeSecondaryProfileFailure(
+            OperationsProfileRegistry.Profile profile,
+            String previousState,
+            long nowMilliseconds) {
+        long nowElapsedMilliseconds = SystemClock.elapsedRealtime();
+        SecondaryFailure failure = secondaryFailures.get(profile.hostId);
+        if (failure == null) {
+            failure = new SecondaryFailure(nowElapsedMilliseconds);
+            secondaryFailures.put(profile.hostId, failure);
+        } else {
+            failure.consecutiveFailures++;
+        }
+        if (!OperationsWatchPolicy.shouldConfirmOffline(
+                failure.consecutiveFailures,
+                failure.firstFailureAtElapsedMilliseconds,
+                nowElapsedMilliseconds)) {
+            Log.w(LOG_TAG, "operations_watch_secondary_fluctuation");
+            return;
+        }
+
+        secondaryFailures.remove(profile.hostId);
+        boolean offlineJustConfirmed = !OperationsWatchHistory.STATE_OFFLINE.equals(previousState);
+        preferences.saveOperationsWatchEvidence(
+                profile.hostId,
+                "",
+                OperationsMonitorEvidenceRevision.Evidence.EMPTY);
+        preferences.recordOperationsProfileWatchState(
+                profile.hostId, OperationsWatchHistory.STATE_OFFLINE, nowMilliseconds);
+        if (OperationsWatchPolicy.shouldPostOffline(
+                OperationsWatchHistory.isOnlineState(previousState),
+                offlineJustConfirmed,
+                OperationsWatchHistory.attentionKey(previousState))) {
+            postAttentionNotification(
+                    profile.hostId,
+                    preferences.getOperationsProfileLabel(profile.hostId),
+                    OperationsWatchPolicy.ATTENTION_OFFLINE,
+                    false);
+        }
+        Log.w(LOG_TAG, "operations_watch_secondary_offline");
+    }
+
+    private OperationsProfileRegistry.Profile findUsableProfile(String hostId) {
+        for (OperationsProfileRegistry.Profile profile : preferences.getOperationsProfiles()) {
+            if (profile.hostId.equals(hostId) && !profile.revoked) {
+                return profile;
+            }
+        }
+        return null;
+    }
+
+    private static final class SecondaryFailure {
+        final long firstFailureAtElapsedMilliseconds;
+        int consecutiveFailures = 1;
+
+        SecondaryFailure(long firstFailureAtElapsedMilliseconds) {
+            this.firstFailureAtElapsedMilliseconds = firstFailureAtElapsedMilliseconds;
+        }
+    }
+
+    private static boolean isRevoked(String code) {
+        return !OperationsConnectionPreference.canFallbackAfter(code);
+    }
+
+    private static final class LocalCheck {
+        final String status;
+        final String attentionKey;
+        final OperationsMonitorEvidenceRevision.Evidence evidence;
+
+        LocalCheck(
+                String status,
+                String attentionKey,
+                OperationsMonitorEvidenceRevision.Evidence evidence) {
+            this.status = status;
+            this.attentionKey = attentionKey;
+            this.evidence = evidence;
+        }
+    }
+
+    private static final class RelayCheck {
+        final boolean hostFresh;
+        final String status;
+        final String attentionKey;
+        final OperationsMonitorEvidenceRevision.Evidence evidence;
+
+        RelayCheck(
+                boolean hostFresh,
+                String status,
+                String attentionKey,
+                OperationsMonitorEvidenceRevision.Evidence evidence) {
+            this.hostFresh = hostFresh;
+            this.status = status;
+            this.attentionKey = attentionKey;
+            this.evidence = evidence;
+        }
     }
 
     private OperationsApiClient getClient() throws Exception {
@@ -209,30 +671,116 @@ public final class OperationsWatchService extends Service {
         return client;
     }
 
-    private void completeSuccessfulCheck(String status, String attentionKey) {
+    private OperationsRelayApiClient getRelayClient() throws Exception {
+        String profileKey = preferences.getOperationsHostId()
+                + "\n" + preferences.getOrCreateDeviceId();
+        if (relayClient == null || !profileKey.equals(relayClientProfileKey)) {
+            OperationsDeviceIdentity identity =
+                    new OperationsDeviceIdentity(preferences.getOperationsHostId());
+            relayClient = new OperationsRelayApiClient(
+                    preferences.getOperationsHostId(),
+                    preferences.getOrCreateDeviceId(),
+                    preferences.getOperationsCertificatePin(),
+                    identity);
+            relayClientProfileKey = profileKey;
+        }
+        return relayClient;
+    }
+
+    private void completeSuccessfulCheck(
+            String status,
+            String attentionKey,
+            OperationsMonitorEvidenceRevision.Evidence evidence) {
         if (!monitoring) {
             return;
         }
         checkInFlight = false;
-        boolean reconnected = hasCompletedCheck && !lastCheckOnline;
+        boolean reconnected = offlineConfirmed;
+        boolean firstOrRecoveredCheck = !hasCompletedCheck
+                || consecutiveFailures > 0
+                || offlineConfirmed;
         hasCompletedCheck = true;
         consecutiveFailures = 0;
-        if (!lastCheckOnline) {
+        firstFailureAtElapsedMilliseconds = 0L;
+        offlineConfirmed = false;
+        if (firstOrRecoveredCheck) {
             Log.i(LOG_TAG, "operations_watch_online");
         }
-        lastCheckOnline = true;
-        preferences.recordOperationsWatchState(
+        String hostId = preferences.getOperationsHostId();
+        String previousAttentionKey = OperationsWatchHistory.attentionKey(
+                preferences.getOperationsWatchState());
+        OperationsMonitorEvidenceRevision.Evidence previousEvidence =
+                preferences.getOperationsWatchEvidence(hostId, previousAttentionKey);
+        preferences.recordOperationsProfileWatchState(
+                hostId,
                 attentionKey.isEmpty()
                         ? OperationsWatchHistory.STATE_ONLINE
                         : OperationsWatchHistory.attentionState(attentionKey),
                 System.currentTimeMillis());
         updateNotification(OperationsWatchPolicy.successfulCheckNotification(status, reconnected), true);
-        if (OperationsWatchPolicy.shouldPostAttention(attentionKey, lastAttentionKey)) {
-            postAttentionNotification(attentionKey);
+        boolean newEvidence = OperationsWatchPolicy.isEvidenceUpdate(
+                attentionKey, previousAttentionKey, evidence, previousEvidence);
+        if (OperationsWatchPolicy.shouldPostAttention(
+                attentionKey, previousAttentionKey, evidence, previousEvidence)) {
+            postAttentionNotification(
+                    hostId,
+                    preferences.getActiveOperationsProfileLabel(),
+                    attentionKey,
+                    newEvidence);
         } else if (attentionKey.isEmpty()) {
-            clearAttentionNotification();
+            clearAttentionNotification(hostId);
         }
-        lastAttentionKey = attentionKey;
+        preferences.saveOperationsWatchEvidence(hostId, attentionKey, evidence);
+        scheduleNext(OperationsWatchPolicy.HEALTHY_CHECK_MILLISECONDS);
+    }
+
+    private void completeRemoteCheck(RelayCheck check) {
+        if (!monitoring) {
+            return;
+        }
+        checkInFlight = false;
+        boolean reconnected = offlineConfirmed;
+        hasCompletedCheck = true;
+        consecutiveFailures = 0;
+        firstFailureAtElapsedMilliseconds = 0L;
+        offlineConfirmed = false;
+        String attentionKey = check.hostFresh ? check.attentionKey : "";
+        OperationsMonitorEvidenceRevision.Evidence evidence = check.hostFresh
+                ? check.evidence : OperationsMonitorEvidenceRevision.Evidence.EMPTY;
+        String relayState = !attentionKey.isEmpty()
+                ? OperationsWatchHistory.attentionState(attentionKey)
+                : check.hostFresh
+                        ? OperationsWatchHistory.STATE_REMOTE_ONLINE
+                        : OperationsWatchHistory.STATE_REMOTE_WAITING;
+        String hostId = preferences.getOperationsHostId();
+        String previousAttentionKey = OperationsWatchHistory.attentionKey(
+                preferences.getOperationsWatchState());
+        OperationsMonitorEvidenceRevision.Evidence previousEvidence =
+                preferences.getOperationsWatchEvidence(hostId, previousAttentionKey);
+        preferences.recordOperationsProfileWatchState(
+                hostId, relayState, System.currentTimeMillis());
+        String status = check.hostFresh
+                ? check.status.isEmpty()
+                        ? "固定中继在线 · 电脑已连接"
+                        : "固定中继 · " + check.status
+                : "远程中继在线 · 等待电脑上线";
+        updateNotification((reconnected ? "连接已恢复 · " : "") + status + " · 刚刚检查", true);
+        boolean newEvidence = OperationsWatchPolicy.isEvidenceUpdate(
+                attentionKey, previousAttentionKey, evidence, previousEvidence);
+        if (OperationsWatchPolicy.shouldPostAttention(
+                attentionKey, previousAttentionKey, evidence, previousEvidence)) {
+            postAttentionNotification(
+                    hostId,
+                    preferences.getActiveOperationsProfileLabel(),
+                    attentionKey,
+                    newEvidence);
+        } else if (attentionKey.isEmpty()) {
+            clearAttentionNotification(hostId);
+        }
+        preferences.saveOperationsWatchEvidence(hostId, attentionKey, evidence);
+        Log.i(LOG_TAG, check.hostFresh
+                ? "operations_watch_remote_online"
+                : "operations_watch_remote_waiting");
         scheduleNext(OperationsWatchPolicy.HEALTHY_CHECK_MILLISECONDS);
     }
 
@@ -241,77 +789,114 @@ public final class OperationsWatchService extends Service {
             return;
         }
         checkInFlight = false;
+        long nowMilliseconds = System.currentTimeMillis();
+        long nowElapsedMilliseconds = SystemClock.elapsedRealtime();
         hasCompletedCheck = true;
         if (code.contains("unknown_or_revoked_device")) {
-            preferences.recordOperationsWatchState(
-                    OperationsWatchHistory.STATE_REVOKED, System.currentTimeMillis());
-            preferences.markOperationsProfileRevoked();
+            String revokedHostId = preferences.getOperationsHostId();
+            String revokedLabel = preferences.getActiveOperationsProfileLabel();
+            clearRemoteWindowSnapshotSecrets();
+            preferences.saveOperationsWatchEvidence(
+                    revokedHostId,
+                    "",
+                    OperationsMonitorEvidenceRevision.Evidence.EMPTY);
+            preferences.recordOperationsProfileWatchState(
+                    revokedHostId, OperationsWatchHistory.STATE_REVOKED,
+                    nowMilliseconds);
+            preferences.markOperationsProfileRevoked(revokedHostId);
             Log.w(LOG_TAG, "operations_watch_pairing_revoked");
-            clearAttentionNotification();
-            updateNotification("配对授权已失效 · 请打开应用重新配对", false);
+            clearAttentionNotification(revokedHostId);
+            if (preferences.hasOperationsProfile()) {
+                continueWithSelectedProfileAfterRevocation();
+                return;
+            }
+            updateNotificationForTarget(
+                    "配对授权已失效 · 请打开应用处理", false, revokedLabel);
             detachNotificationAndStop();
             return;
         }
 
-        boolean notifyOffline = OperationsWatchPolicy.shouldPostOffline(
-                hasCompletedCheck, lastCheckOnline, lastAttentionKey);
+        if (consecutiveFailures == 0) {
+            firstFailureAtElapsedMilliseconds = nowElapsedMilliseconds;
+        }
         consecutiveFailures++;
         long retryDelay = OperationsWatchPolicy.retryDelayMilliseconds(consecutiveFailures);
-        if (lastCheckOnline || consecutiveFailures == 1) {
+        boolean confirmOffline = offlineConfirmed
+                || OperationsWatchPolicy.shouldConfirmOffline(
+                consecutiveFailures,
+                firstFailureAtElapsedMilliseconds,
+                nowElapsedMilliseconds);
+        boolean offlineJustConfirmed = confirmOffline && !offlineConfirmed;
+        String previousState = preferences.getOperationsWatchState();
+        boolean previousStateOnline = OperationsWatchHistory.isOnlineState(previousState);
+        boolean notifyOffline = OperationsWatchPolicy.shouldPostOffline(
+                previousStateOnline,
+                offlineJustConfirmed,
+                OperationsWatchHistory.attentionKey(previousState));
+        if (consecutiveFailures == 1 || offlineJustConfirmed) {
             Log.w(LOG_TAG, "operations_watch_offline retry_seconds=" + (retryDelay / 1000L));
         }
-        lastCheckOnline = false;
-        preferences.recordOperationsWatchState(
-                OperationsWatchHistory.STATE_OFFLINE, System.currentTimeMillis());
-        updateNotification("连接暂断 · " + (retryDelay / 1000L) + " 秒后重试", true);
+        if (confirmOffline) {
+            preferences.recordOperationsProfileWatchState(
+                    preferences.getOperationsHostId(), OperationsWatchHistory.STATE_OFFLINE,
+                    nowMilliseconds);
+            preferences.saveOperationsWatchEvidence(
+                    preferences.getOperationsHostId(),
+                    "",
+                    OperationsMonitorEvidenceRevision.Evidence.EMPTY);
+            offlineConfirmed = true;
+        }
+        updateNotification((confirmOffline ? "连接中断" : "连接波动 · 正在确认")
+                + " · " + (retryDelay / 1000L) + " 秒后重试", true);
         if (notifyOffline) {
-            postAttentionNotification(OperationsWatchPolicy.ATTENTION_OFFLINE);
-            lastAttentionKey = OperationsWatchPolicy.ATTENTION_OFFLINE;
+            postAttentionNotification(
+                    preferences.getOperationsHostId(),
+                    preferences.getActiveOperationsProfileLabel(),
+                    OperationsWatchPolicy.ATTENTION_OFFLINE,
+                    false);
         }
         client = null;
         clientProfileKey = "";
+        relayClient = null;
+        relayClientProfileKey = "";
         scheduleNext(retryDelay);
     }
 
-    private String notificationStatus(JSONObject snapshot) {
-        JSONObject flow = snapshot.optJSONObject("flow");
-        JSONObject performance = snapshot.optJSONObject("performance");
-        JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
-        JSONObject alerts = snapshot.optJSONObject("alerts");
-        JSONObject devices = snapshot.optJSONObject("devices");
-        JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
-        return OperationsWatchPolicy.healthyStatus(
-                mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable"),
-                flow != null && flow.optBoolean("isActive", false),
-                alerts == null ? 0 : alerts.optInt("criticalCount", 0),
-                alerts == null ? 0 : alerts.optInt("errorCount", 0),
-                devices == null || !devices.optBoolean("available", false)
-                        ? 0 : devices.optInt("attentionCount", 0),
-                messageChannel != null
-                        && messageChannel.optBoolean("available", false)
-                        && messageChannel.optBoolean("attentionRequired", false));
+    private void clearRemoteWindowSnapshotSecrets() {
+        clearRemoteWindowSnapshotSecrets(preferences.getOperationsHostId());
     }
 
-    private String notificationAttentionKey(JSONObject snapshot) {
-        JSONObject performance = snapshot.optJSONObject("performance");
-        JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
-        JSONObject alerts = snapshot.optJSONObject("alerts");
-        JSONObject devices = snapshot.optJSONObject("devices");
-        JSONObject messageChannel = snapshot.optJSONObject("messageChannel");
-        return OperationsWatchPolicy.attentionKey(
-                mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable"),
-                alerts == null ? 0 : alerts.optInt("criticalCount", 0),
-                alerts == null ? 0 : alerts.optInt("errorCount", 0),
-                devices == null || !devices.optBoolean("available", false)
-                        ? 0 : devices.optInt("attentionCount", 0),
-                messageChannel != null
-                        && messageChannel.optBoolean("available", false)
-                        && messageChannel.optBoolean("attentionRequired", false));
+    private void clearRemoteWindowSnapshotSecrets(String hostId) {
+        if (OperationsRelayPolicy.isSafeIdentifier(hostId)) {
+            try {
+                new OperationsE2eIdentity(hostId).delete();
+            } catch (Exception ignored) {
+            }
+        }
+        File directory = new File(getCacheDir(), "diagnostic-share");
+        File[] files = directory.listFiles((parent, name) ->
+                name.startsWith("ColorVision-remote-window-snapshot-")
+                        && name.endsWith(".jpg"));
+        if (files != null) {
+            for (File file : files) {
+                file.delete();
+            }
+        }
+    }
+
+    private static String errorCode(Exception exception) {
+        return exception.getMessage() == null ? "" : exception.getMessage();
     }
 
     private void scheduleNext(long delayMilliseconds) {
         handler.removeCallbacks(scheduledCheck);
-        if (monitoring) {
+        if (!monitoring) {
+            return;
+        }
+        if (checkAgainAfterCurrent) {
+            checkAgainAfterCurrent = false;
+            handler.post(scheduledCheck);
+        } else {
             handler.postDelayed(scheduledCheck, delayMilliseconds);
         }
     }
@@ -334,12 +919,41 @@ public final class OperationsWatchService extends Service {
         }
     }
 
+    private void updateNotificationForTarget(
+            String status, boolean ongoing, String targetLabel) {
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        if (manager != null) {
+            manager.notify(NOTIFICATION_ID,
+                    buildNotification(status, ongoing, targetLabel));
+        }
+    }
+
     private Notification buildNotification(String status, boolean ongoing) {
+        return buildNotification(
+                status, ongoing, preferences.getActiveOperationsProfileLabel());
+    }
+
+    private Notification buildNotification(
+            String status, boolean ongoing, String targetLabel) {
+        String watchState = preferences.getOperationsWatchState();
+        String destination = OperationsWatchPolicy.watchStateDestination(
+                watchState,
+                preferences.getActiveOperationsWatchCheckedAt(),
+                System.currentTimeMillis());
+        PendingIntent contentIntent = destination.isEmpty()
+                ? createOperationsPendingIntent(0, "")
+                : createOperationsPendingIntent(
+                        0,
+                        destination,
+                        preferences.getOperationsHostId(),
+                        OperationsWatchHistory.attentionKey(watchState));
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_devices_24)
-                .setContentTitle("ColorVision 运维守护")
+                .setContentTitle(OperationsTargetPolicy.watchNotificationTitle(
+                        targetLabel, preferences.getUsableOperationsProfileCount()))
                 .setContentText(status)
-                .setContentIntent(createOperationsPendingIntent(0, ""))
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(status))
+                .setContentIntent(contentIntent)
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 .setOnlyAlertOnce(true)
@@ -347,22 +961,57 @@ public final class OperationsWatchService extends Service {
                 .setShowWhen(true)
                 .setWhen(System.currentTimeMillis())
                 .setPriority(NotificationCompat.PRIORITY_LOW);
+        if (ongoing) {
+            builder.addAction(
+                    R.drawable.ic_refresh_24,
+                    getString(R.string.operations_watch_check_now_action),
+                    createCheckNowPendingIntent());
+        }
 
         return builder.build();
     }
 
-    private void postAttentionNotification(String attentionKey) {
-        String message = OperationsWatchPolicy.attentionMessage(attentionKey);
+    private void continueWithSelectedProfileAfterRevocation() {
+        checkGeneration++;
+        checkAgainAfterCurrent = false;
+        client = null;
+        clientProfileKey = "";
+        relayClient = null;
+        relayClientProfileKey = "";
+        consecutiveFailures = 0;
+        firstFailureAtElapsedMilliseconds = 0L;
+        String persistedState = preferences.getOperationsWatchState();
+        hasCompletedCheck = !persistedState.isEmpty();
+        offlineConfirmed = OperationsWatchHistory.STATE_OFFLINE.equals(persistedState);
+        updateNotification("上一台电脑授权失效 · 正在连接当前电脑", true);
+        handler.removeCallbacks(scheduledCheck);
+        handler.post(scheduledCheck);
+    }
+
+    private void postAttentionNotification(
+            String hostId,
+            String targetLabel,
+            String attentionKey,
+            boolean newEvidence) {
+        if (!preferences.isOperationsProfileAttentionNotificationsEnabled(hostId)) {
+            clearAttentionNotification(hostId);
+            return;
+        }
+        String message = OperationsWatchPolicy.attentionMessage(attentionKey, newEvidence);
         if (message.isEmpty()) {
             return;
         }
         Notification notification = new NotificationCompat.Builder(this, ATTENTION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_devices_24)
-                .setContentTitle("ColorVision 需要关注")
+                .setContentTitle(OperationsTargetPolicy.attentionNotificationTitle(
+                        targetLabel))
                 .setContentText(message)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
                 .setContentIntent(createOperationsPendingIntent(
-                        1, OperationsWatchPolicy.attentionDestination(attentionKey)))
+                        1,
+                        OperationsWatchPolicy.attentionDestination(attentionKey),
+                        hostId,
+                        attentionKey))
                 .setCategory(NotificationCompat.CATEGORY_ERROR)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 .setAutoCancel(true)
@@ -371,24 +1020,51 @@ public final class OperationsWatchService extends Service {
                 .build();
         NotificationManager manager = getSystemService(NotificationManager.class);
         if (manager != null) {
-            manager.notify(ATTENTION_NOTIFICATION_ID, notification);
+            if (hostId.equals(preferences.getOperationsHostId())) {
+                manager.cancel(LEGACY_ATTENTION_NOTIFICATION_ID);
+            }
+            manager.notify(
+                    OperationsBackgroundFleetPolicy.attentionNotificationTag(hostId),
+                    ATTENTION_NOTIFICATION_ID,
+                    notification);
             Log.w(LOG_TAG, "operations_watch_attention state=" + attentionKey);
         }
     }
 
-    private void clearAttentionNotification() {
-        NotificationManager manager = getSystemService(NotificationManager.class);
-        if (manager != null) {
-            manager.cancel(ATTENTION_NOTIFICATION_ID);
-        }
+    private void clearAttentionNotification(String hostId) {
+        dismissAttentionNotification(this, hostId);
     }
 
     private PendingIntent createOperationsPendingIntent(int requestCode, String destination) {
+        return createOperationsPendingIntent(requestCode, destination, "");
+    }
+
+    private PendingIntent createOperationsPendingIntent(
+            int requestCode, String destination, String hostId) {
+        return createOperationsPendingIntent(requestCode, destination, hostId, "");
+    }
+
+    private PendingIntent createOperationsPendingIntent(
+            int requestCode,
+            String destination,
+            String hostId,
+            String attentionFocus) {
         Intent openIntent = new Intent(this, OperationsActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        if (OperationsRelayPolicy.isSafeIdentifier(hostId)) {
+            openIntent.putExtra(OperationsActivity.EXTRA_SELECT_HOST_ID, hostId);
+            openIntent.setData(Uri.parse(
+                    "colorvision://operations/attention/" + Uri.encode(hostId)));
+        }
         String safeDestination = OperationsWatchPolicy.normalizeDestination(destination);
         if (!safeDestination.isEmpty()) {
             openIntent.putExtra(OperationsActivity.EXTRA_OPEN_DESTINATION, safeDestination);
+        }
+        String safeAttentionFocus = OperationsAttentionFocus.normalize(attentionFocus);
+        if (!safeAttentionFocus.isEmpty()
+                && OperationsWatchPolicy.DESTINATION_TRIAGE.equals(safeDestination)) {
+            openIntent.putExtra(
+                    OperationsActivity.EXTRA_ATTENTION_FOCUS, safeAttentionFocus);
         }
         return PendingIntent.getActivity(
                 this,
@@ -397,7 +1073,17 @@ public final class OperationsWatchService extends Service {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
-    private void createNotificationChannels() {
+    private PendingIntent createCheckNowPendingIntent() {
+        Intent checkIntent = new Intent(this, OperationsWatchService.class)
+                .setAction(ACTION_CHECK_NOW);
+        return PendingIntent.getService(
+                this,
+                CHECK_NOW_REQUEST_CODE,
+                checkIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    private static void createNotificationChannels(Context context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return;
         }
@@ -411,9 +1097,9 @@ public final class OperationsWatchService extends Service {
                 ATTENTION_CHANNEL_ID,
                 "ColorVision 运维提醒",
                 NotificationManager.IMPORTANCE_DEFAULT);
-        attentionChannel.setDescription("仅在已配对主机进入新的异常状态时提醒一次");
+        attentionChannel.setDescription("各台电脑出现异常或同类新脱敏证据时分别提醒");
         attentionChannel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
-        NotificationManager manager = getSystemService(NotificationManager.class);
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
         if (manager != null) {
             manager.createNotificationChannel(watchChannel);
             manager.createNotificationChannel(attentionChannel);
@@ -422,6 +1108,7 @@ public final class OperationsWatchService extends Service {
 
     private void stopMonitoring(boolean removeNotification) {
         monitoring = false;
+        checkGeneration++;
         handler.removeCallbacks(scheduledCheck);
         stopForegroundCompat(removeNotification);
         stopSelf();
@@ -429,6 +1116,7 @@ public final class OperationsWatchService extends Service {
 
     private void detachNotificationAndStop() {
         monitoring = false;
+        checkGeneration++;
         handler.removeCallbacks(scheduledCheck);
         stopForegroundCompat(false);
         stopSelf();

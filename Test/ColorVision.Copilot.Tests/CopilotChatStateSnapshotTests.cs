@@ -15,6 +15,28 @@ public class CopilotChatStateSnapshotTests
     };
 
     [Fact]
+    public void SubmittedMessageAttachmentsAreDetachedFromTheRequestSnapshot()
+    {
+        var sourceAttachment = CopilotAttachmentItem.CreateContext("captured context");
+        var source = new ObservableCollection<CopilotAttachmentItem>
+        {
+            sourceAttachment,
+        };
+        var message = new CopilotChatMessage(CopilotChatRole.User, "Inspect the attachment")
+        {
+            Attachments = source,
+            AttachmentSnapshotCaptured = true,
+        };
+
+        sourceAttachment.Value = "changed request snapshot";
+        source.Add(CopilotAttachmentItem.CreateContext("late attachment"));
+
+        var persistedAttachment = Assert.Single(message.Attachments);
+        Assert.NotSame(sourceAttachment, persistedAttachment);
+        Assert.Equal("captured context", persistedAttachment.Value);
+    }
+
+    [Fact]
     public void IncrementalCaptureMatchesExistingStateContract()
     {
         var firstConversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
@@ -816,13 +838,49 @@ public class CopilotChatStateSnapshotTests
 
             Assert.Equal(CopilotChatStateLoadSource.FutureVersion, store.LastLoadStatus.Source);
             Assert.Equal(reportedSchemaVersion, store.LastLoadStatus.SchemaVersion);
+            Assert.Equal(store.StateFilePath, store.LastLoadStatus.StateFilePath);
             Assert.True(store.IsStatePersistenceBlocked);
             Assert.Empty(loaded.Conversations);
-            Assert.Throws<CopilotChatStateFutureVersionException>(() => store.Save(replacement));
-            await Assert.ThrowsAsync<CopilotChatStateFutureVersionException>(
+            var saveException = Assert.Throws<CopilotChatStateFutureVersionException>(
+                () => store.Save(replacement));
+            var asyncSaveException = await Assert.ThrowsAsync<CopilotChatStateFutureVersionException>(
                 () => store.SaveSerializedAsync(serializedReplacement));
+            Assert.Contains(store.StateFilePath, saveException.Message, StringComparison.Ordinal);
+            Assert.Contains(store.StateFilePath, asyncSaveException.Message, StringComparison.Ordinal);
             Assert.Equal(originalPrimary, File.ReadAllText(store.StateFilePath));
             Assert.Equal(originalBackup, File.ReadAllText(store.BackupStateFilePath));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void FutureSchemaBackupReportsTheExactProtectedArtifact()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new CopilotChatStateStore(root);
+            Directory.CreateDirectory(store.StateDirectoryPath);
+            File.WriteAllText(store.StateFilePath, "{broken-primary");
+            File.WriteAllText(
+                store.BackupStateFilePath,
+                CreateStateDocument(
+                    CopilotChatState.CurrentSchemaVersion + 1,
+                    "Future backup").ToString(Formatting.None));
+
+            var loaded = store.Load();
+            var exception = Assert.Throws<CopilotChatStateFutureVersionException>(
+                () => store.Save(CreateState("Older process")));
+
+            Assert.Empty(loaded.Conversations);
+            Assert.Equal(CopilotChatStateLoadSource.FutureVersion, store.LastLoadStatus.Source);
+            Assert.Equal(store.BackupStateFilePath, store.LastLoadStatus.StateFilePath);
+            Assert.Equal(store.BackupStateFilePath, exception.StateFilePath);
+            Assert.Contains(store.BackupStateFilePath, exception.Message, StringComparison.Ordinal);
         }
         finally
         {
@@ -850,6 +908,8 @@ public class CopilotChatStateSnapshotTests
                 () => store.Save(CreateState("Older process")));
 
             Assert.Equal(CopilotChatState.CurrentSchemaVersion + 1, exception.SchemaVersion);
+            Assert.Equal(store.StateFilePath, exception.StateFilePath);
+            Assert.Contains(store.StateFilePath, exception.Message, StringComparison.Ordinal);
             Assert.True(store.IsStatePersistenceBlocked);
             Assert.Equal(originalPrimary, File.ReadAllText(store.StateFilePath));
         }

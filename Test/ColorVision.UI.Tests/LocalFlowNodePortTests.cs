@@ -31,7 +31,7 @@ public class LocalFlowNodePortTests
     }
 
     [Fact]
-    public void LocalCalibrationNodeUsesOnlyCurrentFrame()
+    public void LocalCalibrationNodeUsesSingleImageInputWithoutManualFileProperty()
     {
         LocalCalibrationNode node = new();
 
@@ -79,6 +79,37 @@ public class LocalFlowNodePortTests
             typeof(LocalBuildPoiNode).GetProperty(nameof(CVBaseServerNode.DeviceCode))!));
         Assert.False(FlowNodePropertyMetadataProvider.Instance.IsBrowsable(
             typeof(LocalBuildPoiByTemplateNode).GetProperty(nameof(CVBaseServerNode.DeviceCode))!));
+    }
+
+    [Theory]
+    [InlineData(typeof(LocalBuildPoiNode))]
+    [InlineData(typeof(LocalBuildPoiByTemplateNode))]
+    [InlineData(typeof(LocalCalibrationNode))]
+    [InlineData(typeof(LocalCalibrationRealPoiNode))]
+    [InlineData(typeof(LocalCameraNode))]
+    [InlineData(typeof(LocalImageNode))]
+    [InlineData(typeof(LocalPoiNode))]
+    [InlineData(typeof(LocalRealPoiNode))]
+    public void LocalNodesDoNotExposeTimeoutAndKeepZIndexAdvanced(Type nodeType)
+    {
+        var maxTimeProperty = nodeType.GetProperty(nameof(CVBaseServerNode.MaxTime));
+        var zIndexProperty = nodeType.GetProperty(nameof(CVBaseServerNode.ZIndex))!;
+
+        Assert.True(typeof(CVCommonNode).IsAssignableFrom(nodeType));
+        Assert.False(typeof(CVBaseServerNode).IsAssignableFrom(nodeType));
+        Assert.Null(maxTimeProperty);
+        Assert.True(FlowNodePropertyMetadataProvider.Instance.IsBrowsable(zIndexProperty));
+        Assert.True(FlowNodePropertyMetadataProvider.AdvancedOptions.IsAdvancedProperty(zIndexProperty));
+    }
+
+    [Fact]
+    public void RemoteNodeKeepsTimeoutAndStandardZIndexProperties()
+    {
+        var maxTimeProperty = typeof(CVBaseServerNode).GetProperty(nameof(CVBaseServerNode.MaxTime))!;
+        var zIndexProperty = typeof(CVBaseServerNode).GetProperty(nameof(CVBaseServerNode.ZIndex))!;
+
+        Assert.True(FlowNodePropertyMetadataProvider.Instance.IsBrowsable(maxTimeProperty));
+        Assert.False(FlowNodePropertyMetadataProvider.AdvancedOptions.IsAdvancedProperty(zIndexProperty));
     }
 
     [Fact]

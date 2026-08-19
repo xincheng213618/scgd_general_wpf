@@ -125,7 +125,10 @@ namespace ColorVision.Copilot
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
                 case CopilotAgentEventType.ToolResult:
                     ApplyToolResult(assistantMessage, agentEvent);
-                    return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
+                    return CopilotAgentEventPresentationResult.Handled(
+                        agentEvent.ToolExecution?.Access == CopilotToolAccess.Write
+                            ? CopilotAgentEventPersistenceMode.Immediate
+                            : CopilotAgentEventPersistenceMode.Deferred);
                 case CopilotAgentEventType.ReasoningDelta:
                     ApplyStreamDelta(assistantMessage, new CopilotStreamDelta(agentEvent.Text, string.Empty));
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Deferred);
@@ -159,11 +162,8 @@ namespace ColorVision.Copilot
                     CompleteThinking(assistantMessage);
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);
                 case CopilotAgentEventType.Completed:
-                    assistantMessage.CompleteActiveAgentTraces(
-                        CopilotToolExecutionState.Interrupted,
-                        CopilotToolFailureKind.Internal,
-                        "tool_terminal_event_missing",
-                        "The Agent turn completed before this tool call emitted an authoritative terminal result.");
+                    assistantMessage.CompleteActiveAgentTracesAfterUnexpectedTurnEnd(
+                        "The Agent turn completed unexpectedly");
                     CancelPendingUserQuestion(assistantMessage);
                     CompleteThinking(assistantMessage);
                     return CopilotAgentEventPresentationResult.Handled(CopilotAgentEventPersistenceMode.Immediate);

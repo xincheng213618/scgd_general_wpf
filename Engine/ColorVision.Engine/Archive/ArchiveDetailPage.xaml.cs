@@ -91,8 +91,8 @@ namespace ColorVision.Engine.Archive.Dao
                 MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.ArchiveConfigInfoNotFound,"ColorVision");
                 return;
             }
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configArchivedModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            propertyEditorWindow.Submited += (s, e) => { ConfigArchivedDao.Instance.Save(configArchivedModel); };
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configArchivedModel, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            propertyEditorWindow.Submitted += (s, e) => { ConfigArchivedDao.Instance.Save(configArchivedModel); };
             propertyEditorWindow.ShowDialog();
         }
     }

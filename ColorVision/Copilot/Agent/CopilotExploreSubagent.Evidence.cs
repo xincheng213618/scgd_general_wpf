@@ -65,7 +65,7 @@ namespace ColorVision.Copilot
 
             var successfulReads = (steps ?? Array.Empty<CopilotAgentStepRecord>())
                 .Where(step => step?.Observation?.Success == true
-                    && string.Equals(step.ToolCall?.ToolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase))
+                    && string.Equals(step.ToolCall?.ToolName, CopilotSharedAgentToolNames.ReadLocalFile, StringComparison.OrdinalIgnoreCase))
                 .ToArray();
             var successfullyReadPaths = successfulReads
                 .SelectMany(step => step.Observation.SuccessfullyReadLocalFilePaths)
@@ -91,7 +91,7 @@ namespace ColorVision.Copilot
                 return null;
 
             var readTool = tools.FirstOrDefault(tool =>
-                string.Equals(tool.Name, "ReadLocalFile", StringComparison.OrdinalIgnoreCase)
+                string.Equals(tool.Name, CopilotSharedAgentToolNames.ReadLocalFile, StringComparison.OrdinalIgnoreCase)
                 && tool.CanHandle(request));
             if (readTool == null)
                 return null;

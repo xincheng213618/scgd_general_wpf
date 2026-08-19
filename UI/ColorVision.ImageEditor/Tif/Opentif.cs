@@ -1,7 +1,9 @@
-﻿using ColorVision.ImageEditor.Abstractions;
+using ColorVision.ImageEditor.Abstractions;
 using System;
+using System.Buffers;
 using System.ComponentModel;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -12,6 +14,11 @@ namespace ColorVision.ImageEditor.Tif
     [FileExtension(".tif|.tiff")]
     public record class Opentif(EditorContext EditorContext) : IImageOpen
     {
+        private const int ConversionBufferPixelCount = 256 * 1024;
+        private readonly object _decodeSync = new();
+        private Task _decodeTail = Task.CompletedTask;
+        private long _latestRequestId;
+
         public static int GetChannelCount(BitmapSource source)
         {
             PixelFormat format = source.Format;
@@ -56,53 +63,17 @@ namespace ColorVision.ImageEditor.Tif
 
         public static WriteableBitmap ConvertGray32FloatToBitmapSource(BitmapSource bitmapSource)
         {
-            // 确保图像数据已加载
-            bitmapSource.Freeze();
+            if (bitmapSource.Format != PixelFormats.Gray32Float)
+                throw new ArgumentException("Bitmap source must use Gray32Float.", nameof(bitmapSource));
 
-            // 获取图像的宽度和高度
-            int width = bitmapSource.PixelWidth;
-            int height = bitmapSource.PixelHeight;
-
-            // 创建一个新的32位浮点数组来存储像素数据
-            float[] floatPixels = new float[width * height];
-
-            // 从BitmapSource中读取像素数据
-            bitmapSource.CopyPixels(floatPixels, width * 4, 0);
-
-            // 创建一个新的16位整数数组来存储转换后的像素值
-            ushort[] ushortPixels = new ushort[width * height];
-
-            // 1. 遍历一遍，找出实际的最大值和最小值
-            float min = float.MaxValue;
-            float max = float.MinValue;
-            for (int i = 0; i < floatPixels.Length; i++)
-            {
-                float v = floatPixels[i];
-                if (v < min) min = v;
-                if (v > max) max = v;
-            }
-
-            // 计算极差，防止全纯色图导致除以0
-            float range = max - min;
-            if (range <= 0) range = 1f;
-
-            // 2. 将浮点值根据最大最小值动态映射到 0-65535 范围的16位整数
-            for (int i = 0; i < floatPixels.Length; i++)
-            {
-                // 归一化到 0.0 - 1.0 之间
-                float normalized = (floatPixels[i] - min) / range;
-
-                // 映射到 16 位整数 (0 - 65535)
-                ushortPixels[i] = (ushort)(normalized * 65535f);
-            }
-
-            // 创建一个新的WriteableBitmap对象
-            WriteableBitmap writeableBitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Gray16, null);
-
-            // 写入像素数据
-            int stride = width * 2; // 每行像素数据的字节数（16位，即2字节）
-            writeableBitmap.WritePixels(new Int32Rect(0, 0, width, height), ushortPixels, stride, 0);
-
+            WriteableBitmap writeableBitmap = new(
+                bitmapSource.PixelWidth,
+                bitmapSource.PixelHeight,
+                96,
+                96,
+                PixelFormats.Gray16,
+                null);
+            CopyGray32FloatToGray16(bitmapSource, writeableBitmap);
             return writeableBitmap;
         }
 
@@ -111,117 +82,262 @@ namespace ColorVision.ImageEditor.Tif
             if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
 
             string requestedFilePath = filePath;
+            long requestId = Interlocked.Increment(ref _latestRequestId);
 
-            // Get file metadata
-            FileInfo fileInfo = new FileInfo(requestedFilePath);
+            FileInfo fileInfo = new(requestedFilePath);
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSource, requestedFilePath, nameof(Opentif), "打开器接收到的源文件路径");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileName, fileInfo.Name, nameof(Opentif), "当前文件名");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileSize, fileInfo.Length, nameof(Opentif), "当前文件大小（字节）");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileCreationTime, fileInfo.CreationTime, nameof(Opentif), "当前文件创建时间");
             context.Config.SetImageMetadata(ImageViewPropertyKeys.FileModifiedTime, fileInfo.LastWriteTime, nameof(Opentif), "当前文件修改时间");
 
-            WriteableBitmap? writeableBitmap = null;
-            BitmapMetadata? metadata = null;
-            BitmapSource source = null;
-            await Task.Run(() =>
+            TaskCompletionSource decodeTurn = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            Task previousDecode;
+            lock (_decodeSync)
             {
+                previousDecode = _decodeTail;
+                _decodeTail = decodeTurn.Task;
+            }
+
+            await previousDecode;
+            try
+            {
+                if (!IsCurrentRequest(context, requestedFilePath, requestId))
+                    return;
+
+                DecodedImage? decodedImage;
                 try
                 {
-                    using var stream = new FileStream(requestedFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    var decoder = new TiffBitmapDecoder(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-
-                    if (decoder.Frames.Count > 0)
-                    {
-                        source = decoder.Frames[0];
-                        metadata = source.Metadata as BitmapMetadata;
-
-                        // 检查 DPI 是否为 96，允许微小误差
-                        if (Math.Abs(source.DpiX - 96.0) > 0.01 || Math.Abs(source.DpiY - 96.0) > 0.01)
-                        {
-                            // 计算 stride (每行字节数)
-                            int stride = (source.PixelWidth * source.Format.BitsPerPixel + 7) / 8;
-
-                            // 创建缓冲区并复制像素数据
-                            byte[] pixels = new byte[source.PixelHeight * stride];
-                            source.CopyPixels(pixels, stride, 0);
-
-                            // 使用相同的像素数据创建新的 BitmapSource，但指定 96 DPI
-                            source = BitmapSource.Create(
-                                source.PixelWidth,
-                                source.PixelHeight,
-                                96, // DpiX
-                                96, // DpiY
-                                source.Format,
-                                source.Palette,
-                                pixels,
-                                stride);
-                        }
-
-                        source.Freeze();
-                    }
+                    decodedImage = await Task.Run(() => DecodeImage(requestedFilePath));
                 }
-                catch (Exception)
+                catch
                 {
                     return;
                 }
 
-            });
+                if (decodedImage == null || !IsCurrentRequest(context, requestedFilePath, requestId))
+                    return;
 
-            if (source == null) return;
+                BitmapSource source = decodedImage.BitmapSource;
+                WriteableBitmap? currentBitmap = context.ImageView.ViewBitmapSource as WriteableBitmap;
+                WriteableBitmap writeableBitmap;
 
-            string? activeFilePath = context.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
-            if (!string.Equals(activeFilePath, requestedFilePath, StringComparison.OrdinalIgnoreCase))
-                return;
-
-            // Gray32Float TIFF 可按打开器配置决定是否先归一化转换为 Gray16。
-            if (source.Format == PixelFormats.Gray32Float)
-            {
-                if (TifOpenConfig.Current.ConvertGray32FloatToGray16OnOpen)
+                // 测量型 Gray32Float 通常不是可直接显示的归一化范围；Gray16 仅作为显示代理，
+                // 原始浮点帧在分块映射完成后即可释放，避免长期保留两份大图。
+                if (source.Format == PixelFormats.Gray32Float && TifOpenConfig.Current.ConvertGray32FloatToGray16OnOpen)
                 {
-                    writeableBitmap = ConvertGray32FloatToBitmapSource(source);
+                    writeableBitmap = GetReusableBitmap(currentBitmap, source.PixelWidth, source.PixelHeight, PixelFormats.Gray16, null);
+                    CopyGray32FloatToGray16(source, writeableBitmap);
                 }
                 else
                 {
-                    writeableBitmap = new WriteableBitmap(source);
+                    writeableBitmap = GetReusableBitmap(currentBitmap, source.PixelWidth, source.PixelHeight, source.Format, source.Palette);
+                    CopyPixels(source, writeableBitmap);
                 }
+
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, writeableBitmap.PixelWidth, nameof(Opentif), "位图像素宽度");
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, writeableBitmap.PixelHeight, nameof(Opentif), "位图像素高度");
+                ApplyMetadata(context, decodedImage.Metadata);
+
+                context.ImageView.SetImageSource(writeableBitmap);
+                context.ImageView.UpdateZoomAndScale();
             }
-            else
+            finally
             {
-                writeableBitmap = new WriteableBitmap(source);
+                decodeTurn.TrySetResult();
             }
+        }
 
-            if (writeableBitmap == null) return;
+        private bool IsCurrentRequest(EditorContext context, string requestedFilePath, long requestId)
+        {
+            if (requestId != Volatile.Read(ref _latestRequestId))
+                return false;
 
-            // Add image dimensions
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageWidth, writeableBitmap.PixelWidth, nameof(Opentif), "位图像素宽度");
-            context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageHeight, writeableBitmap.PixelHeight, nameof(Opentif), "位图像素高度");
+            string? activeFilePath = context.Config.GetProperties<string>(ImageViewPropertyKeys.FilePath);
+            return string.Equals(activeFilePath, requestedFilePath, StringComparison.OrdinalIgnoreCase);
+        }
 
-            // Add EXIF metadata if available
-            if (metadata != null)
+        private static DecodedImage? DecodeImage(string filePath)
+        {
+            using FileStream stream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            TiffBitmapDecoder decoder = new(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+            if (decoder.Frames.Count == 0)
+                return null;
+
+            BitmapFrame frame = decoder.Frames[0];
+            ImageMetadata metadata = ReadMetadata(frame.Metadata as BitmapMetadata);
+            if (frame.CanFreeze && !frame.IsFrozen)
+                frame.Freeze();
+            return new DecodedImage(frame, metadata);
+        }
+
+        private static WriteableBitmap GetReusableBitmap(
+            WriteableBitmap? currentBitmap,
+            int width,
+            int height,
+            PixelFormat pixelFormat,
+            BitmapPalette? palette)
+        {
+            if (currentBitmap != null &&
+                currentBitmap.PixelWidth == width &&
+                currentBitmap.PixelHeight == height &&
+                currentBitmap.Format == pixelFormat &&
+                Math.Abs(currentBitmap.DpiX - 96) <= 0.01 &&
+                Math.Abs(currentBitmap.DpiY - 96) <= 0.01 &&
+                PalettesEqual(currentBitmap.Palette, palette))
             {
-                try
-                {
-                    if (metadata.CameraModel != null)
-                        context.Config.SetImageMetadata(ImageViewPropertyKeys.CameraModel, metadata.CameraModel, nameof(Opentif), "EXIF 相机型号");
-                    if (metadata.CameraManufacturer != null)
-                        context.Config.SetImageMetadata(ImageViewPropertyKeys.CameraManufacturer, metadata.CameraManufacturer, nameof(Opentif), "EXIF 相机厂商");
-                    if (metadata.DateTaken != null)
-                        context.Config.SetImageMetadata(ImageViewPropertyKeys.DateTaken, metadata.DateTaken, nameof(Opentif), "EXIF 拍摄时间");
-                    if (metadata.ApplicationName != null)
-                        context.Config.SetImageMetadata(ImageViewPropertyKeys.ApplicationName, metadata.ApplicationName, nameof(Opentif), "EXIF 应用程序名");
-                    if (metadata.Title != null)
-                        context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageTitle, metadata.Title, nameof(Opentif), "EXIF 标题");
-                    if (metadata.Subject != null)
-                        context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageSubject, metadata.Subject, nameof(Opentif), "EXIF 主题");
-                }
-                catch
-                {
-                    // Silently ignore metadata extraction errors
-                }
+                return currentBitmap;
             }
 
-            context.ImageView.SetImageSource(writeableBitmap);
-            context.ImageView.UpdateZoomAndScale();
+            return new WriteableBitmap(width, height, 96, 96, pixelFormat, palette);
+        }
+
+        private static void CopyPixels(BitmapSource source, WriteableBitmap target)
+        {
+            target.Lock();
+            try
+            {
+                int bufferSize = checked(target.BackBufferStride * target.PixelHeight);
+                source.CopyPixels(new Int32Rect(0, 0, source.PixelWidth, source.PixelHeight), target.BackBuffer, bufferSize, target.BackBufferStride);
+                target.AddDirtyRect(new Int32Rect(0, 0, target.PixelWidth, target.PixelHeight));
+            }
+            finally
+            {
+                target.Unlock();
+            }
+        }
+
+        private static void CopyGray32FloatToGray16(BitmapSource source, WriteableBitmap target)
+        {
+            int width = source.PixelWidth;
+            int height = source.PixelHeight;
+            int rowsPerChunk = Math.Max(1, Math.Min(height, ConversionBufferPixelCount / Math.Max(1, width)));
+            int bufferLength = checked(width * rowsPerChunk);
+            int sourceStride = checked(width * sizeof(float));
+            int targetStride = checked(width * sizeof(ushort));
+            float[] floatPixels = ArrayPool<float>.Shared.Rent(bufferLength);
+            ushort[] ushortPixels = ArrayPool<ushort>.Shared.Rent(bufferLength);
+
+            try
+            {
+                bool hasFiniteValue = false;
+                float min = float.MaxValue;
+                float max = float.MinValue;
+
+                for (int top = 0; top < height; top += rowsPerChunk)
+                {
+                    int rowCount = Math.Min(rowsPerChunk, height - top);
+                    int pixelCount = checked(width * rowCount);
+                    source.CopyPixels(new Int32Rect(0, top, width, rowCount), floatPixels, sourceStride, 0);
+
+                    for (int index = 0; index < pixelCount; index++)
+                    {
+                        float value = floatPixels[index];
+                        if (!float.IsFinite(value))
+                            continue;
+
+                        hasFiniteValue = true;
+                        if (value < min) min = value;
+                        if (value > max) max = value;
+                    }
+                }
+
+                double range = hasFiniteValue ? (double)max - min : 0;
+                bool hasRange = range > 0 && double.IsFinite(range);
+
+                for (int top = 0; top < height; top += rowsPerChunk)
+                {
+                    int rowCount = Math.Min(rowsPerChunk, height - top);
+                    int pixelCount = checked(width * rowCount);
+                    source.CopyPixels(new Int32Rect(0, top, width, rowCount), floatPixels, sourceStride, 0);
+
+                    for (int index = 0; index < pixelCount; index++)
+                    {
+                        float value = floatPixels[index];
+                        if (!float.IsFinite(value) || !hasRange)
+                        {
+                            ushortPixels[index] = 0;
+                        }
+                        else
+                        {
+                            double normalized = Math.Clamp(((double)value - min) / range, 0, 1);
+                            ushortPixels[index] = (ushort)(normalized * ushort.MaxValue);
+                        }
+                    }
+
+                    target.WritePixels(new Int32Rect(0, top, width, rowCount), ushortPixels, targetStride, 0);
+                }
+            }
+            finally
+            {
+                ArrayPool<float>.Shared.Return(floatPixels);
+                ArrayPool<ushort>.Shared.Return(ushortPixels);
+            }
+        }
+
+        private static bool PalettesEqual(BitmapPalette? left, BitmapPalette? right)
+        {
+            if (ReferenceEquals(left, right))
+                return true;
+            if (left == null || right == null || left.Colors.Count != right.Colors.Count)
+                return false;
+
+            for (int index = 0; index < left.Colors.Count; index++)
+            {
+                if (left.Colors[index] != right.Colors[index])
+                    return false;
+            }
+            return true;
+        }
+
+        private static ImageMetadata ReadMetadata(BitmapMetadata? metadata)
+        {
+            if (metadata == null)
+                return ImageMetadata.Empty;
+
+            try
+            {
+                return new ImageMetadata(
+                    metadata.CameraModel,
+                    metadata.CameraManufacturer,
+                    metadata.DateTaken,
+                    metadata.ApplicationName,
+                    metadata.Title,
+                    metadata.Subject);
+            }
+            catch
+            {
+                return ImageMetadata.Empty;
+            }
+        }
+
+        private static void ApplyMetadata(EditorContext context, ImageMetadata metadata)
+        {
+            if (metadata.CameraModel != null)
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.CameraModel, metadata.CameraModel, nameof(Opentif), "EXIF 相机型号");
+            if (metadata.CameraManufacturer != null)
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.CameraManufacturer, metadata.CameraManufacturer, nameof(Opentif), "EXIF 相机厂商");
+            if (metadata.DateTaken != null)
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.DateTaken, metadata.DateTaken, nameof(Opentif), "EXIF 拍摄时间");
+            if (metadata.ApplicationName != null)
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.ApplicationName, metadata.ApplicationName, nameof(Opentif), "EXIF 应用程序名");
+            if (metadata.Title != null)
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageTitle, metadata.Title, nameof(Opentif), "EXIF 标题");
+            if (metadata.Subject != null)
+                context.Config.SetImageMetadata(ImageViewPropertyKeys.ImageSubject, metadata.Subject, nameof(Opentif), "EXIF 主题");
+        }
+
+        private sealed record DecodedImage(BitmapSource BitmapSource, ImageMetadata Metadata);
+
+        private sealed record ImageMetadata(
+            string? CameraModel,
+            string? CameraManufacturer,
+            string? DateTaken,
+            string? ApplicationName,
+            string? Title,
+            string? Subject)
+        {
+            public static ImageMetadata Empty { get; } = new(null, null, null, null, null, null);
         }
     }
 }

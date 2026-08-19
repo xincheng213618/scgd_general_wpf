@@ -523,7 +523,7 @@ namespace ColorVision.Copilot
             }
 
             if (notification != null)
-                _onBudgetExhausted?.Invoke(notification);
+                PublishBudgetObserver(_onBudgetExhausted, notification, "exhaustion");
             return false;
         }
 
@@ -557,13 +557,24 @@ namespace ColorVision.Copilot
 
         private void PublishBudgetChanged(CopilotAgentBudgetSnapshot snapshot)
         {
+            PublishBudgetObserver(_onBudgetChanged, snapshot, "update");
+        }
+
+        private static void PublishBudgetObserver(
+            Action<CopilotAgentBudgetSnapshot>? observer,
+            CopilotAgentBudgetSnapshot snapshot,
+            string notificationKind)
+        {
             try
             {
-                _onBudgetChanged?.Invoke(snapshot);
+                observer?.Invoke(snapshot);
             }
             catch (Exception ex)
             {
-                Trace.TraceWarning($"Copilot budget observer failed: {ex.Message}");
+                Trace.TraceWarning(
+                    "Copilot budget {0} observer failed: {1}",
+                    notificationKind,
+                    ex.GetType().Name);
             }
         }
 

@@ -29,10 +29,6 @@ namespace ProjectARVRPro.Process.Chessboard
         public ChessboardFirstPointColor FirstPointColor { get => _FirstPointColor; set { _FirstPointColor = value; OnPropertyChanged(); } }
         private ChessboardFirstPointColor _FirstPointColor = ChessboardFirstPointColor.Auto;
 
-        [Browsable(false)]
-        [JsonProperty("FirstPointIsBlack")]
-        private bool LegacyFirstPointIsBlack { set => FirstPointColor = value ? ChessboardFirstPointColor.Black : ChessboardFirstPointColor.White; }
-
         [Category("棋盘格对比度")]
         [DisplayName("杂散光系数")]
         [Description("本地计算时先求暗格平均亮度LD，再使用LD'=LD-LB*a修正均值；单格POI保持原值，默认0表示不补偿。")]

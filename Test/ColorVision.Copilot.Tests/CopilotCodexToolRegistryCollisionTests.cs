@@ -2,6 +2,7 @@ using ColorVision.Copilot;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -145,6 +146,23 @@ public sealed class CopilotCodexToolRegistryCollisionTests
     }
 
     [Fact]
+    public void RelaxedPolicyTreatsTrimmedNamesAsTheSameCapability()
+    {
+        var events = new List<CopilotAgentEvent>();
+        var first = new RecordingTool("CollisionProbe");
+        var duplicate = new RecordingTool(" CollisionProbe ");
+
+        var merged = CopilotMicrosoftAgentFrameworkRuntime.MergeAvailableTools(
+            CreateAgentRequest(errorOnToolCollisions: false),
+            [first],
+            [duplicate],
+            events.Add);
+
+        Assert.Same(first, Assert.Single(merged));
+        Assert.Single(events);
+    }
+
+    [Fact]
     public void StrictPolicyRejectsDuplicateBeforeTheToolSurfaceCanBeUsed()
     {
         var events = new List<CopilotAgentEvent>();
@@ -157,6 +175,46 @@ public sealed class CopilotCodexToolRegistryCollisionTests
 
         Assert.Equal("duplicate tool: functions.collisionprobe", exception.Message);
         Assert.Empty(events);
+    }
+
+    [Fact]
+    public void ProviderToolSurfaceUsesCanonicalOrderIndependentOfRegistration()
+    {
+        var alpha = new RecordingTool("AlphaProbe");
+        var mike = new RecordingTool("MikeProbe");
+        var zulu = new RecordingTool("ZuluProbe");
+
+        var first = CopilotMicrosoftAgentFrameworkRuntime.MergeAvailableTools(
+            CreateAgentRequest(errorOnToolCollisions: false),
+            [zulu, alpha],
+            [mike],
+            _ => { });
+        var second = CopilotMicrosoftAgentFrameworkRuntime.MergeAvailableTools(
+            CreateAgentRequest(errorOnToolCollisions: false),
+            [alpha, zulu],
+            [mike],
+            _ => { });
+
+        Assert.Equal(["AlphaProbe", "MikeProbe", "ZuluProbe"], first.Select(tool => tool.Name));
+        Assert.Equal(first.Select(tool => tool.Name), second.Select(tool => tool.Name));
+    }
+
+    [Fact]
+    public void ProviderFunctionNamesAreBoundedAndCollisionSafe()
+    {
+        string longToolName = new('A', 100);
+        string[] toolNames = ["FooBar", "Foo_Bar", longToolName];
+
+        var first = CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.BuildFunctionNameMap(toolNames);
+        var second = CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.BuildFunctionNameMap(toolNames.Reverse());
+
+        Assert.Equal("colorvision_read_local_file", CopilotMicrosoftAgentFrameworkRuntime.HarnessToolBridge.ToFunctionName("ReadLocalFile"));
+        Assert.Equal(toolNames.Length, first.Values.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.All(first.Values, functionName => Assert.InRange(functionName.Length, 1, 64));
+        Assert.NotEqual(first["FooBar"], first["Foo_Bar"]);
+        Assert.Equal(first["FooBar"], second["FooBar"]);
+        Assert.Equal(first["Foo_Bar"], second["Foo_Bar"]);
+        Assert.Equal(first[longToolName], second[longToolName]);
     }
 
     [Fact]

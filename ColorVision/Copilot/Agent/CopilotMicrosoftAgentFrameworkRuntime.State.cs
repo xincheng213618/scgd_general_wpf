@@ -1,5 +1,6 @@
 #pragma warning disable MAAI001
 #pragma warning disable CA1859
+#pragma warning disable CA1001
 using Anthropic;
 using Anthropic.Core;
 using ColorVision.Copilot.Mcp;
@@ -19,6 +20,50 @@ using AIChatFinishReason = Microsoft.Extensions.AI.ChatFinishReason;
 
 namespace ColorVision.Copilot
 {
+    internal sealed class CopilotAgentCheckpointPublication
+    {
+        private CopilotAgentCheckpointPublication(
+            CopilotAgentSessionCheckpoint sessionCheckpoint,
+            CopilotAgentTaskLedgerSnapshot taskLedger)
+        {
+            SessionCheckpoint = sessionCheckpoint;
+            TaskLedger = taskLedger;
+        }
+
+        public CopilotAgentSessionCheckpoint SessionCheckpoint { get; }
+
+        public CopilotAgentTaskLedgerSnapshot TaskLedger { get; }
+
+        public static bool TryCreate(
+            CopilotAgentSessionCheckpoint? sessionCheckpoint,
+            CopilotAgentTaskLedgerSnapshot? taskLedger,
+            out CopilotAgentCheckpointPublication publication)
+        {
+            publication = null!;
+            if (!CopilotAgentSessionCheckpoint.TryCreateSnapshot(
+                    sessionCheckpoint,
+                    out var checkpointSnapshot))
+            {
+                return false;
+            }
+
+            var taskLedgerSnapshot =
+                CopilotAgentTaskLedgerSnapshot.CreateSnapshot(
+                    taskLedger,
+                    normalize: false);
+            if (!taskLedgerSnapshot.IsStructurallyValid())
+                return false;
+
+            publication = new CopilotAgentCheckpointPublication(
+                checkpointSnapshot,
+                taskLedgerSnapshot);
+            return true;
+        }
+
+        public CopilotAgentEvent CreateEvent() =>
+            CopilotAgentEvent.CheckpointUpdated(SessionCheckpoint, TaskLedger);
+    }
+
     public sealed partial class CopilotMicrosoftAgentFrameworkRuntime
     {
         private sealed class LiveCheckpointPublisher
@@ -38,9 +83,8 @@ namespace ColorVision.Copilot
             private readonly bool _sessionResumed;
             private readonly Func<string> _answerText;
             private readonly Func<IReadOnlyList<string>> _deliveredSteeringMessages;
-            private CopilotAgentSessionCheckpoint? _latestCheckpoint;
-            private CopilotAgentTaskLedgerSnapshot? _latestTaskLedger;
-            private int _publishing;
+            private CopilotAgentCheckpointPublication? _latestPublication;
+            private readonly CopilotAgentCheckpointPublicationGate _publicationGate = new();
 
             public LiveCheckpointPublisher(
                 CopilotAgentRequest request,
@@ -76,9 +120,11 @@ namespace ColorVision.Copilot
                 _deliveredSteeringMessages = deliveredSteeringMessages;
             }
 
-            public CopilotAgentSessionCheckpoint? LatestCheckpoint => Volatile.Read(ref _latestCheckpoint);
+            public CopilotAgentSessionCheckpoint? LatestCheckpoint =>
+                Volatile.Read(ref _latestPublication)?.SessionCheckpoint;
 
-            public CopilotAgentTaskLedgerSnapshot? LatestTaskLedger => Volatile.Read(ref _latestTaskLedger);
+            public CopilotAgentTaskLedgerSnapshot? LatestTaskLedger =>
+                Volatile.Read(ref _latestPublication)?.TaskLedger;
 
             public async ValueTask<bool> TryPublishAsync(
                 AIAgent agent,
@@ -88,12 +134,38 @@ namespace ColorVision.Copilot
             {
                 ArgumentNullException.ThrowIfNull(agent);
                 ArgumentNullException.ThrowIfNull(session);
-                if (Interlocked.CompareExchange(ref _publishing, 1, 0) != 0)
-                    return false;
+                return await _publicationGate.TryRunAsync(
+                    token => PublishCoreAsync(agent, session, knownTaskLedger, token),
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            public ValueTask<bool> PublishRequiredAsync(
+                AIAgent agent,
+                AgentSession session,
+                CancellationToken cancellationToken)
+            {
+                ArgumentNullException.ThrowIfNull(agent);
+                ArgumentNullException.ThrowIfNull(session);
+                return _publicationGate.RunRequiredAsync(
+                    token => PublishCoreAsync(agent, session, null, token),
+                    cancellationToken);
+            }
+
+            private async ValueTask<bool> PublishCoreAsync(
+                AIAgent agent,
+                AgentSession session,
+                CopilotAgentTaskLedgerSnapshot? knownTaskLedger,
+                CancellationToken cancellationToken)
+            {
                 try
                 {
                     var taskLedger = knownTaskLedger
-                        ?? await CaptureTaskLedgerAsync(_todoProvider, _modeProvider, session, _sessionResumed, cancellationToken);
+                        ?? await CaptureTaskLedgerAsync(
+                            _todoProvider,
+                            _modeProvider,
+                            session,
+                            _sessionResumed,
+                            cancellationToken);
                     if (knownTaskLedger == null)
                         _taskEventJournalBuilder.RecordTaskLedger(taskLedger, "checkpoint");
 
@@ -102,7 +174,10 @@ namespace ColorVision.Copilot
                         _bridge.StepRecords,
                         _capabilitySnapshot,
                         DateTimeOffset.UtcNow);
-                    var serializedSession = await agent.SerializeSessionAsync(session, null, cancellationToken);
+                    var serializedSession = await agent.SerializeSessionAsync(
+                        session,
+                        null,
+                        cancellationToken);
                     var conversationMemory = CopilotAgentConversationMemory.Merge(
                         _requestedCheckpoint?.ConversationMemory,
                         _request.History,
@@ -124,13 +199,25 @@ namespace ColorVision.Copilot
                         _request.ConfiguredDeveloperInstructions);
                     if (checkpoint == null)
                     {
-                        _emit(CopilotAgentEvent.RuntimeDiagnostic("Incremental Agent checkpoint was rejected because the serialized state was invalid."));
+                        _emit(CopilotAgentEvent.RuntimeDiagnostic(
+                            "Incremental Agent checkpoint was rejected because the serialized state was invalid."));
                         return false;
                     }
 
-                    Volatile.Write(ref _latestTaskLedger, taskLedger);
-                    Volatile.Write(ref _latestCheckpoint, checkpoint);
-                    _emit(CopilotAgentEvent.CheckpointUpdated(checkpoint, taskLedger));
+                    if (!CopilotAgentCheckpointPublication.TryCreate(
+                            checkpoint,
+                            taskLedger,
+                            out var publication))
+                    {
+                        _emit(CopilotAgentEvent.RuntimeDiagnostic(
+                            "Incremental Agent checkpoint was rejected because its publication snapshot was invalid."));
+                        return false;
+                    }
+
+                    var checkpointEvent = publication.CreateEvent();
+                    CopilotAgentEventProtocol.Validate(checkpointEvent);
+                    Volatile.Write(ref _latestPublication, publication);
+                    _emit(checkpointEvent);
                     return true;
                 }
                 catch (OperationCanceledException)
@@ -142,10 +229,6 @@ namespace ColorVision.Copilot
                     _emit(CopilotAgentEvent.RuntimeDiagnostic(
                         $"Incremental Agent checkpoint could not be saved ({CopilotAgentTraceEntry.Sanitize(ex.Message)})."));
                     return false;
-                }
-                finally
-                {
-                    Volatile.Write(ref _publishing, 0);
                 }
             }
         }

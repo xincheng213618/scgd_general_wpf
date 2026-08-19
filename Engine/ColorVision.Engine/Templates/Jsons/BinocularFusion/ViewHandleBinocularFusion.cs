@@ -70,8 +70,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            if (File.Exists(result.FilePath))
-                ctx.ImageView.OpenImage(result.FilePath);
+            OpenSourceImage(ctx, result);
 
             List<string> header = new() { Properties.Resources.CenterPointX, Properties.Resources.CenterPointY, "X Tilt (°)", "Y Tilt (°)", "Rotation" };
             List<string> bdHeader = new() { "CrossMarkCenterX", "CrossMarkCenterY", "XDegree" , "YDegree", "ZDegree" };

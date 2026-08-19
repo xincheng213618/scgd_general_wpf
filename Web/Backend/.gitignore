@@ -1,4 +1,5 @@
 marketplace.db
 storage/
+.operations-relay-window-snapshots/
 __pycache__/
 *.pyc

@@ -424,9 +424,6 @@ namespace ColorVision.Engine.Services.RC
 
         private static bool IsTokenExpiredOrExpiring(NodeToken token, DateTime tokenReceivedTime)
         {
-            if (token.IsExpired())
-                return true;
-
             if (token.Expires <= 0 || tokenReceivedTime == DateTime.MinValue)
                 return false;
 

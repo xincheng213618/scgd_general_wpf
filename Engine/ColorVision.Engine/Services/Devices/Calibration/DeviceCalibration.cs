@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Camera.Local;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -42,8 +43,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
             EditCommand = new RelayCommand(a =>
             {
-                var propertyEditorWindow = new PropertyEditorWindow(Config, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                propertyEditorWindow.Submited += (s, e) => Save();
+                var propertyEditorWindow = new PropertyEditorWindow(Config, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                propertyEditorWindow.Submitted += (s, e) => Save();
                 propertyEditorWindow.ShowDialog();
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
@@ -53,10 +54,27 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             DisplayLazy = new Lazy<DisplayCalibration>(() => new DisplayCalibration(this));
             AttachPhyCamera(PhyCamera);
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
+            EditDisplayConfigCommand = new RelayCommand(_ => EditDisplayConfig());
+            ReleaseLocalCalibrationCacheCommand = new RelayCommand(_ => LocalCalibrationCacheManagerWindow.OpenWindow());
         }
 
         [CommandDisplay("EditCalibration",Order =100)]
         public RelayCommand EditCalibrationCommand { get; set; }
+
+        [CommandDisplay("EditDisplayConfig", Order = -1)]
+        public RelayCommand EditDisplayConfigCommand { get; }
+
+        [CommandDisplay("本地校正缓存管理")]
+        public RelayCommand ReleaseLocalCalibrationCacheCommand { get; }
+
+        private void EditDisplayConfig()
+        {
+            new PropertyEditorWindow(DisplayConfig)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.ShowDialog();
+        }
 
         public void EditCalibration()
         {

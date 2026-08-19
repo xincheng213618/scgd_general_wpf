@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Database"
+        xmlns:engine="clr-namespace:ColorVision.Engine"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:MySqlLocalServicesManager}"
@@ -74,7 +75,7 @@
                                     <StackPanel Orientation="Horizontal">
                                         <Button Content="{x:Static properties:Resources.Restore_Mysql}" Command="{Binding RestoreCommand}" Margin="0,0,5,0"/>
                                         <Button Content="{x:Static properties:Resources.Selected}" Command="{Binding SelectCommand}" Margin="0,0,5,0"/>
-                                        <Button Content="重命名" Tag="{Binding}" Click="RenameBackup_Click"/>
+                                        <Button Content="{engine:EngineLang Key='重命名'}" Tag="{Binding}" Click="RenameBackup_Click"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,15 +8,14 @@ namespace ColorVision.Copilot
 {
     public sealed class CopilotListDirectoryTool : ICopilotAgentDrivenTool
     {
-        public string Name => "ListDirectory";
+        public string Name => CopilotSharedCapabilityCatalog.ListAllowedDirectory.AgentToolName;
 
-        public string Description => "List one stable, bounded page of files and subdirectories from an allowed local directory, with an opaque continuation cursor when more entries remain.";
+        public string Description => CopilotSharedCapabilityCatalog.ListAllowedDirectory.AgentDescription;
 
-        public CopilotToolInputSchema InputSchema { get; } = new CopilotToolInputSchema(new[]
-        {
-            new CopilotToolParameter { Name = "path", Description = "Allowed local directory path to list.", Type = CopilotToolParameterType.Text, Required = true },
-            new CopilotToolParameter { Name = "cursor", Description = "Optional opaque next_cursor returned by the preceding page for the same directory. Never invent or modify it.", Type = CopilotToolParameterType.Text },
-        });
+        public CopilotToolCapabilityDescriptor Capability =>
+            CopilotSharedCapabilityCatalog.ListAllowedDirectory.AgentCapability;
+
+        public CopilotToolInputSchema InputSchema => CopilotSharedCapabilityCatalog.ListAllowedDirectory.AgentInputSchema;
 
         public bool IsAvailable(CopilotAgentRequest request)
         {
@@ -39,7 +37,7 @@ namespace ColorVision.Copilot
             var allowedDirectories = new List<string>(request.ReadableLocalDirectoryPaths);
             var selectedPath = toolInput?.Path;
             if (!string.IsNullOrWhiteSpace(selectedPath)
-                && !IsExplicitlyAllowed(selectedPath, allowedDirectories))
+                && !CopilotWorkspaceSearchSupport.IsExplicitlyAllowedPath(selectedPath, allowedDirectories))
             {
                 if (!CopilotWorkspaceSearchSupport.TryResolveExistingDirectoryWithinRoots(
                     selectedPath,
@@ -69,22 +67,6 @@ namespace ColorVision.Copilot
                 toolInput?.Cursor,
                 cancellationToken);
             return Task.FromResult(result.ToToolResult(Name));
-        }
-
-        private static bool IsExplicitlyAllowed(string path, IEnumerable<string> allowedPaths)
-        {
-            if (!Path.IsPathFullyQualified(path))
-                return false;
-
-            try
-            {
-                var fullPath = Path.GetFullPath(path);
-                return allowedPaths.Any(allowedPath => string.Equals(Path.GetFullPath(allowedPath), fullPath, StringComparison.OrdinalIgnoreCase));
-            }
-            catch
-            {
-                return false;
-            }
         }
     }
 }

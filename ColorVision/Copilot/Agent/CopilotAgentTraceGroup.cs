@@ -134,18 +134,19 @@ namespace ColorVision.Copilot
 
         private static string GetCategory(string toolName)
         {
+            if (CopilotSharedCapabilityCatalog.TryResolveAgentTool(toolName, out var capability))
+                return capability.Presentation.TraceCategory;
+
             return toolName switch
             {
                 "FetchUrl" or "WebSearch" => "web",
-                "ReadLocalFile" or "ReadAttachedFile" or "GetRecentLog" => "file-read",
-                "ListDirectory" or "SearchFiles" or "GrepText" or "SearchDocs" => "file-search",
+                "ReadAttachedFile" => "file-read",
                 "DelegateExplore" or "DelegateScout" => "delegation",
                 _ when toolName.StartsWith("Delegate", StringComparison.Ordinal) => "delegation",
                 "QueryFlowExecutionStats" or "QueryDatabaseSql" => "database-query",
                 "ExecuteDatabaseSql" => "database-write",
                 "InspectWindowsSystem" or "InspectWindowsProcesses" or "InspectWindowsServices" or "InspectTcpPort" or "InspectGitWorkingTree" or "InspectGitDiff" or "RunShellCommand" or "ReadShellCommandOutput" or "StartBackgroundShellCommand" or "InspectBackgroundShellCommands" or "ReadBackgroundShellCommandOutput" or "MonitorBackgroundShellCommandOutput" or "StopBackgroundShellCommandOutputMonitor" or "WaitForBackgroundShellCommand" or "WaitForBackgroundShellCommands" or "StopBackgroundShellCommand" => "command",
                 "PreviewWorkspacePatchEnvelope" or "ApplyWorkspacePatchEnvelope" or "RollbackWorkspacePatchEnvelope" => "workspace",
-                "CreateFlow" or "ApplyTemplatePatch" or "TemplatePatch" or "ExecuteMenu" or "SetLanguage" or "SetTheme" => "application",
                 _ => "tool:" + toolName,
             };
         }

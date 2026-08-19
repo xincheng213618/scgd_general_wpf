@@ -244,7 +244,7 @@ namespace ColorVision.Copilot
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName("arguments");
-                WriteCanonicalJsonElement(writer, arguments);
+                CopilotCanonicalJson.Write(writer, arguments);
                 writer.WriteString("cursor", input.Cursor ?? string.Empty);
                 WriteNullableInt(writer, "endLine", input.EndLine);
                 writer.WriteString("path", input.Path ?? string.Empty);
@@ -294,33 +294,6 @@ namespace ColorVision.Copilot
                 writer.WriteNullValue();
         }
 
-        private static void WriteCanonicalJsonElement(Utf8JsonWriter writer, JsonElement value)
-        {
-            switch (value.ValueKind)
-            {
-                case JsonValueKind.Object:
-                    writer.WriteStartObject();
-                    foreach (var property in value.EnumerateObject().OrderBy(item => item.Name, StringComparer.Ordinal))
-                    {
-                        writer.WritePropertyName(property.Name);
-                        WriteCanonicalJsonElement(writer, property.Value);
-                    }
-                    writer.WriteEndObject();
-                    return;
-                case JsonValueKind.Array:
-                    writer.WriteStartArray();
-                    foreach (var item in value.EnumerateArray())
-                        WriteCanonicalJsonElement(writer, item);
-                    writer.WriteEndArray();
-                    return;
-                case JsonValueKind.Undefined:
-                    writer.WriteNullValue();
-                    return;
-                default:
-                    value.WriteTo(writer);
-                    return;
-            }
-        }
     }
 
     internal static class CopilotAgentToolInputSnapshot
@@ -344,7 +317,16 @@ namespace ColorVision.Copilot
                 var frozenArguments = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
                 foreach (var property in serializedArguments.EnumerateObject())
                 {
-                    if (!frozenArguments.TryAdd(property.Name, property.Value.Clone()))
+                    var sourceValue = input.Arguments[property.Name];
+                    var frozenValue = sourceValue switch
+                    {
+                        null => null,
+                        string or bool or byte or sbyte or short or ushort or int or uint
+                            or long or ulong or float or double or decimal => sourceValue,
+                        JsonElement element => element.Clone(),
+                        _ => property.Value.Clone(),
+                    };
+                    if (!frozenArguments.TryAdd(property.Name, frozenValue))
                     {
                         snapshot = CopilotAgentToolInput.Empty;
                         error = $"Tool arguments contain the duplicate field '{property.Name}'.";
@@ -368,7 +350,7 @@ namespace ColorVision.Copilot
             catch
             {
                 snapshot = CopilotAgentToolInput.Empty;
-                error = "Tool arguments could not be frozen into an immutable approval snapshot.";
+                error = "Tool arguments could not be frozen into an immutable execution snapshot.";
                 return false;
             }
         }
@@ -426,6 +408,9 @@ namespace ColorVision.Copilot
                     $"Approve {tool.Name}",
                     $"Microsoft Agent Framework wants to run the protected ColorVision tool {tool.Name} with {argumentsSummary}."),
             };
+            presentation = CopilotSharedCapabilityCatalog.ApplyApprovalMetadata(
+                tool.Name,
+                presentation);
             ConfirmableAction? action = null;
             EventHandler<ConfirmableActionChangedEventArgs>? statusChanged = null;
             statusChanged = (_, eventArgs) =>

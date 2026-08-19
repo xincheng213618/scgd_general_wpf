@@ -227,7 +227,7 @@ namespace ColorVision.Engine.Services
             {
                 var oldvalue = fileServerCfg.FileServerCfg.Clone();
 
-                var window = new PropertyEditorWindow(fileServerCfg.FileServerCfg, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                var window = new PropertyEditorWindow(fileServerCfg.FileServerCfg, PropertyEditorEditMode.Transactional) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Closed += (s, e) =>
                 {
                     if (!fileServerCfg.FileServerCfg.EqualMax(oldvalue))
@@ -252,34 +252,6 @@ namespace ColorVision.Engine.Services
             using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             DB.Updateable(SysResourceModel).ExecuteCommand();
-        }
-
-        protected bool TrySaveConfig()
-        {
-            string previousCode = SysResourceModel.Code;
-            string previousName = SysResourceModel.Name;
-            string previousValue = SysResourceModel.Value;
-            try
-            {
-                SysResourceModel.Code = Config.Code;
-                SysResourceModel.Name = Config.Name;
-                SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                if (DB.Updateable(SysResourceModel).ExecuteCommand() == 1)
-                    return true;
-            }
-            catch
-            {
-                SysResourceModel.Code = previousCode;
-                SysResourceModel.Name = previousName;
-                SysResourceModel.Value = previousValue;
-                throw;
-            }
-
-            SysResourceModel.Code = previousCode;
-            SysResourceModel.Name = previousName;
-            SysResourceModel.Value = previousValue;
-            return false;
         }
 
         public override void Save()
@@ -307,19 +279,6 @@ namespace ColorVision.Engine.Services
 
             MqttRCService.GetInstance().RestartServices(TypeCode, PCode, Config.Code);
         }
-
-        protected bool TryRestartRCService()
-        {
-            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            SysDictionaryModel? type = DB.Queryable<SysDictionaryModel>().Where(x => x.Pid == 1 && x.Value == SysResourceModel.Type).First();
-            SysResourceModel? parent = DB.Queryable<SysResourceModel>().InSingle(SysResourceModel.Pid);
-            if (type == null || string.IsNullOrWhiteSpace(type.Key) || parent == null || string.IsNullOrWhiteSpace(parent.Code))
-                return false;
-
-            return MqttRCService.GetInstance().TryRestartServices(type.Key, parent.Code, Config.Code);
-        }
-
 
         public override void Delete()
         {

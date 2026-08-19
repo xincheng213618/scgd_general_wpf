@@ -12,19 +12,11 @@ namespace ColorVision.Copilot
 
         public CopilotToolExecutionHookBackgroundActivitySnapshot? BackgroundActivity { get; init; }
 
-        public CopilotCodexAsyncHookActivitySnapshot? AsyncCommandActivity { get; init; }
-
         public IReadOnlyList<CopilotAgentExtensionSourceSnapshot> ExtensionSources { get; init; } =
             Array.Empty<CopilotAgentExtensionSourceSnapshot>();
 
         public IReadOnlyList<CopilotAgentExtensionIssue> ExtensionIssues { get; init; } =
             Array.Empty<CopilotAgentExtensionIssue>();
-
-        public IReadOnlyList<string> ConfiguredHookFilePaths { get; init; } =
-            Array.Empty<string>();
-
-        public IReadOnlyList<CopilotCodexConfiguredHookIssue> ConfiguredHookIssues { get; init; } =
-            Array.Empty<CopilotCodexConfiguredHookIssue>();
 
         public IReadOnlyList<CopilotToolExecutionAuditEntry> RecentToolExecutions { get; init; } =
             Array.Empty<CopilotToolExecutionAuditEntry>();
@@ -48,54 +40,13 @@ namespace ColorVision.Copilot
             builder.AppendLine();
             AppendEffectiveHooks(builder, snapshot.HookSurface);
             AppendBackgroundActivity(builder, snapshot.BackgroundActivity);
-            AppendAsyncCommandActivity(builder, snapshot.AsyncCommandActivity);
             builder.AppendLine();
             AppendExtensionSources(builder, snapshot.ExtensionSources, snapshot.ExtensionIssues);
-            builder.AppendLine();
-            AppendConfiguredHookSources(
-                builder,
-                snapshot.ConfiguredHookFilePaths,
-                snapshot.ConfiguredHookIssues);
             builder.AppendLine();
             AppendRecentHealth(builder, snapshot.RecentToolExecutions);
             builder.AppendLine();
             builder.Append("安全边界：这里只显示来源、匹配器、状态、耗时与稳定失败码；不显示工具参数、结果正文或审批内容。");
             return builder.ToString().TrimEnd();
-        }
-
-        private static void AppendConfiguredHookSources(
-            StringBuilder builder,
-            IReadOnlyList<string>? sourceFilePaths,
-            IReadOnlyList<CopilotCodexConfiguredHookIssue>? issues)
-        {
-            sourceFilePaths ??= Array.Empty<string>();
-            issues ??= Array.Empty<CopilotCodexConfiguredHookIssue>();
-            builder.Append("hooks.json：")
-                .Append(FormatCount(sourceFilePaths.Count))
-                .Append(" 个受信任来源 · ")
-                .Append(FormatCount(issues.Count))
-                .AppendLine(" 个配置问题");
-            foreach (var path in sourceFilePaths.Take(8))
-                builder.Append("  - ").AppendLine(FormatInline(path, "unknown", 260));
-            if (sourceFilePaths.Count > 8)
-            {
-                builder.Append("  - ...另有 ")
-                    .Append(FormatCount(sourceFilePaths.Count - 8))
-                    .AppendLine(" 个来源未展开");
-            }
-            foreach (var issue in issues.Take(MaxExtensionIssues))
-            {
-                builder.Append("  ! ")
-                    .Append(FormatInline(issue.SourceFilePath, "unknown", 180))
-                    .Append(": ")
-                    .AppendLine(FormatInline(issue.Message, "Invalid hook configuration.", 300));
-            }
-            if (issues.Count > MaxExtensionIssues)
-            {
-                builder.Append("  ! ...另有 ")
-                    .Append(FormatCount(issues.Count - MaxExtensionIssues))
-                    .AppendLine(" 个配置问题未展开");
-            }
         }
 
         private static void AppendBackgroundActivity(
@@ -121,34 +72,6 @@ namespace ColorVision.Copilot
                 .Append(FormatCount(value.MaximumPending))
                 .Append(" · 超时占槽 ")
                 .Append(FormatCount(value.TimedOutRetainedCount))
-                .AppendLine();
-        }
-
-        private static void AppendAsyncCommandActivity(
-            StringBuilder builder,
-            CopilotCodexAsyncHookActivitySnapshot? activity)
-        {
-            if (activity?.IsStructurallyValid() != true)
-            {
-                builder.AppendLine("异步命令 Hook：无有效运行时快照");
-                return;
-            }
-
-            var value = activity.Value;
-            builder.Append("异步命令 Hook：会话 ")
-                .Append(FormatCount(value.SessionCount))
-                .Append(" · 运行 ")
-                .Append(FormatCount(value.RunningCount))
-                .Append(" · 排队 ")
-                .Append(FormatCount(value.QueuedCount))
-                .Append(" · 待投递 ")
-                .Append(FormatCount(value.CompletedResultCount))
-                .Append(" · 丢弃 ")
-                .Append(FormatCount(value.DroppedResultCount))
-                .Append(" · 单会话上限 ")
-                .Append(FormatCount(value.MaximumConcurrencyPerSession))
-                .Append('/')
-                .Append(FormatCount(value.MaximumPendingPerSession))
                 .AppendLine();
         }
 

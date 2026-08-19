@@ -459,9 +459,19 @@ JSON
 
   },
 
+  "ChessboardTestResults": {
+
+   "Chessboard": { ... },
+
+   "ChessboardFar": { ... }
+
+  },
+
   "W255TestResult": { ... }, // 亮色度 Key=White 时的兼容字段
 
   "W51TestResult": { ... },  // 视场角 Key=White 时的兼容字段
+
+  "ChessboardTestResult": { ... }, // 动态棋盘格 Key=Chessboard 时的兼容字段；同Key后写入结果覆盖前值
 
   "MTFHVTestResult": { ... },
 

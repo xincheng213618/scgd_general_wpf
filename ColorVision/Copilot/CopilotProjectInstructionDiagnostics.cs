@@ -358,32 +358,17 @@ namespace ColorVision.Copilot
             {
                 builder.Append(" · 官方默认；");
             }
-            var synchronousHookCount = effective.ConfiguredCommandHooks.Count(
-                hook => hook.ExecutionMode == CopilotToolExecutionHookMode.Sync);
-            var asynchronousHookCount = effective.ConfiguredCommandHooks.Count(
-                hook => hook.ExecutionMode == CopilotToolExecutionHookMode.Async);
             if (effective.ConfiguredHooksEnabled)
             {
                 builder.Append(effective.ConfiguredPluginsEnabled
                     ? "ColorVision 模块扩展 Hook 可运行"
                     : "features.plugins=false，省略模块扩展 Hook");
-                builder.Append("；受信任 hooks.json 命令 Hook 可运行");
             }
             else
             {
-                builder.Append("省略模块扩展与 hooks.json 命令 Hook");
+                builder.Append("省略模块扩展 Hook");
             }
-            builder.Append("；已加载命令 Hook ")
-                .Append(effective.ConfiguredCommandHooks.Count)
-                .Append(" 个（同步 ")
-                .Append(synchronousHookCount)
-                .Append(" / 异步 ")
-                .Append(asynchronousHookCount)
-                .Append("） / 来源文件 ")
-                .Append(effective.AppliedHookFilePaths.Count)
-                .Append(" 个 / 配置问题 ")
-                .Append(effective.ConfiguredHookIssues.Count)
-                .AppendLine(" 个；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
+            builder.AppendLine("；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
             builder.Append("Codex features.plugins：")
                 .Append(effective.ConfiguredPluginsEnabled ? "true" : "false");
             if (effective.HasPluginsEnabledOverride)
@@ -683,14 +668,6 @@ namespace ColorVision.Copilot
             {
                 builder.AppendLine(" · 未配置；子代理继承父请求推理强度");
             }
-            var customSubagentDiagnostics = CopilotCodexCustomSubagentDiagnostics.Format(
-                effective.CustomSubagents);
-            if (customSubagentDiagnostics.Length > 0)
-                builder.AppendLine(customSubagentDiagnostics);
-            var customSubagentDiscoveryIssues = CopilotCodexCustomSubagentDiagnostics.FormatDiscoveryIssues(
-                effective.CustomSubagentDiscoveryIssues);
-            if (customSubagentDiscoveryIssues.Length > 0)
-                builder.AppendLine(customSubagentDiscoveryIssues);
             if (effective.HasModelContextWindowOverride)
             {
                 builder.Append("Codex model_context_window：")

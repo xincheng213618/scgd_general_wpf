@@ -177,7 +177,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
             {
                 FindLightBeadsConfig config = new FindLightBeadsConfig();
                 var PropertyEditorWindow = new PropertyEditorWindow(config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                PropertyEditorWindow.Submited += (_, _) =>
+                PropertyEditorWindow.Submitted += (_, _) =>
                 {
                     new FindLightBeads(_imageContext, _drawContext).Execute(config, new RoiRect(roiX, roiY, roiW, roiH));
                 };
@@ -198,7 +198,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
             {
                 FindLightBeadsConfig config = new FindLightBeadsConfig();
                 var PropertyEditorWindow = new PropertyEditorWindow(config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                PropertyEditorWindow.Submited += (_, _) =>
+                PropertyEditorWindow.Submitted += (_, _) =>
                 {
                     new FindLightBeads(ImageContext, DrawContext).Execute(config, new RoiRect());
                 };

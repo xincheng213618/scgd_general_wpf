@@ -6,6 +6,39 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotMcpRequestIdentityTests
 {
+    [Fact]
+    public void AgentRequestDetachesExternalMcpServerViews()
+    {
+        var source = new CopilotMcpClientServerConfig
+        {
+            Name = "stable-server",
+            Endpoint = "https://mcp.example.test/api",
+            AccessPolicy = CopilotMcpClientAccessPolicy.ReadOnly,
+            ToolRules =
+            [
+                new CopilotMcpClientToolRule
+                {
+                    ToolName = "read_data",
+                    AccessPolicy = CopilotMcpClientAccessPolicy.ReadOnly,
+                },
+            ],
+        };
+        var request = new CopilotAgentRequest { ExternalMcpServers = [source] };
+
+        source.Name = "mutated-source";
+        source.ToolRules[0].ToolName = "mutated_tool";
+        var firstView = Assert.Single(request.ExternalMcpServers);
+        firstView.Name = "mutated-view";
+        firstView.ToolRules[0].ToolName = "mutated_view_tool";
+
+        var stableView = Assert.Single(request.ExternalMcpServers);
+        Assert.Equal("stable-server", stableView.Name);
+        Assert.Equal("read_data", Assert.Single(stableView.ToolRules).ToolName);
+        Assert.NotSame(firstView, stableView);
+        Assert.Throws<NotSupportedException>(() =>
+            ((IList<CopilotMcpClientServerConfig>)request.ExternalMcpServers).Clear());
+    }
+
     private const string BearerToken = "test-colorvision-mcp-session-token";
     private const string LoopbackSource = "tcp://127.0.0.1";
     private const string WorkspacePath = @"C:\ColorVision\SessionIsolation";

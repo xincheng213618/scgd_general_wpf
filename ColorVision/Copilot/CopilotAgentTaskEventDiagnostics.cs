@@ -71,8 +71,7 @@ namespace ColorVision.Copilot
             var title = string.IsNullOrWhiteSpace(conversation.Title)
                 ? CopilotUiText.NewConversationTitle
                 : conversation.Title.Trim();
-            var journal = conversation.LatestAgentTaskEventJournal
-                ?? conversation.AgentSessionCheckpoint?.TaskEventJournal;
+            var journal = conversation.CurrentAgentTaskEventJournal;
             if (journal?.Events?.Count is not > 0 || !journal.IsStructurallyValid())
             {
                 return $"Agent 任务日志 · {title}"

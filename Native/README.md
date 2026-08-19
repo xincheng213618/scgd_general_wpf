@@ -19,6 +19,24 @@ This directory contains the repository's native C++ and CUDA source tree.
 
 ## CUDA ABI contract
 
+### Why `opencv_cuda.dll` is tracked
+
+`x64/Release/opencv_cuda.dll` is a deliberate first-party release artifact, not an accidentally
+committed build output. The ordinary GitHub-hosted Windows build is not guaranteed to provide the
+exact CUDA 12.9 and supported Visual Studio integration required by `opencv_cuda.vcxproj`, and
+`build.sln` intentionally does not build that project. Managed builds, NuGet packaging, and the
+local release wrapper therefore consume the reviewed DLL from this stable path so that they do not
+depend on a CUDA-capable build environment.
+
+Do not remove the DLL merely because `x64/` is otherwise ignored. Removing it is safe only after a
+clean GitHub Actions runner can build it before the managed solution, a cache miss always falls back
+to a real CUDA build, and the local release workflow can either build or retrieve the same artifact.
+The intended CI optimization is to cache only the generated DLL, keyed by the CUDA sources, shared
+ABI headers, CUDA/OpenCV property sheets, OpenCV import libraries, and toolchain version; caching the
+CUDA Toolkit itself is too large and the cache must never be the only way to obtain the DLL. Complete
+the existing ABI checks and a GPU smoke test before accepting a newly generated binary and deleting
+the tracked fallback. This decision was last reviewed on 2026-08-17.
+
 `x64/Release/opencv_cuda.dll` is a tracked release input. Any change to
 `include/cuda_export.h`, `include/custom_structs.h`, or the managed interop declarations under
 `UI/ColorVision.Core` must be reviewed against that DLL. The repository checker structurally

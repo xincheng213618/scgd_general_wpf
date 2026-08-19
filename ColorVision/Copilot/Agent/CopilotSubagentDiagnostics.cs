@@ -345,10 +345,7 @@ namespace ColorVision.Copilot
         public static string Format(
             CopilotConversationRecord? conversation,
             string? arguments,
-            CopilotSubagentRoleCatalog? catalog = null,
-            IReadOnlyList<CopilotCodexCustomSubagentDefinition>? customSubagents = null,
-            bool customAgentsEnabled = true,
-            string customAgentSnapshotLabel = "")
+            CopilotSubagentRoleCatalog? catalog = null)
         {
             var request = ParseCommand(arguments);
             if (request.Action is CopilotSubagentDiagnosticAction.Invalid
@@ -380,14 +377,7 @@ namespace ColorVision.Copilot
 
             if (request.Action is CopilotSubagentDiagnosticAction.Overview
                 or CopilotSubagentDiagnosticAction.Roles)
-            {
                 AppendRoles(builder, catalog);
-                AppendCustomSubagents(
-                    builder,
-                    customSubagents,
-                    customAgentsEnabled,
-                    customAgentSnapshotLabel);
-            }
 
             if (request.Action is CopilotSubagentDiagnosticAction.Overview
                 or CopilotSubagentDiagnosticAction.Runs)

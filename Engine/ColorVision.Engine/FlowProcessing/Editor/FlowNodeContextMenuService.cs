@@ -128,7 +128,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
 
             if (node is LocalCalibrationNodeBase)
             {
-                var cacheManagerItem = new MenuItem { Header = "本地校正缓存管理" };
+                var cacheManagerItem = new MenuItem { Header = LocalizeNodeMenuText("本地校正缓存管理") };
                 cacheManagerItem.Click += (_, _) => LocalCalibrationCacheManagerWindow.OpenWindow();
                 items.Add(cacheManagerItem);
             }

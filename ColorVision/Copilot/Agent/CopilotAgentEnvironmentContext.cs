@@ -33,9 +33,19 @@ namespace ColorVision.Copilot
 
         public string ActiveDocumentPath { get; init; } = string.Empty;
 
-        public IReadOnlyList<string> SearchRoots { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> SearchRoots
+        {
+            get => _searchRoots;
+            init => _searchRoots = FreezePaths(value);
+        }
+        private readonly IReadOnlyList<string> _searchRoots = Array.Empty<string>();
 
-        public IReadOnlyList<string> WritableRoots { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> WritableRoots
+        {
+            get => _writableRoots;
+            init => _writableRoots = FreezePaths(value);
+        }
+        private readonly IReadOnlyList<string> _writableRoots = Array.Empty<string>();
 
         public string GitRoot { get; init; } = string.Empty;
 
@@ -192,6 +202,16 @@ namespace ColorVision.Copilot
                 .Where(path => !string.IsNullOrWhiteSpace(path))
                 .Take(MaxScopedPaths)
                 .ToArray();
+        }
+
+        private static IReadOnlyList<string> FreezePaths(IReadOnlyList<string>? source)
+        {
+            if (source == null || source.Count == 0)
+                return Array.Empty<string>();
+            var result = new string[source.Count];
+            for (var index = 0; index < source.Count; index++)
+                result[index] = source[index];
+            return Array.AsReadOnly(result);
         }
 
         private static string NormalizePath(string? path)

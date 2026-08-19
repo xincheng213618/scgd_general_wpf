@@ -19,7 +19,7 @@ namespace ColorVision.Copilot.Mcp
             return CopilotMcpToolCallResult.Ok(FormatTemplateLiveContext(liveContext));
         }
 
-        private static CopilotMcpToolCallResult GetSavedTemplateContext(IReadOnlyDictionary<string, JsonElement>? arguments)
+        internal static CopilotMcpToolCallResult GetSavedTemplateContext(IReadOnlyDictionary<string, JsonElement>? arguments)
         {
             var templateCode = GetString(arguments, "template_code", "code");
             var templateName = GetString(arguments, "template_name", "name");
@@ -36,7 +36,7 @@ namespace ColorVision.Copilot.Mcp
             return CopilotSavedTemplateContextSupport.Read(templateCode, templateName);
         }
 
-        private static CopilotMcpToolCallResult GetTemplateTypeContext(IReadOnlyDictionary<string, JsonElement>? arguments)
+        internal static CopilotMcpToolCallResult GetTemplateTypeContext(IReadOnlyDictionary<string, JsonElement>? arguments)
         {
             var templateCode = GetString(arguments, "template_code", "code");
             if (string.IsNullOrWhiteSpace(templateCode))

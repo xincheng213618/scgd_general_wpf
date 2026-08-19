@@ -19,6 +19,22 @@ public class OperationsWatchPolicyTest {
     }
 
     @Test
+    public void offlineRequiresRepeatedFailuresAcrossTheConfirmationWindow() {
+        long firstFailureAt = 1_000_000L;
+
+        assertFalse(OperationsWatchPolicy.shouldConfirmOffline(
+                1, firstFailureAt, firstFailureAt + 120_000L));
+        assertFalse(OperationsWatchPolicy.shouldConfirmOffline(
+                2, firstFailureAt, firstFailureAt + 120_000L));
+        assertFalse(OperationsWatchPolicy.shouldConfirmOffline(
+                3, firstFailureAt, firstFailureAt + 59_999L));
+        assertTrue(OperationsWatchPolicy.shouldConfirmOffline(
+                3, firstFailureAt, firstFailureAt + 60_000L));
+        assertFalse(OperationsWatchPolicy.shouldConfirmOffline(
+                3, firstFailureAt, firstFailureAt - 1L));
+    }
+
+    @Test
     public void healthyStatusPrioritizesActionableEvidence() {
         assertEquals("在线 · 主界面响应超时",
                 OperationsWatchPolicy.healthyStatus("unresponsive", true, 2, 3, 4, true));
@@ -63,15 +79,58 @@ public class OperationsWatchPolicyTest {
         assertEquals("", OperationsWatchPolicy.attentionKey("slow", 0, 0, 0, false));
 
         assertTrue(OperationsWatchPolicy.shouldPostAttention(
-                OperationsWatchPolicy.ATTENTION_ERRORS, ""));
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                "",
+                evidence('a', 100L, 10L),
+                OperationsMonitorEvidenceRevision.Evidence.EMPTY));
         assertFalse(OperationsWatchPolicy.shouldPostAttention(
-                OperationsWatchPolicy.ATTENTION_ERRORS, OperationsWatchPolicy.ATTENTION_ERRORS));
-        assertFalse(OperationsWatchPolicy.shouldPostAttention("", OperationsWatchPolicy.ATTENTION_ERRORS));
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                evidence('a', 100L, 10L),
+                OperationsMonitorEvidenceRevision.Evidence.EMPTY));
+        assertTrue(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                evidence('b', 200L, 8L),
+                evidence('a', 100L, 10L)));
+        assertTrue(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_DEVICES,
+                OperationsWatchPolicy.ATTENTION_DEVICES,
+                evidence('b', 0L, 20L),
+                evidence('a', 0L, 10L)));
+        assertFalse(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_DEVICES,
+                OperationsWatchPolicy.ATTENTION_DEVICES,
+                evidence('b', 0L, 5L),
+                evidence('a', 0L, 10L)));
+        assertFalse(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                evidence('b', 50L, 100L),
+                evidence('a', 100L, 10L)));
+        assertFalse(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                evidence('a', 100L, 10L),
+                evidence('a', 100L, 10L)));
+        assertFalse(OperationsWatchPolicy.shouldPostAttention(
+                "",
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsMonitorEvidenceRevision.Evidence.EMPTY,
+                evidence('a', 100L, 10L)));
+        assertTrue(OperationsWatchPolicy.isEvidenceUpdate(
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                evidence('b', 200L, 8L),
+                evidence('a', 100L, 10L)));
+        assertEquals("同类异常出现新证据 · 发现错误事件 · 点击进入问题中心",
+                OperationsWatchPolicy.attentionMessage(
+                        OperationsWatchPolicy.ATTENTION_ERRORS, true));
     }
 
     @Test
     public void offlineAlertRequiresARealOnlineToOfflineTransition() {
-        assertFalse(OperationsWatchPolicy.shouldPostOffline(false, false, ""));
+        assertFalse(OperationsWatchPolicy.shouldPostOffline(false, true, ""));
         assertFalse(OperationsWatchPolicy.shouldPostOffline(true, false, ""));
         assertTrue(OperationsWatchPolicy.shouldPostOffline(true, true, ""));
         assertFalse(OperationsWatchPolicy.shouldPostOffline(
@@ -92,13 +151,89 @@ public class OperationsWatchPolicyTest {
                 OperationsWatchPolicy.attentionDestination(OperationsWatchPolicy.ATTENTION_ERRORS));
         assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK,
                 OperationsWatchPolicy.attentionDestination(OperationsWatchPolicy.ATTENTION_OFFLINE));
+        assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTIONS,
+                OperationsWatchPolicy.attentionDestination(OperationsWatchPolicy.ATTENTION_REVOKED));
         assertEquals("", OperationsWatchPolicy.attentionDestination("unknown"));
 
         assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
                 OperationsWatchPolicy.normalizeDestination(OperationsWatchPolicy.DESTINATION_TRIAGE));
         assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK,
                 OperationsWatchPolicy.normalizeDestination(OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK));
+        assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTIONS,
+                OperationsWatchPolicy.normalizeDestination(
+                        OperationsWatchPolicy.DESTINATION_CONNECTIONS));
         assertEquals("", OperationsWatchPolicy.normalizeDestination("/ops/v1/audit"));
         assertEquals("", OperationsWatchPolicy.normalizeDestination(null));
+    }
+
+    @Test
+    public void watchStatesRouteToTheirNearestSafeRecoveryScreen() {
+        assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
+                OperationsWatchPolicy.watchStateDestination(
+                        OperationsWatchHistory.attentionState(
+                                OperationsWatchPolicy.ATTENTION_DEVICES)));
+        assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
+                OperationsWatchPolicy.watchStateDestination(
+                        OperationsWatchHistory.attentionState(
+                                OperationsWatchPolicy.ATTENTION_UI_UNRESPONSIVE)));
+        assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTION_CHECK,
+                OperationsWatchPolicy.watchStateDestination(
+                        OperationsWatchHistory.STATE_OFFLINE));
+        assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTIONS,
+                OperationsWatchPolicy.watchStateDestination(
+                        OperationsWatchHistory.STATE_REMOTE_WAITING));
+        assertEquals(OperationsWatchPolicy.DESTINATION_CONNECTIONS,
+                OperationsWatchPolicy.watchStateDestination(
+                        OperationsWatchHistory.STATE_REVOKED));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination(
+                OperationsWatchHistory.STATE_ONLINE));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination(
+                OperationsWatchHistory.STATE_REMOTE_ONLINE));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination("unknown"));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination(null));
+    }
+
+    @Test
+    public void watchStateDeepLinksRequireAFreshCompletedCheck() {
+        long nowMilliseconds = 2_000_000_000_000L;
+        String deviceAttention = OperationsWatchHistory.attentionState(
+                OperationsWatchPolicy.ATTENTION_DEVICES);
+        assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
+                OperationsWatchPolicy.watchStateDestination(
+                        deviceAttention,
+                        nowMilliseconds
+                                - OperationsWatchFreshnessPolicy.STALE_AFTER_MILLISECONDS,
+                        nowMilliseconds));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination(
+                deviceAttention,
+                nowMilliseconds
+                        - OperationsWatchFreshnessPolicy.STALE_AFTER_MILLISECONDS - 1L,
+                nowMilliseconds));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination(
+                OperationsWatchHistory.STATE_OFFLINE, 0L, nowMilliseconds));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination(
+                OperationsWatchHistory.STATE_REMOTE_WAITING,
+                nowMilliseconds
+                        + OperationsWatchFreshnessPolicy
+                                .MAXIMUM_FUTURE_SKEW_MILLISECONDS + 1L,
+                nowMilliseconds));
+    }
+
+    @Test
+    public void completedBackgroundCheckMustStillBelongToTheActiveComputer() {
+        assertTrue(OperationsWatchPolicy.isCurrentProfileCheck(
+                "host_1", "host_1", 7, 7));
+        assertFalse(OperationsWatchPolicy.isCurrentProfileCheck(
+                "host_1", "host_2", 7, 7));
+        assertFalse(OperationsWatchPolicy.isCurrentProfileCheck(
+                "host_1", "host_1", 6, 7));
+        assertFalse(OperationsWatchPolicy.isCurrentProfileCheck(
+                null, "host_1", 7, 7));
+    }
+
+    private static OperationsMonitorEvidenceRevision.Evidence evidence(
+            char revisionCharacter, long sequence, long burden) {
+        return new OperationsMonitorEvidenceRevision.Evidence(
+                String.valueOf(revisionCharacter).repeat(64), sequence, burden);
     }
 }

@@ -160,69 +160,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             }
         }
 
-        public void ExecuteFromSource(
-            LocalCalibrationLayout layout,
-            IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
-            IntPtr sourceRawPointer,
-            IntPtr correctedRawPointer,
-            IntPtr ciePointer,
-            float[] exposure)
-        {
-            ArgumentNullException.ThrowIfNull(calibrationFiles);
-            ArgumentNullException.ThrowIfNull(exposure);
-            if (sourceRawPointer == IntPtr.Zero) throw new ArgumentException("源 RAW 指针为空。", nameof(sourceRawPointer));
-
-            bool hasColor = calibrationFiles.Any(file => IsColorCalibration(file.CalibrationType));
-            bool hasBasic = calibrationFiles.Any(file => !IsColorCalibration(file.CalibrationType));
-            if (!hasColor && correctedRawPointer == IntPtr.Zero)
-            {
-                throw new ArgumentException("不包含颜色转换时，校正 RAW 输出指针不能为空。", nameof(correctedRawPointer));
-            }
-
-            if (!useLegacyCalibration)
-            {
-                SemaphoreSlim executionGate = EnterExecution();
-                try
-                {
-                    ObjectDisposedException.ThrowIf(disposed, this);
-                    openCvCache.ExecuteFromSource(
-                        layout, calibrationFiles, sourceRawPointer, correctedRawPointer, ciePointer, exposure);
-                    return;
-                }
-                finally
-                {
-                    ExitExecution(executionGate);
-                }
-            }
-
-            // The rollback backend has only an in-place ABI. Color-only
-            // conversion is read-only; basic correction still needs a private
-            // materialized RAW when the caller does not request corrected RAW.
-            if (!hasBasic)
-            {
-                Execute(layout, calibrationFiles, sourceRawPointer, ciePointer, exposure);
-                return;
-            }
-
-            int rawLength = checked((layout.Bpp / 8) * layout.Width * layout.Height * layout.Channels);
-            IntPtr workingRaw = correctedRawPointer;
-            bool ownsWorkingRaw = workingRaw == IntPtr.Zero;
-            if (ownsWorkingRaw)
-            {
-                workingRaw = Marshal.AllocHGlobal(rawLength);
-                if (workingRaw == IntPtr.Zero) throw new OutOfMemoryException("分配旧版校正 RAW 临时缓冲区失败。");
-            }
-            try
-            {
-                CopyMemory(sourceRawPointer, workingRaw, rawLength);
-                Execute(layout, calibrationFiles, workingRaw, ciePointer, exposure);
-            }
-            finally
-            {
-                if (ownsWorkingRaw) Marshal.FreeHGlobal(workingRaw);
-            }
-        }
-
         public int ReleaseCache()
         {
             NativeGate.Wait();
@@ -535,11 +472,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
                 or CalibrationType.LumOneColor
                 or CalibrationType.LumFourColor
                 or CalibrationType.LumMultiColor;
-
-        private static unsafe void CopyMemory(IntPtr source, IntPtr destination, int length)
-        {
-            Buffer.MemoryCopy(source.ToPointer(), destination.ToPointer(), length, length);
-        }
 
         private readonly record struct CachedCalibrationFile(
             CalibrationType CalibrationType,

@@ -6,88 +6,13 @@ using System.Linq;
 namespace ColorVision.Engine.Services.Devices.Camera.Local
 {
     /// <summary>
-    /// Applies a camera calibration template to a process-local RAW buffer.
-    /// Basic correction-only templates return corrected RAW; templates containing one
-    /// luminance/color item return CIE without mutating the upstream frame.
+    /// Applies a camera calibration template directly to a process-local RAW buffer.
+    /// Basic stages update RAW in place; a color stage additionally writes CIE data.
     /// </summary>
     internal static class LocalFrameCalibrationService
     {
-        public static LocalFlowFrame Calibrate(
-            LocalFlowFrameLease source,
-            LocalCalibrationCacheManager cacheManager,
-            IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
-            string calibrationTemplate)
-        {
-            ArgumentNullException.ThrowIfNull(source);
-            ArgumentNullException.ThrowIfNull(cacheManager);
-            ArgumentNullException.ThrowIfNull(calibrationFiles);
-            ValidateSource(source);
-            CalibrationPlan plan = CreatePlan(
-                source.Metadata.Width,
-                source.Metadata.Height,
-                source.Metadata.Channels,
-                calibrationFiles,
-                calibrationTemplate);
-            bool sourceRawAlreadyMirrored = IsRawAlreadyMirrored(source);
-            ValidateMirroredRawContinuation(sourceRawAlreadyMirrored, plan);
-            int rawLength = GetExpectedRawLength(source);
-            LocalFrameMetadata metadata = new()
-            {
-                Width = source.Metadata.Width,
-                Height = source.Metadata.Height,
-                SourceBpp = source.Metadata.SourceBpp,
-                CieBpp = 32,
-                Channels = source.Metadata.Channels,
-                Gain = source.Metadata.Gain,
-                Exposure = source.Metadata.Exposure.ToArray(),
-                DeviceCode = source.Metadata.DeviceCode,
-                SourceFilePath = source.Metadata.SourceFilePath,
-                CalibrationTemplate = calibrationTemplate,
-                CaptureTime = source.Metadata.CaptureTime,
-                PrimaryBufferKind = plan.GeneratesCie ? LocalFrameBufferKind.CvCie : LocalFrameBufferKind.CvRaw,
-                FlipMode = source.Metadata.FlipMode,
-                IsMirrorReady = true
-            };
-            LocalFlowFrame result = LocalFlowFrame.Allocate(metadata, plan.GeneratesCie ? 0 : rawLength, plan.CieLength);
-            try
-            {
-                using (LocalFlowFrameLease destination = result.Acquire())
-                {
-                    float[] exposure = plan.GeneratesCie ? NormalizeExposure(source.Metadata.Exposure) : Array.Empty<float>();
-                    cacheManager.ExecuteFromSource(
-                        new LocalCalibrationLayout(source.Metadata.Width, source.Metadata.Height, source.Metadata.SourceBpp, source.Metadata.Channels),
-                        calibrationFiles,
-                        source.RawPointer,
-                        plan.GeneratesCie ? IntPtr.Zero : destination.RawPointer,
-                        destination.CiePointer,
-                        exposure);
-                }
-                if (sourceRawAlreadyMirrored)
-                {
-                    // Color conversion preserves pixel order. The generated CIE is therefore
-                    // already in the same mirrored orientation as the source RAW.
-                    result.MarkPrimaryBufferFlipApplied();
-                }
-                else
-                {
-                    LocalFrameMirrorService.ApplyPending(result);
-                }
-                return result;
-            }
-            catch
-            {
-                result.Dispose();
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Applies calibration to a frame captured directly into process-local memory.
-        /// Color templates preserve the captured RAW and write CIE beside it; basic-only
-        /// templates correct the captured RAW in place to avoid another full-frame copy.
-        /// </summary>
-        public static void CalibrateCapturedFrame(
-            LocalFlowFrameLease frame,
+        public static void CalibrateInPlace(
+            LocalFlowFrame frame,
             LocalCalibrationCacheManager cacheManager,
             IReadOnlyList<DeviceCameraCalibrationFile> calibrationFiles,
             string calibrationTemplate)
@@ -95,42 +20,38 @@ namespace ColorVision.Engine.Services.Devices.Camera.Local
             ArgumentNullException.ThrowIfNull(frame);
             ArgumentNullException.ThrowIfNull(cacheManager);
             ArgumentNullException.ThrowIfNull(calibrationFiles);
-            ValidateSource(frame);
             CalibrationPlan plan = CreatePlan(
                 frame.Metadata.Width,
                 frame.Metadata.Height,
                 frame.Metadata.Channels,
                 calibrationFiles,
                 calibrationTemplate);
-            bool sourceRawAlreadyMirrored = IsRawAlreadyMirrored(frame);
-            ValidateMirroredRawContinuation(sourceRawAlreadyMirrored, plan);
-            LocalCalibrationLayout layout = new(
-                frame.Metadata.Width,
-                frame.Metadata.Height,
-                frame.Metadata.SourceBpp,
-                frame.Metadata.Channels);
-
-            if (plan.GeneratesCie)
+            bool sourceRawAlreadyMirrored;
+            using (LocalFlowFrameLease source = frame.Acquire())
             {
-                if (frame.CiePointer == IntPtr.Zero || frame.CieLength < plan.CieLength)
-                {
-                    throw new InvalidOperationException($"CIE buffer is too small: required {plan.CieLength} bytes, actual {frame.CieLength} bytes.");
-                }
-                cacheManager.ExecuteFromSource(
-                    layout,
-                    calibrationFiles,
-                    frame.RawPointer,
-                    IntPtr.Zero,
-                    frame.CiePointer,
-                    NormalizeExposure(frame.Metadata.Exposure));
-                if (sourceRawAlreadyMirrored)
-                {
-                    frame.MarkBufferFlipApplied(LocalFrameBufferKind.CvCie);
-                }
-                return;
+                ValidateSource(source);
+                sourceRawAlreadyMirrored = IsRawAlreadyMirrored(source);
+                ValidateMirroredRawContinuation(sourceRawAlreadyMirrored, plan);
             }
-
-            cacheManager.Execute(layout, calibrationFiles, frame.RawPointer, IntPtr.Zero, Array.Empty<float>());
+            frame.PrepareForCalibration(calibrationTemplate, plan.CieLength, plan.HasBasicCalibration);
+            using (LocalFlowFrameLease lease = frame.Acquire())
+            {
+                cacheManager.Execute(
+                    new LocalCalibrationLayout(
+                        lease.Metadata.Width,
+                        lease.Metadata.Height,
+                        lease.Metadata.SourceBpp,
+                        lease.Metadata.Channels),
+                    calibrationFiles,
+                    lease.RawPointer,
+                    plan.GeneratesCie ? lease.CiePointer : IntPtr.Zero,
+                    plan.GeneratesCie ? NormalizeExposure(lease.Metadata.Exposure) : Array.Empty<float>());
+                if (plan.GeneratesCie && sourceRawAlreadyMirrored)
+                {
+                    lease.MarkBufferFlipApplied(LocalFrameBufferKind.CvCie);
+                }
+            }
+            LocalFrameMirrorService.ApplyPending(frame);
         }
 
         public static int GetRequiredCieLength(

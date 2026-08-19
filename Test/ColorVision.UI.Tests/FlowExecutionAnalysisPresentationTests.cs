@@ -1,4 +1,5 @@
 #pragma warning disable CA1707
+using ColorVision.Engine;
 using ColorVision.Engine.FlowProcessing.Diagnostics;
 
 namespace ColorVision.UI.Tests;
@@ -245,7 +246,7 @@ public class FlowExecutionAnalysisPresentationTests
         Assert.Equal(50d, summary.SuccessRatePercent);
         FlowNodeHistoryAnalysis timeoutItem =
             items.Single(item => item.Record.Id == timedOut.Id);
-        Assert.Equal("超时", timeoutItem.StatusText);
+        Assert.Equal(EngineLocalization.Get("超时"), timeoutItem.StatusText);
         Assert.Null(timeoutItem.ElapsedMs);
         Assert.Equal("—", timeoutItem.ElapsedText);
     }
@@ -316,7 +317,7 @@ public class FlowExecutionAnalysisPresentationTests
 
         Assert.Equal(FlowNodeExecutionOutcome.Failed, item.Outcome);
         Assert.True(item.IsTimedOut);
-        Assert.Equal("超时", item.StatusText);
+        Assert.Equal(EngineLocalization.Get("超时"), item.StatusText);
         Assert.Null(item.ElapsedMs);
         Assert.Equal("—", item.ElapsedText);
     }

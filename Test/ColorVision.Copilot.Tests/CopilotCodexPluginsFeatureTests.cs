@@ -11,6 +11,202 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexPluginsFeatureTests
 {
     [Fact]
+    public void CapabilitySnapshotsCannotBeRewrittenAfterPublication()
+    {
+        var catalog = new CopilotCapabilityCatalog();
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.BuiltIn,
+            "builtin:frozen-snapshot",
+            "Built-in tools",
+            [new RecordingTool("FrozenBuiltInTool")]);
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:frozen-snapshot",
+            "Plugin tools",
+            [new RecordingTool("FrozenPluginTool")]);
+
+        AssertReadOnly(catalog.GetSnapshot().Capabilities);
+        AssertReadOnly(catalog.GetSnapshot(includePluginCapabilities: false).Capabilities);
+
+        static void AssertReadOnly(IReadOnlyList<CopilotCapabilityCatalogEntry> capabilities)
+        {
+            var entries = Assert.IsAssignableFrom<System.Collections.Generic.IList<CopilotCapabilityCatalogEntry>>(
+                capabilities);
+            Assert.NotEmpty(entries);
+            Assert.True(entries.IsReadOnly);
+            Assert.Throws<NotSupportedException>(() => entries[0] = new CopilotCapabilityCatalogEntry());
+        }
+    }
+
+    [Fact]
+    public void PluginFilteredCapabilityRevisionTracksNonPluginCatalogChangesMonotonically()
+    {
+        var catalog = new CopilotCapabilityCatalog();
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.BuiltIn,
+            "builtin:filtered-revision",
+            "Built-in tools",
+            [new RecordingTool("FilteredRevisionBuiltInTool")]);
+        var builtInSnapshot = catalog.GetSnapshot(includePluginCapabilities: false);
+
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.ExternalMcp,
+            "mcp:filtered-revision",
+            "External MCP tools",
+            [new RecordingTool("FilteredRevisionMcpTool")]);
+        var withMcpSnapshot = catalog.GetSnapshot(includePluginCapabilities: false);
+
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.Plugin,
+            "plugin:filtered-revision",
+            "Plugin tools",
+            [new RecordingTool("FilteredRevisionPluginTool")]);
+        var afterPluginSnapshot = catalog.GetSnapshot(includePluginCapabilities: false);
+
+        catalog.PublishSource(
+            CopilotCapabilitySourceKind.ExternalMcp,
+            "mcp:filtered-revision",
+            "External MCP tools",
+            []);
+        var afterMcpRemovalSnapshot = catalog.GetSnapshot(includePluginCapabilities: false);
+
+        Assert.True(withMcpSnapshot.Revision > builtInSnapshot.Revision);
+        Assert.Equal(withMcpSnapshot.Revision, afterPluginSnapshot.Revision);
+        Assert.True(afterMcpRemovalSnapshot.Revision > withMcpSnapshot.Revision);
+        Assert.Equal(
+            ["FilteredRevisionBuiltInTool"],
+            afterMcpRemovalSnapshot.Capabilities.Select(entry => entry.Name));
+    }
+
+    [Fact]
+    public void ExtensionRegistryAndBridgeSnapshotsCannotBeRewrittenAfterPublication()
+    {
+        var registry = new CopilotAgentExtensionRegistry();
+        using var bridge = new CopilotAgentExtensionBridge(
+            registry,
+            new CopilotCapabilityCatalog(),
+            reservedToolNames: [],
+            new CopilotToolExecutionHookRegistry());
+        using var registration = registry.Register(new CopilotAgentExtensionRegistration
+        {
+            SourceId = "test.frozen-extension-snapshot",
+            SourceName = "Frozen extension snapshot",
+            SourceVersion = "1.0.0",
+            ContextProviders = [new RecordingContextProvider("frozen-provider")],
+            Tools = [new RecordingModuleTool()],
+            ToolExecutionHooks = [new AsyncModuleHook()],
+        });
+
+        var registrySnapshot = registry.GetSnapshot();
+        var descriptor = Assert.Single(registrySnapshot.Extensions);
+        AssertReadOnly(registrySnapshot.Extensions);
+        AssertReadOnly(descriptor.ContextProviders);
+        AssertReadOnly(descriptor.Tools);
+        AssertReadOnly(descriptor.ToolExecutionHooks);
+
+        var bridgeSnapshot = bridge.GetSnapshot();
+        var source = Assert.Single(bridgeSnapshot.Sources);
+        AssertReadOnly(bridgeSnapshot.Sources);
+        AssertReadOnly(source.Hooks);
+        AssertReadOnly(bridgeSnapshot.ContextProviders);
+        AssertReadOnly(bridgeSnapshot.Tools);
+
+        static void AssertReadOnly<T>(IReadOnlyList<T> values)
+        {
+            var items = Assert.IsAssignableFrom<System.Collections.Generic.IList<T>>(values);
+            Assert.NotEmpty(items);
+            Assert.True(items.IsReadOnly);
+            Assert.Throws<NotSupportedException>(() => items[0] = items[0]);
+        }
+    }
+
+    [Fact]
+    public async Task ModuleToolMetadataIsFrozenAtRegistrationWhileExecutionRemainsLive()
+    {
+        var moduleTool = new MutableModuleTool();
+        var registry = new CopilotAgentExtensionRegistry();
+        using var bridge = new CopilotAgentExtensionBridge(
+            registry,
+            new CopilotCapabilityCatalog(),
+            reservedToolNames: [],
+            new CopilotToolExecutionHookRegistry());
+        using var registration = registry.Register(new CopilotAgentExtensionRegistration
+        {
+            SourceId = "test.frozen-module-tool-metadata",
+            SourceName = "Frozen module tool metadata",
+            SourceVersion = "1.0.0",
+            Tools = [moduleTool],
+        });
+
+        moduleTool.Name = "MutatedModuleTool";
+        moduleTool.Description = "Mutated description.";
+        moduleTool.Access = CopilotModuleToolAccess.Write;
+        moduleTool.InputJsonSchema = "{\"type\":\"object\",\"required\":[\"changed\"],\"properties\":{\"changed\":{\"type\":\"string\"}},\"additionalProperties\":false}";
+        moduleTool.ExecutionTimeout = TimeSpan.FromMinutes(2);
+
+        var registeredTool = Assert.Single(Assert.Single(registry.GetSnapshot().Extensions).Tools);
+        Assert.Equal("StableModuleTool", registeredTool.Name);
+        Assert.Equal("Stable description.", registeredTool.Description);
+        Assert.Equal(CopilotModuleToolAccess.ReadOnly, registeredTool.Access);
+        Assert.Equal(CopilotAgentExtensionDefaults.OptionalQueryJsonSchema, registeredTool.InputJsonSchema);
+        Assert.Equal(TimeSpan.FromSeconds(30), registeredTool.ExecutionTimeout);
+
+        var activeTool = Assert.Single(bridge.GetSnapshot().Tools);
+        Assert.Equal("StableModuleTool", activeTool.Name);
+        Assert.Equal("Stable description.", activeTool.Description);
+        Assert.Equal(CopilotToolAccess.ReadOnly, activeTool.Capability.Access);
+        Assert.DoesNotContain("changed", activeTool.InputSchema.JsonSchema.GetRawText(), StringComparison.Ordinal);
+
+        var result = await activeTool.ExecuteAsync(
+            new CopilotAgentRequest(),
+            CopilotAgentToolInput.Empty,
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal(1, moduleTool.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task ModuleContextProviderOrderIsFrozenWhileCaptureRemainsLive()
+    {
+        const string sourceId = "test.frozen-context-provider-order";
+        var contextProvider = new MutableContextProvider("stable-context", 25);
+        var registry = new CopilotAgentExtensionRegistry();
+        using var bridge = new CopilotAgentExtensionBridge(
+            registry,
+            new CopilotCapabilityCatalog(),
+            reservedToolNames: [],
+            new CopilotToolExecutionHookRegistry());
+        using var registration = registry.Register(new CopilotAgentExtensionRegistration
+        {
+            SourceId = sourceId,
+            SourceName = "Frozen context provider order",
+            ContextProviders = [contextProvider],
+        });
+
+        contextProvider.Order = -50;
+        using var refreshTrigger = registry.Register(new CopilotAgentExtensionRegistration
+        {
+            SourceId = "test.frozen-context-provider-refresh",
+            SourceName = "Frozen context provider refresh trigger",
+            ContextProviders = [new RecordingContextProvider("refresh-context")],
+        });
+
+        var registeredProvider = Assert.Single(
+            Assert.Single(registry.GetSnapshot().Extensions, extension => extension.SourceId == sourceId)
+                .ContextProviders);
+        Assert.Equal(25, registeredProvider.Order);
+
+        var contextRegistry = new CopilotContextRegistry([], bridge);
+        var items = await contextRegistry.CaptureAsync(
+            new CopilotContextRequest { IncludeExtensionProviders = true },
+            CancellationToken.None);
+
+        Assert.Equal(["refresh-context", "stable-context"], items.Select(item => item.Id));
+        Assert.Equal(1, contextProvider.CaptureCount);
+    }
+
+    [Fact]
     public void ClosestTrustedValueIsFrozenAcrossContextPlanAndRequest()
     {
         string globalRoot = CreateTemporaryDirectory();
@@ -261,6 +457,59 @@ public sealed class CopilotCodexPluginsFeatureTests
     }
 
     [Fact]
+    public void ModuleHookMetadataIsFrozenAtRegistrationAcrossBridgeRefreshes()
+    {
+        const string sourceId = "test.frozen-module-hook-metadata";
+        var moduleHook = new MutableModuleHook();
+        var extensionRegistry = new CopilotAgentExtensionRegistry();
+        var hookRegistry = new CopilotToolExecutionHookRegistry();
+        using var bridge = new CopilotAgentExtensionBridge(
+            extensionRegistry,
+            new CopilotCapabilityCatalog(),
+            reservedToolNames: [],
+            hookRegistry);
+        using var registration = extensionRegistry.Register(new CopilotAgentExtensionRegistration
+        {
+            SourceId = sourceId,
+            SourceName = "Frozen module hook metadata",
+            SourceVersion = "1.0.0",
+            ToolExecutionHooks = [moduleHook],
+        });
+
+        moduleHook.Name = "Mutated_Module_Hook";
+        moduleHook.ToolNamePattern = "^MutatedTool$";
+        moduleHook.Order = -50;
+        moduleHook.ExecutionMode = CopilotModuleToolExecutionHookMode.Async;
+        using var refreshTrigger = extensionRegistry.Register(new CopilotAgentExtensionRegistration
+        {
+            SourceId = "test.frozen-module-hook-refresh",
+            SourceName = "Frozen module hook refresh trigger",
+            ContextProviders = [new RecordingContextProvider("hook-refresh")],
+        });
+
+        var registeredHook = Assert.Single(
+            Assert.Single(extensionRegistry.GetSnapshot().Extensions, extension => extension.SourceId == sourceId)
+                .ToolExecutionHooks);
+        Assert.Equal("Stable_Module_Hook", registeredHook.Name);
+        Assert.Equal("^StableTool$", registeredHook.ToolNamePattern);
+        Assert.Equal(25, registeredHook.Order);
+        Assert.Equal(CopilotModuleToolExecutionHookMode.Sync, registeredHook.ExecutionMode);
+
+        var declaredHook = Assert.Single(
+            Assert.Single(bridge.GetSnapshot().Sources, source => source.SourceId == sourceId).Hooks);
+        Assert.Equal("Stable_Module_Hook", declaredHook.Name);
+        Assert.Equal("^StableTool$", declaredHook.ToolNamePattern);
+        Assert.Equal(25, declaredHook.Order);
+        Assert.Equal(CopilotToolExecutionHookMode.Sync, declaredHook.ExecutionMode);
+
+        var runtimeHook = Assert.Single(hookRegistry.GetSnapshot().Entries);
+        Assert.Equal("extension:test.frozen-module-hook-metadata:hook:stable_module_hook", runtimeHook.SourceId);
+        Assert.Equal("^StableTool$", runtimeHook.ToolNamePattern);
+        Assert.Equal(25, runtimeHook.Order);
+        Assert.Equal(CopilotToolExecutionHookMode.Sync, runtimeHook.ExecutionMode);
+    }
+
+    [Fact]
     public void ExtensionActivationIssuesUseStableCodesWithoutRawExceptionText()
     {
         const string sourceId = "test.activation-issues";
@@ -317,6 +566,36 @@ public sealed class CopilotCodexPluginsFeatureTests
             Assert.Contains("code extension_hook_registration_failed", report, StringComparison.Ordinal);
             Assert.DoesNotContain("already registered", report, StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    [Fact]
+    public void ExtensionToolWithUnsupportedSchemaIsRejectedAtTheRegistrationBoundary()
+    {
+        var extensionRegistry = new CopilotAgentExtensionRegistry();
+        var capabilityCatalog = new CopilotCapabilityCatalog();
+        using var bridge = new CopilotAgentExtensionBridge(
+            extensionRegistry,
+            capabilityCatalog,
+            reservedToolNames: [],
+            new CopilotToolExecutionHookRegistry());
+        using var registration = extensionRegistry.Register(
+            new CopilotAgentExtensionRegistration
+            {
+                SourceId = "test.invalid-tool-schema",
+                SourceName = "Invalid schema extension",
+                SourceVersion = "1.0.0",
+                Tools = [new UnsupportedSchemaModuleTool()],
+            });
+
+        var snapshot = bridge.GetSnapshot();
+        var source = Assert.Single(snapshot.Sources);
+        var issue = Assert.Single(snapshot.Issues);
+        Assert.Equal(1, source.DeclaredToolCount);
+        Assert.Equal(0, source.ActiveToolCount);
+        Assert.Empty(snapshot.Tools);
+        Assert.Empty(capabilityCatalog.GetSnapshot().Capabilities);
+        Assert.Equal(CopilotAgentExtensionFailureCodes.CapabilityPublishFailed, issue.FailureCode);
+        Assert.DoesNotContain("$ref", issue.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -491,6 +770,32 @@ public sealed class CopilotCodexPluginsFeatureTests
         }
     }
 
+    private sealed class MutableContextProvider(string id, int order) : ICopilotContextProvider
+    {
+        private int _captureCount;
+
+        public int Order { get; set; } = order;
+
+        public int CaptureCount => Volatile.Read(ref _captureCount);
+
+        public bool CanProvide(CopilotContextScope scope) => true;
+
+        public Task<CopilotContextItem?> CaptureAsync(
+            CopilotContextRequest request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Interlocked.Increment(ref _captureCount);
+            return Task.FromResult<CopilotContextItem?>(new CopilotContextItem
+            {
+                Id = id,
+                Title = id,
+                Summary = id,
+                Content = id,
+            });
+        }
+    }
+
     private sealed class RecordingModuleTool : ICopilotModuleTool
     {
         private int _executionCount;
@@ -509,6 +814,47 @@ public sealed class CopilotCodexPluginsFeatureTests
             Interlocked.Increment(ref _executionCount);
             return Task.FromResult(CopilotModuleToolResult.Ok("Module tool executed."));
         }
+    }
+
+    private sealed class MutableModuleTool : ICopilotModuleTool
+    {
+        private int _executionCount;
+
+        public string Name { get; set; } = "StableModuleTool";
+
+        public string Description { get; set; } = "Stable description.";
+
+        public CopilotModuleToolAccess Access { get; set; } = CopilotModuleToolAccess.ReadOnly;
+
+        public string InputJsonSchema { get; set; } = CopilotAgentExtensionDefaults.OptionalQueryJsonSchema;
+
+        public TimeSpan ExecutionTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+        public int ExecutionCount => Volatile.Read(ref _executionCount);
+
+        public Task<CopilotModuleToolResult> ExecuteAsync(
+            CopilotModuleToolRequest request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Interlocked.Increment(ref _executionCount);
+            return Task.FromResult(CopilotModuleToolResult.Ok("Mutable module tool executed."));
+        }
+    }
+
+    private sealed class UnsupportedSchemaModuleTool : ICopilotModuleTool
+    {
+        public string Name => "UnsupportedSchemaModuleTool";
+
+        public string Description => "A module tool with a schema keyword the shared runtime cannot execute.";
+
+        public string InputJsonSchema =>
+            "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\",\"$ref\":\"#/$defs/value\"}},\"additionalProperties\":false}";
+
+        public Task<CopilotModuleToolResult> ExecuteAsync(
+            CopilotModuleToolRequest request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotModuleToolResult.Ok("This tool must never be activated."));
     }
 
     private sealed class RecordingModuleHook : ICopilotModuleToolExecutionHook
@@ -549,6 +895,23 @@ public sealed class CopilotCodexPluginsFeatureTests
 
         public CopilotModuleToolExecutionHookMode ExecutionMode =>
             CopilotModuleToolExecutionHookMode.Async;
+
+        public Task<CopilotModuleToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotModuleToolExecutionHookContext context,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(CopilotModuleToolExecutionHookDecision.Proceed);
+    }
+
+    private sealed class MutableModuleHook : ICopilotModuleToolExecutionHook
+    {
+        public string Name { get; set; } = "Stable_Module_Hook";
+
+        public string ToolNamePattern { get; set; } = "^StableTool$";
+
+        public int Order { get; set; } = 25;
+
+        public CopilotModuleToolExecutionHookMode ExecutionMode { get; set; } =
+            CopilotModuleToolExecutionHookMode.Sync;
 
         public Task<CopilotModuleToolExecutionHookDecision> BeforeExecuteAsync(
             CopilotModuleToolExecutionHookContext context,

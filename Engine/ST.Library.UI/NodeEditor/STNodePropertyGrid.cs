@@ -463,18 +463,24 @@ public class STNodePropertyGrid : UserControl, IDisposable
 
 		if (propertyType.IsEnum)
 		{
+			var values = Enum.GetValues(propertyType)
+				.Cast<object>()
+				.Select(value => new KeyValuePair<object, string>(value, Lang.Get(value.ToString())))
+				.ToList();
 			var comboBox = new ComboBox
 			{
-				ItemsSource = Enum.GetNames(propertyType),
-				SelectedItem = descriptor.GetValue(null)?.ToString(),
+				ItemsSource = values,
+				DisplayMemberPath = nameof(KeyValuePair<object, string>.Value),
+				SelectedValuePath = nameof(KeyValuePair<object, string>.Key),
+				SelectedValue = descriptor.GetValue(null),
 				IsEnabled = !readOnly,
 				Margin = new Thickness(4, 3, 4, 3)
 			};
 			comboBox.SelectionChanged += (s, e) =>
 			{
-				if (comboBox.SelectedItem is string text)
+				if (comboBox.SelectedValue != null)
 				{
-					CommitText(descriptor, text);
+					CommitValue(descriptor, comboBox.SelectedValue);
 				}
 			};
 			return comboBox;

@@ -62,8 +62,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
                 currentPage = result;
                 pageNumber = Math.Min(result.PageNumber, result.TotalPages);
                 IncidentDataGrid.ItemsSource = result.Items;
-                PageStatusText.Text =
-                    $"第 {pageNumber} / {result.TotalPages} 页，共 {result.TotalCount} 条";
+                PageStatusText.Text = EngineLocalization.Format(
+                    $"第 {pageNumber} / {result.TotalPages} 页，共 {result.TotalCount} 条");
                 PreviousPageButton.IsEnabled = pageNumber > 1;
                 NextPageButton.IsEnabled = pageNumber < result.TotalPages;
 
@@ -229,8 +229,8 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 MessageBox.Show(
                     this,
-                    "关闭 Incident 前请填写处置结果。",
-                    "流程 Incident",
+                    EngineLocalization.Get("关闭 Incident 前请填写处置结果。"),
+                    EngineLocalization.Get("流程 Incident"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 ActionNoteTextBox.Focus();
@@ -268,10 +268,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             {
                 MessageBox.Show(
                     this,
-                    "该运行没有关联旧版 Batch 记录，无法打开节点耗时分析。"
+                    EngineLocalization.Get("该运行没有关联旧版 Batch 记录，无法打开节点耗时分析。")
                         + Environment.NewLine
                         + BuildStableIdentifiers(),
-                    "流程 Incident",
+                    EngineLocalization.Get("流程 Incident"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 return;
@@ -315,10 +315,10 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
 
             MessageBox.Show(
                 this,
-                "当前画布不是该 Incident 对应流程，或节点已不在当前版本中。"
+                EngineLocalization.Get("当前画布不是该 Incident 对应流程，或节点已不在当前版本中。")
                     + Environment.NewLine
                     + BuildStableIdentifiers(),
-                "流程 Incident",
+                EngineLocalization.Get("流程 Incident"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }
@@ -342,7 +342,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
         private string BuildStableIdentifiers()
         {
             if (selectedDetail == null)
-                return "未选择 Incident。";
+                return EngineLocalization.Get("未选择 Incident。");
             return $"IncidentId={selectedDetail.Incident.Id}"
                 + Environment.NewLine
                 + $"RunRecordId={selectedDetail.Incident.RunRecordId}"
@@ -399,7 +399,7 @@ namespace ColorVision.Engine.FlowProcessing.Diagnostics
             MessageBox.Show(
                 this,
                 ex.Message,
-                title,
+                EngineLocalization.Get(title),
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }

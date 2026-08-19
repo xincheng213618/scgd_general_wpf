@@ -50,7 +50,7 @@ namespace ColorVision.Engine.CalFile
                 }
 
                 var propertyEditorWindow = new PropertyEditorWindow(configCamera);
-                propertyEditorWindow.Submited += (s, e) => new PhyCameraManagerWindow().Show();
+                propertyEditorWindow.Submitted += (s, e) => new PhyCameraManagerWindow().Show();
                 propertyEditorWindow.ShowDialog();
                 return true;
             }

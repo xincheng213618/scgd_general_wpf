@@ -168,17 +168,53 @@ namespace ColorVision.Copilot
                     "Copilot Agent runtime diagnostic cannot describe both a bounded retry and connection recovery.");
             }
 
+            if (agentEvent.ToolExecution != null
+                && !CopilotToolExecutionInfoProtocol.IsStructurallyValid(
+                    agentEvent.ToolExecution))
+            {
+                throw new InvalidOperationException(
+                    $"Copilot Agent {agentEvent.Type} event has invalid execution metadata.");
+            }
+
             switch (agentEvent.Type)
             {
                 case CopilotAgentEventType.ToolStarted:
                     RequireMatchingText(agentEvent, agentEvent.ToolExecution!.ToolName, "tool start");
+                    RequireActiveToolExecution(
+                        agentEvent,
+                        allowPending: false);
+                    break;
+                case CopilotAgentEventType.ToolProgress:
+                    RequireActiveToolExecution(
+                        agentEvent,
+                        allowPending: true);
+                    if (!CopilotToolProgressProtocol.IsStructurallyValid(
+                            agentEvent.Progress))
+                    {
+                        throw new InvalidOperationException(
+                            "Copilot Agent emitted an invalid tool progress payload.");
+                    }
                     break;
                 case CopilotAgentEventType.ToolResult:
                     RequireMatchingText(agentEvent, agentEvent.ToolResult!.Summary, "tool result");
+                    ValidateToolResult(agentEvent);
                     break;
                 case CopilotAgentEventType.HookStarted:
                 case CopilotAgentEventType.HookCompleted:
                     RequireMatchingText(agentEvent, agentEvent.ToolExecutionHook!.SourceId, "tool hook");
+                    RequireActiveToolExecution(
+                        agentEvent,
+                        allowPending: true);
+                    var requireCompletedHook =
+                        agentEvent.Type == CopilotAgentEventType.HookCompleted;
+                    if (!agentEvent.ToolExecutionHook.IsStructurallyValid(
+                            requireCompletedHook))
+                    {
+                        throw new InvalidOperationException(
+                            requireCompletedHook
+                                ? "Copilot Agent emitted an invalid tool hook completion."
+                                : "Copilot Agent emitted an invalid tool hook start.");
+                    }
                     break;
                 case CopilotAgentEventType.RuntimeDiagnostic when agentEvent.ProviderRetry != null:
                     CopilotProviderRetryProtocol.ValidateDiagnostic(
@@ -194,6 +230,139 @@ namespace ColorVision.Copilot
                 case CopilotAgentEventType.SteeringRecovery:
                     ValidateSteering(agentEvent);
                     break;
+                case CopilotAgentEventType.UserQuestionRequested:
+                case CopilotAgentEventType.UserQuestionResolved:
+                    ValidateUserQuestion(agentEvent);
+                    break;
+                case CopilotAgentEventType.PlanUpdated:
+                    if (agentEvent.TurnPlan?.IsStructurallyValid() != true)
+                    {
+                        throw new InvalidOperationException(
+                            "Copilot Agent emitted an invalid turn plan snapshot.");
+                    }
+                    break;
+                case CopilotAgentEventType.BudgetUpdated:
+                    if (!CopilotTurnBudgetLifecycleState.IsStructurallyValid(
+                            agentEvent.Budget))
+                    {
+                        throw new InvalidOperationException(
+                            "Copilot Agent emitted an invalid budget snapshot.");
+                    }
+                    break;
+                case CopilotAgentEventType.CheckpointUpdated:
+                    ValidateCheckpointUpdate(agentEvent);
+                    break;
+            }
+        }
+
+        private static void ValidateCheckpointUpdate(CopilotAgentEvent agentEvent)
+        {
+            if (!CopilotAgentSessionCheckpoint.TryCreateSnapshot(
+                    agentEvent.SessionCheckpoint,
+                    out var checkpoint)
+                || checkpoint.UpdatedAtUtc == default
+                || checkpoint.UpdatedAtUtc.Offset != TimeSpan.Zero)
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent emitted an invalid checkpoint update.");
+            }
+
+            if (agentEvent.TaskLedger?.IsStructurallyValid() != true)
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent checkpoint update carried an invalid task ledger.");
+            }
+        }
+
+        private static void ValidateUserQuestion(CopilotAgentEvent agentEvent)
+        {
+            var requirePending =
+                agentEvent.Type == CopilotAgentEventType.UserQuestionRequested;
+            if (!CopilotUserQuestionSnapshot.TryCreateSnapshot(
+                    agentEvent.UserQuestion,
+                    out var snapshot)
+                || snapshot.IsPending != requirePending)
+            {
+                throw new InvalidOperationException(
+                    requirePending
+                        ? "Copilot Agent emitted an invalid user question request."
+                        : "Copilot Agent emitted an invalid user question resolution.");
+            }
+        }
+
+        private static void RequireActiveToolExecution(
+            CopilotAgentEvent agentEvent,
+            bool allowPending)
+        {
+            if (!CopilotToolExecutionInfoProtocol.HasValidActiveState(
+                    agentEvent.ToolExecution,
+                    allowPending))
+            {
+                throw new InvalidOperationException(
+                    $"Copilot Agent {agentEvent.Type} event has invalid execution metadata.");
+            }
+        }
+
+        private static void ValidateToolResult(CopilotAgentEvent agentEvent)
+        {
+            var result = agentEvent.ToolResult!;
+            var execution = agentEvent.ToolExecution!;
+            if (string.IsNullOrWhiteSpace(result.ToolName)
+                || !string.Equals(
+                    result.ToolName,
+                    execution.ToolName,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent tool result identity did not match its execution payload.");
+            }
+
+            try
+            {
+                if (!CopilotToolResultContract.TryValidate(
+                        execution.ToolName,
+                        result,
+                        out var violation))
+                {
+                    throw new InvalidOperationException(
+                        $"Copilot Agent tool result violated its final contract: {violation}.");
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
+            catch
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent tool result could not be validated safely.");
+            }
+
+            if (result.Approval != null
+                && !string.Equals(
+                    result.Approval.ActionId,
+                    execution.ApprovalActionId,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent approval result did not match its execution action identity.");
+            }
+
+            if (!CopilotToolExecutionInfoProtocol.HasValidResultState(
+                    execution,
+                    result))
+            {
+                throw new InvalidOperationException(
+                    execution.State == CopilotToolExecutionState.AwaitingApproval
+                        ? "Copilot Agent emitted an invalid approval request."
+                        : "Copilot Agent tool result contains invalid state metadata for its terminal execution.");
+            }
+
+            if (!CopilotToolExecutionHookRunProtocol.IsStructurallyValid(
+                    agentEvent.ToolExecutionHookRuns))
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent tool result contains invalid hook audit metadata or duplicate hook audit entries.");
             }
         }
 

@@ -23,7 +23,7 @@ namespace ColorVision.Copilot
             var successfulReadSteps = (steps ?? Array.Empty<CopilotAgentStepRecord>())
                 .Where(step =>
                     step?.Observation?.Success == true
-                    && string.Equals(step.ToolCall?.ToolName, "ReadLocalFile", StringComparison.OrdinalIgnoreCase))
+                    && string.Equals(step.ToolCall?.ToolName, CopilotSharedAgentToolNames.ReadLocalFile, StringComparison.OrdinalIgnoreCase))
                 .ToArray();
             var successfullyReadPaths = successfulReadSteps
                 .SelectMany(step => step.Observation.SuccessfullyReadLocalFilePaths ?? Array.Empty<string>())

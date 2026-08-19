@@ -6,6 +6,41 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotQueuedFollowUpRecoveryTests
 {
     [Fact]
+    public void PersistedComposerStatesOwnDeepSnapshots()
+    {
+        var source = CopilotComposerStash.Capture(
+            "review the branch",
+            6,
+            CopilotAgentMode.Review,
+            [CopilotAttachmentItem.CreateContext("captured context")],
+            new CopilotWorkspaceReviewTargetContext
+            {
+                Target = CopilotWorkspaceReviewTarget.BaseBranch,
+                Revision = "origin/develop",
+            });
+        var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");
+        conversation.ComposerStash = source;
+        var recovery = new CopilotQueuedFollowUpRecoveryRecord
+        {
+            ComposerState = source,
+        };
+
+        source.Text = "changed source";
+        source.Attachments[0].Value = "changed attachment";
+        source.WorkspaceReviewTarget!.Revision = "changed-revision";
+
+        Assert.NotSame(source, conversation.ComposerStash);
+        Assert.NotSame(source, recovery.ComposerState);
+        Assert.NotSame(conversation.ComposerStash, recovery.ComposerState);
+        Assert.Equal("review the branch", conversation.ComposerStash?.Text);
+        Assert.Equal("captured context", conversation.ComposerStash?.Attachments[0].Value);
+        Assert.Equal("origin/develop", conversation.ComposerStash?.WorkspaceReviewTarget?.Revision);
+        Assert.Equal("review the branch", recovery.ComposerState?.Text);
+        Assert.Equal("captured context", recovery.ComposerState?.Attachments[0].Value);
+        Assert.Equal("origin/develop", recovery.ComposerState?.WorkspaceReviewTarget?.Revision);
+    }
+
+    [Fact]
     public void StartupKeepsDurableQueueItemsAndMigratesLegacyRecordsToDrafts()
     {
         var conversation = CopilotConversationRecord.CreateEmpty("profile", "Profile");

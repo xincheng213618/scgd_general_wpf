@@ -151,10 +151,24 @@ namespace ColorVision.Copilot
                 LatestAgentTaskEventJournal = null;
                 changed = true;
             }
-            if (LatestAgentTaskEventJournal == null
-                && AgentSessionCheckpoint?.TaskEventJournal is { Events.Count: > 0 } checkpointJournal)
+            if (LatestAgentTaskEventJournal != null
+                && AgentSessionCheckpoint != null)
             {
-                changed |= UpdateLatestAgentTaskEventJournal(checkpointJournal);
+                // Older snapshots could persist both a recovery checkpoint journal and
+                // independent terminal evidence. Select the newer evidence once during
+                // load, then migrate it into the checkpoint so only one journal owner
+                // survives normalization.
+                if (CopilotAgentTaskEventJournal.IsLegacyNewerEvidenceForNormalization(
+                        LatestAgentTaskEventJournal,
+                        AgentSessionCheckpoint.TaskEventJournal))
+                {
+                    AgentSessionCheckpoint =
+                        AgentSessionCheckpoint.CopyWithTaskEventJournalForNormalization(
+                            LatestAgentTaskEventJournal)
+                        ?? AgentSessionCheckpoint;
+                }
+                LatestAgentTaskEventJournal = null;
+                changed = true;
             }
             if (Compaction != null && !Compaction.IsStructurallyValid())
             {
@@ -244,24 +258,251 @@ namespace ColorVision.Copilot
             return true;
         }
 
-        internal bool UpdateLatestAgentTaskEventJournal(CopilotAgentTaskEventJournalSnapshot? journal)
+        private bool RetainAgentTaskEventJournal(CopilotAgentTaskEventJournalSnapshot? journal)
         {
-            if (journal?.Events?.Count is not > 0 || !journal.IsStructurallyValid())
+            if (!CopilotAgentTaskEventJournal.TryCreateSnapshot(journal, out var snapshot)
+                || snapshot.Events.Count == 0)
+            {
                 return false;
+            }
+            if (LatestAgentTaskEventJournal?.IsStructurallyValid() == true)
+            {
+                if (CopilotAgentTaskEventJournal.AreEquivalent(
+                        snapshot,
+                        LatestAgentTaskEventJournal)
+                    || !CopilotAgentTaskEventJournal.IsSameOrForwardBoundedSuccessor(
+                        snapshot,
+                        LatestAgentTaskEventJournal))
+                {
+                    return false;
+                }
+            }
 
-            var currentEvents = LatestAgentTaskEventJournal?.Events;
-            var currentLast = currentEvents?.Count > 0 ? currentEvents[^1] : null;
-            var candidateLast = journal.Events[^1];
-            if (LatestAgentTaskEventJournal?.IsStructurallyValid() == true
-                && currentLast != null
-                && string.Equals(currentLast.RunId, candidateLast.RunId, StringComparison.Ordinal)
-                && currentLast.Sequence >= candidateLast.Sequence)
+            LatestAgentTaskEventJournal = snapshot;
+            return true;
+        }
+
+        internal CopilotAgentSessionCheckpoint? CreateAgentContinuationCheckpoint()
+        {
+            var checkpoint = AgentSessionCheckpoint;
+            if (checkpoint?.IsStructurallyValid() != true)
+                return null;
+
+            var currentJournal = CurrentAgentTaskEventJournal;
+            if (currentJournal?.IsStructurallyValid() != true
+                || CopilotAgentTaskEventJournal.AreEquivalent(
+                    checkpoint.TaskEventJournal,
+                    currentJournal))
+            {
+                return checkpoint;
+            }
+
+            return checkpoint.CopyWithTaskEventJournal(currentJournal) ?? checkpoint;
+        }
+
+        internal bool SetAgentSessionCheckpoint(CopilotAgentSessionCheckpoint? checkpoint)
+        {
+            return TrySetAgentSessionCheckpoint(checkpoint, out var changed) && changed;
+        }
+
+        internal bool TrySetAgentSessionCheckpoint(
+            CopilotAgentSessionCheckpoint? checkpoint,
+            out bool changed)
+        {
+            changed = false;
+            var previousCheckpointJournal = AgentSessionCheckpoint?.TaskEventJournal;
+            CopilotAgentSessionCheckpoint? candidate = null;
+            if (checkpoint != null
+                && (!CopilotAgentSessionCheckpoint.TryCreateSnapshot(checkpoint, out candidate)
+                    || !CanAcceptAgentSessionCheckpoint(candidate.TaskEventJournal)))
             {
                 return false;
             }
 
-            LatestAgentTaskEventJournal = journal;
+            changed = !CopilotAgentSessionCheckpoint.AreEquivalent(
+                AgentSessionCheckpoint,
+                candidate);
+            if (changed)
+                AgentSessionCheckpoint = candidate;
+            var acceptedCheckpoint = AgentSessionCheckpoint;
+            if (acceptedCheckpoint != null)
+            {
+                // A live checkpoint owns its journal. Independent evidence is only
+                // needed when a terminal result is ahead of that checkpoint, which is
+                // committed through CommitAgentRunState instead of this method.
+                if (LatestAgentTaskEventJournal != null
+                    && (CopilotAgentTaskEventJournal.AreEquivalent(
+                            acceptedCheckpoint.TaskEventJournal,
+                            LatestAgentTaskEventJournal)
+                        || CopilotAgentTaskEventJournal.IsSameOrForwardBoundedSuccessor(
+                            acceptedCheckpoint.TaskEventJournal,
+                            LatestAgentTaskEventJournal)))
+                {
+                    LatestAgentTaskEventJournal = null;
+                    changed = true;
+                }
+            }
+            else
+            {
+                // Retire the checkpoint without losing its last durable event evidence.
+                changed |= RetainAgentTaskEventJournal(previousCheckpointJournal);
+            }
             return true;
+        }
+
+        private bool CanAcceptAgentSessionCheckpoint(
+            CopilotAgentTaskEventJournalSnapshot candidateJournal)
+        {
+            var currentJournal = CurrentAgentTaskEventJournal;
+            if (currentJournal?.IsStructurallyValid() != true)
+                return true;
+
+            return CopilotAgentTaskEventJournal.IsSameOrForwardBoundedSuccessor(
+                candidateJournal,
+                currentJournal);
+        }
+
+        internal bool CommitAgentRunState(
+            CopilotAgentTaskEventJournalSnapshot? journal,
+            CopilotAgentSessionCheckpoint? checkpoint)
+        {
+            return TryCommitAgentRunState(journal, checkpoint, out var changed) && changed;
+        }
+
+        internal bool TryCommitAgentRunState(
+            CopilotAgentTaskEventJournalSnapshot? journal,
+            CopilotAgentSessionCheckpoint? checkpoint,
+            out bool changed)
+        {
+            changed = false;
+            CopilotAgentTaskEventJournalSnapshot? journalSnapshot = null;
+            if (journal != null
+                && !CopilotAgentTaskEventJournal.TryCreateSnapshot(journal, out journalSnapshot))
+            {
+                return false;
+            }
+            CopilotAgentSessionCheckpoint? checkpointSnapshot = null;
+            if (checkpoint != null
+                && !CopilotAgentSessionCheckpoint.TryCreateSnapshot(checkpoint, out checkpointSnapshot))
+            {
+                return false;
+            }
+            if (!CanAcceptAgentRunState(journalSnapshot, checkpointSnapshot))
+            {
+                return false;
+            }
+
+            // The terminal run result is the authoritative journal for this commit. A
+            // checkpoint may intentionally trail it and may even belong to the previous
+            // run after cancellation/recovery. Rebase that recovery projection onto the
+            // terminal journal atomically so persistence never keeps two journal owners.
+            var committedCheckpoint = checkpointSnapshot;
+            if (journalSnapshot?.Events.Count > 0)
+            {
+                if (checkpointSnapshot != null
+                    && !CopilotAgentTaskEventJournal.AreEquivalent(
+                        checkpointSnapshot.TaskEventJournal,
+                        journalSnapshot))
+                {
+                    committedCheckpoint = checkpointSnapshot.CopyWithTaskEventJournal(journalSnapshot)
+                        ?? throw new InvalidOperationException(
+                            "A valid Copilot Agent checkpoint could not be rebased onto the authoritative terminal journal.");
+                }
+
+                if (committedCheckpoint == null
+                    && !CopilotAgentTaskEventJournal.AreEquivalent(
+                        LatestAgentTaskEventJournal,
+                        journalSnapshot))
+                {
+                    LatestAgentTaskEventJournal = journalSnapshot;
+                    changed = true;
+                }
+            }
+
+            if (CopilotAgentSessionCheckpoint.AreEquivalent(
+                    AgentSessionCheckpoint,
+                    committedCheckpoint))
+            {
+                committedCheckpoint = AgentSessionCheckpoint;
+            }
+            else
+            {
+                changed = true;
+                AgentSessionCheckpoint = committedCheckpoint;
+            }
+            if (committedCheckpoint != null)
+            {
+                if (LatestAgentTaskEventJournal != null)
+                {
+                    LatestAgentTaskEventJournal = null;
+                    changed = true;
+                }
+            }
+            return true;
+        }
+
+        private bool CanAcceptAgentRunState(
+            CopilotAgentTaskEventJournalSnapshot? journal,
+            CopilotAgentSessionCheckpoint? checkpoint)
+        {
+            var currentJournal = CurrentAgentTaskEventJournal;
+            if (currentJournal?.IsStructurallyValid() != true)
+                return true;
+
+            var candidateJournal = journal?.Events?.Count > 0
+                ? journal
+                : checkpoint?.TaskEventJournal;
+            if (candidateJournal?.IsStructurallyValid() != true)
+                return false;
+
+            return CopilotAgentTaskEventJournal.AreEquivalent(
+                    candidateJournal,
+                    currentJournal)
+                || CopilotAgentTaskEventJournal.IsSameOrForwardBoundedSuccessor(
+                    candidateJournal,
+                    currentJournal);
+        }
+
+        internal bool CompleteOpenAgentRun(
+            CopilotAgentStopReason stopReason,
+            CopilotAgentControlIntent controlIntent = CopilotAgentControlIntent.None)
+        {
+            var expectedStopReason = controlIntent switch
+            {
+                CopilotAgentControlIntent.None => CopilotAgentStopReason.Interrupted,
+                CopilotAgentControlIntent.Pause => CopilotAgentStopReason.Paused,
+                CopilotAgentControlIntent.Cancel => CopilotAgentStopReason.Cancelled,
+                _ => throw new ArgumentOutOfRangeException(nameof(controlIntent)),
+            };
+            if (stopReason != expectedStopReason)
+            {
+                throw new ArgumentException(
+                    $"Stop reason {stopReason} does not match control intent {controlIntent}.",
+                    nameof(stopReason));
+            }
+
+            var checkpoint = AgentSessionCheckpoint;
+            // Independent journal evidence exists only when a terminal result is
+            // ahead of the checkpoint, so the aggregate's resolved current journal
+            // must win over a lagging checkpoint during late completion callbacks.
+            var sourceJournal = CurrentAgentTaskEventJournal;
+            var terminalJournal = CopilotAgentTaskEventJournal.CloseLatestOpenRun(
+                sourceJournal,
+                stopReason,
+                controlIntent);
+            if (terminalJournal == null)
+            {
+                return stopReason == CopilotAgentStopReason.Cancelled
+                    && SetAgentSessionCheckpoint(null);
+            }
+
+            if (stopReason == CopilotAgentStopReason.Cancelled)
+                return CommitAgentRunState(terminalJournal, checkpoint: null);
+
+            var terminalCheckpoint = checkpoint?.CopyWithTaskEventJournal(terminalJournal);
+            return CommitAgentRunState(
+                terminalJournal,
+                terminalCheckpoint ?? checkpoint);
         }
     }
 }

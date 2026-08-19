@@ -16,6 +16,41 @@ public sealed class CopilotApprovalReviewTestGroup
 public sealed class CopilotApprovalReviewTests
 {
     [Fact]
+    public async Task SharedAgentApprovalUsesCatalogReversibilityMetadata()
+    {
+        var coordinator = new CopilotFrameworkApprovalCoordinator();
+        var tool = new CopilotCreateFlowTool();
+        var handle = coordinator.RequestApproval(
+            tool,
+            CreateRequest(),
+            new CopilotAgentToolInput
+            {
+                Arguments = new Dictionary<string, object?>
+                {
+                    ["name"] = "CatalogApprovalFlow",
+                },
+            },
+            $"call-{Guid.NewGuid():N}",
+            CancellationToken.None);
+
+        try
+        {
+            Assert.Equal(
+                CopilotSharedCapabilityCatalog.CreateFlow.ApprovalMetadata.Reversibility,
+                handle.Action.RequestContext.Reversibility);
+            Assert.Equal(
+                CopilotSharedCapabilityCatalog.CreateFlow.ApprovalMetadata.ReversibilitySummary,
+                handle.Action.RequestContext.ReversibilitySummary);
+        }
+        finally
+        {
+            coordinator.Cancel(handle);
+            var decision = await handle.Decision.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.Equal(CopilotFrameworkApprovalDecisionKind.Cancelled, decision.Kind);
+        }
+    }
+
+    [Fact]
     public async Task ShellApprovalPreservesCompleteCommandForHumanReview()
     {
         var command = "Write-Output '" + new string('x', 1800) + "-human-review-tail'";

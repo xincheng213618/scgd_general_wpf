@@ -22,8 +22,8 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
     private readonly Func<Task> _closeRunningFlowBeforeRefreshAsync;
     private readonly Action _invalidateExecutionPresentation;
     private readonly Action _resetNodeTitleProgress;
-    private readonly Action<CVBaseServerNode> _unsubscribeNodeEvents;
-    private readonly Action<CVBaseServerNode> _subscribeNodeEvents;
+    private readonly Action<CVCommonNode> _unsubscribeNodeEvents;
+    private readonly Action<CVCommonNode> _subscribeNodeEvents;
     private readonly FlowTemplateRefreshGate _refreshGate = new();
     private readonly FlowTemplateWorkspaceState _workspaceState = new();
     private readonly object _selectionSync = new();
@@ -41,8 +41,8 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
         Func<Task> closeRunningFlowBeforeRefreshAsync,
         Action invalidateExecutionPresentation,
         Action resetNodeTitleProgress,
-        Action<CVBaseServerNode> unsubscribeNodeEvents,
-        Action<CVBaseServerNode> subscribeNodeEvents)
+        Action<CVCommonNode> unsubscribeNodeEvents,
+        Action<CVCommonNode> subscribeNodeEvents)
     {
         _flowEngineManager = flowEngineManager;
         _view = view;
@@ -188,15 +188,15 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
 
             previousCanvasData =
                 _view.STNodeEditorMain.GetCanvasData();
-            CVBaseServerNode[] previousNodes =
+            CVCommonNode[] previousNodes =
                 _view.STNodeEditorMain.Nodes
-                    .OfType<CVBaseServerNode>()
+                    .OfType<CVCommonNode>()
                     .ToArray();
             attemptedCanvasReplacement = true;
             _view.FlowEngineControl.LoadFromBase64(
                 flowParam.DataBase64,
                 MqttRCService.GetInstance().ServiceTokens);
-            foreach (CVBaseServerNode node in previousNodes)
+            foreach (CVCommonNode node in previousNodes)
                 _unsubscribeNodeEvents(node);
             if (!isCurrent() || _disposed)
                 return;
@@ -218,11 +218,12 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
             if (!_view.IsStandalone)
                 _flowEngineManager.SelectedFlowParam = flowParam;
 
-            foreach (CVBaseServerNode node in
+            foreach (CVCommonNode node in
                 _view.STNodeEditorMain.Nodes
-                    .OfType<CVBaseServerNode>())
+                    .OfType<CVCommonNode>())
             {
-                serverNodes.Insert(0, node);
+                if (node is CVBaseServerNode serverNode)
+                    serverNodes.Insert(0, serverNode);
                 _subscribeNodeEvents(node);
             }
             _view.STNodeEditorMain.Invalidate();
@@ -445,9 +446,9 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
 
     private void ClearDisplayedFlow(FlowParam? flowParam)
     {
-        foreach (CVBaseServerNode node in
+        foreach (CVCommonNode node in
             _view.STNodeEditorMain.Nodes
-                .OfType<CVBaseServerNode>())
+                .OfType<CVCommonNode>())
         {
             _unsubscribeNodeEvents(node);
         }
@@ -483,9 +484,9 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
                 return;
             }
 
-            foreach (CVBaseServerNode node in
+            foreach (CVCommonNode node in
                 _view.STNodeEditorMain.Nodes
-                    .OfType<CVBaseServerNode>())
+                    .OfType<CVCommonNode>())
             {
                 _unsubscribeNodeEvents(node);
             }
@@ -503,11 +504,12 @@ internal sealed class FlowTemplateWorkspaceController : IDisposable
                     ? _workspaceServerNodes
                     : _flowEngineManager.CVBaseServerNodes;
             serverNodes.Clear();
-            foreach (CVBaseServerNode node in
+            foreach (CVCommonNode node in
                 _view.STNodeEditorMain.Nodes
-                    .OfType<CVBaseServerNode>())
+                    .OfType<CVCommonNode>())
             {
-                serverNodes.Insert(0, node);
+                if (node is CVBaseServerNode serverNode)
+                    serverNodes.Insert(0, serverNode);
                 _subscribeNodeEvents(node);
             }
             _view.STNodeEditorMain.Invalidate();

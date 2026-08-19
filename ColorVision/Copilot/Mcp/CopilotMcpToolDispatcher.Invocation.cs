@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,10 +57,62 @@ namespace ColorVision.Copilot.Mcp
 
             try
             {
-                var result = await _router.DispatchAsync(normalizedToolName, arguments, executionScope, cancellationToken);
+                if (!_toolDefinitionsByName.TryGetValue(normalizedToolName, out var definition))
+                {
+                    var missingResult = CopilotMcpToolCallResult.Fail(
+                        "tool_not_found",
+                        $"Unknown MCP tool: {normalizedToolName}");
+                    CopilotMcpAuditLogger.ToolCallCompleted(
+                        normalizedToolName,
+                        false,
+                        stopwatch.Elapsed,
+                        missingResult.ErrorCode);
+                    return missingResult;
+                }
+
+                if (!CopilotToolInputContractValidator.TryValidate(
+                        definition.Descriptor.InputSchema,
+                        arguments,
+                        out var argumentError))
+                {
+                    var invalidResult = CopilotMcpToolCallResult.Fail(
+                        "invalid_arguments",
+                        argumentError,
+                        CopilotToolFailureKind.Validation);
+                    CopilotMcpAuditLogger.ToolCallCompleted(
+                        normalizedToolName,
+                        false,
+                        stopwatch.Elapsed,
+                        invalidResult.ErrorCode);
+                    return invalidResult;
+                }
+
+                var executionTimeout = definition.Descriptor.EffectiveExecutionTimeout
+                    < _executionTimeoutLimit
+                        ? definition.Descriptor.EffectiveExecutionTimeout
+                        : _executionTimeoutLimit;
+                var result = CopilotMcpToolResultContract.Capture(
+                    normalizedToolName,
+                    await CopilotCancellationBoundary.RunTaskAsync(
+                        token => definition.Handler(arguments, executionScope, token),
+                        executionTimeout,
+                        cancellationToken));
 
                 CopilotMcpAuditLogger.ToolCallCompleted(normalizedToolName, result.Success, stopwatch.Elapsed, result.Success ? "OK" : FirstNonEmpty(result.ErrorCode, "tool_call_failed"));
                 return result;
+            }
+            catch (TimeoutException)
+            {
+                var timeoutResult = CopilotMcpToolCallResult.Fail(
+                    "tool_execution_timeout",
+                    $"The MCP tool '{normalizedToolName}' exceeded its execution timeout. Its cancellation was requested, but a non-cooperative action may still finish; inspect application state before retrying.",
+                    CopilotToolFailureKind.Transient);
+                CopilotMcpAuditLogger.ToolCallCompleted(
+                    normalizedToolName,
+                    false,
+                    stopwatch.Elapsed,
+                    timeoutResult.ErrorCode);
+                return timeoutResult;
             }
             catch (OperationCanceledException)
             {
@@ -186,57 +237,5 @@ namespace ColorVision.Copilot.Mcp
             };
         }
 
-        private CopilotMcpToolRouter CreateRouter()
-        {
-            return new CopilotMcpToolRouter()
-                .RegisterScoped("get_server_status", (_, scope, _) => Task.FromResult(GetServerStatus(scope)))
-                .RegisterScoped("get_enabled_tools", (_, _, _) => Task.FromResult(GetEnabledTools()))
-                .RegisterScoped("get_audit_log", (arguments, scope, _) => Task.FromResult(GetAuditLog(arguments, scope)))
-                .RegisterScoped("get_audit_summary", (arguments, scope, _) => Task.FromResult(GetAuditSummary(arguments, scope)))
-                .RegisterScoped("get_last_tool_error", (_, scope, _) => Task.FromResult(GetLastToolError(scope)))
-                .RegisterScoped("get_agent_task_events", (arguments, scope, _) => Task.FromResult(GetAgentTaskEvents(arguments, scope)))
-                .RegisterScoped("get_runtime_environment_summary", (_, _, token) => GetRuntimeEnvironmentSummaryAsync(token))
-                .RegisterScoped("get_diagnostic_bundle", (arguments, scope, token) => GetDiagnosticBundleAsync(arguments, scope, token))
-                .RegisterScoped("get_live_context", (_, _, _) => Task.FromResult(GetLiveContext()))
-                .RegisterScoped("get_workspace_context", (_, _, _) => Task.FromResult(GetWorkspaceContext()))
-                .RegisterScoped("get_recent_log", (arguments, _, token) => GetRecentLogAsync(arguments, token))
-                .RegisterScoped("search_docs", (arguments, _, token) => SearchDocsAsync(arguments, token))
-                .RegisterScoped("search_files", (arguments, _, token) => Task.FromResult(SearchFiles(arguments, token)))
-                .RegisterScoped("grep_text", (arguments, _, token) => Task.FromResult(GrepText(arguments, token)))
-                .RegisterScoped("read_allowed_file", (arguments, _, token) => ReadAllowedFileAsync(arguments, token))
-                .RegisterScoped("list_allowed_directory", (arguments, _, token) => Task.FromResult(ListAllowedDirectory(arguments, token)))
-                .RegisterScoped("get_active_template_context", (_, _, _) => Task.FromResult(GetActiveTemplateContext()))
-                .RegisterScoped("get_saved_template_context", (arguments, _, _) => Task.FromResult(GetSavedTemplateContext(arguments)))
-                .RegisterScoped("get_template_type_context", (arguments, _, _) => Task.FromResult(GetTemplateTypeContext(arguments)))
-                .RegisterScoped("get_flow_summary", (_, _, token) => GetFlowSummaryAsync(token))
-                .RegisterScoped("get_flow_graph", (arguments, _, token) => GetFlowGraphAsync(arguments, token))
-                .RegisterScoped("get_flow_node_catalog", (arguments, _, token) => GetFlowNodeCatalogAsync(arguments, token))
-                .RegisterScoped("preview_flow_patch", (arguments, _, token) => PreviewFlowPatchAsync(arguments, token))
-                .RegisterScoped("apply_flow_patch", (arguments, scope, token) => ApplyFlowPatchAsync(arguments, scope, token))
-                .RegisterScoped("diagnose_flow_failure", (arguments, _, token) => DiagnoseFlowFailureAsync(arguments, token))
-                .RegisterScoped("open_panel", (arguments, _, token) => OpenPanelAsync(arguments, token))
-                .RegisterScoped("execute_menu", (arguments, scope, token) => ExecuteMenuAsync(arguments, scope, token))
-                .RegisterScoped("create_flow", (arguments, scope, token) => CreateFlowAsync(arguments, scope, token))
-                .RegisterScoped("confirm_action", ConfirmActionAsync)
-                .RegisterScoped("preview_template_patch", (arguments, _, _) => Task.FromResult(PreviewTemplatePatch(arguments)))
-                .RegisterScoped("suggest_template_patch", (arguments, _, token) => SuggestTemplatePatchAsync(arguments, token))
-                .RegisterScoped("apply_template_patch", (arguments, scope, token) => ApplyTemplatePatchAsync(arguments, scope, token))
-                .RegisterScoped("preview_flow_action", (arguments, _, token) => PreviewFlowActionAsync(arguments, token))
-                .RegisterScoped("set_theme", (arguments, _, token) => SetThemeAsync(arguments, token))
-                .RegisterScoped("set_language", (arguments, scope, token) => SetLanguageAsync(arguments, scope, token));
-        }
-
-        private void ValidateRouterMatchesDescriptors()
-        {
-            var descriptorNames = ListTools().Select(tool => NormalizeToolName(tool.Name)).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var routeNames = _router.ToolNames.Select(NormalizeToolName).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            if (descriptorNames.SetEquals(routeNames))
-                return;
-
-            var missingRoutes = descriptorNames.Except(routeNames, StringComparer.OrdinalIgnoreCase);
-            var missingDescriptors = routeNames.Except(descriptorNames, StringComparer.OrdinalIgnoreCase);
-            throw new InvalidOperationException(
-                $"MCP tool descriptors and handlers are out of sync. Missing routes: {string.Join(", ", missingRoutes)}. Missing descriptors: {string.Join(", ", missingDescriptors)}.");
-        }
     }
 }

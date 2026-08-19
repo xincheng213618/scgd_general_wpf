@@ -161,8 +161,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
 
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            if (File.Exists(result.FilePath))
-                ctx.ImageView.OpenImage(result.FilePath);
+            OpenSourceImage(ctx, result);
 
             if (result.ViewResults.Count == 1 && result.ViewResults[0] is SFRDetailViewReslut sfrDetailViewReslut)
             {

@@ -4,6 +4,14 @@ using System.Linq;
 
 namespace ColorVision.Copilot
 {
+    internal readonly record struct CopilotConversationSurfaceSnapshot(
+        int CurrentMessages,
+        int ShadowedMessages,
+        int LogOnlyMessages,
+        bool HasCompactionSummary,
+        int BoundaryIndex,
+        int EndIndexExclusive);
+
     public sealed class CopilotConversationCompaction
     {
         public const int CurrentStrategyVersion = 1;
@@ -43,26 +51,20 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(conversation);
 
-            var endIndex = stopBeforeMessage == null
-                ? conversation.Messages.Count
-                : conversation.Messages.IndexOf(stopBeforeMessage);
-            if (endIndex < 0)
-                endIndex = conversation.Messages.Count;
-
-            var startIndex = 0;
+            var surface = CaptureSurface(
+                conversation,
+                stopBeforeMessage);
+            var startIndex = surface.HasCompactionSummary
+                ? surface.BoundaryIndex + 1
+                : 0;
             var history = new List<CopilotRequestMessage>();
             var compaction = conversation.Compaction;
-            if (compaction?.IsStructurallyValid() == true)
-            {
-                var boundaryIndex = FindMessageIndex(conversation, compaction.ThroughMessageId);
-                if (boundaryIndex >= 0 && boundaryIndex < endIndex)
-                {
-                    history.Add(CreateSummaryMessage(compaction));
-                    startIndex = boundaryIndex + 1;
-                }
-            }
+            if (surface.HasCompactionSummary && compaction != null)
+                history.Add(CreateSummaryMessage(compaction));
 
-            for (var index = startIndex; index < endIndex; index++)
+            for (var index = startIndex;
+                index < surface.EndIndexExclusive;
+                index++)
             {
                 var message = conversation.Messages[index];
                 var content = useModelContent
@@ -75,6 +77,56 @@ namespace ColorVision.Copilot
             }
 
             return history;
+        }
+
+        internal static CopilotConversationSurfaceSnapshot CaptureSurface(
+            CopilotConversationRecord? conversation,
+            CopilotChatMessage? stopBeforeMessage = null)
+        {
+            if (conversation == null)
+                return default;
+
+            var endIndex = stopBeforeMessage == null
+                ? conversation.Messages.Count
+                : conversation.Messages.IndexOf(stopBeforeMessage);
+            if (endIndex < 0)
+                endIndex = conversation.Messages.Count;
+
+            var compaction = conversation.Compaction;
+            var boundaryIndex = compaction?.IsStructurallyValid() == true
+                ? FindMessageIndex(
+                    conversation,
+                    compaction.ThroughMessageId)
+                : -1;
+            var hasCompactionSummary = boundaryIndex >= 0
+                && boundaryIndex < endIndex;
+            var currentMessages = 0;
+            var shadowedMessages = 0;
+            var logOnlyMessages = 0;
+            for (var index = 0; index < endIndex; index++)
+            {
+                if (string.IsNullOrWhiteSpace(
+                        conversation.Messages[index].ModelContent))
+                {
+                    logOnlyMessages++;
+                }
+                else if (hasCompactionSummary && index <= boundaryIndex)
+                {
+                    shadowedMessages++;
+                }
+                else
+                {
+                    currentMessages++;
+                }
+            }
+
+            return new CopilotConversationSurfaceSnapshot(
+                currentMessages,
+                shadowedMessages,
+                logOnlyMessages,
+                hasCompactionSummary,
+                boundaryIndex,
+                endIndex);
         }
 
         internal static CopilotRequestMessage CreateSummaryMessage(CopilotConversationCompaction compaction)
@@ -94,6 +146,12 @@ namespace ColorVision.Copilot
             }
 
             return CopilotTokenEstimator.EstimateTextWeight(CreateSummaryMessage(compaction).Content);
+        }
+
+        internal static long EstimateSummaryWeight(string summary)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(summary);
+            return CopilotTokenEstimator.EstimateTextWeight(SummaryPreamble + summary.Trim());
         }
 
         public static int CountMessagesAfterBoundary(CopilotConversationRecord conversation)

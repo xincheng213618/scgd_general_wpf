@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Engine;
 using System;
 using System.Collections.Generic;
 
@@ -77,7 +78,7 @@ namespace ColorVision.Database
             }
         }
 
-        public string ExistsDisplay => Exists ? "存在" : "未找到";
+        public string ExistsDisplay => Exists ? EngineLocalization.Get("存在") : EngineLocalization.Get("未找到");
         public bool CanSelect => Exists;
         public string RowCountDisplay => Exists ? RowCount.ToString("N0") : "-";
         public string SizeDisplay => Exists ? FormatSize(SizeBytes) : "-";

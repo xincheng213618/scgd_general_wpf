@@ -10,7 +10,7 @@ namespace ColorVision.Copilot.Mcp
 {
     internal sealed partial class CopilotMcpToolDispatcher
     {
-        private CopilotMcpToolCallResult PreviewTemplatePatch(IReadOnlyDictionary<string, JsonElement>? arguments)
+        internal CopilotMcpToolCallResult PreviewTemplatePatch(IReadOnlyDictionary<string, JsonElement>? arguments)
         {
             if (!TryBuildTemplatePatchComputation(arguments, out var computation, out var errorCode, out var errorMessage))
                 return CopilotMcpToolCallResult.Fail(errorCode, errorMessage);
@@ -146,7 +146,7 @@ namespace ColorVision.Copilot.Mcp
             }
         }
 
-        private async Task<CopilotMcpToolCallResult> ApplyTemplatePatchAsync(
+        internal async Task<CopilotMcpToolCallResult> ApplyTemplatePatchAsync(
             IReadOnlyDictionary<string, JsonElement>? arguments,
             CopilotExecutionScope executionScope,
             CancellationToken cancellationToken)
@@ -165,7 +165,7 @@ namespace ColorVision.Copilot.Mcp
             return CreateConfirmableActionResult(
                 "Confirm template patch",
                 $"Apply previewed JSON changes to active template editor: {preview.TemplateIdentifier}",
-                "apply_template_patch",
+                CopilotSharedCapabilityCatalog.ApplyTemplatePatch.McpToolName,
                 arguments,
                 BuildTemplatePatchConfirmationPreview(preview),
                 token => ExecuteTemplatePatchPreviewAsync(preview.PreviewId, token),

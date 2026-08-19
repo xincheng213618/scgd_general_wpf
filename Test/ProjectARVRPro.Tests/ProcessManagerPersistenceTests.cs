@@ -17,6 +17,79 @@ public sealed class ProcessManagerPersistenceTestGroup
 public sealed class ProcessManagerPersistenceTests
 {
     [Fact]
+    public void DuplicateMetaCreatesIndependentConfiguredCopyAfterSource()
+    {
+        RunInTemporaryPersistenceDirectory(() =>
+        {
+            var manager = new ProcessManager();
+            ProcessGroup group = Assert.Single(manager.ProcessGroups);
+            var sourceProcess = new BlackProcess();
+            sourceProcess.Config.RecipeConfig.FOFOContrast.Min = 123;
+            var source = new ProcessMeta
+            {
+                Name = "Source",
+                FlowTemplate = "SourceTemplate",
+                Process = sourceProcess,
+                IsEnabled = false,
+                ConfigJson = JsonConvert.SerializeObject(sourceProcess.Config),
+                PictureSwitchConfig = new PictureSwitchConfig
+                {
+                    IsEnabled = true,
+                    SendCommand = "PIC9",
+                    SuccessDelayMs = 900
+                }
+            };
+            group.ProcessMetas.Add(source);
+            group.ProcessMetas.Add(new ProcessMeta { Name = "Source_Copy" });
+            manager.SelectedProcessMeta = source;
+
+            manager.DuplicateMetaCommand.Execute(null);
+
+            Assert.Equal(3, group.ProcessMetas.Count);
+            ProcessMeta copy = group.ProcessMetas[1];
+            Assert.Same(copy, manager.SelectedProcessMeta);
+            Assert.Equal("Source_Copy_1", copy.Name);
+            Assert.Equal(source.FlowTemplate, copy.FlowTemplate);
+            Assert.Equal(source.IsEnabled, copy.IsEnabled);
+            Assert.NotSame(source.Process, copy.Process);
+            BlackProcess copiedProcess = Assert.IsType<BlackProcess>(copy.Process);
+            Assert.Equal(123, copiedProcess.Config.RecipeConfig.FOFOContrast.Min);
+            Assert.NotSame(sourceProcess.Config.RecipeConfig, copiedProcess.Config.RecipeConfig);
+            Assert.NotSame(source.PictureSwitchConfig, copy.PictureSwitchConfig);
+            Assert.True(copy.PictureSwitchConfig.IsEnabled);
+            Assert.Equal("PIC9", copy.PictureSwitchConfig.SendCommand);
+            Assert.Equal(900, copy.PictureSwitchConfig.SuccessDelayMs);
+
+            copiedProcess.Config.RecipeConfig.FOFOContrast.Min = 456;
+            copy.PictureSwitchConfig.SendCommand = "PICA";
+            Assert.Equal(123, sourceProcess.Config.RecipeConfig.FOFOContrast.Min);
+            Assert.Equal("PIC9", source.PictureSwitchConfig.SendCommand);
+        });
+    }
+
+    [Fact]
+    public void MoveMetaToIndexReordersActiveGroupAndKeepsSelection()
+    {
+        RunInTemporaryPersistenceDirectory(() =>
+        {
+            var manager = new ProcessManager();
+            ProcessGroup group = Assert.Single(manager.ProcessGroups);
+            var first = new ProcessMeta { Name = "First" };
+            var second = new ProcessMeta { Name = "Second" };
+            var third = new ProcessMeta { Name = "Third" };
+            group.ProcessMetas.Add(first);
+            group.ProcessMetas.Add(second);
+            group.ProcessMetas.Add(third);
+
+            Assert.True(manager.MoveMetaToIndex(first, 2));
+
+            Assert.Equal("Second,Third,First", string.Join(',', group.ProcessMetas.Select(meta => meta.Name)));
+            Assert.Same(first, manager.SelectedProcessMeta);
+            Assert.False(manager.MoveMetaToIndex(first, 2));
+        });
+    }
+
+    [Fact]
     public void SaveReloadDuplicateAndResultParserKeepIndependentRecipeValues()
     {
         RunInTemporaryPersistenceDirectory(() =>

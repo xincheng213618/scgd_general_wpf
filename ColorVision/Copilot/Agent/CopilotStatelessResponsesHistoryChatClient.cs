@@ -82,6 +82,8 @@ namespace ColorVision.Copilot
                 var preparedMessage = message.Clone();
                 preparedMessage.AdditionalProperties = new(message.AdditionalProperties);
                 preparedMessage.AdditionalProperties.Remove(ResponseMessageJsonKey);
+                // Portable message content is authoritative. Provider-private replay
+                // metadata is used only while its text still describes that content.
                 var responseItem = TryReadMessageHistoryMarker(message);
                 if (responseItem is not null)
                 {
@@ -137,6 +139,7 @@ namespace ColorVision.Copilot
                     BinaryData.FromString(json),
                     ModelReaderWriterOptions.Json);
                 return messageItem?.Role == MessageRole.Assistant
+                    && HasMatchingPortableText(message, json)
                     ? messageItem
                     : null;
             }
@@ -144,6 +147,36 @@ namespace ColorVision.Copilot
             {
                 return null;
             }
+        }
+
+        private static bool HasMatchingPortableText(ChatMessage message, string json)
+        {
+            using var document = JsonDocument.Parse(json);
+            if (!document.RootElement.TryGetProperty("content", out var content)
+                || content.ValueKind != JsonValueKind.Array)
+            {
+                return !message.Contents.OfType<TextContent>().Any();
+            }
+
+            var markerTextParts = content
+                .EnumerateArray()
+                .Where(item => item.ValueKind == JsonValueKind.Object
+                    && item.TryGetProperty("type", out var type)
+                    && string.Equals(type.GetString(), "output_text", StringComparison.Ordinal)
+                    && item.TryGetProperty("text", out var text)
+                    && text.ValueKind == JsonValueKind.String)
+                .Select(item => item.GetProperty("text").GetString() ?? string.Empty)
+                .ToArray();
+            var portableTextParts = message.Contents
+                .OfType<TextContent>()
+                .Select(content => content.Text ?? string.Empty)
+                .ToArray();
+            return markerTextParts.Length == 0
+                ? portableTextParts.Length == 0
+                : string.Equals(
+                    string.Concat(markerTextParts),
+                    string.Concat(portableTextParts),
+                    StringComparison.Ordinal);
         }
 
         private static bool TryGetMessageHistoryJson(

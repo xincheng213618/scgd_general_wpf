@@ -59,8 +59,10 @@ namespace ColorVision.UI.Tests
                 OperationsTriageActionIds.ViewRecentEvents,
                 OperationsTriageActionIds.ShowMainWindow,
                 OperationsTriageActionIds.ReviewJobs,
+                OperationsTriageActionIds.ViewServiceHealth,
                 OperationsTriageActionIds.RequestMqttRestart,
                 OperationsTriageActionIds.ViewDeviceHealth,
+                OperationsTriageActionIds.ViewApplication,
             ];
             Assert.All(actions, action => Assert.Contains(action.ActionId, allowedActionIds));
             OperationsTriageAction restart = Assert.Single(actions,
@@ -69,6 +71,56 @@ namespace ColorVision.UI.Tests
             Assert.True(restart.RequiresConfirmation);
             Assert.False(restart.RequiresLocalCoSign);
             Assert.Equal("approval-workflow", restart.Kind);
+            OperationsTriageFinding serviceFinding = Assert.Single(report.Findings,
+                item => item.FindingId == "service-health-mqtt-broker");
+            Assert.Equal(OperationsTriageActionIds.ViewServiceHealth,
+                serviceFinding.Actions[0].ActionId);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, serviceFinding.Actions[0].RiskLevel);
+            OperationsTriageFinding desktopFinding = Assert.Single(report.Findings,
+                item => item.FindingId == "desktop-window-hidden");
+            Assert.Equal(OperationsTriageActionIds.ViewApplication,
+                desktopFinding.Actions[0].ActionId);
+            Assert.Equal(OperationsTriageActionIds.ShowMainWindow,
+                desktopFinding.Actions[1].ActionId);
+        }
+
+        [Fact]
+        public void UnavailableServiceHealthStillOffersReadOnlyEvidenceRefresh()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                new OperationsServiceHealthReport { Available = false });
+
+            OperationsTriageFinding finding = Assert.Single(report.Findings,
+                item => item.FindingId == "service-health-unavailable");
+            OperationsTriageAction action = Assert.Single(finding.Actions);
+            Assert.Equal(OperationsTriageActionIds.ViewServiceHealth, action.ActionId);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, action.RiskLevel);
+            Assert.False(action.RequiresConfirmation);
+            Assert.False(action.RequiresLocalCoSign);
+        }
+
+        [Fact]
+        public void UnavailableEvidenceStillOffersOnlyItsReadOnlyDetailRefresh()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = false },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                deviceHealth: OperationsDeviceHealthSnapshot.CreateUnavailable(),
+                messageChannel: OperationsMessageChannelHealthSnapshot.CreateUnavailable());
+
+            AssertReadOnlyDetailAction(
+                report, "device-health-unavailable", OperationsTriageActionIds.ViewDeviceHealth);
+            AssertReadOnlyDetailAction(
+                report, "message-channel-health-unavailable", OperationsTriageActionIds.ViewMessageChannelHealth);
+            AssertReadOnlyDetailAction(
+                report, "application-log-unavailable", OperationsTriageActionIds.ViewRecentEvents);
+            Assert.DoesNotContain(report.Findings.SelectMany(item => item.Actions),
+                action => action.ActionId == OperationsTriageActionIds.RequestMessageChannelRecovery
+                    || action.ActionId == OperationsTriageActionIds.RequestMqttRestart);
         }
 
         [Fact]
@@ -82,6 +134,58 @@ namespace ColorVision.UI.Tests
             Assert.Equal("healthy", report.State);
             Assert.Empty(report.Findings);
             Assert.Equal(0, report.PendingJobCount);
+        }
+
+        [Fact]
+        public void UnresponsiveMainUiAddsOneReadOnlyPerformanceFindingWithoutWindowGuess()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, false, false, "Unavailable"),
+                0,
+                performance: Performance("unresponsive"));
+
+            OperationsTriageFinding finding = Assert.Single(report.Findings);
+            Assert.Equal("main-ui-unresponsive", finding.FindingId);
+            Assert.Equal("error", finding.Severity);
+            Assert.Equal("performance", finding.Category);
+            Assert.Contains("固定 1 秒", finding.Summary, StringComparison.Ordinal);
+            Assert.DoesNotContain(report.Findings, item => item.Category == "desktop");
+            AssertReadOnlyDetailAction(
+                report, finding.FindingId, OperationsTriageActionIds.ViewPerformance);
+            Assert.DoesNotContain(report.Findings.SelectMany(item => item.Actions),
+                action => action.RequiresConfirmation || action.RiskLevel != OperationsRiskLevels.ReadOnly);
+        }
+
+        [Fact]
+        public void SlowMainUiAddsStableReadOnlyFindingWithoutCpuOrMemoryInference()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                performance: Performance("slow", latencyMilliseconds: 420, cpuPercent: 98));
+
+            OperationsTriageFinding finding = Assert.Single(report.Findings);
+            Assert.Equal("main-ui-slow", finding.FindingId);
+            Assert.Equal("warning", finding.Severity);
+            Assert.Contains("250 毫秒阈值", finding.Summary, StringComparison.Ordinal);
+            Assert.DoesNotContain("98", finding.Summary, StringComparison.Ordinal);
+            AssertReadOnlyDetailAction(
+                report, finding.FindingId, OperationsTriageActionIds.ViewPerformance);
+        }
+
+        [Fact]
+        public void ResponsiveMainUiDoesNotTurnSingleResourceReadingsIntoMaintenanceAdvice()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                performance: Performance("responsive", latencyMilliseconds: 12, cpuPercent: 100));
+
+            Assert.Equal("healthy", report.State);
+            Assert.Empty(report.Findings);
         }
 
         [Fact]
@@ -112,6 +216,67 @@ namespace ColorVision.UI.Tests
             Assert.False(action.RequiresLocalCoSign);
             Assert.Equal(1, report.HangCount);
             Assert.Equal(1, report.FailureDumpCount);
+        }
+
+        [Fact]
+        public void UnavailableFailureEvidenceCannotBeMisreportedAsHealthy()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                failureEvidence: OperationsFailureEvidenceSnapshot.CreateUnavailable());
+
+            Assert.Equal("attention", report.State);
+            AssertReadOnlyDetailAction(
+                report, "failure-evidence-unavailable", OperationsTriageActionIds.ViewFailureEvidence);
+            OperationsTriageFinding finding = Assert.Single(report.Findings);
+            Assert.Contains("不能据此判断近期没有故障", finding.Summary, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void PartialFailureEvidenceCoverageKeepsNoFindingConclusionQualified()
+        {
+            OperationsFailureEvidenceSnapshot evidence = OperationsFailureEvidenceSnapshotFactory.Create(
+                [], [], eventLogAvailable: true, dumpFolderAvailable: false);
+
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                failureEvidence: evidence);
+
+            OperationsTriageFinding finding = Assert.Single(report.Findings,
+                item => item.FindingId == "failure-evidence-coverage-limited");
+            Assert.Contains("本机转储目录不可读取", finding.Summary, StringComparison.Ordinal);
+            Assert.Contains("不能据此确认", finding.Summary, StringComparison.Ordinal);
+            AssertReadOnlyDetailAction(
+                report, finding.FindingId, OperationsTriageActionIds.ViewFailureEvidence);
+        }
+
+        [Fact]
+        public void LimitedFailureScanKeepsEvidenceAndCoverageInOneFinding()
+        {
+            OperationsFailureEvidenceSnapshot evidence = OperationsFailureEvidenceSnapshotFactory.Create(
+                [new OperationsFailureEventObservation(
+                    DateTimeOffset.UtcNow.AddMinutes(-5), OperationsFailureKinds.ApplicationCrash)],
+                [],
+                eventLogAvailable: true,
+                dumpFolderAvailable: true,
+                eventScanLimited: true);
+
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                failureEvidence: evidence);
+
+            OperationsTriageFinding finding = Assert.Single(report.Findings,
+                item => item.FindingId == "recent-failure-evidence");
+            Assert.Contains("Windows 应用事件仅扫描安全上限内条目", finding.Summary,
+                StringComparison.Ordinal);
+            Assert.DoesNotContain(report.Findings,
+                item => item.FindingId == "failure-evidence-coverage-limited");
         }
 
         [Fact]
@@ -222,7 +387,10 @@ namespace ColorVision.UI.Tests
 
             OperationsTriageFinding finding = Assert.Single(report.Findings);
             Assert.Equal("desktop-window-unavailable", finding.FindingId);
-            Assert.Empty(finding.Actions);
+            AssertReadOnlyDetailAction(
+                report, finding.FindingId, OperationsTriageActionIds.ViewApplication);
+            Assert.DoesNotContain(finding.Actions,
+                action => action.ActionId == OperationsTriageActionIds.ShowMainWindow);
         }
 
         [Fact]
@@ -278,5 +446,36 @@ namespace ColorVision.UI.Tests
                 },
             ],
         };
+
+        private static OperationsRuntimePerformanceSnapshot Performance(
+            string state,
+            long? latencyMilliseconds = null,
+            double cpuPercent = 10) => new()
+        {
+            CapturedAt = DateTimeOffset.UtcNow,
+            CpuPercent = cpuPercent,
+            WorkingSetMb = 8192,
+            MainUi = new OperationsUiResponsivenessSnapshot
+            {
+                Available = true,
+                State = state,
+                LatencyMilliseconds = latencyMilliseconds,
+            },
+        };
+
+        private static void AssertReadOnlyDetailAction(
+            OperationsTriageReport report,
+            string findingId,
+            string actionId)
+        {
+            OperationsTriageFinding finding = Assert.Single(report.Findings,
+                item => item.FindingId == findingId);
+            OperationsTriageAction action = Assert.Single(finding.Actions);
+            Assert.Equal(actionId, action.ActionId);
+            Assert.Equal("client-navigation", action.Kind);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, action.RiskLevel);
+            Assert.False(action.RequiresConfirmation);
+            Assert.False(action.RequiresLocalCoSign);
+        }
     }
 }

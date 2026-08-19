@@ -9,7 +9,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ProjectARVRPro
 {
@@ -302,29 +301,18 @@ namespace ProjectARVRPro
         public static string SqliteDbPath { get; set; } = DirectoryPath + "ProjectARVRPro.db";
 
         public ViewResultManagerConfig Config { get; set; }
-        public Func<bool>? SourceBmpAvailabilityProvider { get; set; }
 
         public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
 
-        public int ViewReslutsSelectedIndex { get => _ViewReslutsSelectedIndex; set { _ViewReslutsSelectedIndex = value; OnPropertyChanged(); } }
-        private int _ViewReslutsSelectedIndex = -1;
-        public ListView? ListView { get; set; }
-
-        public RelayCommand EditConfigCommand { get; set; }
-        public RelayCommand ViewReslutsClearCommand { get; set; }
         public RelayCommand QueryCommand { get; set; }
         public RelayCommand GenericQueryCommand { get; set; }
         public RelayCommand SlectSqlLiteDbCommand { get; set; }
-
-        public RelayCommand SaveCommand { get; set; }
 
         private readonly SqlSugarClient _db;
 
         public ViewResultManager()
         {
             Config = ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
-            EditConfigCommand = new RelayCommand(a => EditConfig());
-            ViewReslutsClearCommand = new RelayCommand(a => ViewReslutsClear());
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
             SlectSqlLiteDbCommand = new RelayCommand(a => SlectSqlLiteDb());
@@ -361,24 +349,6 @@ namespace ProjectARVRPro
         }
 
 
-        public void EditConfig()
-        {
-            try
-            {
-                Config.SourceImageSupportsBmp = SourceBmpAvailabilityProvider?.Invoke() == true;
-            }
-            catch
-            {
-                Config.SourceImageSupportsBmp = false;
-            }
-            new PropertyEditorWindow(Config) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            ConfigService.Instance.SaveConfigs();
-        }
-        public void ViewReslutsClear()
-        {
-            ViewReslutsSelectedIndex = -1;
-            ViewResluts.Clear();
-        }
         public void Query()
         {
             Query(null,null,Config.Count);
@@ -416,9 +386,14 @@ namespace ProjectARVRPro
         {
             if (item == null) return;
 
-            ResultImageDimensions.TryPopulateFromFile(item);
-
             bool isNew = item.Id <= 0;
+            if (isNew
+                && ResultImageDimensions.TryReadFromMeasureResults(item.BatchId, item.FileName, out int width, out int height))
+            {
+                item.ImageWidth = width;
+                item.ImageHeight = height;
+            }
+
             bool savePayload = item.ViewResultJson != null;
             ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
             {
@@ -451,27 +426,53 @@ namespace ProjectARVRPro
                 AddViewResult(item);
         }
 
-        public bool UpdateImageDimensions(ProjectARVRReuslt item, int width, int height)
+        internal bool UpdateSavedImagePaths(
+            ProjectARVRReuslt item,
+            ResultImageExportPathUpdate update)
         {
             ArgumentNullException.ThrowIfNull(item);
-            if (width <= 0 || height <= 0)
-                return false;
-            if (item.ImageWidth == width && item.ImageHeight == height)
+            return ApplySavedImagePathUpdate(item, update, (savedResultImageFileName, savedSourceImageFileName) =>
+            {
+                int updatedRows = ResultJsonPayloadStorage.RunDatabaseMaintenance(() =>
+                    _db.Updateable<ProjectARVRReuslt>()
+                        .SetColumns(result => new ProjectARVRReuslt
+                        {
+                            SavedResultImageFileName = savedResultImageFileName,
+                            SavedSourceImageFileName = savedSourceImageFileName,
+                        })
+                        .Where(result => result.Id == item.Id)
+                        .ExecuteCommand());
+                if (updatedRows != 1)
+                    throw new InvalidOperationException($"未能更新结果图像路径：resultId={item.Id}, affectedRows={updatedRows}");
+            });
+        }
+
+        internal static bool ApplySavedImagePathUpdate(
+            ProjectARVRReuslt item,
+            ResultImageExportPathUpdate update,
+            Action<string?, string?> persist)
+        {
+            ArgumentNullException.ThrowIfNull(item);
+            ArgumentNullException.ThrowIfNull(persist);
+
+            string? savedResultImageFileName = update.UpdateSavedResultImageFileName
+                ? update.SavedResultImageFileName
+                : item.SavedResultImageFileName;
+            string? savedSourceImageFileName = update.UpdateSavedSourceImageFileName
+                ? update.SavedSourceImageFileName
+                : item.SavedSourceImageFileName;
+            bool resultPathChanged = update.UpdateSavedResultImageFileName
+                && !string.Equals(item.SavedResultImageFileName, savedResultImageFileName, StringComparison.OrdinalIgnoreCase);
+            bool sourcePathChanged = update.UpdateSavedSourceImageFileName
+                && !string.Equals(item.SavedSourceImageFileName, savedSourceImageFileName, StringComparison.OrdinalIgnoreCase);
+            if (!resultPathChanged && !sourcePathChanged)
                 return false;
 
-            item.ImageWidth = width;
-            item.ImageHeight = height;
             if (item.Id > 0)
-            {
-                _db.Updateable<ProjectARVRReuslt>()
-                    .SetColumns(result => new ProjectARVRReuslt
-                    {
-                        ImageWidth = width,
-                        ImageHeight = height,
-                    })
-                    .Where(result => result.Id == item.Id)
-                    .ExecuteCommand();
-            }
+                persist(savedResultImageFileName, savedSourceImageFileName);
+
+            item.SavedResultImageFileName = savedResultImageFileName;
+            item.SavedSourceImageFileName = savedSourceImageFileName;
 
             return true;
         }
@@ -487,7 +488,6 @@ namespace ProjectARVRPro
         private void AddViewResult(ProjectARVRReuslt item)
         {
             ViewResluts.Insert(0, item);
-            ViewReslutsSelectedIndex = 0;
         }
 
         public int SaveObjectiveTestResult(int currentRecordId, ProjectARVRReuslt result, ObjectiveTestResult objectiveTestResult)
@@ -550,18 +550,6 @@ namespace ProjectARVRPro
                     .Where(item => item.Id == recordId)
                     .ExecuteCommand();
             });
-        }
-
-        public List<ObjectiveTestResultRecord> QueryObjectiveTestResultRecords(string sn = null, int count = 100)
-        {
-            var query = _db.Queryable<ObjectiveTestResultRecord>();
-            if (!string.IsNullOrWhiteSpace(sn))
-            {
-                query = query.Where(x => x.SN.Contains(sn));
-            }
-
-            query = query.OrderBy(x => x.Id, OrderByType.Desc);
-            return count > 0 ? query.Take(count).ToList() : query.ToList();
         }
 
         public IReadOnlyList<CycleTimeGroup> QueryCycleTimeGroups(

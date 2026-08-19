@@ -30,9 +30,8 @@ namespace ColorVision.Copilot
 
         private CopilotTurnToolLifecycleState ObserveStarted(CopilotAgentEvent agentEvent)
         {
-            var execution = RequireExecution(
+            var execution = RequireRunningExecution(
                 agentEvent,
-                CopilotToolExecutionState.Running,
                 "start");
             var callKey = BuildCallKey(execution);
             if (!_calls.TryGetValue(callKey, out var current))
@@ -149,15 +148,14 @@ namespace ColorVision.Copilot
             return new CopilotTurnToolLifecycleState(calls);
         }
 
-        private static CopilotToolExecutionInfo RequireExecution(
+        private static CopilotToolExecutionInfo RequireRunningExecution(
             CopilotAgentEvent agentEvent,
-            CopilotToolExecutionState expectedState,
             string lifecycleStage)
         {
             var execution = agentEvent.ToolExecution;
-            if (!HasValidExecution(execution)
-                || execution!.State != expectedState
-                || execution.CompletedAtUtc != null)
+            if (!CopilotToolExecutionInfoProtocol.HasValidActiveState(
+                    execution,
+                    allowPending: false))
             {
                 throw new InvalidOperationException(
                     $"Copilot Agent tool {lifecycleStage} has invalid execution metadata.");
@@ -169,9 +167,9 @@ namespace ColorVision.Copilot
         private static CopilotToolExecutionInfo RequireProgressExecution(CopilotAgentEvent agentEvent)
         {
             var execution = agentEvent.ToolExecution;
-            if (!HasValidExecution(execution)
-                || execution!.State is not (CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running)
-                || execution.CompletedAtUtc != null)
+            if (!CopilotToolExecutionInfoProtocol.HasValidActiveState(
+                    execution,
+                    allowPending: true))
             {
                 throw new InvalidOperationException("Copilot Agent tool progress has invalid execution metadata.");
             }
@@ -191,23 +189,14 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException("Copilot Agent tool result has invalid execution metadata.");
             }
 
-            if (execution.State == CopilotToolExecutionState.AwaitingApproval)
+            if (!CopilotToolExecutionInfoProtocol.HasValidResultState(
+                    execution,
+                    result))
             {
-                if (result.Approval == null
-                    || string.IsNullOrWhiteSpace(result.Approval.ActionId)
-                    || !string.Equals(
-                        result.Approval.ActionId,
-                        execution.ApprovalActionId,
-                        StringComparison.Ordinal))
-                {
-                    throw new InvalidOperationException("Copilot Agent approval result has invalid action metadata.");
-                }
-            }
-            else if (result.Approval != null
-                || execution.CompletedAtUtc == null
-                || (execution.State == CopilotToolExecutionState.Completed) != result.Success)
-            {
-                throw new InvalidOperationException("Copilot Agent terminal tool result has invalid state metadata.");
+                throw new InvalidOperationException(
+                    execution.State == CopilotToolExecutionState.AwaitingApproval
+                        ? "Copilot Agent approval result has invalid action metadata."
+                        : "Copilot Agent terminal tool result has invalid state metadata.");
             }
 
             return execution;
@@ -215,41 +204,17 @@ namespace ColorVision.Copilot
 
         private static void RequireProgressPayload(CopilotAgentEvent agentEvent)
         {
-            var progress = agentEvent.Progress;
             if (string.IsNullOrWhiteSpace(agentEvent.Text)
-                || progress?.Completed is < 0
-                || progress?.Total is < 0
-                || progress is { Completed: long completed, Total: long total }
-                    && completed > total
-                || progress?.DelegatedRun?.RequestTokenBudget < 0
-                || progress?.DelegatedRun?.QueueDurationMs < 0
-                || progress?.DelegatedRun?.ConsumedTokens < 0
-                || progress?.DelegatedRun?.ProviderCalls < 0
-                || progress?.DelegatedRun?.ToolCalls < 0)
+                || !CopilotToolProgressProtocol.IsStructurallyValid(
+                    agentEvent.Progress))
             {
                 throw new InvalidOperationException("Copilot Agent emitted an invalid tool progress payload.");
             }
         }
 
-        private static bool HasValidExecution(CopilotToolExecutionInfo? execution) =>
-            execution != null
-            && !string.IsNullOrWhiteSpace(execution.CallId)
-            && execution.Round >= 1
-            && execution.Attempt >= 1
-            && execution.MaxAttempts >= execution.Attempt
-            && !string.IsNullOrWhiteSpace(execution.RuntimeName)
-            && !string.IsNullOrWhiteSpace(execution.ToolName)
-            && Enum.IsDefined(execution.Access)
-            && Enum.IsDefined(execution.RiskLevel)
-            && Enum.IsDefined(execution.ApprovalMode)
-            && Enum.IsDefined(execution.Idempotency)
-            && Enum.IsDefined(execution.ConcurrencyMode)
-            && Enum.IsDefined(execution.State)
-            && Enum.IsDefined(execution.FailureKind)
-            && execution.StartedAtUtc != default
-            && execution.DurationMs >= 0
-            && execution.QueueDurationMs >= 0
-            && execution.TimeoutMs >= 1;
+        private static bool HasValidExecution(
+            CopilotToolExecutionInfo? execution) =>
+            CopilotToolExecutionInfoProtocol.IsStructurallyValid(execution);
 
         private static void RequireMatchingExecution(
             ToolCallSnapshot expected,

@@ -12,6 +12,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Start;
 
 [STNode("/00 全局")]
+[Obsolete("Deprecated V5 start node retained for loading existing flows.")]
 public class MQTTStartV5Node : BaseStartNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(MQTTStartV5Node));
@@ -504,6 +505,11 @@ public class MQTTStartV5Node : BaseStartNode
 			if (serverSubscribers != null)
 			{
 				CVBaseDataFlowResp statusEvent = JsonConvert.DeserializeObject<CVBaseDataFlowResp>(value);
+				if (!string.IsNullOrEmpty(statusEvent.DeviceNodeCode))
+				{
+					serverSubscribers.Find(node => node.NodeID == statusEvent.DeviceNodeCode)?.DoServerStatusRecv(statusEvent);
+					return;
+				}
 				using List<CVBaseServerNode>.Enumerator enumerator = serverSubscribers.GetEnumerator();
 				while (enumerator.MoveNext() && !enumerator.Current.DoServerStatusRecv(statusEvent))
 				{

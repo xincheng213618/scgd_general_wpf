@@ -95,14 +95,10 @@ namespace ColorVision.Copilot
                 return this;
 
             var finalHookRuns = agentEvent.ToolExecutionHookRuns ?? Array.Empty<CopilotToolExecutionHookRun>();
-            var finalHookIdentities = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var finalHookRun in finalHookRuns)
+            if (!CopilotToolExecutionHookRunProtocol.IsStructurallyValid(
+                    finalHookRuns))
             {
-                if (finalHookRun?.IsStructurallyValid() != true
-                    || !finalHookIdentities.Add(BuildHookIdentity(finalHookRun)))
-                {
-                    throw new InvalidOperationException("Copilot Agent emitted an invalid or duplicate hook in a tool result.");
-                }
+                throw new InvalidOperationException("Copilot Agent emitted an invalid or duplicate hook in a tool result.");
             }
 
             var callKey = BuildCallKey(execution);
@@ -143,11 +139,9 @@ namespace ColorVision.Copilot
             string lifecycleStage)
         {
             var execution = agentEvent.ToolExecution;
-            if (execution == null
-                || string.IsNullOrWhiteSpace(execution.CallId)
-                || string.IsNullOrWhiteSpace(execution.ToolName)
-                || execution.Attempt < 1
-                || execution.State is not (CopilotToolExecutionState.Pending or CopilotToolExecutionState.Running))
+            if (!CopilotToolExecutionInfoProtocol.HasValidActiveState(
+                    execution,
+                    allowPending: true))
             {
                 throw new InvalidOperationException(
                     $"Copilot Agent tool hook {lifecycleStage} has invalid execution metadata.");
@@ -164,9 +158,6 @@ namespace ColorVision.Copilot
             string sourceId,
             CopilotToolExecutionHookPhase phase) =>
             $"{callKey}\u001f{(int)phase}\u001f{sourceId}";
-
-        private static string BuildHookIdentity(CopilotToolExecutionHookRun hookRun) =>
-            $"{(int)hookRun.Phase}\u001f{hookRun.SourceId}";
 
         private static bool AreEquivalent(
             CopilotToolExecutionHookRun expected,

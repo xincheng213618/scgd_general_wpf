@@ -834,11 +834,12 @@ class AdminApiContracts(ContractTestBase):
         directory = self._create_feedback()
         headers = self.basic_auth()
 
-        listing = self.client.get("/api/admin/feedback", headers=headers)
+        listing = self.client.get("/api/admin/feedback?status=open", headers=headers)
         self.assertEqual(listing.status_code, 200)
         data = listing.get_json()
         self.assertEqual(data["total"], 1)
         self.assertEqual(data["summary"]["status_counts"]["new"], 1)
+        self.assertEqual(data["summary"]["oldest_open_at"], "2026-08-12T12:00:00+00:00")
         self.assertNotIn("machine_info", data["items"][0])
 
         detail = self.client.get(
@@ -867,6 +868,12 @@ class AdminApiContracts(ContractTestBase):
                 "/api/admin/feedback?status=resolved", headers=headers,
             ).get_json()["total"],
             1,
+        )
+        self.assertEqual(
+            self.client.get(
+                "/api/admin/feedback?status=open", headers=headers,
+            ).get_json()["total"],
+            0,
         )
         audits = marketplace_app._cache.get_audit_log()
         actions = {item["action"] for item in audits}

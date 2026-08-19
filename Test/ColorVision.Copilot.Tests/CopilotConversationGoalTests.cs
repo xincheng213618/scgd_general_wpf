@@ -1392,6 +1392,47 @@ public sealed class CopilotConversationGoalTests
     }
 
     [Fact]
+    public void IterationLogAssignmentFreezesThePersistedFactSequence()
+    {
+        var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);
+        var originalIteration = new CopilotConversationGoalIteration
+        {
+            TurnNumber = 1,
+            State = CopilotConversationGoalState.Active,
+            Reason = "原始记录",
+            CompletedAtUtc = createdAt.AddMinutes(1),
+        };
+        var replacementIteration = new CopilotConversationGoalIteration
+        {
+            TurnNumber = 1,
+            State = CopilotConversationGoalState.Paused,
+            Reason = "外部替换",
+            CompletedAtUtc = createdAt.AddMinutes(1),
+        };
+        var source = new List<CopilotConversationGoalIteration> { originalIteration };
+        var goal = new CopilotConversationGoal
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Objective = "持续改进 Copilot",
+            State = CopilotConversationGoalState.Active,
+            CreatedAtUtc = createdAt,
+            UpdatedAtUtc = createdAt.AddMinutes(1),
+            TurnCount = 1,
+            IterationLog = source,
+        };
+
+        source[0] = replacementIteration;
+        source.Clear();
+
+        var persistedIteration = Assert.Single(goal.IterationLog);
+        Assert.Same(originalIteration, persistedIteration);
+        Assert.Equal("原始记录", persistedIteration.Reason);
+        Assert.Throws<NotSupportedException>(() =>
+            ((IList<CopilotConversationGoalIteration>)goal.IterationLog)[0] = replacementIteration);
+        Assert.True(goal.IsStructurallyValid());
+    }
+
+    [Fact]
     public void SaturatedTurnCounterReplacesTheSameNumberedLogEntry()
     {
         var createdAt = new DateTimeOffset(2026, 8, 8, 8, 0, 0, TimeSpan.Zero);

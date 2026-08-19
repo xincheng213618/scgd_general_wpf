@@ -4,6 +4,86 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotTurnCheckpointLifecycleTests
 {
+    [Fact]
+    public void CheckpointPublicationDoesNotShareMutableLedgerWithEventObservers()
+    {
+        var sourceLedger = CreateTaskLedger();
+        Assert.True(CopilotAgentCheckpointPublication.TryCreate(
+            CreateCheckpoint(InitialUpdate),
+            sourceLedger,
+            out var publication));
+
+        sourceLedger.Mode = "plan";
+        sourceLedger.Items[0].Title = "Rewritten source task";
+        var agentEvent = publication.CreateEvent();
+        Assert.Throws<InvalidOperationException>(() => agentEvent.TaskLedger!.Mode = "plan");
+        Assert.Throws<InvalidOperationException>(() =>
+            agentEvent.TaskLedger!.Items[0].Title = "Rewritten observer task");
+
+        Assert.Equal("execute", publication.TaskLedger.Mode);
+        Assert.Equal(
+            "Persist resumable state",
+            Assert.Single(publication.TaskLedger.Items).Title);
+        Assert.NotSame(publication.TaskLedger, agentEvent.TaskLedger);
+    }
+
+    [Fact]
+    public void CheckpointEventOwnsTheSessionCheckpointCollections()
+    {
+        var toolNames = new List<string> { "FirstTool" };
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "test-profile",
+            SerializedSessionJson = "{}",
+            ToolSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentToolSurfaceVersion,
+            AvailableToolNames = toolNames,
+            TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
+        };
+
+        var agentEvent = CopilotAgentEvent.CheckpointUpdated(
+            checkpoint,
+            CreateTaskLedger());
+        toolNames[0] = "RewrittenTool";
+
+        var captured = Assert.IsType<CopilotAgentSessionCheckpoint>(
+            agentEvent.SessionCheckpoint);
+        Assert.NotSame(checkpoint, captured);
+        Assert.Equal("FirstTool", Assert.Single(captured.AvailableToolNames));
+        var capturedToolNames = Assert.IsAssignableFrom<IList<string>>(
+            captured.AvailableToolNames);
+        Assert.Throws<NotSupportedException>(() =>
+            capturedToolNames[0] = "RewrittenTool");
+    }
+
+    [Fact]
+    public void ReducerOwnsRawCheckpointCollections()
+    {
+        var toolNames = new List<string> { "FirstTool" };
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "test-profile",
+            SerializedSessionJson = "{}",
+            ToolSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentToolSurfaceVersion,
+            AvailableToolNames = toolNames,
+            TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
+            UpdatedAtUtc = InitialUpdate,
+        };
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.CheckpointUpdated,
+            SessionCheckpoint = checkpoint,
+            TaskLedger = CreateTaskLedger(),
+        };
+
+        var state = Observe(CreateStartedState(), agentEvent);
+        toolNames[0] = "RewrittenTool";
+
+        var captured = Assert.IsType<CopilotAgentSessionCheckpoint>(
+            state.CheckpointLifecycle.LatestCheckpoint);
+        Assert.NotSame(checkpoint, captured);
+        Assert.Equal("FirstTool", Assert.Single(captured.AvailableToolNames));
+    }
+
     private static readonly DateTimeOffset InitialUpdate =
         new(2026, 8, 8, 1, 0, 0, TimeSpan.Zero);
 
@@ -101,6 +181,75 @@ public sealed class CopilotTurnCheckpointLifecycleTests
     }
 
     [Fact]
+    public void ReducerRejectsProjectInstructionIdentityDrift()
+    {
+        var state = Observe(
+            CreateStartedState(),
+            CopilotAgentEvent.CheckpointUpdated(
+                CreateCheckpoint(
+                    InitialUpdate,
+                    projectInstructionSurfaceFingerprint: new string('a', 64)),
+                CreateTaskLedger()));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            Observe(
+                state,
+                CopilotAgentEvent.CheckpointUpdated(
+                    CreateCheckpoint(
+                        InitialUpdate.AddSeconds(1),
+                        projectInstructionSurfaceFingerprint: new string('b', 64)),
+                    CreateTaskLedger())));
+
+        Assert.Contains("identity changed", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReducerRejectsTaskIntentIdentityDrift()
+    {
+        var state = Observe(
+            CreateStartedState(),
+            CopilotAgentEvent.CheckpointUpdated(
+                CreateCheckpoint(InitialUpdate, taskIntentText: "Inspect the active flow."),
+                CreateTaskLedger()));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            Observe(
+                state,
+                CopilotAgentEvent.CheckpointUpdated(
+                    CreateCheckpoint(
+                        InitialUpdate.AddSeconds(1),
+                        taskIntentText: "Change the active flow."),
+                    CreateTaskLedger())));
+
+        Assert.Contains("identity changed", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReducerRejectsLaterCheckpointWhoseJournalRegresses()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var regressingJournal = journal.Snapshot();
+        journal.RecordStop(CopilotAgentStopReason.Paused);
+        var state = Observe(
+            CreateStartedState(),
+            CopilotAgentEvent.CheckpointUpdated(
+                CreateCheckpoint(InitialUpdate, taskEventJournal: journal.Snapshot()),
+                CreateTaskLedger()));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            Observe(
+                state,
+                CopilotAgentEvent.CheckpointUpdated(
+                    CreateCheckpoint(
+                        InitialUpdate.AddSeconds(1),
+                        taskEventJournal: regressingJournal),
+                    CreateTaskLedger())));
+
+        Assert.Contains("monotonically", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ReducerRejectsCheckpointTimestampRegression()
     {
         var state = Observe(
@@ -161,6 +310,114 @@ public sealed class CopilotTurnCheckpointLifecycleTests
         Assert.Contains("identity changed", exception.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void ReducerRejectsFinalCheckpointWhoseJournalRegresses()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var regressingJournal = journal.Snapshot();
+        journal.RecordStop(CopilotAgentStopReason.Paused);
+        var ledger = CreateTaskLedger();
+        var state = Observe(
+            CreateStartedState(),
+            CopilotAgentEvent.CheckpointUpdated(
+                CreateCheckpoint(InitialUpdate, taskEventJournal: journal.Snapshot()),
+                ledger));
+        state = CopilotTurnEventReducer.Reduce(
+            state,
+            new CopilotTurnPlanUpdatedEvent(CopilotTurnPlanSnapshot.FromTaskLedger(ledger)));
+        state = Observe(state, CopilotAgentEvent.CheckpointReady());
+        state = Observe(state, CopilotAgentEvent.Completed());
+        var result = CopilotTurnResult.FromAgent(
+            CopilotAgentMode.Auto,
+            CopilotTokenUsage.Empty,
+            new CopilotAgentRunResult
+            {
+                TaskLedger = ledger,
+                SessionCheckpoint = CreateCheckpoint(
+                    InitialUpdate.AddSeconds(1),
+                    taskEventJournal: regressingJournal),
+            });
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            CopilotTurnEventReducer.Reduce(state, new CopilotTurnCompletedEvent(result)));
+
+        Assert.Contains("monotonically", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReducerAcceptsForwardJournalWindowAfterCapacityEviction()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var ledger = CreateTaskLedger();
+        for (var index = 0; index < CopilotAgentTaskEventJournal.MaxEvents - 1; index++)
+            journal.RecordTaskLedger(ledger, $"checkpoint-{index}");
+        var fullWindow = journal.Snapshot();
+        var state = Observe(
+            CreateStartedState(),
+            CopilotAgentEvent.CheckpointUpdated(
+                CreateCheckpoint(InitialUpdate, taskEventJournal: fullWindow),
+                ledger));
+
+        journal.RecordTaskLedger(ledger, "checkpoint-after-capacity");
+        state = Observe(
+            state,
+            CopilotAgentEvent.CheckpointUpdated(
+                CreateCheckpoint(
+                    InitialUpdate.AddSeconds(1),
+                    taskEventJournal: journal.Snapshot()),
+                ledger));
+
+        Assert.Equal(CopilotAgentTaskEventJournal.MaxEvents, state.CheckpointLifecycle.LatestCheckpoint!.TaskEventJournal.Events.Count);
+        Assert.DoesNotContain(
+            state.CheckpointLifecycle.LatestCheckpoint.TaskEventJournal.Events,
+            item => item.Sequence == 2);
+    }
+
+    [Fact]
+    public void ReducerRejectsRewrittenRetainedEventAfterCapacityEviction()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var ledger = CreateTaskLedger();
+        for (var index = 0; index < CopilotAgentTaskEventJournal.MaxEvents - 1; index++)
+            journal.RecordTaskLedger(ledger, $"checkpoint-{index}");
+        var fullWindow = journal.Snapshot();
+        var state = Observe(
+            CreateStartedState(),
+            CopilotAgentEvent.CheckpointUpdated(
+                CreateCheckpoint(InitialUpdate, taskEventJournal: fullWindow),
+                ledger));
+
+        journal.RecordTaskLedger(ledger, "checkpoint-after-capacity");
+        var forwardWindow = journal.Snapshot();
+        var retainedSequence = forwardWindow.Events
+            .Select(item => item.Sequence)
+            .Intersect(fullWindow.Events.Select(item => item.Sequence))
+            .First();
+        var rewrittenWindow = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = forwardWindow.Events
+                .Select(item => item.Sequence == retainedSequence
+                    ? CopyWithSummary(item, "Rewritten historical evidence.")
+                    : item)
+                .ToArray(),
+        };
+
+        Assert.True(rewrittenWindow.IsStructurallyValid());
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            Observe(
+                state,
+                CopilotAgentEvent.CheckpointUpdated(
+                    CreateCheckpoint(
+                        InitialUpdate.AddSeconds(1),
+                        taskEventJournal: rewrittenWindow),
+                    ledger)));
+
+        Assert.Contains("monotonically", exception.Message, StringComparison.Ordinal);
+    }
+
     private static CopilotTurnEventState CreateStartedState() =>
         CopilotTurnEventReducer.Reduce(
             CopilotTurnEventState.Create(CopilotAgentMode.Auto),
@@ -186,13 +443,40 @@ public sealed class CopilotTurnCheckpointLifecycleTests
         ],
     };
 
+    private static CopilotAgentTaskEvent CopyWithSummary(
+        CopilotAgentTaskEvent source,
+        string summary) => new()
+        {
+            Sequence = source.Sequence,
+            Id = source.Id,
+            Type = source.Type,
+            OccurredAtUtc = source.OccurredAtUtc,
+            RunId = source.RunId,
+            SubjectId = source.SubjectId,
+            RelatedIds = source.RelatedIds,
+            ToolName = source.ToolName,
+            State = source.State,
+            FailureCode = source.FailureCode,
+            ExitCode = source.ExitCode,
+            Summary = summary,
+        };
+
     private static CopilotAgentSessionCheckpoint CreateCheckpoint(
         DateTimeOffset updatedAtUtc,
         string profileKey = "test-profile",
-        string serializedSessionJson = "{}") => new()
+        string serializedSessionJson = "{}",
+        CopilotAgentTaskEventJournalSnapshot? taskEventJournal = null,
+        string projectInstructionSurfaceFingerprint = "",
+        string taskIntentText = "") => new()
         {
             ProfileKey = profileKey,
             SerializedSessionJson = serializedSessionJson,
+            ProjectInstructionSurfaceVersion = projectInstructionSurfaceFingerprint.Length == 0
+                ? 0
+                : CopilotAgentSessionCheckpoint.CurrentProjectInstructionSurfaceVersion,
+            ProjectInstructionSurfaceFingerprint = projectInstructionSurfaceFingerprint,
+            TaskIntentText = taskIntentText,
+            TaskEventJournal = taskEventJournal ?? new CopilotAgentTaskEventJournalSnapshot(),
             UpdatedAtUtc = updatedAtUtc,
         };
 }

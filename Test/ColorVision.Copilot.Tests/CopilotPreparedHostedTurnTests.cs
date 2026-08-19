@@ -91,6 +91,27 @@ public sealed class CopilotPreparedHostedTurnTests
             isAutomaticGoalContinuation: false));
     }
 
+    [Fact]
+    public void TaskHostEventKeepsControlFactsFromItsPublicationEdge()
+    {
+        var run = new CopilotHostedAgentRun(
+            "event-snapshot-conversation",
+            CopilotAgentMode.Code);
+        Assert.True(run.TryStart());
+        Assert.True(run.TryRequestCancel());
+        var eventArgs = new CopilotAgentTaskHostChangedEventArgs(
+            CopilotAgentTaskHostChangeKind.ControlRequested,
+            run);
+
+        run.Complete(error: null);
+
+        Assert.Equal(CopilotHostedRunState.Completed, run.State);
+        Assert.Equal(CopilotHostedRunState.CancelRequested, eventArgs.RunState);
+        Assert.True(eventArgs.RunHadStarted);
+        Assert.True(eventArgs.RunIsAgent);
+        Assert.Equal(CopilotAgentControlIntent.Cancel, eventArgs.ControlIntent);
+    }
+
     private static PreparedTurnFixture CreateFixture(CopilotAgentMode mode)
     {
         var profile = new CopilotProfileConfig

@@ -15,7 +15,7 @@ namespace Spectrum.Calibration.Correction;
 public sealed class MenuSpectrumCorrection : SpectrumMenuIBase
 {
     public override string OwnerGuid => ColorVision.UI.Menus.MenuItemConstants.Tool;
-    public override string Header => "光谱修正";
+    public override string Header => "光谱校正";
     public override int Order => 2;
 
     public override void Execute()
@@ -23,13 +23,13 @@ public sealed class MenuSpectrumCorrection : SpectrumMenuIBase
         MainWindow? mainWindow = MainWindow.Instance;
         if (mainWindow == null || !mainWindow.IsLoaded)
         {
-            MessageBox.Show("请先打开 Spectrum 主窗口。", "光谱修正", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("请先打开 Spectrum 主窗口。", "光谱校正", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
         if (!mainWindow.TryGetCorrectionResult(out ViewResultSpectrum? result, out string reason))
         {
-            MessageBox.Show(mainWindow, reason, "光谱修正", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(mainWindow, reason, "光谱校正", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -43,7 +43,7 @@ public sealed class MenuSpectrumCorrection : SpectrumMenuIBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show(mainWindow, ex.GetBaseException().Message, "无法打开光谱修正",
+            MessageBox.Show(mainWindow, ex.GetBaseException().Message, "无法打开光谱校正",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
@@ -89,13 +89,14 @@ public partial class SpectrumResultCorrectionWindow : Window
 
     private void InitializePlot()
     {
-        string font = Fonts.Detect("标准光谱 / 当前光谱 / 修正预测");
-        PreviewPlot.Plot.Title("光谱修正预览");
+        string font = Fonts.Detect("标准光谱 / 当前光谱 / 校正预测");
+        PreviewPlot.Plot.Title("光谱校正预览");
         PreviewPlot.Plot.XLabel("波长 (nm)");
         PreviewPlot.Plot.YLabel("绝对光谱值");
         PreviewPlot.Plot.Axes.Title.Label.FontName = font;
         PreviewPlot.Plot.Axes.Left.Label.FontName = font;
         PreviewPlot.Plot.Axes.Bottom.Label.FontName = font;
+        PreviewPlot.Plot.Legend.FontName = font;
         PlotMeasuredOnly();
     }
 
@@ -162,9 +163,9 @@ public partial class SpectrumResultCorrectionWindow : Window
                 double[] measured = SpectrumCorrectionCalculator.GetAbsoluteSpectrum(_result);
                 PreviewPlot.Plot.Clear();
                 AddLine(CreateWavelengths(), measured, "当前校正后光谱", System.Drawing.Color.DodgerBlue);
-                AddLine(CreateWavelengths(), measured.Select(value => value * factor).ToArray(), "修正预测", System.Drawing.Color.OrangeRed);
+                AddLine(CreateWavelengths(), measured.Select(value => value * factor).ToArray(), "校正预测", System.Drawing.Color.OrangeRed);
                 FinishPlot();
-                StatusText.Text = $"亮度修正比例：{factor:G8}。";
+                StatusText.Text = $"亮度校正比例：{factor:G8}。";
                 _preview = null;
             }
             else
@@ -172,13 +173,13 @@ public partial class SpectrumResultCorrectionWindow : Window
                 _preview = CalculateFullSpectrum();
                 PlotFullPreview(_preview);
                 StatusText.Text = _preview.FilledFactorCount == 0
-                    ? "完整光谱修正预览完成。"
-                    : $"完整光谱修正预览完成；{_preview.FilledFactorCount} 个低信号点使用相邻修正倍率填补。";
+                    ? "完整光谱校正预览完成。"
+                    : $"完整光谱校正预览完成；{_preview.FilledFactorCount} 个低信号点使用相邻校正倍率填补。";
             }
         }
         catch (Exception ex)
         {
-            ShowError("无法计算修正预览", ex);
+            ShowError("无法计算校正预览", ex);
         }
     }
 
@@ -232,7 +233,7 @@ public partial class SpectrumResultCorrectionWindow : Window
         bool cellCommitted = StandardDataGrid.CommitEdit(DataGridEditingUnit.Cell, true);
         bool rowCommitted = StandardDataGrid.CommitEdit(DataGridEditingUnit.Row, true);
         if (!cellCommitted || !rowCommitted || Validation.GetHasError(StandardDataGrid))
-            throw new FormatException("标准光谱表格中有未通过校验的输入，请修正后重试。");
+            throw new FormatException("标准光谱表格中有未通过校验的输入，请更正后重试。");
 
         return SpectrumCorrectionCalculator.CorrectSpectrum(
             _sourceFile,
@@ -246,7 +247,7 @@ public partial class SpectrumResultCorrectionWindow : Window
         PreviewPlot.Plot.Clear();
         AddLine(output.Wavelengths, output.MeasuredValues, "当前校正后光谱", System.Drawing.Color.DodgerBlue);
         AddLine(output.Wavelengths, output.StandardValues, "标准光谱", System.Drawing.Color.ForestGreen);
-        AddLine(output.Wavelengths, predicted, "修正预测", System.Drawing.Color.OrangeRed);
+        AddLine(output.Wavelengths, predicted, "校正预测", System.Drawing.Color.OrangeRed);
         FinishPlot();
     }
 

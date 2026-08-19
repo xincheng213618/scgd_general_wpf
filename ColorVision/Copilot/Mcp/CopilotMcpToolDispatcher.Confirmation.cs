@@ -96,24 +96,18 @@ namespace ColorVision.Copilot.Mcp
             string toolName,
             out string summary)
         {
-            switch (NormalizeToolName(toolName))
+            var normalizedToolName = NormalizeToolName(toolName);
+            if (CopilotSharedCapabilityCatalog.TryResolveMcpTool(
+                    normalizedToolName,
+                    out var definition)
+                && definition.ApprovalMetadata.HasPresentation)
             {
-                case "apply_template_patch":
-                    summary = "修改只应用到当前编辑器；保存前可通过重新加载模板手动恢复。";
-                    return CopilotApprovalReversibility.ManualOnly;
-                case "apply_flow_patch":
-                    summary = "修改不会自动保存或运行流程；如需恢复，必须在编辑器中手动撤销。";
-                    return CopilotApprovalReversibility.ManualOnly;
-                case "set_language":
-                    summary = "可在设置中再次切换语言，但本操作没有自动回滚步骤。";
-                    return CopilotApprovalReversibility.ManualOnly;
-                case "create_flow":
-                    summary = "新建流程不会自动删除；如需恢复，必须手动关闭或移除。";
-                    return CopilotApprovalReversibility.ManualOnly;
-                default:
-                    summary = "所选命令未声明自动撤销能力；请在批准前核对影响。";
-                    return CopilotApprovalReversibility.Unknown;
+                summary = definition.ApprovalMetadata.ReversibilitySummary;
+                return definition.ApprovalMetadata.Reversibility;
             }
+
+            summary = "所选命令未声明自动撤销能力；请在批准前核对影响。";
+            return CopilotApprovalReversibility.Unknown;
         }
 
         private static bool IsConfirmationRequiredResult(CopilotMcpToolCallResult result)

@@ -404,11 +404,15 @@ namespace ProjectARVRPro.IntegrationDemo
                    "    public BlackTestResult BlackTestResult { get; set; }\r\n" +
                    "    public Dictionary<string, FieldOfViewTestResult> FieldOfViewTestResults { get; set; }\r\n" +
                    "    public Dictionary<string, LuminanceChromaticityTestResult> LuminanceChromaticityTestResults { get; set; }\r\n" +
+                   "    public Dictionary<string, LuminanceChromaticityYWTestResult> LuminanceChromaticityYWTestResults { get; set; }\r\n" +
                    "    public ChessboardTestResult ChessboardTestResult { get; set; }\r\n" +
+                   "    public Dictionary<string, ChessboardTestResult> ChessboardTestResults { get; set; }\r\n" +
                    "    public MTFHVTestResult MTFHVTestResult { get; set; }\r\n" +
                    "    public List<MTFHV048TestResult> MTFHV048TestResults { get; set; }\r\n" +
                    "    public List<MTFHV058TestResult> MTFHV058TestResults { get; set; }\r\n" +
                    "    public Dictionary<string, MTFHV058TestResult> DynamicMTFHV058TestResults { get; set; }\r\n" +
+                   "    public Dictionary<string, MTFH07TestResult> MTFH07TestResults { get; set; }\r\n" +
+                   "    public Dictionary<string, MTFV07TestResult> MTFV07TestResults { get; set; }\r\n" +
                    "    public DistortionTestResult DistortionTestResult { get; set; }\r\n" +
                    "    public OpticCenterTestResult OpticCenterTestResult { get; set; }\r\n" +
                    "    public Dictionary<string, ObservableCollection<ObjectiveTestItem>> DynamicTestResults { get; set; }\r\n" +

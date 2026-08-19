@@ -86,6 +86,7 @@ namespace ProjectARVRPro.Process
 
             if (typeName is "BlackProcess"
                 or "LuminanceChromaticityProcess"
+                or "LuminanceChromaticityYWProcess"
                 or "PoiDynamicProcess"
                 or "White51Process"
                 or "White255Process")
@@ -150,13 +151,16 @@ namespace ProjectARVRPro.Process
             "DistortionDynamicProcess" => ("动态畸变", "解析动态点位的畸变测量结果，适配点位数量或布局变化的测试。", "动态点位 · 畸变计算 · 图形叠加 · 文本结果"),
             "FieldOfViewProcess" => ("视场角", "解析视场角关键结果，计算水平、垂直及对角视场并显示边界。", "FOV 计算 · 阈值判定 · 边界叠加 · 结构化结果"),
             "LuminanceChromaticityProcess" => ("亮色度", "解析关键点亮度与色度结果，用于亮度、色坐标及均匀性评价。", "亮度 · 色度 · 均匀性 · 点位叠加"),
+            "LuminanceChromaticityYWProcess" => ("YW亮色度（12X7 + 8X7）", "分别解析YW的12X7与8X7两组POI，并直接计算平均亮度、亮度均匀性和色度均匀性。", "双POI组 · 本地均匀性计算 · 独立Recipe · 强类型Key"),
             "MTFProcess" => ("MTF 通用", "解析通用 MTF 结果，按测量点输出清晰度评价。", "MTF 解析 · 阈值判定 · 区域叠加 · 文本结果"),
-            "MTFHProcess" => ("MTF-H", "解析水平方向 MTF 结果，并按测量区域完成阈值评价。", "水平 MTF · 阈值判定 · 区域叠加 · 文本结果"),
-            "MTFVProcess" => ("MTF-V", "解析垂直方向 MTF 结果，并按测量区域完成阈值评价。", "垂直 MTF · 阈值判定 · 区域叠加 · 文本结果"),
-            "MTFHVProcess" => ("MTF-HV", "同时解析水平与垂直 MTF 结果，适合常规双方向清晰度测试。", "水平/垂直 MTF · 阈值判定 · 区域叠加"),
-            "MTFHVDynamicProcess" => ("动态 MTF-HV", "解析动态区域的水平与垂直 MTF，适配测量区域变化的流程。", "动态区域 · 水平/垂直 MTF · 阈值判定 · 图形叠加"),
-            "MTFHV048Process" => ("MTF-HV 0.48", "解析 0.48 规格的水平与垂直 MTF 结果。", "0.48 规格 · 水平/垂直 MTF · 阈值判定 · 区域叠加"),
-            "MTFHV058Process" => ("MTF-HV 0.58", "解析 0.58 规格的水平与垂直 MTF 结果。", "0.58 规格 · 水平/垂直 MTF · 阈值判定 · 区域叠加"),
+            "MTFHProcess" => ("MTF 058-H（横条纹）", "解析058测试点位方案的横条纹MTF结果。", "横条纹 · 058点位 · 固定区域 · 独立阈值"),
+            "MTFVProcess" => ("MTF 058-V（竖条纹）", "解析058测试点位方案的竖条纹MTF结果。", "竖条纹 · 058点位 · 固定区域 · 独立阈值"),
+            "MTFH07Process" => ("MTFH07（横条纹）", "解析07测试点位方案的横条纹结果；中心0F和四角0.7F分别配置解析Key与Recipe。", "横条纹 · 5个固定点位 · 逐点Recipe · 独立输出Key"),
+            "MTFV07Process" => ("MTFV07（竖条纹）", "解析07测试点位方案的竖条纹结果；中心0F和四角0.7F分别配置解析Key与Recipe。", "竖条纹 · 5个固定点位 · 逐点Recipe · 独立输出Key"),
+            "MTFHVProcess" => ("MTF-HV 0368（特殊图案）", "解析0368测试点位方案的HV特殊图案结果。", "HV特殊图案 · 0368点位 · 阈值判定 · 区域叠加"),
+            "MTFHVDynamicProcess" => ("动态 MTF-HV（特殊图案）", "解析HV特殊图案的动态测量区域；它不是横条纹与竖条纹流程的合并。", "HV特殊图案 · 动态区域 · 双向特征 · 独立Key"),
+            "MTFHV048Process" => ("MTF-HV 048（特殊图案）", "解析048测试点位方案的HV特殊图案结果。", "HV特殊图案 · 048点位 · 阈值判定 · 区域叠加"),
+            "MTFHV058Process" => ("MTF-HV 058（特殊图案）", "解析058测试点位方案的HV特殊图案结果。", "HV特殊图案 · 058点位 · 阈值判定 · 区域叠加"),
             "OpticCenterProcess" => ("光学中心", "解析固定点位光学中心结果，用于中心偏移及位置评价。", "中心定位 · 偏移评价 · 阈值判定 · 文本结果"),
             "OpticCenterDynamicProcess" => ("动态光学中心", "解析动态点位光学中心结果，适配运行时变化的中心定位流程。", "动态点位 · 中心定位 · 偏移评价 · 文本结果"),
             "PoiDynamicProcess" => ("动态 POI", "解析动态 POI 测量结果，用于运行时生成点位的亮色度展示。", "动态点位 · POI 解析 · 图形叠加 · 文本结果"),

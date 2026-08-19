@@ -74,6 +74,14 @@ namespace ColorVision.UI.Desktop.Operations
         public int UnknownCount { get; init; }
 
         public int AttentionCount { get; init; }
+
+        public int OfflineCount { get; init; }
+
+        public int UninitializedCount { get; init; }
+
+        public int UnauthorizedCount { get; init; }
+
+        public int UnclassifiedUnavailableCount { get; init; }
     }
 
     public sealed class OperationsDeviceHealthSnapshot
@@ -113,7 +121,7 @@ namespace ColorVision.UI.Desktop.Operations
         public DateTimeOffset ObservedAt { get; init; } = DateTimeOffset.UtcNow;
 
         public string PrivacyNotice { get; init; } =
-            "This snapshot contains configured device counts grouped into fixed coarse categories, normalized runtime states, and aggregate fixed unavailability reasons only. It excludes device names, codes, identifiers, addresses, topics, configuration, raw status payloads, device activity timestamps, and measurement data.";
+            "This snapshot contains configured device counts, normalized runtime states, and fixed unavailability-reason counts grouped into fixed coarse categories only. It excludes device names, codes, identifiers, addresses, topics, configuration, raw status payloads, device activity timestamps, and measurement data.";
 
         public static OperationsDeviceHealthSnapshot CreateUnavailable(DateTimeOffset? observedAt = null) => new()
         {
@@ -151,6 +159,11 @@ namespace ColorVision.UI.Desktop.Operations
                     UnknownCount = Count(group, OperationsDeviceStates.Unknown),
                     AttentionCount = group.Count(item => item.State is
                         OperationsDeviceStates.Unavailable or OperationsDeviceStates.Unknown),
+                    OfflineCount = CountReason(group, OperationsDeviceUnavailableReasons.Offline),
+                    UninitializedCount = CountReason(group, OperationsDeviceUnavailableReasons.Uninitialized),
+                    UnauthorizedCount = CountReason(group, OperationsDeviceUnavailableReasons.Unauthorized),
+                    UnclassifiedUnavailableCount = CountReason(
+                        group, OperationsDeviceUnavailableReasons.Unclassified),
                 })
                 .ToArray();
             int readyCount = Count(current, OperationsDeviceStates.Ready);

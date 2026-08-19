@@ -2,24 +2,19 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Sorts;
 using log4net;
 using SqlSugar;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -31,7 +26,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
     /// </summary>
     public partial class ThirdPartyAlgorithmsView : UserControl
     {
-        private static readonly ILog logg = LogManager.GetLogger(typeof(AlgorithmView));
+        private static readonly ILog logg = LogManager.GetLogger(typeof(ThirdPartyAlgorithmsView));
         public ThirdPartyAlgorithmsView()
         {
             InitializeComponent();
@@ -130,8 +125,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
             {
                 ViewResultAlg ViewResultAlg = new ViewResultAlg(result);
 
-                var ResultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResultAlg));
-
                 if (Config.InsertAtBeginning)
                     ViewResults.Insert(0, ViewResultAlg);
                 else
@@ -152,66 +145,24 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (listView1.SelectedIndex < 0) return;
-            var ResultHandle = ResultHandleRegistry.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResults[listView1.SelectedIndex]));
-            if (ResultHandle != null)
+            if (listView1.SelectedItem is not ViewResultAlg result)
             {
-                //ResultHandle.Handle(this, ViewResults[listView1.SelectedIndex]);
+                ImageView.Clear();
+                listViewSide.ItemsSource = null;
                 return;
             }
 
-            if (ViewResults[listView1.SelectedIndex] is ViewResultAlg result)
+            ImageView.ImageShow.Clear();
+            ImageView.OpenImage(result.FilePath);
+
+            if (listViewSide.View is GridView gridView)
             {
-                ImageView.ImageShow.Clear();
-                if (File.Exists(result.FilePath))
-                    ImageView.OpenImage(result.FilePath);
-
-                List<string> header = new();
-                List<string> bdHeader = new();
-
-                switch (result.ResultType)
-                {
-                    default:
-                        break;
-                }
-
-                if (listViewSide.View is GridView gridView)
-                {
-                    LeftGridViewColumnVisibilitys.Clear();
-                    gridView.Columns.Clear();
-                    for (int i = 0; i < header.Count; i++)
-                        gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                    listViewSide.ItemsSource = result.ViewResults;
-                }
+                LeftGridViewColumnVisibilitys.Clear();
+                gridView.Columns.Clear();
+                listViewSide.ItemsSource = result.ViewResults;
             }
         }
 
-        public void AddPoint(List<Point> points)
-        {
-            int id = 0;
-            foreach (var item in points)
-            {
-                id++;
-                DVCircleText Circle = new();
-                Circle.Attribute.Center = item;
-                Circle.Attribute.Radius = 20 / ImageView.Zoombox1.ContentMatrix.M11;
-                Circle.Attribute.Brush = Brushes.Transparent;
-                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
-                Circle.Attribute.Id = id;
-                Circle.Render();
-                ImageView.AddVisual(Circle);
-            }
-        }
-
-        public void AddRect(Rect rect)
-        {
-            DVRectangleText Rectangle = new();
-            Rectangle.Attribute.Rect = new Rect(rect.X, rect.Y, rect.Width, rect.Height);
-            Rectangle.Attribute.Brush = Brushes.Transparent;
-            Rectangle.Attribute.Pen = new Pen(Brushes.Red, rect.Width / 30.0);
-            Rectangle.Render();
-            ImageView.AddVisual(Rectangle);
-        }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
         {

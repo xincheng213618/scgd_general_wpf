@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace ColorVision.Copilot
@@ -28,7 +29,7 @@ namespace ColorVision.Copilot
             "LOCALAPPDATA", "APPDATA", "TEMP", "TMP", "TMPDIR", "POWERSHELL", "PWSH",
         ];
         private static readonly string[] DefaultExcludePatterns =
-            ["*KEY*", "*SECRET*", "*TOKEN*"];
+            ["*KEY*", "*PASSWORD*", "*SECRET*", "*TOKEN*"];
         private static readonly string[] NonInheritableEnvironmentVariables =
             ["OPENAI_FEDERATION_RULE_ID", "OPENAI_IDENTITY_TOKEN_FILE"];
 
@@ -43,14 +44,30 @@ namespace ColorVision.Copilot
         public CopilotCodexShellEnvironmentInherit Inherit { get; init; } =
             CopilotCodexShellEnvironmentInherit.All;
 
-        public bool IgnoreDefaultExcludes { get; init; } = true;
+        public bool IgnoreDefaultExcludes { get; init; }
 
-        public IReadOnlyList<string> Exclude { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> Exclude
+        {
+            get => _exclude;
+            init => _exclude = FreezePatterns(value);
+        }
+        private readonly IReadOnlyList<string> _exclude = Array.Empty<string>();
 
-        public IReadOnlyDictionary<string, string> Set { get; init; } =
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        public IReadOnlyDictionary<string, string> Set
+        {
+            get => _set;
+            init => _set = FreezeVariables(value);
+        }
+        private readonly IReadOnlyDictionary<string, string> _set =
+            new ReadOnlyDictionary<string, string>(
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
 
-        public IReadOnlyList<string> IncludeOnly { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> IncludeOnly
+        {
+            get => _includeOnly;
+            init => _includeOnly = FreezePatterns(value);
+        }
+        private readonly IReadOnlyList<string> _includeOnly = Array.Empty<string>();
 
         public CopilotCodexShellEnvironmentPolicy CreateSnapshot() => new()
         {
@@ -150,6 +167,28 @@ namespace ColorVision.Copilot
             value != null && NonInheritableEnvironmentVariables.Contains(
                 value,
                 StringComparer.OrdinalIgnoreCase);
+
+        private static IReadOnlyList<string> FreezePatterns(IReadOnlyList<string>? source)
+        {
+            if (source == null || source.Count == 0)
+                return Array.Empty<string>();
+            var result = new string[source.Count];
+            for (var index = 0; index < source.Count; index++)
+                result[index] = source[index];
+            return Array.AsReadOnly(result);
+        }
+
+        private static IReadOnlyDictionary<string, string> FreezeVariables(
+            IReadOnlyDictionary<string, string>? source)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (source != null)
+            {
+                foreach (var pair in source)
+                    result[pair.Key] = pair.Value;
+            }
+            return new ReadOnlyDictionary<string, string>(result);
+        }
 
         private static void RemoveMatches(
             Dictionary<string, string> environment,

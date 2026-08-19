@@ -3,6 +3,7 @@ using ST.Library.UI;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
@@ -38,7 +39,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             if (string.IsNullOrWhiteSpace(summary))
                 summary = nodeAttribute?.DisplayDescription ?? string.Empty;
             if (string.IsNullOrWhiteSpace(summary))
-                summary = "该节点尚未提供用途说明。";
+                summary = GetInspectorText("Flow_NodeInspector_NoDocumentation");
 
             return new FlowNodeDocumentation(
                 string.IsNullOrWhiteSpace(node.Title) ? nodeType.Name : node.Title,
@@ -67,12 +68,12 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             SetTextBrush(title);
             panel.Children.Add(title);
 
-            AddSection(panel, "用途", documentation.Summary);
-            AddSection(panel, "如何使用", documentation.Usage);
-            AddSection(panel, "处理顺序", documentation.Processing);
+            AddSection(panel, GetInspectorText("Flow_NodeInspector_Purpose"), documentation.Summary);
+            AddSection(panel, GetInspectorText("Flow_NodeInspector_HowToUse"), documentation.Usage);
+            AddSection(panel, GetInspectorText("Flow_NodeInspector_ProcessingOrder"), documentation.Processing);
             AddPortsSection(panel, documentation.Inputs, documentation.Outputs);
             AddPropertiesSection(panel, documentation.Properties);
-            AddSection(panel, "注意事项", documentation.Notes);
+            AddSection(panel, GetInspectorText("Flow_NodeInspector_Notes"), documentation.Notes);
             return panel;
         }
 
@@ -122,9 +123,9 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             if (inputs.Count == 0 && outputs.Count == 0)
                 return;
 
-            panel.Children.Add(CreateHeading("端口"));
-            AddPortRows(panel, "输入", inputs);
-            AddPortRows(panel, "输出", outputs);
+            panel.Children.Add(CreateHeading(GetInspectorText("Flow_NodeInspector_Ports")));
+            AddPortRows(panel, GetInspectorText("Flow_NodeInspector_Input"), inputs);
+            AddPortRows(panel, GetInspectorText("Flow_NodeInspector_Output"), outputs);
             panel.Children.Add(new Border { Height = 8 });
         }
 
@@ -148,7 +149,7 @@ namespace ColorVision.Engine.FlowProcessing.Editor
             if (properties.Count == 0)
                 return;
 
-            panel.Children.Add(CreateHeading("参数说明"));
+            panel.Children.Add(CreateHeading(GetInspectorText("Flow_NodeInspector_PropertyDescriptions")));
             foreach (FlowNodePropertyDocumentation property in properties)
             {
                 var row = new Grid { Margin = new Thickness(0, 2, 0, 6) };
@@ -205,6 +206,11 @@ namespace ColorVision.Engine.FlowProcessing.Editor
         private static string Localize(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : Lang.GetOrDefault(value);
+        }
+
+        private static string GetInspectorText(string key)
+        {
+            return Properties.Resources.ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
         }
 
         private static void SetTextBrush(TextBlock textBlock)

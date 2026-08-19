@@ -3,6 +3,7 @@ using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Process.KeyedResults.FieldOfView;
 using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
+using ProjectARVRPro.Process.MTF.MTF07.MTFH;
 using ProjectARVRPro.Process.MTF.MTFHV048;
 using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Process.W51;
@@ -52,6 +53,10 @@ public class ObjectiveTestResultBatchCsvExporterTests
         {
             new() { Name = "Point", Value = 3.5 }
         };
+        result.MTFH07TestResults["MTFH07"] = new MTFH07TestResult
+        {
+            MTF_H_Center_0F = new ObjectiveTestItem { Name = "MTF_H_Center_0F", Value = 0.82 }
+        };
         result.DynamicPoixyuvDatas["PoiTest"] = new ObservableCollection<PoixyuvData>
         {
             new() { Name = "P1", Y = 10.5, x = 0.1, y = 0.2, u = 0.3, v = 0.4 }
@@ -64,6 +69,7 @@ public class ObjectiveTestResultBatchCsvExporterTests
         Assert.Contains(metrics, metric => metric.Header == "White_Fov" && metric.Value == "91.25");
         Assert.Contains(metrics, metric => metric.Header == "White_Luminance" && metric.Value == "123.5");
         Assert.Contains(metrics, metric => metric.Header == "Dynamic_Point" && metric.Value == "3.5");
+        Assert.Contains(metrics, metric => metric.Header == "MTFH07_MTF_H_Center_0F" && metric.Value == "0.82");
         Assert.Equal(5, metrics.Count(metric => metric.Header.StartsWith("PoiTest_P1(", StringComparison.Ordinal)));
         Assert.DoesNotContain(metrics, metric => metric.Header.StartsWith("W51_", StringComparison.Ordinal));
         Assert.DoesNotContain(metrics, metric => metric.Header.StartsWith("W255_", StringComparison.Ordinal));

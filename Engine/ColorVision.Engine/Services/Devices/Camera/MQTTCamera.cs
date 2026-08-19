@@ -150,16 +150,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         }
 
                         break;
-                    case "SaveLicense":
-                        log.Debug($"SaveLicense:{msg.Data}");
-                        break;
-                    case "Calibration":
-                        log.Debug($"Calibration:{msg.Data}");
-                        break;
-                    case "Move":
-                        break;
-                    case "MoveDiaphragm":
-                        break;
                     case "AutoFocus":
                         Application.Current.Dispatcher.Invoke(() =>
                         {
@@ -200,35 +190,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         break;
                 }
             }
-            else if(msg.Code == -401)
-            {
-                switch (msg.EventName)
-                {
-                    case "Open":
-                        DeviceStatus = DeviceStatusType.Closed;
-                        string SN = msg.Data.SN;
-                        Common.Clipboard.SetText(SN);
-                        Application.Current.Dispatcher.BeginInvoke(() => 
-                        {
-                            MessageBox1.Show(WindowHelpers.GetActiveWindow(), $"相机打开失败，找不到激活文件,设备码{msg.DeviceCode} {Environment.NewLine} 请粘贴到SN到指定位置:{SN} ","ColorVision");
-                        });
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-
-
-        public MsgRecord CfwPortSetPort(int nIndex, int nPort, int eImgChlType)
-        {
-            MsgSend msg = new()
-            {
-                EventName = "SetParam",
-                Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
-                    new() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", nIndex }, { "nPort", nPort },{ "eImgChlType" , eImgChlType } }  } } } }
-            };
-            return PublishAsyncClient(msg);
         }
         public MsgRecord Open(string CameraID, TakeImageMode TakeImageMode, int ImageBpp)
         {

@@ -100,8 +100,8 @@ namespace ColorVision.Copilot
 
         public CopilotWorkspaceReviewTargetContext? DraftWorkspaceReviewTarget
         {
-            get => _draftWorkspaceReviewTarget;
-            set => SetProperty(ref _draftWorkspaceReviewTarget, value);
+            get => _draftWorkspaceReviewTarget?.CreateSnapshot();
+            set => SetProperty(ref _draftWorkspaceReviewTarget, value?.CreateSnapshot());
         }
         private CopilotWorkspaceReviewTargetContext? _draftWorkspaceReviewTarget;
 
@@ -110,8 +110,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentSkillReference? DraftAgentSkillReference
         {
-            get => _draftAgentSkillReference;
-            set => SetProperty(ref _draftAgentSkillReference, value);
+            get => _draftAgentSkillReference?.CreateSnapshot();
+            set => SetProperty(ref _draftAgentSkillReference, value?.CreateSnapshot());
         }
         private CopilotAgentSkillReference? _draftAgentSkillReference;
 
@@ -123,7 +123,7 @@ namespace ColorVision.Copilot
             get => _composerStash;
             set
             {
-                if (SetProperty(ref _composerStash, value))
+                if (SetProperty(ref _composerStash, value?.CreateSnapshot()))
                 {
                     OnPropertyChanged(nameof(HasComposerStash));
                     OnPropertyChanged(nameof(ConversationListPreviewText));
@@ -240,13 +240,51 @@ namespace ColorVision.Copilot
         [JsonIgnore]
         public bool HasAdditionalReadRoots => AdditionalReadRootPaths?.Count > 0;
 
-        public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint { get; set; }
+        /// <summary>
+        /// Resumable Agent Framework state. Its task journal is recovery payload, not a
+        /// second independently writable conversation journal.
+        /// </summary>
+        [JsonProperty]
+        public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint
+        {
+            get => _agentSessionCheckpoint;
+            internal set => _agentSessionCheckpoint = value != null
+                && CopilotAgentSessionCheckpoint.TryCreateSnapshot(value, out var snapshot)
+                    ? snapshot
+                    : value;
+        }
+        private CopilotAgentSessionCheckpoint? _agentSessionCheckpoint;
 
-        public CopilotAgentTaskEventJournalSnapshot? LatestAgentTaskEventJournal { get; set; }
+        /// <summary>
+        /// Standalone journal owner used only when no resumable checkpoint survives.
+        /// Legacy snapshots that contain both owners are collapsed during normalization.
+        /// </summary>
+        [JsonProperty]
+        public CopilotAgentTaskEventJournalSnapshot? LatestAgentTaskEventJournal
+        {
+            get => _latestAgentTaskEventJournal;
+            internal set => _latestAgentTaskEventJournal = value != null
+                && CopilotAgentTaskEventJournal.TryCreateSnapshot(value, out var snapshot)
+                    ? snapshot
+                    : value;
+        }
+        private CopilotAgentTaskEventJournalSnapshot? _latestAgentTaskEventJournal;
+
+        [JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        public CopilotAgentTaskEventJournalSnapshot? CurrentAgentTaskEventJournal =>
+            LatestAgentTaskEventJournal?.IsStructurallyValid() == true
+                ? LatestAgentTaskEventJournal
+                : AgentSessionCheckpoint?.TaskEventJournal?.IsStructurallyValid() == true
+                    ? AgentSessionCheckpoint.TaskEventJournal
+                    : null;
 
         public bool ShouldSerializeLatestAgentTaskEventJournal() =>
             LatestAgentTaskEventJournal?.Events?.Count > 0
-            && LatestAgentTaskEventJournal.IsStructurallyValid();
+            && LatestAgentTaskEventJournal.IsStructurallyValid()
+            && !CopilotAgentTaskEventJournal.AreEquivalent(
+                LatestAgentTaskEventJournal,
+                AgentSessionCheckpoint?.TaskEventJournal);
 
         public CopilotConversationCompaction? Compaction { get; set; }
 

@@ -40,7 +40,26 @@ namespace ColorVision.Copilot.Mcp
 
         [JsonPropertyName("inputSchema")]
         public object InputSchema { get; init; } = new { type = "object" };
+
+        [JsonIgnore]
+        internal TimeSpan ExecutionTimeout { get; init; } = CopilotToolCapabilityDescriptor.DefaultExecutionTimeout;
+
+        [JsonIgnore]
+        internal TimeSpan EffectiveExecutionTimeout => ExecutionTimeout <= TimeSpan.Zero
+            ? CopilotToolCapabilityDescriptor.DefaultExecutionTimeout
+            : ExecutionTimeout > CopilotToolCapabilityDescriptor.MaximumExecutionTimeout
+                ? CopilotToolCapabilityDescriptor.MaximumExecutionTimeout
+                : ExecutionTimeout;
     }
+
+    internal delegate Task<CopilotMcpToolCallResult> CopilotScopedMcpToolHandler(
+        IReadOnlyDictionary<string, JsonElement>? arguments,
+        CopilotExecutionScope executionScope,
+        CancellationToken cancellationToken);
+
+    internal sealed record CopilotMcpToolDefinition(
+        CopilotMcpToolDescriptor Descriptor,
+        CopilotScopedMcpToolHandler Handler);
 
     public sealed class CopilotMcpResourceDescriptor
     {

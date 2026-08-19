@@ -1,5 +1,6 @@
 ﻿using ColorVision.Themes;
 using ColorVision.UI.Menus;
+using ColorVision.Engine;
 using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -153,7 +154,7 @@ namespace ColorVision.Database
 
                 if (!TryGetRenameTarget(backup, input, out string targetPath, out string validationError))
                 {
-                    MessageBox.Show(this, validationError, "重命名备份", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(this, validationError, EngineLocalization.Get("重命名备份"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     proposedName = input;
                     continue;
                 }
@@ -174,7 +175,7 @@ namespace ColorVision.Database
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
                 {
-                    MessageBox.Show(this, $"重命名失败：{ex.Message}", "重命名备份", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(this, EngineLocalization.Format($"重命名失败：{ex.Message}"), EngineLocalization.Get("重命名备份"), MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
             }
@@ -187,13 +188,13 @@ namespace ColorVision.Database
 
             if (string.IsNullOrWhiteSpace(input))
             {
-                error = "备份名称不能为空。";
+                error = EngineLocalization.Get("备份名称不能为空。");
                 return false;
             }
 
             if (!string.Equals(input, input.Trim(), StringComparison.Ordinal))
             {
-                error = "备份名称不能以空格开头或结尾。";
+                error = EngineLocalization.Get("备份名称不能以空格开头或结尾。");
                 return false;
             }
 
@@ -203,19 +204,19 @@ namespace ColorVision.Database
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                error = "备份名称不能为空。";
+                error = EngineLocalization.Get("备份名称不能为空。");
                 return false;
             }
 
             if (name.Length + ".sql".Length > 255)
             {
-                error = "备份名称过长，请缩短后重试。";
+                error = EngineLocalization.Get("备份名称过长，请缩短后重试。");
                 return false;
             }
 
             if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || name.EndsWith('.') || name.EndsWith(' '))
             {
-                error = "备份名称包含 Windows 文件名不允许的字符或结尾。";
+                error = EngineLocalization.Get("备份名称包含 Windows 文件名不允许的字符或结尾。");
                 return false;
             }
 
@@ -223,7 +224,7 @@ namespace ColorVision.Database
             string[] reservedNames = ["CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"];
             if (reservedNames.Contains(reservedName, StringComparer.OrdinalIgnoreCase))
             {
-                error = "该名称是 Windows 保留文件名，请使用其他名称。";
+                error = EngineLocalization.Get("该名称是 Windows 保留文件名，请使用其他名称。");
                 return false;
             }
 
@@ -235,7 +236,7 @@ namespace ColorVision.Database
                 if (!File.Exists(sourcePath) || !IsSqlBackup(sourcePath) ||
                     !string.Equals(Path.GetDirectoryName(sourcePath), backupDirectory, StringComparison.OrdinalIgnoreCase))
                 {
-                    error = "只能重命名备份目录中的 SQL 文件。";
+                    error = EngineLocalization.Get("只能重命名备份目录中的 SQL 文件。");
                     return false;
                 }
 
@@ -243,7 +244,7 @@ namespace ColorVision.Database
                 if (!IsSqlBackup(candidateTargetPath) ||
                     !string.Equals(Path.GetDirectoryName(candidateTargetPath), backupDirectory, StringComparison.OrdinalIgnoreCase))
                 {
-                    error = "目标文件名超出了备份目录。";
+                    error = EngineLocalization.Get("目标文件名超出了备份目录。");
                     return false;
                 }
 
@@ -252,7 +253,7 @@ namespace ColorVision.Database
                     !ReferenceEquals(item, backup) &&
                     string.Equals(Path.GetFullPath(item.FilePath), candidateTargetPath, StringComparison.OrdinalIgnoreCase))))
                 {
-                    error = "同名备份已经存在，请使用其他名称。";
+                    error = EngineLocalization.Get("同名备份已经存在，请使用其他名称。");
                     return false;
                 }
 
@@ -261,7 +262,7 @@ namespace ColorVision.Database
             }
             catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException or PathTooLongException)
             {
-                error = $"备份名称无效：{ex.Message}";
+                error = EngineLocalization.Format($"备份名称无效：{ex.Message}");
                 return false;
             }
         }
@@ -271,7 +272,7 @@ namespace ColorVision.Database
             var dialog = new Window
             {
                 Owner = this,
-                Title = "重命名备份",
+                Title = EngineLocalization.Get("重命名备份"),
                 ShowInTaskbar = false,
                 SizeToContent = SizeToContent.WidthAndHeight,
                 ResizeMode = ResizeMode.NoResize,
@@ -280,15 +281,15 @@ namespace ColorVision.Database
             };
 
             var panel = new StackPanel { Margin = new Thickness(16) };
-            panel.Children.Add(new TextBlock { Text = "备份名称（无需输入 .sql）：", Margin = new Thickness(0, 0, 0, 8) });
+            panel.Children.Add(new TextBlock { Text = EngineLocalization.Get("备份名称（无需输入 .sql）："), Margin = new Thickness(0, 0, 0, 8) });
             var textBox = new TextBox { Text = currentName, MinWidth = 360, Margin = new Thickness(0, 0, 0, 12) };
             panel.Children.Add(textBox);
 
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-            var okButton = new Button { Content = "确定", IsDefault = true, MinWidth = 72, Margin = new Thickness(0, 0, 8, 0) };
+            var okButton = new Button { Content = EngineLocalization.Get("确定"), IsDefault = true, MinWidth = 72, Margin = new Thickness(0, 0, 8, 0) };
             okButton.Click += (_, _) => dialog.DialogResult = true;
             buttons.Children.Add(okButton);
-            buttons.Children.Add(new Button { Content = "取消", IsCancel = true, MinWidth = 72 });
+            buttons.Children.Add(new Button { Content = EngineLocalization.Get("取消"), IsCancel = true, MinWidth = 72 });
             panel.Children.Add(buttons);
 
             dialog.Content = panel;

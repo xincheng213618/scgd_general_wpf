@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.FlowProcessing.Editor;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
@@ -94,6 +95,7 @@ namespace ProjectARVRPro.Process
         /// 组切换事件
         /// </summary>
         public event EventHandler ActiveGroupChanged;
+        public event EventHandler? ActiveProcessMetasChanged;
         public event EventHandler? RecipeConfigImported;
 
         public ObservableCollection<TemplateModel<FlowParam>> templateModels { get; set; } = TemplateFlow.Params;
@@ -138,11 +140,13 @@ namespace ProjectARVRPro.Process
         public ProcessMeta? SelectedConfigurationMeta => SelectedResultParserMeta ?? SelectedProcessMeta;
 
         public RelayCommand AddMetaCommand { get; set; }
+        public RelayCommand DuplicateMetaCommand { get; set; }
         public RelayCommand RemoveMetaCommand { get; set; }
         public RelayCommand EditMetaNameCommand { get; set; }
         public RelayCommand SaveMetaNameCommand { get; set; }
         public RelayCommand CancelMetaNameCommand { get; set; }
         public RelayCommand EditMetaTemplateCommand { get; set; }
+        public RelayCommand OpenFlowTemplateEditorCommand { get; set; }
         public RelayCommand EditMetaProcessCommand { get; set; }
         public RelayCommand MoveUpCommand { get; set; }
         public RelayCommand MoveDownCommand { get; set; }
@@ -200,6 +204,7 @@ namespace ProjectARVRPro.Process
             LoadProcesses();
             EditCommand = new RelayCommand(a => Edit());
             AddMetaCommand = new RelayCommand(a => AddMeta(), a => ActiveGroup != null);
+            DuplicateMetaCommand = new RelayCommand(a => DuplicateMeta(), a => SelectedProcessMeta != null);
             RemoveMetaCommand = new RelayCommand(a => RemoveMeta(), a => SelectedProcessMeta != null);
             EditMetaNameCommand = new RelayCommand(
                 a => BeginEditMetaName(a as ProcessMeta),
@@ -212,6 +217,9 @@ namespace ProjectARVRPro.Process
                 a => IsEditingMetaName);
             EditMetaTemplateCommand = new RelayCommand(
                 a => UpdateMeta(a as ProcessMeta, ProcessMetaEditTarget.Template),
+                a => a is ProcessMeta);
+            OpenFlowTemplateEditorCommand = new RelayCommand(
+                a => OpenFlowTemplateEditor(a as ProcessMeta),
                 a => a is ProcessMeta);
             EditMetaProcessCommand = new RelayCommand(
                 a => UpdateMeta(a as ProcessMeta, ProcessMetaEditTarget.Process),
@@ -300,22 +308,7 @@ namespace ProjectARVRPro.Process
             var newGroup = new ProcessGroup { Name = newName };
             foreach (var meta in ActiveGroup.ProcessMetas)
             {
-                string configJson = GetProcessConfigJson(meta);
-                var newProc = meta.Process?.CreateInstance();
-                if (newProc != null && !string.IsNullOrEmpty(configJson))
-                {
-                    newProc.SetProcessConfig(configJson);
-                }
-                var newMeta = new ProcessMeta
-                {
-                    Name = meta.Name,
-                    FlowTemplate = meta.FlowTemplate,
-                    Process = newProc,
-                    IsEnabled = meta.IsEnabled,
-                    ConfigJson = configJson,
-                    PictureSwitchConfig = meta.PictureSwitchConfig.Clone()
-                };
-                newGroup.ProcessMetas.Add(newMeta);
+                newGroup.ProcessMetas.Add(CloneProcessMeta(meta, meta.Name));
             }
             ProcessGroups.Add(newGroup);
             ActiveGroupIndex = ProcessGroups.Count - 1;
@@ -674,6 +667,7 @@ namespace ProjectARVRPro.Process
         private void ProcessMetas_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             ProcessMetaCollectionChanged(e);
+            ActiveProcessMetasChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void ResultParserMetas_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -703,6 +697,15 @@ namespace ProjectARVRPro.Process
         private void Meta_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             SavePersistedGroups();
+
+            if (sender is ProcessMeta meta
+                && ProcessMetas.Contains(meta)
+                && (string.IsNullOrEmpty(e.PropertyName)
+                    || e.PropertyName == nameof(ProcessMeta.IsEnabled)
+                    || e.PropertyName == nameof(ProcessMeta.Name)))
+            {
+                ActiveProcessMetasChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         public void Edit()
@@ -747,6 +750,50 @@ namespace ProjectARVRPro.Process
 
             ProcessMetas.Add(newMeta);
             SelectedProcessMeta = newMeta;
+        }
+
+        private void DuplicateMeta()
+        {
+            ProcessMeta? source = SelectedProcessMeta;
+            if (source == null)
+                return;
+
+            string copyName = GetUniqueMetaCopyName(ProcessMetas, source.Name);
+            ProcessMeta copy = CloneProcessMeta(source, copyName);
+            int sourceIndex = ProcessMetas.IndexOf(source);
+            ProcessMetas.Insert(sourceIndex + 1, copy);
+            SelectedProcessMeta = copy;
+        }
+
+        private static ProcessMeta CloneProcessMeta(ProcessMeta source, string name)
+        {
+            string configJson = GetProcessConfigJson(source);
+            IProcess? process = source.Process?.CreateInstance();
+            if (process != null && !string.IsNullOrEmpty(configJson))
+                process.SetProcessConfig(configJson);
+
+            return new ProcessMeta
+            {
+                Name = name,
+                FlowTemplate = source.FlowTemplate,
+                Process = process,
+                IsEnabled = source.IsEnabled,
+                ConfigJson = configJson,
+                PictureSwitchConfig = source.PictureSwitchConfig.Clone()
+            };
+        }
+
+        internal static string GetUniqueMetaCopyName(IEnumerable<ProcessMeta> processMetas, string sourceName)
+        {
+            string normalizedSourceName = string.IsNullOrWhiteSpace(sourceName) ? "Process" : sourceName.Trim();
+            string baseName = $"{normalizedSourceName}_Copy";
+            string name = baseName;
+            int counter = 1;
+
+            while (processMetas.Any(meta => meta.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                name = $"{baseName}_{counter++}";
+
+            return name;
         }
 
         private void RemoveMeta()
@@ -843,6 +890,31 @@ namespace ProjectARVRPro.Process
             meta.IsEnabled = dialog.IsMetaEnabled;
             meta.ConfigJson = configJson;
             meta.Process = newProcessInstance;
+        }
+
+        private void OpenFlowTemplateEditor(ProcessMeta? meta)
+        {
+            if (meta == null)
+                return;
+
+            TemplateModel<FlowParam>? template = templateModels.FirstOrDefault(item =>
+                string.Equals(item.Key, meta.FlowTemplate, StringComparison.OrdinalIgnoreCase));
+            if (template == null)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"未找到流程模板 \"{meta.FlowTemplate}\"。",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            new FlowEngineToolWindow(template.Value)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            }.Show();
         }
 
         private void AddResultParser()
@@ -986,7 +1058,7 @@ namespace ProjectARVRPro.Process
             var selectedMeta = SelectedProcessMeta;
             if (selectedMeta == null) return;
             int index = ProcessMetas.IndexOf(selectedMeta);
-            ProcessMetas.Move(index, index - 1);
+            MoveMetaToIndex(selectedMeta, index - 1);
         }
 
         private bool CanMoveDown()
@@ -1001,7 +1073,23 @@ namespace ProjectARVRPro.Process
             var selectedMeta = SelectedProcessMeta;
             if (selectedMeta == null) return;
             int index = ProcessMetas.IndexOf(selectedMeta);
-            ProcessMetas.Move(index, index + 1);
+            MoveMetaToIndex(selectedMeta, index + 1);
+        }
+
+        internal bool MoveMetaToIndex(ProcessMeta meta, int destinationIndex)
+        {
+            int sourceIndex = ProcessMetas.IndexOf(meta);
+            if (sourceIndex < 0 || ProcessMetas.Count == 0)
+                return false;
+
+            destinationIndex = Math.Clamp(destinationIndex, 0, ProcessMetas.Count - 1);
+            if (sourceIndex == destinationIndex)
+                return false;
+
+            ProcessMetas.Move(sourceIndex, destinationIndex);
+            SelectedProcessMeta = meta;
+            CommandManager.InvalidateRequerySuggested();
+            return true;
         }
 
         #region Persistence
@@ -1506,11 +1594,26 @@ namespace ProjectARVRPro.Process
         public void GenStepBar(HandyControl.Controls.StepBar stepBar)
         {
             stepBar.Items.Clear();
-            foreach (var item in ProcessMetas)
+            foreach (var item in ProcessMetas.Where(meta => meta.IsEnabled))
             {
                 HandyControl.Controls.StepBarItem stepBarItem = new HandyControl.Controls.StepBarItem() { Content = item.Name };
                 stepBar.Items.Add(stepBarItem);
             }
+        }
+
+        internal static int GetEnabledStepIndex(IReadOnlyList<ProcessMeta> processMetas, int processIndex)
+        {
+            if (processIndex < 0 || processIndex >= processMetas.Count || !processMetas[processIndex].IsEnabled)
+                return -1;
+
+            int enabledStepIndex = 0;
+            for (int i = 0; i < processIndex; i++)
+            {
+                if (processMetas[i].IsEnabled)
+                    enabledStepIndex++;
+            }
+
+            return enabledStepIndex;
         }
 
     }

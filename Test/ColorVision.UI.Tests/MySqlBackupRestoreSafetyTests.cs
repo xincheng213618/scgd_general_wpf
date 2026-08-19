@@ -117,29 +117,57 @@ public sealed class MySqlBackupRestoreSafetyTests
         Assert.Contains("WaitForExitAsync", source, StringComparison.Ordinal);
         Assert.Contains("MySqlCommandTimeout", source, StringComparison.Ordinal);
         Assert.Contains("process.Kill(entireProcessTree: true)", source, StringComparison.Ordinal);
-        Assert.Contains("数据库及服务已恢复，但应用自动重启失败", source, StringComparison.Ordinal);
+        Assert.Contains("MySqlRestoreProgressWindow", source, StringComparison.Ordinal);
+        Assert.Contains("SynchronizeInstalledServiceConfigs", source, StringComparison.Ordinal);
         Assert.DoesNotContain("ExecuteCommandAsAdmin", source, StringComparison.Ordinal);
         Assert.DoesNotContain("ExecuteCommandUI", source, StringComparison.Ordinal);
         Assert.DoesNotContain("restoreCommand", source, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void WindowsServiceBackupAndRestoreUseTheSharedProtocolDefaults()
+    public void WindowsServiceResetAndRestoreUseEngineMaintenanceImplementation()
     {
         string source = File.ReadAllText(FindRepositoryFile(
             "Plugins",
             "WindowsServicePlugin",
             "ServiceManager",
-            "MySqlServiceHelper.cs"));
+            "Mysql",
+            "MySqlServiceManager.cs"));
 
-        Assert.Contains("MySqlProtocolDefaults.AddCharacterSetArgument", source, StringComparison.Ordinal);
-        Assert.Contains("psi.ArgumentList.Add($\"-p{password}\")", source, StringComparison.Ordinal);
-        Assert.Contains("MySqlProtocolDefaults.CreateScript", source, StringComparison.Ordinal);
-        Assert.Contains("MySqlProtocolDefaults.CharacterSet", source, StringComparison.Ordinal);
-        Assert.Contains("bool restored = ExecuteSqlFile", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("Tool.ExecuteCommandUI", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("--default-character-set=utf8mb4", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("SET NAMES utf8mb4", source, StringComparison.Ordinal);
+        Assert.Contains("MySqlDatabaseMaintenanceService.RestoreSqlFileAsync", source, StringComparison.Ordinal);
+        Assert.Contains("MySqlDatabaseMaintenanceService.ResetDatabaseFromSqlFileAsync", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("TryBackupResetPreservedData", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("ResetPreservedTables", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EngineUpdatesServiceMySqlConfigWithoutChangingUnrelatedSettings()
+    {
+        string configPath = Path.Combine(Path.GetTempPath(), $"mysql-config-{Guid.NewGuid():N}.config");
+        File.WriteAllText(configPath, "<configuration><appSettings><add key=\"Host\" value=\"old\"/><add key=\"Port\" value=\"1\"/><add key=\"User\" value=\"old\"/><add key=\"Password\" value=\"old\"/><add key=\"Database\" value=\"old\"/><add key=\"Keep\" value=\"same\"/></appSettings></configuration>");
+        try
+        {
+            MySqlDatabaseMaintenanceService.UpdateConfigFile(configPath, new MySqlConfig
+            {
+                Host = "127.0.0.1",
+                Port = 3307,
+                UserName = "cv",
+                UserPwd = "secret",
+                Database = "color_vision_4xx"
+            });
+
+            string updated = File.ReadAllText(configPath);
+            Assert.Contains("key=\"Host\" value=\"127.0.0.1\"", updated, StringComparison.Ordinal);
+            Assert.Contains("key=\"Port\" value=\"3307\"", updated, StringComparison.Ordinal);
+            Assert.Contains("key=\"User\" value=\"cv\"", updated, StringComparison.Ordinal);
+            Assert.Contains("key=\"Password\" value=\"secret\"", updated, StringComparison.Ordinal);
+            Assert.Contains("key=\"Database\" value=\"color_vision_4xx\"", updated, StringComparison.Ordinal);
+            Assert.Contains("key=\"Keep\" value=\"same\"", updated, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(configPath);
+        }
     }
 
     private static string FindManagerSourcePath([CallerFilePath] string testSourcePath = "")

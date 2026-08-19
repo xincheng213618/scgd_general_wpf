@@ -5,6 +5,7 @@ using ColorVision.UI.Sorts;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine
@@ -55,6 +56,12 @@ namespace ColorVision.Engine
         protected const double OverlayPenThickness = 1;
 
         protected static string FormatNumber(double? value) => value?.ToString("F3", CultureInfo.InvariantCulture) ?? string.Empty;
+
+        protected static void OpenSourceImage(ViewResultContext context, ViewResultAlg result)
+        {
+            if (File.Exists(result.FilePath))
+                context.ImageView.OpenImage(result.FilePath);
+        }
 
         /// <summary>
         /// 可以处理的算法类型列表

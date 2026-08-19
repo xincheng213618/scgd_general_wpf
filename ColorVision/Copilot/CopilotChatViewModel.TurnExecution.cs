@@ -76,7 +76,7 @@ namespace ColorVision.Copilot
                     .Select(attachment => attachment.CreateSnapshot())
                     .ToArray()
                     ?? Attachments.ToArray();
-            if (!TryValidateComposerAttachments(requestAttachments))
+            if (!TryValidateComposerAttachments(requestAttachments, selectedProfile))
                 return;
 
             var conversation = EnsureConversation();
@@ -133,6 +133,10 @@ namespace ColorVision.Copilot
             {
                 return;
             }
+            var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments);
+            if (admittedAttachments == null)
+                return;
+            turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
             var automaticCompaction = await TryAutoCompactConversationAsync(
                 conversation,
                 requestProfile,
@@ -174,7 +178,7 @@ namespace ColorVision.Copilot
                 AttachmentSnapshotCaptured = true,
             };
             var assistantMessage = CreatePendingAssistantMessage(requestProfile, requestMode);
-            var previousCheckpoint = conversation.AgentSessionCheckpoint;
+            var previousCheckpoint = conversation.CreateAgentContinuationCheckpoint();
 
             if (isReplacingTurn)
             {
@@ -183,7 +187,7 @@ namespace ColorVision.Copilot
                 conversation.Messages.Remove(replacedUserMessage);
                 conversation.Messages.Insert(replacedUserIndex, userMessage);
                 conversation.Messages.Insert(replacedUserIndex + 1, assistantMessage);
-                conversation.AgentSessionCheckpoint = null;
+                conversation.SetAgentSessionCheckpoint(null);
             }
             else
             {
@@ -229,7 +233,7 @@ namespace ColorVision.Copilot
                     conversation.Messages.Insert(replacedUserIndex, replacedUserMessage);
                     if (replacedAssistantMessage != null)
                         conversation.Messages.Insert(replacedUserIndex + 1, replacedAssistantMessage);
-                    conversation.AgentSessionCheckpoint = previousCheckpoint;
+                    conversation.SetAgentSessionCheckpoint(previousCheckpoint);
                 }
                 UpdateConversationMetadata(conversation, touch: true);
                 PersistState();
@@ -489,7 +493,7 @@ namespace ColorVision.Copilot
             }
             if (userMessage.RequestMode == CopilotAgentMode.Chat)
             {
-                conversation.AgentSessionCheckpoint = null;
+                conversation.SetAgentSessionCheckpoint(null);
                 PersistState();
             }
 
@@ -514,7 +518,8 @@ namespace ColorVision.Copilot
                     isOnTargetThread: dispatcher == null ? null : dispatcher.CheckAccess);
             }
 
-            var sessionCheckpoint = conversation.AgentSessionCheckpoint;
+            var sessionCheckpoint = conversation.CreateAgentContinuationCheckpoint();
+            var taskEventJournalBaseline = conversation.CurrentAgentTaskEventJournal;
             var accessContext = conversation.AccessContext;
             var agentDefaults = runtimeConfigSnapshot.CreateAgentDefaultsSnapshot();
             var externalMcpServers = runtimeConfigSnapshot.CreateExternalMcpServerSnapshots();
@@ -543,7 +548,8 @@ namespace ColorVision.Copilot
                         ? conversation.Goal.Objective
                         : string.Empty,
                 userMessage.WorkspaceReviewTarget,
-                userMessage.AgentSkillReference);
+                userMessage.AgentSkillReference,
+                taskEventJournalBaseline);
             var eventProtocol = new CopilotTurnEventProtocol(userMessage.RequestMode, hostedRun.Id);
             var hideAgentReasoning = turnSnapshot.ProjectInstructionDiscoveryOptions.ConfiguredHideAgentReasoning;
             try
@@ -562,6 +568,24 @@ namespace ColorVision.Copilot
                         switch (presentationEvent)
                         {
                             case CopilotTurnStartedEvent:
+                                break;
+                            case CopilotTurnStatePersistenceBarrierEvent barrier:
+                                try
+                                {
+                                    if (eventBuffer == null)
+                                    {
+                                        throw new InvalidOperationException(
+                                            "Agent state persistence requires an active event buffer.");
+                                    }
+
+                                    await eventBuffer.FlushAsync();
+                                    await FlushStatePersistenceBarrierAsync();
+                                    barrier.TryCommit();
+                                }
+                                catch (Exception exception)
+                                {
+                                    barrier.TryReject(exception);
+                                }
                                 break;
                             case CopilotTurnErrorEvent:
                                 break;
@@ -643,7 +667,8 @@ namespace ColorVision.Copilot
                 && hostedRun.RunControl?.Intent == CopilotAgentControlIntent.Pause
                 && sessionCheckpoint != null)
             {
-                conversation.AgentSessionCheckpoint ??= sessionCheckpoint;
+                if (conversation.AgentSessionCheckpoint == null)
+                    conversation.SetAgentSessionCheckpoint(sessionCheckpoint);
                 PersistState(immediate: true);
                 throw;
             }
@@ -657,7 +682,7 @@ namespace ColorVision.Copilot
                     && sessionCheckpoint != null
                     && conversation.AgentSessionCheckpoint == null)
                 {
-                    conversation.AgentSessionCheckpoint = sessionCheckpoint;
+                    conversation.SetAgentSessionCheckpoint(sessionCheckpoint);
                     PersistState(immediate: true);
                 }
                 throw;
@@ -701,13 +726,12 @@ namespace ColorVision.Copilot
             assistantMessage.AgentStopReason = agentResult.StopReason;
             assistantMessage.AgentRunBudget = agentResult.Budget;
             assistantMessage.AgentBlockers = agentResult.Blockers;
-            conversation.UpdateLatestAgentTaskEventJournal(agentResult.TaskEventJournal);
-            conversation.AgentSessionCheckpoint = agentResult.SessionCheckpoint;
-            ResolveDeliveredSteeringAtTerminal(
+            CommitAgentRunStateAndResolveSteering(
                 hostedRun,
                 conversation,
+                agentResult.TaskEventJournal,
                 agentResult.SessionCheckpoint,
-                discard: agentResult.StopReason == CopilotAgentStopReason.Cancelled);
+                agentResult.StopReason);
             if (string.IsNullOrWhiteSpace(assistantMessage.Content))
             {
                 CopilotAssistantMessagePresenter.SetFallbackContent(assistantMessage, agentResult.StopReason switch

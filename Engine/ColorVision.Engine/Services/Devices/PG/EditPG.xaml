@@ -52,6 +52,7 @@
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
+                    <StackPanel x:Name="GeneratedPropertyEditorHost"/>
                 </StackPanel>
             </Border>
         </ScrollViewer>

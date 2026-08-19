@@ -840,10 +840,6 @@ namespace ColorVision.Copilot
             StringBuilder builder,
             CopilotProjectInstructionDiscoveryOptions codexConfigOptions)
         {
-            var synchronousHookCount = codexConfigOptions.ConfiguredCommandHooks.Count(
-                hook => hook.ExecutionMode == CopilotToolExecutionHookMode.Sync);
-            var asynchronousHookCount = codexConfigOptions.ConfiguredCommandHooks.Count(
-                hook => hook.ExecutionMode == CopilotToolExecutionHookMode.Async);
             builder.Append("- Codex features.hooks：")
                 .Append(codexConfigOptions.ConfiguredHooksEnabled ? "true" : "false");
             if (codexConfigOptions.HasHooksEnabledOverride)
@@ -863,23 +859,12 @@ namespace ColorVision.Copilot
                 builder.Append(codexConfigOptions.ConfiguredPluginsEnabled
                     ? " · ColorVision 模块扩展 Hook 可运行"
                     : " · features.plugins=false，模块扩展 Hook 已省略");
-                builder.Append("；受信任 hooks.json 命令 Hook 可运行");
             }
             else
             {
-                builder.Append(" · 模块扩展与 hooks.json 命令 Hook 已省略");
+                builder.Append(" · 模块扩展 Hook 已省略");
             }
-            builder.Append("；已加载命令 Hook ")
-                .Append(codexConfigOptions.ConfiguredCommandHooks.Count)
-                .Append(" 个（同步 ")
-                .Append(synchronousHookCount)
-                .Append(" / 异步 ")
-                .Append(asynchronousHookCount)
-                .Append("） / 来源文件 ")
-                .Append(codexConfigOptions.AppliedHookFilePaths.Count)
-                .Append(" 个 / 配置问题 ")
-                .Append(codexConfigOptions.ConfiguredHookIssues.Count)
-                .AppendLine(" 个；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
+            builder.AppendLine("；内置写入安全策略仍保留，checkpoint 按有效 Hook 面校验");
         }
 
         private static void AppendExecPolicy(
@@ -1303,14 +1288,6 @@ namespace ColorVision.Copilot
             {
                 builder.AppendLine(" · 未配置 · 子代理继承父请求推理强度");
             }
-            var customSubagentDiagnostics = CopilotCodexCustomSubagentDiagnostics.Format(
-                codexConfigOptions.CustomSubagents);
-            if (customSubagentDiagnostics.Length > 0)
-                builder.AppendLine(customSubagentDiagnostics);
-            var customSubagentDiscoveryIssues = CopilotCodexCustomSubagentDiagnostics.FormatDiscoveryIssues(
-                codexConfigOptions.CustomSubagentDiscoveryIssues);
-            if (customSubagentDiscoveryIssues.Length > 0)
-                builder.AppendLine(customSubagentDiscoveryIssues);
         }
 
         private static void AppendConversation(
@@ -1422,6 +1399,9 @@ namespace ColorVision.Copilot
         {
             return probe.State switch
             {
+                CopilotConfigFileProbeState.Loaded
+                    when probe.SchemaVersion > CopilotConfig.CurrentSchemaVersion =>
+                    $"更高版本阻止 CopilotConfig 写入 · file schema {probe.SchemaVersion.Value.ToString(CultureInfo.InvariantCulture)} · runtime read-only schema {runtimeSchemaVersion.ToString(CultureInfo.InvariantCulture)}",
                 CopilotConfigFileProbeState.Loaded =>
                     $"已加载 CopilotConfig · file schema {probe.SchemaVersion?.ToString(CultureInfo.InvariantCulture) ?? "未声明"} → runtime {runtimeSchemaVersion.ToString(CultureInfo.InvariantCulture)}",
                 CopilotConfigFileProbeState.FileMissing => "当前文件不存在 · 继续使用已加载运行时值",

@@ -20,6 +20,7 @@ namespace ColorVision.UI.Desktop.Operations
         private readonly OperationsDiagnosticBundleService _diagnosticBundles;
         private readonly OperationsWindowSnapshotService _windowSnapshots;
         private readonly OperationsRelayClientService _relay;
+        private readonly OperationsRuntimePerformanceService _runtimePerformanceProvider;
         private IOperationsServiceHealthProvider _serviceHealthProvider = UnavailableOperationsServiceHealthProvider.Instance;
         private IOperationsDeviceHealthProvider _deviceHealthProvider = UnavailableOperationsDeviceHealthProvider.Instance;
         private IOperationsMessageChannelHealthProvider _messageChannelHealthProvider = UnavailableOperationsMessageChannelHealthProvider.Instance;
@@ -47,6 +48,8 @@ namespace ColorVision.UI.Desktop.Operations
             _diagnosticBundles = new OperationsDiagnosticBundleService(_workStore);
             _windowSnapshots = new OperationsWindowSnapshotService();
             _relay = new OperationsRelayClientService(_identity, _registry, _workStore);
+            _relay.ConfigureWindowSnapshotService(_windowSnapshots);
+            _runtimePerformanceProvider = new OperationsRuntimePerformanceService();
         }
 
         public event EventHandler? StateChanged;
@@ -94,6 +97,7 @@ namespace ColorVision.UI.Desktop.Operations
                 _flowRuntimeStatusProvider = provider;
                 _flowRuntimeController = provider as IOperationsFlowRuntimeController
                     ?? UnavailableOperationsFlowRuntimeController.Instance;
+                _relay.ConfigureFlowRuntimeController(_flowRuntimeController);
             }
         }
 
@@ -127,6 +131,7 @@ namespace ColorVision.UI.Desktop.Operations
                 if (IsRunning)
                     throw new InvalidOperationException("Configure the Operations MQTT restart controller before starting the secure host.");
                 _mqttRestartController = controller;
+                _relay.ConfigureMqttRestartController(controller);
             }
         }
 
@@ -138,6 +143,7 @@ namespace ColorVision.UI.Desktop.Operations
                 if (IsRunning)
                     throw new InvalidOperationException("Configure the Operations message-channel recovery controller before starting the secure host.");
                 _messageChannelRecoveryController = controller;
+                _relay.ConfigureMessageChannelRecoveryController(controller);
             }
         }
 
@@ -149,6 +155,7 @@ namespace ColorVision.UI.Desktop.Operations
                 if (IsRunning)
                     throw new InvalidOperationException("Configure the Operations failure-evidence provider before starting the secure host.");
                 _failureEvidenceProvider = provider;
+                _relay.ConfigureFailureEvidenceProvider(provider);
             }
         }
 
@@ -160,6 +167,7 @@ namespace ColorVision.UI.Desktop.Operations
                 if (IsRunning)
                     throw new InvalidOperationException("Configure the Operations application restart controller before starting the secure host.");
                 _applicationRestartController = controller;
+                _relay.ConfigureApplicationRestartController(controller);
             }
         }
 
@@ -178,6 +186,7 @@ namespace ColorVision.UI.Desktop.Operations
                         serviceHealthProvider: _serviceHealthProvider, alerts: _alerts,
                         diagnosticBundles: _diagnosticBundles, windowSnapshots: _windowSnapshots,
                         flowRuntimeStatus: _flowRuntimeStatusProvider,
+                        runtimePerformance: _runtimePerformanceProvider,
                         flowRuntimeController: _flowRuntimeController,
                         mqttRestartController: _mqttRestartController,
                         applicationRestartController: _applicationRestartController,
@@ -193,7 +202,7 @@ namespace ColorVision.UI.Desktop.Operations
                     IsRunning = true;
                     LastStatusMessage = $"安全运维通道运行中，HTTPS 端口 {port}。";
                     _acceptLoop = Task.Run(() => AcceptLoopAsync(_cts.Token));
-                    _relay.Start(snapshotProvider);
+                    _relay.Start(snapshotProvider, CaptureRelayMonitor);
                     Log.Info(LastStatusMessage);
                 }
                 catch (Exception ex)
@@ -265,6 +274,34 @@ namespace ColorVision.UI.Desktop.Operations
         }
 
         public OperationsWindowSnapshotResult CreateWindowSnapshot() => _windowSnapshots.Create();
+
+        private OperationsLiveMonitorSnapshot? CaptureRelayMonitor()
+        {
+            try
+            {
+                OperationsServiceHealthReport serviceHealth;
+                try
+                {
+                    serviceHealth = _serviceHealthProvider.Capture();
+                }
+                catch
+                {
+                    serviceHealth = OperationsServiceHealthReport.CreateUnavailable();
+                }
+                return OperationsLiveMonitorSnapshotFactory.Create(
+                    _flowRuntimeStatusProvider.Capture(),
+                    _runtimePerformanceProvider.Capture(),
+                    _alerts.GetRecent(),
+                    _deviceHealthProvider.Capture(),
+                    messageChannel: _messageChannelHealthProvider.Capture(),
+                    applicationRecovery: WindowsApplicationRestartRegistration.CaptureStatus(),
+                    serviceHealth: serviceHealth);
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         private async Task AcceptLoopAsync(CancellationToken cancellationToken)
         {

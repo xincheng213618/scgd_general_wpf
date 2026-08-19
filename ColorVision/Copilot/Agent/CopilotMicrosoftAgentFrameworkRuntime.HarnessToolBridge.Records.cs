@@ -103,6 +103,7 @@ namespace ColorVision.Copilot
                 string? callId = null)
             {
                 CopilotToolExecutionOutcome outcome;
+                string formattedModelResult;
                 lock (_syncRoot)
                 {
                     if (_reservedToolCalls >= _maxToolCalls)
@@ -162,12 +163,17 @@ namespace ColorVision.Copilot
                         Result = result,
                         Execution = execution,
                     };
+                    formattedModelResult = FormatToolResult(outcome);
                     _stepRecords.Add(outcome.StepRecord);
                 }
 
                 CopilotToolExecutionAuditLogger.Record(outcome);
-                _emit(CopilotAgentEvent.FromToolResult(outcome.Result, outcome.Execution));
-                return FormatToolResult(outcome);
+                _emit(CopilotAgentEvent.FromToolResult(
+                    outcome.Result,
+                    outcome.Execution,
+                    outcome.HookRuns,
+                    formattedModelResult));
+                return formattedModelResult;
             }
 
             private string RecordGuardRejectedToolCall(
@@ -178,6 +184,7 @@ namespace ColorVision.Copilot
                 string? callId = null)
             {
                 CopilotToolExecutionOutcome outcome;
+                string formattedModelResult;
                 lock (_syncRoot)
                 {
                     if (_reservedToolCalls >= _maxToolCalls)
@@ -246,12 +253,17 @@ namespace ColorVision.Copilot
                         Result = result,
                         Execution = execution,
                     };
+                    formattedModelResult = FormatToolResult(outcome);
                     _stepRecords.Add(outcome.StepRecord);
                 }
 
                 CopilotToolExecutionAuditLogger.Record(outcome);
-                _emit(CopilotAgentEvent.FromToolResult(outcome.Result, outcome.Execution));
-                return FormatToolResult(outcome);
+                _emit(CopilotAgentEvent.FromToolResult(
+                    outcome.Result,
+                    outcome.Execution,
+                    outcome.HookRuns,
+                    formattedModelResult));
+                return formattedModelResult;
             }
         }
     }

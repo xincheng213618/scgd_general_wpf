@@ -2,7 +2,7 @@ using System;
 
 namespace MQTTMessageLib.Util;
 
-public class EnumTool
+public static class EnumTool
 {
 	public static T ParseEnum<T>(string value, bool ignoreCase = false)
 	{

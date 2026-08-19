@@ -10,6 +10,544 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotAgentTaskEventJournalIntegrityTests
 {
     [Fact]
+    public void TaskLedgerIsFrozenBeforeRepeatedEnumeration()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        var hostileItems = new ThrowOnSecondEnumerationTaskItems(
+            new CopilotAgentTaskItem
+            {
+                Id = 1,
+                Title = "Inspect durable append behavior",
+            });
+
+        journal.RecordTaskLedger(
+            new CopilotAgentTaskLedgerSnapshot
+            {
+                Mode = "execute",
+                Items = hostileItems,
+            },
+            "checkpoint");
+
+        var captured = Assert.Single(journal.Snapshot().Events);
+        Assert.Equal(1, captured.Sequence);
+        Assert.Equal(CopilotAgentTaskEventType.TaskLedgerCaptured, captured.Type);
+        Assert.Equal("Task ledger 0/1 complete in execute mode.", captured.Summary);
+    }
+
+    [Fact]
+    public void InvalidTaskLedgerIsRejectedBeforeJournalMutation()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        Assert.Throws<ArgumentException>(() =>
+            journal.RecordTaskLedger(
+                new CopilotAgentTaskLedgerSnapshot
+                {
+                    Mode = "invalid",
+                    Items =
+                    [
+                        new CopilotAgentTaskItem
+                        {
+                            Id = 1,
+                            Title = "Do not record this task",
+                        },
+                    ],
+                },
+                "checkpoint"));
+
+        Assert.Empty(journal.Snapshot().Events);
+        journal.RecordRunStarted();
+        Assert.Equal(1, Assert.Single(journal.Snapshot().Events).Sequence);
+    }
+
+    [Fact]
+    public void SessionResumeAndReplanFactsAreMutuallyExclusivePerRun()
+    {
+        var resumed = new CopilotAgentTaskEventJournalBuilder();
+        resumed.RecordSessionResumed();
+        resumed.RecordSessionResumed();
+
+        Assert.Throws<InvalidOperationException>(() =>
+            resumed.RecordReplanRequired(
+                CopilotAgentCheckpointCompatibilityKind.CapabilityDrift));
+        Assert.Single(resumed.Snapshot().Events);
+
+        var replanned = new CopilotAgentTaskEventJournalBuilder();
+        replanned.RecordReplanRequired(
+            CopilotAgentCheckpointCompatibilityKind.Invalid);
+        Assert.Throws<InvalidOperationException>(() =>
+            replanned.RecordSessionResumed());
+        Assert.Single(replanned.Snapshot().Events);
+    }
+
+    [Fact]
+    public void ReplanFactRejectsNonReplanCompatibilityReasons()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            journal.RecordReplanRequired(
+                CopilotAgentCheckpointCompatibilityKind.Compatible));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            journal.RecordReplanRequired(
+                (CopilotAgentCheckpointCompatibilityKind)int.MaxValue));
+
+        Assert.Empty(journal.Snapshot().Events);
+    }
+
+    [Fact]
+    public void ProfileChangeCanBeRecordedAsAReplanFact()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        journal.RecordReplanRequired(
+            CopilotAgentCheckpointCompatibilityKind.ProfileChanged);
+
+        var replan = Assert.Single(journal.Snapshot().Events);
+        Assert.Equal(CopilotAgentTaskEventType.ReplanRequired, replan.Type);
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.ProfileChanged.ToString(), replan.State);
+    }
+
+    [Fact]
+    public void PersistedReplanFactRejectsNonReplanCompatibilityReason()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordReplanRequired(
+            CopilotAgentCheckpointCompatibilityKind.Invalid);
+        var replan = Assert.Single(journal.Snapshot().Events);
+        var rewritten = new CopilotAgentTaskEvent
+        {
+            Sequence = replan.Sequence,
+            Id = replan.Id,
+            Type = replan.Type,
+            OccurredAtUtc = replan.OccurredAtUtc,
+            RunId = replan.RunId,
+            SubjectId = replan.SubjectId,
+            RelatedIds = replan.RelatedIds,
+            ToolName = replan.ToolName,
+            State = CopilotAgentCheckpointCompatibilityKind.Compatible.ToString(),
+            FailureCode = replan.FailureCode,
+            ExitCode = replan.ExitCode,
+            Summary = replan.Summary,
+        };
+
+        Assert.True(rewritten.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [rewritten],
+        }.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void StructurallyValidEventIdMustMatchItsIdentityFields()
+    {
+        var runId = CopilotAgentTaskEventIds.CreateRunId();
+        var occurredAtUtc = DateTimeOffset.UtcNow;
+        var mismatched = new CopilotAgentTaskEvent
+        {
+            Sequence = 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                1,
+                runId,
+                CopilotAgentTaskEventType.RunStarted,
+                occurredAtUtc),
+            Type = CopilotAgentTaskEventType.RunStopped,
+            OccurredAtUtc = occurredAtUtc,
+            RunId = runId,
+            SubjectId = runId,
+            State = CopilotAgentStopReason.Completed.ToString(),
+        };
+
+        Assert.False(mismatched.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [mismatched],
+        }.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void JournalEquivalenceIncludesTheCompletePersistedEventPayload()
+    {
+        var runId = CopilotAgentTaskEventIds.CreateRunId();
+        var occurredAtUtc = DateTimeOffset.UtcNow;
+        var originalEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                1,
+                runId,
+                CopilotAgentTaskEventType.ToolCompleted,
+                occurredAtUtc),
+            Type = CopilotAgentTaskEventType.ToolCompleted,
+            OccurredAtUtc = occurredAtUtc,
+            RunId = runId,
+            SubjectId = CopilotAgentTaskEventIds.ForCall("same-call"),
+            RelatedIds = [CopilotAgentTaskEventIds.ForApproval("same-action")],
+            ToolName = "IntegrityTool",
+            State = CopilotToolExecutionState.Completed.ToString(),
+            Summary = "Original evidence.",
+        };
+        var rewrittenEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = originalEvent.Sequence,
+            Id = originalEvent.Id,
+            Type = originalEvent.Type,
+            OccurredAtUtc = originalEvent.OccurredAtUtc,
+            RunId = originalEvent.RunId,
+            SubjectId = originalEvent.SubjectId,
+            RelatedIds = originalEvent.RelatedIds,
+            ToolName = originalEvent.ToolName,
+            State = originalEvent.State,
+            Summary = "Rewritten evidence.",
+        };
+        var original = new CopilotAgentTaskEventJournalSnapshot { Events = [originalEvent] };
+        var rewritten = new CopilotAgentTaskEventJournalSnapshot { Events = [rewrittenEvent] };
+
+        Assert.True(original.IsStructurallyValid());
+        Assert.True(rewritten.IsStructurallyValid());
+        Assert.False(CopilotAgentTaskEventJournal.AreEquivalent(original, rewritten));
+        Assert.False(CopilotAgentTaskEventJournal.IsLegacyNewerEvidenceForNormalization(
+            rewritten,
+            original));
+    }
+
+    [Fact]
+    public void LegacyNormalizationRejectsRewrittenPayloadWithLaterAppendedEvidence()
+    {
+        var runId = CopilotAgentTaskEventIds.CreateRunId();
+        var occurredAtUtc = DateTimeOffset.UtcNow;
+        var originalEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                1,
+                runId,
+                CopilotAgentTaskEventType.ToolCompleted,
+                occurredAtUtc),
+            Type = CopilotAgentTaskEventType.ToolCompleted,
+            OccurredAtUtc = occurredAtUtc,
+            RunId = runId,
+            SubjectId = CopilotAgentTaskEventIds.ForCall("legacy-call"),
+            ToolName = "IntegrityTool",
+            State = CopilotToolExecutionState.Completed.ToString(),
+            Summary = "Original evidence.",
+        };
+        var rewrittenEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = originalEvent.Sequence,
+            Id = originalEvent.Id,
+            Type = originalEvent.Type,
+            OccurredAtUtc = originalEvent.OccurredAtUtc,
+            RunId = originalEvent.RunId,
+            SubjectId = originalEvent.SubjectId,
+            ToolName = originalEvent.ToolName,
+            State = originalEvent.State,
+            Summary = "Rewritten evidence.",
+        };
+        var appendedAtUtc = occurredAtUtc.AddSeconds(1);
+        var appendedEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = 2,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                2,
+                runId,
+                CopilotAgentTaskEventType.RuntimeError,
+                appendedAtUtc),
+            Type = CopilotAgentTaskEventType.RuntimeError,
+            OccurredAtUtc = appendedAtUtc,
+            RunId = runId,
+            SubjectId = runId,
+            State = "error",
+            Summary = "Later evidence.",
+        };
+        var baseline = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [originalEvent],
+        };
+        var candidate = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [rewrittenEvent, appendedEvent],
+        };
+
+        Assert.True(baseline.IsStructurallyValid());
+        Assert.True(candidate.IsStructurallyValid());
+        Assert.False(CopilotAgentTaskEventJournal.IsLegacyNewerEvidenceForNormalization(
+            candidate,
+            baseline));
+    }
+
+    [Fact]
+    public void PublishedSnapshotCannotRewriteBuilderHistory()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordApprovalDecision(
+            "ProtectedTool",
+            "original-call",
+            "approval-action",
+            approved: true,
+            decisionSource: CopilotFrameworkApprovalDecisionSource.ExecutionPolicy.ToString());
+        var published = journal.Snapshot();
+        var approval = Assert.Single(published.Events);
+
+        var relatedIds = Assert.IsAssignableFrom<IList<string>>(approval.RelatedIds);
+        Assert.Throws<NotSupportedException>(() =>
+            relatedIds[0] = CopilotAgentTaskEventIds.ForCall("rewritten-call"));
+
+        var next = journal.Snapshot();
+        Assert.True(CopilotAgentTaskEventJournal.AreEquivalent(published, next));
+        Assert.NotSame(published.Events[0], next.Events[0]);
+        Assert.NotSame(published.Events[0].RelatedIds, next.Events[0].RelatedIds);
+    }
+
+    [Fact]
+    public void ExplicitApprovalDecisionRequiresMatchingJournalRequest()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            journal.RecordApprovalDecision(
+                "ProtectedTool",
+                "orphan-call",
+                "orphan-action",
+                approved: true,
+                decisionSource: CopilotFrameworkApprovalDecisionSource.User.ToString()));
+
+        Assert.Contains("no matching request", exception.Message, StringComparison.Ordinal);
+        Assert.Empty(journal.Snapshot().Events);
+        journal.RecordRunStarted();
+        Assert.Equal(1, Assert.Single(journal.Snapshot().Events).Sequence);
+    }
+
+    [Fact]
+    public void PersistedExplicitApprovalRequiresEarlierMatchingRequest()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordApprovalDecision(
+            "ProtectedTool",
+            "implicit-call",
+            approvalActionId: string.Empty,
+            approved: true,
+            decisionSource: CopilotFrameworkApprovalDecisionSource.ExecutionPolicy.ToString());
+        var implicitApproval = Assert.Single(journal.Snapshot().Events);
+        var rewritten = new CopilotAgentTaskEvent
+        {
+            Sequence = implicitApproval.Sequence,
+            Id = implicitApproval.Id,
+            Type = implicitApproval.Type,
+            OccurredAtUtc = implicitApproval.OccurredAtUtc,
+            RunId = implicitApproval.RunId,
+            SubjectId = implicitApproval.SubjectId,
+            RelatedIds = implicitApproval.RelatedIds,
+            ToolName = implicitApproval.ToolName,
+            State = "approved:User",
+            FailureCode = implicitApproval.FailureCode,
+            ExitCode = implicitApproval.ExitCode,
+            Summary = implicitApproval.Summary,
+        };
+
+        Assert.True(implicitApproval.IsStructurallyValid());
+        Assert.True(journal.Snapshot().IsStructurallyValid());
+        Assert.True(rewritten.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [rewritten],
+        }.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void PersistedExplicitApprovalAcceptsEarlierMatchingRequest()
+    {
+        const string toolName = "ProtectedTool";
+        const string callId = "explicit-call";
+        const string actionId = "explicit-action";
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = toolName,
+                Success = true,
+                Summary = "Waiting for approval.",
+                Approval = new CopilotToolApprovalInfo
+                {
+                    ActionId = actionId,
+                    Title = "Protected action",
+                    RiskLevel = "high",
+                    ExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(1),
+                },
+            },
+            CreateExecution(
+                callId,
+                CopilotToolExecutionState.AwaitingApproval,
+                actionId,
+                toolName: toolName)));
+        journal.RecordApprovalDecision(
+            toolName,
+            callId,
+            actionId,
+            approved: true,
+            decisionSource: CopilotFrameworkApprovalDecisionSource.User.ToString());
+
+        var snapshot = journal.Snapshot();
+        Assert.True(snapshot.IsStructurallyValid());
+        Assert.Collection(
+            snapshot.Events,
+            requested => Assert.Equal(
+                CopilotAgentTaskEventType.ApprovalRequested,
+                requested.Type),
+            approved => Assert.Equal(
+                CopilotAgentTaskEventType.ApprovalApproved,
+                approved.Type));
+    }
+
+    [Fact]
+    public void PersistedApprovalRemainsValidWhenBoundedPrefixEvictsRequest()
+    {
+        const string toolName = "ProtectedTool";
+        const string callId = "bounded-call";
+        const string actionId = "bounded-action";
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = toolName,
+                Success = true,
+                Summary = "Waiting for approval.",
+                Approval = new CopilotToolApprovalInfo
+                {
+                    ActionId = actionId,
+                    Title = "Protected action",
+                    RiskLevel = "high",
+                    ExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(1),
+                },
+            },
+            CreateExecution(
+                callId,
+                CopilotToolExecutionState.AwaitingApproval,
+                actionId,
+                toolName: toolName)));
+        journal.RecordApprovalDecision(
+            toolName,
+            callId,
+            actionId,
+            approved: true,
+            decisionSource: CopilotFrameworkApprovalDecisionSource.User.ToString());
+        for (var index = 0;
+            index < CopilotAgentTaskEventJournal.MaxEvents - 2;
+            index++)
+        {
+            journal.RecordTaskLedger(
+                new CopilotAgentTaskLedgerSnapshot
+                {
+                    Mode = "execute",
+                },
+                $"checkpoint-{index}");
+        }
+
+        var snapshot = journal.Snapshot();
+        Assert.Equal(CopilotAgentTaskEventJournal.MaxEvents, snapshot.Events.Count);
+        Assert.DoesNotContain(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.ApprovalRequested);
+        Assert.Contains(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.ApprovalApproved);
+        Assert.True(snapshot.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void PolicyApprovalsWithoutActionsRemainBoundToTheirExactCalls()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        journal.RecordApprovalDecision(
+            "FirstProtectedTool",
+            "first-policy-call",
+            approvalActionId: string.Empty,
+            approved: true,
+            decisionSource: CopilotFrameworkApprovalDecisionSource.ExecutionPolicy.ToString());
+        journal.RecordApprovalDecision(
+            "SecondProtectedTool",
+            "second-policy-call",
+            approvalActionId: string.Empty,
+            approved: true,
+            decisionSource: CopilotFrameworkApprovalDecisionSource.ExecutionPolicy.ToString());
+
+        var approvals = journal.Snapshot().Events
+            .Where(item => item.Type == CopilotAgentTaskEventType.ApprovalApproved)
+            .ToArray();
+        Assert.Equal(2, approvals.Length);
+        Assert.Equal(2, approvals.Select(item => item.SubjectId).Distinct(StringComparer.Ordinal).Count());
+        Assert.All(approvals, item => Assert.Equal(
+            "Protected tool call was approved by the submitted turn's execution policy.",
+            item.Summary));
+        Assert.Contains(approvals, item => item.RelatedIds.Contains(
+            CopilotAgentTaskEventIds.ForCall("first-policy-call"),
+            StringComparer.Ordinal));
+        Assert.Contains(approvals, item => item.RelatedIds.Contains(
+            CopilotAgentTaskEventIds.ForCall("second-policy-call"),
+            StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void PolicyDenialsWithoutActionsRemainBoundToTheirExactCalls()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        foreach (var callId in new[] { "first-denied-call", "second-denied-call" })
+        {
+            journal.Observe(CopilotAgentEvent.FromToolResult(
+                new CopilotToolResult
+                {
+                    ToolName = "ProtectedTool",
+                    Success = false,
+                    Summary = "Denied by policy.",
+                    FailureCode = "approval_policy_denied",
+                },
+                CreateExecution(
+                    callId,
+                    CopilotToolExecutionState.Denied,
+                    completedAtUtc: DateTimeOffset.UtcNow)));
+        }
+
+        var denials = journal.Snapshot().Events
+            .Where(item => item.Type == CopilotAgentTaskEventType.ApprovalDenied)
+            .ToArray();
+        Assert.Equal(2, denials.Length);
+        Assert.Equal(2, denials.Select(item => item.SubjectId).Distinct(StringComparer.Ordinal).Count());
+    }
+
+    [Fact]
+    public void PreExecutionPolicyDenialRemainsAToolOutcome()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "ProtectedTool",
+                Success = false,
+                Summary = "Denied by a PreToolUse hook.",
+                FailureKind = CopilotToolFailureKind.Authorization,
+                FailureCode = "tool_hook_denied",
+            },
+            CreateExecution(
+                "hook-denied-call",
+                CopilotToolExecutionState.Denied,
+                completedAtUtc: DateTimeOffset.UtcNow)));
+
+        var snapshot = journal.Snapshot();
+        var completed = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        Assert.Equal(
+            CopilotAgentTaskEventIds.ForCall("hook-denied-call"),
+            completed.SubjectId);
+        Assert.Equal("tool_hook_denied", completed.FailureCode);
+        Assert.DoesNotContain(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ApprovalDenied);
+    }
+
+    [Fact]
     public void SessionResetRecoveryRetainsTheLatestStateOfEveryAttemptedToolCall()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
@@ -136,6 +674,12 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
         Assert.Equal(2, calls.Count);
         Assert.Contains("FirstRunTool", calls.Keys);
         Assert.Contains("SecondRunTool", calls.Keys);
+        Assert.Equal(
+            calls["FirstRunTool"].GetProperty("CallKey").GetString(),
+            calls["SecondRunTool"].GetProperty("CallKey").GetString());
+        Assert.NotEqual(
+            calls["FirstRunTool"].GetProperty("RunId").GetString(),
+            calls["SecondRunTool"].GetProperty("RunId").GetString());
     }
 
     [Fact]
@@ -177,6 +721,59 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void FinalAnswerRecoveryPreservesTheSourceRunOfHistoricalOutcomes()
+    {
+        var firstRun = new CopilotAgentTaskEventJournalBuilder();
+        firstRun.RecordRunStarted();
+        firstRun.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "HistoricalTool",
+                Success = true,
+                Summary = "Historical tool completed.",
+            },
+            CreateExecution(
+                "historical-call",
+                CopilotToolExecutionState.Completed,
+                completedAtUtc: DateTimeOffset.UtcNow,
+                toolName: "HistoricalTool")));
+        firstRun.RecordStop(CopilotAgentStopReason.Completed);
+
+        var currentRun = new CopilotAgentTaskEventJournalBuilder(firstRun.Snapshot());
+        currentRun.RecordRunStarted();
+        currentRun.RecordBlocker(new CopilotAgentBlockerSnapshot
+        {
+            Kind = CopilotAgentBlockerKind.ProviderOutput,
+            Code = "provider_empty_output",
+            Summary = "The current run produced no final answer.",
+            RequiresUserInput = true,
+        });
+        currentRun.RecordStop(CopilotAgentStopReason.IncompleteOutput);
+
+        var prompt = CopilotAgentTaskEventJournal.BuildFinalAnswerRecoveryPrompt(
+            currentRun.Snapshot());
+        var records = prompt.Split(
+                ["\r\n", "\n"],
+                StringSplitOptions.RemoveEmptyEntries)
+            .Where(line => line.StartsWith('{'))
+            .Select(line => JsonSerializer.Deserialize<JsonElement>(line))
+            .ToArray();
+
+        Assert.Collection(
+            records,
+            outcome =>
+            {
+                Assert.Equal("ToolCompleted", outcome.GetProperty("Type").GetString());
+                Assert.Equal(firstRun.RunId, outcome.GetProperty("RunId").GetString());
+            },
+            blocker =>
+            {
+                Assert.Equal("BlockerDetected", blocker.GetProperty("Type").GetString());
+                Assert.Equal(currentRun.RunId, blocker.GetProperty("RunId").GetString());
+            });
+    }
+
+    [Fact]
     public void InterruptedStopClosesEveryDanglingToolBeforeRunStop()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
@@ -193,10 +790,226 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             .ToArray();
         Assert.Collection(
             terminalEvents,
-            item => AssertSyntheticTerminal(item, "call-1", CopilotToolExecutionState.Interrupted, "tool_terminal_event_missing"),
-            item => AssertSyntheticTerminal(item, "call-2", CopilotToolExecutionState.Interrupted, "tool_terminal_event_missing"));
+            item => AssertSyntheticTerminal(item, "call-1", CopilotToolExecutionState.Interrupted, CopilotToolFailureCode.OutcomeUnknown),
+            item => AssertSyntheticTerminal(item, "call-2", CopilotToolExecutionState.Interrupted, CopilotToolFailureCode.OutcomeUnknown));
         var stopped = Assert.Single(snapshot.Events, item => item.Type == CopilotAgentTaskEventType.RunStopped);
         Assert.All(terminalEvents, item => Assert.True(item.Sequence < stopped.Sequence));
+        var recoveryPrompt = CopilotAgentTaskEventJournal.BuildAttemptedToolRecoveryPrompt(snapshot);
+        Assert.Contains("external outcome is unknown", recoveryPrompt, StringComparison.Ordinal);
+        Assert.Contains("do not retry a write or non-idempotent operation blindly", recoveryPrompt, StringComparison.Ordinal);
+        Assert.Contains(CopilotToolFailureCode.OutcomeUnknown, recoveryPrompt, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LatestRunWithUnknownToolOutcomeCannotResumeProviderSession()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("crashed-write")));
+        journal.RecordStop(CopilotAgentStopReason.Interrupted);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot());
+
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome, compatibility.Kind);
+        Assert.True(compatibility.RequiresReplan);
+        Assert.False(compatibility.CanResume);
+    }
+
+    [Fact]
+    public void ProviderPersistedCallThatNeverEnteredBridgeIsRecordedAsNotStarted()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordProviderToolHistory(CreateProviderCallDelta("not-started-call"));
+
+        journal.RecordStop(CopilotAgentStopReason.Interrupted);
+
+        var snapshot = journal.Snapshot();
+        var terminal = Assert.Single(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        Assert.Equal(CopilotAgentTaskEventIds.ForCall("not-started-call"), terminal.SubjectId);
+        Assert.Equal(CopilotToolFailureCode.NotStarted, terminal.FailureCode);
+        Assert.Contains("never entered", terminal.Summary, StringComparison.Ordinal);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: snapshot);
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+        Assert.Equal(
+            CopilotAgentCheckpointCompatibilityKind.UnresolvedProviderToolCall,
+            compatibility.Kind);
+        Assert.Contains(
+            CopilotToolFailureCode.NotStarted,
+            CopilotAgentTaskEventJournal.BuildAttemptedToolRecoveryPrompt(snapshot),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CompletedToolWithoutProviderPersistedResultCannotResumeSession()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordProviderToolHistory(CreateProviderCallDelta("completed-call"));
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("completed-call")));
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = true,
+                Summary = "Tool completed.",
+            },
+            CreateExecution(
+                "completed-call",
+                CopilotToolExecutionState.Completed,
+                completedAtUtc: DateTimeOffset.UtcNow)));
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot());
+
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(
+            CopilotAgentCheckpointCompatibilityKind.UnresolvedProviderToolCall,
+            compatibility.Kind);
+    }
+
+    [Fact]
+    public void ProviderPersistedResultSettlesCompletedToolCallForResume()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordProviderToolHistory(CreateProviderCallDelta("settled-call"));
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("settled-call")));
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = true,
+                Summary = "Tool completed.",
+            },
+            CreateExecution(
+                "settled-call",
+                CopilotToolExecutionState.Completed,
+                completedAtUtc: DateTimeOffset.UtcNow)));
+        journal.RecordProviderToolHistory(CreateProviderResultDelta("settled-call"));
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot());
+
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.Compatible, compatibility.Kind);
+        Assert.True(compatibility.CanResume);
+    }
+
+    [Fact]
+    public void ProviderHandledToolCallIsSettledWithoutLocalAttemptEvidence()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordProviderToolHistory(CopilotProviderToolHistoryDelta.Capture(
+            requestMessages: null,
+            responseMessages:
+            [
+                new ChatMessage(
+                    ChatRole.Assistant,
+                    [
+                        new FunctionCallContent(
+                            "server-call",
+                            "ServerTool",
+                            new Dictionary<string, object?>()),
+                        new FunctionResultContent("server-call", "handled"),
+                    ]),
+            ]));
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var snapshot = journal.Snapshot();
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: snapshot);
+
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.Compatible, compatibility.Kind);
+        Assert.DoesNotContain(snapshot.Events, item =>
+            item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        Assert.Equal(
+            string.Empty,
+            CopilotAgentTaskEventJournal.BuildAttemptedToolRecoveryPrompt(snapshot));
+    }
+
+    [Fact]
+    public void ActiveRunWithDanglingToolCannotResumeProviderSession()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("unsettled-write")));
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: journal.Snapshot());
+
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.UncertainToolOutcome, compatibility.Kind);
+        Assert.False(compatibility.CanResume);
+    }
+
+    [Fact]
+    public void LaterSettledRunCanResumeAfterHistoricalUnknownToolOutcome()
+    {
+        var profile = CreateProfile();
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var interruptedRun = new CopilotAgentTaskEventJournalBuilder();
+        interruptedRun.RecordRunStarted();
+        interruptedRun.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("historical-write")));
+        interruptedRun.RecordStop(CopilotAgentStopReason.Interrupted);
+        var settledRun = new CopilotAgentTaskEventJournalBuilder(interruptedRun.Snapshot());
+        settledRun.RecordRunStarted();
+        settledRun.RecordStop(CopilotAgentStopReason.Completed);
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            capabilitySnapshot,
+            taskEventJournal: settledRun.Snapshot());
+
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(profile, capabilitySnapshot);
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.Compatible, compatibility.Kind);
+        Assert.True(compatibility.CanResume);
     }
 
     [Fact]
@@ -244,6 +1057,80 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
         Assert.Equal(CopilotToolExecutionState.Completed.ToString(), terminal.State);
         Assert.Equal(string.Empty, terminal.FailureCode);
         Assert.Equal("Tool completed.", terminal.Summary);
+    }
+
+    [Fact]
+    public void RepeatedToolLifecycleObservationsAreIdempotentButCannotConflict()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var started = CopilotAgentEvent.ToolStarted(
+            CreateExecution("repeated-call"));
+        journal.Observe(started);
+        journal.Observe(started);
+        var completed = CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = true,
+                Summary = "Tool completed once.",
+            },
+            CreateExecution(
+                "repeated-call",
+                CopilotToolExecutionState.Completed,
+                completedAtUtc: DateTimeOffset.UtcNow));
+        journal.Observe(completed);
+        journal.Observe(completed);
+
+        var conflict = CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = false,
+                Summary = "Conflicting terminal result.",
+                FailureCode = "conflicting_result",
+            },
+            CreateExecution(
+                "repeated-call",
+                CopilotToolExecutionState.Failed,
+                completedAtUtc: DateTimeOffset.UtcNow));
+        Assert.Throws<InvalidOperationException>(() =>
+            journal.Observe(conflict));
+
+        var snapshot = journal.Snapshot();
+        Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ToolStarted);
+        var terminal = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        Assert.Equal("Tool completed once.", terminal.Summary);
+        Assert.True(snapshot.IsStructurallyValid());
+
+        var duplicateTimestamp = terminal.OccurredAtUtc.AddTicks(1);
+        var duplicateTerminal = new CopilotAgentTaskEvent
+        {
+            Sequence = terminal.Sequence + 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                terminal.Sequence + 1,
+                terminal.RunId,
+                terminal.Type,
+                duplicateTimestamp),
+            Type = terminal.Type,
+            OccurredAtUtc = duplicateTimestamp,
+            RunId = terminal.RunId,
+            SubjectId = terminal.SubjectId,
+            RelatedIds = terminal.RelatedIds,
+            ToolName = terminal.ToolName,
+            State = terminal.State,
+            FailureCode = terminal.FailureCode,
+            Summary = terminal.Summary,
+        };
+        Assert.True(duplicateTerminal.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = snapshot.Events.Append(duplicateTerminal).ToArray(),
+        }.IsStructurallyValid());
     }
 
     [Fact]
@@ -442,8 +1329,10 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             _ => new SingleResponseChatClient(),
             new EmptyExternalToolProvider(),
             new CopilotCapabilityCatalog(),
-            new CopilotCodexStopHookExecutor(),
-            requestedConversationId =>
+            skillUsageStore: null,
+            automaticApprovalReviewer: new CopilotAutomaticApprovalReviewer(),
+            automaticApprovalOverrideStore: null,
+            backgroundShellCommandSnapshotProvider: requestedConversationId =>
             {
                 snapshotRequests.Add(requestedConversationId);
                 return
@@ -582,8 +1471,10 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             _ => chatClient,
             new EmptyExternalToolProvider(),
             new CopilotCapabilityCatalog(),
-            new CopilotCodexStopHookExecutor(),
-            requestedConversationId =>
+            skillUsageStore: null,
+            automaticApprovalReviewer: new CopilotAutomaticApprovalReviewer(),
+            automaticApprovalOverrideStore: null,
+            backgroundShellCommandSnapshotProvider: requestedConversationId =>
             {
                 snapshotRequests.Add(requestedConversationId);
                 return snapshotRequests.Count == 1
@@ -668,12 +1559,389 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
-    public void InterruptedRunRecoveryRepairsCheckpointJournalBeforeRunStop()
+    public void ApprovalCancellationClosesTheRequestedApprovalDecision()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("cancelled-approval-call")));
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = true,
+                Summary = "Approval required.",
+            },
+            CreateExecution(
+                "cancelled-approval-call",
+                CopilotToolExecutionState.AwaitingApproval,
+                approvalActionId: "cancelled-approval-action",
+                completedAtUtc: DateTimeOffset.UtcNow)));
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = false,
+                Summary = "Approval was cancelled.",
+                FailureKind = CopilotToolFailureKind.Cancelled,
+                FailureCode = "approval_cancelled",
+            },
+            CreateExecution(
+                "cancelled-approval-call",
+                CopilotToolExecutionState.Cancelled,
+                approvalActionId: "cancelled-approval-action",
+                completedAtUtc: DateTimeOffset.UtcNow)));
+
+        journal.RecordStop(CopilotAgentStopReason.Cancelled);
+
+        var snapshot = journal.Snapshot();
+        Assert.DoesNotContain(snapshot.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        var requested = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ApprovalRequested);
+        var cancelled = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ApprovalDenied);
+        Assert.Equal(requested.SubjectId, cancelled.SubjectId);
+        Assert.Equal(CopilotToolExecutionState.Cancelled.ToString(), cancelled.State);
+        Assert.Equal("approval_cancelled", cancelled.FailureCode);
+    }
+
+    [Fact]
+    public void ToolBodyCancellationAfterApprovalRemainsAToolOutcome()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = false,
+                Summary = "Approved tool execution was cancelled.",
+                FailureKind = CopilotToolFailureKind.Cancelled,
+                FailureCode = "tool_execution_cancelled",
+            },
+            CreateExecution(
+                "cancelled-tool-call",
+                CopilotToolExecutionState.Cancelled,
+                approvalActionId: "approved-action",
+                completedAtUtc: DateTimeOffset.UtcNow)));
+
+        var snapshot = journal.Snapshot();
+        var completed = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        Assert.Equal(CopilotToolExecutionState.Cancelled.ToString(), completed.State);
+        Assert.Equal("tool_execution_cancelled", completed.FailureCode);
+        Assert.DoesNotContain(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ApprovalDenied);
+    }
+
+    [Fact]
+    public void ApprovalRequestClosesTheInitialAttemptWithoutUnknownOutcome()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("approval-call")));
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = true,
+                Summary = "Approval required.",
+            },
+            CreateExecution(
+                "approval-call",
+                CopilotToolExecutionState.AwaitingApproval,
+                approvalActionId: "approval-action",
+                completedAtUtc: DateTimeOffset.UtcNow)));
+
+        journal.RecordStop(CopilotAgentStopReason.Interrupted);
+
+        var snapshot = journal.Snapshot();
+        Assert.DoesNotContain(snapshot.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        var approval = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ApprovalRequested);
+        var closed = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ApprovalDenied);
+        Assert.Equal(approval.SubjectId, closed.SubjectId);
+        Assert.Equal(CopilotToolExecutionState.Cancelled.ToString(), closed.State);
+        Assert.Equal("approval_cancelled", closed.FailureCode);
+        var recoveryPrompt = CopilotAgentTaskEventJournal.BuildAttemptedToolRecoveryPrompt(snapshot);
+        Assert.Contains("protected operation did not execute", recoveryPrompt, StringComparison.Ordinal);
+        var recovered = Assert.Single(ParseAttemptedToolCalls(recoveryPrompt)).Value;
+        Assert.Equal(CopilotToolExecutionState.Cancelled.ToString(), recovered.GetProperty("State").GetString());
+        Assert.Equal("approval_cancelled", recovered.GetProperty("FailureCode").GetString());
+    }
+
+    [Fact]
+    public void RunStopClosesOnlyDanglingStructuredUserQuestions()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        var answered = CreatePendingQuestion(journal.RunId, "question:11111111111111111111111111111111");
+        var interrupted = CreatePendingQuestion(journal.RunId, "question:22222222222222222222222222222222");
+        journal.Observe(CopilotAgentEvent.UserQuestionRequested(answered));
+        journal.Observe(CopilotAgentEvent.UserQuestionResolved(
+            answered.Resolve(CopilotUserQuestionResolution.Answered, "Option A")));
+        journal.Observe(CopilotAgentEvent.UserQuestionRequested(interrupted));
+
+        journal.RecordStop(CopilotAgentStopReason.Interrupted);
+
+        var snapshot = journal.Snapshot();
+        var resolutions = snapshot.Events
+            .Where(item => item.Type == CopilotAgentTaskEventType.UserQuestionResolved)
+            .ToArray();
+        Assert.Equal(2, resolutions.Length);
+        Assert.Single(resolutions, item =>
+            string.Equals(
+                item.SubjectId,
+                CopilotAgentTaskEventIds.ForUserQuestion(answered.RequestId),
+                StringComparison.Ordinal)
+            && string.Equals(item.State, CopilotUserQuestionResolution.Answered.ToString(), StringComparison.Ordinal));
+        var synthetic = Assert.Single(resolutions, item =>
+            string.Equals(
+                item.SubjectId,
+                CopilotAgentTaskEventIds.ForUserQuestion(interrupted.RequestId),
+                StringComparison.Ordinal));
+        Assert.Equal(CopilotUserQuestionResolution.Cancelled.ToString(), synthetic.State);
+        Assert.Contains("closed without an answer", synthetic.Summary, StringComparison.Ordinal);
+        var stopped = Assert.Single(snapshot.Events, item => item.Type == CopilotAgentTaskEventType.RunStopped);
+        Assert.True(synthetic.Sequence < stopped.Sequence);
+        Assert.True(snapshot.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void StructuredUserQuestionResolutionRequiresMatchingRequestAndRun()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        var pending = CreatePendingQuestion(
+            journal.RunId,
+            "question:33333333333333333333333333333333");
+
+        var orphan = Assert.Throws<InvalidOperationException>(() =>
+            journal.Observe(CopilotAgentEvent.UserQuestionResolved(
+                pending.Resolve(
+                    CopilotUserQuestionResolution.Answered,
+                    "Option A"))));
+        Assert.Contains("no matching request", orphan.Message, StringComparison.Ordinal);
+        Assert.Empty(journal.Snapshot().Events);
+
+        var otherRunQuestion = CreatePendingQuestion(
+            CopilotAgentTaskEventIds.CreateRunId(),
+            "question:44444444444444444444444444444444");
+        var wrongRun = Assert.Throws<InvalidOperationException>(() =>
+            journal.Observe(CopilotAgentEvent.UserQuestionRequested(
+                otherRunQuestion)));
+        Assert.Contains("different Agent run", wrongRun.Message, StringComparison.Ordinal);
+        Assert.Empty(journal.Snapshot().Events);
+    }
+
+    [Fact]
+    public void PersistedUserQuestionResolutionIsLossAware()
+    {
+        var runId = CopilotAgentTaskEventIds.CreateRunId();
+        var occurredAtUtc = DateTimeOffset.UtcNow;
+        var subjectId = CopilotAgentTaskEventIds.ForUserQuestion(
+            "question:55555555555555555555555555555555");
+
+        CopilotAgentTaskEvent CreateResolution(long sequence) => new()
+        {
+            Sequence = sequence,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                sequence,
+                runId,
+                CopilotAgentTaskEventType.UserQuestionResolved,
+                occurredAtUtc),
+            Type = CopilotAgentTaskEventType.UserQuestionResolved,
+            OccurredAtUtc = occurredAtUtc,
+            RunId = runId,
+            SubjectId = subjectId,
+            State = CopilotUserQuestionResolution.Answered.ToString(),
+            Summary = "The structured user clarification was answered.",
+        };
+
+        var provenOrphan = CreateResolution(1);
+        var truncatedPrefix = CreateResolution(2);
+        Assert.True(provenOrphan.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [provenOrphan],
+        }.IsStructurallyValid());
+        Assert.True(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [truncatedPrefix],
+        }.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void RunStopIsIdempotentButCannotBeRewritten()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            journal.RecordStop(CopilotAgentStopReason.Interrupted));
+
+        var stopped = Assert.Single(
+            journal.Snapshot().Events,
+            item => item.Type == CopilotAgentTaskEventType.RunStopped);
+        Assert.Equal(CopilotAgentStopReason.Completed.ToString(), stopped.State);
+        Assert.Contains("already stopped", exception.Message, StringComparison.Ordinal);
+        Assert.True(journal.Snapshot().IsStructurallyValid());
+
+        var duplicateTimestamp = stopped.OccurredAtUtc.AddTicks(1);
+        var duplicate = new CopilotAgentTaskEvent
+        {
+            Sequence = stopped.Sequence + 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                stopped.Sequence + 1,
+                stopped.RunId,
+                CopilotAgentTaskEventType.RunStopped,
+                duplicateTimestamp),
+            Type = CopilotAgentTaskEventType.RunStopped,
+            OccurredAtUtc = duplicateTimestamp,
+            RunId = stopped.RunId,
+            SubjectId = stopped.SubjectId,
+            State = stopped.State,
+            Summary = stopped.Summary,
+        };
+        var duplicatedSnapshot = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = journal.Snapshot().Events.Append(duplicate).ToArray(),
+        };
+        Assert.True(duplicate.IsStructurallyValid());
+        Assert.False(duplicatedSnapshot.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void RunStartIsIdempotentAndStopIsTerminal()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.RecordRunStarted();
+        var startedSnapshot = journal.Snapshot();
+        var started = Assert.Single(
+            startedSnapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.RunStarted);
+
+        var duplicateTimestamp = started.OccurredAtUtc.AddTicks(1);
+        var duplicateStart = new CopilotAgentTaskEvent
+        {
+            Sequence = started.Sequence + 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                started.Sequence + 1,
+                started.RunId,
+                CopilotAgentTaskEventType.RunStarted,
+                duplicateTimestamp),
+            Type = CopilotAgentTaskEventType.RunStarted,
+            OccurredAtUtc = duplicateTimestamp,
+            RunId = started.RunId,
+            SubjectId = started.SubjectId,
+            RelatedIds = started.RelatedIds,
+            State = started.State,
+            Summary = started.Summary,
+        };
+        Assert.True(duplicateStart.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = startedSnapshot.Events.Append(duplicateStart).ToArray(),
+        }.IsStructurallyValid());
+
+        journal.RecordStop(CopilotAgentStopReason.Completed);
+        var terminalSnapshot = journal.Snapshot();
+        var stopped = Assert.Single(
+            terminalSnapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.RunStopped);
+        Assert.Throws<InvalidOperationException>(journal.RecordSessionResumed);
+
+        var lateTimestamp = stopped.OccurredAtUtc.AddTicks(1);
+        var lateEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = stopped.Sequence + 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                stopped.Sequence + 1,
+                stopped.RunId,
+                CopilotAgentTaskEventType.SessionResumed,
+                lateTimestamp),
+            Type = CopilotAgentTaskEventType.SessionResumed,
+            OccurredAtUtc = lateTimestamp,
+            RunId = stopped.RunId,
+            SubjectId = stopped.RunId,
+            State = "resumed",
+            Summary = "Late event.",
+        };
+        Assert.True(lateEvent.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = terminalSnapshot.Events.Append(lateEvent).ToArray(),
+        }.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void RunControlIsSingularAndMustMatchTheStopReason()
+    {
+        var paused = new CopilotAgentTaskEventJournalBuilder();
+        paused.RecordRunStarted();
+        paused.RecordControl(CopilotAgentControlIntent.Pause);
+        paused.RecordControl(CopilotAgentControlIntent.Pause);
+        Assert.Throws<InvalidOperationException>(() =>
+            paused.RecordControl(CopilotAgentControlIntent.Cancel));
+        Assert.Throws<InvalidOperationException>(() =>
+            paused.RecordStop(CopilotAgentStopReason.Completed));
+        paused.RecordStop(CopilotAgentStopReason.Paused);
+
+        var snapshot = paused.Snapshot();
+        var control = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.PauseRequested);
+        Assert.True(snapshot.IsStructurallyValid());
+
+        var stopped = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.RunStopped);
+        var contradictoryStop = new CopilotAgentTaskEvent
+        {
+            Sequence = stopped.Sequence,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                stopped.Sequence,
+                stopped.RunId,
+                stopped.Type,
+                stopped.OccurredAtUtc),
+            Type = stopped.Type,
+            OccurredAtUtc = stopped.OccurredAtUtc,
+            RunId = stopped.RunId,
+            SubjectId = stopped.SubjectId,
+            State = CopilotAgentStopReason.Cancelled.ToString(),
+            Summary = stopped.Summary,
+        };
+        Assert.True(contradictoryStop.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = snapshot.Events
+                .Where(item => !ReferenceEquals(item, stopped))
+                .Append(contradictoryStop)
+                .OrderBy(item => item.Sequence)
+                .ToArray(),
+        }.IsStructurallyValid());
+        Assert.Equal(CopilotAgentControlIntent.Pause.ToString(), control.State);
+    }
+
+    [Fact]
+    public void RestoredStateInitializationRepairsCheckpointJournalBeforeRunStop()
     {
         var profile = CreateProfile();
         var journal = new CopilotAgentTaskEventJournalBuilder();
         journal.RecordRunStarted();
         journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("crashed-call")));
+        var pendingQuestion = CreatePendingQuestion(
+            journal.RunId,
+            "question:33333333333333333333333333333333");
+        journal.Observe(CopilotAgentEvent.UserQuestionRequested(pendingQuestion));
         var checkpoint = CopilotAgentSessionCheckpoint.Create(
             profile,
             "{}",
@@ -687,8 +1955,24 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             IsExecutionInProgress = true,
         };
         conversation.Messages.Add(assistant);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = profile.Id,
+            Conversations = new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>
+            {
+                conversation,
+            },
+        };
+        var config = new CopilotConfig
+        {
+            Profiles = new System.Collections.ObjectModel.ObservableCollection<CopilotProfileConfig>
+            {
+                profile,
+            },
+        };
 
-        Assert.True(CopilotInterruptedAgentRunRecovery.Normalize(conversation, assistant));
+        Assert.True(state.EnsureInitializedAfterRestore(config));
 
         var recovered = Assert.IsType<CopilotAgentSessionCheckpoint>(conversation.AgentSessionCheckpoint);
         var terminal = Assert.Single(
@@ -698,12 +1982,67 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             terminal,
             "crashed-call",
             CopilotToolExecutionState.Interrupted,
-            "tool_terminal_event_missing");
+            CopilotToolFailureCode.OutcomeUnknown);
+        var questionResolution = Assert.Single(
+            recovered.TaskEventJournal.Events,
+            item => item.Type == CopilotAgentTaskEventType.UserQuestionResolved);
+        Assert.Equal(
+            CopilotAgentTaskEventIds.ForUserQuestion(pendingQuestion.RequestId),
+            questionResolution.SubjectId);
+        Assert.Equal(CopilotUserQuestionResolution.Cancelled.ToString(), questionResolution.State);
         var stopped = Assert.Single(
             recovered.TaskEventJournal.Events,
             item => item.Type == CopilotAgentTaskEventType.RunStopped);
         Assert.True(terminal.Sequence < stopped.Sequence);
+        Assert.True(questionResolution.Sequence < stopped.Sequence);
         Assert.Equal(CopilotAgentStopReason.Interrupted, assistant.AgentStopReason);
+    }
+
+    [Fact]
+    public void LiveProfileReconciliationDoesNotRepairAnActiveAgentRun()
+    {
+        var profile = CreateProfile();
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("live-call")));
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            profile,
+            "{}",
+            CopilotCapabilityCatalog.Shared.GetSnapshot(),
+            taskEventJournal: journal.Snapshot());
+        var conversation = CopilotConversationRecord.CreateEmpty(profile.Id, profile.DisplayLabel);
+        conversation.AgentSessionCheckpoint = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint);
+        var assistant = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            RequestMode = CopilotAgentMode.Auto,
+            IsExecutionInProgress = true,
+        };
+        conversation.Messages.Add(assistant);
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = conversation.Id,
+            ActiveProfileId = profile.Id,
+            Conversations = new System.Collections.ObjectModel.ObservableCollection<CopilotConversationRecord>
+            {
+                conversation,
+            },
+        };
+        var config = new CopilotConfig
+        {
+            Profiles = new System.Collections.ObjectModel.ObservableCollection<CopilotProfileConfig>
+            {
+                profile,
+            },
+        };
+
+        CopilotChatStateProfileReconciler.Apply(state, config, profile.Id);
+
+        var preserved = Assert.IsType<CopilotAgentSessionCheckpoint>(conversation.AgentSessionCheckpoint);
+        Assert.DoesNotContain(
+            preserved.TaskEventJournal.Events,
+            item => item.Type == CopilotAgentTaskEventType.RunStopped);
+        Assert.True(assistant.IsThinkingInProgress);
+        Assert.Equal(CopilotAgentStopReason.None, assistant.AgentStopReason);
     }
 
     [Fact]
@@ -758,6 +2097,38 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             StandardError: string.Empty);
     }
 
+    private static CopilotUserQuestionSnapshot CreatePendingQuestion(
+        string taskId,
+        string requestId)
+    {
+        return new CopilotUserQuestionSnapshot
+        {
+            RequestId = requestId,
+            ConversationId = "conversation:journal-integrity",
+            TaskId = taskId,
+            Header = "Choice",
+            Question = "Which path should the Agent use?",
+            Options =
+            [
+                new CopilotUserQuestionOption
+                {
+                    RequestId = requestId,
+                    TaskId = taskId,
+                    Label = "Option A",
+                    Description = "Use the first path.",
+                },
+                new CopilotUserQuestionOption
+                {
+                    RequestId = requestId,
+                    TaskId = taskId,
+                    Label = "Option B",
+                    Description = "Use the second path.",
+                },
+            ],
+            RequestedAtUtc = DateTimeOffset.UtcNow,
+        };
+    }
+
     private static CopilotBackgroundShellOutputMonitorEventArgs
         CreateBackgroundOutputEvent(string backgroundId, int index)
     {
@@ -796,6 +2167,63 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             StartedAtUtc = DateTimeOffset.UtcNow.AddSeconds(-1),
             CompletedAtUtc = completedAtUtc,
         };
+    }
+
+    private static CopilotProviderToolHistoryDelta CreateProviderCallDelta(
+        string callId)
+    {
+        return CopilotProviderToolHistoryDelta.Capture(
+            requestMessages: null,
+            responseMessages:
+            [
+                new ChatMessage(
+                    ChatRole.Assistant,
+                    [
+                        new FunctionCallContent(
+                            callId,
+                            "IntegrityTool",
+                            new Dictionary<string, object?>()),
+                    ]),
+            ]);
+    }
+
+    private static CopilotProviderToolHistoryDelta CreateProviderResultDelta(
+        string callId)
+    {
+        return CopilotProviderToolHistoryDelta.Capture(
+            requestMessages:
+            [
+                new ChatMessage(
+                    ChatRole.Tool,
+                    [new FunctionResultContent(callId, "done")]),
+            ],
+            responseMessages: null);
+    }
+
+    private sealed class ThrowOnSecondEnumerationTaskItems(
+        CopilotAgentTaskItem item) : IReadOnlyList<CopilotAgentTaskItem>
+    {
+        private int _enumerations;
+
+        public int Count => 1;
+
+        public CopilotAgentTaskItem this[int index] => index == 0
+            ? item
+            : throw new ArgumentOutOfRangeException(nameof(index));
+
+        public IEnumerator<CopilotAgentTaskItem> GetEnumerator()
+        {
+            if (Interlocked.Increment(ref _enumerations) > 1)
+            {
+                throw new InvalidOperationException(
+                    "The hostile task list rejected its second enumeration.");
+            }
+
+            yield return item;
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() =>
+            GetEnumerator();
     }
 
     private static Dictionary<string, JsonElement> ParseAttemptedToolCalls(string prompt)
@@ -1001,4 +2429,5 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
                 "colorvision_run_workspace_validation",
                 new Dictionary<string, object?>());
     }
+
 }

@@ -1,7 +1,6 @@
 #pragma warning disable CA1822
 using ColorVision.UI;
 using ColorVision.Solution.Editor.AvalonEditor;
-using log4net;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -50,9 +49,6 @@ namespace ProjectARVRPro
     /// </summary>
     public partial class TestResultViewWindow : Window
     {
-        private static readonly ILog Log = LogManager.GetLogger(typeof(TestResultViewWindow));
-        private CopilotDynamicContextSession? _copilotContextSession;
-
         public ObservableCollection<ObjectiveTestItem> TestItems { get; set; } = new ObservableCollection<ObjectiveTestItem>();
 
         public string ViewResultJson { get; set; } = string.Empty;
@@ -62,7 +58,6 @@ namespace ProjectARVRPro
             InitializeComponent();
             ParseAndDisplayTestResult(viewResultJson);
             dataGrid.ItemsSource = TestItems;
-            RegisterCopilotContext();
         }
         private void OpenJson_Click(object sender, RoutedEventArgs e)
         {
@@ -90,77 +85,6 @@ namespace ProjectARVRPro
             {
                 MessageBox.Show($"Failed to parse ViewResultJson: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        private void RegisterCopilotContext()
-        {
-            try
-            {
-                _copilotContextSession = ProjectARVRCopilotContextHub.Shared.Register(
-                    CaptureCopilotSnapshotAsync,
-                    typeof(TestResultViewWindow).Assembly.GetName().Version?.ToString());
-            }
-            catch (Exception ex)
-            {
-                Log.Warn("Could not register the ARVRPro result-detail Copilot context; the result window will continue to operate.", ex);
-            }
-        }
-
-        private async Task<CopilotProjectResultContextSnapshot?> CaptureCopilotSnapshotAsync(CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (!Dispatcher.CheckAccess())
-            {
-                return await Dispatcher.InvokeAsync(() =>
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    return ProjectARVRCopilotSnapshotFactory.CreateForTestItems(
-                        "ARVRPro objective test result details",
-                        TestItems.ToArray());
-                });
-            }
-
-            return ProjectARVRCopilotSnapshotFactory.CreateForTestItems(
-                "ARVRPro objective test result details",
-                TestItems.ToArray());
-        }
-
-        protected override void OnActivated(EventArgs e)
-        {
-            base.OnActivated(e);
-            _copilotContextSession?.Activate();
-            PublishCopilotContext();
-        }
-
-        private void PublishCopilotContext()
-        {
-            if (_copilotContextSession?.IsCurrent != true)
-                return;
-
-            try
-            {
-                var snapshot = ProjectARVRCopilotSnapshotFactory.CreateForTestItems(
-                    "ARVRPro objective test result details",
-                    TestItems.ToArray());
-                var item = CopilotBusinessContextBuilder.BuildProjectResultContextItem(snapshot);
-                CopilotBusinessContextCoordinator.Publish(CopilotBusinessContextBundle.FromItem(
-                    ProjectARVRCopilotAgentExtension.SourceId,
-                    item));
-            }
-            catch (Exception ex)
-            {
-                Log.Debug($"Could not publish the active ARVRPro result-detail context to Copilot: {ex.Message}");
-            }
-        }
-
-        protected override void OnClosed(EventArgs e)
-        {
-            var wasCurrent = _copilotContextSession?.IsCurrent == true;
-            _copilotContextSession?.Dispose();
-            _copilotContextSession = null;
-            if (wasCurrent)
-                CopilotLiveContextRegistry.Clear(ProjectARVRCopilotAgentExtension.SourceId);
-            base.OnClosed(e);
         }
 
         private void ExportCsv_Click(object sender, RoutedEventArgs e)

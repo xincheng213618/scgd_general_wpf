@@ -98,6 +98,7 @@ public sealed class CopilotImageInputBudgetTests
                 ApiKey = "test-key",
                 BaseUrl = "https://api.openai.com/v1",
                 Model = "gpt-4o",
+                SupportsImageInput = true,
                 MaxTokens = 4_096,
             };
             var result = await service.AnalyzeAsync(
@@ -125,6 +126,39 @@ public sealed class CopilotImageInputBudgetTests
         }
     }
 
+    [Fact]
+    public async Task UndeclaredImageSupportRejectsBeforeFileOrNetworkAccess()
+    {
+        using var handler = new ImageAnalysisHandler();
+        using var httpClient = new HttpClient(handler);
+        var service = new CopilotImageUnderstandingService(new CopilotChatService(httpClient));
+        var profile = new CopilotProfileConfig
+        {
+            Name = "Text only",
+            VendorType = CopilotVendorType.OpenAI,
+            ProviderType = CopilotProviderType.OpenAICompatible,
+            ApiKey = "test-key",
+            BaseUrl = "https://api.openai.com/v1",
+            Model = "text-model",
+        };
+        var missingImagePath = Path.Combine(Path.GetTempPath(), $"missing-copilot-image-{Guid.NewGuid():N}.png");
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.AnalyzeAsync(
+            profile,
+            "Inspect the chart.",
+            [new CopilotAttachmentItem
+            {
+                Type = CopilotAttachmentType.Image,
+                Title = "missing.png",
+                Value = missingImagePath,
+            }],
+            CancellationToken.None));
+
+        Assert.Contains("Text only", error.Message, StringComparison.Ordinal);
+        Assert.Contains("未声明支持图片输入", error.Message, StringComparison.Ordinal);
+        Assert.Equal(0, handler.RequestCount);
+    }
+
     private static byte[] CreatePng(int width, int height, SKColor color)
     {
         using var bitmap = new SKBitmap(
@@ -139,10 +173,13 @@ public sealed class CopilotImageInputBudgetTests
     {
         public string LastPayload { get; private set; } = string.Empty;
 
+        public int RequestCount { get; private set; }
+
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            RequestCount++;
             LastPayload = request.Content == null
                 ? string.Empty
                 : await request.Content.ReadAsStringAsync(cancellationToken);

@@ -226,6 +226,30 @@ __global__ void calculate_err_kernel(
     }
 }
 
+// Each output pixel is owned by one thread, so the per-image error accumulation
+// does not require atomics. Iterating the image planes in the same order as the
+// former sequence of kernel launches preserves the arithmetic order while
+// removing P launches and P global read-modify-writes of err.
+__global__ void calculate_err_and_normalize_kernel(
+    double* all_imgs, double* err, const double* A, const double* u, const double* s2,
+    const double* Ymax, int total, int P)
+{
+    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= total) {
+        return;
+    }
+
+    double accumulated_error = 0.0;
+    for (int p = 0; p < P; ++p) {
+        double& focus = all_imgs[p * total + idx];
+        const double delta = static_cast<double>(p + 1) - u[idx];
+        const double fitted = A[idx] * exp(-(delta * delta) / (2.0 * s2[idx]));
+        accumulated_error += fabs(focus - fitted);
+        focus /= Ymax[idx];
+    }
+    err[idx] = accumulated_error;
+}
+
 // ============================================================================
 // Kernel 5: Calculate S (PSNR-based weight)
 // ============================================================================
@@ -265,6 +289,25 @@ __global__ void tanh_weight_kernel(double* imgs, double* phi, int M, int N)
     if (idx < total) {
         imgs[idx] = 0.5 + 0.5 * tanh(phi[idx] * (imgs[idx] - 1.0));
     }
+}
+
+// Applies the independent per-plane weight transform and accumulates the final
+// denominator in one pass. The plane loop retains the original summation order.
+__global__ void apply_weights_and_sum_kernel(
+    double* all_imgs, const double* phi, double* weight_sum, int total, int P)
+{
+    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= total) {
+        return;
+    }
+
+    double sum = 0.0;
+    for (int p = 0; p < P; ++p) {
+        double& focus = all_imgs[p * total + idx];
+        focus = 0.5 + 0.5 * tanh(phi[idx] * (focus - 1.0));
+        sum += focus;
+    }
+    weight_sum[idx] = sum;
 }
 
 // ============================================================================

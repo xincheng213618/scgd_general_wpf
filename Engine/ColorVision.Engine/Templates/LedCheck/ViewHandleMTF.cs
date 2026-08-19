@@ -46,7 +46,6 @@ namespace ColorVision.Engine.Templates.LedCheck
 
         public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
-            base.Load(ctx, result);
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -65,8 +64,7 @@ namespace ColorVision.Engine.Templates.LedCheck
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
 
-            if (File.Exists(result.FilePath))
-                ctx.ImageView.OpenImage(result.FilePath);
+            OpenSourceImage(ctx, result);
 
             var header = new List<string> { Properties.Resources.Coordinates, Properties.Resources.Radius };
             var bdHeader = new List<string> { "Point", "Radius" };

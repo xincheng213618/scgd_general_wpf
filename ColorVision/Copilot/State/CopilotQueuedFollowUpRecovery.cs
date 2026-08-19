@@ -24,7 +24,12 @@ namespace ColorVision.Copilot
 
         public string Prompt { get; set; } = string.Empty;
 
-        public CopilotComposerStash? ComposerState { get; set; }
+        public CopilotComposerStash? ComposerState
+        {
+            get => _composerState;
+            set => _composerState = value?.CreateSnapshot();
+        }
+        private CopilotComposerStash? _composerState;
 
         public string ProfileId { get; set; } = string.Empty;
 

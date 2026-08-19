@@ -12,6 +12,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         public required string Description { get; init; }
         public required string ConfigurationSummary { get; init; }
         public required int Order { get; init; }
+        internal string CategoryKey { get; init; } = string.Empty;
 
         public string TypeName => Process.GetType().Name;
         public string FullTypeName => Process.GetType().FullName ?? TypeName;
@@ -35,7 +36,7 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
             return processes
                 .GroupBy(process => process.GetType().FullName, StringComparer.Ordinal)
                 .Select(group => CreateOption(group.First()))
-                .OrderBy(option => GetCategoryOrder(option.Category))
+                .OrderBy(option => GetCategoryOrder(option.CategoryKey))
                 .ThenBy(option => option.Category, StringComparer.CurrentCultureIgnoreCase)
                 .ThenBy(option => option.Order)
                 .ThenBy(option => option.DisplayName, StringComparer.CurrentCultureIgnoreCase)
@@ -45,15 +46,19 @@ namespace ColorVision.Engine.FlowProcessing.PostProcess
         private static PostProcessTypeOption CreateOption(IPostProcessor process)
         {
             PostProcessMetadata metadata = PostProcessMetadata.FromProcess(process);
+            string categoryKey = ResolveCategory(process, metadata);
             return new PostProcessTypeOption
             {
                 Process = process,
-                Category = ResolveCategory(process, metadata),
+                CategoryKey = categoryKey,
+                Category = EngineLocalization.Get(categoryKey),
                 DisplayName = metadata.DisplayName,
                 Description = string.IsNullOrWhiteSpace(metadata.Description)
-                    ? $"流程完成后执行 {metadata.DisplayName}。"
+                    ? EngineLocalization.Format($"流程完成后执行 {metadata.DisplayName}。")
                     : metadata.Description,
-                ConfigurationSummary = process.GetConfig() == null ? "无需额外配置" : "支持处理配置",
+                ConfigurationSummary = process.GetConfig() == null
+                    ? EngineLocalization.Get("无需额外配置")
+                    : EngineLocalization.Get("支持处理配置"),
                 Order = metadata.Order
             };
         }

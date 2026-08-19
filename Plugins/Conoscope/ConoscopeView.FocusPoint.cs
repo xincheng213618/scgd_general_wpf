@@ -507,7 +507,7 @@ namespace Conoscope
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 Title = Properties.Resources.TitleFocusPointPolarEditor
             };
-            editorWindow.Submited += (_, _) =>
+            editorWindow.Submitted += (_, _) =>
             {
                 circle.Render();
                 ImageView.RefreshFocusCircleSelection();
