@@ -7,6 +7,28 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotCodexEnvironmentContextTests
 {
     [Fact]
+    public void RootAssignmentsFreezeTheEnvironmentSnapshot()
+    {
+        var searchRoots = new List<string> { @"C:\search" };
+        var writableRoots = new List<string> { @"C:\write" };
+        var environment = new CopilotAgentEnvironmentContext
+        {
+            SearchRoots = searchRoots,
+            WritableRoots = writableRoots,
+        };
+
+        searchRoots[0] = @"C:\different-search";
+        writableRoots.Clear();
+
+        Assert.Equal(@"C:\search", Assert.Single(environment.SearchRoots));
+        Assert.Equal(@"C:\write", Assert.Single(environment.WritableRoots));
+        Assert.Throws<NotSupportedException>(() =>
+            ((IList<string>)environment.SearchRoots)[0] = @"C:\mutated-search");
+        Assert.Throws<NotSupportedException>(() =>
+            ((IList<string>)environment.WritableRoots).Clear());
+    }
+
+    [Fact]
     public void ClosestTrustedValueIsFrozenIntoTheSubmittedRequest()
     {
         string globalRoot = CreateTemporaryDirectory();
