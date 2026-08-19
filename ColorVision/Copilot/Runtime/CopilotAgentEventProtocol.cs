@@ -241,6 +241,14 @@ namespace ColorVision.Copilot
                             "Copilot Agent emitted an invalid turn plan snapshot.");
                     }
                     break;
+                case CopilotAgentEventType.BudgetUpdated:
+                    if (!CopilotTurnBudgetLifecycleState.IsStructurallyValid(
+                            agentEvent.Budget))
+                    {
+                        throw new InvalidOperationException(
+                            "Copilot Agent emitted an invalid budget snapshot.");
+                    }
+                    break;
             }
         }
 
