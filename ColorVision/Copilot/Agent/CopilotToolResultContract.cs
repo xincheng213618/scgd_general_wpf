@@ -17,9 +17,19 @@ namespace ColorVision.Copilot
 
             try
             {
-                if (!TryValidate(expectedToolName, result, out var violation))
+                if (result == null)
+                    return Invalid(expectedToolName, "the tool returned null");
+                if (!TryValidateSnapshotPrerequisites(result, out var violation))
                     return Invalid(expectedToolName, violation);
-                return Snapshot(expectedToolName, result!);
+
+                // Freeze third-party collections before validation so the facts
+                // validated here are the same facts published by the runtime.
+                var snapshot = Snapshot(result.ToolName ?? string.Empty, result);
+                if (!TryValidate(expectedToolName, snapshot, out violation))
+                    return Invalid(expectedToolName, violation);
+                return string.Equals(snapshot.ToolName, expectedToolName, StringComparison.Ordinal)
+                    ? snapshot
+                    : Snapshot(expectedToolName, snapshot);
             }
             catch
             {
@@ -51,30 +61,15 @@ namespace ColorVision.Copilot
         {
             if (result == null)
                 return Fail("the tool returned null", out violation);
+            if (!TryValidateSnapshotPrerequisites(result, out violation))
+                return false;
             if (result.ToolName == null
                 || !string.Equals(result.ToolName.Trim(), expectedToolName, StringComparison.OrdinalIgnoreCase))
             {
                 return Fail("the result identity does not match the registered tool", out violation);
             }
-            if (result.Summary == null
-                || result.Content == null
-                || result.ErrorMessage == null
-                || result.FailureCode == null
-                || result.ProcessOperation == null
-                || result.ObservationProgressSignature == null)
-            {
-                return Fail("a required text field is null", out violation);
-            }
             if (!Enum.IsDefined(result.FailureKind))
                 return Fail("the failure kind is invalid", out violation);
-            if (result.SuggestedReadableLocalFilePaths == null
-                || result.AttemptedLocalFilePaths == null
-                || result.SuccessfullyReadLocalFilePaths == null
-                || result.LocalFileReadScopes == null
-                || result.BackgroundShellCommands == null)
-            {
-                return Fail("a required result collection is null", out violation);
-            }
             if (result.SuggestedReadableLocalFilePaths.Any(path => path == null)
                 || result.AttemptedLocalFilePaths.Any(path => path == null)
                 || result.SuccessfullyReadLocalFilePaths.Any(path => path == null)
@@ -147,6 +142,34 @@ namespace ColorVision.Copilot
             {
                 return Fail("the delegated answer metadata is invalid", out violation);
             }
+
+            violation = string.Empty;
+            return true;
+        }
+
+        private static bool TryValidateSnapshotPrerequisites(
+            CopilotToolResult result,
+            out string violation)
+        {
+            if (result.Summary == null
+                || result.Content == null
+                || result.ErrorMessage == null
+                || result.FailureCode == null
+                || result.ProcessOperation == null
+                || result.ObservationProgressSignature == null)
+            {
+                return Fail("a required text field is null", out violation);
+            }
+            if (result.SuggestedReadableLocalFilePaths == null
+                || result.AttemptedLocalFilePaths == null
+                || result.SuccessfullyReadLocalFilePaths == null
+                || result.LocalFileReadScopes == null
+                || result.BackgroundShellCommands == null)
+            {
+                return Fail("a required result collection is null", out violation);
+            }
+            if (result.WorkspaceMutation?.Files == null)
+                return Fail("the workspace mutation snapshot is invalid", out violation);
 
             violation = string.Empty;
             return true;

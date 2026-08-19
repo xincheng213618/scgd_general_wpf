@@ -48,6 +48,41 @@ public sealed class CopilotQueuedFollowUpCoordinatorTests
     }
 
     [Fact]
+    public async Task ChangedSubscriberFailureCannotUndoCommittedFollowUp()
+    {
+        var state = new CopilotChatState();
+        var busyHost = await StartBusyHostAsync("conversation-1");
+        var queue = new CopilotQueuedFollowUpCoordinator(state, busyHost.Host);
+        ForwardHostChanges(busyHost.Host, queue);
+        var laterObserverCalls = 0;
+        queue.Changed += static (_, _) => throw new InvalidOperationException("observer failed");
+        queue.Changed += (_, _) => laterObserverCalls++;
+        CopilotQueuedFollowUp? queuedItem = null;
+
+        try
+        {
+            Assert.True(queue.TrySchedule(
+                CreateRequest("conversation-1", "continue once"),
+                runNext: false,
+                static (_, _) => Task.CompletedTask,
+                out queuedItem,
+                out var admission));
+
+            Assert.True(admission.IsAllowed);
+            Assert.Equal(1, laterObserverCalls);
+            Assert.Same(queuedItem, Assert.Single(queue.Items));
+            Assert.Equal(queuedItem!.RunId, Assert.Single(state.QueuedFollowUpRecoveries).RunId);
+            Assert.Contains(busyHost.Host.QueuedRuns, run => run.Id == queuedItem.RunId);
+        }
+        finally
+        {
+            if (queuedItem != null)
+                busyHost.Host.RequestCancel(queuedItem.RunId);
+            await busyHost.CompleteAsync();
+        }
+    }
+
+    [Fact]
     public async Task LocalCommandRecoveryPersistsItsExecutionKind()
     {
         var state = new CopilotChatState();

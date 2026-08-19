@@ -5,6 +5,8 @@ using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Distortion;
 using ProjectARVRPro.Process.KeyedResults.FieldOfView;
 using ProjectARVRPro.Process.KeyedResults.LuminanceChromaticity;
+using ProjectARVRPro.Process.MTF.MTF07.MTFH;
+using ProjectARVRPro.Process.MTF.MTF07.MTFV;
 using ProjectARVRPro.Process.MTF.MTFHV;
 using ProjectARVRPro.Process.MTF.MTFHV048;
 using ProjectARVRPro.Process.MTF.MTFHV058;
@@ -51,6 +53,10 @@ namespace ProjectARVRPro
         [DisplayName("Chessborad")]
         public ChessboardTestResult ChessboardTestResult { get; set; }
 
+        /// <summary>按配置名称输出的棋盘格测试结果。</summary>
+        [DisplayName("棋盘格测试")]
+        public Dictionary<string, ChessboardTestResult> ChessboardTestResults { get; set; } = new Dictionary<string, ChessboardTestResult>();
+
         /// <summary>MTF 清晰度/解析力测试结果，包含多个视场位置的 H/V 方向 MTF。</summary>
         [DisplayName("MTF")]
         public MTFHVTestResult MTFHVTestResult { get; set; }
@@ -66,6 +72,14 @@ namespace ProjectARVRPro
         /// <summary>按配置名称输出的 MTF 0.5F/0.8F 测试结果。</summary>
         [DisplayName("DynamicMTFHV058")]
         public Dictionary<string, MTFHV058TestResult> DynamicMTFHV058TestResults { get; set; } = new Dictionary<string, MTFHV058TestResult>();
+
+        /// <summary>按配置名称输出的水平方向中心与 0.7F MTF 测试结果。</summary>
+        [DisplayName("MTFH07")]
+        public Dictionary<string, MTFH07TestResult> MTFH07TestResults { get; set; } = new Dictionary<string, MTFH07TestResult>();
+
+        /// <summary>按配置名称输出的垂直方向中心与 0.7F MTF 测试结果。</summary>
+        [DisplayName("MTFV07")]
+        public Dictionary<string, MTFV07TestResult> MTFV07TestResults { get; set; } = new Dictionary<string, MTFV07TestResult>();
 
         /// <summary>畸变测试结果，包含 TV 畸变、光学畸变和九点/梯形畸变。</summary>
         [DisplayName("Distortion")]

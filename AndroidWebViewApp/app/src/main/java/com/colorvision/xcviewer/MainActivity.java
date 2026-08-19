@@ -27,6 +27,7 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.TextViewCompat;
 
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -65,8 +66,7 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private AppPreferences appPreferences;
     private ThemeManager themeManager;
-    private TextView headerTitle;
-    private TextView headerSubtitle;
+    private MaterialToolbar topAppBar;
     private NavigationBarView topLevelNavigation;
     private boolean navigationRail;
     private boolean updatingTopLevelNavigation;
@@ -237,32 +237,19 @@ public class MainActivity extends AppCompatActivity {
         return shell;
     }
 
-    private LinearLayout createTopBar() {
-        LinearLayout bar = new LinearLayout(this);
-        bar.setOrientation(LinearLayout.HORIZONTAL);
-        bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setMinimumHeight(dp(48));
-        bar.setPadding(dp(18), dp(2), dp(14), dp(2));
-        bar.setBackgroundColor(shellBackgroundColor());
+    private MaterialToolbar createTopBar() {
+        topAppBar = new MaterialToolbar(this);
+        topAppBar.setMinimumHeight(dp(64));
+        topAppBar.setBackgroundColor(shellBackgroundColor());
+        topAppBar.setTitleTextColor(primaryTextColor());
+        topAppBar.setSubtitleTextColor(secondaryTextColor());
+        setTopBar(getString(R.string.brand_name), "安全运维伴侣");
+        return topAppBar;
+    }
 
-        LinearLayout titleBlock = new LinearLayout(this);
-        titleBlock.setOrientation(LinearLayout.VERTICAL);
-        titleBlock.setGravity(Gravity.CENTER_VERTICAL);
-        bar.addView(titleBlock, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
-
-        headerTitle = new TextView(this);
-        headerTitle.setText(R.string.brand_name);
-        TextViewCompat.setTextAppearance(headerTitle, com.google.android.material.R.style.TextAppearance_Material3_TitleLarge);
-        headerTitle.setTextColor(primaryTextColor());
-        titleBlock.addView(headerTitle, matchWidthWrapParams());
-
-        headerSubtitle = new TextView(this);
-        headerSubtitle.setText("安全运维伴侣");
-        TextViewCompat.setTextAppearance(headerSubtitle, com.google.android.material.R.style.TextAppearance_Material3_BodySmall);
-        headerSubtitle.setTextColor(secondaryTextColor());
-        titleBlock.addView(headerSubtitle, matchWidthWrapParams());
-
-        return bar;
+    private void setTopBar(String title, String subtitle) {
+        topAppBar.setTitle(title);
+        topAppBar.setSubtitle(subtitle);
     }
 
     private NavigationBarView createTopLevelNavigation() {
@@ -410,8 +397,7 @@ public class MainActivity extends AppCompatActivity {
         }
         AppScreenMotion.beginContentTransition(setupContainer, direction);
         selectTab(TAB_OPERATIONS);
-        headerTitle.setText("现场运维");
-        headerSubtitle.setText("扫描电脑端安全配对码");
+        setTopBar("现场运维", "扫描电脑端安全配对码");
         setupContainer.removeAllViews();
         setupContainer.addView(createOperationsLandingContent(), matchParentParams());
         setupContainer.setVisibility(View.VISIBLE);
@@ -439,8 +425,7 @@ public class MainActivity extends AppCompatActivity {
         }
         AppScreenMotion.beginContentTransition(setupContainer, direction);
         selectTab(TAB_PROBLEMS);
-        headerTitle.setText("问题中心");
-        headerSubtitle.setText("连接电脑后开始复核");
+        setTopBar("问题中心", "连接电脑后开始复核");
         setupContainer.removeAllViews();
         setupContainer.addView(createPairingLandingContent(
                 "先连接运维电脑",
@@ -465,8 +450,7 @@ public class MainActivity extends AppCompatActivity {
         }
         AppScreenMotion.beginContentTransition(setupContainer, direction);
         selectTab(TAB_TOOLS);
-        headerTitle.setText("运维工具");
-        headerSubtitle.setText("连接电脑后使用");
+        setTopBar("运维工具", "连接电脑后使用");
         setupContainer.removeAllViews();
         setupContainer.addView(createPairingLandingContent(
                 "先连接运维电脑",
@@ -526,8 +510,7 @@ public class MainActivity extends AppCompatActivity {
                 TAB_SETTINGS);
         AppScreenMotion.beginContentTransition(setupContainer, direction);
         selectTab(TAB_SETTINGS);
-        headerTitle.setText("设置");
-        headerSubtitle.setText("连接、后台与应用");
+        setTopBar("设置", "连接、后台与应用");
         setupContainer.removeAllViews();
         setupContainer.addView(createProfileContent(), matchParentParams());
         setupContainer.setVisibility(View.VISIBLE);
@@ -888,7 +871,7 @@ public class MainActivity extends AppCompatActivity {
         appUpdateInFlight = true;
         progressBar.setIndeterminate(true);
         progressBar.setVisibility(View.VISIBLE);
-        headerSubtitle.setText("正在检查安全更新…");
+        topAppBar.setSubtitle("正在检查安全更新…");
         appUpdateExecutor.execute(() -> {
             try {
                 AndroidUpdateClient.Release release = new AndroidUpdateClient(this).check();
@@ -934,7 +917,7 @@ public class MainActivity extends AppCompatActivity {
         progressBar.setMax(100);
         progressBar.setProgress(0);
         progressBar.setVisibility(View.VISIBLE);
-        headerSubtitle.setText(getString(R.string.app_update_downloading, release.version));
+        topAppBar.setSubtitle(getString(R.string.app_update_downloading, release.version));
         appUpdateExecutor.execute(() -> {
             try {
                 File verified = new AndroidUpdateClient(this).downloadAndVerify(
@@ -998,7 +981,7 @@ public class MainActivity extends AppCompatActivity {
         appUpdateInFlight = false;
         progressBar.setVisibility(View.GONE);
         if (currentTab == TAB_SETTINGS) {
-            headerSubtitle.setText("连接、后台与应用");
+            topAppBar.setSubtitle("连接、后台与应用");
         }
     }
 

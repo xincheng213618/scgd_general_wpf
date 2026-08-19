@@ -707,7 +707,10 @@ namespace ProjectARVRPro.IntegrationDemo
             return propertyName == "FieldOfViewTestResults" ||
                    propertyName == "LuminanceChromaticityTestResults" ||
                    propertyName == "LuminanceChromaticityYWTestResults" ||
+                   propertyName == "ChessboardTestResults" ||
                    propertyName == "DynamicMTFHV058TestResults" ||
+                   propertyName == "MTFH07TestResults" ||
+                   propertyName == "MTFV07TestResults" ||
                    propertyName == "DynamicPoixyuvDatas";
         }
 
@@ -1098,7 +1101,7 @@ namespace ProjectARVRPro.IntegrationDemo
             if (itemKey.EndsWith("(Wave)", StringComparison.OrdinalIgnoreCase) || key.EndsWith(".Wave", StringComparison.Ordinal))
                 return "测点主波长或波长相关结果。";
             if (itemKey.IndexOf("MTF", StringComparison.OrdinalIgnoreCase) >= 0 || itemKey.StartsWith("P_", StringComparison.OrdinalIgnoreCase))
-                return "MTF 调制传递函数，表示成像系统在指定位置和方向的清晰度/解析力，H 为水平线对方向，V 为垂直线对方向，0F/0.3F/0.6F/0.8F 表示不同视场位置。";
+                return "MTF 调制传递函数，表示成像系统在指定位置和方向的清晰度/解析力，H 为水平线对方向，V 为垂直线对方向，0F/0.3F/0.6F/0.7F/0.8F 表示不同视场位置。";
 
             return "ARVRPro 输出的客观测试项。具体含义以项目测试配置和字段名为准。";
         }
@@ -1119,7 +1122,7 @@ namespace ProjectARVRPro.IntegrationDemo
                    "AverageBlackLuminance: 棋盘格暗区的平均亮度。\r\n" +
                    "TV/Optic/Keystone Distortion: 几何畸变、光学畸变和梯形畸变，单位通常为 %。\r\n" +
                    "OpticCenter/ImageCenter: 光学中心或图像中心的偏移、倾斜、旋转，单位通常为 degree。\r\n" +
-                   "MTF: 调制传递函数，用于描述清晰度/解析力；H/V 为方向，0F/0.3F/0.6F/0.8F 为不同视场位置。\r\n" +
+                   "MTF: 调制传递函数，用于描述清晰度/解析力；H/V 为方向，0F/0.3F/0.6F/0.7F/0.8F 为不同视场位置。\r\n" +
                    "DynamicScreenDefectResults: 按画面名称输出缺陷汇总；Defects 中包含 Id/Type/X/Y/Width/Height/Area 及可选亮度、对比度字段。\r\n" +
                    "\r\n" +
                    "ObjectiveTestItem 字段说明\r\n" +

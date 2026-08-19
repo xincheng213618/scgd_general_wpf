@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ProjectARVRPro.Process"
+        xmlns:integration="clr-namespace:ProjectARVRPro.Integration"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProcessManager}"
         Title="流程处理配置" Height="760" Width="1320" MinHeight="660" MinWidth="1080"
@@ -376,6 +377,10 @@
                     </TabControl>
                 </Grid>
             </Grid>
+        </TabItem>
+
+        <TabItem Header="外部对接">
+            <integration:IntegrationDemoPanel/>
         </TabItem>
     </TabControl>
 </Window>

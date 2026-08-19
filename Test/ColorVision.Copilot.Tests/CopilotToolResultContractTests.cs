@@ -27,6 +27,27 @@ public sealed class CopilotToolResultContractTests
     }
 
     [Fact]
+    public void CaptureValidatesTheFrozenCollectionInsteadOfReenumeratingTheSource()
+    {
+        var paths = new AlternatingPathCollection(
+            @"C:\workspace\captured.cs",
+            null!);
+        var captured = CopilotToolResultContract.Capture(
+            "SnapshotTool",
+            new CopilotToolResult
+            {
+                ToolName = "SnapshotTool",
+                Success = true,
+                Summary = "Captured output.",
+                SuggestedReadableLocalFilePaths = paths,
+            });
+
+        Assert.True(captured.Success);
+        Assert.Equal(@"C:\workspace\captured.cs", Assert.Single(captured.SuggestedReadableLocalFilePaths));
+        Assert.Equal(1, paths.EnumerationCount);
+    }
+
+    [Fact]
     public void ObservationOwnsCapturedResultCollections()
     {
         var paths = new List<string> { @"C:\workspace\first.cs" };
@@ -338,5 +359,26 @@ public sealed class CopilotToolResultContractTests
             CopilotAgentRequest request,
             CopilotAgentToolInput toolInput,
             CancellationToken cancellationToken) => Task.FromResult(result);
+    }
+
+    private sealed class AlternatingPathCollection(
+        string firstValue,
+        string secondValue) : IReadOnlyList<string>
+    {
+        private int _enumerationCount;
+
+        public int Count => 1;
+
+        public int EnumerationCount => Volatile.Read(ref _enumerationCount);
+
+        public string this[int index] => index == 0 ? firstValue : throw new ArgumentOutOfRangeException(nameof(index));
+
+        public IEnumerator<string> GetEnumerator()
+        {
+            var enumeration = Interlocked.Increment(ref _enumerationCount);
+            yield return enumeration == 1 ? firstValue : secondValue;
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

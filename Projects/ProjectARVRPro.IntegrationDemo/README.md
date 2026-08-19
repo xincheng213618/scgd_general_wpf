@@ -40,7 +40,7 @@ public class W51TestResult : ViewModelBase
 
 | 类型 | 顶层字段 | 说明 |
 | --- | --- | --- |
-| 键化结果 | `FieldOfViewTestResults`、`LuminanceChromaticityTestResults`、`LuminanceChromaticityYWTestResults`、`DynamicMTFHV058TestResults` | 第一层 Key 是流程配置的输出名称，例如 `White`、`YW`、`W25` 或客户自定义名称；客户端不能把 Key 集合写死。YW 结果内分别保存 12X7、8X7 两组 POI，以及各组平均亮度、亮度均匀性和色度均匀性。 |
+| 键化结果 | `FieldOfViewTestResults`、`LuminanceChromaticityTestResults`、`LuminanceChromaticityYWTestResults`、`ChessboardTestResults`、`DynamicMTFHV058TestResults`、`MTFH07TestResults`、`MTFV07TestResults` | 第一层 Key 是流程配置的输出名称，例如 `White`、`YW`、`Chessboard`、`MTFH07`、`MTFV07` 或客户自定义名称；客户端不能把 Key 集合写死。YW 结果内分别保存 12X7、8X7 两组 POI，以及各组平均亮度、亮度均匀性和色度均匀性。 |
 | 动态结果 | `DynamicTestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults` | 分别承载动态 `ObjectiveTestItem`、POI 光色数据和屏幕缺陷汇总/缺陷框。 |
 | 固定与兼容结果 | `W51TestResult`、`W255TestResult`、`BlackTestResult`、`ChessboardTestResult`、`MTFHVTestResult`、`MTFHV048TestResults`、`MTFHV058TestResults`、`DistortionTestResult`、`OpticCenterTestResult` | `FieldOfViewTestResults["White"]` 和 `LuminanceChromaticityTestResults["White"]` 会同时保留 W51/W255 兼容字段。 |
 
@@ -108,7 +108,7 @@ ProjectARVRPro.IntegrationDemo.exe --parse-file Samples\project-arvr-result.json
 - `ProjectARVRResult_*.json`：保存后的原始响应
 - `ProjectARVRResult_*_items.csv`：扁平化后的测试项清单，包含 `Description` 字段说明列
 
-随项目提供的样例覆盖五个现代顶层字段：`FieldOfViewTestResults`、`LuminanceChromaticityTestResults`、`DynamicMTFHV058TestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults`，并覆盖 `ChessboardTestResult.AverageBlackLuminance`。离线解析后，键化 `ObjectiveTestItem`、POI 光色项、屏幕缺陷汇总和每个缺陷框的标量字段都会进入扁平 CSV，并保留可追溯到原始 JSON 的 `Path`。
+随项目提供的样例覆盖九个现代键化/动态顶层字段：`FieldOfViewTestResults`、`LuminanceChromaticityTestResults`、`LuminanceChromaticityYWTestResults`、`ChessboardTestResults`、`DynamicMTFHV058TestResults`、`MTFH07TestResults`、`MTFV07TestResults`、`DynamicPoixyuvDatas`、`DynamicScreenDefectResults`，并覆盖 `ChessboardTestResult.AverageBlackLuminance`。离线解析后，键化 `ObjectiveTestItem`、YW 两组 POI 光色项、动态 POI、屏幕缺陷汇总和每个缺陷框的标量字段都会进入扁平 CSV，并保留可追溯到原始 JSON 的 `Path`。
 
 ## 光学参数说明
 
@@ -133,7 +133,7 @@ ProjectARVRPro.IntegrationDemo.exe --parse-file Samples\project-arvr-result.json
 | `KeystoneHoriz` / `KeystoneVert` | 水平/垂直梯形畸变。 | % |
 | `ImageCenter*` | 图像中心偏移、倾斜或旋转。 | degree |
 | `OptCenter*` | 光学中心偏移、倾斜或旋转。 | degree |
-| `MTF_*` | 调制传递函数，描述成像清晰度/解析力；H/V 表示方向，0F/0.3F/0.6F/0.8F 表示视场位置。 | % |
+| `MTF_*` | 调制传递函数，描述成像清晰度/解析力；H/V 表示方向，0F/0.3F/0.6F/0.7F/0.8F 表示视场位置。 | % |
 | `DynamicPoixyuvDatas` | 按输出名称分组的 POI 光色数据，包含 XYZ、xy、uv、CCT 和波长。 | 按子字段 |
 | `DynamicScreenDefectResults` | 按输出名称分组的屏幕缺陷汇总和缺陷框参数。 | 像素/算法值 |
 
@@ -203,6 +203,20 @@ dotnet publish Projects/ProjectARVRPro.IntegrationDemo/ProjectARVRPro.Integratio
 - `Program.cs` 中完整的通信/解析辅助类型：`DemoOptions`、`ArvrClient`、`JsonStreamMessageReader`、`PoixyuvDataJavaScriptConverter`、`ResultParser`、`ParsedProjectArvrResult`、`ResultItem`、`OpticalParameterDescriptions`。不要只摘取 `ResultParser`；它依赖 POI converter 及后面的解析结果、行模型和字段说明类型。
 
 这些代码不依赖本仓库其他文件。WPF 窗口只是演示壳，客户自己的 WinForms 软件可以只复用通信和解析部分。
+
+### 发布到 ColorVision 下载服务
+
+仓库提供了独立的 Demo 发布入口。它会发布 `net48/x64`、运行样例解析冒烟检查、生成版本化 ZIP 和 `latest.json`，并在上传后重新下载核对文件大小与 SHA-256：
+
+```powershell
+# 只构建和校验，不上传
+.\Scripts\publish_project_arvrpro_integration_demo.bat --validate-only
+
+# 上传 ZIP，校验成功后再更新 latest.json
+.\Scripts\publish_project_arvrpro_integration_demo.bat
+```
+
+如需保留本地制品，可增加 `--output-dir artifacts\ProjectARVRPro.IntegrationDemo`。远端目录固定为 `Tool/ProjectARVRPro.IntegrationDemo/`；ProjectARVRPro 的“外部对接”页读取其中的 `latest.json`，再通过现有 HTTP 下载服务获取 ZIP。HTTP 传输不提供链路加密，因此客户端会在下载完成后强制校验清单中的文件大小和 SHA-256；校验失败的文件不会作为有效交付包保留。
 
 ## 报文说明
 

@@ -186,6 +186,94 @@
         }
       }
     },
+    "LuminanceChromaticityYWTestResults": {
+      "YW": {
+        "PoixyuvDatas12X7": [
+          {
+            "Id": 43,
+            "Name": "YW_12X7_P43",
+            "CCT": 6408.3,
+            "Wave": 0.0,
+            "X": 731.4,
+            "Y": 803.4,
+            "Z": 819.7,
+            "u": 0.1982,
+            "v": 0.4675,
+            "x": 0.3133,
+            "y": 0.3282
+          }
+        ],
+        "AverageLuminance12X7": {
+          "Name": "AverageLuminance12X7",
+          "TestValue": "803.4",
+          "Value": 803.4,
+          "LowLimit": 700.0,
+          "UpLimit": 900.0,
+          "Unit": "cd/m2",
+          "TestResult": true
+        },
+        "LuminanceUniformity12X7": {
+          "Name": "LuminanceUniformity12X7",
+          "TestValue": "76.2",
+          "Value": 76.2,
+          "LowLimit": 65.0,
+          "UpLimit": 0.0,
+          "Unit": "%",
+          "TestResult": true
+        },
+        "ColorUniformity12X7": {
+          "Name": "ColorUniformity12X7",
+          "TestValue": "0.013",
+          "Value": 0.013,
+          "LowLimit": 0.0,
+          "UpLimit": 0.02,
+          "Unit": "None",
+          "TestResult": true
+        },
+        "PoixyuvDatas8X7": [
+          {
+            "Id": 28,
+            "Name": "YW_8X7_P28",
+            "CCT": 6422.7,
+            "Wave": 0.0,
+            "X": 729.9,
+            "Y": 801.8,
+            "Z": 817.5,
+            "u": 0.1980,
+            "v": 0.4678,
+            "x": 0.3130,
+            "y": 0.3286
+          }
+        ],
+        "AverageLuminance8X7": {
+          "Name": "AverageLuminance8X7",
+          "TestValue": "801.8",
+          "Value": 801.8,
+          "LowLimit": 700.0,
+          "UpLimit": 900.0,
+          "Unit": "cd/m2",
+          "TestResult": true
+        },
+        "LuminanceUniformity8X7": {
+          "Name": "LuminanceUniformity8X7",
+          "TestValue": "77.1",
+          "Value": 77.1,
+          "LowLimit": 65.0,
+          "UpLimit": 0.0,
+          "Unit": "%",
+          "TestResult": true
+        },
+        "ColorUniformity8X7": {
+          "Name": "ColorUniformity8X7",
+          "TestValue": "0.012",
+          "Value": 0.012,
+          "LowLimit": 0.0,
+          "UpLimit": 0.02,
+          "Unit": "None",
+          "TestResult": true
+        }
+      }
+    },
     "ChessboardTestResult": {
       "ChessboardContrast": {
         "Name": "ChessboardContrast",
@@ -204,6 +292,28 @@
         "UpLimit": 8.0,
         "Unit": "cd/m2",
         "TestResult": true
+      }
+    },
+    "ChessboardTestResults": {
+      "ChessboardFar": {
+        "ChessboardContrast": {
+          "Name": "ChessboardContrast",
+          "TestValue": "138.2",
+          "Value": 138.2,
+          "LowLimit": 100.0,
+          "UpLimit": 0.0,
+          "Unit": "None",
+          "TestResult": true
+        },
+        "AverageBlackLuminance": {
+          "Name": "AverageBlackLuminance",
+          "TestValue": "6.1",
+          "Value": 6.1,
+          "LowLimit": 0.0,
+          "UpLimit": 8.0,
+          "Unit": "cd/m2",
+          "TestResult": true
+        }
       }
     },
     "DistortionTestResult": {
@@ -251,6 +361,104 @@
           "TestValue": "0.74",
           "Value": 0.74,
           "LowLimit": 0.65,
+          "UpLimit": 0.0,
+          "Unit": "%",
+          "TestResult": true
+        }
+      }
+    },
+    "MTFH07TestResults": {
+      "MTFH07": {
+        "MTF_H_Center_0F": {
+          "Name": "MTF_H_Center_0F",
+          "TestValue": "0.80",
+          "Value": 0.80,
+          "LowLimit": 0.65,
+          "UpLimit": 0.0,
+          "Unit": "%",
+          "TestResult": true
+        },
+        "MTF_H_LeftUp_0_7F": {
+          "Name": "MTF_H_LeftUp_0_7F",
+          "TestValue": "0.73",
+          "Value": 0.73,
+          "LowLimit": 0.60,
+          "UpLimit": 0.0,
+          "Unit": "%",
+          "TestResult": true
+        },
+        "MTF_H_RightUp_0_7F": {
+          "Name": "MTF_H_RightUp_0_7F",
+          "TestValue": "0.72",
+          "Value": 0.72,
+          "LowLimit": 0.60,
+          "UpLimit": 0.0,
+          "Unit": "%",
+          "TestResult": true
+        },
+        "MTF_H_LeftDown_0_7F": {
+          "Name": "MTF_H_LeftDown_0_7F",
+          "TestValue": "0.71",
+          "Value": 0.71,
+          "LowLimit": 0.60,
+          "UpLimit": 0.0,
+          "Unit": "%",
+          "TestResult": true
+        },
+        "MTF_H_RightDown_0_7F": {
+          "Name": "MTF_H_RightDown_0_7F",
+          "TestValue": "0.70",
+          "Value": 0.70,
+          "LowLimit": 0.60,
+          "UpLimit": 0.0,
+          "Unit": "%",
+          "TestResult": true
+        }
+      }
+    },
+    "MTFV07TestResults": {
+      "MTFV07": {
+        "MTF_V_Center_0F": {
+          "Name": "MTF_V_Center_0F",
+          "TestValue": "0.79",
+          "Value": 0.79,
+          "LowLimit": 0.65,
+          "UpLimit": 0.0,
+          "Unit": "%",
+          "TestResult": true
+        },
+        "MTF_V_LeftUp_0_7F": {
+          "Name": "MTF_V_LeftUp_0_7F",
+          "TestValue": "0.72",
+          "Value": 0.72,
+          "LowLimit": 0.60,
+          "UpLimit": 0.0,
+          "Unit": "%",
+          "TestResult": true
+        },
+        "MTF_V_RightUp_0_7F": {
+          "Name": "MTF_V_RightUp_0_7F",
+          "TestValue": "0.71",
+          "Value": 0.71,
+          "LowLimit": 0.60,
+          "UpLimit": 0.0,
+          "Unit": "%",
+          "TestResult": true
+        },
+        "MTF_V_LeftDown_0_7F": {
+          "Name": "MTF_V_LeftDown_0_7F",
+          "TestValue": "0.70",
+          "Value": 0.70,
+          "LowLimit": 0.60,
+          "UpLimit": 0.0,
+          "Unit": "%",
+          "TestResult": true
+        },
+        "MTF_V_RightDown_0_7F": {
+          "Name": "MTF_V_RightDown_0_7F",
+          "TestValue": "0.69",
+          "Value": 0.69,
+          "LowLimit": 0.60,
           "UpLimit": 0.0,
           "Unit": "%",
           "TestResult": true
