@@ -13,6 +13,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+#pragma warning disable CA1001
+
 namespace ColorVision.Copilot
 {
 
@@ -37,6 +39,7 @@ namespace ColorVision.Copilot
         private readonly CopilotToolExecutionHookRegistry? _hookRegistry;
         private readonly Func<DateTimeOffset> _utcNow;
         private readonly CopilotToolExecutionGate _executionGate;
+        private readonly SemaphoreSlim _preExecutionGate = new(1, 1);
         private readonly TimeSpan _hookPhaseTimeout;
         private readonly TimeSpan _progressInterval;
         private readonly ICopilotCodexCommandHookRunner? _codexCommandHookRunner;
@@ -269,21 +272,29 @@ namespace ColorVision.Copilot
             CopilotToolExecutionHookDecision decision;
             try
             {
-                var beforeHookEvents = new CopilotToolExecutionHookEventPublisher(
-                    onEvent,
-                    () => CreateExecutionInfo(
-                        invocation,
-                        CopilotToolExecutionState.Pending,
-                        startedAt,
-                        completedAt: null,
-                        stopwatch.ElapsedMilliseconds,
-                        timeout));
-                decision = await RunBeforeHooksAsync(
-                    hookContext,
-                    hooks,
-                    hookRuns,
-                    beforeHookEvents,
-                    cancellationToken);
+                await _preExecutionGate.WaitAsync(cancellationToken);
+                try
+                {
+                    var beforeHookEvents = new CopilotToolExecutionHookEventPublisher(
+                        onEvent,
+                        () => CreateExecutionInfo(
+                            invocation,
+                            CopilotToolExecutionState.Pending,
+                            startedAt,
+                            completedAt: null,
+                            stopwatch.ElapsedMilliseconds,
+                            timeout));
+                    decision = await RunBeforeHooksAsync(
+                        hookContext,
+                        hooks,
+                        hookRuns,
+                        beforeHookEvents,
+                        cancellationToken);
+                }
+                finally
+                {
+                    _preExecutionGate.Release();
+                }
             }
             catch (OperationCanceledException)
             {

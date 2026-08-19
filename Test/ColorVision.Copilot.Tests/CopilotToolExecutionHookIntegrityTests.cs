@@ -221,6 +221,37 @@ public sealed class CopilotToolExecutionHookIntegrityTests
     }
 
     [Fact]
+    public async Task ConcurrentToolCallsEnterSynchronousPreExecutionHooksInOrder()
+    {
+        var hook = new OrderedBeforeHook();
+        var executor = new CopilotToolExecutor([hook]);
+        var firstTool = new RecordingTool();
+        var secondTool = new RecordingTool();
+
+        var firstExecution = executor.ExecuteAsync(
+            CreateInvocation(firstTool, "ordered-pre-hook-first"),
+            _ => { },
+            CancellationToken.None);
+        await hook.FirstEntered.Task.WaitAsync(TestTimeout);
+
+        var secondExecution = executor.ExecuteAsync(
+            CreateInvocation(secondTool, "ordered-pre-hook-second"),
+            _ => { },
+            CancellationToken.None);
+
+        Assert.False(hook.SecondEntered.Task.IsCompleted);
+        hook.ReleaseFirst.TrySetResult();
+        await hook.SecondEntered.Task.WaitAsync(TestTimeout);
+
+        var outcomes = await Task.WhenAll(firstExecution, secondExecution)
+            .WaitAsync(TestTimeout);
+
+        Assert.All(outcomes, outcome => Assert.True(outcome.Result.Success));
+        Assert.Equal(1, firstTool.ExecutionCount);
+        Assert.Equal(1, secondTool.ExecutionCount);
+    }
+
+    [Fact]
     public async Task FrameworkBridgeRetainsTheCommittedOutcomeWhenTerminalDispatchFails()
     {
         var tool = new RecordingTool();
@@ -957,6 +988,42 @@ public sealed class CopilotToolExecutionHookIntegrityTests
             Interlocked.Increment(ref _afterCount);
             return _afterExecute(outcome, cancellationToken);
         }
+    }
+
+    private sealed class OrderedBeforeHook : ICopilotToolExecutionHook
+    {
+        private int _beforeCount;
+
+        public TaskCompletionSource FirstEntered { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource SecondEntered { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource ReleaseFirst { get; } = new(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<CopilotToolExecutionHookDecision> BeforeExecuteAsync(
+            CopilotToolExecutionHookContext context,
+            CancellationToken cancellationToken)
+        {
+            var position = Interlocked.Increment(ref _beforeCount);
+            if (position == 1)
+            {
+                FirstEntered.TrySetResult();
+                await ReleaseFirst.Task.WaitAsync(cancellationToken);
+            }
+            else if (position == 2)
+            {
+                SecondEntered.TrySetResult();
+            }
+
+            return CopilotToolExecutionHookDecision.Proceed;
+        }
+
+        public Task AfterExecuteAsync(
+            CopilotToolExecutionOutcome outcome,
+            CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class RecordingTool : ICopilotTool
