@@ -146,6 +146,23 @@ public sealed class CopilotCodexToolRegistryCollisionTests
     }
 
     [Fact]
+    public void RelaxedPolicyTreatsTrimmedNamesAsTheSameCapability()
+    {
+        var events = new List<CopilotAgentEvent>();
+        var first = new RecordingTool("CollisionProbe");
+        var duplicate = new RecordingTool(" CollisionProbe ");
+
+        var merged = CopilotMicrosoftAgentFrameworkRuntime.MergeAvailableTools(
+            CreateAgentRequest(errorOnToolCollisions: false),
+            [first],
+            [duplicate],
+            events.Add);
+
+        Assert.Same(first, Assert.Single(merged));
+        Assert.Single(events);
+    }
+
+    [Fact]
     public void StrictPolicyRejectsDuplicateBeforeTheToolSurfaceCanBeUsed()
     {
         var events = new List<CopilotAgentEvent>();
@@ -158,6 +175,28 @@ public sealed class CopilotCodexToolRegistryCollisionTests
 
         Assert.Equal("duplicate tool: functions.collisionprobe", exception.Message);
         Assert.Empty(events);
+    }
+
+    [Fact]
+    public void ProviderToolSurfaceUsesCanonicalOrderIndependentOfRegistration()
+    {
+        var alpha = new RecordingTool("AlphaProbe");
+        var mike = new RecordingTool("MikeProbe");
+        var zulu = new RecordingTool("ZuluProbe");
+
+        var first = CopilotMicrosoftAgentFrameworkRuntime.MergeAvailableTools(
+            CreateAgentRequest(errorOnToolCollisions: false),
+            [zulu, alpha],
+            [mike],
+            _ => { });
+        var second = CopilotMicrosoftAgentFrameworkRuntime.MergeAvailableTools(
+            CreateAgentRequest(errorOnToolCollisions: false),
+            [alpha, zulu],
+            [mike],
+            _ => { });
+
+        Assert.Equal(["AlphaProbe", "MikeProbe", "ZuluProbe"], first.Select(tool => tool.Name));
+        Assert.Equal(first.Select(tool => tool.Name), second.Select(tool => tool.Name));
     }
 
     [Fact]

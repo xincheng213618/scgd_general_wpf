@@ -414,7 +414,7 @@ namespace ColorVision.Copilot
                     && CopilotToolIntentPolicy.CanRetainForFollowUp(request, tool);
                 if (!directlyAvailable && !retainedForFollowUp)
                     continue;
-                if (!names.Add(tool.Name))
+                if (!names.Add(tool.Name.Trim()))
                 {
                     if (request.CodexErrorOnToolCollisions)
                         throw new InvalidOperationException($"duplicate tool: functions.{tool.Name.Trim()}");
@@ -425,7 +425,9 @@ namespace ColorVision.Copilot
                     emit(CopilotAgentEvent.RuntimeDiagnostic($"Agent Framework retained recent read-only tool {tool.Name} for follow-up continuity."));
                 merged.Add(tool);
             }
-            return merged.ToArray();
+            return merged
+                .OrderBy(tool => tool.Name.Trim(), StringComparer.Ordinal)
+                .ToArray();
         }
 
         private static string GetCurrentWorkspacePath()
