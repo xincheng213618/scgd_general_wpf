@@ -27,6 +27,8 @@ namespace ColorVision.Copilot
             private readonly CopilotAgentRequest _request;
             private readonly CopilotExecutionScope _executionScope;
             private readonly IReadOnlyDictionary<string, ICopilotTool> _tools;
+            private readonly IReadOnlyDictionary<string, string> _functionNamesByToolName;
+            private readonly IReadOnlyDictionary<string, ICopilotTool> _toolsByFunctionName;
             private readonly CopilotToolExecutor _toolExecutor;
             private readonly CopilotFrameworkApprovalCoordinator _approvalCoordinator;
             private readonly Action<CopilotAgentEvent> _emit;
@@ -63,6 +65,11 @@ namespace ColorVision.Copilot
                 _request = request;
                 _executionScope = executionScope ?? throw new ArgumentNullException(nameof(executionScope));
                 _tools = tools.ToDictionary(tool => tool.Name, StringComparer.OrdinalIgnoreCase);
+                _functionNamesByToolName = BuildFunctionNameMap(_tools.Keys);
+                _toolsByFunctionName = _tools.ToDictionary(
+                    entry => _functionNamesByToolName[entry.Key],
+                    entry => entry.Value,
+                    StringComparer.OrdinalIgnoreCase);
                 _maxToolCalls = Math.Max(1, maxToolCalls);
                 _toolExecutor = toolExecutor;
                 _approvalCoordinator = approvalCoordinator;
@@ -114,9 +121,10 @@ namespace ColorVision.Copilot
             public IList<AITool> CreateFunctions()
             {
                 var functions = new List<AITool>();
-                foreach (var tool in _tools.Values)
+                foreach (var entry in _tools)
                 {
-                    var function = new HarnessToolFunction(this, tool);
+                    var tool = entry.Value;
+                    var function = new HarnessToolFunction(this, tool, _functionNamesByToolName[entry.Key]);
                     functions.Add(RequiresNativeApproval(tool) ? new ApprovalRequiredAIFunction(function) : function);
                 }
                 return functions;
