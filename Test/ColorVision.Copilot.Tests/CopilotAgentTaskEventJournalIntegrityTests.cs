@@ -309,6 +309,87 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void PersistedExplicitApprovalRequiresEarlierMatchingRequest()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordApprovalDecision(
+            "ProtectedTool",
+            "implicit-call",
+            approvalActionId: string.Empty,
+            approved: true,
+            decisionSource: CopilotFrameworkApprovalDecisionSource.ExecutionPolicy.ToString());
+        var implicitApproval = Assert.Single(journal.Snapshot().Events);
+        var rewritten = new CopilotAgentTaskEvent
+        {
+            Sequence = implicitApproval.Sequence,
+            Id = implicitApproval.Id,
+            Type = implicitApproval.Type,
+            OccurredAtUtc = implicitApproval.OccurredAtUtc,
+            RunId = implicitApproval.RunId,
+            SubjectId = implicitApproval.SubjectId,
+            RelatedIds = implicitApproval.RelatedIds,
+            ToolName = implicitApproval.ToolName,
+            State = "approved:User",
+            FailureCode = implicitApproval.FailureCode,
+            ExitCode = implicitApproval.ExitCode,
+            Summary = implicitApproval.Summary,
+        };
+
+        Assert.True(implicitApproval.IsStructurallyValid());
+        Assert.True(journal.Snapshot().IsStructurallyValid());
+        Assert.True(rewritten.IsStructurallyValid());
+        Assert.False(new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [rewritten],
+        }.IsStructurallyValid());
+    }
+
+    [Fact]
+    public void PersistedExplicitApprovalAcceptsEarlierMatchingRequest()
+    {
+        const string toolName = "ProtectedTool";
+        const string callId = "explicit-call";
+        const string actionId = "explicit-action";
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = toolName,
+                Success = true,
+                Summary = "Waiting for approval.",
+                Approval = new CopilotToolApprovalInfo
+                {
+                    ActionId = actionId,
+                    Title = "Protected action",
+                    RiskLevel = "high",
+                    ExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(1),
+                },
+            },
+            CreateExecution(
+                callId,
+                CopilotToolExecutionState.AwaitingApproval,
+                actionId,
+                toolName: toolName)));
+        journal.RecordApprovalDecision(
+            toolName,
+            callId,
+            actionId,
+            approved: true,
+            decisionSource: CopilotFrameworkApprovalDecisionSource.User.ToString());
+
+        var snapshot = journal.Snapshot();
+        Assert.True(snapshot.IsStructurallyValid());
+        Assert.Collection(
+            snapshot.Events,
+            requested => Assert.Equal(
+                CopilotAgentTaskEventType.ApprovalRequested,
+                requested.Type),
+            approved => Assert.Equal(
+                CopilotAgentTaskEventType.ApprovalApproved,
+                approved.Type));
+    }
+
+    [Fact]
     public void PolicyApprovalsWithoutActionsRemainBoundToTheirExactCalls()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();

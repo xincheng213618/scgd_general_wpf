@@ -130,6 +130,7 @@ namespace ColorVision.Copilot
                     .GroupBy(item => item.RunId, StringComparer.Ordinal)
                     .Any(group => group.Count() > 1)
                 || HasInvalidSessionLifecycle(Events)
+                || HasInvalidApprovalLifecycle(Events)
                 || HasDuplicateLifecycleEvents(Events)
                 || HasInvalidControlLifecycle(Events)
                 || Events
@@ -202,6 +203,42 @@ namespace ColorVision.Copilot
                     or CopilotAgentTaskEventType.ApprovalDenied)
                 .GroupBy(item => (item.RunId, item.SubjectId))
                 .Any(group => group.Count() > 1);
+        }
+
+        private static bool HasInvalidApprovalLifecycle(
+            IReadOnlyList<CopilotAgentTaskEvent> events)
+        {
+            foreach (var approval in events.Where(item =>
+                item.Type == CopilotAgentTaskEventType.ApprovalApproved))
+            {
+                if (approval.State is
+                    "approved:ExecutionPolicy"
+                    or "approved:TemporaryGrant")
+                {
+                    continue;
+                }
+                if (approval.State is not (
+                    "approved"
+                    or "approved:User"
+                    or "approved:AutomaticReview"))
+                {
+                    return true;
+                }
+
+                var requested = events.Any(item =>
+                    item.Type == CopilotAgentTaskEventType.ApprovalRequested
+                    && item.Sequence < approval.Sequence
+                    && string.Equals(item.RunId, approval.RunId, StringComparison.Ordinal)
+                    && string.Equals(item.SubjectId, approval.SubjectId, StringComparison.Ordinal)
+                    && string.Equals(item.ToolName, approval.ToolName, StringComparison.Ordinal)
+                    && item.RelatedIds.SequenceEqual(
+                        approval.RelatedIds,
+                        StringComparer.Ordinal));
+                if (!requested)
+                    return true;
+            }
+
+            return false;
         }
 
         private static bool HasInvalidControlLifecycle(
