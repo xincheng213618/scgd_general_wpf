@@ -8,6 +8,28 @@ import org.junit.Test;
 
 public class OperationsInPageNavigationPolicyTest {
     @Test
+    public void detailParentStateIsExclusiveAndMigratesLegacyFlags() {
+        assertEquals(OperationsDestinationState.TRIAGE,
+                OperationsInPageNavigationPolicy.normalizeDetailParent(
+                        OperationsDestinationState.TRIAGE));
+        assertEquals(OperationsDestinationState.TOOLS,
+                OperationsInPageNavigationPolicy.normalizeDetailParent(
+                        OperationsDestinationState.TOOLS));
+        assertEquals(OperationsDestinationState.OVERVIEW,
+                OperationsInPageNavigationPolicy.normalizeDetailParent(
+                        OperationsDestinationState.SETTINGS));
+        assertEquals(OperationsDestinationState.TOOLS,
+                OperationsInPageNavigationPolicy.restoreDetailParent(
+                        OperationsDestinationState.TOOLS, true, false));
+        assertEquals(OperationsDestinationState.TRIAGE,
+                OperationsInPageNavigationPolicy.restoreDetailParent(null, true, true));
+        assertEquals(OperationsDestinationState.TOOLS,
+                OperationsInPageNavigationPolicy.restoreDetailParent(null, false, true));
+        assertEquals(OperationsDestinationState.OVERVIEW,
+                OperationsInPageNavigationPolicy.restoreDetailParent(null, false, false));
+    }
+
+    @Test
     public void topAppBarUsesTheNearestMeaningfulParent() {
         assertEquals(OperationsDestinationState.OVERVIEW,
                 parent(OperationsDestinationState.CONNECTIONS, false, false));
@@ -46,27 +68,27 @@ public class OperationsInPageNavigationPolicyTest {
         assertEquals("返回电脑与连接",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.CONNECTION_CHECK,
-                        false, false, false, false));
+                        detailParent(false, false), false, false));
         assertEquals("返回问题中心",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.JOBS,
-                        true, false, false, false));
+                        detailParent(true, false), false, false));
         assertEquals("返回问题中心",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.CONNECTION_CHECK,
-                        true, false, false, false));
+                        detailParent(true, false), false, false));
         assertEquals("返回运维工具",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.JOBS,
-                        false, true, false, false));
+                        detailParent(false, true), false, false));
         assertEquals("返回现场运维概览",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.LIVE_MONITOR,
-                        false, false, false, false));
+                        detailParent(false, false), false, false));
         assertEquals("返回现场运维概览",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.OVERVIEW,
-                        false, false, false, false));
+                        detailParent(false, false), false, false));
     }
 
     @Test
@@ -154,15 +176,13 @@ public class OperationsInPageNavigationPolicyTest {
                 OperationsInPageNavigationPolicy.motionDirection(
                         OperationsDestinationState.CONNECTIONS,
                         OperationsDestinationState.SETTINGS,
-                        false,
-                        false,
+                        OperationsDestinationState.OVERVIEW,
                         OperationsDestinationState.SETTINGS));
         assertEquals(AppScreenMotion.DIRECTION_FORWARD,
                 OperationsInPageNavigationPolicy.motionDirection(
                         OperationsDestinationState.SETTINGS,
                         OperationsDestinationState.CONNECTIONS,
-                        false,
-                        false,
+                        OperationsDestinationState.OVERVIEW,
                         OperationsDestinationState.SETTINGS));
         assertEquals(AppScreenMotion.DIRECTION_NONE,
                 motion(OperationsDestinationState.FLEET_ALL,
@@ -212,19 +232,19 @@ public class OperationsInPageNavigationPolicyTest {
     @Test
     public void triageDetailsReturnToTheirParentBeforeTheOverview() {
         assertTrue(OperationsInPageNavigationPolicy.shouldReturnToTriage(
-                true, true, false, false, true));
+                true, true, false, false, detailParent(true, false)));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
-                true, true, false, false, false));
+                true, true, false, false, detailParent(false, false)));
     }
 
     @Test
     public void triageParentReturnKeepsRootAndRecoveryBoundaries() {
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
-                true, true, true, false, true));
+                true, true, true, false, detailParent(true, false)));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
-                true, true, false, true, true));
+                true, true, false, true, detailParent(true, false)));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
-                false, true, false, false, true));
+                false, true, false, false, detailParent(true, false)));
     }
 
     @Test
@@ -293,7 +313,7 @@ public class OperationsInPageNavigationPolicyTest {
     private static String parent(
             String destination, boolean fromTriage, boolean fromToolbox) {
         return OperationsInPageNavigationPolicy.parentDestination(
-                destination, fromTriage, fromToolbox);
+                destination, detailParent(fromTriage, fromToolbox));
     }
 
     private static boolean showsNavigateUp(
@@ -308,8 +328,7 @@ public class OperationsInPageNavigationPolicyTest {
                 paired,
                 dashboardVisible,
                 destination,
-                fromTriage,
-                fromToolbox,
+                detailParent(fromTriage, fromToolbox),
                 summaryVisible,
                 recoveryVisible);
     }
@@ -319,8 +338,7 @@ public class OperationsInPageNavigationPolicyTest {
         return OperationsInPageNavigationPolicy.motionDirection(
                 from,
                 to,
-                fromTriage,
-                fromToolbox,
+                detailParent(fromTriage, fromToolbox),
                 OperationsDestinationState.OVERVIEW);
     }
 
@@ -330,6 +348,16 @@ public class OperationsInPageNavigationPolicyTest {
             boolean fromToolbox,
             String existingParent) {
         return OperationsInPageNavigationPolicy.targetManagementParentDestination(
-                destination, fromTriage, fromToolbox, existingParent);
+                destination, detailParent(fromTriage, fromToolbox), existingParent);
+    }
+
+    private static String detailParent(boolean fromTriage, boolean fromToolbox) {
+        if (fromTriage) {
+            return OperationsDestinationState.TRIAGE;
+        }
+        if (fromToolbox) {
+            return OperationsDestinationState.TOOLS;
+        }
+        return OperationsDestinationState.OVERVIEW;
     }
 }

@@ -73,8 +73,9 @@ public class OperationsActivity extends AppCompatActivity {
     static final String EXTRA_OPEN_DESTINATION = "operations_open_destination";
     static final String EXTRA_RETURN_TO_SETTINGS = "operations_return_to_settings";
     private static final String STATE_DESTINATION = "operations_destination";
-    private static final String STATE_RETURN_TO_TRIAGE = "operations_return_to_triage";
-    private static final String STATE_RETURN_TO_TOOLBOX = "operations_return_to_toolbox";
+    private static final String STATE_DETAIL_PARENT = "operations_detail_parent";
+    private static final String LEGACY_STATE_RETURN_TO_TRIAGE = "operations_return_to_triage";
+    private static final String LEGACY_STATE_RETURN_TO_TOOLBOX = "operations_return_to_toolbox";
     private static final String STATE_CONNECTIONS_PARENT = "operations_connections_parent";
     private static final String STATE_SCROLL_OVERVIEW = "operations_scroll_overview";
     private static final String STATE_SCROLL_PROBLEMS = "operations_scroll_problems";
@@ -198,8 +199,7 @@ public class OperationsActivity extends AppCompatActivity {
     private String pendingRestoredDestination = "";
     private String problemBadgeState = "";
     private int problemBadgeCount;
-    private boolean returnToTriageOnBack;
-    private boolean returnToToolboxOnBack;
+    private String detailParentDestination = OperationsDestinationState.OVERVIEW;
     private String connectionsParentDestination = OperationsDestinationState.OVERVIEW;
     private boolean updatingTopLevelNavigation;
     private boolean updatingTopLevelScroll;
@@ -244,10 +244,14 @@ public class OperationsActivity extends AppCompatActivity {
         String restoredDestination = OperationsDestinationState.normalize(
                 restoring ? savedInstanceState.getString(STATE_DESTINATION) : null);
         currentDestination = restoredDestination;
-        returnToTriageOnBack = restoring
-                && savedInstanceState.getBoolean(STATE_RETURN_TO_TRIAGE, false);
-        returnToToolboxOnBack = restoring
-                && savedInstanceState.getBoolean(STATE_RETURN_TO_TOOLBOX, false);
+        detailParentDestination = restoring
+                ? OperationsInPageNavigationPolicy.restoreDetailParent(
+                        savedInstanceState.getString(STATE_DETAIL_PARENT),
+                        savedInstanceState.getBoolean(
+                                LEGACY_STATE_RETURN_TO_TRIAGE, false),
+                        savedInstanceState.getBoolean(
+                                LEGACY_STATE_RETURN_TO_TOOLBOX, false))
+                : OperationsDestinationState.OVERVIEW;
         connectionsParentDestination = restoring
                 ? OperationsInPageNavigationPolicy.normalizeConnectionsParent(
                         savedInstanceState.getString(STATE_CONNECTIONS_PARENT))
@@ -369,8 +373,7 @@ public class OperationsActivity extends AppCompatActivity {
                 connectionsParentDestination = OperationsInPageNavigationPolicy
                         .targetManagementParentDestination(
                                 currentDestination,
-                                returnToTriageOnBack,
-                                returnToToolboxOnBack,
+                                detailParentDestination,
                                 connectionsParentDestination);
                 showConnectionPreference();
                 return true;
@@ -593,8 +596,7 @@ public class OperationsActivity extends AppCompatActivity {
                 }
             } else if (item.getItemId() == NAV_PROBLEMS) {
                 topLevelState.resetScroll(OperationsDestinationState.TRIAGE);
-                if (OperationsDestinationState.TRIAGE.equals(currentDestination)
-                        && !returnToTriageOnBack) {
+                if (OperationsDestinationState.TRIAGE.equals(currentDestination)) {
                     scrollDashboardToTop();
                 } else {
                     showProblemCenter();
@@ -685,7 +687,7 @@ public class OperationsActivity extends AppCompatActivity {
                 dashboardVisible,
                 showingDashboardSummary,
                 connectionRecoveryVisible,
-                returnToTriageOnBack)) {
+                detailParentDestination)) {
             return false;
         }
         showProblemCenter();
@@ -698,16 +700,15 @@ public class OperationsActivity extends AppCompatActivity {
             return OperationsInPageNavigationPolicy.connectionsParentLabel(
                     connectionsParentDestination);
         }
-        if (returnToTriageOnBack) {
+        if (OperationsDestinationState.TRIAGE.equals(detailParentDestination)) {
             return "返回问题中心";
         }
-        if (returnToToolboxOnBack) {
+        if (OperationsDestinationState.TOOLS.equals(detailParentDestination)) {
             return "返回运维工具";
         }
         String parentLabel = OperationsInPageNavigationPolicy.navigateUpLabel(
                 currentDestination,
-                returnToTriageOnBack,
-                returnToToolboxOnBack,
+                detailParentDestination,
                 showingDashboardSummary,
                 connectionRecoveryVisible);
         return parentLabel.isEmpty() ? "返回现场运维概览" : parentLabel;
@@ -733,16 +734,14 @@ public class OperationsActivity extends AppCompatActivity {
                 preferences != null && preferences.hasOperationsProfile(),
                 dashboardVisible,
                 currentDestination,
-                returnToTriageOnBack,
-                returnToToolboxOnBack,
+                detailParentDestination,
                 showingDashboardSummary,
                 connectionRecoveryVisible)) {
             return false;
         }
         String parent = OperationsInPageNavigationPolicy.activeParentDestination(
                 currentDestination,
-                returnToTriageOnBack,
-                returnToToolboxOnBack,
+                detailParentDestination,
                 showingDashboardSummary,
                 connectionRecoveryVisible);
         if (OperationsDestinationState.CONNECTIONS.equals(parent)) {
@@ -758,8 +757,7 @@ public class OperationsActivity extends AppCompatActivity {
             return true;
         }
         if (OperationsDestinationState.OVERVIEW.equals(parent)) {
-            returnToTriageOnBack = false;
-            returnToToolboxOnBack = false;
+            detailParentDestination = OperationsDestinationState.OVERVIEW;
             AppScreenMotion.beginContentTransition(
                     dashboardContent, AppScreenMotion.DIRECTION_BACKWARD);
             showCurrentDashboard();
@@ -777,8 +775,7 @@ public class OperationsActivity extends AppCompatActivity {
             return false;
         }
         connectionCheckGeneration++;
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         showCurrentDashboard();
         return true;
     }
@@ -871,8 +868,7 @@ public class OperationsActivity extends AppCompatActivity {
         cancelDashboardRefresh();
         leaveSupportCenter();
         leaveLiveMonitor();
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setConnectionRecoveryVisible(false);
         rebuildSettingsPage(false);
         setCurrentDestination(OperationsDestinationState.SETTINGS);
@@ -1994,8 +1990,7 @@ public class OperationsActivity extends AppCompatActivity {
         int direction = OperationsInPageNavigationPolicy.motionDirection(
                 currentDestination,
                 normalized,
-                returnToTriageOnBack,
-                returnToToolboxOnBack,
+                detailParentDestination,
                 connectionsParentDestination);
         AppScreenMotion.beginContentTransition(
                 contentHost == null ? dashboardContent : contentHost,
@@ -2099,8 +2094,7 @@ public class OperationsActivity extends AppCompatActivity {
                 paired,
                 dashboardVisible,
                 currentDestination,
-                returnToTriageOnBack,
-                returnToToolboxOnBack,
+                detailParentDestination,
                 showingDashboardSummary,
                 connectionRecoveryVisible);
         if (showNavigateUp) {
@@ -2112,8 +2106,7 @@ public class OperationsActivity extends AppCompatActivity {
                                     connectionsParentDestination)
                             : OperationsInPageNavigationPolicy.navigateUpLabel(
                                     currentDestination,
-                                    returnToTriageOnBack,
-                                    returnToToolboxOnBack,
+                                    detailParentDestination,
                                     showingDashboardSummary,
                                     connectionRecoveryVisible));
         } else {
@@ -2270,8 +2263,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (restorePendingDestination(true)) {
             return;
         }
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setCurrentDestination(OperationsDestinationState.OVERVIEW);
         setDashboardVisible(true);
         setShowingDashboardSummary(true);
@@ -2336,8 +2328,7 @@ public class OperationsActivity extends AppCompatActivity {
         refreshOperationsTargetPresentation();
         leaveSupportCenter();
         leaveLiveMonitor();
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setConnectionRecoveryVisible(false);
         setCurrentDestination(OperationsDestinationState.TOOLS);
         setDashboardVisible(true);
@@ -2369,8 +2360,7 @@ public class OperationsActivity extends AppCompatActivity {
         refreshOperationsTargetPresentation();
         leaveSupportCenter();
         leaveLiveMonitor();
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setConnectionRecoveryVisible(false);
         setCurrentDestination(OperationsDestinationState.TOOLS);
         setDashboardVisible(true);
@@ -2464,7 +2454,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showToolboxCapabilityDetails(String path) {
-        returnToToolboxOnBack = true;
+        detailParentDestination = OperationsDestinationState.TOOLS;
         showDashboardCapabilityDetails(path);
     }
 
@@ -2473,8 +2463,7 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         preferences.recordOperationsToolboxAction(actionId);
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = true;
+        detailParentDestination = OperationsDestinationState.TOOLS;
         switch (actionId) {
             case OperationsToolboxPresentation.ACTION_CONNECTION_CHECK:
                 runConnectionSelfCheck();
@@ -2546,8 +2535,7 @@ public class OperationsActivity extends AppCompatActivity {
             return;
         }
         preferences.recordOperationsToolboxAction(actionId);
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = true;
+        detailParentDestination = OperationsDestinationState.TOOLS;
         switch (actionId) {
             case OperationsToolboxPresentation.ACTION_SHOW_WINDOW:
                 runRemoteTask(
@@ -2599,8 +2587,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (restorePendingDestination(false)) {
             return;
         }
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setCurrentDestination(OperationsDestinationState.OVERVIEW);
         setDashboardVisible(true);
         setShowingDashboardSummary(true);
@@ -2744,7 +2731,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showRemoteProblemDetail(String section) {
-        returnToTriageOnBack = true;
+        detailParentDestination = OperationsDestinationState.TRIAGE;
         showLatestRemoteMonitorDetail(section);
     }
 
@@ -4790,9 +4777,8 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showRemoteProblemCenter() {
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setCurrentDestination(OperationsDestinationState.TRIAGE);
-        returnToTriageOnBack = false;
         refreshOperationsHeaderNavigation();
         setShowingDashboardSummary(false);
         leaveSupportCenter();
@@ -4863,9 +4849,8 @@ public class OperationsActivity extends AppCompatActivity {
         problemCenterRefreshInFlight = true;
         boolean preservePreviousReport = OperationsDestinationState.TRIAGE.equals(
                 currentDestination) && actions.getChildCount() > 0;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setCurrentDestination(OperationsDestinationState.TRIAGE);
-        returnToTriageOnBack = false;
         refreshOperationsHeaderNavigation();
         setShowingDashboardSummary(false);
         leaveSupportCenter();
@@ -4933,26 +4918,26 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showLiveMonitorFromTriage() {
-        returnToTriageOnBack = true;
+        detailParentDestination = OperationsDestinationState.TRIAGE;
         showLiveMonitor();
     }
 
     private void runConnectionSelfCheckFromTriage() {
-        returnToTriageOnBack = true;
+        detailParentDestination = OperationsDestinationState.TRIAGE;
         runConnectionSelfCheck();
     }
 
     private void runTriageAction(String actionId) {
         switch (actionId) {
             case "triage.events.view":
-                returnToTriageOnBack = true;
+                detailParentDestination = OperationsDestinationState.TRIAGE;
                 showDashboardCapabilityDetails(PATH_RECENT_EVENTS);
                 return;
             case "triage.window.show":
                 runWindowAction("show", "主窗口已显示");
                 return;
             case "triage.jobs.review":
-                returnToTriageOnBack = true;
+                detailParentDestination = OperationsDestinationState.TRIAGE;
                 showJobs();
                 return;
             case "triage.mqtt.restart.request":
@@ -4962,14 +4947,14 @@ public class OperationsActivity extends AppCompatActivity {
                 showDeviceHealthOverview();
                 return;
             case "triage.messaging.view":
-                returnToTriageOnBack = true;
+                detailParentDestination = OperationsDestinationState.TRIAGE;
                 showDashboardCapabilityDetails("/ops/v1/messaging/health");
                 return;
             case "triage.messaging.reconnect.request":
                 confirmRecoverMessageChannel();
                 return;
             case "triage.failures.view":
-                returnToTriageOnBack = true;
+                detailParentDestination = OperationsDestinationState.TRIAGE;
                 showDashboardCapabilityDetails(PATH_FAILURE_EVIDENCE);
                 return;
             default:
@@ -6555,8 +6540,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showPerformanceLiveMonitor() {
-        returnToToolboxOnBack = false;
-        returnToTriageOnBack = true;
+        detailParentDestination = OperationsDestinationState.TRIAGE;
         showLiveMonitor();
     }
 
@@ -7480,12 +7464,12 @@ public class OperationsActivity extends AppCompatActivity {
                         connectionsParentDestination)) {
             destination = NAV_SETTINGS;
         } else if (OperationsDestinationState.TOOLS.equals(currentDestination)
-                || returnToToolboxOnBack
+                || OperationsDestinationState.TOOLS.equals(detailParentDestination)
                 || OperationsDestinationState.TOOLS.equals(
                         connectionsParentDestination)) {
             destination = NAV_TOOLS;
         } else if (OperationsDestinationState.TRIAGE.equals(currentDestination)
-                || returnToTriageOnBack
+                || OperationsDestinationState.TRIAGE.equals(detailParentDestination)
                 || OperationsDestinationState.TRIAGE.equals(
                         connectionsParentDestination)) {
             destination = NAV_PROBLEMS;
@@ -7542,8 +7526,7 @@ public class OperationsActivity extends AppCompatActivity {
         rememberVisibleTopLevelScroll();
         outState.putString(STATE_DESTINATION,
                 OperationsDestinationState.normalize(currentDestination));
-        outState.putBoolean(STATE_RETURN_TO_TRIAGE, returnToTriageOnBack);
-        outState.putBoolean(STATE_RETURN_TO_TOOLBOX, returnToToolboxOnBack);
+        outState.putString(STATE_DETAIL_PARENT, detailParentDestination);
         outState.putString(STATE_CONNECTIONS_PARENT, connectionsParentDestination);
         outState.putInt(STATE_SCROLL_OVERVIEW,
                 topLevelState.scrollY(OperationsDestinationState.OVERVIEW));
