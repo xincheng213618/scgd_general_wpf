@@ -34,11 +34,12 @@ namespace ColorVision.Copilot
                     return outcome.FormattedModelResult = initial.Content;
 
                 registry ??= CopilotToolOutputArchiveRegistry.Shared;
+                var result = outcome.EffectiveModelResult;
                 var snapshot = registry.Retain(
                     outcome.Invocation.AgentRequest.ConversationId,
                     outcome.Execution.ToolName,
                     outcome.Execution.CallId,
-                    outcome.EffectiveModelResult.Content);
+                    BuildArchivableOutput(result));
                 if (snapshot == null)
                     return outcome.FormattedModelResult = initial.Content;
 
@@ -60,17 +61,31 @@ namespace ColorVision.Copilot
             CopilotFrameworkToolResultFormatResult formatted)
         {
             var result = outcome.EffectiveModelResult;
-            return formatted.ContentTruncated
-                && result.Success
+            return (formatted.ContentTruncated || formatted.ErrorTruncated)
                 && result.Approval == null
                 && !result.SuppressModelOutput
-                && !string.IsNullOrEmpty(result.Content)
+                && (!string.IsNullOrEmpty(result.Content)
+                    || !string.IsNullOrEmpty(result.ErrorMessage))
                 && outcome.Invocation?.AgentRequest != null
                 && outcome.Invocation.Tool != null
                 && !ExcludedToolNames.Contains(outcome.Invocation.Tool.Name)
                 && !outcome.Invocation.Tool.Name.Contains(
                     "BackgroundShellCommand",
                     StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string BuildArchivableOutput(CopilotToolResult result)
+        {
+            if (result.Success || string.IsNullOrEmpty(result.ErrorMessage))
+                return result.Content;
+            if (string.IsNullOrEmpty(result.Content))
+                return "[Tool Error]" + Environment.NewLine + result.ErrorMessage;
+            return result.Content
+                + Environment.NewLine
+                + Environment.NewLine
+                + "[Tool Error]"
+                + Environment.NewLine
+                + result.ErrorMessage;
         }
     }
 }

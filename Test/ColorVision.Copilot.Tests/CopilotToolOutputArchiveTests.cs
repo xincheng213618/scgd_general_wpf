@@ -68,6 +68,49 @@ public sealed class CopilotToolOutputArchiveTests
     }
 
     [Fact]
+    public async Task TruncatedFailureErrorCanBeReadFromItsRedactedArchive()
+    {
+        using var registry = new CopilotToolOutputArchiveRegistry();
+        var request = new CopilotAgentRequest
+        {
+            ConversationId = "failure-archive-conversation",
+            TaskId = "failure-archive-task",
+        };
+        const string secret = "private-failure-secret";
+        var error = $"token={secret};\n"
+            + new string('x', 30_000)
+            + "\nfull-error-tail";
+        var tool = new LargeOutputTool(string.Empty);
+        var outcome = CreateFailedOutcome(request, tool, error);
+
+        var formatted = CopilotToolOutputArchivePolicy.Format(
+            outcome,
+            SmallTokenLimit,
+            registry);
+        using var document = JsonDocument.Parse(formatted);
+        var root = document.RootElement;
+        var archiveId = root
+            .GetProperty("content_archive")
+            .GetProperty("archive_id")
+            .GetString();
+
+        Assert.False(root.GetProperty("success").GetBoolean());
+        Assert.NotNull(archiveId);
+        Assert.Equal(error, outcome.Result.ErrorMessage);
+        Assert.Single(registry.GetSnapshots(request.ConversationId));
+
+        var page = await new CopilotReadToolOutputTool(registry).ExecuteAsync(
+            request,
+            CreateReadInput(archiveId!),
+            CancellationToken.None);
+
+        Assert.True(page.Success);
+        Assert.Contains("[Tool Error]", page.Content, StringComparison.Ordinal);
+        Assert.Contains("token=<redacted>;", page.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain(secret, page.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ArchiveIsNotCreatedWhenItsReferenceCannotFitTheProviderBudget()
     {
         using var registry = new CopilotToolOutputArchiveRegistry();
@@ -300,6 +343,46 @@ public sealed class CopilotToolOutputArchiveTests
                 Attempt = 1,
                 MaxAttempts = 1,
                 State = CopilotToolExecutionState.Completed,
+            },
+        };
+    }
+
+    private static CopilotToolExecutionOutcome CreateFailedOutcome(
+        CopilotAgentRequest request,
+        ICopilotTool tool,
+        string error)
+    {
+        const string CallId = "call:failed-tool-output-archive";
+        return new CopilotToolExecutionOutcome
+        {
+            Invocation = new CopilotToolInvocation
+            {
+                CallId = CallId,
+                Round = 1,
+                Attempt = 1,
+                MaxAttempts = 1,
+                RuntimeName = "test",
+                Tool = tool,
+                AgentRequest = request,
+                ToolInput = CopilotAgentToolInput.Empty,
+            },
+            Result = new CopilotToolResult
+            {
+                ToolName = tool.Name,
+                Success = false,
+                Summary = "The tool failed with a large diagnostic.",
+                ErrorMessage = error,
+                FailureKind = CopilotToolFailureKind.Internal,
+                FailureCode = "large_diagnostic",
+            },
+            Execution = new CopilotToolExecutionInfo
+            {
+                CallId = CallId,
+                ToolName = tool.Name,
+                Attempt = 1,
+                MaxAttempts = 1,
+                State = CopilotToolExecutionState.Failed,
+                FailureKind = CopilotToolFailureKind.Internal,
             },
         };
     }

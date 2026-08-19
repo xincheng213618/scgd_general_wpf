@@ -12,6 +12,7 @@ namespace ColorVision.Copilot
     internal readonly record struct CopilotFrameworkToolResultFormatResult(
         string Content,
         bool ContentTruncated,
+        bool ErrorTruncated,
         bool ArchiveReferenceIncluded);
 
     public static class CopilotFrameworkToolResultFormatter
@@ -353,8 +354,37 @@ namespace ColorVision.Copilot
             return new CopilotFrameworkToolResultFormatResult(
                 content,
                 contentTruncated,
+                IsErrorTruncated(outcome, content),
                 archive != null
                     && content.Contains(archive.Id, StringComparison.Ordinal));
+        }
+
+        private static bool IsErrorTruncated(
+            CopilotToolExecutionOutcome outcome,
+            string serialized)
+        {
+            var fullError = SanitizeInline(
+                outcome.EffectiveModelResult.ErrorMessage,
+                int.MaxValue);
+            if (fullError.Length == 0)
+                return false;
+            if (serialized.Length == 0)
+                return true;
+
+            try
+            {
+                using var document = JsonDocument.Parse(serialized);
+                return !document.RootElement.TryGetProperty("error", out var error)
+                    || error.ValueKind != JsonValueKind.String
+                    || !string.Equals(
+                        error.GetString(),
+                        fullError,
+                        StringComparison.Ordinal);
+            }
+            catch (JsonException)
+            {
+                return true;
+            }
         }
 
         private static FormatterBudget ResolveBudget(int? configuredTokenLimit)
