@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "Id": "Spectrum",
   "name": "Spectrum",
-  "version": "2.3.3.11",
+  "version": "2.3.3.12",
   "description": "Spectrum",
   "dllpath": "Spectrum.dll",
   "requires": "1.4.12.45"
