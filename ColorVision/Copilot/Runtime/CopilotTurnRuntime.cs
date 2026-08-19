@@ -475,6 +475,7 @@ namespace ColorVision.Copilot
             {
                 if (reviewAnswer.HasValue)
                     reviewAnswer = reviewAnswer.Value.Observe(agentEvent);
+                var planChanged = turnPlan.Observe(agentEvent, out var planSnapshot);
                 eventSink.OnAgentEvent(agentEvent);
                 if (reviewTarget != null
                     && CopilotTurnCodeReviewSnapshotCapture.TryCaptureUpdate(
@@ -494,7 +495,7 @@ namespace ColorVision.Copilot
                 }
                 if (workspaceDiff.Observe(agentEvent, out var snapshot))
                     eventSink.OnWorkspaceDiffUpdated(snapshot);
-                if (turnPlan.Observe(agentEvent, out var planSnapshot))
+                if (planChanged)
                     eventSink.OnPlanUpdated(planSnapshot);
             }
 

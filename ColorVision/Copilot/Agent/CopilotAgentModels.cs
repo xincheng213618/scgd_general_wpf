@@ -44,7 +44,12 @@ namespace ColorVision.Copilot
 
         public CopilotAgentBudgetSnapshot Budget { get; init; } = new();
 
-        public CopilotAgentTaskLedgerSnapshot TaskLedger { get; init; } = new();
+        public CopilotAgentTaskLedgerSnapshot TaskLedger
+        {
+            get => _taskLedger;
+            init => _taskLedger = CopilotAgentTaskLedgerSnapshot.CreateSnapshot(value, normalize: false);
+        }
+        private CopilotAgentTaskLedgerSnapshot _taskLedger = new();
 
         public CopilotAgentStopReason StopReason { get; init; }
 
@@ -87,6 +92,42 @@ namespace ColorVision.Copilot
 
         public int RemainingCount => TotalCount - CompletedCount;
 
+        internal static CopilotAgentTaskLedgerSnapshot CreateSnapshot(
+            CopilotAgentTaskLedgerSnapshot? source,
+            bool normalize)
+        {
+            try
+            {
+                var snapshot = new CopilotAgentTaskLedgerSnapshot
+                {
+                    Mode = source?.Mode ?? string.Empty,
+                    ResumedFromCheckpoint = source?.ResumedFromCheckpoint == true,
+                    Items = Array.AsReadOnly((source?.Items ?? Array.Empty<CopilotAgentTaskItem>())
+                        .Take(MaxItems + 1)
+                        .Select(item => item == null
+                            ? null!
+                            : new CopilotAgentTaskItem
+                            {
+                                Id = item.Id,
+                                Title = item.Title,
+                                Description = item.Description,
+                                IsComplete = item.IsComplete,
+                            })
+                        .ToArray()),
+                };
+                if (normalize)
+                    snapshot.EnsureValid();
+                return snapshot;
+            }
+            catch
+            {
+                var snapshot = new CopilotAgentTaskLedgerSnapshot();
+                if (normalize)
+                    snapshot.EnsureValid();
+                return snapshot;
+            }
+        }
+
         public bool EnsureValid()
         {
             var originalMode = Mode;
@@ -117,7 +158,7 @@ namespace ColorVision.Copilot
                 normalizedItems.Add(item);
             }
 
-            Items = normalizedItems;
+            Items = Array.AsReadOnly(normalizedItems.ToArray());
             return changed || originalItems?.Count != Items.Count;
         }
 

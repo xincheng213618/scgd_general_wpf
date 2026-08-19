@@ -378,8 +378,9 @@ namespace ColorVision.Copilot
             get => _agentTaskLedger;
             set
             {
-                var normalized = value ?? new CopilotAgentTaskLedgerSnapshot();
-                normalized.EnsureValid();
+                var normalized = CopilotAgentTaskLedgerSnapshot.CreateSnapshot(
+                    value,
+                    normalize: true);
                 if (SetProperty(ref _agentTaskLedger, normalized))
                     OnAgentTaskStateChanged();
             }

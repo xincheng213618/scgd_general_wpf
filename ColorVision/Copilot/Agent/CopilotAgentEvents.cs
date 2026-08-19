@@ -264,7 +264,9 @@ namespace ColorVision.Copilot
             {
                 Type = CopilotAgentEventType.CheckpointUpdated,
                 SessionCheckpoint = sessionCheckpoint,
-                TaskLedger = taskLedger,
+                TaskLedger = CopilotAgentTaskLedgerSnapshot.CreateSnapshot(
+                    taskLedger,
+                    normalize: false),
             };
         }
 
