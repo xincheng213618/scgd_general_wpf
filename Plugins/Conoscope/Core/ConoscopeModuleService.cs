@@ -8,16 +8,6 @@ namespace Conoscope.Core
 {
     internal static class ConoscopeModuleService
     {
-        public static void RefreshAllConoscopeConfiguration()
-        {
-            ConoscopeWindow.Instance?.RefreshConoscopeConfiguration();
-        }
-
-        public static void RefreshAllReferenceState()
-        {
-            ConoscopeWindow.Instance?.RefreshAllReferenceState();
-        }
-
         public static void OpenModule(string? filePath = null)
         {
             ConoscopeWindow window = GetOrCreateWindow();

@@ -29,7 +29,21 @@ namespace Conoscope.ApplicationServices.Preprocess
 
             if (options.DustRemovalEnabled)
             {
-                DustRemovalSummary summary = DustRemovalProcessor.Apply(ref xSource, ref ySource, ref zSource, options.DustRemoval);
+                DustRemovalSummary summary;
+                try
+                {
+                    summary = DustRemovalProcessor.Apply(ref xSource, ref ySource, ref zSource, options.DustRemoval);
+                }
+                finally
+                {
+                    // Dust repair replaces and disposes one channel at a time. Publish
+                    // every completed replacement even when a later channel throws so
+                    // the caller never retains a disposed Mat or leaks its replacement.
+                    xMat = xSource;
+                    yMat = ySource;
+                    zMat = zSource;
+                }
+
                 if (!summary.HasCandidates)
                 {
                     log?.Info($"灰尘滤除未检测到候选区域: mode={options.DustRemoval.Mode}, threshold={options.DustRemoval.ThresholdPercent:F1}%");
@@ -44,8 +58,11 @@ namespace Conoscope.ApplicationServices.Preprocess
             if (options.Filter.FilterType != ImageFilterType.None)
             {
                 xSource = ReplaceWithFilteredMat(xSource, options.Filter);
+                xMat = xSource;
                 ySource = ReplaceWithFilteredMat(ySource, options.Filter);
+                yMat = ySource;
                 zSource = ReplaceWithFilteredMat(zSource, options.Filter);
+                zMat = zSource;
                 log?.Info($"滤波应用到XYZ通道完成: {options.Filter.FilterType}, kernelSize={options.Filter.KernelSize}");
             }
 
@@ -64,7 +81,16 @@ namespace Conoscope.ApplicationServices.Preprocess
             Mat source = channelMat;
             if (options.DustRemovalEnabled)
             {
-                DustRemovalSummary summary = DustRemovalProcessor.ApplyToSingleChannel(ref source, source, options.DustRemoval);
+                DustRemovalSummary summary;
+                try
+                {
+                    summary = DustRemovalProcessor.ApplyToSingleChannel(ref source, source, options.DustRemoval);
+                }
+                finally
+                {
+                    channelMat = source;
+                }
+
                 if (!summary.HasCandidates)
                 {
                     log?.Info($"灰尘滤除未检测到候选区域: mode={options.DustRemoval.Mode}, threshold={options.DustRemoval.ThresholdPercent:F1}%");

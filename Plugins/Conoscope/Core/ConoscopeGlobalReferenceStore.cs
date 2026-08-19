@@ -31,6 +31,8 @@ namespace Conoscope.Core
 
         public bool HasColorDifferenceReference => colorDifferenceReferenceUMat != null && colorDifferenceReferenceVMat != null;
 
+        public event EventHandler? Changed;
+
         public bool HasContrastReference(ContrastReferenceKind referenceKind)
         {
             return GetContrastReferenceYMat(referenceKind) != null;
@@ -62,6 +64,7 @@ namespace Conoscope.Core
             config.ColorDifferenceReferenceVMatPath = vPath;
             config.ColorDifferenceReferenceDisplayName = fileName ?? string.Empty;
             SaveConfig();
+            Changed?.Invoke(this, EventArgs.Empty);
         }
 
         public void ClearColorDifferenceReference()
@@ -79,6 +82,7 @@ namespace Conoscope.Core
             config.ColorDifferenceReferenceVMatPath = string.Empty;
             config.ColorDifferenceReferenceDisplayName = string.Empty;
             SaveConfig();
+            Changed?.Invoke(this, EventArgs.Empty);
         }
 
         public void SaveContrastReference(ContrastReferenceKind referenceKind, Mat yMat, string? fileName)
@@ -96,6 +100,7 @@ namespace Conoscope.Core
                 config.ContrastBlackReferenceYMatPath = persistedPath;
                 config.ContrastBlackReferenceDisplayName = fileName ?? string.Empty;
                 SaveConfig();
+                Changed?.Invoke(this, EventArgs.Empty);
                 return;
             }
 
@@ -104,6 +109,7 @@ namespace Conoscope.Core
             config.ContrastWhiteReferenceYMatPath = persistedPath;
             config.ContrastWhiteReferenceDisplayName = fileName ?? string.Empty;
             SaveConfig();
+            Changed?.Invoke(this, EventArgs.Empty);
         }
 
         public void ClearContrastReference(ContrastReferenceKind referenceKind)
@@ -117,6 +123,7 @@ namespace Conoscope.Core
                 config.ContrastBlackReferenceYMatPath = string.Empty;
                 config.ContrastBlackReferenceDisplayName = string.Empty;
                 SaveConfig();
+                Changed?.Invoke(this, EventArgs.Empty);
                 return;
             }
 
@@ -127,6 +134,7 @@ namespace Conoscope.Core
             config.ContrastWhiteReferenceYMatPath = string.Empty;
             config.ContrastWhiteReferenceDisplayName = string.Empty;
             SaveConfig();
+            Changed?.Invoke(this, EventArgs.Empty);
         }
 
         public void Dispose()

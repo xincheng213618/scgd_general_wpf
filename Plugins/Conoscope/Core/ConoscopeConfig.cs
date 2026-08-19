@@ -255,6 +255,18 @@ namespace Conoscope.Core
             EnsureProfile(ConoscopeModelType.VA80);
         }
 
+        internal void NormalizeAfterLoad()
+        {
+            const int legacyDustRemovalFilterValue = 6;
+            if ((int)FilterType == legacyDustRemovalFilterValue)
+            {
+                DustRemovalEnabled = true;
+                FilterType = ImageFilterType.None;
+            }
+
+            DustMaxArea = Math.Max(DustMinArea, DustMaxArea);
+        }
+
         private static int NormalizeOdd(int value, int min, int max)
         {
             value = Math.Max(min, Math.Min(value, max));

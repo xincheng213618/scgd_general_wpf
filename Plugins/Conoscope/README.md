@@ -2,11 +2,12 @@
 
 版本：1.4.7.5
 
-Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、关注点采样和综合色域/对比度计算的插件。当前代码按五个容易定位的职责组织：
+Conoscope 是 ColorVision 中用于锥光镜图像观察、参考坐标分析、关注点采样和综合色域/对比度计算的插件。当前代码按六个容易定位的职责组织：
 
 - 窗口 Shell 管理标签页、Ribbon、采集和分析槽位。
-- 单图 Viewer 管理该文档唯一的 `ConoscopeViewState`、参考图形和关注点。
-- Imaging 负责 CVCIE 按通道加载、Mat 预处理、渲染与导出。
+- 单图 Viewer 通过唯一的 `ConoscopeViewState` 投影参考图形、关注点和显示状态。
+- `ConoscopeDocument` 独占 CVCIE 按通道加载、取消以及 X/Y/Z Mat 生命周期。
+- Imaging 负责 Mat 预处理、衍生通道、渲染与导出。
 - Analysis 负责关注点快照、色域/对比度计算和结果窗口。
 - Settings / Integration 负责全局默认值、型号、参考图、宿主和相机边界。
 
@@ -164,13 +165,12 @@ README 和 CHANGELOG 作为插件元数据保留，供源码维护和插件信�
 - 架构文档：Docs/ARCHITECTURE.md
 - 主窗口：ConoscopeWindow.xaml / ConoscopeWindow.xaml.cs
 - Ribbon 布局：ConoscopeWindow.xaml
-- 当前视图快捷控制：ConoscopeWindow.HomeQuickControls.cs
-- 分析 Ribbon：ConoscopeWindow.AnalysisRibbon.cs
+- 单文档视图：ConoscopeView.xaml / ConoscopeView.xaml.cs
+- 文档数据所有者：ConoscopeDocument.cs
+- 轻量图像宿主：ConoscopeImageHost.xaml / ConoscopeImageHost.xaml.cs
 - 分析会话：Application/Analysis/ConoscopeAnalysisSession.cs
+- POI 模板数据库边界：Application/FocusPoiTemplateRepository.cs
 - Ribbon 资源：Presentation/Ribbon/ConoscopeRibbonResources.xaml
-- 当前视图桥接：ConoscopeView.WindowQuickControls.cs
-- 关注点逻辑：ConoscopeView.FocusPoint.cs
-- 参考图形逻辑：ConoscopeView.ReferenceAxis.cs
 - 批量计算模型：Analysis/MeasurementCaptureModels.cs
 - 色域结果窗：Analysis/ColorGamutResultWindow.xaml
 - 对比度结果窗：Analysis/ContrastResultWindow.xaml

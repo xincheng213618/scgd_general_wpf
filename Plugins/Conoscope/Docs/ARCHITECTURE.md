@@ -1,151 +1,120 @@
-# Conoscope 代码结构
+# Conoscope 当前架构
 
-这份文档只描述当前代码。目标是让第一次接触插件的人能先找到入口，再沿一条明确的数据流阅读代码。
+这份文档描述当前代码，不为目录或 `partial` 数量辩护。判断一个类型是否应该存在，只看它是否拥有独立状态、生命周期或可测试规则。
 
-## 先记住五块
+## 先看三个组合点
 
-Conoscope 不再追求七层或更多“教科书分层”。当前按职责分成五块：
-
-| 模块 | 主要文件 | 负责什么 |
+| 组合点 | 文件 | 责任 |
 |---|---|---|
-| 窗口 Shell | `ConoscopeWindow*.cs` | 标签页、Ribbon、采集入口、活动视图、分析槽位 |
-| 单图 Viewer | `ConoscopeView*.cs`、`ConoscopeImageHost*` | 一张图的状态、显示、坐标轴、关注点和参考曲线 |
-| Imaging | `ConoscopeView.Data.cs`、`Core/ConoscopeColorimetry.cs`、`Core/ConoscopePseudoColorRenderer.cs`、`Processing/Preprocess/`、`Core/ConoscopeExportService.cs` | CVCIE 加载、Mat 处理、渲染和导出 |
-| Analysis | `Analysis/`、`Application/Analysis/` | 关注点测量、色域/对比度计算、结果窗口 |
-| Settings / Integration | `Core/ConoscopeConfig.cs`、`Core/ConoscopeModelProfile.cs`、`Core/ConoscopeGlobalReferenceStore.cs`、`Core/ConoscopeModuleService.cs`、`MVS/` | 配置、型号、全局参考、宿主入口和相机边界 |
+| 窗口 Shell | `ConoscopeWindow.xaml(.cs)` | 文档标签、Ribbon、采集入口、活动文档切换、分析结果窗口 |
+| 单文档 Viewer | `ConoscopeView.xaml(.cs)` | 把文档状态投影到 WPF，编排坐标轴、参考曲线、关注点、显示和导出 |
+| 轻量图像宿主 | `ConoscopeImageHost.xaml(.cs)` | Zoombox、DrawCanvas、图像替换和关注点编辑器的生命周期 |
 
-`Application/Capture/ConoscopeCaptureWorkflow.cs` 和
-`Application/Preprocess/ConoscopePreprocessPipeline.cs` 是值得保留的工作流边界；不要为了“层数整齐”再给每个简单调用增加接口、工厂或转发类。
+`ConoscopeView` 和 `ConoscopeWindow` 不再按方法类别机械拆成十几个共享同一可变对象的 partial 文件。当前保留单一 code-behind，是为了让调用环和剩余职责能够被直接看见。以后只有出现真正独立的所有者时才抽类型，不能再以“文件太长”为理由搬运方法。
 
-## 打开一张图时发生什么
+## 真正的边界
+
+### ConoscopeDocument：数据与所有权
+
+`ConoscopeDocument.cs` 独占一张 CVCIE 的 X/Y/Z `Mat`、文件名、曝光摘要、取消源和加载版本。View 只能读取 Mat，不能替换或释放它们。
 
 ```text
-菜单 / 宿主 ImageView
-        ↓
-ConoscopeModuleService.OpenModule
-        ↓
-ConoscopeWindow.AddConoscopeView
-        ↓
 ConoscopeView.OpenConoscope
         ↓
-后台读取 Y → 预处理 Y → 首屏显示
+ConoscopeDocument.OpenAsync
         ↓
-后台顺序读取 X、Z → 预处理 → 开放衍生通道/分析/导出
+直接读取 Y ──→ InitialDisplayReady ──→ 首屏
+        ↓
+后台顺序读取 X、Z ──→ DeferredChannelsReady ──→ 衍生通道/分析
 ```
 
-关键实现：
+必须保留的不变量：
 
-- `CVFileUtil.ReadCIEFileChannel` 只读取 CVCIE 内嵌的指定通道，不跟随头部的 `SrcFileName`。
-- 首屏只需要 Y；X/Z 在后台补齐，Y 不会再读取或处理第二次。
-- 同一 View 的加载是 single-flight/latest-wins：新请求取消旧请求，只有当前版本能回写。
-- `ConoscopeView.Dispose()` 先取消后台加载，再释放 Mat。
-- 不要把这里替换成通用 `OpenLocalCVFile` / `ToMat`。通用路径可能打开关联 TIFF，并会改变 32F 分析数据的语义。
+- `CVFileUtil.ReadCIEFileChannel` 只读指定的内嵌通道；不能退回通用 `OpenLocalCVFile`。
+- Y-first、X/Z 后台补齐；无联合灰尘处理时 Y 不重复读取或处理。
+- 同一文档 single-flight/latest-wins；取消的请求不能提交 Mat。
+- Mat 的创建方负责释放，只有成功提交后所有权才转移给 Document。
+- 联合预处理即使在调度前取消，也必须进入负责释放 Y 的委托。
 
-## 一张图只有一个状态源
+### ConoscopeViewState：持久语义状态
 
-每个 `ConoscopeView` 有且只有一个 `ConoscopeViewState State`。它保存：
+每个 View 只有一个 `ConoscopeViewState`。它保存显示通道、伪彩、预处理、色差/对比度选择、坐标轴参数以及当前能力状态。活动文档 Ribbon 的普通值通过 Binding 读取 State；需要校验或产生渲染副作用的写操作仍调用 View 的语义方法。
 
-- 当前显示/导出通道；
-- 伪彩与范围限制；
-- 预处理参数；
-- 色差和对比度选择；
-- 当前坐标轴参数。
+不要再引入：
 
-Ribbon 读取活动 View 的 `State`，写操作通过 View 的校验方法完成。不要重新引入隐藏的
-ComboBox/TextBox 作为状态仓库，也不要在窗口和视图之间复制第二份快照。
+- `RenderingConfig` / `PreprocessConfig` 等指向同一对象的别名；
+- Window 与 View 各自维护一份快照；
+- 以 ComboBox、ToggleButton 或 TextBox 的当前值作为业务状态。
 
-全局 `ConoscopeConfig` 只提供新 View 的默认值和需要持久化的设置。已经打开的多个 View
-各自持有本地状态，因此切换标签页不会互相覆盖。
+鼠标捕获、缩放、DrawCanvas 和 ScottPlot 属于 WPF 视图机制，保留在 code-behind/Host，不为追求形式上的 MVVM 包装成命令或 DialogService。
 
-## 显示与测量要分开理解
+### Application：可测试工作流和外部边界
 
-显示路径：
+- `Application/Capture/`：采集 Session/Workflow。
+- `Application/Analysis/`：测量快照、色域和对比度会话。
+- `Application/Preprocess/`：预处理选项和 Mat 替换规则。
+- `Application/FocusPoiTemplateRepository.cs`：POI 模板数据库事务；View 不创建 SqlSugar 连接。
+
+Application 代码不得显示 MessageBox，也不拥有 WPF 控件。
+
+## 显示通道
+
+Y 只需要 Y；Contrast 只需要 Y 和同尺寸的对侧参考 Y；X/Z/CIE/色差需要完整 XYZ。所有入口（显示、参考曲线、3D、当前导出和高级导出）使用同一套 readiness 规则。
 
 ```text
-XYZ Mat
-  → 选择或计算显示通道
-  → 获取显示范围
-  → 8 位灰度 / 伪彩
-  → 冻结的 WriteableBitmap
-  → ConoscopeImageHost
+State.DisplayChannel
+        ↓ 先验证能力和参考数据
+借用 X/Y/Z 或创建衍生 Mat
+        ↓
+有界范围计算 / 灰度或伪彩
+        ↓
+冻结 WriteableBitmap
+        ↓
+ImageHost.ReplaceDisplayedImage
 ```
 
-- X/Y/Z 直接借用源 Mat，渲染器不再为它们克隆整张图。
-- 对比度的 99.5% 显示上限使用有界采样，避免把三千万个 float 放入 `List` 后全排序。
-- 色差矩阵共享分母并减少全尺寸临时 Mat。
-- 这些优化只影响显示过程或中间存储，不应改变导出和测量值。
+衍生通道创建失败不能静默回退到 Y 后仍标记为 Δuv/Contrast。ImageCenter 色差参考在文档数据改变时失效，并且每个数据版本只计算一次，曲线或导出逐点读取不会重复扫描 51×51 ROI。
 
-测量路径：
+## ImageHost 为什么不复用完整 ImageView
 
-```text
-图像坐标 / 关注点圆
-  → FocusPointMeasurementService
-  → ImageMeasurement / MeasurementCapture
-  → ConoscopeAnalysis
-  → ConoscopeAnalysisSession 的五个槽位
-  → 结果窗口 / CSV
-```
+完整 `ColorVision.ImageEditor.ImageView` 会初始化 EditorContext、工具工厂、反射工具、图层、设置和拖放等能力。Conoscope 只需要 Zoombox、DrawCanvas 和关注点 overlay；换回完整 ImageView 会恢复不需要的启动成本并改变 Clear/SetImageSource 语义。
 
-方位角统一使用 0–360°。坐标的正变换和反变换都应放在
-`FocusPointMeasurementService`，不要在编辑器里再写一份角度公式。
+`ConoscopeImageHost` 因此保留为轻量 viewport。内部 `FocusCircleEditor` 独占圆的 visual、选择、绘制/擦除、菜单、边界和 debounce。Host 对 View 暴露 `ResetDocument`、`ReplaceDisplayedImage`、缩放、指针位置和单一 `FocusCircleInteractionMode`，不再模拟旧 `ImageShow/Zoombox1` API。
 
-## 参考曲线
+- 新文档使用 `ResetDocument`，清除旧文档关注点。
+- 通道/伪彩刷新使用 `ReplaceDisplayedImage`，保留当前文档关注点。
+- `Dispose` 幂等，并释放 DrawCanvas、事件和命令绑定。
 
-`PolarAngleLine`（方位线）和 `ConcentricCircleLine`（极角圆）共享
-`ReferenceCurve` 的值与采样集合。`ConoscopeView.ReferencePlot.cs` 使用同一绘图方法，
-只通过 `IsClosed` 区分是否闭合。
+## 配置与全局参考
 
-`RgbSample` 是只读值类型。采样时预分配集合，避免拖动参考线时为每个像素创建对象。
+- `ConoscopeConfig` 是唯一可序列化全局配置，并在加载后集中迁移旧值。
+- 设置窗口编辑 working copy；只有“应用并保存”才提交。
+- 预处理设置页直接 TwoWay 绑定配置，不再手写 13 份控件同步。
+- Window 合并同一 Dispatcher 周期内的配置 PropertyChanged，避免一次 Apply 触发十几轮刷新。
+- `ConoscopeGlobalReferenceStore` 独占参考 Mat 和持久化，并通过 `Changed` 通知窗口；View 不再反向调用静态 Window 单例刷新 UI。
 
-## 配置边界
+## 关注点
 
-- `ConoscopeConfig` 是唯一可序列化的全局配置；直接访问其属性，不再包
-  `Rendering/Preprocess/Export/...` 转发对象。
-- `ConoscopeModelProfile` 保存型号差异。
-- `ConoscopeGlobalReferenceStore` 独占参考 Mat 的生命周期和持久化。
-- 设置窗口先编辑临时副本，只有“应用并保存”才写回全局配置。
-- `ConoscopeModuleService` 只负责从宿主打开/找到窗口；活动 View 和打开文档由
-  `ConoscopeWindow` 自己管理。
-
-## 去哪里改
-
-| 想改的功能 | 从这里开始 |
-|---|---|
-| 文件打开、取消、首屏速度 | `ConoscopeView.Data.cs` |
-| 通道/伪彩显示 | `ConoscopeView.Display.cs`、`Core/ConoscopePseudoColorRenderer.cs` |
-| 色度、色差、对比度公式 | `Core/ConoscopeColorimetry.cs` |
-| 滤波和灰尘修复 | `Processing/Preprocess/` |
-| 坐标轴与参考曲线 | `ConoscopeView.ReferenceAxis.cs`、`ConoscopeView.ReferencePlot.cs` |
-| 关注点绘制/测量 | `ConoscopeImageHost.xaml.cs`、`ConoscopeView.FocusPoint.cs`、`FocusPointMeasurementService.cs` |
-| 色域/对比度分析 | `MeasurementCaptureModels.cs`、`ConoscopeAnalysisSession.cs` |
-| CSV 导出 | `ConoscopeView.Export.cs`、`Core/ConoscopeExportService.cs` |
-| 全局设置/型号 | `Core/ConoscopeConfig.cs`、`Core/ConoscopeModelProfile.cs` |
-| Ribbon 或标签页 | 对应的 `ConoscopeWindow.*.cs` |
+- `FocusCircleInteractionMode` 保证 Browse/Select/Draw/Erase 互斥。
+- Host 管低层 visual 与鼠标交互；View 管测量编排和反馈。
+- `FocusPointMeasurementService` 管 ROI、像素/极坐标换算。
+- `FocusPointPolarEditModel` 是草稿；只有提交才写回 visual，取消不会修改圆。
+- `FocusPoiTemplateRepository` 管数据库读取和事务，View 只决定如何显示错误。
 
 ## 维护规则
 
-1. 先找现有状态源和生命周期所有者，再决定是否需要新类型。
-2. 一个方法只被一处调用、且没有独立语义时，优先就近写清楚，不新增转发层。
-3. Mat 的创建方必须明确谁负责 `Dispose`；异步结果在提交给 View 后才转移所有权。
-4. 显示近似可以有界采样，但测量、分析和导出必须使用原始数值。
-5. 可能改变 XYZ 的算法或默认参数必须用真实金样回归，不能与纯性能重构混在一起。
-6. 新增 UI 设置优先使用仓库的 PropertyGrid 元数据或现有标准控件，并补中/英/繁资源。
+1. 先确认状态和资源由谁拥有，再决定是否抽类型。
+2. 禁止新增 `ConoscopeView.*.cs` / `ConoscopeWindow.*.cs` 式机械 partial；抽出的类型必须能说清独立输入、输出和生命周期。
+3. 禁止在 Core/Application 中通过 `ConoscopeWindow.Instance` 或 MessageBox 反向驱动 UI。
+4. 不为一个调用点新增 interface/factory/forwarding service。
+5. 大 Mat 不为“代码整洁”而 clone；任何改动都要审查峰值内存和异常路径 Dispose。
+6. 显示可以使用有界近似，测量、分析和导出必须读取原始数值。
 
 ## 验证
-
-在仓库根目录执行：
 
 ```powershell
 dotnet build .\Plugins\Conoscope\Conoscope.csproj -p:Platform=x64
 dotnet test .\Test\Conoscope.Tests\Conoscope.Tests.csproj -p:Platform=x64
 ```
 
-`Test/Conoscope.Tests` 当前覆盖：
-
-- CVCIE 指定通道读取和格式元数据；
-- 色差/对比度矩阵的数值边界；
-- 0–360° 方位角与关注点 ROI；
-- 色域/对比度分析槽位和关注点对齐；
-- 插件版本和 Application 层 UI 依赖约束。
-
-大文件性能回归使用真实 CVCIE 样本单独执行，至少记录总耗时、峰值工作集和通道校验值。
+真实大图回归可设置 `CONOSCOPE_REAL_SAMPLE` 后运行 `ReadsConfiguredRealWorldSampleOneChannelAtATime`，记录三个通道的尺寸、payload、耗时、采样 hash 和峰值工作集。

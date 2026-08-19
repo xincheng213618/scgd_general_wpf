@@ -144,7 +144,7 @@ namespace Conoscope.Core
         }
     }
 
-    public class ConoscopeCoordinateAxisVisual : DrawingVisualBase, IDrawingVisual
+    public class ConoscopeCoordinateAxisVisual : DrawingVisualBase, IDrawingVisual, IDisposable
     {
         private const double HitTolerance = 14;
         private static readonly Vector[] TextOutlineDirections =
@@ -166,7 +166,18 @@ namespace Conoscope.Core
         {
             Attribute = param;
             Attribute.Pen = new Pen(Attribute.AxisBrush, Attribute.LineWidth);
-            Attribute.PropertyChanged += (s, e) => Render();
+            Attribute.PropertyChanged += Attribute_PropertyChanged;
+        }
+
+        private void Attribute_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            Render();
+        }
+
+        public void Dispose()
+        {
+            Attribute.PropertyChanged -= Attribute_PropertyChanged;
+            GC.SuppressFinalize(this);
         }
 
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
@@ -471,6 +482,8 @@ namespace Conoscope.Core
             {
                 drawCanvas.RemoveVisual(Axis);
             }
+
+            Axis.Dispose();
         }
 
         private void DrawCanvas_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)

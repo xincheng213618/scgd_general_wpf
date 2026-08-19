@@ -153,7 +153,7 @@ namespace Conoscope.MVS
         public MVSViewWindowConfig Config { get; set; }
         public RelayCommand EditMVSViewConfigCommand { get; set; }
         public bool IsOpen { get; set; }
-        public Core.ConoscopeModelProfile CurrentModelProfile => Core.ConoscopeManager.GetInstance().Config.CurrentModelProfile;
+        public Core.ConoscopeModelProfile CurrentModelProfile => Core.ConoscopeManager.Instance.Config.CurrentModelProfile;
         public Array PixelTypes { get; } = Enum.GetValues<PixelType>();
 
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
@@ -164,7 +164,7 @@ namespace Conoscope.MVS
             Config = MVSViewWindowConfig.Instance;
             Config.EnsureSelectedGratingDiameter();
             EditMVSViewConfigCommand = new RelayCommand(a => EditMVSViewConfig());
-            Core.ConoscopeManager.GetInstance().Config.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
+            Core.ConoscopeManager.Instance.Config.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
         }
 
         private void ConoscopeConfig_ModelTypeChanged(object? sender, Core.ConoscopeModelType e)

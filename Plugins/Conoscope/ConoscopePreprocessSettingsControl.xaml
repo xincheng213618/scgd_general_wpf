@@ -8,6 +8,53 @@
              xmlns:automation="clr-namespace:System.Windows.Automation;assembly=PresentationCore"
              mc:Ignorable="d"
              Background="Transparent">
+    <UserControl.Resources>
+        <Style x:Key="FilterKernelRowStyle" TargetType="Grid">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding FilterType}" Value="{x:Static core:ImageFilterType.LowPass}">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding FilterType}" Value="{x:Static core:ImageFilterType.MovingAverage}">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding FilterType}" Value="{x:Static core:ImageFilterType.Gaussian}">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding FilterType}" Value="{x:Static core:ImageFilterType.Median}">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="GaussianParameterRowStyle" TargetType="Grid">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding FilterType}" Value="{x:Static core:ImageFilterType.Gaussian}">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="BilateralParameterRowStyle" TargetType="Grid">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding FilterType}" Value="{x:Static core:ImageFilterType.Bilateral}">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="DustParameterRowStyle" TargetType="Grid">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding DustRemovalEnabled}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -21,12 +68,14 @@
                           Content="{x:Static properties:Resources.ChkEnablePreprocess}"
                           Margin="0,0,0,10"
                           ToolTip="{x:Static properties:Resources.TipEnablePreprocess}"
-                          Checked="PreprocessSetting_Changed"
-                          Unchecked="PreprocessSetting_Changed"/>
+                          IsChecked="{Binding ApplyFilterOnOpen, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                 <DockPanel Margin="0,0,0,8">
                     <TextBlock Text="{x:Static properties:Resources.LabelFilterType}" Width="92" VerticalAlignment="Center"/>
-                    <ComboBox x:Name="cbFilterType" Width="170" SelectedValuePath="Tag" SelectionChanged="cbFilterType_SelectionChanged">
+                    <ComboBox x:Name="cbFilterType"
+                              Width="170"
+                              SelectedValuePath="Tag"
+                              SelectedValue="{Binding FilterType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                         <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}" Tag="{x:Static core:ImageFilterType.None}"/>
                         <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}" Tag="{x:Static core:ImageFilterType.LowPass}"/>
                         <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}" Tag="{x:Static core:ImageFilterType.MovingAverage}"/>
@@ -36,7 +85,7 @@
                     </ComboBox>
                 </DockPanel>
 
-                <Grid x:Name="rowFilterKernel" Margin="0,0,0,6">
+                <Grid x:Name="rowFilterKernel" Margin="0,0,0,6" Style="{StaticResource FilterKernelRowStyle}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
@@ -44,11 +93,11 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.KernelSize}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderKernelSize, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderKernelSize" Grid.Column="2" Minimum="1" Maximum="101" Value="7" TickFrequency="2" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                    <Slider x:Name="sliderKernelSize" Grid.Column="2" Minimum="1" Maximum="101" Value="{Binding FilterKernelSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="2" IsSnapToTickEnabled="True"
                             automation:AutomationProperties.Name="{x:Static properties:Resources.KernelSize}"/>
                 </Grid>
 
-                <Grid x:Name="rowFilterSigma" Margin="0,0,0,6">
+                <Grid x:Name="rowFilterSigma" Margin="0,0,0,6" Style="{StaticResource GaussianParameterRowStyle}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
@@ -56,11 +105,11 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.Con_Cfg_GaussianSigma}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigma, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderSigma" Grid.Column="2" Minimum="0.1" Maximum="10" Value="1.0" TickFrequency="0.1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                    <Slider x:Name="sliderSigma" Grid.Column="2" Minimum="0.1" Maximum="10" Value="{Binding FilterSigma, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="0.1" IsSnapToTickEnabled="True"
                             automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Cfg_GaussianSigma}"/>
                 </Grid>
 
-                <Grid x:Name="rowFilterD" Margin="0,0,0,6">
+                <Grid x:Name="rowFilterD" Margin="0,0,0,6" Style="{StaticResource BilateralParameterRowStyle}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
@@ -68,11 +117,11 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.Con_Cfg_BilateralD}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderD, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderD" Grid.Column="2" Minimum="1" Maximum="15" Value="5" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                    <Slider x:Name="sliderD" Grid.Column="2" Minimum="1" Maximum="15" Value="{Binding FilterD, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="1" IsSnapToTickEnabled="True"
                             automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Cfg_BilateralD}"/>
                 </Grid>
 
-                <Grid x:Name="rowFilterSigmaColor" Margin="0,0,0,6">
+                <Grid x:Name="rowFilterSigmaColor" Margin="0,0,0,6" Style="{StaticResource BilateralParameterRowStyle}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
@@ -80,11 +129,11 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.Con_Cfg_BilateralSigmaColor}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaColor, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderSigmaColor" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                    <Slider x:Name="sliderSigmaColor" Grid.Column="2" Minimum="1" Maximum="200" Value="{Binding FilterSigmaColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="1" IsSnapToTickEnabled="True"
                             automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Cfg_BilateralSigmaColor}"/>
                 </Grid>
 
-                <Grid x:Name="rowFilterSigmaSpace" Margin="0,0,0,0">
+                <Grid x:Name="rowFilterSigmaSpace" Margin="0,0,0,0" Style="{StaticResource BilateralParameterRowStyle}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
@@ -92,7 +141,7 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.Con_Cfg_BilateralSigmaSpace}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderSigmaSpace, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderSigmaSpace" Grid.Column="2" Minimum="1" Maximum="200" Value="75" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                    <Slider x:Name="sliderSigmaSpace" Grid.Column="2" Minimum="1" Maximum="200" Value="{Binding FilterSigmaSpace, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="1" IsSnapToTickEnabled="True"
                             automation:AutomationProperties.Name="{x:Static properties:Resources.Con_Cfg_BilateralSigmaSpace}"/>
                 </Grid>
             </StackPanel>
@@ -104,23 +153,27 @@
                 <CheckBox x:Name="chkDustRemovalEnabled"
                           Content="{x:Static properties:Resources.ChkEnableDustRemoval}"
                           Margin="0,0,0,10"
-                          Checked="PreprocessSetting_Changed"
-                          Unchecked="PreprocessSetting_Changed"/>
+                          IsChecked="{Binding DustRemovalEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
-                <Grid x:Name="rowDustMode" Margin="0,0,0,6">
+                <Grid x:Name="rowDustMode" Margin="0,0,0,6" Style="{StaticResource DustParameterRowStyle}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.LabelDustType}" VerticalAlignment="Center"/>
-                    <ComboBox x:Name="cbDustMode" Grid.Column="1" Width="170" HorizontalAlignment="Left" SelectionChanged="PreprocessSetting_Changed">
-                        <ComboBoxItem Content="{x:Static properties:Resources.CbiDarkSpot}" Tag="DarkSpot"/>
-                        <ComboBoxItem Content="{x:Static properties:Resources.CbiBrightSpot}" Tag="BrightSpot"/>
-                        <ComboBoxItem Content="{x:Static properties:Resources.CbiBothSpots}" Tag="Both"/>
+                    <ComboBox x:Name="cbDustMode"
+                              Grid.Column="1"
+                              Width="170"
+                              HorizontalAlignment="Left"
+                              SelectedValuePath="Tag"
+                              SelectedValue="{Binding DustRemovalMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        <ComboBoxItem Content="{x:Static properties:Resources.CbiDarkSpot}" Tag="{x:Static core:DustRemovalMode.DarkSpot}"/>
+                        <ComboBoxItem Content="{x:Static properties:Resources.CbiBrightSpot}" Tag="{x:Static core:DustRemovalMode.BrightSpot}"/>
+                        <ComboBoxItem Content="{x:Static properties:Resources.CbiBothSpots}" Tag="{x:Static core:DustRemovalMode.Both}"/>
                     </ComboBox>
                 </Grid>
 
-                <Grid x:Name="rowDustThreshold" Margin="0,0,0,6">
+                <Grid x:Name="rowDustThreshold" Margin="0,0,0,6" Style="{StaticResource DustParameterRowStyle}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
@@ -128,11 +181,11 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.LabelThresholdPct}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustThreshold, Path=Value, StringFormat=F1}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderDustThreshold" Grid.Column="2" Minimum="1" Maximum="100" Value="12" TickFrequency="0.5" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                    <Slider x:Name="sliderDustThreshold" Grid.Column="2" Minimum="1" Maximum="100" Value="{Binding DustThresholdPercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="0.5" IsSnapToTickEnabled="True"
                             automation:AutomationProperties.Name="{x:Static properties:Resources.LabelThresholdPct}"/>
                 </Grid>
 
-                <Grid x:Name="rowDustMinArea" Margin="0,0,0,6">
+                <Grid x:Name="rowDustMinArea" Margin="0,0,0,6" Style="{StaticResource DustParameterRowStyle}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
@@ -140,11 +193,11 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.LabelMinArea}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustMinArea, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderDustMinArea" Grid.Column="2" Minimum="1" Maximum="200" Value="1" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                    <Slider x:Name="sliderDustMinArea" Grid.Column="2" Minimum="1" Maximum="200" Value="{Binding DustMinArea, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="1" IsSnapToTickEnabled="True"
                             automation:AutomationProperties.Name="{x:Static properties:Resources.LabelMinArea}"/>
                 </Grid>
 
-                <Grid x:Name="rowDustMaxArea" Margin="0,0,0,6">
+                <Grid x:Name="rowDustMaxArea" Margin="0,0,0,6" Style="{StaticResource DustParameterRowStyle}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
@@ -152,11 +205,11 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.LabelMaxArea}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustMaxArea, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderDustMaxArea" Grid.Column="2" Minimum="10" Maximum="5000" Value="500" TickFrequency="10" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                    <Slider x:Name="sliderDustMaxArea" Grid.Column="2" Minimum="{Binding DustMinArea}" Maximum="5000" Value="{Binding DustMaxArea, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="10" IsSnapToTickEnabled="True"
                             automation:AutomationProperties.Name="{x:Static properties:Resources.LabelMaxArea}"/>
                 </Grid>
 
-                <Grid x:Name="rowDustRepairRadius" Margin="0,0,0,0">
+                <Grid x:Name="rowDustRepairRadius" Margin="0,0,0,0" Style="{StaticResource DustParameterRowStyle}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="40"/>
@@ -164,7 +217,7 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{x:Static properties:Resources.LabelRepairRadius}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding ElementName=sliderDustRepairRadius, Path=Value, StringFormat=F0}" TextAlignment="Right" VerticalAlignment="Center"/>
-                    <Slider x:Name="sliderDustRepairRadius" Grid.Column="2" Minimum="1" Maximum="31" Value="3" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="PreprocessSetting_Changed"
+                    <Slider x:Name="sliderDustRepairRadius" Grid.Column="2" Minimum="1" Maximum="31" Value="{Binding DustRepairRadius, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TickFrequency="1" IsSnapToTickEnabled="True"
                             automation:AutomationProperties.Name="{x:Static properties:Resources.LabelRepairRadius}"/>
                 </Grid>
             </StackPanel>
