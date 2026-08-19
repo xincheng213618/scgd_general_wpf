@@ -3,6 +3,8 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Input;
 
@@ -14,6 +16,8 @@ namespace ColorVision.Engine.Services.Devices.PG
     /// </summary>
     public partial class EditPG : Window
     {
+        private const string GecsV24Category = "GECS.V2.4";
+
         public DevicePG Device { get; set; }
 
         public ConfigPG EditConfig { get; set; }
@@ -47,7 +51,11 @@ namespace ColorVision.Engine.Services.Devices.PG
 
             pgCategory.SelectionChanged += (s, e) =>
             {
-                if (pgCategory.SelectedItem is KeyValuePair<string, Dictionary<string, string>> selectedCategory && selectedCategory.Key == "CH431.I2C")
+                if (pgCategory.SelectedItem is not KeyValuePair<string, Dictionary<string, string>> selectedCategory)
+                    return;
+
+                EditConfig.Category = selectedCategory.Key;
+                if (selectedCategory.Key == "CH431.I2C")
                 {
                     EditConfig.Addr = "0";
                     EditConfig.Port = 0x08;
@@ -66,6 +74,8 @@ namespace ColorVision.Engine.Services.Devices.PG
                     TextBlockPGIP.Text = Properties.Resources.IPAddress;
                     TextBlockPGPort.Text = Properties.Resources.Port;
                 }
+
+                RefreshGeneratedPropertyEditor();
             };
 
             pgCategory.ItemsSource = Device.DService.PGCategoryLib;
@@ -86,7 +96,36 @@ namespace ColorVision.Engine.Services.Devices.PG
             }
 
 
-            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig));
+            RefreshGeneratedPropertyEditor();
+        }
+
+        private void RefreshGeneratedPropertyEditor()
+        {
+            GeneratedPropertyEditorHost.Children.Clear();
+            GeneratedPropertyEditorHost.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(
+                EditConfig,
+                metadataProvider: new ConfigPGMetadataProvider(EditConfig)));
+        }
+
+        private sealed class ConfigPGMetadataProvider(ConfigPG config) : IPropertyEditorMetadataProvider
+        {
+            public bool IsPropertyManaged(PropertyInfo propertyInfo) => true;
+
+            public bool IsBrowsable(PropertyInfo propertyInfo) => propertyInfo.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true;
+
+            public Type? GetEditorType(PropertyInfo propertyInfo) => null;
+
+            public string? GetDisplayName(PropertyInfo propertyInfo)
+            {
+                return propertyInfo.Name == nameof(ConfigPG.RegisterAddress)
+                    && string.Equals(config.Category, GecsV24Category, StringComparison.Ordinal)
+                    ? nameof(Properties.Resources.Channel)
+                    : null;
+            }
+
+            public string? GetDescription(PropertyInfo propertyInfo) => null;
+
+            public string? GetCategory(PropertyInfo propertyInfo) => null;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
