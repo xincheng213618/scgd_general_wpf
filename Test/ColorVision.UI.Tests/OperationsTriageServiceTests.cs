@@ -130,6 +130,58 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void UnresponsiveMainUiAddsOneReadOnlyPerformanceFindingWithoutWindowGuess()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, false, false, "Unavailable"),
+                0,
+                performance: Performance("unresponsive"));
+
+            OperationsTriageFinding finding = Assert.Single(report.Findings);
+            Assert.Equal("main-ui-unresponsive", finding.FindingId);
+            Assert.Equal("error", finding.Severity);
+            Assert.Equal("performance", finding.Category);
+            Assert.Contains("固定 1 秒", finding.Summary, StringComparison.Ordinal);
+            Assert.DoesNotContain(report.Findings, item => item.Category == "desktop");
+            AssertReadOnlyDetailAction(
+                report, finding.FindingId, OperationsTriageActionIds.ViewPerformance);
+            Assert.DoesNotContain(report.Findings.SelectMany(item => item.Actions),
+                action => action.RequiresConfirmation || action.RiskLevel != OperationsRiskLevels.ReadOnly);
+        }
+
+        [Fact]
+        public void SlowMainUiAddsStableReadOnlyFindingWithoutCpuOrMemoryInference()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                performance: Performance("slow", latencyMilliseconds: 420, cpuPercent: 98));
+
+            OperationsTriageFinding finding = Assert.Single(report.Findings);
+            Assert.Equal("main-ui-slow", finding.FindingId);
+            Assert.Equal("warning", finding.Severity);
+            Assert.Contains("250 毫秒阈值", finding.Summary, StringComparison.Ordinal);
+            Assert.DoesNotContain("98", finding.Summary, StringComparison.Ordinal);
+            AssertReadOnlyDetailAction(
+                report, finding.FindingId, OperationsTriageActionIds.ViewPerformance);
+        }
+
+        [Fact]
+        public void ResponsiveMainUiDoesNotTurnSingleResourceReadingsIntoMaintenanceAdvice()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = true },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                performance: Performance("responsive", latencyMilliseconds: 12, cpuPercent: 100));
+
+            Assert.Equal("healthy", report.State);
+            Assert.Empty(report.Findings);
+        }
+
+        [Fact]
         public void FailureEvidenceAddsOnlyReadOnlyNavigationRecommendation()
         {
             DateTimeOffset now = DateTimeOffset.UtcNow;
@@ -383,6 +435,22 @@ namespace ColorVision.UI.Tests
                     ObservedAt = DateTimeOffset.UtcNow,
                 },
             ],
+        };
+
+        private static OperationsRuntimePerformanceSnapshot Performance(
+            string state,
+            long? latencyMilliseconds = null,
+            double cpuPercent = 10) => new()
+        {
+            CapturedAt = DateTimeOffset.UtcNow,
+            CpuPercent = cpuPercent,
+            WorkingSetMb = 8192,
+            MainUi = new OperationsUiResponsivenessSnapshot
+            {
+                Available = true,
+                State = state,
+                LatencyMilliseconds = latencyMilliseconds,
+            },
         };
 
         private static void AssertReadOnlyDetailAction(

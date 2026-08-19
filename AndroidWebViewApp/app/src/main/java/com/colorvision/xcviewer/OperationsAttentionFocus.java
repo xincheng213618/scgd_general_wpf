@@ -25,8 +25,8 @@ final class OperationsAttentionFocus {
         String safeSeverity = severity == null ? "" : severity;
         switch (normalized) {
             case OperationsWatchPolicy.ATTENTION_UI_UNRESPONSIVE:
-                return "desktop".equals(safeCategory)
-                        || "failure-evidence".equals(safeCategory);
+                return "performance".equals(safeCategory)
+                        && "error".equals(safeSeverity);
             case OperationsWatchPolicy.ATTENTION_CRITICAL:
                 return "critical".equals(safeSeverity);
             case OperationsWatchPolicy.ATTENTION_MESSAGE_CHANNEL:

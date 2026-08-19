@@ -179,9 +179,14 @@ namespace ColorVision.UI.Desktop.Operations
             {
                 int pendingJobCount = _workStore.GetJobsForDevice(authentication.Device.DeviceId).Count(item => item.Status is
                     "awaiting_mobile_approval" or "awaiting_local_cosign" or "approved_local" or "approved_mobile" or "executing");
+                OperationsRuntimePerformanceSnapshot? performance = CaptureRuntimePerformance();
+                OperationsDesktopState desktop = performance?.MainUi is { Available: true, State: "unresponsive" }
+                    ? new OperationsDesktopState(true, false, false, "Unavailable")
+                    : OperationsDesktopActionService.CaptureState();
                 OperationsTriageReport report = OperationsTriageService.Build(
-                    _alerts.GetDigest(), OperationsDesktopActionService.CaptureState(), pendingJobCount,
-                    CaptureServiceHealth(), CaptureDeviceHealth(), CaptureMessageChannelHealth(), CaptureFailureEvidence());
+                    _alerts.GetDigest(), desktop, pendingJobCount,
+                    CaptureServiceHealth(), CaptureDeviceHealth(), CaptureMessageChannelHealth(), CaptureFailureEvidence(),
+                    performance);
                 return GetOnly(request, correlationId, authentication.Device, "ops.diagnostics.read", report);
             }
 
@@ -613,6 +618,18 @@ namespace ColorVision.UI.Desktop.Operations
             catch
             {
                 return OperationsFailureEvidenceSnapshot.CreateUnavailable();
+            }
+        }
+
+        private OperationsRuntimePerformanceSnapshot? CaptureRuntimePerformance()
+        {
+            try
+            {
+                return _runtimePerformance.Capture();
+            }
+            catch
+            {
+                return null;
             }
         }
 

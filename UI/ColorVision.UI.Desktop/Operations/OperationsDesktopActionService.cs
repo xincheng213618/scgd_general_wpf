@@ -8,6 +8,7 @@ namespace ColorVision.UI.Desktop.Operations
 
     public static class OperationsDesktopActionService
     {
+        private const int CaptureStateTimeoutMilliseconds = 1000;
         public const string ShowWindowAction = "ops.window.show";
         public const string MinimizeWindowAction = "ops.window.minimize";
 
@@ -29,7 +30,16 @@ namespace ColorVision.UI.Desktop.Operations
 
             try
             {
-                return dispatcher.CheckAccess() ? CaptureStateOnUiThread() : dispatcher.Invoke(CaptureStateOnUiThread);
+                if (dispatcher.CheckAccess())
+                    return CaptureStateOnUiThread();
+
+                var operation = dispatcher.InvokeAsync(
+                    CaptureStateOnUiThread, System.Windows.Threading.DispatcherPriority.Send);
+                if (operation.Task.Wait(CaptureStateTimeoutMilliseconds))
+                    return operation.Task.Result;
+
+                operation.Abort();
+                return new OperationsDesktopState(true, false, false, "Unavailable");
             }
             catch
             {

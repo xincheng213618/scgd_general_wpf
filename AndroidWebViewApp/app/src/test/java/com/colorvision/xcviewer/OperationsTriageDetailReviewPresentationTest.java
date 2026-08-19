@@ -147,6 +147,17 @@ public class OperationsTriageDetailReviewPresentationTest {
                 OperationsTriageDetailReviewPresentation.surfaceFor(failure));
     }
 
+    @Test
+    public void performanceFindingUsesResponseEvidenceReviewSurface() throws Exception {
+        OperationsTriagePresentation.Finding performance = OperationsTriagePresentation.from(
+                new JSONObject("{\"findings\":[{\"findingId\":\"main-ui-unresponsive\","
+                        + "\"category\":\"performance\"}]}"), value -> value)
+                .findings.get(0);
+
+        assertEquals(OperationsTriageDetailReviewPresentation.SURFACE_PERFORMANCE,
+                OperationsTriageDetailReviewPresentation.surfaceFor(performance));
+    }
+
     private static OperationsTriagePresentation.Finding finding(
             boolean acknowledged,
             String summary) throws Exception {

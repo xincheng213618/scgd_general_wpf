@@ -30,12 +30,20 @@ public class OperationsAttentionFocusTest {
     public void directFindingsMatchTheBoundedAttentionCategory() {
         assertTrue(OperationsAttentionFocus.matchesFinding(
                 OperationsWatchPolicy.ATTENTION_UI_UNRESPONSIVE,
-                "desktop",
+                "performance",
                 "error"));
-        assertTrue(OperationsAttentionFocus.matchesFinding(
+        assertFalse(OperationsAttentionFocus.matchesFinding(
                 OperationsWatchPolicy.ATTENTION_UI_UNRESPONSIVE,
                 "failure-evidence",
                 "error"));
+        assertFalse(OperationsAttentionFocus.matchesFinding(
+                OperationsWatchPolicy.ATTENTION_UI_UNRESPONSIVE,
+                "desktop",
+                "error"));
+        assertFalse(OperationsAttentionFocus.matchesFinding(
+                OperationsWatchPolicy.ATTENTION_UI_UNRESPONSIVE,
+                "performance",
+                "warning"));
         assertTrue(OperationsAttentionFocus.matchesFinding(
                 OperationsWatchPolicy.ATTENTION_CRITICAL,
                 "diagnostics",

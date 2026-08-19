@@ -192,6 +192,7 @@ final class OperationsTriagePresentation {
             case "triage.messaging.view":
             case "triage.messaging.reconnect.request":
             case "triage.failures.view":
+            case "triage.performance.view":
                 return true;
             default:
                 return false;
@@ -330,6 +331,7 @@ final class OperationsTriagePresentation {
             case "desktop": return "主窗口";
             case "approvals": return "作业审批";
             case "failure-evidence": return "崩溃与卡死";
+            case "performance": return "主界面响应";
             default: return "运行状态";
         }
     }
@@ -434,7 +436,8 @@ final class OperationsTriagePresentation {
             boolean devices = false;
             boolean messaging = false;
             for (Finding finding : findings) {
-                if ("desktop".equals(finding.category)) {
+                if ("performance".equals(finding.category)
+                        && "error".equals(finding.severity)) {
                     return OperationsWatchHistory.attentionState(
                             OperationsWatchPolicy.ATTENTION_UI_UNRESPONSIVE);
                 }

@@ -224,6 +224,29 @@ public class OperationsTriagePresentationTest {
     }
 
     @Test
+    public void performanceFindingOpensReadOnlyDetailsAndCarriesUiAttentionState()
+            throws Exception {
+        JSONObject report = new JSONObject("{\"state\":\"attention\",\"findings\":[{"
+                + "\"findingId\":\"main-ui-unresponsive\","
+                + "\"severity\":\"error\",\"category\":\"performance\","
+                + "\"title\":\"电脑主界面响应超时\",\"evidenceCount\":1,"
+                + "\"actions\":[{\"actionId\":\"triage.performance.view\","
+                + "\"title\":\"查看进程性能快照\",\"riskLevel\":\"read-only\"}]}]}");
+
+        OperationsTriagePresentation.ViewModel model =
+                OperationsTriagePresentation.from(report, value -> value);
+        OperationsTriagePresentation.Finding finding = model.findings.get(0);
+
+        assertEquals("错误 · 主界面响应 · 1 条证据", finding.evidenceLabel());
+        assertEquals("triage.performance.view", finding.primaryCardAction().actionId);
+        assertTrue(OperationsTriagePresentation.isSupportedAction(
+                finding.primaryCardAction().actionId));
+        assertEquals(OperationsWatchHistory.attentionState(
+                        OperationsWatchPolicy.ATTENTION_UI_UNRESPONSIVE),
+                model.watchState());
+    }
+
+    @Test
     public void serviceEvidenceNavigationStaysPrimaryBeforePrivilegedMaintenance()
             throws Exception {
         JSONObject report = new JSONObject("{\"findings\":[{"

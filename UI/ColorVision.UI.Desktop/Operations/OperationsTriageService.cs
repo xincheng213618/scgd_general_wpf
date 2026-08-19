@@ -11,6 +11,7 @@ namespace ColorVision.UI.Desktop.Operations
         public const string ViewMessageChannelHealth = "triage.messaging.view";
         public const string RequestMessageChannelRecovery = "triage.messaging.reconnect.request";
         public const string ViewFailureEvidence = "triage.failures.view";
+        public const string ViewPerformance = "triage.performance.view";
     }
 
     public sealed class OperationsTriageAction
@@ -78,11 +79,14 @@ namespace ColorVision.UI.Desktop.Operations
             OperationsServiceHealthReport? serviceHealth = null,
             OperationsDeviceHealthSnapshot? deviceHealth = null,
             OperationsMessageChannelHealthSnapshot? messageChannel = null,
-            OperationsFailureEvidenceSnapshot? failureEvidence = null)
+            OperationsFailureEvidenceSnapshot? failureEvidence = null,
+            OperationsRuntimePerformanceSnapshot? performance = null)
         {
             int boundedPendingJobCount = Math.Max(0, pendingJobCount);
             List<OperationsTriageFinding> findings = [];
 
+            if (performance != null)
+                AddPerformanceFinding(performance, findings);
             if (serviceHealth != null)
                 AddServiceHealthFindings(serviceHealth, findings);
             if (messageChannel != null)
@@ -93,7 +97,7 @@ namespace ColorVision.UI.Desktop.Operations
                 AddFailureEvidenceFinding(failureEvidence, findings);
             AddLogFindings(digest, findings);
             AddMessageServiceFinding(digest, serviceHealth, findings);
-            AddDesktopFinding(desktop, findings);
+            AddDesktopFinding(desktop, performance, findings);
             AddPendingJobFinding(boundedPendingJobCount, findings);
 
             string state = digest.CriticalCount > 0
@@ -130,6 +134,33 @@ namespace ColorVision.UI.Desktop.Operations
                 FailureDumpCount = Math.Max(0, failureEvidence?.DumpCount ?? 0),
                 Findings = findings,
             };
+        }
+
+        private static void AddPerformanceFinding(
+            OperationsRuntimePerformanceSnapshot performance,
+            List<OperationsTriageFinding> findings)
+        {
+            if (!performance.MainUi.Available)
+                return;
+
+            string state = performance.MainUi.State.Trim().ToLowerInvariant();
+            if (state is not ("slow" or "unresponsive"))
+                return;
+
+            bool unresponsive = state == "unresponsive";
+            findings.Add(new OperationsTriageFinding
+            {
+                FindingId = unresponsive ? "main-ui-unresponsive" : "main-ui-slow",
+                Severity = unresponsive ? "error" : "warning",
+                Category = "performance",
+                Title = unresponsive ? "电脑主界面响应超时" : "电脑主界面响应偏慢",
+                Summary = unresponsive
+                    ? "固定 1 秒主界面响应探针超时。此结果只说明采样时 UI 线程未及时响应；不会根据单次 CPU 或内存读数自动建议维护。"
+                    : "固定主界面响应探针在 250 毫秒阈值后才完成。请查看同次聚合性能快照；不会根据单次 CPU 或内存读数自动建议维护。",
+                EvidenceCount = 1,
+                LatestAt = performance.CapturedAt,
+                Actions = [ViewPerformanceAction()],
+            });
         }
 
         private static void AddFailureEvidenceFinding(
@@ -449,8 +480,14 @@ namespace ColorVision.UI.Desktop.Operations
             });
         }
 
-        private static void AddDesktopFinding(OperationsDesktopState desktop, List<OperationsTriageFinding> findings)
+        private static void AddDesktopFinding(
+            OperationsDesktopState desktop,
+            OperationsRuntimePerformanceSnapshot? performance,
+            List<OperationsTriageFinding> findings)
         {
+            if (performance?.MainUi is { Available: true, State: "unresponsive" })
+                return;
+
             if (!desktop.DispatcherAvailable || !desktop.Exists)
             {
                 findings.Add(new OperationsTriageFinding
@@ -550,6 +587,15 @@ namespace ColorVision.UI.Desktop.Operations
             Kind = "client-navigation",
             RiskLevel = OperationsRiskLevels.ReadOnly,
             Description = "只查看最近七天固定类别的计数与聚合时间，不返回事件正文、文件名、路径或转储内容。",
+        };
+
+        private static OperationsTriageAction ViewPerformanceAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.ViewPerformance,
+            Title = "查看进程性能快照",
+            Kind = "client-navigation",
+            RiskLevel = OperationsRiskLevels.ReadOnly,
+            Description = "只查看聚合进程计数和主界面响应状态，不返回进程身份、路径或窗口内容，也不执行维护。",
         };
 
         private static OperationsTriageAction RestartMqttAction() => new()
