@@ -23,14 +23,8 @@ namespace ColorVision.Update
         {
             builder.AppendLine(":wait_for_original_process");
             AppendLog(builder, "Waiting for original application process to exit.");
-            builder.AppendLine("set \"WAIT_ATTEMPTS=0\"");
-            builder.AppendLine(":wait_for_original_process_loop");
-            builder.AppendLine("tasklist /fi \"PID eq %ORIGINAL_PID%\" /nh 2>nul | findstr /r /c:\"[ ]%ORIGINAL_PID%[ ]\" >nul");
-            builder.AppendLine("if errorlevel 1 goto wait_for_original_process_completed");
-            builder.AppendLine("set /a WAIT_ATTEMPTS+=1");
-            builder.AppendLine("if %WAIT_ATTEMPTS% GEQ 15 goto wait_for_original_process_timeout");
-            builder.AppendLine("ping -n 2 127.0.0.1 >nul");
-            builder.AppendLine("goto wait_for_original_process_loop");
+            builder.AppendLine("powershell.exe -NoLogo -NoProfile -NonInteractive -Command \"try { $process = [Diagnostics.Process]::GetProcessById([int]$env:ORIGINAL_PID); if ($process.WaitForExit(15000)) { exit 0 }; exit 1 } catch [ArgumentException] { exit 0 } catch { exit 2 }\"");
+            builder.AppendLine("if not errorlevel 1 goto wait_for_original_process_completed");
             builder.AppendLine(":wait_for_original_process_timeout");
             AppendLog(builder, "Original application process exit timed out; forcing termination.");
             builder.AppendLine("taskkill /f /pid \"%ORIGINAL_PID%\" >nul 2>nul");

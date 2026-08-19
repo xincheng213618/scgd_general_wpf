@@ -198,7 +198,7 @@ namespace ColorVision.UI.Plugins
                     if (!TryGetPluginTargetDirectory(programPluginsDirectory, pluginId, out string targetPluginDirectory))
                         throw new InvalidDataException($"Plugin manifest id '{pluginId}' does not resolve inside the installation Plugins directory.");
 
-                    PluginRecoveryBackupService.Instance.CreateVerifiedBackup(pluginId, targetPluginDirectory);
+                    PluginRecoveryBackupService.Instance.EnsureCurrentVersionBackup(pluginId, targetPluginDirectory);
                 }
 
                 GenerateBatchFile(
