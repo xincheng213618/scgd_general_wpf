@@ -765,6 +765,8 @@ namespace ColorVision.Copilot
                 return result.Success
                     && result.Approval != null
                     && !string.IsNullOrWhiteSpace(result.Approval.ActionId)
+                    && !(result.Approval.ExecuteOnApproval
+                        && result.Approval.ResumesAgentOnApproval)
                     && string.Equals(
                         result.Approval.ActionId,
                         execution.ApprovalActionId,

@@ -287,7 +287,9 @@ namespace ColorVision.Copilot
                     result))
             {
                 throw new InvalidOperationException(
-                    "Copilot Agent tool result contains invalid state metadata for its terminal execution.");
+                    execution.State == CopilotToolExecutionState.AwaitingApproval
+                        ? "Copilot Agent emitted an invalid approval request."
+                        : "Copilot Agent tool result contains invalid state metadata for its terminal execution.");
             }
 
             if (agentEvent.ToolExecutionHookRuns.Any(run =>

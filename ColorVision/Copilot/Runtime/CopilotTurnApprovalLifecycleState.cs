@@ -97,21 +97,15 @@ namespace ColorVision.Copilot
             var approval = result?.Approval;
             if (result == null
                 || approval == null
-                || string.IsNullOrWhiteSpace(approval.ActionId)
-                || string.IsNullOrWhiteSpace(approval.Title)
-                || string.IsNullOrWhiteSpace(approval.RiskLevel)
-                || approval.ExpiresAtUtc == default
-                || !string.Equals(result.ToolName, execution.ToolName, StringComparison.Ordinal)
-                || !string.Equals(approval.ActionId, execution.ApprovalActionId, StringComparison.Ordinal)
-                || (approval.ExecuteOnApproval && approval.ResumesAgentOnApproval))
+                || !CopilotToolExecutionInfoProtocol.HasValidResultState(
+                    execution,
+                    result))
             {
                 throw new InvalidOperationException("Copilot Agent emitted an invalid approval request.");
             }
 
             if (!approval.ResumesAgentOnApproval)
                 return this;
-            if (!result.Success || approval.ExecuteOnApproval)
-                throw new InvalidOperationException("Copilot Agent emitted an invalid turn-blocking approval request.");
 
             var snapshot = ApprovalRequestSnapshot.Create(execution);
             var callKey = BuildCallKey(execution);
@@ -163,13 +157,16 @@ namespace ColorVision.Copilot
             CopilotToolExecutionState expectedState,
             string lifecycleStage)
         {
-            if (!HasValidCallIdentity(execution)
-                || execution.Round < 1
-                || execution.MaxAttempts < execution.Attempt
-                || string.IsNullOrWhiteSpace(execution.RuntimeName)
+            var hasValidState = expectedState == CopilotToolExecutionState.Running
+                ? CopilotToolExecutionInfoProtocol.HasValidActiveState(
+                    execution,
+                    allowPending: false)
+                : expectedState == CopilotToolExecutionState.AwaitingApproval
+                    && CopilotToolExecutionInfoProtocol.IsStructurallyValid(
+                        execution)
+                    && execution.State == CopilotToolExecutionState.AwaitingApproval;
+            if (!hasValidState
                 || string.IsNullOrWhiteSpace(execution.ApprovalActionId)
-                || execution.StartedAtUtc == default
-                || execution.TimeoutMs < 1
                 || execution.State != expectedState)
             {
                 throw new InvalidOperationException(
@@ -179,14 +176,8 @@ namespace ColorVision.Copilot
 
         private static void RequireTerminalExecution(CopilotToolExecutionInfo execution)
         {
-            if (!HasValidCallIdentity(execution)
-                || execution.Round < 1
-                || execution.MaxAttempts < execution.Attempt
-                || string.IsNullOrWhiteSpace(execution.RuntimeName)
+            if (!CopilotToolExecutionInfoProtocol.IsStructurallyValid(execution)
                 || string.IsNullOrWhiteSpace(execution.ApprovalActionId)
-                || execution.StartedAtUtc == default
-                || execution.TimeoutMs < 1
-                || !Enum.IsDefined(execution.State)
                 || execution.State is CopilotToolExecutionState.Pending
                     or CopilotToolExecutionState.Running
                     or CopilotToolExecutionState.AwaitingApproval)
@@ -200,8 +191,9 @@ namespace ColorVision.Copilot
             CopilotToolExecutionInfo execution)
         {
             if (agentEvent.ToolResult == null
-                || agentEvent.ToolResult.Approval != null
-                || !string.Equals(agentEvent.ToolResult.ToolName, execution.ToolName, StringComparison.Ordinal))
+                || !CopilotToolExecutionInfoProtocol.HasValidResultState(
+                    execution,
+                    agentEvent.ToolResult))
             {
                 throw new InvalidOperationException("Copilot Agent emitted an invalid approval resolution.");
             }
@@ -232,9 +224,7 @@ namespace ColorVision.Copilot
         }
 
         private static bool HasValidCallIdentity(CopilotToolExecutionInfo execution) =>
-            !string.IsNullOrWhiteSpace(execution.CallId)
-            && !string.IsNullOrWhiteSpace(execution.ToolName)
-            && execution.Attempt >= 1;
+            CopilotToolExecutionInfoProtocol.IsStructurallyValid(execution);
 
         private static string BuildCallKey(CopilotToolExecutionInfo execution) =>
             $"{execution.CallId}\u001f{execution.Attempt}\u001f{execution.ToolName}";
