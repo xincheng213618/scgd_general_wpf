@@ -227,6 +227,44 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
         Assert.Equal(0, store.AsyncSaveCount);
     }
 
+    [Fact]
+    public async Task SynchronousShutdownSaveCommitsAfterAnInFlightOlderAsyncSave()
+    {
+        var store = new RecordingStateStore
+        {
+            BlockFirstAsyncSave = true,
+        };
+        var state = new CopilotChatState
+        {
+            ActiveConversationId = "older-async-cut",
+        };
+        using var coordinator = new CopilotChatStatePersistenceCoordinator(
+            store,
+            () => state,
+            () => null,
+            _ => { },
+            () => { });
+
+        coordinator.RequestSave(immediate: true);
+        await store.FirstAsyncSaveStarted.WaitAsync(TimeSpan.FromSeconds(5));
+        var latestState = new CopilotChatState
+        {
+            ActiveConversationId = "latest-shutdown-cut",
+        };
+        state = latestState;
+
+        var shutdownSave = Task.Run(coordinator.SaveSynchronouslyAndStop);
+        await Task.Delay(100);
+
+        Assert.False(shutdownSave.IsCompleted);
+        Assert.Null(store.SynchronouslySavedState);
+        store.ReleaseBlockedAsyncSave();
+        await shutdownSave.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Same(latestState, store.SynchronouslySavedState);
+        Assert.Equal(["async", "sync"], store.SaveOrder);
+    }
+
     private sealed class RecordingStateStore : IIncrementalCopilotChatStateStore
     {
         private readonly Dispatcher? _dispatcher;
@@ -237,6 +275,10 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
         private readonly TaskCompletionSource _continueFirstSerialization =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _firstSerializationStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _continueFirstAsyncSave =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _firstAsyncSaveStarted =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public RecordingStateStore(Dispatcher? dispatcher = null)
@@ -268,6 +310,8 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
 
         public bool BlockFirstSerialization { get; init; }
 
+        public bool BlockFirstAsyncSave { get; init; }
+
         public int BeginSnapshotCount { get; private set; }
 
         public int SerializeCount { get; private set; }
@@ -276,11 +320,16 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
 
         public Task FirstSerializationStarted => _firstSerializationStarted.Task;
 
+        public Task FirstAsyncSaveStarted => _firstAsyncSaveStarted.Task;
+
+        public List<string> SaveOrder { get; } = [];
+
         public CopilotChatState Load() => new();
 
         public void Save(CopilotChatState state)
         {
             SynchronouslySavedState = state;
+            SaveOrder.Add("sync");
             if (SyncSaveException != null)
                 throw SyncSaveException;
         }
@@ -333,17 +382,22 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
 
         public string Serialize(CopilotChatState state) => "serialized-state";
 
-        public Task SaveSerializedAsync(
+        public async Task SaveSerializedAsync(
             string serializedState,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             AsyncSaveCount++;
             if (AsyncSaveException != null)
-                return Task.FromException(AsyncSaveException);
+                throw AsyncSaveException;
+            if (BlockFirstAsyncSave && AsyncSaveCount == 1)
+            {
+                _firstAsyncSaveStarted.TrySetResult();
+                await _continueFirstAsyncSave.Task;
+            }
 
             SavedSerializedState = serializedState;
-            return Task.CompletedTask;
+            SaveOrder.Add("async");
         }
 
         public int CleanupOrphanedAttachments(CopilotChatState state) => 0;
@@ -351,5 +405,7 @@ public sealed class CopilotChatStatePersistenceCoordinatorTests
         public void ReleaseBlockedSnapshot() => _continueIncrementalSnapshot.TrySetResult();
 
         public void ReleaseBlockedSerialization() => _continueFirstSerialization.TrySetResult();
+
+        public void ReleaseBlockedAsyncSave() => _continueFirstAsyncSave.TrySetResult();
     }
 }

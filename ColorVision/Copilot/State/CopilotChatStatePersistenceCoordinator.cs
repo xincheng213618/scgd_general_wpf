@@ -14,6 +14,7 @@ namespace ColorVision.Copilot
         private readonly Func<Dispatcher?> _dispatcherProvider;
         private readonly Action<Exception> _onError;
         private readonly CopilotChatStateSaveScheduler _scheduler;
+        private readonly SemaphoreSlim _commitGate = new(1, 1);
         private int _lastSavePersisted;
         private int _stopState;
 
@@ -47,6 +48,7 @@ namespace ColorVision.Copilot
         public void SaveSynchronouslyAndStop()
         {
             Stop();
+            _commitGate.Wait();
             try
             {
                 if (_stateStore is not CopilotChatStateStore stateStore || !stateStore.IsStatePersistenceBlocked)
@@ -55,6 +57,10 @@ namespace ColorVision.Copilot
             catch (Exception exception)
             {
                 ReportError(exception);
+            }
+            finally
+            {
+                _commitGate.Release();
             }
         }
 
@@ -105,9 +111,20 @@ namespace ColorVision.Copilot
             if (_scheduler.RequestedVersion != captureVersion)
                 return;
 
-            await _stateStore.SaveSerializedAsync(serializedState, cancellationToken).ConfigureAwait(false);
-            if (_scheduler.RequestedVersion == captureVersion)
-                Interlocked.Exchange(ref _lastSavePersisted, 1);
+            await _commitGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                if (_scheduler.RequestedVersion != captureVersion)
+                    return;
+
+                await _stateStore.SaveSerializedAsync(serializedState, cancellationToken).ConfigureAwait(false);
+                if (_scheduler.RequestedVersion == captureVersion)
+                    Interlocked.Exchange(ref _lastSavePersisted, 1);
+            }
+            finally
+            {
+                _commitGate.Release();
+            }
         }
 
         private CopilotChatState GetState() =>
