@@ -306,11 +306,10 @@ namespace ColorVision.UI
 
             foreach (var provider in contextProviders)
                 _ = provider.Order;
-            foreach (var tool in tools)
-                ValidateTool(tool);
+            var registeredTools = tools.Select(CreateRegisteredTool).ToArray();
             foreach (var hook in toolExecutionHooks)
                 ValidateToolExecutionHook(hook);
-            var duplicateToolName = tools.GroupBy(tool => tool.Name.Trim(), StringComparer.OrdinalIgnoreCase).FirstOrDefault(group => group.Count() > 1)?.Key;
+            var duplicateToolName = registeredTools.GroupBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase).FirstOrDefault(group => group.Count() > 1)?.Key;
             if (!string.IsNullOrWhiteSpace(duplicateToolName))
                 throw new ArgumentException($"Agent extension '{sourceId}' declares module tool '{duplicateToolName}' more than once.", nameof(registration));
             var duplicateHookName = toolExecutionHooks
@@ -329,22 +328,24 @@ namespace ColorVision.UI
                 sourceName,
                 sourceVersion,
                 Array.AsReadOnly(contextProviders),
-                Array.AsReadOnly(tools),
+                Array.AsReadOnly<ICopilotModuleTool>(registeredTools),
                 Array.AsReadOnly(toolExecutionHooks),
                 Guid.NewGuid().ToString("N"));
         }
 
-        private static void ValidateTool(ICopilotModuleTool tool)
+        private static RegisteredModuleTool CreateRegisteredTool(ICopilotModuleTool tool)
         {
             var name = tool.Name?.Trim() ?? string.Empty;
             if (name.Length == 0 || name.Length > MaximumToolNameLength)
                 throw new ArgumentException($"A module tool name must contain 1-{MaximumToolNameLength} characters.");
             if (name.Any(character => !(character is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_' or '-')))
                 throw new ArgumentException($"Module tool '{name}' may contain only ASCII letters, digits, '_' and '-'.");
-            _ = NormalizeRequiredText(tool.Description, MaximumToolDescriptionLength, $"Module tool '{name}' requires a description.");
-            if (!Enum.IsDefined(tool.Access))
+            var description = NormalizeRequiredText(tool.Description, MaximumToolDescriptionLength, $"Module tool '{name}' requires a description.");
+            var access = tool.Access;
+            if (!Enum.IsDefined(access))
                 throw new ArgumentException($"Module tool '{name}' has an invalid access mode.");
-            if (tool.ExecutionTimeout <= TimeSpan.Zero || tool.ExecutionTimeout > TimeSpan.FromMinutes(10))
+            var executionTimeout = tool.ExecutionTimeout;
+            if (executionTimeout <= TimeSpan.Zero || executionTimeout > TimeSpan.FromMinutes(10))
                 throw new ArgumentException($"Module tool '{name}' must use an execution timeout between zero and ten minutes.");
 
             var schemaText = tool.InputJsonSchema?.Trim() ?? string.Empty;
@@ -360,6 +361,14 @@ namespace ColorVision.UI
             {
                 throw new ArgumentException($"Module tool '{name}' input schema is not valid JSON: {ex.Message}", ex);
             }
+
+            return new RegisteredModuleTool(
+                tool,
+                name,
+                description,
+                access,
+                schemaText,
+                executionTimeout);
         }
 
         private static void ValidateToolExecutionHook(ICopilotModuleToolExecutionHook hook)
@@ -452,6 +461,45 @@ namespace ColorVision.UI
                 {
                 }
             }
+        }
+
+        private sealed class RegisteredModuleTool : ICopilotModuleTool
+        {
+            private readonly ICopilotModuleTool _implementation;
+
+            public RegisteredModuleTool(
+                ICopilotModuleTool implementation,
+                string name,
+                string description,
+                CopilotModuleToolAccess access,
+                string inputJsonSchema,
+                TimeSpan executionTimeout)
+            {
+                _implementation = implementation;
+                Name = name;
+                Description = description;
+                Access = access;
+                InputJsonSchema = inputJsonSchema;
+                ExecutionTimeout = executionTimeout;
+            }
+
+            public string Name { get; }
+
+            public string Description { get; }
+
+            public CopilotModuleToolAccess Access { get; }
+
+            public string InputJsonSchema { get; }
+
+            public TimeSpan ExecutionTimeout { get; }
+
+            public bool IsAvailable(CopilotModuleToolRequest request) =>
+                _implementation.IsAvailable(request);
+
+            public Task<CopilotModuleToolResult> ExecuteAsync(
+                CopilotModuleToolRequest request,
+                CancellationToken cancellationToken) =>
+                _implementation.ExecuteAsync(request, cancellationToken);
         }
 
         private sealed class Registration : IDisposable

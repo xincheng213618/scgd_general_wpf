@@ -121,6 +121,52 @@ public sealed class CopilotCodexPluginsFeatureTests
     }
 
     [Fact]
+    public async Task ModuleToolMetadataIsFrozenAtRegistrationWhileExecutionRemainsLive()
+    {
+        var moduleTool = new MutableModuleTool();
+        var registry = new CopilotAgentExtensionRegistry();
+        using var bridge = new CopilotAgentExtensionBridge(
+            registry,
+            new CopilotCapabilityCatalog(),
+            reservedToolNames: [],
+            new CopilotToolExecutionHookRegistry());
+        using var registration = registry.Register(new CopilotAgentExtensionRegistration
+        {
+            SourceId = "test.frozen-module-tool-metadata",
+            SourceName = "Frozen module tool metadata",
+            SourceVersion = "1.0.0",
+            Tools = [moduleTool],
+        });
+
+        moduleTool.Name = "MutatedModuleTool";
+        moduleTool.Description = "Mutated description.";
+        moduleTool.Access = CopilotModuleToolAccess.Write;
+        moduleTool.InputJsonSchema = "{\"type\":\"object\",\"required\":[\"changed\"],\"properties\":{\"changed\":{\"type\":\"string\"}},\"additionalProperties\":false}";
+        moduleTool.ExecutionTimeout = TimeSpan.FromMinutes(2);
+
+        var registeredTool = Assert.Single(Assert.Single(registry.GetSnapshot().Extensions).Tools);
+        Assert.Equal("StableModuleTool", registeredTool.Name);
+        Assert.Equal("Stable description.", registeredTool.Description);
+        Assert.Equal(CopilotModuleToolAccess.ReadOnly, registeredTool.Access);
+        Assert.Equal(CopilotAgentExtensionDefaults.OptionalQueryJsonSchema, registeredTool.InputJsonSchema);
+        Assert.Equal(TimeSpan.FromSeconds(30), registeredTool.ExecutionTimeout);
+
+        var activeTool = Assert.Single(bridge.GetSnapshot().Tools);
+        Assert.Equal("StableModuleTool", activeTool.Name);
+        Assert.Equal("Stable description.", activeTool.Description);
+        Assert.Equal(CopilotToolAccess.ReadOnly, activeTool.Capability.Access);
+        Assert.DoesNotContain("changed", activeTool.InputSchema.JsonSchema.GetRawText(), StringComparison.Ordinal);
+
+        var result = await activeTool.ExecuteAsync(
+            new CopilotAgentRequest(),
+            CopilotAgentToolInput.Empty,
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal(1, moduleTool.ExecutionCount);
+    }
+
+    [Fact]
     public void ClosestTrustedValueIsFrozenAcrossContextPlanAndRequest()
     {
         string globalRoot = CreateTemporaryDirectory();
@@ -648,6 +694,32 @@ public sealed class CopilotCodexPluginsFeatureTests
             cancellationToken.ThrowIfCancellationRequested();
             Interlocked.Increment(ref _executionCount);
             return Task.FromResult(CopilotModuleToolResult.Ok("Module tool executed."));
+        }
+    }
+
+    private sealed class MutableModuleTool : ICopilotModuleTool
+    {
+        private int _executionCount;
+
+        public string Name { get; set; } = "StableModuleTool";
+
+        public string Description { get; set; } = "Stable description.";
+
+        public CopilotModuleToolAccess Access { get; set; } = CopilotModuleToolAccess.ReadOnly;
+
+        public string InputJsonSchema { get; set; } = CopilotAgentExtensionDefaults.OptionalQueryJsonSchema;
+
+        public TimeSpan ExecutionTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+        public int ExecutionCount => Volatile.Read(ref _executionCount);
+
+        public Task<CopilotModuleToolResult> ExecuteAsync(
+            CopilotModuleToolRequest request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Interlocked.Increment(ref _executionCount);
+            return Task.FromResult(CopilotModuleToolResult.Ok("Mutable module tool executed."));
         }
     }
 
