@@ -194,6 +194,32 @@ public class OperationsWatchPolicyTest {
     }
 
     @Test
+    public void watchStateDeepLinksRequireAFreshCompletedCheck() {
+        long nowMilliseconds = 2_000_000_000_000L;
+        String deviceAttention = OperationsWatchHistory.attentionState(
+                OperationsWatchPolicy.ATTENTION_DEVICES);
+        assertEquals(OperationsWatchPolicy.DESTINATION_TRIAGE,
+                OperationsWatchPolicy.watchStateDestination(
+                        deviceAttention,
+                        nowMilliseconds
+                                - OperationsWatchFreshnessPolicy.STALE_AFTER_MILLISECONDS,
+                        nowMilliseconds));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination(
+                deviceAttention,
+                nowMilliseconds
+                        - OperationsWatchFreshnessPolicy.STALE_AFTER_MILLISECONDS - 1L,
+                nowMilliseconds));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination(
+                OperationsWatchHistory.STATE_OFFLINE, 0L, nowMilliseconds));
+        assertEquals("", OperationsWatchPolicy.watchStateDestination(
+                OperationsWatchHistory.STATE_REMOTE_WAITING,
+                nowMilliseconds
+                        + OperationsWatchFreshnessPolicy
+                                .MAXIMUM_FUTURE_SKEW_MILLISECONDS + 1L,
+                nowMilliseconds));
+    }
+
+    @Test
     public void completedBackgroundCheckMustStillBelongToTheActiveComputer() {
         assertTrue(OperationsWatchPolicy.isCurrentProfileCheck(
                 "host_1", "host_1", 7, 7));

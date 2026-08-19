@@ -8,10 +8,6 @@ final class OperationsFleetOverview {
     static final String ACTION_NONE = "none";
     static final String ACTION_OPEN = "open";
     static final String ACTION_REMOVE = "remove";
-    static final long RECENT_CHECK_MILLISECONDS = 10L * 60L * 1000L;
-
-    private static final long MAXIMUM_FUTURE_SKEW_MILLISECONDS = 60_000L;
-
     private OperationsFleetOverview() {
     }
 
@@ -105,9 +101,8 @@ final class OperationsFleetOverview {
                     "移除失效配对");
         }
         long checkedAt = profile.watchCheckedAt;
-        if (checkedAt <= 0L
-                || checkedAt > nowMilliseconds + MAXIMUM_FUTURE_SKEW_MILLISECONDS
-                || nowMilliseconds - checkedAt > RECENT_CHECK_MILLISECONDS) {
+        if (OperationsWatchFreshnessPolicy.classify(checkedAt, nowMilliseconds)
+                != OperationsWatchFreshnessPolicy.Freshness.FRESH) {
             return ProfileState.unchecked();
         }
         List<OperationsWatchHistory.Entry> entries = OperationsWatchHistory.parse(

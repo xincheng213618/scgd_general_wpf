@@ -936,7 +936,10 @@ public final class OperationsWatchService extends Service {
     private Notification buildNotification(
             String status, boolean ongoing, String targetLabel) {
         String watchState = preferences.getOperationsWatchState();
-        String destination = OperationsWatchPolicy.watchStateDestination(watchState);
+        String destination = OperationsWatchPolicy.watchStateDestination(
+                watchState,
+                preferences.getActiveOperationsWatchCheckedAt(),
+                System.currentTimeMillis());
         PendingIntent contentIntent = destination.isEmpty()
                 ? createOperationsPendingIntent(0, "")
                 : createOperationsPendingIntent(

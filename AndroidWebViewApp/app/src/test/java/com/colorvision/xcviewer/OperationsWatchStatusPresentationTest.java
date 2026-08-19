@@ -25,7 +25,7 @@ public class OperationsWatchStatusPresentationTest {
                         true,
                         true,
                         OperationsWatchHistory.STATE_OFFLINE,
-                        NOW - OperationsWatchStatusPresentation.STALE_AFTER_MILLISECONDS - 1L,
+                        NOW - OperationsWatchFreshnessPolicy.STALE_AFTER_MILLISECONDS - 1L,
                         NOW);
         assertEquals("超过 10 分钟未更新", stale.summary);
         assertTrue(stale.details.contains("持续守护仍处于开启偏好"));

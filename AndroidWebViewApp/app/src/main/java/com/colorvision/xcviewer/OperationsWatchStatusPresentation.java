@@ -1,9 +1,6 @@
 package com.colorvision.xcviewer;
 
 final class OperationsWatchStatusPresentation {
-    static final long STALE_AFTER_MILLISECONDS = OperationsFleetOverview.RECENT_CHECK_MILLISECONDS;
-    private static final long MAXIMUM_FUTURE_SKEW_MILLISECONDS = 60_000L;
-
     private OperationsWatchStatusPresentation() {
     }
 
@@ -32,7 +29,10 @@ final class OperationsWatchStatusPresentation {
                     "持续守护已开启，但还没有完成第一轮后台检查。可以立即检查；结果只保存为本机脱敏状态记录。",
                     false);
         }
-        if (checkedAtMilliseconds > nowMilliseconds + MAXIMUM_FUTURE_SKEW_MILLISECONDS) {
+        OperationsWatchFreshnessPolicy.Freshness freshness =
+                OperationsWatchFreshnessPolicy.classify(
+                        checkedAtMilliseconds, nowMilliseconds);
+        if (freshness == OperationsWatchFreshnessPolicy.Freshness.FUTURE) {
             return new Presentation(
                     "检查时间记录异常",
                     "最近检查时间晚于手机当前时间，不能据此判断守护是否正常。请校准手机时间后立即检查。",
@@ -41,7 +41,7 @@ final class OperationsWatchStatusPresentation {
 
         long ageMilliseconds = Math.max(0L, nowMilliseconds - checkedAtMilliseconds);
         String stateLabel = OperationsWatchHistory.label(normalizedState);
-        if (ageMilliseconds > STALE_AFTER_MILLISECONDS) {
+        if (freshness == OperationsWatchFreshnessPolicy.Freshness.STALE) {
             return new Presentation(
                     "超过 10 分钟未更新",
                     "持续守护仍处于开启偏好，但后台状态已经超过 10 分钟未更新。最近记录："

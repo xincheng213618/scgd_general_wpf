@@ -24,7 +24,7 @@ public class OperationsFleetOverviewTest {
         state = withState(state, "host_4", OperationsWatchHistory.STATE_OFFLINE,
                 NOW - 120_000L);
         state = withState(state, "host_5", OperationsWatchHistory.STATE_ONLINE,
-                NOW - OperationsFleetOverview.RECENT_CHECK_MILLISECONDS - 1L);
+                NOW - OperationsWatchFreshnessPolicy.STALE_AFTER_MILLISECONDS - 1L);
         state = state.revoke("host_6");
 
         OperationsFleetOverview.Assessment result = OperationsFleetOverview.assess(

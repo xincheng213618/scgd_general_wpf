@@ -154,6 +154,17 @@ final class OperationsWatchPolicy {
         return attentionDestination(OperationsWatchHistory.attentionKey(watchState));
     }
 
+    static String watchStateDestination(
+            String watchState,
+            long checkedAtMilliseconds,
+            long nowMilliseconds) {
+        return OperationsWatchFreshnessPolicy.classify(
+                checkedAtMilliseconds, nowMilliseconds)
+                == OperationsWatchFreshnessPolicy.Freshness.FRESH
+                ? watchStateDestination(watchState)
+                : "";
+    }
+
     static String normalizeDestination(String destination) {
         if (DESTINATION_TRIAGE.equals(destination)
                 || DESTINATION_CONNECTION_CHECK.equals(destination)
