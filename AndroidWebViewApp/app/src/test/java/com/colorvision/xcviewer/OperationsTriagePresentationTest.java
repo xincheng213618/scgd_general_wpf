@@ -247,6 +247,35 @@ public class OperationsTriagePresentationTest {
     }
 
     @Test
+    public void unavailableEvidenceCardsKeepSafeReadOnlyDetailEntrances()
+            throws Exception {
+        JSONObject report = new JSONObject("{\"findings\":["
+                + "{\"findingId\":\"device-health-unavailable\","
+                + "\"category\":\"devices\",\"actions\":[{"
+                + "\"actionId\":\"triage.devices.view\","
+                + "\"title\":\"查看设备状态概览\",\"riskLevel\":\"read-only\"}]},"
+                + "{\"findingId\":\"message-channel-health-unavailable\","
+                + "\"category\":\"message-channel\",\"actions\":[{"
+                + "\"actionId\":\"triage.messaging.view\","
+                + "\"title\":\"查看消息通道健康\",\"riskLevel\":\"read-only\"}]},"
+                + "{\"findingId\":\"application-log-unavailable\","
+                + "\"category\":\"diagnostics\",\"actions\":[{"
+                + "\"actionId\":\"triage.events.view\","
+                + "\"title\":\"查看近期脱敏事件\",\"riskLevel\":\"read-only\"}]}]}");
+
+        OperationsTriagePresentation.ViewModel model =
+                OperationsTriagePresentation.from(report, value -> value);
+
+        assertEquals(3, model.findings.size());
+        for (OperationsTriagePresentation.Finding finding : model.findings) {
+            OperationsTriagePresentation.Action action = finding.primaryCardAction();
+            assertSame(finding.actions.get(0), action);
+            assertTrue(action.readOnly());
+            assertTrue(OperationsTriagePresentation.isSupportedAction(action.actionId));
+        }
+    }
+
+    @Test
     public void failedRefreshLabelsAVisiblePreviousReportAsReferenceOnly() {
         assertEquals("电脑端暂不可达。",
                 OperationsTriagePresentation.failureDetails(

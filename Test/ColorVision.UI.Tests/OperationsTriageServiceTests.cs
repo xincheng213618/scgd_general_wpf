@@ -96,6 +96,27 @@ namespace ColorVision.UI.Tests
         }
 
         [Fact]
+        public void UnavailableEvidenceStillOffersOnlyItsReadOnlyDetailRefresh()
+        {
+            OperationsTriageReport report = OperationsTriageService.Build(
+                new OperationsLogDigest { Available = false },
+                new OperationsDesktopState(true, true, true, "Normal"),
+                0,
+                deviceHealth: OperationsDeviceHealthSnapshot.CreateUnavailable(),
+                messageChannel: OperationsMessageChannelHealthSnapshot.CreateUnavailable());
+
+            AssertReadOnlyDetailAction(
+                report, "device-health-unavailable", OperationsTriageActionIds.ViewDeviceHealth);
+            AssertReadOnlyDetailAction(
+                report, "message-channel-health-unavailable", OperationsTriageActionIds.ViewMessageChannelHealth);
+            AssertReadOnlyDetailAction(
+                report, "application-log-unavailable", OperationsTriageActionIds.ViewRecentEvents);
+            Assert.DoesNotContain(report.Findings.SelectMany(item => item.Actions),
+                action => action.ActionId == OperationsTriageActionIds.RequestMessageChannelRecovery
+                    || action.ActionId == OperationsTriageActionIds.RequestMqttRestart);
+        }
+
+        [Fact]
         public void BuildReturnsHealthyWhenBoundedEvidenceHasNoActionableFinding()
         {
             OperationsTriageReport report = OperationsTriageService.Build(
@@ -302,5 +323,20 @@ namespace ColorVision.UI.Tests
                 },
             ],
         };
+
+        private static void AssertReadOnlyDetailAction(
+            OperationsTriageReport report,
+            string findingId,
+            string actionId)
+        {
+            OperationsTriageFinding finding = Assert.Single(report.Findings,
+                item => item.FindingId == findingId);
+            OperationsTriageAction action = Assert.Single(finding.Actions);
+            Assert.Equal(actionId, action.ActionId);
+            Assert.Equal("client-navigation", action.Kind);
+            Assert.Equal(OperationsRiskLevels.ReadOnly, action.RiskLevel);
+            Assert.False(action.RequiresConfirmation);
+            Assert.False(action.RequiresLocalCoSign);
+        }
     }
 }

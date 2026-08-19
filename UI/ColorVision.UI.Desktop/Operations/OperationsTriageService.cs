@@ -188,6 +188,7 @@ namespace ColorVision.UI.Desktop.Operations
                     Category = "devices",
                     Title = "检测设备状态暂不可用",
                     Summary = "当前无法取得设备注册表的类别级运行状态汇总；不会据此执行任何设备操作。",
+                    Actions = [ViewDeviceHealthAction()],
                 });
                 return;
             }
@@ -209,17 +210,7 @@ namespace ColorVision.UI.Desktop.Operations
                 Summary = $"已加载设备 {deviceHealth.TotalCount} 台，其中不可用 {deviceHealth.UnavailableCount} 台、状态未知 {deviceHealth.UnknownCount} 台。{unavailableReasonSummary}{correlationSummary}",
                 EvidenceCount = deviceHealth.AttentionCount,
                 LatestAt = deviceHealth.ObservedAt,
-                Actions =
-                [
-                    new OperationsTriageAction
-                    {
-                        ActionId = OperationsTriageActionIds.ViewDeviceHealth,
-                        Title = "查看设备状态概览",
-                        Kind = "client-navigation",
-                        RiskLevel = OperationsRiskLevels.ReadOnly,
-                        Description = "只查看固定类别的规范化运行状态计数，不返回设备身份，也不执行重连或重启。",
-                    },
-                ],
+                Actions = [ViewDeviceHealthAction()],
             });
         }
 
@@ -255,6 +246,7 @@ namespace ColorVision.UI.Desktop.Operations
                     Category = "message-channel",
                     Title = "消息通道状态暂不可用",
                     Summary = "当前无法取得 ColorVision 消息客户端的脱敏连接状态；不会据此自动重连或重启。",
+                    Actions = [ViewMessageChannelHealthAction()],
                 });
                 return;
             }
@@ -284,14 +276,7 @@ namespace ColorVision.UI.Desktop.Operations
             }
             List<OperationsTriageAction> actions =
             [
-                new OperationsTriageAction
-                {
-                    ActionId = OperationsTriageActionIds.ViewMessageChannelHealth,
-                    Title = "查看消息通道健康",
-                    Kind = "client-navigation",
-                    RiskLevel = OperationsRiskLevels.ReadOnly,
-                    Description = "只查看脱敏连接状态、订阅计数和聚合活动时间，不执行重连、重启或任意目标操作。",
-                },
+                ViewMessageChannelHealthAction(),
             ];
             if (messageChannel.State is OperationsMessageChannelStates.Disconnected or OperationsMessageChannelStates.Degraded)
             {
@@ -371,6 +356,7 @@ namespace ColorVision.UI.Desktop.Operations
                     Category = "diagnostics",
                     Title = "近期日志摘要暂不可用",
                     Summary = "电脑端当前没有可读取的应用日志摘要。其他运行状态仍可继续检查。",
+                    Actions = [ViewEventsAction()],
                 });
                 return;
             }
@@ -501,6 +487,24 @@ namespace ColorVision.UI.Desktop.Operations
             Kind = "client-navigation",
             RiskLevel = OperationsRiskLevels.ReadOnly,
             Description = "打开有界脱敏日志摘要，不读取原始日志。",
+        };
+
+        private static OperationsTriageAction ViewDeviceHealthAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.ViewDeviceHealth,
+            Title = "查看设备状态概览",
+            Kind = "client-navigation",
+            RiskLevel = OperationsRiskLevels.ReadOnly,
+            Description = "只查看固定类别的规范化运行状态计数，不返回设备身份，也不执行重连或重启。",
+        };
+
+        private static OperationsTriageAction ViewMessageChannelHealthAction() => new()
+        {
+            ActionId = OperationsTriageActionIds.ViewMessageChannelHealth,
+            Title = "查看消息通道健康",
+            Kind = "client-navigation",
+            RiskLevel = OperationsRiskLevels.ReadOnly,
+            Description = "只查看脱敏连接状态、订阅计数和聚合活动时间，不执行重连、重启或任意目标操作。",
         };
 
         private static OperationsTriageAction RestartMqttAction() => new()
