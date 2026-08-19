@@ -33,7 +33,8 @@ namespace ColorVision.Copilot
             CopilotToolExecutionHookRegistry.MaxRegistrations
             + CopilotProjectInstructionDiscoveryConfig.MaximumConfiguredHookHandlers
             + 1;
-        private const int MaxRecordedHookRuns = MaxInvocationHookBindings * 3;
+        private const int MaxRecordedHookRuns =
+            CopilotToolExecutionHookRunProtocol.MaximumEntries;
 
         private readonly IReadOnlyList<ICopilotToolExecutionHook> _fixedHooks;
         private readonly CopilotToolExecutionHookRegistry? _hookRegistry;

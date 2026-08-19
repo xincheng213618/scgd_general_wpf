@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 
 namespace ColorVision.Copilot
 {
@@ -292,11 +291,11 @@ namespace ColorVision.Copilot
                         : "Copilot Agent tool result contains invalid state metadata for its terminal execution.");
             }
 
-            if (agentEvent.ToolExecutionHookRuns.Any(run =>
-                    run?.IsStructurallyValid() != true))
+            if (!CopilotToolExecutionHookRunProtocol.IsStructurallyValid(
+                    agentEvent.ToolExecutionHookRuns))
             {
                 throw new InvalidOperationException(
-                    "Copilot Agent tool result contains an invalid hook audit entry.");
+                    "Copilot Agent tool result contains invalid hook audit metadata or duplicate hook audit entries.");
             }
         }
 

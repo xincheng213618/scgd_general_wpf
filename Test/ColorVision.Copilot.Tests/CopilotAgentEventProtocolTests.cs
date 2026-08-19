@@ -154,6 +154,38 @@ public sealed class CopilotAgentEventProtocolTests
     }
 
     [Fact]
+    public void RuntimeEmitterRejectsDuplicateToolHookAuditBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var hookRun = CopilotToolExecutionHookRun.Create(
+            "extension:test:duplicate-hook",
+            CopilotToolExecutionHookPhase.AfterExecute,
+            CopilotToolExecutionHookState.Completed,
+            durationMs: 1);
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.ToolResult,
+            Text = "Completed.",
+            ToolResult = new CopilotToolResult
+            {
+                ToolName = "ProtectedTool",
+                Success = true,
+                Summary = "Completed.",
+            },
+            ToolExecution = CreateExecution(CopilotToolExecutionState.Completed),
+            ToolExecutionHookRuns = [hookRun, hookRun.CreateSnapshot()],
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("duplicate hook audit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
     public void RuntimeEmitterRejectsContradictoryToolResultBeforeItsObserverRuns()
     {
         var observed = 0;
