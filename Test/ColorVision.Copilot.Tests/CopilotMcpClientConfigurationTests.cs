@@ -59,6 +59,33 @@ public sealed class CopilotMcpClientConfigurationTests
     }
 
     [Fact]
+    public void ExternalMcpSourceIdentityPreservesNamespaceAndEndpointSemantics()
+    {
+        var baseline = CreateServer("docs", "https://EXAMPLE.test/Mcp?tenant=alpha", "MCP_TOKEN");
+
+        Assert.Equal(
+            CopilotCapabilityCatalog.BuildExternalMcpSourceId(baseline),
+            CopilotCapabilityCatalog.BuildExternalMcpSourceId(
+                CreateServer("DOCS", "https://example.test/Mcp?tenant=alpha", "mcp_token")));
+        Assert.NotEqual(
+            CopilotCapabilityCatalog.BuildExternalMcpSourceId(baseline),
+            CopilotCapabilityCatalog.BuildExternalMcpSourceId(
+                CreateServer("docs-alt", baseline.Endpoint, baseline.BearerTokenEnvironmentVariable)));
+        Assert.NotEqual(
+            CopilotCapabilityCatalog.BuildExternalMcpSourceId(baseline),
+            CopilotCapabilityCatalog.BuildExternalMcpSourceId(
+                CreateServer(baseline.Name, "https://example.test/mcp?tenant=alpha", baseline.BearerTokenEnvironmentVariable)));
+        Assert.NotEqual(
+            CopilotCapabilityCatalog.BuildExternalMcpSourceId(baseline),
+            CopilotCapabilityCatalog.BuildExternalMcpSourceId(
+                CreateServer(baseline.Name, "https://example.test/Mcp?tenant=beta", baseline.BearerTokenEnvironmentVariable)));
+        Assert.NotEqual(
+            CopilotCapabilityCatalog.BuildExternalMcpSourceId(baseline),
+            CopilotCapabilityCatalog.BuildExternalMcpSourceId(
+                CreateServer(baseline.Name, baseline.Endpoint, "OTHER_TOKEN")));
+    }
+
+    [Fact]
     public void DiscoveryCacheDetachesMutableToolDefinitionsAndReturnedSnapshots()
     {
         var now = new DateTimeOffset(2026, 8, 19, 12, 0, 0, TimeSpan.Zero);
@@ -158,4 +185,12 @@ public sealed class CopilotMcpClientConfigurationTests
         using var document = JsonDocument.Parse(json);
         return document.RootElement.Clone();
     }
+
+    private static CopilotMcpClientServerConfig CreateServer(string name, string endpoint, string tokenEnvironmentVariable)
+        => new()
+        {
+            Name = name,
+            Endpoint = endpoint,
+            BearerTokenEnvironmentVariable = tokenEnvironmentVariable,
+        };
 }
