@@ -3,6 +3,7 @@ package com.colorvision.xcviewer;
 final class OperationsTriageDetailReviewPresentation {
     static final String SURFACE_RECENT_EVENTS = "recent-events";
     static final String SURFACE_DEVICE_HEALTH = "device-health";
+    static final String SURFACE_MESSAGE_CHANNEL = "message-channel";
 
     private OperationsTriageDetailReviewPresentation() {
     }
@@ -10,8 +11,23 @@ final class OperationsTriageDetailReviewPresentation {
     static ViewModel from(
             OperationsTriagePresentation.Finding finding,
             boolean inFlight) {
+        return from(finding, inFlight, false);
+    }
+
+    static ViewModel from(
+            OperationsTriagePresentation.Finding finding,
+            boolean inFlight,
+            boolean evidenceUpdateInFlight) {
         if (finding == null) {
             return new ViewModel(false, "", "", false, false);
+        }
+        if (evidenceUpdateInFlight) {
+            return new ViewModel(
+                    true,
+                    "正在更新消息证据…",
+                    "正在恢复或刷新消息通道；完成前不能复核可能变化的证据",
+                    false,
+                    finding.acknowledged);
         }
         if (inFlight) {
             return new ViewModel(
@@ -45,8 +61,14 @@ final class OperationsTriageDetailReviewPresentation {
         if ("diagnostics".equals(finding.category)) {
             return SURFACE_RECENT_EVENTS;
         }
+        if ("message-service".equals(finding.category)) {
+            return SURFACE_RECENT_EVENTS;
+        }
         if ("devices".equals(finding.category)) {
             return SURFACE_DEVICE_HEALTH;
+        }
+        if ("message-channel".equals(finding.category)) {
+            return SURFACE_MESSAGE_CHANNEL;
         }
         return "";
     }

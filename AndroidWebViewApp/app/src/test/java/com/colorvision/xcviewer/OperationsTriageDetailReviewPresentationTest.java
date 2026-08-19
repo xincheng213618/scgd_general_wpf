@@ -46,6 +46,18 @@ public class OperationsTriageDetailReviewPresentationTest {
     }
 
     @Test
+    public void messageEvidenceUpdateTemporarilyDisablesReview() throws Exception {
+        OperationsTriagePresentation.Finding finding = finding(false, "订阅未恢复");
+
+        OperationsTriageDetailReviewPresentation.ViewModel updating =
+                OperationsTriageDetailReviewPresentation.from(finding, false, true);
+
+        assertEquals("正在更新消息证据…", updating.label);
+        assertFalse(updating.enabled);
+        assertFalse(updating.acknowledged);
+    }
+
+    @Test
     public void latestReportMatchesByStableFindingIdAcrossEvidenceRevision()
             throws Exception {
         OperationsTriagePresentation.Finding reference = finding(false, "old evidence");
@@ -93,6 +105,23 @@ public class OperationsTriageDetailReviewPresentationTest {
 
         assertEquals(OperationsTriageDetailReviewPresentation.SURFACE_DEVICE_HEALTH,
                 OperationsTriageDetailReviewPresentation.surfaceFor(device));
+    }
+
+    @Test
+    public void messageFindingsUseTheEvidencePageTheyActuallyOpen() throws Exception {
+        OperationsTriagePresentation.Finding channel = OperationsTriagePresentation.from(
+                new JSONObject("{\"findings\":[{\"findingId\":\"channel\","
+                        + "\"category\":\"message-channel\"}]}"), value -> value)
+                .findings.get(0);
+        OperationsTriagePresentation.Finding service = OperationsTriagePresentation.from(
+                new JSONObject("{\"findings\":[{\"findingId\":\"service\","
+                        + "\"category\":\"message-service\"}]}"), value -> value)
+                .findings.get(0);
+
+        assertEquals(OperationsTriageDetailReviewPresentation.SURFACE_MESSAGE_CHANNEL,
+                OperationsTriageDetailReviewPresentation.surfaceFor(channel));
+        assertEquals(OperationsTriageDetailReviewPresentation.SURFACE_RECENT_EVENTS,
+                OperationsTriageDetailReviewPresentation.surfaceFor(service));
     }
 
     private static OperationsTriagePresentation.Finding finding(

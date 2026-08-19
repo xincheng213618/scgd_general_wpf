@@ -124,10 +124,10 @@ final class OperationsTriageContent {
                 activity,
                 null,
                 com.google.android.material.R.attr.materialButtonTonalStyle);
-        button.setText("全部标记已复核（" + count + "）");
+        button.setText(activity.getString(R.string.operations_review_all_action, count));
         button.setMinHeight(dp(activity, 48));
-        button.setContentDescription("将当前 " + count + " 项问题"
-                + "全部标记为已在此手机复核；电脑状态不会改变，操作后可以撤销");
+        button.setContentDescription(activity.getString(
+                R.string.operations_review_all_direct_content_description, count));
         button.setOnClickListener(view -> reviewAll.run());
         return button;
     }

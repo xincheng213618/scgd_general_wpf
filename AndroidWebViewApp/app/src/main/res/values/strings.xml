@@ -36,6 +36,9 @@
     <plurals name="operations_problem_badge_count">
         <item quantity="other">%d 项待复核</item>
     </plurals>
+    <string name="operations_review_all_action">全部标记已复核（%1$d）</string>
+    <string name="operations_review_all_direct_content_description">将当前 %1$d 项问题全部标记为已在此手机复核；电脑状态不会改变，操作后可以撤销</string>
+    <string name="operations_review_all_remote_content_description">将当前 %1$d 项电脑签名问题全部标记为已在此手机复核；电脑状态不会改变，操作后可以撤销</string>
     <string name="operations_audit_section_count">%1$s · %2$d</string>
     <string name="operations_live_monitor_loading">正在采集第一份有界运行快照…</string>
     <string name="operations_live_monitor_details">前台每 10 秒读取一份脱敏聚合快照；后台守护仍按 60 秒检查。样本只保留在手机内存，离开本页即清空。</string>

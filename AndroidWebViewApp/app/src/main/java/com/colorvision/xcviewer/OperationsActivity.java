@@ -99,6 +99,7 @@ public class OperationsActivity extends AppCompatActivity {
     private static final int MENU_REFRESH_DASHBOARD = 2005;
     private static final int MENU_TARGET = 2006;
     private static final String PATH_SERVICE_HEALTH = "/ops/v1/services/health";
+    private static final String PATH_MESSAGE_CHANNEL = "/ops/v1/messaging/health";
     private static final String PATH_RECENT_EVENTS = "/ops/v1/diagnostics/recent-events";
     private static final String PATH_FAILURE_EVIDENCE = "/ops/v1/diagnostics/failures";
     private static final String PATH_PERFORMANCE = "/ops/v1/diagnostics/performance";
@@ -107,6 +108,8 @@ public class OperationsActivity extends AppCompatActivity {
             OperationsTriageDetailReviewPresentation.SURFACE_RECENT_EVENTS;
     private static final String TRIAGE_REVIEW_DEVICE_HEALTH =
             OperationsTriageDetailReviewPresentation.SURFACE_DEVICE_HEALTH;
+    private static final String TRIAGE_REVIEW_MESSAGE_CHANNEL =
+            OperationsTriageDetailReviewPresentation.SURFACE_MESSAGE_CHANNEL;
 
     private boolean supportCenterVisible;
     private boolean supportAutoRefresh;
@@ -205,6 +208,9 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean triageDetailReviewInFlight;
     private LinearLayout triageDetailReviewContainer;
     private DeviceHealthBottomSheet.ReviewHandle triageDeviceReviewHandle;
+    private OperationsMessageChannelPresentation.ViewModel messageChannelDetailModel;
+    private boolean messageChannelRecoveryInFlight;
+    private CharSequence messageChannelRecoveryPreviousState = "";
     private String lastSuccessfulDashboardUpdateLabel = "";
     private int connectionRequestGeneration;
     private int connectionCheckGeneration;
@@ -5570,7 +5576,8 @@ public class OperationsActivity extends AppCompatActivity {
                 return;
             case "triage.messaging.view":
                 detailParentDestination = OperationsDestinationState.TRIAGE;
-                showDashboardCapabilityDetails("/ops/v1/messaging/health");
+                showDashboardCapabilityDetails(PATH_MESSAGE_CHANNEL);
+                prepareTriageDetailReview(sourceFinding);
                 return;
             case "triage.messaging.reconnect.request":
                 confirmRecoverMessageChannel();
@@ -5620,10 +5627,16 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void refreshTriageDetailReviewAction() {
+        boolean messageEvidenceUpdateInFlight = TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(
+                triageDetailReviewSurface)
+                && (messageChannelRecoveryInFlight
+                        || (dashboardDetailRefreshInFlight
+                                && PATH_MESSAGE_CHANNEL.equals(dashboardDetailPath)));
         OperationsTriageDetailReviewPresentation.ViewModel presentation =
                 OperationsTriageDetailReviewPresentation.from(
                         triageDetailReviewFinding,
-                        triageDetailReviewInFlight);
+                        triageDetailReviewInFlight,
+                        messageEvidenceUpdateInFlight);
         if (triageDeviceReviewHandle != null) {
             triageDeviceReviewHandle.update(presentation);
         }
@@ -5649,6 +5662,15 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void setTriageDetailFindingAcknowledged(boolean acknowledged) {
         if (triageDetailReviewInFlight || triageDetailReviewFinding == null) {
+            return;
+        }
+        if (TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(triageDetailReviewSurface)
+                && (messageChannelRecoveryInFlight || dashboardDetailRefreshInFlight)) {
+            showTriageDetailReviewFeedback(
+                    triageDetailReviewSurface,
+                    "消息证据正在更新 · 完成后再复核",
+                    "",
+                    null);
             return;
         }
         String hostId = triageDetailReviewHostId;
@@ -5750,6 +5772,8 @@ public class OperationsActivity extends AppCompatActivity {
                     reviewSurface,
                     TRIAGE_REVIEW_DEVICE_HEALTH.equals(reviewSurface)
                             ? "发现更新证据 · 请先刷新设备状态后再复核"
+                            : TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(reviewSurface)
+                                    ? "发现更新证据 · 请先刷新消息通道后再复核"
                             : "发现更新证据 · 请先刷新近期事件后再复核",
                     "刷新",
                     () -> refreshTriageDetailReviewEvidence(reviewSurface));
@@ -5830,8 +5854,11 @@ public class OperationsActivity extends AppCompatActivity {
                 && OperationsDestinationState.TRIAGE.equals(currentDestination)
                 && triageDeviceReviewHandle != null
                 && triageDeviceReviewHandle.isShowing();
+        boolean messageChannelVisible = TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(reviewSurface)
+                && OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
+                && PATH_MESSAGE_CHANNEL.equals(dashboardDetailPath);
         return requestGeneration == connectionRequestGeneration
-                && (recentEventsVisible || deviceHealthVisible)
+                && (recentEventsVisible || deviceHealthVisible || messageChannelVisible)
                 && hostId.equals(preferences.getOperationsHostId())
                 && reviewSurface.equals(triageDetailReviewSurface)
                 && triageDetailReviewFinding != null
@@ -5844,7 +5871,8 @@ public class OperationsActivity extends AppCompatActivity {
                 triageDeviceReviewHandle.dismiss();
             }
             showDeviceHealthOverview();
-        } else if (TRIAGE_REVIEW_RECENT_EVENTS.equals(reviewSurface)) {
+        } else if (TRIAGE_REVIEW_RECENT_EVENTS.equals(reviewSurface)
+                || TRIAGE_REVIEW_MESSAGE_CHANNEL.equals(reviewSurface)) {
             refreshDashboardDetail();
         }
     }
@@ -6317,15 +6345,32 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void confirmRecoverMessageChannel() {
+        if (messageChannelRecoveryInFlight) {
+            Snackbar.make(
+                    snackbarHost,
+                    "消息通道恢复正在进行，请等待本次结果",
+                    Snackbar.LENGTH_LONG).show();
+            return;
+        }
+        String originDestination = currentDestination;
+        String originDetailPath = dashboardDetailPath;
         showTargetedConfirmation(
                 "确认恢复消息通道",
                 "只在 ColorVision 消息客户端断开或订阅未就绪时，使用电脑当前已有配置重建连接并恢复已登记订阅。健康通道不会断开；手机不能填写地址、端口、Topic、凭据或其他参数。",
-                "取消", "确认恢复", this::recoverMessageChannel);
+                "取消", "确认恢复",
+                () -> recoverMessageChannel(originDestination, originDetailPath));
     }
 
-    private void recoverMessageChannel() {
+    private void recoverMessageChannel(String originDestination, String originDetailPath) {
+        if (messageChannelRecoveryInFlight) {
+            return;
+        }
+        messageChannelRecoveryInFlight = true;
+        messageChannelRecoveryPreviousState = state.getText();
         progress.setVisibility(View.VISIBLE);
         state.setText(R.string.operations_message_channel_recovering);
+        refreshTriageDetailReviewAction();
+        renderMessageChannelDetailContent();
         executor.execute(() -> {
             try {
                 JSONObject job = createAndApproveJob(
@@ -6336,13 +6381,62 @@ public class OperationsActivity extends AppCompatActivity {
                     throw new IllegalStateException("message_channel_recovery_failed");
                 }
                 runOnUiThread(() -> {
+                    messageChannelRecoveryInFlight = false;
                     Toast.makeText(this, "消息通道已就绪", Toast.LENGTH_LONG).show();
-                    loadCapability("/ops/v1/messaging/health");
+                    finishMessageChannelRecovery(originDestination, originDetailPath);
                 });
             } catch (Exception ex) {
-                runOnUiThread(() -> showTransientError(ex));
+                runOnUiThread(() -> failMessageChannelRecovery(
+                        originDestination, originDetailPath, ex));
             }
         });
+    }
+
+    private void finishMessageChannelRecovery(
+            String originDestination, String originDetailPath) {
+        refreshTriageDetailReviewAction();
+        renderMessageChannelDetailContent();
+        if (!isMessageChannelRecoveryOriginVisible(originDestination, originDetailPath)) {
+            return;
+        }
+        if (OperationsDestinationState.CAPABILITY_DETAIL.equals(originDestination)) {
+            loadCapability(PATH_MESSAGE_CHANNEL);
+        } else if (OperationsDestinationState.TRIAGE.equals(originDestination)) {
+            showTriageCenter();
+        } else if (OperationsDestinationState.TOOLS.equals(originDestination)) {
+            showOperationsToolboxPage();
+        } else {
+            progress.setVisibility(View.GONE);
+            state.setText(messageChannelRecoveryPreviousState);
+        }
+    }
+
+    private void failMessageChannelRecovery(
+            String originDestination,
+            String originDetailPath,
+            Exception exception) {
+        messageChannelRecoveryInFlight = false;
+        refreshTriageDetailReviewAction();
+        renderMessageChannelDetailContent();
+        if (!isMessageChannelRecoveryOriginVisible(originDestination, originDetailPath)) {
+            return;
+        }
+        progress.setVisibility(View.GONE);
+        state.setText(messageChannelRecoveryPreviousState);
+        Snackbar.make(
+                snackbarHost,
+                "消息通道恢复未完成 · " + OperationsErrorPresentation.readable(exception),
+                Snackbar.LENGTH_LONG).show();
+    }
+
+    private boolean isMessageChannelRecoveryOriginVisible(
+            String originDestination, String originDetailPath) {
+        return OperationsMessageChannelRecoveryPolicy.isOriginVisible(
+                originDestination,
+                originDetailPath,
+                currentDestination,
+                dashboardDetailPath,
+                PATH_MESSAGE_CHANNEL);
     }
 
     private void confirmRestartApplication() {
@@ -7324,6 +7418,7 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsDashboardDetailPresentation.forPath(path);
         clearRecentEventsRefreshState();
         clearTriageDetailReviewState();
+        messageChannelDetailModel = null;
         setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         dashboardDetailPath = path;
         refreshDetailsCardVisibility();
@@ -7346,6 +7441,9 @@ public class OperationsActivity extends AppCompatActivity {
         if (dashboardDetailRequest) {
             dashboardDetailRefreshInFlight = true;
             refreshOperationsHeaderNavigation();
+            if (PATH_MESSAGE_CHANNEL.equals(path)) {
+                refreshTriageDetailReviewAction();
+            }
         }
         setShowingDashboardSummary(dashboardSnapshot);
         leaveSupportCenter();
@@ -7381,6 +7479,8 @@ public class OperationsActivity extends AppCompatActivity {
                         renderRecentEvents(response);
                     } else if (dashboardDetailRequest && PATH_AUDIT.equals(path)) {
                         renderAuditTimeline(response);
+                    } else if (dashboardDetailRequest && PATH_MESSAGE_CHANNEL.equals(path)) {
+                        renderMessageChannelHealth(response);
                     } else {
                         state.setText(dashboardSnapshot
                                 ? directConnectionState() : capabilityHeading(path));
@@ -7404,6 +7504,9 @@ public class OperationsActivity extends AppCompatActivity {
                     }
                     if (dashboardDetailRequest && PATH_RECENT_EVENTS.equals(path)) {
                         pendingRecentEventsRefreshBaseline = null;
+                    }
+                    if (dashboardDetailRequest && PATH_MESSAGE_CHANNEL.equals(path)) {
+                        refreshTriageDetailReviewAction();
                     }
                     progress.setVisibility(View.GONE);
                     if (dashboardSnapshot) {
@@ -7448,13 +7551,44 @@ public class OperationsActivity extends AppCompatActivity {
         }
     }
 
+    private void renderMessageChannelHealth(JSONObject response) {
+        JSONObject data = response.optJSONObject("data");
+        JSONObject payload = data == null ? response : data;
+        messageChannelDetailModel = OperationsMessageChannelPresentation.from(
+                payload, this::shortTime);
+        renderMessageChannelDetailContent();
+    }
+
+    private void renderMessageChannelDetailContent() {
+        if (messageChannelDetailModel == null
+                || !OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
+                || !PATH_MESSAGE_CHANNEL.equals(dashboardDetailPath)) {
+            return;
+        }
+        state.setText(messageChannelRecoveryInFlight
+                ? getString(R.string.operations_message_channel_recovering)
+                : messageChannelDetailModel.stateLabel);
+        detailsCard.setVisibility(View.GONE);
+        actions.removeAllViews();
+        addTriageDetailReviewAction();
+        actions.addView(OperationsMessageChannelContent.create(
+                        this,
+                        themeManager,
+                        messageChannelDetailModel,
+                        messageChannelRecoveryInFlight,
+                        this::confirmRecoverMessageChannel),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
     private void runRecentEventAction(String actionId) {
         switch (actionId) {
             case OperationsRecentEventsPresentation.ACTION_CONNECTION_CHECK:
                 runConnectionSelfCheck();
                 return;
             case OperationsRecentEventsPresentation.ACTION_MESSAGE_CHANNEL:
-                showDashboardCapabilityDetails("/ops/v1/messaging/health");
+                showDashboardCapabilityDetails(PATH_MESSAGE_CHANNEL);
                 return;
             case OperationsRecentEventsPresentation.ACTION_DEVICE_HEALTH:
                 showDeviceHealthOverview();

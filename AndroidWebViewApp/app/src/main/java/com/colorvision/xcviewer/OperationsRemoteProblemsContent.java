@@ -45,11 +45,12 @@ final class OperationsRemoteProblemsContent {
                     activity,
                     null,
                     com.google.android.material.R.attr.materialButtonTonalStyle);
-            reviewAllButton.setText("全部标记已复核（" + model.pendingIssues.size() + "）");
+            reviewAllButton.setText(activity.getString(
+                    R.string.operations_review_all_action, model.pendingIssues.size()));
             reviewAllButton.setMinHeight(dp(activity, 48));
-            reviewAllButton.setContentDescription("将当前 " + model.pendingIssues.size()
-                    + " 项电脑签名问题全部标记为已在此手机复核；"
-                    + "电脑状态不会改变，操作后可以撤销");
+            reviewAllButton.setContentDescription(activity.getString(
+                    R.string.operations_review_all_remote_content_description,
+                    model.pendingIssues.size()));
             reviewAllButton.setOnClickListener(view -> reviewAll.run());
             root.addView(reviewAllButton, topMargin(dp(activity, 12)));
         }
