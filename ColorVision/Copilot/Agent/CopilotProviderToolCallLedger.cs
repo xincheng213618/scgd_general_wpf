@@ -46,6 +46,7 @@ namespace ColorVision.Copilot
                 return CopilotProviderToolCallResult.Executed(await executionFactory());
 
             Lazy<Task<string>> execution;
+            var ownsExecution = false;
             lock (_syncRoot)
             {
                 if (!_calls.TryGetValue(normalizedCallId, out var state))
@@ -61,11 +62,15 @@ namespace ColorVision.Copilot
                 if (state.Execution == null)
                 {
                     state.Execution = new Lazy<Task<string>>(executionFactory, LazyThreadSafetyMode.ExecutionAndPublication);
+                    ownsExecution = true;
                 }
                 execution = state.Execution;
             }
 
-            var content = await execution.Value.WaitAsync(cancellationToken);
+            var executionTask = execution.Value;
+            var content = ownsExecution
+                ? await executionTask.ConfigureAwait(false)
+                : await executionTask.WaitAsync(cancellationToken).ConfigureAwait(false);
             return CopilotProviderToolCallResult.Executed(content);
         }
 
