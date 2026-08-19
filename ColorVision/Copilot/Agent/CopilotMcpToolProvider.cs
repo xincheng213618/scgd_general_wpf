@@ -51,8 +51,8 @@ namespace ColorVision.Copilot
             TimeSpan disposalTimeout,
             TimeSpan resourceDisposalTimeout)
         {
-            Tools = tools ?? Array.Empty<ICopilotTool>();
-            Diagnostics = diagnostics ?? Array.Empty<string>();
+            Tools = Array.AsReadOnly((tools ?? Array.Empty<ICopilotTool>()).ToArray());
+            Diagnostics = Array.AsReadOnly((diagnostics ?? Array.Empty<string>()).ToArray());
             _resources = resources?.Where(resource => resource != null).ToArray()
                 ?? Array.Empty<IAsyncDisposable>();
             _disposalTimeout = ValidateTimeout(disposalTimeout, nameof(disposalTimeout));
