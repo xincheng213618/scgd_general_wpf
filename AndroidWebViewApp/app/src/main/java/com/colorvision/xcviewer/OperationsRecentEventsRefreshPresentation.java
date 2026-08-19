@@ -86,6 +86,21 @@ final class OperationsRecentEventsRefreshPresentation {
         return "刷新完成 · 未发现新增异常证据";
     }
 
+    static boolean hasNewEvidence(Snapshot viewed, Snapshot latest) {
+        if (viewed == null || latest == null || !latest.available) {
+            return true;
+        }
+        if (!viewed.available) {
+            return latest.attentionCount() > 0 || !latest.evidence.isEmpty();
+        }
+        if (!addedEvidence(viewed.evidence, latest.evidence).isEmpty()) {
+            return true;
+        }
+        return latest.criticalCount > viewed.criticalCount
+                || latest.errorCount > viewed.errorCount
+                || latest.warningCount > viewed.warningCount;
+    }
+
     private static List<Evidence> addedEvidence(
             List<Evidence> previous,
             List<Evidence> current) {

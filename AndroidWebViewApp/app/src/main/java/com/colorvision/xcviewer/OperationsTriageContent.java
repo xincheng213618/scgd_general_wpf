@@ -208,7 +208,7 @@ final class OperationsTriageContent {
             row.setFocusable(true);
             row.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
             applySelectableBackground(activity, row);
-            row.setOnClickListener(view -> actionHandler.onAction(metric.actionId));
+            row.setOnClickListener(view -> actionHandler.onAction(metric.actionId, null));
             label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             summary.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             rows.addView(row, matchWidth());
@@ -379,7 +379,7 @@ final class OperationsTriageContent {
             clickableSummary.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
             applySelectableBackground(activity, clickableSummary);
             clickableSummary.setOnClickListener(
-                    view -> actionHandler.onAction(cardAction.actionId));
+                    view -> actionHandler.onAction(cardAction.actionId, finding));
             evidence.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             if (summary != null) {
@@ -399,7 +399,8 @@ final class OperationsTriageContent {
             button.setMinHeight(dp(activity, 48));
             button.setContentDescription(action.description.isEmpty()
                     ? action.buttonLabel() : action.buttonLabel() + "。" + action.description);
-            button.setOnClickListener(view -> actionHandler.onAction(action.actionId));
+            button.setOnClickListener(view -> actionHandler.onAction(
+                    action.actionId, finding));
             LinearLayout.LayoutParams buttonParams = topMargin(dp(activity, 4));
             buttonParams.setMargins(
                     dp(activity, 16), dp(activity, 4), dp(activity, 16), dp(activity, 12));
@@ -532,7 +533,9 @@ final class OperationsTriageContent {
     }
 
     interface ActionHandler {
-        void onAction(String actionId);
+        void onAction(
+                String actionId,
+                OperationsTriagePresentation.Finding sourceFinding);
     }
 
     interface ReviewHandler {

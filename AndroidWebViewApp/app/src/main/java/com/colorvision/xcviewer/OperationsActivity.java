@@ -195,6 +195,10 @@ public class OperationsActivity extends AppCompatActivity {
     private String dashboardDetailPath = "";
     private OperationsRecentEventsRefreshPresentation.Snapshot recentEventsSnapshot;
     private OperationsRecentEventsRefreshPresentation.Snapshot pendingRecentEventsRefreshBaseline;
+    private OperationsTriagePresentation.Finding triageDetailReviewFinding;
+    private String triageDetailReviewHostId = "";
+    private boolean triageDetailReviewInFlight;
+    private LinearLayout triageDetailReviewContainer;
     private String lastSuccessfulDashboardUpdateLabel = "";
     private int connectionRequestGeneration;
     private int connectionCheckGeneration;
@@ -2147,6 +2151,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardDetailPath = "";
         dashboardDetailRefreshInFlight = false;
         clearRecentEventsRefreshState();
+        clearTriageDetailReviewState();
         connectionHeartbeatHandler.removeCallbacks(connectionHeartbeat);
         clearDashboardLiveStatusReferences();
         refreshProblemNavigationBadge();
@@ -2179,6 +2184,7 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardDetailRefreshInFlight = false;
         if (!OperationsDestinationState.CAPABILITY_DETAIL.equals(normalized)) {
             clearRecentEventsRefreshState();
+            clearTriageDetailReviewState();
         }
         boolean topLevelTransition = OperationsInPageNavigationPolicy.isTopLevelTransition(
                 currentDestination, normalized);
@@ -2698,6 +2704,13 @@ public class OperationsActivity extends AppCompatActivity {
     private void clearRecentEventsRefreshState() {
         recentEventsSnapshot = null;
         pendingRecentEventsRefreshBaseline = null;
+    }
+
+    private void clearTriageDetailReviewState() {
+        triageDetailReviewFinding = null;
+        triageDetailReviewHostId = "";
+        triageDetailReviewInFlight = false;
+        triageDetailReviewContainer = null;
     }
 
     private void showToolboxCapabilityDetails(String path) {
@@ -5307,14 +5320,7 @@ public class OperationsActivity extends AppCompatActivity {
         List<OperationsTriagePresentation.Finding> pendingFindings =
                 model.pendingFindings;
         problemCenterRefreshInFlight = false;
-        problemBadgeCount = model.pendingFindings.size();
-        problemBadgeState = model.watchState();
-        directProblemBadgeRefreshGeneration++;
-        directProblemBadgeRefreshInFlight = false;
-        directProblemBadgeAuthoritative = true;
-        directProblemBadgeMonitorRevision = latestDirectProblemMonitorRevision;
-        lastDirectProblemBadgeRefreshAttemptMilliseconds = nowMilliseconds;
-        refreshProblemNavigationBadge();
+        applyAuthoritativeTriageStatus(model, nowMilliseconds);
         refreshOperationsHeaderNavigation();
         scrollDashboardToTop();
         progress.setVisibility(View.GONE);
@@ -5328,7 +5334,7 @@ public class OperationsActivity extends AppCompatActivity {
                         themeManager,
                         model,
                         focused.contextMessage,
-                        this::runTriageAction,
+                        (actionId, finding) -> runTriageAction(actionId, finding),
                         (finding, acknowledged) -> setTriageFindingAcknowledged(
                                 report, finding, acknowledged),
                         () -> setAllTriageFindingsAcknowledged(
@@ -5349,6 +5355,19 @@ public class OperationsActivity extends AppCompatActivity {
                         LinearLayout.LayoutParams.WRAP_CONTENT));
         problemCenterCurrentContentRendered = true;
         restoreTopLevelScroll(OperationsDestinationState.TRIAGE);
+    }
+
+    private void applyAuthoritativeTriageStatus(
+            OperationsTriagePresentation.ViewModel model,
+            long nowMilliseconds) {
+        problemBadgeCount = model.pendingFindings.size();
+        problemBadgeState = model.watchState();
+        directProblemBadgeRefreshGeneration++;
+        directProblemBadgeRefreshInFlight = false;
+        directProblemBadgeAuthoritative = true;
+        directProblemBadgeMonitorRevision = latestDirectProblemMonitorRevision;
+        lastDirectProblemBadgeRefreshAttemptMilliseconds = nowMilliseconds;
+        refreshProblemNavigationBadge();
     }
 
     private void addFleetProblemCenterOverview() {
@@ -5518,11 +5537,14 @@ public class OperationsActivity extends AppCompatActivity {
         runConnectionSelfCheck();
     }
 
-    private void runTriageAction(String actionId) {
+    private void runTriageAction(
+            String actionId,
+            OperationsTriagePresentation.Finding sourceFinding) {
         switch (actionId) {
             case "triage.events.view":
                 detailParentDestination = OperationsDestinationState.TRIAGE;
                 showDashboardCapabilityDetails(PATH_RECENT_EVENTS);
+                prepareTriageDetailReview(sourceFinding);
                 return;
             case "triage.window.show":
                 runWindowAction("show", "主窗口已显示");
@@ -5551,6 +5573,225 @@ public class OperationsActivity extends AppCompatActivity {
             default:
                 return;
         }
+    }
+
+    private void prepareTriageDetailReview(
+            OperationsTriagePresentation.Finding finding) {
+        if (finding == null || !"diagnostics".equals(finding.category)) {
+            return;
+        }
+        String hostId = preferences.getOperationsHostId();
+        if (!OperationsRelayPolicy.isSafeIdentifier(hostId)) {
+            return;
+        }
+        triageDetailReviewFinding = finding;
+        triageDetailReviewHostId = hostId;
+        triageDetailReviewInFlight = false;
+    }
+
+    private void addTriageDetailReviewAction() {
+        if (triageDetailReviewFinding == null
+                || !triageDetailReviewHostId.equals(preferences.getOperationsHostId())) {
+            return;
+        }
+        triageDetailReviewContainer = new LinearLayout(this);
+        triageDetailReviewContainer.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, 0, dp(8));
+        actions.addView(triageDetailReviewContainer, params);
+        refreshTriageDetailReviewAction();
+    }
+
+    private void refreshTriageDetailReviewAction() {
+        if (triageDetailReviewContainer == null) {
+            return;
+        }
+        OperationsTriageDetailReviewPresentation.ViewModel presentation =
+                OperationsTriageDetailReviewPresentation.from(
+                        triageDetailReviewFinding,
+                        triageDetailReviewInFlight);
+        triageDetailReviewContainer.removeAllViews();
+        triageDetailReviewContainer.setVisibility(
+                presentation.visible ? View.VISIBLE : View.GONE);
+        if (!presentation.visible) {
+            return;
+        }
+        Button button = triageDetailReviewFinding.acknowledged
+                ? dashboardButton(presentation.label,
+                        view -> setTriageDetailFindingAcknowledged(false))
+                : dashboardTonalButton(presentation.label,
+                        view -> setTriageDetailFindingAcknowledged(true));
+        button.setEnabled(presentation.enabled);
+        button.setContentDescription(presentation.contentDescription);
+        triageDetailReviewContainer.addView(button, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void setTriageDetailFindingAcknowledged(boolean acknowledged) {
+        if (triageDetailReviewInFlight || triageDetailReviewFinding == null) {
+            return;
+        }
+        String hostId = triageDetailReviewHostId;
+        OperationsApiClient requestClient = client;
+        if (requestClient == null
+                || !hostId.equals(preferences.getOperationsHostId())
+                || !OperationsRelayPolicy.isSafeIdentifier(hostId)) {
+            Snackbar.make(
+                    snackbarHost,
+                    "复核未完成 · 当前电脑连接已变化",
+                    Snackbar.LENGTH_LONG).show();
+            return;
+        }
+        String findingId = triageDetailReviewFinding.findingId;
+        int requestGeneration = connectionRequestGeneration;
+        triageDetailReviewInFlight = true;
+        refreshTriageDetailReviewAction();
+        executor.execute(() -> {
+            try {
+                JSONObject response = requestClient.get("/ops/v1/triage");
+                JSONObject report = response.optJSONObject("data");
+                if (report == null) {
+                    throw new IllegalStateException("incomplete_triage_response");
+                }
+                JSONObject eventsResponse = requestClient.get(PATH_RECENT_EVENTS);
+                JSONObject eventsData = eventsResponse.optJSONObject("data");
+                JSONObject eventsPayload = eventsData == null
+                        ? eventsResponse : eventsData;
+                OperationsRecentEventsRefreshPresentation.Snapshot latestEvents =
+                        OperationsRecentEventsRefreshPresentation.capture(eventsPayload);
+                runOnUiThread(() -> finishTriageDetailReview(
+                        requestGeneration,
+                        hostId,
+                        findingId,
+                        acknowledged,
+                        latestEvents,
+                        report));
+            } catch (Exception ex) {
+                runOnUiThread(() -> failTriageDetailReview(
+                        requestGeneration, hostId, findingId, ex));
+            }
+        });
+    }
+
+    private void finishTriageDetailReview(
+            int requestGeneration,
+            String hostId,
+            String findingId,
+            boolean acknowledged,
+            OperationsRecentEventsRefreshPresentation.Snapshot latestEvents,
+            JSONObject report) {
+        if (!isCurrentTriageDetailReviewRequest(
+                requestGeneration, hostId, findingId)) {
+            return;
+        }
+        long nowMilliseconds = System.currentTimeMillis();
+        OperationsTriagePresentation.Finding previous = triageDetailReviewFinding;
+        OperationsTriagePresentation.ViewModel latestModel =
+                triageModel(report, true, nowMilliseconds);
+        OperationsTriagePresentation.Finding latest =
+                OperationsTriageDetailReviewPresentation.findCurrent(
+                        latestModel, previous);
+        if (latest == null) {
+            triageDetailReviewFinding = null;
+            triageDetailReviewInFlight = false;
+            applyAuthoritativeTriageStatus(latestModel, nowMilliseconds);
+            refreshTriageDetailReviewAction();
+            Snackbar.make(
+                    snackbarHost,
+                    "最新问题报告已不再包含此问题，无需复核",
+                    Snackbar.LENGTH_LONG).show();
+            return;
+        }
+
+        boolean evidenceChanged = !previous.revision.equals(latest.revision);
+        boolean hasUnseenEvidence = OperationsRecentEventsRefreshPresentation
+                .hasNewEvidence(recentEventsSnapshot, latestEvents);
+        if (OperationsTriageDetailReviewPresentation.requiresEvidenceRefresh(
+                latest, acknowledged, hasUnseenEvidence)) {
+            triageDetailReviewFinding = latest;
+            triageDetailReviewInFlight = false;
+            applyAuthoritativeTriageStatus(latestModel, nowMilliseconds);
+            refreshTriageDetailReviewAction();
+            Snackbar snackbar = Snackbar.make(
+                    snackbarHost,
+                    "发现更新证据 · 请先刷新近期事件后再复核",
+                    Snackbar.LENGTH_LONG);
+            snackbar.setAction("刷新", view -> refreshDashboardDetail());
+            snackbar.show();
+            return;
+        }
+        boolean stateAlreadyMatched = latest.acknowledged == acknowledged;
+        if (!stateAlreadyMatched) {
+            preferences.saveOperationsTriageFindingAcknowledged(
+                    hostId,
+                    latest.findingId,
+                    latest.revision,
+                    acknowledged,
+                    nowMilliseconds);
+            latestModel = triageModel(report, false, nowMilliseconds);
+            latest = OperationsTriageDetailReviewPresentation.findCurrent(
+                    latestModel, latest);
+        }
+        triageDetailReviewFinding = latest;
+        triageDetailReviewInFlight = false;
+        applyAuthoritativeTriageStatus(latestModel, nowMilliseconds);
+        if (OperationsAttentionNotificationReconciliation.shouldClear(
+                preferences.getOperationsWatchState(), latestModel)) {
+            OperationsWatchService.dismissAttentionNotification(this, hostId);
+        }
+        refreshTriageDetailReviewAction();
+
+        String message;
+        if (acknowledged) {
+            message = stateAlreadyMatched
+                    ? "最新证据已在此手机复核"
+                    : evidenceChanged
+                            ? "已按最新证据复核；电脑状态未改变"
+                            : "已在此手机复核；电脑状态未改变，新证据会自动重新出现";
+        } else {
+            message = stateAlreadyMatched
+                    ? evidenceChanged
+                            ? "检测到更新证据，当前已经是待复核"
+                            : "当前证据已经是待复核"
+                    : "已恢复为待复核";
+        }
+        Snackbar snackbar = Snackbar.make(snackbarHost, message, Snackbar.LENGTH_LONG);
+        if (acknowledged && !stateAlreadyMatched) {
+            snackbar.setAction("撤销", view -> setTriageDetailFindingAcknowledged(false));
+        }
+        snackbar.show();
+    }
+
+    private void failTriageDetailReview(
+            int requestGeneration,
+            String hostId,
+            String findingId,
+            Exception exception) {
+        if (!isCurrentTriageDetailReviewRequest(
+                requestGeneration, hostId, findingId)) {
+            return;
+        }
+        triageDetailReviewInFlight = false;
+        refreshTriageDetailReviewAction();
+        Snackbar.make(
+                snackbarHost,
+                "复核未完成 · " + OperationsErrorPresentation.readable(exception),
+                Snackbar.LENGTH_LONG).show();
+    }
+
+    private boolean isCurrentTriageDetailReviewRequest(
+            int requestGeneration,
+            String hostId,
+            String findingId) {
+        return requestGeneration == connectionRequestGeneration
+                && OperationsDestinationState.CAPABILITY_DETAIL.equals(currentDestination)
+                && PATH_RECENT_EVENTS.equals(dashboardDetailPath)
+                && hostId.equals(preferences.getOperationsHostId())
+                && triageDetailReviewFinding != null
+                && findingId.equals(triageDetailReviewFinding.findingId);
     }
 
     private void showJobs() {
@@ -6978,6 +7219,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void showDashboardApplicationDetails() {
         clearRecentEventsRefreshState();
+        clearTriageDetailReviewState();
         setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         dashboardDetailPath = "/ops/v1/snapshot";
         refreshDetailsCardVisibility();
@@ -6992,6 +7234,7 @@ public class OperationsActivity extends AppCompatActivity {
         OperationsDashboardDetailPresentation.Item presentation =
                 OperationsDashboardDetailPresentation.forPath(path);
         clearRecentEventsRefreshState();
+        clearTriageDetailReviewState();
         setCurrentDestination(OperationsDestinationState.CAPABILITY_DETAIL);
         dashboardDetailPath = path;
         refreshDetailsCardVisibility();
@@ -7103,6 +7346,7 @@ public class OperationsActivity extends AppCompatActivity {
         state.setText(model.stateLabel);
         detailsCard.setVisibility(View.GONE);
         actions.removeAllViews();
+        addTriageDetailReviewAction();
         actions.addView(OperationsRecentEventsContent.create(
                         this, themeManager, model, this::runRecentEventAction),
                 new LinearLayout.LayoutParams(

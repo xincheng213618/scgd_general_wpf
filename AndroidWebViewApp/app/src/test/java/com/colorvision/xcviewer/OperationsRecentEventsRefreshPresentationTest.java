@@ -5,6 +5,8 @@ import org.json.JSONObject;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class OperationsRecentEventsRefreshPresentationTest {
     @Test
@@ -21,6 +23,8 @@ public class OperationsRecentEventsRefreshPresentationTest {
 
         assertEquals("刷新完成 · 未发现新增异常证据",
                 OperationsRecentEventsRefreshPresentation.feedback(previous, current));
+        assertFalse(OperationsRecentEventsRefreshPresentation.hasNewEvidence(
+                previous, current));
     }
 
     @Test
@@ -37,6 +41,8 @@ public class OperationsRecentEventsRefreshPresentationTest {
 
         assertEquals("刷新完成 · 发现 1 条新增异常证据 · 错误 1",
                 OperationsRecentEventsRefreshPresentation.feedback(previous, current));
+        assertTrue(OperationsRecentEventsRefreshPresentation.hasNewEvidence(
+                previous, current));
     }
 
     @Test
@@ -47,6 +53,8 @@ public class OperationsRecentEventsRefreshPresentationTest {
 
         assertEquals("刷新完成 · 异常计数增加 · 错误 +1 · 警告 +2",
                 OperationsRecentEventsRefreshPresentation.feedback(previous, current));
+        assertTrue(OperationsRecentEventsRefreshPresentation.hasNewEvidence(
+                previous, current));
     }
 
     @Test
@@ -56,6 +64,8 @@ public class OperationsRecentEventsRefreshPresentationTest {
 
         assertEquals("刷新完成 · 日志窗口已更新，当前异常 2 条；计数下降不代表已恢复",
                 OperationsRecentEventsRefreshPresentation.feedback(previous, current));
+        assertFalse(OperationsRecentEventsRefreshPresentation.hasNewEvidence(
+                previous, current));
     }
 
     @Test
