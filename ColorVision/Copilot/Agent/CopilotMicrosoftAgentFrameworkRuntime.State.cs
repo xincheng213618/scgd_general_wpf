@@ -84,7 +84,7 @@ namespace ColorVision.Copilot
             private readonly Func<string> _answerText;
             private readonly Func<IReadOnlyList<string>> _deliveredSteeringMessages;
             private CopilotAgentCheckpointPublication? _latestPublication;
-            private readonly SemaphoreSlim _publicationGate = new(1, 1);
+            private readonly CopilotAgentCheckpointPublicationGate _publicationGate = new();
 
             public LiveCheckpointPublisher(
                 CopilotAgentRequest request,
@@ -134,46 +134,21 @@ namespace ColorVision.Copilot
             {
                 ArgumentNullException.ThrowIfNull(agent);
                 ArgumentNullException.ThrowIfNull(session);
-                if (!await _publicationGate.WaitAsync(
-                        millisecondsTimeout: 0,
-                        cancellationToken).ConfigureAwait(false))
-                {
-                    return false;
-                }
-                try
-                {
-                    return await PublishCoreAsync(
-                        agent,
-                        session,
-                        knownTaskLedger,
-                        cancellationToken).ConfigureAwait(false);
-                }
-                finally
-                {
-                    _publicationGate.Release();
-                }
+                return await _publicationGate.TryRunAsync(
+                    token => PublishCoreAsync(agent, session, knownTaskLedger, token),
+                    cancellationToken).ConfigureAwait(false);
             }
 
-            public async ValueTask<bool> PublishForToolDispatchAsync(
+            public ValueTask<bool> PublishRequiredAsync(
                 AIAgent agent,
                 AgentSession session,
                 CancellationToken cancellationToken)
             {
                 ArgumentNullException.ThrowIfNull(agent);
                 ArgumentNullException.ThrowIfNull(session);
-                await _publicationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-                try
-                {
-                    return await PublishCoreAsync(
-                        agent,
-                        session,
-                        null,
-                        cancellationToken).ConfigureAwait(false);
-                }
-                finally
-                {
-                    _publicationGate.Release();
-                }
+                return _publicationGate.RunRequiredAsync(
+                    token => PublishCoreAsync(agent, session, null, token),
+                    cancellationToken);
             }
 
             private async ValueTask<bool> PublishCoreAsync(

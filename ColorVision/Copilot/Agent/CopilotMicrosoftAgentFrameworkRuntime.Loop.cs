@@ -376,7 +376,7 @@ namespace ColorVision.Copilot
             var steeringRegistration = sessionPreparation.SteeringRegistration;
             liveCheckpointPublisher = sessionPreparation.LiveCheckpointPublisher;
             bridge.AttachInteractionCheckpointPublisher(
-                token => liveCheckpointPublisher.TryPublishAsync(agent, session, token));
+                token => liveCheckpointPublisher.PublishRequiredAsync(agent, session, token));
             var statePersistenceBarrier = request.StatePersistenceBarrier;
             if (statePersistenceBarrier != null)
             {
@@ -384,7 +384,7 @@ namespace ColorVision.Copilot
                     async token =>
                     {
                         if (!await liveCheckpointPublisher
-                                .PublishForToolDispatchAsync(agent, session, token)
+                                .PublishRequiredAsync(agent, session, token)
                                 .ConfigureAwait(false))
                         {
                             return false;
