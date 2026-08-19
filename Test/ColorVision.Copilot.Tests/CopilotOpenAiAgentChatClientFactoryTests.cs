@@ -223,6 +223,48 @@ public sealed class CopilotOpenAiAgentChatClientFactoryTests
         AssertStatelessResponseItemsReplayed(handler.Payloads[2]);
     }
 
+    [Fact]
+    public async Task OfficialOpenAiAgentDegradesStaleMessageReplayMetadataToPortableContent()
+    {
+        using var handler = new CapturingHandler(
+            ReasoningResponseStream,
+            TextResponseStream);
+        using var httpClient = new HttpClient(handler);
+        using var client = CopilotOpenAiAgentChatClientFactory.Create(
+            CreateProfile(
+                CopilotVendorType.OpenAI,
+                "https://api.openai.com/v1",
+                "gpt-5.5"),
+            httpClient);
+        var firstUserMessage = new ChatMessage(ChatRole.User, "Remember the reasoning state.");
+
+        var firstResponse = await client.GetStreamingResponseAsync(
+                [firstUserMessage])
+            .ToChatResponseAsync();
+        var serializedMessages = JsonSerializer.Serialize(
+            firstResponse.Messages,
+            AIJsonUtilities.DefaultOptions);
+        var restoredMessages = Assert.IsType<List<ChatMessage>>(
+            JsonSerializer.Deserialize<List<ChatMessage>>(
+                serializedMessages,
+                AIJsonUtilities.DefaultOptions));
+        var restoredAssistant = Assert.Single(restoredMessages);
+        restoredAssistant.Contents = [new TextContent("Compacted answer.")];
+        var secondTurnMessages = new List<ChatMessage> { firstUserMessage, restoredAssistant };
+        secondTurnMessages.Add(new ChatMessage(ChatRole.User, "Continue from the compacted state."));
+
+        await client.GetStreamingResponseAsync(secondTurnMessages)
+            .ToChatResponseAsync();
+
+        using var document = JsonDocument.Parse(handler.Payloads[1]);
+        var assistantItem = Assert.Single(
+            document.RootElement.GetProperty("input").EnumerateArray(),
+            item => item.GetProperty("type").GetString() == "message"
+                && item.GetProperty("role").GetString() == "assistant");
+        var outputText = Assert.Single(assistantItem.GetProperty("content").EnumerateArray());
+        Assert.Equal("Compacted answer.", outputText.GetProperty("text").GetString());
+    }
+
     private static void AssertStatelessResponseItemsReplayed(string payload)
     {
         using var document = JsonDocument.Parse(payload);
