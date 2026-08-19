@@ -28,6 +28,21 @@ final class OperationsDashboardRefreshPolicy {
         return toolbarActionVisible && !manualRefreshInFlight;
     }
 
+    static boolean showsRemoteToolboxAction(
+            boolean hasOperationsProfile,
+            boolean dashboardVisible,
+            boolean toolboxDestination,
+            boolean remoteDashboard,
+            boolean connectionRecoveryVisible,
+            boolean hasRelayClient) {
+        return hasOperationsProfile
+                && dashboardVisible
+                && toolboxDestination
+                && remoteDashboard
+                && !connectionRecoveryVisible
+                && hasRelayClient;
+    }
+
     static Decision decide(
             boolean activityResumed,
             boolean dashboardVisible,

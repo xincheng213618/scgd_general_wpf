@@ -2,6 +2,9 @@ package com.colorvision.xcviewer;
 
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -21,6 +24,12 @@ public class OperationsToolboxPresentationTest {
         assertEquals("支持记录", model.sections.get(4).shortcutLabel());
         assertEquals("跳到支持与记录分组",
                 model.sections.get(4).shortcutAccessibilityLabel());
+        Set<String> shortcutLabels = new HashSet<>();
+        for (OperationsToolboxPresentation.Section section : model.sections) {
+            assertTrue(shortcutLabels.add(section.shortcutLabel()));
+            assertEquals("跳到" + section.title + "分组",
+                    section.shortcutAccessibilityLabel());
+        }
         assertEquals(17, model.actionCount());
         assertEquals(17, model.enabledActionCount());
         assertTrue(model.hasUniqueActionIds());

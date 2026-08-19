@@ -29,6 +29,20 @@ public class OperationsDashboardRefreshPolicyTest {
     }
 
     @Test
+    public void remoteToolboxReusesTheToolbarRefreshAction() {
+        assertTrue(OperationsDashboardRefreshPolicy.showsRemoteToolboxAction(
+                true, true, true, true, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsRemoteToolboxAction(
+                true, true, true, false, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsRemoteToolboxAction(
+                true, true, false, true, false, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsRemoteToolboxAction(
+                true, true, true, true, true, true));
+        assertFalse(OperationsDashboardRefreshPolicy.showsRemoteToolboxAction(
+                true, true, true, true, false, false));
+    }
+
+    @Test
     public void visibleDashboardStartsANewRefresh() {
         assertEquals(
                 OperationsDashboardRefreshPolicy.Decision.START,

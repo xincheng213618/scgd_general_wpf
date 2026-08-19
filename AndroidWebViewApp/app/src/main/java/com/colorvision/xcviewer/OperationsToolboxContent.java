@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -32,8 +31,9 @@ final class OperationsToolboxContent {
             SectionHandler sectionHandler) {
         List<Chip> shortcutChips = new ArrayList<>();
         ChipGroup shortcutGroup = new ChipGroup(activity);
-        shortcutGroup.setSingleLine(true);
+        shortcutGroup.setSingleLine(false);
         shortcutGroup.setChipSpacingHorizontal(dp(activity, 8));
+        shortcutGroup.setChipSpacingVertical(dp(activity, 4));
         for (OperationsToolboxPresentation.Section section : model.sections) {
             Chip shortcut = new Chip(activity);
             shortcut.setText(section.shortcutLabel());
@@ -43,15 +43,9 @@ final class OperationsToolboxContent {
             shortcutGroup.addView(shortcut);
             shortcutChips.add(shortcut);
         }
-        HorizontalScrollView shortcuts = new HorizontalScrollView(activity);
-        shortcuts.setHorizontalScrollBarEnabled(false);
-        shortcuts.setFillViewport(false);
-        shortcuts.addView(shortcutGroup, new HorizontalScrollView.LayoutParams(
-                HorizontalScrollView.LayoutParams.WRAP_CONTENT,
-                HorizontalScrollView.LayoutParams.WRAP_CONTENT));
         LinearLayout.LayoutParams shortcutParams = matchWidth();
         shortcutParams.setMargins(0, dp(activity, 2), 0, dp(activity, 2));
-        target.addView(shortcuts, shortcutParams);
+        target.addView(shortcutGroup, shortcutParams);
 
         List<TextView> sectionHeadings = new ArrayList<>();
         for (OperationsToolboxPresentation.Section section : model.sections) {

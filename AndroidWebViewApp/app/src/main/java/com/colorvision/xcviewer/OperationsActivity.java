@@ -163,6 +163,7 @@ public class OperationsActivity extends AppCompatActivity {
     private boolean connectionRecoveryVisible;
     private boolean connectionHeartbeatInFlight;
     private boolean manualDashboardRefresh;
+    private boolean remoteToolboxRefreshInFlight;
     private String lastSuccessfulDashboardUpdateLabel = "";
     private int connectionRequestGeneration;
     private int connectionCheckGeneration;
@@ -307,7 +308,11 @@ public class OperationsActivity extends AppCompatActivity {
             if (item.getItemId() != MENU_REFRESH_DASHBOARD) {
                 return false;
             }
-            requestDashboardRefresh();
+            if (isRemoteToolboxRefreshDestination()) {
+                refreshRemoteOperationsToolbox();
+            } else {
+                requestDashboardRefresh();
+            }
             return true;
         });
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
@@ -1883,16 +1888,30 @@ public class OperationsActivity extends AppCompatActivity {
             title.setNavigationContentDescription(null);
         }
         if (dashboardRefreshMenuItem != null) {
-            boolean showRefresh = OperationsDashboardRefreshPolicy.showsToolbarAction(
+            boolean showDashboardRefresh = OperationsDashboardRefreshPolicy.showsToolbarAction(
                     paired,
                     dashboardVisible,
                     showingDashboardSummary,
                     connectionRecoveryVisible,
                     client != null || relayClient != null);
+            boolean showToolboxRefresh = OperationsDashboardRefreshPolicy
+                    .showsRemoteToolboxAction(
+                            paired,
+                            dashboardVisible,
+                            OperationsDestinationState.TOOLS.equals(currentDestination),
+                            remoteDashboard,
+                            connectionRecoveryVisible,
+                            relayClient != null);
+            boolean showRefresh = showDashboardRefresh || showToolboxRefresh;
+            dashboardRefreshMenuItem.setTitle(showToolboxRefresh
+                    ? "刷新工具可用性"
+                    : getString(R.string.operations_refresh_dashboard));
             dashboardRefreshMenuItem.setVisible(showRefresh);
             dashboardRefreshMenuItem.setEnabled(
                     OperationsDashboardRefreshPolicy.toolbarActionEnabled(
-                            showRefresh, manualDashboardRefresh));
+                            showRefresh,
+                            showToolboxRefresh
+                                    ? remoteToolboxRefreshInFlight : manualDashboardRefresh));
         }
         if (dashboardFreshness != null) {
             dashboardFreshness.setVisibility(
@@ -2147,8 +2166,6 @@ public class OperationsActivity extends AppCompatActivity {
         state.setText(model.compactStateLabel);
         details.setText(model.summary);
         actions.removeAllViews();
-        addDashboardWideAction(dashboardTonalButton(
-                "刷新工具可用性", v -> refreshRemoteOperationsToolbox()));
         OperationsToolboxContent.addTo(
                 this,
                 themeManager,
@@ -2165,12 +2182,18 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void refreshRemoteOperationsToolbox() {
+        if (remoteToolboxRefreshInFlight) {
+            return;
+        }
+        remoteToolboxRefreshInFlight = true;
+        refreshOperationsHeaderNavigation();
         progress.setVisibility(View.VISIBLE);
         state.setText("正在核验电脑签名能力…");
         executor.execute(() -> {
             try {
                 JSONObject response = relayClient.getSnapshot();
                 runOnUiThread(() -> {
+                    remoteToolboxRefreshInFlight = false;
                     lastRelaySnapshotResponse = response;
                     JSONObject host = response.optJSONObject("host");
                     boolean fresh = host != null && OperationsRelayPolicy.isHostFresh(
@@ -2184,9 +2207,18 @@ public class OperationsActivity extends AppCompatActivity {
                     showRemoteOperationsToolboxPage();
                 });
             } catch (Exception ex) {
-                runOnUiThread(() -> showTransientError(ex));
+                runOnUiThread(() -> {
+                    remoteToolboxRefreshInFlight = false;
+                    refreshOperationsHeaderNavigation();
+                    showTransientError(ex);
+                });
             }
         });
+    }
+
+    private boolean isRemoteToolboxRefreshDestination() {
+        return remoteDashboard
+                && OperationsDestinationState.TOOLS.equals(currentDestination);
     }
 
     private void runOperationsToolboxAction(String actionId) {
