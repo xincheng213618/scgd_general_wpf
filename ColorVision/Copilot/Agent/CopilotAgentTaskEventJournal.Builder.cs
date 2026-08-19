@@ -156,7 +156,9 @@ namespace ColorVision.Copilot
                         ? "Protected tool call was approved by automatic permission review."
                         : string.Equals(source, nameof(CopilotFrameworkApprovalDecisionSource.TemporaryGrant), StringComparison.Ordinal)
                             ? "Protected tool call was approved by the temporary task grant."
-                            : "Protected tool call was approved by the user."
+                            : string.Equals(source, nameof(CopilotFrameworkApprovalDecisionSource.ExecutionPolicy), StringComparison.Ordinal)
+                                ? "Protected tool call was approved by the submitted turn's execution policy."
+                                : "Protected tool call was approved by the user."
                     : "Protected tool call was denied or expired.",
                 toolName,
                 [CopilotAgentTaskEventIds.ForCall(callId)],

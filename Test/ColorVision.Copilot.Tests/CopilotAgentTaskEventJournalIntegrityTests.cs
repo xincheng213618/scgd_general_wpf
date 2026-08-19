@@ -127,6 +127,9 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
             .ToArray();
         Assert.Equal(2, approvals.Length);
         Assert.Equal(2, approvals.Select(item => item.SubjectId).Distinct(StringComparer.Ordinal).Count());
+        Assert.All(approvals, item => Assert.Equal(
+            "Protected tool call was approved by the submitted turn's execution policy.",
+            item.Summary));
         Assert.Contains(approvals, item => item.RelatedIds.Contains(
             CopilotAgentTaskEventIds.ForCall("first-policy-call"),
             StringComparer.Ordinal));
