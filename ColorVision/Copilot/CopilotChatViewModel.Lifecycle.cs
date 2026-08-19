@@ -81,6 +81,17 @@ namespace ColorVision.Copilot
 
         private void Application_Exit(object? sender, ExitEventArgs e)
         {
+            try
+            {
+                CopilotMcpServer.Instance.ShutdownAsync()
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            catch (Exception exception)
+            {
+                System.Diagnostics.Trace.TraceError(
+                    $"Copilot MCP server shutdown failed: {CopilotAgentTraceEntry.Sanitize(exception.Message)}");
+            }
             PreserveQueuedFollowUpsForRestart();
             CopilotSteeringRecovery.RestorePendingToDrafts(_state);
             var scheduledRuns = _taskHost.ScheduledRuns;
