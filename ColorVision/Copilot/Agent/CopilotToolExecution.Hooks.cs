@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -246,7 +247,7 @@ namespace ColorVision.Copilot
                     context.MaximumTokens,
                     isPreToolUse: true);
             }
-            outcome.HookRuns = hookRuns;
+            outcome.HookRuns = CreateHookRunSnapshot(hookRuns);
             var hookEvents = new CopilotToolExecutionHookEventPublisher(
                 onEvent,
                 () => CreateExecutionInfo(
@@ -410,18 +411,22 @@ namespace ColorVision.Copilot
 
         private static void SealOutcome(
             CopilotToolExecutionOutcome outcome,
-            IReadOnlyList<CopilotToolExecutionHookRun> hookRuns,
+            List<CopilotToolExecutionHookRun> hookRuns,
             bool toolWasExecuted)
         {
             if (toolWasExecuted)
                 AddChangedPathProjectInstructions(outcome);
-            outcome.HookRuns = hookRuns.ToArray();
+            outcome.HookRuns = CreateHookRunSnapshot(hookRuns);
             outcome.FormattedModelResult = CopilotToolOutputArchivePolicy.Format(
                 outcome,
                 outcome.Invocation.AgentRequest.ToolOutputTokenLimitOverride);
             RecordReviewEvidence(outcome);
             CopilotToolExecutionAuditLogger.Record(outcome);
         }
+
+        private static ReadOnlyCollection<CopilotToolExecutionHookRun> CreateHookRunSnapshot(
+            List<CopilotToolExecutionHookRun> hookRuns) =>
+            Array.AsReadOnly(hookRuns.ToArray());
 
         private static async Task<CopilotCodexAsyncHookOutput?> RunAsyncPostHookNotificationAsync(
             ICopilotToolExecutionHook hook,
