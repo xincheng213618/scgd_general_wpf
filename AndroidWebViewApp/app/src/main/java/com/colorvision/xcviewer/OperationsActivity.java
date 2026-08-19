@@ -2202,8 +2202,6 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardPriorityAction.setEnabled(false);
         addDashboardWideAction(dashboardPriorityAction);
 
-        addDashboardShortcuts();
-
         dashboardStatusHeading = addDashboardSection(
                 OperationsDashboardStatusFormatter.sectionTitle(false, true));
         dashboardApplicationStatus = dashboardStatusRow("应用",
@@ -2235,41 +2233,6 @@ public class OperationsActivity extends AppCompatActivity {
         }
         loadDashboardSnapshot();
         loadDashboardLiveStatus();
-    }
-
-    private void addDashboardShortcuts() {
-        List<OperationsDashboardShortcutPresentation.Shortcut> shortcuts =
-                OperationsDashboardShortcutPresentation.direct();
-        addDashboardSection("连接");
-        for (int index = 0; index < shortcuts.size(); index += 2) {
-            addDashboardShortcutRow(
-                    dashboardShortcutButton(shortcuts.get(index)),
-                    dashboardShortcutButton(shortcuts.get(index + 1)));
-        }
-    }
-
-    private Button dashboardShortcutButton(
-            OperationsDashboardShortcutPresentation.Shortcut shortcut) {
-        Button button = shortcut.tonal
-                ? dashboardTonalButton(
-                        shortcut.label, v -> runDashboardShortcut(shortcut.actionId))
-                : dashboardButton(
-                        shortcut.label, v -> runDashboardShortcut(shortcut.actionId));
-        button.setContentDescription(shortcut.accessibilityLabel());
-        return button;
-    }
-
-    private void runDashboardShortcut(String actionId) {
-        switch (actionId) {
-            case OperationsDashboardShortcutPresentation.ACTION_CONNECTION_CHECK:
-                runConnectionSelfCheck();
-                return;
-            case OperationsDashboardShortcutPresentation.ACTION_CONNECTIONS:
-                showConnectionPreference();
-                return;
-            default:
-                return;
-        }
     }
 
     private void showOperationsToolboxPage() {
@@ -2583,11 +2546,6 @@ public class OperationsActivity extends AppCompatActivity {
             updateDashboardLiveStatus(monitor);
         }
 
-        addDashboardSection("连接");
-        addDashboardActionRow(
-                dashboardButton("刷新远程状态", v -> refreshRemoteDashboard()),
-                dashboardButton("连接方式", v -> showConnectionPreference()));
-
         if (openPendingOperationsDestination()) {
             return;
         }
@@ -2900,19 +2858,6 @@ public class OperationsActivity extends AppCompatActivity {
             text.append(" · 当前不提供远程重启");
         }
         return text.append("\n该状态独立于 ColorVision 消息连接和订阅状态。 ").toString();
-    }
-
-    private void refreshRemoteDashboard() {
-        progress.setVisibility(View.VISIBLE);
-        state.setText("正在刷新远程中继状态…");
-        executor.execute(() -> {
-            try {
-                JSONObject response = relayClient.getSnapshot();
-                runOnUiThread(() -> showRemoteDashboard(response));
-            } catch (Exception ex) {
-                runOnUiThread(() -> showTransientError(ex));
-            }
-        });
     }
 
     private void confirmRemoteMinimizeWindow() {
@@ -4421,16 +4366,6 @@ public class OperationsActivity extends AppCompatActivity {
     private void addDashboardActionRow(Button left, Button right) {
         actions.addView(createDashboardActionRow(left, right), new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-    }
-
-    private void addDashboardShortcutRow(Button left, Button right) {
-        boolean singleColumn = AppResponsiveLayout.usesSingleColumnDashboardShortcuts(
-                getResources().getConfiguration().screenWidthDp,
-                getResources().getConfiguration().fontScale);
-        actions.addView(createDashboardActionRow(left, right, singleColumn),
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
     private LinearLayout createDashboardActionRow(Button left, Button right) {
