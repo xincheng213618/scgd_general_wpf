@@ -4,8 +4,6 @@ import android.Manifest;
 import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -31,6 +29,7 @@ import androidx.core.widget.TextViewCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationBarView;
 import com.google.android.material.navigationrail.NavigationRailView;
@@ -485,26 +484,34 @@ public class MainActivity extends AppCompatActivity {
 
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(18), dp(18), dp(18), dp(24));
+        content.setPadding(dp(16), dp(16), dp(16), dp(24));
         scrollView.addView(content, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT,
                 ScrollView.LayoutParams.WRAP_CONTENT));
 
-        LinearLayout operationsCard = makeCard();
-        content.addView(operationsCard, fullWidthCardParams());
-        operationsCard.addView(makeTitle(title, 22), matchWidthWrapParams());
+        LinearLayout cardContent = new LinearLayout(this);
+        cardContent.setOrientation(LinearLayout.VERTICAL);
+        cardContent.setPadding(dp(16), dp(16), dp(16), dp(16));
+        cardContent.addView(makeTitle(title, 22), matchWidthWrapParams());
 
         TextView status = makeBodyText(description);
         status.setPadding(0, dp(8), 0, dp(4));
-        operationsCard.addView(status, matchWidthWrapParams());
+        cardContent.addView(status, matchWidthWrapParams());
 
         Button operationsButton = makePrimaryButton("扫描并连接电脑");
         operationsButton.setOnClickListener(v -> openOperations());
-        operationsCard.addView(operationsButton, fullWidthButtonParams());
+        cardContent.addView(operationsButton, fullWidthButtonParams());
 
         Button helpButton = makeSecondaryButton("配对码在哪里？");
         helpButton.setOnClickListener(v -> PairingHelpDialog.show(this, this::startQrScan));
-        operationsCard.addView(helpButton, fullWidthButtonParams());
+        cardContent.addView(helpButton, fullWidthButtonParams());
+
+        MaterialCardView operationsCard = new MaterialCardView(this);
+        operationsCard.setCardBackgroundColor(cardBackgroundColor());
+        operationsCard.addView(cardContent, new MaterialCardView.LayoutParams(
+                MaterialCardView.LayoutParams.MATCH_PARENT,
+                MaterialCardView.LayoutParams.WRAP_CONTENT));
+        content.addView(operationsCard, matchWidthWrapParams());
 
         return scrollView;
     }
@@ -1074,14 +1081,6 @@ public class MainActivity extends AppCompatActivity {
         PairingScanRecoveryDialog.show(this, reason, this::startQrScan);
     }
 
-    private LinearLayout makeCard() {
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(18), dp(18), dp(18), dp(18));
-        card.setBackground(rounded(cardBackgroundColor(), dp(12), Color.TRANSPARENT, 0));
-        return card;
-    }
-
     private TextView makeTitle(String text, int size) {
         TextView title = new TextView(this);
         title.setText(text);
@@ -1113,21 +1112,7 @@ public class MainActivity extends AppCompatActivity {
     private Button makeBaseButton(String text, int styleAttribute) {
         MaterialButton button = new MaterialButton(this, null, styleAttribute);
         button.setText(text);
-        button.setTextSize(15);
-        button.setAllCaps(false);
-        button.setGravity(Gravity.CENTER);
-        button.setMinHeight(dp(46));
         return button;
-    }
-
-    private GradientDrawable rounded(int fillColor, int radius, int strokeColor, int strokeWidth) {
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setColor(fillColor);
-        drawable.setCornerRadius(radius);
-        if (strokeWidth > 0) {
-            drawable.setStroke(strokeWidth, strokeColor);
-        }
-        return drawable;
     }
 
     private FrameLayout.LayoutParams matchParentParams() {
@@ -1146,15 +1131,7 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, dp(10), 0, 0);
-        return params;
-    }
-
-    private LinearLayout.LayoutParams fullWidthCardParams() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, dp(12), 0, 0);
+        params.setMargins(0, dp(8), 0, 0);
         return params;
     }
 
