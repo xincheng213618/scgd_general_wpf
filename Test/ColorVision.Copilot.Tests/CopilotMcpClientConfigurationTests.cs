@@ -180,6 +180,58 @@ public sealed class CopilotMcpClientConfigurationTests
         Assert.NotSame(cachedTool, nextTool);
     }
 
+    [Fact]
+    public void DiscoveryCacheIgnoresJsonObjectPropertyOrderWhenIdentifyingCapabilities()
+    {
+        var cache = new CopilotMcpToolDiscoveryCache(TimeSpan.FromMinutes(5));
+        var server = new CopilotMcpClientServerConfig
+        {
+            Name = "docs",
+            Endpoint = "https://example.test/mcp",
+        };
+        var changes = new List<CopilotMcpCapabilitiesChangedEventArgs>();
+        cache.CapabilitiesChanged += (_, change) => changes.Add(change);
+        var first = new Tool
+        {
+            Name = "search",
+            Description = "Search documents",
+            InputSchema = ParseElement(
+                """{"type":"object","properties":{"query":{"type":"string","description":"Query"}},"required":["query"]}"""),
+            OutputSchema = ParseElement(
+                """{"type":"object","properties":{"result":{"type":"string"}},"required":["result"]}"""),
+            Meta = JsonNode.Parse("""{"origin":"server","routing":{"region":"cn","priority":1}}""")!.AsObject(),
+        };
+        var reordered = new Tool
+        {
+            Name = "search",
+            Description = "Search documents",
+            InputSchema = ParseElement(
+                """{"required":["query"],"properties":{"query":{"description":"Query","type":"string"}},"type":"object"}"""),
+            OutputSchema = ParseElement(
+                """{"required":["result"],"properties":{"result":{"type":"string"}},"type":"object"}"""),
+            Meta = JsonNode.Parse("""{"routing":{"priority":1,"region":"cn"},"origin":"server"}""")!.AsObject(),
+        };
+
+        var added = cache.Store(server, "token", [first], 1, out var initialSnapshot);
+        var unchanged = cache.Store(server, "token", [reordered], 1, out var refreshedSnapshot);
+
+        Assert.Equal(CopilotMcpDiscoveryCacheUpdateKind.Added, added);
+        Assert.Equal(CopilotMcpDiscoveryCacheUpdateKind.Unchanged, unchanged);
+        Assert.Equal(initialSnapshot.Revision, refreshedSnapshot.Revision);
+        Assert.Empty(changes);
+
+        reordered.InputSchema = ParseElement(
+            """{"required":["query"],"properties":{"query":{"minLength":1,"description":"Query","type":"string"}},"type":"object"}""");
+
+        var changed = cache.Store(server, "token", [reordered], 1, out var changedSnapshot);
+
+        Assert.Equal(CopilotMcpDiscoveryCacheUpdateKind.Changed, changed);
+        Assert.Equal(initialSnapshot.Revision + 1, changedSnapshot.Revision);
+        var change = Assert.Single(changes);
+        Assert.Equal(initialSnapshot.Revision, change.PreviousRevision);
+        Assert.Equal(changedSnapshot.Revision, change.Revision);
+    }
+
     private static JsonElement ParseElement(string json)
     {
         using var document = JsonDocument.Parse(json);

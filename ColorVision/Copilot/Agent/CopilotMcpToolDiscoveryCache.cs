@@ -1,5 +1,6 @@
 using ModelContextProtocol.Protocol;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -191,10 +192,45 @@ namespace ColorVision.Copilot
 
         private static string CreateSignature(IReadOnlyList<Tool> tools, int discoveredToolCount)
         {
-            var builder = new StringBuilder().Append(discoveredToolCount).Append('\n');
-            foreach (var tool in tools.OrderBy(tool => tool.Name, StringComparer.Ordinal))
-                builder.Append(JsonSerializer.Serialize(tool)).Append('\n');
-            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString())));
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(buffer))
+            {
+                writer.WriteStartObject();
+                writer.WriteNumber("discoveredToolCount", discoveredToolCount);
+                writer.WritePropertyName("tools");
+                writer.WriteStartArray();
+                foreach (var tool in tools.OrderBy(tool => tool.Name, StringComparer.Ordinal))
+                    WriteCanonicalJson(writer, JsonSerializer.SerializeToElement(tool));
+                writer.WriteEndArray();
+                writer.WriteEndObject();
+            }
+            return Convert.ToHexString(SHA256.HashData(buffer.WrittenSpan));
+        }
+
+        private static void WriteCanonicalJson(Utf8JsonWriter writer, JsonElement value)
+        {
+            switch (value.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    writer.WriteStartObject();
+                    foreach (var property in value.EnumerateObject()
+                        .OrderBy(property => property.Name, StringComparer.Ordinal))
+                    {
+                        writer.WritePropertyName(property.Name);
+                        WriteCanonicalJson(writer, property.Value);
+                    }
+                    writer.WriteEndObject();
+                    break;
+                case JsonValueKind.Array:
+                    writer.WriteStartArray();
+                    foreach (var item in value.EnumerateArray())
+                        WriteCanonicalJson(writer, item);
+                    writer.WriteEndArray();
+                    break;
+                default:
+                    value.WriteTo(writer);
+                    break;
+            }
         }
 
         private static Tool[] CreateToolSnapshots(IEnumerable<Tool> tools)
