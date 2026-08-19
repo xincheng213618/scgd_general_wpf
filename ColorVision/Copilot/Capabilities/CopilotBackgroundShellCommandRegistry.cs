@@ -390,6 +390,9 @@ namespace ColorVision.Copilot
             try
             {
                 await entry.Completion.ConfigureAwait(false);
+                var terminalObservation = await entry
+                    .WaitForTerminalObservationOutcomeAsync()
+                    .ConfigureAwait(false);
                 CopilotBackgroundShellCommandSnapshot? snapshot;
                 lock (_syncRoot)
                 {
@@ -403,7 +406,8 @@ namespace ColorVision.Copilot
                     return;
                 var eventArgs = new CopilotBackgroundShellCommandCompletedEventArgs(
                     snapshot,
-                    entry.TerminalObservationWasPendingAtCompletion);
+                    terminalObservation.WasPendingAtCompletion,
+                    terminalObservation.TerminalResultWasReturned);
                 foreach (EventHandler<CopilotBackgroundShellCommandCompletedEventArgs> handler
                     in handlers.GetInvocationList())
                 {

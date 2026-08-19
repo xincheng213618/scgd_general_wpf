@@ -17,13 +17,27 @@ namespace ColorVision.Copilot
     {
         private sealed class TerminalObservationScope : IDisposable
         {
+            private readonly Entry[] _entries;
             private IDisposable[]? _registrations;
 
             public TerminalObservationScope(IEnumerable<Entry> entries)
             {
-                _registrations = (entries ?? Array.Empty<Entry>())
+                _entries = (entries ?? Array.Empty<Entry>()).ToArray();
+                _registrations = _entries
                     .Select(entry => entry.BeginTerminalObservation())
                     .ToArray();
+            }
+
+            public void MarkTerminalResultsReturned(
+                IEnumerable<string> backgroundIds)
+            {
+                var returnedIds = (backgroundIds ?? Array.Empty<string>())
+                    .ToHashSet(StringComparer.Ordinal);
+                foreach (var entry in _entries.Where(entry =>
+                             returnedIds.Contains(entry.Id)))
+                {
+                    entry.MarkTerminalResultReturned();
+                }
             }
 
             public void Dispose()
@@ -41,9 +55,14 @@ namespace ColorVision.Copilot
         private sealed class Entry : IDisposable
         {
             private readonly ICopilotBackgroundShellProcess _process;
+            private readonly object _terminalObservationSyncRoot = new();
             private CopilotBackgroundShellProcessCompletion? _completion;
             private int _activeTerminalObservationCount;
-            private int _terminalObservationWasPendingAtCompletion;
+            private bool _terminalObservationCompletionCaptured;
+            private bool _terminalObservationWasPendingAtCompletion;
+            private bool _terminalResultWasReturnedAtCompletion;
+            private TaskCompletionSource<bool>?
+                _terminalObservationSettlement;
             private int _disposed;
 
             public Entry(
@@ -95,33 +114,83 @@ namespace ColorVision.Copilot
             public Task<CopilotBackgroundShellProcessCompletion> Completion =>
                 _process.Completion;
 
-            public bool TerminalObservationWasPendingAtCompletion =>
-                Volatile.Read(
-                    ref _terminalObservationWasPendingAtCompletion) == 1;
-
             public IDisposable BeginTerminalObservation()
             {
-                Interlocked.Increment(
-                    ref _activeTerminalObservationCount);
-                if (_process.Completion.IsCompleted)
-                    CaptureTerminalObservationOwnership();
+                lock (_terminalObservationSyncRoot)
+                {
+                    _activeTerminalObservationCount++;
+                    if (_process.Completion.IsCompleted)
+                        CaptureTerminalObservationOwnershipUnderLock();
+                }
                 return new TerminalObservationRegistration(this);
             }
 
             private void CaptureTerminalObservationOwnership()
             {
-                if (Volatile.Read(ref _activeTerminalObservationCount) > 0)
+                lock (_terminalObservationSyncRoot)
+                    CaptureTerminalObservationOwnershipUnderLock();
+            }
+
+            private void CaptureTerminalObservationOwnershipUnderLock()
+            {
+                _terminalObservationCompletionCaptured = true;
+                if (_activeTerminalObservationCount > 0)
                 {
-                    Interlocked.Exchange(
-                        ref _terminalObservationWasPendingAtCompletion,
-                        1);
+                    _terminalObservationWasPendingAtCompletion = true;
+                    _terminalObservationSettlement ??=
+                        new TaskCompletionSource<bool>(
+                            TaskCreationOptions.RunContinuationsAsynchronously);
+                }
+                else
+                    _terminalObservationSettlement?.TrySetResult(true);
+            }
+
+            public void MarkTerminalResultReturned()
+            {
+                lock (_terminalObservationSyncRoot)
+                {
+                    if (_terminalObservationCompletionCaptured
+                        || _process.Completion.IsCompleted)
+                    {
+                        _terminalObservationCompletionCaptured = true;
+                        _terminalResultWasReturnedAtCompletion = true;
+                    }
+                }
+            }
+
+            public async Task<TerminalObservationOutcome>
+                WaitForTerminalObservationOutcomeAsync()
+            {
+                Task? settlement;
+                lock (_terminalObservationSyncRoot)
+                {
+                    CaptureTerminalObservationOwnershipUnderLock();
+                    settlement = _activeTerminalObservationCount > 0
+                        ? _terminalObservationSettlement!.Task
+                        : null;
+                }
+                if (settlement != null)
+                    await settlement.ConfigureAwait(false);
+
+                lock (_terminalObservationSyncRoot)
+                {
+                    return new TerminalObservationOutcome(
+                        _terminalObservationWasPendingAtCompletion,
+                        _terminalResultWasReturnedAtCompletion);
                 }
             }
 
             private void EndTerminalObservation()
             {
-                Interlocked.Decrement(
-                    ref _activeTerminalObservationCount);
+                lock (_terminalObservationSyncRoot)
+                {
+                    _activeTerminalObservationCount--;
+                    if (_activeTerminalObservationCount == 0
+                        && _terminalObservationCompletionCaptured)
+                    {
+                        _terminalObservationSettlement?.TrySetResult(true);
+                    }
+                }
             }
 
             public void RefreshCompletion()
@@ -264,6 +333,10 @@ namespace ColorVision.Copilot
                         ?.EndTerminalObservation();
                 }
             }
+
+            public readonly record struct TerminalObservationOutcome(
+                bool WasPendingAtCompletion,
+                bool TerminalResultWasReturned);
         }
 
     }

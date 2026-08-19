@@ -171,6 +171,8 @@ namespace ColorVision.Copilot
                 TryPublishObservation(onSnapshot, snapshot);
                 if (!snapshot.IsActive)
                 {
+                    terminalObservation.MarkTerminalResultsReturned(
+                        [snapshot.Id]);
                     return new CopilotBackgroundShellCommandWaitResult(
                         snapshot,
                         CopilotBackgroundShellCommandObservation.Terminal,
@@ -371,6 +373,10 @@ namespace ColorVision.Copilot
                 };
                 if (terminalConditionMet)
                 {
+                    terminalObservation.MarkTerminalResultsReturned(
+                        snapshots
+                            .Where(snapshot => !snapshot.IsActive)
+                            .Select(snapshot => snapshot.Id));
                     return new CopilotBackgroundShellCommandGroupWaitResult(
                         snapshots,
                         mode,

@@ -241,16 +241,20 @@ namespace ColorVision.Copilot
     {
         public CopilotBackgroundShellCommandCompletedEventArgs(
             CopilotBackgroundShellCommandSnapshot snapshot,
-            bool terminalObservationWasPendingAtCompletion = false)
+            bool terminalObservationWasPendingAtCompletion = false,
+            bool terminalResultWasReturned = false)
         {
             Snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
             TerminalObservationWasPendingAtCompletion =
                 terminalObservationWasPendingAtCompletion;
+            TerminalResultWasReturned = terminalResultWasReturned;
         }
 
         public CopilotBackgroundShellCommandSnapshot Snapshot { get; }
 
         public bool TerminalObservationWasPendingAtCompletion { get; }
+
+        public bool TerminalResultWasReturned { get; }
     }
 
 }

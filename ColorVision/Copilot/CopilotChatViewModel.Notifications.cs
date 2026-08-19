@@ -352,7 +352,7 @@ namespace ColorVision.Copilot
                 return;
 
             if (offerToActiveAgent
-                && !e.TerminalObservationWasPendingAtCompletion)
+                && !e.TerminalResultWasReturned)
             {
                 _turnRuntime.TryEnqueueBackgroundShellCommandCompletion(
                     e.Snapshot);
