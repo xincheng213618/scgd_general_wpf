@@ -249,6 +249,28 @@ namespace ColorVision.Copilot
                             "Copilot Agent emitted an invalid budget snapshot.");
                     }
                     break;
+                case CopilotAgentEventType.CheckpointUpdated:
+                    ValidateCheckpointUpdate(agentEvent);
+                    break;
+            }
+        }
+
+        private static void ValidateCheckpointUpdate(CopilotAgentEvent agentEvent)
+        {
+            if (!CopilotAgentSessionCheckpoint.TryCreateSnapshot(
+                    agentEvent.SessionCheckpoint,
+                    out var checkpoint)
+                || checkpoint.UpdatedAtUtc == default
+                || checkpoint.UpdatedAtUtc.Offset != TimeSpan.Zero)
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent emitted an invalid checkpoint update.");
+            }
+
+            if (agentEvent.TaskLedger?.IsStructurallyValid() != true)
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent checkpoint update carried an invalid task ledger.");
             }
         }
 

@@ -163,6 +163,28 @@ namespace ColorVision.Copilot
             }
         }
 
+        internal bool IsStructurallyValid()
+        {
+            if (Mode is not ("plan" or "execute")
+                || Items == null
+                || Items.Count > MaxItems)
+            {
+                return false;
+            }
+
+            return Items.All(item => item != null
+                    && item.Id >= 0
+                    && !string.IsNullOrWhiteSpace(item.Title)
+                    && string.Equals(item.Title, item.Title.Trim(), StringComparison.Ordinal)
+                    && item.Title.Length <= CopilotAgentTaskItem.MaxTitleLength
+                    && !item.Title.Contains('\0')
+                    && item.Description != null
+                    && string.Equals(item.Description, item.Description.Trim(), StringComparison.Ordinal)
+                    && item.Description.Length <= CopilotAgentTaskItem.MaxDescriptionLength
+                    && !item.Description.Contains('\0'))
+                && Items.Select(item => item.Id).Distinct().Count() == Items.Count;
+        }
+
         public bool EnsureValid()
         {
             var originalMode = Mode;

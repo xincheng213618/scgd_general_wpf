@@ -422,6 +422,26 @@ public sealed class CopilotAgentEventProtocolTests
     }
 
     [Fact]
+    public void RuntimeEmitterRejectsInvalidCheckpointLedgerBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = CopilotAgentEvent.CheckpointUpdated(
+            CreateCheckpoint(),
+            new CopilotAgentTaskLedgerSnapshot
+            {
+                Mode = "invalid",
+            });
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid task ledger", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
     public void ReducerRejectsUnnormalizedSteeringMessage()
     {
         var agentEvent = new CopilotAgentEvent
@@ -614,4 +634,12 @@ public sealed class CopilotAgentEventProtocolTests
             out var error), error);
         return question;
     }
+
+    private static CopilotAgentSessionCheckpoint CreateCheckpoint() => new()
+    {
+        ProfileKey = "test-profile",
+        SerializedSessionJson = "{}",
+        TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
+        UpdatedAtUtc = DateTimeOffset.UtcNow,
+    };
 }

@@ -43,7 +43,7 @@ namespace ColorVision.Copilot
             var checkpoint = agentEvent.SessionCheckpoint;
             if (!IsValidCheckpoint(checkpoint))
                 throw new InvalidOperationException("Copilot Agent emitted an invalid checkpoint update.");
-            if (!IsValidTaskLedger(agentEvent.TaskLedger))
+            if (agentEvent.TaskLedger?.IsStructurallyValid() != true)
                 throw new InvalidOperationException("Copilot Agent checkpoint update carried an invalid task ledger.");
 
             if (LatestCheckpoint != null)
@@ -77,29 +77,6 @@ namespace ColorVision.Copilot
             checkpoint?.IsStructurallyValid() == true
             && checkpoint.UpdatedAtUtc != default
             && checkpoint.UpdatedAtUtc.Offset == TimeSpan.Zero;
-
-        private static bool IsValidTaskLedger(CopilotAgentTaskLedgerSnapshot? taskLedger)
-        {
-            if (taskLedger == null
-                || taskLedger.Mode is not ("plan" or "execute")
-                || taskLedger.Items == null
-                || taskLedger.Items.Count > CopilotAgentTaskLedgerSnapshot.MaxItems)
-            {
-                return false;
-            }
-
-            return taskLedger.Items.All(item => item != null
-                    && item.Id >= 0
-                    && !string.IsNullOrWhiteSpace(item.Title)
-                    && string.Equals(item.Title, item.Title.Trim(), StringComparison.Ordinal)
-                    && item.Title.Length <= CopilotAgentTaskItem.MaxTitleLength
-                    && !item.Title.Contains('\0')
-                    && item.Description != null
-                    && string.Equals(item.Description, item.Description.Trim(), StringComparison.Ordinal)
-                    && item.Description.Length <= CopilotAgentTaskItem.MaxDescriptionLength
-                    && !item.Description.Contains('\0'))
-                && taskLedger.Items.Select(item => item.Id).Distinct().Count() == taskLedger.Items.Count;
-        }
 
         private static void RequireMatchingIdentity(
             CopilotAgentSessionCheckpoint expected,
