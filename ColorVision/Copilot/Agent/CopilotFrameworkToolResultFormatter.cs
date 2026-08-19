@@ -24,8 +24,10 @@ namespace ColorVision.Copilot
         internal const int MinimumConfiguredTokenLimit = 0;
         internal const int MaximumConfiguredTokenLimit = int.MaxValue;
 
-        private const int MaximumConfiguredSerializedCharacters = 1_048_576;
-        private const int MaximumConfiguredContentCharacters = 1_000_000;
+        private const int MaximumConfiguredSerializedCharacters =
+            CopilotCodeReviewSnapshot.MaximumModelObservationCharacters;
+        private const int MaximumConfiguredContentCharacters =
+            MaximumConfiguredSerializedCharacters;
         private const int MaxPreservedSections = 24;
         private static readonly Regex WebPageSectionRegex = new(
             @"(?m)^(?=\[Web Fetch Scope\]|\[Web Page (?:Fetched|Fetch Failed)\])",

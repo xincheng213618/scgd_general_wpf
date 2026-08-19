@@ -149,9 +149,9 @@ public sealed class CopilotToolOutputArchiveTests
         {
             ConversationId = conversationId,
             TaskId = "runtime-archive-task",
-            ToolOutputTokenLimitOverride = SmallTokenLimit,
+            ToolOutputTokenLimitOverride = int.MaxValue,
         };
-        var tool = new LargeOutputTool(new string('x', 30_000));
+        var tool = new LargeOutputTool(new string('x', 400_000));
         var events = new List<CopilotAgentEvent>();
         try
         {
@@ -176,6 +176,10 @@ public sealed class CopilotToolOutputArchiveTests
             Assert.NotNull(outcome.ToolOutputArchive);
             Assert.NotNull(outcome.FormattedModelResult);
             Assert.Equal(outcome.FormattedModelResult, toolResultEvent.ModelToolResult);
+            Assert.True(
+                toolResultEvent.ModelToolResult.Length
+                    <= CopilotCodeReviewSnapshot.MaximumModelObservationCharacters);
+            CopilotAgentEventProtocol.Validate(toolResultEvent);
             using var document = JsonDocument.Parse(toolResultEvent.ModelToolResult);
             Assert.Equal(
                 outcome.ToolOutputArchive!.Id,
