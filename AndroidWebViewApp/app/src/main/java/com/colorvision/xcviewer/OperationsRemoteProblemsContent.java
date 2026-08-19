@@ -12,7 +12,10 @@ import android.widget.TextView;
 import androidx.core.view.ViewCompat;
 import androidx.core.widget.TextViewCompat;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
+
+import java.util.List;
 
 final class OperationsRemoteProblemsContent {
     private OperationsRemoteProblemsContent() {
@@ -23,7 +26,8 @@ final class OperationsRemoteProblemsContent {
             ThemeManager themeManager,
             OperationsRemoteProblemsPresentation.ViewModel model,
             String attentionContext,
-            SectionHandler sectionHandler) {
+            SectionHandler sectionHandler,
+            ReviewHandler reviewHandler) {
         LinearLayout root = new LinearLayout(activity);
         root.setOrientation(LinearLayout.VERTICAL);
 
@@ -35,11 +39,29 @@ final class OperationsRemoteProblemsContent {
         }
         root.addView(infoCard(activity, themeManager, model.summary),
                 hasAttentionContext ? topMargin(dp(activity, 8)) : matchWidth());
-        if (!model.issues.isEmpty()) {
-            root.addView(sectionTitle(activity, themeManager, "需关注"),
+        if (!model.pendingIssues.isEmpty()) {
+            root.addView(sectionTitle(
+                            activity,
+                            themeManager,
+                            "优先处理 · " + model.pendingIssues.size()),
                     topMargin(dp(activity, 20)));
             root.addView(issueContent(
-                    activity, themeManager, model, sectionHandler),
+                    activity,
+                    themeManager,
+                    model.pendingIssues,
+                    sectionHandler,
+                    reviewHandler),
+                    topMargin(dp(activity, 8)));
+        }
+        if (!model.reviewedIssues.isEmpty()) {
+            root.addView(sectionTitle(activity, themeManager, "已复核 · 状态仍存在"),
+                    topMargin(dp(activity, 20)));
+            root.addView(issueContent(
+                    activity,
+                    themeManager,
+                    model.reviewedIssues,
+                    sectionHandler,
+                    reviewHandler),
                     topMargin(dp(activity, 8)));
         }
 
@@ -72,31 +94,34 @@ final class OperationsRemoteProblemsContent {
     private static View issueContent(
             Activity activity,
             ThemeManager themeManager,
-            OperationsRemoteProblemsPresentation.ViewModel model,
-            SectionHandler sectionHandler) {
+            List<OperationsRemoteProblemsPresentation.Issue> issues,
+            SectionHandler sectionHandler,
+            ReviewHandler reviewHandler) {
         boolean twoColumns = AppResponsiveLayout.usesTwoColumnGrid(
                 activity.getResources().getConfiguration().screenWidthDp,
                 activity.getResources().getConfiguration().fontScale,
-                model.issues.size());
+                issues.size());
         return twoColumns
-                ? issueGrid(activity, themeManager, model, sectionHandler)
-                : issueListCard(activity, themeManager, model, sectionHandler);
+                ? issueGrid(activity, themeManager, issues, sectionHandler, reviewHandler)
+                : issueListCard(activity, themeManager, issues, sectionHandler, reviewHandler);
     }
 
     private static MaterialCardView issueListCard(
             Activity activity,
             ThemeManager themeManager,
-            OperationsRemoteProblemsPresentation.ViewModel model,
-            SectionHandler sectionHandler) {
+            List<OperationsRemoteProblemsPresentation.Issue> issues,
+            SectionHandler sectionHandler,
+            ReviewHandler reviewHandler) {
         LinearLayout rows = new LinearLayout(activity);
         rows.setOrientation(LinearLayout.VERTICAL);
-        for (int index = 0; index < model.issues.size(); index++) {
+        for (int index = 0; index < issues.size(); index++) {
             rows.addView(issueRow(
                     activity,
                     themeManager,
-                    model.issues.get(index),
-                    sectionHandler), matchWidth());
-            if (index < model.issues.size() - 1) {
+                    issues.get(index),
+                    sectionHandler,
+                    reviewHandler), matchWidth());
+            if (index < issues.size() - 1) {
                 rows.addView(divider(activity, themeManager), dividerParams(activity));
             }
         }
@@ -110,23 +135,25 @@ final class OperationsRemoteProblemsContent {
     private static View issueGrid(
             Activity activity,
             ThemeManager themeManager,
-            OperationsRemoteProblemsPresentation.ViewModel model,
-            SectionHandler sectionHandler) {
+            List<OperationsRemoteProblemsPresentation.Issue> issues,
+            SectionHandler sectionHandler,
+            ReviewHandler reviewHandler) {
         LinearLayout grid = new LinearLayout(activity);
         grid.setOrientation(LinearLayout.VERTICAL);
         int spacing = dp(activity, 8);
-        for (int index = 0; index < model.issues.size(); index += 2) {
+        for (int index = 0; index < issues.size(); index += 2) {
             LinearLayout row = new LinearLayout(activity);
             row.setOrientation(LinearLayout.HORIZONTAL);
-            int itemsInRow = Math.min(2, model.issues.size() - index);
+            int itemsInRow = Math.min(2, issues.size() - index);
             for (int column = 0; column < itemsInRow; column++) {
                 MaterialCardView card = new MaterialCardView(activity);
                 card.setCardBackgroundColor(themeManager.cardBackgroundColor());
                 card.addView(issueRow(
                         activity,
                         themeManager,
-                        model.issues.get(index + column),
-                        sectionHandler), matchCardWidth());
+                        issues.get(index + column),
+                        sectionHandler,
+                        reviewHandler), matchCardWidth());
                 LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
                         0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
                 if (column > 0) {
@@ -147,12 +174,17 @@ final class OperationsRemoteProblemsContent {
             Activity activity,
             ThemeManager themeManager,
             OperationsRemoteProblemsPresentation.Issue issue,
-            SectionHandler sectionHandler) {
-        LinearLayout row = new LinearLayout(activity);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setMinimumHeight(dp(activity, 68));
-        row.setPadding(dp(activity, 16), dp(activity, 10), dp(activity, 12), dp(activity, 10));
+            SectionHandler sectionHandler,
+            ReviewHandler reviewHandler) {
+        LinearLayout content = new LinearLayout(activity);
+        content.setOrientation(LinearLayout.VERTICAL);
+
+        LinearLayout clickableSummary = new LinearLayout(activity);
+        clickableSummary.setOrientation(LinearLayout.HORIZONTAL);
+        clickableSummary.setGravity(Gravity.CENTER_VERTICAL);
+        clickableSummary.setMinimumHeight(dp(activity, 68));
+        clickableSummary.setPadding(
+                dp(activity, 16), dp(activity, 10), dp(activity, 12), dp(activity, 10));
 
         LinearLayout copy = new LinearLayout(activity);
         copy.setOrientation(LinearLayout.VERTICAL);
@@ -168,7 +200,7 @@ final class OperationsRemoteProblemsContent {
                 themeManager.errorColor());
         copy.addView(title, matchWidth());
         copy.addView(summary, topMargin(dp(activity, 2)));
-        row.addView(copy, new LinearLayout.LayoutParams(
+        clickableSummary.addView(copy, new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
         ImageView chevron = new ImageView(activity);
@@ -178,17 +210,36 @@ final class OperationsRemoteProblemsContent {
         LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
                 dp(activity, 24), dp(activity, 24));
         iconParams.setMargins(dp(activity, 12), 0, 0, 0);
-        row.addView(chevron, iconParams);
+        clickableSummary.addView(chevron, iconParams);
 
-        row.setContentDescription(issue.accessibilityLabel());
-        row.setClickable(true);
-        row.setFocusable(true);
-        row.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
-        applySelectableBackground(activity, row);
-        row.setOnClickListener(view -> sectionHandler.onSection(issue.section));
+        clickableSummary.setContentDescription(issue.accessibilityLabel());
+        clickableSummary.setClickable(true);
+        clickableSummary.setFocusable(true);
+        clickableSummary.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        applySelectableBackground(activity, clickableSummary);
+        clickableSummary.setOnClickListener(view -> sectionHandler.onSection(issue.section));
         title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         summary.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        return row;
+        content.addView(clickableSummary, matchWidth());
+
+        MaterialButton reviewButton = new MaterialButton(
+                activity,
+                null,
+                issue.acknowledged
+                        ? com.google.android.material.R.attr.materialButtonOutlinedStyle
+                        : com.google.android.material.R.attr.materialButtonTonalStyle);
+        reviewButton.setText(issue.acknowledged ? "撤销复核" : "标记已复核");
+        reviewButton.setMinHeight(dp(activity, 48));
+        reviewButton.setContentDescription(issue.acknowledged
+                ? "撤销本机复核，恢复为待复核"
+                : "标记为已在此手机复核；电脑签名状态不会改变，新证据会自动恢复为待复核");
+        reviewButton.setOnClickListener(view -> reviewHandler.onReview(
+                issue, !issue.acknowledged));
+        LinearLayout.LayoutParams reviewParams = topMargin(dp(activity, 4));
+        reviewParams.setMargins(
+                dp(activity, 16), dp(activity, 4), dp(activity, 16), dp(activity, 12));
+        content.addView(reviewButton, reviewParams);
+        return content;
     }
 
     private static MaterialCardView infoCard(
@@ -271,5 +322,11 @@ final class OperationsRemoteProblemsContent {
 
     interface SectionHandler {
         void onSection(String section);
+    }
+
+    interface ReviewHandler {
+        void onReview(
+                OperationsRemoteProblemsPresentation.Issue issue,
+                boolean acknowledged);
     }
 }

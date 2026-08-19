@@ -35,11 +35,11 @@ final class OperationsRemoteProblemsPresentation {
         DeviceHealthPresentation.ViewModel deviceHealth = DeviceHealthPresentation.from(devices);
 
         List<Issue> issues = new ArrayList<>();
-        addIfAttention(issues, "flow", OperationsDashboardStatusFormatter.flow(
+        addIfAttention(issues, "flow", monitor, OperationsDashboardStatusFormatter.flow(
                 isAvailable(flow),
                 flow != null && flow.optBoolean("isActive", false),
                 flow == null ? "idle" : flow.optString("phase", "idle")));
-        addIfAttention(issues, "devices", OperationsDashboardStatusFormatter.devices(
+        addIfAttention(issues, "devices", monitor, OperationsDashboardStatusFormatter.devices(
                 isAvailable(devices),
                 devices != null && devices.optBoolean("hasConfiguredDevices", false),
                 count(devices, "readyCount"),
@@ -47,23 +47,25 @@ final class OperationsRemoteProblemsPresentation {
                 count(devices, "attentionCount"),
                 count(devices, "totalCount"),
                 deviceHealth.compactAttentionSummary()));
-        addIfAttention(issues, "message", OperationsDashboardStatusFormatter.messageChannel(
+        addIfAttention(issues, "message", monitor,
+                OperationsDashboardStatusFormatter.messageChannel(
                 isAvailable(messageChannel),
                 messageChannel != null && messageChannel.optBoolean("connected", false),
                 messageChannel != null && messageChannel.optBoolean("subscriptionReady", false),
                 count(messageChannel, "activeSubscriptionCount"),
                 count(messageChannel, "registeredSubscriptionCount")));
-        addIfAttention(issues, "alerts", OperationsDashboardStatusFormatter.alerts(
+        addIfAttention(issues, "alerts", monitor, OperationsDashboardStatusFormatter.alerts(
                 alerts != null,
                 count(alerts, "warningCount"),
                 count(alerts, "errorCount"),
                 count(alerts, "criticalCount"),
                 alerts == null ? "" : alerts.optString("primarySource", "")));
-        addIfAttention(issues, "performance", OperationsDashboardStatusFormatter.performance(
+        addIfAttention(issues, "performance", monitor,
+                OperationsDashboardStatusFormatter.performance(
                 performance != null,
                 performance == null ? 0 : performance.optDouble("cpuPercent", 0),
                 mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable")));
-        addIfAttention(issues, "recovery", OperationsDashboardStatusFormatter.recovery(
+        addIfAttention(issues, "recovery", monitor, OperationsDashboardStatusFormatter.recovery(
                 recovery != null,
                 recovery != null && recovery.optBoolean("supported", false),
                 recovery != null && recovery.optBoolean("registered", false),
@@ -102,7 +104,9 @@ final class OperationsRemoteProblemsPresentation {
                 stateLabel,
                 summary,
                 incompleteCount,
-                Collections.unmodifiableList(issues));
+                Collections.unmodifiableList(issues),
+                Collections.unmodifiableList(issues),
+                Collections.emptyList());
     }
 
     static FocusedViewModel focus(ViewModel model, String attentionKey) {
@@ -120,9 +124,42 @@ final class OperationsRemoteProblemsPresentation {
                         model.stateLabel,
                         model.summary,
                         model.incompleteCount,
-                        issues),
+                        issues,
+                        prioritize(model.pendingIssues, normalized),
+                        prioritize(model.reviewedIssues, normalized)),
                 OperationsAttentionFocus.contextMessage(
                         normalized, found, model.snapshotAvailable));
+    }
+
+    static ViewModel withAcknowledgements(
+            ViewModel model, AcknowledgementLookup acknowledgementLookup) {
+        if (model == null || acknowledgementLookup == null) {
+            return model;
+        }
+        List<Issue> all = new ArrayList<>();
+        List<Issue> pending = new ArrayList<>();
+        List<Issue> reviewed = new ArrayList<>();
+        for (Issue source : model.issues) {
+            boolean acknowledged = acknowledgementLookup.isAcknowledged(
+                    source.findingId, source.revision);
+            Issue issue = source.withAcknowledged(acknowledged);
+            all.add(issue);
+            (acknowledged ? reviewed : pending).add(issue);
+        }
+        String stateLabel = model.stateLabel;
+        if (!pending.isEmpty()) {
+            stateLabel = pending.size() + " 项待复核";
+        } else if (!reviewed.isEmpty()) {
+            stateLabel = reviewed.size() + " 项已复核 · 状态仍存在";
+        }
+        return new ViewModel(
+                model.snapshotAvailable,
+                stateLabel,
+                model.summary,
+                model.incompleteCount,
+                Collections.unmodifiableList(all),
+                Collections.unmodifiableList(pending),
+                Collections.unmodifiableList(reviewed));
     }
 
     private static ViewModel unavailable(String stateLabel, String summary) {
@@ -131,15 +168,27 @@ final class OperationsRemoteProblemsPresentation {
                 stateLabel,
                 summary,
                 0,
+                Collections.emptyList(),
+                Collections.emptyList(),
                 Collections.emptyList());
     }
 
     private static void addIfAttention(
             List<Issue> issues,
             String section,
+            JSONObject monitor,
             OperationsDashboardStatusFormatter.Item status) {
         if (status.tone == OperationsDashboardStatusFormatter.TONE_ATTENTION) {
-            issues.add(new Issue(section, status));
+            OperationsRemoteProblemRevision.Identity identity =
+                    OperationsRemoteProblemRevision.capture(section, monitor, status);
+            if (identity.available()) {
+                issues.add(new Issue(
+                        section,
+                        status,
+                        identity.findingId,
+                        identity.revision,
+                        false));
+            }
         }
     }
 
@@ -169,6 +218,10 @@ final class OperationsRemoteProblemsPresentation {
         return Collections.unmodifiableList(prioritized);
     }
 
+    interface AcknowledgementLookup {
+        boolean isAcknowledged(String findingId, String revision);
+    }
+
     static final class FocusedViewModel {
         final ViewModel model;
         final String contextMessage;
@@ -185,32 +238,57 @@ final class OperationsRemoteProblemsPresentation {
         final String summary;
         final int incompleteCount;
         final List<Issue> issues;
+        final List<Issue> pendingIssues;
+        final List<Issue> reviewedIssues;
 
         ViewModel(
                 boolean snapshotAvailable,
                 String stateLabel,
                 String summary,
                 int incompleteCount,
-                List<Issue> issues) {
+                List<Issue> issues,
+                List<Issue> pendingIssues,
+                List<Issue> reviewedIssues) {
             this.snapshotAvailable = snapshotAvailable;
             this.stateLabel = stateLabel;
             this.summary = summary;
             this.incompleteCount = Math.max(0, incompleteCount);
             this.issues = issues;
+            this.pendingIssues = pendingIssues;
+            this.reviewedIssues = reviewedIssues;
         }
     }
 
     static final class Issue {
         final String section;
         final OperationsDashboardStatusFormatter.Item status;
+        final String findingId;
+        final String revision;
+        final boolean acknowledged;
 
-        Issue(String section, OperationsDashboardStatusFormatter.Item status) {
+        Issue(
+                String section,
+                OperationsDashboardStatusFormatter.Item status,
+                String findingId,
+                String revision,
+                boolean acknowledged) {
             this.section = section;
             this.status = status;
+            this.findingId = findingId;
+            this.revision = revision;
+            this.acknowledged = acknowledged;
+        }
+
+        Issue withAcknowledged(boolean value) {
+            if (acknowledged == value) {
+                return this;
+            }
+            return new Issue(section, status, findingId, revision, value);
         }
 
         String accessibilityLabel() {
-            return status.title + "，" + status.summary + "，查看电脑签名详情";
+            return (acknowledged ? "已复核，" : "")
+                    + status.title + "，" + status.summary + "，查看电脑签名详情";
         }
     }
 }

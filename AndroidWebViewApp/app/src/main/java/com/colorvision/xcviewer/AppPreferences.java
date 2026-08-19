@@ -42,6 +42,8 @@ final class AppPreferences {
             "operations_toolbox_recents_v1";
     private static final String KEY_OPERATIONS_TRIAGE_ACKNOWLEDGEMENTS =
             "operations_triage_acknowledgements_v1";
+    private static final String KEY_OPERATIONS_REMOTE_PROBLEM_ACKNOWLEDGEMENTS =
+            "operations_remote_problem_acknowledgements_v1";
     private static final String KEY_OPERATIONS_WATCH_EVIDENCE =
             "operations_watch_evidence_v1";
     private static final Object OPERATIONS_PROFILE_LOCK = new Object();
@@ -387,6 +389,39 @@ final class AppPreferences {
                         current, hostId, findingId, nowMilliseconds));
     }
 
+    void reconcileOperationsRemoteProblemAcknowledgements(
+            String hostId, Map<String, String> currentRevisions, long nowMilliseconds) {
+        saveOperationsRemoteProblemAcknowledgements(OperationsTriageAcknowledgements.reconcile(
+                getOperationsRemoteProblemAcknowledgements(),
+                hostId,
+                currentRevisions,
+                nowMilliseconds));
+    }
+
+    boolean isOperationsRemoteProblemAcknowledged(
+            String hostId, String findingId, String revision, long nowMilliseconds) {
+        return OperationsTriageAcknowledgements.contains(
+                getOperationsRemoteProblemAcknowledgements(),
+                hostId,
+                findingId,
+                revision,
+                nowMilliseconds);
+    }
+
+    void saveOperationsRemoteProblemAcknowledged(
+            String hostId,
+            String findingId,
+            String revision,
+            boolean acknowledged,
+            long nowMilliseconds) {
+        String current = getOperationsRemoteProblemAcknowledgements();
+        saveOperationsRemoteProblemAcknowledgements(acknowledged
+                ? OperationsTriageAcknowledgements.acknowledge(
+                        current, hostId, findingId, revision, nowMilliseconds)
+                : OperationsTriageAcknowledgements.remove(
+                        current, hostId, findingId, nowMilliseconds));
+    }
+
     void removeOperationsProfile(String hostId) {
         synchronized (OPERATIONS_PROFILE_LOCK) {
             writeOperationsProfiles(readOperationsProfiles().remove(hostId));
@@ -394,6 +429,11 @@ final class AppPreferences {
                     getOperationsTriageAcknowledgements(),
                     hostId,
                     System.currentTimeMillis()));
+            saveOperationsRemoteProblemAcknowledgements(
+                    OperationsTriageAcknowledgements.removeHost(
+                            getOperationsRemoteProblemAcknowledgements(),
+                            hostId,
+                            System.currentTimeMillis()));
             saveOperationsWatchEvidence(
                     hostId, "", OperationsMonitorEvidenceRevision.Evidence.EMPTY);
         }
@@ -409,6 +449,20 @@ final class AppPreferences {
             editor.remove(KEY_OPERATIONS_TRIAGE_ACKNOWLEDGEMENTS);
         } else {
             editor.putString(KEY_OPERATIONS_TRIAGE_ACKNOWLEDGEMENTS, serialized);
+        }
+        editor.apply();
+    }
+
+    private String getOperationsRemoteProblemAcknowledgements() {
+        return preferences.getString(KEY_OPERATIONS_REMOTE_PROBLEM_ACKNOWLEDGEMENTS, "");
+    }
+
+    private void saveOperationsRemoteProblemAcknowledgements(String serialized) {
+        SharedPreferences.Editor editor = preferences.edit();
+        if (serialized == null || serialized.isEmpty()) {
+            editor.remove(KEY_OPERATIONS_REMOTE_PROBLEM_ACKNOWLEDGEMENTS);
+        } else {
+            editor.putString(KEY_OPERATIONS_REMOTE_PROBLEM_ACKNOWLEDGEMENTS, serialized);
         }
         editor.apply();
     }

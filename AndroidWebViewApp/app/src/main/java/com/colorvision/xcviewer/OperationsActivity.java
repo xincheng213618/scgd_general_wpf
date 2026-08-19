@@ -667,10 +667,16 @@ public class OperationsActivity extends AppCompatActivity {
                     relay
                             ? OperationsWatchHistory.STATE_REMOTE_ONLINE
                             : OperationsWatchHistory.STATE_ONLINE);
-            problemBadgeCount = monitor == null
-                    ? 0
-                    : OperationsRemoteProblemsPresentation.from(
-                            monitor, true).issues.size();
+            if (monitor == null) {
+                problemBadgeCount = 0;
+            } else {
+                OperationsRemoteProblemsPresentation.ViewModel rawModel =
+                        OperationsRemoteProblemsPresentation.from(monitor, true);
+                problemBadgeCount = relay
+                        ? applyRemoteProblemAcknowledgements(rawModel, false)
+                                .pendingIssues.size()
+                        : rawModel.issues.size();
+            }
         }
         refreshProblemNavigationBadge();
     }
@@ -4838,14 +4844,16 @@ public class OperationsActivity extends AppCompatActivity {
         boolean fresh = host != null && OperationsRelayPolicy.isHostFresh(
                 host.optLong("signedAt", 0L), System.currentTimeMillis());
         dashboardRemoteHostFresh = fresh;
-        OperationsRemoteProblemsPresentation.ViewModel model =
+        OperationsRemoteProblemsPresentation.ViewModel rawModel =
                 OperationsRemoteProblemsPresentation.from(
                         remoteMonitor(lastRelaySnapshotResponse), fresh);
+        OperationsRemoteProblemsPresentation.ViewModel model =
+                applyRemoteProblemAcknowledgements(rawModel, true);
         OperationsRemoteProblemsPresentation.FocusedViewModel focused =
                 OperationsRemoteProblemsPresentation.focus(
                         model, activeTriageAttentionFocus);
         model = focused.model;
-        problemBadgeCount = model.snapshotAvailable ? model.issues.size() : 0;
+        problemBadgeCount = model.snapshotAvailable ? model.pendingIssues.size() : 0;
         refreshProblemNavigationBadge();
         state.setText(model.stateLabel);
         actions.removeAllViews();
@@ -4854,11 +4862,65 @@ public class OperationsActivity extends AppCompatActivity {
                         themeManager,
                         model,
                         focused.contextMessage,
-                        this::showRemoteProblemDetail),
+                        this::showRemoteProblemDetail,
+                        this::setRemoteProblemAcknowledged),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
         restoreTopLevelScroll(OperationsDestinationState.TRIAGE);
+    }
+
+    private OperationsRemoteProblemsPresentation.ViewModel
+            applyRemoteProblemAcknowledgements(
+                    OperationsRemoteProblemsPresentation.ViewModel rawModel,
+                    boolean reconcile) {
+        if (rawModel == null || !rawModel.snapshotAvailable) {
+            return rawModel;
+        }
+        String hostId = preferences.getOperationsHostId();
+        long nowMilliseconds = System.currentTimeMillis();
+        if (reconcile) {
+            Map<String, String> currentRevisions = new HashMap<>();
+            for (OperationsRemoteProblemsPresentation.Issue issue : rawModel.issues) {
+                currentRevisions.put(issue.findingId, issue.revision);
+            }
+            preferences.reconcileOperationsRemoteProblemAcknowledgements(
+                    hostId, currentRevisions, nowMilliseconds);
+        }
+        return OperationsRemoteProblemsPresentation.withAcknowledgements(
+                rawModel,
+                (findingId, revision) -> preferences
+                        .isOperationsRemoteProblemAcknowledged(
+                                hostId,
+                                findingId,
+                                revision,
+                                nowMilliseconds));
+    }
+
+    private void setRemoteProblemAcknowledged(
+            OperationsRemoteProblemsPresentation.Issue issue,
+            boolean acknowledged) {
+        String hostId = preferences.getOperationsHostId();
+        if (!OperationsRelayPolicy.isSafeIdentifier(hostId) || issue == null) {
+            return;
+        }
+        int scrollY = dashboardScroll == null ? 0 : dashboardScroll.getScrollY();
+        preferences.saveOperationsRemoteProblemAcknowledged(
+                hostId,
+                issue.findingId,
+                issue.revision,
+                acknowledged,
+                System.currentTimeMillis());
+        showRemoteProblemCenter();
+        if (dashboardScroll != null) {
+            dashboardScroll.post(() -> dashboardScroll.scrollTo(0, scrollY));
+        }
+        Snackbar.make(
+                snackbarHost,
+                acknowledged
+                        ? "已在此手机复核签名摘要；电脑状态未改变，新证据会自动重新出现"
+                        : "已恢复为待复核",
+                Snackbar.LENGTH_LONG).show();
     }
 
     private void refreshRemoteProblemCenter() {
