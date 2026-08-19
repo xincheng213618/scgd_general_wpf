@@ -27,6 +27,60 @@ public sealed class CopilotToolResultContractTests
     }
 
     [Fact]
+    public void ObservationOwnsCapturedResultCollections()
+    {
+        var paths = new List<string> { @"C:\workspace\first.cs" };
+        var observation = CopilotToolObservation.FromResult(new CopilotToolResult
+        {
+            ToolName = "SnapshotTool",
+            Success = true,
+            SuggestedReadableLocalFilePaths = paths,
+        });
+
+        paths[0] = @"C:\workspace\rewritten.cs";
+
+        Assert.Equal(@"C:\workspace\first.cs", Assert.Single(observation.SuggestedReadableLocalFilePaths));
+        var observedPaths = Assert.IsAssignableFrom<IList<string>>(
+            observation.SuggestedReadableLocalFilePaths);
+        Assert.Throws<NotSupportedException>(() =>
+            observedPaths[0] = @"C:\workspace\rewritten.cs");
+    }
+
+    [Fact]
+    public void AgentRunResultOwnsStepAndBlockerCollections()
+    {
+        var originalStep = new CopilotAgentStepRecord { Round = 1 };
+        var originalBlocker = new CopilotAgentBlockerSnapshot
+        {
+            Kind = CopilotAgentBlockerKind.Policy,
+            Code = "policy_blocked",
+            Summary = "The operation is blocked by policy.",
+        };
+        var steps = new List<CopilotAgentStepRecord> { originalStep };
+        var blockers = new List<CopilotAgentBlockerSnapshot> { originalBlocker };
+        var result = new CopilotAgentRunResult
+        {
+            StepRecords = steps,
+            Blockers = blockers,
+        };
+
+        steps[0] = new CopilotAgentStepRecord { Round = 2 };
+        blockers[0] = new CopilotAgentBlockerSnapshot
+        {
+            Kind = CopilotAgentBlockerKind.Policy,
+            Code = "rewritten",
+            Summary = "Rewritten after completion.",
+        };
+
+        Assert.Same(originalStep, Assert.Single(result.StepRecords));
+        Assert.Same(originalBlocker, Assert.Single(result.Blockers));
+        var capturedSteps = Assert.IsAssignableFrom<IList<CopilotAgentStepRecord>>(result.StepRecords);
+        var capturedBlockers = Assert.IsAssignableFrom<IList<CopilotAgentBlockerSnapshot>>(result.Blockers);
+        Assert.Throws<NotSupportedException>(() => capturedSteps[0] = steps[0]);
+        Assert.Throws<NotSupportedException>(() => capturedBlockers[0] = blockers[0]);
+    }
+
+    [Fact]
     public void CaptureKeepsTheExistingSuccessfulAwaitingApprovalShape()
     {
         var approval = new CopilotToolApprovalInfo

@@ -38,7 +38,12 @@ namespace ColorVision.Copilot
     {
         public string PreparedUserMessageContent { get; init; } = string.Empty;
 
-        public IReadOnlyList<CopilotAgentStepRecord> StepRecords { get; init; } = Array.Empty<CopilotAgentStepRecord>();
+        public IReadOnlyList<CopilotAgentStepRecord> StepRecords
+        {
+            get => _stepRecords;
+            init => _stepRecords = Freeze(value);
+        }
+        private IReadOnlyList<CopilotAgentStepRecord> _stepRecords = Array.Empty<CopilotAgentStepRecord>();
 
         public CopilotTokenUsage Usage { get; init; } = CopilotTokenUsage.Empty;
 
@@ -53,11 +58,23 @@ namespace ColorVision.Copilot
 
         public CopilotAgentStopReason StopReason { get; init; }
 
-        public IReadOnlyList<CopilotAgentBlockerSnapshot> Blockers { get; init; } = Array.Empty<CopilotAgentBlockerSnapshot>();
+        public IReadOnlyList<CopilotAgentBlockerSnapshot> Blockers
+        {
+            get => _blockers;
+            init => _blockers = Freeze(value);
+        }
+        private IReadOnlyList<CopilotAgentBlockerSnapshot> _blockers = Array.Empty<CopilotAgentBlockerSnapshot>();
 
         public CopilotAgentTaskEventJournalSnapshot TaskEventJournal { get; init; } = new();
 
         public CopilotAgentSessionCheckpoint? SessionCheckpoint { get; init; }
+
+        private static IReadOnlyList<T> Freeze<T>(IReadOnlyList<T>? values)
+        {
+            return values == null || values.Count == 0
+                ? Array.Empty<T>()
+                : Array.AsReadOnly(values.ToArray());
+        }
     }
 
     public enum CopilotAgentStopReason

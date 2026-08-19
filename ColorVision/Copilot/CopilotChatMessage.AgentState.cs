@@ -22,15 +22,24 @@ namespace ColorVision.Copilot
             get => _agentBlockers;
             set
             {
-                var normalized = (value ?? Array.Empty<CopilotAgentBlockerSnapshot>())
-                    .Where(item => item?.IsStructurallyValid() == true)
-                    .Take(8)
-                    .ToArray();
+                var normalized = CaptureAgentBlockers(value);
                 if (SetProperty(ref _agentBlockers, normalized))
                     OnAgentTaskStateChanged();
             }
         }
         private IReadOnlyList<CopilotAgentBlockerSnapshot> _agentBlockers = Array.Empty<CopilotAgentBlockerSnapshot>();
+
+        private static IReadOnlyList<CopilotAgentBlockerSnapshot> CaptureAgentBlockers(
+            IReadOnlyList<CopilotAgentBlockerSnapshot>? blockers)
+        {
+            var normalized = (blockers ?? Array.Empty<CopilotAgentBlockerSnapshot>())
+                .Where(item => item?.IsStructurallyValid() == true)
+                .Take(8)
+                .ToArray();
+            return normalized.Length == 0
+                ? Array.Empty<CopilotAgentBlockerSnapshot>()
+                : Array.AsReadOnly(normalized);
+        }
 
         public bool ShouldSerializeAgentBlockers() => AgentBlockers?.Count > 0;
 

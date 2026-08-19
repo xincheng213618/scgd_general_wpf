@@ -596,13 +596,20 @@ namespace ColorVision.Copilot
                 ProcessExitCode = processEvidence.ExitCode,
                 ProcessTimedOut = processEvidence.TimedOut,
                 Approval = result?.Approval,
-                SuggestedReadableLocalFilePaths = result?.SuggestedReadableLocalFilePaths ?? Array.Empty<string>(),
-                AttemptedLocalFilePaths = result?.AttemptedLocalFilePaths ?? Array.Empty<string>(),
-                SuccessfullyReadLocalFilePaths = result?.SuccessfullyReadLocalFilePaths ?? Array.Empty<string>(),
-                LocalFileReadScopes = result?.LocalFileReadScopes ?? Array.Empty<CopilotLocalFileReadScope>(),
+                SuggestedReadableLocalFilePaths = Freeze(result?.SuggestedReadableLocalFilePaths),
+                AttemptedLocalFilePaths = Freeze(result?.AttemptedLocalFilePaths),
+                SuccessfullyReadLocalFilePaths = Freeze(result?.SuccessfullyReadLocalFilePaths),
+                LocalFileReadScopes = Freeze(result?.LocalFileReadScopes),
                 DelegatedRunUsage = result?.DelegatedRunUsage,
                 DelegatedAnswer = result?.DelegatedAnswer,
             };
+        }
+
+        private static IReadOnlyList<T> Freeze<T>(IReadOnlyList<T>? values)
+        {
+            return values == null || values.Count == 0
+                ? Array.Empty<T>()
+                : Array.AsReadOnly(values.ToArray());
         }
     }
 

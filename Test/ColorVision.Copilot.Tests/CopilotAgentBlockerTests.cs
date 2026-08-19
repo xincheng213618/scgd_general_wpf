@@ -6,6 +6,34 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotAgentBlockerTests
 {
     [Fact]
+    public void PersistedMessageOwnsItsBlockerCollection()
+    {
+        var blocker = new CopilotAgentBlockerSnapshot
+        {
+            Kind = CopilotAgentBlockerKind.Policy,
+            Code = "policy_blocked",
+            Summary = "The operation is blocked by policy.",
+        };
+        var source = new[] { blocker };
+        var message = new CopilotChatMessage(CopilotChatRole.Assistant, string.Empty)
+        {
+            AgentBlockers = source,
+        };
+
+        source[0] = new CopilotAgentBlockerSnapshot
+        {
+            Kind = CopilotAgentBlockerKind.Policy,
+            Code = "rewritten",
+            Summary = "Rewritten after persistence.",
+        };
+
+        Assert.Same(blocker, Assert.Single(message.AgentBlockers));
+        var persisted = Assert.IsAssignableFrom<IList<CopilotAgentBlockerSnapshot>>(
+            message.AgentBlockers);
+        Assert.Throws<NotSupportedException>(() => persisted[0] = source[0]);
+    }
+
+    [Fact]
     public void PersistedMessageFiltersBlockersWithNullTextFields()
     {
         var message = JsonConvert.DeserializeObject<CopilotChatMessage>(
