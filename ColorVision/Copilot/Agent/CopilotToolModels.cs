@@ -708,6 +708,9 @@ namespace ColorVision.Copilot
 
         public static CopilotToolObservation FromResult(CopilotToolResult? result)
         {
+            result = result == null
+                ? null
+                : CopilotToolResultContract.CreateSnapshot(result);
             CopilotToolProcessEvidence.TryNormalizeForResult(
                 result?.ToolName,
                 result?.Success ?? false,

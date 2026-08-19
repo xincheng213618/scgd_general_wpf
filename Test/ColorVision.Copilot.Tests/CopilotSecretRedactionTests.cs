@@ -81,6 +81,23 @@ public sealed class CopilotSecretRedactionTests
         Assert.DoesNotContain(credential, terminal.ToolResult?.ErrorMessage ?? string.Empty, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void LegacyToolObservationUsesTheSameDiagnosticRedactionBoundary()
+    {
+        const string credential = "raw-legacy-secret-1234567890";
+        var observation = CopilotToolObservation.FromResult(new CopilotToolResult
+        {
+            ToolName = "LegacyResultTool",
+            Success = false,
+            Summary = $"Remote token={credential}, request rejected.",
+            ErrorMessage = $"Authorization token={credential}; access denied.",
+            FailureKind = CopilotToolFailureKind.Authorization,
+        });
+
+        Assert.Equal("Remote token=<redacted>, request rejected.", observation.Summary);
+        Assert.Equal("Authorization token=<redacted>; access denied.", observation.ErrorMessage);
+    }
+
     [Theory]
     [InlineData(
         "rg sk-abcdefghijklmnopqrstuvwxyz123456",
