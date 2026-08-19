@@ -221,7 +221,9 @@ namespace ColorVision.Copilot
                     if (_processedVersion >= targetVersion)
                         processedError = _lastProcessedError;
                     else if (_isDisposed)
-                        return;
+                        processedError = new ObjectDisposedException(
+                            nameof(CopilotChatStateSaveScheduler),
+                            "The scheduler stopped before the requested state save completed.");
                     else
                         processedChanged = _processedChanged.Task;
                 }
