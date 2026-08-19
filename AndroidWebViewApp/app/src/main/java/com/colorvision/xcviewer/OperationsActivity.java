@@ -44,7 +44,6 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.chip.Chip;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
@@ -88,6 +87,7 @@ public class OperationsActivity extends AppCompatActivity {
     private static final int NAV_TOOLS = 2003;
     private static final int NAV_SETTINGS = 2004;
     private static final int MENU_REFRESH_DASHBOARD = 2005;
+    private static final int MENU_TARGET = 2006;
     private static final String PATH_SERVICE_HEALTH = "/ops/v1/services/health";
     private static final String PATH_RECENT_EVENTS = "/ops/v1/diagnostics/recent-events";
     private static final String PATH_FAILURE_EVIDENCE = "/ops/v1/diagnostics/failures";
@@ -132,7 +132,7 @@ public class OperationsActivity extends AppCompatActivity {
     private JSONObject lastRelaySnapshotResponse;
     private MaterialToolbar title;
     private MenuItem dashboardRefreshMenuItem;
-    private Chip profileTarget;
+    private MenuItem targetMenuItem;
     private TextView state;
     private TextView dashboardFreshness;
     private TextView details;
@@ -321,13 +321,24 @@ public class OperationsActivity extends AppCompatActivity {
         title = new MaterialToolbar(this);
         title.setTitle("运维伴侣");
         title.setTitleTextColor(themeManager.primaryTextColor());
+        title.setSubtitleTextColor(themeManager.secondaryTextColor());
         title.setNavigationIconTint(themeManager.primaryTextColor());
         title.setNavigationOnClickListener(v -> navigateUpWithinOperations());
         title.setMinimumHeight(dp(64));
+        targetMenuItem = title.getMenu().add(0, MENU_TARGET, 0, "管理当前电脑");
+        targetMenuItem.setIcon(R.drawable.ic_devices_24);
+        Drawable targetIcon = targetMenuItem.getIcon();
+        if (targetIcon != null) {
+            targetIcon = targetIcon.mutate();
+            targetIcon.setTint(themeManager.primaryTextColor());
+            targetMenuItem.setIcon(targetIcon);
+        }
+        targetMenuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        targetMenuItem.setVisible(false);
         dashboardRefreshMenuItem = title.getMenu().add(
                 0,
                 MENU_REFRESH_DASHBOARD,
-                0,
+                1,
                 R.string.operations_refresh_dashboard);
         dashboardRefreshMenuItem.setIcon(R.drawable.ic_refresh_24);
         Drawable refreshIcon = dashboardRefreshMenuItem.getIcon();
@@ -339,6 +350,10 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardRefreshMenuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
         dashboardRefreshMenuItem.setVisible(false);
         title.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == MENU_TARGET) {
+                showConnectionPreference();
+                return true;
+            }
             if (item.getItemId() != MENU_REFRESH_DASHBOARD) {
                 return false;
             }
@@ -363,21 +378,6 @@ public class OperationsActivity extends AppCompatActivity {
         shell.addView(header, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
-
-        profileTarget = new Chip(this);
-        profileTarget.setTextSize(12);
-        profileTarget.setSingleLine(true);
-        profileTarget.setEllipsize(TextUtils.TruncateAt.END);
-        profileTarget.setChipIconResource(R.drawable.ic_devices_24);
-        profileTarget.setChipIconTint(ColorStateList.valueOf(themeManager.primaryColor()));
-        profileTarget.setEnsureMinTouchTargetSize(true);
-        profileTarget.setMaxWidth(getResources().getDisplayMetrics().widthPixels - dp(32));
-        profileTarget.setOnClickListener(v -> showConnectionPreference());
-        LinearLayout.LayoutParams profileParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        profileParams.setMargins(0, 0, 0, dp(8));
-        root.addView(profileTarget, profileParams);
 
         state = new TextView(this);
         TextViewCompat.setTextAppearance(state, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
@@ -1998,7 +1998,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void refreshOperationsHeaderNavigation() {
-        if (title == null || profileTarget == null || preferences == null) {
+        if (title == null || targetMenuItem == null || preferences == null) {
             return;
         }
         boolean paired = preferences.hasOperationsProfile();
@@ -2086,24 +2086,22 @@ public class OperationsActivity extends AppCompatActivity {
                     dashboardVisible && showingDashboardSummary
                             ? View.VISIBLE : View.GONE);
         }
-        boolean showProfileTarget = paired
-                && dashboardVisible
-                && !OperationsDestinationState.CONNECTIONS.equals(currentDestination);
-        profileTarget.setVisibility(showProfileTarget ? View.VISIBLE : View.GONE);
+        OperationsTargetAppBarPresentation.ViewModel targetAppBar =
+                OperationsTargetAppBarPresentation.from(
+                        paired,
+                        dashboardVisible,
+                        currentDestination,
+                        preferences.getActiveOperationsProfileLabel());
+        title.setSubtitle(targetAppBar.visible ? targetAppBar.subtitle : null);
+        targetMenuItem.setTitle(targetAppBar.actionLabel);
+        targetMenuItem.setVisible(targetAppBar.visible);
+        targetMenuItem.setEnabled(targetAppBar.visible);
     }
 
     private void refreshOperationsTargetPresentation() {
-        if (profileTarget == null || preferences == null) {
+        if (targetMenuItem == null || preferences == null) {
             return;
         }
-        boolean paired = preferences.hasOperationsProfile();
-        String label = paired ? preferences.getActiveOperationsProfileLabel() : "未配对";
-        profileTarget.setText(getString(R.string.operations_target_label, label));
-        profileTarget.setContentDescription(paired
-                ? getString(R.string.operations_target_content_description, label)
-                : getString(R.string.operations_target_unpaired_content_description));
-        profileTarget.setEnabled(paired);
-        profileTarget.setAlpha(paired ? 1f : 0.55f);
         refreshOperationsHeaderNavigation();
     }
 
