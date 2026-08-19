@@ -4973,6 +4973,11 @@ public class OperationsActivity extends AppCompatActivity {
                         remoteMonitor(lastRelaySnapshotResponse), fresh);
         OperationsRemoteProblemsPresentation.ViewModel model =
                 applyRemoteProblemAcknowledgements(rawModel, true);
+        if (OperationsAttentionNotificationReconciliation.shouldClear(
+                preferences.getOperationsWatchState(), model)) {
+            OperationsWatchService.dismissAttentionNotification(
+                    this, preferences.getOperationsHostId());
+        }
         OperationsRemoteProblemsPresentation.FocusedViewModel focused =
                 OperationsRemoteProblemsPresentation.focus(
                         model, activeTriageAttentionFocus);
@@ -5129,6 +5134,11 @@ public class OperationsActivity extends AppCompatActivity {
         long nowMilliseconds = System.currentTimeMillis();
         OperationsTriagePresentation.ViewModel model =
                 triageModel(report, true, nowMilliseconds);
+        if (OperationsAttentionNotificationReconciliation.shouldClear(
+                preferences.getOperationsWatchState(), model)) {
+            OperationsWatchService.dismissAttentionNotification(
+                    this, preferences.getOperationsHostId());
+        }
         OperationsTriagePresentation.FocusedViewModel focused =
                 OperationsTriagePresentation.focus(model, activeTriageAttentionFocus);
         model = focused.model;

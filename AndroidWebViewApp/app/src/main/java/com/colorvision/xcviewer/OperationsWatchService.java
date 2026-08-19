@@ -42,7 +42,7 @@ public final class OperationsWatchService extends Service {
     static final String ATTENTION_CHANNEL_ID = "operations_attention";
     private static final int NOTIFICATION_ID = 22023;
     private static final int LEGACY_ATTENTION_NOTIFICATION_ID = 22024;
-    private static final int ATTENTION_NOTIFICATION_ID = 22024;
+    static final int ATTENTION_NOTIFICATION_ID = 22024;
     private static final int REMINDER_TEST_NOTIFICATION_ID = 22025;
     private static final int FLEET_CONNECT_TIMEOUT_MILLISECONDS = 4_000;
     private static final int FLEET_READ_TIMEOUT_MILLISECONDS = 6_000;
@@ -88,10 +88,8 @@ public final class OperationsWatchService extends Service {
         NotificationManager manager = context.getSystemService(NotificationManager.class);
         if (manager != null) {
             manager.cancel(LEGACY_ATTENTION_NOTIFICATION_ID);
-            manager.cancel(
-                    OperationsBackgroundFleetPolicy.attentionNotificationTag(hostId),
-                    ATTENTION_NOTIFICATION_ID);
         }
+        dismissAttentionNotification(context, hostId);
     }
 
     static void stopForUserPreference(Context context) {
@@ -202,6 +200,22 @@ public final class OperationsWatchService extends Service {
     static void restartForProfileChange(Context context) {
         context.stopService(new Intent(context, OperationsWatchService.class));
         start(context);
+    }
+
+    static void dismissAttentionNotification(Context context, String hostId) {
+        if (context == null || !OperationsRelayPolicy.isSafeIdentifier(hostId)) {
+            return;
+        }
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        if (manager == null) {
+            return;
+        }
+        if (hostId.equals(new AppPreferences(context).getOperationsHostId())) {
+            manager.cancel(LEGACY_ATTENTION_NOTIFICATION_ID);
+        }
+        manager.cancel(
+                OperationsBackgroundFleetPolicy.attentionNotificationTag(hostId),
+                ATTENTION_NOTIFICATION_ID);
     }
 
     @Override
@@ -990,15 +1004,7 @@ public final class OperationsWatchService extends Service {
     }
 
     private void clearAttentionNotification(String hostId) {
-        NotificationManager manager = getSystemService(NotificationManager.class);
-        if (manager != null) {
-            if (hostId.equals(preferences.getOperationsHostId())) {
-                manager.cancel(LEGACY_ATTENTION_NOTIFICATION_ID);
-            }
-            manager.cancel(
-                    OperationsBackgroundFleetPolicy.attentionNotificationTag(hostId),
-                    ATTENTION_NOTIFICATION_ID);
-        }
+        dismissAttentionNotification(this, hostId);
     }
 
     private PendingIntent createOperationsPendingIntent(int requestCode, String destination) {
