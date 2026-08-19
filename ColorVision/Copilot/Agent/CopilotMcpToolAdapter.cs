@@ -133,17 +133,14 @@ namespace ColorVision.Copilot
             };
         }
 
-        private static string BuildResultContent(CallToolResult result)
+        internal static string BuildResultContent(CallToolResult result)
         {
             var builder = new StringBuilder();
             var maximumPayloadLength = MaximumResultLength - Environment.NewLine.Length - ResultTruncationMarker.Length;
             var wasTruncated = result.Content.Count > MaximumResultBlocks;
             foreach (var block in result.Content.Take(MaximumResultBlocks))
             {
-                if (block is not TextContentBlock textBlock)
-                    continue;
-
-                if (!TryAppendResultPart(builder, textBlock.Text, maximumPayloadLength))
+                if (!TryAppendResultPart(builder, ProjectResultBlock(block), maximumPayloadLength))
                 {
                     wasTruncated = true;
                     break;
@@ -156,12 +153,6 @@ namespace ColorVision.Copilot
                     wasTruncated = true;
             }
 
-            if (builder.Length == 0 && result.Content.Count > 0)
-            {
-                if (!TryAppendResultPart(builder, $"MCP returned {result.Content.Count} non-text content block(s).", maximumPayloadLength))
-                    wasTruncated = true;
-            }
-
             if (wasTruncated)
             {
                 if (builder.Length > 0)
@@ -169,6 +160,47 @@ namespace ColorVision.Copilot
                 builder.Append(ResultTruncationMarker);
             }
             return builder.ToString();
+        }
+
+        private static string ProjectResultBlock(ContentBlock block)
+        {
+            return block switch
+            {
+                null => "[unsupported MCP content block: null]",
+                TextContentBlock text => text.Text,
+                ResourceLinkBlock link => ProjectResourceLink(link),
+                ImageContentBlock image =>
+                    $"[MCP image result omitted from model context: {NormalizeInlineLabel(image.MimeType, "unknown media type")}; binary payload was not retained]",
+                AudioContentBlock audio =>
+                    $"[MCP audio result omitted from model context: {NormalizeInlineLabel(audio.MimeType, "unknown media type")}; binary payload was not retained]",
+                EmbeddedResourceBlock resource =>
+                    $"[MCP embedded resource omitted from model context: {NormalizeInlineLabel(resource.Resource?.Uri, "unknown resource")}; payload was not retained]",
+                _ => $"[unsupported MCP content type: {NormalizeInlineLabel(block.Type, "unknown")}]",
+            };
+        }
+
+        private static string ProjectResourceLink(ResourceLinkBlock link)
+        {
+            var name = NormalizeInlineLabel(
+                string.IsNullOrWhiteSpace(link.Title) ? link.Name : link.Title,
+                "unnamed resource");
+            var uri = NormalizeInlineLabel(link.Uri, "missing URI");
+            return $"MCP resource link: {name} ({uri})";
+        }
+
+        private static string NormalizeInlineLabel(string? value, string fallback)
+        {
+            var normalized = string.Join(
+                " ",
+                (value ?? string.Empty).Split(
+                    (char[]?)null,
+                    StringSplitOptions.RemoveEmptyEntries));
+            if (normalized.Length == 0)
+                return fallback;
+            const int maximumLength = 1_024;
+            return normalized.Length <= maximumLength
+                ? normalized
+                : normalized[..maximumLength] + "...";
         }
 
         private static bool TryAppendStructuredResult(
