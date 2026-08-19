@@ -132,6 +132,23 @@ namespace ColorVision.Copilot
                 ProjectInstructionDiscoveryOptions);
         }
 
+        internal CopilotAgentHostContextSnapshot WithAttachments(
+            IEnumerable<CopilotAttachmentItem> attachments)
+        {
+            ArgumentNullException.ThrowIfNull(attachments);
+            return new CopilotAgentHostContextSnapshot(
+                ActiveDocumentPath,
+                SolutionDirectoryPath,
+                attachments,
+                LiveContext,
+                ConversationHistory,
+                AdditionalReadRootPaths,
+                GlobalInstructionRootPath,
+                PrimaryTrustedProjectRootPath,
+                ProjectConfigWorkingDirectoryPath,
+                ProjectInstructionDiscoveryOptions);
+        }
+
         private CopilotAgentHostContextSnapshot(
             string activeDocumentPath,
             string solutionDirectoryPath,

@@ -537,6 +537,10 @@ namespace ColorVision.Copilot
             }
             if (!TryValidateComposerAttachments(turnSnapshot.Attachments, requestProfile))
                 return;
+            var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments);
+            if (admittedAttachments == null)
+                return;
+            turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
 
             conversation.ProfileId = requestProfile.Id;
             conversation.ProfileDisplayName = requestProfile.DisplayLabel;

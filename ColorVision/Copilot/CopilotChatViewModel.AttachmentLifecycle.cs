@@ -136,6 +136,27 @@ namespace ColorVision.Copilot
             }
         }
 
+        private async Task<IReadOnlyList<CopilotAttachmentItem>?> TryPersistImageAttachmentsAsync(
+            IReadOnlyList<CopilotAttachmentItem> attachments)
+        {
+            try
+            {
+                return await CopilotImageAttachmentAdmission.PersistAsync(
+                    attachments,
+                    _stateStore.AttachmentDirectoryPath,
+                    CancellationToken.None);
+            }
+            catch (CopilotImageAttachmentAdmissionException ex)
+            {
+                LocalCommandResultTitle = ex.FailureKind
+                    == CopilotImageAttachmentAdmissionFailureKind.RejectedInput
+                        ? "图片无法附加"
+                        : "图片保存失败";
+                LocalCommandResultText = ex.Message;
+                return null;
+            }
+        }
+
         private void RemoveManagedAttachmentFiles(IEnumerable<CopilotAttachmentItem> attachments)
         {
             foreach (var attachment in attachments.ToList())

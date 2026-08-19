@@ -133,6 +133,10 @@ namespace ColorVision.Copilot
             {
                 return;
             }
+            var admittedAttachments = await TryPersistImageAttachmentsAsync(turnSnapshot.Attachments);
+            if (admittedAttachments == null)
+                return;
+            turnSnapshot = turnSnapshot.WithAttachments(admittedAttachments);
             var automaticCompaction = await TryAutoCompactConversationAsync(
                 conversation,
                 requestProfile,
