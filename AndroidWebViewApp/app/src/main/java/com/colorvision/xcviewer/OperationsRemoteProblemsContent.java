@@ -27,7 +27,8 @@ final class OperationsRemoteProblemsContent {
             OperationsRemoteProblemsPresentation.ViewModel model,
             String attentionContext,
             SectionHandler sectionHandler,
-            ReviewHandler reviewHandler) {
+            ReviewHandler reviewHandler,
+            Runnable reviewAll) {
         LinearLayout root = new LinearLayout(activity);
         root.setOrientation(LinearLayout.VERTICAL);
 
@@ -39,6 +40,19 @@ final class OperationsRemoteProblemsContent {
         }
         root.addView(infoCard(activity, themeManager, model.summary),
                 hasAttentionContext ? topMargin(dp(activity, 8)) : matchWidth());
+        if (model.pendingIssues.size() > 1) {
+            MaterialButton reviewAllButton = new MaterialButton(
+                    activity,
+                    null,
+                    com.google.android.material.R.attr.materialButtonTonalStyle);
+            reviewAllButton.setText("全部标记已复核（" + model.pendingIssues.size() + "）");
+            reviewAllButton.setMinHeight(dp(activity, 48));
+            reviewAllButton.setContentDescription("将当前 " + model.pendingIssues.size()
+                    + " 项电脑签名问题全部标记为已在此手机复核；"
+                    + "电脑状态不会改变，操作后可以撤销");
+            reviewAllButton.setOnClickListener(view -> reviewAll.run());
+            root.addView(reviewAllButton, topMargin(dp(activity, 12)));
+        }
         if (!model.pendingIssues.isEmpty()) {
             root.addView(sectionTitle(
                             activity,

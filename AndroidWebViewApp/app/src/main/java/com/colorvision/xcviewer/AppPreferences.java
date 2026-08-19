@@ -438,6 +438,19 @@ final class AppPreferences {
                         current, hostId, findingId, nowMilliseconds));
     }
 
+    void saveOperationsTriageFindingsAcknowledged(
+            String hostId,
+            Map<String, String> revisions,
+            boolean acknowledged,
+            long nowMilliseconds) {
+        saveOperationsTriageAcknowledgements(OperationsTriageAcknowledgements.updateAll(
+                getOperationsTriageAcknowledgements(),
+                hostId,
+                revisions,
+                acknowledged,
+                nowMilliseconds));
+    }
+
     void reconcileOperationsRemoteProblemAcknowledgements(
             String hostId, Map<String, String> currentRevisions, long nowMilliseconds) {
         saveOperationsRemoteProblemAcknowledgements(OperationsTriageAcknowledgements.reconcile(
@@ -469,6 +482,19 @@ final class AppPreferences {
                         current, hostId, findingId, revision, nowMilliseconds)
                 : OperationsTriageAcknowledgements.remove(
                         current, hostId, findingId, nowMilliseconds));
+    }
+
+    void saveOperationsRemoteProblemsAcknowledged(
+            String hostId,
+            Map<String, String> revisions,
+            boolean acknowledged,
+            long nowMilliseconds) {
+        saveOperationsRemoteProblemAcknowledgements(OperationsTriageAcknowledgements.updateAll(
+                getOperationsRemoteProblemAcknowledgements(),
+                hostId,
+                revisions,
+                acknowledged,
+                nowMilliseconds));
     }
 
     void removeOperationsProfile(String hostId) {

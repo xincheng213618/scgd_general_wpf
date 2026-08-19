@@ -53,6 +53,28 @@ final class OperationsTriageAcknowledgements {
                 parse(serialized, nowMilliseconds), hostId, findingId));
     }
 
+    static String updateAll(
+            String serialized,
+            String hostId,
+            Map<String, String> revisions,
+            boolean acknowledged,
+            long nowMilliseconds) {
+        String updated = serialized;
+        Map<String, String> safeRevisions = revisions == null
+                ? Collections.emptyMap() : revisions;
+        for (Map.Entry<String, String> revision : safeRevisions.entrySet()) {
+            updated = acknowledged
+                    ? acknowledge(
+                            updated,
+                            hostId,
+                            revision.getKey(),
+                            revision.getValue(),
+                            nowMilliseconds)
+                    : remove(updated, hostId, revision.getKey(), nowMilliseconds);
+        }
+        return updated;
+    }
+
     static String reconcile(
             String serialized,
             String hostId,

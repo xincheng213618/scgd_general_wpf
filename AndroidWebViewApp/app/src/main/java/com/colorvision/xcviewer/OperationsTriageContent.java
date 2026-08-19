@@ -33,6 +33,7 @@ final class OperationsTriageContent {
             String attentionContext,
             ActionHandler actionHandler,
             ReviewHandler reviewHandler,
+            Runnable reviewAll,
             Runnable connectionCheck,
             Runnable observe) {
         LinearLayout root = new LinearLayout(activity);
@@ -66,6 +67,14 @@ final class OperationsTriageContent {
                 observe));
         root.addView(quickActions, hasAttentionContext
                 ? topMargin(dp(activity, 12)) : matchWidth());
+
+        if (model.pendingFindings.size() > 1) {
+            root.addView(reviewAllButton(
+                            activity,
+                            model.pendingFindings.size(),
+                            reviewAll),
+                    topMargin(dp(activity, 12)));
+        }
 
         if (!model.pendingFindings.isEmpty()) {
             root.addView(sectionTitle(
@@ -102,6 +111,20 @@ final class OperationsTriageContent {
                 topMargin(dp(activity, 8)));
 
         return root;
+    }
+
+    private static MaterialButton reviewAllButton(
+            Activity activity, int count, Runnable reviewAll) {
+        MaterialButton button = new MaterialButton(
+                activity,
+                null,
+                com.google.android.material.R.attr.materialButtonTonalStyle);
+        button.setText("全部标记已复核（" + count + "）");
+        button.setMinHeight(dp(activity, 48));
+        button.setContentDescription("将当前 " + count + " 项问题"
+                + "全部标记为已在此手机复核；电脑状态不会改变，操作后可以撤销");
+        button.setOnClickListener(view -> reviewAll.run());
+        return button;
     }
 
     private static MaterialCardView attentionContextCard(

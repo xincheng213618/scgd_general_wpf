@@ -62,6 +62,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -5054,6 +5055,8 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsRemoteProblemsPresentation.focus(
                         model, activeTriageAttentionFocus);
         model = focused.model;
+        List<OperationsRemoteProblemsPresentation.Issue> pendingIssues =
+                model.pendingIssues;
         problemBadgeCount = model.snapshotAvailable ? model.pendingIssues.size() : 0;
         refreshProblemNavigationBadge();
         state.setText(model.stateLabel);
@@ -5065,7 +5068,11 @@ public class OperationsActivity extends AppCompatActivity {
                         model,
                         focused.contextMessage,
                         this::showRemoteProblemDetail,
-                        this::setRemoteProblemAcknowledged),
+                        this::setRemoteProblemAcknowledged,
+                        () -> setAllRemoteProblemsAcknowledged(
+                                pendingIssues,
+                                true,
+                                preferences.getOperationsHostId())),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
@@ -5124,6 +5131,44 @@ public class OperationsActivity extends AppCompatActivity {
                         ? "已在此手机复核签名摘要；电脑状态未改变，新证据会自动重新出现"
                         : "已恢复为待复核",
                 Snackbar.LENGTH_LONG).show();
+    }
+
+    private void setAllRemoteProblemsAcknowledged(
+            List<OperationsRemoteProblemsPresentation.Issue> issues,
+            boolean acknowledged,
+            String hostId) {
+        if (!OperationsRelayPolicy.isSafeIdentifier(hostId)) {
+            return;
+        }
+        Map<String, String> revisions = new LinkedHashMap<>();
+        for (OperationsRemoteProblemsPresentation.Issue issue : issues) {
+            if (issue != null) {
+                revisions.put(issue.findingId, issue.revision);
+            }
+        }
+        if (revisions.isEmpty()) {
+            return;
+        }
+        preferences.saveOperationsRemoteProblemsAcknowledged(
+                hostId,
+                revisions,
+                acknowledged,
+                System.currentTimeMillis());
+        if (hostId.equals(preferences.getOperationsHostId())) {
+            showRemoteProblemCenter();
+        }
+        Snackbar snackbar = Snackbar.make(
+                snackbarHost,
+                acknowledged
+                        ? "已复核 " + revisions.size()
+                                + " 项电脑签名问题；电脑状态未改变"
+                        : "已撤销 " + revisions.size() + " 项批量复核",
+                Snackbar.LENGTH_LONG);
+        if (acknowledged) {
+            snackbar.setAction("撤销", view -> setAllRemoteProblemsAcknowledged(
+                    issues, false, hostId));
+        }
+        snackbar.show();
     }
 
     private void refreshRemoteProblemCenter() {
@@ -5220,6 +5265,8 @@ public class OperationsActivity extends AppCompatActivity {
         OperationsTriagePresentation.FocusedViewModel focused =
                 OperationsTriagePresentation.focus(model, activeTriageAttentionFocus);
         model = focused.model;
+        List<OperationsTriagePresentation.Finding> pendingFindings =
+                model.pendingFindings;
         problemCenterRefreshInFlight = false;
         problemBadgeCount = model.pendingFindings.size();
         problemBadgeState = model.watchState();
@@ -5244,6 +5291,11 @@ public class OperationsActivity extends AppCompatActivity {
                         this::runTriageAction,
                         (finding, acknowledged) -> setTriageFindingAcknowledged(
                                 report, finding, acknowledged),
+                        () -> setAllTriageFindingsAcknowledged(
+                                report,
+                                pendingFindings,
+                                true,
+                                preferences.getOperationsHostId()),
                         this::runConnectionSelfCheckFromTriage,
                         this::showLiveMonitorFromTriage),
                 new LinearLayout.LayoutParams(
@@ -5359,6 +5411,44 @@ public class OperationsActivity extends AppCompatActivity {
                         ? "已在此手机复核；电脑状态未改变，新证据会自动重新出现"
                         : "已恢复为待复核",
                 Snackbar.LENGTH_LONG).show();
+    }
+
+    private void setAllTriageFindingsAcknowledged(
+            JSONObject report,
+            List<OperationsTriagePresentation.Finding> findings,
+            boolean acknowledged,
+            String hostId) {
+        if (!OperationsRelayPolicy.isSafeIdentifier(hostId)) {
+            return;
+        }
+        Map<String, String> revisions = new LinkedHashMap<>();
+        for (OperationsTriagePresentation.Finding finding : findings) {
+            if (finding != null) {
+                revisions.put(finding.findingId, finding.revision);
+            }
+        }
+        if (revisions.isEmpty()) {
+            return;
+        }
+        preferences.saveOperationsTriageFindingsAcknowledged(
+                hostId,
+                revisions,
+                acknowledged,
+                System.currentTimeMillis());
+        if (hostId.equals(preferences.getOperationsHostId())) {
+            renderTriageCenter(report);
+        }
+        Snackbar snackbar = Snackbar.make(
+                snackbarHost,
+                acknowledged
+                        ? "已复核 " + revisions.size() + " 项；电脑状态未改变"
+                        : "已撤销 " + revisions.size() + " 项批量复核",
+                Snackbar.LENGTH_LONG);
+        if (acknowledged) {
+            snackbar.setAction("撤销", view -> setAllTriageFindingsAcknowledged(
+                    report, findings, false, hostId));
+        }
+        snackbar.show();
     }
 
     private void showLiveMonitorFromTriage() {

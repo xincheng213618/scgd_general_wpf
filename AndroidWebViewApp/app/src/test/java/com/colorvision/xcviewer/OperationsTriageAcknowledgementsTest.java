@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertFalse;
@@ -62,6 +63,33 @@ public class OperationsTriageAcknowledgementsTest {
                 state, "host-b", NOW + 3L);
         assertFalse(OperationsTriageAcknowledgements.contains(
                 state, "host-b", "devices", REVISION_B, NOW + 3L));
+    }
+
+    @Test
+    public void batchReviewAndUndoStayScopedToTheSelectedComputer() {
+        String state = OperationsTriageAcknowledgements.acknowledge(
+                "", "host-b", "devices", REVISION_B, NOW);
+        Map<String, String> pending = new LinkedHashMap<>();
+        pending.put("devices", REVISION_A);
+        pending.put("messages", REVISION_B);
+
+        state = OperationsTriageAcknowledgements.updateAll(
+                state, "host-a", pending, true, NOW + 1L);
+        assertTrue(OperationsTriageAcknowledgements.contains(
+                state, "host-a", "devices", REVISION_A, NOW + 1L));
+        assertTrue(OperationsTriageAcknowledgements.contains(
+                state, "host-a", "messages", REVISION_B, NOW + 1L));
+        assertTrue(OperationsTriageAcknowledgements.contains(
+                state, "host-b", "devices", REVISION_B, NOW + 1L));
+
+        state = OperationsTriageAcknowledgements.updateAll(
+                state, "host-a", pending, false, NOW + 2L);
+        assertFalse(OperationsTriageAcknowledgements.contains(
+                state, "host-a", "devices", REVISION_A, NOW + 2L));
+        assertFalse(OperationsTriageAcknowledgements.contains(
+                state, "host-a", "messages", REVISION_B, NOW + 2L));
+        assertTrue(OperationsTriageAcknowledgements.contains(
+                state, "host-b", "devices", REVISION_B, NOW + 2L));
     }
 
     @Test
