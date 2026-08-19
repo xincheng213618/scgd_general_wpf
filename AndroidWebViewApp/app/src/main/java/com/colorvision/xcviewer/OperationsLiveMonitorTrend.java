@@ -2,6 +2,7 @@ package com.colorvision.xcviewer;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Iterator;
 
 final class OperationsLiveMonitorTrend {
     static final int MAX_SAMPLES = 30;
@@ -14,6 +15,8 @@ final class OperationsLiveMonitorTrend {
         final Long uiLatencyMilliseconds;
         final String flowPhase;
         final int alertCount;
+        final boolean deviceHealthAvailable;
+        final int deviceAttentionCount;
 
         Sample(long capturedAtMilliseconds,
                double cpuPercent,
@@ -21,7 +24,9 @@ final class OperationsLiveMonitorTrend {
                String uiState,
                Long uiLatencyMilliseconds,
                String flowPhase,
-               int alertCount) {
+               int alertCount,
+               boolean deviceHealthAvailable,
+               int deviceAttentionCount) {
             this.capturedAtMilliseconds = Math.max(0, capturedAtMilliseconds);
             this.cpuPercent = Math.max(0, cpuPercent);
             this.workingSetMb = Math.max(0, workingSetMb);
@@ -30,6 +35,8 @@ final class OperationsLiveMonitorTrend {
                     ? null : Math.max(0, uiLatencyMilliseconds);
             this.flowPhase = normalize(flowPhase, "unavailable");
             this.alertCount = Math.max(0, alertCount);
+            this.deviceHealthAvailable = deviceHealthAvailable;
+            this.deviceAttentionCount = Math.max(0, deviceAttentionCount);
         }
     }
 
@@ -49,6 +56,11 @@ final class OperationsLiveMonitorTrend {
         final int flowPhaseTransitionCount;
         final int latestAlertCount;
         final int maximumAlertCount;
+        final boolean deviceRecoveryTracked;
+        final int initialDeviceAttentionCount;
+        final boolean latestDeviceHealthAvailable;
+        final int latestDeviceAttentionCount;
+        final int consecutiveHealthyDeviceSamples;
 
         private Summary(int sampleCount,
                         long startedAtMilliseconds,
@@ -64,7 +76,12 @@ final class OperationsLiveMonitorTrend {
                         String latestFlowPhase,
                         int flowPhaseTransitionCount,
                         int latestAlertCount,
-                        int maximumAlertCount) {
+                        int maximumAlertCount,
+                        boolean deviceRecoveryTracked,
+                        int initialDeviceAttentionCount,
+                        boolean latestDeviceHealthAvailable,
+                        int latestDeviceAttentionCount,
+                        int consecutiveHealthyDeviceSamples) {
             this.sampleCount = sampleCount;
             this.startedAtMilliseconds = startedAtMilliseconds;
             this.endedAtMilliseconds = endedAtMilliseconds;
@@ -80,15 +97,36 @@ final class OperationsLiveMonitorTrend {
             this.flowPhaseTransitionCount = flowPhaseTransitionCount;
             this.latestAlertCount = latestAlertCount;
             this.maximumAlertCount = maximumAlertCount;
+            this.deviceRecoveryTracked = deviceRecoveryTracked;
+            this.initialDeviceAttentionCount = initialDeviceAttentionCount;
+            this.latestDeviceHealthAvailable = latestDeviceHealthAvailable;
+            this.latestDeviceAttentionCount = latestDeviceAttentionCount;
+            this.consecutiveHealthyDeviceSamples = consecutiveHealthyDeviceSamples;
         }
 
         static Summary empty() {
             return new Summary(0, 0, 0, 0, 0, 0, 0,
-                    null, 0, 0, "unavailable", "unavailable", 0, 0, 0);
+                    null, 0, 0, "unavailable", "unavailable", 0, 0, 0,
+                    false, 0, false, 0, 0);
+        }
+
+        boolean deviceRecoveryPendingConfirmation() {
+            return deviceRecoveryTracked
+                    && latestDeviceHealthAvailable
+                    && latestDeviceAttentionCount == 0
+                    && consecutiveHealthyDeviceSamples == 1;
+        }
+
+        boolean deviceRecoveryConfirmed() {
+            return deviceRecoveryTracked
+                    && latestDeviceHealthAvailable
+                    && latestDeviceAttentionCount == 0
+                    && consecutiveHealthyDeviceSamples >= 2;
         }
     }
 
     private final Deque<Sample> samples = new ArrayDeque<>(MAX_SAMPLES);
+    private Integer deviceRecoveryBaseline;
 
     void add(Sample sample) {
         if (sample == null) {
@@ -102,6 +140,11 @@ final class OperationsLiveMonitorTrend {
 
     void reset() {
         samples.clear();
+        deviceRecoveryBaseline = null;
+    }
+
+    void trackDeviceRecovery(int attentionCount) {
+        deviceRecoveryBaseline = attentionCount > 0 ? attentionCount : null;
     }
 
     int size() {
@@ -125,6 +168,7 @@ final class OperationsLiveMonitorTrend {
         int flowTransitions = 0;
         int maximumAlerts = 0;
         String previousFlowPhase = null;
+        Integer initialDeviceAttention = deviceRecoveryBaseline;
 
         for (Sample sample : samples) {
             cpuTotal += sample.cpuPercent;
@@ -146,6 +190,20 @@ final class OperationsLiveMonitorTrend {
             }
             previousFlowPhase = sample.flowPhase;
             maximumAlerts = Math.max(maximumAlerts, sample.alertCount);
+            if (initialDeviceAttention == null
+                    && sample.deviceHealthAvailable
+                    && sample.deviceAttentionCount > 0) {
+                initialDeviceAttention = sample.deviceAttentionCount;
+            }
+        }
+
+        int consecutiveHealthyDeviceSamples = 0;
+        for (Iterator<Sample> iterator = samples.descendingIterator(); iterator.hasNext();) {
+            Sample sample = iterator.next();
+            if (!sample.deviceHealthAvailable || sample.deviceAttentionCount > 0) {
+                break;
+            }
+            consecutiveHealthyDeviceSamples++;
         }
 
         return new Summary(
@@ -163,7 +221,12 @@ final class OperationsLiveMonitorTrend {
                 latest.flowPhase,
                 flowTransitions,
                 latest.alertCount,
-                maximumAlerts);
+                maximumAlerts,
+                initialDeviceAttention != null && initialDeviceAttention > 0,
+                initialDeviceAttention == null ? 0 : initialDeviceAttention,
+                latest.deviceHealthAvailable,
+                latest.deviceAttentionCount,
+                consecutiveHealthyDeviceSamples);
     }
 
     private static String normalize(String value, String fallback) {

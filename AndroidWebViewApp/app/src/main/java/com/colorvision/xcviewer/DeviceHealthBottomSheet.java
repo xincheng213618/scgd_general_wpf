@@ -32,7 +32,8 @@ final class DeviceHealthBottomSheet {
             String observedAt,
             boolean offerTriageAction,
             Runnable refresh,
-            Runnable openTriage) {
+            Runnable openTriage,
+            Runnable trackRecovery) {
         BottomSheetDialog dialog = new BottomSheetDialog(activity);
         LinearLayout sheetRoot = new LinearLayout(activity);
         sheetRoot.setOrientation(LinearLayout.VERTICAL);
@@ -153,9 +154,11 @@ final class DeviceHealthBottomSheet {
                 .show());
         content.addView(scope, topMargin(dp(activity, 12)));
 
+        boolean trackableRecovery = model.canTrackRecovery();
         boolean singleColumnActions = AppResponsiveLayout.usesSingleColumn(
                 activity.getResources().getConfiguration().screenWidthDp,
-                activity.getResources().getConfiguration().fontScale);
+                activity.getResources().getConfiguration().fontScale)
+                || (offerTriageAction && trackableRecovery);
         LinearLayout actions = new LinearLayout(activity);
         actions.setOrientation(singleColumnActions
                 ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
@@ -174,7 +177,12 @@ final class DeviceHealthBottomSheet {
         actions.addView(refreshButton, singleColumnActions ? matchWidth() : weightedButton());
 
         if (offerTriageAction) {
-            MaterialButton triageButton = new MaterialButton(activity);
+            MaterialButton triageButton = trackableRecovery
+                    ? new MaterialButton(
+                            activity,
+                            null,
+                            com.google.android.material.R.attr.materialButtonOutlinedStyle)
+                    : new MaterialButton(activity);
             triageButton.setText("打开问题中心");
             triageButton.setMinHeight(dp(activity, 48));
             triageButton.setOnClickListener(view -> {
@@ -187,6 +195,22 @@ final class DeviceHealthBottomSheet {
                 triageParams.setMargins(dp(activity, 8), 0, 0, 0);
             }
             actions.addView(triageButton, triageParams);
+        }
+
+        if (trackableRecovery) {
+            MaterialButton recoveryButton = new MaterialButton(activity);
+            recoveryButton.setText("跟踪设备恢复");
+            recoveryButton.setMinHeight(dp(activity, 48));
+            recoveryButton.setOnClickListener(view -> {
+                dialog.dismiss();
+                trackRecovery.run();
+            });
+            LinearLayout.LayoutParams recoveryParams = singleColumnActions
+                    ? topMargin(dp(activity, 8)) : weightedButton();
+            if (!singleColumnActions) {
+                recoveryParams.setMargins(dp(activity, 8), 0, 0, 0);
+            }
+            actions.addView(recoveryButton, recoveryParams);
         }
 
         int footerBaseBottom = dp(activity, 16);

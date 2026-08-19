@@ -225,6 +225,10 @@ final class DeviceHealthPresentation {
                     : attentionCount > 0 ? "设备需关注 " + attentionCount + " 个" : headline;
         }
 
+        boolean canTrackRecovery() {
+            return available && attentionCount > 0;
+        }
+
         private String compactAttentionCategorySummary() {
             List<String> labels = new ArrayList<>();
             int visibleCount = Math.min(2, attentionCategoryCount);

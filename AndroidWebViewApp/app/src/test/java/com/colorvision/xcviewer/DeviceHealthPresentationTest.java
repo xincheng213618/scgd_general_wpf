@@ -48,6 +48,7 @@ public class DeviceHealthPresentationTest {
         assertTrue(model.guidance.startsWith("优先检查 相机类、光谱类"));
         assertTrue(model.accessibilitySummary().contains("不可用原因，离线 2"));
         assertTrue(model.accessibilitySummary().contains("需关注类型，相机类、光谱类"));
+        assertTrue(model.canTrackRecovery());
     }
 
     @Test
@@ -96,6 +97,7 @@ public class DeviceHealthPresentationTest {
         assertEquals("当前无法读取检测设备状态", model.headline);
         assertEquals("不会自动重连或重启设备", model.summary);
         assertTrue(model.categories.isEmpty());
+        assertFalse(model.canTrackRecovery());
     }
 
     @Test

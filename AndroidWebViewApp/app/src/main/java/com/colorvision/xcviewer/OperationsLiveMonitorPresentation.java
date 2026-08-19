@@ -105,14 +105,24 @@ final class OperationsLiveMonitorPresentation {
         return value == null ? 0 : Math.max(0, value.optInt(name, 0));
     }
 
+    static int attentionAlertCount(JSONObject alerts) {
+        return count(alerts, "warningCount")
+                + count(alerts, "errorCount")
+                + count(alerts, "criticalCount");
+    }
+
     private static String trendSummary(OperationsLiveMonitorTrend.Summary summary) {
         if (summary.sampleCount < 2) {
+            String recovery = deviceRecoverySummary(summary);
+            if (!recovery.isEmpty()) {
+                return recovery;
+            }
             return "再采集 1 个样本后显示本次趋势";
         }
         String latency = summary.maximumUiLatencyMilliseconds == null
                 ? "界面延迟未知"
                 : "界面最大延迟 " + summary.maximumUiLatencyMilliseconds + " ms";
-        return String.format(
+        String base = String.format(
                 Locale.CHINA,
                 "%d 个样本 · %s–%s · %s\n"
                         + "CPU 平均 %.1f%% / 峰值 %.1f%%\n"
@@ -133,6 +143,28 @@ final class OperationsLiveMonitorPresentation {
                 flowPhase(summary.latestFlowPhase),
                 summary.flowPhaseTransitionCount,
                 summary.maximumAlertCount);
+        String recovery = deviceRecoverySummary(summary);
+        return recovery.isEmpty() ? base : base + "\n" + recovery;
+    }
+
+    static String deviceRecoverySummary(OperationsLiveMonitorTrend.Summary summary) {
+        if (summary == null || !summary.deviceRecoveryTracked) {
+            return "";
+        }
+        if (!summary.latestDeviceHealthAvailable) {
+            return "设备恢复暂无法确认 · 当前状态不可用";
+        }
+        if (summary.latestDeviceAttentionCount > 0) {
+            return "设备恢复待确认 · 当前仍有 "
+                    + summary.latestDeviceAttentionCount + " 台需关注";
+        }
+        if (summary.deviceRecoveryConfirmed()) {
+            return "设备恢复已确认 · 连续 "
+                    + summary.consecutiveHealthyDeviceSamples
+                    + " 个样本正常（开始需关注 "
+                    + summary.initialDeviceAttentionCount + " 台）";
+        }
+        return "设备状态暂时正常 · 再采集 1 个正常样本后确认恢复";
     }
 
     private static String clock(long milliseconds) {

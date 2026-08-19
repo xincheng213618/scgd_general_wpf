@@ -5800,6 +5800,10 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showLiveMonitor() {
+        openLiveMonitor(0);
+    }
+
+    private void openLiveMonitor(int deviceAttentionBaseline) {
         setCurrentDestination(OperationsDestinationState.LIVE_MONITOR);
         setShowingDashboardSummary(false);
         leaveSupportCenter();
@@ -5811,8 +5815,11 @@ public class OperationsActivity extends AppCompatActivity {
         liveMonitorCancelInFlight = false;
         liveMonitorLatestSnapshot = null;
         liveMonitorTrend.reset();
-        title.setTitle(R.string.operations_live_monitor_title);
-        state.setText(R.string.operations_live_monitor_loading);
+        liveMonitorTrend.trackDeviceRecovery(deviceAttentionBaseline);
+        title.setTitle(deviceAttentionBaseline > 0
+                ? "设备恢复观察" : getString(R.string.operations_live_monitor_title));
+        state.setText(deviceAttentionBaseline > 0
+                ? "正在建立设备恢复观察…" : getString(R.string.operations_live_monitor_loading));
         details.setText(R.string.operations_live_monitor_details);
         renderLiveMonitorActions();
         loadLiveMonitor(true);
@@ -5997,6 +6004,7 @@ public class OperationsActivity extends AppCompatActivity {
         JSONObject performance = snapshot.optJSONObject("performance");
         JSONObject mainUi = performance == null ? null : performance.optJSONObject("mainUi");
         JSONObject alerts = snapshot.optJSONObject("alerts");
+        JSONObject devices = snapshot.optJSONObject("devices");
         Long uiLatency = mainUi != null
                 && mainUi.has("latencyMilliseconds")
                 && !mainUi.isNull("latencyMilliseconds")
@@ -6009,7 +6017,9 @@ public class OperationsActivity extends AppCompatActivity {
                 mainUi == null ? "unavailable" : mainUi.optString("state", "unavailable"),
                 uiLatency,
                 flow == null ? "unavailable" : flow.optString("phase", "unavailable"),
-                alerts == null ? 0 : alerts.optInt("count", 0));
+                OperationsLiveMonitorPresentation.attentionAlertCount(alerts),
+                devices != null && devices.optBoolean("available", false),
+                devices == null ? 0 : devices.optInt("attentionCount", 0));
     }
 
     private void confirmCancelCurrentFlow() {
@@ -6158,12 +6168,19 @@ public class OperationsActivity extends AppCompatActivity {
         boolean messageChannelAttention = messageChannel != null
                 && messageChannel.optBoolean("available", false)
                 && messageChannel.optBoolean("attentionRequired", false);
+        OperationsLiveMonitorTrend.Summary trend = liveMonitorTrend.summarize();
         if ("unresponsive".equals(uiState)) {
             prefix = "主界面响应超时";
         } else if (criticalCount > 0) {
             prefix = "发现严重告警";
         } else if (messageChannelAttention) {
             prefix = "消息通道状态需要关注";
+        } else if (trend.deviceRecoveryConfirmed()) {
+            prefix = "检测设备恢复已确认";
+        } else if (trend.deviceRecoveryPendingConfirmation()) {
+            prefix = "检测设备状态已正常 · 正在复核";
+        } else if (trend.deviceRecoveryTracked && !trend.latestDeviceHealthAvailable) {
+            prefix = "检测设备恢复暂无法确认";
         } else if (deviceAttentionCount > 0) {
             prefix = "检测设备状态需要关注";
         } else if (errorCount > 0) {
@@ -6203,6 +6220,10 @@ public class OperationsActivity extends AppCompatActivity {
                 .append(" · 切换 ").append(summary.flowPhaseTransitionCount).append(" 次")
                 .append("\n告警计数：当前 ").append(summary.latestAlertCount)
                 .append(" · 本次最高 ").append(summary.maximumAlertCount);
+        String deviceRecovery = OperationsLiveMonitorPresentation.deviceRecoverySummary(summary);
+        if (!deviceRecovery.isEmpty()) {
+            text.append("\n").append(deviceRecovery);
+        }
         return text.toString();
     }
 
@@ -6629,12 +6650,22 @@ public class OperationsActivity extends AppCompatActivity {
                             observedAt,
                             offerTriageAction,
                             this::showDeviceHealthOverview,
-                            this::showProblemCenter);
+                            this::showProblemCenter,
+                            () -> showDeviceRecoveryMonitor(model.attentionCount));
                 });
             } catch (Exception ex) {
                 runOnUiThread(() -> showTransientError(ex));
             }
         });
+    }
+
+    private void showDeviceRecoveryMonitor(int attentionCount) {
+        String parentCandidate = OperationsDestinationState.CAPABILITY_DETAIL.equals(
+                OperationsDestinationState.normalize(currentDestination))
+                ? detailParentDestination : currentDestination;
+        detailParentDestination = OperationsInPageNavigationPolicy.normalizeDetailParent(
+                parentCandidate);
+        openLiveMonitor(attentionCount);
     }
 
     private String formatCapability(String path, JSONObject response) {
