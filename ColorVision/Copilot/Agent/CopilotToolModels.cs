@@ -327,13 +327,33 @@ namespace ColorVision.Copilot
 
         public CopilotAgentRunBudgetOverride? RunBudgetOverride { get; init; }
 
-        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillOverrides { get; init; } = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
+        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillOverrides
+        {
+            get => _skillOverrides;
+            init => _skillOverrides = FreezeSkillOverrides(value);
+        }
+        private readonly IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> _skillOverrides =
+            new ReadOnlyDictionary<string, CopilotAgentSkillOverrideState>(
+                new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase));
 
-        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillPathOverrides { get; init; } = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
+        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillPathOverrides
+        {
+            get => _skillPathOverrides;
+            init => _skillPathOverrides = FreezeSkillOverrides(value);
+        }
+        private readonly IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> _skillPathOverrides =
+            new ReadOnlyDictionary<string, CopilotAgentSkillOverrideState>(
+                new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase));
 
         public CopilotAgentSkillReference? AgentSkillReference { get; init; }
 
-        public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
+        public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers
+        {
+            get => CloneExternalMcpServers(_externalMcpServers);
+            init => _externalMcpServers = CloneExternalMcpServers(value);
+        }
+        private readonly IReadOnlyList<CopilotMcpClientServerConfig> _externalMcpServers =
+            Array.Empty<CopilotMcpClientServerConfig>();
 
         public bool ForceExternalMcpToolRefresh { get; init; }
 
@@ -361,6 +381,29 @@ namespace ColorVision.Copilot
             if (source == null || source.Count == 0)
                 return Array.Empty<string>();
             return Array.AsReadOnly(source.ToArray());
+        }
+
+        private static IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> FreezeSkillOverrides(
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? source)
+        {
+            var result = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
+            if (source != null)
+            {
+                foreach (var pair in source)
+                    result[pair.Key] = pair.Value;
+            }
+            return new ReadOnlyDictionary<string, CopilotAgentSkillOverrideState>(result);
+        }
+
+        private static IReadOnlyList<CopilotMcpClientServerConfig> CloneExternalMcpServers(
+            IReadOnlyList<CopilotMcpClientServerConfig>? source)
+        {
+            if (source == null || source.Count == 0)
+                return Array.Empty<CopilotMcpClientServerConfig>();
+            return Array.AsReadOnly(source
+                .Where(server => server != null)
+                .Select(server => server.Clone())
+                .ToArray());
         }
     }
 

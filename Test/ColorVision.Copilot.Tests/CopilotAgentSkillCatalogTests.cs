@@ -8,6 +8,37 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotAgentSkillCatalogTests
 {
     [Fact]
+    public void AgentRequestFreezesSkillOverrideMaps()
+    {
+        var nameOverrides = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["review"] = CopilotAgentSkillOverrideState.On,
+        };
+        var pathOverrides = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase)
+        {
+            [@"C:\skills\review\SKILL.md"] = CopilotAgentSkillOverrideState.Off,
+        };
+        var request = new CopilotAgentRequest
+        {
+            SkillOverrides = nameOverrides,
+            SkillPathOverrides = pathOverrides,
+        };
+
+        nameOverrides["review"] = CopilotAgentSkillOverrideState.Off;
+        pathOverrides.Clear();
+
+        Assert.Equal(CopilotAgentSkillOverrideState.On, request.SkillOverrides["review"]);
+        Assert.Equal(
+            CopilotAgentSkillOverrideState.Off,
+            request.SkillPathOverrides[@"C:\skills\review\SKILL.md"]);
+        Assert.Throws<NotSupportedException>(() =>
+            ((IDictionary<string, CopilotAgentSkillOverrideState>)request.SkillOverrides)
+                ["late"] = CopilotAgentSkillOverrideState.On);
+        Assert.Throws<NotSupportedException>(() =>
+            ((IDictionary<string, CopilotAgentSkillOverrideState>)request.SkillPathOverrides).Clear());
+    }
+
+    [Fact]
     public async Task CachedCatalogReloadsWhenSkillRootAppearsChangesAndIsDeleted()
     {
         var applicationBaseDirectory = CreateTemporaryDirectory();
