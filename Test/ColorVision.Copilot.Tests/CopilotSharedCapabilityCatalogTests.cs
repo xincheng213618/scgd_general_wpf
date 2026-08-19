@@ -63,6 +63,18 @@ public sealed class CopilotSharedCapabilityCatalogTests
         }
     }
 
+    [Fact]
+    public void EveryBuiltInAgentToolDescribesEachRequiredInput()
+    {
+        foreach (var tool in CopilotToolRegistry.CreateBuiltInCatalogTools())
+        {
+            AssertRequiredPropertiesAreDescribed(
+                tool.InputSchema.JsonSchema,
+                tool.Name,
+                "$");
+        }
+    }
+
     [Theory]
     [InlineData("{\"type\":\"object\",\"properties\":{},\"additionalProperties\":true}", "additionalProperties")]
     [InlineData("{\"type\":\"object\",\"properties\":{},\"required\":[\"missing\"],\"additionalProperties\":false}", "undeclared")]
@@ -1034,6 +1046,45 @@ public sealed class CopilotSharedCapabilityCatalogTests
 
         Assert.Contains("descriptor metadata drift", exception.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(CopilotSharedCapabilityCatalog.SetTheme.McpToolName, exception.Message);
+    }
+
+    private static void AssertRequiredPropertiesAreDescribed(
+        JsonElement schema,
+        string toolName,
+        string path)
+    {
+        if (schema.ValueKind != JsonValueKind.Object)
+            return;
+
+        if (schema.TryGetProperty("required", out var required)
+            && required.ValueKind == JsonValueKind.Array)
+        {
+            Assert.True(
+                schema.TryGetProperty("properties", out var requiredProperties)
+                    && requiredProperties.ValueKind == JsonValueKind.Object,
+                $"{toolName}: schema '{path}' has required inputs without properties.");
+            foreach (var requiredElement in required.EnumerateArray())
+            {
+                var requiredName = requiredElement.GetString()!;
+                Assert.True(
+                    requiredProperties.TryGetProperty(requiredName, out var requiredProperty),
+                    $"{toolName}: schema '{path}' does not declare required input '{requiredName}'.");
+                Assert.True(
+                    requiredProperty.TryGetProperty("description", out var description)
+                        && description.ValueKind == JsonValueKind.String
+                        && !string.IsNullOrWhiteSpace(description.GetString()),
+                    $"{toolName}: required input '{path}.{requiredName}' has no model-facing description.");
+            }
+        }
+
+        if (schema.TryGetProperty("properties", out var properties)
+            && properties.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var property in properties.EnumerateObject())
+                AssertRequiredPropertiesAreDescribed(property.Value, toolName, $"{path}.{property.Name}");
+        }
+        if (schema.TryGetProperty("items", out var items))
+            AssertRequiredPropertiesAreDescribed(items, toolName, path + "[]");
     }
 
     private sealed class SchemaOverrideTool(
