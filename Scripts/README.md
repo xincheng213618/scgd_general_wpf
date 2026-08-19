@@ -14,8 +14,14 @@ Full reader-facing guide: `docs/02-developer-guide/scripts/README.md`.
 | Validate plugin manifest only | `py Scripts\package_cvxp.py --project-file <plugin.csproj> --validate-only` |
 | Refresh host shared-file manifests | `py Scripts\generate_shared_files.py` |
 | Verify manifests against the current host output | `py Scripts\generate_shared_files.py --check` |
+| Count code, comment, and blank lines | `py Scripts\count_code_lines.py` |
+| Generate the interactive code-history dashboard | `py Scripts\generate_code_history_dashboard.py` |
 
 `build.py` and `build_update.py` are release internals. Do not use them as normal manual release entry points; `build_update.py` executes package generation and upload when run.
+
+The code-line counter respects `.gitignore` and has no third-party dependencies. To save a reusable machine-readable report, run `py Scripts\count_code_lines.py --format json --output code-lines.json`.
+
+The code-history dashboard follows the current branch's first-parent Git history and writes a self-contained offline page to `.codex-artifacts\code-history-dashboard\index.html` plus a 1080×1440 social-sharing image at `.codex-artifacts\code-history-dashboard\share-card.png`. It includes exact weekly code/content snapshots; a day/week/month/half-year/year selector for additions, deletions, total change, and net growth; natural-day average additions/deletions/change; paired rewrite/refactor estimates; major code-size jumps; natural data-detected pace changes; nearby `CHANGELOG.md` release context; and directory/language activity. It deliberately keeps raw commit detail out of the dashboard so the primary analysis stays compact. It does not hard-code AI tool eras: sustained changes are detected by comparing the median change volume of the eight complete weeks before and after a candidate point. Re-run the command whenever history changes; add `--open` to open the result immediately, or pass `--share-card <path>` to choose the PNG output. The ignored `.codex-artifacts\code-history-dashboard\history-cache.json` cache reuses immutable commit nodes, Git blob counts, exact weekly snapshots, and unchanged HEAD file counts, so subsequent runs only parse new commits and count unseen content. Use `--refresh-cache` after a manual cache reset, or `--verify` when a slower browser-based portable-page verification is required. PNG generation requires Pillow.
 
 The main application and ServiceHost inherit the same `VersionPrefix` from `Directory.Build.props`; a normal release has only this one core version source. Every incremental package carries the complete `ServiceHost/` runtime so ZIP deployments can install the service into an empty ProgramData directory.
 
@@ -69,5 +75,7 @@ The backend HTTP upload endpoint is the only release distribution channel. A mai
 | `generate_shared_files.py` | Generate or set-check the repository and Plugin Kit `shared_files.json` mirrors from one host output scan |
 | `build_spectrum.py` | Spectrum ZIP + `.cvxp` build, signed dual-feed publish, and remote verification |
 | `backend_client.py` | Shared upload/auth/preflight client |
+| `count_code_lines.py` | Dependency-free code, comment, and blank-line report |
+| `generate_code_history_dashboard.py` | Generate the offline Git code-history dashboard |
 
 If a file is not present in `Scripts/`, do not document it as an active entry point.
