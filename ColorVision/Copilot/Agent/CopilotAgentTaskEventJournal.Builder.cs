@@ -117,14 +117,24 @@ namespace ColorVision.Copilot
         public void RecordTaskLedger(CopilotAgentTaskLedgerSnapshot ledger, string phase)
         {
             ArgumentNullException.ThrowIfNull(ledger);
-            var items = ledger.Items ?? Array.Empty<CopilotAgentTaskItem>();
+            var ledgerSnapshot = CopilotAgentTaskLedgerSnapshot.CreateSnapshot(
+                ledger,
+                normalize: false);
+            if (!ledgerSnapshot.IsStructurallyValid())
+            {
+                throw new ArgumentException(
+                    "Agent task ledger is not structurally valid.",
+                    nameof(ledger));
+            }
+
+            var items = ledgerSnapshot.Items;
             var completedCount = items.Count(item => item?.IsComplete == true);
             var relatedIds = items.Where(item => item != null).Select(item => $"task:{Math.Max(0, item.Id)}");
             Append(
                 CopilotAgentTaskEventType.TaskLedgerCaptured,
                 RunId,
                 phase,
-                $"Task ledger {completedCount}/{items.Count} complete in {ledger.Mode} mode.",
+                $"Task ledger {completedCount}/{items.Count} complete in {ledgerSnapshot.Mode} mode.",
                 relatedIds: relatedIds);
         }
 

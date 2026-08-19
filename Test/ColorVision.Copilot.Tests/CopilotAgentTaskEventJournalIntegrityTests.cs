@@ -10,7 +10,7 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotAgentTaskEventJournalIntegrityTests
 {
     [Fact]
-    public void FailedAppendDoesNotConsumeASequenceNumber()
+    public void TaskLedgerIsFrozenBeforeRepeatedEnumeration()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
         var hostileItems = new ThrowOnSecondEnumerationTaskItems(
@@ -20,20 +20,44 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
                 Title = "Inspect durable append behavior",
             });
 
-        Assert.Throws<InvalidOperationException>(() =>
+        journal.RecordTaskLedger(
+            new CopilotAgentTaskLedgerSnapshot
+            {
+                Mode = "execute",
+                Items = hostileItems,
+            },
+            "checkpoint");
+
+        var captured = Assert.Single(journal.Snapshot().Events);
+        Assert.Equal(1, captured.Sequence);
+        Assert.Equal(CopilotAgentTaskEventType.TaskLedgerCaptured, captured.Type);
+        Assert.Equal("Task ledger 0/1 complete in execute mode.", captured.Summary);
+    }
+
+    [Fact]
+    public void InvalidTaskLedgerIsRejectedBeforeJournalMutation()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        Assert.Throws<ArgumentException>(() =>
             journal.RecordTaskLedger(
                 new CopilotAgentTaskLedgerSnapshot
                 {
-                    Mode = "execute",
-                    Items = hostileItems,
+                    Mode = "invalid",
+                    Items =
+                    [
+                        new CopilotAgentTaskItem
+                        {
+                            Id = 1,
+                            Title = "Do not record this task",
+                        },
+                    ],
                 },
                 "checkpoint"));
 
+        Assert.Empty(journal.Snapshot().Events);
         journal.RecordRunStarted();
-
-        var started = Assert.Single(journal.Snapshot().Events);
-        Assert.Equal(1, started.Sequence);
-        Assert.Equal(CopilotAgentTaskEventType.RunStarted, started.Type);
+        Assert.Equal(1, Assert.Single(journal.Snapshot().Events).Sequence);
     }
 
     [Fact]
