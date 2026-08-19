@@ -249,6 +249,13 @@ namespace ColorVision.Copilot
             return CreateHashedKey("approval", actionId);
         }
 
+        public static string ForApproval(string? actionId, string? callId)
+        {
+            return string.IsNullOrWhiteSpace(actionId)
+                ? CreateHashedKey("approval", "call:" + (callId ?? string.Empty))
+                : ForApproval(actionId);
+        }
+
         public static string ForSteering(string? message)
         {
             return CreateHashedKey("steering", message);

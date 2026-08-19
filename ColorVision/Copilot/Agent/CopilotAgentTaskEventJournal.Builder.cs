@@ -141,7 +141,9 @@ namespace ColorVision.Copilot
             bool approved,
             string decisionSource = "")
         {
-            var approvalId = CopilotAgentTaskEventIds.ForApproval(approvalActionId);
+            var approvalId = CopilotAgentTaskEventIds.ForApproval(
+                approvalActionId,
+                callId);
             var source = (decisionSource ?? string.Empty).Trim();
             AppendUnique(
                 approved ? CopilotAgentTaskEventType.ApprovalApproved : CopilotAgentTaskEventType.ApprovalDenied,
@@ -352,7 +354,9 @@ namespace ColorVision.Copilot
                 };
                 var callId = CopilotAgentTaskEventIds.ForCall(execution.CallId);
                 var subjectId = type is CopilotAgentTaskEventType.ApprovalRequested or CopilotAgentTaskEventType.ApprovalDenied
-                    ? CopilotAgentTaskEventIds.ForApproval(execution.ApprovalActionId)
+                    ? CopilotAgentTaskEventIds.ForApproval(
+                        execution.ApprovalActionId,
+                        execution.CallId)
                     : callId;
                 var backgroundCommands = SelectBackgroundShellCommandEvidence(
                     execution,

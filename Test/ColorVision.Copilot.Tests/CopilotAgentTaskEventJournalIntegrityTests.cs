@@ -105,6 +105,65 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void PolicyApprovalsWithoutActionsRemainBoundToTheirExactCalls()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        journal.RecordApprovalDecision(
+            "FirstProtectedTool",
+            "first-policy-call",
+            approvalActionId: string.Empty,
+            approved: true,
+            decisionSource: CopilotFrameworkApprovalDecisionSource.ExecutionPolicy.ToString());
+        journal.RecordApprovalDecision(
+            "SecondProtectedTool",
+            "second-policy-call",
+            approvalActionId: string.Empty,
+            approved: true,
+            decisionSource: CopilotFrameworkApprovalDecisionSource.ExecutionPolicy.ToString());
+
+        var approvals = journal.Snapshot().Events
+            .Where(item => item.Type == CopilotAgentTaskEventType.ApprovalApproved)
+            .ToArray();
+        Assert.Equal(2, approvals.Length);
+        Assert.Equal(2, approvals.Select(item => item.SubjectId).Distinct(StringComparer.Ordinal).Count());
+        Assert.Contains(approvals, item => item.RelatedIds.Contains(
+            CopilotAgentTaskEventIds.ForCall("first-policy-call"),
+            StringComparer.Ordinal));
+        Assert.Contains(approvals, item => item.RelatedIds.Contains(
+            CopilotAgentTaskEventIds.ForCall("second-policy-call"),
+            StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void PolicyDenialsWithoutActionsRemainBoundToTheirExactCalls()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        foreach (var callId in new[] { "first-denied-call", "second-denied-call" })
+        {
+            journal.Observe(CopilotAgentEvent.FromToolResult(
+                new CopilotToolResult
+                {
+                    ToolName = "ProtectedTool",
+                    Success = false,
+                    Summary = "Denied by policy.",
+                    FailureCode = "approval_policy_denied",
+                },
+                CreateExecution(
+                    callId,
+                    CopilotToolExecutionState.Denied,
+                    completedAtUtc: DateTimeOffset.UtcNow)));
+        }
+
+        var denials = journal.Snapshot().Events
+            .Where(item => item.Type == CopilotAgentTaskEventType.ApprovalDenied)
+            .ToArray();
+        Assert.Equal(2, denials.Length);
+        Assert.Equal(2, denials.Select(item => item.SubjectId).Distinct(StringComparer.Ordinal).Count());
+    }
+
+    [Fact]
     public void SessionResetRecoveryRetainsTheLatestStateOfEveryAttemptedToolCall()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
