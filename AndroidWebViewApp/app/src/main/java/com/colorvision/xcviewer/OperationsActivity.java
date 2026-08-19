@@ -88,6 +88,7 @@ public class OperationsActivity extends AppCompatActivity {
     private static final int NAV_TOOLS = 2003;
     private static final int NAV_SETTINGS = 2004;
     private static final int MENU_REFRESH_DASHBOARD = 2005;
+    private static final String PATH_SERVICE_HEALTH = "/ops/v1/services/health";
     private static final String PATH_RECENT_EVENTS = "/ops/v1/diagnostics/recent-events";
     private static final String PATH_AUDIT = "/ops/v1/audit";
 
@@ -1925,7 +1926,8 @@ public class OperationsActivity extends AppCompatActivity {
         boolean hideForToolbox = OperationsDestinationState.TOOLS.equals(currentDestination);
         boolean hideForStructuredDetail = OperationsDestinationState.CAPABILITY_DETAIL.equals(
                 currentDestination)
-                && (PATH_RECENT_EVENTS.equals(dashboardDetailPath)
+                && (PATH_SERVICE_HEALTH.equals(dashboardDetailPath)
+                        || PATH_RECENT_EVENTS.equals(dashboardDetailPath)
                         || PATH_AUDIT.equals(dashboardDetailPath));
         boolean hideDirectDashboardSummary = OperationsDestinationState.OVERVIEW.equals(
                 currentDestination) && showingDashboardSummary && !remoteDashboard;
@@ -2355,7 +2357,7 @@ public class OperationsActivity extends AppCompatActivity {
         returnToToolboxOnBack = true;
         switch (actionId) {
             case OperationsToolboxPresentation.ACTION_SERVICES_HEALTH:
-                showToolboxCapabilityDetails("/ops/v1/services/health");
+                showToolboxCapabilityDetails(PATH_SERVICE_HEALTH);
                 return;
             case OperationsToolboxPresentation.ACTION_SHOW_WINDOW:
                 runWindowAction("show", "主窗口已显示");
@@ -6300,7 +6302,9 @@ public class OperationsActivity extends AppCompatActivity {
                     if ("/ops/v1/snapshot".equals(path)) {
                         updateDashboardApplicationStatus(response);
                     }
-                    if (dashboardDetailRequest && PATH_RECENT_EVENTS.equals(path)) {
+                    if (dashboardDetailRequest && PATH_SERVICE_HEALTH.equals(path)) {
+                        renderServiceHealth(response);
+                    } else if (dashboardDetailRequest && PATH_RECENT_EVENTS.equals(path)) {
                         renderRecentEvents(response);
                     } else if (dashboardDetailRequest && PATH_AUDIT.equals(path)) {
                         renderAuditTimeline(response);
@@ -6350,6 +6354,21 @@ public class OperationsActivity extends AppCompatActivity {
         detailsCard.setVisibility(View.GONE);
         actions.removeAllViews();
         actions.addView(OperationsRecentEventsContent.create(
+                        this, themeManager, model),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private void renderServiceHealth(JSONObject response) {
+        JSONObject data = response.optJSONObject("data");
+        JSONObject payload = data == null ? response : data;
+        OperationsServiceHealthPresentation.ViewModel model =
+                OperationsServiceHealthPresentation.from(payload, this::shortTime);
+        state.setText(model.stateLabel);
+        detailsCard.setVisibility(View.GONE);
+        actions.removeAllViews();
+        actions.addView(OperationsServiceHealthContent.create(
                         this, themeManager, model),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
@@ -6442,7 +6461,7 @@ public class OperationsActivity extends AppCompatActivity {
         if ("/ops/v1/flow/runtime".equals(path)) {
             return formatFlowRuntimeStatus(payload);
         }
-        if ("/ops/v1/services/health".equals(path)) {
+        if (PATH_SERVICE_HEALTH.equals(path)) {
             return formatServiceHealth(payload);
         }
         if ("/ops/v1/devices/health".equals(path)) {
@@ -6512,7 +6531,7 @@ public class OperationsActivity extends AppCompatActivity {
         if ("/ops/v1/flow/runtime".equals(path)) {
             return "当前检测状态已刷新";
         }
-        if ("/ops/v1/services/health".equals(path)) {
+        if (PATH_SERVICE_HEALTH.equals(path)) {
             return "白名单服务状态已刷新";
         }
         if ("/ops/v1/devices/health".equals(path)) {
@@ -6648,38 +6667,8 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private String formatServiceHealth(JSONObject payload) {
-        if (!payload.optBoolean("available", false)) {
-            return "当前无法读取白名单服务状态。\n\n不会仅凭日志建议服务维护；请在电脑端检查 Windows 服务状态。";
-        }
-
-        JSONArray services = payload.optJSONArray("services");
-        StringBuilder text = new StringBuilder();
-        text.append(payload.optBoolean("allHealthy", false) ? "白名单服务均正常" : "有白名单服务需要关注");
-        if (services == null || services.length() == 0) {
-            text.append("\n\n当前没有适用的本机服务状态。");
-        } else {
-            for (int index = 0; index < services.length(); index++) {
-                JSONObject service = services.optJSONObject(index);
-                if (service == null) {
-                    continue;
-                }
-                text.append("\n\n").append(index + 1).append(". ")
-                        .append(service.optString("title", "白名单服务"))
-                        .append("\n状态：").append(serviceStatusLabel(service.optString("status", "unknown")))
-                        .append(service.optBoolean("healthy", false) ? " · 正常" : " · 需关注")
-                        .append("\n来源：").append(serviceSourceLabel(service.optString("statusSource", "")));
-                String observedAt = shortTime(service.optString("observedAt", ""));
-                if (!observedAt.isEmpty()) {
-                    text.append("\n观测时间：").append(observedAt);
-                }
-                if (service.optBoolean("maintenanceSupported", false)) {
-                    text.append("\n维护边界：仅固定 Mosquitto 可由已配对手机确认后重启");
-                }
-            }
-        }
-        text.append("\n\n").append(payload.optString("privacyNotice",
-                "仅报告固定白名单服务的规范化状态；不返回服务账户、程序路径或启动参数。"));
-        return text.toString();
+        return OperationsServiceHealthPresentation.from(
+                payload, this::shortTime).plainText();
     }
 
     private String formatDeviceHealth(JSONObject payload) {
@@ -6948,28 +6937,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private String serviceStatusLabel(String value) {
-        switch (value) {
-            case "running": return "运行中";
-            case "stopped": return "已停止";
-            case "paused": return "已暂停";
-            case "start_pending": return "正在启动";
-            case "stop_pending": return "正在停止";
-            case "pause_pending": return "正在暂停";
-            case "continue_pending": return "正在恢复";
-            case "not_installed": return "未安装";
-            case "not_applicable": return "使用远程端点，本机不适用";
-            default: return "未知";
-        }
-    }
-
-    private String serviceSourceLabel(String value) {
-        if ("windows-service-control-manager".equals(value)) {
-            return "Windows 服务控制管理器";
-        }
-        if ("application-config".equals(value)) {
-            return "应用配置";
-        }
-        return "受限状态提供程序";
+        return OperationsServiceHealthPresentation.statusLabel(value);
     }
 
     private String formatAlerts(JSONObject payload) {
@@ -7138,7 +7106,7 @@ public class OperationsActivity extends AppCompatActivity {
             try {
                 JSONObject connection = client.get("/ops/v1/diagnostics/connection").optJSONObject("data");
                 JSONObject events = client.get("/ops/v1/diagnostics/recent-events").optJSONObject("data");
-                JSONObject services = client.get("/ops/v1/services/health").optJSONObject("data");
+                JSONObject services = client.get(PATH_SERVICE_HEALTH).optJSONObject("data");
                 JSONObject performance = client.get("/ops/v1/diagnostics/performance").optJSONObject("data");
                 JSONObject flowRuntime = client.get("/ops/v1/flow/runtime").optJSONObject("data");
                 JSONObject devices = client.get("/ops/v1/devices/health").optJSONObject("data");
