@@ -1,6 +1,8 @@
 package com.colorvision.xcviewer;
 
 import android.app.Activity;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -16,6 +18,8 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,8 +35,76 @@ final class OperationsToolboxContent {
             OperationsToolboxPresentation.ViewModel model,
             ActionHandler actionHandler,
             SectionHandler sectionHandler) {
+        TextInputLayout searchField = (TextInputLayout) activity.getLayoutInflater().inflate(
+                R.layout.operations_toolbox_search, target, false);
+        TextInputEditText searchInput = searchField.findViewById(
+                R.id.operations_toolbox_search_input);
+        target.addView(searchField);
+
+        LinearLayout results = new LinearLayout(activity);
+        results.setOrientation(LinearLayout.VERTICAL);
+        target.addView(results, matchWidth());
+        renderResults(activity, themeManager, results, model, "",
+                actionHandler, sectionHandler);
+        searchInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence text, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence text, int start, int before, int count) {
+                renderResults(activity, themeManager, results, model, text.toString(),
+                        actionHandler, sectionHandler);
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+            }
+        });
+    }
+
+    private static void renderResults(
+            Activity activity,
+            ThemeManager themeManager,
+            LinearLayout target,
+            OperationsToolboxPresentation.ViewModel source,
+            String query,
+            ActionHandler actionHandler,
+            SectionHandler sectionHandler) {
+        target.removeAllViews();
+        if (query.trim().isEmpty()) {
+            renderAllTools(activity, themeManager, target, source,
+                    actionHandler, sectionHandler);
+            return;
+        }
+
+        OperationsToolboxPresentation.ViewModel filtered =
+                OperationsToolboxPresentation.filter(source, query);
+        TextView resultHeading = sectionTitle(
+                activity,
+                themeManager,
+                "搜索结果 · " + filtered.actionCount() + " 项");
+        resultHeading.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        target.addView(resultHeading, matchWidth());
+        if (filtered.sections.isEmpty()) {
+            target.addView(emptySearchCard(activity, themeManager), cardParams(activity));
+            return;
+        }
+        addSectionCards(activity, themeManager, target, filtered.sections, actionHandler);
+    }
+
+    private static void renderAllTools(
+            Activity activity,
+            ThemeManager themeManager,
+            LinearLayout target,
+            OperationsToolboxPresentation.ViewModel model,
+            ActionHandler actionHandler,
+            SectionHandler sectionHandler) {
         if (!model.quickActions.isEmpty()) {
-            target.addView(sectionTitle(activity, themeManager, "常用只读"), matchWidth());
+            target.addView(sectionTitle(
+                    activity,
+                    themeManager,
+                    OperationsToolboxPresentation.QUICK_SECTION_TITLE), matchWidth());
             target.addView(quickActionGrid(
                     activity, model.quickActions, actionHandler), cardParams(activity));
         }
@@ -73,8 +145,49 @@ final class OperationsToolboxContent {
         for (int index = 0; index < shortcutChips.size(); index++) {
             TextView heading = sectionHeadings.get(index);
             shortcutChips.get(index).setOnClickListener(
-                    view -> sectionHandler.onSection(heading));
+                    view -> sectionHandler.onSection(target.getTop() + heading.getTop()));
         }
+    }
+
+    private static void addSectionCards(
+            Activity activity,
+            ThemeManager themeManager,
+            LinearLayout target,
+            List<OperationsToolboxPresentation.Section> sections,
+            ActionHandler actionHandler) {
+        for (OperationsToolboxPresentation.Section section : sections) {
+            target.addView(sectionTitle(activity, themeManager, section.title), matchWidth());
+            target.addView(sectionCard(
+                    activity, themeManager, section, actionHandler), cardParams(activity));
+        }
+    }
+
+    private static MaterialCardView emptySearchCard(
+            Activity activity,
+            ThemeManager themeManager) {
+        LinearLayout copy = new LinearLayout(activity);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        copy.setPadding(dp(activity, 20), dp(activity, 18), dp(activity, 20), dp(activity, 18));
+        copy.addView(text(
+                activity,
+                "没有找到工具",
+                com.google.android.material.R.style.TextAppearance_Material3_TitleMedium,
+                themeManager.primaryTextColor()), matchWidth());
+        TextView supportingText = text(
+                activity,
+                "可搜索工具名称、说明或分组，例如“诊断”、“恢复”或“支持”。",
+                com.google.android.material.R.style.TextAppearance_Material3_BodyMedium,
+                themeManager.secondaryTextColor());
+        LinearLayout.LayoutParams supportingParams = matchWidth();
+        supportingParams.setMargins(0, dp(activity, 4), 0, 0);
+        copy.addView(supportingText, supportingParams);
+
+        MaterialCardView card = new MaterialCardView(activity);
+        card.setCardBackgroundColor(themeManager.cardBackgroundColor());
+        card.addView(copy, new MaterialCardView.LayoutParams(
+                MaterialCardView.LayoutParams.MATCH_PARENT,
+                MaterialCardView.LayoutParams.WRAP_CONTENT));
+        return card;
     }
 
     private static View quickActionGrid(
@@ -254,6 +367,6 @@ final class OperationsToolboxContent {
     }
 
     interface SectionHandler {
-        void onSection(View sectionHeading);
+        void onSection(int sectionOffset);
     }
 }

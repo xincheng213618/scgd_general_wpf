@@ -2305,10 +2305,10 @@ public class OperationsActivity extends AppCompatActivity {
                 this::scrollToToolboxSection);
     }
 
-    private void scrollToToolboxSection(View sectionHeading) {
-        sectionHeading.post(() -> dashboardScroll.smoothScrollTo(
+    private void scrollToToolboxSection(int sectionOffset) {
+        actions.post(() -> dashboardScroll.smoothScrollTo(
                 0,
-                actions.getTop() + sectionHeading.getTop()));
+                actions.getTop() + sectionOffset));
     }
 
     private void refreshRemoteOperationsToolbox() {

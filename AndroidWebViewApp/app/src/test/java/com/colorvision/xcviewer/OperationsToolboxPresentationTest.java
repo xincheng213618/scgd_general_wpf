@@ -7,6 +7,7 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class OperationsToolboxPresentationTest {
@@ -93,6 +94,69 @@ public class OperationsToolboxPresentationTest {
         assertTrue(OperationsToolboxPresentation.isSupportedAction(
                 OperationsToolboxPresentation.ACTION_TIMELINE));
         assertFalse(OperationsToolboxPresentation.isSupportedAction("toolbox.unknown"));
+    }
+
+    @Test
+    public void blankSearchKeepsTheFullToolboxAndQuickActions() {
+        OperationsToolboxPresentation.ViewModel model =
+                OperationsToolboxPresentation.create();
+
+        assertSame(model, OperationsToolboxPresentation.filter(model, "  "));
+    }
+
+    @Test
+    public void searchFindsQuickAndDeepActionsWithoutKnowingTheirGroups() {
+        OperationsToolboxPresentation.ViewModel model =
+                OperationsToolboxPresentation.create();
+
+        OperationsToolboxPresentation.ViewModel connection =
+                OperationsToolboxPresentation.filter(model, "连接自检");
+        assertEquals(1, connection.actionCount());
+        assertEquals(OperationsToolboxPresentation.QUICK_SECTION_TITLE,
+                connection.sections.get(0).title);
+        assertEquals(OperationsToolboxPresentation.ACTION_CONNECTION_CHECK,
+                connection.sections.get(0).actions.get(0).actionId);
+
+        OperationsToolboxPresentation.ViewModel snapshot =
+                OperationsToolboxPresentation.filter(model, "主窗口快照");
+        assertEquals(1, snapshot.actionCount());
+        assertEquals("取证", snapshot.sections.get(0).title);
+        assertEquals(OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
+                snapshot.sections.get(0).actions.get(0).actionId);
+    }
+
+    @Test
+    public void searchMatchesDescriptionsSectionsAndAsciiCaseInsensitively() {
+        OperationsToolboxPresentation.ViewModel model =
+                OperationsToolboxPresentation.create();
+
+        OperationsToolboxPresentation.ViewModel consent =
+                OperationsToolboxPresentation.filter(model, "电脑端同意");
+        assertEquals(1, consent.actionCount());
+        assertEquals(OperationsToolboxPresentation.ACTION_SUPPORT,
+                consent.sections.get(0).actions.get(0).actionId);
+
+        OperationsToolboxPresentation.ViewModel recovery =
+                OperationsToolboxPresentation.filter(model, "恢复");
+        assertEquals(3, recovery.actionCount());
+        assertEquals("恢复", recovery.sections.get(0).title);
+
+        OperationsToolboxPresentation.ViewModel mqtt =
+                OperationsToolboxPresentation.filter(model, "mqtt");
+        assertEquals(1, mqtt.actionCount());
+        assertEquals(OperationsToolboxPresentation.ACTION_RESTART_MQTT,
+                mqtt.sections.get(0).actions.get(0).actionId);
+    }
+
+    @Test
+    public void searchReturnsAnEmptyModelForUnknownText() {
+        OperationsToolboxPresentation.ViewModel filtered =
+                OperationsToolboxPresentation.filter(
+                        OperationsToolboxPresentation.create(), "不存在的功能");
+
+        assertTrue(filtered.sections.isEmpty());
+        assertEquals(0, filtered.actionCount());
+        assertTrue(filtered.quickActions.isEmpty());
     }
 
     private static OperationsToolboxPresentation.Action find(
