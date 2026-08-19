@@ -721,4 +721,66 @@ namespace ColorVision.Copilot
         public long TimeoutMs { get; init; }
     }
 
+    internal static class CopilotToolExecutionInfoProtocol
+    {
+        internal static bool IsStructurallyValid(
+            CopilotToolExecutionInfo? execution) =>
+            execution != null
+            && !string.IsNullOrWhiteSpace(execution.CallId)
+            && execution.Round >= 1
+            && execution.Attempt >= 1
+            && execution.MaxAttempts >= execution.Attempt
+            && !string.IsNullOrWhiteSpace(execution.RuntimeName)
+            && !string.IsNullOrWhiteSpace(execution.ToolName)
+            && Enum.IsDefined(execution.Access)
+            && Enum.IsDefined(execution.RiskLevel)
+            && Enum.IsDefined(execution.ApprovalMode)
+            && Enum.IsDefined(execution.Idempotency)
+            && Enum.IsDefined(execution.ConcurrencyMode)
+            && Enum.IsDefined(execution.State)
+            && Enum.IsDefined(execution.FailureKind)
+            && execution.StartedAtUtc != default
+            && execution.DurationMs >= 0
+            && execution.QueueDurationMs >= 0
+            && execution.TimeoutMs >= 1;
+
+        internal static bool HasValidResultState(
+            CopilotToolExecutionInfo execution,
+            CopilotToolResult result)
+        {
+            ArgumentNullException.ThrowIfNull(execution);
+            ArgumentNullException.ThrowIfNull(result);
+            if (!IsStructurallyValid(execution)
+                || !string.Equals(
+                    result.ToolName,
+                    execution.ToolName,
+                    StringComparison.Ordinal)
+                || execution.FailureKind != result.FailureKind)
+            {
+                return false;
+            }
+
+            if (execution.State == CopilotToolExecutionState.AwaitingApproval)
+            {
+                return result.Success
+                    && result.Approval != null
+                    && !string.IsNullOrWhiteSpace(result.Approval.ActionId)
+                    && string.Equals(
+                        result.Approval.ActionId,
+                        execution.ApprovalActionId,
+                        StringComparison.Ordinal);
+            }
+
+            return result.Approval == null
+                && execution.CompletedAtUtc != null
+                && (result.Success
+                    ? execution.State == CopilotToolExecutionState.Completed
+                    : execution.State is CopilotToolExecutionState.Failed
+                        or CopilotToolExecutionState.TimedOut
+                        or CopilotToolExecutionState.Denied
+                        or CopilotToolExecutionState.Cancelled
+                        or CopilotToolExecutionState.Interrupted);
+        }
+    }
+
 }

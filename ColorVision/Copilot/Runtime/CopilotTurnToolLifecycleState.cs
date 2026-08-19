@@ -191,23 +191,14 @@ namespace ColorVision.Copilot
                 throw new InvalidOperationException("Copilot Agent tool result has invalid execution metadata.");
             }
 
-            if (execution.State == CopilotToolExecutionState.AwaitingApproval)
+            if (!CopilotToolExecutionInfoProtocol.HasValidResultState(
+                    execution,
+                    result))
             {
-                if (result.Approval == null
-                    || string.IsNullOrWhiteSpace(result.Approval.ActionId)
-                    || !string.Equals(
-                        result.Approval.ActionId,
-                        execution.ApprovalActionId,
-                        StringComparison.Ordinal))
-                {
-                    throw new InvalidOperationException("Copilot Agent approval result has invalid action metadata.");
-                }
-            }
-            else if (result.Approval != null
-                || execution.CompletedAtUtc == null
-                || (execution.State == CopilotToolExecutionState.Completed) != result.Success)
-            {
-                throw new InvalidOperationException("Copilot Agent terminal tool result has invalid state metadata.");
+                throw new InvalidOperationException(
+                    execution.State == CopilotToolExecutionState.AwaitingApproval
+                        ? "Copilot Agent approval result has invalid action metadata."
+                        : "Copilot Agent terminal tool result has invalid state metadata.");
             }
 
             return execution;
@@ -231,25 +222,9 @@ namespace ColorVision.Copilot
             }
         }
 
-        private static bool HasValidExecution(CopilotToolExecutionInfo? execution) =>
-            execution != null
-            && !string.IsNullOrWhiteSpace(execution.CallId)
-            && execution.Round >= 1
-            && execution.Attempt >= 1
-            && execution.MaxAttempts >= execution.Attempt
-            && !string.IsNullOrWhiteSpace(execution.RuntimeName)
-            && !string.IsNullOrWhiteSpace(execution.ToolName)
-            && Enum.IsDefined(execution.Access)
-            && Enum.IsDefined(execution.RiskLevel)
-            && Enum.IsDefined(execution.ApprovalMode)
-            && Enum.IsDefined(execution.Idempotency)
-            && Enum.IsDefined(execution.ConcurrencyMode)
-            && Enum.IsDefined(execution.State)
-            && Enum.IsDefined(execution.FailureKind)
-            && execution.StartedAtUtc != default
-            && execution.DurationMs >= 0
-            && execution.QueueDurationMs >= 0
-            && execution.TimeoutMs >= 1;
+        private static bool HasValidExecution(
+            CopilotToolExecutionInfo? execution) =>
+            CopilotToolExecutionInfoProtocol.IsStructurallyValid(execution);
 
         private static void RequireMatchingExecution(
             ToolCallSnapshot expected,

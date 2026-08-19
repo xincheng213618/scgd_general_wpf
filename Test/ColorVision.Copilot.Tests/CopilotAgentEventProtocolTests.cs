@@ -209,6 +209,36 @@ public sealed class CopilotAgentEventProtocolTests
     }
 
     [Fact]
+    public void RuntimeEmitterRejectsInvalidToolExecutionMetadataBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.ToolResult,
+            Text = "Completed.",
+            ToolResult = new CopilotToolResult
+            {
+                ToolName = "ProtectedTool",
+                Success = true,
+                Summary = "Completed.",
+            },
+            ToolExecution = new CopilotToolExecutionInfo
+            {
+                ToolName = "ProtectedTool",
+                State = CopilotToolExecutionState.Completed,
+            },
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid execution metadata", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
     public void ReducerRejectsUnnormalizedSteeringMessage()
     {
         var agentEvent = new CopilotAgentEvent
@@ -363,6 +393,14 @@ public sealed class CopilotAgentEventProtocolTests
         ArgumentSummary = "path=C:\\workspace\\file.txt",
         State = state,
         StartedAtUtc = DateTimeOffset.UtcNow,
+        CompletedAtUtc = state is CopilotToolExecutionState.Completed
+            or CopilotToolExecutionState.Failed
+            or CopilotToolExecutionState.TimedOut
+            or CopilotToolExecutionState.Denied
+            or CopilotToolExecutionState.Cancelled
+            or CopilotToolExecutionState.Interrupted
+                ? DateTimeOffset.UtcNow
+                : null,
         TimeoutMs = 30_000,
     };
 }

@@ -203,8 +203,13 @@ namespace ColorVision.Copilot
         {
             var result = agentEvent.ToolResult!;
             var execution = agentEvent.ToolExecution!;
+            if (!CopilotToolExecutionInfoProtocol.IsStructurallyValid(execution))
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent tool result has invalid execution metadata.");
+            }
+
             if (string.IsNullOrWhiteSpace(result.ToolName)
-                || string.IsNullOrWhiteSpace(execution.ToolName)
                 || !string.Equals(
                     result.ToolName,
                     execution.ToolName,
@@ -235,22 +240,6 @@ namespace ColorVision.Copilot
                     "Copilot Agent tool result could not be validated safely.");
             }
 
-            var hasValidTerminalState = result.Success
-                ? result.Approval != null
-                    ? execution.State == CopilotToolExecutionState.AwaitingApproval
-                    : execution.State == CopilotToolExecutionState.Completed
-                : execution.State is CopilotToolExecutionState.Failed
-                    or CopilotToolExecutionState.TimedOut
-                    or CopilotToolExecutionState.Denied
-                    or CopilotToolExecutionState.Cancelled
-                    or CopilotToolExecutionState.Interrupted;
-            if (!hasValidTerminalState
-                || execution.FailureKind != result.FailureKind)
-            {
-                throw new InvalidOperationException(
-                    "Copilot Agent tool result contains invalid state metadata for its terminal execution.");
-            }
-
             if (result.Approval != null
                 && !string.Equals(
                     result.Approval.ActionId,
@@ -259,6 +248,14 @@ namespace ColorVision.Copilot
             {
                 throw new InvalidOperationException(
                     "Copilot Agent approval result did not match its execution action identity.");
+            }
+
+            if (!CopilotToolExecutionInfoProtocol.HasValidResultState(
+                    execution,
+                    result))
+            {
+                throw new InvalidOperationException(
+                    "Copilot Agent tool result contains invalid state metadata for its terminal execution.");
             }
 
             if (agentEvent.ToolExecutionHookRuns.Any(run =>
