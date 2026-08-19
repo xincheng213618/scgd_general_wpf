@@ -16,6 +16,8 @@ public class OperationsWatchStatusPresentationTest {
                         true, true, OperationsWatchHistory.STATE_ONLINE, NOW - 75_000L, NOW);
         assertEquals("1 分钟前检查 · 连接在线 · 当前状态稳定", current.summary);
         assertTrue(current.details.startsWith("最近一轮后台检查在 1 分钟前完成。"));
+        assertTrue(current.details.contains("同类状态产生新脱敏证据"));
+        assertTrue(current.details.contains("普通轮询时间变化不会重复打扰"));
         assertFalse(current.attention);
 
         OperationsWatchStatusPresentation.Presentation stale =

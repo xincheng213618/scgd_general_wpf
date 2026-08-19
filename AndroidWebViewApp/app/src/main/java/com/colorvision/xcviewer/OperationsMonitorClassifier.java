@@ -58,4 +58,9 @@ final class OperationsMonitorClassifier {
                         && messageChannel.optBoolean("available", false)
                         && messageChannel.optBoolean("attentionRequired", false));
     }
+
+    static OperationsMonitorEvidenceRevision.Evidence evidence(
+            JSONObject monitor, String attentionKey) {
+        return OperationsMonitorEvidenceRevision.capture(monitor, attentionKey);
+    }
 }

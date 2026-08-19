@@ -52,7 +52,8 @@ final class OperationsWatchStatusPresentation {
         return new Presentation(
                 checkedLabel + " · " + stateLabel,
                 completedCheckLabel(ageMilliseconds) + "当前记录：" + stateLabel
-                        + "。异常状态首次出现时才会发送一次运维提醒。",
+                        + "。异常首次出现或同类状态产生新脱敏证据时会发送运维提醒；"
+                        + "普通轮询时间变化不会重复打扰。",
                 false);
     }
 

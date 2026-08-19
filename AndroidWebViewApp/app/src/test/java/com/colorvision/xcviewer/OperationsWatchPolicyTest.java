@@ -79,10 +79,53 @@ public class OperationsWatchPolicyTest {
         assertEquals("", OperationsWatchPolicy.attentionKey("slow", 0, 0, 0, false));
 
         assertTrue(OperationsWatchPolicy.shouldPostAttention(
-                OperationsWatchPolicy.ATTENTION_ERRORS, ""));
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                "",
+                evidence('a', 100L, 10L),
+                OperationsMonitorEvidenceRevision.Evidence.EMPTY));
         assertFalse(OperationsWatchPolicy.shouldPostAttention(
-                OperationsWatchPolicy.ATTENTION_ERRORS, OperationsWatchPolicy.ATTENTION_ERRORS));
-        assertFalse(OperationsWatchPolicy.shouldPostAttention("", OperationsWatchPolicy.ATTENTION_ERRORS));
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                evidence('a', 100L, 10L),
+                OperationsMonitorEvidenceRevision.Evidence.EMPTY));
+        assertTrue(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                evidence('b', 200L, 8L),
+                evidence('a', 100L, 10L)));
+        assertTrue(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_DEVICES,
+                OperationsWatchPolicy.ATTENTION_DEVICES,
+                evidence('b', 0L, 20L),
+                evidence('a', 0L, 10L)));
+        assertFalse(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_DEVICES,
+                OperationsWatchPolicy.ATTENTION_DEVICES,
+                evidence('b', 0L, 5L),
+                evidence('a', 0L, 10L)));
+        assertFalse(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                evidence('b', 50L, 100L),
+                evidence('a', 100L, 10L)));
+        assertFalse(OperationsWatchPolicy.shouldPostAttention(
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                evidence('a', 100L, 10L),
+                evidence('a', 100L, 10L)));
+        assertFalse(OperationsWatchPolicy.shouldPostAttention(
+                "",
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsMonitorEvidenceRevision.Evidence.EMPTY,
+                evidence('a', 100L, 10L)));
+        assertTrue(OperationsWatchPolicy.isEvidenceUpdate(
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                OperationsWatchPolicy.ATTENTION_ERRORS,
+                evidence('b', 200L, 8L),
+                evidence('a', 100L, 10L)));
+        assertEquals("同类异常出现新证据 · 发现错误事件 · 点击进入问题中心",
+                OperationsWatchPolicy.attentionMessage(
+                        OperationsWatchPolicy.ATTENTION_ERRORS, true));
     }
 
     @Test
@@ -133,5 +176,11 @@ public class OperationsWatchPolicyTest {
                 "host_1", "host_1", 6, 7));
         assertFalse(OperationsWatchPolicy.isCurrentProfileCheck(
                 null, "host_1", 7, 7));
+    }
+
+    private static OperationsMonitorEvidenceRevision.Evidence evidence(
+            char revisionCharacter, long sequence, long burden) {
+        return new OperationsMonitorEvidenceRevision.Evidence(
+                String.valueOf(revisionCharacter).repeat(64), sequence, burden);
     }
 }

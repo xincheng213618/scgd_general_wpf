@@ -42,9 +42,9 @@
     <string name="operations_live_monitor_failure_details">%1$s\n\n持续观察本身不会删除配对资料或修改检测流程；只有你明确确认取消动作后才会介入当前检测。</string>
     <string name="operations_keystore_busy_details">设备私钥只保存在 Android Keystore，不会写入二维码、网址或应用配置。</string>
     <string name="operations_reminder_manage_title">运维提醒</string>
-    <string name="operations_reminder_manage_message">异常状态首次出现时提醒一次；通知不显示端点、设备身份、日志或检测数据。可以发送一条测试提醒，确认当前系统通道能够正常送达。</string>
+    <string name="operations_reminder_manage_message">异常首次出现或同类状态产生新脱敏证据时提醒；普通轮询时间变化不会重复提醒。通知不显示端点、设备身份、日志或检测数据。可以发送一条测试提醒，确认当前系统通道能够正常送达。</string>
     <string name="operations_reminder_permission_title">开启运维提醒</string>
-    <string name="operations_reminder_permission_message">仅在电脑离线、严重告警、错误事件、消息通道异常或设备需关注等新状态出现时提醒。通知不显示端点、设备身份、日志或检测数据。</string>
+    <string name="operations_reminder_permission_message">电脑离线、严重告警、错误事件、消息通道异常或设备需关注等新状态出现时提醒；持续异常中只有新的需关注证据才会再次提醒。通知不显示端点、设备身份、日志或检测数据。</string>
     <string name="operations_reminder_permission_later">暂不开启</string>
     <string name="operations_reminder_permission_action">允许提醒</string>
     <string name="operations_reminder_permission_denied">运维提醒未开启；可再次点按调整</string>

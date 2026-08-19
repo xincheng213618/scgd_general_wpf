@@ -42,6 +42,8 @@ final class AppPreferences {
             "operations_toolbox_recents_v1";
     private static final String KEY_OPERATIONS_TRIAGE_ACKNOWLEDGEMENTS =
             "operations_triage_acknowledgements_v1";
+    private static final String KEY_OPERATIONS_WATCH_EVIDENCE =
+            "operations_watch_evidence_v1";
     private static final Object OPERATIONS_PROFILE_LOCK = new Object();
 
     private final SharedPreferences preferences;
@@ -146,6 +148,8 @@ final class AppPreferences {
             OperationsProfileRegistry.State state = readOperationsProfiles();
             try {
                 writeOperationsProfiles(state.upsert(endpoint, certificatePin, hostId));
+                saveOperationsWatchEvidence(
+                        hostId, "", OperationsMonitorEvidenceRevision.Evidence.EMPTY);
                 return true;
             } catch (IllegalStateException exception) {
                 return false;
@@ -286,6 +290,36 @@ final class AppPreferences {
         }
     }
 
+    OperationsMonitorEvidenceRevision.Evidence getOperationsWatchEvidence(
+            String hostId, String attentionKey) {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            return OperationsWatchEvidenceMemory.evidence(
+                    preferences.getString(KEY_OPERATIONS_WATCH_EVIDENCE, ""),
+                    hostId,
+                    attentionKey);
+        }
+    }
+
+    void saveOperationsWatchEvidence(
+            String hostId,
+            String attentionKey,
+            OperationsMonitorEvidenceRevision.Evidence evidence) {
+        synchronized (OPERATIONS_PROFILE_LOCK) {
+            String updated = OperationsWatchEvidenceMemory.update(
+                    preferences.getString(KEY_OPERATIONS_WATCH_EVIDENCE, ""),
+                    hostId,
+                    attentionKey,
+                    evidence);
+            SharedPreferences.Editor editor = preferences.edit();
+            if (updated.isEmpty()) {
+                editor.remove(KEY_OPERATIONS_WATCH_EVIDENCE);
+            } else {
+                editor.putString(KEY_OPERATIONS_WATCH_EVIDENCE, updated);
+            }
+            editor.apply();
+        }
+    }
+
     void saveOperationsRelayTask(String taskId, String capabilityId, String idempotencyKey) {
         synchronized (OPERATIONS_PROFILE_LOCK) {
             writeOperationsProfiles(readOperationsProfiles().updateRelayTask(
@@ -360,6 +394,8 @@ final class AppPreferences {
                     getOperationsTriageAcknowledgements(),
                     hostId,
                     System.currentTimeMillis()));
+            saveOperationsWatchEvidence(
+                    hostId, "", OperationsMonitorEvidenceRevision.Evidence.EMPTY);
         }
     }
 

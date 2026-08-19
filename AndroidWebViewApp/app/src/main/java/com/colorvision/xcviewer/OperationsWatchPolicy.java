@@ -96,25 +96,34 @@ final class OperationsWatchPolicy {
         return "";
     }
 
-    static String attentionMessage(String attentionKey) {
+    static String attentionMessage(String attentionKey, boolean newEvidence) {
+        String message;
         switch (attentionKey) {
             case ATTENTION_UI_UNRESPONSIVE:
-                return "主界面响应超时 · 点击进入问题中心";
+                message = "主界面响应超时 · 点击进入问题中心";
+                break;
             case ATTENTION_CRITICAL:
-                return "发现严重告警 · 点击查看脱敏证据";
+                message = "发现严重告警 · 点击查看脱敏证据";
+                break;
             case ATTENTION_MESSAGE_CHANNEL:
-                return "消息通道需要关注 · 可在手机确认恢复";
+                message = "消息通道需要关注 · 可在手机确认恢复";
+                break;
             case ATTENTION_DEVICES:
-                return "检测设备状态需要关注 · 点击查看汇总";
+                message = "检测设备状态需要关注 · 点击查看汇总";
+                break;
             case ATTENTION_ERRORS:
-                return "发现错误事件 · 点击进入问题中心";
+                message = "发现错误事件 · 点击进入问题中心";
+                break;
             case ATTENTION_OFFLINE:
-                return "已配对主机连接中断 · 后台正在自动重试";
+                message = "已配对主机连接中断 · 后台正在自动重试";
+                break;
             case ATTENTION_REVOKED:
-                return "配对授权已失效 · 点击管理已配对电脑";
+                message = "配对授权已失效 · 点击管理已配对电脑";
+                break;
             default:
                 return "";
         }
+        return newEvidence ? "同类异常出现新证据 · " + message : message;
     }
 
     static String attentionDestination(String attentionKey) {
@@ -143,8 +152,39 @@ final class OperationsWatchPolicy {
         return "";
     }
 
-    static boolean shouldPostAttention(String currentAttentionKey, String lastAttentionKey) {
-        return !currentAttentionKey.isEmpty() && !currentAttentionKey.equals(lastAttentionKey);
+    static boolean shouldPostAttention(
+            String currentAttentionKey,
+            String lastAttentionKey,
+            OperationsMonitorEvidenceRevision.Evidence currentEvidence,
+            OperationsMonitorEvidenceRevision.Evidence lastEvidence) {
+        if (currentAttentionKey.isEmpty()) {
+            return false;
+        }
+        if (!currentAttentionKey.equals(lastAttentionKey)) {
+            return true;
+        }
+        return isEvidenceUpdate(
+                currentAttentionKey,
+                lastAttentionKey,
+                currentEvidence,
+                lastEvidence);
+    }
+
+    static boolean isEvidenceUpdate(
+            String currentAttentionKey,
+            String lastAttentionKey,
+            OperationsMonitorEvidenceRevision.Evidence currentEvidence,
+            OperationsMonitorEvidenceRevision.Evidence lastEvidence) {
+        return !currentAttentionKey.isEmpty()
+                && currentAttentionKey.equals(lastAttentionKey)
+                && currentEvidence != null
+                && lastEvidence != null
+                && currentEvidence.available()
+                && lastEvidence.available()
+                && !currentEvidence.revision.equals(lastEvidence.revision)
+                && (currentEvidence.sequence > lastEvidence.sequence
+                || currentEvidence.sequence == lastEvidence.sequence
+                && currentEvidence.burden > lastEvidence.burden);
     }
 
     static boolean shouldPostOffline(

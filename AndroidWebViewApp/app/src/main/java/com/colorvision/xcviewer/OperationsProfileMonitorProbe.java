@@ -53,10 +53,12 @@ final class OperationsProfileMonitorProbe {
         if (monitor == null) {
             throw new IllegalStateException("incomplete_live_monitor_response");
         }
+        String attentionKey = OperationsMonitorClassifier.attentionKey(monitor);
         return Result.reachable(
                 OperationsMonitorClassifier.watchState(
                         monitor, OperationsWatchHistory.STATE_ONLINE),
-                OperationsMonitorClassifier.attentionKey(monitor));
+                attentionKey,
+                OperationsMonitorClassifier.evidence(monitor, attentionKey));
     }
 
     private static Result checkRelay(
@@ -80,16 +82,28 @@ final class OperationsProfileMonitorProbe {
         boolean fresh = OperationsRelayPolicy.isHostFresh(
                 host.optLong("signedAt", 0L), nowMilliseconds);
         if (!fresh) {
-            return Result.reachable(OperationsWatchHistory.STATE_REMOTE_WAITING, "");
+            return Result.reachable(
+                    OperationsWatchHistory.STATE_REMOTE_WAITING,
+                    "",
+                    OperationsMonitorEvidenceRevision.Evidence.EMPTY);
         }
         JSONObject snapshot = host.optJSONObject("snapshot");
         JSONObject monitor = snapshot == null ? null : snapshot.optJSONObject("monitor");
         return monitor == null
-                ? Result.reachable(OperationsWatchHistory.STATE_REMOTE_ONLINE, "")
-                : Result.reachable(
-                        OperationsMonitorClassifier.watchState(
-                                monitor, OperationsWatchHistory.STATE_REMOTE_ONLINE),
-                        OperationsMonitorClassifier.attentionKey(monitor));
+                ? Result.reachable(
+                        OperationsWatchHistory.STATE_REMOTE_ONLINE,
+                        "",
+                        OperationsMonitorEvidenceRevision.Evidence.EMPTY)
+                : relayMonitorResult(monitor);
+    }
+
+    private static Result relayMonitorResult(JSONObject monitor) {
+        String attentionKey = OperationsMonitorClassifier.attentionKey(monitor);
+        return Result.reachable(
+                OperationsMonitorClassifier.watchState(
+                        monitor, OperationsWatchHistory.STATE_REMOTE_ONLINE),
+                attentionKey,
+                OperationsMonitorClassifier.evidence(monitor, attentionKey));
     }
 
     private static boolean isRevoked(Exception exception) {
@@ -102,30 +116,44 @@ final class OperationsProfileMonitorProbe {
         final boolean revoked;
         final String state;
         final String attentionKey;
+        final OperationsMonitorEvidenceRevision.Evidence evidence;
 
         private Result(
                 boolean reachable,
                 boolean revoked,
                 String state,
-                String attentionKey) {
+                String attentionKey,
+                OperationsMonitorEvidenceRevision.Evidence evidence) {
             this.reachable = reachable;
             this.revoked = revoked;
             this.state = state;
             this.attentionKey = attentionKey;
+            this.evidence = evidence;
         }
 
-        static Result reachable(String state, String attentionKey) {
-            return new Result(true, false, state, attentionKey);
+        static Result reachable(
+                String state,
+                String attentionKey,
+                OperationsMonitorEvidenceRevision.Evidence evidence) {
+            return new Result(true, false, state, attentionKey, evidence);
         }
 
         static Result offline() {
             return new Result(
-                    false, false, OperationsWatchHistory.STATE_OFFLINE, "");
+                    false,
+                    false,
+                    OperationsWatchHistory.STATE_OFFLINE,
+                    "",
+                    OperationsMonitorEvidenceRevision.Evidence.EMPTY);
         }
 
         static Result revoked() {
             return new Result(
-                    false, true, OperationsWatchHistory.STATE_REVOKED, "");
+                    false,
+                    true,
+                    OperationsWatchHistory.STATE_REVOKED,
+                    "",
+                    OperationsMonitorEvidenceRevision.Evidence.EMPTY);
         }
     }
 }
