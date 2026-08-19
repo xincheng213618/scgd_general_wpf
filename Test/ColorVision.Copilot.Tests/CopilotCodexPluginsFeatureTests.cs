@@ -167,6 +167,46 @@ public sealed class CopilotCodexPluginsFeatureTests
     }
 
     [Fact]
+    public async Task ModuleContextProviderOrderIsFrozenWhileCaptureRemainsLive()
+    {
+        const string sourceId = "test.frozen-context-provider-order";
+        var contextProvider = new MutableContextProvider("stable-context", 25);
+        var registry = new CopilotAgentExtensionRegistry();
+        using var bridge = new CopilotAgentExtensionBridge(
+            registry,
+            new CopilotCapabilityCatalog(),
+            reservedToolNames: [],
+            new CopilotToolExecutionHookRegistry());
+        using var registration = registry.Register(new CopilotAgentExtensionRegistration
+        {
+            SourceId = sourceId,
+            SourceName = "Frozen context provider order",
+            ContextProviders = [contextProvider],
+        });
+
+        contextProvider.Order = -50;
+        using var refreshTrigger = registry.Register(new CopilotAgentExtensionRegistration
+        {
+            SourceId = "test.frozen-context-provider-refresh",
+            SourceName = "Frozen context provider refresh trigger",
+            ContextProviders = [new RecordingContextProvider("refresh-context")],
+        });
+
+        var registeredProvider = Assert.Single(
+            Assert.Single(registry.GetSnapshot().Extensions, extension => extension.SourceId == sourceId)
+                .ContextProviders);
+        Assert.Equal(25, registeredProvider.Order);
+
+        var contextRegistry = new CopilotContextRegistry([], bridge);
+        var items = await contextRegistry.CaptureAsync(
+            new CopilotContextRequest { IncludeExtensionProviders = true },
+            CancellationToken.None);
+
+        Assert.Equal(["refresh-context", "stable-context"], items.Select(item => item.Id));
+        Assert.Equal(1, contextProvider.CaptureCount);
+    }
+
+    [Fact]
     public void ClosestTrustedValueIsFrozenAcrossContextPlanAndRequest()
     {
         string globalRoot = CreateTemporaryDirectory();
@@ -709,6 +749,32 @@ public sealed class CopilotCodexPluginsFeatureTests
         private int _captureCount;
 
         public int Order => 0;
+
+        public int CaptureCount => Volatile.Read(ref _captureCount);
+
+        public bool CanProvide(CopilotContextScope scope) => true;
+
+        public Task<CopilotContextItem?> CaptureAsync(
+            CopilotContextRequest request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Interlocked.Increment(ref _captureCount);
+            return Task.FromResult<CopilotContextItem?>(new CopilotContextItem
+            {
+                Id = id,
+                Title = id,
+                Summary = id,
+                Content = id,
+            });
+        }
+    }
+
+    private sealed class MutableContextProvider(string id, int order) : ICopilotContextProvider
+    {
+        private int _captureCount;
+
+        public int Order { get; set; } = order;
 
         public int CaptureCount => Volatile.Read(ref _captureCount);
 

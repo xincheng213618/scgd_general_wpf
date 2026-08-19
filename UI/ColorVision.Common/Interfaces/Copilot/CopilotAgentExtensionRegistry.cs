@@ -304,8 +304,9 @@ namespace ColorVision.UI
                     nameof(registration));
             }
 
-            foreach (var provider in contextProviders)
-                _ = provider.Order;
+            var registeredContextProviders = contextProviders
+                .Select(provider => new RegisteredContextProvider(provider, provider.Order))
+                .ToArray();
             var registeredTools = tools.Select(CreateRegisteredTool).ToArray();
             var registeredHooks = toolExecutionHooks.Select(CreateRegisteredHook).ToArray();
             var duplicateToolName = registeredTools.GroupBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase).FirstOrDefault(group => group.Count() > 1)?.Key;
@@ -326,7 +327,7 @@ namespace ColorVision.UI
                 sourceId,
                 sourceName,
                 sourceVersion,
-                Array.AsReadOnly(contextProviders),
+                Array.AsReadOnly<ICopilotContextProvider>(registeredContextProviders),
                 Array.AsReadOnly<ICopilotModuleTool>(registeredTools),
                 Array.AsReadOnly<ICopilotModuleToolExecutionHook>(registeredHooks),
                 Guid.NewGuid().ToString("N"));
@@ -517,6 +518,29 @@ namespace ColorVision.UI
                 CopilotModuleToolRequest request,
                 CancellationToken cancellationToken) =>
                 _implementation.ExecuteAsync(request, cancellationToken);
+        }
+
+        private sealed class RegisteredContextProvider : ICopilotContextProvider
+        {
+            private readonly ICopilotContextProvider _implementation;
+
+            public RegisteredContextProvider(
+                ICopilotContextProvider implementation,
+                int order)
+            {
+                _implementation = implementation;
+                Order = order;
+            }
+
+            public int Order { get; }
+
+            public bool CanProvide(CopilotContextScope scope) =>
+                _implementation.CanProvide(scope);
+
+            public Task<CopilotContextItem?> CaptureAsync(
+                CopilotContextRequest request,
+                CancellationToken cancellationToken) =>
+                _implementation.CaptureAsync(request, cancellationToken);
         }
 
         private class RegisteredModuleToolExecutionHook : ICopilotModuleToolExecutionHook
