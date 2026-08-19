@@ -30,18 +30,6 @@ namespace Spectrum.Data
         public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; OnPropertyChanged(); } }
         private bool _AutoRefresh = true;
 
-        [DisplayName("视图高度"), Category("View")]
-        public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
-        private double _Height = 300;
-
-        [DisplayName("打开图像延迟"), Category("View")]
-        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
-        private int _ViewImageReadDelay = 1000;
-
-        [DisplayName("Csv保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("Spectrum")]
-        public string SavePathCsv { get => _SavePathCsv; set { _SavePathCsv = value; OnPropertyChanged(); } }
-        private string _SavePathCsv = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Spectrum");
-
         [DisplayName("防负亮度"), Category("Spectrum")]
         public bool EnableNegativeLuminanceGuard { get => _EnableNegativeLuminanceGuard; set { _EnableNegativeLuminanceGuard = value; OnPropertyChanged(); } }
         private bool _EnableNegativeLuminanceGuard = true;
@@ -161,7 +149,10 @@ namespace Spectrum.Data
         private static ViewResultManager _instance;
         private static readonly object _locker = new();
         private static readonly object _dbInitLocker = new();
+        private static readonly object _databaseGate = new();
         private static bool _dbInitialized;
+        private static long _databaseGeneration;
+        private static int _activeQuerySessions;
         public static ViewResultManager GetInstance() { lock (_locker) { _instance ??= new ViewResultManager(); return _instance; } }
         public static string DirectoryPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\Spectromer\\Config\\";
 
@@ -178,7 +169,6 @@ namespace Spectrum.Data
         public RelayCommand GenericQueryCommand { get; set; }
         public RelayCommand DeleteAllCommand { get; set; }
         public RelayCommand ResetDatabaseCommand { get; set; }
-        public RelayCommand ReloadCommand { get; set; }
 
         /// <summary>
         /// 创建短生命周期的数据库连接，避免长期持有导致数据库占用
@@ -226,9 +216,11 @@ namespace Spectrum.Data
             ResetDatabaseCommand = new RelayCommand(a =>
             {
                 if (MessageBox.Show("确定要重置数据库吗？将删除数据库文件并重新创建。此操作不可恢复。", "确认重置", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
-                    ResetDatabase();
+                {
+                    if (!ResetDatabase())
+                        MessageBox.Show("通用查询窗口正在使用数据库，请先关闭查询窗口再重置。", "无法重置", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             });
-            ReloadCommand = new RelayCommand(a => ReloadData());
             EnsureDatabaseInitialized();
             LoadAll(Config.Count);
                 DatabaseBrowserProviderRegistry.Register(new SqliteDatabaseBrowserProvider(
@@ -265,11 +257,15 @@ namespace Spectrum.Data
             if (index >= 0 && index < ViewResluts.Count)
             {
                 var item = ViewResluts[index];
-                EnsureDatabaseInitialized();
-                using (var db = CreateDb())
+                lock (_databaseGate)
                 {
-                    db.Deleteable<SpectrumMeasurementProfile>().Where(x => x.SpectrumId == item.Id).ExecuteCommand();
-                    db.Deleteable<SprectrumModel>().Where(x => x.Id == item.Id).ExecuteCommand();
+                    EnsureDatabaseInitialized();
+                    using var db = CreateDb();
+                    ExecuteTransaction(db, () =>
+                    {
+                        db.Deleteable<SpectrumMeasurementProfile>().Where(x => x.SpectrumId == item.Id).ExecuteCommand();
+                        db.Deleteable<SprectrumModel>().Where(x => x.Id == item.Id).ExecuteCommand();
+                    });
                 }
                 ViewResluts.RemoveAt(index);
             }
@@ -280,16 +276,23 @@ namespace Spectrum.Data
         /// </summary>
         public void DeleteSelected(IList<ViewResultSpectrum> items)
         {
-            EnsureDatabaseInitialized();
-            using (var db = CreateDb())
+            List<ViewResultSpectrum> selectedItems = items.ToList();
+            lock (_databaseGate)
             {
-                foreach (var item in items.ToList())
+                EnsureDatabaseInitialized();
+                using var db = CreateDb();
+                ExecuteTransaction(db, () =>
                 {
-                    db.Deleteable<SpectrumMeasurementProfile>().Where(x => x.SpectrumId == item.Id).ExecuteCommand();
-                    db.Deleteable<SprectrumModel>().Where(x => x.Id == item.Id).ExecuteCommand();
-                    ViewResluts.Remove(item);
-                }
+                    foreach (var item in selectedItems)
+                    {
+                        db.Deleteable<SpectrumMeasurementProfile>().Where(x => x.SpectrumId == item.Id).ExecuteCommand();
+                        db.Deleteable<SprectrumModel>().Where(x => x.Id == item.Id).ExecuteCommand();
+                    }
+                });
             }
+
+            foreach (var item in selectedItems)
+                ViewResluts.Remove(item);
         }
 
         /// <summary>
@@ -297,11 +300,16 @@ namespace Spectrum.Data
         /// </summary>
         public void DeleteAllRecords()
         {
-            EnsureDatabaseInitialized();
-            using (var db = CreateDb())
+            lock (_databaseGate)
             {
-                db.Deleteable<SprectrumModel>().ExecuteCommand();
-                db.Deleteable<SpectrumMeasurementProfile>().ExecuteCommand();
+                EnsureDatabaseInitialized();
+                using var db = CreateDb();
+                ExecuteTransaction(db, () =>
+                {
+                    db.Deleteable<SprectrumModel>().ExecuteCommand();
+                    db.Deleteable<SpectrumMeasurementProfile>().ExecuteCommand();
+                });
+                Interlocked.Increment(ref _databaseGeneration);
             }
             ViewReslutsClear();
         }
@@ -309,55 +317,71 @@ namespace Spectrum.Data
         /// <summary>
         /// 重置数据库（删除db文件并重新创建）
         /// </summary>
-        public void ResetDatabase()
+        public bool ResetDatabase()
         {
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            lock (_databaseGate)
+            {
+                if (Volatile.Read(ref _activeQuerySessions) > 0)
+                    return false;
 
-            // 为了保险起见，强制回收一下垃圾
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-
-            if (File.Exists(SqliteDbPath))
-                File.Delete(SqliteDbPath);
-            _dbInitialized = false;
-            EnsureDatabaseInitialized();
+                Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+                if (File.Exists(SqliteDbPath))
+                    File.Delete(SqliteDbPath);
+                _dbInitialized = false;
+                EnsureDatabaseInitialized();
+                Interlocked.Increment(ref _databaseGeneration);
+            }
             ViewReslutsClear();
-        }
-
-        /// <summary>
-        /// 重新加载数据
-        /// </summary>
-        public void ReloadData()
-        {
-            LoadAll(Config.Count);
+            return true;
         }
 
         /// <summary>
         /// 更新数据库中EQE相关字段
         /// </summary>
-        public void UpdateEqeFields(ViewResultSpectrum viewResult, bool isRecalculated = false)
+        public Task UpdateEqeFieldsAsync(
+            IReadOnlyList<ViewResultSpectrum> viewResults,
+            bool isRecalculated = false,
+            CancellationToken cancellationToken = default)
         {
-            EnsureDatabaseInitialized();
-            using var db = CreateDb();
-            db.Updateable<SprectrumModel>()
-                .SetColumns(x => x.EqeVoltage == viewResult.V)
-                .SetColumns(x => x.EqeCurrentMA == viewResult.I)
-                .SetColumns(x => x.Eqe == viewResult.Eqe)
-                .SetColumns(x => x.LuminousFlux == viewResult.LuminousFlux)
-                .SetColumns(x => x.RadiantFlux == viewResult.RadiantFlux)
-                .SetColumns(x => x.LuminousEfficacy == viewResult.LuminousEfficacy)
-                .SetColumns(x => x.ExcitationPurity == (double?)viewResult.ExcitationPurity)
-                .SetColumns(x => x.IsRecalculated == isRecalculated)
-                .Where(x => x.Id == viewResult.Id)
-                .ExecuteCommand();
+            ArgumentNullException.ThrowIfNull(viewResults);
+            return Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                lock (_databaseGate)
+                {
+                    EnsureDatabaseInitialized();
+                    using var db = CreateDb();
+                    ExecuteTransaction(db, () =>
+                    {
+                        foreach (ViewResultSpectrum viewResult in viewResults)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            db.Updateable<SprectrumModel>()
+                                .SetColumns(x => x.EqeVoltage == viewResult.V)
+                                .SetColumns(x => x.EqeCurrentMA == viewResult.I)
+                                .SetColumns(x => x.Eqe == viewResult.Eqe)
+                                .SetColumns(x => x.LuminousFlux == viewResult.LuminousFlux)
+                                .SetColumns(x => x.RadiantFlux == viewResult.RadiantFlux)
+                                .SetColumns(x => x.LuminousEfficacy == viewResult.LuminousEfficacy)
+                                .SetColumns(x => x.ExcitationPurity == (double?)viewResult.ExcitationPurity)
+                                .SetColumns(x => x.IsRecalculated == isRecalculated)
+                                .Where(x => x.Id == viewResult.Id)
+                                .ExecuteCommand();
+                        }
+                    });
+                }
+            }, cancellationToken);
         }
 
         public void SaveMeasurementProfile(SpectrumMeasurementProfile item)
         {
             if (item == null) return;
-            EnsureDatabaseInitialized();
-            using var db = CreateDb();
-            db.Insertable(item).ExecuteCommand();
+            lock (_databaseGate)
+            {
+                EnsureDatabaseInitialized();
+                using var db = CreateDb();
+                db.Insertable(item).ExecuteCommand();
+            }
         }
 
         /// <summary>
@@ -365,35 +389,42 @@ namespace Spectrum.Data
         /// </summary>
         public void LoadAll(int count = 100)
         {
-            EnsureDatabaseInitialized();
-            ViewResluts.Clear();
-            using var db = CreateDb();
             List<SprectrumModel> dbList;
-            if (count > 0)
+            lock (_databaseGate)
             {
-                dbList = db.Queryable<SprectrumModel>()
-                    .OrderBy(x => x.Id, OrderByType.Desc)
-                    .Take(count)
-                    .ToList();
-                if (Config.OrderByType == OrderByType.Asc)
-                    dbList.Reverse();
-            }
-            else
-            {
-                dbList = db.Queryable<SprectrumModel>()
-                    .OrderBy(x => x.Id, Config.OrderByType)
-                    .ToList();
+                EnsureDatabaseInitialized();
+                using var db = CreateDb();
+                if (count > 0)
+                {
+                    dbList = db.Queryable<SprectrumModel>()
+                        .OrderBy(x => x.Id, OrderByType.Desc)
+                        .Take(count)
+                        .ToList();
+                    if (Config.OrderByType == OrderByType.Asc)
+                        dbList.Reverse();
+                }
+                else
+                {
+                    dbList = db.Queryable<SprectrumModel>()
+                        .OrderBy(x => x.Id, Config.OrderByType)
+                        .ToList();
+                }
             }
 
-            foreach (var dbItem in dbList)
-            {
-                ViewResluts.Add(new ViewResultSpectrum(dbItem));
-            }
+            List<ViewResultSpectrum> results = dbList.Select(item => new ViewResultSpectrum(item)).ToList();
+            ViewResluts.Clear();
+            foreach (var result in results)
+                ViewResluts.Add(result);
         }
 
-        public ViewResultSpectrum Save(SprectrumModel item, float? eqeVoltage, float? eqeCurrentMA)
+        public ViewResultSpectrum SaveMeasurement(
+            SprectrumModel item,
+            float? eqeVoltage,
+            float? eqeCurrentMA,
+            SpectrumMeasurementProfile profile)
         {
             ArgumentNullException.ThrowIfNull(item);
+            ArgumentNullException.ThrowIfNull(profile);
             long preparationStarted = Stopwatch.GetTimestamp();
             item.ColorParam = ViewResultSpectrum.NormalizeColorParam(item.ColorParam);
             ViewResultSpectrum viewResultSpectrum = new(item);
@@ -411,20 +442,45 @@ namespace Spectrum.Data
             item.TotalDurationMs = (item.TotalDurationMs ?? 0) + (long)Stopwatch.GetElapsedTime(preparationStarted).TotalMilliseconds;
             viewResultSpectrum.TotalDurationMs = item.TotalDurationMs;
 
-            EnsureDatabaseInitialized();
-            using var db = CreateDb();
-            int id = db.Insertable(item).ExecuteReturnIdentity();
-            item.Id = id;
-            viewResultSpectrum.Id = id;
+            long generation;
+            lock (_databaseGate)
+            {
+                EnsureDatabaseInitialized();
+                using var db = CreateDb();
+                db.Ado.BeginTran();
+                try
+                {
+                    int id = db.Insertable(item).ExecuteReturnIdentity();
+                    item.Id = id;
+                    viewResultSpectrum.Id = id;
+                    profile.SpectrumId = id;
+                    profile.IsSuccess = true;
+                    profile.PersistDurationMs = (long)Stopwatch.GetElapsedTime(preparationStarted).TotalMilliseconds;
+                    profile.TotalDurationMs += profile.PersistDurationMs.Value;
+                    db.Insertable(profile).ExecuteCommand();
+                    db.Ado.CommitTran();
+                }
+                catch
+                {
+                    db.Ado.RollbackTran();
+                    profile.SpectrumId = null;
+                    profile.IsSuccess = false;
+                    throw;
+                }
+                generation = Volatile.Read(ref _databaseGeneration);
+            }
 
-            PublishResult(viewResultSpectrum);
+            PublishResult(viewResultSpectrum, generation);
             return viewResultSpectrum;
         }
 
-        private void PublishResult(ViewResultSpectrum viewResultSpectrum)
+        private void PublishResult(ViewResultSpectrum viewResultSpectrum, long generation)
         {
             void Publish()
             {
+                if (generation != Volatile.Read(ref _databaseGeneration))
+                    return;
+
                 ViewResultSpectrum? publishedResult = ViewResluts.FirstOrDefault(item => item.Id == viewResultSpectrum.Id);
                 if (publishedResult == null && Config.OrderByType == OrderByType.Desc)
                 {
@@ -446,9 +502,33 @@ namespace Spectrum.Data
 
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher != null && !dispatcher.CheckAccess())
-                dispatcher.Invoke(Publish);
+            {
+                try
+                {
+                    _ = dispatcher.BeginInvoke(Publish);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"发布光谱结果到界面失败: {ex.Message}");
+                }
+            }
             else
                 Publish();
+        }
+
+        private static void ExecuteTransaction(SqlSugarClient db, Action operation)
+        {
+            db.Ado.BeginTran();
+            try
+            {
+                operation();
+                db.Ado.CommitTran();
+            }
+            catch
+            {
+                db.Ado.RollbackTran();
+                throw;
+            }
         }
 
         private void TrimVisibleResults()
@@ -465,19 +545,23 @@ namespace Spectrum.Data
 
         public void GenericQuery()
         {
-            EnsureDatabaseInitialized();
-            var db = CreateDb();
+            SqlSugarClient db;
+            lock (_databaseGate)
+            {
+                EnsureDatabaseInitialized();
+                db = CreateDb();
+                Interlocked.Increment(ref _activeQuerySessions);
+            }
             try
             {
                 GenericQuery<SprectrumModel, ViewResultSpectrum> genericQuery = new GenericQuery<SprectrumModel, ViewResultSpectrum>(db, ViewResluts, a => new ViewResultSpectrum(a));
                 GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                genericQueryWindow.Closed += (s, e) => db.Dispose();
                 genericQueryWindow.ShowDialog();
             }
-            catch
+            finally
             {
                 db.Dispose();
-                throw;
+                Interlocked.Decrement(ref _activeQuerySessions);
             }
         }
 

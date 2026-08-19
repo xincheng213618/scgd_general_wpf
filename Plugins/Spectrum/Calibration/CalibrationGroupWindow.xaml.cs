@@ -1,5 +1,4 @@
 using log4net;
-using Newtonsoft.Json;
 using Spectrum.Configs;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,22 +15,15 @@ namespace Spectrum.Calibration
         private static readonly ILog log = LogManager.GetLogger(typeof(CalibrationGroupWindow));
 
         private SpectrometerManager Manager { get; }
+        private CalibrationGroupConfig WorkingConfig { get; }
         private bool _suppressSelectionChanged;
         private bool _hasUnsavedChanges;
-
-        // Backup of initial state for restore on discard
-        private readonly string _initialConfigJson;
-        private readonly string _initialWavelengthFile;
-        private readonly string _initialMaguideFile;
+        private bool _saveInProgress;
 
         public CalibrationGroupWindow(SpectrometerManager manager)
         {
             Manager = manager;
-
-            // Save initial state before any edits
-            _initialConfigJson = JsonConvert.SerializeObject(Manager.CalibrationGroupConfig);
-            _initialWavelengthFile = Manager.WavelengthFile;
-            _initialMaguideFile = Manager.MaguideFile;
+            WorkingConfig = Manager.CalibrationGroupConfig.Clone();
 
             InitializeComponent();
             RefreshGroupList();
@@ -55,10 +47,10 @@ namespace Spectrum.Calibration
         {
             _suppressSelectionChanged = true;
             ComboBoxGroups.ItemsSource = null;
-            ComboBoxGroups.ItemsSource = Manager.CalibrationGroupConfig.Groups;
+            ComboBoxGroups.ItemsSource = WorkingConfig.Groups;
             ComboBoxGroups.DisplayMemberPath = "GroupName";
 
-            var active = Manager.CalibrationGroupConfig.ActiveGroup;
+            var active = WorkingConfig.ActiveGroup;
             if (active != null)
                 ComboBoxGroups.SelectedItem = active;
             else if (ComboBoxGroups.Items.Count > 0)
@@ -114,8 +106,8 @@ namespace Spectrum.Calibration
             var group = ComboBoxGroups.SelectedItem as CalibrationGroup;
             if (group != null)
             {
-                // Set directly on config without triggering save/apply side-effects
-                Manager.CalibrationGroupConfig.ActiveGroupName = group.GroupName;
+                WorkingConfig.ActiveGroupName = group.GroupName;
+                MarkUnsaved();
             }
             UpdateGroupDetail();
         }
@@ -123,15 +115,15 @@ namespace Spectrum.Calibration
         private void BtnAddGroup_Click(object sender, RoutedEventArgs e)
         {
             // Add group directly to config without auto-saving
-            int idx = Manager.CalibrationGroupConfig.Groups.Count;
+            int idx = WorkingConfig.Groups.Count;
             string newName;
             do
             {
                 newName = $"Group{idx}";
                 idx++;
-            } while (Manager.CalibrationGroupConfig.Groups.Any(g => g.GroupName == newName));
+            } while (WorkingConfig.Groups.Any(g => g.GroupName == newName));
 
-            Manager.CalibrationGroupConfig.Groups.Add(new CalibrationGroup
+            WorkingConfig.Groups.Add(new CalibrationGroup
             {
                 GroupName = newName,
                 WavelengthFile = Manager.WavelengthFile,
@@ -147,7 +139,7 @@ namespace Spectrum.Calibration
 
         private void BtnRemoveGroup_Click(object sender, RoutedEventArgs e)
         {
-            if (Manager.CalibrationGroupConfig.Groups.Count <= 1)
+            if (WorkingConfig.Groups.Count <= 1)
             {
                 MessageBox.Show("至少保留一个分组", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -155,8 +147,8 @@ namespace Spectrum.Calibration
             // Remove group directly from config without auto-saving
             var group = ComboBoxGroups.SelectedItem as CalibrationGroup;
             if (group == null) return;
-            Manager.CalibrationGroupConfig.Groups.Remove(group);
-            Manager.CalibrationGroupConfig.ActiveGroupName = Manager.CalibrationGroupConfig.Groups.FirstOrDefault()?.GroupName ?? "Default";
+            WorkingConfig.Groups.Remove(group);
+            WorkingConfig.ActiveGroupName = WorkingConfig.Groups.FirstOrDefault()?.GroupName ?? "Default";
             RefreshGroupList();
             MarkUnsaved();
         }
@@ -170,12 +162,11 @@ namespace Spectrum.Calibration
             if (newName != group.GroupName)
             {
                 // Check for duplicate group names
-                if (Manager.CalibrationGroupConfig.Groups.Any(g => g != group && g.GroupName == newName))
+                if (WorkingConfig.Groups.Any(g => g != group && g.GroupName == newName))
                     return;
 
                 group.GroupName = newName;
-                // Set directly on config without triggering save/apply side-effects
-                Manager.CalibrationGroupConfig.ActiveGroupName = newName;
+                WorkingConfig.ActiveGroupName = newName;
                 MarkUnsaved();
 
                 // Refresh ComboBox display
@@ -270,73 +261,102 @@ namespace Spectrum.Calibration
             }
         }
 
-        private void BtnSave_Click(object sender, RoutedEventArgs e)
+        private async void BtnSave_Click(object sender, RoutedEventArgs e)
         {
-            ApplyAndSave();
-            MarkSaved();
-            MessageBox.Show("标定配置已保存", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (_saveInProgress)
+                return;
+
+            _saveInProgress = true;
+            IsEnabled = false;
+            try
+            {
+                SpectrumCalibrationApplyResult result = await ApplyAndSaveAsync();
+                if (!result.IsSuccess)
+                {
+                    MessageBox.Show(result.ErrorMessage, "标定配置未完成", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                MarkSaved();
+                string message = Manager.IsConnected ? "标定配置已保存并加载" : "标定配置已保存，将在连接光谱仪时加载";
+                MessageBox.Show(message, "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            finally
+            {
+                IsEnabled = true;
+                _saveInProgress = false;
+            }
         }
 
         /// <summary>
         /// Applies the current edits to Manager and saves to disk.
         /// </summary>
-        private void ApplyAndSave()
+        private async Task<SpectrumCalibrationApplyResult> ApplyAndSaveAsync()
         {
             // Apply active group files to Manager
-            var group = Manager.CalibrationGroupConfig.ActiveGroup;
-            if (group != null)
-            {
-                Manager.WavelengthFile = group.WavelengthFile;
-                Manager.MaguideFile = group.MaguideFile;
-            }
-            Manager.SaveCalibrationConfig();
-        }
+            CalibrationGroupConfig candidate = WorkingConfig.Clone();
+            CalibrationGroup? group = candidate.ActiveGroup;
+            if (group == null)
+                return new SpectrumCalibrationApplyResult(false, "请选择一个有效的标定分组");
 
-        /// <summary>
-        /// Discards all in-memory changes and restores the initial state.
-        /// </summary>
-        private void DiscardChanges()
-        {
-            try
+            SpectrumCalibrationApplyResult result = Manager.IsConnected
+                ? await Manager.ApplyCalibrationAsync(
+                    group.GroupName,
+                    group.WavelengthFile,
+                    group.MaguideFile).ConfigureAwait(false)
+                : SpectrumCalibrationApplyResult.Success;
+            if (result.IsSuccess && !Manager.CommitCalibrationConfiguration(candidate, result.RequestVersion))
             {
-                var restored = JsonConvert.DeserializeObject<CalibrationGroupConfig>(_initialConfigJson);
-                if (restored != null)
+                string saveError = Manager.LastOperationError;
+                if (Manager.IsConnected && Manager.IsCalibrationRequestCurrent(result.RequestVersion))
                 {
-                    Manager.CalibrationGroupConfig.Groups.Clear();
-                    foreach (var g in restored.Groups)
-                        Manager.CalibrationGroupConfig.Groups.Add(g);
-                    Manager.CalibrationGroupConfig.ActiveGroupName = restored.ActiveGroupName;
+                    SpectrumCalibrationApplyResult restore = await Manager
+                        .RestoreConfiguredCalibrationAsync(result.RequestVersion)
+                        .ConfigureAwait(false);
+                    if (!restore.IsSuccess)
+                        saveError = $"{saveError}；恢复原标定失败：{restore.ErrorMessage}";
                 }
-                else
-                {
-                    log.Warn("Failed to deserialize initial config snapshot during discard");
-                }
+                return new SpectrumCalibrationApplyResult(false, saveError);
             }
-            catch (Exception ex)
-            {
-                log.Error("Failed to restore initial config snapshot during discard", ex);
-            }
-            Manager.WavelengthFile = _initialWavelengthFile;
-            Manager.MaguideFile = _initialMaguideFile;
+            return result;
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
+            if (_saveInProgress)
+            {
+                e.Cancel = true;
+                return;
+            }
+
             if (_hasUnsavedChanges)
             {
                 var result = MessageBox.Show("有未保存的更改，是否保存？", "提示", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
                 if (result == MessageBoxResult.Yes)
                 {
-                    ApplyAndSave();
+                    try
+                    {
+                        SpectrumCalibrationApplyResult applyResult = ApplyAndSaveAsync().GetAwaiter().GetResult();
+                        if (!applyResult.IsSuccess)
+                        {
+                            MessageBox.Show(applyResult.ErrorMessage, "标定文件加载失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            e.Cancel = true;
+                            return;
+                        }
+                        MarkSaved();
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("Failed to save and apply calibration files", ex);
+                        MessageBox.Show(ex.GetBaseException().Message, "标定文件加载失败", MessageBoxButton.OK, MessageBoxImage.Error);
+                        e.Cancel = true;
+                        return;
+                    }
                 }
                 else if (result == MessageBoxResult.Cancel)
                 {
                     e.Cancel = true;
                     return;
-                }
-                else
-                {
-                    DiscardChanges();
                 }
             }
             base.OnClosing(e);

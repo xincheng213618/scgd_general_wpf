@@ -10,9 +10,6 @@
         Title="生成幅值标定文件" Width="750" Height="600"
         Background="{DynamicResource GlobalBackground}"
         Initialized="Window_Initialized">
-    <Window.InputBindings>
-        <KeyBinding Key="G" Command="{Binding GenerateAmplitudeFromExistingCommand}" Modifiers="Ctrl" />
-    </Window.InputBindings>
     <Window.Resources>
         <Style TargetType="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -28,22 +25,22 @@
         <!--  Top: File Configuration  -->
         <StackPanel Grid.Row="0">
             <DockPanel Margin="0,0,0,5">
-                <Button Margin="5,0,0,0" Command="{Binding SetCSFileCommand}" Content="选择" DockPanel.Dock="Right" />
+                <Button Margin="5,0,0,0" Click="SelectCsFile_Click" Content="选择" DockPanel.Dock="Right" />
                 <TextBlock MinWidth="140" VerticalAlignment="Center" Text="标准光源绝对光谱文件" />
                 <TextBox IsReadOnly="True" Text="{Binding CSFile}" ToolTip="{Binding CSFile}" />
             </DockPanel>
 
             <DockPanel Margin="0,0,0,5">
-                <Button Margin="5,0,0,0" Command="{Binding SetMaguideOutputFileCommand}" Content="选择" DockPanel.Dock="Right" />
+                <Button Margin="5,0,0,0" Click="SelectMagnitudeOutputFile_Click" Content="选择" DockPanel.Dock="Right" />
                 <TextBlock MinWidth="140" VerticalAlignment="Center" Text="幅值标定文件保存路径" />
                 <TextBox Text="{Binding MaguideFileOutput}" ToolTip="{Binding MaguideFileOutput}" />
             </DockPanel>
 
             <!--  Manual Data Acquisition  -->
             <DockPanel Margin="0,5,0,5">
-                <Button Padding="10,4" Background="#8E44AD" Command="{Binding GenerateAmplitudeCommand}" Content="自动采集并生成" DockPanel.Dock="Right" Foreground="White" />
-                <Button Margin="0,0,8,0" Padding="10,4" Background="#3498DB" Command="{Binding GetDarkDataCommand}" Content="获取暗数据" Foreground="White" />
-                <Button Margin="0,0,8,0" Padding="10,4" Background="#E67E22" Command="{Binding GetLightDataCommand}" Content="获取亮数据" Foreground="White" />
+                <Button Padding="10,4" Background="#8E44AD" Click="GenerateAmplitude_Click" Content="自动采集并生成" DockPanel.Dock="Right" Foreground="White" />
+                <Button Margin="0,0,8,0" Padding="10,4" Background="#3498DB" Click="CaptureDarkData_Click" Content="获取暗数据" Foreground="White" />
+                <Button Margin="0,0,8,0" Padding="10,4" Background="#E67E22" Click="CaptureLightData_Click" Content="获取亮数据" Foreground="White" />
                 <Separator Margin="8,0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />
             </DockPanel>
         </StackPanel>

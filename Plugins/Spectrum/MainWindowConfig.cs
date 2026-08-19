@@ -33,9 +33,6 @@ namespace Spectrum
         public float EqeCurrentMA { get => _EqeCurrentMA; set { _EqeCurrentMA = value; OnPropertyChanged(); } }
         private float _EqeCurrentMA = 20.0f;
 
-        public bool CiePointEnabled { get => _CiePointEnabled; set { _CiePointEnabled = value; OnPropertyChanged(); } }
-        private bool _CiePointEnabled = true;
-
         [JsonIgnore]
         public bool IsFull { get => _IsFull; set { _IsFull = value; OnPropertyChanged(); } }
         private bool _IsFull;

@@ -4,7 +4,6 @@ using log4net;
 using Spectrum.TimedButtons;
 using System.IO.Ports;
 using System.Text;
-using System.Windows;
 using System.Windows.Input;
 
 namespace Spectrum.Configs
@@ -32,6 +31,13 @@ namespace Spectrum.Configs
 
         public string StatusText => IsConnected ? "已连接 (Connected)" : "未连接 (Disconnected)";
 
+        public string LastErrorMessage
+        {
+            get => _lastErrorMessage;
+            private set { _lastErrorMessage = value; OnPropertyChanged(); }
+        }
+        private string _lastErrorMessage = string.Empty;
+
         // 命令
         public ICommand ConnectCommand { get; }
         public ICommand DisconnectCommand { get; }
@@ -41,35 +47,35 @@ namespace Spectrum.Configs
         public ShutterController()
         {
             ConnectCommand = new TimedButtonCommand(
-                async _ => await Task.FromResult(Connect()),
-                _ => !IsConnected,
+                async _ => await ConnectAsync(),
+                _ => !IsConnected && !IsBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "shutter-connect");
 
             DisconnectCommand = new TimedButtonCommand(
-                async _ => await Task.FromResult(Disconnect()),
-                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
+                async _ => await DisconnectAsync(),
+                _ => IsConnected && !IsBusy && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "shutter-disconnect");
 
             OpenShutterCommand = new TimedButtonCommand(
-                _ => SendCommand(Config.OpenCmd),
-                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
+                _ => SendCommand(Config.OpenCmd, "turn on"),
+                _ => IsConnected && !IsBusy && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "shutter-open");
 
             CloseShutterCommand = new TimedButtonCommand(
-                _ => SendCommand(Config.CloseCmd),
-                _ => IsConnected && !SpectrometerManager.Instance.IsDeviceBusy,
+                _ => SendCommand(Config.CloseCmd, "turn off"),
+                _ => IsConnected && !IsBusy && !SpectrometerManager.Instance.IsDeviceBusy,
                 SpectrumTimedButtonHost.GetOwner,
                 SpectrumTimedButtonHost.BuildOperationKey,
                 "shutter-close");
         }
 
-        private bool Connect()
+        private bool ConnectCore()
         {
             try
             {
@@ -84,20 +90,31 @@ namespace Spectrum.Configs
                 log.Info($"尝试连接到串口 {Config.SzComName}，波特率 {Config.BaudRate}");
                 _serialPort.Open();
                 IsConnected = true;
+                LastErrorMessage = string.Empty;
                 log.Info($"连接成功");
                 return true;
 
             }
             catch (Exception ex)
             {
-                log.Info($"打开串口失败: {ex.Message}");
-                MessageBox.Show($"打开串口失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                LastErrorMessage = $"打开串口失败: {ex.Message}";
+                log.Warn(LastErrorMessage, ex);
                 IsConnected = false;
+                SerialPort? serialPort = _serialPort;
+                _serialPort = null;
+                try
+                {
+                    serialPort?.Dispose();
+                }
+                catch (Exception disposeException)
+                {
+                    log.Warn("释放打开失败的快门串口失败", disposeException);
+                }
                 return false;
             }
         }
 
-        private bool Disconnect()
+        private bool DisconnectCore()
         {
             bool success = true;
             try
@@ -109,9 +126,8 @@ namespace Spectrum.Configs
             }
             catch (Exception ex)
             {
-                log.Info($"关闭串口失败: {{ex.Message}}");
-
-                MessageBox.Show($"关闭串口失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                LastErrorMessage = $"关闭串口失败: {ex.Message}";
+                log.Warn(LastErrorMessage, ex);
                 success = false;
             }
             finally
@@ -133,30 +149,36 @@ namespace Spectrum.Configs
             return success;
         }
 
+        private Task<bool> ConnectAsync() => RunSerializedAsync(() => Task.Run(ConnectCore));
+
+        private Task<bool> DisconnectAsync() => RunSerializedAsync(() => Task.Run(DisconnectCore));
+
         public async Task<bool> OpenShutter()
         {
-            return await SendCommand(Config.OpenCmd);
+            return await SendCommand(Config.OpenCmd, "turn on");
         }
         public async Task<bool> CloseShutter()
         {
-            return await SendCommand(Config.CloseCmd);
+            return await SendCommand(Config.CloseCmd, "turn off");
         }
 
-
-        private async Task<bool> SendCommand(string cmd)
+        private async Task<bool> SendCommand(string cmd, string expectedResponse)
         {
-            Interlocked.Increment(ref activeOperationCount);
-            await commandGate.WaitAsync();
-            try
+            return await RunSerializedAsync(async () =>
             {
                 if (_serialPort != null && _serialPort.IsOpen)
                 {
                     try
                     {
-                        // 发送指令
+                        // Drop delayed responses from the previous operation before sending a
+                        // new command. Otherwise a stale acknowledgement can invert dark/light.
+                        _serialPort.DiscardInBuffer();
                         _serialPort.Write(cmd);
 
                         string receiveBuffer = "";
+                        string unexpectedResponse = expectedResponse.Equals("turn on", StringComparison.OrdinalIgnoreCase)
+                            ? "turn off"
+                            : "turn on";
 
                         // 3. 循环等待接收
                         // 根据 Configs.DelayTime 计算循环次数，例如 1000ms / 16ms ≈ 62次
@@ -179,39 +201,84 @@ namespace Spectrum.Configs
                                 string msg = Encoding.UTF8.GetString(buff);
                                 receiveBuffer += msg;
 
-                                // 忽略大小写检查返回值
-                                if (receiveBuffer.Contains("turn on", StringComparison.OrdinalIgnoreCase))
+                                if (receiveBuffer.Contains(unexpectedResponse, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    return true;
+                                    LastErrorMessage = $"快门返回了相反状态：{unexpectedResponse}";
+                                    log.Warn(LastErrorMessage);
+                                    return false;
                                 }
-                                else if (receiveBuffer.Contains("turn off", StringComparison.OrdinalIgnoreCase))
+
+                                if (receiveBuffer.Contains(expectedResponse, StringComparison.OrdinalIgnoreCase))
                                 {
+                                    LastErrorMessage = string.Empty;
                                     return true;
                                 }
                             }
                         }
+                        LastErrorMessage = "快门未在规定时间内返回确认";
                         return false;
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"发送或读取指令失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                        Disconnect(); // 异常通常是线被拔了，直接断开
+                        LastErrorMessage = $"快门通信失败: {ex.Message}";
+                        log.Error(LastErrorMessage, ex);
+                        // The operation already owns commandGate, so disconnect the port directly
+                        // instead of trying to enter the same gate recursively.
+                        DisconnectCore();
                         return false;
                     }
                 }
 
+                LastErrorMessage = "快门未连接";
                 return false;
+            });
+        }
+
+        private async Task<T> RunSerializedAsync<T>(Func<Task<T>> operation)
+        {
+            Interlocked.Increment(ref activeOperationCount);
+            try
+            {
+                await commandGate.WaitAsync();
+                try
+                {
+                    return await operation();
+                }
+                finally
+                {
+                    commandGate.Release();
+                }
             }
             finally
             {
-                commandGate.Release();
+                Interlocked.Decrement(ref activeOperationCount);
+            }
+        }
+
+        private T RunSerialized<T>(Func<T> operation)
+        {
+            Interlocked.Increment(ref activeOperationCount);
+            try
+            {
+                commandGate.Wait();
+                try
+                {
+                    return operation();
+                }
+                finally
+                {
+                    commandGate.Release();
+                }
+            }
+            finally
+            {
                 Interlocked.Decrement(ref activeOperationCount);
             }
         }
 
         public void Dispose()
         {
-            Disconnect();
+            RunSerialized(DisconnectCore);
             GC.SuppressFinalize(this);
         }
     }

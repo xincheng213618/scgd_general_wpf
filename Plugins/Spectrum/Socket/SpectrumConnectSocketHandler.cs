@@ -36,8 +36,8 @@ namespace Spectrum.Socket
                         MsgID = request.MsgID,
                         EventName = EventName,
                         Code = result == 1 ? 200 : -2,
-                        Msg = result == 1 ? "光谱仪已断开" : $"光谱仪断开失败: {cvColorVision.Spectrometer.GetErrorMessage(result)}",
-                        Data = new { manager.IsConnected }
+                        Msg = result == 1 ? "光谱仪已断开" : $"光谱仪断开失败: {manager.GetOperationErrorMessage(result)}",
+                        Data = new { manager.IsConnected, manager.IsCalibrationReady, manager.CalibrationStatus }
                     };
                 }
                 else
@@ -51,11 +51,13 @@ namespace Spectrum.Socket
                         EventName = EventName,
                         Code = isConnected ? 200 : result == SpectrometerManager.OperationBusy ? -4 : -2,
                         Msg = isConnected
-                            ? "光谱仪连接成功"
+                            ? manager.IsCalibrationReady
+                                ? "光谱仪连接成功，标定已就绪"
+                                : $"光谱仪已连接，但暂不可测量：{manager.CalibrationStatus}"
                             : result == SpectrometerManager.OperationBusy
                                 ? "光谱仪驱动正被其他会话使用，或上次释放失败"
-                                : $"光谱仪连接失败: {cvColorVision.Spectrometer.GetErrorMessage(result)}",
-                        Data = new { IsConnected = isConnected }
+                                : $"光谱仪连接失败: {manager.GetOperationErrorMessage(result)}",
+                        Data = new { IsConnected = isConnected, manager.IsCalibrationReady, manager.CalibrationStatus }
                     };
                 }
             }
