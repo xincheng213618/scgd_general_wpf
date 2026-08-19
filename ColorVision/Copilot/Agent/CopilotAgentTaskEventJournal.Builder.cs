@@ -352,6 +352,13 @@ namespace ColorVision.Copilot
                 {
                     CopilotToolExecutionState.AwaitingApproval => CopilotAgentTaskEventType.ApprovalRequested,
                     CopilotToolExecutionState.Denied => CopilotAgentTaskEventType.ApprovalDenied,
+                    CopilotToolExecutionState.Cancelled
+                        when string.Equals(
+                            CopilotToolFailureCode.Normalize(
+                                agentEvent.ToolResult?.FailureCode),
+                            "approval_cancelled",
+                            StringComparison.Ordinal) =>
+                        CopilotAgentTaskEventType.ApprovalDenied,
                     _ => CopilotAgentTaskEventType.ToolCompleted,
                 };
                 var callId = CopilotAgentTaskEventIds.ForCall(execution.CallId);

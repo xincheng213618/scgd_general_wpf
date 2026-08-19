@@ -976,6 +976,54 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void ApprovalCancellationClosesTheRequestedApprovalDecision()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+        journal.RecordRunStarted();
+        journal.Observe(CopilotAgentEvent.ToolStarted(CreateExecution("cancelled-approval-call")));
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = true,
+                Summary = "Approval required.",
+            },
+            CreateExecution(
+                "cancelled-approval-call",
+                CopilotToolExecutionState.AwaitingApproval,
+                approvalActionId: "cancelled-approval-action",
+                completedAtUtc: DateTimeOffset.UtcNow)));
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = false,
+                Summary = "Approval was cancelled.",
+                FailureKind = CopilotToolFailureKind.Cancelled,
+                FailureCode = "approval_cancelled",
+            },
+            CreateExecution(
+                "cancelled-approval-call",
+                CopilotToolExecutionState.Cancelled,
+                approvalActionId: "cancelled-approval-action",
+                completedAtUtc: DateTimeOffset.UtcNow)));
+
+        journal.RecordStop(CopilotAgentStopReason.Cancelled);
+
+        var snapshot = journal.Snapshot();
+        Assert.DoesNotContain(snapshot.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        var requested = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ApprovalRequested);
+        var cancelled = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ApprovalDenied);
+        Assert.Equal(requested.SubjectId, cancelled.SubjectId);
+        Assert.Equal(CopilotToolExecutionState.Cancelled.ToString(), cancelled.State);
+        Assert.Equal("approval_cancelled", cancelled.FailureCode);
+    }
+
+    [Fact]
     public void ApprovalRequestClosesTheInitialAttemptWithoutUnknownOutcome()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
