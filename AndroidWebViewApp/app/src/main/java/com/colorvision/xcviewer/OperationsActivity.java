@@ -365,6 +365,8 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardRefreshMenuItem.setVisible(false);
         title.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == MENU_TARGET) {
+                returnToSettingsOnBack = OperationsDestinationState.SETTINGS.equals(
+                        currentDestination);
                 showConnectionPreference();
                 return true;
             }
@@ -844,7 +846,7 @@ public class OperationsActivity extends AppCompatActivity {
                     @Override
                     public void onWorkFinished() {
                         settingsProgress.setVisibility(View.GONE);
-                        title.setSubtitle(null);
+                        refreshOperationsTargetPresentation();
                     }
                 });
     }
@@ -864,7 +866,6 @@ public class OperationsActivity extends AppCompatActivity {
         setDashboardVisible(true);
         setShowingDashboardSummary(false);
         title.setTitle("设置");
-        title.setSubtitle(null);
         progress.setVisibility(View.GONE);
         scheduleConnectionHeartbeat();
     }

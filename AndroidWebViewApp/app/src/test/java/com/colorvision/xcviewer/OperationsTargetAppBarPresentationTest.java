@@ -35,12 +35,17 @@ public class OperationsTargetAppBarPresentationTest {
     }
 
     @Test
-    public void settingsAndUnpairedShellsKeepTheTargetActionHidden() {
-        assertFalse(OperationsTargetAppBarPresentation.from(
-                true,
-                true,
-                OperationsDestinationState.SETTINGS,
-                "检测电脑").visible);
+    public void settingsKeepsTheComputerContextWhileUnpairedShellsHideIt() {
+        OperationsTargetAppBarPresentation.ViewModel settings =
+                OperationsTargetAppBarPresentation.from(
+                        true,
+                        true,
+                        OperationsDestinationState.SETTINGS,
+                        "检测电脑");
+
+        assertTrue(settings.visible);
+        assertEquals("检测电脑", settings.subtitle);
+        assertEquals("当前操作电脑：检测电脑，点按管理或切换电脑", settings.actionLabel);
         assertFalse(OperationsTargetAppBarPresentation.from(
                 false,
                 true,
