@@ -125,6 +125,31 @@ public sealed class CopilotSharedCapabilityCatalogTests
     }
 
     [Fact]
+    public async Task ExternalMcpProviderUpdatesItsBoundCapabilityCatalog()
+    {
+        var catalog = new CopilotCapabilityCatalog();
+        var server = new CopilotMcpClientServerConfig
+        {
+            Name = "isolated-catalog",
+            Endpoint = "https://example.test/mcp",
+            Enabled = true,
+        };
+        catalog.PublishExternalMcp(
+            server,
+            [new SchemaOverrideTool("ExternalProbe", CopilotToolInputSchema.Empty)]);
+        var provider = new CopilotMcpToolProvider(
+            new CopilotMcpToolDiscoveryCache(),
+            catalog);
+
+        await using var lease = await provider.DiscoverAsync(
+            new CopilotAgentRequest(),
+            CancellationToken.None);
+
+        Assert.Empty(lease.Tools);
+        Assert.Empty(catalog.GetSnapshot().Capabilities);
+    }
+
+    [Fact]
     public void CapabilitySchemaIdentityIgnoresObjectOrderButTracksConstraintChanges()
     {
         var firstSchema = CopilotToolInputSchema.FromJsonSchema(

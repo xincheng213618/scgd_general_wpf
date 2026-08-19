@@ -152,15 +152,24 @@ namespace ColorVision.Copilot
         private static readonly TimeSpan DiscoveryCleanupTimeout = TimeSpan.FromSeconds(1);
         private static readonly TimeSpan DiscoveryResourceCleanupTimeout = TimeSpan.FromMilliseconds(500);
         private readonly CopilotMcpToolDiscoveryCache _discoveryCache;
+        private readonly CopilotCapabilityCatalog _capabilityCatalog;
 
         public CopilotMcpToolProvider()
-            : this(CopilotMcpToolDiscoveryCache.Shared)
+            : this(CopilotMcpToolDiscoveryCache.Shared, CopilotCapabilityCatalog.Shared)
         {
         }
 
         internal CopilotMcpToolProvider(CopilotMcpToolDiscoveryCache discoveryCache)
+            : this(discoveryCache, CopilotCapabilityCatalog.Shared)
+        {
+        }
+
+        internal CopilotMcpToolProvider(
+            CopilotMcpToolDiscoveryCache discoveryCache,
+            CopilotCapabilityCatalog capabilityCatalog)
         {
             _discoveryCache = discoveryCache ?? throw new ArgumentNullException(nameof(discoveryCache));
+            _capabilityCatalog = capabilityCatalog ?? throw new ArgumentNullException(nameof(capabilityCatalog));
         }
 
         public async Task<CopilotExternalToolLease> DiscoverAsync(CopilotAgentRequest request, CancellationToken cancellationToken)
@@ -171,7 +180,7 @@ namespace ColorVision.Copilot
             var diagnostics = new List<string>();
             var clients = new List<IAsyncDisposable>();
             var enabledServers = request.ExternalMcpServers.Where(server => server?.Enabled == true).Take(8).ToArray();
-            CopilotCapabilityCatalog.Shared.RetainExternalMcpServers(enabledServers);
+            _capabilityCatalog.RetainExternalMcpServers(enabledServers);
             foreach (var server in enabledServers)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -321,7 +330,7 @@ namespace ColorVision.Copilot
                     // same definitions exposed to this turn. A rejected source must not
                     // leave callable adapters backed by a client that the finally block
                     // is about to dispose.
-                    CopilotCapabilityCatalog.Shared.PublishExternalMcp(server, compatibleAdapters);
+                    _capabilityCatalog.PublishExternalMcp(server, compatibleAdapters);
                     tools.AddRange(compatibleAdapters);
                     CopilotMcpClientHealthRegistry.RecordConnected(
                         server,
