@@ -1024,6 +1024,37 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void ToolBodyCancellationAfterApprovalRemainsAToolOutcome()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        journal.Observe(CopilotAgentEvent.FromToolResult(
+            new CopilotToolResult
+            {
+                ToolName = "IntegrityTool",
+                Success = false,
+                Summary = "Approved tool execution was cancelled.",
+                FailureKind = CopilotToolFailureKind.Cancelled,
+                FailureCode = "tool_execution_cancelled",
+            },
+            CreateExecution(
+                "cancelled-tool-call",
+                CopilotToolExecutionState.Cancelled,
+                approvalActionId: "approved-action",
+                completedAtUtc: DateTimeOffset.UtcNow)));
+
+        var snapshot = journal.Snapshot();
+        var completed = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
+        Assert.Equal(CopilotToolExecutionState.Cancelled.ToString(), completed.State);
+        Assert.Equal("tool_execution_cancelled", completed.FailureCode);
+        Assert.DoesNotContain(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ApprovalDenied);
+    }
+
+    [Fact]
     public void ApprovalRequestClosesTheInitialAttemptWithoutUnknownOutcome()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
@@ -1046,13 +1077,20 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
 
         var snapshot = journal.Snapshot();
         Assert.DoesNotContain(snapshot.Events, item => item.Type == CopilotAgentTaskEventType.ToolCompleted);
-        var approval = Assert.Single(snapshot.Events, item => item.Type == CopilotAgentTaskEventType.ApprovalRequested);
-        Assert.Equal(CopilotToolExecutionState.AwaitingApproval.ToString(), approval.State);
+        var approval = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ApprovalRequested);
+        var closed = Assert.Single(
+            snapshot.Events,
+            item => item.Type == CopilotAgentTaskEventType.ApprovalDenied);
+        Assert.Equal(approval.SubjectId, closed.SubjectId);
+        Assert.Equal(CopilotToolExecutionState.Cancelled.ToString(), closed.State);
+        Assert.Equal("approval_cancelled", closed.FailureCode);
         var recoveryPrompt = CopilotAgentTaskEventJournal.BuildAttemptedToolRecoveryPrompt(snapshot);
         Assert.Contains("protected operation did not execute", recoveryPrompt, StringComparison.Ordinal);
         var recovered = Assert.Single(ParseAttemptedToolCalls(recoveryPrompt)).Value;
-        Assert.Equal(CopilotToolExecutionState.AwaitingApproval.ToString(), recovered.GetProperty("State").GetString());
-        Assert.Equal(string.Empty, recovered.GetProperty("FailureCode").GetString());
+        Assert.Equal(CopilotToolExecutionState.Cancelled.ToString(), recovered.GetProperty("State").GetString());
+        Assert.Equal("approval_cancelled", recovered.GetProperty("FailureCode").GetString());
     }
 
     [Fact]

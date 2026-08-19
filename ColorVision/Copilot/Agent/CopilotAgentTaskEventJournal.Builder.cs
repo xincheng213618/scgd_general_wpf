@@ -290,6 +290,7 @@ namespace ColorVision.Copilot
                     throw new InvalidOperationException(
                         $"Agent run {RunId} control event {control!.Type} requires stop reason {expectedReason.Value}, not {reason}.");
                 }
+                CloseDanglingApprovals();
                 CloseDanglingToolExecutions(reason);
                 CloseDanglingUserQuestions(reason);
                 Append(CopilotAgentTaskEventType.RunStopped, RunId, reason.ToString(), $"Agent run stopped with reason {reason}.");
@@ -470,6 +471,39 @@ namespace ColorVision.Copilot
                     summary,
                     start.ToolName,
                     failureCode: failureCode);
+            }
+        }
+
+        private void CloseDanglingApprovals()
+        {
+            var pendingRequests = _events
+                .Where(item => item.Type == CopilotAgentTaskEventType.ApprovalRequested
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal))
+                .GroupBy(item => item.SubjectId, StringComparer.Ordinal)
+                .Select(group => group.OrderByDescending(item => item.Sequence).First())
+                .Where(request => !_events.Any(item =>
+                    (item.Type is CopilotAgentTaskEventType.ApprovalApproved
+                        or CopilotAgentTaskEventType.ApprovalDenied)
+                    && string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                    && string.Equals(item.SubjectId, request.SubjectId, StringComparison.Ordinal)
+                    && item.Sequence > request.Sequence))
+                .OrderBy(item => item.Sequence)
+                .ToArray();
+            foreach (var request in pendingRequests)
+            {
+                AppendUnique(
+                    CopilotAgentTaskEventType.ApprovalDenied,
+                    request.SubjectId,
+                    CopilotToolExecutionState.Cancelled.ToString(),
+                    "The pending approval was closed when the Agent run stopped; the protected operation did not execute and requires a fresh approval before any future attempt.",
+                    request.ToolName,
+                    request.RelatedIds,
+                    failureCode: "approval_cancelled",
+                    uniqueTypes:
+                    [
+                        CopilotAgentTaskEventType.ApprovalApproved,
+                        CopilotAgentTaskEventType.ApprovalDenied,
+                    ]);
             }
         }
 
