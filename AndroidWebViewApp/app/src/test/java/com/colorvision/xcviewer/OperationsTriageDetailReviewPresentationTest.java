@@ -20,9 +20,12 @@ public class OperationsTriageDetailReviewPresentationTest {
 
         assertTrue(model.visible);
         assertTrue(model.enabled);
+        assertFalse(model.acknowledged);
         assertEquals("标记此问题已复核", model.label);
         assertTrue(model.contentDescription.contains("电脑状态不会改变"));
         assertTrue(model.contentDescription.contains("最新证据"));
+        assertEquals(OperationsTriageDetailReviewPresentation.SURFACE_RECENT_EVENTS,
+                OperationsTriageDetailReviewPresentation.surfaceFor(finding));
     }
 
     @Test
@@ -37,6 +40,7 @@ public class OperationsTriageDetailReviewPresentationTest {
 
         assertEquals("撤销此问题复核", reviewed.label);
         assertTrue(reviewed.enabled);
+        assertTrue(reviewed.acknowledged);
         assertEquals("正在核对最新问题证据…", loading.label);
         assertFalse(loading.enabled);
     }
@@ -79,6 +83,16 @@ public class OperationsTriageDetailReviewPresentationTest {
 
         assertNull(OperationsTriageDetailReviewPresentation.findCurrent(healthy, reference));
         assertFalse(OperationsTriageDetailReviewPresentation.from(null, false).visible);
+    }
+
+    @Test
+    public void deviceFindingUsesDeviceHealthReviewSurface() throws Exception {
+        OperationsTriagePresentation.Finding device = OperationsTriagePresentation.from(
+                new JSONObject("{\"findings\":[{\"findingId\":\"devices\","
+                        + "\"category\":\"devices\"}]}"), value -> value).findings.get(0);
+
+        assertEquals(OperationsTriageDetailReviewPresentation.SURFACE_DEVICE_HEALTH,
+                OperationsTriageDetailReviewPresentation.surfaceFor(device));
     }
 
     private static OperationsTriagePresentation.Finding finding(

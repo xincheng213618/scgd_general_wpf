@@ -18,6 +18,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.List;
 
@@ -25,7 +26,7 @@ final class DeviceHealthBottomSheet {
     private DeviceHealthBottomSheet() {
     }
 
-    static void show(
+    static ReviewHandle show(
             Activity activity,
             ThemeManager themeManager,
             DeviceHealthPresentation.ViewModel model,
@@ -33,7 +34,9 @@ final class DeviceHealthBottomSheet {
             boolean offerTriageAction,
             Runnable refresh,
             Runnable openTriage,
-            Runnable trackRecovery) {
+            Runnable trackRecovery,
+            OperationsTriageDetailReviewPresentation.ViewModel reviewPresentation,
+            ReviewHandler reviewHandler) {
         BottomSheetDialog dialog = new BottomSheetDialog(activity);
         LinearLayout sheetRoot = new LinearLayout(activity);
         sheetRoot.setOrientation(LinearLayout.VERTICAL);
@@ -155,6 +158,9 @@ final class DeviceHealthBottomSheet {
         content.addView(scope, topMargin(dp(activity, 12)));
 
         boolean trackableRecovery = model.canTrackRecovery();
+        boolean offerReview = reviewPresentation != null
+                && reviewPresentation.visible
+                && reviewHandler != null;
         boolean singleColumnActions = AppResponsiveLayout.usesSingleColumn(
                 activity.getResources().getConfiguration().screenWidthDp,
                 activity.getResources().getConfiguration().fontScale)
@@ -195,6 +201,24 @@ final class DeviceHealthBottomSheet {
                 triageParams.setMargins(dp(activity, 8), 0, 0, 0);
             }
             actions.addView(triageButton, triageParams);
+        }
+
+        MaterialButton reviewButton = null;
+        if (offerReview) {
+            reviewButton = new MaterialButton(
+                    activity,
+                    null,
+                    com.google.android.material.R.attr.materialButtonOutlinedStyle);
+            reviewButton.setMinHeight(dp(activity, 48));
+            MaterialButton target = reviewButton;
+            reviewButton.setOnClickListener(view -> reviewHandler.onReview(
+                    !Boolean.TRUE.equals(target.getTag())));
+            LinearLayout.LayoutParams reviewParams = singleColumnActions
+                    ? topMargin(dp(activity, 8)) : weightedButton();
+            if (!singleColumnActions) {
+                reviewParams.setMargins(dp(activity, 8), 0, 0, 0);
+            }
+            actions.addView(reviewButton, reviewParams);
         }
 
         if (trackableRecovery) {
@@ -254,6 +278,53 @@ final class DeviceHealthBottomSheet {
             }
         });
         dialog.show();
+        ReviewHandle reviewHandle = new ReviewHandle(dialog, reviewButton);
+        reviewHandle.update(reviewPresentation);
+        return reviewHandle;
+    }
+
+    interface ReviewHandler {
+        void onReview(boolean acknowledged);
+    }
+
+    static final class ReviewHandle {
+        private final BottomSheetDialog dialog;
+        private final MaterialButton button;
+
+        ReviewHandle(BottomSheetDialog dialog, MaterialButton button) {
+            this.dialog = dialog;
+            this.button = button;
+        }
+
+        void update(OperationsTriageDetailReviewPresentation.ViewModel presentation) {
+            if (button == null || presentation == null) {
+                return;
+            }
+            button.setVisibility(presentation.visible ? View.VISIBLE : View.GONE);
+            button.setText(presentation.label);
+            button.setContentDescription(presentation.contentDescription);
+            button.setEnabled(presentation.enabled);
+            button.setTag(presentation.acknowledged);
+        }
+
+        boolean isShowing() {
+            return dialog.isShowing();
+        }
+
+        void dismiss() {
+            dialog.dismiss();
+        }
+
+        void showMessage(String message, String actionLabel, Runnable action) {
+            if (button == null || !dialog.isShowing()) {
+                return;
+            }
+            Snackbar snackbar = Snackbar.make(button, message, Snackbar.LENGTH_LONG);
+            if (actionLabel != null && !actionLabel.isEmpty() && action != null) {
+                snackbar.setAction(actionLabel, view -> action.run());
+            }
+            snackbar.show();
+        }
     }
 
     private static MaterialCardView categoryCard(
