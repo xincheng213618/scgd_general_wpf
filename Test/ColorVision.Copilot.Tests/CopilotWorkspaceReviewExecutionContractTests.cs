@@ -268,6 +268,11 @@ public sealed class CopilotWorkspaceReviewExecutionContractTests
 
         source.Revision = "changed-after-create";
         Assert.Equal("origin/develop", request.WorkspaceReviewTarget?.Revision);
+
+        var returned = request.WorkspaceReviewTarget!;
+        returned.Revision = "changed-through-getter";
+        Assert.Equal("origin/develop", request.WorkspaceReviewTarget?.Revision);
+        Assert.NotSame(returned, request.WorkspaceReviewTarget);
     }
 
     [Fact]

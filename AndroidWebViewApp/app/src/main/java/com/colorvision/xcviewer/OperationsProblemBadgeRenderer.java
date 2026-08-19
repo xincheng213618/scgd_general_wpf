@@ -1,14 +1,14 @@
 package com.colorvision.xcviewer;
 
 import com.google.android.material.badge.BadgeDrawable;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.navigation.NavigationBarView;
 
 final class OperationsProblemBadgeRenderer {
     private OperationsProblemBadgeRenderer() {
     }
 
     static void render(
-            BottomNavigationView navigation,
+            NavigationBarView navigation,
             int itemId,
             OperationsProblemBadgePresentation.ViewModel model) {
         if (navigation == null) {

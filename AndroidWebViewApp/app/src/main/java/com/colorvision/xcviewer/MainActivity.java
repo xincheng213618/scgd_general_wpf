@@ -4,8 +4,6 @@ import android.Manifest;
 import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -30,7 +29,10 @@ import androidx.core.widget.TextViewCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.navigation.NavigationBarView;
+import com.google.android.material.navigationrail.NavigationRailView;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -54,17 +56,20 @@ public class MainActivity extends AppCompatActivity {
     static final int TAB_OPERATIONS = 0;
     static final int TAB_TOOLS = 1;
     static final int TAB_SETTINGS = 2;
+    static final int TAB_PROBLEMS = 3;
 
     private FrameLayout root;
     private LinearLayout appShell;
     private FrameLayout setupContainer;
+    private CoordinatorLayout snackbarHost;
     private ProgressBar progressBar;
     private AppPreferences appPreferences;
     private ThemeManager themeManager;
     private TextView headerTitle;
     private TextView headerSubtitle;
-    private BottomNavigationView bottomNavigation;
-    private boolean updatingBottomNavigation;
+    private NavigationBarView topLevelNavigation;
+    private boolean navigationRail;
+    private boolean updatingTopLevelNavigation;
     private boolean openedFromOperations;
     private int currentTab = TAB_OPERATIONS;
     private String lastNotificationPermissionStatus = "";
@@ -92,6 +97,7 @@ public class MainActivity extends AppCompatActivity {
                 restoredTab,
                 requestedTab,
                 TAB_OPERATIONS,
+                TAB_PROBLEMS,
                 TAB_TOOLS,
                 TAB_SETTINGS);
         openedFromOperations = restoring
@@ -104,11 +110,18 @@ public class MainActivity extends AppCompatActivity {
         }
         if (AppNavigationPolicy.shouldOpenPairedWorkspace(
                 appPreferences.hasOperationsProfile(),
-                startTab == TAB_OPERATIONS
-                        || startTab == TAB_TOOLS
-                        || startTab == TAB_SETTINGS)) {
+                AppNavigationPolicy.isTopLevelTab(
+                        startTab,
+                        TAB_OPERATIONS,
+                        TAB_PROBLEMS,
+                        TAB_TOOLS,
+                        TAB_SETTINGS))) {
             openOperationsDirectly(AppNavigationPolicy.pairedDestinationForTab(
-                    startTab, TAB_OPERATIONS, TAB_TOOLS, TAB_SETTINGS));
+                    startTab,
+                    TAB_OPERATIONS,
+                    TAB_PROBLEMS,
+                    TAB_TOOLS,
+                    TAB_SETTINGS));
             return;
         }
         themeManager = new ThemeManager(this, appPreferences);
@@ -125,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT));
 
-        applyTopSystemBarInset(root);
+        applySystemBarInsets(root);
         setContentView(root);
         ViewCompat.requestApplyInsets(root);
 
@@ -185,22 +198,42 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private LinearLayout createAppShell() {
+        navigationRail = AppResponsiveLayout.usesNavigationRail(
+                getResources().getConfiguration().screenWidthDp);
         LinearLayout shell = new LinearLayout(this);
-        shell.setOrientation(LinearLayout.VERTICAL);
+        shell.setOrientation(navigationRail
+                ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
         shell.setBackgroundColor(shellBackgroundColor());
-        shell.addView(createTopBar(), new LinearLayout.LayoutParams(
+        LinearLayout workspace = new LinearLayout(this);
+        workspace.setOrientation(LinearLayout.VERTICAL);
+        workspace.setBackgroundColor(shellBackgroundColor());
+        workspace.addView(createTopBar(), new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        shell.addView(setupContainer, new LinearLayout.LayoutParams(
+        workspace.addView(setupContainer, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 0,
                 1));
+        snackbarHost = new CoordinatorLayout(this);
+        snackbarHost.addView(workspace, new CoordinatorLayout.LayoutParams(
+                CoordinatorLayout.LayoutParams.MATCH_PARENT,
+                CoordinatorLayout.LayoutParams.MATCH_PARENT));
 
-        bottomNavigation = createBottomNav();
-        shell.addView(bottomNavigation, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
+        topLevelNavigation = createTopLevelNavigation();
+        if (navigationRail) {
+            shell.addView(topLevelNavigation, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT));
+            shell.addView(snackbarHost, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        } else {
+            shell.addView(snackbarHost, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+            shell.addView(topLevelNavigation, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
         return shell;
     }
 
@@ -232,10 +265,14 @@ public class MainActivity extends AppCompatActivity {
         return bar;
     }
 
-    private BottomNavigationView createBottomNav() {
-        BottomNavigationView nav = new BottomNavigationView(this);
+    private NavigationBarView createTopLevelNavigation() {
+        NavigationBarView nav = navigationRail
+                ? new NavigationRailView(this) : new BottomNavigationView(this);
         nav.setBackgroundColor(bottomNavBackgroundColor());
-        nav.setLabelVisibilityMode(BottomNavigationView.LABEL_VISIBILITY_LABELED);
+        nav.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_LABELED);
+        if (nav instanceof NavigationRailView) {
+            ((NavigationRailView) nav).setMenuGravity(Gravity.CENTER);
+        }
         nav.getMenu().add(0, NAV_OPERATIONS, 0, "概览").setIcon(R.drawable.ic_devices_24);
         nav.getMenu().add(0, NAV_PROBLEMS, 1, "问题")
                 .setIcon(R.drawable.ic_report_problem_24);
@@ -243,7 +280,7 @@ public class MainActivity extends AppCompatActivity {
         nav.getMenu().add(0, NAV_SETTINGS, 3, "设置").setIcon(R.drawable.ic_settings_24);
         renderProblemNavigationBadge(nav);
         nav.setOnItemSelectedListener(item -> {
-            if (updatingBottomNavigation) {
+            if (updatingTopLevelNavigation) {
                 return true;
             }
             if (item.getItemId() == NAV_OPERATIONS) {
@@ -254,7 +291,7 @@ public class MainActivity extends AppCompatActivity {
                 if (appPreferences.hasOperationsProfile()) {
                     openOperationsDirectly(OperationsDestinationState.TRIAGE);
                 } else {
-                    showOperationsLanding();
+                    showProblemsLanding();
                 }
                 return true;
             }
@@ -271,7 +308,7 @@ public class MainActivity extends AppCompatActivity {
         return nav;
     }
 
-    private void renderProblemNavigationBadge(BottomNavigationView navigation) {
+    private void renderProblemNavigationBadge(NavigationBarView navigation) {
         OperationsProblemBadgeRenderer.render(
                 navigation,
                 NAV_PROBLEMS,
@@ -283,15 +320,18 @@ public class MainActivity extends AppCompatActivity {
 
     private void selectTab(int tab) {
         currentTab = tab;
-        if (bottomNavigation == null) {
+        if (topLevelNavigation == null) {
             return;
         }
         int itemId = tab == TAB_SETTINGS
-                ? NAV_SETTINGS : tab == TAB_TOOLS ? NAV_TOOLS : NAV_OPERATIONS;
-        if (bottomNavigation.getSelectedItemId() != itemId) {
-            updatingBottomNavigation = true;
-            bottomNavigation.setSelectedItemId(itemId);
-            updatingBottomNavigation = false;
+                ? NAV_SETTINGS
+                : tab == TAB_TOOLS
+                        ? NAV_TOOLS
+                        : tab == TAB_PROBLEMS ? NAV_PROBLEMS : NAV_OPERATIONS;
+        if (topLevelNavigation.getSelectedItemId() != itemId) {
+            updatingTopLevelNavigation = true;
+            topLevelNavigation.setSelectedItemId(itemId);
+            updatingTopLevelNavigation = false;
         }
     }
 
@@ -302,6 +342,7 @@ public class MainActivity extends AppCompatActivity {
                 requestedTab,
                 appPreferences.consumeStartTab(TAB_OPERATIONS),
                 TAB_OPERATIONS,
+                TAB_PROBLEMS,
                 TAB_TOOLS,
                 TAB_SETTINGS);
     }
@@ -309,6 +350,10 @@ public class MainActivity extends AppCompatActivity {
     private void showInitialTab(int startTab) {
         if (startTab == TAB_SETTINGS) {
             showProfileView();
+            return;
+        }
+        if (startTab == TAB_PROBLEMS) {
+            showProblemsLanding();
             return;
         }
         if (startTab == TAB_TOOLS) {
@@ -329,11 +374,18 @@ public class MainActivity extends AppCompatActivity {
         }
         if (AppNavigationPolicy.shouldOpenPairedWorkspace(
                 appPreferences.hasOperationsProfile(),
-                startTab == TAB_OPERATIONS
-                        || startTab == TAB_TOOLS
-                        || startTab == TAB_SETTINGS)) {
+                AppNavigationPolicy.isTopLevelTab(
+                        startTab,
+                        TAB_OPERATIONS,
+                        TAB_PROBLEMS,
+                        TAB_TOOLS,
+                        TAB_SETTINGS))) {
             openOperationsDirectly(AppNavigationPolicy.pairedDestinationForTab(
-                    startTab, TAB_OPERATIONS, TAB_TOOLS, TAB_SETTINGS));
+                    startTab,
+                    TAB_OPERATIONS,
+                    TAB_PROBLEMS,
+                    TAB_TOOLS,
+                    TAB_SETTINGS));
             return;
         }
         showInitialTab(startTab);
@@ -344,6 +396,7 @@ public class MainActivity extends AppCompatActivity {
                 currentTab,
                 TAB_OPERATIONS,
                 TAB_OPERATIONS,
+                TAB_PROBLEMS,
                 TAB_TOOLS,
                 TAB_SETTINGS);
         if (appPreferences.hasOperationsProfile()) {
@@ -372,11 +425,38 @@ public class MainActivity extends AppCompatActivity {
                 "扫描电脑端“设置 > 局域网控制”中的短时安全配对码。完成一次配对后，运维伴侣会成为首屏并持续守护安全连接。");
     }
 
+    private void showProblemsLanding() {
+        int direction = AppScreenMotion.directionBetween(
+                currentTab,
+                TAB_PROBLEMS,
+                TAB_OPERATIONS,
+                TAB_PROBLEMS,
+                TAB_TOOLS,
+                TAB_SETTINGS);
+        if (appPreferences.hasOperationsProfile()) {
+            openOperationsDirectly(OperationsDestinationState.TRIAGE);
+            return;
+        }
+        AppScreenMotion.beginContentTransition(setupContainer, direction);
+        selectTab(TAB_PROBLEMS);
+        headerTitle.setText("问题中心");
+        headerSubtitle.setText("连接电脑后开始复核");
+        setupContainer.removeAllViews();
+        setupContainer.addView(createPairingLandingContent(
+                "先连接运维电脑",
+                "完成安全配对后，问题中心会按优先级汇总设备离线、警告事件与待处理作业，并保留诊断证据。"),
+                matchParentParams());
+        setupContainer.setVisibility(View.VISIBLE);
+        appShell.setVisibility(View.VISIBLE);
+        progressBar.setVisibility(View.GONE);
+    }
+
     private void showToolsLanding() {
         int direction = AppScreenMotion.directionBetween(
                 currentTab,
                 TAB_TOOLS,
                 TAB_OPERATIONS,
+                TAB_PROBLEMS,
                 TAB_TOOLS,
                 TAB_SETTINGS);
         if (appPreferences.hasOperationsProfile()) {
@@ -404,26 +484,34 @@ public class MainActivity extends AppCompatActivity {
 
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(18), dp(18), dp(18), dp(24));
+        content.setPadding(dp(16), dp(16), dp(16), dp(24));
         scrollView.addView(content, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT,
                 ScrollView.LayoutParams.WRAP_CONTENT));
 
-        LinearLayout operationsCard = makeCard();
-        content.addView(operationsCard, fullWidthCardParams());
-        operationsCard.addView(makeTitle(title, 22), matchWidthWrapParams());
+        LinearLayout cardContent = new LinearLayout(this);
+        cardContent.setOrientation(LinearLayout.VERTICAL);
+        cardContent.setPadding(dp(16), dp(16), dp(16), dp(16));
+        cardContent.addView(makeTitle(title, 22), matchWidthWrapParams());
 
         TextView status = makeBodyText(description);
         status.setPadding(0, dp(8), 0, dp(4));
-        operationsCard.addView(status, matchWidthWrapParams());
+        cardContent.addView(status, matchWidthWrapParams());
 
         Button operationsButton = makePrimaryButton("扫描并连接电脑");
         operationsButton.setOnClickListener(v -> openOperations());
-        operationsCard.addView(operationsButton, fullWidthButtonParams());
+        cardContent.addView(operationsButton, fullWidthButtonParams());
 
         Button helpButton = makeSecondaryButton("配对码在哪里？");
         helpButton.setOnClickListener(v -> PairingHelpDialog.show(this, this::startQrScan));
-        operationsCard.addView(helpButton, fullWidthButtonParams());
+        cardContent.addView(helpButton, fullWidthButtonParams());
+
+        MaterialCardView operationsCard = new MaterialCardView(this);
+        operationsCard.setCardBackgroundColor(cardBackgroundColor());
+        operationsCard.addView(cardContent, new MaterialCardView.LayoutParams(
+                MaterialCardView.LayoutParams.MATCH_PARENT,
+                MaterialCardView.LayoutParams.WRAP_CONTENT));
+        content.addView(operationsCard, matchWidthWrapParams());
 
         return scrollView;
     }
@@ -433,6 +521,7 @@ public class MainActivity extends AppCompatActivity {
                 currentTab,
                 TAB_SETTINGS,
                 TAB_OPERATIONS,
+                TAB_PROBLEMS,
                 TAB_TOOLS,
                 TAB_SETTINGS);
         AppScreenMotion.beginContentTransition(setupContainer, direction);
@@ -545,10 +634,7 @@ public class MainActivity extends AppCompatActivity {
         if (watchPreferenceSnackbar != null) {
             watchPreferenceSnackbar.dismiss();
         }
-        watchPreferenceSnackbar = Snackbar.make(root, message, Snackbar.LENGTH_LONG);
-        if (bottomNavigation != null) {
-            watchPreferenceSnackbar.setAnchorView(bottomNavigation);
-        }
+        watchPreferenceSnackbar = Snackbar.make(snackbarHost, message, Snackbar.LENGTH_LONG);
         if (offerReminderAction) {
             watchPreferenceSnackbar.setAction("开启提醒", view -> manageNotificationPermission());
         }
@@ -766,7 +852,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        renderProblemNavigationBadge(bottomNavigation);
+        renderProblemNavigationBadge(topLevelNavigation);
         boolean granted = hasCameraPermission();
         String notificationStatus = appPreferences == null
                 ? "" : notificationPermissionStatus();
@@ -975,7 +1061,11 @@ public class MainActivity extends AppCompatActivity {
             OperationsPairingPayload.parse(text);
             Intent operations = new Intent(this, OperationsActivity.class);
             operations.putExtra(OperationsActivity.EXTRA_PAIRING_PAYLOAD, text);
-            if (currentTab == TAB_TOOLS) {
+            if (currentTab == TAB_PROBLEMS) {
+                operations.putExtra(
+                        OperationsActivity.EXTRA_OPEN_DESTINATION,
+                        OperationsDestinationState.TRIAGE);
+            } else if (currentTab == TAB_TOOLS) {
                 operations.putExtra(
                         OperationsActivity.EXTRA_OPEN_DESTINATION,
                         OperationsDestinationState.TOOLS);
@@ -989,14 +1079,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void showPairingScanFailure(String reason) {
         PairingScanRecoveryDialog.show(this, reason, this::startQrScan);
-    }
-
-    private LinearLayout makeCard() {
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(18), dp(18), dp(18), dp(18));
-        card.setBackground(rounded(cardBackgroundColor(), dp(12), Color.TRANSPARENT, 0));
-        return card;
     }
 
     private TextView makeTitle(String text, int size) {
@@ -1030,21 +1112,7 @@ public class MainActivity extends AppCompatActivity {
     private Button makeBaseButton(String text, int styleAttribute) {
         MaterialButton button = new MaterialButton(this, null, styleAttribute);
         button.setText(text);
-        button.setTextSize(15);
-        button.setAllCaps(false);
-        button.setGravity(Gravity.CENTER);
-        button.setMinHeight(dp(46));
         return button;
-    }
-
-    private GradientDrawable rounded(int fillColor, int radius, int strokeColor, int strokeWidth) {
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setColor(fillColor);
-        drawable.setCornerRadius(radius);
-        if (strokeWidth > 0) {
-            drawable.setStroke(strokeWidth, strokeColor);
-        }
-        return drawable;
     }
 
     private FrameLayout.LayoutParams matchParentParams() {
@@ -1063,15 +1131,7 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, dp(10), 0, 0);
-        return params;
-    }
-
-    private LinearLayout.LayoutParams fullWidthCardParams() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, dp(12), 0, 0);
+        params.setMargins(0, dp(8), 0, 0);
         return params;
     }
 
@@ -1079,14 +1139,18 @@ public class MainActivity extends AppCompatActivity {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
-    private void applyTopSystemBarInset(View insetHost) {
+    private void applySystemBarInsets(View insetHost) {
         ViewCompat.setOnApplyWindowInsetsListener(insetHost, (view, windowInsets) -> {
             Insets statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars());
             Insets displayCutout = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout());
+            Insets navigationBars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.navigationBars());
             int topInset = AppWindowInsetsPolicy.topContentInset(
                     statusBars.top, displayCutout.top);
+            int bottomInset = AppWindowInsetsPolicy.bottomContentInset(
+                    navigationRail, navigationBars.bottom);
             view.setPadding(view.getPaddingLeft(), topInset,
-                    view.getPaddingRight(), view.getPaddingBottom());
+                    view.getPaddingRight(), bottomInset);
             return windowInsets;
         });
     }

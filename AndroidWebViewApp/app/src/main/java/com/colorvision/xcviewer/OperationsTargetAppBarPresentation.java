@@ -11,8 +11,7 @@ final class OperationsTargetAppBarPresentation {
             String activeProfileLabel) {
         boolean visible = paired
                 && dashboardVisible
-                && !OperationsDestinationState.CONNECTIONS.equals(destination)
-                && !OperationsDestinationState.SETTINGS.equals(destination);
+                && !OperationsDestinationState.CONNECTIONS.equals(destination);
         String subtitle = visible ? safe(activeProfileLabel) : "";
         return new ViewModel(
                 visible,

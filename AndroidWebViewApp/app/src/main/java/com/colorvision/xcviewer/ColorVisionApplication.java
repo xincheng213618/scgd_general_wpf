@@ -7,5 +7,6 @@ public final class ColorVisionApplication extends Application {
     public void onCreate() {
         super.onCreate();
         ThemeManager.applySavedMode(new AppPreferences(this));
+        ThemeManager.applyDynamicColors(this);
     }
 }

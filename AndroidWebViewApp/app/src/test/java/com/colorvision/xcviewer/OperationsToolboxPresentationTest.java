@@ -2,11 +2,13 @@ package com.colorvision.xcviewer;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class OperationsToolboxPresentationTest {
@@ -30,8 +32,8 @@ public class OperationsToolboxPresentationTest {
             assertEquals("跳到" + section.title + "分组",
                     section.shortcutAccessibilityLabel());
         }
-        assertEquals(17, model.actionCount());
-        assertEquals(17, model.enabledActionCount());
+        assertEquals(20, model.actionCount());
+        assertEquals(20, model.enabledActionCount());
         assertEquals(4, model.quickActionCount());
         assertEquals(OperationsToolboxPresentation.ACTION_CONNECTION_CHECK,
                 model.quickActions.get(0).actionId);
@@ -68,6 +70,73 @@ public class OperationsToolboxPresentationTest {
     }
 
     @Test
+    public void recentDeepToolsReplaceDefaultsWithoutGrowingTheQuickGrid() {
+        OperationsToolboxPresentation.ViewModel model =
+                OperationsToolboxPresentation.withRecentQuickActions(
+                        OperationsToolboxPresentation.create(),
+                        Arrays.asList(
+                                OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
+                                OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE));
+
+        assertEquals(4, model.quickActionCount());
+        assertEquals(OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
+                model.quickActions.get(0).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE,
+                model.quickActions.get(1).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_CONNECTION_CHECK,
+                model.quickActions.get(2).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_LIVE_MONITOR,
+                model.quickActions.get(3).actionId);
+    }
+
+    @Test
+    public void fullToolListKeepsEveryDefaultWhenRecentActionsFillTheQuickGrid() {
+        OperationsToolboxPresentation.ViewModel model =
+                OperationsToolboxPresentation.withRecentQuickActions(
+                        OperationsToolboxPresentation.create(),
+                        Arrays.asList(
+                                OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
+                                OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE,
+                                OperationsToolboxPresentation.ACTION_SUPPORT,
+                                OperationsToolboxPresentation.ACTION_AUDIT));
+
+        assertEquals(4, model.quickActionCount());
+        assertEquals(20, model.actionCount());
+        assertEquals(OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
+                model.quickActions.get(0).actionId);
+        assertEquals(OperationsToolboxPresentation.ACTION_AUDIT,
+                model.quickActions.get(3).actionId);
+        assertEquals("连接自检", find(model,
+                OperationsToolboxPresentation.ACTION_CONNECTION_CHECK).title);
+        assertEquals("持续观察", find(model,
+                OperationsToolboxPresentation.ACTION_LIVE_MONITOR).title);
+        assertEquals("设备状态", find(model,
+                OperationsToolboxPresentation.ACTION_DEVICE_HEALTH).title);
+        assertTrue(model.hasUniqueActionIds());
+    }
+
+    @Test
+    public void recentQuickToolsIgnoreUnknownDuplicatesAndDisabledActions() {
+        OperationsToolboxPresentation.Action enabled = new OperationsToolboxPresentation.Action(
+                "toolbox.enabled", "可用", "可用工具", true);
+        OperationsToolboxPresentation.Action disabled = new OperationsToolboxPresentation.Action(
+                "toolbox.disabled", "不可用", "不可用工具", false);
+        OperationsToolboxPresentation.ViewModel source = new OperationsToolboxPresentation.ViewModel(
+                Arrays.asList(new OperationsToolboxPresentation.Section(
+                        "测试", Arrays.asList(enabled, disabled))),
+                Arrays.asList(enabled));
+
+        OperationsToolboxPresentation.ViewModel model =
+                OperationsToolboxPresentation.withRecentQuickActions(
+                        source,
+                        Arrays.asList(null, "toolbox.unknown", "toolbox.disabled",
+                                "toolbox.enabled", "toolbox.enabled"));
+
+        assertEquals(1, model.quickActionCount());
+        assertEquals("toolbox.enabled", model.quickActions.get(0).actionId);
+    }
+
+    @Test
     public void accessibilityLabelsReadTitleBeforeSupportingText() {
         OperationsToolboxPresentation.Action action = find(
                 OperationsToolboxPresentation.create(),
@@ -93,6 +162,69 @@ public class OperationsToolboxPresentationTest {
         assertTrue(OperationsToolboxPresentation.isSupportedAction(
                 OperationsToolboxPresentation.ACTION_TIMELINE));
         assertFalse(OperationsToolboxPresentation.isSupportedAction("toolbox.unknown"));
+    }
+
+    @Test
+    public void blankSearchKeepsTheFullToolboxAndQuickActions() {
+        OperationsToolboxPresentation.ViewModel model =
+                OperationsToolboxPresentation.create();
+
+        assertSame(model, OperationsToolboxPresentation.filter(model, "  "));
+    }
+
+    @Test
+    public void searchFindsQuickAndDeepActionsWithoutKnowingTheirGroups() {
+        OperationsToolboxPresentation.ViewModel model =
+                OperationsToolboxPresentation.create();
+
+        OperationsToolboxPresentation.ViewModel connection =
+                OperationsToolboxPresentation.filter(model, "连接自检");
+        assertEquals(1, connection.actionCount());
+        assertEquals(OperationsToolboxPresentation.QUICK_SECTION_TITLE,
+                connection.sections.get(0).title);
+        assertEquals(OperationsToolboxPresentation.ACTION_CONNECTION_CHECK,
+                connection.sections.get(0).actions.get(0).actionId);
+
+        OperationsToolboxPresentation.ViewModel snapshot =
+                OperationsToolboxPresentation.filter(model, "主窗口快照");
+        assertEquals(1, snapshot.actionCount());
+        assertEquals("取证", snapshot.sections.get(0).title);
+        assertEquals(OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT,
+                snapshot.sections.get(0).actions.get(0).actionId);
+    }
+
+    @Test
+    public void searchMatchesDescriptionsSectionsAndAsciiCaseInsensitively() {
+        OperationsToolboxPresentation.ViewModel model =
+                OperationsToolboxPresentation.create();
+
+        OperationsToolboxPresentation.ViewModel consent =
+                OperationsToolboxPresentation.filter(model, "电脑端同意");
+        assertEquals(1, consent.actionCount());
+        assertEquals(OperationsToolboxPresentation.ACTION_SUPPORT,
+                consent.sections.get(0).actions.get(0).actionId);
+
+        OperationsToolboxPresentation.ViewModel recovery =
+                OperationsToolboxPresentation.filter(model, "恢复");
+        assertEquals(3, recovery.actionCount());
+        assertEquals("恢复", recovery.sections.get(0).title);
+
+        OperationsToolboxPresentation.ViewModel mqtt =
+                OperationsToolboxPresentation.filter(model, "mqtt");
+        assertEquals(1, mqtt.actionCount());
+        assertEquals(OperationsToolboxPresentation.ACTION_RESTART_MQTT,
+                mqtt.sections.get(0).actions.get(0).actionId);
+    }
+
+    @Test
+    public void searchReturnsAnEmptyModelForUnknownText() {
+        OperationsToolboxPresentation.ViewModel filtered =
+                OperationsToolboxPresentation.filter(
+                        OperationsToolboxPresentation.create(), "不存在的功能");
+
+        assertTrue(filtered.sections.isEmpty());
+        assertEquals(0, filtered.actionCount());
+        assertTrue(filtered.quickActions.isEmpty());
     }
 
     private static OperationsToolboxPresentation.Action find(

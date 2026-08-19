@@ -232,6 +232,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             UpdatedAtUtc = DateTimeOffset.UtcNow,
         };
         Assert.True(conversation.SetAgentSessionCheckpoint(currentCheckpoint));
+        var acceptedCheckpoint = conversation.AgentSessionCheckpoint;
 
         using var solutionManagerScope = new IsolatedSolutionManagerScope();
         var viewModel = CreateViewModel(
@@ -292,7 +293,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                         ],
                     }));
 
-            Assert.Same(currentCheckpoint, conversation.AgentSessionCheckpoint);
+            Assert.Same(acceptedCheckpoint, conversation.AgentSessionCheckpoint);
             Assert.Single(conversation.PendingSteeringRecoveries);
         }
         finally
@@ -325,6 +326,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
             UpdatedAtUtc = DateTimeOffset.UtcNow,
         };
         conversation.SetAgentSessionCheckpoint(currentCheckpoint);
+        var acceptedCheckpoint = conversation.AgentSessionCheckpoint;
 
         using var solutionManagerScope = new IsolatedSolutionManagerScope();
         var viewModel = CreateViewModel(
@@ -373,7 +375,7 @@ public sealed class CopilotChatViewModelProfileIsolationTests
                 CopilotAgentStopReason.Paused);
 
             Assert.False(accepted);
-            Assert.Same(currentCheckpoint, conversation.AgentSessionCheckpoint);
+            Assert.Same(acceptedCheckpoint, conversation.AgentSessionCheckpoint);
             Assert.Empty(conversation.PendingSteeringRecoveries);
             Assert.Contains(steeringMessage.Text, conversation.DraftText, StringComparison.Ordinal);
         }

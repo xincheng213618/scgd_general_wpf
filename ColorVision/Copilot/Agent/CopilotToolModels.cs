@@ -153,19 +153,50 @@ namespace ColorVision.Copilot
 
         public string ActiveGoalText { get; init; } = string.Empty;
 
-        public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget { get; init; }
+        public CopilotWorkspaceReviewTargetContext? WorkspaceReviewTarget
+        {
+            get => _workspaceReviewTarget?.CreateSnapshot();
+            init => _workspaceReviewTarget = value?.CreateSnapshot();
+        }
+        private readonly CopilotWorkspaceReviewTargetContext? _workspaceReviewTarget;
 
         public CopilotProfileConfig Profile { get; init; } = null!;
 
-        public IReadOnlyList<CopilotRequestMessage> History { get; init; } = Array.Empty<CopilotRequestMessage>();
+        public IReadOnlyList<CopilotRequestMessage> History
+        {
+            get => _history;
+            init => _history = FreezeList(value);
+        }
+        private readonly IReadOnlyList<CopilotRequestMessage> _history = Array.Empty<CopilotRequestMessage>();
 
-        public IReadOnlyList<CopilotAttachmentItem> Attachments { get; init; } = Array.Empty<CopilotAttachmentItem>();
+        public IReadOnlyList<CopilotAttachmentItem> Attachments
+        {
+            get => CloneAttachments(_attachments);
+            init => _attachments = CloneAttachments(value);
+        }
+        private readonly IReadOnlyList<CopilotAttachmentItem> _attachments =
+            Array.Empty<CopilotAttachmentItem>();
 
-        public IReadOnlyList<CopilotContextItem> ContextItems { get; init; } = Array.Empty<CopilotContextItem>();
+        public IReadOnlyList<CopilotContextItem> ContextItems
+        {
+            get => _contextItems;
+            init => _contextItems = FreezeList(value);
+        }
+        private readonly IReadOnlyList<CopilotContextItem> _contextItems = Array.Empty<CopilotContextItem>();
 
-        public IReadOnlyList<string> SearchRootPaths { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> SearchRootPaths
+        {
+            get => _searchRootPaths;
+            init => _searchRootPaths = FreezeList(value);
+        }
+        private readonly IReadOnlyList<string> _searchRootPaths = Array.Empty<string>();
 
-        public IReadOnlyList<string> TrustedProjectRootPaths { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> TrustedProjectRootPaths
+        {
+            get => _trustedProjectRootPaths;
+            init => _trustedProjectRootPaths = FreezeList(value);
+        }
+        private readonly IReadOnlyList<string> _trustedProjectRootPaths = Array.Empty<string>();
 
         public string ActiveDocumentPath { get; init; } = string.Empty;
 
@@ -263,19 +294,45 @@ namespace ColorVision.Copilot
         internal CopilotCodexModelVerbosity CodexModelVerbosity { get; init; } =
             CopilotCodexModelVerbosity.Unspecified;
 
-        public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions { get; init; } = Array.Empty<CopilotProjectInstructionDocument>();
+        public IReadOnlyList<CopilotProjectInstructionDocument> ProjectInstructions
+        {
+            get => _projectInstructions;
+            init => _projectInstructions = FreezeList(value);
+        }
+        private readonly IReadOnlyList<CopilotProjectInstructionDocument> _projectInstructions =
+            Array.Empty<CopilotProjectInstructionDocument>();
 
         internal CopilotReviewProjectInstructionContext? ReviewProjectInstructionContext { get; init; }
 
         internal CopilotReviewEvidenceContext? ReviewEvidenceContext { get; init; }
 
-        public IReadOnlyList<string> ReadableLocalFilePaths { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> ReadableLocalFilePaths
+        {
+            get => _readableLocalFilePaths;
+            init => _readableLocalFilePaths = FreezeList(value);
+        }
+        private readonly IReadOnlyList<string> _readableLocalFilePaths = Array.Empty<string>();
 
-        public IReadOnlyList<string> ReadableLocalDirectoryPaths { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> ReadableLocalDirectoryPaths
+        {
+            get => _readableLocalDirectoryPaths;
+            init => _readableLocalDirectoryPaths = FreezeList(value);
+        }
+        private readonly IReadOnlyList<string> _readableLocalDirectoryPaths = Array.Empty<string>();
 
-        public IReadOnlyList<string> WritableLocalRootPaths { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> WritableLocalRootPaths
+        {
+            get => _writableLocalRootPaths;
+            init => _writableLocalRootPaths = FreezeList(value);
+        }
+        private readonly IReadOnlyList<string> _writableLocalRootPaths = Array.Empty<string>();
 
-        public IReadOnlyList<string> WritableLocalFilePaths { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> WritableLocalFilePaths
+        {
+            get => _writableLocalFilePaths;
+            init => _writableLocalFilePaths = FreezeList(value);
+        }
+        private readonly IReadOnlyList<string> _writableLocalFilePaths = Array.Empty<string>();
 
         public bool PreferBatchReadLocalFiles { get; init; }
 
@@ -297,13 +354,38 @@ namespace ColorVision.Copilot
 
         public CopilotAgentRunBudgetOverride? RunBudgetOverride { get; init; }
 
-        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillOverrides { get; init; } = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
+        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillOverrides
+        {
+            get => _skillOverrides;
+            init => _skillOverrides = FreezeSkillOverrides(value);
+        }
+        private readonly IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> _skillOverrides =
+            new ReadOnlyDictionary<string, CopilotAgentSkillOverrideState>(
+                new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase));
 
-        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillPathOverrides { get; init; } = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
+        public IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> SkillPathOverrides
+        {
+            get => _skillPathOverrides;
+            init => _skillPathOverrides = FreezeSkillOverrides(value);
+        }
+        private readonly IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> _skillPathOverrides =
+            new ReadOnlyDictionary<string, CopilotAgentSkillOverrideState>(
+                new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase));
 
-        public CopilotAgentSkillReference? AgentSkillReference { get; init; }
+        public CopilotAgentSkillReference? AgentSkillReference
+        {
+            get => _agentSkillReference?.CreateSnapshot();
+            init => _agentSkillReference = value?.CreateSnapshot();
+        }
+        private readonly CopilotAgentSkillReference? _agentSkillReference;
 
-        public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers { get; init; } = Array.Empty<CopilotMcpClientServerConfig>();
+        public IReadOnlyList<CopilotMcpClientServerConfig> ExternalMcpServers
+        {
+            get => CloneExternalMcpServers(_externalMcpServers);
+            init => _externalMcpServers = CloneExternalMcpServers(value);
+        }
+        private readonly IReadOnlyList<CopilotMcpClientServerConfig> _externalMcpServers =
+            Array.Empty<CopilotMcpClientServerConfig>();
 
         public bool ForceExternalMcpToolRefresh { get; init; }
 
@@ -317,9 +399,55 @@ namespace ColorVision.Copilot
 
         internal CopilotAgentRuntimePurpose RuntimePurpose { get; init; }
 
-        internal IReadOnlyList<string> RequiredSuccessfulToolNames { get; init; } = Array.Empty<string>();
+        internal IReadOnlyList<string> RequiredSuccessfulToolNames
+        {
+            get => _requiredSuccessfulToolNames;
+            init => _requiredSuccessfulToolNames = FreezeList(value);
+        }
+        private readonly IReadOnlyList<string> _requiredSuccessfulToolNames = Array.Empty<string>();
 
         internal bool RequiresDelegatedWorkspaceEvidence { get; init; }
+
+        private static IReadOnlyList<T> FreezeList<T>(IReadOnlyList<T>? source)
+        {
+            if (source == null || source.Count == 0)
+                return Array.Empty<T>();
+            return Array.AsReadOnly(source.ToArray());
+        }
+
+        private static IReadOnlyDictionary<string, CopilotAgentSkillOverrideState> FreezeSkillOverrides(
+            IReadOnlyDictionary<string, CopilotAgentSkillOverrideState>? source)
+        {
+            var result = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase);
+            if (source != null)
+            {
+                foreach (var pair in source)
+                    result[pair.Key] = pair.Value;
+            }
+            return new ReadOnlyDictionary<string, CopilotAgentSkillOverrideState>(result);
+        }
+
+        private static IReadOnlyList<CopilotMcpClientServerConfig> CloneExternalMcpServers(
+            IReadOnlyList<CopilotMcpClientServerConfig>? source)
+        {
+            if (source == null || source.Count == 0)
+                return Array.Empty<CopilotMcpClientServerConfig>();
+            return Array.AsReadOnly(source
+                .Where(server => server != null)
+                .Select(server => server.Clone())
+                .ToArray());
+        }
+
+        private static IReadOnlyList<CopilotAttachmentItem> CloneAttachments(
+            IReadOnlyList<CopilotAttachmentItem>? source)
+        {
+            if (source == null || source.Count == 0)
+                return Array.Empty<CopilotAttachmentItem>();
+            return Array.AsReadOnly(source
+                .Where(attachment => attachment != null)
+                .Select(attachment => attachment.CreateSnapshot())
+                .ToArray());
+        }
     }
 
     public sealed class CopilotDelegatedRunUsage
@@ -719,6 +847,79 @@ namespace ColorVision.Copilot
         public long QueueDurationMs { get; init; }
 
         public long TimeoutMs { get; init; }
+    }
+
+    internal static class CopilotToolExecutionInfoProtocol
+    {
+        internal static bool IsStructurallyValid(
+            CopilotToolExecutionInfo? execution) =>
+            execution != null
+            && !string.IsNullOrWhiteSpace(execution.CallId)
+            && execution.Round >= 1
+            && execution.Attempt >= 1
+            && execution.MaxAttempts >= execution.Attempt
+            && !string.IsNullOrWhiteSpace(execution.RuntimeName)
+            && !string.IsNullOrWhiteSpace(execution.ToolName)
+            && Enum.IsDefined(execution.Access)
+            && Enum.IsDefined(execution.RiskLevel)
+            && Enum.IsDefined(execution.ApprovalMode)
+            && Enum.IsDefined(execution.Idempotency)
+            && Enum.IsDefined(execution.ConcurrencyMode)
+            && Enum.IsDefined(execution.State)
+            && Enum.IsDefined(execution.FailureKind)
+            && execution.StartedAtUtc != default
+            && execution.DurationMs >= 0
+            && execution.QueueDurationMs >= 0
+            && execution.TimeoutMs >= 1;
+
+        internal static bool HasValidResultState(
+            CopilotToolExecutionInfo execution,
+            CopilotToolResult result)
+        {
+            ArgumentNullException.ThrowIfNull(execution);
+            ArgumentNullException.ThrowIfNull(result);
+            if (!IsStructurallyValid(execution)
+                || !string.Equals(
+                    result.ToolName,
+                    execution.ToolName,
+                    StringComparison.Ordinal)
+                || execution.FailureKind != result.FailureKind)
+            {
+                return false;
+            }
+
+            if (execution.State == CopilotToolExecutionState.AwaitingApproval)
+            {
+                return result.Success
+                    && result.Approval != null
+                    && !string.IsNullOrWhiteSpace(result.Approval.ActionId)
+                    && !(result.Approval.ExecuteOnApproval
+                        && result.Approval.ResumesAgentOnApproval)
+                    && string.Equals(
+                        result.Approval.ActionId,
+                        execution.ApprovalActionId,
+                        StringComparison.Ordinal);
+            }
+
+            return result.Approval == null
+                && execution.CompletedAtUtc != null
+                && (result.Success
+                    ? execution.State == CopilotToolExecutionState.Completed
+                    : execution.State is CopilotToolExecutionState.Failed
+                        or CopilotToolExecutionState.TimedOut
+                        or CopilotToolExecutionState.Denied
+                        or CopilotToolExecutionState.Cancelled
+                        or CopilotToolExecutionState.Interrupted);
+        }
+
+        internal static bool HasValidActiveState(
+            CopilotToolExecutionInfo? execution,
+            bool allowPending) =>
+            IsStructurallyValid(execution)
+            && execution!.CompletedAtUtc == null
+            && (execution.State == CopilotToolExecutionState.Running
+                || allowPending
+                    && execution.State == CopilotToolExecutionState.Pending);
     }
 
 }

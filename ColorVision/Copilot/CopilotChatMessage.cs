@@ -307,7 +307,15 @@ namespace ColorVision.Copilot
 
         public bool ShouldSerializeIsContentDisplayOnly() => IsContentDisplayOnly;
 
-        public ObservableCollection<CopilotAttachmentItem> Attachments { get; set; } = new();
+        public ObservableCollection<CopilotAttachmentItem> Attachments
+        {
+            get => _attachments;
+            set => _attachments = new ObservableCollection<CopilotAttachmentItem>(
+                (value ?? new ObservableCollection<CopilotAttachmentItem>())
+                    .Where(attachment => attachment != null)
+                    .Select(attachment => attachment.CreateSnapshot()));
+        }
+        private ObservableCollection<CopilotAttachmentItem> _attachments = new();
 
         public bool AttachmentSnapshotCaptured { get; set; }
 
@@ -385,7 +393,8 @@ namespace ColorVision.Copilot
                     OnAgentTaskStateChanged();
             }
         }
-        private CopilotAgentTaskLedgerSnapshot _agentTaskLedger = new();
+        private CopilotAgentTaskLedgerSnapshot _agentTaskLedger =
+            CopilotAgentTaskLedgerSnapshot.CreateSnapshot(source: null, normalize: true);
 
         public bool ShouldSerializeAgentTaskLedger() => AgentTaskLedger?.TotalCount > 0;
 

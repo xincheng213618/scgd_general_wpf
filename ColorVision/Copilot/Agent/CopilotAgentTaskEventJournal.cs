@@ -113,6 +113,10 @@ namespace ColorVision.Copilot
 
         public IReadOnlyList<CopilotAgentTaskEvent> Events { get; init; } = Array.Empty<CopilotAgentTaskEvent>();
 
+        [Newtonsoft.Json.JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        internal bool IsDetachedSnapshot { get; init; }
+
         public bool IsStructurallyValid()
         {
             if (SchemaVersion != CurrentSchemaVersion
@@ -129,6 +133,9 @@ namespace ColorVision.Copilot
                     .Where(item => item.Type == CopilotAgentTaskEventType.RunStarted)
                     .GroupBy(item => item.RunId, StringComparer.Ordinal)
                     .Any(group => group.Count() > 1)
+                || HasInvalidSessionLifecycle(Events)
+                || HasInvalidApprovalLifecycle(Events)
+                || HasInvalidUserQuestionLifecycle(Events)
                 || HasDuplicateLifecycleEvents(Events)
                 || HasInvalidControlLifecycle(Events)
                 || Events
@@ -152,9 +159,37 @@ namespace ColorVision.Copilot
             return Events.Zip(Events.Skip(1), (left, right) => left.Sequence < right.Sequence).All(value => value);
         }
 
+        private static bool HasInvalidSessionLifecycle(
+            IReadOnlyList<CopilotAgentTaskEvent> events)
+        {
+            return events.Any(item =>
+                item.Type == CopilotAgentTaskEventType.SessionResumed
+                    ? !string.Equals(item.SubjectId, item.RunId, StringComparison.Ordinal)
+                        || !string.Equals(item.State, "resumed", StringComparison.Ordinal)
+                    : item.Type == CopilotAgentTaskEventType.ReplanRequired
+                        && (!string.Equals(item.SubjectId, item.RunId, StringComparison.Ordinal)
+                            || !Enum.TryParse<CopilotAgentCheckpointCompatibilityKind>(
+                                item.State,
+                                out var reason)
+                            || !Enum.IsDefined(reason)
+                            || reason is CopilotAgentCheckpointCompatibilityKind.Compatible
+                                or CopilotAgentCheckpointCompatibilityKind.ProfileChanged
+                            || !string.Equals(item.State, reason.ToString(), StringComparison.Ordinal)));
+        }
+
         private static bool HasDuplicateLifecycleEvents(
             IReadOnlyList<CopilotAgentTaskEvent> events)
         {
+            if (events
+                .Where(item => item.Type is
+                    CopilotAgentTaskEventType.SessionResumed
+                    or CopilotAgentTaskEventType.ReplanRequired)
+                .GroupBy(item => item.RunId, StringComparer.Ordinal)
+                .Any(group => group.Count() > 1))
+            {
+                return true;
+            }
+
             if (events
                 .Where(item => item.Type is CopilotAgentTaskEventType.ToolStarted
                     or CopilotAgentTaskEventType.ToolCompleted
@@ -173,6 +208,92 @@ namespace ColorVision.Copilot
                     or CopilotAgentTaskEventType.ApprovalDenied)
                 .GroupBy(item => (item.RunId, item.SubjectId))
                 .Any(group => group.Count() > 1);
+        }
+
+        private static bool HasInvalidApprovalLifecycle(
+            IReadOnlyList<CopilotAgentTaskEvent> events)
+        {
+            foreach (var approval in events.Where(item =>
+                item.Type == CopilotAgentTaskEventType.ApprovalApproved))
+            {
+                if (approval.State is
+                    "approved:ExecutionPolicy"
+                    or "approved:TemporaryGrant")
+                {
+                    continue;
+                }
+                if (approval.State is not (
+                    "approved"
+                    or "approved:User"
+                    or "approved:AutomaticReview"))
+                {
+                    return true;
+                }
+
+                var requested = events.Any(item =>
+                    item.Type == CopilotAgentTaskEventType.ApprovalRequested
+                    && item.Sequence < approval.Sequence
+                    && string.Equals(item.RunId, approval.RunId, StringComparison.Ordinal)
+                    && string.Equals(item.SubjectId, approval.SubjectId, StringComparison.Ordinal)
+                    && string.Equals(item.ToolName, approval.ToolName, StringComparison.Ordinal)
+                    && item.RelatedIds.SequenceEqual(
+                        approval.RelatedIds,
+                        StringComparer.Ordinal));
+                if (!requested
+                    && !HasMissingEarlierSequence(
+                        events,
+                        approval.Sequence))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool HasInvalidUserQuestionLifecycle(
+            IReadOnlyList<CopilotAgentTaskEvent> events)
+        {
+            foreach (var item in events.Where(item =>
+                item.Type is CopilotAgentTaskEventType.UserQuestionRequested
+                    or CopilotAgentTaskEventType.UserQuestionResolved))
+            {
+                if (item.Type == CopilotAgentTaskEventType.UserQuestionRequested)
+                {
+                    if (!string.Equals(item.State, "pending", StringComparison.Ordinal))
+                        return true;
+                    continue;
+                }
+
+                if (item.State is not ("Answered" or "Cancelled"))
+                    return true;
+                var requested = events.Any(candidate =>
+                    candidate.Type == CopilotAgentTaskEventType.UserQuestionRequested
+                    && candidate.Sequence < item.Sequence
+                    && string.Equals(candidate.RunId, item.RunId, StringComparison.Ordinal)
+                    && string.Equals(candidate.SubjectId, item.SubjectId, StringComparison.Ordinal));
+                if (!requested
+                    && !HasMissingEarlierSequence(events, item.Sequence))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasMissingEarlierSequence(
+            IReadOnlyList<CopilotAgentTaskEvent> events,
+            long sequence)
+        {
+            var expectedSequence = 1L;
+            foreach (var item in events)
+            {
+                if (item.Sequence >= sequence)
+                    break;
+                if (item.Sequence > expectedSequence)
+                    return true;
+                expectedSequence = item.Sequence + 1;
+            }
+            return sequence > expectedSequence;
         }
 
         private static bool HasInvalidControlLifecycle(
@@ -321,6 +442,14 @@ namespace ColorVision.Copilot
             if (source == null)
                 return false;
 
+            if (source.IsDetachedSnapshot)
+            {
+                if (!source.IsStructurallyValid())
+                    return false;
+                snapshot = source;
+                return true;
+            }
+
             try
             {
                 var sourceEvents = (source.Events ?? Array.Empty<CopilotAgentTaskEvent>())
@@ -335,6 +464,7 @@ namespace ColorVision.Copilot
                 {
                     SchemaVersion = source.SchemaVersion,
                     Events = Array.AsReadOnly(events),
+                    IsDetachedSnapshot = true,
                 };
                 if (!candidate.IsStructurallyValid())
                     return false;

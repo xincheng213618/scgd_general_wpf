@@ -108,7 +108,7 @@ public sealed class CopilotAgentEventProtocolTests
                 Success = true,
                 Summary = "Completed.",
             },
-            ToolExecution = CreateExecution(),
+            ToolExecution = CreateExecution(CopilotToolExecutionState.Completed),
         };
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
@@ -134,7 +134,7 @@ public sealed class CopilotAgentEventProtocolTests
                 Success = true,
                 Summary = "Completed.",
             },
-            ToolExecution = CreateExecution(),
+            ToolExecution = CreateExecution(CopilotToolExecutionState.Completed),
             ToolExecutionHookRuns =
             [
                 new CopilotToolExecutionHookRun
@@ -150,6 +150,38 @@ public sealed class CopilotAgentEventProtocolTests
             emit(agentEvent));
 
         Assert.Contains("invalid hook audit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
+    public void RuntimeEmitterRejectsDuplicateToolHookAuditBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var hookRun = CopilotToolExecutionHookRun.Create(
+            "extension:test:duplicate-hook",
+            CopilotToolExecutionHookPhase.AfterExecute,
+            CopilotToolExecutionHookState.Completed,
+            durationMs: 1);
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.ToolResult,
+            Text = "Completed.",
+            ToolResult = new CopilotToolResult
+            {
+                ToolName = "ProtectedTool",
+                Success = true,
+                Summary = "Completed.",
+            },
+            ToolExecution = CreateExecution(CopilotToolExecutionState.Completed),
+            ToolExecutionHookRuns = [hookRun, hookRun.CreateSnapshot()],
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("duplicate hook audit", exception.Message, StringComparison.Ordinal);
         Assert.Equal(0, Volatile.Read(ref observed));
     }
 
@@ -172,13 +204,240 @@ public sealed class CopilotAgentEventProtocolTests
                 FailureKind = CopilotToolFailureKind.Internal,
                 FailureCode = "contradiction",
             },
-            ToolExecution = CreateExecution(),
+            ToolExecution = CreateExecution(CopilotToolExecutionState.Completed),
         };
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
             emit(agentEvent));
 
         Assert.Contains("violated its final contract", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
+    public void RuntimeEmitterRejectsNonterminalSuccessfulToolResultBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.ToolResult,
+            Text = "Completed.",
+            ToolResult = new CopilotToolResult
+            {
+                ToolName = "ProtectedTool",
+                Success = true,
+                Summary = "Completed.",
+            },
+            ToolExecution = CreateExecution(CopilotToolExecutionState.Running),
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid state metadata", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
+    public void RuntimeEmitterRejectsInvalidToolExecutionMetadataBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.ToolResult,
+            Text = "Completed.",
+            ToolResult = new CopilotToolResult
+            {
+                ToolName = "ProtectedTool",
+                Success = true,
+                Summary = "Completed.",
+            },
+            ToolExecution = new CopilotToolExecutionInfo
+            {
+                ToolName = "ProtectedTool",
+                State = CopilotToolExecutionState.Completed,
+            },
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid execution metadata", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
+    public void RuntimeEmitterRejectsInvalidToolStartMetadataBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = CopilotAgentEvent.ToolStarted(
+            new CopilotToolExecutionInfo
+            {
+                ToolName = "ProtectedTool",
+                State = CopilotToolExecutionState.Running,
+            });
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid execution metadata", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
+    public void RuntimeEmitterRejectsTerminalStateOnToolStartBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = CopilotAgentEvent.ToolStarted(
+            CreateExecution(CopilotToolExecutionState.Completed));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid execution metadata", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
+    public void RuntimeEmitterRejectsInvalidToolProgressBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = CopilotAgentEvent.ToolProgress(
+            CreateExecution(),
+            "ProtectedTool is running.",
+            new CopilotToolProgressUpdate
+            {
+                Completed = 2,
+                Total = 1,
+            });
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid tool progress payload", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
+    public void RuntimeEmitterRejectsInvalidToolHookLifecycleBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.HookStarted,
+            Text = "extension:test:invalid-lifecycle",
+            ToolExecution = CreateExecution(),
+            ToolExecutionHook = new CopilotToolExecutionHookLifecycle
+            {
+                SourceId = "extension:test:invalid-lifecycle",
+                Phase = (CopilotToolExecutionHookPhase)int.MaxValue,
+            },
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid tool hook start", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
+    public void RuntimeEmitterRejectsMismatchedUserQuestionStateBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var pending = CreateUserQuestion();
+        var answered = pending.Resolve(
+            CopilotUserQuestionResolution.Answered,
+            "Option A");
+        CopilotAgentEvent[] invalidEvents =
+        [
+            new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.UserQuestionRequested,
+                UserQuestion = answered,
+            },
+            new CopilotAgentEvent
+            {
+                Type = CopilotAgentEventType.UserQuestionResolved,
+                UserQuestion = pending,
+            },
+        ];
+
+        foreach (var agentEvent in invalidEvents)
+            Assert.Throws<InvalidOperationException>(() => emit(agentEvent));
+
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
+    public void RuntimeEmitterRejectsInvalidTurnPlanBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.PlanUpdated,
+            TurnPlan = new CopilotTurnPlanSnapshot(
+                "invalid",
+                resumedFromCheckpoint: false,
+                Array.Empty<CopilotTurnPlanItemSnapshot>()),
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid turn plan snapshot", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
+    public void RuntimeEmitterRejectsInvalidBudgetBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = CopilotAgentEvent.BudgetUpdated(
+            new CopilotAgentBudgetSnapshot());
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid budget snapshot", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, Volatile.Read(ref observed));
+    }
+
+    [Fact]
+    public void RuntimeEmitterRejectsInvalidCheckpointLedgerBeforeItsObserverRuns()
+    {
+        var observed = 0;
+        var emit = CopilotMicrosoftAgentFrameworkRuntime.CreateEventEmitter(
+            _ => Interlocked.Increment(ref observed));
+        var agentEvent = CopilotAgentEvent.CheckpointUpdated(
+            CreateCheckpoint(),
+            new CopilotAgentTaskLedgerSnapshot
+            {
+                Mode = "invalid",
+            });
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            emit(agentEvent));
+
+        Assert.Contains("invalid task ledger", exception.Message, StringComparison.Ordinal);
         Assert.Equal(0, Volatile.Read(ref observed));
     }
 
@@ -319,7 +578,8 @@ public sealed class CopilotAgentEventProtocolTests
         return CopilotTurnEventReducer.Reduce(state, new CopilotTurnAgentEvent(agentEvent));
     }
 
-    private static CopilotToolExecutionInfo CreateExecution() => new()
+    private static CopilotToolExecutionInfo CreateExecution(
+        CopilotToolExecutionState state = CopilotToolExecutionState.Running) => new()
     {
         CallId = "provider-call-1",
         Round = 1,
@@ -334,8 +594,52 @@ public sealed class CopilotAgentEventProtocolTests
         ConcurrencyMode = CopilotToolConcurrencyMode.Exclusive,
         ConcurrencyKey = "resource:test",
         ArgumentSummary = "path=C:\\workspace\\file.txt",
-        State = CopilotToolExecutionState.Running,
+        State = state,
         StartedAtUtc = DateTimeOffset.UtcNow,
+        CompletedAtUtc = state is CopilotToolExecutionState.Completed
+            or CopilotToolExecutionState.Failed
+            or CopilotToolExecutionState.TimedOut
+            or CopilotToolExecutionState.Denied
+            or CopilotToolExecutionState.Cancelled
+            or CopilotToolExecutionState.Interrupted
+                ? DateTimeOffset.UtcNow
+                : null,
         TimeoutMs = 30_000,
+    };
+
+    private static CopilotUserQuestionSnapshot CreateUserQuestion()
+    {
+        Assert.True(CopilotUserQuestionSnapshot.TryCreate(
+            "conversation:test",
+            "run:11111111111111111111111111111111",
+            new CopilotUserQuestionInput
+            {
+                Header = "Choice",
+                Question = "Choose a path?",
+                Options =
+                [
+                    new CopilotUserQuestionInputOption
+                    {
+                        Label = "Option A",
+                        Description = "Use the first path.",
+                    },
+                    new CopilotUserQuestionInputOption
+                    {
+                        Label = "Option B",
+                        Description = "Use the second path.",
+                    },
+                ],
+            },
+            out var question,
+            out var error), error);
+        return question;
+    }
+
+    private static CopilotAgentSessionCheckpoint CreateCheckpoint() => new()
+    {
+        ProfileKey = "test-profile",
+        SerializedSessionJson = "{}",
+        TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
+        UpdatedAtUtc = DateTimeOffset.UtcNow,
     };
 }

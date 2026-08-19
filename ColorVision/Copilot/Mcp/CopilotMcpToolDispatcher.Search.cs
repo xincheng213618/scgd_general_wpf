@@ -36,21 +36,23 @@ namespace ColorVision.Copilot.Mcp
             return ToMcpResult(result, "docs_search_failed");
         }
 
-        private CopilotMcpToolCallResult SearchFiles(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        private CopilotMcpToolCallResult SearchFiles(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CopilotExecutionScope executionScope,
+            CancellationToken cancellationToken)
         {
             var query = GetString(arguments, "query");
             if (string.IsNullOrWhiteSpace(query))
                 return CopilotMcpToolCallResult.Fail("missing_query", "The search_files tool requires a non-empty query argument.");
 
-            var roots = GetAllowedRoots();
-            if (roots.Count == 0)
-                return CopilotMcpToolCallResult.Fail("no_allowed_roots", "No allowed ColorVision workspace roots are available.");
+            if (!TryGetAllowedRoots(executionScope, out var roots, out var scopeError))
+                return scopeError;
 
             IReadOnlyList<string> searchRoots = roots;
             var path = GetString(arguments, "path");
             if (!string.IsNullOrWhiteSpace(path))
             {
-                if (!TryResolveAllowedPath(path, out var fullPath, out var pathError))
+                if (!TryResolveAllowedPath(path, roots, out var fullPath, out var pathError))
                     return CopilotMcpToolCallResult.Fail("path_not_allowed", pathError);
                 if (!Directory.Exists(fullPath))
                     return CopilotMcpToolCallResult.Fail("directory_not_found", $"The search directory does not exist: {fullPath}");
@@ -69,21 +71,23 @@ namespace ColorVision.Copilot.Mcp
             return ToMcpResult(result.ToCapabilityResult(), "file_search_failed");
         }
 
-        private CopilotMcpToolCallResult GrepText(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        private CopilotMcpToolCallResult GrepText(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CopilotExecutionScope executionScope,
+            CancellationToken cancellationToken)
         {
             var query = GetString(arguments, "query");
             if (string.IsNullOrWhiteSpace(query))
                 return CopilotMcpToolCallResult.Fail("missing_query", "The grep_text tool requires a non-empty query argument.");
 
-            var roots = GetAllowedRoots();
-            if (roots.Count == 0)
-                return CopilotMcpToolCallResult.Fail("no_allowed_roots", "No allowed ColorVision workspace roots are available.");
+            if (!TryGetAllowedRoots(executionScope, out var roots, out var scopeError))
+                return scopeError;
 
             IReadOnlyList<string> searchRoots = roots;
             var path = GetString(arguments, "path");
             if (!string.IsNullOrWhiteSpace(path))
             {
-                if (!TryResolveAllowedPath(path, out var fullPath, out var pathError))
+                if (!TryResolveAllowedPath(path, roots, out var fullPath, out var pathError))
                     return CopilotMcpToolCallResult.Fail("path_not_allowed", pathError);
                 if (!Directory.Exists(fullPath) && !File.Exists(fullPath))
                     return CopilotMcpToolCallResult.Fail("path_not_found", $"The search file or directory does not exist: {fullPath}");
@@ -95,13 +99,19 @@ namespace ColorVision.Copilot.Mcp
             return ToMcpResult(result.ToCapabilityResult(), "grep_failed");
         }
 
-        private async Task<CopilotMcpToolCallResult> ReadAllowedFileAsync(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        private async Task<CopilotMcpToolCallResult> ReadAllowedFileAsync(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CopilotExecutionScope executionScope,
+            CancellationToken cancellationToken)
         {
             var path = GetString(arguments, "path");
             if (string.IsNullOrWhiteSpace(path))
                 return CopilotMcpToolCallResult.Fail("missing_path", "The read_allowed_file tool requires a non-empty path argument.");
 
-            if (!TryResolveAllowedPath(path, out var fullPath, out var error))
+            if (!TryGetAllowedRoots(executionScope, out var roots, out var scopeError))
+                return scopeError;
+
+            if (!TryResolveAllowedPath(path, roots, out var fullPath, out var error))
                 return CopilotMcpToolCallResult.Fail("path_not_allowed", error);
 
             if (!File.Exists(fullPath))
@@ -120,13 +130,15 @@ namespace ColorVision.Copilot.Mcp
             return ToMcpResult(result, "read_failed");
         }
 
-        private CopilotMcpToolCallResult ListAllowedDirectory(IReadOnlyDictionary<string, JsonElement>? arguments, CancellationToken cancellationToken)
+        private CopilotMcpToolCallResult ListAllowedDirectory(
+            IReadOnlyDictionary<string, JsonElement>? arguments,
+            CopilotExecutionScope executionScope,
+            CancellationToken cancellationToken)
         {
             var path = GetString(arguments, "path");
             var cursor = GetString(arguments, "cursor");
-            var roots = GetAllowedRoots();
-            if (roots.Count == 0)
-                return CopilotMcpToolCallResult.Fail("no_allowed_roots", "No allowed ColorVision workspace roots are available.");
+            if (!TryGetAllowedRoots(executionScope, out var roots, out var scopeError))
+                return scopeError;
 
             if (string.IsNullOrWhiteSpace(path))
             {
@@ -140,7 +152,7 @@ namespace ColorVision.Copilot.Mcp
                 return CopilotMcpToolCallResult.Ok(rootBuilder.ToString().TrimEnd());
             }
 
-            if (!TryResolveAllowedPath(path, out var fullPath, out var error))
+            if (!TryResolveAllowedPath(path, roots, out var fullPath, out var error))
                 return CopilotMcpToolCallResult.Fail("path_not_allowed", error);
 
             if (!Directory.Exists(fullPath))
@@ -155,22 +167,43 @@ namespace ColorVision.Copilot.Mcp
             return _environment.WorkspaceSnapshotProvider() ?? new CopilotMcpWorkspaceSnapshot();
         }
 
-        private IReadOnlyList<string> GetAllowedRoots()
+        private bool TryGetAllowedRoots(
+            CopilotExecutionScope executionScope,
+            out IReadOnlyList<string> roots,
+            out CopilotMcpToolCallResult error)
         {
-            return CopilotWorkspaceSearchSupport.NormalizeSearchRoots(GetWorkspaceSnapshot().SearchRootPaths);
+            var workspace = GetWorkspaceSnapshot();
+            if (!WorkspaceScopeMatches(executionScope.WorkspacePath, workspace.SolutionDirectoryPath))
+            {
+                roots = Array.Empty<string>();
+                error = CopilotMcpToolCallResult.Fail(
+                    "workspace_scope_changed",
+                    "The active ColorVision workspace changed after this MCP tool call was scoped. Retry the call in the current workspace.",
+                    CopilotToolFailureKind.Authorization);
+                return false;
+            }
+
+            roots = CopilotWorkspaceSearchSupport.NormalizeSearchRoots(workspace.SearchRootPaths);
+            if (roots.Count > 0)
+            {
+                error = null!;
+                return true;
+            }
+
+            error = CopilotMcpToolCallResult.Fail(
+                "no_allowed_roots",
+                "No allowed ColorVision workspace roots are available.");
+            return false;
         }
 
-        private bool TryResolveAllowedPath(string path, out string fullPath, out string error)
+        private static bool TryResolveAllowedPath(
+            string path,
+            IReadOnlyList<string> roots,
+            out string fullPath,
+            out string error)
         {
             fullPath = string.Empty;
             error = string.Empty;
-
-            var roots = GetAllowedRoots();
-            if (roots.Count == 0)
-            {
-                error = "No allowed ColorVision workspace roots are available.";
-                return false;
-            }
 
             try
             {

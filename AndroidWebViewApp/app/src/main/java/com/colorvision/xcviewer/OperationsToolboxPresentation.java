@@ -4,9 +4,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 final class OperationsToolboxPresentation {
+    static final String QUICK_SECTION_TITLE = "快捷工具";
+    private static final int QUICK_ACTION_LIMIT = 4;
     static final String ACTION_CONNECTION_CHECK = "toolbox.connection.check";
     static final String ACTION_LIVE_MONITOR = "toolbox.live.monitor";
     static final String ACTION_DEVICE_HEALTH = "toolbox.devices.health";
@@ -41,6 +44,12 @@ final class OperationsToolboxPresentation {
                 action(ACTION_CANCEL_FLOW,
                         "取消当前检测", "仅在主检测运行且允许取消时开放 · 执行前确认")));
         sections.add(section("诊断",
+                action(ACTION_CONNECTION_CHECK,
+                        "连接自检", "只读检查网络、安全通道、证书固定与设备签名"),
+                action(ACTION_LIVE_MONITOR,
+                        "持续观察", "每 10 秒读取一次脱敏运行快照，本次最多保留 30 个样本"),
+                action(ACTION_DEVICE_HEALTH,
+                        "设备状态", "查看检测设备类型、可用性与异常原因汇总"),
                 action(ACTION_SERVICES_HEALTH,
                         "服务健康", "查看服务、依赖与运行状态"),
                 action(ACTION_RECENT_EVENTS,
@@ -73,12 +82,9 @@ final class OperationsToolboxPresentation {
                 action(ACTION_TIMELINE,
                         "运维时间线", "查看连接与后台守护状态变化")));
         List<Action> quickActions = new ArrayList<>();
-        quickActions.add(action(ACTION_CONNECTION_CHECK,
-                "连接自检", "只读检查网络、安全通道、证书固定与设备签名"));
-        quickActions.add(action(ACTION_LIVE_MONITOR,
-                "持续观察", "每 10 秒读取一次脱敏运行快照，本次最多保留 30 个样本"));
-        quickActions.add(action(ACTION_DEVICE_HEALTH,
-                "设备状态", "查看检测设备类型、可用性与异常原因汇总"));
+        quickActions.add(findAction(sections, ACTION_CONNECTION_CHECK));
+        quickActions.add(findAction(sections, ACTION_LIVE_MONITOR));
+        quickActions.add(findAction(sections, ACTION_DEVICE_HEALTH));
         quickActions.add(findAction(sections, ACTION_RECENT_EVENTS));
         return new ViewModel(
                 Collections.unmodifiableList(sections),
@@ -111,6 +117,103 @@ final class OperationsToolboxPresentation {
             default:
                 return false;
         }
+    }
+
+    static ViewModel withRecentQuickActions(ViewModel source, List<String> recentActionIds) {
+        if (recentActionIds == null || recentActionIds.isEmpty()) {
+            return source;
+        }
+        List<Action> quickActions = new ArrayList<>();
+        Set<String> includedActionIds = new HashSet<>();
+        for (String actionId : recentActionIds) {
+            addQuickAction(source, actionId, quickActions, includedActionIds);
+        }
+        for (Action fallback : source.quickActions) {
+            addQuickAction(source, fallback.actionId, quickActions, includedActionIds);
+        }
+        return new ViewModel(
+                source.sections,
+                Collections.unmodifiableList(quickActions));
+    }
+
+    private static void addQuickAction(
+            ViewModel source,
+            String actionId,
+            List<Action> quickActions,
+            Set<String> includedActionIds) {
+        if (actionId == null
+                || quickActions.size() == QUICK_ACTION_LIMIT
+                || includedActionIds.contains(actionId)) {
+            return;
+        }
+        Action action = findAction(source, actionId);
+        if (action != null && action.enabled) {
+            quickActions.add(action);
+            includedActionIds.add(actionId);
+        }
+    }
+
+    private static Action findAction(ViewModel source, String actionId) {
+        for (Action action : source.quickActions) {
+            if (actionId.equals(action.actionId)) {
+                return action;
+            }
+        }
+        return findAction(source.sections, actionId);
+    }
+
+    static ViewModel filter(ViewModel source, String query) {
+        String normalizedQuery = normalizeSearchText(query);
+        if (normalizedQuery.isEmpty()) {
+            return source;
+        }
+
+        List<Section> matchingSections = new ArrayList<>();
+        Set<String> includedActionIds = new HashSet<>();
+        List<Action> matchingQuickActions = new ArrayList<>();
+        boolean quickSectionMatches = matches(QUICK_SECTION_TITLE, normalizedQuery);
+        for (Action action : source.quickActions) {
+            if (quickSectionMatches || matches(action, normalizedQuery)) {
+                matchingQuickActions.add(action);
+                includedActionIds.add(action.actionId);
+            }
+        }
+        if (!matchingQuickActions.isEmpty()) {
+            matchingSections.add(new Section(
+                    QUICK_SECTION_TITLE,
+                    Collections.unmodifiableList(matchingQuickActions)));
+        }
+
+        for (Section section : source.sections) {
+            boolean sectionMatches = matches(section.title, normalizedQuery);
+            List<Action> matchingActions = new ArrayList<>();
+            for (Action action : section.actions) {
+                if (!includedActionIds.contains(action.actionId)
+                        && (sectionMatches || matches(action, normalizedQuery))) {
+                    matchingActions.add(action);
+                    includedActionIds.add(action.actionId);
+                }
+            }
+            if (!matchingActions.isEmpty()) {
+                matchingSections.add(new Section(
+                        section.title,
+                        Collections.unmodifiableList(matchingActions)));
+            }
+        }
+        return new ViewModel(Collections.unmodifiableList(matchingSections));
+    }
+
+    private static boolean matches(Action action, String normalizedQuery) {
+        return matches(action.title, normalizedQuery)
+                || matches(action.summary, normalizedQuery);
+    }
+
+    private static boolean matches(String value, String normalizedQuery) {
+        return normalizeSearchText(value).contains(normalizedQuery);
+    }
+
+    private static String normalizeSearchText(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 
     private static Section section(String title, Action... actions) {

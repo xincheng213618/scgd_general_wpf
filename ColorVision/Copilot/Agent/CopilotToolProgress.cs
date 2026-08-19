@@ -55,6 +55,40 @@ namespace ColorVision.Copilot
         public int ToolCalls { get; init; }
     }
 
+    internal static class CopilotToolProgressProtocol
+    {
+        internal static bool IsStructurallyValid(
+            CopilotToolProgressUpdate? progress)
+        {
+            if (progress == null)
+                return true;
+
+            return progress.Message != null
+                && progress.Unit != null
+                && progress.Completed is not < 0
+                && progress.Total is not < 0
+                && (progress.Completed is not long completed
+                    || progress.Total is not long total
+                    || completed <= total)
+                && (progress.DelegatedRun == null
+                    || IsStructurallyValid(progress.DelegatedRun));
+        }
+
+        private static bool IsStructurallyValid(
+            CopilotDelegatedRunProgress delegated) =>
+            delegated.RoleId != null
+            && delegated.AgentName != null
+            && delegated.RunId != null
+            && delegated.ResumeFromRunId != null
+            && delegated.Model != null
+            && delegated.ReasoningEffort != null
+            && delegated.RequestTokenBudget >= 0
+            && delegated.QueueDurationMs >= 0
+            && delegated.ConsumedTokens >= 0
+            && delegated.ProviderCalls >= 0
+            && delegated.ToolCalls >= 0;
+    }
+
     public sealed class CopilotToolProgressContext
     {
         private const int MaximumMessageLength = 240;

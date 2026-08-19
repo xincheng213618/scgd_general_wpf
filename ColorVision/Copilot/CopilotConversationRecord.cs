@@ -100,8 +100,8 @@ namespace ColorVision.Copilot
 
         public CopilotWorkspaceReviewTargetContext? DraftWorkspaceReviewTarget
         {
-            get => _draftWorkspaceReviewTarget;
-            set => SetProperty(ref _draftWorkspaceReviewTarget, value);
+            get => _draftWorkspaceReviewTarget?.CreateSnapshot();
+            set => SetProperty(ref _draftWorkspaceReviewTarget, value?.CreateSnapshot());
         }
         private CopilotWorkspaceReviewTargetContext? _draftWorkspaceReviewTarget;
 
@@ -110,8 +110,8 @@ namespace ColorVision.Copilot
 
         public CopilotAgentSkillReference? DraftAgentSkillReference
         {
-            get => _draftAgentSkillReference;
-            set => SetProperty(ref _draftAgentSkillReference, value);
+            get => _draftAgentSkillReference?.CreateSnapshot();
+            set => SetProperty(ref _draftAgentSkillReference, value?.CreateSnapshot());
         }
         private CopilotAgentSkillReference? _draftAgentSkillReference;
 
@@ -123,7 +123,7 @@ namespace ColorVision.Copilot
             get => _composerStash;
             set
             {
-                if (SetProperty(ref _composerStash, value))
+                if (SetProperty(ref _composerStash, value?.CreateSnapshot()))
                 {
                     OnPropertyChanged(nameof(HasComposerStash));
                     OnPropertyChanged(nameof(ConversationListPreviewText));
@@ -245,14 +245,30 @@ namespace ColorVision.Copilot
         /// second independently writable conversation journal.
         /// </summary>
         [JsonProperty]
-        public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint { get; internal set; }
+        public CopilotAgentSessionCheckpoint? AgentSessionCheckpoint
+        {
+            get => _agentSessionCheckpoint;
+            internal set => _agentSessionCheckpoint = value != null
+                && CopilotAgentSessionCheckpoint.TryCreateSnapshot(value, out var snapshot)
+                    ? snapshot
+                    : value;
+        }
+        private CopilotAgentSessionCheckpoint? _agentSessionCheckpoint;
 
         /// <summary>
         /// Standalone journal owner used only when no resumable checkpoint survives.
         /// Legacy snapshots that contain both owners are collapsed during normalization.
         /// </summary>
         [JsonProperty]
-        public CopilotAgentTaskEventJournalSnapshot? LatestAgentTaskEventJournal { get; internal set; }
+        public CopilotAgentTaskEventJournalSnapshot? LatestAgentTaskEventJournal
+        {
+            get => _latestAgentTaskEventJournal;
+            internal set => _latestAgentTaskEventJournal = value != null
+                && CopilotAgentTaskEventJournal.TryCreateSnapshot(value, out var snapshot)
+                    ? snapshot
+                    : value;
+        }
+        private CopilotAgentTaskEventJournalSnapshot? _latestAgentTaskEventJournal;
 
         [JsonIgnore]
         [System.Text.Json.Serialization.JsonIgnore]

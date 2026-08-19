@@ -19,6 +19,35 @@ public class AppResponsiveLayoutTest {
     }
 
     @Test
+    public void compactWindowsUseBottomNavigation() {
+        assertFalse(AppResponsiveLayout.usesNavigationRail(360));
+        assertFalse(AppResponsiveLayout.usesNavigationRail(599));
+    }
+
+    @Test
+    public void mediumAndExpandedWindowsUseNavigationRail() {
+        assertTrue(AppResponsiveLayout.usesNavigationRail(600));
+        assertTrue(AppResponsiveLayout.usesNavigationRail(840));
+        assertFalse(AppResponsiveLayout.usesNavigationRail(0));
+    }
+
+    @Test
+    public void wideWindowsUseTwoColumnGridForMultipleItems() {
+        assertTrue(AppResponsiveLayout.usesTwoColumnGrid(600, 1f, 2));
+        assertTrue(AppResponsiveLayout.usesTwoColumnGrid(840, 1f, 3));
+        assertTrue(AppResponsiveLayout.usesTwoColumnGrid(840, 1f, 6));
+        assertTrue(AppResponsiveLayout.usesTwoColumnGrid(840, 1.19f, 2));
+        assertFalse(AppResponsiveLayout.usesTwoColumnGrid(840, 1f, 1));
+    }
+
+    @Test
+    public void compactOrLargeTextLayoutsKeepSingleColumnGrid() {
+        assertFalse(AppResponsiveLayout.usesTwoColumnGrid(599, 1f, 2));
+        assertFalse(AppResponsiveLayout.usesTwoColumnGrid(840, 1.2f, 2));
+        assertFalse(AppResponsiveLayout.usesTwoColumnGrid(0, 1f, 2));
+    }
+
+    @Test
     public void largeFontUsesSingleColumnLayoutsAcrossTheApp() {
         assertTrue(AppResponsiveLayout.usesSingleColumn(600, 1.2f));
         assertTrue(AppResponsiveLayout.usesSingleColumn(840, 1.3f));
@@ -42,5 +71,14 @@ public class AppResponsiveLayoutTest {
         assertFalse(AppResponsiveLayout.usesStackedControlRow(0, 2.0f));
         assertFalse(AppResponsiveLayout.usesStackedControlRow(360, Float.NaN));
         assertFalse(AppResponsiveLayout.usesStackedControlRow(360, 0f));
+    }
+
+    @Test
+    public void largeFontStacksEqualWidthButtonGrids() {
+        assertFalse(AppResponsiveLayout.usesStackedButtonGrid(1f));
+        assertFalse(AppResponsiveLayout.usesStackedButtonGrid(1.19f));
+        assertTrue(AppResponsiveLayout.usesStackedButtonGrid(1.2f));
+        assertTrue(AppResponsiveLayout.usesStackedButtonGrid(1.5f));
+        assertFalse(AppResponsiveLayout.usesStackedButtonGrid(Float.NaN));
     }
 }

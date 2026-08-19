@@ -1,3 +1,4 @@
+using ColorVision.Copilot;
 using ColorVision.Copilot.Mcp;
 using System.IO;
 using System.Text.Json;
@@ -6,6 +7,44 @@ namespace ColorVision.Copilot.Tests;
 
 public sealed class CopilotMcpPathSecurityTests
 {
+    [Fact]
+    public async Task FileToolsRejectWorkspaceDriftWithinOneCall()
+    {
+        var firstRoot = CreateRoot();
+        var secondRoot = CreateRoot();
+        var captureCount = 0;
+        try
+        {
+            var dispatcher = new CopilotMcpToolDispatcher(new CopilotMcpToolEnvironment
+            {
+                WorkspaceSnapshotProvider = () =>
+                {
+                    var root = ++captureCount == 1 ? firstRoot : secondRoot;
+                    return new CopilotMcpWorkspaceSnapshot
+                    {
+                        SolutionDirectoryPath = root,
+                        SearchRootPaths = [root],
+                    };
+                },
+            });
+
+            var result = await dispatcher.CallAsync(
+                "list_allowed_directory",
+                new Dictionary<string, JsonElement>(),
+                CancellationToken.None);
+
+            Assert.False(result.Success);
+            Assert.Equal("workspace_scope_changed", result.ErrorCode);
+            Assert.Equal(CopilotToolFailureKind.Authorization, result.FailureKind);
+            Assert.Equal(2, captureCount);
+        }
+        finally
+        {
+            Directory.Delete(firstRoot, recursive: true);
+            Directory.Delete(secondRoot, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task ListAllowedDirectoryRejectsRelativeTraversalOutsideWorkspace()
     {

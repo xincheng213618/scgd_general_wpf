@@ -136,7 +136,9 @@ namespace ColorVision.Copilot
 
             if (_agentTaskLedger == null)
             {
-                _agentTaskLedger = new CopilotAgentTaskLedgerSnapshot();
+                _agentTaskLedger = CopilotAgentTaskLedgerSnapshot.CreateSnapshot(
+                    source: null,
+                    normalize: true);
                 changed = true;
             }
             else

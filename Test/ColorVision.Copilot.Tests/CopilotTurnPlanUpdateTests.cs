@@ -33,6 +33,9 @@ public sealed class CopilotTurnPlanUpdateTests
             runResult.TaskLedger.Items);
         Assert.Throws<NotSupportedException>(() => eventItems[0] = sourceItems[0]);
         Assert.Throws<NotSupportedException>(() => resultItems[0] = sourceItems[0]);
+        Assert.Throws<InvalidOperationException>(() => eventLedger.Mode = "plan");
+        Assert.Throws<InvalidOperationException>(() => eventLedger.Items[0].Title = "rewritten");
+        Assert.Throws<InvalidOperationException>(() => runResult.TaskLedger.Items[0].IsComplete = true);
     }
 
     [Fact]
@@ -61,6 +64,9 @@ public sealed class CopilotTurnPlanUpdateTests
             assistant.AgentTaskLedger.Items);
         Assert.Throws<NotSupportedException>(() =>
             persistedItems[0] = new CopilotAgentTaskItem { Id = 2, Title = "replacement" });
+        Assert.Throws<InvalidOperationException>(() => assistant.AgentTaskLedger.Mode = "plan");
+        Assert.Throws<InvalidOperationException>(() =>
+            assistant.AgentTaskLedger.Items[0].Title = "rewritten through projection");
     }
 
     [Fact]

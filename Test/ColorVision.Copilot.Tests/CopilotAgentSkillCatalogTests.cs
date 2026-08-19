@@ -8,6 +8,37 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotAgentSkillCatalogTests
 {
     [Fact]
+    public void AgentRequestFreezesSkillOverrideMaps()
+    {
+        var nameOverrides = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["review"] = CopilotAgentSkillOverrideState.On,
+        };
+        var pathOverrides = new Dictionary<string, CopilotAgentSkillOverrideState>(StringComparer.OrdinalIgnoreCase)
+        {
+            [@"C:\skills\review\SKILL.md"] = CopilotAgentSkillOverrideState.Off,
+        };
+        var request = new CopilotAgentRequest
+        {
+            SkillOverrides = nameOverrides,
+            SkillPathOverrides = pathOverrides,
+        };
+
+        nameOverrides["review"] = CopilotAgentSkillOverrideState.Off;
+        pathOverrides.Clear();
+
+        Assert.Equal(CopilotAgentSkillOverrideState.On, request.SkillOverrides["review"]);
+        Assert.Equal(
+            CopilotAgentSkillOverrideState.Off,
+            request.SkillPathOverrides[@"C:\skills\review\SKILL.md"]);
+        Assert.Throws<NotSupportedException>(() =>
+            ((IDictionary<string, CopilotAgentSkillOverrideState>)request.SkillOverrides)
+                ["late"] = CopilotAgentSkillOverrideState.On);
+        Assert.Throws<NotSupportedException>(() =>
+            ((IDictionary<string, CopilotAgentSkillOverrideState>)request.SkillPathOverrides).Clear());
+    }
+
+    [Fact]
     public async Task CachedCatalogReloadsWhenSkillRootAppearsChangesAndIsDeleted()
     {
         var applicationBaseDirectory = CreateTemporaryDirectory();
@@ -624,6 +655,41 @@ public sealed class CopilotAgentSkillCatalogTests
     }
 
     [Fact]
+    public void PersistedSkillReferencesAreDetachedFromCallers()
+    {
+        var skillDirectory = CreateTemporaryDirectory();
+        try
+        {
+            var source = new CopilotAgentSkillReference
+            {
+                Name = "shared-skill",
+                SkillFilePath = Path.Combine(skillDirectory, "SKILL.md"),
+            };
+            var message = new CopilotChatMessage(CopilotChatRole.User, "$shared-skill inspect this")
+            {
+                AgentSkillReference = source,
+            };
+            var conversation = CopilotConversationRecord.CreateEmpty(string.Empty, string.Empty);
+            conversation.DraftAgentSkillReference = source;
+
+            source.Name = "changed-source";
+            var messageSnapshot = message.AgentSkillReference!;
+            var draftSnapshot = conversation.DraftAgentSkillReference!;
+            messageSnapshot.Name = "changed-message-snapshot";
+            draftSnapshot.Name = "changed-draft-snapshot";
+
+            Assert.Equal("shared-skill", message.AgentSkillReference?.Name);
+            Assert.Equal("shared-skill", conversation.DraftAgentSkillReference?.Name);
+            Assert.NotSame(messageSnapshot, message.AgentSkillReference);
+            Assert.NotSame(draftSnapshot, conversation.DraftAgentSkillReference);
+        }
+        finally
+        {
+            DeleteTemporaryDirectory(skillDirectory);
+        }
+    }
+
+    [Fact]
     public void RequestFactorySnapshotsOnlyAnExplicitlyInvokedSkillReference()
     {
         var skillDirectory = CreateTemporaryDirectory();
@@ -650,6 +716,11 @@ public sealed class CopilotAgentSkillCatalogTests
 
             source.SkillFilePath = Path.Combine(skillDirectory, "changed", "SKILL.md");
             Assert.NotEqual(source.SkillFilePath, request.AgentSkillReference?.SkillFilePath);
+
+            var returned = request.AgentSkillReference!;
+            returned.Name = "changed-through-getter";
+            Assert.Equal("shared-skill", request.AgentSkillReference?.Name);
+            Assert.NotSame(returned, request.AgentSkillReference);
 
             request = CopilotAgentRequestFactory.Create(
                 new CopilotAgentRequestPlan { UserText = "Do not invoke a skill." },

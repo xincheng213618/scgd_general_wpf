@@ -168,6 +168,25 @@ final class OperationsRemoteToolboxPresentation {
         return new ViewModel(hostFresh, compactStateLabel, summary, toolbox);
     }
 
+    static boolean isSupportedAction(String actionId) {
+        switch (actionId) {
+            case OperationsToolboxPresentation.ACTION_SHOW_WINDOW:
+            case OperationsToolboxPresentation.ACTION_MINIMIZE_WINDOW:
+            case OperationsToolboxPresentation.ACTION_CANCEL_FLOW:
+            case OperationsToolboxPresentation.ACTION_RECOVER_MESSAGE:
+            case OperationsToolboxPresentation.ACTION_RESTART_MQTT:
+            case OperationsToolboxPresentation.ACTION_RESTART_APPLICATION:
+            case OperationsToolboxPresentation.ACTION_CREATE_DIAGNOSTIC:
+            case OperationsToolboxPresentation.ACTION_FAILURES:
+            case OperationsToolboxPresentation.ACTION_CREATE_SNAPSHOT:
+            case ACTION_RECENT_REMOTE_TASK:
+            case OperationsToolboxPresentation.ACTION_TIMELINE:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     private static String snapshotSummary(boolean enabled, int androidSdk) {
         if (enabled) {
             return "端到端加密采集当前 ColorVision 主窗口 · 执行前确认";

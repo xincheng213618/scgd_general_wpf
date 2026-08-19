@@ -129,10 +129,10 @@ namespace ColorVision.Copilot.Mcp
             CopilotSharedCapabilityDefinition capability) => capability.Id switch
             {
                 "docs.search" => (arguments, _, token) => SearchDocsAsync(arguments, token),
-                "workspace.search-files" => (arguments, _, token) => Task.FromResult(SearchFiles(arguments, token)),
-                "workspace.grep-text" => (arguments, _, token) => Task.FromResult(GrepText(arguments, token)),
-                "workspace.read-file" => (arguments, _, token) => ReadAllowedFileAsync(arguments, token),
-                "workspace.list-directory" => (arguments, _, token) => Task.FromResult(ListAllowedDirectory(arguments, token)),
+                "workspace.search-files" => (arguments, scope, token) => Task.FromResult(SearchFiles(arguments, scope, token)),
+                "workspace.grep-text" => (arguments, scope, token) => Task.FromResult(GrepText(arguments, scope, token)),
+                "workspace.read-file" => (arguments, scope, token) => ReadAllowedFileAsync(arguments, scope, token),
+                "workspace.list-directory" => (arguments, scope, token) => Task.FromResult(ListAllowedDirectory(arguments, scope, token)),
                 "diagnostics.recent-log" => (arguments, _, token) => GetRecentLogAsync(arguments, token),
                 "template.saved-context" => (arguments, _, _) => Task.FromResult(GetSavedTemplateContext(arguments)),
                 "template.type-context" => (arguments, _, _) => Task.FromResult(GetTemplateTypeContext(arguments)),

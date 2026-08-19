@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 
 import androidx.transition.TransitionManager;
 
+import com.google.android.material.transition.MaterialFadeThrough;
 import com.google.android.material.transition.MaterialSharedAxis;
 
 final class AppScreenMotion {
@@ -22,27 +23,46 @@ final class AppScreenMotion {
             int fromTab,
             int toTab,
             int operationsTab,
+            int problemsTab,
             int toolsTab,
             int settingsTab) {
-        int fromIndex = tabIndex(fromTab, operationsTab, toolsTab, settingsTab);
-        int toIndex = tabIndex(toTab, operationsTab, toolsTab, settingsTab);
+        int fromIndex = tabIndex(
+                fromTab, operationsTab, problemsTab, toolsTab, settingsTab);
+        int toIndex = tabIndex(
+                toTab, operationsTab, problemsTab, toolsTab, settingsTab);
         if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) {
             return DIRECTION_NONE;
         }
         return fromIndex < toIndex ? DIRECTION_FORWARD : DIRECTION_BACKWARD;
     }
 
-    private static int tabIndex(int tab, int operationsTab, int toolsTab, int settingsTab) {
+    private static int tabIndex(
+            int tab,
+            int operationsTab,
+            int problemsTab,
+            int toolsTab,
+            int settingsTab) {
         if (tab == operationsTab) {
             return 0;
         }
-        if (tab == toolsTab) {
+        if (tab == problemsTab) {
             return 1;
         }
-        return tab == settingsTab ? 2 : -1;
+        if (tab == toolsTab) {
+            return 2;
+        }
+        return tab == settingsTab ? 3 : -1;
     }
 
-    static boolean usesSharedAxis(int direction) {
+    static boolean usesFadeThrough(int direction, boolean topLevelTransition) {
+        return topLevelTransition && isDirectional(direction);
+    }
+
+    static boolean usesSharedAxis(int direction, boolean topLevelTransition) {
+        return !topLevelTransition && isDirectional(direction);
+    }
+
+    private static boolean isDirectional(int direction) {
         return direction == DIRECTION_FORWARD || direction == DIRECTION_BACKWARD;
     }
 
@@ -82,7 +102,16 @@ final class AppScreenMotion {
     }
 
     static void beginContentTransition(ViewGroup container, int direction) {
-        if (!usesSharedAxis(direction) || container.getChildCount() == 0) {
+        beginContentTransition(container, direction, false);
+    }
+
+    static void beginContentTransition(
+            ViewGroup container, int direction, boolean topLevelTransition) {
+        if (!isDirectional(direction) || container.getChildCount() == 0) {
+            return;
+        }
+        if (usesFadeThrough(direction, topLevelTransition)) {
+            TransitionManager.beginDelayedTransition(container, new MaterialFadeThrough());
             return;
         }
         MaterialSharedAxis transition = new MaterialSharedAxis(

@@ -8,6 +8,28 @@ import org.junit.Test;
 
 public class OperationsInPageNavigationPolicyTest {
     @Test
+    public void detailParentStateIsExclusiveAndMigratesLegacyFlags() {
+        assertEquals(OperationsDestinationState.TRIAGE,
+                OperationsInPageNavigationPolicy.normalizeDetailParent(
+                        OperationsDestinationState.TRIAGE));
+        assertEquals(OperationsDestinationState.TOOLS,
+                OperationsInPageNavigationPolicy.normalizeDetailParent(
+                        OperationsDestinationState.TOOLS));
+        assertEquals(OperationsDestinationState.OVERVIEW,
+                OperationsInPageNavigationPolicy.normalizeDetailParent(
+                        OperationsDestinationState.SETTINGS));
+        assertEquals(OperationsDestinationState.TOOLS,
+                OperationsInPageNavigationPolicy.restoreDetailParent(
+                        OperationsDestinationState.TOOLS, true, false));
+        assertEquals(OperationsDestinationState.TRIAGE,
+                OperationsInPageNavigationPolicy.restoreDetailParent(null, true, true));
+        assertEquals(OperationsDestinationState.TOOLS,
+                OperationsInPageNavigationPolicy.restoreDetailParent(null, false, true));
+        assertEquals(OperationsDestinationState.OVERVIEW,
+                OperationsInPageNavigationPolicy.restoreDetailParent(null, false, false));
+    }
+
+    @Test
     public void topAppBarUsesTheNearestMeaningfulParent() {
         assertEquals(OperationsDestinationState.OVERVIEW,
                 parent(OperationsDestinationState.CONNECTIONS, false, false));
@@ -21,7 +43,7 @@ public class OperationsInPageNavigationPolicyTest {
                 parent(OperationsDestinationState.JOBS, true, false));
         assertEquals(OperationsDestinationState.TRIAGE,
                 parent(OperationsDestinationState.CAPABILITY_DETAIL, true, false));
-        assertEquals(OperationsDestinationState.TRIAGE,
+        assertEquals("",
                 parent(OperationsDestinationState.TRIAGE, true, false));
         assertEquals("", parent(OperationsDestinationState.TRIAGE, false, false));
         assertEquals(OperationsDestinationState.OVERVIEW,
@@ -38,6 +60,7 @@ public class OperationsInPageNavigationPolicyTest {
         assertEquals(OperationsDestinationState.TOOLS,
                 parent(OperationsDestinationState.HISTORY, false, true));
         assertEquals("", parent(OperationsDestinationState.TOOLS, false, false));
+        assertEquals("", parent(OperationsDestinationState.TOOLS, false, true));
     }
 
     @Test
@@ -45,27 +68,27 @@ public class OperationsInPageNavigationPolicyTest {
         assertEquals("返回电脑与连接",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.CONNECTION_CHECK,
-                        false, false, false, false));
+                        detailParent(false, false), false, false));
         assertEquals("返回问题中心",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.JOBS,
-                        true, false, false, false));
+                        detailParent(true, false), false, false));
         assertEquals("返回问题中心",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.CONNECTION_CHECK,
-                        true, false, false, false));
+                        detailParent(true, false), false, false));
         assertEquals("返回运维工具",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.JOBS,
-                        false, true, false, false));
+                        detailParent(false, true), false, false));
         assertEquals("返回现场运维概览",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.LIVE_MONITOR,
-                        false, false, false, false));
+                        detailParent(false, false), false, false));
         assertEquals("返回现场运维概览",
                 OperationsInPageNavigationPolicy.navigateUpLabel(
                         OperationsDestinationState.OVERVIEW,
-                        false, false, false, false));
+                        detailParent(false, false), false, false));
     }
 
     @Test
@@ -97,7 +120,7 @@ public class OperationsInPageNavigationPolicyTest {
         assertFalse(showsNavigateUp(
                 true, true, OperationsDestinationState.SETTINGS,
                 false, false, false, false));
-        assertTrue(showsNavigateUp(
+        assertFalse(showsNavigateUp(
                 true, true, OperationsDestinationState.TRIAGE,
                 true, false, false, false));
     }
@@ -153,19 +176,39 @@ public class OperationsInPageNavigationPolicyTest {
                 OperationsInPageNavigationPolicy.motionDirection(
                         OperationsDestinationState.CONNECTIONS,
                         OperationsDestinationState.SETTINGS,
-                        false,
-                        false,
-                        true));
+                        OperationsDestinationState.OVERVIEW,
+                        OperationsDestinationState.SETTINGS));
         assertEquals(AppScreenMotion.DIRECTION_FORWARD,
                 OperationsInPageNavigationPolicy.motionDirection(
                         OperationsDestinationState.SETTINGS,
                         OperationsDestinationState.CONNECTIONS,
-                        false,
-                        false,
-                        true));
+                        OperationsDestinationState.OVERVIEW,
+                        OperationsDestinationState.SETTINGS));
         assertEquals(AppScreenMotion.DIRECTION_NONE,
                 motion(OperationsDestinationState.FLEET_ALL,
                         OperationsDestinationState.FLEET_ISSUES, false, false));
+    }
+
+    @Test
+    public void onlyBottomNavigationDestinationsUseFadeThrough() {
+        assertTrue(OperationsInPageNavigationPolicy.isTopLevelTransition(
+                OperationsDestinationState.OVERVIEW,
+                OperationsDestinationState.SETTINGS));
+        assertTrue(OperationsInPageNavigationPolicy.isTopLevelTransition(
+                OperationsDestinationState.SETTINGS,
+                OperationsDestinationState.TRIAGE));
+        assertTrue(OperationsInPageNavigationPolicy.isTopLevelTransition(
+                OperationsDestinationState.TRIAGE,
+                OperationsDestinationState.TOOLS));
+        assertFalse(OperationsInPageNavigationPolicy.isTopLevelTransition(
+                OperationsDestinationState.SETTINGS,
+                OperationsDestinationState.CONNECTIONS));
+        assertFalse(OperationsInPageNavigationPolicy.isTopLevelTransition(
+                OperationsDestinationState.CONNECTIONS,
+                OperationsDestinationState.SETTINGS));
+        assertFalse(OperationsInPageNavigationPolicy.isTopLevelTransition(
+                OperationsDestinationState.SETTINGS,
+                OperationsDestinationState.SETTINGS));
     }
 
     @Test
@@ -189,51 +232,88 @@ public class OperationsInPageNavigationPolicyTest {
     @Test
     public void triageDetailsReturnToTheirParentBeforeTheOverview() {
         assertTrue(OperationsInPageNavigationPolicy.shouldReturnToTriage(
-                true, true, false, false, true));
+                true, true, false, false, detailParent(true, false)));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
-                true, true, false, false, false));
+                true, true, false, false, detailParent(false, false)));
     }
 
     @Test
     public void triageParentReturnKeepsRootAndRecoveryBoundaries() {
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
-                true, true, true, false, true));
+                true, true, true, false, detailParent(true, false)));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
-                true, true, false, true, true));
+                true, true, false, true, detailParent(true, false)));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToTriage(
-                false, true, false, false, true));
+                false, true, false, false, detailParent(true, false)));
     }
 
     @Test
     public void systemBackReturnsBottomDestinationsToTheOverview() {
         assertTrue(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
-                OperationsDestinationState.TRIAGE, false, false));
+                OperationsDestinationState.TRIAGE));
         assertTrue(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
-                OperationsDestinationState.TOOLS, false, false));
+                OperationsDestinationState.TOOLS));
         assertTrue(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
-                OperationsDestinationState.SETTINGS, false, false));
+                OperationsDestinationState.SETTINGS));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
-                OperationsDestinationState.LIVE_MONITOR, true, false));
+                OperationsDestinationState.LIVE_MONITOR));
         assertFalse(OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
-                OperationsDestinationState.JOBS, false, true));
+                OperationsDestinationState.JOBS));
     }
 
     @Test
-    public void settingsOwnedConnectionPageReturnsToSettingsOnlyAtItsRoot() {
-        assertTrue(OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                OperationsDestinationState.CONNECTIONS, true));
-        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                OperationsDestinationState.CONNECTIONS, false));
-        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                OperationsDestinationState.CONNECTION_CHECK, true));
-        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                OperationsDestinationState.OVERVIEW, true));
+    public void connectionManagementReturnsToItsOwningBottomDestinationOnlyAtItsRoot() {
+        assertTrue(OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                OperationsDestinationState.CONNECTIONS,
+                OperationsDestinationState.SETTINGS));
+        assertTrue(OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                OperationsDestinationState.CONNECTIONS,
+                OperationsDestinationState.TOOLS));
+        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                OperationsDestinationState.CONNECTIONS,
+                OperationsDestinationState.OVERVIEW));
+        assertFalse(OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                OperationsDestinationState.CONNECTION_CHECK,
+                OperationsDestinationState.SETTINGS));
+        assertEquals("返回问题中心",
+                OperationsInPageNavigationPolicy.connectionsParentLabel(
+                        OperationsDestinationState.TRIAGE));
+        assertEquals("返回运维工具",
+                OperationsInPageNavigationPolicy.connectionsParentLabel(
+                        OperationsDestinationState.TOOLS));
+        assertEquals("返回设置",
+                OperationsInPageNavigationPolicy.connectionsParentLabel(
+                        OperationsDestinationState.SETTINGS));
+    }
+
+    @Test
+    public void targetManagementKeepsTheNearestBottomDestination() {
+        assertEquals(OperationsDestinationState.OVERVIEW,
+                targetParent(OperationsDestinationState.OVERVIEW, false, false, ""));
+        assertEquals(OperationsDestinationState.TRIAGE,
+                targetParent(OperationsDestinationState.TRIAGE, false, false, ""));
+        assertEquals(OperationsDestinationState.TOOLS,
+                targetParent(OperationsDestinationState.TOOLS, false, false, ""));
+        assertEquals(OperationsDestinationState.SETTINGS,
+                targetParent(OperationsDestinationState.SETTINGS, false, false, ""));
+        assertEquals(OperationsDestinationState.TRIAGE,
+                targetParent(
+                        OperationsDestinationState.CAPABILITY_DETAIL,
+                        true,
+                        false,
+                        OperationsDestinationState.OVERVIEW));
+        assertEquals(OperationsDestinationState.SETTINGS,
+                targetParent(
+                        OperationsDestinationState.CONNECTION_CHECK,
+                        false,
+                        false,
+                        OperationsDestinationState.SETTINGS));
     }
 
     private static String parent(
             String destination, boolean fromTriage, boolean fromToolbox) {
         return OperationsInPageNavigationPolicy.parentDestination(
-                destination, fromTriage, fromToolbox);
+                destination, detailParent(fromTriage, fromToolbox));
     }
 
     private static boolean showsNavigateUp(
@@ -248,8 +328,7 @@ public class OperationsInPageNavigationPolicyTest {
                 paired,
                 dashboardVisible,
                 destination,
-                fromTriage,
-                fromToolbox,
+                detailParent(fromTriage, fromToolbox),
                 summaryVisible,
                 recoveryVisible);
     }
@@ -257,6 +336,28 @@ public class OperationsInPageNavigationPolicyTest {
     private static int motion(
             String from, String to, boolean fromTriage, boolean fromToolbox) {
         return OperationsInPageNavigationPolicy.motionDirection(
-                from, to, fromTriage, fromToolbox, false);
+                from,
+                to,
+                detailParent(fromTriage, fromToolbox),
+                OperationsDestinationState.OVERVIEW);
+    }
+
+    private static String targetParent(
+            String destination,
+            boolean fromTriage,
+            boolean fromToolbox,
+            String existingParent) {
+        return OperationsInPageNavigationPolicy.targetManagementParentDestination(
+                destination, detailParent(fromTriage, fromToolbox), existingParent);
+    }
+
+    private static String detailParent(boolean fromTriage, boolean fromToolbox) {
+        if (fromTriage) {
+            return OperationsDestinationState.TRIAGE;
+        }
+        if (fromToolbox) {
+            return OperationsDestinationState.TOOLS;
+        }
+        return OperationsDestinationState.OVERVIEW;
     }
 }

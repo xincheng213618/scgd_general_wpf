@@ -247,7 +247,10 @@ namespace ColorVision.Copilot
                         usage =>
                         {
                             responseStarted = true;
-                            onUsageChanged?.Invoke(usage);
+                            CopilotProviderNotificationObserver.Notify(
+                                onUsageChanged,
+                                usage,
+                                "usage update");
                         },
                         inactivityTimeouts,
                         cancellationToken).ConfigureAwait(false);
@@ -264,12 +267,15 @@ namespace ColorVision.Copilot
                         cancellationToken,
                         out var recovery))
                 {
-                    onConnectionRecovery(recovery);
+                    CopilotProviderNotificationObserver.Notify(
+                        onConnectionRecovery,
+                        recovery,
+                        "connection recovery");
                     await _delayAsync(recovery.Delay, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (TryCreateRetry(exception, attempt, responseStarted, cancellationToken, out var retry))
                 {
-                    onRetry?.Invoke(retry);
+                    CopilotProviderNotificationObserver.Notify(onRetry, retry, "retry");
                     await _delayAsync(retry.Delay, cancellationToken).ConfigureAwait(false);
                     attempt++;
                 }

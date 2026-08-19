@@ -106,31 +106,72 @@ namespace ColorVision.Copilot
 
         public void RecordSessionResumed()
         {
-            Append(CopilotAgentTaskEventType.SessionResumed, RunId, "resumed", "Agent session and task state resumed from checkpoint.");
+            AppendUnique(
+                CopilotAgentTaskEventType.SessionResumed,
+                RunId,
+                "resumed",
+                "Agent session and task state resumed from checkpoint.",
+                uniqueTypes:
+                [
+                    CopilotAgentTaskEventType.SessionResumed,
+                    CopilotAgentTaskEventType.ReplanRequired,
+                ]);
         }
 
         public void RecordReplanRequired(CopilotAgentCheckpointCompatibilityKind reason)
         {
-            Append(CopilotAgentTaskEventType.ReplanRequired, RunId, reason.ToString(), "Persisted task state was discarded and must be replanned.");
+            if (!Enum.IsDefined(reason)
+                || reason is CopilotAgentCheckpointCompatibilityKind.Compatible
+                    or CopilotAgentCheckpointCompatibilityKind.ProfileChanged)
+            {
+                throw new ArgumentOutOfRangeException(nameof(reason));
+            }
+
+            AppendUnique(
+                CopilotAgentTaskEventType.ReplanRequired,
+                RunId,
+                reason.ToString(),
+                "Persisted task state was discarded and must be replanned.",
+                uniqueTypes:
+                [
+                    CopilotAgentTaskEventType.SessionResumed,
+                    CopilotAgentTaskEventType.ReplanRequired,
+                ]);
         }
 
         public void RecordTaskLedger(CopilotAgentTaskLedgerSnapshot ledger, string phase)
         {
             ArgumentNullException.ThrowIfNull(ledger);
-            var items = ledger.Items ?? Array.Empty<CopilotAgentTaskItem>();
+            var ledgerSnapshot = CopilotAgentTaskLedgerSnapshot.CreateSnapshot(
+                ledger,
+                normalize: false);
+            if (!ledgerSnapshot.IsStructurallyValid())
+            {
+                throw new ArgumentException(
+                    "Agent task ledger is not structurally valid.",
+                    nameof(ledger));
+            }
+
+            var items = ledgerSnapshot.Items;
             var completedCount = items.Count(item => item?.IsComplete == true);
             var relatedIds = items.Where(item => item != null).Select(item => $"task:{Math.Max(0, item.Id)}");
             Append(
                 CopilotAgentTaskEventType.TaskLedgerCaptured,
                 RunId,
                 phase,
-                $"Task ledger {completedCount}/{items.Count} complete in {ledger.Mode} mode.",
+                $"Task ledger {completedCount}/{items.Count} complete in {ledgerSnapshot.Mode} mode.",
                 relatedIds: relatedIds);
         }
 
         public void RecordApprovalDecision(CopilotToolExecutionInfo execution, bool approved)
         {
             ArgumentNullException.ThrowIfNull(execution);
+            if (!CopilotToolExecutionInfoProtocol.IsStructurallyValid(execution))
+            {
+                throw new ArgumentException(
+                    "Tool execution metadata is not structurally valid.",
+                    nameof(execution));
+            }
             RecordApprovalDecision(execution.ToolName, execution.CallId, execution.ApprovalActionId, approved);
         }
 
@@ -141,32 +182,102 @@ namespace ColorVision.Copilot
             bool approved,
             string decisionSource = "")
         {
-            var approvalId = CopilotAgentTaskEventIds.ForApproval(
-                approvalActionId,
-                callId);
+            var normalizedToolName = (toolName ?? string.Empty).Trim();
+            var normalizedCallId = (callId ?? string.Empty).Trim();
+            var normalizedActionId = (approvalActionId ?? string.Empty).Trim();
             var source = (decisionSource ?? string.Empty).Trim();
-            AppendUnique(
-                approved ? CopilotAgentTaskEventType.ApprovalApproved : CopilotAgentTaskEventType.ApprovalDenied,
-                approvalId,
-                approved
-                    ? string.IsNullOrWhiteSpace(source) ? "approved" : "approved:" + source
-                    : "denied",
-                approved
-                    ? string.Equals(source, nameof(CopilotFrameworkApprovalDecisionSource.AutomaticReview), StringComparison.Ordinal)
-                        ? "Protected tool call was approved by automatic permission review."
-                        : string.Equals(source, nameof(CopilotFrameworkApprovalDecisionSource.TemporaryGrant), StringComparison.Ordinal)
-                            ? "Protected tool call was approved by the temporary task grant."
-                            : string.Equals(source, nameof(CopilotFrameworkApprovalDecisionSource.ExecutionPolicy), StringComparison.Ordinal)
-                                ? "Protected tool call was approved by the submitted turn's execution policy."
-                                : "Protected tool call was approved by the user."
-                    : "Protected tool call was denied or expired.",
-                toolName,
-                [CopilotAgentTaskEventIds.ForCall(callId)],
-                uniqueTypes:
-                [
-                    CopilotAgentTaskEventType.ApprovalApproved,
-                    CopilotAgentTaskEventType.ApprovalDenied,
-                ]);
+            if (normalizedToolName.Length == 0
+                || normalizedToolName.Length > CopilotAgentTaskEventJournal.MaxToolNameLength
+                || normalizedToolName.Any(char.IsControl))
+            {
+                throw new ArgumentException(
+                    "Approval tool name is not structurally valid.",
+                    nameof(toolName));
+            }
+            if (normalizedCallId.Length == 0
+                || normalizedCallId.Any(char.IsControl))
+            {
+                throw new ArgumentException(
+                    "Approval call ID is not structurally valid.",
+                    nameof(callId));
+            }
+            if (normalizedActionId.Any(char.IsControl))
+            {
+                throw new ArgumentException(
+                    "Approval action ID is not structurally valid.",
+                    nameof(approvalActionId));
+            }
+            var decisionSourceKind =
+                CopilotFrameworkApprovalDecisionSource.None;
+            if (source.Length > 0
+                && (!Enum.TryParse(
+                        source,
+                        ignoreCase: false,
+                        out decisionSourceKind)
+                    || !Enum.IsDefined(decisionSourceKind)))
+            {
+                throw new ArgumentException(
+                    "Approval decision source is not recognized.",
+                    nameof(decisionSource));
+            }
+
+            var implicitApproval = decisionSourceKind is
+                CopilotFrameworkApprovalDecisionSource.ExecutionPolicy
+                or CopilotFrameworkApprovalDecisionSource.TemporaryGrant;
+            if (implicitApproval && !approved)
+            {
+                throw new ArgumentException(
+                    "Implicit approval sources cannot record a denial.",
+                    nameof(approved));
+            }
+            if (!implicitApproval && normalizedActionId.Length == 0)
+            {
+                throw new ArgumentException(
+                    "Explicit approval decisions require an action ID.",
+                    nameof(approvalActionId));
+            }
+
+            var approvalId = CopilotAgentTaskEventIds.ForApproval(
+                normalizedActionId,
+                normalizedCallId);
+            var callSubjectId = CopilotAgentTaskEventIds.ForCall(normalizedCallId);
+            lock (_syncRoot)
+            {
+                if (!implicitApproval
+                    && !_events.Any(item =>
+                        item.Type == CopilotAgentTaskEventType.ApprovalRequested
+                        && string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                        && string.Equals(item.SubjectId, approvalId, StringComparison.Ordinal)
+                        && string.Equals(item.ToolName, normalizedToolName, StringComparison.Ordinal)
+                        && item.RelatedIds.Contains(callSubjectId, StringComparer.Ordinal)))
+                {
+                    throw new InvalidOperationException(
+                        "Explicit approval decision has no matching request in the Agent task journal.");
+                }
+
+                AppendUnique(
+                    approved ? CopilotAgentTaskEventType.ApprovalApproved : CopilotAgentTaskEventType.ApprovalDenied,
+                    approvalId,
+                    approved
+                        ? source.Length == 0 ? "approved" : "approved:" + source
+                        : "denied",
+                    approved
+                        ? decisionSourceKind == CopilotFrameworkApprovalDecisionSource.AutomaticReview
+                            ? "Protected tool call was approved by automatic permission review."
+                            : decisionSourceKind == CopilotFrameworkApprovalDecisionSource.TemporaryGrant
+                                ? "Protected tool call was approved by the temporary task grant."
+                                : decisionSourceKind == CopilotFrameworkApprovalDecisionSource.ExecutionPolicy
+                                    ? "Protected tool call was approved by the submitted turn's execution policy."
+                                    : "Protected tool call was approved by the user."
+                        : "Protected tool call was denied or expired.",
+                    normalizedToolName,
+                    [callSubjectId],
+                    uniqueTypes:
+                    [
+                        CopilotAgentTaskEventType.ApprovalApproved,
+                        CopilotAgentTaskEventType.ApprovalDenied,
+                    ]);
+            }
         }
 
         public void RecordSteering(string message)
@@ -410,18 +521,38 @@ namespace ColorVision.Copilot
                 && agentEvent.UserQuestion?.IsStructurallyValid() == true)
             {
                 var question = agentEvent.UserQuestion;
+                if (!string.Equals(question.TaskId, RunId, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        "Structured user question belongs to a different Agent run.");
+                }
                 var requested = agentEvent.Type == CopilotAgentEventType.UserQuestionRequested;
-                AppendUnique(
-                    requested
-                        ? CopilotAgentTaskEventType.UserQuestionRequested
-                        : CopilotAgentTaskEventType.UserQuestionResolved,
-                    CopilotAgentTaskEventIds.ForUserQuestion(question.RequestId),
-                    requested ? "pending" : question.Resolution.ToString(),
-                    requested
-                        ? "The Agent requested one structured user clarification."
-                        : question.Resolution == CopilotUserQuestionResolution.Answered
-                            ? "The structured user clarification was answered."
-                            : "The structured user clarification was cancelled.");
+                var subjectId = CopilotAgentTaskEventIds.ForUserQuestion(
+                    question.RequestId);
+                lock (_syncRoot)
+                {
+                    if (!requested
+                        && !_events.Any(item =>
+                            item.Type == CopilotAgentTaskEventType.UserQuestionRequested
+                            && string.Equals(item.RunId, RunId, StringComparison.Ordinal)
+                            && string.Equals(item.SubjectId, subjectId, StringComparison.Ordinal)))
+                    {
+                        throw new InvalidOperationException(
+                            "Structured user question resolution has no matching request in the Agent task journal.");
+                    }
+
+                    AppendUnique(
+                        requested
+                            ? CopilotAgentTaskEventType.UserQuestionRequested
+                            : CopilotAgentTaskEventType.UserQuestionResolved,
+                        subjectId,
+                        requested ? "pending" : question.Resolution.ToString(),
+                        requested
+                            ? "The Agent requested one structured user clarification."
+                            : question.Resolution == CopilotUserQuestionResolution.Answered
+                                ? "The structured user clarification was answered."
+                                : "The structured user clarification was cancelled.");
+                }
             }
         }
 

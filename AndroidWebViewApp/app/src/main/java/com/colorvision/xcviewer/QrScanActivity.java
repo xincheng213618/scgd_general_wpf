@@ -3,7 +3,6 @@ package com.colorvision.xcviewer;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -100,52 +99,56 @@ public class QrScanActivity extends AppCompatActivity {
                 R.drawable.ic_arrow_back_24, getString(R.string.qr_scan_back));
         backButton.setOnClickListener(view -> finish());
         FrameLayout.LayoutParams backParams = new FrameLayout.LayoutParams(
-                dp(56), dp(56), Gravity.TOP | Gravity.START);
-        backParams.setMargins(dp(12), dp(12), 0, 0);
+                dp(48), dp(48), Gravity.TOP | Gravity.START);
+        backParams.setMargins(dp(16), dp(16), 0, 0);
         root.addView(backButton, backParams);
 
-        torchButton = createCameraIconButton(
-                R.drawable.ic_flash_on_24, getString(R.string.qr_scan_torch_on));
-        torchButton.setVisibility(View.GONE);
-        torchButton.setOnClickListener(view -> toggleTorch());
-        FrameLayout.LayoutParams torchParams = new FrameLayout.LayoutParams(
-                dp(56), dp(56), Gravity.TOP | Gravity.END);
-        torchParams.setMargins(0, dp(12), dp(12), 0);
-        root.addView(torchButton, torchParams);
-
         MaterialCardView statusCard = new MaterialCardView(this);
-        statusCard.setCardBackgroundColor(Color.argb(184, 0, 0, 0));
-        statusCard.setCardElevation(0);
-        statusCard.setRadius(dp(16));
 
         LinearLayout statusContent = new LinearLayout(this);
         statusContent.setOrientation(LinearLayout.VERTICAL);
-        statusContent.setGravity(Gravity.CENTER_HORIZONTAL);
-        statusContent.setPadding(dp(10), dp(6), dp(10), dp(6));
+        statusContent.setPadding(dp(16), dp(16), dp(16), dp(16));
 
         TextView statusText = new TextView(this);
         statusText.setText(R.string.qr_scan_prompt);
         statusText.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyLarge);
-        statusText.setTextColor(Color.WHITE);
-        statusText.setGravity(Gravity.CENTER);
-        statusText.setPadding(dp(8), dp(8), dp(8), 0);
+        statusText.setGravity(Gravity.START);
         statusContent.addView(statusText, new LinearLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT));
 
+        boolean stackActions = AppResponsiveLayout.usesStackedButtonGrid(
+                getResources().getConfiguration().fontScale);
+        LinearLayout actionBar = new LinearLayout(this);
+        actionBar.setOrientation(stackActions ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        actionBar.setGravity(Gravity.END);
+        LinearLayout.LayoutParams actionBarParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        actionBarParams.topMargin = dp(12);
+        statusContent.addView(actionBar, actionBarParams);
+
         MaterialButton helpButton = new MaterialButton(
                 this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
         helpButton.setText(R.string.qr_scan_help);
-        helpButton.setTextColor(Color.WHITE);
-        helpButton.setStrokeColor(ColorStateList.valueOf(Color.WHITE));
-        helpButton.setStrokeWidth(dp(1));
-        helpButton.setMinimumHeight(dp(48));
-        helpButton.setInsetTop(0);
-        helpButton.setInsetBottom(0);
         helpButton.setOnClickListener(view -> showPairingHelp());
-        statusContent.addView(helpButton, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                dp(48)));
+
+        torchButton = new MaterialButton(
+                this, null, com.google.android.material.R.attr.materialButtonTonalStyle);
+        torchButton.setText(R.string.qr_scan_torch_on);
+        torchButton.setIconResource(R.drawable.ic_flash_on_24);
+        torchButton.setVisibility(View.GONE);
+        torchButton.setOnClickListener(view -> toggleTorch());
+
+        if (stackActions) {
+            actionBar.addView(helpButton, fullWidthActionParams(0));
+            actionBar.addView(torchButton, fullWidthActionParams(8));
+        } else {
+            actionBar.addView(helpButton, weightedActionParams());
+            LinearLayout.LayoutParams torchParams = weightedActionParams();
+            torchParams.setMarginStart(dp(8));
+            actionBar.addView(torchButton, torchParams);
+        }
 
         statusCard.addView(statusContent, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -154,7 +157,7 @@ public class QrScanActivity extends AppCompatActivity {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM);
-        statusParams.setMargins(dp(18), 0, dp(18), dp(16));
+        statusParams.setMargins(dp(16), 0, dp(16), dp(16));
         root.addView(statusCard, statusParams);
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (view, windowInsets) -> {
@@ -162,12 +165,10 @@ public class QrScanActivity extends AppCompatActivity {
             Insets displayCutout = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout());
             Insets navigationBars = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars());
             backParams.topMargin = AppWindowInsetsPolicy.topContentInset(
-                    statusBars.top, displayCutout.top) + dp(12);
-            torchParams.topMargin = backParams.topMargin;
+                    statusBars.top, displayCutout.top) + dp(16);
             statusParams.bottomMargin = Math.max(
                     navigationBars.bottom, displayCutout.bottom) + dp(16);
             backButton.setLayoutParams(backParams);
-            torchButton.setLayoutParams(torchParams);
             statusCard.setLayoutParams(statusParams);
             return windowInsets;
         });
@@ -177,19 +178,22 @@ public class QrScanActivity extends AppCompatActivity {
 
     private MaterialButton createCameraIconButton(int iconResource, String description) {
         MaterialButton button = new MaterialButton(
-                this, null, com.google.android.material.R.attr.materialIconButtonStyle);
+                this, null, com.google.android.material.R.attr.materialIconButtonFilledTonalStyle);
         button.setIconResource(iconResource);
-        button.setIconTint(ColorStateList.valueOf(Color.WHITE));
-        button.setIconSize(dp(24));
-        button.setIconPadding(0);
-        button.setGravity(Gravity.CENTER);
-        button.setPadding(0, 0, 0, 0);
-        button.setInsetTop(0);
-        button.setInsetBottom(0);
-        button.setCornerRadius(dp(28));
-        button.setBackgroundTintList(ColorStateList.valueOf(Color.argb(128, 0, 0, 0)));
         button.setContentDescription(description);
         return button;
+    }
+
+    private LinearLayout.LayoutParams weightedActionParams() {
+        return new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+    }
+
+    private LinearLayout.LayoutParams fullWidthActionParams(int topMarginDp) {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.topMargin = dp(topMarginDp);
+        return params;
     }
 
     private boolean hasCameraPermission() {
@@ -355,11 +359,8 @@ public class QrScanActivity extends AppCompatActivity {
         if (torchButton == null) {
             return;
         }
-        torchButton.setIconTint(ColorStateList.valueOf(torchEnabled ? Color.BLACK : Color.WHITE));
-        torchButton.setBackgroundTintList(ColorStateList.valueOf(torchEnabled
-                ? Color.WHITE : Color.argb(128, 0, 0, 0)));
-        torchButton.setContentDescription(getString(torchEnabled
-                ? R.string.qr_scan_torch_off : R.string.qr_scan_torch_on));
+        torchButton.setText(torchEnabled
+                ? R.string.qr_scan_torch_off : R.string.qr_scan_torch_on);
     }
 
     @Override

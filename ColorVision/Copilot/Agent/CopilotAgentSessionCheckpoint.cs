@@ -81,6 +81,7 @@ namespace ColorVision.Copilot
 
         private string _serializedSessionJson = string.Empty;
         private string _serializedSessionPayload = string.Empty;
+        private bool _isDetachedSnapshot;
 
         public string ProfileKey { get; init; } = string.Empty;
 
@@ -350,6 +351,14 @@ namespace ColorVision.Copilot
             if (source == null)
                 return false;
 
+            if (source._isDetachedSnapshot)
+            {
+                if (!source.IsStructurallyValid())
+                    return false;
+                snapshot = source;
+                return true;
+            }
+
             try
             {
                 if (!CopilotAgentTaskEventJournal.TryCreateSnapshot(
@@ -395,6 +404,7 @@ namespace ColorVision.Copilot
                 if (!candidate.IsStructurallyValid())
                     return false;
 
+                candidate._isDetachedSnapshot = true;
                 snapshot = candidate;
                 return true;
             }
@@ -402,6 +412,71 @@ namespace ColorVision.Copilot
             {
                 return false;
             }
+        }
+
+        internal static bool AreEquivalent(
+            CopilotAgentSessionCheckpoint? left,
+            CopilotAgentSessionCheckpoint? right)
+        {
+            if (ReferenceEquals(left, right))
+                return true;
+            if (left?.IsStructurallyValid() != true || right?.IsStructurallyValid() != true)
+                return false;
+
+            return string.Equals(left.ProfileKey, right.ProfileKey, StringComparison.Ordinal)
+                && string.Equals(left.SerializedSessionJson, right.SerializedSessionJson, StringComparison.Ordinal)
+                && left.CapabilityCatalogRevision == right.CapabilityCatalogRevision
+                && SequenceEqual(left.Capabilities, right.Capabilities, AreCapabilitiesEquivalent)
+                && left.ToolSurfaceVersion == right.ToolSurfaceVersion
+                && left.AvailableToolNames.SequenceEqual(right.AvailableToolNames, StringComparer.Ordinal)
+                && left.EnvironmentVersion == right.EnvironmentVersion
+                && string.Equals(left.EnvironmentFingerprint, right.EnvironmentFingerprint, StringComparison.Ordinal)
+                && left.HookSurfaceVersion == right.HookSurfaceVersion
+                && string.Equals(left.HookSurfaceFingerprint, right.HookSurfaceFingerprint, StringComparison.Ordinal)
+                && left.ProjectInstructionSurfaceVersion == right.ProjectInstructionSurfaceVersion
+                && string.Equals(
+                    left.ProjectInstructionSurfaceFingerprint,
+                    right.ProjectInstructionSurfaceFingerprint,
+                    StringComparison.Ordinal)
+                && SequenceEqual(left.EvidenceArtifacts, right.EvidenceArtifacts, AreEvidenceArtifactsEquivalent)
+                && left.ConversationMemory.SequenceEqual(right.ConversationMemory)
+                && string.Equals(left.TaskIntentText, right.TaskIntentText, StringComparison.Ordinal)
+                && CopilotAgentTaskEventJournal.AreEquivalent(left.TaskEventJournal, right.TaskEventJournal)
+                && left.UpdatedAtUtc == right.UpdatedAtUtc;
+        }
+
+        private static bool AreCapabilitiesEquivalent(
+            CopilotAgentCheckpointCapability left,
+            CopilotAgentCheckpointCapability right)
+        {
+            return string.Equals(left.Id, right.Id, StringComparison.Ordinal)
+                && left.Revision == right.Revision
+                && string.Equals(left.Fingerprint, right.Fingerprint, StringComparison.Ordinal);
+        }
+
+        private static bool AreEvidenceArtifactsEquivalent(
+            CopilotAgentEvidenceArtifact left,
+            CopilotAgentEvidenceArtifact right)
+        {
+            return string.Equals(left.Id, right.Id, StringComparison.Ordinal)
+                && string.Equals(left.CapabilityId, right.CapabilityId, StringComparison.Ordinal)
+                && string.Equals(left.CapabilityFingerprint, right.CapabilityFingerprint, StringComparison.Ordinal)
+                && string.Equals(left.ToolName, right.ToolName, StringComparison.Ordinal)
+                && string.Equals(left.SourceCallKey, right.SourceCallKey, StringComparison.Ordinal)
+                && string.Equals(left.ResourceKey, right.ResourceKey, StringComparison.Ordinal)
+                && string.Equals(left.Summary, right.Summary, StringComparison.Ordinal)
+                && string.Equals(left.ContentExcerpt, right.ContentExcerpt, StringComparison.Ordinal)
+                && string.Equals(left.ContentFingerprint, right.ContentFingerprint, StringComparison.Ordinal)
+                && left.CapturedAtUtc == right.CapturedAtUtc;
+        }
+
+        private static bool SequenceEqual<T>(
+            IReadOnlyList<T> left,
+            IReadOnlyList<T> right,
+            Func<T, T, bool> comparer)
+        {
+            return left.Count == right.Count
+                && left.Zip(right, comparer).All(equivalent => equivalent);
         }
 
         public static CopilotAgentSessionCheckpoint? Create(
@@ -492,7 +567,10 @@ namespace ColorVision.Copilot
                 TaskEventJournal = persistedTaskEventJournal,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
             };
-            return checkpoint.IsStructurallyValid() ? checkpoint : null;
+            if (!checkpoint.IsStructurallyValid())
+                return null;
+            checkpoint._isDetachedSnapshot = true;
+            return checkpoint;
         }
 
         internal CopilotAgentSessionCheckpoint? CopyWithTaskEventJournal(CopilotAgentTaskEventJournalSnapshot taskEventJournal)
@@ -523,6 +601,12 @@ namespace ColorVision.Copilot
         {
             ArgumentNullException.ThrowIfNull(taskEventJournal);
             ArgumentNullException.ThrowIfNull(conversationMemory);
+            if (!CopilotAgentTaskEventJournal.TryCreateSnapshot(
+                    taskEventJournal,
+                    out var taskEventJournalSnapshot))
+            {
+                return null;
+            }
             var checkpoint = new CopilotAgentSessionCheckpoint(this)
             {
                 ProfileKey = ProfileKey,
@@ -542,10 +626,13 @@ namespace ColorVision.Copilot
                     (EvidenceArtifacts ?? Array.Empty<CopilotAgentEvidenceArtifact>()).ToArray()),
                 ConversationMemory = Array.AsReadOnly(conversationMemory.ToArray()),
                 TaskIntentText = TaskIntentText,
-                TaskEventJournal = taskEventJournal,
+                TaskEventJournal = taskEventJournalSnapshot,
                 UpdatedAtUtc = updatedAtUtc,
             };
-            return checkpoint.IsStructurallyValid() ? checkpoint : null;
+            if (!checkpoint.IsStructurallyValid())
+                return null;
+            checkpoint._isDetachedSnapshot = true;
+            return checkpoint;
         }
 
         private CopilotAgentCheckpointCompatibility CreateCompatibility(

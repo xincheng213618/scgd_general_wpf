@@ -31,6 +31,7 @@ import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -45,6 +46,8 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.navigation.NavigationBarView;
+import com.google.android.material.navigationrail.NavigationRailView;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -70,9 +73,10 @@ public class OperationsActivity extends AppCompatActivity {
     static final String EXTRA_OPEN_DESTINATION = "operations_open_destination";
     static final String EXTRA_RETURN_TO_SETTINGS = "operations_return_to_settings";
     private static final String STATE_DESTINATION = "operations_destination";
-    private static final String STATE_RETURN_TO_TRIAGE = "operations_return_to_triage";
-    private static final String STATE_RETURN_TO_TOOLBOX = "operations_return_to_toolbox";
-    private static final String STATE_RETURN_TO_SETTINGS = "operations_return_to_settings";
+    private static final String STATE_DETAIL_PARENT = "operations_detail_parent";
+    private static final String LEGACY_STATE_RETURN_TO_TRIAGE = "operations_return_to_triage";
+    private static final String LEGACY_STATE_RETURN_TO_TOOLBOX = "operations_return_to_toolbox";
+    private static final String STATE_CONNECTIONS_PARENT = "operations_connections_parent";
     private static final String STATE_SCROLL_OVERVIEW = "operations_scroll_overview";
     private static final String STATE_SCROLL_PROBLEMS = "operations_scroll_problems";
     private static final String STATE_SCROLL_TOOLS = "operations_scroll_tools";
@@ -136,7 +140,10 @@ public class OperationsActivity extends AppCompatActivity {
     private TextView state;
     private TextView dashboardFreshness;
     private TextView details;
+    private MaterialCardView stateCard;
     private MaterialCardView detailsCard;
+    private LinearLayout dashboardStateColumn;
+    private LinearLayout dashboardSummaryCards;
     private OperationsConnectionContent.SummaryView connectionSummaryView;
     private LinearProgressIndicator progress;
     private SwipeRefreshLayout dashboardRefresh;
@@ -183,17 +190,18 @@ public class OperationsActivity extends AppCompatActivity {
     private int connectionCheckGeneration;
     private int remoteTaskGeneration;
     private int fleetCheckGeneration;
-    private BottomNavigationView bottomNavigation;
+    private NavigationBarView topLevelNavigation;
+    private CoordinatorLayout snackbarHost;
+    private boolean navigationRail;
     private boolean fleetCheckInFlight;
     private String pendingOperationsDestination = "";
     private String currentDestination = OperationsDestinationState.OVERVIEW;
     private String pendingRestoredDestination = "";
     private String problemBadgeState = "";
     private int problemBadgeCount;
-    private boolean returnToTriageOnBack;
-    private boolean returnToToolboxOnBack;
-    private boolean returnToSettingsOnBack;
-    private boolean updatingBottomNavigation;
+    private String detailParentDestination = OperationsDestinationState.OVERVIEW;
+    private String connectionsParentDestination = OperationsDestinationState.OVERVIEW;
+    private boolean updatingTopLevelNavigation;
     private boolean updatingTopLevelScroll;
     private boolean settingsConnectionInFlight;
     private NotificationSettingsController notificationSettingsController;
@@ -236,13 +244,18 @@ public class OperationsActivity extends AppCompatActivity {
         String restoredDestination = OperationsDestinationState.normalize(
                 restoring ? savedInstanceState.getString(STATE_DESTINATION) : null);
         currentDestination = restoredDestination;
-        returnToTriageOnBack = restoring
-                && savedInstanceState.getBoolean(STATE_RETURN_TO_TRIAGE, false);
-        returnToToolboxOnBack = restoring
-                && savedInstanceState.getBoolean(STATE_RETURN_TO_TOOLBOX, false);
-        returnToSettingsOnBack = restoring
-                ? savedInstanceState.getBoolean(STATE_RETURN_TO_SETTINGS, false)
-                : returnToSettingsOnBack;
+        detailParentDestination = restoring
+                ? OperationsInPageNavigationPolicy.restoreDetailParent(
+                        savedInstanceState.getString(STATE_DETAIL_PARENT),
+                        savedInstanceState.getBoolean(
+                                LEGACY_STATE_RETURN_TO_TRIAGE, false),
+                        savedInstanceState.getBoolean(
+                                LEGACY_STATE_RETURN_TO_TOOLBOX, false))
+                : OperationsDestinationState.OVERVIEW;
+        connectionsParentDestination = restoring
+                ? OperationsInPageNavigationPolicy.normalizeConnectionsParent(
+                        savedInstanceState.getString(STATE_CONNECTIONS_PARENT))
+                : connectionsParentDestination;
         if (restoring) {
             topLevelState.rememberScroll(OperationsDestinationState.OVERVIEW,
                     savedInstanceState.getInt(STATE_SCROLL_OVERVIEW, 0));
@@ -292,9 +305,15 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void createView() {
+        navigationRail = AppResponsiveLayout.usesNavigationRail(
+                getResources().getConfiguration().screenWidthDp);
         LinearLayout shell = new LinearLayout(this);
-        shell.setOrientation(LinearLayout.VERTICAL);
+        shell.setOrientation(navigationRail
+                ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
         shell.setBackgroundColor(themeManager.pageBackgroundColor());
+        LinearLayout workspace = new LinearLayout(this);
+        workspace.setOrientation(LinearLayout.VERTICAL);
+        workspace.setBackgroundColor(themeManager.pageBackgroundColor());
 
         ScrollView scroll = new ScrollView(this);
         dashboardScroll = scroll;
@@ -351,6 +370,11 @@ public class OperationsActivity extends AppCompatActivity {
         dashboardRefreshMenuItem.setVisible(false);
         title.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == MENU_TARGET) {
+                connectionsParentDestination = OperationsInPageNavigationPolicy
+                        .targetManagementParentDestination(
+                                currentDestination,
+                                detailParentDestination,
+                                connectionsParentDestination);
                 showConnectionPreference();
                 return true;
             }
@@ -375,7 +399,7 @@ public class OperationsActivity extends AppCompatActivity {
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         header.addView(title, titleParams);
-        shell.addView(header, new LinearLayout.LayoutParams(
+        workspace.addView(header, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
@@ -396,22 +420,23 @@ public class OperationsActivity extends AppCompatActivity {
         stateContent.addView(dashboardFreshness, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
-        MaterialCardView stateCard = new MaterialCardView(this);
+        stateCard = new MaterialCardView(this);
         stateCard.setCardBackgroundColor(themeManager.primaryContainerColor());
         stateCard.addView(stateContent, new MaterialCardView.LayoutParams(
                 MaterialCardView.LayoutParams.MATCH_PARENT,
                 MaterialCardView.LayoutParams.WRAP_CONTENT));
-        LinearLayout.LayoutParams stateParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        stateParams.setMargins(0, dp(8), 0, 0);
-        root.addView(stateCard, stateParams);
 
         progress = new LinearProgressIndicator(this);
         progress.setIndeterminate(true);
+        dashboardStateColumn = new LinearLayout(this);
+        dashboardStateColumn.setOrientation(LinearLayout.VERTICAL);
+        dashboardStateColumn.addView(stateCard, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(4));
         progressParams.setMargins(0, dp(4), 0, 0);
-        root.addView(progress, progressParams);
+        dashboardStateColumn.addView(progress, progressParams);
 
         details = new TextView(this);
         TextViewCompat.setTextAppearance(details, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
@@ -423,10 +448,16 @@ public class OperationsActivity extends AppCompatActivity {
         detailsCard.addView(details, new MaterialCardView.LayoutParams(
                 MaterialCardView.LayoutParams.MATCH_PARENT,
                 MaterialCardView.LayoutParams.WRAP_CONTENT));
-        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(
+
+        dashboardSummaryCards = new LinearLayout(this);
+        dashboardSummaryCards.setOrientation(LinearLayout.VERTICAL);
+        dashboardSummaryCards.addView(dashboardStateColumn);
+        dashboardSummaryCards.addView(detailsCard);
+        LinearLayout.LayoutParams summaryParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        detailsParams.setMargins(0, dp(8), 0, 0);
-        root.addView(detailsCard, detailsParams);
+        summaryParams.setMargins(0, dp(8), 0, 0);
+        root.addView(dashboardSummaryCards, summaryParams);
+        refreshDashboardSummaryCardsLayout();
 
         actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.VERTICAL);
@@ -458,33 +489,56 @@ public class OperationsActivity extends AppCompatActivity {
                 dp(4));
         settingsProgressParams.gravity = Gravity.TOP;
         contentHost.addView(settingsProgress, settingsProgressParams);
-        shell.addView(contentHost, new LinearLayout.LayoutParams(
+        workspace.addView(contentHost, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
-        bottomNavigation = createBottomNavigation();
-        shell.addView(bottomNavigation, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-        applyTopSystemBarInset(shell);
+        snackbarHost = new CoordinatorLayout(this);
+        snackbarHost.addView(workspace, new CoordinatorLayout.LayoutParams(
+                CoordinatorLayout.LayoutParams.MATCH_PARENT,
+                CoordinatorLayout.LayoutParams.MATCH_PARENT));
+        topLevelNavigation = createTopLevelNavigation();
+        if (navigationRail) {
+            shell.addView(topLevelNavigation, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT));
+            shell.addView(snackbarHost, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+        } else {
+            shell.addView(snackbarHost, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+            shell.addView(topLevelNavigation, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
+        applySystemBarInsets(shell);
         setContentView(shell);
         ViewCompat.requestApplyInsets(shell);
         refreshOperationsTargetPresentation();
     }
 
-    private void applyTopSystemBarInset(View insetHost) {
+    private void applySystemBarInsets(View insetHost) {
         ViewCompat.setOnApplyWindowInsetsListener(insetHost, (view, windowInsets) -> {
             Insets statusBars = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars());
             Insets displayCutout = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout());
+            Insets navigationBars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.navigationBars());
             int topInset = AppWindowInsetsPolicy.topContentInset(
                     statusBars.top, displayCutout.top);
+            int bottomInset = AppWindowInsetsPolicy.bottomContentInset(
+                    navigationRail, navigationBars.bottom);
             view.setPadding(view.getPaddingLeft(), topInset,
-                    view.getPaddingRight(), view.getPaddingBottom());
+                    view.getPaddingRight(), bottomInset);
             return windowInsets;
         });
     }
 
-    private BottomNavigationView createBottomNavigation() {
-        BottomNavigationView navigation = new BottomNavigationView(this);
+    private NavigationBarView createTopLevelNavigation() {
+        NavigationBarView navigation = navigationRail
+                ? new NavigationRailView(this) : new BottomNavigationView(this);
         navigation.setBackgroundColor(themeManager.bottomNavBackgroundColor());
-        navigation.setLabelVisibilityMode(BottomNavigationView.LABEL_VISIBILITY_LABELED);
+        navigation.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_LABELED);
+        if (navigation instanceof NavigationRailView) {
+            ((NavigationRailView) navigation).setMenuGravity(Gravity.CENTER);
+        }
         navigation.getMenu().add(0, NAV_OPERATIONS, 0, "概览").setIcon(R.drawable.ic_devices_24);
         navigation.getMenu().add(0, NAV_PROBLEMS, 1, "问题")
                 .setIcon(R.drawable.ic_report_problem_24);
@@ -494,11 +548,11 @@ public class OperationsActivity extends AppCompatActivity {
                 navigation, preferences.getOperationsWatchState(), 0);
         navigation.setSelectedItemId(NAV_OPERATIONS);
         navigation.setOnItemSelectedListener(item -> {
-            if (updatingBottomNavigation) {
+            if (updatingTopLevelNavigation) {
                 return true;
             }
             if (item.getItemId() == NAV_OPERATIONS) {
-                returnToSettingsOnBack = false;
+                connectionsParentDestination = OperationsDestinationState.OVERVIEW;
                 if (connectFromSettings(OperationsDestinationState.OVERVIEW)) {
                     return true;
                 }
@@ -509,7 +563,7 @@ public class OperationsActivity extends AppCompatActivity {
                 if (preferences == null || !preferences.hasOperationsProfile()) {
                     return false;
                 }
-                returnToSettingsOnBack = false;
+                connectionsParentDestination = OperationsDestinationState.OVERVIEW;
                 if (connectFromSettings(OperationsDestinationState.TRIAGE)) {
                     return true;
                 }
@@ -520,7 +574,7 @@ public class OperationsActivity extends AppCompatActivity {
                 if (preferences == null || !preferences.hasOperationsProfile()) {
                     return false;
                 }
-                returnToSettingsOnBack = false;
+                connectionsParentDestination = OperationsDestinationState.OVERVIEW;
                 if (connectFromSettings(OperationsDestinationState.TOOLS)) {
                     return true;
                 }
@@ -528,7 +582,7 @@ public class OperationsActivity extends AppCompatActivity {
                 return true;
             }
             if (item.getItemId() == NAV_SETTINGS) {
-                returnToSettingsOnBack = false;
+                connectionsParentDestination = OperationsDestinationState.OVERVIEW;
                 showSettingsPage();
                 return true;
             }
@@ -542,8 +596,7 @@ public class OperationsActivity extends AppCompatActivity {
                 }
             } else if (item.getItemId() == NAV_PROBLEMS) {
                 topLevelState.resetScroll(OperationsDestinationState.TRIAGE);
-                if (OperationsDestinationState.TRIAGE.equals(currentDestination)
-                        && !returnToTriageOnBack) {
+                if (OperationsDestinationState.TRIAGE.equals(currentDestination)) {
                     scrollDashboardToTop();
                 } else {
                     showProblemCenter();
@@ -561,8 +614,9 @@ public class OperationsActivity extends AppCompatActivity {
                     if (settingsScroll != null) {
                         settingsScroll.smoothScrollTo(0, 0);
                     }
-                } else if (returnToSettingsOnBack) {
-                    returnToSettings();
+                } else if (OperationsDestinationState.SETTINGS.equals(
+                        connectionsParentDestination)) {
+                    returnToConnectionsParent();
                 } else {
                     showSettingsPage();
                 }
@@ -572,7 +626,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void renderProblemNavigationBadge(
-            BottomNavigationView navigation, String watchState, int issueCount) {
+            NavigationBarView navigation, String watchState, int issueCount) {
         OperationsProblemBadgeRenderer.render(
                 navigation,
                 NAV_PROBLEMS,
@@ -584,7 +638,7 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void refreshProblemNavigationBadge() {
         renderProblemNavigationBadge(
-                bottomNavigation,
+                topLevelNavigation,
                 problemBadgeState.isEmpty()
                         ? preferences.getOperationsWatchState() : problemBadgeState,
                 problemBadgeCount);
@@ -614,9 +668,7 @@ public class OperationsActivity extends AppCompatActivity {
             @Override
             public void handleOnBackPressed() {
                 if (OperationsInPageNavigationPolicy.shouldReturnToStartDestination(
-                        currentDestination,
-                        returnToTriageOnBack,
-                        returnToToolboxOnBack)) {
+                        currentDestination)) {
                     showCurrentDashboard();
                     return;
                 }
@@ -635,7 +687,7 @@ public class OperationsActivity extends AppCompatActivity {
                 dashboardVisible,
                 showingDashboardSummary,
                 connectionRecoveryVisible,
-                returnToTriageOnBack)) {
+                detailParentDestination)) {
             return false;
         }
         showProblemCenter();
@@ -643,20 +695,20 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private String operationsDetailBackLabel() {
-        if (OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                currentDestination, returnToSettingsOnBack)) {
-            return "返回设置";
+        if (OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                currentDestination, connectionsParentDestination)) {
+            return OperationsInPageNavigationPolicy.connectionsParentLabel(
+                    connectionsParentDestination);
         }
-        if (returnToTriageOnBack) {
+        if (OperationsDestinationState.TRIAGE.equals(detailParentDestination)) {
             return "返回问题中心";
         }
-        if (returnToToolboxOnBack) {
+        if (OperationsDestinationState.TOOLS.equals(detailParentDestination)) {
             return "返回运维工具";
         }
         String parentLabel = OperationsInPageNavigationPolicy.navigateUpLabel(
                 currentDestination,
-                returnToTriageOnBack,
-                returnToToolboxOnBack,
+                detailParentDestination,
                 showingDashboardSummary,
                 connectionRecoveryVisible);
         return parentLabel.isEmpty() ? "返回现场运维概览" : parentLabel;
@@ -673,25 +725,23 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private boolean navigateUpWithinOperations() {
-        if (OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                currentDestination, returnToSettingsOnBack)) {
-            returnToSettings();
+        if (OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                currentDestination, connectionsParentDestination)) {
+            returnToConnectionsParent();
             return true;
         }
         if (!OperationsInPageNavigationPolicy.showsNavigateUp(
                 preferences != null && preferences.hasOperationsProfile(),
                 dashboardVisible,
                 currentDestination,
-                returnToTriageOnBack,
-                returnToToolboxOnBack,
+                detailParentDestination,
                 showingDashboardSummary,
                 connectionRecoveryVisible)) {
             return false;
         }
         String parent = OperationsInPageNavigationPolicy.activeParentDestination(
                 currentDestination,
-                returnToTriageOnBack,
-                returnToToolboxOnBack,
+                detailParentDestination,
                 showingDashboardSummary,
                 connectionRecoveryVisible);
         if (OperationsDestinationState.CONNECTIONS.equals(parent)) {
@@ -707,8 +757,7 @@ public class OperationsActivity extends AppCompatActivity {
             return true;
         }
         if (OperationsDestinationState.OVERVIEW.equals(parent)) {
-            returnToTriageOnBack = false;
-            returnToToolboxOnBack = false;
+            detailParentDestination = OperationsDestinationState.OVERVIEW;
             AppScreenMotion.beginContentTransition(
                     dashboardContent, AppScreenMotion.DIRECTION_BACKWARD);
             showCurrentDashboard();
@@ -726,8 +775,7 @@ public class OperationsActivity extends AppCompatActivity {
             return false;
         }
         connectionCheckGeneration++;
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         showCurrentDashboard();
         return true;
     }
@@ -755,10 +803,20 @@ public class OperationsActivity extends AppCompatActivity {
         return true;
     }
 
-    private void returnToSettings() {
+    private void returnToConnectionsParent() {
         connectionCheckGeneration++;
-        returnToSettingsOnBack = false;
-        showSettingsPage();
+        String parent = OperationsInPageNavigationPolicy.normalizeConnectionsParent(
+                connectionsParentDestination);
+        if (OperationsDestinationState.SETTINGS.equals(parent)) {
+            showSettingsPage();
+        } else if (OperationsDestinationState.TRIAGE.equals(parent)) {
+            showProblemCenter();
+        } else if (OperationsDestinationState.TOOLS.equals(parent)) {
+            showOperationsToolboxPage();
+        } else {
+            showCurrentDashboard();
+        }
+        connectionsParentDestination = OperationsDestinationState.OVERVIEW;
     }
 
     private void initializeSettingsControllers() {
@@ -800,7 +858,7 @@ public class OperationsActivity extends AppCompatActivity {
                     @Override
                     public void onWorkFinished() {
                         settingsProgress.setVisibility(View.GONE);
-                        title.setSubtitle(null);
+                        refreshOperationsTargetPresentation();
                     }
                 });
     }
@@ -810,17 +868,15 @@ public class OperationsActivity extends AppCompatActivity {
         cancelDashboardRefresh();
         leaveSupportCenter();
         leaveLiveMonitor();
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setConnectionRecoveryVisible(false);
         rebuildSettingsPage(false);
         setCurrentDestination(OperationsDestinationState.SETTINGS);
-        returnToSettingsOnBack = false;
-        syncBottomNavigation();
+        connectionsParentDestination = OperationsDestinationState.OVERVIEW;
+        syncTopLevelNavigation();
         setDashboardVisible(true);
         setShowingDashboardSummary(false);
         title.setTitle("设置");
-        title.setSubtitle(null);
         progress.setVisibility(View.GONE);
         scheduleConnectionHeartbeat();
     }
@@ -846,7 +902,7 @@ public class OperationsActivity extends AppCompatActivity {
                 new SettingsPageContent.Handler() {
                     @Override
                     public void onComputerConnections() {
-                        returnToSettingsOnBack = true;
+                        connectionsParentDestination = OperationsDestinationState.SETTINGS;
                         showConnectionPreference();
                     }
 
@@ -940,10 +996,9 @@ public class OperationsActivity extends AppCompatActivity {
             settingsFeedbackSnackbar.dismiss();
         }
         settingsFeedbackSnackbar = Snackbar.make(
-                contentHost,
+                snackbarHost,
                 message,
                 Snackbar.LENGTH_LONG);
-        settingsFeedbackSnackbar.setAnchorView(bottomNavigation);
         if (offerReminderAction) {
             settingsFeedbackSnackbar.setAction(
                     "开启提醒",
@@ -1802,9 +1857,6 @@ public class OperationsActivity extends AppCompatActivity {
                 PairingSuccessPresentation.message(
                         existingProfile, preferences.getOperationsProfileLabel(hostId)),
                 Snackbar.LENGTH_LONG);
-        if (bottomNavigation != null) {
-            snackbar.setAnchorView(bottomNavigation);
-        }
         snackbar.setAction(PairingSuccessPresentation.renameAction(),
                 v -> promptRenameOperationsProfile(
                         hostId, this::refreshOperationsTargetPresentation));
@@ -1933,15 +1985,17 @@ public class OperationsActivity extends AppCompatActivity {
         String normalized = OperationsDestinationState.normalize(destination);
         dashboardDetailPath = "";
         dashboardDetailRefreshInFlight = false;
+        boolean topLevelTransition = OperationsInPageNavigationPolicy.isTopLevelTransition(
+                currentDestination, normalized);
         int direction = OperationsInPageNavigationPolicy.motionDirection(
                 currentDestination,
                 normalized,
-                returnToTriageOnBack,
-                returnToToolboxOnBack,
-                returnToSettingsOnBack);
+                detailParentDestination,
+                connectionsParentDestination);
         AppScreenMotion.beginContentTransition(
                 contentHost == null ? dashboardContent : contentHost,
-                direction);
+                direction,
+                topLevelTransition);
         currentDestination = normalized;
         boolean settingsVisible = OperationsDestinationState.SETTINGS.equals(normalized);
         if (dashboardRefresh != null) {
@@ -1951,7 +2005,7 @@ public class OperationsActivity extends AppCompatActivity {
             settingsScroll.setVisibility(settingsVisible ? View.VISIBLE : View.GONE);
         }
         refreshDetailsCardVisibility();
-        syncBottomNavigation();
+        syncTopLevelNavigation();
         refreshOperationsHeaderNavigation();
         restoreTopLevelScroll(normalized);
     }
@@ -1990,6 +2044,40 @@ public class OperationsActivity extends AppCompatActivity {
                 || hideForStructuredDetail
                 || hideDirectDashboardSummary
                 ? View.GONE : View.VISIBLE);
+        refreshDashboardSummaryCardsLayout();
+    }
+
+    private void refreshDashboardSummaryCardsLayout() {
+        if (dashboardSummaryCards == null
+                || dashboardStateColumn == null
+                || detailsCard == null) {
+            return;
+        }
+        boolean twoColumns = showingDashboardSummary
+                && OperationsDestinationState.OVERVIEW.equals(currentDestination)
+                && AppResponsiveLayout.usesTwoColumnGrid(
+                        getResources().getConfiguration().screenWidthDp,
+                        getResources().getConfiguration().fontScale,
+                        2);
+        dashboardSummaryCards.setOrientation(
+                twoColumns ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
+        if (twoColumns) {
+            dashboardStateColumn.setLayoutParams(new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.MATCH_PARENT, 1));
+            LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
+            detailsParams.setMargins(dp(8), 0, 0, 0);
+            detailsCard.setLayoutParams(detailsParams);
+        } else {
+            dashboardStateColumn.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+            LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            detailsParams.setMargins(0, dp(8), 0, 0);
+            detailsCard.setLayoutParams(detailsParams);
+        }
     }
 
     private void setConnectionRecoveryVisible(boolean visible) {
@@ -2006,20 +2094,19 @@ public class OperationsActivity extends AppCompatActivity {
                 paired,
                 dashboardVisible,
                 currentDestination,
-                returnToTriageOnBack,
-                returnToToolboxOnBack,
+                detailParentDestination,
                 showingDashboardSummary,
                 connectionRecoveryVisible);
         if (showNavigateUp) {
             title.setNavigationIcon(R.drawable.ic_arrow_back_24);
             title.setNavigationContentDescription(
-                    OperationsInPageNavigationPolicy.shouldReturnToSettings(
-                            currentDestination, returnToSettingsOnBack)
-                            ? "返回设置"
+                    OperationsInPageNavigationPolicy.shouldReturnToConnectionsParent(
+                            currentDestination, connectionsParentDestination)
+                            ? OperationsInPageNavigationPolicy.connectionsParentLabel(
+                                    connectionsParentDestination)
                             : OperationsInPageNavigationPolicy.navigateUpLabel(
                                     currentDestination,
-                                    returnToTriageOnBack,
-                                    returnToToolboxOnBack,
+                                    detailParentDestination,
                                     showingDashboardSummary,
                                     connectionRecoveryVisible));
         } else {
@@ -2176,8 +2263,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (restorePendingDestination(true)) {
             return;
         }
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setCurrentDestination(OperationsDestinationState.OVERVIEW);
         setDashboardVisible(true);
         setShowingDashboardSummary(true);
@@ -2242,8 +2328,7 @@ public class OperationsActivity extends AppCompatActivity {
         refreshOperationsTargetPresentation();
         leaveSupportCenter();
         leaveLiveMonitor();
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setConnectionRecoveryVisible(false);
         setCurrentDestination(OperationsDestinationState.TOOLS);
         setDashboardVisible(true);
@@ -2251,7 +2336,9 @@ public class OperationsActivity extends AppCompatActivity {
         progress.setVisibility(View.GONE);
         title.setTitle("运维工具");
         OperationsToolboxPresentation.ViewModel toolbox =
-                OperationsToolboxPresentation.create();
+                OperationsToolboxPresentation.withRecentQuickActions(
+                        OperationsToolboxPresentation.create(),
+                        preferences.getRecentOperationsToolboxActions());
         state.setText(getString(
                 R.string.operations_toolbox_compact_state,
                 toolbox.quickActionCount(),
@@ -2273,8 +2360,7 @@ public class OperationsActivity extends AppCompatActivity {
         refreshOperationsTargetPresentation();
         leaveSupportCenter();
         leaveLiveMonitor();
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setConnectionRecoveryVisible(false);
         setCurrentDestination(OperationsDestinationState.TOOLS);
         setDashboardVisible(true);
@@ -2296,19 +2382,23 @@ public class OperationsActivity extends AppCompatActivity {
         state.setText(model.compactStateLabel);
         details.setText(model.summary);
         actions.removeAllViews();
+        OperationsToolboxPresentation.ViewModel toolbox =
+                OperationsToolboxPresentation.withRecentQuickActions(
+                        model.toolbox,
+                        preferences.getRecentOperationsToolboxActions());
         OperationsToolboxContent.addTo(
                 this,
                 themeManager,
                 actions,
-                model.toolbox,
+                toolbox,
                 this::runRemoteOperationsToolboxAction,
                 this::scrollToToolboxSection);
     }
 
-    private void scrollToToolboxSection(View sectionHeading) {
-        sectionHeading.post(() -> dashboardScroll.smoothScrollTo(
+    private void scrollToToolboxSection(int sectionOffset) {
+        actions.post(() -> dashboardScroll.smoothScrollTo(
                 0,
-                actions.getTop() + sectionHeading.getTop()));
+                actions.getTop() + sectionOffset));
     }
 
     private void refreshRemoteOperationsToolbox() {
@@ -2364,13 +2454,16 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showToolboxCapabilityDetails(String path) {
-        returnToToolboxOnBack = true;
+        detailParentDestination = OperationsDestinationState.TOOLS;
         showDashboardCapabilityDetails(path);
     }
 
     private void runOperationsToolboxAction(String actionId) {
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = true;
+        if (!OperationsToolboxPresentation.isSupportedAction(actionId)) {
+            return;
+        }
+        preferences.recordOperationsToolboxAction(actionId);
+        detailParentDestination = OperationsDestinationState.TOOLS;
         switch (actionId) {
             case OperationsToolboxPresentation.ACTION_CONNECTION_CHECK:
                 runConnectionSelfCheck();
@@ -2438,8 +2531,11 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void runRemoteOperationsToolboxAction(String actionId) {
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = true;
+        if (!OperationsRemoteToolboxPresentation.isSupportedAction(actionId)) {
+            return;
+        }
+        preferences.recordOperationsToolboxAction(actionId);
+        detailParentDestination = OperationsDestinationState.TOOLS;
         switch (actionId) {
             case OperationsToolboxPresentation.ACTION_SHOW_WINDOW:
                 runRemoteTask(
@@ -2491,8 +2587,7 @@ public class OperationsActivity extends AppCompatActivity {
         if (restorePendingDestination(false)) {
             return;
         }
-        returnToTriageOnBack = false;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setCurrentDestination(OperationsDestinationState.OVERVIEW);
         setDashboardVisible(true);
         setShowingDashboardSummary(true);
@@ -2636,7 +2731,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showRemoteProblemDetail(String section) {
-        returnToTriageOnBack = true;
+        detailParentDestination = OperationsDestinationState.TRIAGE;
         showLatestRemoteMonitorDetail(section);
     }
 
@@ -3523,9 +3618,6 @@ public class OperationsActivity extends AppCompatActivity {
         if (showResult && activityResumed && dashboardRefresh != null
                 && message != null && !message.isEmpty()) {
             Snackbar snackbar = Snackbar.make(dashboardRefresh, message, Snackbar.LENGTH_SHORT);
-            if (bottomNavigation != null) {
-                snackbar.setAnchorView(bottomNavigation);
-            }
             snackbar.show();
         }
     }
@@ -3611,8 +3703,10 @@ public class OperationsActivity extends AppCompatActivity {
         intent.removeExtra(EXTRA_RETURN_TO_SETTINGS);
         if (!destination.isEmpty()) {
             pendingOperationsDestination = destination;
-            returnToSettingsOnBack = requestedReturnToSettings
-                    && OperationsDestinationState.CONNECTIONS.equals(destination);
+            connectionsParentDestination = requestedReturnToSettings
+                            && OperationsDestinationState.CONNECTIONS.equals(destination)
+                    ? OperationsDestinationState.SETTINGS
+                    : OperationsDestinationState.OVERVIEW;
         }
     }
 
@@ -4683,9 +4777,8 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showRemoteProblemCenter() {
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setCurrentDestination(OperationsDestinationState.TRIAGE);
-        returnToTriageOnBack = false;
         refreshOperationsHeaderNavigation();
         setShowingDashboardSummary(false);
         leaveSupportCenter();
@@ -4756,9 +4849,8 @@ public class OperationsActivity extends AppCompatActivity {
         problemCenterRefreshInFlight = true;
         boolean preservePreviousReport = OperationsDestinationState.TRIAGE.equals(
                 currentDestination) && actions.getChildCount() > 0;
-        returnToToolboxOnBack = false;
+        detailParentDestination = OperationsDestinationState.OVERVIEW;
         setCurrentDestination(OperationsDestinationState.TRIAGE);
-        returnToTriageOnBack = false;
         refreshOperationsHeaderNavigation();
         setShowingDashboardSummary(false);
         leaveSupportCenter();
@@ -4826,26 +4918,26 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showLiveMonitorFromTriage() {
-        returnToTriageOnBack = true;
+        detailParentDestination = OperationsDestinationState.TRIAGE;
         showLiveMonitor();
     }
 
     private void runConnectionSelfCheckFromTriage() {
-        returnToTriageOnBack = true;
+        detailParentDestination = OperationsDestinationState.TRIAGE;
         runConnectionSelfCheck();
     }
 
     private void runTriageAction(String actionId) {
         switch (actionId) {
             case "triage.events.view":
-                returnToTriageOnBack = true;
+                detailParentDestination = OperationsDestinationState.TRIAGE;
                 showDashboardCapabilityDetails(PATH_RECENT_EVENTS);
                 return;
             case "triage.window.show":
                 runWindowAction("show", "主窗口已显示");
                 return;
             case "triage.jobs.review":
-                returnToTriageOnBack = true;
+                detailParentDestination = OperationsDestinationState.TRIAGE;
                 showJobs();
                 return;
             case "triage.mqtt.restart.request":
@@ -4855,14 +4947,14 @@ public class OperationsActivity extends AppCompatActivity {
                 showDeviceHealthOverview();
                 return;
             case "triage.messaging.view":
-                returnToTriageOnBack = true;
+                detailParentDestination = OperationsDestinationState.TRIAGE;
                 showDashboardCapabilityDetails("/ops/v1/messaging/health");
                 return;
             case "triage.messaging.reconnect.request":
                 confirmRecoverMessageChannel();
                 return;
             case "triage.failures.view":
-                returnToTriageOnBack = true;
+                detailParentDestination = OperationsDestinationState.TRIAGE;
                 showDashboardCapabilityDetails(PATH_FAILURE_EVIDENCE);
                 return;
             default:
@@ -6448,8 +6540,7 @@ public class OperationsActivity extends AppCompatActivity {
     }
 
     private void showPerformanceLiveMonitor() {
-        returnToToolboxOnBack = false;
-        returnToTriageOnBack = true;
+        detailParentDestination = OperationsDestinationState.TRIAGE;
         showLiveMonitor();
     }
 
@@ -7360,30 +7451,35 @@ public class OperationsActivity extends AppCompatActivity {
     @Override
     protected void onRestart() {
         super.onRestart();
-        syncBottomNavigation();
+        syncTopLevelNavigation();
     }
 
-    private void syncBottomNavigation() {
-        if (bottomNavigation == null) {
+    private void syncTopLevelNavigation() {
+        if (topLevelNavigation == null) {
             return;
         }
         int destination;
         if (OperationsDestinationState.SETTINGS.equals(currentDestination)
-                || returnToSettingsOnBack) {
+                || OperationsDestinationState.SETTINGS.equals(
+                        connectionsParentDestination)) {
             destination = NAV_SETTINGS;
         } else if (OperationsDestinationState.TOOLS.equals(currentDestination)
-                || returnToToolboxOnBack) {
+                || OperationsDestinationState.TOOLS.equals(detailParentDestination)
+                || OperationsDestinationState.TOOLS.equals(
+                        connectionsParentDestination)) {
             destination = NAV_TOOLS;
         } else if (OperationsDestinationState.TRIAGE.equals(currentDestination)
-                || returnToTriageOnBack) {
+                || OperationsDestinationState.TRIAGE.equals(detailParentDestination)
+                || OperationsDestinationState.TRIAGE.equals(
+                        connectionsParentDestination)) {
             destination = NAV_PROBLEMS;
         } else {
             destination = NAV_OPERATIONS;
         }
-        if (bottomNavigation.getSelectedItemId() != destination) {
-            updatingBottomNavigation = true;
-            bottomNavigation.setSelectedItemId(destination);
-            updatingBottomNavigation = false;
+        if (topLevelNavigation.getSelectedItemId() != destination) {
+            updatingTopLevelNavigation = true;
+            topLevelNavigation.setSelectedItemId(destination);
+            updatingTopLevelNavigation = false;
         }
     }
 
@@ -7430,9 +7526,8 @@ public class OperationsActivity extends AppCompatActivity {
         rememberVisibleTopLevelScroll();
         outState.putString(STATE_DESTINATION,
                 OperationsDestinationState.normalize(currentDestination));
-        outState.putBoolean(STATE_RETURN_TO_TRIAGE, returnToTriageOnBack);
-        outState.putBoolean(STATE_RETURN_TO_TOOLBOX, returnToToolboxOnBack);
-        outState.putBoolean(STATE_RETURN_TO_SETTINGS, returnToSettingsOnBack);
+        outState.putString(STATE_DETAIL_PARENT, detailParentDestination);
+        outState.putString(STATE_CONNECTIONS_PARENT, connectionsParentDestination);
         outState.putInt(STATE_SCROLL_OVERVIEW,
                 topLevelState.scrollY(OperationsDestinationState.OVERVIEW));
         outState.putInt(STATE_SCROLL_PROBLEMS,
@@ -7457,7 +7552,7 @@ public class OperationsActivity extends AppCompatActivity {
                 && notificationChanged) {
             refreshSettingsPage();
         }
-        syncBottomNavigation();
+        syncTopLevelNavigation();
         refreshProblemNavigationBadge();
         activityResumed = true;
         refreshOperationsTargetPresentation();

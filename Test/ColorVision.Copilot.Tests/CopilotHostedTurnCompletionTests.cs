@@ -291,12 +291,14 @@ public sealed class CopilotHostedTurnCompletionTests
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
         journal.RecordRunStarted();
-        return new CopilotAgentSessionCheckpoint
+        var candidate = new CopilotAgentSessionCheckpoint
         {
             ProfileKey = "test-profile",
             SerializedSessionJson = "{}",
             TaskEventJournal = journal.Snapshot(),
         };
+        Assert.True(CopilotAgentSessionCheckpoint.TryCreateSnapshot(candidate, out var checkpoint));
+        return checkpoint;
     }
 
     private static CopilotChatMessage CreateAssistant(CopilotAgentMode mode)

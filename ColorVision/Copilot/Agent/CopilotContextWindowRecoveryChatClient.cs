@@ -264,7 +264,10 @@ namespace ColorVision.Copilot
             if (compacted.Length >= messages.Length)
                 throw CreateExhaustedException(recovery, exception);
 
-            _onRecovery?.Invoke(recovery);
+            CopilotProviderNotificationObserver.Notify(
+                _onRecovery,
+                recovery,
+                "context recovery");
             return (compacted, recovery);
         }
 

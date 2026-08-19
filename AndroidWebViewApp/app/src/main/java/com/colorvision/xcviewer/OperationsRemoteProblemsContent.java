@@ -30,7 +30,7 @@ final class OperationsRemoteProblemsContent {
         if (!model.issues.isEmpty()) {
             root.addView(sectionTitle(activity, themeManager, "需关注"),
                     topMargin(dp(activity, 20)));
-            root.addView(issueListCard(
+            root.addView(issueContent(
                     activity, themeManager, model, sectionHandler),
                     topMargin(dp(activity, 8)));
         }
@@ -46,6 +46,20 @@ final class OperationsRemoteProblemsContent {
         return root;
     }
 
+    private static View issueContent(
+            Activity activity,
+            ThemeManager themeManager,
+            OperationsRemoteProblemsPresentation.ViewModel model,
+            SectionHandler sectionHandler) {
+        boolean twoColumns = AppResponsiveLayout.usesTwoColumnGrid(
+                activity.getResources().getConfiguration().screenWidthDp,
+                activity.getResources().getConfiguration().fontScale,
+                model.issues.size());
+        return twoColumns
+                ? issueGrid(activity, themeManager, model, sectionHandler)
+                : issueListCard(activity, themeManager, model, sectionHandler);
+    }
+
     private static MaterialCardView issueListCard(
             Activity activity,
             ThemeManager themeManager,
@@ -54,48 +68,11 @@ final class OperationsRemoteProblemsContent {
         LinearLayout rows = new LinearLayout(activity);
         rows.setOrientation(LinearLayout.VERTICAL);
         for (int index = 0; index < model.issues.size(); index++) {
-            OperationsRemoteProblemsPresentation.Issue issue = model.issues.get(index);
-            LinearLayout row = new LinearLayout(activity);
-            row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setMinimumHeight(dp(activity, 68));
-            row.setPadding(dp(activity, 16), dp(activity, 10), dp(activity, 12), dp(activity, 10));
-
-            LinearLayout copy = new LinearLayout(activity);
-            copy.setOrientation(LinearLayout.VERTICAL);
-            TextView title = text(
+            rows.addView(issueRow(
                     activity,
-                    issue.status.title,
-                    com.google.android.material.R.style.TextAppearance_Material3_BodyLarge,
-                    themeManager.primaryTextColor());
-            TextView summary = text(
-                    activity,
-                    issue.status.summary,
-                    com.google.android.material.R.style.TextAppearance_Material3_BodyMedium,
-                    themeManager.errorColor());
-            copy.addView(title, matchWidth());
-            copy.addView(summary, topMargin(dp(activity, 2)));
-            row.addView(copy, new LinearLayout.LayoutParams(
-                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-
-            ImageView chevron = new ImageView(activity);
-            chevron.setImageResource(R.drawable.ic_chevron_right_24);
-            chevron.setImageTintList(ColorStateList.valueOf(themeManager.secondaryTextColor()));
-            chevron.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
-                    dp(activity, 24), dp(activity, 24));
-            iconParams.setMargins(dp(activity, 12), 0, 0, 0);
-            row.addView(chevron, iconParams);
-
-            row.setContentDescription(issue.accessibilityLabel());
-            row.setClickable(true);
-            row.setFocusable(true);
-            row.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
-            applySelectableBackground(activity, row);
-            row.setOnClickListener(view -> sectionHandler.onSection(issue.section));
-            title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            summary.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            rows.addView(row, matchWidth());
+                    themeManager,
+                    model.issues.get(index),
+                    sectionHandler), matchWidth());
             if (index < model.issues.size() - 1) {
                 rows.addView(divider(activity, themeManager), dividerParams(activity));
             }
@@ -105,6 +82,90 @@ final class OperationsRemoteProblemsContent {
         card.setCardBackgroundColor(themeManager.cardBackgroundColor());
         card.addView(rows, matchCardWidth());
         return card;
+    }
+
+    private static View issueGrid(
+            Activity activity,
+            ThemeManager themeManager,
+            OperationsRemoteProblemsPresentation.ViewModel model,
+            SectionHandler sectionHandler) {
+        LinearLayout grid = new LinearLayout(activity);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        int spacing = dp(activity, 8);
+        for (int index = 0; index < model.issues.size(); index += 2) {
+            LinearLayout row = new LinearLayout(activity);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            int itemsInRow = Math.min(2, model.issues.size() - index);
+            for (int column = 0; column < itemsInRow; column++) {
+                MaterialCardView card = new MaterialCardView(activity);
+                card.setCardBackgroundColor(themeManager.cardBackgroundColor());
+                card.addView(issueRow(
+                        activity,
+                        themeManager,
+                        model.issues.get(index + column),
+                        sectionHandler), matchCardWidth());
+                LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
+                        0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
+                if (column > 0) {
+                    cardParams.setMargins(spacing, 0, 0, 0);
+                }
+                row.addView(card, cardParams);
+            }
+            LinearLayout.LayoutParams rowParams = matchWidth();
+            if (index > 0) {
+                rowParams.setMargins(0, spacing, 0, 0);
+            }
+            grid.addView(row, rowParams);
+        }
+        return grid;
+    }
+
+    private static View issueRow(
+            Activity activity,
+            ThemeManager themeManager,
+            OperationsRemoteProblemsPresentation.Issue issue,
+            SectionHandler sectionHandler) {
+        LinearLayout row = new LinearLayout(activity);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setMinimumHeight(dp(activity, 68));
+        row.setPadding(dp(activity, 16), dp(activity, 10), dp(activity, 12), dp(activity, 10));
+
+        LinearLayout copy = new LinearLayout(activity);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        TextView title = text(
+                activity,
+                issue.status.title,
+                com.google.android.material.R.style.TextAppearance_Material3_BodyLarge,
+                themeManager.primaryTextColor());
+        TextView summary = text(
+                activity,
+                issue.status.summary,
+                com.google.android.material.R.style.TextAppearance_Material3_BodyMedium,
+                themeManager.errorColor());
+        copy.addView(title, matchWidth());
+        copy.addView(summary, topMargin(dp(activity, 2)));
+        row.addView(copy, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+        ImageView chevron = new ImageView(activity);
+        chevron.setImageResource(R.drawable.ic_chevron_right_24);
+        chevron.setImageTintList(ColorStateList.valueOf(themeManager.secondaryTextColor()));
+        chevron.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
+                dp(activity, 24), dp(activity, 24));
+        iconParams.setMargins(dp(activity, 12), 0, 0, 0);
+        row.addView(chevron, iconParams);
+
+        row.setContentDescription(issue.accessibilityLabel());
+        row.setClickable(true);
+        row.setFocusable(true);
+        row.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        applySelectableBackground(activity, row);
+        row.setOnClickListener(view -> sectionHandler.onSection(issue.section));
+        title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        summary.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        return row;
     }
 
     private static MaterialCardView infoCard(

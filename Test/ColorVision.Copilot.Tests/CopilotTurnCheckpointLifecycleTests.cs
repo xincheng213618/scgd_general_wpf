@@ -5,6 +5,29 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotTurnCheckpointLifecycleTests
 {
     [Fact]
+    public void CheckpointPublicationDoesNotShareMutableLedgerWithEventObservers()
+    {
+        var sourceLedger = CreateTaskLedger();
+        Assert.True(CopilotAgentCheckpointPublication.TryCreate(
+            CreateCheckpoint(InitialUpdate),
+            sourceLedger,
+            out var publication));
+
+        sourceLedger.Mode = "plan";
+        sourceLedger.Items[0].Title = "Rewritten source task";
+        var agentEvent = publication.CreateEvent();
+        Assert.Throws<InvalidOperationException>(() => agentEvent.TaskLedger!.Mode = "plan");
+        Assert.Throws<InvalidOperationException>(() =>
+            agentEvent.TaskLedger!.Items[0].Title = "Rewritten observer task");
+
+        Assert.Equal("execute", publication.TaskLedger.Mode);
+        Assert.Equal(
+            "Persist resumable state",
+            Assert.Single(publication.TaskLedger.Items).Title);
+        Assert.NotSame(publication.TaskLedger, agentEvent.TaskLedger);
+    }
+
+    [Fact]
     public void CheckpointEventOwnsTheSessionCheckpointCollections()
     {
         var toolNames = new List<string> { "FirstTool" };
@@ -30,6 +53,35 @@ public sealed class CopilotTurnCheckpointLifecycleTests
             captured.AvailableToolNames);
         Assert.Throws<NotSupportedException>(() =>
             capturedToolNames[0] = "RewrittenTool");
+    }
+
+    [Fact]
+    public void ReducerOwnsRawCheckpointCollections()
+    {
+        var toolNames = new List<string> { "FirstTool" };
+        var checkpoint = new CopilotAgentSessionCheckpoint
+        {
+            ProfileKey = "test-profile",
+            SerializedSessionJson = "{}",
+            ToolSurfaceVersion = CopilotAgentSessionCheckpoint.CurrentToolSurfaceVersion,
+            AvailableToolNames = toolNames,
+            TaskEventJournal = new CopilotAgentTaskEventJournalSnapshot(),
+            UpdatedAtUtc = InitialUpdate,
+        };
+        var agentEvent = new CopilotAgentEvent
+        {
+            Type = CopilotAgentEventType.CheckpointUpdated,
+            SessionCheckpoint = checkpoint,
+            TaskLedger = CreateTaskLedger(),
+        };
+
+        var state = Observe(CreateStartedState(), agentEvent);
+        toolNames[0] = "RewrittenTool";
+
+        var captured = Assert.IsType<CopilotAgentSessionCheckpoint>(
+            state.CheckpointLifecycle.LatestCheckpoint);
+        Assert.NotSame(checkpoint, captured);
+        Assert.Equal("FirstTool", Assert.Single(captured.AvailableToolNames));
     }
 
     private static readonly DateTimeOffset InitialUpdate =

@@ -5,6 +5,24 @@ namespace ColorVision.Copilot.Tests
     public sealed class CopilotAttachmentSnapshotTests
     {
         [Fact]
+        public void AgentRequestDetachesAttachmentAuthorizationViews()
+        {
+            var source = CopilotAttachmentItem.CreateFile(@"C:\evidence\source.txt");
+            var request = new CopilotAgentRequest { Attachments = [source] };
+
+            source.Value = @"C:\evidence\mutated-source.txt";
+            var firstView = Assert.Single(request.Attachments);
+            firstView.Value = @"C:\evidence\mutated-view.txt";
+
+            var stableView = Assert.Single(request.Attachments);
+            Assert.Equal(@"C:\evidence\source.txt", stableView.Value);
+            Assert.NotSame(source, stableView);
+            Assert.NotSame(firstView, stableView);
+            Assert.Throws<NotSupportedException>(() =>
+                ((IList<CopilotAttachmentItem>)request.Attachments).Clear());
+        }
+
+        [Fact]
         public void HostedTurnRefreshesAttachedLiveContextWhenTheTurnIsCaptured()
         {
             const string sourceId = "flow-engine-manager";

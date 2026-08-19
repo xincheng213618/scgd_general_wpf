@@ -37,6 +37,8 @@ final class AppPreferences {
     private static final String KEY_OPERATIONS_RELAY_TASK_ID = "operations_relay_task_id";
     private static final String KEY_OPERATIONS_RELAY_TASK_CAPABILITY = "operations_relay_task_capability";
     private static final String KEY_OPERATIONS_RELAY_TASK_IDEMPOTENCY = "operations_relay_task_idempotency";
+    private static final String KEY_OPERATIONS_TOOLBOX_RECENTS =
+            "operations_toolbox_recents_v1";
     private static final Object OPERATIONS_PROFILE_LOCK = new Object();
 
     private final SharedPreferences preferences;
@@ -290,6 +292,18 @@ final class AppPreferences {
     String getOperationsRelayTaskIdempotencyKey() {
         OperationsProfileRegistry.Profile profile = activeOperationsProfile();
         return profile == null ? "" : profile.relayTaskIdempotency;
+    }
+
+    List<String> getRecentOperationsToolboxActions() {
+        return OperationsToolboxRecents.parse(
+                preferences.getString(KEY_OPERATIONS_TOOLBOX_RECENTS, ""));
+    }
+
+    void recordOperationsToolboxAction(String actionId) {
+        String current = preferences.getString(KEY_OPERATIONS_TOOLBOX_RECENTS, "");
+        preferences.edit().putString(
+                KEY_OPERATIONS_TOOLBOX_RECENTS,
+                OperationsToolboxRecents.record(current, actionId)).apply();
     }
 
     void removeOperationsProfile(String hostId) {

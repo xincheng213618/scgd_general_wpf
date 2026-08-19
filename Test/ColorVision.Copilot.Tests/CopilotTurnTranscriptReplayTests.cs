@@ -8,6 +8,43 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotTurnTranscriptReplayTests
 {
     [Fact]
+    public void AgentRequestFreezesSubmittedModelContextCollections()
+    {
+        var history = new List<CopilotRequestMessage>
+        {
+            new("user", "original history"),
+        };
+        var contextItems = new List<CopilotContextItem>
+        {
+            new() { Id = "context", Content = "original context" },
+        };
+        var projectInstructions = new List<CopilotProjectInstructionDocument>
+        {
+            new() { Path = @"C:\project\AGENTS.md", Content = "original instructions" },
+        };
+        var request = new CopilotAgentRequest
+        {
+            History = history,
+            ContextItems = contextItems,
+            ProjectInstructions = projectInstructions,
+        };
+
+        history.Clear();
+        contextItems.Clear();
+        projectInstructions.Clear();
+
+        Assert.Equal("original history", Assert.Single(request.History).Content);
+        Assert.Equal("original context", Assert.Single(request.ContextItems).Content);
+        Assert.Equal("original instructions", Assert.Single(request.ProjectInstructions).Content);
+        Assert.Throws<NotSupportedException>(() =>
+            ((IList<CopilotRequestMessage>)request.History).Clear());
+        Assert.Throws<NotSupportedException>(() =>
+            ((IList<CopilotContextItem>)request.ContextItems).Clear());
+        Assert.Throws<NotSupportedException>(() =>
+            ((IList<CopilotProjectInstructionDocument>)request.ProjectInstructions).Clear());
+    }
+
+    [Fact]
     public void TurnRequestFreezesTheSubmittedProfile()
     {
         var submittedProfile = new CopilotProfileConfig
@@ -49,7 +86,7 @@ public sealed class CopilotTurnTranscriptReplayTests
     }
 
     [Fact]
-    public void TurnRequestFreezesJournalBaselineWithoutARecoveryCheckpoint()
+    public void TurnRequestReusesDetachedJournalBaselineWithoutARecoveryCheckpoint()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();
         journal.RecordRunStarted();
@@ -82,7 +119,7 @@ public sealed class CopilotTurnTranscriptReplayTests
             taskEventJournalBaseline: baseline);
 
         Assert.Null(request.SessionCheckpoint);
-        Assert.NotSame(baseline, request.TaskEventJournalBaseline);
+        Assert.Same(baseline, request.TaskEventJournalBaseline);
         Assert.True(CopilotAgentTaskEventJournal.AreEquivalent(
             baseline,
             request.TaskEventJournalBaseline));
