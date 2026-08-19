@@ -159,6 +159,46 @@ public class OperationsTriagePresentationTest {
     }
 
     @Test
+    public void notificationFocusPrioritizesMatchingEvidenceWithoutHidingOtherFindings()
+            throws Exception {
+        JSONObject report = new JSONObject("{\"state\":\"attention\",\"findings\":["
+                + "{\"findingId\":\"diagnostics\",\"severity\":\"error\","
+                + "\"category\":\"diagnostics\",\"title\":\"近期错误\"},"
+                + "{\"findingId\":\"devices\",\"severity\":\"warning\","
+                + "\"category\":\"devices\",\"title\":\"设备离线\"}]} ");
+        OperationsTriagePresentation.ViewModel model =
+                OperationsTriagePresentation.withAcknowledgements(
+                        OperationsTriagePresentation.from(report, value -> value),
+                        (findingId, revision) -> false);
+
+        OperationsTriagePresentation.FocusedViewModel focused =
+                OperationsTriagePresentation.focus(
+                        model, OperationsWatchPolicy.ATTENTION_DEVICES);
+
+        assertEquals(2, focused.model.findings.size());
+        assertEquals("devices", focused.model.findings.get(0).findingId);
+        assertEquals("devices", focused.model.pendingFindings.get(0).findingId);
+        assertEquals("diagnostics", focused.model.findings.get(1).findingId);
+        assertEquals("来自后台提醒 · 已定位“检测设备”相关证据并优先显示。",
+                focused.contextMessage);
+    }
+
+    @Test
+    public void notificationFocusExplainsWhenCurrentEvidenceNoLongerMatches()
+            throws Exception {
+        OperationsTriagePresentation.ViewModel model = OperationsTriagePresentation.from(
+                new JSONObject("{\"state\":\"healthy\",\"findings\":[]}"),
+                value -> value);
+
+        OperationsTriagePresentation.FocusedViewModel focused =
+                OperationsTriagePresentation.focus(
+                        model, OperationsWatchPolicy.ATTENTION_DEVICES);
+
+        assertTrue(focused.model.findings.isEmpty());
+        assertTrue(focused.contextMessage.contains("不再发现“检测设备”"));
+    }
+
+    @Test
     public void actionRequirementsStayVisibleAndUnknownActionsStayUnavailable() throws Exception {
         JSONObject report = new JSONObject("{\"findings\":[{\"actions\":[{"
                 + "\"actionId\":\"triage.jobs.review\","

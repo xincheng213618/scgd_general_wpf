@@ -22,11 +22,19 @@ final class OperationsRemoteProblemsContent {
             Activity activity,
             ThemeManager themeManager,
             OperationsRemoteProblemsPresentation.ViewModel model,
+            String attentionContext,
             SectionHandler sectionHandler) {
         LinearLayout root = new LinearLayout(activity);
         root.setOrientation(LinearLayout.VERTICAL);
 
-        root.addView(infoCard(activity, themeManager, model.summary), matchWidth());
+        boolean hasAttentionContext = attentionContext != null
+                && !attentionContext.isEmpty();
+        if (hasAttentionContext) {
+            root.addView(attentionContextCard(
+                    activity, themeManager, attentionContext), matchWidth());
+        }
+        root.addView(infoCard(activity, themeManager, model.summary),
+                hasAttentionContext ? topMargin(dp(activity, 8)) : matchWidth());
         if (!model.issues.isEmpty()) {
             root.addView(sectionTitle(activity, themeManager, "需关注"),
                     topMargin(dp(activity, 20)));
@@ -44,6 +52,21 @@ final class OperationsRemoteProblemsContent {
                 topMargin(dp(activity, 8)));
 
         return root;
+    }
+
+    private static MaterialCardView attentionContextCard(
+            Activity activity, ThemeManager themeManager, String message) {
+        TextView text = text(
+                activity,
+                message,
+                com.google.android.material.R.style.TextAppearance_Material3_BodyMedium,
+                themeManager.onSecondaryContainerColor());
+        text.setLineSpacing(0, 1.06f);
+        text.setPadding(dp(activity, 16), dp(activity, 14), dp(activity, 16), dp(activity, 14));
+        MaterialCardView card = new MaterialCardView(activity);
+        card.setCardBackgroundColor(themeManager.secondaryContainerColor());
+        card.addView(text, matchCardWidth());
+        return card;
     }
 
     private static View issueContent(

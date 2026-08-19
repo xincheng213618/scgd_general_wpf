@@ -105,6 +105,26 @@ final class OperationsRemoteProblemsPresentation {
                 Collections.unmodifiableList(issues));
     }
 
+    static FocusedViewModel focus(ViewModel model, String attentionKey) {
+        String normalized = OperationsAttentionFocus.normalize(attentionKey);
+        if (model == null || normalized.isEmpty()) {
+            return new FocusedViewModel(model, "");
+        }
+        List<Issue> issues = prioritize(model.issues, normalized);
+        boolean found = !issues.isEmpty()
+                && OperationsAttentionFocus.matchesRemoteSection(
+                        normalized, issues.get(0).section);
+        return new FocusedViewModel(
+                new ViewModel(
+                        model.snapshotAvailable,
+                        model.stateLabel,
+                        model.summary,
+                        model.incompleteCount,
+                        issues),
+                OperationsAttentionFocus.contextMessage(
+                        normalized, found, model.snapshotAvailable));
+    }
+
     private static ViewModel unavailable(String stateLabel, String summary) {
         return new ViewModel(
                 false,
@@ -129,6 +149,34 @@ final class OperationsRemoteProblemsPresentation {
 
     private static int count(JSONObject value, String field) {
         return value == null ? 0 : Math.max(0, Math.min(999, value.optInt(field, 0)));
+    }
+
+    private static List<Issue> prioritize(List<Issue> source, String attentionKey) {
+        if (source == null || source.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Issue> prioritized = new ArrayList<>(source.size());
+        for (Issue issue : source) {
+            if (OperationsAttentionFocus.matchesRemoteSection(attentionKey, issue.section)) {
+                prioritized.add(issue);
+            }
+        }
+        for (Issue issue : source) {
+            if (!OperationsAttentionFocus.matchesRemoteSection(attentionKey, issue.section)) {
+                prioritized.add(issue);
+            }
+        }
+        return Collections.unmodifiableList(prioritized);
+    }
+
+    static final class FocusedViewModel {
+        final ViewModel model;
+        final String contextMessage;
+
+        FocusedViewModel(ViewModel model, String contextMessage) {
+            this.model = model;
+            this.contextMessage = contextMessage;
+        }
     }
 
     static final class ViewModel {

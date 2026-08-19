@@ -154,6 +154,30 @@ final class OperationsTriagePresentation {
                 model.safetyNotice);
     }
 
+    static FocusedViewModel focus(ViewModel model, String attentionKey) {
+        String normalized = OperationsAttentionFocus.normalize(attentionKey);
+        if (model == null || normalized.isEmpty()) {
+            return new FocusedViewModel(model, "");
+        }
+        List<Finding> findings = prioritize(model.findings, normalized);
+        List<Finding> pending = prioritize(model.pendingFindings, normalized);
+        List<Finding> reviewed = prioritize(model.reviewedFindings, normalized);
+        boolean found = !findings.isEmpty() && OperationsAttentionFocus.matchesFinding(
+                normalized, findings.get(0).category, findings.get(0).severity);
+        return new FocusedViewModel(
+                new ViewModel(
+                        model.reportState,
+                        model.stateLabel,
+                        model.summary,
+                        model.tone,
+                        model.metrics,
+                        findings,
+                        pending,
+                        reviewed,
+                        model.safetyNotice),
+                OperationsAttentionFocus.contextMessage(normalized, found, true));
+    }
+
     static boolean isSupportedAction(String actionId) {
         switch (actionId) {
             case "triage.events.view":
@@ -306,12 +330,42 @@ final class OperationsTriagePresentation {
         }
     }
 
+    private static List<Finding> prioritize(List<Finding> source, String attentionKey) {
+        if (source == null || source.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Finding> prioritized = new ArrayList<>(source.size());
+        for (Finding finding : source) {
+            if (OperationsAttentionFocus.matchesFinding(
+                    attentionKey, finding.category, finding.severity)) {
+                prioritized.add(finding);
+            }
+        }
+        for (Finding finding : source) {
+            if (!OperationsAttentionFocus.matchesFinding(
+                    attentionKey, finding.category, finding.severity)) {
+                prioritized.add(finding);
+            }
+        }
+        return Collections.unmodifiableList(prioritized);
+    }
+
     interface TimeFormatter {
         String format(String value);
     }
 
     interface AcknowledgementLookup {
         boolean isAcknowledged(String findingId, String revision);
+    }
+
+    static final class FocusedViewModel {
+        final ViewModel model;
+        final String contextMessage;
+
+        FocusedViewModel(ViewModel model, String contextMessage) {
+            this.model = model;
+            this.contextMessage = contextMessage;
+        }
     }
 
     static final class ViewModel {

@@ -74,12 +74,14 @@ public class OperationsActivity extends AppCompatActivity {
     public static final String EXTRA_PAIRING_PAYLOAD = "operations_pairing_payload";
     static final String EXTRA_OPEN_DESTINATION = "operations_open_destination";
     static final String EXTRA_SELECT_HOST_ID = "operations_select_host_id";
+    static final String EXTRA_ATTENTION_FOCUS = "operations_attention_focus";
     static final String EXTRA_RETURN_TO_SETTINGS = "operations_return_to_settings";
     private static final String STATE_DESTINATION = "operations_destination";
     private static final String STATE_DETAIL_PARENT = "operations_detail_parent";
     private static final String LEGACY_STATE_RETURN_TO_TRIAGE = "operations_return_to_triage";
     private static final String LEGACY_STATE_RETURN_TO_TOOLBOX = "operations_return_to_toolbox";
     private static final String STATE_CONNECTIONS_PARENT = "operations_connections_parent";
+    private static final String STATE_ATTENTION_FOCUS = "operations_attention_focus";
     private static final String STATE_SCROLL_OVERVIEW = "operations_scroll_overview";
     private static final String STATE_SCROLL_PROBLEMS = "operations_scroll_problems";
     private static final String STATE_SCROLL_TOOLS = "operations_scroll_tools";
@@ -201,6 +203,7 @@ public class OperationsActivity extends AppCompatActivity {
     private String pendingOperationsDestination = "";
     private String currentDestination = OperationsDestinationState.OVERVIEW;
     private String pendingRestoredDestination = "";
+    private String activeTriageAttentionFocus = "";
     private String problemBadgeState = "";
     private int problemBadgeCount;
     private String detailParentDestination = OperationsDestinationState.OVERVIEW;
@@ -247,6 +250,11 @@ public class OperationsActivity extends AppCompatActivity {
         boolean restoring = savedInstanceState != null;
         String restoredDestination = OperationsDestinationState.normalize(
                 restoring ? savedInstanceState.getString(STATE_DESTINATION) : null);
+        if (restoring && activeTriageAttentionFocus.isEmpty()
+                && OperationsDestinationState.TRIAGE.equals(restoredDestination)) {
+            activeTriageAttentionFocus = OperationsAttentionFocus.normalize(
+                    savedInstanceState.getString(STATE_ATTENTION_FOCUS));
+        }
         currentDestination = restoredDestination;
         detailParentDestination = restoring
                 ? OperationsInPageNavigationPolicy.restoreDetailParent(
@@ -1962,6 +1970,11 @@ public class OperationsActivity extends AppCompatActivity {
 
     private void setCurrentDestination(String destination) {
         String normalized = OperationsDestinationState.normalize(destination);
+        if (!OperationsDestinationState.TRIAGE.equals(normalized)
+                && !OperationsDestinationState.TRIAGE.equals(
+                        pendingOperationsDestination)) {
+            activeTriageAttentionFocus = "";
+        }
         dashboardDetailPath = "";
         dashboardDetailRefreshInFlight = false;
         boolean topLevelTransition = OperationsInPageNavigationPolicy.isTopLevelTransition(
@@ -3716,11 +3729,17 @@ public class OperationsActivity extends AppCompatActivity {
                 : OperationsWatchPolicy.normalizeDestination(requestedDestination);
         boolean requestedReturnToSettings = intent.getBooleanExtra(
                 EXTRA_RETURN_TO_SETTINGS, false);
+        String requestedAttentionFocus = OperationsAttentionFocus.normalize(
+                intent.getStringExtra(EXTRA_ATTENTION_FOCUS));
         intent.removeExtra(EXTRA_OPEN_DESTINATION);
         intent.removeExtra(EXTRA_SELECT_HOST_ID);
+        intent.removeExtra(EXTRA_ATTENTION_FOCUS);
         intent.removeExtra(EXTRA_RETURN_TO_SETTINGS);
         if (!destination.isEmpty()) {
             pendingOperationsDestination = destination;
+            if (OperationsDestinationState.TRIAGE.equals(destination)) {
+                activeTriageAttentionFocus = requestedAttentionFocus;
+            }
             connectionsParentDestination = requestedReturnToSettings
                             && OperationsDestinationState.CONNECTIONS.equals(destination)
                     ? OperationsDestinationState.SETTINGS
@@ -4822,6 +4841,10 @@ public class OperationsActivity extends AppCompatActivity {
         OperationsRemoteProblemsPresentation.ViewModel model =
                 OperationsRemoteProblemsPresentation.from(
                         remoteMonitor(lastRelaySnapshotResponse), fresh);
+        OperationsRemoteProblemsPresentation.FocusedViewModel focused =
+                OperationsRemoteProblemsPresentation.focus(
+                        model, activeTriageAttentionFocus);
+        model = focused.model;
         problemBadgeCount = model.snapshotAvailable ? model.issues.size() : 0;
         refreshProblemNavigationBadge();
         state.setText(model.stateLabel);
@@ -4830,6 +4853,7 @@ public class OperationsActivity extends AppCompatActivity {
                         this,
                         themeManager,
                         model,
+                        focused.contextMessage,
                         this::showRemoteProblemDetail),
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
@@ -4935,6 +4959,9 @@ public class OperationsActivity extends AppCompatActivity {
                                         findingId,
                                         revision,
                                         nowMilliseconds));
+        OperationsTriagePresentation.FocusedViewModel focused =
+                OperationsTriagePresentation.focus(model, activeTriageAttentionFocus);
+        model = focused.model;
         problemCenterRefreshInFlight = false;
         problemBadgeCount = model.pendingFindings.size();
         problemBadgeState = model.watchState();
@@ -4949,6 +4976,7 @@ public class OperationsActivity extends AppCompatActivity {
                         this,
                         themeManager,
                         model,
+                        focused.contextMessage,
                         this::runTriageAction,
                         (finding, acknowledged) -> setTriageFindingAcknowledged(
                                 report, finding, acknowledged),
@@ -7652,6 +7680,7 @@ public class OperationsActivity extends AppCompatActivity {
                 OperationsDestinationState.normalize(currentDestination));
         outState.putString(STATE_DETAIL_PARENT, detailParentDestination);
         outState.putString(STATE_CONNECTIONS_PARENT, connectionsParentDestination);
+        outState.putString(STATE_ATTENTION_FOCUS, activeTriageAttentionFocus);
         outState.putInt(STATE_SCROLL_OVERVIEW,
                 topLevelState.scrollY(OperationsDestinationState.OVERVIEW));
         outState.putInt(STATE_SCROLL_PROBLEMS,

@@ -42,7 +42,7 @@
     <string name="operations_live_monitor_failure_details">%1$s\n\n持续观察本身不会删除配对资料或修改检测流程；只有你明确确认取消动作后才会介入当前检测。</string>
     <string name="operations_keystore_busy_details">设备私钥只保存在 Android Keystore，不会写入二维码、网址或应用配置。</string>
     <string name="operations_reminder_manage_title">运维提醒</string>
-    <string name="operations_reminder_manage_message">异常首次出现或同类状态产生新脱敏证据时提醒；普通轮询时间变化不会重复提醒。通知不显示端点、设备身份、日志或检测数据。可以发送一条测试提醒，确认当前系统通道能够正常送达。</string>
+    <string name="operations_reminder_manage_message">异常首次出现或同类状态产生新脱敏证据时提醒；普通轮询时间变化不会重复提醒。通知不显示端点、设备身份、日志或检测数据。可以发送一条带“测试提醒”标识的通知；当前守护记录有需关注项时，点开还能验证问题定位。</string>
     <string name="operations_reminder_permission_title">开启运维提醒</string>
     <string name="operations_reminder_permission_message">电脑离线、严重告警、错误事件、消息通道异常或设备需关注等新状态出现时提醒；持续异常中只有新的需关注证据才会再次提醒。通知不显示端点、设备身份、日志或检测数据。</string>
     <string name="operations_reminder_permission_later">暂不开启</string>
@@ -54,6 +54,7 @@
     <string name="operations_reminder_test_unavailable">测试提醒未发送，请检查系统通知设置</string>
     <string name="operations_reminder_test_notification_title">ColorVision 运维提醒测试</string>
     <string name="operations_reminder_test_notification_body">提醒通道工作正常；异常状态出现时会通过此通道提醒。</string>
+    <string name="operations_reminder_test_attention_notification_body">测试提醒 · 当前守护记录为%1$s需要关注；点按验证问题定位。</string>
     <string name="operations_refresh_dashboard">刷新运维状态</string>
     <string name="operations_cancel_flow_toolbox_available_details">已重新读取电脑当前主检测状态；只有你在下一步明确确认后，才会提交取消请求。</string>
     <string name="operations_cancel_flow_toolbox_unavailable_details">已重新读取电脑当前主检测状态；没有提交或执行任何取消操作。</string>

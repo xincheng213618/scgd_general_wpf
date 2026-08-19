@@ -70,6 +70,47 @@ public class OperationsRemoteProblemsPresentationTest {
     }
 
     @Test
+    public void notificationFocusMovesTheMatchingSignedIssueFirst() throws Exception {
+        JSONObject monitor = completeMonitor()
+                .put("devices", new JSONObject()
+                        .put("available", true)
+                        .put("hasConfiguredDevices", true)
+                        .put("readyCount", 2)
+                        .put("attentionCount", 1)
+                        .put("totalCount", 3)
+                        .put("offlineCount", 1))
+                .put("alerts", new JSONObject()
+                        .put("warningCount", 0)
+                        .put("errorCount", 2)
+                        .put("criticalCount", 0));
+        OperationsRemoteProblemsPresentation.ViewModel model =
+                OperationsRemoteProblemsPresentation.from(monitor, true);
+
+        OperationsRemoteProblemsPresentation.FocusedViewModel focused =
+                OperationsRemoteProblemsPresentation.focus(
+                        model, OperationsWatchPolicy.ATTENTION_DEVICES);
+
+        assertEquals(Arrays.asList("devices", "alerts"), sections(focused.model));
+        assertEquals("来自后台提醒 · 已定位“检测设备”相关证据并优先显示。",
+                focused.contextMessage);
+    }
+
+    @Test
+    public void notificationFocusDistinguishesResolvedFromUnavailableState() throws Exception {
+        OperationsRemoteProblemsPresentation.FocusedViewModel resolved =
+                OperationsRemoteProblemsPresentation.focus(
+                        OperationsRemoteProblemsPresentation.from(completeMonitor(), true),
+                        OperationsWatchPolicy.ATTENTION_DEVICES);
+        assertTrue(resolved.contextMessage.contains("不再发现“检测设备”"));
+
+        OperationsRemoteProblemsPresentation.FocusedViewModel unavailable =
+                OperationsRemoteProblemsPresentation.focus(
+                        OperationsRemoteProblemsPresentation.from(null, true),
+                        OperationsWatchPolicy.ATTENTION_DEVICES);
+        assertTrue(unavailable.contextMessage.contains("尚不能确认“检测设备”"));
+    }
+
+    @Test
     public void incompleteSnapshotDoesNotClaimEverythingIsHealthy() throws Exception {
         JSONObject monitor = completeMonitor();
         monitor.remove("performance");

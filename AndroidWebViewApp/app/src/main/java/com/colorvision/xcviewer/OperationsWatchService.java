@@ -125,9 +125,35 @@ public final class OperationsWatchService extends Service {
             return false;
         }
         Context applicationContext = context.getApplicationContext();
-        Intent openIntent = new Intent(applicationContext, MainActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                .putExtra(MainActivity.EXTRA_START_TAB, MainActivity.TAB_SETTINGS);
+        AppPreferences preferences = new AppPreferences(applicationContext);
+        String hostId = preferences.getOperationsHostId();
+        String attentionFocus = OperationsAttentionFocus.fromWatchState(
+                preferences.getOperationsWatchState());
+        boolean testProblemFocus = preferences.hasOperationsProfile()
+                && OperationsRelayPolicy.isSafeIdentifier(hostId)
+                && !attentionFocus.isEmpty();
+        Intent openIntent;
+        String body;
+        if (testProblemFocus) {
+            openIntent = new Intent(applicationContext, OperationsActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    .putExtra(OperationsActivity.EXTRA_SELECT_HOST_ID, hostId)
+                    .putExtra(
+                            OperationsActivity.EXTRA_OPEN_DESTINATION,
+                            OperationsWatchPolicy.DESTINATION_TRIAGE)
+                    .putExtra(OperationsActivity.EXTRA_ATTENTION_FOCUS, attentionFocus)
+                    .setData(Uri.parse("colorvision://operations/reminder-test/"
+                            + Uri.encode(hostId) + '/' + Uri.encode(attentionFocus)));
+            body = applicationContext.getString(
+                    R.string.operations_reminder_test_attention_notification_body,
+                    OperationsAttentionFocus.label(attentionFocus));
+        } else {
+            openIntent = new Intent(applicationContext, MainActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    .putExtra(MainActivity.EXTRA_START_TAB, MainActivity.TAB_SETTINGS);
+            body = applicationContext.getString(
+                    R.string.operations_reminder_test_notification_body);
+        }
         PendingIntent contentIntent = PendingIntent.getActivity(
                 applicationContext,
                 2,
@@ -138,8 +164,8 @@ public final class OperationsWatchService extends Service {
                 .setSmallIcon(R.drawable.ic_devices_24)
                 .setContentTitle(applicationContext.getString(
                         R.string.operations_reminder_test_notification_title))
-                .setContentText(applicationContext.getString(
-                        R.string.operations_reminder_test_notification_body))
+                .setContentText(body)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                 .setContentIntent(contentIntent)
                 .setCategory(NotificationCompat.CATEGORY_STATUS)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
@@ -940,7 +966,10 @@ public final class OperationsWatchService extends Service {
                 .setContentText(message)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
                 .setContentIntent(createOperationsPendingIntent(
-                        1, OperationsWatchPolicy.attentionDestination(attentionKey), hostId))
+                        1,
+                        OperationsWatchPolicy.attentionDestination(attentionKey),
+                        hostId,
+                        attentionKey))
                 .setCategory(NotificationCompat.CATEGORY_ERROR)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 .setAutoCancel(true)
@@ -978,6 +1007,14 @@ public final class OperationsWatchService extends Service {
 
     private PendingIntent createOperationsPendingIntent(
             int requestCode, String destination, String hostId) {
+        return createOperationsPendingIntent(requestCode, destination, hostId, "");
+    }
+
+    private PendingIntent createOperationsPendingIntent(
+            int requestCode,
+            String destination,
+            String hostId,
+            String attentionFocus) {
         Intent openIntent = new Intent(this, OperationsActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         if (OperationsRelayPolicy.isSafeIdentifier(hostId)) {
@@ -988,6 +1025,12 @@ public final class OperationsWatchService extends Service {
         String safeDestination = OperationsWatchPolicy.normalizeDestination(destination);
         if (!safeDestination.isEmpty()) {
             openIntent.putExtra(OperationsActivity.EXTRA_OPEN_DESTINATION, safeDestination);
+        }
+        String safeAttentionFocus = OperationsAttentionFocus.normalize(attentionFocus);
+        if (!safeAttentionFocus.isEmpty()
+                && OperationsWatchPolicy.DESTINATION_TRIAGE.equals(safeDestination)) {
+            openIntent.putExtra(
+                    OperationsActivity.EXTRA_ATTENTION_FOCUS, safeAttentionFocus);
         }
         return PendingIntent.getActivity(
                 this,

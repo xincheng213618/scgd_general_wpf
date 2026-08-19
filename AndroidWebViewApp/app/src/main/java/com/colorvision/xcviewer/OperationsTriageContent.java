@@ -30,12 +30,20 @@ final class OperationsTriageContent {
             Activity activity,
             ThemeManager themeManager,
             OperationsTriagePresentation.ViewModel model,
+            String attentionContext,
             ActionHandler actionHandler,
             ReviewHandler reviewHandler,
             Runnable connectionCheck,
             Runnable observe) {
         LinearLayout root = new LinearLayout(activity);
         root.setOrientation(LinearLayout.VERTICAL);
+
+        boolean hasAttentionContext = attentionContext != null
+                && !attentionContext.isEmpty();
+        if (hasAttentionContext) {
+            root.addView(attentionContextCard(
+                    activity, themeManager, attentionContext), matchWidth());
+        }
 
         ChipGroup quickActions = new ChipGroup(activity);
         quickActions.setSingleLine(false);
@@ -56,7 +64,8 @@ final class OperationsTriageContent {
                 activity.getString(R.string.operations_triage_observe_content_description),
                 R.drawable.ic_visibility_24,
                 observe));
-        root.addView(quickActions, matchWidth());
+        root.addView(quickActions, hasAttentionContext
+                ? topMargin(dp(activity, 12)) : matchWidth());
 
         if (!model.pendingFindings.isEmpty()) {
             root.addView(sectionTitle(
@@ -93,6 +102,21 @@ final class OperationsTriageContent {
                 topMargin(dp(activity, 8)));
 
         return root;
+    }
+
+    private static MaterialCardView attentionContextCard(
+            Activity activity, ThemeManager themeManager, String message) {
+        TextView text = text(
+                activity,
+                message,
+                com.google.android.material.R.style.TextAppearance_Material3_BodyMedium,
+                themeManager.onSecondaryContainerColor());
+        text.setLineSpacing(0, 1.06f);
+        text.setPadding(dp(activity, 16), dp(activity, 14), dp(activity, 16), dp(activity, 14));
+        MaterialCardView card = new MaterialCardView(activity);
+        card.setCardBackgroundColor(themeManager.secondaryContainerColor());
+        card.addView(text, matchCardWidth());
+        return card;
     }
 
     private static Chip actionChip(
