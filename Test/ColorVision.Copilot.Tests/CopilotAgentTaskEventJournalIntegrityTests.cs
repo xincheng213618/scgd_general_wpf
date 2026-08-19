@@ -83,6 +83,71 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
     }
 
     [Fact]
+    public void LegacyNormalizationRejectsRewrittenPayloadWithLaterAppendedEvidence()
+    {
+        var runId = CopilotAgentTaskEventIds.CreateRunId();
+        var occurredAtUtc = DateTimeOffset.UtcNow;
+        var originalEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = 1,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                1,
+                runId,
+                CopilotAgentTaskEventType.ToolCompleted,
+                occurredAtUtc),
+            Type = CopilotAgentTaskEventType.ToolCompleted,
+            OccurredAtUtc = occurredAtUtc,
+            RunId = runId,
+            SubjectId = CopilotAgentTaskEventIds.ForCall("legacy-call"),
+            ToolName = "IntegrityTool",
+            State = CopilotToolExecutionState.Completed.ToString(),
+            Summary = "Original evidence.",
+        };
+        var rewrittenEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = originalEvent.Sequence,
+            Id = originalEvent.Id,
+            Type = originalEvent.Type,
+            OccurredAtUtc = originalEvent.OccurredAtUtc,
+            RunId = originalEvent.RunId,
+            SubjectId = originalEvent.SubjectId,
+            ToolName = originalEvent.ToolName,
+            State = originalEvent.State,
+            Summary = "Rewritten evidence.",
+        };
+        var appendedAtUtc = occurredAtUtc.AddSeconds(1);
+        var appendedEvent = new CopilotAgentTaskEvent
+        {
+            Sequence = 2,
+            Id = CopilotAgentTaskEventIds.CreateEventId(
+                2,
+                runId,
+                CopilotAgentTaskEventType.RuntimeError,
+                appendedAtUtc),
+            Type = CopilotAgentTaskEventType.RuntimeError,
+            OccurredAtUtc = appendedAtUtc,
+            RunId = runId,
+            SubjectId = runId,
+            State = "error",
+            Summary = "Later evidence.",
+        };
+        var baseline = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [originalEvent],
+        };
+        var candidate = new CopilotAgentTaskEventJournalSnapshot
+        {
+            Events = [rewrittenEvent, appendedEvent],
+        };
+
+        Assert.True(baseline.IsStructurallyValid());
+        Assert.True(candidate.IsStructurallyValid());
+        Assert.False(CopilotAgentTaskEventJournal.IsLegacyNewerEvidenceForNormalization(
+            candidate,
+            baseline));
+    }
+
+    [Fact]
     public void PublishedSnapshotCannotRewriteBuilderHistory()
     {
         var journal = new CopilotAgentTaskEventJournalBuilder();

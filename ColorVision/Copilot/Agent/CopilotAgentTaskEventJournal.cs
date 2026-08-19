@@ -470,11 +470,9 @@ namespace ColorVision.Copilot
             var commonPrefixLength = 0;
             var comparableLength = Math.Min(candidate.Events.Count, baseline.Events.Count);
             while (commonPrefixLength < comparableLength
-                && candidate.Events[commonPrefixLength].Sequence == baseline.Events[commonPrefixLength].Sequence
-                && string.Equals(
-                    candidate.Events[commonPrefixLength].Id,
-                    baseline.Events[commonPrefixLength].Id,
-                    StringComparison.Ordinal))
+                && AreEventsEquivalent(
+                    candidate.Events[commonPrefixLength],
+                    baseline.Events[commonPrefixLength]))
             {
                 commonPrefixLength++;
             }
@@ -483,6 +481,17 @@ namespace ColorVision.Copilot
                 return candidate.Events.Count > baseline.Events.Count;
             if (commonPrefixLength == candidate.Events.Count)
                 return false;
+
+            var candidateDivergence = candidate.Events[commonPrefixLength];
+            var baselineDivergence = baseline.Events[commonPrefixLength];
+            if (candidateDivergence.Sequence == baselineDivergence.Sequence
+                && string.Equals(
+                    candidateDivergence.Id,
+                    baselineDivergence.Id,
+                    StringComparison.Ordinal))
+            {
+                return false;
+            }
 
             var candidateLatestOccurrence = candidate.Events.Max(item => item.OccurredAtUtc);
             var baselineLatestOccurrence = baseline.Events.Max(item => item.OccurredAtUtc);
