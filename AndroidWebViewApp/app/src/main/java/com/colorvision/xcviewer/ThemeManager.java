@@ -1,6 +1,7 @@
 package com.colorvision.xcviewer;
 
 import android.app.Activity;
+import android.app.Application;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.Window;
@@ -10,6 +11,7 @@ import androidx.appcompat.R;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
+import com.google.android.material.color.DynamicColors;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -31,6 +33,10 @@ final class ThemeManager {
         } else {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
         }
+    }
+
+    static void applyDynamicColors(Application application) {
+        DynamicColors.applyToActivitiesIfAvailable(application);
     }
 
     void applySystemBars(Activity activity) {
