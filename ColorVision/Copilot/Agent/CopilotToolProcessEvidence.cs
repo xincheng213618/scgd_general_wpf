@@ -34,7 +34,6 @@ namespace ColorVision.Copilot
                 _ => false,
             };
             if (!operationIsValid
-                || (timedOut && exitCode.HasValue)
                 || (!timedOut && !exitCode.HasValue))
             {
                 return false;
@@ -42,7 +41,7 @@ namespace ColorVision.Copilot
 
             evidence = new CopilotToolProcessEvidenceSnapshot(
                 normalizedOperation,
-                timedOut ? null : exitCode,
+                exitCode,
                 timedOut);
             return true;
         }

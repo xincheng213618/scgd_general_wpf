@@ -27,7 +27,7 @@ namespace ColorVision.Copilot
     }
 
     internal sealed record CopilotWorkspaceValidationProcessResult(
-        int ExitCode,
+        int? ExitCode,
         bool TimedOut,
         string StandardOutput,
         string StandardError,
@@ -194,8 +194,17 @@ namespace ColorVision.Copilot
                     FailureKind = CopilotToolFailureKind.Transient,
                     FailureCode = ValidationTimedOutFailureCode,
                     ProcessOperation = task,
+                    ProcessExitCode = processResult.ExitCode,
                     ProcessTimedOut = true,
                 };
+            }
+
+            if (!processResult.ExitCode.HasValue)
+            {
+                return Failure(
+                    CopilotToolFailureKind.Internal,
+                    $"Workspace {task} ended without an exit code.",
+                    $"The managed dotnet {task} process completed, but its exit code was unavailable.");
             }
 
             var passed = processResult.ExitCode == 0;
@@ -318,7 +327,7 @@ namespace ColorVision.Copilot
             builder.AppendLine($"target: {targetPath}");
             builder.AppendLine($"configuration: {configuration}");
             builder.AppendLine($"platform: {(platform.Length == 0 ? "project_default" : platform)}");
-            builder.AppendLine($"exit_code: {result.ExitCode}");
+            builder.AppendLine($"exit_code: {result.ExitCode?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "unknown"}");
             builder.AppendLine($"outcome: {(result.TimedOut ? "timed_out" : result.ExitCode == 0 ? "passed" : "failed")}");
             builder.AppendLine($"duration_ms: {Math.Max(0, (long)result.Duration.TotalMilliseconds)}");
             builder.AppendLine("stdout:");
@@ -506,7 +515,7 @@ namespace ColorVision.Copilot
             if (cancelledByCaller)
                 throw new OperationCanceledException(cancellationToken);
             return new CopilotWorkspaceValidationProcessResult(
-                timedOut ? -1 : process.ExitCode,
+                CopilotProcessExecutionSupport.TryGetExitCode(process),
                 timedOut,
                 standardOutput,
                 standardError,

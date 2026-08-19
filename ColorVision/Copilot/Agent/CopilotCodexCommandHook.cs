@@ -129,7 +129,7 @@ namespace ColorVision.Copilot
                 },
                 cancellationToken).ConfigureAwait(false);
             return new CopilotCodexCommandHookProcessResult(
-                result.ExitCode,
+                result.ExitCode ?? -1,
                 result.TimedOut,
                 result.StandardOutput,
                 result.StandardError);

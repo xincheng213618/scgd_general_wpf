@@ -36,7 +36,7 @@ public sealed class CopilotForegroundProcessEvidenceTests : IDisposable
                 "private validation stderr",
                 TimeSpan.FromMilliseconds(1)),
             new CopilotWorkspaceValidationProcessResult(
-                -1,
+                0,
                 true,
                 "private timed-out validation stdout",
                 "private timed-out validation stderr",
@@ -60,7 +60,7 @@ public sealed class CopilotForegroundProcessEvidenceTests : IDisposable
         Assert.False(buildResult.ProcessTimedOut);
         Assert.False(timedOutTestResult.Success);
         Assert.Equal("test", timedOutTestResult.ProcessOperation);
-        Assert.Null(timedOutTestResult.ProcessExitCode);
+        Assert.Equal(0, timedOutTestResult.ProcessExitCode);
         Assert.True(timedOutTestResult.ProcessTimedOut);
 
         using var archiveRegistry = new CopilotShellCommandOutputArchiveRegistry();
@@ -72,7 +72,7 @@ public sealed class CopilotForegroundProcessEvidenceTests : IDisposable
                 "private shell stderr",
                 TimeSpan.FromMilliseconds(1)),
             new CopilotShellProcessResult(
-                -1,
+                0,
                 true,
                 "private timed-out shell stdout",
                 "private timed-out shell stderr",
@@ -97,7 +97,7 @@ public sealed class CopilotForegroundProcessEvidenceTests : IDisposable
         Assert.False(failedShellResult.ProcessTimedOut);
         Assert.False(timedOutShellResult.Success);
         Assert.Equal("shell", timedOutShellResult.ProcessOperation);
-        Assert.Null(timedOutShellResult.ProcessExitCode);
+        Assert.Equal(0, timedOutShellResult.ProcessExitCode);
         Assert.True(timedOutShellResult.ProcessTimedOut);
 
         var observation = CopilotToolObservation.FromResult(failedShellResult);
@@ -178,6 +178,31 @@ public sealed class CopilotForegroundProcessEvidenceTests : IDisposable
         Assert.False(restored.EnsureValid(DateTimeOffset.UtcNow));
         Assert.Equal("shell", restored.ProcessOperation);
         Assert.Equal(23, restored.ProcessExitCode);
+
+        var timedOutTrace = CopilotAgentTraceEntry.FromResult(
+            new CopilotToolExecutionInfo
+            {
+                ToolName = "RunShellCommand",
+                State = CopilotToolExecutionState.Failed,
+            },
+            new CopilotToolResult
+            {
+                ToolName = "RunShellCommand",
+                Success = false,
+                FailureKind = CopilotToolFailureKind.Transient,
+                FailureCode = CopilotShellCommandService.TimedOutFailureCode,
+                ProcessOperation = "shell",
+                ProcessExitCode = 0,
+                ProcessTimedOut = true,
+            });
+        Assert.Equal(0, timedOutTrace.ProcessExitCode);
+        Assert.True(timedOutTrace.ProcessTimedOut);
+        var restoredTimedOut = JsonConvert.DeserializeObject<CopilotAgentTraceEntry>(
+            JsonConvert.SerializeObject(timedOutTrace));
+        Assert.NotNull(restoredTimedOut);
+        Assert.False(restoredTimedOut.EnsureValid(DateTimeOffset.UtcNow));
+        Assert.Equal(0, restoredTimedOut.ProcessExitCode);
+        Assert.True(restoredTimedOut.ProcessTimedOut);
 
         var legacyDocument = JObject.Parse(serialized);
         legacyDocument[nameof(CopilotAgentTraceEntry.SchemaVersion)] =
