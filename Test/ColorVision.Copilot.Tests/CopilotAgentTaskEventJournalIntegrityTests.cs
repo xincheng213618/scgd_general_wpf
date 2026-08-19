@@ -90,12 +90,22 @@ public sealed class CopilotAgentTaskEventJournalIntegrityTests
                 CopilotAgentCheckpointCompatibilityKind.Compatible));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             journal.RecordReplanRequired(
-                CopilotAgentCheckpointCompatibilityKind.ProfileChanged));
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            journal.RecordReplanRequired(
                 (CopilotAgentCheckpointCompatibilityKind)int.MaxValue));
 
         Assert.Empty(journal.Snapshot().Events);
+    }
+
+    [Fact]
+    public void ProfileChangeCanBeRecordedAsAReplanFact()
+    {
+        var journal = new CopilotAgentTaskEventJournalBuilder();
+
+        journal.RecordReplanRequired(
+            CopilotAgentCheckpointCompatibilityKind.ProfileChanged);
+
+        var replan = Assert.Single(journal.Snapshot().Events);
+        Assert.Equal(CopilotAgentTaskEventType.ReplanRequired, replan.Type);
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.ProfileChanged.ToString(), replan.State);
     }
 
     [Fact]

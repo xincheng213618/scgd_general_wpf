@@ -121,8 +121,7 @@ namespace ColorVision.Copilot
         public void RecordReplanRequired(CopilotAgentCheckpointCompatibilityKind reason)
         {
             if (!Enum.IsDefined(reason)
-                || reason is CopilotAgentCheckpointCompatibilityKind.Compatible
-                    or CopilotAgentCheckpointCompatibilityKind.ProfileChanged)
+                || reason == CopilotAgentCheckpointCompatibilityKind.Compatible)
             {
                 throw new ArgumentOutOfRangeException(nameof(reason));
             }

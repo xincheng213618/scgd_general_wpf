@@ -172,8 +172,7 @@ namespace ColorVision.Copilot
                                 item.State,
                                 out var reason)
                             || !Enum.IsDefined(reason)
-                            || reason is CopilotAgentCheckpointCompatibilityKind.Compatible
-                                or CopilotAgentCheckpointCompatibilityKind.ProfileChanged
+                            || reason == CopilotAgentCheckpointCompatibilityKind.Compatible
                             || !string.Equals(item.State, reason.ToString(), StringComparison.Ordinal)));
         }
 

@@ -9,6 +9,29 @@ namespace ColorVision.Copilot.Tests;
 public sealed class CopilotAgentSessionCheckpointTests
 {
     [Fact]
+    public void ProfileChangeRequiresAFreshPlan()
+    {
+        var originalProfile = CreateOpenAiProfile(
+            CopilotVendorType.OpenAI,
+            "https://original.example.test/v1");
+        var replacementProfile = CreateOpenAiProfile(
+            CopilotVendorType.OpenAI,
+            "https://replacement.example.test/v1");
+        var capabilitySnapshot = CopilotCapabilityCatalog.Shared.GetSnapshot();
+        var checkpoint = CopilotAgentSessionCheckpoint.Create(
+            originalProfile,
+            "{}",
+            capabilitySnapshot);
+
+        var compatibility = Assert.IsType<CopilotAgentSessionCheckpoint>(checkpoint)
+            .EvaluateFor(replacementProfile, capabilitySnapshot);
+
+        Assert.Equal(CopilotAgentCheckpointCompatibilityKind.ProfileChanged, compatibility.Kind);
+        Assert.True(compatibility.RequiresReplan);
+        Assert.False(compatibility.CanResume);
+    }
+
+    [Fact]
     public void StructurallyValidCheckpointAcceptsCurrentEmptyTaskEventJournal()
     {
         var checkpoint = CreateCheckpoint(new CopilotAgentTaskEventJournalSnapshot());

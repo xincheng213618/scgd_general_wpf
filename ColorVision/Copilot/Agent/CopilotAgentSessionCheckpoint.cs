@@ -51,7 +51,8 @@ namespace ColorVision.Copilot
 
         public bool CanResume => Kind == CopilotAgentCheckpointCompatibilityKind.Compatible;
 
-        public bool RequiresReplan => Kind is CopilotAgentCheckpointCompatibilityKind.CapabilitySnapshotMissing
+        public bool RequiresReplan => Kind is CopilotAgentCheckpointCompatibilityKind.ProfileChanged
+            or CopilotAgentCheckpointCompatibilityKind.CapabilitySnapshotMissing
             or CopilotAgentCheckpointCompatibilityKind.CapabilityDrift
             or CopilotAgentCheckpointCompatibilityKind.ToolSurfaceSnapshotMissing
             or CopilotAgentCheckpointCompatibilityKind.ToolSurfaceDrift
