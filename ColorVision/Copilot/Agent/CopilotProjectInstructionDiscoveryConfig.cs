@@ -177,12 +177,6 @@ namespace ColorVision.Copilot
         internal IReadOnlyList<CopilotCodexExecPolicyIssue> ConfiguredExecPolicyIssues { get; init; } =
             Array.Empty<CopilotCodexExecPolicyIssue>();
 
-        internal IReadOnlyList<CopilotCodexCustomSubagentDefinition> CustomSubagents { get; init; } =
-            Array.Empty<CopilotCodexCustomSubagentDefinition>();
-
-        internal IReadOnlyList<CopilotCodexCustomSubagentDiscoveryIssue> CustomSubagentDiscoveryIssues { get; init; } =
-            Array.Empty<CopilotCodexCustomSubagentDiscoveryIssue>();
-
         public string DeveloperInstructions { get; init; } = string.Empty;
 
         public bool HasDeveloperInstructionsOverride { get; init; }
@@ -994,16 +988,9 @@ namespace ColorVision.Copilot
                     includeProjectRootMarkers: true);
             }
 
-            var customSubagents = DiscoverCodexHomeCustomSubagents(
-                normalizedRoot,
-                globalSource,
-                globalConfigPath,
-                out var customSubagentDiscoveryIssues);
             var execPolicy = DiscoverCodexHomeExecPolicy(normalizedRoot);
             options = options with
             {
-                CustomSubagents = customSubagents,
-                CustomSubagentDiscoveryIssues = customSubagentDiscoveryIssues,
                 ConfiguredExecPolicyRules = execPolicy.Rules,
                 ConfiguredExecPolicyIssues = execPolicy.Issues,
                 AppliedExecPolicyFilePaths = execPolicy.SourceFilePaths,
@@ -1051,8 +1038,6 @@ namespace ColorVision.Copilot
                     projectLayer = parsedProjectLayer;
                 }
                 var hasInstructionAssignments = projectLayer != null;
-                var hasCustomSubagentDeclarations = hasProjectConfig
-                    && HasValidCustomSubagentDeclarations(projectSource);
                 var hasApplicableOverrides = false;
 
                 if (hasInstructionAssignments && projectLayer != null)
@@ -1079,7 +1064,7 @@ namespace ColorVision.Copilot
                         includeProjectRootMarkers: false);
                     }
                 }
-                if (hasApplicableOverrides || hasCustomSubagentDeclarations)
+                if (hasApplicableOverrides)
                     appliedConfigFilePaths.Add(Path.GetFullPath(configPath));
 
             }
@@ -1101,16 +1086,8 @@ namespace ColorVision.Copilot
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
-            var customSubagents = ApplyTrustedProjectCustomSubagents(
-                options.CustomSubagents,
-                options.CustomSubagentDiscoveryIssues,
-                normalizedProjectRoot,
-                configDirectories,
-                out var customSubagentDiscoveryIssues);
             options = options with
             {
-                CustomSubagents = customSubagents,
-                CustomSubagentDiscoveryIssues = customSubagentDiscoveryIssues,
                 ConfiguredExecPolicyRules = configuredExecPolicyRules,
                 ConfiguredExecPolicyIssues = configuredExecPolicyIssues,
                 AppliedExecPolicyFilePaths = appliedExecPolicyFilePaths,

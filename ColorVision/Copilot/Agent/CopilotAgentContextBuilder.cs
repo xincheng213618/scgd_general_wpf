@@ -227,20 +227,6 @@ namespace ColorVision.Copilot
                 1,
                 builder.Length - contributionStart));
 
-            var customSubagents = BuildCustomSubagentPromptBlock(request);
-            if (customSubagents.Length > 0)
-            {
-                contributionStart = builder.Length;
-                builder.AppendLine();
-                builder.AppendLine(customSubagents);
-                provenance.Add(new CopilotContextProvenanceEntry(
-                    CopilotContextSourceKind.CustomSubagentCatalog,
-                    CopilotContextSourceForm.Catalog,
-                    CopilotContextTrustClass.TrustedConfiguration,
-                    Math.Min(24, request.CodexCustomSubagents.Count),
-                    builder.Length - contributionStart));
-            }
-
             var applicationContext = BuildApplicationContext(
                 request.ContextItems,
                 CopilotAgentRunBudget.Resolve(request).ContextWindowTokens,
@@ -359,63 +345,6 @@ namespace ColorVision.Copilot
             }
 
             return new PreparedUserMessage(builder.ToString().TrimEnd(), provenance.ToArray());
-        }
-
-        private static string BuildCustomSubagentPromptBlock(CopilotAgentRequest request)
-        {
-            if (!request.CodexAgentsEnabled || request.CodexCustomSubagents.Count == 0)
-                return string.Empty;
-
-            var builder = new StringBuilder();
-            builder.AppendLine("# Available custom subagents (trusted configuration snapshot)");
-            builder.AppendLine("Select one with the optional agent argument on DelegateExplore or DelegateScout. The selected delegate tool keeps its fixed read-only capability boundary; custom settings cannot add tools, writes, approvals, MCP servers, skills, or broader sandbox access.");
-            foreach (var definition in request.CodexCustomSubagents.Take(24))
-            {
-                builder.Append("- ").Append(definition.Name).Append(": ")
-                    .AppendLine(TruncateInlineText(definition.Description, 400));
-                if (!string.IsNullOrWhiteSpace(definition.Model)
-                    || definition.ContextWindowTokens.HasValue
-                    || definition.ToolOutputTokenLimit.HasValue
-                    || definition.SandboxMode != CopilotCodexSandboxMode.Unspecified
-                    || definition.ReasoningEffort != CopilotCodexReasoningEffort.Unspecified
-                    || definition.ReasoningSummary != CopilotCodexReasoningSummary.Unspecified
-                    || definition.SupportsReasoningSummaries.HasValue
-                    || definition.ModelVerbosity != CopilotCodexModelVerbosity.Unspecified
-                    || !string.IsNullOrWhiteSpace(definition.ServiceTier))
-                {
-                    builder.Append("  configured runtime: model=")
-                        .Append(string.IsNullOrWhiteSpace(definition.Model) ? "inherited" : definition.Model)
-                        .Append("; context_window=")
-                        .Append(definition.ContextWindowTokens?.ToString() ?? "inherited")
-                        .Append("; tool_output_token_limit=")
-                        .Append(definition.ToolOutputTokenLimit?.ToString() ?? "inherited")
-                        .Append("; sandbox_mode=")
-                        .Append(definition.SandboxMode == CopilotCodexSandboxMode.Unspecified
-                            ? "inherited"
-                            : CopilotCodexSandboxModeSelection.GetConfigToken(definition.SandboxMode))
-                        .Append("; sandbox_effective=read-only")
-                        .Append("; reasoning_effort=")
-                        .Append(definition.ReasoningEffort == CopilotCodexReasoningEffort.Unspecified
-                            ? "inherited"
-                            : CopilotCodexReasoningEffortSelection.GetConfigToken(definition.ReasoningEffort))
-                        .Append("; reasoning_summary=")
-                        .Append(definition.ReasoningSummary == CopilotCodexReasoningSummary.Unspecified
-                            ? "inherited"
-                            : CopilotCodexReasoningSummarySelection.GetConfigToken(definition.ReasoningSummary))
-                        .Append("; reasoning_summaries=")
-                        .Append(CopilotCodexReasoningSummarySupportSelection.GetConfigToken(
-                            definition.SupportsReasoningSummaries))
-                        .Append("; verbosity=")
-                        .Append(definition.ModelVerbosity == CopilotCodexModelVerbosity.Unspecified
-                            ? "inherited"
-                            : CopilotCodexModelVerbositySelection.GetConfigToken(definition.ModelVerbosity))
-                        .Append("; service_tier=")
-                        .AppendLine(string.IsNullOrWhiteSpace(definition.ServiceTier)
-                            ? "inherited"
-                            : definition.ServiceTier);
-                }
-            }
-            return builder.ToString().TrimEnd();
         }
 
         internal static string BuildActiveGoalRequestContent(

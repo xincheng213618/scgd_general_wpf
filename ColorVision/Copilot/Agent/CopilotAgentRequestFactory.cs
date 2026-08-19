@@ -306,9 +306,6 @@ namespace ColorVision.Copilot
         internal CopilotCodexReasoningEffort CodexDefaultSubagentReasoningEffort { get; init; } =
             CopilotCodexReasoningEffort.Unspecified;
 
-        internal IReadOnlyList<CopilotCodexCustomSubagentDefinition> CodexCustomSubagents { get; init; } =
-            Array.Empty<CopilotCodexCustomSubagentDefinition>();
-
         internal int? ModelContextWindowTokensOverride { get; init; }
 
         internal int? ToolOutputTokenLimitOverride { get; init; }
@@ -515,9 +512,6 @@ namespace ColorVision.Copilot
                     hostContext.ProjectInstructionDiscoveryOptions.HasDefaultSubagentReasoningEffortOverride
                         ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredDefaultSubagentReasoningEffort
                         : CopilotCodexReasoningEffort.Unspecified,
-                CodexCustomSubagents = hostContext.ProjectInstructionDiscoveryOptions.CustomSubagents
-                    .Select(definition => definition.CreateSnapshot())
-                    .ToArray(),
                 ModelContextWindowTokensOverride = hostContext.ProjectInstructionDiscoveryOptions.HasModelContextWindowOverride
                     ? hostContext.ProjectInstructionDiscoveryOptions.ConfiguredModelContextWindowTokens
                     : null,
@@ -618,9 +612,6 @@ namespace ColorVision.Copilot
                 CodexMaximumConcurrentSubagentRuns = plan.CodexMaximumConcurrentSubagentRuns,
                 CodexDefaultSubagentModel = plan.CodexDefaultSubagentModel,
                 CodexDefaultSubagentReasoningEffort = plan.CodexDefaultSubagentReasoningEffort,
-                CodexCustomSubagents = plan.CodexCustomSubagents
-                    .Select(definition => definition.CreateSnapshot())
-                    .ToArray(),
                 ToolOutputTokenLimitOverride = plan.ToolOutputTokenLimitOverride,
                 CodexReasoningEffort = plan.CodexReasoningEffort,
                 CodexReasoningSummary = plan.CodexReasoningSummary,

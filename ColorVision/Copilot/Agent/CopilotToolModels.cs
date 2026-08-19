@@ -260,9 +260,6 @@ namespace ColorVision.Copilot
         internal CopilotCodexReasoningEffort CodexDefaultSubagentReasoningEffort { get; init; } =
             CopilotCodexReasoningEffort.Unspecified;
 
-        internal IReadOnlyList<CopilotCodexCustomSubagentDefinition> CodexCustomSubagents { get; init; } =
-            Array.Empty<CopilotCodexCustomSubagentDefinition>();
-
         internal int? ToolOutputTokenLimitOverride { get; init; }
 
         internal CopilotCodexReasoningEffort CodexReasoningEffort { get; init; } =

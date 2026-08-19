@@ -262,11 +262,7 @@ namespace ColorVision.Copilot
                 ? string.Empty
                 : CopilotToolFailureCode.Normalize(FailureCode);
             DelegatedRoleId = SanitizeIdentifier(DelegatedRoleId);
-            DelegatedAgentName = CopilotCodexCustomSubagentSelection.TryNormalizeName(
-                DelegatedAgentName,
-                out var delegatedAgentName)
-                    ? delegatedAgentName
-                    : string.Empty;
+            DelegatedAgentName = SanitizeIdentifier(DelegatedAgentName);
             DelegatedRunId = SanitizeIdentifier(DelegatedRunId);
             DelegatedResumeFromRunId = SanitizeIdentifier(DelegatedResumeFromRunId);
             DelegatedModel = CopilotConfiguredModelSelection.TryNormalize(DelegatedModel, out var delegatedModel)

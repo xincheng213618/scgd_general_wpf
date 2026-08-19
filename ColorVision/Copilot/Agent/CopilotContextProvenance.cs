@@ -10,7 +10,6 @@ namespace ColorVision.Copilot
         ConversationHistory,
         ActiveGoal,
         UserQuestion,
-        CustomSubagentCatalog,
         ApplicationContext,
         AttachmentContext,
         ProjectInstructions,
@@ -21,7 +20,6 @@ namespace ColorVision.Copilot
     internal enum CopilotContextSourceForm
     {
         Instructions,
-        Catalog,
         Snapshot,
         Recall,
     }
@@ -30,7 +28,6 @@ namespace ColorVision.Copilot
     {
         HostPolicy,
         UserInstruction,
-        TrustedConfiguration,
         ScopedGuidance,
         UntrustedData,
         ConversationRecall,
@@ -88,7 +85,6 @@ namespace ColorVision.Copilot
             CopilotContextSourceKind.ConversationHistory => "conversation_history",
             CopilotContextSourceKind.ActiveGoal => "active_goal",
             CopilotContextSourceKind.UserQuestion => "user_question",
-            CopilotContextSourceKind.CustomSubagentCatalog => "custom_subagent_catalog",
             CopilotContextSourceKind.ApplicationContext => "application_context",
             CopilotContextSourceKind.AttachmentContext => "attachment_context",
             CopilotContextSourceKind.ProjectInstructions => "project_instructions",
@@ -100,7 +96,6 @@ namespace ColorVision.Copilot
         private static string GetFormToken(CopilotContextSourceForm form) => form switch
         {
             CopilotContextSourceForm.Instructions => "instructions",
-            CopilotContextSourceForm.Catalog => "catalog",
             CopilotContextSourceForm.Snapshot => "snapshot",
             CopilotContextSourceForm.Recall => "recall",
             _ => "opaque",
@@ -110,7 +105,6 @@ namespace ColorVision.Copilot
         {
             CopilotContextTrustClass.HostPolicy => "host_policy",
             CopilotContextTrustClass.UserInstruction => "user_instruction",
-            CopilotContextTrustClass.TrustedConfiguration => "trusted_configuration",
             CopilotContextTrustClass.ScopedGuidance => "scoped_guidance",
             CopilotContextTrustClass.UntrustedData => "untrusted_data",
             CopilotContextTrustClass.ConversationRecall => "conversation_recall",

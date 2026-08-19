@@ -66,14 +66,6 @@ public sealed class CopilotContextProvenanceTests
                     Content = sensitive,
                 },
             ],
-            CodexCustomSubagents =
-            [
-                new CopilotCodexCustomSubagentDefinition
-                {
-                    Name = "scout",
-                    Description = sensitive,
-                },
-            ],
         };
 
         var prepared = new CopilotAgentContextBuilder().BuildAnswerMessages(
@@ -86,7 +78,6 @@ public sealed class CopilotContextProvenanceTests
                 CopilotContextSourceKind.ConversationHistory,
                 CopilotContextSourceKind.ActiveGoal,
                 CopilotContextSourceKind.UserQuestion,
-                CopilotContextSourceKind.CustomSubagentCatalog,
                 CopilotContextSourceKind.ApplicationContext,
                 CopilotContextSourceKind.AttachmentContext,
                 CopilotContextSourceKind.ProjectInstructions,
@@ -96,11 +87,9 @@ public sealed class CopilotContextProvenanceTests
         Assert.Equal(CopilotContextSourceForm.Recall, entries[0].Form);
         Assert.Equal(CopilotContextTrustClass.ConversationRecall, entries[0].Trust);
         Assert.Equal(CopilotContextTrustClass.UserInstruction, entries[1].Trust);
-        Assert.Equal(CopilotContextSourceForm.Catalog, entries[3].Form);
-        Assert.Equal(CopilotContextTrustClass.TrustedConfiguration, entries[3].Trust);
-        Assert.Equal(CopilotContextTrustClass.UntrustedData, entries[4].Trust);
-        Assert.Equal(CopilotContextTrustClass.ScopedGuidance, entries[6].Trust);
-        Assert.Equal(CopilotContextTrustClass.HostPolicy, entries[7].Trust);
+        Assert.Equal(CopilotContextTrustClass.UntrustedData, entries[3].Trust);
+        Assert.Equal(CopilotContextTrustClass.ScopedGuidance, entries[5].Trust);
+        Assert.Equal(CopilotContextTrustClass.HostPolicy, entries[6].Trust);
         Assert.All(entries, entry =>
         {
             Assert.True(entry.ItemCount > 0);
